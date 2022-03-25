@@ -319,10 +319,34 @@ func (s *workflowServer) RetryWorkflow(ctx context.Context, req *workflowpkg.Wor
 		return nil, err
 	}
 
-	wf, err = util.RetryWorkflow(ctx, kubeClient, s.hydrator, wfClient.ArgoprojV1alpha1().Workflows(req.Namespace), wf.Name, req.RestartSuccessful, req.NodeFieldSelector)
+	err = s.hydrator.Hydrate(wf)
 	if err != nil {
 		return nil, err
 	}
+
+	wf, podsToDelete, err := util.FormulateRetryWorkflow(ctx, wf, req.RestartSuccessful, req.NodeFieldSelector)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, podName := range podsToDelete {
+		log.WithFields(log.Fields{"podDeleted": podName}).Info("Deleting pod")
+		err := kubeClient.CoreV1().Pods(wf.Namespace).Delete(ctx, podName, metav1.DeleteOptions{})
+		if err != nil && !apierr.IsNotFound(err) {
+			return nil, err
+		}
+	}
+
+	err = s.hydrator.Dehydrate(wf)
+	if err != nil {
+		return nil, err
+	}
+
+	wf, err = wfClient.ArgoprojV1alpha1().Workflows(req.Namespace).Update(ctx, wf, metav1.UpdateOptions{})
+	if err != nil {
+		return nil, err
+	}
+
 	return wf, nil
 }
 
@@ -495,6 +519,9 @@ func (s *workflowServer) SetWorkflow(ctx context.Context, req *workflowpkg.Workf
 }
 
 func (s *workflowServer) LintWorkflow(ctx context.Context, req *workflowpkg.WorkflowLintRequest) (*wfv1.Workflow, error) {
+	if req.Workflow == nil {
+		return nil, fmt.Errorf("unable to get a workflow")
+	}
 	wfClient := auth.GetWfClient(ctx)
 	wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().WorkflowTemplates(req.Namespace))
 	cwftmplGetter := templateresolution.WrapClusterWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().ClusterWorkflowTemplates())
@@ -584,17 +611,9 @@ func (s *workflowServer) SubmitWorkflow(ctx context.Context, req *workflowpkg.Wo
 		}
 		wf = common.ConvertCronWorkflowToWorkflow(cronWf)
 	case workflow.WorkflowTemplateKind, workflow.WorkflowTemplateSingular, workflow.WorkflowTemplatePlural, workflow.WorkflowTemplateShortName:
-		wfTmpl, err := wfClient.ArgoprojV1alpha1().WorkflowTemplates(req.Namespace).Get(ctx, req.ResourceName, metav1.GetOptions{})
-		if err != nil {
-			return nil, err
-		}
-		wf = common.NewWorkflowFromWorkflowTemplate(req.ResourceName, wfTmpl.Spec.WorkflowMetadata, false)
+		wf = common.NewWorkflowFromWorkflowTemplate(req.ResourceName, false)
 	case workflow.ClusterWorkflowTemplateKind, workflow.ClusterWorkflowTemplateSingular, workflow.ClusterWorkflowTemplatePlural, workflow.ClusterWorkflowTemplateShortName:
-		cwfTmpl, err := wfClient.ArgoprojV1alpha1().ClusterWorkflowTemplates().Get(ctx, req.ResourceName, metav1.GetOptions{})
-		if err != nil {
-			return nil, err
-		}
-		wf = common.NewWorkflowFromWorkflowTemplate(req.ResourceName, cwfTmpl.Spec.WorkflowMetadata, true)
+		wf = common.NewWorkflowFromWorkflowTemplate(req.ResourceName, true)
 	default:
 		return nil, errors.Errorf(errors.CodeBadRequest, "Resource kind '%s' is not supported for submitting", req.ResourceKind)
 	}
@@ -609,7 +628,7 @@ func (s *workflowServer) SubmitWorkflow(ctx context.Context, req *workflowpkg.Wo
 	wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().WorkflowTemplates(req.Namespace))
 	cwftmplGetter := templateresolution.WrapClusterWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().ClusterWorkflowTemplates())
 
-	_, err = validate.ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, validate.ValidateOpts{})
+	_, err = validate.ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, validate.ValidateOpts{Submit: true})
 	if err != nil {
 		return nil, err
 	}

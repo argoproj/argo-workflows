@@ -267,7 +267,31 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                         )}
                         <div className='argo-table-list'>
                             <div className='row argo-table-list__head'>
-                                <div className='columns small-1 workflows-list__status' />
+                                <div className='columns small-1 workflows-list__status'>
+                                    <input
+                                        type='checkbox'
+                                        className='workflows-list__status--checkbox'
+                                        checked={this.state.workflows.length === this.state.selectedWorkflows.size}
+                                        onClick={e => {
+                                            e.stopPropagation();
+                                        }}
+                                        onChange={e => {
+                                            if (this.state.workflows.length === this.state.selectedWorkflows.size) {
+                                                // All workflows are selected, deselect them all
+                                                this.updateCurrentlySelectedAndBatchActions(new Map<string, models.Workflow>());
+                                            } else {
+                                                // Not all workflows are selected, select them all
+                                                const currentlySelected: Map<string, Workflow> = this.state.selectedWorkflows;
+                                                this.state.workflows.forEach(wf => {
+                                                    if (!currentlySelected.has(wf.metadata.uid)) {
+                                                        currentlySelected.set(wf.metadata.uid, wf);
+                                                    }
+                                                });
+                                                this.updateCurrentlySelectedAndBatchActions(currentlySelected);
+                                            }
+                                        }}
+                                    />
+                                </div>
                                 <div className='row small-11'>
                                     <div className='columns small-3'>NAME</div>
                                     <div className='columns small-1'>NAMESPACE</div>

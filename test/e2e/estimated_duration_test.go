@@ -1,3 +1,4 @@
+//go:build functional
 // +build functional
 
 package e2e
@@ -25,38 +26,6 @@ func (s *EstimatedDurationSuite) TestWorkflowTemplate() {
 		SubmitWorkflowsFromWorkflowTemplates().
 		WaitForWorkflow().
 		SubmitWorkflowsFromWorkflowTemplates().
-		WaitForWorkflow(fixtures.ToBeSucceeded).
-		Then().
-		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.NotEmpty(t, status.EstimatedDuration)
-			assert.NotEmpty(t, status.Nodes[metadata.Name].EstimatedDuration)
-		})
-}
-
-func (s *EstimatedDurationSuite) TestClusterWorkflowTemplate() {
-	s.Given().
-		ClusterWorkflowTemplate("@testdata/basic-clusterworkflowtemplate.yaml").
-		When().
-		CreateClusterWorkflowTemplates().
-		SubmitWorkflowsFromClusterWorkflowTemplates().
-		WaitForWorkflow().
-		SubmitWorkflowsFromClusterWorkflowTemplates().
-		WaitForWorkflow(fixtures.ToBeSucceeded).
-		Then().
-		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.NotEmpty(t, status.EstimatedDuration)
-			assert.NotEmpty(t, status.Nodes[metadata.Name].EstimatedDuration)
-		})
-}
-
-func (s *EstimatedDurationSuite) TestCronWorkflow() {
-	s.Given().
-		CronWorkflow("@testdata/basic-cronworkflow.yaml").
-		When().
-		CreateCronWorkflow().
-		SubmitWorkflowsFromCronWorkflows().
-		WaitForWorkflow().
-		SubmitWorkflowsFromCronWorkflows().
 		WaitForWorkflow(fixtures.ToBeSucceeded).
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {

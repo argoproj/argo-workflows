@@ -2,10 +2,6 @@
 
 view logs of a pod or workflow
 
-### Synopsis
-
-view logs of a pod or workflow
-
 ```
 argo logs WORKFLOW [POD] [flags]
 ```
@@ -20,6 +16,10 @@ argo logs WORKFLOW [POD] [flags]
 # Follow the logs of a workflows:
 
   argo logs my-wf --follow
+
+# Print the logs of a workflows with a selector:
+
+  argo logs my-wf -l app=sth
 
 # Print the logs of single container in a pod
 
@@ -47,6 +47,7 @@ argo logs WORKFLOW [POD] [flags]
   -h, --help                help for logs
       --no-color            Disable colorized output
   -p, --previous            Specify if the previously terminated container logs should be returned.
+  -l, --selector string     log selector for some pod
       --since duration      Only return logs newer than a relative duration like 5s, 2m, or 3h. Defaults to all logs. Only one of since-time / since may be used.
       --since-time string   Only return logs after a specific date (RFC3339). Defaults to all logs. Only one of since-time / since may be used.
       --tail int            If set, the number of lines from the end of the logs to show. If not specified, logs are shown from the creation of the container or sinceSeconds or sinceTime (default -1)
@@ -61,12 +62,14 @@ argo logs WORKFLOW [POD] [flags]
   -s, --argo-server host:port          API server host:port. e.g. localhost:2746. Defaults to the ARGO_SERVER environment variable.
       --as string                      Username to impersonate for the operation
       --as-group stringArray           Group to impersonate for the operation, this flag can be repeated to specify multiple groups.
+      --as-uid string                  UID to impersonate for the operation
       --certificate-authority string   Path to a cert file for the certificate authority
       --client-certificate string      Path to a client certificate file for TLS
       --client-key string              Path to a client key file for TLS
       --cluster string                 The name of the kubeconfig cluster to use
       --context string                 The name of the kubeconfig context to use
       --gloglevel int                  Set the glog logging level
+  -H, --header strings                 Sets additional header to all requests made by Argo CLI. (Can be repeated multiple times to add multiple headers, also supports comma separated headers) Used only when either ARGO_HTTP1 or --argo-http1 is set to true.
       --insecure-skip-tls-verify       If true, the server's certificate will not be checked for validity. This will make your HTTPS connections insecure
   -k, --insecure-skip-verify           If true, the Argo Server's certificate will not be checked for validity. This will make your HTTPS connections insecure. Defaults to the ARGO_INSECURE_SKIP_VERIFY environment variable.
       --instanceid string              submit with a specific controller's instance id label. Default to the ARGO_INSTANCEID environment variable.

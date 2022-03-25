@@ -3,14 +3,23 @@ repo_url: https://github.com/argoproj/argo-workflows
 strict: true
 theme:
   name: material
-  palette:
-    primary: blue
   font:
     text: Work Sans
   logo: assets/logo.png
-google_analytics:
-  - UA-105170809-7
-  - auto
+  palette:
+  - scheme: default
+    primary: blue
+    toggle:
+      icon: material/toggle-switch-off-outline
+      name: Switch to dark mode
+  - scheme: slate
+    toggle:
+      icon: material/toggle-switch
+      name: Switch to light mode
+extra:
+  analytics:
+    provider: google
+    property: UA-105170809-7
 markdown_extensions:
   - codehilite
   - admonition
@@ -40,7 +49,10 @@ nav:
           - cluster-workflow-templates.md
           - cron-workflows.md
           - cron-backfill.md
+          - templates.md
+          - http-template.md
           - container-set-template.md
+          - template-defaults.md
           - work-avoidance.md
           - enhanced-depends-logic.md
           - data-sourcing-and-transformation.md
@@ -51,12 +63,14 @@ nav:
           - estimated-duration.md
           - workflow-pod-security-context.md
           - progress.md
+          - lifecyclehook.md
           - workflow-creator.md
           - synchronization.md
           - workflow-of-workflows.md
           - memoization.md
           - tolerating-pod-deletion.md
           - widgets.md
+          - retries.md
       # all other topics, including API access
       - Advanced:
           - workflow-restrictions.md
@@ -64,17 +78,26 @@ nav:
           - workflow-events.md
           - kubectl.md
           - access-token.md
+          - swagger.md
           - rest-api.md
           - rest-examples.md
+          - client-libraries.md
           - events.md
           - webhooks.md
           - submit-workflow-via-automation.md
           - workflow-submitting-workflow.md
           - resuming-workflow-via-automation.md
           - async-pattern.md
-          - security.md
+          - running-at-massive-scale.md
+          - debug-pause.md
+      - Plugins:
+          - plugins.md
+          - executor_plugins.md
+          - executor_swagger.md
+          - plugin-directory.md
       - ide-setup.md
-      - Examples: examples/README.md
+      - security.md
+      - Examples: https://github.com/argoproj/argo-workflows/blob/master/examples/README.md
       - Field Reference: fields.md
       - CLI Reference:
           - argo: cli/argo.md
@@ -82,6 +105,8 @@ nav:
           - argo archive delete: cli/argo_archive_delete.md
           - argo archive get: cli/argo_archive_get.md
           - argo archive list: cli/argo_archive_list.md
+          - argo archive list-label-keys: cli/argo_archive_list-label-keys.md
+          - argo archive list-label-values: cli/argo_archive_list-label-values.md
           - argo auth: cli/argo_auth.md
           - argo auth token: cli/argo_auth_token.md
           - argo cluster-template: cli/argo_cluster-template.md
@@ -100,6 +125,8 @@ nav:
           - argo cron resume: cli/argo_cron_resume.md
           - argo cron suspend: cli/argo_cron_suspend.md
           - argo delete: cli/argo_delete.md
+          - argo executor-plugin: cli/argo_executor-plugin.md
+          - argo executor-plugin build: cli/argo_executor-plugin_build.md
           - argo get: cli/argo_get.md
           - argo lint: cli/argo_lint.md
           - argo list: cli/argo_list.md
@@ -129,11 +156,11 @@ nav:
       - Configuration:
           - managed-namespace.md
           - configure-artifact-repository.md
+          - configure-archive-logs.md
           - workflow-controller-configmap.md
           - workflow-executors.md
           - sidecar-injection.md
           - default-workflow-specs.md
-          - template-defaults.md
           - offloading-large-workflows.md
           - workflow-archive.md
           - metrics.md
@@ -152,6 +179,7 @@ nav:
       - environment-variables.md
   - Developer Guide:
       - CONTRIBUTING.md
+      - mentoring.md
       - architecture.md
       - running-locally.md
       - versioning.md

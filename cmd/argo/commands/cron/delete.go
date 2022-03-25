@@ -16,7 +16,7 @@ func NewDeleteCommand() *cobra.Command {
 		Use:   "delete [CRON_WORKFLOW... | --all]",
 		Short: "delete a cron workflow",
 		Run: func(cmd *cobra.Command, args []string) {
-			ctx, apiClient := client.NewAPIClient()
+			ctx, apiClient := client.NewAPIClient(cmd.Context())
 			serviceClient, err := apiClient.NewCronWorkflowServiceClient()
 			errors.CheckError(err)
 			if all {
@@ -38,6 +38,6 @@ func NewDeleteCommand() *cobra.Command {
 		},
 	}
 
-	command.Flags().BoolVar(&all, "all", false, "Delete all workflow templates")
+	command.Flags().BoolVar(&all, "all", false, "Delete all cron workflows")
 	return command
 }

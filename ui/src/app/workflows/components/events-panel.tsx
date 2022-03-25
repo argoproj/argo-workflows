@@ -1,5 +1,6 @@
 import * as React from 'react';
 import {useEffect, useRef, useState} from 'react';
+import {map} from 'rxjs/operators';
 import {Event} from '../../../models';
 import {ErrorNotice} from '../../shared/components/error-notice';
 import {Notice} from '../../shared/components/notice';
@@ -31,12 +32,14 @@ export const EventsPanel = ({namespace, name, kind}: {namespace: string; name: s
             () => Promise.resolve({metadata: {}, items: []}),
             () =>
                 // ListWatch can only handle Kubernetes Watch Event - so we fake it
-                services.workflows.watchEvents(namespace, fieldSelector).map(
-                    x =>
-                        x && {
-                            type: 'ADDED',
-                            object: x
-                        }
+                services.workflows.watchEvents(namespace, fieldSelector).pipe(
+                    map(
+                        x =>
+                            x && {
+                                type: 'ADDED',
+                                object: x
+                            }
+                    )
                 ),
             () => setError(null),
             () => setError(null),
@@ -109,21 +112,24 @@ export const EventsPanel = ({namespace, name, kind}: {namespace: string; name: s
                         <div className='columns small-2'>Object</div>
                         <div className='columns small-5'>Message</div>
                     </div>
-                    {events.map(e => (
-                        <div className='row argo-table-list__row' key={e.metadata.uid}>
-                            <div className='columns small-1' title={e.type}>
-                                {e.type === 'Normal' ? <i className='fa fa-check-circle status-icon--init' /> : <i className='fa fa-exclamation-circle status-icon--pending' />}
+                    {events
+                        .filter(e => e && e.lastTimestamp)
+                        .sort((a, b) => -a.lastTimestamp.localeCompare(b.lastTimestamp))
+                        .map(e => (
+                            <div className='row argo-table-list__row' key={e.metadata.uid}>
+                                <div className='columns small-1' title={e.type}>
+                                    {e.type === 'Normal' ? <i className='fa fa-check-circle status-icon--init' /> : <i className='fa fa-exclamation-circle status-icon--pending' />}
+                                </div>
+                                <div className='columns small-2'>
+                                    <Timestamp date={e.lastTimestamp} />
+                                </div>
+                                <div className='columns small-2'>{e.reason}</div>
+                                <div className='columns small-2'>
+                                    {e.involvedObject.kind}/{e.involvedObject.name}
+                                </div>
+                                <div className='columns small-5'>{e.message}</div>
                             </div>
-                            <div className='columns small-2'>
-                                <Timestamp date={e.lastTimestamp} />
-                            </div>
-                            <div className='columns small-2'>{e.reason}</div>
-                            <div className='columns small-2'>
-                                {e.involvedObject.kind}/{e.involvedObject.name}
-                            </div>
-                            <div className='columns small-5'>{e.message}</div>
-                        </div>
-                    ))}
+                        ))}
                 </div>
             )}
         </>

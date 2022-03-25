@@ -1,22 +1,30 @@
 # Installation
 
-You can choose one of three common installations:
+## Argo on Desktop
 
-* **cluster install** Execute workflows in any namespace? 
-* **namespace install** Only execute workflows in the same namespace we install in (typically `argo`).
-* **managed namespace install**: Only execute workflows in a specific namespace ([learn more](managed-namespace.md)).
+Use the [quick-start manifests](quick-start.md).
 
-Choose [a manifests from the list](https://github.com/argoproj/argo-workflows/tree/stable/manifests).
+## Argo in Production
 
-E.g.
+Determine your base installation option.
 
-```sh
-kubectl create ns argo
-kubectl apply -n argo -f https://raw.githubusercontent.com/argoproj/argo-workflows/stable/manifests/namespace-install.yaml 
-```
+* A **cluster install** will watch and execute workflows in all namespaces.
+* A **namespace install** only executes workflows in the namespace it is installed in (typically `argo`).
+* A **managed namespace install**: only executes workflows in a specific namespace ([learn more](managed-namespace.md)).
 
+⚠️ `latest` is tip, not stable. Never run it. Make sure you're using the manifests attached to each Github release. See [this link](https://github.com/argoproj/argo-workflows/releases/latest) for the most recent manifests. 
 
+⚠️ Double-check you have the right version of your executor configured, it's easy to miss.
 
+⚠️ If you are using GitOps. Never use Kustomize remote base, this is dangerous. Instead, copy the manifests into your Git repo.
 
+Review the following:
+
+ * [Security](security.md).
+ * [Scaling](scaling.md) and [running at massive scale](running-at-massive-scale.md).
+ * [High-availability](high-availability.md)
+ * [Disaster recovery](disaster-recovery.md)
+
+Read the [upgrading guide](upgrading.md) before any major upgrade to be aware of breaking changes.
 
 

@@ -433,6 +433,55 @@ func TestDAGTmplMetrics(t *testing.T) {
 	assert.Contains(t, metricCounterString, `counter:<value:1 > `)
 }
 
+var testRealtimeWorkflowMetric = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: test-foobar
+  labels:
+    testLabel: foobar
+spec:
+  entrypoint: whalesay
+  metrics:
+    prometheus:
+      - name: intuit_data_persistplat_dppselfservice_workflow_test_duration
+        help: Duration of workflow
+        labels:
+          - key: workflowName
+            value: "{{workflow.name}}"
+          - key: label
+            value: "{{workflow.labels.testLabel}}"
+        gauge:
+          realtime: true
+          value: "{{ workflow.duration }}"
+  templates:
+    - name: whalesay
+      container:
+        image: docker/whalesay
+        command: [ cowsay ]
+        args: [ "hello world" ]
+`
+
+func TestRealtimeWorkflowMetric(t *testing.T) {
+	cancel, controller := newController()
+	defer cancel()
+	ctx := context.Background()
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+	wf := v1alpha1.MustUnmarshalWorkflow(testRealtimeWorkflowMetric)
+	_, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
+	assert.NoError(t, err)
+	woc := newWorkflowOperationCtx(wf, controller)
+
+	woc.operate(ctx)
+
+	metricErrorDesc := woc.wf.Spec.Metrics.Prometheus[0].GetDesc()
+	assert.NotNil(t, controller.metrics.GetCustomMetric(metricErrorDesc))
+	metricErrorCounter := controller.metrics.GetCustomMetric(metricErrorDesc)
+	metricErrorCounterString, err := getMetricStringValue(metricErrorCounter)
+	assert.NoError(t, err)
+	assert.Contains(t, metricErrorCounterString, `label:<name:"workflowName" value:"test-foobar" > gauge:<value:`)
+}
+
 var testRealtimeWorkflowMetricWithGlobalParameters = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -585,4 +634,152 @@ func TestProcessedRetryNode(t *testing.T) {
 	metricErrorCounterString, err := getMetricStringValue(metric)
 	assert.NoError(t, err)
 	assert.Contains(t, metricErrorCounterString, `value:1`)
+}
+
+var suspendWfWithMetrics = `apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: suspend-template-qndm5
+spec:
+  entrypoint: suspend
+  metrics:
+    prometheus:
+    - gauge:
+        realtime: true
+        value: '{{workflow.duration}}'
+      help: Duration gauge by name
+      labels:
+      - key: name
+        value: model_a
+      name: exec_duration_gauge
+  templates:
+  - name: suspend
+    steps:
+    - - name: build
+        template: whalesay
+    - - name: approve
+        template: approve
+    - - name: delay
+        template: delay
+    - - name: release
+        template: whalesay
+  - name: approve
+    suspend: {}
+  - name: delay
+    suspend:
+      duration: "20"
+  - container:
+      args:
+      - hello world
+      command:
+      - cowsay
+      image: docker/whalesay
+      name: ""
+    name: whalesay
+  ttlStrategy:
+    secondsAfterCompletion: 600
+status:
+  conditions:
+  - status: "False"
+    type: PodRunning
+  finishedAt: null
+  nodes:
+    suspend-template-qndm5:
+      children:
+      - suspend-template-qndm5-343839516
+      displayName: suspend-template-qndm5
+      finishedAt: null
+      id: suspend-template-qndm5
+      name: suspend-template-qndm5
+      phase: Running
+      progress: 1/1
+      startedAt: "2021-09-28T12:23:10Z"
+      templateName: suspend
+      templateScope: local/suspend-template-qndm5
+      type: Steps
+    suspend-template-qndm5-343839516:
+      boundaryID: suspend-template-qndm5
+      children:
+      - suspend-template-qndm5-2823755246
+      displayName: '[0]'
+      finishedAt: "2021-09-28T12:23:20Z"
+      id: suspend-template-qndm5-343839516
+      name: suspend-template-qndm5[0]
+      phase: Succeeded
+      progress: 1/1
+      resourcesDuration:
+        cpu: 6
+        memory: 3
+      startedAt: "2021-09-28T12:23:10Z"
+      templateScope: local/suspend-template-qndm5
+      type: StepGroup
+    suspend-template-qndm5-2823755246:
+      boundaryID: suspend-template-qndm5
+      children:
+      - suspend-template-qndm5-3632002577
+      displayName: build
+      finishedAt: "2021-09-28T12:23:16Z"
+      hostNodeName: kind-control-plane
+      id: suspend-template-qndm5-2823755246
+      name: suspend-template-qndm5[0].build
+      outputs:
+        exitCode: "0"
+      phase: Succeeded
+      progress: 1/1
+      resourcesDuration:
+        cpu: 6
+        memory: 3
+      startedAt: "2021-09-28T12:23:10Z"
+      templateName: whalesay
+      templateScope: local/suspend-template-qndm5
+      type: Pod
+    suspend-template-qndm5-3456849218:
+      boundaryID: suspend-template-qndm5
+      displayName: approve
+      finishedAt: null
+      id: suspend-template-qndm5-3456849218
+      name: suspend-template-qndm5[1].approve
+      phase: Running
+      startedAt: "2021-09-28T12:23:20Z"
+      templateName: approve
+      templateScope: local/suspend-template-qndm5
+      type: Suspend
+    suspend-template-qndm5-3632002577:
+      boundaryID: suspend-template-qndm5
+      children:
+      - suspend-template-qndm5-3456849218
+      displayName: '[1]'
+      finishedAt: null
+      id: suspend-template-qndm5-3632002577
+      name: suspend-template-qndm5[1]
+      phase: Running
+      startedAt: "2021-09-28T12:23:20Z"
+      templateScope: local/suspend-template-qndm5
+      type: StepGroup
+  phase: Running
+  progress: 1/1
+  resourcesDuration:
+    cpu: 6
+    memory: 3
+  startedAt: "2021-09-28T12:23:10Z"
+`
+
+func TestControllerRestartWithRunningWorkflow(t *testing.T) {
+	cancel, controller := newController()
+	defer cancel()
+	ctx := context.Background()
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+	wf := v1alpha1.MustUnmarshalWorkflow(suspendWfWithMetrics)
+	_, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
+	assert.NoError(t, err)
+	woc := newWorkflowOperationCtx(wf, controller)
+
+	woc.operate(ctx)
+	metricDesc := wf.Spec.Metrics.Prometheus[0].GetDesc()
+	metric := controller.metrics.GetCustomMetric(metricDesc)
+	assert.NotNil(t, metric)
+	metricString, err := getMetricStringValue(metric)
+	fmt.Println(metricString)
+	assert.NoError(t, err)
+	assert.Contains(t, metricString, `model_a`)
 }

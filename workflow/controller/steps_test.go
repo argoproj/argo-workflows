@@ -3,12 +3,12 @@ package controller
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
 
@@ -135,6 +135,8 @@ func TestResourceDurationMetric(t *testing.T) {
       id: many-items-z26lj-3491220632
       name: many-items-z26lj[0].sleep(4:four)
       outputs:
+        parameters:
+        - name: pipeline_tid
         artifacts:
         - archiveLogs: true
           name: main-logs
@@ -167,6 +169,22 @@ func TestResourceDurationMetric(t *testing.T) {
 	assert.Equal(t, "33", localScope["resourcesDuration.cpu"])
 	assert.Equal(t, "24", localScope["resourcesDuration.memory"])
 	assert.Equal(t, "0", localScope["exitCode"])
+}
+
+func TestResourceDurationMetricDefaultMetricScope(t *testing.T) {
+	wf := wfv1.Workflow{Status: wfv1.WorkflowStatus{StartedAt: metav1.NewTime(time.Now())}}
+	woc := wfOperationCtx{
+		globalParams: make(common.Parameters),
+		wf:           &wf,
+	}
+
+	localScope, realTimeScope := woc.prepareDefaultMetricScope()
+
+	assert.Equal(t, "0", localScope["resourcesDuration.cpu"])
+	assert.Equal(t, "0", localScope["resourcesDuration.memory"])
+	assert.Equal(t, "0", localScope["duration"])
+	assert.Equal(t, "Pending", localScope["status"])
+	assert.Less(t, realTimeScope["workflow.duration"](), 1.0)
 }
 
 var optionalArgumentAndParameter = `

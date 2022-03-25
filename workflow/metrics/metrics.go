@@ -26,10 +26,11 @@ type ServerConfig struct {
 	Port         int
 	TTL          time.Duration
 	IgnoreErrors bool
+	Secure       bool
 }
 
 func (s ServerConfig) SameServerAs(other ServerConfig) bool {
-	return s.Port == other.Port && s.Path == other.Path && s.Enabled && other.Enabled
+	return s.Port == other.Port && s.Path == other.Path && s.Enabled && other.Enabled && s.Secure == other.Secure
 }
 
 type metric struct {
@@ -207,6 +208,7 @@ type ErrorCause string
 const (
 	ErrorCauseOperationPanic              ErrorCause = "OperationPanic"
 	ErrorCauseCronWorkflowSubmissionError ErrorCause = "CronWorkflowSubmissionError"
+	ErrorCauseCronWorkflowSpecError       ErrorCause = "CronWorkflowSpecError"
 )
 
 func (m *Metrics) OperationPanic() {
@@ -221,6 +223,13 @@ func (m *Metrics) CronWorkflowSubmissionError() {
 	defer m.mutex.Unlock()
 
 	m.errors[ErrorCauseCronWorkflowSubmissionError].Inc()
+}
+
+func (m *Metrics) CronWorkflowSpecError() {
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
+
+	m.errors[ErrorCauseCronWorkflowSpecError].Inc()
 }
 
 // Act as a metrics provider for a workflow queue

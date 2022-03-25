@@ -1,6 +1,7 @@
 package event
 
 import (
+	"encoding/json"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -17,20 +18,47 @@ import (
 
 func TestController(t *testing.T) {
 	clientset := fake.NewSimpleClientset()
-	s := NewController(instanceid.NewService("my-instanceid"), events.NewEventRecorderManager(fakekube.NewSimpleClientset()), 1, 1)
-
 	ctx := context.WithValue(context.TODO(), auth.WfKey, clientset)
-	_, err := s.ReceiveEvent(ctx, &eventpkg.EventRequest{Namespace: "my-ns", Payload: &wfv1.Item{}})
-	assert.NoError(t, err)
+	instanceIDService := instanceid.NewService("my-instanceid")
+	eventRecorderManager := events.NewEventRecorderManager(fakekube.NewSimpleClientset())
+	newController := func(asyncDispatch bool) *Controller {
+		return NewController(instanceIDService, eventRecorderManager, 1, 1, asyncDispatch)
+	}
+	e1 := &eventpkg.EventRequest{Namespace: "my-ns", Payload: &wfv1.Item{}}
+	e2 := &eventpkg.EventRequest{}
+	t.Run("Async", func(t *testing.T) {
 
-	assert.Len(t, s.operationQueue, 1, "one event to be processed")
+		s := newController(true)
 
-	_, err = s.ReceiveEvent(ctx, &eventpkg.EventRequest{})
-	assert.EqualError(t, err, "operation queue full", "backpressure when queue is full")
+		_, err := s.ReceiveEvent(ctx, e1)
+		assert.NoError(t, err)
 
-	stopCh := make(chan struct{}, 1)
-	stopCh <- struct{}{}
-	s.Run(stopCh)
+		assert.Len(t, s.operationQueue, 1, "one event to be processed")
 
-	assert.Len(t, s.operationQueue, 0, "all events were processed")
+		_, err = s.ReceiveEvent(ctx, e2)
+		assert.EqualError(t, err, "operation queue full", "backpressure when queue is full")
+
+		stopCh := make(chan struct{}, 1)
+		stopCh <- struct{}{}
+		s.Run(stopCh)
+
+		assert.Len(t, s.operationQueue, 0, "all events were processed")
+
+	})
+	t.Run("Sync", func(t *testing.T) {
+
+		s := newController(false)
+
+		_, err := s.ReceiveEvent(ctx, e1)
+		assert.NoError(t, err)
+		_, err = s.ReceiveEvent(ctx, e2)
+		assert.NoError(t, err)
+	})
+	t.Run("SyncError", func(t *testing.T) {
+
+		s := newController(false)
+
+		_, err := s.ReceiveEvent(ctx, &eventpkg.EventRequest{Namespace: "my-ns", Payload: &wfv1.Item{Value: json.RawMessage("!")}})
+		assert.EqualError(t, err, "failed to create workflow template expression environment: json: error calling MarshalJSON for type *v1alpha1.Item: invalid character '!' looking for beginning of value")
+	})
 }

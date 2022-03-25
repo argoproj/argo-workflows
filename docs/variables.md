@@ -53,8 +53,8 @@ args: [ "{{ inputs.parameters.message }}" ]
 
 The tag is substituted with the result of evaluating the tag as an expression.
 
-Note that any hyphenated parameter names will cause a parsing error. You can reference them by
-indexing into the parameter map, e.g. `inputs.parameters['my-param']`.
+Note that any hyphenated parameter names or step names will cause a parsing error. You can reference them by
+indexing into the parameter or step map, e.g. `inputs.parameters['my-param']` or `steps['my-step'].outputs.result`.
 
 [Learn about the expression syntax](https://github.com/antonmedv/expr/blob/master/docs/Language-Definition.md).
 
@@ -104,6 +104,12 @@ Convert to a JSON string (needed for `withParam`):
 toJson([1, 2])
 ```
 
+Extract data from JSON:
+
+```
+jsonpath(inputs.parameters.json, '$.some.path')
+```
+
 You can also use [Sprig functions](http://masterminds.github.io/sprig/):
 
 Trim a string:
@@ -112,7 +118,7 @@ Trim a string:
 sprig.trim(inputs.parameters['my-string-param'])
 ```
 
-!!! Warning In Sprig functions, errors are not often not raised. E.g. if `int` is used on an invalid value, it
+!!! Warning In Sprig functions, errors are often not raised. E.g. if `int` is used on an invalid value, it
 returns `0`. Please review the Sprig documentation to understand which functions do and which do not.
 
 ## Reference
@@ -154,6 +160,34 @@ returns `0`. Please review the Sprig documentation to understand which functions
 | `tasks.<TASKNAME>.outputs.parameters` | When the previous task uses 'withItems' or 'withParams', this contains a JSON array of the output parameter maps of each invocation |
 | `tasks.<TASKNAME>.outputs.parameters.<NAME>` | Output parameter of any previous task. When the previous task uses 'withItems' or 'withParams', this contains a JSON array of the output parameter values of each invocation |
 | `tasks.<TASKNAME>.outputs.artifacts.<NAME>` | Output artifact of any previous task |
+
+### HTTP Templates
+
+> Since v3.3
+
+Only available for `successCondition`
+
+| Variable | Description|
+|----------|------------|
+| `request.method` | Request method (`string`) |
+| `request.url` | Request URL (`string`) |
+| `request.body` | Request body (`string`) |
+| `request.headers` | Request headers (`map[string][]string`) |
+| `response.statusCode` | Response status code (`int`) |
+| `response.body` | Response body (`string`) |
+| `response.headers` | Response headers (`map[string][]string`) |
+
+### RetryStrategy
+
+When using the `expression` field within `retryStrategy`, special variables are available.
+
+| Variable | Description|
+|----------|------------|
+| `lastRetry.exitCode` | Exit code of the last retry |
+| `lastRetry.Status` | Status of the last retry |
+| `lastRetry.Duration` | Duration in seconds of the last retry |
+
+Note: These variables evaluate to a string type. If using advanced expressions, either cast them to int values (`expression: "{{=asInt(lastRetry.exitCode) >= 2}}"`) or compare them to string values (`expression: "{{=lastRetry.exitCode != '2'}}"`).
 
 ### Container/Script Templates
 
@@ -216,7 +250,8 @@ For `Template`-level metrics:
 | `workflow.annotations.<NAME>` | Workflow annotations |
 | `workflow.labels.<NAME>` | Workflow labels |
 | `workflow.creationTimestamp` | Workflow creation timestamp formatted in RFC 3339  (e.g. `2018-08-23T05:42:49Z`) |
-| `workflow.creationTimestamp.<STRFTIMECHAR>` | Creation timestamp formatted with a [strftime](http://strftime.org) format character |
+| `workflow.creationTimestamp.<STRFTIMECHAR>` | Creation timestamp formatted with a [strftime](http://strftime.org) format character. |
+| `workflow.creationTimestamp.RFC3339` | Creation timestamp formatted with in RFC 3339. |
 | `workflow.priority` | Workflow priority |
 | `workflow.duration` | Workflow duration estimate, may differ from actual duration by a couple of seconds |
 | `workflow.scheduledTime` | Scheduled runtime formatted in RFC 3339 (only available for CronWorkflows) |

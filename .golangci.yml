@@ -1,11 +1,17 @@
 # https://golangci-lint.run/usage/quick-start/
 run:
   concurrency: 4
-  timeout: 5m
+  timeout: 8m
   skip-dirs:
+    - dist
+    - docs
+    - examples
+    - hack
+    - manifests
     - pkg/client
-    - vendor
+    - sdks
     - ui
+    - vendor
   skip-files:
     - server/static/files.go
   build-tags:
@@ -15,14 +21,24 @@ run:
     - executor
     - examples
     - functional
+    - plugins
 linters:
   enable:
+    - bodyclose
     - deadcode
     - errcheck
     - goimports
+    # only minor issues
+    # - errorlint
+    - exportloopref
+    - gci
+    - gosec
     - gosimple
     - govet
+    - ineffassign
     - misspell
+    - rowserrcheck
+    - sqlclosecheck
     - staticcheck
     - structcheck
     - typecheck
@@ -32,3 +48,14 @@ linters:
 linters-settings:
   goimports:
     local-prefixes: github.com/argoproj/argo-workflows/
+  gosec:
+    includes:
+      - G304
+      - G307
+    excludes:
+      # G106: Use of ssh InsecureIgnoreHostKey should be audited
+      - G106
+      # G402: TLS InsecureSkipVerify set true
+      - G402
+      # G601: Implicit memory aliasing in for loop.
+      - G601

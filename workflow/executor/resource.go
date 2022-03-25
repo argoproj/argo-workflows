@@ -5,9 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"os"
 	"os/exec"
-	"os/signal"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -18,13 +17,12 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/client-go/util/retry"
 
 	"github.com/argoproj/argo-workflows/v3/errors"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/util"
 	envutil "github.com/argoproj/argo-workflows/v3/util/env"
 	argoerr "github.com/argoproj/argo-workflows/v3/util/errors"
-	os_specific "github.com/argoproj/argo-workflows/v3/workflow/executor/os-specific"
 )
 
 // ExecResource will run kubectl action against a manifest
@@ -34,17 +32,23 @@ func (we *WorkflowExecutor) ExecResource(action string, manifestPath string, fla
 		return "", "", "", err
 	}
 
-	cmd := exec.Command("kubectl", args...)
-	log.Info(strings.Join(cmd.Args, " "))
+	var out []byte
+	err = retry.OnError(retry.DefaultBackoff, argoerr.IsTransientErr, func() error {
+		cmd := exec.Command("kubectl", args...)
+		log.Info(strings.Join(cmd.Args, " "))
 
-	out, err := cmd.Output()
+		out, err = cmd.Output()
+		return err
+	})
 	if err != nil {
 		if exErr, ok := err.(*exec.ExitError); ok {
 			errMsg := strings.TrimSpace(string(exErr.Stderr))
-			return "", "", "", errors.New(errors.CodeBadRequest, errMsg)
+			err = errors.Wrap(err, errors.CodeBadRequest, errMsg)
 		} else {
-			return "", "", "", errors.New(errors.CodeBadRequest, err.Error())
+			err = errors.Wrap(err, errors.CodeBadRequest, err.Error())
 		}
+		err = errors.Wrap(err, errors.CodeBadRequest, "no more retries "+err.Error())
+		return "", "", "", err
 	}
 	if action == "delete" {
 		return "", "", "", nil
@@ -86,7 +90,7 @@ func inferObjectSelfLink(obj unstructured.Unstructured) string {
 }
 
 func (we *WorkflowExecutor) getKubectlArguments(action string, manifestPath string, flags []string) ([]string, error) {
-	buff, err := ioutil.ReadFile(manifestPath)
+	buff, err := ioutil.ReadFile(filepath.Clean(manifestPath))
 	if err != nil {
 		return []string{}, errors.New(errors.CodeBadRequest, err.Error())
 	}
@@ -155,28 +159,8 @@ func (g gjsonLabels) Get(label string) string {
 	return gjson.GetBytes(g.json, label).String()
 }
 
-// signalMonitoring start the goroutine which listens for a SIGUSR2.
-// Upon receiving of the signal, We update the pod annotation and exit the process.
-func (we *WorkflowExecutor) signalMonitoring() {
-	log.Infof("Starting SIGUSR2 signal monitor")
-	sigs := make(chan os.Signal, 1)
-
-	signal.Notify(sigs, os_specific.GetOsSignal())
-	go func() {
-		for {
-			<-sigs
-			log.Infof("Received SIGUSR2 signal. Process is terminated")
-			util.WriteTeriminateMessage("Received user signal to terminate the workflow")
-			os.Exit(130)
-		}
-	}()
-}
-
 // WaitResource waits for a specific resource to satisfy either the success or failure condition
 func (we *WorkflowExecutor) WaitResource(ctx context.Context, resourceNamespace, resourceName, selfLink string) error {
-	// Monitor the SIGTERM
-	we.signalMonitoring()
-
 	if we.Template.Resource.SuccessCondition == "" && we.Template.Resource.FailureCondition == "" {
 		return nil
 	}
@@ -333,6 +317,6 @@ func (we *WorkflowExecutor) SaveResourceParameters(ctx context.Context, resource
 		we.Template.Outputs.Parameters[i].Value = wfv1.AnyStringPtr(output)
 		log.Infof("Saved output parameter: %s, value: %s", param.Name, output)
 	}
-	err := we.AnnotateOutputs(ctx, nil)
+	err := we.ReportOutputs(ctx, nil)
 	return err
 }

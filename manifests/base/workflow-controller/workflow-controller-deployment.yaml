@@ -11,10 +11,11 @@ spec:
       labels:
         app: workflow-controller
     spec:
+      priorityClassName: workflow-controller
       serviceAccountName: argo
       containers:
         - name: workflow-controller
-          image: docker.io/argoproj/workflow-controller:latest
+          image: quay.io/argoproj/workflow-controller:latest
           securityContext:
             readOnlyRootFilesystem: true
             runAsNonRoot: true
@@ -24,11 +25,7 @@ spec:
                 - ALL
           command:
             - workflow-controller
-          args:
-            - --configmap
-            - workflow-controller-configmap
-            - --executor-image
-            - argoproj/argoexec:latest
+          args: [ ]
           env:
             - name: LEADER_ELECTION_IDENTITY
               valueFrom:

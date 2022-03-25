@@ -8,7 +8,7 @@ Argo is implemented as a Kubernetes CRD (Custom Resource Definition). As a resul
 
 Many of the Argo examples used in this walkthrough are available in the [`/examples` directory](https://github.com/argoproj/argo-workflows/tree/master/examples) on GitHub. If you like this project, please give us a star!
 
-For a complete description of the Argo workflow spec, please refer to [our spec definitions](https://github.com/argoproj/argo-workflows/blob/master/pkg/apis/workflow/v1alpha1/workflow_types.go).
+For a complete description of the Argo workflow spec, please refer to [the spec documentation](https://argoproj.github.io/argo-workflows/fields/#workflowspec).
 
 ## Table of Contents
 
@@ -803,6 +803,14 @@ spec:
       args: ["echo \"it was heads the first flip and tails the second. Or it was two times tails.\""]
 ```
 
+!!! note
+    If the parameter value contains quotes, it may invalidate the govaluate expression. To handle parameters with 
+    quotes, embed an [expr](https://github.com/antonmedv/expr) expression in the conditional. For example:
+
+    ```yaml
+    when: "{{=inputs.parameters['may-contain-quotes'] == 'example'}}"
+    ```
+
 ## Retrying Failed or Errored Steps
 
 You can specify a `retryStrategy` that will dictate how failed or errored steps are retried:
@@ -956,7 +964,7 @@ spec:
     container:
       image: alpine:latest
       command: [sh, -c]
-      args: ["echo send e-mail: {{workflow.name}} {{workflow.status}}"]
+      args: ["echo send e-mail: {{workflow.name}} {{workflow.status}} {{workflow.duration}}"]
   - name: celebrate
     container:
       image: alpine:latest
@@ -1494,6 +1502,7 @@ spec:
     sidecars:
     - name: dind
       image: docker:19.03.13-dind          # Docker already provides an image for running a Docker daemon
+      command: [dockerd-entrypoint.sh]
       env:
         - name: DOCKER_TLS_CERTDIR         # Docker TLS env config
           value: ""

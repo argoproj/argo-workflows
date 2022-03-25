@@ -5,8 +5,11 @@ import (
 	"fmt"
 	"hash/fnv"
 	"net/url"
+	"os"
 	"path"
+	"path/filepath"
 	"reflect"
+	"regexp"
 	"sort"
 	"strings"
 	"time"
@@ -17,7 +20,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/intstr"
+	"k8s.io/apimachinery/pkg/util/wait"
 
+	argoerrs "github.com/argoproj/argo-workflows/v3/errors"
 	"github.com/argoproj/argo-workflows/v3/util/slice"
 )
 
@@ -35,6 +40,7 @@ const (
 	TemplateTypeSuspend      TemplateType = "Suspend"
 	TemplateTypeData         TemplateType = "Data"
 	TemplateTypeHTTP         TemplateType = "HTTP"
+	TemplateTypePlugin       TemplateType = "Plugin"
 	TemplateTypeUnknown      TemplateType = "Unknown"
 )
 
@@ -74,13 +80,27 @@ const (
 	NodeTypeSkipped   NodeType = "Skipped"
 	NodeTypeSuspend   NodeType = "Suspend"
 	NodeTypeHTTP      NodeType = "HTTP"
+	NodeTypePlugin    NodeType = "Plugin"
 )
 
 // PodGCStrategy is the strategy when to delete completed pods for GC.
 type PodGCStrategy string
 
+func (s PodGCStrategy) IsValid() bool {
+	switch s {
+	case PodGCOnPodNone,
+		PodGCOnPodCompletion,
+		PodGCOnPodSuccess,
+		PodGCOnWorkflowCompletion,
+		PodGCOnWorkflowSuccess:
+		return true
+	}
+	return false
+}
+
 // PodGCStrategy
 const (
+	PodGCOnPodNone            PodGCStrategy = ""
 	PodGCOnPodCompletion      PodGCStrategy = "OnPodCompletion"
 	PodGCOnPodSuccess         PodGCStrategy = "OnPodSuccess"
 	PodGCOnWorkflowCompletion PodGCStrategy = "OnWorkflowCompletion"
@@ -156,6 +176,13 @@ func (w *Workflow) GetTTLStrategy() *TTLStrategy {
 		ttlStrategy = w.Spec.GetTTLStrategy()
 	}
 	return ttlStrategy
+}
+
+func (w *Workflow) GetExecSpec() *WorkflowSpec {
+	if w.Status.StoredWorkflowSpec != nil {
+		return w.Status.StoredWorkflowSpec
+	}
+	return &w.Spec
 }
 
 var (
@@ -355,6 +382,44 @@ type WorkflowSpec struct {
 
 	// TemplateDefaults holds default template values that will apply to all templates in the Workflow, unless overridden on the template-level
 	TemplateDefaults *Template `json:"templateDefaults,omitempty" protobuf:"bytes,39,opt,name=templateDefaults"`
+
+	// ArchiveLogs indicates if the container logs should be archived
+	ArchiveLogs *bool `json:"archiveLogs,omitempty" protobuf:"varint,40,opt,name=archiveLogs"`
+
+	// Hooks holds the lifecycle hook which is invoked at lifecycle of
+	// step, irrespective of the success, failure, or error status of the primary step
+	Hooks LifecycleHooks `json:"hooks,omitempty" protobuf:"bytes,41,opt,name=hooks"`
+
+	// WorkflowMetadata contains some metadata of the workflow to be refer
+	WorkflowMetadata *WorkflowMetadata `json:"workflowMetadata,omitempty" protobuf:"bytes,42,opt,name=workflowMetadata"`
+}
+
+type LabelValueFrom struct {
+	Expression string `json:"expression" protobuf:"bytes,1,opt,name=expression"`
+}
+
+type WorkflowMetadata struct {
+	Labels      map[string]string         `json:"labels,omitempty" protobuf:"bytes,1,rep,name=labels"`
+	Annotations map[string]string         `json:"annotations,omitempty" protobuf:"bytes,2,rep,name=annotations"`
+	LabelsFrom  map[string]LabelValueFrom `json:"labelsFrom,omitempty" protobuf:"bytes,3,rep,name=labelsFrom"`
+}
+
+func (in *WorkflowMetadata) AsObjectMeta() *metav1.ObjectMeta {
+	return &metav1.ObjectMeta{Labels: in.Labels, Annotations: in.Annotations}
+}
+
+func (wfs *WorkflowSpec) GetExitHook(args Arguments) *LifecycleHook {
+	if !wfs.HasExitHook() {
+		return nil
+	}
+	if wfs.OnExit != "" {
+		return &LifecycleHook{Template: wfs.OnExit, Arguments: args}
+	}
+	return wfs.Hooks.GetExitHook().WithArgs(args)
+}
+
+func (wfs *WorkflowSpec) HasExitHook() bool {
+	return (wfs.Hooks != nil && wfs.Hooks.HasExitHook()) || wfs.OnExit != ""
 }
 
 // GetVolumeClaimGC returns the VolumeClaimGC that was defined in the workflow spec.  If none was provided, a default value is returned.
@@ -543,6 +608,9 @@ type Template struct {
 	// HTTP makes a HTTP request
 	HTTP *HTTP `json:"http,omitempty" protobuf:"bytes,42,opt,name=http"`
 
+	// Plugin is a plugin template
+	Plugin *Plugin `json:"plugin,omitempty" protobuf:"bytes,43,opt,name=plugin"`
+
 	// Volumes is a list of volumes that can be mounted by containers in a template.
 	// +patchStrategy=merge
 	// +patchMergeKey=name
@@ -632,7 +700,7 @@ type Template struct {
 	// Memoize allows templates to use outputs generated from already executed templates
 	Memoize *Memoize `json:"memoize,omitempty" protobuf:"bytes,37,opt,name=memoize"`
 
-	// Timout allows to set the total node execution timeout duration counting from the node's start time.
+	// Timeout allows to set the total node execution timeout duration counting from the node's start time.
 	// This duration also includes time in which the node spends in Pending state. This duration may not be applied to Step or DAG templates.
 	Timeout string `json:"timeout,omitempty" protobuf:"bytes,38,opt,name=timeout"`
 }
@@ -749,6 +817,9 @@ type Parameter struct {
 
 	// Enum holds a list of string values to choose from, for the actual value of the parameter
 	Enum []AnyString `json:"enum,omitempty" protobuf:"bytes,6,rep,name=enum"`
+
+	// Description is the parameter description
+	Description *AnyString `json:"description,omitempty" protobuf:"bytes,7,opt,name=description"`
 }
 
 // ValueFrom describes a location in which to obtain the value to a parameter
@@ -771,6 +842,9 @@ type ValueFrom struct {
 
 	// Supplied value to be filled in directly, either through the CLI, API, etc.
 	Supplied *SuppliedValueFrom `json:"supplied,omitempty" protobuf:"bytes,6,opt,name=supplied"`
+
+	// ConfigMapKeyRef is configmap selector for input parameter configuration
+	ConfigMapKeyRef *apiv1.ConfigMapKeySelector `json:"configMapKeyRef,omitempty" protobuf:"bytes,9,opt,name=configMapKeyRef"`
 
 	// Default specifies a value to be used if retrieving the value from the specified source fails
 	Default *AnyString `json:"default,omitempty" protobuf:"bytes,5,opt,name=default"`
@@ -834,6 +908,37 @@ type Artifact struct {
 	FromExpression string `json:"fromExpression,omitempty" protobuf:"bytes,11,opt,name=fromExpression"`
 }
 
+// CleanPath validates and cleans the artifact path.
+func (a *Artifact) CleanPath() error {
+	if a.Path == "" {
+		return argoerrs.InternalErrorf("Artifact '%s' did not specify a path", a.Name)
+	}
+
+	// Ensure that the artifact path does not use directory traversal to escape a
+	// "safe" sub-directory, assuming malicious user input is present. For example:
+	// inputs:
+	//    artifacts:
+	//      - name: a1
+	//        path: /tmp/safe/{{ inputs.parameters.user-input }}
+	//
+	// Any resolved path should always be within the /tmp/safe/ directory.
+	safeDir := ""
+	slashDotDotRe := regexp.MustCompile(fmt.Sprintf(`%c..$`, os.PathSeparator))
+	slashDotDotSlash := fmt.Sprintf(`%c..%c`, os.PathSeparator, os.PathSeparator)
+	if strings.Contains(a.Path, slashDotDotSlash) {
+		safeDir = a.Path[:strings.Index(a.Path, slashDotDotSlash)]
+	} else if slashDotDotRe.FindStringIndex(a.Path) != nil {
+		safeDir = a.Path[:len(a.Path)-3]
+	}
+	cleaned := filepath.Clean(a.Path)
+	safeDirWithSlash := fmt.Sprintf(`%s%c`, safeDir, os.PathSeparator)
+	if len(safeDir) > 0 && (!strings.HasPrefix(cleaned, safeDirWithSlash) || len(cleaned) <= len(safeDirWithSlash)) {
+		return argoerrs.InternalErrorf("Artifact '%s' attempted to use a path containing '..'. Directory traversal is not permitted", a.Name)
+	}
+	a.Path = cleaned
+	return nil
+}
+
 // PodGC describes how to delete completed pods as they complete
 type PodGC struct {
 	// Strategy is the strategy to use. One of "OnPodCompletion", "OnPodSuccess", "OnWorkflowCompletion", "OnWorkflowSuccess"
@@ -842,24 +947,22 @@ type PodGC struct {
 	LabelSelector *metav1.LabelSelector `json:"labelSelector,omitempty" protobuf:"bytes,2,opt,name=labelSelector"`
 }
 
-// Matches returns whether the pod labels match with the label selector specified in podGC.
-func (podGC *PodGC) Matches(labels labels.Set) (bool, error) {
+// GetLabelSelector gets the label selector from podGC.
+func (podGC *PodGC) GetLabelSelector() (labels.Selector, error) {
 	if podGC == nil {
-		return true, nil
+		return labels.Nothing(), nil
 	}
-	selector, err := metav1.LabelSelectorAsSelector(podGC.LabelSelector)
-	if err != nil {
-		return false, err
+	if podGC.LabelSelector == nil {
+		return labels.Everything(), nil
 	}
-	return selector.Matches(labels), nil
+	return metav1.LabelSelectorAsSelector(podGC.LabelSelector)
 }
 
-// GetLabelSelector gets the label selector from podGC.
-func (podGC *PodGC) GetLabelSelector() *metav1.LabelSelector {
-	if podGC != nil && podGC.LabelSelector != nil {
-		return podGC.LabelSelector
+func (podGC *PodGC) GetStrategy() PodGCStrategy {
+	if podGC != nil {
+		return podGC.Strategy
 	}
-	return nil
+	return PodGCOnPodNone
 }
 
 // VolumeClaimGC describes how to delete volumes from completed Workflows
@@ -938,27 +1041,27 @@ type ArtifactLocation struct {
 	GCS *GCSArtifact `json:"gcs,omitempty" protobuf:"bytes,9,opt,name=gcs"`
 }
 
-func (a *ArtifactLocation) Get() ArtifactLocationType {
+func (a *ArtifactLocation) Get() (ArtifactLocationType, error) {
 	if a == nil {
-		return nil
+		return nil, fmt.Errorf("key unsupported: cannot get key for artifact location, because it is invalid")
 	} else if a.Artifactory != nil {
-		return a.Artifactory
+		return a.Artifactory, nil
 	} else if a.Git != nil {
-		return a.Git
+		return a.Git, nil
 	} else if a.GCS != nil {
-		return a.GCS
+		return a.GCS, nil
 	} else if a.HDFS != nil {
-		return a.HDFS
+		return a.HDFS, nil
 	} else if a.HTTP != nil {
-		return a.HTTP
+		return a.HTTP, nil
 	} else if a.OSS != nil {
-		return a.OSS
+		return a.OSS, nil
 	} else if a.Raw != nil {
-		return a.Raw
+		return a.Raw, nil
 	} else if a.S3 != nil {
-		return a.S3
+		return a.S3, nil
 	}
-	return nil
+	return nil, fmt.Errorf("You need to configure artifact storage. More information on how to do this can be found in the docs: https://argoproj.github.io/argo-workflows/configure-artifact-repository/")
 }
 
 // SetType sets the type of the artifact to type the argument.
@@ -997,9 +1100,9 @@ func (a *ArtifactLocation) HasKey() bool {
 
 // set the key to a new value, use path.Join to combine items
 func (a *ArtifactLocation) SetKey(key string) error {
-	v := a.Get()
-	if v == nil {
-		return fmt.Errorf("key unsupported: cannot set key for artifact location because it is invalid")
+	v, err := a.Get()
+	if err != nil {
+		return err
 	}
 	return v.SetKey(key)
 }
@@ -1032,8 +1135,8 @@ func (a *ArtifactLocation) Relocate(l *ArtifactLocation) error {
 // HasLocation whether or not an artifact has a *full* location defined
 // An artifact that has a location implicitly has a key (i.e. HasKey() == true).
 func (a *ArtifactLocation) HasLocation() bool {
-	v := a.Get()
-	return v != nil && v.HasLocation()
+	v, err := a.Get()
+	return err == nil && v.HasLocation()
 }
 
 func (a *ArtifactLocation) IsArchiveLogs() bool {
@@ -1041,9 +1144,9 @@ func (a *ArtifactLocation) IsArchiveLogs() bool {
 }
 
 func (a *ArtifactLocation) GetKey() (string, error) {
-	v := a.Get()
-	if v == nil {
-		return "", fmt.Errorf("key unsupported: cannot get key for artifact location, because it is invalid")
+	v, err := a.Get()
+	if err != nil {
+		return "", err
 	}
 	return v.GetKey()
 }
@@ -1077,8 +1180,6 @@ func (r *ArtifactRepositoryRef) String() string {
 	return fmt.Sprintf("%s#%s", r.ConfigMap, r.Key)
 }
 
-var DefaultArtifactRepositoryRefStatus = &ArtifactRepositoryRefStatus{Default: true}
-
 // +protobuf.options.(gogoproto.goproto_stringer)=false
 type ArtifactRepositoryRefStatus struct {
 	ArtifactRepositoryRef `json:",inline" protobuf:"bytes,1,opt,name=artifactRepositoryRef"`
@@ -1086,6 +1187,8 @@ type ArtifactRepositoryRefStatus struct {
 	Namespace string `json:"namespace,omitempty" protobuf:"bytes,2,opt,name=namespace"`
 	// If this ref represents the default artifact repository, rather than a config map.
 	Default bool `json:"default,omitempty" protobuf:"varint,3,opt,name=default"`
+	// The repository the workflow will use. This maybe empty before v3.1.
+	ArtifactRepository *ArtifactRepository `json:"artifactRepository,omitempty" protobuf:"bytes,4,opt,name=artifactRepository"`
 }
 
 func (r *ArtifactRepositoryRefStatus) String() string {
@@ -1124,6 +1227,9 @@ type WorkflowStep struct {
 
 	// Template is the name of the template to execute as the step
 	Template string `json:"template,omitempty" protobuf:"bytes,2,opt,name=template"`
+
+	// Inline is the template. Template must be empty if this is declared (and vice-versa).
+	Inline *Template `json:"inline,omitempty" protobuf:"bytes,13,opt,name=inline"`
 
 	// Arguments hold arguments to the template
 	Arguments Arguments `json:"arguments,omitempty" protobuf:"bytes,3,opt,name=arguments"`
@@ -1175,9 +1281,20 @@ func (lchs LifecycleHooks) GetExitHook() *LifecycleHook {
 	return nil
 }
 
+func (lchs LifecycleHooks) HasExitHook() bool {
+	return lchs.GetExitHook() != nil
+}
+
 type LifecycleHook struct {
-	Template  string    `json:"template," protobuf:"bytes,1,opt,name=template"`
+	// Template is the name of the template to execute by the hook
+	Template string `json:"template," protobuf:"bytes,1,opt,name=template"`
+	// Arguments hold arguments to the template
 	Arguments Arguments `json:"arguments,omitempty" protobuf:"bytes,2,opt,name=arguments"`
+	// TemplateRef is the reference to the template resource to execute by the hook
+	TemplateRef *TemplateRef `json:"templateRef,omitempty" protobuf:"bytes,3,opt,name=templateRef"`
+	// Expression is a condition expression for when a node will be retried. If it evaluates to false, the node will not
+	// be retried and the retry strategy will be ignored
+	Expression string `json:"expression,omitempty" protobuf:"bytes,4,opt,name=expression"`
 }
 
 func (lch *LifecycleHook) WithArgs(args Arguments) *LifecycleHook {
@@ -1191,7 +1308,7 @@ func (lch *LifecycleHook) WithArgs(args Arguments) *LifecycleHook {
 var _ TemplateReferenceHolder = &WorkflowStep{}
 
 func (step *WorkflowStep) HasExitHook() bool {
-	return (step.Hooks != nil && step.Hooks.GetExitHook() != nil) || step.OnExit != ""
+	return (step.Hooks != nil && step.Hooks.HasExitHook()) || step.OnExit != ""
 }
 
 func (step *WorkflowStep) GetExitHook(args Arguments) *LifecycleHook {
@@ -1202,6 +1319,10 @@ func (step *WorkflowStep) GetExitHook(args Arguments) *LifecycleHook {
 		return &LifecycleHook{Template: step.OnExit, Arguments: args}
 	}
 	return step.Hooks.GetExitHook().WithArgs(args)
+}
+
+func (step *WorkflowStep) GetTemplate() *Template {
+	return step.Inline
 }
 
 func (step *WorkflowStep) GetTemplateName() string {
@@ -1511,6 +1632,10 @@ type RetryStrategy struct {
 
 	// Affinity prevents running workflow's step on the same host
 	Affinity *RetryAffinity `json:"affinity,omitempty" protobuf:"bytes,4,opt,name=affinity"`
+
+	// Expression is a condition expression for when a node will be retried. If it evaluates to false, the node will not
+	// be retried and the retry strategy will be ignored
+	Expression string `json:"expression,omitempty" protobuf:"bytes,5,opt,name=expression"`
 }
 
 // The amount of requested resource * the duration that request was used.
@@ -1809,6 +1934,11 @@ func (n NodeStatus) IsDaemoned() bool {
 	return true
 }
 
+// IsExitNode returns whether or not node run as exit handler.
+func (ws NodeStatus) IsExitNode() bool {
+	return strings.HasSuffix(ws.DisplayName, ".onExit")
+}
+
 func (n NodeStatus) Succeeded() bool {
 	return n.Phase == NodeSucceeded
 }
@@ -1850,6 +1980,10 @@ func (n NodeStatus) GetTemplateScope() (ResourceScope, string) {
 }
 
 var _ TemplateReferenceHolder = &NodeStatus{}
+
+func (n *NodeStatus) GetTemplate() *Template {
+	return nil
+}
 
 func (n *NodeStatus) GetTemplateName() string {
 	return n.TemplateName
@@ -1906,8 +2040,25 @@ type S3Bucket struct {
 	// UseSDKCreds tells the driver to figure out credentials based on sdk defaults.
 	UseSDKCreds bool `json:"useSDKCreds,omitempty" protobuf:"varint,8,opt,name=useSDKCreds"`
 
-	// CreateBucketIfNotPresent tells the driver to attempt to create the S3 bucket for output artifacts, if it doesn't exist
+	// CreateBucketIfNotPresent tells the driver to attempt to create the S3 bucket for output artifacts, if it doesn't exist. Setting Enabled Encryption will apply either SSE-S3 to the bucket if KmsKeyId is not set or SSE-KMS if it is.
 	CreateBucketIfNotPresent *CreateS3BucketOptions `json:"createBucketIfNotPresent,omitempty" protobuf:"bytes,9,opt,name=createBucketIfNotPresent"`
+
+	EncryptionOptions *S3EncryptionOptions `json:"encryptionOptions,omitempty" protobuf:"bytes,10,opt,name=encryptionOptions"`
+}
+
+// S3EncryptionOptions used to determine encryption options during s3 operations
+type S3EncryptionOptions struct {
+	// KMSKeyId tells the driver to encrypt the object using the specified KMS Key.
+	KmsKeyId string `json:"kmsKeyId,omitempty" protobuf:"bytes,1,opt,name=kmsKeyId"`
+
+	// KmsEncryptionContext is a json blob that contains an encryption context. See https://docs.aws.amazon.com/kms/latest/developerguide/concepts.html#encrypt_context for more information
+	KmsEncryptionContext string `json:"kmsEncryptionContext,omitempty" protobuf:"bytes,2,opt,name=kmsEncryptionContext"`
+
+	// EnableEncryption tells the driver to encrypt objects if set to true. If kmsKeyId and serverSideCustomerKeySecret are not set, SSE-S3 will be used
+	EnableEncryption bool `json:"enableEncryption,omitempty" protobuf:"varint,3,opt,name=enableEncryption"`
+
+	// ServerSideCustomerKeySecret tells the driver to encrypt the output artifacts using SSE-C with the specified secret.
+	ServerSideCustomerKeySecret *apiv1.SecretKeySelector `json:"serverSideCustomerKeySecret,omitempty" protobuf:"bytes,4,opt,name=serverSideCustomerKeySecret"`
 }
 
 // CreateS3BucketOptions options used to determine automatic automatic bucket-creation process
@@ -2035,7 +2186,7 @@ type HDFSArtifact struct {
 	// Path is a file path in HDFS
 	Path string `json:"path" protobuf:"bytes,2,opt,name=path"`
 
-	// Force copies a file forcibly even if it exists (default: false)
+	// Force copies a file forcibly even if it exists
 	Force bool `json:"force,omitempty" protobuf:"varint,3,opt,name=force"`
 }
 
@@ -2308,7 +2459,29 @@ func (tmpl *Template) GetType() TemplateType {
 	if tmpl.HTTP != nil {
 		return TemplateTypeHTTP
 	}
+	if tmpl.Plugin != nil {
+		return TemplateTypePlugin
+	}
 	return TemplateTypeUnknown
+}
+
+func (tmpl *Template) GetNodeType() NodeType {
+	if tmpl.RetryStrategy != nil {
+		return NodeTypeRetry
+	}
+	switch tmpl.GetType() {
+	case TemplateTypeContainer, TemplateTypeContainerSet, TemplateTypeScript, TemplateTypeResource, TemplateTypeData:
+		return NodeTypePod
+	case TemplateTypeDAG:
+		return NodeTypeDAG
+	case TemplateTypeSteps:
+		return NodeTypeSteps
+	case TemplateTypeSuspend:
+		return NodeTypeSuspend
+	case TemplateTypePlugin:
+		return NodeTypePlugin
+	}
+	return ""
 }
 
 // IsPodType returns whether or not the template is a pod type
@@ -2323,7 +2496,7 @@ func (tmpl *Template) IsPodType() bool {
 // IsLeaf returns whether or not the template is a leaf
 func (tmpl *Template) IsLeaf() bool {
 	switch tmpl.GetType() {
-	case TemplateTypeContainer, TemplateTypeContainerSet, TemplateTypeScript, TemplateTypeResource, TemplateTypeData, TemplateTypeHTTP:
+	case TemplateTypeContainer, TemplateTypeContainerSet, TemplateTypeScript, TemplateTypeResource, TemplateTypeData, TemplateTypeHTTP, TemplateTypePlugin:
 		return true
 	}
 	return false
@@ -2367,12 +2540,24 @@ func (tmpl *Template) GetVolumeMounts() []apiv1.VolumeMount {
 
 // whether or not the template can and will have outputs (i.e. exit code and result)
 func (tmpl *Template) HasOutput() bool {
-	return tmpl.Container != nil || tmpl.ContainerSet.HasContainerNamed("main") || tmpl.Script != nil || tmpl.Data != nil
+	return tmpl.Container != nil || tmpl.ContainerSet.HasContainerNamed("main") || tmpl.Script != nil || tmpl.Data != nil || tmpl.HTTP != nil
+}
+
+func (t *Template) IsDaemon() bool {
+	return t != nil && t.Daemon != nil && *t.Daemon
 }
 
 // if logs should be saved as an artifact
 func (tmpl *Template) SaveLogsAsArtifact() bool {
 	return tmpl != nil && tmpl.ArchiveLocation.IsArchiveLogs() && (tmpl.ContainerSet == nil || tmpl.ContainerSet.HasContainerNamed("main"))
+}
+
+func (t *Template) GetRetryStrategy() (wait.Backoff, error) {
+	return t.ContainerSet.GetRetryStrategy()
+}
+
+func (t *Template) HasOutputs() bool {
+	return t != nil && t.Outputs.HasOutputs()
 }
 
 // DAGTemplate is a template subtype for directed acyclic graph templates
@@ -2401,6 +2586,9 @@ type DAGTask struct {
 
 	// Name of template to execute
 	Template string `json:"template,omitempty" protobuf:"bytes,2,opt,name=template"`
+
+	// Inline is the template. Template must be empty if this is declared (and vice-versa).
+	Inline *Template `json:"inline,omitempty" protobuf:"bytes,14,opt,name=inline"`
 
 	// Arguments are the parameter and artifact arguments to the template
 	Arguments Arguments `json:"arguments,omitempty" protobuf:"bytes,3,opt,name=arguments"`
@@ -2455,7 +2643,11 @@ func (t *DAGTask) GetExitHook(args Arguments) *LifecycleHook {
 }
 
 func (t *DAGTask) HasExitHook() bool {
-	return (t.Hooks != nil && t.Hooks.GetExitHook() != nil) || t.OnExit != ""
+	return (t.Hooks != nil && t.Hooks.HasExitHook()) || t.OnExit != ""
+}
+
+func (t *DAGTask) GetTemplate() *Template {
+	return t.Inline
 }
 
 func (t *DAGTask) GetTemplateName() string {
@@ -2478,6 +2670,9 @@ type SuspendTemplate struct {
 
 // GetArtifactByName returns an input artifact by its name
 func (in *Inputs) GetArtifactByName(name string) *Artifact {
+	if in == nil {
+		return nil
+	}
 	return in.Artifacts.GetArtifactByName(name)
 }
 
@@ -2504,6 +2699,9 @@ func (in *Inputs) HasInputs() bool {
 
 // HasOutputs returns whether or not there are any outputs
 func (out *Outputs) HasOutputs() bool {
+	if out == nil {
+		return false
+	}
 	if out.Result != nil {
 		return true
 	}
@@ -2524,6 +2722,32 @@ func (out *Outputs) GetArtifactByName(name string) *Artifact {
 		return nil
 	}
 	return out.Artifacts.GetArtifactByName(name)
+}
+
+func (out *Outputs) HasResult() bool {
+	return out != nil && out.Result != nil
+}
+
+func (out *Outputs) HasArtifacts() bool {
+	return out != nil && len(out.Artifacts) > 0
+}
+
+func (out *Outputs) HasParameters() bool {
+	return out != nil && len(out.Parameters) > 0
+}
+
+const MainLogsArtifactName = "main-logs"
+
+func (out *Outputs) HasLogs() bool {
+	if out == nil {
+		return false
+	}
+	for _, a := range out.Artifacts {
+		if a.Name == MainLogsArtifactName {
+			return true
+		}
+	}
+	return false
 }
 
 // GetArtifactByName retrieves an artifact by its name
@@ -2560,6 +2784,11 @@ func (wf *Workflow) GetTemplateByName(name string) *Template {
 			if t.Name == name {
 				return &t
 			}
+		}
+	}
+	for _, t := range wf.Status.StoredTemplates {
+		if t.Name == name {
+			return &t
 		}
 	}
 	return nil

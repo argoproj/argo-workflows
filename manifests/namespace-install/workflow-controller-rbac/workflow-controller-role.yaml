@@ -36,8 +36,10 @@ rules:
       - ""
     resources:
       - persistentvolumeclaims
+      - persistentvolumeclaims/finalizers
     verbs:
       - create
+      - update
       - delete
       - get
   - apiGroups:
@@ -45,6 +47,8 @@ rules:
     resources:
       - workflows
       - workflows/finalizers
+      - workflowtasksets
+      - workflowtasksets/finalizers
     verbs:
       - get
       - list
@@ -62,6 +66,21 @@ rules:
       - get
       - list
       - watch
+  - apiGroups:
+      - ""
+    resources:
+      - serviceaccounts
+    verbs:
+      - get
+      - list
+  - apiGroups:
+      - argoproj.io
+    resources:
+      - workflowtaskresults
+    verbs:
+      - list
+      - watch
+      - deletecollection
   - apiGroups:
       - ""
     resources:

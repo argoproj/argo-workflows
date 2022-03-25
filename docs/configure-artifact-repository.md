@@ -16,7 +16,7 @@ Subsequent sections will show how to use it.
 | Raw | Yes | No | 5% |
 | S3 | Yes | Yes | 86% |
 
-The actual repository used by a workflow is choosen by the following rules:
+The actual repository used by a workflow is chosen by the following rules:
 
 1. Anything explicitly configured using [Artifact Repository Ref](artifact-repository-ref.md). This is the most flexible, safe, and secure option.
 2. From a config map named `artifact-repositories` if it has the `workflows.argoproj.io/default-artifact-repository` annotation in the workflow's namespace.                                        
@@ -201,6 +201,8 @@ artifacts:
         name: my-oss-credentials
         key: secretKey
 ```
+
+You can also set `createBucketIfNotPresent` to `true` to tell the artifact driver to automatically create the OSS bucket if it doesn't exist yet when saving artifacts. Note that you'll need to set additional permission for your OSS account to create new buckets.
 
 # Configure the Default Artifact Repository
 

@@ -2,10 +2,6 @@
 
 resubmit one or more workflows
 
-### Synopsis
-
-resubmit one or more workflows
-
 ```
 argo resubmit [WORKFLOW...] [flags]
 ```
@@ -53,7 +49,7 @@ argo resubmit [WORKFLOW...] [flags]
       --field-selector string   Selector (field query) to filter on, supports '=', '==', and '!='.(e.g. --field-selector key1=value1,key2=value2). The server only supports a limited number of field queries per type.
   -h, --help                    help for resubmit
       --log                     log the workflow until it completes
-      --memoized                re-use successful steps & outputs from the previous run (experimental)
+      --memoized                re-use successful steps & outputs from the previous run
   -o, --output string           Output format. One of: name|json|yaml|wide
       --priority int32          workflow priority
   -l, --selector string         Selector (label query) to filter on, not including uninitialized ones, supports '=', '==', and '!='.(e.g. -l key1=value1,key2=value2)
@@ -69,12 +65,14 @@ argo resubmit [WORKFLOW...] [flags]
   -s, --argo-server host:port          API server host:port. e.g. localhost:2746. Defaults to the ARGO_SERVER environment variable.
       --as string                      Username to impersonate for the operation
       --as-group stringArray           Group to impersonate for the operation, this flag can be repeated to specify multiple groups.
+      --as-uid string                  UID to impersonate for the operation
       --certificate-authority string   Path to a cert file for the certificate authority
       --client-certificate string      Path to a client certificate file for TLS
       --client-key string              Path to a client key file for TLS
       --cluster string                 The name of the kubeconfig cluster to use
       --context string                 The name of the kubeconfig context to use
       --gloglevel int                  Set the glog logging level
+  -H, --header strings                 Sets additional header to all requests made by Argo CLI. (Can be repeated multiple times to add multiple headers, also supports comma separated headers) Used only when either ARGO_HTTP1 or --argo-http1 is set to true.
       --insecure-skip-tls-verify       If true, the server's certificate will not be checked for validity. This will make your HTTPS connections insecure
   -k, --insecure-skip-verify           If true, the Argo Server's certificate will not be checked for validity. This will make your HTTPS connections insecure. Defaults to the ARGO_INSECURE_SKIP_VERIFY environment variable.
       --instanceid string              submit with a specific controller's instance id label. Default to the ARGO_INSTANCEID environment variable.

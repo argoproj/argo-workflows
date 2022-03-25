@@ -13,6 +13,9 @@ import eventflow from './event-flow';
 import eventSources from './event-sources';
 import help from './help';
 import login from './login';
+import {ModalSwitch} from './modals/modal-switch';
+import pipelines from './pipelines';
+import plugins from './plugins';
 import reports from './reports';
 import sensors from './sensors';
 import {uiUrl} from './shared/base';
@@ -28,6 +31,7 @@ import workflows from './workflows';
 
 const eventFlowUrl = uiUrl('event-flow');
 const sensorUrl = uiUrl('sensors');
+const pipelinesUrl = uiUrl('pipelines');
 const workflowsUrl = uiUrl('workflows');
 const workflowsEventBindingsUrl = uiUrl('workflow-event-bindings');
 const workflowTemplatesUrl = uiUrl('workflow-templates');
@@ -35,6 +39,7 @@ const clusterWorkflowTemplatesUrl = uiUrl('cluster-workflow-templates');
 const cronWorkflowsUrl = uiUrl('cron-workflows');
 const archivedWorkflowsUrl = uiUrl('archived-workflows');
 const eventSourceUrl = uiUrl('event-sources');
+const pluginsUrl = uiUrl('plugins');
 const helpUrl = uiUrl('help');
 const apiDocsUrl = uiUrl('apidocs');
 const userInfoUrl = uiUrl('userinfo');
@@ -44,8 +49,10 @@ const reportsUrl = uiUrl('reports');
 
 export const AppRouter = ({popupManager, history, notificationsManager}: {popupManager: PopupManager; history: H.History; notificationsManager: NotificationsManager}) => {
     const [popupProps, setPopupProps] = useState<PopupProps>();
+    const [modals, setModals] = useState<{string: boolean}>();
     const [version, setVersion] = useState<Version>();
     const [namespace, setNamespace] = useState<string>();
+    const [navBarBackgroundColor, setNavBarBackgroundColor] = useState<string>();
     const setError = (error: Error) => {
         notificationsManager.show({
             content: 'Failed to load version/info ' + error,
@@ -63,6 +70,8 @@ export const AppRouter = ({popupManager, history, notificationsManager}: {popupM
             .then(info => {
                 Utils.managedNamespace = info.managedNamespace;
                 setNamespace(Utils.currentNamespace);
+                setModals(info.modals);
+                setNavBarBackgroundColor(info.navColor);
             })
             .then(() => services.info.getVersion())
             .then(setVersion)
@@ -77,6 +86,7 @@ export const AppRouter = ({popupManager, history, notificationsManager}: {popupM
                 <Switch>
                     <Route path={uiUrl('widgets')} component={Widgets} />
                     <Layout
+                        navBarStyle={{backgroundColor: navBarBackgroundColor}}
                         navItems={[
                             {
                                 title: 'Workflows',
@@ -97,6 +107,11 @@ export const AppRouter = ({popupManager, history, notificationsManager}: {popupM
                                 title: 'Cron Workflows',
                                 path: cronWorkflowsUrl + namespaceSuffix,
                                 iconClassName: 'fa fa-clock'
+                            },
+                            {
+                                title: 'Pipelines',
+                                path: pipelinesUrl + '/' + namespace,
+                                iconClassName: 'fa fa-wind'
                             },
                             {
                                 title: 'Event Flow',
@@ -139,6 +154,11 @@ export const AppRouter = ({popupManager, history, notificationsManager}: {popupM
                                 iconClassName: 'fa fa-code'
                             },
                             {
+                                title: 'Plugins',
+                                path: pluginsUrl,
+                                iconClassName: 'fa fa-puzzle-piece'
+                            },
+                            {
                                 title: 'Help',
                                 path: helpUrl,
                                 iconClassName: 'fa fa-question-circle'
@@ -152,6 +172,7 @@ export const AppRouter = ({popupManager, history, notificationsManager}: {popupM
                                     <Redirect to={workflowsUrl} />
                                 </Route>
                                 <Route path={eventFlowUrl} component={eventflow.component} />
+                                <Route path={pipelinesUrl} component={pipelines.component} />
                                 <Route path={sensorUrl} component={sensors.component} />
                                 <Route path={eventSourceUrl} component={eventSources.component} />
                                 <Route path={workflowsUrl} component={workflows.component} />
@@ -161,6 +182,7 @@ export const AppRouter = ({popupManager, history, notificationsManager}: {popupM
                                 <Route path={cronWorkflowsUrl} component={cronWorkflows.component} />
                                 <Route path={archivedWorkflowsUrl} component={archivedWorkflows.component} />
                                 <Route path={reportsUrl} component={reports.component} />
+                                <Route path={pluginsUrl} component={plugins.component} />
                                 <Route exact={true} strict={true} path={helpUrl} component={help.component} />
                                 <Route exact={true} strict={true} path={apiDocsUrl} component={apidocs.component} />
                                 <Route exact={true} strict={true} path={userInfoUrl} component={userinfo.component} />
@@ -170,6 +192,7 @@ export const AppRouter = ({popupManager, history, notificationsManager}: {popupM
                             </Switch>
                         </ErrorBoundary>
                         <ChatButton />
+                        {version && modals && <ModalSwitch version={version.version} modals={modals} />}
                     </Layout>
                 </Switch>
             </Router>

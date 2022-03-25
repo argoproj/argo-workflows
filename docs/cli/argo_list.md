@@ -2,10 +2,6 @@
 
 list workflows
 
-### Synopsis
-
-list workflows
-
 ```
 argo list [flags]
 ```
@@ -20,7 +16,7 @@ argo list [flags]
   -h, --help                    help for list
       --no-headers              Don't print headers (default print headers).
       --older string            List completed workflows finished before the specified duration (e.g. 10m, 3h, 1d)
-  -o, --output string           Output format. One of: wide|name
+  -o, --output string           Output format. One of: name|wide|yaml|json
       --prefix string           Filter workflows by prefix
       --resubmitted             Show resubmitted workflows
       --running                 Show running workflows. Mutually exclusive with --completed.
@@ -37,12 +33,14 @@ argo list [flags]
   -s, --argo-server host:port          API server host:port. e.g. localhost:2746. Defaults to the ARGO_SERVER environment variable.
       --as string                      Username to impersonate for the operation
       --as-group stringArray           Group to impersonate for the operation, this flag can be repeated to specify multiple groups.
+      --as-uid string                  UID to impersonate for the operation
       --certificate-authority string   Path to a cert file for the certificate authority
       --client-certificate string      Path to a client certificate file for TLS
       --client-key string              Path to a client key file for TLS
       --cluster string                 The name of the kubeconfig cluster to use
       --context string                 The name of the kubeconfig context to use
       --gloglevel int                  Set the glog logging level
+  -H, --header strings                 Sets additional header to all requests made by Argo CLI. (Can be repeated multiple times to add multiple headers, also supports comma separated headers) Used only when either ARGO_HTTP1 or --argo-http1 is set to true.
       --insecure-skip-tls-verify       If true, the server's certificate will not be checked for validity. This will make your HTTPS connections insecure
   -k, --insecure-skip-verify           If true, the Argo Server's certificate will not be checked for validity. This will make your HTTPS connections insecure. Defaults to the ARGO_INSECURE_SKIP_VERIFY environment variable.
       --instanceid string              submit with a specific controller's instance id label. Default to the ARGO_INSTANCEID environment variable.

@@ -9,8 +9,6 @@ metadata:
     workflows.argoproj.io/description: |
       This workflow demonstrates running a graph of tasks within containers in a single pod.
     workflows.argoproj.io/version: ">= 3.1.0"
-    workflows.argoproj.io/verify.py: |
-      assert status["phase"] == "Succeeded"
 spec:
   entrypoint: main
   templates:
@@ -21,14 +19,10 @@ spec:
             image: argoproj/argosay:v2
           - name: b
             image: argoproj/argosay:v2
-            dependencies:
-              - a
+            dependencies: ["a"]
           - name: c
             image: argoproj/argosay:v2
-            dependencies:
-              - a
+            dependencies: ["a"]
           - name: d
             image: argoproj/argosay:v2
-            dependencies:
-              - b
-              - c
+            dependencies: ["b", "c"]

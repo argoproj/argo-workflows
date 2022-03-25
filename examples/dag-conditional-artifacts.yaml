@@ -13,8 +13,6 @@ metadata:
       Based on the condition one of steps may not execute. The step template output's artifact will be set to the
       executed step's output artifacts.
     workflows.argoproj.io/version: '>= 3.1.0'
-    workflows.argoproj.io/verify.py: |
-      assert status["phase"] == "Succeeded"
 spec:
   entrypoint: main
   templates:
@@ -62,7 +60,7 @@ spec:
         command: [ python ]
         source: |
           with open("result.txt", "w") as f:
-            f.write("it was heads")
+            f.write("it was tails")
       outputs:
         artifacts:
           - name: result

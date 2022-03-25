@@ -21,7 +21,7 @@ func NewGetCommand() *cobra.Command {
 		Use:   "get WORKFLOW_TEMPLATE...",
 		Short: "display details about a workflow template",
 		Run: func(cmd *cobra.Command, args []string) {
-			ctx, apiClient := client.NewAPIClient()
+			ctx, apiClient := client.NewAPIClient(cmd.Context())
 			serviceClient, err := apiClient.NewWorkflowTemplateServiceClient()
 			if err != nil {
 				log.Fatal(err)

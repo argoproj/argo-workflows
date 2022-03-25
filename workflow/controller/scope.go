@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"github.com/antonmedv/expr"
@@ -106,13 +107,25 @@ func (s *wfScope) resolveArtifact(art *wfv1.Artifact) (*wfv1.Artifact, error) {
 	}
 
 	if art.SubPath != "" {
-		resolvedSubPath, err := template.Replace(art.SubPath, s.getParameters(), true)
+		// Copy resolved artifact pointer before adding subpath
+		copyArt := valArt.DeepCopy()
+
+		subPathAsJson, err := json.Marshal(art.SubPath)
+		if err != nil {
+			return copyArt, errors.New(errors.CodeBadRequest, "failed to marshal artifact subpath for templating")
+		}
+
+		resolvedSubPathAsJson, err := template.Replace(string(subPathAsJson), s.getParameters(), true)
 		if err != nil {
 			return nil, err
 		}
 
-		// Copy resolved artifact pointer before adding subpath
-		copyArt := valArt.DeepCopy()
+		var resolvedSubPath string
+		err = json.Unmarshal([]byte(resolvedSubPathAsJson), &resolvedSubPath)
+		if err != nil {
+			return copyArt, errors.New(errors.CodeBadRequest, "failed to unmarshal artifact subpath for templating")
+		}
+
 		return copyArt, copyArt.AppendToKey(resolvedSubPath)
 	}
 

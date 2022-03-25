@@ -11,6 +11,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
 	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/clustertemplate"
 	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/cron"
+	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/executorplugin"
 	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/template"
 	cmdutil "github.com/argoproj/argo-workflows/v3/util/cmd"
 )
@@ -30,7 +31,7 @@ You can use the CLI in the following modes:
 
 # Kubernetes API Mode (default)
 
-Requests are sent directly to the Kubernetes API. No Argo Server is needs. Large workflows and the workflow archive are not supported.
+Requests are sent directly to the Kubernetes API. No Argo Server is needed. Large workflows and the workflow archive are not supported.
 
 Use when you have direct access to the Kubernetes API, and don't need large workflow or workflow archive support.
 
@@ -110,6 +111,7 @@ If your server is behind an ingress with a path (you'll be running "argo server 
 	command.AddCommand(template.NewTemplateCommand())
 	command.AddCommand(cron.NewCronWorkflowCommand())
 	command.AddCommand(clustertemplate.NewClusterTemplateCommand())
+	command.AddCommand(executorplugin.NewRootCommand())
 
 	client.AddKubectlFlagsToCmd(command)
 	client.AddAPIClientFlagsToCmd(command)

@@ -1,3 +1,4 @@
+//go:build executor
 // +build executor
 
 package e2e
@@ -30,6 +31,7 @@ spec:
     - name: main
       resource:
         action: create
+        setOwnerReference: true
         successCondition: status.phase == Succeeded
         failureCondition: status.phase == Failed
         manifest: |
@@ -69,6 +71,7 @@ spec:
       serviceAccountName: argo
       resource:
         action: create
+        setOwnerReference: true
         successCondition: status.phase == Succeeded
         failureCondition: status.phase == Failed
         manifest: |

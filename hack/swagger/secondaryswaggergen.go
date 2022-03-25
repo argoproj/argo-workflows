@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/go-openapi/jsonreference"
-	"github.com/go-openapi/spec"
+	"k8s.io/kube-openapi/pkg/validation/spec"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
@@ -51,7 +51,7 @@ func secondarySwaggerGen() {
 		panic(err)
 	}
 	newContents := strings.ReplaceAll(string(read), "argoproj.argo-workflows", "argoproj.argo_workflows")
-	err = ioutil.WriteFile("pkg/apiclient/_.secondary.swagger.json", []byte(newContents), 0o666)
+	err = ioutil.WriteFile("pkg/apiclient/_.secondary.swagger.json", []byte(newContents), 0o600)
 	if err != nil {
 		panic(err)
 	}

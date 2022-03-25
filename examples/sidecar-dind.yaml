@@ -20,6 +20,7 @@ spec:
     sidecars:
     - name: dind
       image: docker:19.03.13-dind
+      command: [dockerd-entrypoint.sh]
       env:
         - name: DOCKER_TLS_CERTDIR
           value: ""

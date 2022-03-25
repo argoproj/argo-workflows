@@ -148,15 +148,14 @@ func (ctx *Context) GetTemplateFromRef(tmplRef *wfv1.TemplateRef) (*wfv1.Templat
 }
 
 // GetTemplate returns a template found by template name or template ref.
-func (ctx *Context) GetTemplate(tmplHolder wfv1.TemplateReferenceHolder) (*wfv1.Template, error) {
+func (ctx *Context) GetTemplate(h wfv1.TemplateReferenceHolder) (*wfv1.Template, error) {
 	ctx.log.Debug("Getting the template")
-
-	tmplName := tmplHolder.GetTemplateName()
-	tmplRef := tmplHolder.GetTemplateRef()
-	if tmplRef != nil {
-		return ctx.GetTemplateFromRef(tmplRef)
-	} else if tmplName != "" {
-		return ctx.GetTemplateByName(tmplName)
+	if x := h.GetTemplate(); x != nil {
+		return x, nil
+	} else if x := h.GetTemplateRef(); x != nil {
+		return ctx.GetTemplateFromRef(x)
+	} else if x := h.GetTemplateName(); x != "" {
+		return ctx.GetTemplateByName(x)
 	}
 	return nil, errors.Errorf(errors.CodeInternal, "failed to get a template")
 }
@@ -176,7 +175,7 @@ func (ctx *Context) ResolveTemplate(tmplHolder wfv1.TemplateReferenceHolder) (*C
 	return ctx.resolveTemplateImpl(tmplHolder, 0)
 }
 
-// resolveTemplateImpl digs into referenes and returns a merged template.
+// resolveTemplateImpl digs into references and returns a merged template.
 // This method processes inputs and arguments so the inputs of the final
 //  resolved template include intermediate parameter passing.
 // The other fields are just merged and shallower templates overwrite deeper.

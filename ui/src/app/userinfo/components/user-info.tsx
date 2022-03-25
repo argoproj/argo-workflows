@@ -37,12 +37,30 @@ export class UserInfo extends BasePage<RouteComponentProps<any>, State> {
                     </h3>
                     {this.state.userInfo && (
                         <>
-                            <p>Issuer: {this.state.userInfo.issuer || '-'}</p>
-                            <p>Subject: {this.state.userInfo.subject || '-'}</p>
-                            <p>Groups: {(this.state.userInfo.groups && this.state.userInfo.groups.length > 0 && this.state.userInfo.groups.join(', ')) || '-'}</p>
-                            <p>Email: {this.state.userInfo.email || '-'}</p>
-                            <p>Email Verified: {this.state.userInfo.emailVerified || '-'}</p>
-                            <p>Service Account: {this.state.userInfo.serviceAccountName || '-'}</p>
+                            <dl>
+                                <dt>Issuer:</dt>
+                                <dd>{this.state.userInfo.issuer || '-'}</dd>
+                            </dl>
+                            <dl>
+                                <dt>Subject:</dt>
+                                <dd>{this.state.userInfo.subject || '-'}</dd>
+                            </dl>
+                            <dl>
+                                <dt>Groups:</dt>
+                                <dd>{(this.state.userInfo.groups && this.state.userInfo.groups.length > 0 && this.state.userInfo.groups.join(', ')) || '-'}</dd>
+                            </dl>
+                            <dl>
+                                <dt>Email:</dt>
+                                <dd>{this.state.userInfo.email || '-'}</dd>
+                            </dl>
+                            <dl>
+                                <dt>Email Verified:</dt>
+                                <dd>{this.state.userInfo.emailVerified || '-'}</dd>
+                            </dl>
+                            <dl>
+                                <dt>Service Account:</dt>
+                                <dd>{this.state.userInfo.serviceAccountName || '-'}</dd>
+                            </dl>
                         </>
                     )}
                     <a className='argo-button argo-button--base-o' href={uiUrl('login')}>

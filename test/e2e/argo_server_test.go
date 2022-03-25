@@ -1,3 +1,4 @@
+//go:build api
 // +build api
 
 package e2e
@@ -33,6 +34,7 @@ const baseUrl = "http://localhost:2746"
 // testing behaviour really is a non-goal
 type ArgoServerSuite struct {
 	fixtures.E2ESuite
+	username    string
 	bearerToken string
 }
 
@@ -54,7 +56,9 @@ func (s *ArgoServerSuite) e() *httpexpect.Expect {
 			Client: httpClient,
 		}).
 		Builder(func(req *httpexpect.Request) {
-			if s.bearerToken != "" {
+			if s.username != "" {
+				req.WithBasicAuth(s.username, "garbage")
+			} else if s.bearerToken != "" {
 				req.WithHeader("Authorization", "Bearer "+s.bearerToken)
 			}
 		})
@@ -92,9 +96,17 @@ func (s *ArgoServerSuite) TestVersion() {
 	})
 }
 
-func (s *ArgoServerSuite) TestMetrics() {
-	s.Need(fixtures.CI)
-	s.e().GET("/metrics").
+func (s *ArgoServerSuite) TestMetricsForbidden() {
+	s.bearerToken = ""
+	s.e().
+		GET("/metrics").
+		Expect().
+		Status(403)
+}
+
+func (s *ArgoServerSuite) TestMetricsOK() {
+	s.e().
+		GET("/metrics").
 		Expect().
 		Status(200).
 		Body().
@@ -283,7 +295,7 @@ metadata:
 				POST("/api/v1/events/argo/").
 				WithBytes([]byte(`{}`)).
 				Expect().
-				Status(200)
+				Status(500)
 		}).
 		Then().
 		ExpectAuditEvents(
@@ -293,7 +305,7 @@ metadata:
 			func(t *testing.T, e []corev1.Event) {
 				assert.Equal(t, "argo", e[0].InvolvedObject.Namespace)
 				assert.Equal(t, "WorkflowEventBindingError", e[0].Reason)
-				assert.Equal(t, "failed to dispatch event: failed to evaluate workflow template expression: unexpected token EOF (1:1)", e[0].Message)
+				assert.Equal(t, "failed to dispatch event: failed to evaluate workflow template expression: unable to evaluate expression '': unexpected token EOF (1:1)", e[0].Message)
 			},
 		)
 }
@@ -320,11 +332,20 @@ func (s *ArgoServerSuite) TestOauth() {
 
 func (s *ArgoServerSuite) TestUnauthorized() {
 	token := s.bearerToken
-	defer func() { s.bearerToken = token }()
-	s.bearerToken = "test-token"
-	s.e().GET("/api/v1/workflows/argo").
-		Expect().
-		Status(401)
+	s.T().Run("Bearer", func(t *testing.T) {
+		s.bearerToken = "test-token"
+		defer func() { s.bearerToken = token }()
+		s.e().GET("/api/v1/workflows/argo").
+			Expect().
+			Status(401)
+	})
+	s.T().Run("Basic", func(t *testing.T) {
+		s.username = "garbage"
+		defer func() { s.username = "" }()
+		s.e().GET("/api/v1/workflows/argo").
+			Expect().
+			Status(401)
+	})
 }
 
 func (s *ArgoServerSuite) TestCookieAuth() {
@@ -333,6 +354,19 @@ func (s *ArgoServerSuite) TestCookieAuth() {
 	s.bearerToken = ""
 	s.e().GET("/api/v1/workflows/argo").
 		WithHeader("Cookie", "authorization=Bearer "+token).
+		Expect().
+		Status(200)
+}
+
+// You could have multiple authorization headers, set by wildcard domain cookies in the case of some SSO implementations
+func (s *ArgoServerSuite) TestMultiCookieAuth() {
+	token := s.bearerToken
+	defer func() { s.bearerToken = token }()
+	s.bearerToken = ""
+	s.e().GET("/api/v1/workflows/argo").
+		WithCookie("authorization", "invalid1").
+		WithCookie("authorization", "Bearer "+token).
+		WithCookie("authorization", "invalid2").
 		Expect().
 		Status(200)
 }
@@ -820,7 +854,7 @@ func (s *ArgoServerSuite) TestWorkflowService() {
 	})
 
 	s.Run("Terminate", func() {
-		s.Need(fixtures.None(fixtures.K8SAPI, fixtures.Kubelet))
+		s.Need(fixtures.None(fixtures.Kubelet))
 		s.e().PUT("/api/v1/workflows/argo/" + name + "/terminate").
 			Expect().
 			Status(200)
@@ -1159,6 +1193,28 @@ spec:
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			uid = metadata.UID
 		})
+	var failedUid types.UID
+	s.Given().
+		Workflow(`
+metadata:
+  generateName: jughead-
+  labels:
+    foo: 3
+spec:
+  entrypoint: run-jughead
+  templates:
+    - name: run-jughead
+      container:
+        image: argoproj/argosay:v2
+        command: [sh, -c]
+        args: ["echo intentional failure; exit 1"]`).
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeArchived).
+		Then().
+		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			failedUid = metadata.UID
+		})
 	s.Given().
 		Workflow(`
 metadata:
@@ -1184,11 +1240,11 @@ spec:
 		{"ListEquals", "foo=1", 1},
 		{"ListDoubleEquals", "foo==1", 1},
 		{"ListIn", "foo in (1)", 1},
-		{"ListNotEquals", "foo!=1", 1},
-		{"ListNotIn", "foo notin (1)", 1},
-		{"ListExists", "foo", 2},
-		{"ListGreaterThan0", "foo>0", 2},
-		{"ListGreaterThan1", "foo>1", 1},
+		{"ListNotEquals", "foo!=1", 2},
+		{"ListNotIn", "foo notin (1)", 2},
+		{"ListExists", "foo", 3},
+		{"ListGreaterThan0", "foo>0", 3},
+		{"ListGreaterThan1", "foo>1", 2},
 		{"ListLessThan1", "foo<1", 0},
 		{"ListLessThan2", "foo<2", 1},
 	} {
@@ -1268,6 +1324,26 @@ spec:
 			NotNull()
 	})
 
+	s.Run("Retry", func() {
+		s.e().PUT("/api/v1/archived-workflows/{uid}/retry", failedUid).
+			WithBytes([]byte(`{"namespace": "argo"}`)).
+			Expect().
+			Status(200).
+			JSON().
+			NotNull()
+	})
+
+	s.Run("Resubmit", func() {
+		s.Need(fixtures.BaseLayerArtifacts)
+		s.e().PUT("/api/v1/archived-workflows/{uid}/resubmit", uid).
+			WithBytes([]byte(`{"namespace": "argo", "memoized": false}`)).
+			Expect().
+			Status(200).
+			JSON().
+			Path("$.metadata.name").
+			NotNull()
+	})
+
 	s.Run("Delete", func() {
 		s.e().DELETE("/api/v1/archived-workflows/{uid}", uid).
 			Expect().
@@ -1276,6 +1352,32 @@ spec:
 			Expect().
 			Status(404)
 	})
+
+	s.Run("ListLabelKeys", func() {
+		j := s.e().GET("/api/v1/archived-workflows-label-keys").
+			Expect().
+			Status(200).
+			JSON()
+		j.
+			Path("$.items").
+			Array().
+			Length().
+			Gt(0)
+	})
+
+	s.Run("ListLabelValues", func() {
+		j := s.e().GET("/api/v1/archived-workflows-label-values").
+			WithQuery("listOptions.labelSelector", "workflows.argoproj.io/test").
+			Expect().
+			Status(200).
+			JSON()
+		j.
+			Path("$.items").
+			Array().
+			Length().
+			Equal(1)
+	})
+
 }
 
 func (s *ArgoServerSuite) TestWorkflowTemplateService() {
@@ -1625,6 +1727,20 @@ func (s *ArgoServerSuite) TestEventSourcesService() {
 	})
 	s.Run("DeleteEventSource", func() {
 		s.e().DELETE("/api/v1/event-sources/argo/test-event-source").
+			Expect().
+			Status(200)
+	})
+}
+
+func (s *ArgoServerSuite) TestPipelineService() {
+	s.T().SkipNow()
+	s.Run("GetPipeline", func() {
+		s.e().GET("/api/v1/pipelines/argo/not-exists").
+			Expect().
+			Status(404)
+	})
+	s.Run("ListPipelines", func() {
+		s.e().GET("/api/v1/pipelines/argo").
 			Expect().
 			Status(200)
 	})

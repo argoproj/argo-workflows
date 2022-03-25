@@ -2,14 +2,19 @@ package metrics
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 	"net/http"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/collectors"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	log "github.com/sirupsen/logrus"
 	runtimeutil "k8s.io/apimachinery/pkg/util/runtime"
+	"k8s.io/utils/env"
+
+	tlsutils "github.com/argoproj/argo-workflows/v3/util/tls"
 )
 
 // RunServer starts a metrics server
@@ -26,11 +31,11 @@ func (m *Metrics) RunServer(ctx context.Context) {
 
 	if m.metricsConfig.SameServerAs(m.telemetryConfig) {
 		// If the metrics and telemetry servers are the same, run both of them in the same instance
-		metricsRegistry.MustRegister(prometheus.NewGoCollector())
+		metricsRegistry.MustRegister(collectors.NewGoCollector())
 	} else if m.telemetryConfig.Enabled {
 		// If the telemetry server is different -- and it's enabled -- run each on its own instance
 		telemetryRegistry := prometheus.NewRegistry()
-		telemetryRegistry.MustRegister(prometheus.NewGoCollector())
+		telemetryRegistry.MustRegister(collectors.NewGoCollector())
 		go runServer(m.telemetryConfig, telemetryRegistry, ctx)
 	}
 
@@ -50,12 +55,31 @@ func runServer(config ServerConfig, registry *prometheus.Registry, ctx context.C
 	mux.Handle(config.Path, promhttp.HandlerFor(registry, handlerOpts))
 	srv := &http.Server{Addr: fmt.Sprintf(":%v", config.Port), Handler: mux}
 
-	go func() {
-		log.Infof("Starting prometheus metrics server at localhost:%v%s", config.Port, config.Path)
-		if err := srv.ListenAndServe(); err != nil {
+	if config.Secure {
+		tlsMinVersion, err := env.GetInt("TLS_MIN_VERSION", tls.VersionTLS12)
+		if err != nil {
 			panic(err)
 		}
-	}()
+		log.Infof("Generating Self Signed TLS Certificates for Telemetry Servers")
+		tlsConfig, err := tlsutils.GenerateX509KeyPairTLSConfig(uint16(tlsMinVersion))
+		if err != nil {
+			panic(err)
+		}
+		srv.TLSConfig = tlsConfig
+		go func() {
+			log.Infof("Starting prometheus metrics server at localhost:%v%s", config.Port, config.Path)
+			if err := srv.ListenAndServeTLS("", ""); err != nil {
+				panic(err)
+			}
+		}()
+	} else {
+		go func() {
+			log.Infof("Starting prometheus metrics server at localhost:%v%s", config.Port, config.Path)
+			if err := srv.ListenAndServe(); err != nil {
+				panic(err)
+			}
+		}()
+	}
 
 	// Waiting for stop signal
 	<-ctx.Done()

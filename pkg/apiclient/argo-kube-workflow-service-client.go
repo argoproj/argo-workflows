@@ -2,7 +2,6 @@ package apiclient
 
 import (
 	"context"
-	"errors"
 	"io"
 
 	"google.golang.org/grpc"
@@ -30,7 +29,7 @@ func (c *argoKubeWorkflowServiceClient) ListWorkflows(ctx context.Context, req *
 }
 
 func (c *argoKubeWorkflowServiceClient) WatchWorkflows(ctx context.Context, req *workflowpkg.WatchWorkflowsRequest, _ ...grpc.CallOption) (workflowpkg.WorkflowService_WatchWorkflowsClient, error) {
-	intermediary := newWatchIntermediary(ctx)
+	intermediary := newWorkflowWatchIntermediary(ctx)
 	go func() {
 		defer intermediary.cancel()
 		err := c.delegate.WatchWorkflows(req, intermediary)
@@ -43,8 +42,18 @@ func (c *argoKubeWorkflowServiceClient) WatchWorkflows(ctx context.Context, req 
 	return intermediary, nil
 }
 
-func (c *argoKubeWorkflowServiceClient) WatchEvents(context.Context, *workflowpkg.WatchEventsRequest, ...grpc.CallOption) (workflowpkg.WorkflowService_WatchEventsClient, error) {
-	return nil, errors.New("not implemented")
+func (c *argoKubeWorkflowServiceClient) WatchEvents(ctx context.Context, req *workflowpkg.WatchEventsRequest, _ ...grpc.CallOption) (workflowpkg.WorkflowService_WatchEventsClient, error) {
+	intermediary := newEventWatchIntermediary(ctx)
+	go func() {
+		defer intermediary.cancel()
+		err := c.delegate.WatchEvents(req, intermediary)
+		if err != nil {
+			intermediary.error <- err
+		} else {
+			intermediary.error <- io.EOF
+		}
+	}()
+	return intermediary, nil
 }
 
 func (c *argoKubeWorkflowServiceClient) DeleteWorkflow(ctx context.Context, req *workflowpkg.WorkflowDeleteRequest, _ ...grpc.CallOption) (*workflowpkg.WorkflowDeleteResponse, error) {

@@ -11,8 +11,6 @@ metadata:
 
       Specifially, you must have a container named "main".
     workflows.argoproj.io/version: ">= 3.1.0"
-    workflows.argoproj.io/verify.py: |
-      assert status["phase"] == "Succeeded"
 spec:
   entrypoint: main
   templates:
@@ -27,8 +25,7 @@ spec:
               parameters:
                 - name: x
                   value: "{{tasks.a.outputs.result}}"
-            dependencies:
-              - a
+            dependencies: ["a"]
 
     - name: group
       containerSet:
@@ -48,4 +45,3 @@ spec:
         image: python:alpine3.6
         source: |
           assert "{{inputs.parameters.x}}" == "hi"
-

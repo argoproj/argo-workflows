@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"path/filepath"
 
 	"sigs.k8s.io/yaml"
 )
@@ -16,9 +17,12 @@ func MustUnmarshal(text, v interface{}) {
 	case string:
 		MustUnmarshal([]byte(x), v)
 	case []byte:
+		if len(x) == 0 {
+			panic("no text to unmarshal")
+		}
 		if x[0] == '@' {
 			filename := string(x[1:])
-			y, err := ioutil.ReadFile(filename)
+			y, err := ioutil.ReadFile(filepath.Clean(filename))
 			if err != nil {
 				panic(fmt.Errorf("failed to read file %s: %w", filename, err))
 			}

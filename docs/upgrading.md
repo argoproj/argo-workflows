@@ -1,13 +1,170 @@
+
 # Upgrading
 
 Breaking changes  typically (sometimes we don't realise they are breaking) have "!" in the commit message, as per
 the [conventional commits](https://www.conventionalcommits.org/en/v1.0.0/#summary).
 
+## Upgrading to v3.3
+
+### [662a7295b](https://github.com/argoproj/argo-workflows/commit/662a7295b) feat: Replace `patch pod` with `create workflowtaskresult`. Fixes #3961 (#8000)
+
+The PR changes the permissions that can be used by a workflow to remove the `pod patch` permission. 
+
+See [workflow RBAC](workflow-rbac.md) and [#8013](https://github.com/argoproj/argo-workflows/issues/3961).
+
+### [06d4bf76f](https://github.com/argoproj/argo-workflows/commit/06d4bf76f) fix: Reduce agent permissions. Fixes #7986 (#7987)
+
+The PR changes the permissions used by the agent to report back the outcome of HTTP template requests. The permission `patch workflowtasksets/status` replaces `patch workflowtasksets`, for example:
+
+```yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: agent
+rules:
+  - apiGroups:
+      - argoproj.io
+    resources:
+      - workflowtasksets/status
+    verbs:
+      - patch
+```
+
+Workflows running during any upgrade should be give both permissions.
+
+See [#8013](https://github.com/argoproj/argo-workflows/issues/8013).
+
+### feat!: Remove deprecated config flags
+
+This PR removes the following configmap items -
+
+- executorImage (use executor.image in configmap instead)
+  e.g.
+  Workflow controller configmap similar to the following one given below won't be valid anymore:
+
+  ```yaml
+  apiVersion: v1
+  kind: ConfigMap
+  metadata:
+    name: workflow-controller-configmap
+  data:
+    ...
+    executorImage: argoproj/argocli:latest
+    ...
+  ```
+
+  From now and onwards, only provide the executor image in workflow controller as a command argument as shown below:
+
+  ```yaml
+  apiVersion: v1
+  kind: ConfigMap
+  metadata:
+    name: workflow-controller-configmap
+  data:
+    ...
+    executor: |
+      image: argoproj/argocli:latest
+    ...
+  ```
+
+- executorImagePullPolicy (use executor.imagePullPolicy in configmap instead)
+  e.g.
+  Workflow controller configmap similar to the following one given below won't be valid anymore:
+
+  ```yaml
+  data:
+    ...
+    executorImagePullPolicy: IfNotPresent
+    ...
+  ```
+
+  Change it as shown below:
+
+  ```yaml
+  data:
+    ...
+    executor: |
+      imagePullPolicy: IfNotPresent
+    ...
+  ```
+
+- executorResources (use executor.resources in configmap instead)
+  e.g.
+  Workflow controller configmap similar to the following one given below won't be valid anymore:
+
+  ```yaml
+  data:
+    ...
+    executorResources:
+      requests:
+        cpu: 0.1
+        memory: 64Mi
+      limits:
+        cpu: 0.5
+        memory: 512Mi
+    ...
+  ```
+
+  Change it as shown below:
+
+  ```yaml
+  data:
+    ...
+    executor: |
+      resources:
+        requests:
+          cpu: 0.1
+          memory: 64Mi
+        limits:
+          cpu: 0.5
+          memory: 512Mi
+    ...
+  ```
+
+### [fce82d572](https://github.com/argoproj/argo-workflows/commit/fce82d5727b89cfe49e8e3568fff40725bd43734) feat: Remove pod workers (#7837)
+
+This PR removes pod workers from the code, the pod informer directly writes into the workflow queue. As a result the `--pod-workers` flag has been removed. 
+
+### [93c11a24ff](https://github.com/argoproj/argo-workflows/commit/93c11a24ff06049c2197149acd787f702e5c1f9b) feat: Add TLS to Metrics and Telemetry servers (#7041)
+
+This PR adds the ability to send metrics over TLS with a self-signed certificate. In v3.5 this will be enabled by default, so it is recommended that users enable this functionality now.
+
+### [0758eab11](https://github.com/argoproj/argo-workflows/commit/0758eab11decb8a1e741abef3e0ec08c48a69ab8) feat(server)!: Sync dispatch of webhook events by default
+
+This is not expected to impact users.
+
+Events dispatch in the Argo Server has been change from async to sync by default. This is so that errors are surfaced to
+the client, rather than only appearing as logs or Kubernetes events. It is possible that response times under load are
+too long for your client and you may prefer to revert this behaviour.
+
+To revert this behaviour, restart Argo Server with `ARGO_EVENT_ASYNC_DISPATCH=true`. Make sure that `asyncDispatch=true`
+is logged.
+
+### [bd49c6303](https://github.com/argoproj/argo-workflows/commit/bd49c630328d30206a5c5b78cbc9a00700a28e7d) fix(artifact)!: default https to any URL missing a scheme. Fixes #6973
+
+HTTPArtifact without a scheme will now defaults to https instead of http
+
+user need to explicitly include a http prefix if they want to retrieve HTTPArtifact through http
+
+### chore!: Remove the hidden flag `--verify` from `argo submit`.
+
+The hidden flag `--verify` has been removed from `argo submit`. This is a internal testing flag we don't need anymore.
+
 ## Upgrading to v3.2
+
+### [e5b131a33](https://github.com/argoproj/argo-workflows/commit/e5b131a33) feat: Add template node to pod name. Fixes #1319 (#6712)
+
+This add the template name to the pod name, to make it easier to understand which pod ran which step. This behaviour can be reverted by setting `POD_NAMES=v1` on the workflow controller. 
 
 ### [be63efe89](https://github.com/argoproj/argo-workflows/commit/be63efe89) feat(executor)!: Change `argoexec` base image to alpine. Closes #5720 (#6006)
 
-Changing from Debian to Alpine reduces the size of the `argoexec` image, resulting is faster starting workflow pods, and it also reduce the risk of security issues. There is not such thing as a free lunch. There maybe other behaviour changes we don't know of yet. 
+Changing from Debian to Alpine reduces the size of the `argoexec` image, resulting is faster starting workflow pods, and it also reduce the risk of security issues. There is not such thing as a free lunch. There maybe other behaviour changes we don't know of yet.
+
+Some users found this change prevented workflow with very large parameters from running. See [#7586](https://github.com/argoproj/argo-workflows/issues/7586)
+
+### [48d7ad3](https://github.com/argoproj/argo-workflows/commit/48d7ad36c14e4a50c50332d6decd543a1b732b69) chore: Remove onExit naming transition scaffolding code (#6297)
+
+When upgrading from `<v2.12` to `>v3.2` workflows that are running at the time of the upgrade and have `onExit` steps _may_ experience the `onExit` step running twice. This is only applicable for workflows that began running before a `workflow-controller` upgrade and are still running after the upgrade is complete. This is only applicable for upgrading from `v2.12` or earlier directly to `v3.2` or later. Even under these conditions, duplicate work may not be experienced.
 
 ## Upgrading to v3.1
 
@@ -40,6 +197,18 @@ containerRuntimeExecutors: |
         workflows.argoproj.io/container-runtime-executor: emissary
 ```
 
+### [be63efe89](https://github.com/argoproj/argo-workflows/commit/e6fa41a) feat(controller): Expression template tags. Resolves #4548 & #1293 (#5115)
+
+This PR introduced a new expression syntax know as "expression tag template". A user has reported that this does not
+always play nicely with the `when` condition syntax (Goevaluate).
+
+This can be resolved using a single quote in your when expression:
+
+```
+when: "'{{inputs.parameters.should-print}}' != '2021-01-01'"
+```
+
+[Learn more](https://github.com/argoproj/argo-workflows/issues/6314)
 
 ## Upgrading to v3.0
 

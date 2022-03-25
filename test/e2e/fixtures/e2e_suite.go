@@ -145,7 +145,7 @@ func (s *E2ESuite) DeleteResources() {
 		archive := s.Persistence.workflowArchive
 		parse, err := labels.ParseToRequirements(Label)
 		s.CheckError(err)
-		workflows, err := archive.ListWorkflows(Namespace, time.Time{}, time.Time{}, parse, 0, 0)
+		workflows, err := archive.ListWorkflows(Namespace, "", "", time.Time{}, time.Time{}, parse, 0, 0)
 		s.CheckError(err)
 		for _, w := range workflows {
 			err := archive.DeleteWorkflow(string(w.UID))
@@ -207,6 +207,10 @@ func (s *E2ESuite) GetServiceAccountToken() (string, error) {
 }
 
 func (s *E2ESuite) Given() *Given {
+	bearerToken, err := s.GetServiceAccountToken()
+	if err != nil {
+		s.T().Fatal(err)
+	}
 	return &Given{
 		t:                 s.T(),
 		client:            s.wfClient,
@@ -216,5 +220,6 @@ func (s *E2ESuite) Given() *Given {
 		cronClient:        s.cronClient,
 		hydrator:          s.hydrator,
 		kubeClient:        s.KubeClient,
+		bearerToken:       bearerToken,
 	}
 }

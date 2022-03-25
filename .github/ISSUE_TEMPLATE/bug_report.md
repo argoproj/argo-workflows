@@ -1,32 +1,38 @@
 ---
 name: Reproducible bug report 
 about: Create a reproducible bug report. Not for support requests.
-labels: 'bug'
+labels: ['bug', 'triage']
 ---
-## Summary 
+
+<!-- If this is a regression, please open a regression report instead. -->
+
+## Checklist
+
+<!-- Do NOT open an issue until you have: --> 
+
+* [ ] Double-checked my configuration.
+* [ ] Tested using the latest version.
+* [ ] Used the Emissary executor.
+
+## Summary
 
 What happened/what you expected to happen?
 
+What version are you running?
+
 ## Diagnostics
 
-👀 Yes! We need all of your diagnostics, please make sure you add it all, otherwise we'll go around in circles asking you for it:
+Paste the smallest workflow that reproduces the bug. We must be able to run the workflow.
 
-What Kubernetes provider are you using? 
+```yaml
 
-What version of Argo Workflows are you running? 
-
-What executor are you running? Docker/K8SAPI/Kubelet/PNS/Emissary
-
-Did this work in a previous version? I.e. is it a regression?
-
-Are you pasting thousands of log lines? That's too much information. 
+```
 
 ```bash
-# Either a workflow that reproduces the bug, or paste you whole workflow YAML, including status, something like:
-kubectl get wf -o yaml ${workflow}
-
 # Logs from the workflow controller:
-kubectl logs -n argo deploy/workflow-controller | grep ${workflow}
+kubectl logs -n argo deploy/workflow-controller | grep ${workflow} 
+
+# If the workflow's pods have not been created, you can skip the rest of the diagnostics.
 
 # The workflow's pods that are problematic:
 kubectl get pod -o yaml -l workflows.argoproj.io/workflow=${workflow},workflow.argoproj.io/phase!=Succeeded

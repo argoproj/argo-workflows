@@ -50,10 +50,7 @@ func mergeMap(from, to map[string]string) {
 
 // JoinWorkflowMetaData will join the workflow metadata with the following order of preference
 // 1. Workflow, 2 WorkflowTemplate (WorkflowTemplateRef), 3. WorkflowDefault.
-func JoinWorkflowMetaData(wfMetaData, wftMetaData, wfDefaultMetaData *metav1.ObjectMeta) {
-	if wftMetaData != nil {
-		mergeMetaDataTo(wftMetaData, wfMetaData)
-	}
+func JoinWorkflowMetaData(wfMetaData, wfDefaultMetaData *metav1.ObjectMeta) {
 	if wfDefaultMetaData != nil {
 		mergeMetaDataTo(wfDefaultMetaData, wfMetaData)
 	}
@@ -77,6 +74,12 @@ func JoinWorkflowSpec(wfSpec, wftSpec, wfDefaultSpec *wfv1.WorkflowSpec) (*wfv1.
 		if err != nil {
 			return nil, err
 		}
+	}
+
+	// This condition will update the workflow Spec suspend value if merged value is different.
+	// This scenario will happen when Workflow with WorkflowTemplateRef has suspend template
+	if wfSpec.Suspend != targetWf.Spec.Suspend {
+		targetWf.Spec.Suspend = wfSpec.Suspend
 	}
 	return &targetWf, nil
 }

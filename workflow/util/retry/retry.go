@@ -6,16 +6,27 @@ import (
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
 
-// GetFailHosts returns slice of all child nodes with fail or error status
-func GetFailHosts(nodes wfv1.Nodes, parent string) []string {
+// GetFailHosts iterates over the node subtree and find pod in error or fail
+func GetFailHosts(nodes wfv1.Nodes, retryNodeName string) []string {
+	toVisit := []string{retryNodeName}
 	hostNames := []string{}
-	failNodes := nodes.Children(parent).
-		Filter(func(x wfv1.NodeStatus) bool { return x.Phase == wfv1.NodeFailed || x.Phase == wfv1.NodeError }).
-		Map(func(x wfv1.NodeStatus) interface{} { return x.HostNodeName })
-	for _, hostName := range failNodes {
-		hostNames = append(hostNames, hostName.(string))
+	for len(toVisit) > 0 {
+		n := len(toVisit) - 1
+		nodeToVisit := toVisit[n]
+		toVisit = toVisit[:n]
+		if x, ok := nodes[nodeToVisit]; ok {
+			if (x.Phase == wfv1.NodeFailed || x.Phase == wfv1.NodeError) && x.Type == wfv1.NodeTypePod {
+				hostNames = append(hostNames, x.HostNodeName)
+			}
+			for i := 0; i < len(x.Children); i++ {
+				childNode := x.Children[i]
+				if y, ok := nodes[childNode]; ok {
+					toVisit = append(toVisit, y.ID)
+				}
+			}
+		}
 	}
-	return hostNames
+	return RemoveDuplicates(hostNames)
 }
 
 // RemoveDuplicates removes duplicate strings from slice

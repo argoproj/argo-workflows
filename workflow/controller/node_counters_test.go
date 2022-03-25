@@ -147,4 +147,17 @@ func TestCounters(t *testing.T) {
 	assert.Equal(t, int64(2), woc.getActivePods("2"))
 	assert.Equal(t, int64(2), woc.getActiveChildren("2"))
 	assert.Equal(t, int64(2), woc.getUnsuccessfulChildren("2"))
+
+	testNodePodExists(t, woc)
+}
+
+func testNodePodExists(t *testing.T, woc *wfOperationCtx) {
+	for _, node := range woc.wf.Status.Nodes {
+		if node.ID == "" {
+			continue
+		}
+
+		doesPodExist := woc.nodePodExist(node)
+		assert.True(t, doesPodExist)
+	}
 }

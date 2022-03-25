@@ -53,23 +53,30 @@ Argo is a [Cloud Native Computing Foundation (CNCF)](https://cncf.io/) hosted pr
 |
 [Couler](https://github.com/couler-proj/couler)
 |
-[OnePanel](https://www.onepanel.ai/)
+[Katib](https://github.com/kubeflow/katib)
+|
+[Kedro](https://kedro.readthedocs.io/en/stable/)
+|
+[Kubeflow Pipelines](https://github.com/kubeflow/pipelines)
+|
+[Onepanel](https://www.onepanel.ai/)
 |
 [Ploomber](https://github.com/ploomber/ploomber)
 |
-[SQLFlow](https://github.com/sql-machine-learning/sqlflow)
+[Seldon](https://github.com/SeldonIO/seldon-core)
 |
-[Kubeflow Pipelines](https://github.com/kubeflow/pipelines)
+[SQLFlow](https://github.com/sql-machine-learning/sqlflow)
 
-## SDKs
 
-Check out our [Java, Golang and Python SDKs](https://github.com/argoproj-labs/argo-client-gen).
+## Client Libraries
+
+Check out our [Java, Golang and Python clients](docs/client-libraries.md).
 
 ## Quickstart
 
 ```bash
 kubectl create namespace argo
-kubectl apply -n argo -f https://raw.githubusercontent.com/argoproj/argo-workflows/stable/manifests/install.yaml
+kubectl apply -n argo -f https://raw.githubusercontent.com/argoproj/argo-workflows/master/manifests/install.yaml
 ```
 
 ## Who uses Argo Workflows?
@@ -79,7 +86,7 @@ kubectl apply -n argo -f https://raw.githubusercontent.com/argoproj/argo-workflo
 ## Documentation
 
 * [Get started here](docs/quick-start.md)
-* [How to write Argo Workflow specs](examples/README.md)
+* [How to write Argo Workflow specs](https://github.com/argoproj/argo-workflows/blob/master/examples/README.md)
 * [How to configure your artifact repository](docs/configure-artifact-repository.md)
 
 ## Features
@@ -135,6 +142,7 @@ the [CNCF Code of Conduct](https://github.com/cncf/foundation/blob/master/code-o
 
 ## Community Blogs and Presentations
 
+* [Awesome-Argo: A Curated List of Awesome Projects and Resources Related to Argo](https://github.com/terrytangyuan/awesome-argo)
 * [Automation of Everything - How To Combine Argo Events, Workflows & Pipelines, CD, and Rollouts](https://youtu.be/XNXJtxkUKeY)
 * [Argo Workflows and Pipelines - CI/CD, Machine Learning, and Other Kubernetes Workflows](https://youtu.be/UMaivwrAyTA)
 * [Argo Ansible role: Provisioning Argo Workflows on OpenShift](https://medium.com/@marekermk/provisioning-argo-on-openshift-with-ansible-and-kustomize-340a1fda8b50)
@@ -151,3 +159,7 @@ the [CNCF Code of Conduct](https://github.com/cncf/foundation/blob/master/code-o
 * Argo GitHub:  https://github.com/argoproj
 * Argo Website: https://argoproj.github.io/
 * Argo Slack:   [click here to join](https://argoproj.github.io/community/join-slack)
+
+## Security
+
+See [SECURITY.md](SECURITY.md).

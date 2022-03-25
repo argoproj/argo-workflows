@@ -48,7 +48,7 @@ export const WorkflowOperationsMap: WorkflowOperations = {
         title: 'RESUME',
         iconClassName: 'fa fa-play',
         disabled: (wf: Workflow) => !Utils.isWorkflowSuspended(wf),
-        action: (wf: Workflow) => services.workflows.resume(wf.metadata.name, wf.metadata.namespace)
+        action: (wf: Workflow) => services.workflows.resume(wf.metadata.name, wf.metadata.namespace, null)
     },
     STOP: {
         title: 'STOP',

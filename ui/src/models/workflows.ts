@@ -87,7 +87,7 @@ export interface Parameter {
     /**
      * Default is the default value to use for an input parameter if a value was not supplied
      */
-    _default?: string;
+    default?: string;
     /**
      * Name is the parameter name
      */
@@ -104,6 +104,10 @@ export interface Parameter {
      * Enum holds a list of string values to choose from, for the actual value of the parameter
      */
     enum?: Array<string>;
+    /**
+     * Description is the parameter description
+     */
+    description?: string;
 }
 
 /**
@@ -157,9 +161,9 @@ export interface Script {
 }
 
 /**
- * Sidecar is a container which runs alongside the main container
+ * UserContainer is is a container specified by a user.
  */
-export interface Sidecar {
+export interface UserContainer {
     /**
      * Arguments to the entrypoint. The docker image's CMD is used if this is not provided.
      * Variable references $(VAR_NAME) are expanded using the container's environment.
@@ -353,7 +357,11 @@ export interface Template {
     /**
      * Sidecars is a list of containers which run alongside the main container Sidecars are automatically killed when the main container completes
      */
-    sidecars?: Sidecar[];
+    sidecars?: UserContainer[];
+    /**
+     * InitContainers is a list of containers which run before the main container.
+     */
+    initContainers?: UserContainer[];
     /**
      * Steps define a series of sequential/parallel workflow steps
      */

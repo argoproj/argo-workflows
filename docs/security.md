@@ -1,5 +1,7 @@
 # Security
 
+See [SECURITY.md](https://github.com/argoproj/argo-workflows/blob/master/SECURITY.md).
+
 ## Workflow Controller Security
 
 This has three parts.
@@ -12,7 +14,7 @@ The controller has permission (via Kubernetes RBAC + its config map) with either
 * Create/get/delete pods, PVCs, and PDBs.
 * List/get template, config maps, service accounts, and secrets.
 
-See [workflow-controller-clusterrole.yaml](manifests/cluster-install/workflow-controller-rbac/workflow-controller-clusterrole.yaml) or [workflow-controller-role.yaml](manifests/namespace-install/workflow-controller-rbac/workflow-controller-role.yaml)
+See [workflow-controller-clusterrole.yaml](https://raw.githubusercontent.com/argoproj/argo-workflows/master/manifests/cluster-install/workflow-controller-rbac/workflow-controller-clusterrole.yaml) or [workflow-controller-role.yaml](https://raw.githubusercontent.com/argoproj/argo-workflows/master/manifests/namespace-install/workflow-controller-rbac/workflow-controller-role.yaml)
 
 ### User Permissions
 
@@ -36,12 +38,7 @@ Workflow pods run using either:
 
 There is no restriction on which service account in a namespace may be used.
 
-This service account typically needs the following permissions:
-
-* Get/watch/patch pods.
-* Get/watch pod logs.
-
-See [workflow-role.yaml](manifests/quick-start/base/workflow-role.yaml).
+This service account typically needs [permissions](workflow-rbac.md).
 
 Different service accounts should be used if a workflow pod needs to have elevated permissions, e.g. to create other resources.
 
@@ -75,7 +72,7 @@ Argo Workflows requires various levels of network access depending on configurat
 
 The argo server is commonly exposed to end-users to provide users with a user interface for visualizing and managing their workflows. It must also be exposed if leveraging [webhooks](webhooks.md) to trigger workflows. Both of these use cases require that the argo-server Service to be exposed for ingress traffic (e.g. with an Ingress object or load balancer). Note that the Argo UI is also available to be accessed by running the server locally (i.e. `argo server`) using local kubeconfig credentials, and visiting the UI over https://localhost:2746.
 
-The argo server additionally has a feature to allow downloading of artifacts through the user interface. This feature requires that the argo-server be given egress access to the underlying artifact provider (e.g. S3, GCS, MinIO, Arfactory) in order to download and stream the artifact.
+The argo server additionally has a feature to allow downloading of artifacts through the user interface. This feature requires that the argo-server be given egress access to the underlying artifact provider (e.g. S3, GCS, MinIO, Artifactory) in order to download and stream the artifact.
 
 ### Workflow Controller
 

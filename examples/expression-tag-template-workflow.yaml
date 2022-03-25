@@ -7,10 +7,6 @@ metadata:
   annotations:
     # available in v3.1.0
     workflows.argoproj.io/version: ">= 3.1.0"
-    workflows.argoproj.io/verify.py: |
-      assert status["phase"] == "Succeeded"
-      assert nodes["task-0(0:3)"]["phase"] == "Succeeded"
-      assert nodes["task-0(0:3)"]["outputs"]["parameters"][0]["value"] == "hello 30 @ 2021"
 spec:
   entrypoint: main
   templates:

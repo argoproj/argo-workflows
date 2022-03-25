@@ -1,3 +1,4 @@
+//go:build executor
 // +build executor
 
 package e2e
@@ -26,7 +27,7 @@ type SignalsSuite struct {
 func (s *SignalsSuite) SetupSuite() {
 	s.E2ESuite.SetupSuite()
 	// Because k8ssapi and kubelet execute `sh -c 'kill 15 1'` to they do not work.
-	s.Need(fixtures.None(fixtures.K8SAPI, fixtures.Kubelet))
+	s.Need(fixtures.None(fixtures.Kubelet))
 }
 
 func (s *SignalsSuite) TestStopBehavior() {
@@ -35,10 +36,7 @@ func (s *SignalsSuite) TestStopBehavior() {
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToHaveRunningPod, kill2xDuration).
-		RunCli([]string{"stop", "@latest"}, func(t *testing.T, output string, err error) {
-			assert.NoError(t, err)
-			assert.Regexp(t, "workflow stop-terminate-.* stopped", output)
-		}).
+		ShutdownWorkflow(wfv1.ShutdownStrategyStop).
 		WaitForWorkflow(kill2xDuration).
 		Then().
 		ExpectWorkflow(func(t *testing.T, m *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
@@ -64,10 +62,7 @@ func (s *SignalsSuite) TestTerminateBehavior() {
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToHaveRunningPod, kill2xDuration).
-		RunCli([]string{"terminate", "@latest"}, func(t *testing.T, output string, err error) {
-			assert.NoError(t, err)
-			assert.Regexp(t, "workflow stop-terminate-.* terminated", output)
-		}).
+		ShutdownWorkflow(wfv1.ShutdownStrategyTerminate).
 		WaitForWorkflow(kill2xDuration).
 		Then().
 		ExpectWorkflow(func(t *testing.T, m *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
@@ -85,15 +80,13 @@ func (s *SignalsSuite) TestTerminateBehavior() {
 
 // Tests that new pods are never created once a stop shutdown strategy has been added
 func (s *SignalsSuite) TestDoNotCreatePodsUnderStopBehavior() {
+	s.Need(fixtures.None(fixtures.Docker))
 	s.Given().
 		Workflow("@functional/stop-terminate-2.yaml").
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(fixtures.ToHaveRunningPod).
-		RunCli([]string{"stop", "@latest"}, func(t *testing.T, output string, err error) {
-			assert.NoError(t, err)
-			assert.Regexp(t, "workflow stop-terminate-.* stopped", output)
-		}).
+		WaitForWorkflow(fixtures.ToHaveRunningPod, kill2xDuration).
+		ShutdownWorkflow(wfv1.ShutdownStrategyStop).
 		WaitForWorkflow(kill2xDuration).
 		Then().
 		ExpectWorkflow(func(t *testing.T, m *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {

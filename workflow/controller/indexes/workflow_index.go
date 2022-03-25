@@ -32,6 +32,21 @@ func MetaWorkflowIndexFunc(obj interface{}) ([]string, error) {
 	return []string{WorkflowIndexValue(m.GetNamespace(), name)}, nil
 }
 
+// MetaNodeIDIndexFunc takes a kubernetes object and returns either the
+// namespace and its node id or the namespace and its name
+func MetaNodeIDIndexFunc(obj interface{}) ([]string, error) {
+	m, err := meta.Accessor(obj)
+	if err != nil {
+		return nil, err
+	}
+
+	if nodeID, ok := m.GetAnnotations()[common.AnnotationKeyNodeID]; ok {
+		return []string{m.GetNamespace() + "/" + nodeID}, nil
+	}
+
+	return []string{m.GetNamespace() + "/" + m.GetName()}, nil
+}
+
 func WorkflowIndexValue(namespace, name string) string {
 	return namespace + "/" + name
 }
@@ -45,6 +60,9 @@ func WorkflowSemaphoreKeysIndexFunc() cache.IndexFunc {
 	return func(obj interface{}) ([]string, error) {
 		un, ok := obj.(*unstructured.Unstructured)
 		if !ok {
+			return nil, nil
+		}
+		if un.GetLabels()[common.LabelKeyCompleted] != "false" {
 			return nil, nil
 		}
 		wf, err := util.FromUnstructured(un)

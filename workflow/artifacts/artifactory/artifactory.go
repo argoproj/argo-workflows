@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"path/filepath"
 
 	"github.com/argoproj/argo-workflows/v3/errors"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
@@ -54,7 +55,7 @@ func (a *ArtifactDriver) Load(artifact *wfv1.Artifact, path string) error {
 
 // UpLoad artifact to an artifactory URL
 func (a *ArtifactDriver) Save(path string, artifact *wfv1.Artifact) error {
-	f, err := os.Open(path)
+	f, err := os.Open(filepath.Clean(path))
 	if err != nil {
 		return err
 	}

@@ -31,9 +31,7 @@ func waitContainer(ctx context.Context) error {
 	stats.StartStatsTicker(5 * time.Minute)
 
 	defer func() {
-		// Killing sidecar containers
-		err := wfExecutor.KillSidecars(ctx)
-		if err != nil {
+		if err := wfExecutor.KillSidecars(ctx); err != nil {
 			wfExecutor.AddError(err)
 		}
 	}()
@@ -64,7 +62,7 @@ func waitContainer(ctx context.Context) error {
 		wfExecutor.AddError(err)
 	}
 	// Annotating pod with output
-	err = wfExecutor.AnnotateOutputs(ctx, logArt)
+	err = wfExecutor.ReportOutputs(ctx, logArt)
 	if err != nil {
 		wfExecutor.AddError(err)
 	}

@@ -50,10 +50,10 @@ func GetSecrets(ctx context.Context, clientSet kubernetes.Interface, namespace, 
 }
 
 // Write the Terminate message in pod spec
-func WriteTeriminateMessage(message string) {
-	err := ioutil.WriteFile("/dev/termination-log", []byte(message), 0o644)
+func WriteTerminateMessage(message string) {
+	err := ioutil.WriteFile("/dev/termination-log", []byte(message), 0o600)
 	if err != nil {
-		panic(err)
+		println("unable to write termination log: " + err.Error())
 	}
 }
 

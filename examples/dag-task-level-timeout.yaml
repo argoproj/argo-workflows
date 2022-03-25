@@ -14,12 +14,12 @@ spec:
         arguments:
           parameters: [{name: timeout, value: "20s"}]
       - name: B
-        dependencies: [A]
+        depends: "A"
         template: echo
         arguments:
           parameters: [{name: timeout, value: "10s"}]
       - name: C
-        dependencies: [A]
+        depends: "A"
         template: echo
         arguments:
           parameters: [{name: timeout, value: "20s"}]

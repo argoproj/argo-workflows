@@ -1,3 +1,4 @@
+//go:build executor
 // +build executor
 
 package e2e
@@ -24,7 +25,7 @@ func (s *RunAsNonRootSuite) TestRunAsNonRootWorkflow() {
 }
 
 func (s *RunAsNonRootSuite) TestRunAsNonRootWithOutputParams() {
-	s.Need(fixtures.None(fixtures.Docker, fixtures.K8SAPI, fixtures.Kubelet))
+	s.Need(fixtures.None(fixtures.Docker, fixtures.Kubelet))
 	s.Given().
 		Workflow("@smoke/runasnonroot-output-params-pipeline.yaml").
 		When().

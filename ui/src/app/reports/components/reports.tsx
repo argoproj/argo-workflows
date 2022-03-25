@@ -28,6 +28,7 @@ interface State {
     archivedWorkflows: boolean;
     namespace: string;
     labels: string[];
+    autocompleteLabels: string[];
     error?: Error;
     charts?: Chart[];
 }
@@ -59,12 +60,14 @@ export class Reports extends BasePage<RouteComponentProps<any>, State> {
         this.state = {
             archivedWorkflows: !!this.queryParam('archivedWorkflows'),
             namespace: Utils.getNamespace(this.props.match.params.namespace) || '',
-            labels: (this.queryParam('labels') || '').split(',').filter(v => v !== '')
+            labels: (this.queryParam('labels') || '').split(',').filter(v => v !== ''),
+            autocompleteLabels: ['']
         };
     }
 
     public componentDidMount() {
         this.fetchReport(this.state.namespace, this.state.labels, this.state.archivedWorkflows);
+        this.fetchWorkflowsLabels(this.state.archivedWorkflows);
     }
 
     public render() {
@@ -104,7 +107,7 @@ export class Reports extends BasePage<RouteComponentProps<any>, State> {
             return;
         }
         (archivedWorkflows
-            ? services.archivedWorkflows.list(namespace, [], labels, null, null, {limit})
+            ? services.archivedWorkflows.list(namespace, '', '', [], labels, null, null, {limit})
             : services.workflows.list(namespace, [], labels, {limit}, [
                   'items.metadata.name',
                   'items.status.phase',
@@ -253,13 +256,35 @@ export class Reports extends BasePage<RouteComponentProps<any>, State> {
         ];
     }
 
+    private fetchWorkflowsLabels(isArchivedWorkflows: boolean): void {
+        if (isArchivedWorkflows) {
+            services.archivedWorkflows.listLabelKeys().then(list => {
+                this.setState({
+                    autocompleteLabels: list.items.sort((a, b) => a.localeCompare(b)) || []
+                });
+            });
+        }
+    }
+
+    private fetchArchivedWorkflowsLabels(key: string): Promise<any> {
+        return services.archivedWorkflows.listLabelValues(key).then(list => {
+            return list.items.map(i => key + '=' + i).sort((a, b) => a.localeCompare(b));
+        });
+    }
+
     private renderFilters() {
         return (
             <div className='wf-filters-container'>
                 <div className='row'>
                     <div className=' columns small-12 xlarge-12'>
                         <p className='wf-filters-container__title'>Archived Workflows</p>
-                        <Checkbox checked={this.state.archivedWorkflows} onChange={checked => this.fetchReport(this.state.namespace, this.state.labels, checked)} />
+                        <Checkbox
+                            checked={this.state.archivedWorkflows}
+                            onChange={checked => {
+                                this.fetchReport(this.state.namespace, this.state.labels, checked);
+                                this.fetchWorkflowsLabels(checked);
+                            }}
+                        />
                     </div>
                     <div className=' columns small-12 xlarge-12'>
                         <p className='wf-filters-container__title'>Namespace</p>
@@ -275,13 +300,20 @@ export class Reports extends BasePage<RouteComponentProps<any>, State> {
                         <TagsInput
                             placeholder='Labels'
                             tags={this.state.labels}
+                            autocomplete={this.state.archivedWorkflows ? this.state.autocompleteLabels : null}
+                            sublistQuery={this.state.archivedWorkflows ? this.fetchArchivedWorkflowsLabels : null}
                             onChange={labels => this.fetchReport(this.state.namespace, labels, this.state.archivedWorkflows)}
                         />
                     </div>
                     <div className=' columns small-12 xlarge-12'>
                         <p className='wf-filters-container__title'>Workflow Template</p>
                         <DataLoaderDropdown
-                            load={() => services.workflowTemplate.list(this.state.namespace).then(list => list.map(x => x.metadata.name))}
+                            load={() =>
+                                services.workflowTemplate
+                                    .list(this.state.namespace, [])
+                                    .then(list => list.items || [])
+                                    .then(list => list.map(x => x.metadata.name))
+                            }
                             onChange={value => (this.workflowTemplate = value)}
                         />
                     </div>
@@ -295,10 +327,12 @@ export class Reports extends BasePage<RouteComponentProps<any>, State> {
                     <div className=' columns small-12 xlarge-12'>
                         <p className='wf-filters-container__title'>Phase</p>
                         {[NODE_PHASE.SUCCEEDED, NODE_PHASE.ERROR, NODE_PHASE.FAILED].map(phase => (
-                            <label key={phase} style={{marginRight: 10}}>
-                                <input type='radio' checked={phase === this.phase} onChange={() => (this.phase = phase)} style={{marginRight: 5}} />
-                                {phase}
-                            </label>
+                            <div>
+                                <label key={phase} style={{marginRight: 10}}>
+                                    <input type='radio' checked={phase === this.phase} onChange={() => (this.phase = phase)} style={{marginRight: 5}} />
+                                    {phase}
+                                </label>
+                            </div>
                         ))}
                     </div>
                 </div>

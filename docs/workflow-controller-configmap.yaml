@@ -38,7 +38,7 @@ data:
   nodeEvents: |
     enabled: true
 
-  # uncomment flowing lines if workflow controller runs in a different k8s cluster with the
+  # uncomment following lines if workflow controller runs in a different k8s cluster with the
   # workflow workloads, or needs to communicate with the k8s apiserver using an out-of-cluster
   # kubeconfig secret
   # kubeConfig:
@@ -73,6 +73,9 @@ data:
     - name: Get help
       scope: chat
       url: http://my-chat
+
+  # uncomment following lines if you want to change navigation bar background color
+  # navColor: red
 
   # artifactRepository defines the default location to be used as the artifact repository for
   # container artifacts.
@@ -115,12 +118,35 @@ data:
         key: secretKey
       # If this is set to true, argo workflows will use AWS SDK default credentials provider chain. This will allow things like
       # IRSA and any of the authentication methods that the golang SDK uses in it's default chain.
+      # If you are using IRSA on AWS, and set this option to true, you will also need to modify Argo-Server Deployment with
+      # `spec.template.spec.securityContext.fsGroup: 65534` configuration. This is required for IRSA to be able to access
+      # `/var/run/secrets/eks.amazonaws.com/serviceaccount/token` file, and authenticate with AWS.
       useSDKCreds: false
 
-  # Specifies the container runtime interface to use (default: docker)
-  # must be one of: docker, kubelet, k8sapi, pns
+      encryptionOptions:
+        # If this is set to true, SSE-S3 encryption will be used to store objects
+        # unless kmsKeyId or serverSideCustomerKeySecret is set
+        enableEncryption: false
+        # A valid kms key id. If this value is set, the object stored in s3 will be encrypted with SSE-KMS
+        # Note: You cannot set both kmsKeyId and serverSideCustomerKeySecret
+        # kmsKeyId: ''
+        # Allows you to set a json blob of simple key value pairs. See
+        # https://docs.aws.amazon.com/kms/latest/developerguide/concepts.html#encrypt_context
+        # for more information
+        # kmsEncryptionContext: ''
+        # The actual secret object (in this example my-s3-credentials),
+        # should be created when using a custom secret to encrypt objects in using SSE-C
+        # Note: You cannot set both kmsKeyId and serverSideCustomerKeySecret
+        # serverSideCustomerKeySecret:
+        #  name: my-s3-credentials
+        #  key: secretKey
+
+
+
+  # Specifies the container runtime interface to use (default: emissary)
+  # must be one of: docker, kubelet, k8sapi, pns, emissary
   # It has lower precedence than either `--container-runtime-executor` and `containerRuntimeExecutors`.
-  containerRuntimeExecutor: docker
+  containerRuntimeExecutor: emissary
 
   # Specifies the executor to use.
   #
@@ -133,10 +159,14 @@ data:
   # The list is in order of precedence; the first matching executor is used.
   # This has precedence over `containerRuntimeExecutor`.
   containerRuntimeExecutors: |
-    - name: k8sapi
+    - name: emissary
       selector:
         matchLabels:
-          workflows.argoproj.io/container-runtime-executor: k8sapi
+          workflows.argoproj.io/container-runtime-executor: emissary
+    - name: pns
+      selector:
+        matchLabels:
+          workflows.argoproj.io/container-runtime-executor: pns
 
   # Specifies the location of docker.sock on the host for docker executor (default: /var/run/docker.sock)
   # (available since Argo v2.4)
@@ -156,9 +186,30 @@ data:
     argoproj/argosay:v2:
       command: [/argosay]
     docker/whalesay:latest:
-       command: [cowsay]
+      command: [cowsay]
     python:alpine3.6:
-       command: [python3]
+      command: [python3]
+
+  # Defaults for main containers. These can be overridden by the template.
+  # <= v3.3 only `resources` are supported.
+  # >= v3.4 all fields are supported, including security context.
+  mainContainer: |
+    imagePullPolicy: IfNotPresent
+    resources:
+      requests:
+        cpu: 0.1
+        memory: 64Mi
+      limits:
+        cpu: 0.5
+        memory: 512Mi
+    securityContext:
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop:
+        - ALL
+      readOnlyRootFilesystem: true
+      runAsNonRoot: true
+      runAsUser: 1000
 
   # executor controls how the init and wait container should be customized
   # (available since Argo v2.3)
@@ -197,6 +248,8 @@ data:
     metricsTTL: "10m"
     # IgnoreErrors is a flag that instructs prometheus to ignore metric emission errors. Default is "false"
     ignoreErrors: false
+    # Use a self-signed cert for TLS, default false
+    secure: false
 
     # DEPRECATED: Legacy metrics are now removed, this field is ignored
     disableLegacy: false
@@ -207,6 +260,7 @@ data:
     enabled: true
     path: /telemetry
     port: 8080
+    secure: true  # Use a self-signed cert for TLS, default false
 
   # enable persistence using postgres
   persistence: |
@@ -280,6 +334,8 @@ data:
   sso: |
     # This is the root URL of the OIDC provider (required).
     issuer: https://issuer.root.url/
+    # Some OIDC providers have alternate root URLs that can be included. These should be reviewed carefully. (optional)
+    issuerAlias: https://altissuer.root.url
     # This defines how long your login is valid for (in hours). (optional)
     # If omitted, defaults to 10h. Example below is 10 days.
     sessionExpiry: 240h
@@ -293,9 +349,9 @@ data:
     clientSecret:
       name: client-secret-secret
       key: client-secret-key
-    # This is the redirect URL supplied to the provider (required). It must
+    # This is the redirect URL supplied to the provider (optional). It must
     # be in the form <argo-server-root-url>/oauth2/callback. It must be
-    # browser-accessible.
+    # browser-accessible. If omitted, will be automatically generated.
     redirectUrl: https://argo-server/oauth2/callback
     # Additional scopes to request. Typically needed for SSO RBAC. >= v2.12
     scopes:
@@ -304,6 +360,8 @@ data:
     # RBAC Config. >= v2.12
     rbac:
       enabled: false
+    # Skip TLS verify, not recommended in production environments. Useful for testing purposes. >= v3.2.4
+    insecureSkipVerify: false
 
   # workflowRestrictions restricts the Workflows that the controller will process.
   # Current options:

@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/go-jose/go-jose/v3/jwt"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"gopkg.in/square/go-jose.v2/jwt"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -447,8 +447,7 @@ const workflowtmpl = `
     "arguments": {
       "parameters": [
         {
-          "name": "message",
-          "value": "hello world"
+          "name": "message"
         }
       ]
     },
@@ -880,18 +879,30 @@ func TestPodLogs(t *testing.T) {
 
 func TestSubmitWorkflowFromResource(t *testing.T) {
 	server, ctx := getWorkflowServer()
-	t.Run("SubmitFromWorkflowTemplate", func(t *testing.T) {
-		wf, err := server.SubmitWorkflow(ctx, &workflowpkg.WorkflowSubmitRequest{
+	t.Run("SubmitFromWorkflowTemplate fails if missing parameters", func(t *testing.T) {
+		_, err := server.SubmitWorkflow(ctx, &workflowpkg.WorkflowSubmitRequest{
 			Namespace:    "workflows",
 			ResourceKind: "workflowtemplate",
 			ResourceName: "workflow-template-whalesay-template",
+		})
+		assert.EqualError(t, err, "spec.arguments.message.value is required")
+	})
+	t.Run("SubmitFromWorkflowTemplate", func(t *testing.T) {
+		opts := v1alpha1.SubmitOpts{
+			Parameters: []string{
+				"message=hello",
+			},
+		}
+		wf, err := server.SubmitWorkflow(ctx, &workflowpkg.WorkflowSubmitRequest{
+			Namespace:     "workflows",
+			ResourceKind:  "workflowtemplate",
+			ResourceName:  "workflow-template-whalesay-template",
+			SubmitOptions: &opts,
 		})
 		if assert.NoError(t, err) {
 			assert.NotNil(t, wf)
 			assert.Contains(t, wf.Labels, common.LabelKeyControllerInstanceID)
 			assert.Contains(t, wf.Labels, common.LabelKeyCreator)
-			assert.Contains(t, wf.Labels, "labelTest")
-			assert.Contains(t, wf.Annotations, "annotationTest")
 		}
 	})
 	t.Run("SubmitFromCronWorkflow", func(t *testing.T) {
@@ -916,8 +927,6 @@ func TestSubmitWorkflowFromResource(t *testing.T) {
 			assert.NotNil(t, wf)
 			assert.Contains(t, wf.Labels, common.LabelKeyControllerInstanceID)
 			assert.Contains(t, wf.Labels, common.LabelKeyCreator)
-			assert.Contains(t, wf.Labels, "labelTest")
-			assert.Contains(t, wf.Annotations, "annotationTest")
 		}
 	})
 }

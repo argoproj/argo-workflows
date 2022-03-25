@@ -1,6 +1,7 @@
 package metrics
 
 import (
+	"errors"
 	"fmt"
 	"regexp"
 	"strconv"
@@ -203,6 +204,7 @@ func getErrorCounters() map[ErrorCause]prometheus.Counter {
 	return map[ErrorCause]prometheus.Counter{
 		ErrorCauseOperationPanic:              prometheus.NewCounter(getOptsByPahse(ErrorCauseOperationPanic)),
 		ErrorCauseCronWorkflowSubmissionError: prometheus.NewCounter(getOptsByPahse(ErrorCauseCronWorkflowSubmissionError)),
+		ErrorCauseCronWorkflowSpecError:       prometheus.NewCounter(getOptsByPahse(ErrorCauseCronWorkflowSpecError)),
 	}
 }
 
@@ -218,6 +220,26 @@ func getWorkersBusy(name string) prometheus.Gauge {
 
 func IsValidMetricName(name string) bool {
 	return model.IsValidMetricName(model.LabelValue(name))
+}
+
+func ValidateMetricValues(metric *wfv1.Prometheus) error {
+	if metric.Gauge != nil {
+		if metric.Gauge.Value == "" {
+			return errors.New("missing gauge.value")
+		}
+		if metric.Gauge.Realtime != nil && *metric.Gauge.Realtime {
+			if strings.Contains(metric.Gauge.Value, "resourcesDuration.") {
+				return errors.New("'resourcesDuration.*' metrics cannot be used in real-time")
+			}
+		}
+	}
+	if metric.Counter != nil && metric.Counter.Value == "" {
+		return errors.New("missing counter.value")
+	}
+	if metric.Histogram != nil && metric.Histogram.Value == "" {
+		return errors.New("missing histogram.value")
+	}
+	return nil
 }
 
 func ValidateMetricLabels(metrics map[string]string) error {

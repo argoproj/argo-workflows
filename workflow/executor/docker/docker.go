@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"runtime"
 	"strconv"
 	"strings"
@@ -40,7 +41,6 @@ type ctr struct {
 }
 
 func NewDockerExecutor(namespace, podName string) (*DockerExecutor, error) {
-	log.Infof("Creating a docker executor")
 	return &DockerExecutor{namespace, podName, make(map[string]ctr)}, nil
 }
 
@@ -73,7 +73,7 @@ func (d *DockerExecutor) CopyFile(containerName string, sourcePath string, destP
 	if err != nil {
 		return err
 	}
-	copiedFile, err := os.Open(destPath)
+	copiedFile, err := os.Open(filepath.Clean(destPath))
 	if err != nil {
 		return err
 	}
@@ -197,20 +197,84 @@ func (d *DockerExecutor) Wait(ctx context.Context, containerNames []string) erro
 			log.WithError(err).Error("failed to poll container IDs")
 		}
 	}()
-	for !d.haveContainers(containerNames) {
+	for {
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
 		default:
-			time.Sleep(1 * time.Second)
+			if d.haveContainers(containerNames) {
+				containerIDs, err := d.getContainerIDs(containerNames)
+				if err != nil {
+					return err
+				}
+				_, err = common.RunCommand("docker", append([]string{"wait"}, containerIDs...)...)
+				if err != nil && strings.Contains(err.Error(), "No such container") {
+					// e.g. reason could be ContainerCannotRun
+					log.WithError(err).Info("ignoring error as container may have been re-created and therefore container ID may have changed")
+					time.Sleep(time.Second)
+					continue
+				}
+				if err != nil {
+					return err
+				}
+				completed, err := d.validateCompleted(ctx, containerNames)
+				if err != nil {
+					return err
+				}
+				if completed {
+					// We waited until everything completed!
+					return nil
+				}
+			}
+			time.Sleep(time.Second)
 		}
 	}
-	containerIDs, err := d.getContainerIDs(containerNames)
+}
+
+// After docker wait, sometimes a container can still be in "Created" state.
+// https://github.com/argoproj/argo-workflows/issues/6352
+// To workaround this issue, validate containers actually completed.
+func (d *DockerExecutor) validateCompleted(ctx context.Context, containerNames []string) (bool, error) {
+	containers, err := d.listContainers()
 	if err != nil {
-		return err
+		return false, err
 	}
-	_, err = common.RunCommand("docker", append([]string{"wait"}, containerIDs...)...)
-	return err
+	for _, name := range containerNames {
+		container, ok := containers[name]
+		if !ok {
+			// ignore containers no longer found
+			continue
+		}
+		if container.status == "Created" {
+			// For containers with status == "Created", there are two
+			// possibilities:
+			// 1. the container will start running soon
+			// 2. the container failed to start, for example,
+			// because its entrypoint is set to an invalid path.
+			// You can reproduce this behavior by running:
+			// docker inspect $(docker run -d --entrypoint invalid argoproj/argosay:v2) | less
+			// In this case, we can distinguish the container by
+			// checking its exit code.
+			code, err := d.GetExitCode(ctx, name)
+			if err != nil {
+				return false, err
+			}
+			if code == "0" {
+				// If code is zero, it's case #1, the container
+				// will start soon.
+				log.Infof("unexpected: container %q still has state %q after docker wait", name, container.status)
+				return false, nil
+			} else {
+				// If code is non-zero, then it's case #2, the
+				// container failed to start, but its state is
+				// stuck at "Created".
+				// Therefore, we can treat this container as
+				// completed.
+				continue
+			}
+		}
+	}
+	return true, nil
 }
 
 func (d *DockerExecutor) listContainers() (map[string]ctr, error) {
@@ -264,14 +328,6 @@ func (d *DockerExecutor) pollContainerIDs(ctx context.Context, containerNames []
 			}
 			for containerName, c := range containers {
 				if d.containers[containerName].containerID == c.containerID { // already found
-					continue
-				}
-				if c.createdAt.Before(started.Add(-15 * time.Second)) {
-					log.Infof("ignoring container %q created at %v, too long before process started", containerName, c.createdAt)
-					continue
-				}
-				if c.status == "Created" && d.containers[containerName].status != "" {
-					log.Infof("ignoring created container %q that would %s -> %s", containerName, d.containers[containerName].status, c.status)
 					continue
 				}
 				d.containers[containerName] = c

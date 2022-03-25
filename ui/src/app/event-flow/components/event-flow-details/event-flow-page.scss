@@ -9,6 +9,10 @@
   }
 }
 
+.graph {
+  overflow: scroll;
+}
+
 .graph.events {
   .node {
     &.Ready {

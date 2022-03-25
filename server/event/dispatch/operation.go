@@ -3,10 +3,8 @@ package dispatch
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"strings"
-	"time"
 
 	"github.com/antonmedv/expr"
 	log "github.com/sirupsen/logrus"
@@ -19,6 +17,7 @@ import (
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/server/auth"
 	errorsutil "github.com/argoproj/argo-workflows/v3/util/errors"
+	"github.com/argoproj/argo-workflows/v3/util/expr/argoexpr"
 	exprenv "github.com/argoproj/argo-workflows/v3/util/expr/env"
 	"github.com/argoproj/argo-workflows/v3/util/instanceid"
 	jsonutil "github.com/argoproj/argo-workflows/v3/util/json"
@@ -26,6 +25,7 @@ import (
 	waitutil "github.com/argoproj/argo-workflows/v3/util/wait"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/creator"
+	"github.com/argoproj/argo-workflows/v3/workflow/util"
 )
 
 type Operation struct {
@@ -50,39 +50,39 @@ func NewOperation(ctx context.Context, instanceIDService instanceid.Service, eve
 	}, nil
 }
 
-func (o *Operation) Dispatch(ctx context.Context) {
+func (o *Operation) Dispatch(ctx context.Context) error {
 	log.Debug("Executing event dispatch")
 
 	data, _ := json.MarshalIndent(o.env, "", "  ")
 	log.Debugln(string(data))
 
+	var errs []error
 	for _, event := range o.events {
-		// we use a predicable suffix for the name so that lost connections cannot result in the same workflow being created twice
-		// being created twice
-		nameSuffix := fmt.Sprintf("%v", time.Now().Unix())
 		err := waitutil.Backoff(retry.DefaultRetry, func() (bool, error) {
-			_, err := o.dispatch(ctx, event, nameSuffix)
+			_, err := o.dispatch(ctx, event)
 			return !errorsutil.IsTransientErr(err), err
 		})
 		if err != nil {
 			log.WithError(err).WithFields(log.Fields{"namespace": event.Namespace, "event": event.Name}).Error("failed to dispatch from event")
 			o.eventRecorder.Event(&event, corev1.EventTypeWarning, "WorkflowEventBindingError", "failed to dispatch event: "+err.Error())
+			errs = append(errs, err)
 		}
 	}
+	if len(errs) > 0 {
+		return fmt.Errorf("failed to dispatch event: %v", errs)
+	}
+	return nil
 }
 
-func (o *Operation) dispatch(ctx context.Context, wfeb wfv1.WorkflowEventBinding, nameSuffix string) (*wfv1.Workflow, error) {
+func (o *Operation) dispatch(ctx context.Context, wfeb wfv1.WorkflowEventBinding) (*wfv1.Workflow, error) {
 	selector := wfeb.Spec.Event.Selector
-	result, err := expr.Eval(selector, o.env)
+	matched, err := argoexpr.EvalBool(selector, o.env)
 	if err != nil {
 		return nil, fmt.Errorf("failed to evaluate workflow template expression: %w", err)
 	}
-	matched, boolExpr := result.(bool)
-	log.WithFields(log.Fields{"namespace": wfeb.Namespace, "event": wfeb.Name, "selector": selector, "matched": matched, "boolExpr": boolExpr}).Debug("Selector evaluation")
+	log.WithFields(log.Fields{"namespace": wfeb.Namespace, "event": wfeb.Name, "selector": selector, "matched": matched}).Debug("Selector evaluation")
 	submit := wfeb.Spec.Submit
-	if !boolExpr {
-		return nil, errors.New("malformed workflow template expression: did not evaluate to boolean")
-	} else if matched && submit != nil {
+	if matched && submit != nil {
 		client := auth.GetWfClient(o.ctx)
 		ref := wfeb.Spec.Submit.WorkflowTemplateRef
 		var tmpl wfv1.WorkflowSpecHolder
@@ -99,7 +99,7 @@ func (o *Operation) dispatch(ctx context.Context, wfeb wfv1.WorkflowEventBinding
 		if err != nil {
 			return nil, fmt.Errorf("failed to validate workflow template instanceid: %w", err)
 		}
-		wf := common.NewWorkflowFromWorkflowTemplate(tmpl.GetName(), tmpl.GetWorkflowMetadata(), ref.ClusterScope)
+		wf := common.NewWorkflowFromWorkflowTemplate(tmpl.GetName(), ref.ClusterScope)
 		o.instanceIDService.Label(wf)
 		err = o.populateWorkflowMetadata(wf, &submit.ObjectMeta)
 		if err != nil {
@@ -107,8 +107,7 @@ func (o *Operation) dispatch(ctx context.Context, wfeb wfv1.WorkflowEventBinding
 		}
 
 		if wf.Name == "" {
-			// make sure we have a predicable name, so re-creation doesn't create two workflows
-			wf.SetName(wf.GetGenerateName() + nameSuffix)
+			wf.SetName(wf.GetGenerateName() + util.RandSuffix())
 		}
 
 		// users will always want to know why a workflow was submitted,
@@ -118,7 +117,7 @@ func (o *Operation) dispatch(ctx context.Context, wfeb wfv1.WorkflowEventBinding
 		if submit.Arguments != nil {
 			for _, p := range submit.Arguments.Parameters {
 				if p.ValueFrom == nil {
-					return nil, fmt.Errorf("malformed workflow template parameter \"%s\": validFrom is nil", p.Name)
+					return nil, fmt.Errorf("malformed workflow template parameter \"%s\": valueFrom is nil", p.Name)
 				}
 				result, err := expr.Eval(p.ValueFrom.Event, o.env)
 				if err != nil {

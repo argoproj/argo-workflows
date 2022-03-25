@@ -23,7 +23,8 @@ export const WorkflowCreator = ({namespace, onCreate}: {namespace: string; onCre
 
     useEffect(() => {
         services.workflowTemplate
-            .list(namespace)
+            .list(namespace, [])
+            .then(list => list.items || [])
             .then(setWorkflowTemplates)
             .catch(setError);
     }, [namespace]);

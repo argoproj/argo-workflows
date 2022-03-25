@@ -9,10 +9,13 @@ package indexes
 const (
 	ClusterWorkflowTemplateIndex = "clusterworkflowtemplate"
 	CronWorkflowIndex            = "cronworkflow"
+	NodeIDIndex                  = "nodeID"
 	WorkflowIndex                = "workflow"
 	WorkflowTemplateIndex        = "workflowtemplate"
 	WorkflowPhaseIndex           = "workflow.phase"
 	PodPhaseIndex                = "pod.phase"
+	ConfigMapLabelsIndex         = "configmap.labels"
 	ConditionsIndex              = "status.conditions"
 	SemaphoreConfigIndexName     = "bySemaphoreConfigMap"
+	UIDIndex                     = "uid"
 )

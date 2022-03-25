@@ -1,12 +1,12 @@
 #syntax=docker/dockerfile:1.2
 
 ARG DOCKER_CHANNEL=stable
-ARG DOCKER_VERSION=18.09.1
+ARG DOCKER_VERSION=20.10.12
 # NOTE: kubectl version should be one minor version less than https://storage.googleapis.com/kubernetes-release/release/stable.txt
-ARG KUBECTL_VERSION=1.19.6
+ARG KUBECTL_VERSION=1.22.3
 ARG JQ_VERSION=1.6
 
-FROM docker.io/library/golang:1.15.7 as builder
+FROM golang:1.17 as builder
 
 RUN apt-get update && apt-get --no-install-recommends install -y \
     git \
@@ -16,6 +16,7 @@ RUN apt-get update && apt-get --no-install-recommends install -y \
     ca-certificates \
     wget \
     gcc \
+    libcap2-bin \
     zip && \
     apt-get clean \
     && rm -rf \
@@ -65,7 +66,7 @@ COPY hack/nsswitch.conf /etc/
 
 ####################################################################################################
 
-FROM docker.io/library/node:14.0.0 as argo-ui
+FROM node:16 as argo-ui
 
 COPY ui/package.json ui/yarn.lock ui/
 
@@ -74,7 +75,7 @@ RUN JOBS=max yarn --cwd ui install --network-timeout 1000000
 COPY ui ui
 COPY api api
 
-RUN JOBS=max yarn --cwd ui build
+RUN NODE_OPTIONS="--max-old-space-size=2048" JOBS=max yarn --cwd ui build
 
 ####################################################################################################
 
@@ -86,6 +87,7 @@ RUN cat .dockerignore >> .gitignore
 RUN git status --porcelain | cut -c4- | xargs git update-index --skip-worktree
 
 RUN --mount=type=cache,target=/root/.cache/go-build make dist/argoexec
+RUN setcap CAP_SYS_PTRACE,CAP_SYS_CHROOT+ei dist/argoexec
 
 ####################################################################################################
 
@@ -120,7 +122,8 @@ RUN --mount=type=cache,target=/root/.cache/go-build make dist/argo
 FROM argoexec-base as argoexec
 
 COPY --from=argoexec-build /go/src/github.com/argoproj/argo-workflows/dist/argoexec /usr/local/bin/
-RUN setcap CAP_SYS_PTRACE,CAP_SYS_CHROOT+ei /usr/local/bin/argoexec
+COPY --from=argoexec-build /etc/mime.types /etc/mime.types
+
 ENTRYPOINT [ "argoexec" ]
 
 ####################################################################################################
@@ -145,8 +148,6 @@ WORKDIR /home/argo
 COPY hack/ssh_known_hosts /etc/ssh/
 COPY hack/nsswitch.conf /etc/
 COPY --from=argocli-build /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
-COPY --from=argocli-build --chown=8737 /go/src/github.com/argoproj/argo-workflows/argo-server.crt /home/argo/
-COPY --from=argocli-build --chown=8737 /go/src/github.com/argoproj/argo-workflows/argo-server.key /home/argo/
 COPY --from=argocli-build /go/src/github.com/argoproj/argo-workflows/dist/argo /bin/
 
 ENTRYPOINT [ "argo" ]

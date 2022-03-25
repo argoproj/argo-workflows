@@ -2,6 +2,7 @@ package commands
 
 import (
 	"compress/gzip"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -11,11 +12,13 @@ import (
 	"os/signal"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"syscall"
 	"time"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"k8s.io/client-go/util/retry"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/util/archive"
@@ -24,9 +27,9 @@ import (
 )
 
 var (
-	varRunArgo          = "/var/run/argo"
+	varRunArgo          = common.VarRunArgoPath
 	containerName       = os.Getenv(common.EnvVarContainerName)
-	includeScriptOutput = os.Getenv(common.EnvVarIncludeScriptOutput) == "true" // capture stdout/stderr
+	includeScriptOutput = os.Getenv(common.EnvVarIncludeScriptOutput) == "true" // capture stdout/combined
 	template            = &wfv1.Template{}
 	logger              = log.WithField("argo", true)
 )
@@ -39,14 +42,19 @@ func NewEmissaryCommand() *cobra.Command {
 			exitCode := 64
 
 			defer func() {
-				err := ioutil.WriteFile(varRunArgo+"/ctr/"+containerName+"/exitcode", []byte(strconv.Itoa(exitCode)), 0o600)
+				err := ioutil.WriteFile(varRunArgo+"/ctr/"+containerName+"/exitcode", []byte(strconv.Itoa(exitCode)), 0o644)
 				if err != nil {
 					logger.Error(fmt.Errorf("failed to write exit code: %w", err))
 				}
 			}()
 
-			// this also indicates we've started
-			if err := os.MkdirAll(varRunArgo+"/ctr/"+containerName, 0o700); err != nil {
+			osspecific.AllowGrantingAccessToEveryone()
+
+			// Dir permission set to rwxrwxrwx, so that non-root wait container can also write kill signal to the folder.
+			// Note it's important varRunArgo+"/ctr/" folder is writable by all, because multiple containers may want to
+			// write to it with different users.
+			// This also indicates we've started.
+			if err := os.MkdirAll(varRunArgo+"/ctr/"+containerName, 0o777); err != nil {
 				return fmt.Errorf("failed to create ctr directory: %w", err)
 			}
 
@@ -78,7 +86,7 @@ func NewEmissaryCommand() *cobra.Command {
 					for _, y := range x.Dependencies {
 						logger.Infof("waiting for dependency %q", y)
 						for {
-							data, err := ioutil.ReadFile(varRunArgo + "/ctr/" + y + "/exitcode")
+							data, err := ioutil.ReadFile(filepath.Clean(varRunArgo + "/ctr/" + y + "/exitcode"))
 							if os.IsNotExist(err) {
 								time.Sleep(time.Second)
 								continue
@@ -101,48 +109,78 @@ func NewEmissaryCommand() *cobra.Command {
 				return fmt.Errorf("failed to find name in PATH: %w", err)
 			}
 
-			command := exec.Command(name, args...)
-			command.Env = os.Environ()
-			command.SysProcAttr = &syscall.SysProcAttr{}
-			osspecific.Setpgid(command.SysProcAttr)
-			command.Stdout = os.Stdout
-			command.Stderr = os.Stderr
-
-			// this may not be that important an optimisation, except for very long logs we don't want to capture
-			if includeScriptOutput {
-				logger.Info("capturing logs")
-				stdout, err := os.Create(varRunArgo + "/ctr/" + containerName + "/stdout")
-				if err != nil {
-					return fmt.Errorf("failed to open stdout: %w", err)
-				}
-				defer func() { _ = stdout.Close() }()
-				command.Stdout = io.MultiWriter(os.Stdout, stdout)
-
-				stderr, err := os.Create(varRunArgo + "/ctr/" + containerName + "/stderr")
-				if err != nil {
-					return fmt.Errorf("failed to open stderr: %w", err)
-				}
-				defer func() { _ = stderr.Close() }()
-				command.Stderr = io.MultiWriter(os.Stderr, stderr)
-			}
-
-			if err := command.Start(); err != nil {
-				return err
-			}
-
-			go func() {
+			if _, ok := os.LookupEnv("ARGO_DEBUG_PAUSE_BEFORE"); ok {
 				for {
-					data, _ := ioutil.ReadFile(varRunArgo + "/ctr/" + containerName + "/signal")
-					_ = os.Remove(varRunArgo + "/ctr/" + containerName + "/signal")
-					s, _ := strconv.Atoi(string(data))
-					if s > 0 {
-						_ = osspecific.Kill(command.Process.Pid, syscall.Signal(s))
+					// User can create the file: /ctr/NAME_OF_THE_CONTAINER/before
+					// in order to break out of the sleep and release the container from
+					// the debugging state.
+					if _, err := os.Stat(varRunArgo + "/ctr/" + containerName + "/before"); os.IsNotExist(err) {
+						time.Sleep(time.Second)
+						continue
 					}
-					time.Sleep(2 * time.Second)
+					break
 				}
-			}()
+			}
 
-			cmdErr := command.Wait()
+			backoff, err := template.GetRetryStrategy()
+			if err != nil {
+				return fmt.Errorf("failed to get retry strategy: %w", err)
+			}
+
+			var command *exec.Cmd
+			var stdout *os.File
+			var combined *os.File
+			cmdErr := retry.OnError(backoff, func(error) bool { return true }, func() error {
+				if stdout != nil {
+					stdout.Close()
+				}
+				if combined != nil {
+					combined.Close()
+				}
+				command, stdout, combined, err = createCommand(name, args, template)
+				if err != nil {
+					return fmt.Errorf("failed to create command: %w", err)
+				}
+
+				if err := command.Start(); err != nil {
+					return err
+				}
+
+				ctx, cancel := context.WithCancel(context.Background())
+				defer cancel()
+				go func() {
+					for {
+						select {
+						case <-ctx.Done():
+							return
+						default:
+							data, _ := ioutil.ReadFile(filepath.Clean(varRunArgo + "/ctr/" + containerName + "/signal"))
+							_ = os.Remove(varRunArgo + "/ctr/" + containerName + "/signal")
+							s, _ := strconv.Atoi(string(data))
+							if s > 0 {
+								_ = osspecific.Kill(command.Process.Pid, syscall.Signal(s))
+							}
+							time.Sleep(2 * time.Second)
+						}
+					}
+				}()
+				return command.Wait()
+			})
+			defer stdout.Close()
+			defer combined.Close()
+
+			if _, ok := os.LookupEnv("ARGO_DEBUG_PAUSE_AFTER"); ok {
+				for {
+					// User can create the file: /ctr/NAME_OF_THE_CONTAINER/after
+					// in order to break out of the sleep and release the container from
+					// the debugging state.
+					if _, err := os.Stat(varRunArgo + "/ctr/" + containerName + "/after"); os.IsNotExist(err) {
+						time.Sleep(time.Second)
+						continue
+					}
+					break
+				}
+			}
 
 			if cmdErr == nil {
 				exitCode = 0
@@ -178,6 +216,34 @@ func NewEmissaryCommand() *cobra.Command {
 	}
 }
 
+func createCommand(name string, args []string, template *wfv1.Template) (*exec.Cmd, *os.File, *os.File, error) {
+	command := exec.Command(name, args...)
+	command.Env = os.Environ()
+	command.SysProcAttr = &syscall.SysProcAttr{}
+	osspecific.Setpgid(command.SysProcAttr)
+	command.Stdout = os.Stdout
+	command.Stderr = os.Stderr
+
+	var stdout *os.File
+	var combined *os.File
+	var err error
+	// this may not be that important an optimisation, except for very long logs we don't want to capture
+	if includeScriptOutput || template.SaveLogsAsArtifact() {
+		logger.Info("capturing logs")
+		stdout, err = os.OpenFile(varRunArgo+"/ctr/"+containerName+"/stdout", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+		if err != nil {
+			return nil, nil, nil, fmt.Errorf("failed to open stdout: %w", err)
+		}
+		combined, err = os.OpenFile(varRunArgo+"/ctr/"+containerName+"/combined", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+		if err != nil {
+			return nil, nil, nil, fmt.Errorf("failed to open combined: %w", err)
+		}
+		command.Stdout = io.MultiWriter(os.Stdout, stdout, combined)
+		command.Stderr = io.MultiWriter(os.Stderr, combined)
+	}
+	return command, stdout, combined, nil
+}
+
 func saveArtifact(srcPath string) error {
 	if common.FindOverlappingVolume(template, srcPath) != nil {
 		logger.Infof("no need to save artifact - on overlapping volume: %s", srcPath)
@@ -187,10 +253,10 @@ func saveArtifact(srcPath string) error {
 		logger.WithError(err).Errorf("cannot save artifact %s", srcPath)
 		return nil
 	}
-	dstPath := varRunArgo + "/outputs/artifacts/" + srcPath + ".tgz"
+	dstPath := filepath.Join(varRunArgo, "/outputs/artifacts/", strings.TrimSuffix(srcPath, "/")+".tgz")
 	logger.Infof("%s -> %s", srcPath, dstPath)
 	z := filepath.Dir(dstPath)
-	if err := os.MkdirAll(z, 0o700); err != nil { // chmod rwx------
+	if err := os.MkdirAll(z, 0o755); err != nil { // chmod rwxr-xr-x
 		return fmt.Errorf("failed to create directory %s: %w", z, err)
 	}
 	dst, err := os.Create(dstPath)
@@ -212,7 +278,7 @@ func saveParameter(srcPath string) error {
 		logger.Infof("no need to save parameter - on overlapping volume: %s", srcPath)
 		return nil
 	}
-	src, err := os.Open(srcPath)
+	src, err := os.Open(filepath.Clean(srcPath))
 	if os.IsNotExist(err) { // might be optional, so we ignore
 		logger.WithError(err).Errorf("cannot save parameter %s", srcPath)
 		return nil
@@ -224,7 +290,7 @@ func saveParameter(srcPath string) error {
 	dstPath := varRunArgo + "/outputs/parameters/" + srcPath
 	logger.Infof("%s -> %s", srcPath, dstPath)
 	z := filepath.Dir(dstPath)
-	if err := os.MkdirAll(z, 0o700); err != nil { // chmod rwx------
+	if err := os.MkdirAll(z, 0o755); err != nil { // chmod rwxr-xr-x
 		return fmt.Errorf("failed to create directory %s: %w", z, err)
 	}
 	dst, err := os.Create(dstPath)

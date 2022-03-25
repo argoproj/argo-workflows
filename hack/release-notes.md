@@ -8,15 +8,17 @@ Find out on [our blog](https://blog.argoproj.io) and [changelog](https://github.
 
 See [upgrading](https://github.com/argoproj/argo-workflows/blob/master/docs/upgrading.md).
 
-## Argo CLI
+## Installation
 
-### Mac
+### CLI
+
+#### Mac
 
 Available via `curl`
 
 ```sh
 # Download the binary
-curl -sLO https://github.com/argoproj/argo/releases/download/${version}/argo-darwin-amd64.gz
+curl -sLO https://github.com/argoproj/argo-workflows/releases/download/${version}/argo-darwin-amd64.gz
 
 # Unzip
 gunzip argo-darwin-amd64.gz
@@ -31,13 +33,13 @@ mv ./argo-darwin-amd64 /usr/local/bin/argo
 argo version
 ```
 
-### Linux
+#### Linux
 
 Available via `curl`
 
 ```sh
 # Download the binary
-curl -sLO https://github.com/argoproj/argo/releases/download/${version}/argo-linux-amd64.gz
+curl -sLO https://github.com/argoproj/argo-workflows/releases/download/${version}/argo-linux-amd64.gz
 
 # Unzip
 gunzip argo-linux-amd64.gz
@@ -52,7 +54,7 @@ mv ./argo-linux-amd64 /usr/local/bin/argo
 argo version
 ```
 
-## Install 
+### Controller and Server
 
 ```sh
 kubectl create namespace argo

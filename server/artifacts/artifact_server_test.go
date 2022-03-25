@@ -14,7 +14,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kubefake "k8s.io/client-go/kubernetes/fake"
 
-	"github.com/argoproj/argo-workflows/v3/config"
 	sqldbmocks "github.com/argoproj/argo-workflows/v3/persist/sqldb/mocks"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	fakewfv1 "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/fake"
@@ -42,7 +41,7 @@ type fakeArtifactDriver struct {
 }
 
 func (a *fakeArtifactDriver) Load(_ *wfv1.Artifact, path string) error {
-	return ioutil.WriteFile(path, a.data, 0o666)
+	return ioutil.WriteFile(path, a.data, 0o600)
 }
 
 func (a *fakeArtifactDriver) Save(_ string, _ *wfv1.Artifact) error {
@@ -110,6 +109,8 @@ func newServer() *ArtifactServer {
 						},
 					},
 				},
+				// a node without input/output artifacts
+				"my-node-no-artifacts": wfv1.NodeStatus{},
 			},
 		},
 	}
@@ -117,7 +118,7 @@ func newServer() *ArtifactServer {
 		ObjectMeta: metav1.ObjectMeta{Namespace: "my-ns", Name: "your-wf"},
 	})
 	ctx := context.WithValue(context.WithValue(context.Background(), auth.KubeKey, kube), auth.WfKey, argo)
-	gatekeeper.On("Context", mock.Anything).Return(ctx, nil)
+	gatekeeper.On("ContextWithRequest", mock.Anything, mock.Anything).Return(ctx, nil)
 	a := &sqldbmocks.WorkflowArchive{}
 	a.On("GetWorkflow", "my-uuid").Return(wf, nil)
 
@@ -125,8 +126,8 @@ func newServer() *ArtifactServer {
 		return &fakeArtifactDriver{data: []byte("my-data")}, nil
 	}
 
-	artifactRepositories := armocks.DummyArtifactRepositories(&config.ArtifactRepository{
-		S3: &config.S3ArtifactRepository{
+	artifactRepositories := armocks.DummyArtifactRepositories(&wfv1.ArtifactRepository{
+		S3: &wfv1.S3ArtifactRepository{
 			S3Bucket: wfv1.S3Bucket{
 				Endpoint: "my-endpoint",
 				Bucket:   "my-bucket",
@@ -199,6 +200,20 @@ func TestArtifactServer_GetInputArtifact(t *testing.T) {
 	}
 }
 
+// TestArtifactServer_NodeWithoutArtifact makes sure that the server doesn't panic due to a nil-pointer error
+// when trying to get an artifact from a node result without any artifacts
+func TestArtifactServer_NodeWithoutArtifact(t *testing.T) {
+	s := newServer()
+	r := &http.Request{}
+	r.URL = mustParse(fmt.Sprintf("/input-artifacts/my-ns/my-wf/my-node-no-artifacts/%s", "my-artifact"))
+	w := &testhttp.TestResponseWriter{}
+	s.GetInputArtifact(w, r)
+	// make sure there is no nil pointer panic
+	assert.Equal(t, 500, w.StatusCode)
+	s.GetOutputArtifact(w, r)
+	assert.Equal(t, 500, w.StatusCode)
+}
+
 func TestArtifactServer_GetOutputArtifactWithoutInstanceID(t *testing.T) {
 	s := newServer()
 	r := &http.Request{}
@@ -214,5 +229,22 @@ func TestArtifactServer_GetOutputArtifactByUID(t *testing.T) {
 	r.URL = mustParse("/artifacts/my-uuid/my-node/my-artifact")
 	w := &testhttp.TestResponseWriter{}
 	s.GetOutputArtifactByUID(w, r)
+	assert.Equal(t, 401, w.StatusCode)
+}
+
+func TestArtifactServer_GetArtifactByUIDInvalidRequestPath(t *testing.T) {
+	s := newServer()
+	r := &http.Request{}
+	// missing my-artifact part to have a valid URL
+	r.URL = mustParse("/input-artifacts/my-uuid/my-node")
+	w := &testhttp.TestResponseWriter{}
+	s.GetInputArtifactByUID(w, r)
+	// make sure there is no index out of bounds error
 	assert.Equal(t, 500, w.StatusCode)
+	assert.Equal(t, "request path is not valid", w.Output)
+
+	w = &testhttp.TestResponseWriter{}
+	s.GetOutputArtifactByUID(w, r)
+	assert.Equal(t, 500, w.StatusCode)
+	assert.Equal(t, "request path is not valid", w.Output)
 }

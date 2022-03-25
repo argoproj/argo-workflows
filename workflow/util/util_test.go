@@ -12,7 +12,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	kubefake "k8s.io/client-go/kubernetes/fake"
+	"k8s.io/apimachinery/pkg/fields"
 	"sigs.k8s.io/yaml"
 
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
@@ -93,17 +93,13 @@ func TestReadFromSingleorMultiplePath(t *testing.T) {
 
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
-			dir, err := ioutil.TempDir("", name)
-			if err != nil {
-				t.Error("Could not create temporary directory")
-			}
-			defer os.RemoveAll(dir)
+			dir := t.TempDir()
 			var filePaths []string
 			for i := range tc.fileNames {
 				content := []byte(tc.contents[i])
 				tmpfn := filepath.Join(dir, tc.fileNames[i])
 				filePaths = append(filePaths, tmpfn)
-				err := ioutil.WriteFile(tmpfn, content, 0o666)
+				err := ioutil.WriteFile(tmpfn, content, 0o600)
 				if err != nil {
 					t.Error("Could not write to temporary file")
 				}
@@ -144,18 +140,14 @@ func TestReadFromSingleorMultiplePathErrorHandling(t *testing.T) {
 
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
-			dir, err := ioutil.TempDir("", name)
-			if err != nil {
-				t.Error("Could not create temporary directory")
-			}
-			defer os.RemoveAll(dir)
+			dir := t.TempDir()
 			var filePaths []string
 			for i := range tc.fileNames {
 				content := []byte(tc.contents[i])
 				tmpfn := filepath.Join(dir, tc.fileNames[i])
 				filePaths = append(filePaths, tmpfn)
 				if tc.exists[i] {
-					err := ioutil.WriteFile(tmpfn, content, 0o666)
+					err := ioutil.WriteFile(tmpfn, content, 0o600)
 					if err != nil {
 						t.Error("Could not write to temporary file")
 					}
@@ -322,6 +314,31 @@ func TestStopWorkflowByNodeName(t *testing.T) {
 	assert.Equal(t, wfv1.NodeFailed, wf.Status.Nodes.FindByDisplayName("approve").Phase)
 }
 
+// Regression test for #6478
+func TestAddParamToGlobalScopeValueNil(t *testing.T) {
+	paramValue := wfv1.AnyString("test")
+	wf := wfv1.Workflow{
+		Status: wfv1.WorkflowStatus{
+			Outputs: &wfv1.Outputs{
+				Parameters: []wfv1.Parameter{
+					{
+						Name:       "test",
+						Value:      &paramValue,
+						GlobalName: "global_output_param",
+					},
+				},
+			},
+		},
+	}
+
+	p := AddParamToGlobalScope(&wf, nil, wfv1.Parameter{
+		Name:       "test",
+		Value:      nil,
+		GlobalName: "test",
+	})
+	assert.False(t, p)
+}
+
 var susWorkflow = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -459,6 +476,66 @@ func TestUpdateSuspendedNode(t *testing.T) {
 	}
 }
 
+func TestSelectorMatchesNode(t *testing.T) {
+	tests := map[string]struct {
+		selector string
+		outcome  bool
+	}{
+		"idFound": {
+			selector: "id=123",
+			outcome:  true,
+		},
+		"idNotFound": {
+			selector: "id=321",
+			outcome:  false,
+		},
+		"nameFound": {
+			selector: "name=failed-node",
+			outcome:  true,
+		},
+		"phaseFound": {
+			selector: "phase=Failed",
+			outcome:  true,
+		},
+		"randomNotFound": {
+			selector: "foo=Failed",
+			outcome:  false,
+		},
+		"templateFound": {
+			selector: "templateRef.name=templateName",
+			outcome:  true,
+		},
+		"inputFound": {
+			selector: "inputs.parameters.myparam.value=abc",
+			outcome:  true,
+		},
+	}
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			node := wfv1.NodeStatus{ID: "123", Name: "failed-node", Phase: wfv1.NodeFailed, TemplateRef: &wfv1.TemplateRef{
+				Name:     "templateName",
+				Template: "template",
+			},
+				Inputs: &wfv1.Inputs{
+					Parameters: []wfv1.Parameter{
+						{
+							Name:  "myparam",
+							Value: wfv1.AnyStringPtr("abc"),
+						},
+					},
+				},
+			}
+			selector, err := fields.ParseSelector(tc.selector)
+			assert.NoError(t, err)
+			if tc.outcome {
+				assert.True(t, SelectorMatchesNode(selector, node))
+			} else {
+				assert.False(t, SelectorMatchesNode(selector, node))
+			}
+		})
+	}
+}
+
 func TestGetNodeType(t *testing.T) {
 	t.Run("getNodeType", func(t *testing.T) {
 		assert.Equal(t, wfv1.NodeTypePod, GetNodeType(&wfv1.Template{Script: &wfv1.ScriptTemplate{}}))
@@ -511,21 +588,27 @@ func TestApplySubmitOpts(t *testing.T) {
 			assert.Equal(t, "81861780812", parameters[0].Value.String())
 		}
 	})
-	t.Run("ParameterFile", func(t *testing.T) {
+	t.Run("PodPriorityClassName", func(t *testing.T) {
 		wf := &wfv1.Workflow{}
-		file, err := ioutil.TempFile("", "")
+		err := ApplySubmitOpts(wf, &wfv1.SubmitOpts{PodPriorityClassName: "abc"})
 		assert.NoError(t, err)
-		defer func() { _ = os.Remove(file.Name()) }()
-		err = ioutil.WriteFile(file.Name(), []byte(`a: 81861780812`), 0o644)
-		assert.NoError(t, err)
-		err = ApplySubmitOpts(wf, &wfv1.SubmitOpts{ParameterFile: file.Name()})
-		assert.NoError(t, err)
-		parameters := wf.Spec.Arguments.Parameters
-		if assert.Len(t, parameters, 1) {
-			assert.Equal(t, "a", parameters[0].Name)
-			assert.Equal(t, "81861780812", parameters[0].Value.String())
-		}
+		assert.Equal(t, "abc", wf.Spec.PodPriorityClassName)
 	})
+}
+
+func TestReadParametersFile(t *testing.T) {
+	file, err := ioutil.TempFile("", "")
+	assert.NoError(t, err)
+	defer func() { _ = os.Remove(file.Name()) }()
+	err = ioutil.WriteFile(file.Name(), []byte(`a: 81861780812`), 0o600)
+	assert.NoError(t, err)
+	opts := &wfv1.SubmitOpts{}
+	err = ReadParametersFile(file.Name(), opts)
+	assert.NoError(t, err)
+	parameters := opts.Parameters
+	if assert.Len(t, parameters, 1) {
+		assert.Equal(t, "a=81861780812", parameters[0])
+	}
 }
 
 func TestFormulateResubmitWorkflow(t *testing.T) {
@@ -721,13 +804,12 @@ status:
 
 func TestDeepDeleteNodes(t *testing.T) {
 	wfIf := argofake.NewSimpleClientset().ArgoprojV1alpha1().Workflows("")
-	kubeClient := &kubefake.Clientset{}
 	origWf := wfv1.MustUnmarshalWorkflow(deepDeleteOfNodes)
 
 	ctx := context.Background()
 	wf, err := wfIf.Create(ctx, origWf, metav1.CreateOptions{})
 	if assert.NoError(t, err) {
-		newWf, err := RetryWorkflow(ctx, kubeClient, hydratorfake.Noop, wfIf, wf.Name, false, "")
+		newWf, _, err := FormulateRetryWorkflow(ctx, wf, false, "")
 		assert.NoError(t, err)
 		newWfBytes, err := yaml.Marshal(newWf)
 		assert.NoError(t, err)
@@ -735,51 +817,76 @@ func TestDeepDeleteNodes(t *testing.T) {
 	}
 }
 
-func TestRetryWorkflow(t *testing.T) {
-	kubeClient := kubefake.NewSimpleClientset()
+func TestFormulateRetryWorkflow(t *testing.T) {
+	ctx := context.Background()
 	wfClient := argofake.NewSimpleClientset().ArgoprojV1alpha1().Workflows("my-ns")
 	createdTime := metav1.Time{Time: time.Now().UTC()}
 	finishedTime := metav1.Time{Time: createdTime.Add(time.Second * 2)}
-	wf := &wfv1.Workflow{
-		ObjectMeta: metav1.ObjectMeta{Labels: map[string]string{
-			common.LabelKeyCompleted:               "true",
-			common.LabelKeyWorkflowArchivingStatus: "Pending",
-		}},
-		Status: wfv1.WorkflowStatus{
-			Phase:      wfv1.WorkflowFailed,
-			StartedAt:  createdTime,
-			FinishedAt: finishedTime,
-			Nodes: map[string]wfv1.NodeStatus{
-				"failed-node":    {Name: "failed-node", StartedAt: createdTime, FinishedAt: finishedTime, Phase: wfv1.NodeFailed, Message: "failed"},
-				"succeeded-node": {Name: "succeeded-node", StartedAt: createdTime, FinishedAt: finishedTime, Phase: wfv1.NodeSucceeded, Message: "succeeded"}},
-		},
-	}
-
-	ctx := context.Background()
-	_, err := wfClient.Create(ctx, wf, metav1.CreateOptions{})
-	assert.NoError(t, err)
-	wf, err = RetryWorkflow(ctx, kubeClient, hydratorfake.Always, wfClient, wf.Name, false, "")
-	if assert.NoError(t, err) {
-		assert.Equal(t, wfv1.WorkflowRunning, wf.Status.Phase)
-		assert.Equal(t, metav1.Time{}, wf.Status.FinishedAt)
-		assert.True(t, wf.Status.StartedAt.After(createdTime.Time))
-		assert.NotContains(t, wf.Labels, common.LabelKeyCompleted)
-		assert.NotContains(t, wf.Labels, common.LabelKeyWorkflowArchivingStatus)
-		for _, node := range wf.Status.Nodes {
-			switch node.Phase {
-			case wfv1.NodeSucceeded:
-				assert.Equal(t, "succeeded", node.Message)
-				assert.Equal(t, wfv1.NodeSucceeded, node.Phase)
-				assert.Equal(t, createdTime, node.StartedAt)
-				assert.Equal(t, finishedTime, node.FinishedAt)
-			case wfv1.NodeFailed:
-				assert.Equal(t, "", node.Message)
-				assert.Equal(t, wfv1.NodeRunning, node.Phase)
-				assert.Equal(t, metav1.Time{}, node.FinishedAt)
-				assert.True(t, node.StartedAt.After(createdTime.Time))
+	t.Run("Steps", func(t *testing.T) {
+		wf := &wfv1.Workflow{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "my-steps",
+				Labels: map[string]string{
+					common.LabelKeyCompleted:               "true",
+					common.LabelKeyWorkflowArchivingStatus: "Pending",
+				},
+			},
+			Status: wfv1.WorkflowStatus{
+				Phase:      wfv1.WorkflowFailed,
+				StartedAt:  createdTime,
+				FinishedAt: finishedTime,
+				Nodes: map[string]wfv1.NodeStatus{
+					"failed-node":    {Name: "failed-node", StartedAt: createdTime, FinishedAt: finishedTime, Phase: wfv1.NodeFailed, Message: "failed"},
+					"succeeded-node": {Name: "succeeded-node", StartedAt: createdTime, FinishedAt: finishedTime, Phase: wfv1.NodeSucceeded, Message: "succeeded"}},
+			},
+		}
+		_, err := wfClient.Create(ctx, wf, metav1.CreateOptions{})
+		assert.NoError(t, err)
+		wf, _, err = FormulateRetryWorkflow(ctx, wf, false, "")
+		if assert.NoError(t, err) {
+			assert.Equal(t, wfv1.WorkflowRunning, wf.Status.Phase)
+			assert.Equal(t, metav1.Time{}, wf.Status.FinishedAt)
+			assert.True(t, wf.Status.StartedAt.After(createdTime.Time))
+			assert.NotContains(t, wf.Labels, common.LabelKeyCompleted)
+			assert.NotContains(t, wf.Labels, common.LabelKeyWorkflowArchivingStatus)
+			for _, node := range wf.Status.Nodes {
+				switch node.Phase {
+				case wfv1.NodeSucceeded:
+					assert.Equal(t, "succeeded", node.Message)
+					assert.Equal(t, wfv1.NodeSucceeded, node.Phase)
+					assert.Equal(t, createdTime, node.StartedAt)
+					assert.Equal(t, finishedTime, node.FinishedAt)
+				case wfv1.NodeFailed:
+					assert.Equal(t, "", node.Message)
+					assert.Equal(t, wfv1.NodeRunning, node.Phase)
+					assert.Equal(t, metav1.Time{}, node.FinishedAt)
+					assert.True(t, node.StartedAt.After(createdTime.Time))
+				}
 			}
 		}
-	}
+	})
+	t.Run("DAG", func(t *testing.T) {
+		wf := &wfv1.Workflow{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:   "my-dag",
+				Labels: map[string]string{},
+			},
+			Status: wfv1.WorkflowStatus{
+				Phase: wfv1.WorkflowFailed,
+				Nodes: map[string]wfv1.NodeStatus{
+					"": {Phase: wfv1.NodeFailed, Type: wfv1.NodeTypeTaskGroup}},
+			},
+		}
+		_, err := wfClient.Create(ctx, wf, metav1.CreateOptions{})
+		assert.NoError(t, err)
+		wf, _, err = FormulateRetryWorkflow(ctx, wf, false, "")
+		if assert.NoError(t, err) {
+			if assert.Len(t, wf.Status.Nodes, 1) {
+				assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes[""].Phase)
+			}
+
+		}
+	})
 }
 
 func TestFromUnstructuredObj(t *testing.T) {
@@ -812,5 +919,36 @@ func TestToUnstructured(t *testing.T) {
 		assert.Equal(t, workflow.WorkflowKind, gv.Kind)
 		assert.Equal(t, workflow.Group, gv.Group)
 		assert.Equal(t, workflow.Version, gv.Version)
+	}
+}
+
+func TestGetTemplateFromNode(t *testing.T) {
+	cases := []struct {
+		inputNode            wfv1.NodeStatus
+		expectedTemplateName string
+	}{
+		{
+			inputNode: wfv1.NodeStatus{
+				TemplateRef: &wfv1.TemplateRef{
+					Name:         "foo-workflowtemplate",
+					Template:     "foo-template",
+					ClusterScope: false,
+				},
+				TemplateName: "",
+			},
+			expectedTemplateName: "foo-template",
+		},
+		{
+			inputNode: wfv1.NodeStatus{
+				TemplateRef:  nil,
+				TemplateName: "bar-template",
+			},
+			expectedTemplateName: "bar-template",
+		},
+	}
+
+	for _, tc := range cases {
+		actual := getTemplateFromNode(tc.inputNode)
+		assert.Equal(t, tc.expectedTemplateName, actual)
 	}
 }

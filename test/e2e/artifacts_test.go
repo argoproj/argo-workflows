@@ -1,3 +1,4 @@
+//go:build executor
 // +build executor
 
 package e2e
@@ -128,6 +129,38 @@ func (s *ArtifactsSuite) TestOutputResult() {
 				assert.NotNil(t, n.Outputs.Result)
 			}
 		})
+}
+
+func (s *ArtifactsSuite) TestMainLog() {
+	s.Run("Basic", func() {
+		s.Given().
+			Workflow("@testdata/basic-workflow.yaml").
+			When().
+			SubmitWorkflow().
+			WaitForWorkflow(fixtures.ToBeSucceeded).
+			Then().
+			ExpectWorkflow(func(t *testing.T, m *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+				n := status.Nodes[m.Name]
+				if assert.NotNil(t, n) {
+					assert.Len(t, n.Outputs.Artifacts, 1)
+				}
+			})
+	})
+	s.Need(fixtures.None(fixtures.Docker, fixtures.Kubelet))
+	s.Run("ActiveDeadlineSeconds", func() {
+		s.Given().
+			Workflow("@expectedfailures/timeouts-step.yaml").
+			When().
+			SubmitWorkflow().
+			WaitForWorkflow(fixtures.ToBeFailed).
+			Then().
+			ExpectWorkflow(func(t *testing.T, m *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+				n := status.Nodes[m.Name]
+				if assert.NotNil(t, n.Outputs) {
+					assert.Len(t, n.Outputs.Artifacts, 1)
+				}
+			})
+	})
 }
 
 func TestArtifactsSuite(t *testing.T) {

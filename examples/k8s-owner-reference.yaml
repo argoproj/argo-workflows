@@ -13,8 +13,6 @@ metadata:
       to other resource types.
 
       https://kubernetes.io/docs/concepts/workloads/controllers/garbage-collection/
-    workflows.argoproj.io/verify.py: |
-      assert status["phase"] == "Succeeded"
 spec:
   entrypoint: main
   templates:

@@ -29,7 +29,7 @@ func NewListCommand() *cobra.Command {
 		Use:   "list",
 		Short: "list cron workflows",
 		Run: func(cmd *cobra.Command, args []string) {
-			ctx, apiClient := client.NewAPIClient()
+			ctx, apiClient := client.NewAPIClient(cmd.Context())
 			serviceClient, err := apiClient.NewCronWorkflowServiceClient()
 			errors.CheckError(err)
 			namespace := client.Namespace()
@@ -66,7 +66,7 @@ func printTable(wfList []wfv1.CronWorkflow, listArgs *listFlags) {
 	if listArgs.allNamespaces {
 		_, _ = fmt.Fprint(w, "NAMESPACE\t")
 	}
-	_, _ = fmt.Fprint(w, "NAME\tAGE\tLAST RUN\tNEXT RUN\tSCHEDULE\tSUSPENDED")
+	_, _ = fmt.Fprint(w, "NAME\tAGE\tLAST RUN\tNEXT RUN\tSCHEDULE\tTIMEZONE\tSUSPENDED")
 	_, _ = fmt.Fprint(w, "\n")
 	for _, cwf := range wfList {
 		if listArgs.allNamespaces {
@@ -84,7 +84,7 @@ func printTable(wfList []wfv1.CronWorkflow, listArgs *listFlags) {
 		} else {
 			cleanNextScheduledTime = "N/A"
 		}
-		_, _ = fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\t%t", cwf.ObjectMeta.Name, humanize.RelativeDurationShort(cwf.ObjectMeta.CreationTimestamp.Time, time.Now()), cleanLastScheduledTime, cleanNextScheduledTime, cwf.Spec.Schedule, cwf.Spec.Suspend)
+		_, _ = fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\t%s\t%t", cwf.ObjectMeta.Name, humanize.RelativeDurationShort(cwf.ObjectMeta.CreationTimestamp.Time, time.Now()), cleanLastScheduledTime, cleanNextScheduledTime, cwf.Spec.Schedule, cwf.Spec.Timezone, cwf.Spec.Suspend)
 		_, _ = fmt.Fprintf(w, "\n")
 	}
 	_ = w.Flush()

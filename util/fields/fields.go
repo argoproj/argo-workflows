@@ -60,7 +60,7 @@ func (f Cleaner) WillExclude(x string) bool {
 
 func (f Cleaner) matches(x string) bool {
 	for y := range f.fields {
-		if strings.HasPrefix(x, y) {
+		if strings.HasPrefix(x, y) || strings.HasPrefix(y, x) {
 			return true
 		}
 	}

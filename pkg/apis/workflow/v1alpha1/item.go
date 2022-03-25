@@ -72,7 +72,7 @@ func (i *Item) String() string {
 }
 
 func (i Item) Format(s fmt.State, _ rune) {
-	_, _ = fmt.Fprintf(s, i.String()) // nolint
+	_, _ = fmt.Fprintf(s, "%s", i.String()) //nolint
 }
 
 func (i Item) MarshalJSON() ([]byte, error) {

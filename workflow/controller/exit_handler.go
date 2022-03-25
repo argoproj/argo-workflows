@@ -11,26 +11,17 @@ import (
 	"github.com/argoproj/argo-workflows/v3/workflow/templateresolution"
 )
 
-func (woc *wfOperationCtx) runOnExitNode(ctx context.Context, exitHook *wfv1.LifecycleHook, parentDisplayName, parentNodeName, boundaryID string, tmplCtx *templateresolution.Context, prefix string, outputs *wfv1.Outputs) (bool, *wfv1.NodeStatus, error) {
+func (woc *wfOperationCtx) runOnExitNode(ctx context.Context, exitHook *wfv1.LifecycleHook, parentNode *wfv1.NodeStatus, boundaryID string, tmplCtx *templateresolution.Context, prefix string) (bool, *wfv1.NodeStatus, error) {
+	outputs := parentNode.Outputs
+	if parentNode.Type == wfv1.NodeTypeRetry {
+		lastChildNode := getChildNodeIndex(parentNode, woc.wf.Status.Nodes, -1)
+		outputs = lastChildNode.Outputs
+	}
+
 	if exitHook != nil && woc.GetShutdownStrategy().ShouldExecute(true) {
 		woc.log.WithField("lifeCycleHook", exitHook).Infof("Running OnExit handler")
 
-		// Previously we used `parentDisplayName` to generate all onExit node names. However, as these can be non-unique
-		// we transitioned to using `parentNodeName` instead, which are guaranteed to be unique. In order to not disrupt
-		// running workflows during upgrade time, we first check if there is an onExit node that currently exists with the
-		// legacy name AND said node is a child of the parent node. If it does, we continue execution with the legacy name.
-		// If it doesn't, we use the new (and unique) name for all operations henceforth.
-		// TODO: This scaffold code should be removed after a couple of "grace period" version upgrades to allow transitions. It was introduced in v3.0.0
-		// When the scaffold code is removed, we should only have the following:
-		//
-		// 		onExitNodeName := common.GenerateOnExitNodeName(parentNodeName)
-		//
-		// See more: https://github.com/argoproj/argo-workflows/issues/5502
-		onExitNodeName := common.GenerateOnExitNodeName(parentNodeName)
-		legacyOnExitNodeName := common.GenerateOnExitNodeName(parentDisplayName)
-		if legacyNameNode := woc.wf.GetNodeByName(legacyOnExitNodeName); legacyNameNode != nil && woc.wf.GetNodeByName(parentNodeName).HasChild(legacyNameNode.ID) {
-			onExitNodeName = legacyOnExitNodeName
-		}
+		onExitNodeName := common.GenerateOnExitNodeName(parentNode.Name)
 		resolvedArgs := exitHook.Arguments
 		var err error
 		if !resolvedArgs.IsEmpty() && outputs != nil {
@@ -40,12 +31,12 @@ func (woc *wfOperationCtx) runOnExitNode(ctx context.Context, exitHook *wfv1.Lif
 			}
 
 		}
-		onExitNode, err := woc.executeTemplate(ctx, onExitNodeName, &wfv1.WorkflowStep{Template: exitHook.Template}, tmplCtx, resolvedArgs, &executeTemplateOpts{
+		onExitNode, err := woc.executeTemplate(ctx, onExitNodeName, &wfv1.WorkflowStep{Template: exitHook.Template, TemplateRef: exitHook.TemplateRef}, tmplCtx, resolvedArgs, &executeTemplateOpts{
 
 			boundaryID:     boundaryID,
 			onExitTemplate: true,
 		})
-		woc.addChildNode(parentNodeName, onExitNodeName)
+		woc.addChildNode(parentNode.Name, onExitNodeName)
 		return true, onExitNode, err
 	}
 	return false, nil, nil

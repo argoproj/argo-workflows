@@ -2,7 +2,6 @@ package controller
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"sync"
 	"time"
@@ -10,22 +9,24 @@ import (
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/argoproj/argo-workflows/v3/errors"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
 
 // applyExecutionControl will ensure a pod's execution control annotation is up-to-date
-// kills any pending pods when workflow has reached it's deadline
-func (woc *wfOperationCtx) applyExecutionControl(ctx context.Context, pod *apiv1.Pod, wfNodesLock *sync.RWMutex) error {
+// kills any pending and running pods when workflow has reached it's deadline
+func (woc *wfOperationCtx) applyExecutionControl(ctx context.Context, pod *apiv1.Pod, wfNodesLock *sync.RWMutex) {
 	if pod == nil {
-		return nil
+		return
 	}
+
+	nodeID := woc.nodeID(pod)
+
 	switch pod.Status.Phase {
 	case apiv1.PodSucceeded, apiv1.PodFailed:
 		// Skip any pod which are already completed
-		return nil
-	case apiv1.PodPending:
+		return
+	case apiv1.PodPending, apiv1.PodRunning:
 		// Check if we are currently shutting down
 		if woc.GetShutdownStrategy().Enabled() {
 			// Only delete pods that are not part of an onExit handler if we are "Stopping" or all pods if we are "Terminating"
@@ -35,11 +36,9 @@ func (woc *wfOperationCtx) applyExecutionControl(ctx context.Context, pod *apiv1
 				woc.log.Infof("Deleting Pending pod %s/%s as part of workflow shutdown with strategy: %s", pod.Namespace, pod.Name, woc.GetShutdownStrategy())
 				err := woc.controller.kubeclientset.CoreV1().Pods(pod.Namespace).Delete(ctx, pod.Name, metav1.DeleteOptions{})
 				if err == nil {
-					wfNodesLock.Lock()
-					node := woc.wf.Status.Nodes[pod.Name]
-					wfNodesLock.Unlock()
-					woc.markNodePhase(node.Name, wfv1.NodeFailed, fmt.Sprintf("workflow shutdown with strategy:  %s", woc.GetShutdownStrategy()))
-					return nil
+					msg := fmt.Sprintf("workflow shutdown with strategy:  %s", woc.GetShutdownStrategy())
+					woc.handleExecutionControlError(nodeID, wfNodesLock, msg)
+					return
 				}
 				// If we fail to delete the pod, fall back to setting the annotation
 				woc.log.Warnf("Failed to delete %s/%s: %v", pod.Namespace, pod.Name, err)
@@ -54,122 +53,54 @@ func (woc *wfOperationCtx) applyExecutionControl(ctx context.Context, pod *apiv1
 				woc.log.Infof("Deleting Pending pod %s/%s which has exceeded workflow deadline %s", pod.Namespace, pod.Name, woc.workflowDeadline)
 				err := woc.controller.kubeclientset.CoreV1().Pods(pod.Namespace).Delete(ctx, pod.Name, metav1.DeleteOptions{})
 				if err == nil {
-					wfNodesLock.Lock()
-					node := woc.wf.Status.Nodes[pod.Name]
-					wfNodesLock.Unlock()
-					woc.markNodePhase(node.Name, wfv1.NodeFailed, "Step exceeded its deadline")
-					return nil
+					woc.handleExecutionControlError(nodeID, wfNodesLock, "Step exceeded its deadline")
+					return
 				}
 				// If we fail to delete the pod, fall back to setting the annotation
 				woc.log.Warnf("Failed to delete %s/%s: %v", pod.Namespace, pod.Name, err)
 			}
 		}
 	}
-
-	var podExecCtl common.ExecutionControl
-	if execCtlStr, ok := pod.Annotations[common.AnnotationKeyExecutionControl]; ok && execCtlStr != "" {
-		err := json.Unmarshal([]byte(execCtlStr), &podExecCtl)
-		if err != nil {
-			woc.log.Warnf("Failed to unmarshal execution control from pod %s", pod.Name)
+	if woc.GetShutdownStrategy().Enabled() {
+		if _, onExitPod := pod.Labels[common.LabelKeyOnExit]; !woc.GetShutdownStrategy().ShouldExecute(onExitPod) {
+			woc.log.Infof("Shutting down pod %s", pod.Name)
+			woc.controller.queuePodForCleanup(woc.wf.Namespace, pod.Name, shutdownPod)
 		}
 	}
+}
 
+// handleExecutionControlError marks a node as failed with an error message
+func (woc *wfOperationCtx) handleExecutionControlError(nodeID string, wfNodesLock *sync.RWMutex, errorMsg string) {
 	wfNodesLock.Lock()
-	template := woc.findTemplate(pod)
-	wfNodesLock.Unlock()
-	for _, c := range template.GetMainContainerNames() {
-		if woc.GetShutdownStrategy().Enabled() {
-			if _, onExitPod := pod.Labels[common.LabelKeyOnExit]; !woc.GetShutdownStrategy().ShouldExecute(onExitPod) {
-				podExecCtl.Deadline = &time.Time{}
-				woc.log.Infof("Applying shutdown deadline for pod %s", pod.Name)
-				return woc.updateExecutionControl(ctx, pod.Name, podExecCtl, c)
-			}
-		}
+	defer wfNodesLock.Unlock()
 
-		if woc.workflowDeadline != nil {
-			if podExecCtl.Deadline == nil || woc.workflowDeadline.Before(*podExecCtl.Deadline) {
-				podExecCtl.Deadline = woc.workflowDeadline
-				woc.log.Infof("Applying sooner Workflow Deadline for pod %s at: %v", pod.Name, woc.workflowDeadline)
-				return woc.updateExecutionControl(ctx, pod.Name, podExecCtl, c)
-			}
+	node := woc.wf.Status.Nodes[nodeID]
+	woc.markNodePhase(node.Name, wfv1.NodeFailed, errorMsg)
+
+	// if node is a pod created from ContainerSet template
+	// then need to fail child nodes so they will not hang in Pending after pod deletion
+	for _, nodeID := range node.Children {
+		child := woc.wf.Status.Nodes[nodeID]
+		if !child.IsExitNode() && !child.Fulfilled() {
+			woc.markNodePhase(child.Name, wfv1.NodeFailed, errorMsg)
 		}
 	}
-
-	return nil
 }
 
 // killDaemonedChildren kill any daemoned pods of a steps or DAG template node.
-func (woc *wfOperationCtx) killDaemonedChildren(ctx context.Context, nodeID string) error {
+func (woc *wfOperationCtx) killDaemonedChildren(nodeID string) {
 	woc.log.Infof("Checking daemoned children of %s", nodeID)
-	var firstErr error
-	execCtl := common.ExecutionControl{
-		Deadline: &time.Time{},
-	}
 	for _, childNode := range woc.wf.Status.Nodes {
 		if childNode.BoundaryID != nodeID {
 			continue
 		}
-		if childNode.Daemoned == nil || !*childNode.Daemoned {
+		if !childNode.IsDaemoned() {
 			continue
 		}
-		err := woc.updateExecutionControl(ctx, childNode.ID, execCtl, common.WaitContainerName)
-		if err != nil {
-			woc.log.Errorf("Failed to update execution control of node %s: %+v", childNode.ID, err)
-			if firstErr == nil {
-				firstErr = err
-			}
-		}
+		woc.controller.queuePodForCleanup(woc.wf.Namespace, childNode.ID, shutdownPod)
 		childNode.Phase = wfv1.NodeSucceeded
 		childNode.Daemoned = nil
 		woc.wf.Status.Nodes[childNode.ID] = childNode
 		woc.updated = true
 	}
-	return firstErr
-}
-
-// updateExecutionControl updates the execution control parameters
-func (woc *wfOperationCtx) updateExecutionControl(ctx context.Context, podName string, execCtl common.ExecutionControl, containerName string) error {
-	execCtlBytes, err := json.Marshal(execCtl)
-	if err != nil {
-		return errors.InternalWrapError(err)
-	}
-
-	woc.log.Infof("Updating execution control of %s: %s", podName, execCtlBytes)
-	err = common.AddPodAnnotation(
-		ctx,
-		woc.controller.kubeclientset,
-		podName,
-		woc.wf.ObjectMeta.Namespace,
-		common.AnnotationKeyExecutionControl,
-		string(execCtlBytes),
-	)
-	if err != nil {
-		return err
-	}
-
-	// Ideally we would simply annotate the pod with the updates and be done with it, allowing
-	// the executor to notice the updates naturally via the Downward API annotations volume
-	// mounted file. However, updates to the Downward API volumes take a very long time to
-	// propagate (minutes). The following code fast-tracks this by signaling the executor
-	// using SIGUSR2 that something changed.
-	woc.log.Infof("Signalling %s of updates", podName)
-	exec, err := common.ExecPodContainer(
-		woc.controller.restConfig, woc.wf.ObjectMeta.Namespace, podName,
-		containerName, true, true, "sh", "-c", "kill -s USR2 $(pidof argoexec)",
-	)
-	if err != nil {
-		return err
-	}
-	go func() {
-		// This call is necessary to actually send the exec. Since signalling is best effort,
-		// it is launched as a goroutine and the error is discarded
-		_, _, err = common.GetExecutorOutput(exec)
-		if err != nil {
-			woc.log.Warnf("Signal command failed: %v", err)
-			return
-		}
-		woc.log.Infof("Signal of %s (%s) successfully issued", podName, common.WaitContainerName)
-	}()
-
-	return nil
 }
