@@ -155,6 +155,7 @@ func NewWorkflowController(ctx context.Context, restConfig *rest.Config, kubecli
 		cliExecutorImage:           executorImage,
 		cliExecutorImagePullPolicy: executorImagePullPolicy,
 		containerRuntimeExecutor:   containerRuntimeExecutor,
+		configController:           config.NewController(namespace, configMap, kubeclientset),
 		workflowKeyLock:            syncpkg.NewKeyLock(),
 		cacheFactory:               controllercache.NewCacheFactory(kubeclientset, namespace),
 		eventRecorderManager:       events.NewEventRecorderManager(kubeclientset),
