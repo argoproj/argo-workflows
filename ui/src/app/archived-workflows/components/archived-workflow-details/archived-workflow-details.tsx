@@ -230,13 +230,13 @@ export class ArchivedWorkflowDetails extends BasePage<RouteComponentProps<any>, 
                             value={{
                                 metadata: {
                                     namespace: this.state.workflow.metadata.namespace,
-                                    name: this.state.workflow.metadata.name
+                                    name: this.state.workflow.metadata.name,
                                 },
                                 spec: this.state.workflow.spec
                             }}
                             onSubmit={(value: Workflow) =>
-                                services.workflows
-                                    .create(value, value.metadata.namespace)
+                                services.archivedWorkflows
+                                    .resubmit(this.state.workflow.metadata.uid, this.state.workflow.metadata.namespace)
                                     .then(workflow => (document.location.href = uiUrl(`workflows/${workflow.metadata.namespace}/${workflow.metadata.name}`)))
                             }
                         />
