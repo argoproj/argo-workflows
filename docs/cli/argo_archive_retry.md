@@ -1,15 +1,56 @@
-## argo archive
+## argo archive retry
 
-manage the workflow archive
+retry zero or more workflows
 
 ```
-argo archive [flags]
+argo archive retry [WORKFLOW...] [flags]
+```
+
+### Examples
+
+```
+# Retry a workflow:
+
+  argo archive retry uid
+
+# Retry multiple workflows:
+
+  argo archive retry uid another-uid
+
+# Retry multiple workflows by label selector:
+
+  argo archive retry -l workflows.argoproj.io/test=true
+
+# Retry multiple workflows by field selector:
+
+  argo archive retry --field-selector metadata.namespace=argo
+
+# Retry and wait for completion:
+
+  argo archive retry --wait uid
+
+# Retry and watch until completion:
+
+  argo archive retry --watch uid
+		
+# Retry and tail logs until completion:
+
+  argo archive retry --log uid
+
 ```
 
 ### Options
 
 ```
-  -h, --help   help for archive
+      --field-selector string        Selector (field query) to filter on, supports '=', '==', and '!='.(e.g. --field-selector key1=value1,key2=value2). The server only supports a limited number of field queries per type.
+  -h, --help                         help for retry
+      --log                          log the workflow until it completes
+      --node-field-selector string   selector of nodes to reset, eg: --node-field-selector inputs.paramaters.myparam.value=abc
+  -o, --output string                Output format. One of: name|json|yaml|wide
+      --restart-successful           indicates to restart successful nodes matching the --node-field-selector
+  -l, --selector string              Selector (label query) to filter on, not including uninitialized ones, supports '=', '==', and '!='.(e.g. -l key1=value1,key2=value2)
+  -w, --wait                         wait for the workflow to complete, only works when a single workflow is retried
+      --watch                        watch the workflow until it completes, only works when a single workflow is retried
 ```
 
 ### Options inherited from parent commands
@@ -47,12 +88,5 @@ argo archive [flags]
 
 ### SEE ALSO
 
-* [argo](argo.md)	 - argo is the command line interface to Argo
-* [argo archive delete](argo_archive_delete.md)	 - delete a workflow in the archive
-* [argo archive get](argo_archive_get.md)	 - get a workflow in the archive
-* [argo archive list](argo_archive_list.md)	 - list workflows in the archive
-* [argo archive list-label-keys](argo_archive_list-label-keys.md)	 - list workflows label keys in the archive
-* [argo archive list-label-values](argo_archive_list-label-values.md)	 - get workflow label values in the archive
-* [argo archive resubmit](argo_archive_resubmit.md)	 - resubmit one or more workflows
-* [argo archive retry](argo_archive_retry.md)	 - retry zero or more workflows
+* [argo archive](argo_archive.md)	 - manage the workflow archive
 

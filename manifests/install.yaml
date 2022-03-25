@@ -1064,9 +1064,12 @@ spec:
           initialDelaySeconds: 10
           periodSeconds: 20
         securityContext:
+          allowPrivilegeEscalation: false
           capabilities:
             drop:
             - ALL
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
         volumeMounts:
         - mountPath: /tmp
           name: tmp
