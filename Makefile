@@ -279,7 +279,7 @@ docs: \
 	./hack/check-env-doc.sh
 
 $(GOPATH)/bin/mockery:
-	go install github.com/vektra/mockery/v2@v2.9.4
+	go install github.com/vektra/mockery/v2@v2.10.0
 $(GOPATH)/bin/controller-gen:
 	go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.4.1
 $(GOPATH)/bin/go-to-protobuf:
