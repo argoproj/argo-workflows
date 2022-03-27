@@ -123,15 +123,16 @@ func getResourceCacheNamespace(opts ArgoServerOpts) string {
 }
 
 func NewArgoServer(ctx context.Context, opts ArgoServerOpts) (*argoServer, error) {
-	configController := config.NewController(opts.Namespace, opts.ConfigName, opts.Clients.Kubernetes, emptyConfigFunc)
+	configController := config.NewController(opts.Namespace, opts.ConfigName, opts.Clients.Kubernetes)
 	var resourceCache *cache.ResourceCache = nil
 	ssoIf := sso.NullSSO
 	if opts.AuthModes[auth.SSO] {
-		c, err := configController.Get(ctx)
+		c := &Config{}
+		err := configController.Get(ctx, c)
 		if err != nil {
 			return nil, err
 		}
-		ssoIf, err = sso.New(c.(*Config).SSO, opts.Clients.Kubernetes.CoreV1().Secrets(opts.Namespace), opts.BaseHRef, opts.TLSConfig != nil)
+		ssoIf, err = sso.New(c.SSO, opts.Clients.Kubernetes.CoreV1().Secrets(opts.Namespace), opts.BaseHRef, opts.TLSConfig != nil)
 		if err != nil {
 			return nil, err
 		}
@@ -172,11 +173,11 @@ var backoff = wait.Backoff{
 }
 
 func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(string)) {
-	v, err := as.configController.Get(ctx)
+	config := &Config{}
+	err := as.configController.Get(ctx, config)
 	if err != nil {
 		log.Fatal(err)
 	}
-	config := v.(*Config)
 	log.WithFields(log.Fields{"version": argo.GetVersion().Version, "instanceID": config.InstanceID}).Info("Starting Argo Server")
 	instanceIDService := instanceid.NewService(config.InstanceID)
 	offloadRepo := sqldb.ExplosiveOffloadNodeStatusRepo
@@ -230,7 +231,6 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 	httpL := tcpm.Match(cmux.HTTP1Fast())
 	grpcL := tcpm.Match(cmux.Any())
 
-	go as.configController.Run(as.stopCh, as.restartOnConfigChange)
 	go eventServer.Run(as.stopCh)
 	go func() { as.checkServeErr("grpcServer", grpcServer.Serve(grpcL)) }()
 	go func() { as.checkServeErr("httpServer", httpServer.Serve(httpL)) }()
@@ -374,15 +374,6 @@ func mustRegisterGWHandler(register registerFunc, ctx context.Context, mux *runt
 	if err != nil {
 		panic(err)
 	}
-}
-
-// Unlike the controller, the server creates object based on the config map at init time, and will not pick-up on
-// changes unless we restart.
-// Instead of opting to re-write the server, instead we'll just listen for any old change and restart.
-func (as *argoServer) restartOnConfigChange(interface{}) error {
-	log.Info("config map event, exiting gracefully")
-	as.stopCh <- struct{}{}
-	return nil
 }
 
 // checkServeErr checks the error from a .Serve() call to decide if it was a graceful shutdown
