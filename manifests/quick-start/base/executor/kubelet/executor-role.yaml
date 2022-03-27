@@ -1,0 +1,17 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: executor
+  annotations:
+    workflows.argoproj.io/description: |
+      Recommended minimum permissions for `kubelet` executor.
+
+      This executor is superseded by  the `emmisary` executor, so we do not recommend you use it anymore.
+rules:
+  - apiGroups:
+      - argoproj.io
+    resources:
+      - workflowtaskresults
+    verbs:
+      - create
+      - patch
