@@ -142,11 +142,6 @@ func (s *ArtifactsSuite) TestMainLog() {
 				}
 			})
 	})
-<<<<<<< HEAD
-	s.Need(fixtures.None(fixtures.Kubelet))
-=======
-	s.Need(fixtures.None(fixtures.Docker))
->>>>>>> chore: removed kubelet refs
 	s.Run("ActiveDeadlineSeconds", func() {
 		s.Given().
 			Workflow("@expectedfailures/timeouts-step.yaml").
