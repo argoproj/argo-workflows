@@ -1,0 +1,15 @@
+# https://github.com/DeFiCh/oss-governance-bot
+name: Governance Bot
+
+on:
+  issues:
+    types: [ opened, labeled, unlabeled ]
+  issue_comment:
+    types: [ created ]
+
+jobs:
+  governance:
+    name: Governance
+    runs-on: ubuntu-latest
+    steps:
+      - uses: DeFiCh/oss-governance-bot@v2
