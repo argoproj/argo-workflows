@@ -1581,41 +1581,6 @@ spec:
         path: /mnt
 `
 
-var nonPathOutputParameter = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: non-path-out-param-
-spec:
-  entrypoint: non-path-out-param
-  templates:
-  - name: non-path-out-param
-    steps:
-    - - name: non-path-resource-out-param
-        template: non-path-resource-out-param
-    outputs:
-      parameters:
-      - name: param
-        valueFrom:
-          parameter: "{{steps.non-path-resource-out-param.outputs.parameters.json}}"
-  - name: non-path-resource-out-param
-    resource:
-      action: create
-      manifest: |
-        apiVersion: v1
-        kind: ConfigMap
-        metadata:
-          name: whalesay-cm
-    outputs:
-      parameters:
-      - name: json
-        valueFrom:
-          jsonPath: '{.metadata.name}'
-      - name: jqfliter
-        valueFrom:
-          jqFilter: .
-`
-
 // TestBaseImageOutputVerify verifies we error when we detect the condition when the container
 // runtime executor doesn't support output artifacts from a base image layer, and fails validation
 func TestBaseImageOutputVerify(t *testing.T) {
