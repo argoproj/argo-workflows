@@ -12,8 +12,6 @@ import (
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
 
-var EmptyConfigFunc = func() interface{} { return &Config{} }
-
 type ResourceRateLimit struct {
 	Limit float64 `json:"limit"`
 	Burst int     `json:"burst"`

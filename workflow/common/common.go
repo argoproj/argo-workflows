@@ -234,6 +234,8 @@ const (
 
 	// ErrDeadlineExceeded is the pod status reason when exceed deadline
 	ErrDeadlineExceeded = "DeadlineExceeded"
+
+	ConfigMapName = "workflow-controller-configmap"
 )
 
 // AnnotationKeyKillCmd specifies the command to use to kill to container, useful for injected sidecars
