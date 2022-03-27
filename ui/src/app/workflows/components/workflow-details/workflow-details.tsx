@@ -131,22 +131,21 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
         }
 
         if (workflow?.spec?.workflowTemplateRef) {
+            const templateName: string = workflow.spec.workflowTemplateRef.name;
+            const clusterScope: boolean = workflow.spec.workflowTemplateRef.clusterScope;
+            const url: string = clusterScope ? `/cluster-workflow-templates/${templateName}` : `/workflow-templates/${workflow.metadata.namespace}/${templateName}`;
 
-            const templateName : string = workflow.spec.workflowTemplateRef.name;
-            const clusterScope : boolean = workflow.spec.workflowTemplateRef.clusterScope;
-            const url : string = clusterScope ? `/cluster-workflow-templates/${templateName}` : `/workflow-templates/${workflow.metadata.namespace}/${templateName}`;
-
-            const templateLink : Link = {
-                name: "Workflow Template Link",
-                scope: "workflow",
-                url: url
-            }
+            const templateLink: Link = {
+                name: 'Workflow Template Link',
+                scope: 'workflow',
+                url
+            };
 
             items.push({
                 title: templateLink.name,
                 iconClassName: 'fa fa-external-link-alt',
                 action: () => openLink(templateLink)
-            })
+            });
         }
 
         return items;

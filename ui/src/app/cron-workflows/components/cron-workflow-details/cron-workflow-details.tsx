@@ -89,7 +89,6 @@ export const CronWorkflowDetails = ({match, location, history}: RouteComponentPr
               };
 
     const openLink = (link: Link) => {
-
         if ((window.event as MouseEvent).ctrlKey || (window.event as MouseEvent).metaKey) {
             window.open(link.url, '_blank');
         } else {
@@ -158,28 +157,28 @@ export const CronWorkflowDetails = ({match, location, history}: RouteComponentPr
                 iconClassName: 'fa fa-share-alt',
                 action: () => setSidePanel('share')
             }
-        ]
+        ];
 
         if (cronWorkflow?.spec?.workflowSpec?.workflowTemplateRef) {
             const templateName = cronWorkflow.spec.workflowSpec.workflowTemplateRef.name;
             const clusterScope = cronWorkflow.spec.workflowSpec.workflowTemplateRef.clusterScope;
-            const url : string = clusterScope ? `/cluster-workflow-templates/${templateName}` : `/workflow-templates/${cronWorkflow.metadata.namespace}/${templateName}`;
+            const url: string = clusterScope ? `/cluster-workflow-templates/${templateName}` : `/workflow-templates/${cronWorkflow.metadata.namespace}/${templateName}`;
 
-            const templateLink : Link = {
-                name: "Workflow Template Link",
-                scope: "workflow",
-                url: url
-            }
+            const templateLink: Link = {
+                name: 'Workflow Template Link',
+                scope: 'workflow',
+                url
+            };
 
             items.push({
                 title: templateLink.name,
                 iconClassName: 'fa fa-external-link-alt',
                 action: () => openLink(templateLink)
-            })
+            });
         }
 
-        return items
-    }
+        return items;
+    };
 
     return (
         <Page
