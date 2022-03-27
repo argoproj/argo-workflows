@@ -67,6 +67,8 @@ The emissary will exit with code 64 if it fails. This may indicate a bug in the 
 
 ## Kubelet (kubelet)
 
+⚠️Deprecated.
+
 * Secure
     * No `privileged` access
     * Cannot escape the privileges of the pod's service account
