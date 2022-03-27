@@ -83,9 +83,6 @@ type Config struct {
 	// Links to related apps.
 	Links []*wfv1.Link `json:"links,omitempty"`
 
-	// Config customized Docker Sock path
-	DockerSockPath string `json:"dockerSockPath,omitempty"`
-
 	// WorkflowDefaults are values that will apply to all Workflows from this controller, unless overridden on the Workflow-level
 	WorkflowDefaults *wfv1.Workflow `json:"workflowDefaults,omitempty"`
 

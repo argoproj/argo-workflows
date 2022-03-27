@@ -39,58 +39,7 @@ var (
 		Name:      volumeVarArgo.Name,
 		MountPath: common.VarRunArgoPath,
 	}
-	hostPathSocket = apiv1.HostPathSocket
 )
-
-func (woc *wfOperationCtx) getVolumeMountDockerSock(tmpl *wfv1.Template) apiv1.VolumeMount {
-	return apiv1.VolumeMount{
-		Name:      common.DockerSockVolumeName,
-		MountPath: getDockerSockPath(tmpl),
-		ReadOnly:  getDockerSockReadOnly(tmpl),
-	}
-}
-
-func getDockerSockReadOnly(tmpl *wfv1.Template) bool {
-	return !util.HasWindowsOSNodeSelector(tmpl.NodeSelector)
-}
-
-func getDockerSockPath(tmpl *wfv1.Template) string {
-	if util.HasWindowsOSNodeSelector(tmpl.NodeSelector) {
-		return "\\\\.\\pipe\\docker_engine"
-	}
-
-	return "/var/run/docker.sock"
-}
-
-func getVolumeHostPathType(tmpl *wfv1.Template) *apiv1.HostPathType {
-	if util.HasWindowsOSNodeSelector(tmpl.NodeSelector) {
-		return nil
-	}
-
-	return &hostPathSocket
-}
-
-func (woc *wfOperationCtx) getVolumeDockerSock(tmpl *wfv1.Template) apiv1.Volume {
-	dockerSockPath := getDockerSockPath(tmpl)
-
-	if woc.controller.Config.DockerSockPath != "" {
-		dockerSockPath = woc.controller.Config.DockerSockPath
-	}
-
-	// volumeDockerSock provides the wait container direct access to the minion's host docker daemon.
-	// The primary purpose of this is to make available `docker cp` to collect an output artifact
-	// from a container. Alternatively, we could use `kubectl cp`, but `docker cp` avoids the extra
-	// hop to the kube api server.
-	return apiv1.Volume{
-		Name: common.DockerSockVolumeName,
-		VolumeSource: apiv1.VolumeSource{
-			HostPath: &apiv1.HostPathVolumeSource{
-				Path: dockerSockPath,
-				Type: getVolumeHostPathType(tmpl),
-			},
-		},
-	}
-}
 
 func (woc *wfOperationCtx) hasPodSpecPatch(tmpl *wfv1.Template) bool {
 	return woc.execWf.Spec.HasPodSpecPatch() || tmpl.HasPodSpecPatch()
@@ -584,8 +533,6 @@ func (woc *wfOperationCtx) newWaitContainer(tmpl *wfv1.Template) *apiv1.Containe
 			// in order to SIGTERM/SIGKILL the pid
 			ctr.SecurityContext.Privileged = pointer.BoolPtr(true)
 		}
-	case common.ContainerRuntimeExecutorDocker:
-		ctr.VolumeMounts = append(ctr.VolumeMounts, woc.getVolumeMountDockerSock(tmpl))
 	}
 	return ctr
 }
@@ -696,11 +643,6 @@ func (woc *wfOperationCtx) createVolumes(tmpl *wfv1.Template) []apiv1.Volume {
 	}
 
 	volumes = append(volumes, volumeVarArgo)
-
-	switch woc.getContainerRuntimeExecutor() {
-	case common.ContainerRuntimeExecutorDocker:
-		volumes = append(volumes, woc.getVolumeDockerSock(tmpl))
-	}
 	volumes = append(volumes, tmpl.Volumes...)
 	return volumes
 }

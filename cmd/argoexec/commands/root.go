@@ -23,7 +23,6 @@ import (
 	"github.com/argoproj/argo-workflows/v3/util/logs"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/executor"
-	"github.com/argoproj/argo-workflows/v3/workflow/executor/docker"
 	"github.com/argoproj/argo-workflows/v3/workflow/executor/emissary"
 	"github.com/argoproj/argo-workflows/v3/workflow/executor/kubelet"
 	"github.com/argoproj/argo-workflows/v3/workflow/executor/pns"
@@ -117,8 +116,6 @@ func initExecutor() *executor.WorkflowExecutor {
 		cre, err = kubelet.NewKubeletExecutor(namespace, podName)
 	case common.ContainerRuntimeExecutorPNS:
 		cre, err = pns.NewPNSExecutor(clientset, podName, namespace)
-	case common.ContainerRuntimeExecutorDocker:
-		cre, err = docker.NewDockerExecutor(namespace, podName)
 	default:
 		cre, err = emissary.New()
 	}

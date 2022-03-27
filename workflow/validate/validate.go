@@ -36,7 +36,7 @@ type ValidateOpts struct {
 
 	// ContainerRuntimeExecutor will trigger additional validation checks specific to different
 	// types of executors. For example, the inability of kubelet/k8s executors to copy artifacts
-	// out of the base image layer. If unspecified, will use docker executor validation
+	// out of the base image layer.
 	ContainerRuntimeExecutor string
 
 	// IgnoreEntrypoint indicates to skip/ignore the EntryPoint validation on workflow spec.
