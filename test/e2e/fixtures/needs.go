@@ -10,12 +10,7 @@ var (
 	CI Need = func(s *E2ESuite) (bool, string) {
 		return os.Getenv("CI") != "", "CI"
 	}
-	BaseLayerArtifacts Need = func(s *E2ESuite) (bool, string) {
-		met, _ := None(Kubelet)(s)
-		return met, "base layer artifact support"
-	}
 	Emissary = Executor("emissary")
-	Kubelet  = Executor("kubelet")
 	PNS      = Executor("pns")
 )
 

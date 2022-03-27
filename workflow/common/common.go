@@ -150,9 +150,6 @@ const (
 	// EnvAgentPatchRate is the rate that the Argo Agent will patch the Workflow TaskSet
 	EnvAgentPatchRate = "ARGO_AGENT_PATCH_RATE"
 
-	// ContainerRuntimeExecutorKubelet to use the kubelet as container runtime executor
-	ContainerRuntimeExecutorKubelet = "kubelet"
-
 	// ContainerRuntimeExecutorPNS indicates to use process namespace sharing as the container runtime executor
 	ContainerRuntimeExecutorPNS = "pns"
 

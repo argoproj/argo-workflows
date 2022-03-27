@@ -715,30 +715,6 @@ func TestVolumeAndVolumeMounts(t *testing.T) {
 		},
 	}
 
-	// For Kubelet executor
-	t.Run("Kubelet", func(t *testing.T) {
-		ctx := context.Background()
-		woc := newWoc()
-		woc.volumes = volumes
-		woc.execWf.Spec.Templates[0].Container.VolumeMounts = volumeMounts
-		woc.controller.Config.ContainerRuntimeExecutor = common.ContainerRuntimeExecutorKubelet
-
-		tmplCtx, err := woc.createTemplateContext(wfv1.ResourceScopeLocal, "")
-		assert.NoError(t, err)
-		_, err = woc.executeContainer(ctx, woc.execWf.Spec.Entrypoint, tmplCtx.GetTemplateScope(), &woc.execWf.Spec.Templates[0], &wfv1.WorkflowStep{}, &executeTemplateOpts{})
-		assert.NoError(t, err)
-		pods, err := listPods(woc)
-		assert.NoError(t, err)
-		assert.Len(t, pods.Items, 1)
-		pod := pods.Items[0]
-		assert.Equal(t, 2, len(pod.Spec.Volumes))
-		assert.Equal(t, "var-run-argo", pod.Spec.Volumes[0].Name)
-		assert.Equal(t, "volume-name", pod.Spec.Volumes[1].Name)
-		assert.Equal(t, 2, len(pod.Spec.Containers[1].VolumeMounts))
-		assert.Equal(t, "volume-name", pod.Spec.Containers[1].VolumeMounts[0].Name)
-		assert.Equal(t, "var-run-argo", pod.Spec.Containers[1].VolumeMounts[1].Name)
-	})
-
 	// For emissary executor
 	t.Run("Emissary", func(t *testing.T) {
 		ctx := context.Background()

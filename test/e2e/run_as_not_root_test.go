@@ -24,7 +24,6 @@ func (s *RunAsNonRootSuite) TestRunAsNonRootWorkflow() {
 }
 
 func (s *RunAsNonRootSuite) TestRunAsNonRootWithOutputParams() {
-	s.Need(fixtures.None(fixtures.Kubelet))
 	s.Given().
 		Workflow("@smoke/runasnonroot-output-params-pipeline.yaml").
 		When().
