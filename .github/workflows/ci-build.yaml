@@ -211,16 +211,7 @@ jobs:
         with:
           fetch-depth: 0
       - run: cp server/static/files.go.stub server/static/files.go
-      - uses: actions/setup-go@v3
-      - uses: golangci/golangci-lint-action@v3
-        with:
-          version: v1.42.0
-        
-          # Optional: if set to true then the action don't cache or restore ~/go/pkg.
-          skip-pkg-cache: true
-  
-          # Optional: if set to true then the action don't cache or restore ~/.cache/go-build.
-          skip-build-cache: true
+      - uses: golangci/golangci-lint-action@v2
       - run: git diff --exit-code
 
   ui:
