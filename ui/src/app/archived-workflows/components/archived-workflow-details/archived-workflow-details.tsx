@@ -281,8 +281,8 @@ export class ArchivedWorkflowDetails extends BasePage<RouteComponentProps<any>, 
                 this.appContext.apis.notifications.show({
                     content: 'Failed to resubmit archived workflow ' + e,
                     type: NotificationType.Error
-                })
-            })
+                });
+            });
     }
 
     private retryArchivedWorkflow() {
@@ -296,8 +296,8 @@ export class ArchivedWorkflowDetails extends BasePage<RouteComponentProps<any>, 
                 this.appContext.apis.notifications.show({
                     content: 'Failed to retry archived workflow ' + e,
                     type: NotificationType.Error
-                })
-            })
+                });
+            });
     }
 
     private openLink(link: Link) {
