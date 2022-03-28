@@ -424,8 +424,8 @@ ifeq ($(PROFILE),multi-cluster)
 
 	# install profile into local cluster
 	argo cluster get-profile cluster-1 default argo.cluster-0 | kubectl -n argo apply -f  -
-	kubectl annotate secret argo.cluster-1 --overwrite workflows.argoproj.io/workflow-namespace=argo
-	kubectl annotate secret argo.cluster-1 --overwrite workflows.argoproj.io/namespace=default
+	kubectl annotate secret argo.profile.cluster-1 --overwrite workflows.argoproj.io/workflow-namespace=argo
+	kubectl annotate secret argo.profile.cluster-1 --overwrite workflows.argoproj.io/namespace=default
 
 	# create default bindings for the executor
 	kubectl --context=cluster-1 create role executor --verb=create,patch --resource=workflowtaskresults.argoproj.io

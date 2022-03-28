@@ -71,9 +71,6 @@ func (s *ArgoServerSuite) TestInfo() {
 			Status(200).
 			JSON()
 		json.
-			Path("$.managedNamespace").
-			Equal("argo")
-		json.
 			Path("$.links[0].name").
 			Equal("Workflow Link")
 		json.
