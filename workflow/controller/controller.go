@@ -156,7 +156,7 @@ func NewWorkflowController(
 		cliExecutorImage:           executorImage,
 		cliExecutorImagePullPolicy: executorImagePullPolicy,
 		containerRuntimeExecutor:   containerRuntimeExecutor,
-		configController:           config.NewController(namespace, configMap, kubeclientset),
+		configController:           config.NewController(namespace, configMap, kubernetesClient),
 		workflowKeyLock:            syncpkg.NewKeyLock(),
 		cacheFactory:               controllercache.NewCacheFactory(kubernetesClient, namespace),
 		eventRecorderManager:       events.NewEventRecorderManager(kubernetesClient),
@@ -423,12 +423,12 @@ func (wfc *WorkflowController) createClusterWorkflowTemplateInformer(ctx context
 	}
 }
 
-func (wfc *WorkflowController) UpdateConfig(ctx context.Context) {
+func (wfc *WorkflowController) UpdateConfig(ctx context.Context, kubernetesClient kubernetes.Interface) {
 	err := wfc.configController.Get(ctx, &wfc.Config)
 	if err != nil {
 		log.Fatalf("Failed to register watch for controller config map: %v", err)
 	}
-	err = wfc.updateConfig()
+	err = wfc.updateConfig(kubernetesClient)
 	if err != nil {
 		log.Fatalf("Failed to update config: %v", err)
 	}

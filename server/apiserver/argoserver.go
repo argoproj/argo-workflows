@@ -123,7 +123,8 @@ func getResourceCacheNamespace(opts ArgoServerOpts) string {
 }
 
 func NewArgoServer(ctx context.Context, opts ArgoServerOpts) (*argoServer, error) {
-	configController := config.NewController(opts.Namespace, opts.ConfigName, opts.Clients.Primary().Kubernetes, emptyConfigFunc)
+	kubernetesClient := opts.Clients.Primary().Kubernetes
+	configController := config.NewController(opts.Namespace, opts.ConfigName, kubernetesClient)
 	resourceCache := cache.ResourceCaches{}
 	ssoIf := sso.NullSSO
 	if opts.AuthModes[auth.SSO] {
@@ -132,7 +133,7 @@ func NewArgoServer(ctx context.Context, opts ArgoServerOpts) (*argoServer, error
 		if err != nil {
 			return nil, err
 		}
-		ssoIf, err = sso.New(c.SSO, opts.Clients.Kubernetes.CoreV1().Secrets(opts.Namespace), opts.BaseHRef, opts.TLSConfig != nil)
+		ssoIf, err = sso.New(c.SSO, kubernetesClient.CoreV1().Secrets(opts.Namespace), opts.BaseHRef, opts.TLSConfig != nil)
 		if err != nil {
 			return nil, err
 		}

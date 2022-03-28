@@ -18,7 +18,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/workflow/hydrator"
 )
 
-func (wfc *WorkflowController) updateConfig() error {
+func (wfc *WorkflowController) updateConfig(kubernetesClient kubernetes.Interface) error {
 	bytes, err := yaml.Marshal(wfc.Config)
 	if err != nil {
 		return err

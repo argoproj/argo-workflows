@@ -9,7 +9,7 @@ import (
 func TestUpdateConfig(t *testing.T) {
 	cancel, controller := newController()
 	defer cancel()
-	err := controller.updateConfig()
+	err := controller.updateConfig(controller.primaryProfile().kubernetesClient)
 	assert.NoError(t, err)
 	assert.NotNil(t, controller.Config)
 	assert.NotNil(t, controller.archiveLabelSelector)
