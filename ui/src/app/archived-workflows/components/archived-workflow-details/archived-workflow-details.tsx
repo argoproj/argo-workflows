@@ -2,7 +2,7 @@ import {NotificationType, Page, SlidingPanel} from 'argo-ui';
 import * as classNames from 'classnames';
 import * as React from 'react';
 import {RouteComponentProps} from 'react-router';
-import {execSpec, Link, Workflow} from '../../../../models';
+import {execSpec, Link, NodePhase, Workflow} from '../../../../models';
 import {uiUrl} from '../../../shared/base';
 import {BasePage} from '../../../shared/components/base-page';
 import {ErrorNotice} from '../../../shared/components/error-notice';
@@ -88,23 +88,24 @@ export class ArchivedWorkflowDetails extends BasePage<RouteComponentProps<any>, 
     }
 
     public render() {
+        const workflowPhase: NodePhase = this.state.workflow && this.state.workflow.status ? this.state.workflow.status.phase : undefined;
         const items = [
             {
                 title: 'Retry',
                 iconClassName: 'fa fa-undo',
-                disabled: false,
+                disabled: workflowPhase === undefined || !(workflowPhase === 'Failed' || workflowPhase === 'Error'),
                 action: () => this.retryArchivedWorkflow()
             },
             {
                 title: 'Resubmit',
-                iconClassName: 'fa fa-redo',
+                iconClassName: 'fa fa-plus-circle',
                 disabled: false,
                 action: () => this.resubmitArchivedWorkflow()
             },
             {
                 title: 'Delete',
                 iconClassName: 'fa fa-trash',
-                disabled: false, 
+                disabled: false,
                 action: () => this.deleteArchivedWorkflow()
             }
         ];
