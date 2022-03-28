@@ -1,7 +1,5 @@
 # https://golangci-lint.run/usage/quick-start/
 run:
-  concurrency: 4
-  timeout: 8m
   skip-dirs:
     - dist
     - docs
@@ -31,7 +29,8 @@ linters:
     # only minor issues
     # - errorlint
     - exportloopref
-    - gci
+    # seems to have bugs in recent version, also slow
+    # - gci
     - gosec
     - gosimple
     - govet

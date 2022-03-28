@@ -66,9 +66,9 @@ RUN_MODE              := local
 KUBECTX               := $(shell [[ "`which kubectl`" != '' ]] && kubectl config current-context || echo none)
 DOCKER_DESKTOP        := $(shell [[ "$(KUBECTX)" == "docker-desktop" ]] && echo true || echo false)
 K3D                   := $(shell [[ "$(KUBECTX)" == "k3d-"* ]] && echo true || echo false)
-LOG_LEVEL             := debug
+LOG_LEVEL             := info
 UPPERIO_DB_DEBUG      := 0
-NAMESPACED            := true
+NAMESPACED            := false
 ifeq ($(PROFILE),prometheus)
 RUN_MODE              := kubernetes
 endif
@@ -97,6 +97,8 @@ ifndef $(GOPATH)
 	export GOPATH
 endif
 
+export PATH:=dist:$(PATH)
+
 ARGOEXEC_PKGS    := $(shell echo cmd/argoexec            && go list -f '{{ join .Deps "\n" }}' ./cmd/argoexec/            | grep 'argoproj/argo-workflows/v3/' | cut -c 39-)
 CLI_PKGS         := $(shell echo cmd/argo                && go list -f '{{ join .Deps "\n" }}' ./cmd/argo/                | grep 'argoproj/argo-workflows/v3/' | cut -c 39-)
 CONTROLLER_PKGS  := $(shell echo cmd/workflow-controller && go list -f '{{ join .Deps "\n" }}' ./cmd/workflow-controller/ | grep 'argoproj/argo-workflows/v3/' | cut -c 39-)
@@ -115,7 +117,7 @@ SWAGGER_FILES := pkg/apiclient/_.primary.swagger.json \
 	pkg/apiclient/workflow/workflow.swagger.json \
 	pkg/apiclient/workflowarchive/workflow-archive.swagger.json \
 	pkg/apiclient/workflowtemplate/workflow-template.swagger.json
-PROTO_BINARIES := $(GOPATH)/bin/protoc-gen-gogo $(GOPATH)/bin/protoc-gen-gogofast $(GOPATH)/bin/goimports $(GOPATH)/bin/protoc-gen-grpc-gateway $(GOPATH)/bin/protoc-gen-swagger
+PROTO_BINARIES := $(GOPATH)/bin/protoc-gen-gogo $(GOPATH)/bin/protoc-gen-gogofast $(GOPATH)/bin/protoc-gen-grpc-gateway $(GOPATH)/bin/protoc-gen-swagger
 
 # protoc,my.proto
 define protoc
@@ -298,8 +300,6 @@ $(GOPATH)/bin/openapi-gen:
 	go install k8s.io/kube-openapi/cmd/openapi-gen@v0.0.0-20220124234850-424119656bbf
 $(GOPATH)/bin/swagger:
 	go install github.com/go-swagger/go-swagger/cmd/swagger@v0.28.0
-$(GOPATH)/bin/goimports:
-	go install golang.org/x/tools/cmd/goimports@v0.1.7
 
 pkg/apis/workflow/v1alpha1/generated.proto: $(GOPATH)/bin/go-to-protobuf $(PROTO_BINARIES) $(TYPES) $(GOPATH)/src/github.com/gogo/protobuf
 	# These files are generated on a v3/ folder by the tool. Link them to the root folder
@@ -379,7 +379,7 @@ dist/manifests/%: manifests/%
 # lint/test/etc
 
 $(GOPATH)/bin/golangci-lint:
-	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b `go env GOPATH`/bin v1.42.0
+	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b `go env GOPATH`/bin
 
 .PHONY: lint
 lint: server/static/files.go $(GOPATH)/bin/golangci-lint
@@ -396,7 +396,11 @@ test: server/static/files.go dist/argosay
 	env KUBECONFIG=/dev/null $(GOTEST) ./...
 
 .PHONY: install
+ifeq ($(PROFILE),multi-cluster)
+install: githooks ./dist/argo
+else
 install: githooks
+endif
 	kubectl get ns $(KUBE_NAMESPACE) || kubectl create ns $(KUBE_NAMESPACE)
 	kubectl config set-context --current --namespace=$(KUBE_NAMESPACE)
 	@echo "installing PROFILE=$(PROFILE), E2E_EXECUTOR=$(E2E_EXECUTOR)"
@@ -405,6 +409,25 @@ ifneq ($(E2E_EXECUTOR),emissary)
 	# only change the executor from the default it we need to
 	kubectl patch cm/workflow-controller-configmap -p "{\"data\": {\"containerRuntimeExecutor\": \"$(E2E_EXECUTOR)\"}}"
 	kubectl apply -f manifests/quick-start/base/executor/$(E2E_EXECUTOR)
+endif
+ifeq ($(PROFILE),multi-cluster)
+	# create a remote cluster
+	k3d cluster delete cluster-1
+	k3d cluster create cluster-1 --kubeconfig-switch-context=false --no-lb
+	kubectl config delete-context cluster-1 || true
+	kubectl config rename-context k3d-cluster-1 cluster-1
+
+	# install resources into remote cluster
+	kubectl kustomize --load-restrictor=LoadRestrictionsNone manifests/quick-start/cluster-1 | kubectl --context=cluster-1 -n default apply -f -
+
+	# install profile into local cluster
+	argo cluster get-profile cluster-1 default argo.cluster-0 --server=https://`ipconfig getifaddr en0`:`kubectl config view --raw --minify --context=cluster-1|grep server|cut -c 29-` --insecure-skip-tls-verify | kubectl -n argo apply -f  -
+	kubectl annotate secret argo.cluster-1 --overwrite workflows.argoproj.io/workflow-namespace=argo
+	kubectl annotate secret argo.cluster-1 --overwrite workflows.argoproj.io/namespace=default
+
+	# create default bindings for the executor
+	kubectl --context=cluster-1 create role executor --verb=create,patch --resource=workflowtaskresults.argoproj.io
+	kubectl --context=cluster-1 create rolebinding default-executor --role=executor --user=system:serviceaccount:default:default
 endif
 ifeq ($(PROFILE),stress)
 	kubectl -n $(KUBE_NAMESPACE) apply -f test/stress/massive-workflow.yaml
