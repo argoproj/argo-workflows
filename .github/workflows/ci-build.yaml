@@ -170,13 +170,7 @@ jobs:
       - run: make ${{matrix.test}} E2E_TIMEOUT=1m STATIC_FILES=false
       - if: ${{ failure() }}
         run: |
-          fi [ -e /tmp/argo.log ] ; then cat /tmp/argo.log; fi
-      - if: ${{ failure() }}
-        run: kubectl describe pod -l workflows.argoproj.io/workflow
-      - if: ${{ failure() }}
-        run: kubectl describe workflowtaskresults
-      - if: ${{ failure() }}
-        run: kubectl logs -c wait $(kubectl get pod -l workflows.argoproj.io/workflow -o name | tail -n1)
+          [ -e /tmp/argo.log ] && cat /tmp/argo.log
 
   codegen:
     name: Codegen

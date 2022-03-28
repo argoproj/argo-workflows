@@ -423,7 +423,7 @@ ifeq ($(PROFILE),multi-cluster)
 	kubectl kustomize --load-restrictor=LoadRestrictionsNone manifests/quick-start/cluster-1 | kubectl --context=cluster-1 -n default apply -f -
 
 	# install profile into local cluster
-	argo cluster get-profile cluster-1 default argo.cluster-0 --server=https://`ipconfig getifaddr en0`:`kubectl config view --raw --minify --context=cluster-1|grep server|cut -c 29-` --insecure-skip-tls-verify | kubectl -n argo apply -f  -
+	argo cluster get-profile cluster-1 default argo.cluster-0 | kubectl -n argo apply -f  -
 	kubectl annotate secret argo.cluster-1 --overwrite workflows.argoproj.io/workflow-namespace=argo
 	kubectl annotate secret argo.cluster-1 --overwrite workflows.argoproj.io/namespace=default
 
