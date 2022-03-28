@@ -31,4 +31,11 @@ export class ArchivedWorkflowsService {
             .send({namespace})
             .then(res => res.body as models.Workflow);
     }
+
+    public retry(uid: string, namespace: string) {
+        return requests
+            .put(`api/v1/archived-workflows/${uid}/retry`)
+            .send({namespace})
+            .then(res => res.body as models.Workflow);
+    }
 }

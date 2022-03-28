@@ -90,13 +90,21 @@ export class ArchivedWorkflowDetails extends BasePage<RouteComponentProps<any>, 
     public render() {
         const items = [
             {
+                title: 'Retry',
+                iconClassName: 'fa fa-undo',
+                disabled: false,
+                action: () => this.retryArchivedWorkflow()
+            },
+            {
                 title: 'Resubmit',
                 iconClassName: 'fa fa-redo',
+                disabled: false,
                 action: () => this.resubmitArchivedWorkflow()
             },
             {
                 title: 'Delete',
                 iconClassName: 'fa fa-trash',
+                disabled: false, 
                 action: () => this.deleteArchivedWorkflow()
             }
         ];
@@ -107,6 +115,7 @@ export class ArchivedWorkflowDetails extends BasePage<RouteComponentProps<any>, 
                     items.push({
                         title: link.name,
                         iconClassName: 'fa fa-external-link-alt',
+                        disabled: false,
                         action: () => this.openLink(link)
                     })
                 );
@@ -267,6 +276,27 @@ export class ArchivedWorkflowDetails extends BasePage<RouteComponentProps<any>, 
         services.archivedWorkflows
             .resubmit(this.state.workflow.metadata.uid, this.state.workflow.metadata.namespace)
             .then(workflow => (document.location.href = uiUrl(`workflows/${workflow.metadata.namespace}/${workflow.metadata.name}`)))
+            .catch(e => {
+                this.appContext.apis.notifications.show({
+                    content: 'Failed to resubmit archived workflow ' + e,
+                    type: NotificationType.Error
+                })
+            })
+    }
+
+    private retryArchivedWorkflow() {
+        if (!confirm('Are you sure you want to retry this archived workflow?')) {
+            return;
+        }
+        services.archivedWorkflows
+            .retry(this.state.workflow.metadata.uid, this.state.workflow.metadata.namespace)
+            .then(workflow => (document.location.href = uiUrl(`workflows/${workflow.metadata.namespace}/${workflow.metadata.name}`)))
+            .catch(e => {
+                this.appContext.apis.notifications.show({
+                    content: 'Failed to retry archived workflow ' + e,
+                    type: NotificationType.Error
+                })
+            })
     }
 
     private openLink(link: Link) {
