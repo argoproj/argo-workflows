@@ -24,12 +24,6 @@ type SignalsSuite struct {
 	fixtures.E2ESuite
 }
 
-func (s *SignalsSuite) SetupSuite() {
-	s.E2ESuite.SetupSuite()
-	// Because k8ssapi and kubelet execute `sh -c 'kill 15 1'` to they do not work.
-	s.Need(fixtures.None(fixtures.Kubelet))
-}
-
 func (s *SignalsSuite) TestStopBehavior() {
 	s.Given().
 		Workflow("@functional/stop-terminate.yaml").
@@ -80,7 +74,6 @@ func (s *SignalsSuite) TestTerminateBehavior() {
 
 // Tests that new pods are never created once a stop shutdown strategy has been added
 func (s *SignalsSuite) TestDoNotCreatePodsUnderStopBehavior() {
-	s.Need(fixtures.None(fixtures.Docker))
 	s.Given().
 		Workflow("@functional/stop-terminate-2.yaml").
 		When().

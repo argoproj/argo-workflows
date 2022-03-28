@@ -12,8 +12,6 @@ import (
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
 
-var EmptyConfigFunc = func() interface{} { return &Config{} }
-
 type ResourceRateLimit struct {
 	Limit float64 `json:"limit"`
 	Burst int     `json:"burst"`
@@ -38,12 +36,6 @@ type Config struct {
 	ContainerRuntimeExecutor string `json:"containerRuntimeExecutor,omitempty"`
 
 	ContainerRuntimeExecutors ContainerRuntimeExecutors `json:"containerRuntimeExecutors,omitempty"`
-
-	// KubeletPort is needed when using the kubelet containerRuntimeExecutor, default to 10250
-	KubeletPort int `json:"kubeletPort,omitempty"`
-
-	// KubeletInsecure disable the TLS verification of the kubelet containerRuntimeExecutor, default to false
-	KubeletInsecure bool `json:"kubeletInsecure,omitempty"`
 
 	// ArtifactRepository contains the default location of an artifact repository for container artifacts
 	ArtifactRepository wfv1.ArtifactRepository `json:"artifactRepository,omitempty"`
@@ -82,9 +74,6 @@ type Config struct {
 
 	// Links to related apps.
 	Links []*wfv1.Link `json:"links,omitempty"`
-
-	// Config customized Docker Sock path
-	DockerSockPath string `json:"dockerSockPath,omitempty"`
 
 	// WorkflowDefaults are values that will apply to all Workflows from this controller, unless overridden on the Workflow-level
 	WorkflowDefaults *wfv1.Workflow `json:"workflowDefaults,omitempty"`

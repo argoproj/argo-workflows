@@ -1,0 +1,72 @@
+# https://github.com/DeFiCh/oss-governance-bot
+version: v1
+
+issue:
+  labels:
+    - prefix: area
+      list:
+        - area/api
+        - area/artifacts
+        - area/build
+        - area/cli
+        - area/controller
+        - area/cron-workflows
+        - area/daemon-steps
+        - area/docs
+        - area/executor
+        - area/exit-handler
+        - area/hooks
+        - area/looping
+        - area/manifests
+        - area/memoization
+        - area/metrics
+        - area/multi-cluster
+        - area/mutex-semaphore
+        - area/plugins
+        - area/sdks
+        - area/spec
+        - area/sso-rbac
+        - area/suspend-resume
+        - area/templates/container
+        - area/templates/container-set
+        - area/templates/dag
+        - area/templates/data
+        - area/templates/http
+        - area/templates/resource
+        - area/templates/script
+        - area/templates/steps
+      multiple: true
+      needs:
+        comment: |
+          @$AUTHOR: There are no area labels on this issue. Adding a label will help expedite your issue. **If you are unsure what to do, make your best guess. We can change it later**
+
+          * `/area api`
+          * `/area artifacts`
+          * `/area build`
+          * `/area cli`
+          * `/area controller`
+          * `/area cron-workflows`
+          * `/area daemon-steps`
+          * `/area docs`
+          * `/area executor`
+          * `/area exit-handler`
+          * `/area hooks`
+          * `/area looping`
+          * `/area manifests`
+          * `/area memoization`
+          * `/area metrics`
+          * `/area multi-cluster`
+          * `/area mutex-semaphore`
+          * `/area plugins`
+          * `/area sdks`
+          * `/area spec`
+          * `/area sso-rbac`
+          * `/area suspend-resume`
+          * `/area templates/container`
+          * `/area templates/container-set`
+          * `/area templates/dag`
+          * `/area templates/data`
+          * `/area templates/http`
+          * `/area templates/resource`
+          * `/area templates/script`
+          * `/area templates/steps`

@@ -7512,11 +7512,6 @@ func TestGetContainerRuntimeExecutor(t *testing.T) {
 		executor := controller.GetContainerRuntimeExecutor(labels.Set{})
 		assert.Equal(t, common.ContainerRuntimeExecutorEmissary, executor)
 	})
-	t.Run("CLIParameter", func(t *testing.T) {
-		controller.containerRuntimeExecutor = common.ContainerRuntimeExecutorKubelet
-		executor := controller.GetContainerRuntimeExecutor(labels.Set{})
-		assert.Equal(t, common.ContainerRuntimeExecutorKubelet, executor)
-	})
 	controller.Config.ContainerRuntimeExecutor = "pns"
 	controller.Config.ContainerRuntimeExecutors = config.ContainerRuntimeExecutors{
 		{

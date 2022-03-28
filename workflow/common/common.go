@@ -12,9 +12,6 @@ const (
 	InitContainerName = "init"
 	WaitContainerName = "wait"
 
-	// DockerSockVolumeName is the volume name for the /var/run/docker.sock host path volume
-	DockerSockVolumeName = "docker-sock"
-
 	// AnnotationKeyDefaultContainer is the annotation that specify container that will be used by default in case of kubectl commands for example
 	AnnotationKeyDefaultContainer = "kubectl.kubernetes.io/default-container"
 
@@ -128,7 +125,7 @@ const (
 	EnvVarIncludeScriptOutput = "ARGO_INCLUDE_SCRIPT_OUTPUT"
 	// EnvVarTemplate is the template
 	EnvVarTemplate = "ARGO_TEMPLATE"
-	// EnvVarContainerRuntimeExecutor contains the name of the container runtime executor to use, empty is equal to "docker"
+	// EnvVarContainerRuntimeExecutor contains the name of the container runtime executor to use.
 	EnvVarContainerRuntimeExecutor = "ARGO_CONTAINER_RUNTIME_EXECUTOR"
 	// EnvVarDownwardAPINodeIP is the envvar used to get the `status.hostIP`
 	EnvVarDownwardAPINodeIP = "ARGO_KUBELET_HOST"
@@ -152,12 +149,6 @@ const (
 	EnvAgentTaskWorkers = "ARGO_AGENT_TASK_WORKERS"
 	// EnvAgentPatchRate is the rate that the Argo Agent will patch the Workflow TaskSet
 	EnvAgentPatchRate = "ARGO_AGENT_PATCH_RATE"
-
-	// ContainerRuntimeExecutorDocker to use docker as container runtime executor
-	ContainerRuntimeExecutorDocker = "docker"
-
-	// ContainerRuntimeExecutorKubelet to use the kubelet as container runtime executor
-	ContainerRuntimeExecutorKubelet = "kubelet"
 
 	// ContainerRuntimeExecutorPNS indicates to use process namespace sharing as the container runtime executor
 	ContainerRuntimeExecutorPNS = "pns"
@@ -240,6 +231,8 @@ const (
 
 	// ErrDeadlineExceeded is the pod status reason when exceed deadline
 	ErrDeadlineExceeded = "DeadlineExceeded"
+
+	ConfigMapName = "workflow-controller-configmap"
 )
 
 // AnnotationKeyKillCmd specifies the command to use to kill to container, useful for injected sidecars
