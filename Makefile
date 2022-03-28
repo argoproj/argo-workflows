@@ -66,9 +66,9 @@ RUN_MODE              := local
 KUBECTX               := $(shell [[ "`which kubectl`" != '' ]] && kubectl config current-context || echo none)
 DOCKER_DESKTOP        := $(shell [[ "$(KUBECTX)" == "docker-desktop" ]] && echo true || echo false)
 K3D                   := $(shell [[ "$(KUBECTX)" == "k3d-"* ]] && echo true || echo false)
-LOG_LEVEL             := info
+LOG_LEVEL             := debug
 UPPERIO_DB_DEBUG      := 0
-NAMESPACED            := false
+NAMESPACED            := true
 ifeq ($(PROFILE),prometheus)
 RUN_MODE              := kubernetes
 endif
@@ -96,8 +96,6 @@ ifndef $(GOPATH)
 	GOPATH=$(shell go env GOPATH)
 	export GOPATH
 endif
-
-export PATH:=dist:$(PATH)
 
 ARGOEXEC_PKGS    := $(shell echo cmd/argoexec            && go list -f '{{ join .Deps "\n" }}' ./cmd/argoexec/            | grep 'argoproj/argo-workflows/v3/' | cut -c 39-)
 CLI_PKGS         := $(shell echo cmd/argo                && go list -f '{{ join .Deps "\n" }}' ./cmd/argo/                | grep 'argoproj/argo-workflows/v3/' | cut -c 39-)
@@ -396,11 +394,7 @@ test: server/static/files.go dist/argosay
 	env KUBECONFIG=/dev/null $(GOTEST) ./...
 
 .PHONY: install
-ifeq ($(PROFILE),multi-cluster)
-install: githooks ./dist/argo
-else
 install: githooks
-endif
 	kubectl get ns $(KUBE_NAMESPACE) || kubectl create ns $(KUBE_NAMESPACE)
 	kubectl config set-context --current --namespace=$(KUBE_NAMESPACE)
 	@echo "installing PROFILE=$(PROFILE), E2E_EXECUTOR=$(E2E_EXECUTOR)"
@@ -409,25 +403,6 @@ ifneq ($(E2E_EXECUTOR),emissary)
 	# only change the executor from the default it we need to
 	kubectl patch cm/workflow-controller-configmap -p "{\"data\": {\"containerRuntimeExecutor\": \"$(E2E_EXECUTOR)\"}}"
 	kubectl apply -f manifests/quick-start/base/executor/$(E2E_EXECUTOR)
-endif
-ifeq ($(PROFILE),multi-cluster)
-	# create a remote cluster
-	k3d cluster delete cluster-1
-	k3d cluster create cluster-1 --kubeconfig-switch-context=false --no-lb
-	kubectl config delete-context cluster-1 || true
-	kubectl config rename-context k3d-cluster-1 cluster-1
-
-	# install resources into remote cluster
-	kubectl kustomize --load-restrictor=LoadRestrictionsNone manifests/quick-start/cluster-1 | kubectl --context=cluster-1 -n default apply -f -
-
-	# install profile into local cluster
-	argo cluster get-profile cluster-1 default argo.cluster-0 --server=https://`ipconfig getifaddr en0`:`kubectl config view --raw --minify --context=cluster-1|grep server|cut -c 29-` --insecure-skip-tls-verify | kubectl -n argo apply -f  -
-	kubectl annotate secret argo.cluster-1 --overwrite workflows.argoproj.io/workflow-namespace=argo
-	kubectl annotate secret argo.cluster-1 --overwrite workflows.argoproj.io/namespace=default
-
-	# create default bindings for the executor
-	kubectl --context=cluster-1 create role executor --verb=create,patch --resource=workflowtaskresults.argoproj.io
-	kubectl --context=cluster-1 create rolebinding default-executor --role=executor --user=system:serviceaccount:default:default
 endif
 ifeq ($(PROFILE),stress)
 	kubectl -n $(KUBE_NAMESPACE) apply -f test/stress/massive-workflow.yaml
