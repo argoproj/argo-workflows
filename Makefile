@@ -281,7 +281,7 @@ docs: \
 	./hack/check-env-doc.sh
 
 $(GOPATH)/bin/mockery:
-	go install github.com/vektra/mockery/v2@v2.9.4
+	go install github.com/vektra/mockery/v2@v2.10.0
 $(GOPATH)/bin/controller-gen:
 	go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.4.1
 $(GOPATH)/bin/go-to-protobuf:
@@ -487,11 +487,11 @@ ifneq ($(PLUGINS),true)
 endif
 	# Check dex, minio, postgres and mysql are in hosts file
 ifeq ($(AUTH_MODE),sso)
-	grep '127.0.0.1[[:blank:]]*dex' /etc/hosts
+	grep '127.0.0.1.*dex' /etc/hosts
 endif
-	grep '127.0.0.1[[:blank:]]*minio' /etc/hosts
-	grep '127.0.0.1[[:blank:]]*postgres' /etc/hosts
-	grep '127.0.0.1[[:blank:]]*mysql' /etc/hosts
+	grep '127.0.0.1.*minio' /etc/hosts
+	grep '127.0.0.1.*postgres' /etc/hosts
+	grep '127.0.0.1.*mysql' /etc/hosts
 	./hack/port-forward.sh
 ifeq ($(RUN_MODE),local)
 	env DEFAULT_REQUEUE_TIME=$(DEFAULT_REQUEUE_TIME) SECURE=$(SECURE) ALWAYS_OFFLOAD_NODE_STATUS=$(ALWAYS_OFFLOAD_NODE_STATUS) LOG_LEVEL=$(LOG_LEVEL) UPPERIO_DB_DEBUG=$(UPPERIO_DB_DEBUG) IMAGE_NAMESPACE=$(IMAGE_NAMESPACE) VERSION=$(VERSION) AUTH_MODE=$(AUTH_MODE) NAMESPACED=$(NAMESPACED) NAMESPACE=$(KUBE_NAMESPACE) MANAGED_NAMESPACE=$(MANAGED_NAMESPACE) UI=$(UI) API=$(API) PLUGINS=$(PLUGINS) $(GOPATH)/bin/goreman -set-ports=false -logtime=false start $(shell if [ -z $GREP_LOGS ]; then echo; else echo "| grep \"$(GREP_LOGS)\""; fi)

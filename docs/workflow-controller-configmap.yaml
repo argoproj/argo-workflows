@@ -173,10 +173,10 @@ data:
           workflows.argoproj.io/container-runtime-executor: pns
 
   # Specifies the location of docker.sock on the host for docker executor (default: /var/run/docker.sock)
-  # (available since Argo v2.4)
+  # (available v2.4-v3.3)
   dockerSockPath: /var/someplace/else/docker.sock
 
-  # kubelet port when using kubelet executor (default: 10250)
+  # kubelet port when using kubelet executor (default: 10250) (kubelet executor will be deprecated use emissary instead)
   kubeletPort: 10250
 
   # disable the TLS verification of the kubelet executor (default: false)

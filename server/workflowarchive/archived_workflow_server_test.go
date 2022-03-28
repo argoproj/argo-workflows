@@ -185,9 +185,8 @@ func Test_archivedWorkflowServer(t *testing.T) {
 		assert.Len(t, resp.Items, 2)
 	})
 	t.Run("RetryArchivedWorkflow", func(t *testing.T) {
-		wf, err := w.RetryArchivedWorkflow(ctx, &workflowarchivepkg.RetryArchivedWorkflowRequest{Uid: "failed-uid"})
-		assert.NoError(t, err)
-		assert.NotNil(t, wf)
+		_, err := w.RetryArchivedWorkflow(ctx, &workflowarchivepkg.RetryArchivedWorkflowRequest{Uid: "failed-uid"})
+		assert.Equal(t, err, status.Error(codes.AlreadyExists, "Workflow already exists on cluster, use argo retry {name} instead"))
 	})
 	t.Run("ResubmitArchivedWorkflow", func(t *testing.T) {
 		wf, err := w.ResubmitArchivedWorkflow(ctx, &workflowarchivepkg.ResubmitArchivedWorkflowRequest{Uid: "resubmit-uid", Memoized: false})

@@ -12,7 +12,7 @@ import (
 )
 
 func (woc *wfOperationCtx) executeWfLifeCycleHook(ctx context.Context, tmplCtx *templateresolution.Context) error {
-	for hookName, hook := range woc.wf.Spec.Hooks {
+	for hookName, hook := range woc.execWf.Spec.Hooks {
 		//exit hook will be execute in runOnExitNode
 		if hookName == wfv1.ExitLifecycleEvent {
 			continue
