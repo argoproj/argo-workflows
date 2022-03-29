@@ -897,6 +897,27 @@ subjects:
   name: argo-server
 ---
 apiVersion: v1
+data:
+  model.conf: |
+    # This is the default Casbin model for the workflow controller
+    [request_definition]
+    r = workflowNamespace, cluster, namespace
+
+    [policy_definition]
+    p = workflowNamespace, cluster, namespace
+
+    [policy_effect]
+    e = some(where (p.eft == allow))
+
+    [matchers]
+    # workflows may create resources in their own cluster and namespace OR it may create a resource only if it has a policy
+    m = r.workflowNamespace == r.namespace && r.cluster == "" || r.workflowNamespace == p.workflowNamespace && r.cluster == p.cluster && r.namespace == p.namespace
+  policy.csv: ""
+kind: ConfigMap
+metadata:
+  name: workflow-controller-auth
+---
+apiVersion: v1
 kind: ConfigMap
 metadata:
   name: workflow-controller-configmap
@@ -1028,9 +1049,17 @@ spec:
             - ALL
           readOnlyRootFilesystem: true
           runAsNonRoot: true
+        volumeMounts:
+        - mountPath: /auth
+          name: auth
+          readOnly: true
       nodeSelector:
         kubernetes.io/os: linux
       priorityClassName: workflow-controller
       securityContext:
         runAsNonRoot: true
       serviceAccountName: argo
+      volumes:
+      - configMap:
+          name: workflow-controller-auth
+        name: auth

@@ -10,6 +10,7 @@ import (
 
 	"github.com/argoproj/pkg/errors"
 	syncpkg "github.com/argoproj/pkg/sync"
+	"github.com/casbin/casbin/v2"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/time/rate"
 	apiv1 "k8s.io/api/core/v1"
@@ -88,6 +89,7 @@ type WorkflowController struct {
 	rateLimiter      *rate.Limiter
 	dynamicInterface dynamic.Interface
 	profiles         profiles
+	enforcer         casbin.IEnforcer
 
 	// datastructures to support the processing of workflows and workflow pods
 	wfInformer            cache.SharedIndexInformer
@@ -149,6 +151,10 @@ func NewWorkflowController(
 	if err != nil {
 		return nil, err
 	}
+	enforcer, err := casbin.NewEnforcer("auth/model.conf", "auth/policy.csv")
+	if err != nil {
+		return nil, err
+	}
 	wfc := WorkflowController{
 		dynamicInterface:           dynamicInterface,
 		namespace:                  namespace,
@@ -163,6 +169,7 @@ func NewWorkflowController(
 		progressPatchTickDuration:  env.LookupEnvDurationOr(common.EnvVarProgressPatchTickDuration, 1*time.Minute),
 		progressFileTickDuration:   env.LookupEnvDurationOr(common.EnvVarProgressFileTickDuration, 3*time.Second),
 		profiles:                   profiles{},
+		enforcer:                   enforcer,
 	}
 
 	if executorPlugins {

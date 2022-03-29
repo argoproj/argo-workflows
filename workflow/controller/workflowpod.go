@@ -67,6 +67,17 @@ func (woc *wfOperationCtx) scheduleOnDifferentHost(node *wfv1.NodeStatus, pod *a
 	return nil
 }
 
+func (woc *wfOperationCtx) enforce(workflowNamespace, cluster, namespace string) error {
+	allowed, err := woc.controller.enforcer.Enforce(workflowNamespace, cluster, namespace)
+	if err != nil {
+		return err
+	}
+	if !allowed {
+		return fmt.Errorf("namespace %q is forbidden from creating resources in cluster %q namespace %q", woc.wf.Namespace, cluster, namespace)
+	}
+	return nil
+}
+
 type createWorkflowPodOpts struct {
 	includeScriptOutput bool
 	onExitPod           bool
@@ -173,6 +184,11 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 	}
 
 	cluster, namespace := woc.clusterNamespaceForTemplate(tmpl)
+
+	if err := woc.enforce(woc.wf.Namespace, tmpl.Cluster, namespace); err != nil {
+		return nil, err
+	}
+
 	if cluster == common.PrimaryCluster() && namespace == woc.wf.Namespace {
 		pod.SetOwnerReferences([]metav1.OwnerReference{
 			*metav1.NewControllerRef(woc.wf, wfv1.SchemeGroupVersion.WithKind(workflow.WorkflowKind)),

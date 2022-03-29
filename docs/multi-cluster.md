@@ -39,8 +39,51 @@ I'm going to make some assumptions:
 * Your default Kubernetes context is the local cluster.
 * There is a Kubernetes context for the remote cluster (named `cluster-1`).
 
+Update the config map with permissions:
+
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: workflow-controller-auth
+data:
+  model.conf: |
+    # This is the default Casbin model for the workflow controller
+    [request_definition]
+    r = workflowNamespace, cluster, namespace
+    
+    [policy_definition]
+    p = workflowNamespace, cluster, namespace
+    
+    [policy_effect]
+    e = some(where (p.eft == allow))
+    
+    [matchers]
+    # workflows may create resources in their own cluster and namespace OR it may create a resource only if it has a policy
+    m = r.workflowNamespace == r.namespace && r.cluster == "" || r.workflowNamespace == p.workflowNamespace && r.cluster == p.cluster && r.namespace == p.namespace
+  policy.csv: |
+    # Workflows in the "argo" namespace may create resources in the "cluster-1" cluster's "default" namespace
+    p, argo, cluster-1, default
+    # Workflows in the "argo" namespace may create resources in the local cluster's "default" namespace
+    p, argo, , default
+```
+
 The workflow controller must be configured with the name of its cluster:
 
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: workflow-controller
+spec:
+  template:
+    spec:
+      containers:
+        - name: workflow-controller
+          env:
+            - name: ARGO_CLUSTER
+              value: cluster-0
+```
 
 Restart the controller:
 

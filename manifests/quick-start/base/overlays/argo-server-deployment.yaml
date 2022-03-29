@@ -14,3 +14,6 @@ spec:
             - server
             - --auth-mode
             - client
+          env:
+            - name: ARGO_CLUSTER
+              value: cluster-0

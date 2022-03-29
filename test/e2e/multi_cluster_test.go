@@ -95,7 +95,6 @@ spec:
 }
 
 func (s *MultiClusterSuite) TestDisallowedNamespace() {
-	s.T().SkipNow()
 	s.Given().
 		Workflow(`
 metadata:
@@ -115,11 +114,10 @@ spec:
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeErrored).
 		Then().
-		ExpectWorkflow(fixtures.StatusMessageContains(`profile not found for policy argo,cluster-1,argo`))
+		ExpectWorkflow(fixtures.StatusMessageContains(`namespace "argo" is forbidden from creating resources in cluster "cluster-1" namespace "argo"`))
 }
 
 func (s *MultiClusterSuite) TestDisallowedCluster() {
-	s.T().SkipNow()
 	s.Given().
 		Workflow(`
 metadata:
@@ -138,7 +136,7 @@ spec:
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeErrored).
 		Then().
-		ExpectWorkflow(fixtures.StatusMessageContains(`profile not found for policy argo,cluster-1,argo`))
+		ExpectWorkflow(fixtures.StatusMessageContains(`namespace "argo" is forbidden from creating resources in cluster "cluster-1" namespace "argo"`))
 }
 
 func TestMultiClusterSuite(t *testing.T) {

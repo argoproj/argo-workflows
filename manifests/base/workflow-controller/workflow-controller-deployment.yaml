@@ -45,6 +45,14 @@ spec:
             initialDelaySeconds: 90
             periodSeconds: 60
             timeoutSeconds: 30
+          volumeMounts:
+            - mountPath: /auth
+              name: auth
+              readOnly: true
+      volumes:
+        - name: auth
+          configMap:
+            name: workflow-controller-auth
       securityContext:
         runAsNonRoot: true
       nodeSelector:

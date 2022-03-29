@@ -1155,6 +1155,27 @@ metadata:
 ---
 apiVersion: v1
 data:
+  model.conf: |
+    # This is the default Casbin model for the workflow controller
+    [request_definition]
+    r = workflowNamespace, cluster, namespace
+
+    [policy_definition]
+    p = workflowNamespace, cluster, namespace
+
+    [policy_effect]
+    e = some(where (p.eft == allow))
+
+    [matchers]
+    # workflows may create resources in their own cluster and namespace OR it may create a resource only if it has a policy
+    m = r.workflowNamespace == r.namespace && r.cluster == "" || r.workflowNamespace == p.workflowNamespace && r.cluster == p.cluster && r.namespace == p.namespace
+  policy.csv: ""
+kind: ConfigMap
+metadata:
+  name: workflow-controller-auth
+---
+apiVersion: v1
+data:
   artifactRepository: |
     s3:
       bucket: my-bucket
@@ -1367,7 +1388,9 @@ spec:
         - server
         - --auth-mode
         - client
-        env: []
+        env:
+        - name: ARGO_CLUSTER
+          value: cluster-0
         image: quay.io/argoproj/argocli:latest
         name: argo-server
         ports:
@@ -1512,6 +1535,8 @@ spec:
         command:
         - workflow-controller
         env:
+        - name: ARGO_CLUSTER
+          value: cluster-0
         - name: LEADER_ELECTION_IDENTITY
           valueFrom:
             fieldRef:
@@ -1538,9 +1563,17 @@ spec:
             - ALL
           readOnlyRootFilesystem: true
           runAsNonRoot: true
+        volumeMounts:
+        - mountPath: /auth
+          name: auth
+          readOnly: true
       nodeSelector:
         kubernetes.io/os: linux
       priorityClassName: workflow-controller
       securityContext:
         runAsNonRoot: true
       serviceAccountName: argo
+      volumes:
+      - configMap:
+          name: workflow-controller-auth
+        name: auth

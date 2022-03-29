@@ -19,4 +19,5 @@ resources:
 
 patchesStrategicMerge:
   - overlays/workflow-controller-configmap.yaml
+  - overlays/workflow-controller-deployment.yaml
   - overlays/argo-server-deployment.yaml

@@ -4,8 +4,9 @@ import (
 	"context"
 	"testing"
 	"time"
-
+	
 	"github.com/argoproj/pkg/sync"
+	"github.com/casbin/casbin/v2"
 	"github.com/stretchr/testify/assert"
 	authorizationv1 "k8s.io/api/authorization/v1"
 	apiv1 "k8s.io/api/core/v1"
@@ -198,6 +199,7 @@ func newController(options ...interface{}) (context.CancelFunc, *WorkflowControl
 		progressPatchTickDuration: envutil.LookupEnvDurationOr(common.EnvVarProgressPatchTickDuration, 1*time.Minute),
 		progressFileTickDuration:  envutil.LookupEnvDurationOr(common.EnvVarProgressFileTickDuration, 3*time.Second),
 		profiles:                  profiles{},
+		enforcer:                  &casbin.Enforcer{},
 	}
 
 	for _, opt := range options {
