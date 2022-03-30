@@ -6,6 +6,8 @@ import (
 	"strings"
 	"testing"
 
+	"k8s.io/client-go/rest"
+
 	"github.com/stretchr/testify/assert"
 	"k8s.io/client-go/tools/clientcmd"
 )
@@ -38,7 +40,7 @@ func Test_BasicAuthString(t *testing.T) {
 		assert.NoError(t, err)
 		authString, err := GetAuthString(restConfig, "")
 		assert.NoError(t, err)
-		assert.True(t, IsBasicAuthScheme(authString))
+		assert.True(t, isBasicAuthScheme(authString))
 		token := strings.TrimSpace(strings.TrimPrefix(authString, BasicAuthScheme))
 		uname, pwd, ok := decodeBasicAuthToken(token)
 		if assert.True(t, ok) {
@@ -52,7 +54,7 @@ func Test_BasicAuthString(t *testing.T) {
 		err = file.Close()
 		assert.NoError(t, err)
 		os.Setenv("KUBECONFIG", file.Name())
-		config, err := GetRestConfig(authString)
+		config, err := GetRestConfig(&rest.Config{}, authString)
 		if assert.NoError(t, err) {
 			assert.Equal(t, "admin", config.Username)
 			assert.Equal(t, "admin", config.Password)

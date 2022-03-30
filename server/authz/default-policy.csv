@@ -1,0 +1,2 @@
+# The argo-server has read-write access in cluster-0.
+p, serviceaccount:cluster-0:argo:argo-server, cluster-0:*, *

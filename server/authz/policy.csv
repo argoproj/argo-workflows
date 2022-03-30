@@ -1,4 +1,6 @@
-# The argo-server has read-only access
+# The argo-server has read-write access in cluster-0.
 p, serviceaccount:cluster-0:argo:argo-server, cluster-0:*, *
-# The argo-server service account has read-only permissions.
+# The argo-server service account has read-only permissions in cluster-0.
 p, serviceaccount:cluster-0:argo:argo-server, cluster-1:*:*, "get,list,watch"
+# The SSO user "Cg0wLTM4NS0yODA4OS0wEgRtb2Nr" has read-only permissions.
+p, user:cluster-0:Cg0wLTM4NS0yODA4OS0wEgRtb2Nr, cluster-1:*:*, "get,list,watch"

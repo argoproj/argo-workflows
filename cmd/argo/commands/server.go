@@ -10,8 +10,6 @@ import (
 	"strings"
 	"time"
 
-	eventsource "github.com/argoproj/argo-events/pkg/client/eventsource/clientset/versioned"
-	sensor "github.com/argoproj/argo-events/pkg/client/sensor/clientset/versioned"
 	"github.com/argoproj/pkg/stats"
 	log "github.com/sirupsen/logrus"
 	"github.com/skratchdot/open-golang/open"
@@ -20,7 +18,6 @@ import (
 	"github.com/spf13/viper"
 	"golang.org/x/net/context"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	restclient "k8s.io/client-go/rest"
@@ -29,17 +26,14 @@ import (
 
 	"github.com/argoproj/argo-workflows/v3"
 	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
-	wfclientset "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo-workflows/v3/server/apiserver"
 	"github.com/argoproj/argo-workflows/v3/server/auth"
 	"github.com/argoproj/argo-workflows/v3/server/types"
 	"github.com/argoproj/argo-workflows/v3/util/cmd"
 	"github.com/argoproj/argo-workflows/v3/util/help"
-	"github.com/argoproj/argo-workflows/v3/util/logs"
 	pprofutil "github.com/argoproj/argo-workflows/v3/util/pprof"
 	tlsutils "github.com/argoproj/argo-workflows/v3/util/tls"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
-	"github.com/argoproj/argo-workflows/v3/workflow/metrics"
 )
 
 func NewServerCommand() *cobra.Command {
@@ -84,7 +78,11 @@ See %s`, help.ArgoServer),
 			config.QPS = 20.0
 
 			namespace := client.Namespace()
-			clients := types.Profiles{common.PrimaryCluster(): newProfile(config)}
+			profile, err := types.NewProfile(config)
+			if err != nil {
+				return err
+			}
+			clients := types.Profiles{common.PrimaryCluster(): profile}
 
 			ctx, cancel := context.WithCancel(c.Context())
 			defer cancel()
@@ -109,7 +107,10 @@ See %s`, help.ArgoServer),
 					return err
 				}
 
-				clients[key] = newProfile(config)
+				clients[key], err = types.NewProfile(config)
+				if err != nil {
+					return err
+				}
 			}
 
 			if !namespaced && managedNamespace != "" {
@@ -271,16 +272,4 @@ See %s`, help.ArgoServer),
 	})
 
 	return &command
-}
-
-func newProfile(config *restclient.Config) *types.Profile {
-	logs.AddK8SLogTransportWrapper(config)
-	metrics.AddMetricsTransportWrapper(config)
-	return &types.Profile{
-		Dynamic:     dynamic.NewForConfigOrDie(config),
-		EventSource: eventsource.NewForConfigOrDie(config),
-		Kubernetes:  kubernetes.NewForConfigOrDie(config),
-		Sensor:      sensor.NewForConfigOrDie(config),
-		Workflow:    wfclientset.NewForConfigOrDie(config),
-	}
 }

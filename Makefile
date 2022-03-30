@@ -368,7 +368,7 @@ manifests: \
 manifests/base/workflow-controller/workflow-controller-authz-configmap.yaml: /dev/null
 	kubectl create --dry-run=client -o yaml cm workflow-controller-authz --from-file=model.conf=workflow/authz/model.conf --from-file=policy.csv=/dev/null > manifests/base/workflow-controller/workflow-controller-authz-configmap.yaml
 manifests/base/argo-server/argo-server-authz-configmap.yaml: /dev/null
-	kubectl create --dry-run=client -o yaml cm argo-server-authz --from-file=model.conf=server/authz/model.conf --from-file=policy.csv=/dev/null > manifests/base/argo-server/argo-server-authz-configmap.yaml
+	kubectl create --dry-run=client -o yaml cm argo-server-authz --from-file=model.conf=server/authz/model.conf --from-file=policy.csv=server/authz/default-policy.csv > manifests/base/argo-server/argo-server-authz-configmap.yaml
 manifests/install.yaml: /dev/null
 	kubectl kustomize --load-restrictor=LoadRestrictionsNone manifests/cluster-install | ./hack/auto-gen-msg.sh > manifests/install.yaml
 manifests/namespace-install.yaml: /dev/null

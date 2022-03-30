@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/casbin/casbin/v2"
+
 	eventsource "github.com/argoproj/argo-events/pkg/client/eventsource/clientset/versioned"
 	sensor "github.com/argoproj/argo-events/pkg/client/sensor/clientset/versioned"
 	"k8s.io/client-go/dynamic"
@@ -67,6 +69,7 @@ func newArgoKubeClient(ctx context.Context, clientConfig clientcmd.ClientConfig,
 	}
 	clients := types.Profiles{
 		common.PrimaryCluster(): &types.Clients{
+			RESTConfig:  restConfig,
 			Dynamic:     dynamicClient,
 			EventSource: eventSourceInterface,
 			Kubernetes:  kubeClient,
@@ -74,7 +77,16 @@ func newArgoKubeClient(ctx context.Context, clientConfig clientcmd.ClientConfig,
 			Workflow:    wfClient,
 		},
 	}
-	gatekeeper, err := auth.NewGatekeeper(auth.Modes{auth.Server: true}, clients, restConfig, nil, auth.DefaultClientForAuthorization, "unused", "unused", false, nil)
+	gatekeeper, err := auth.NewGatekeeper(
+		auth.Modes{auth.Server: true},
+		clients,
+		nil,
+		"unused",
+		"unused",
+		false,
+		nil,
+		&casbin.Enforcer{},
+	)
 	if err != nil {
 		return nil, nil, err
 	}

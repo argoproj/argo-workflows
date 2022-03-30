@@ -8,6 +8,8 @@ import (
 	"os"
 	"time"
 
+	"github.com/argoproj/argo-workflows/v3/util/authz"
+
 	"github.com/gorilla/handlers"
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	grpc_logrus "github.com/grpc-ecosystem/go-grpc-middleware/logging/logrus"
@@ -84,7 +86,7 @@ type argoServer struct {
 	eventAsyncDispatch       bool
 	xframeOptions            string
 	accessControlAllowOrigin string
-	cache                    cache.ResourceCaches
+	cache                    *cache.ResourceCache
 }
 
 type ArgoServerOpts struct {
@@ -125,7 +127,7 @@ func getResourceCacheNamespace(opts ArgoServerOpts) string {
 func NewArgoServer(ctx context.Context, opts ArgoServerOpts) (*argoServer, error) {
 	kubernetesClient := opts.Clients.Primary().Kubernetes
 	configController := config.NewController(opts.Namespace, opts.ConfigName, kubernetesClient)
-	resourceCache := cache.ResourceCaches{}
+	var resourceCache *cache.ResourceCache = nil
 	ssoIf := sso.NullSSO
 	if opts.AuthModes[auth.SSO] {
 		c := &Config{}
@@ -137,14 +139,26 @@ func NewArgoServer(ctx context.Context, opts ArgoServerOpts) (*argoServer, error
 		if err != nil {
 			return nil, err
 		}
-		for cluster, p := range opts.Clients {
-			resourceCache[cluster] = cache.NewResourceCache(p.Kubernetes, ctx, getResourceCacheNamespace(opts))
-		}
+		resourceCache = cache.NewResourceCache(kubernetesClient, ctx, getResourceCacheNamespace(opts))
 		log.Info("SSO enabled")
 	} else {
 		log.Info("SSO disabled")
 	}
-	gatekeeper, err := auth.NewGatekeeper(opts.AuthModes, opts.Clients, opts.RestConfig, ssoIf, auth.DefaultClientForAuthorization, opts.Namespace, opts.SSONameSpace, opts.Namespaced, resourceCache)
+
+	enforcer, err := authz.NewEnforcer("server/authz")
+	if err != nil {
+		return nil, err
+	}
+	gatekeeper, err := auth.NewGatekeeper(
+		opts.AuthModes,
+		opts.Clients,
+		ssoIf,
+		opts.Namespace,
+		opts.SSONameSpace,
+		opts.Namespaced,
+		resourceCache,
+		enforcer,
+	)
 	if err != nil {
 		return nil, err
 	}

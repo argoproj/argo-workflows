@@ -9,8 +9,6 @@ import (
 	v1 "k8s.io/client-go/listers/core/v1"
 )
 
-type ResourceCaches map[string]*ResourceCache
-
 type ResourceCache struct {
 	v1.ServiceAccountLister
 	v1.SecretLister

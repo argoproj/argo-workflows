@@ -775,7 +775,6 @@ rules:
   verbs:
   - get
   - list
-  - watch
 - apiGroups:
   - argoproj.io
   resources:
@@ -910,7 +909,9 @@ data:
 
     [matchers]
     m = keyMatch(r.sub, p.sub) && keyMatch(r.obj, p.obj) && (contains(p.acts, r.act) || p.acts == '*')
-  policy.csv: ""
+  policy.csv: |
+    # The argo-server has read-write access in cluster-0.
+    p, serviceaccount:cluster-0:argo:argo-server, cluster-0:*, *
 kind: ConfigMap
 metadata:
   creationTimestamp: null

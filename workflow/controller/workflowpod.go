@@ -68,9 +68,6 @@ func (woc *wfOperationCtx) scheduleOnDifferentHost(node *wfv1.NodeStatus, pod *a
 }
 
 func (woc *wfOperationCtx) enforce(workflowNamespace, cluster, namespace string) error {
-	if cluster == common.PrimaryCluster() && workflowNamespace == namespace {
-		return nil
-	}
 	allowed, err := woc.controller.enforcer.Enforce(
 		fmt.Sprintf("%s:%s", common.PrimaryCluster(), workflowNamespace),
 		fmt.Sprintf("%s:%s", cluster, namespace),

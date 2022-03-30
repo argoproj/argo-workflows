@@ -203,6 +203,16 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
         if (this.listWatch) {
             this.listWatch.stop();
         }
+        this.setState(
+            {
+                cluster,
+                namespace,
+                selectedPhases,
+                selectedLabels,
+                selectedWorkflows: new Map<string, models.Workflow>()
+            },
+            this.saveHistory
+        ),
         this.listWatch = new ListWatch(
             () => services.workflows.list(cluster, namespace, selectedPhases, selectedLabels, pagination),
             (resourceVersion: string) => services.workflows.watchFields({namespace, phases: selectedPhases, labels: selectedLabels, resourceVersion}),
@@ -210,12 +220,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                 this.setState(
                     {
                         error: null,
-                        cluster,
-                        namespace,
                         pagination: {offset: pagination.offset, limit: pagination.limit, nextOffset: metadata.continue},
-                        selectedPhases,
-                        selectedLabels,
-                        selectedWorkflows: new Map<string, models.Workflow>()
                     },
                     this.saveHistory
                 ),

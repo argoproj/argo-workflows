@@ -5,10 +5,8 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-	"regexp"
 	"sort"
 	"strconv"
-	"strings"
 
 	eventsource "github.com/argoproj/argo-events/pkg/client/eventsource/clientset/versioned"
 	sensor "github.com/argoproj/argo-events/pkg/client/sensor/clientset/versioned"
@@ -30,7 +28,6 @@ import (
 	"github.com/argoproj/argo-workflows/v3/server/auth/types"
 	"github.com/argoproj/argo-workflows/v3/server/cache"
 	servertypes "github.com/argoproj/argo-workflows/v3/server/types"
-	"github.com/argoproj/argo-workflows/v3/util/authz"
 	"github.com/argoproj/argo-workflows/v3/util/expr/argoexpr"
 	jsonutil "github.com/argoproj/argo-workflows/v3/util/json"
 	"github.com/argoproj/argo-workflows/v3/util/kubeconfig"
@@ -62,42 +59,33 @@ type ClientForAuthorization func(authorization string) (*rest.Config, *servertyp
 type gatekeeper struct {
 	Modes Modes
 	// global clients, not to be used if there are better ones
-	clients                servertypes.Profiles
-	restConfig             *rest.Config
-	ssoIf                  sso.Interface
-	clientForAuthorization ClientForAuthorization
+	clients servertypes.Profiles
+	ssoIf   sso.Interface
 	// The namespace the server is installed in.
 	namespace    string
 	ssoNamespace string
 	namespaced   bool
-	cache        cache.ResourceCaches
+	cache        *cache.ResourceCache
 	enforcer     casbin.IEnforcer
 }
 
 func NewGatekeeper(
 	modes Modes,
 	clients servertypes.Profiles,
-	restConfig *rest.Config,
 	ssoIf sso.Interface,
-	clientForAuthorization ClientForAuthorization,
 	namespace string,
 	ssoNamespace string,
 	namespaced bool,
-	cache cache.ResourceCaches,
+	cache *cache.ResourceCache,
+	enforcer casbin.IEnforcer,
 ) (Gatekeeper, error) {
 	if len(modes) == 0 {
 		return nil, fmt.Errorf("must specify at least one auth mode")
 	}
-	enforcer, err := authz.NewEnforcer("server/authz")
-	if err != nil {
-		return nil, err
-	}
 	return &gatekeeper{
 		modes,
 		clients,
-		restConfig,
 		ssoIf,
-		clientForAuthorization,
 		namespace,
 		ssoNamespace,
 		namespaced,
@@ -213,12 +201,10 @@ func (s gatekeeper) getClients(ctx context.Context, req interface{}) (*servertyp
 
 	cluster := servertypes.Cluster(req)
 	namespace := getNamespace(req)
-	fullMethod := grpc.ServerTransportStreamFromContext(ctx).Method()
-	parts := strings.Split(fullMethod, "/")
-	if len(parts) < 3 {
-		return nil, nil, fmt.Errorf("full method %q invalid", fullMethod)
+	method, err := getMethod(ctx)
+	if err != nil {
+		return nil, nil, err
 	}
-	method := parts[2]
 	act, resource := parseMethod(method)
 	obj := fmt.Sprintf("%s:%s:%s", cluster, resource, namespace)
 
@@ -226,7 +212,7 @@ func (s gatekeeper) getClients(ctx context.Context, req interface{}) (*servertyp
 		if allowed, err := s.enforcer.Enforce(sub, obj, act); err != nil {
 			return err
 		} else if !allowed {
-			// TODO - is this too much debugging information
+			// TODO - is this too much debugging information?
 			return status.Errorf(codes.PermissionDenied, "access denied to %q for %q %q", sub, obj, act)
 		} else {
 			return nil
@@ -235,14 +221,14 @@ func (s gatekeeper) getClients(ctx context.Context, req interface{}) (*servertyp
 
 	switch mode {
 	case Client:
-		restConfig, clients, err := s.clientForAuthorization(authorization)
+		clients, err := s.clientForAuthorization(authorization)
 		if err != nil {
 			return nil, nil, status.Error(codes.Unauthenticated, err.Error())
 		}
-		claims, _ := serviceaccount.ClaimSetFor(restConfig)
-		return clients, claims, err
+		claims, _ := serviceaccount.ClaimSetFor(clients.RESTConfig)
+		return clients, claims, nil
 	case Server:
-		claims, _ := serviceaccount.ClaimSetFor(s.restConfig)
+		claims, _ := serviceaccount.ClaimSetFor(s.clients.Primary().RESTConfig)
 		// TODO "argo-server" might be something else
 		sub := fmt.Sprintf("serviceaccount:%s:%s:%s", common.PrimaryCluster(), s.namespace, "argo-server")
 		if err := allowed(sub); err != nil {
@@ -255,42 +241,29 @@ func (s gatekeeper) getClients(ctx context.Context, req interface{}) (*servertyp
 		if err != nil {
 			return nil, nil, status.Error(codes.Unauthenticated, err.Error())
 		}
+		clients := s.clients.Primary()
 		if s.ssoIf.IsRBACEnabled() {
-			clients, err := s.rbacAuthorization(cluster, claims, req)
+			clients, err = s.rbacAuthorization(claims, namespace)
 			if err != nil {
 				log.WithError(err).Error("failed to perform RBAC authorization")
 				return nil, nil, status.Error(codes.PermissionDenied, "not allowed")
 			}
-			return clients, claims, nil
 		} else {
 			// important! write an audit entry (i.e. log entry) so we know which user performed an operation
 			log.WithFields(addClaimsLogFields(claims, nil)).Info("using the default service account for user")
-			sub := fmt.Sprintf("user:%s:%s", common.PrimaryCluster(), claims.Subject)
-			if err := allowed(sub); err != nil {
-				return nil, nil, err
-			}
-			p, err := s.clients.Find(cluster)
-			return p, claims, err
 		}
+		sub := fmt.Sprintf("user:%s:%s", common.PrimaryCluster(), claims.Subject)
+		if err := allowed(sub); err != nil {
+			return nil, nil, err
+		}
+		if cluster == common.PrimaryCluster() {
+			return clients, claims, err
+		}
+		p, err := s.clients.Find(cluster)
+		return p, claims, err
 	default:
 		panic("this should never happen")
 	}
-}
-
-func parseMethod(method string) (string, string) {
-	h := regexp.MustCompile(`[A-Z][a-z]*`).FindString(method)
-	return strings.ToLower(h), strings.ToLower(strings.TrimPrefix(strings.TrimSuffix(method, "V2"), h))
-}
-
-func getNamespace(req interface{}) string {
-	if req == nil {
-		return ""
-	}
-	namespacedRequest, ok := req.(servertypes.NamespacedRequest)
-	if !ok {
-		return ""
-	}
-	return namespacedRequest.GetNamespace()
 }
 
 func precedence(serviceAccount *corev1.ServiceAccount) int {
@@ -298,8 +271,8 @@ func precedence(serviceAccount *corev1.ServiceAccount) int {
 	return i
 }
 
-func (s *gatekeeper) getServiceAccount(cluster string, claims *types.Claims, namespace string) (*corev1.ServiceAccount, error) {
-	list, err := s.cache[cluster].ServiceAccountLister.ServiceAccounts(namespace).List(labels.Everything())
+func (s *gatekeeper) getServiceAccount(claims *types.Claims, namespace string) (*corev1.ServiceAccount, error) {
+	list, err := s.cache.ServiceAccountLister.ServiceAccounts(namespace).List(labels.Everything())
 	if err != nil {
 		return nil, fmt.Errorf("failed to list SSO RBAC service accounts: %w", err)
 	}
@@ -330,20 +303,19 @@ func (s *gatekeeper) getServiceAccount(cluster string, claims *types.Claims, nam
 	return nil, fmt.Errorf("no service account rule matches")
 }
 
-func (s *gatekeeper) canDelegateRBACToRequestNamespace(req interface{}) bool {
+func (s *gatekeeper) canDelegateRBACToRequestNamespace(namespace string) bool {
 	if s.namespaced || os.Getenv("SSO_DELEGATE_RBAC_TO_NAMESPACE") != "true" {
 		return false
 	}
-	namespace := getNamespace(req)
 	return len(namespace) != 0 && s.ssoNamespace != namespace
 }
 
-func (s *gatekeeper) getClientsForServiceAccount(cluster string, claims *types.Claims, serviceAccount *corev1.ServiceAccount) (*servertypes.Clients, error) {
-	authorization, err := s.authorizationForServiceAccount(cluster, serviceAccount)
+func (s *gatekeeper) getClientsForServiceAccount(claims *types.Claims, serviceAccount *corev1.ServiceAccount) (*servertypes.Clients, error) {
+	authorization, err := s.authorizationForServiceAccount(serviceAccount)
 	if err != nil {
 		return nil, err
 	}
-	_, clients, err := s.clientForAuthorization(authorization)
+	clients, err := s.clientForAuthorization(authorization)
 	if err != nil {
 		return nil, err
 	}
@@ -351,16 +323,16 @@ func (s *gatekeeper) getClientsForServiceAccount(cluster string, claims *types.C
 	return clients, nil
 }
 
-func (s *gatekeeper) rbacAuthorization(cluster string, claims *types.Claims, req interface{}) (*servertypes.Clients, error) {
+func (s *gatekeeper) rbacAuthorization(claims *types.Claims, namespace string) (*servertypes.Clients, error) {
 	ssoDelegationAllowed, ssoDelegated := false, false
-	loginAccount, err := s.getServiceAccount(cluster, claims, s.ssoNamespace)
+	loginAccount, err := s.getServiceAccount(claims, s.ssoNamespace)
 	if err != nil {
 		return nil, err
 	}
 	delegatedAccount := loginAccount
-	if s.canDelegateRBACToRequestNamespace(req) {
+	if s.canDelegateRBACToRequestNamespace(namespace) {
 		ssoDelegationAllowed = true
-		namespaceAccount, err := s.getServiceAccount(cluster, claims, getNamespace(req))
+		namespaceAccount, err := s.getServiceAccount(claims, namespace)
 		if err != nil {
 			log.WithError(err).Info("Error while SSO Delegation")
 		} else if precedence(namespaceAccount) > precedence(loginAccount) {
@@ -370,14 +342,14 @@ func (s *gatekeeper) rbacAuthorization(cluster string, claims *types.Claims, req
 	}
 	// important! write an audit entry (i.e. log entry) so we know which user performed an operation
 	log.WithFields(log.Fields{"serviceAccount": delegatedAccount.Name, "loginServiceAccount": loginAccount.Name, "subject": claims.Subject, "email": claims.Email, "ssoDelegationAllowed": ssoDelegationAllowed, "ssoDelegated": ssoDelegated}).Info("selected SSO RBAC service account for user")
-	return s.getClientsForServiceAccount(cluster, claims, delegatedAccount)
+	return s.getClientsForServiceAccount(claims, delegatedAccount)
 }
 
-func (s *gatekeeper) authorizationForServiceAccount(cluster string, serviceAccount *corev1.ServiceAccount) (string, error) {
+func (s *gatekeeper) authorizationForServiceAccount(serviceAccount *corev1.ServiceAccount) (string, error) {
 	if len(serviceAccount.Secrets) == 0 {
 		return "", fmt.Errorf("expected at least one secret for SSO RBAC service account: %s", serviceAccount.GetName())
 	}
-	secret, err := s.cache[cluster].SecretLister.Secrets(serviceAccount.GetNamespace()).Get(serviceAccount.Secrets[0].Name)
+	secret, err := s.cache.SecretLister.Secrets(serviceAccount.GetNamespace()).Get(serviceAccount.Secrets[0].Name)
 	if err != nil {
 		return "", fmt.Errorf("failed to get service account secret: %w", err)
 	}
@@ -395,36 +367,10 @@ func addClaimsLogFields(claims *types.Claims, fields log.Fields) log.Fields {
 	return fields
 }
 
-func DefaultClientForAuthorization(authorization string) (*rest.Config, *servertypes.Clients, error) {
-	restConfig, err := kubeconfig.GetRestConfig(authorization)
+func (g *gatekeeper) clientForAuthorization(authorization string) (*servertypes.Clients, error) {
+	restConfig, err := kubeconfig.GetRestConfig(g.clients.Primary().RESTConfig, authorization)
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to create REST config: %w", err)
+		return nil, err
 	}
-	dynamicClient, err := dynamic.NewForConfig(restConfig)
-	if err != nil {
-		return nil, nil, fmt.Errorf("failure to create dynamic client: %w", err)
-	}
-	wfClient, err := workflow.NewForConfig(restConfig)
-	if err != nil {
-		return nil, nil, fmt.Errorf("failure to create workflow client: %w", err)
-	}
-	eventSourceClient, err := eventsource.NewForConfig(restConfig)
-	if err != nil {
-		return nil, nil, fmt.Errorf("failure to create event source client: %w", err)
-	}
-	sensorClient, err := sensor.NewForConfig(restConfig)
-	if err != nil {
-		return nil, nil, fmt.Errorf("failure to create sensor client: %w", err)
-	}
-	kubeClient, err := kubernetes.NewForConfig(restConfig)
-	if err != nil {
-		return nil, nil, fmt.Errorf("failure to create kubernetes client: %w", err)
-	}
-	return restConfig, &servertypes.Clients{
-		Dynamic:     dynamicClient,
-		Workflow:    wfClient,
-		Sensor:      sensorClient,
-		EventSource: eventSourceClient,
-		Kubernetes:  kubeClient,
-	}, nil
+	return servertypes.NewProfile(restConfig)
 }

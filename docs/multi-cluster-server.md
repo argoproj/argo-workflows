@@ -22,12 +22,18 @@ data:
   policy.csv: |
     # The argo-server has read-only access
     p, serviceaccount:cluster-0:argo:argo-server, cluster-0:*, *
-    # The argo-server service account has read-only permissions.
-    p, serviceaccount:cluster-0:argo:argo-server, cluster-1:*:*, "get,list,watch"
+    # The SSO user "Cg0wLTM4NS0yODA4OS0wEgRtb2Nr" has read-only permissions.
+    p, user:cluster-0:Cg0wLTM4NS0yODA4OS0wEgRtb2Nr, cluster-1:*:*, "get,list,watch"
 kind: ConfigMap
 metadata:
   name: argo-server-authz
 ```
+
+Multi-Cluster Server authz differently depending on the configured auth-mode:
+
+* `server` - the service account is `argo-server` so rules are configured using subject `serviceaccount:argo:argo-server`.
+* `client` - no authz is provided, the supplied client token must be for the cluster specific in the request.
+* `sso` - rules are configured using subject `user:${claims.subject}`.
 
 The argo server must be configured with the name of its own cluster:
 
