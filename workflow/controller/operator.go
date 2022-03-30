@@ -3554,7 +3554,7 @@ func (woc *wfOperationCtx) setStoredWfSpec() error {
 			return err
 		}
 		if mergedWf.Spec.String() != woc.wf.Status.StoredWorkflowSpec.String() {
-			return fmt.Errorf("workflowTemplateRef reference may not change during execution when the controller is in reference mode")
+			return fmt.Errorf("WorkflowSpec may not change during execution when the controller is set `templateReferencing: Secure`")
 		}
 	}
 	return nil
