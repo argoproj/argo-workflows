@@ -23,16 +23,16 @@ func newGetProfileCommand() *cobra.Command {
 		context                  string
 	)
 	cmd := &cobra.Command{
-		Use:   "get-profile cluster namespace service_account_name",
+		Use:   "get-profile cluster namespace service_account_name [argo|argo-server]",
 		Short: "print the profile for the  cluster",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
-			if len(args) != 3 {
+			if len(args) != 4 {
 				cmd.HelpFunc()(cmd, args)
 				os.Exit(1)
 			}
 
-			cluster, namespace, serviceAccountName := args[0], args[1], args[2]
+			cluster, namespace, serviceAccountName, app := args[0], args[1], args[2], args[3]
 
 			if context == "" {
 				context = cluster
@@ -104,9 +104,10 @@ func newGetProfileCommand() *cobra.Command {
 			profile := &apiv1.Secret{
 				TypeMeta: metav1.TypeMeta{Kind: "Secret", APIVersion: "v1"},
 				ObjectMeta: metav1.ObjectMeta{
-					Name: common.ProfileSecretName(cluster),
+					Name: common.ProfileSecretName(app, cluster),
 					Labels: map[string]string{
 						common.LabelKeyCluster: cluster,
+						common.LabelKeyApp:     app,
 					},
 				},
 				Data: map[string][]byte{"kubeconfig": data},

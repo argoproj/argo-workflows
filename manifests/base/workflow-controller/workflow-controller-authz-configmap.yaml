@@ -1,0 +1,19 @@
+apiVersion: v1
+data:
+  model.conf: |-
+    [request_definition]
+    r = sub, obj
+
+    [policy_definition]
+    p = sub, obj
+
+    [policy_effect]
+    e = some(where (p.eft == allow))
+
+    [matchers]
+    m = keyMatch(r.sub, p.sub) && keyMatch(r.obj, p.obj)
+  policy.csv: ""
+kind: ConfigMap
+metadata:
+  creationTimestamp: null
+  name: workflow-controller-authz

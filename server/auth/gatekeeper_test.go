@@ -106,8 +106,8 @@ func TestServer_GetWFClient(t *testing.T) {
 		},
 	)
 	resourceCache := cache.ResourceCaches{common.PrimaryCluster(): cache.NewResourceCache(kubeClient, context.TODO(), corev1.NamespaceAll)}
-	var clientForAuthorization ClientForAuthorization = func(cluster, authorization string) (*rest.Config, *servertypes.Profile, error) {
-		return &rest.Config{}, &servertypes.Profile{Workflow: &fakewfclientset.Clientset{}, Kubernetes: &kubefake.Clientset{}}, nil
+	var clientForAuthorization ClientForAuthorization = func(authorization string) (*rest.Config, *servertypes.Profile, error) {
+		return &rest.Config{}, &servertypes.Clients{Workflow: &fakewfclientset.Clientset{}, Kubernetes: &kubefake.Clientset{}}, nil
 	}
 	clients := servertypes.Profiles{common.PrimaryCluster(): &servertypes.Clients{Workflow: wfClient, Kubernetes: kubeClient}}
 	t.Run("None", func(t *testing.T) {
@@ -295,4 +295,10 @@ func x(authorization string) context.Context {
 func TestGetClaimSet(t *testing.T) {
 	// we should be able to get nil claim set
 	assert.Nil(t, GetClaims(context.TODO()))
+}
+
+func Test_parseMethod(t *testing.T) {
+	verb, resource := parseMethod("ListCronWorkflowsV2")
+	assert.Equal(t, "list", verb)
+	assert.Equal(t, "cronworkflows", resource)
 }

@@ -89,7 +89,7 @@ See %s`, help.ArgoServer),
 			ctx, cancel := context.WithCancel(c.Context())
 			defer cancel()
 
-			items, err := kubernetes.NewForConfigOrDie(config).CoreV1().Secrets(namespace).List(ctx, metav1.ListOptions{LabelSelector: common.LabelKeyCluster})
+			items, err := kubernetes.NewForConfigOrDie(config).CoreV1().Secrets(namespace).List(ctx, metav1.ListOptions{LabelSelector: common.LabelKeyCluster + "," + common.LabelKeyApp + "=argo-server"})
 			if err != nil {
 				return err
 			}

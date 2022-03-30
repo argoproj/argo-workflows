@@ -35,9 +35,15 @@ spec:
             initialDelaySeconds: 10
             periodSeconds: 20
           volumeMounts:
+            - mountPath: /server/authz
+              name: authz
+              readOnly: true
             - mountPath: /tmp
               name: tmp
       volumes:
+        - name: authz
+          configMap:
+            name: argo-server-authz
         - name: tmp
           emptyDir: { }
       securityContext:

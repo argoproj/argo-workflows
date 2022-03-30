@@ -3,7 +3,7 @@
 print the profile for the  cluster
 
 ```
-argo cluster get-profile cluster namespace service_account_name [flags]
+argo cluster get-profile cluster namespace service_account_name [argo|argo-server] [flags]
 ```
 
 ### Options

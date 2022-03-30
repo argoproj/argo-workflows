@@ -35,6 +35,6 @@ func Namespace(m metav1.Object) string {
 	return m.GetNamespace()
 }
 
-func ProfileSecretName(cluster string) string {
-	return fmt.Sprintf("argo.profile.%s", cluster)
+func ProfileSecretName(app, cluster string) string {
+	return fmt.Sprintf("%s.profile.%s", app, cluster)
 }

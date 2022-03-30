@@ -46,6 +46,7 @@ import (
 	wfextvv1alpha1 "github.com/argoproj/argo-workflows/v3/pkg/client/informers/externalversions/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/pkg/plugins/spec"
 	authutil "github.com/argoproj/argo-workflows/v3/util/auth"
+	"github.com/argoproj/argo-workflows/v3/util/authz"
 	"github.com/argoproj/argo-workflows/v3/util/diff"
 	"github.com/argoproj/argo-workflows/v3/util/env"
 	errorsutil "github.com/argoproj/argo-workflows/v3/util/errors"
@@ -151,7 +152,7 @@ func NewWorkflowController(
 	if err != nil {
 		return nil, err
 	}
-	enforcer, err := casbin.NewEnforcer("auth/model.conf", "auth/policy.csv")
+	enforcer, err := authz.NewEnforcer("workflow/authz")
 	if err != nil {
 		return nil, err
 	}

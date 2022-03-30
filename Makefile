@@ -352,6 +352,8 @@ manifests/base/crds/full/argoproj.io_workflows.yaml: $(GOPATH)/bin/controller-ge
 	./hack/crdgen.sh
 
 manifests: \
+	manifests/base/workflow-controller/workflow-controller-authz-configmap.yaml \
+	manifests/base/argo-server/argo-server-authz-configmap.yaml \
 	manifests/install.yaml \
 	manifests/namespace-install.yaml \
 	manifests/quick-start-minimal.yaml \
@@ -363,6 +365,10 @@ manifests: \
 	dist/manifests/quick-start-mysql.yaml \
 	dist/manifests/quick-start-postgres.yaml
 
+manifests/base/workflow-controller/workflow-controller-authz-configmap.yaml: /dev/null
+	kubectl create --dry-run=client -o yaml cm workflow-controller-authz --from-file=model.conf=workflow/authz/model.conf --from-file=policy.csv=/dev/null > manifests/base/workflow-controller/workflow-controller-authz-configmap.yaml
+manifests/base/argo-server/argo-server-authz-configmap.yaml: /dev/null
+	kubectl create --dry-run=client -o yaml cm argo-server-authz --from-file=model.conf=server/authz/model.conf --from-file=policy.csv=/dev/null > manifests/base/argo-server/argo-server-authz-configmap.yaml
 manifests/install.yaml: /dev/null
 	kubectl kustomize --load-restrictor=LoadRestrictionsNone manifests/cluster-install | ./hack/auto-gen-msg.sh > manifests/install.yaml
 manifests/namespace-install.yaml: /dev/null
@@ -423,9 +429,8 @@ ifeq ($(PROFILE),multi-cluster)
 	kubectl kustomize --load-restrictor=LoadRestrictionsNone manifests/quick-start/cluster-1 | kubectl --context=cluster-1 -n default apply -f -
 
 	# install profile into local cluster
-	argo cluster get-profile cluster-1 default argo.cluster-0 | kubectl -n argo apply -f  -
-	kubectl annotate secret argo.profile.cluster-1 --overwrite workflows.argoproj.io/workflow-namespace=argo
-	kubectl annotate secret argo.profile.cluster-1 --overwrite workflows.argoproj.io/namespace=default
+	argo cluster get-profile cluster-1 default argo.cluster-0 argo | kubectl -n argo apply -f  -
+	argo cluster get-profile cluster-1 default argo-server.cluster-0 argo-server | kubectl -n argo apply -f  -
 
 	# create default bindings for the executor
 	kubectl --context=cluster-1 create role executor --verb=create,patch --resource=workflowtaskresults.argoproj.io

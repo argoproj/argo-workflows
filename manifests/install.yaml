@@ -999,24 +999,43 @@ subjects:
 ---
 apiVersion: v1
 data:
-  model.conf: |
-    # This is the default Casbin model for the workflow controller
+  model.conf: |-
     [request_definition]
-    r = workflowNamespace, cluster, namespace
+    r = sub, obj, act
 
     [policy_definition]
-    p = workflowNamespace, cluster, namespace
+    p = sub, obj, acts
 
     [policy_effect]
     e = some(where (p.eft == allow))
 
     [matchers]
-    # workflows may create resources in their own cluster and namespace OR it may create a resource only if it has a policy
-    m = r.workflowNamespace == r.namespace && r.cluster == "" || r.workflowNamespace == p.workflowNamespace && r.cluster == p.cluster && r.namespace == p.namespace
+    m = keyMatch(r.sub, p.sub) && keyMatch(r.obj, p.obj) && (contains(p.acts, r.act) || p.acts == '*')
   policy.csv: ""
 kind: ConfigMap
 metadata:
-  name: workflow-controller-auth
+  creationTimestamp: null
+  name: argo-server-authz
+---
+apiVersion: v1
+data:
+  model.conf: |-
+    [request_definition]
+    r = sub, obj
+
+    [policy_definition]
+    p = sub, obj
+
+    [policy_effect]
+    e = some(where (p.eft == allow))
+
+    [matchers]
+    m = keyMatch(r.sub, p.sub) && keyMatch(r.obj, p.obj)
+  policy.csv: ""
+kind: ConfigMap
+metadata:
+  creationTimestamp: null
+  name: workflow-controller-authz
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -1093,6 +1112,9 @@ spec:
           readOnlyRootFilesystem: true
           runAsNonRoot: true
         volumeMounts:
+        - mountPath: /server/authz
+          name: authz
+          readOnly: true
         - mountPath: /tmp
           name: tmp
       nodeSelector:
@@ -1101,6 +1123,9 @@ spec:
         runAsNonRoot: true
       serviceAccountName: argo-server
       volumes:
+      - configMap:
+          name: argo-server-authz
+        name: authz
       - emptyDir: {}
         name: tmp
 ---
@@ -1149,8 +1174,8 @@ spec:
           readOnlyRootFilesystem: true
           runAsNonRoot: true
         volumeMounts:
-        - mountPath: /auth
-          name: auth
+        - mountPath: /workflow/authz
+          name: authz
           readOnly: true
       nodeSelector:
         kubernetes.io/os: linux
@@ -1160,5 +1185,5 @@ spec:
       serviceAccountName: argo
       volumes:
       - configMap:
-          name: workflow-controller-auth
-        name: auth
+          name: workflow-controller-authz
+        name: authz

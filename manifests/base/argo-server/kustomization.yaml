@@ -3,5 +3,6 @@ kind: Kustomization
 
 resources:
 - argo-server-deployment.yaml
+- argo-server-authz-configmap.yaml
 - argo-server-sa.yaml
 - argo-server-service.yaml

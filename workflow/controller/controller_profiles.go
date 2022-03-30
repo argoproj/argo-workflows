@@ -18,7 +18,7 @@ import (
 )
 
 func (wfc *WorkflowController) loadProfiles(ctx context.Context, kubernetesClient kubernetes.Interface) error {
-	list, err := kubernetesClient.CoreV1().Secrets(wfc.namespace).List(ctx, metav1.ListOptions{LabelSelector: common.LabelKeyCluster})
+	list, err := kubernetesClient.CoreV1().Secrets(wfc.namespace).List(ctx, metav1.ListOptions{LabelSelector: common.LabelKeyCluster + "," + common.LabelKeyApp + "=argo"})
 	if err != nil {
 		return err
 	}

@@ -71,6 +71,8 @@ const (
 	LabelKeyWorkflow = workflow.WorkflowFullName + "/workflow"
 	// LabelKeyCluster is the cluster. This is omitted for this cluster.
 	LabelKeyCluster = workflow.WorkflowFullName + "/cluster"
+	// LabelKeyApp is the app, either "argo" for the controller or "argo-server"
+	LabelKeyApp = workflow.WorkflowFullName + "/app"
 	// LabelKeyComponent determines what component within a workflow, intentionally similar to app.kubernetes.io/component.
 	// See https://kubernetes.io/docs/concepts/overview/working-with-objects/common-labels/
 	LabelKeyComponent = workflow.WorkflowFullName + "/component"

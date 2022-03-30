@@ -5,11 +5,14 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"regexp"
 	"sort"
 	"strconv"
+	"strings"
 
 	eventsource "github.com/argoproj/argo-events/pkg/client/eventsource/clientset/versioned"
 	sensor "github.com/argoproj/argo-events/pkg/client/sensor/clientset/versioned"
+	"github.com/casbin/casbin/v2"
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -27,6 +30,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/server/auth/types"
 	"github.com/argoproj/argo-workflows/v3/server/cache"
 	servertypes "github.com/argoproj/argo-workflows/v3/server/types"
+	"github.com/argoproj/argo-workflows/v3/util/authz"
 	"github.com/argoproj/argo-workflows/v3/util/expr/argoexpr"
 	jsonutil "github.com/argoproj/argo-workflows/v3/util/json"
 	"github.com/argoproj/argo-workflows/v3/util/kubeconfig"
@@ -53,7 +57,7 @@ type Gatekeeper interface {
 	StreamServerInterceptor() grpc.StreamServerInterceptor
 }
 
-type ClientForAuthorization func(cluster, authorization string) (*rest.Config, *servertypes.Clients, error)
+type ClientForAuthorization func(authorization string) (*rest.Config, *servertypes.Clients, error)
 
 type gatekeeper struct {
 	Modes Modes
@@ -67,6 +71,7 @@ type gatekeeper struct {
 	ssoNamespace string
 	namespaced   bool
 	cache        cache.ResourceCaches
+	enforcer     casbin.IEnforcer
 }
 
 func NewGatekeeper(
@@ -83,6 +88,10 @@ func NewGatekeeper(
 	if len(modes) == 0 {
 		return nil, fmt.Errorf("must specify at least one auth mode")
 	}
+	enforcer, err := authz.NewEnforcer("server/authz")
+	if err != nil {
+		return nil, err
+	}
 	return &gatekeeper{
 		modes,
 		clients,
@@ -93,6 +102,7 @@ func NewGatekeeper(
 		ssoNamespace,
 		namespaced,
 		cache,
+		enforcer,
 	}, nil
 
 }
@@ -202,10 +212,30 @@ func (s gatekeeper) getClients(ctx context.Context, req interface{}) (*servertyp
 	}
 
 	cluster := servertypes.Cluster(req)
+	namespace := getNamespace(req)
+	fullMethod := grpc.ServerTransportStreamFromContext(ctx).Method()
+	parts := strings.Split(fullMethod, "/")
+	if len(parts) < 3 {
+		return nil, nil, fmt.Errorf("full method %q invalid", fullMethod)
+	}
+	method := parts[2]
+	act, resource := parseMethod(method)
+	obj := fmt.Sprintf("%s:%s:%s", cluster, resource, namespace)
+
+	allowed := func(sub string) error {
+		if allowed, err := s.enforcer.Enforce(sub, obj, act); err != nil {
+			return err
+		} else if !allowed {
+			// TODO - is this too much debugging information
+			return status.Errorf(codes.PermissionDenied, "access denied to %q for %q %q", sub, obj, act)
+		} else {
+			return nil
+		}
+	}
 
 	switch mode {
 	case Client:
-		restConfig, clients, err := s.clientForAuthorization(cluster, authorization)
+		restConfig, clients, err := s.clientForAuthorization(authorization)
 		if err != nil {
 			return nil, nil, status.Error(codes.Unauthenticated, err.Error())
 		}
@@ -213,6 +243,11 @@ func (s gatekeeper) getClients(ctx context.Context, req interface{}) (*servertyp
 		return clients, claims, err
 	case Server:
 		claims, _ := serviceaccount.ClaimSetFor(s.restConfig)
+		// TODO "argo-server" might be something else
+		sub := fmt.Sprintf("serviceaccount:%s:%s:%s", common.PrimaryCluster(), s.namespace, "argo-server")
+		if err := allowed(sub); err != nil {
+			return nil, nil, err
+		}
 		p, err := s.clients.Find(cluster)
 		return p, claims, err
 	case SSO:
@@ -226,16 +261,25 @@ func (s gatekeeper) getClients(ctx context.Context, req interface{}) (*servertyp
 				log.WithError(err).Error("failed to perform RBAC authorization")
 				return nil, nil, status.Error(codes.PermissionDenied, "not allowed")
 			}
-			return clients, claims, err
+			return clients, claims, nil
 		} else {
 			// important! write an audit entry (i.e. log entry) so we know which user performed an operation
 			log.WithFields(addClaimsLogFields(claims, nil)).Info("using the default service account for user")
+			sub := fmt.Sprintf("user:%s:%s", common.PrimaryCluster(), claims.Subject)
+			if err := allowed(sub); err != nil {
+				return nil, nil, err
+			}
 			p, err := s.clients.Find(cluster)
 			return p, claims, err
 		}
 	default:
 		panic("this should never happen")
 	}
+}
+
+func parseMethod(method string) (string, string) {
+	h := regexp.MustCompile(`[A-Z][a-z]*`).FindString(method)
+	return strings.ToLower(h), strings.ToLower(strings.TrimPrefix(strings.TrimSuffix(method, "V2"), h))
 }
 
 func getNamespace(req interface{}) string {
@@ -299,7 +343,7 @@ func (s *gatekeeper) getClientsForServiceAccount(cluster string, claims *types.C
 	if err != nil {
 		return nil, err
 	}
-	_, clients, err := s.clientForAuthorization(cluster, authorization)
+	_, clients, err := s.clientForAuthorization(authorization)
 	if err != nil {
 		return nil, err
 	}
@@ -307,7 +351,7 @@ func (s *gatekeeper) getClientsForServiceAccount(cluster string, claims *types.C
 	return clients, nil
 }
 
-func (s *gatekeeper) rbacAuthorization(cluster string, claims *types.Claims, req interface{}) (*servertypes.Profile, error) {
+func (s *gatekeeper) rbacAuthorization(cluster string, claims *types.Claims, req interface{}) (*servertypes.Clients, error) {
 	ssoDelegationAllowed, ssoDelegated := false, false
 	loginAccount, err := s.getServiceAccount(cluster, claims, s.ssoNamespace)
 	if err != nil {
@@ -351,7 +395,7 @@ func addClaimsLogFields(claims *types.Claims, fields log.Fields) log.Fields {
 	return fields
 }
 
-func DefaultClientForAuthorization(cluster, authorization string) (*rest.Config, *servertypes.Clients, error) {
+func DefaultClientForAuthorization(authorization string) (*rest.Config, *servertypes.Clients, error) {
 	restConfig, err := kubeconfig.GetRestConfig(authorization)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to create REST config: %w", err)

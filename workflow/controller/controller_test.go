@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 	"time"
-	
+
 	"github.com/argoproj/pkg/sync"
 	"github.com/casbin/casbin/v2"
 	"github.com/stretchr/testify/assert"

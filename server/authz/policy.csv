@@ -1,0 +1,4 @@
+# The argo-server has read-only access
+p, serviceaccount:cluster-0:argo:argo-server, cluster-0:*, *
+# The argo-server service account has read-only permissions.
+p, serviceaccount:cluster-0:argo:argo-server, cluster-1:*:*, "get,list,watch"

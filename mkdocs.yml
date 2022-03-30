@@ -91,6 +91,8 @@ nav:
           - running-at-massive-scale.md
           - debug-pause.md
           - multi-cluster.md
+          - multi-cluster-workflows.md
+          - multi-cluster-server.md
       - Plugins:
           - plugins.md
           - executor_plugins.md

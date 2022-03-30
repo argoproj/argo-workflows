@@ -6,3 +6,6 @@ resources:
   - argo.cluster-0-serviceaccount.yaml
   - argo.cluster-0-role.yaml
   - argo.cluster-0-rolebinding.yaml
+  - argo-server.cluster-0-serviceaccount.yaml
+  - argo-server.cluster-0-role.yaml
+  - argo-server.cluster-0-rolebinding.yaml
