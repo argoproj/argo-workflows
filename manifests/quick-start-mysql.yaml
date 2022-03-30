@@ -1187,7 +1187,7 @@ data:
     e = some(where (p.eft == allow))
 
     [matchers]
-    m = keyMatch(r.sub, p.sub) && keyMatch(r.obj, p.obj)
+    m = r.sub == r.obj || keyMatch(r.sub, p.sub) && keyMatch(r.obj, p.obj)
   policy.csv: ""
 kind: ConfigMap
 metadata:
