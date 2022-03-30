@@ -213,22 +213,22 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
             },
             this.saveHistory
         ),
-        this.listWatch = new ListWatch(
-            () => services.workflows.list(cluster, namespace, selectedPhases, selectedLabels, pagination),
-            (resourceVersion: string) => services.workflows.watchFields({namespace, phases: selectedPhases, labels: selectedLabels, resourceVersion}),
-            metadata =>
-                this.setState(
-                    {
-                        error: null,
-                        pagination: {offset: pagination.offset, limit: pagination.limit, nextOffset: metadata.continue},
-                    },
-                    this.saveHistory
-                ),
-            () => this.setState({error: null}),
-            workflows => this.setState({workflows: workflows.slice(0, this.state.pagination.limit || 999999)}),
-            error => this.setState({error}),
-            sortByYouth
-        );
+            (this.listWatch = new ListWatch(
+                () => services.workflows.list(cluster, namespace, selectedPhases, selectedLabels, pagination),
+                (resourceVersion: string) => services.workflows.watchFields({namespace, phases: selectedPhases, labels: selectedLabels, resourceVersion}),
+                metadata =>
+                    this.setState(
+                        {
+                            error: null,
+                            pagination: {offset: pagination.offset, limit: pagination.limit, nextOffset: metadata.continue}
+                        },
+                        this.saveHistory
+                    ),
+                () => this.setState({error: null}),
+                workflows => this.setState({workflows: workflows.slice(0, this.state.pagination.limit || 999999)}),
+                error => this.setState({error}),
+                sortByYouth
+            ));
         this.listWatch.start();
     }
 
