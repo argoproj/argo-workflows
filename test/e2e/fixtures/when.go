@@ -346,7 +346,7 @@ func (w *When) WaitForWorkflowList(listOptions metav1.ListOptions, condition fun
 
 func (w *When) hydrateWorkflow(wf *wfv1.Workflow) {
 	w.t.Helper()
-	err := w.hydrator.Hydrate(wf)
+	err := w.hydrator.Hydrate(common.PrimaryCluster(), wf)
 	if err != nil {
 		w.t.Fatal(err)
 	}

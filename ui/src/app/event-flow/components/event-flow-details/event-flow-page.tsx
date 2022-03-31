@@ -61,7 +61,7 @@ export const EventFlowPage = ({history, location, match}: RouteComponentProps<an
     useEffect(
         () =>
             history.push(
-                historyUrl('event-flow' + (Utils.managedNamespace ? '' : '/{cluster}/{namespace}'), {
+                historyUrl('event-flow' + (Utils.managedNamespace ? '' : '/{namespace}'), {
                     cluster,
                     namespace,
                     showFlow,

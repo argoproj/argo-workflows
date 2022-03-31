@@ -1,6 +1,7 @@
 package cluster
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/spf13/cobra"
@@ -57,6 +58,9 @@ func newGetProfileCommand() *cobra.Command {
 			serviceAccount, err := client.CoreV1().ServiceAccounts(namespace).Get(ctx, serviceAccountName, metav1.GetOptions{})
 			if err != nil {
 				return err
+			}
+			if len(serviceAccount.Secrets) < 1 {
+				return fmt.Errorf("no secrets found in service account %q", serviceAccountName)
 			}
 			secretName := serviceAccount.Secrets[0].Name
 

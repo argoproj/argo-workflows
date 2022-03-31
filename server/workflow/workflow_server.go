@@ -7,6 +7,8 @@ import (
 	"io"
 	"sort"
 
+	servertypes "github.com/argoproj/argo-workflows/v3/server/types"
+
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc/metadata"
@@ -106,7 +108,7 @@ func (s *workflowServer) GetWorkflow(ctx context.Context, req *workflowpkg.Workf
 	}
 	cleaner := fields.NewCleaner(req.Fields)
 	if !cleaner.WillExclude("status.nodes") {
-		if err := s.hydrator.Hydrate(wf); err != nil {
+		if err := s.hydrator.Hydrate(servertypes.Cluster(req), wf); err != nil {
 			return nil, err
 		}
 	}
@@ -119,11 +121,7 @@ func (s *workflowServer) GetWorkflow(ctx context.Context, req *workflowpkg.Workf
 	return wf, nil
 }
 
-func (s *workflowServer) ListWorkflows(ctx context.Context, req *workflowpkg.WorkflowListRequest) (*wfv1.WorkflowList, error) {
-	return s.ListWorkflowsV2(ctx, req)
-}
-
-func (s *workflowServer) ListWorkflowsV2(ctx context2.Context, req *workflowpkg.WorkflowListRequest) (*wfv1.WorkflowList, error) {
+func (s *workflowServer) ListWorkflows(ctx context2.Context, req *workflowpkg.WorkflowListRequest) (*wfv1.WorkflowList, error) {
 	wfClient := auth.GetWfClient(ctx)
 
 	listOption := &metav1.ListOptions{}
@@ -137,7 +135,7 @@ func (s *workflowServer) ListWorkflowsV2(ctx context2.Context, req *workflowpkg.
 	}
 	cleaner := fields.NewCleaner(req.Fields)
 	if s.offloadNodeStatusRepo.IsEnabled() && !cleaner.WillExclude("items.status.nodes") {
-		offloadedNodes, err := s.offloadNodeStatusRepo.List(req.Namespace)
+		offloadedNodes, err := s.offloadNodeStatusRepo.List(servertypes.Cluster(req), req.Namespace)
 		if err != nil {
 			return nil, err
 		}
@@ -229,7 +227,7 @@ func (s *workflowServer) WatchWorkflows(req *workflowpkg.WatchWorkflowsRequest, 
 			}
 			logCtx := log.WithFields(log.Fields{"workflow": wf.Name, "type": event.Type, "phase": wf.Status.Phase})
 			if !cleaner.WillExclude("status.nodes") {
-				if err := s.hydrator.Hydrate(wf); err != nil {
+				if err := s.hydrator.Hydrate(servertypes.Cluster(req), wf); err != nil {
 					return err
 				}
 			}
@@ -324,7 +322,7 @@ func (s *workflowServer) RetryWorkflow(ctx context.Context, req *workflowpkg.Wor
 		return nil, err
 	}
 
-	err = s.hydrator.Hydrate(wf)
+	err = s.hydrator.Hydrate(servertypes.Cluster(req), wf)
 	if err != nil {
 		return nil, err
 	}
@@ -342,7 +340,7 @@ func (s *workflowServer) RetryWorkflow(ctx context.Context, req *workflowpkg.Wor
 		}
 	}
 
-	err = s.hydrator.Dehydrate(wf)
+	err = s.hydrator.Dehydrate(servertypes.Cluster(req), wf)
 	if err != nil {
 		return nil, err
 	}
@@ -391,7 +389,7 @@ func (s *workflowServer) ResumeWorkflow(ctx context.Context, req *workflowpkg.Wo
 		return nil, err
 	}
 
-	err = util.ResumeWorkflow(ctx, wfClient.ArgoprojV1alpha1().Workflows(req.Namespace), s.hydrator, wf.Name, req.NodeFieldSelector)
+	err = util.ResumeWorkflow(ctx, wfClient.ArgoprojV1alpha1().Workflows(req.Namespace), s.hydrator, servertypes.Cluster(req), wf.Name, req.NodeFieldSelector)
 	if err != nil {
 		log.Warnf("Failed to resume %s: %+v", wf.Name, err)
 		return nil, err
@@ -466,7 +464,7 @@ func (s *workflowServer) StopWorkflow(ctx context.Context, req *workflowpkg.Work
 	if err != nil {
 		return nil, err
 	}
-	err = util.StopWorkflow(ctx, wfClient.ArgoprojV1alpha1().Workflows(req.Namespace), s.hydrator, wf.Name, req.NodeFieldSelector, req.Message)
+	err = util.StopWorkflow(ctx, wfClient.ArgoprojV1alpha1().Workflows(req.Namespace), s.hydrator, servertypes.Cluster(req), wf.Name, req.NodeFieldSelector, req.Message)
 	if err != nil {
 		return nil, err
 	}
@@ -511,7 +509,7 @@ func (s *workflowServer) SetWorkflow(ctx context.Context, req *workflowpkg.Workf
 		OutputParameters: outputParams,
 	}
 
-	err = util.SetWorkflow(ctx, wfClient.ArgoprojV1alpha1().Workflows(req.Namespace), s.hydrator, wf.Name, req.NodeFieldSelector, operation)
+	err = util.SetWorkflow(ctx, wfClient.ArgoprojV1alpha1().Workflows(req.Namespace), s.hydrator, servertypes.Cluster(req), wf.Name, req.NodeFieldSelector, operation)
 	if err != nil {
 		return nil, err
 	}

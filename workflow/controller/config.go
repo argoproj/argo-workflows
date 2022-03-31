@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/argoproj/argo-workflows/v3/workflow/common"
+
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/time/rate"
 	apiv1 "k8s.io/api/core/v1"
@@ -38,7 +40,7 @@ func (wfc *WorkflowController) updateConfig(kubernetesClient kubernetes.Interfac
 		}
 		log.Info("Persistence Session created successfully")
 		if !persistence.SkipMigration {
-			err = sqldb.NewMigrate(session, persistence.GetClusterName(), tableName).Exec(context.Background())
+			err = sqldb.NewMigrate(session, common.PrimaryCluster(), tableName).Exec(context.Background())
 			if err != nil {
 				return err
 			}
@@ -48,7 +50,7 @@ func (wfc *WorkflowController) updateConfig(kubernetesClient kubernetes.Interfac
 
 		wfc.session = session
 		if persistence.NodeStatusOffload {
-			wfc.offloadNodeStatusRepo, err = sqldb.NewOffloadNodeStatusRepo(session, persistence.GetClusterName(), tableName)
+			wfc.offloadNodeStatusRepo, err = sqldb.NewOffloadNodeStatusRepo(session, tableName)
 			if err != nil {
 				return err
 			}
@@ -63,7 +65,7 @@ func (wfc *WorkflowController) updateConfig(kubernetesClient kubernetes.Interfac
 			if err != nil {
 				return err
 			}
-			wfc.wfArchive = sqldb.NewWorkflowArchive(session, persistence.GetClusterName(), wfc.managedNamespace, instanceIDService)
+			wfc.wfArchive = sqldb.NewWorkflowArchive(session, wfc.managedNamespace, instanceIDService)
 			log.Info("Workflow archiving is enabled")
 		} else {
 			log.Info("Workflow archiving is disabled")

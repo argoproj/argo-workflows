@@ -19,9 +19,9 @@ type Interface interface {
 	// whether or not the workflow in hydrated
 	IsHydrated(wf *wfv1.Workflow) bool
 	// hydrate the workflow - doing nothing if it is already hydrated
-	Hydrate(wf *wfv1.Workflow) error
+	Hydrate(cluster string, wf *wfv1.Workflow) error
 	// dehydrate the workflow - doing nothing if already dehydrated
-	Dehydrate(wf *wfv1.Workflow) error
+	Dehydrate(cluster string, wf *wfv1.Workflow) error
 	// hydrate the workflow using the provided nodes
 	HydrateWithNodes(wf *wfv1.Workflow, nodes wfv1.Nodes)
 }
@@ -69,7 +69,7 @@ var readRetry = wait.Backoff{Steps: 5, Duration: 100 * time.Millisecond, Factor:
 // 5	31.00
 var writeRetry = wait.Backoff{Steps: 5, Duration: 1 * time.Second, Factor: 2}
 
-func (h hydrator) Hydrate(wf *wfv1.Workflow) error {
+func (h hydrator) Hydrate(cluster string, wf *wfv1.Workflow) error {
 	err := packer.DecompressWorkflow(wf)
 	if err != nil {
 		return err
@@ -77,7 +77,7 @@ func (h hydrator) Hydrate(wf *wfv1.Workflow) error {
 	if wf.Status.IsOffloadNodeStatus() {
 		var offloadedNodes wfv1.Nodes
 		err := waitutil.Backoff(readRetry, func() (bool, error) {
-			offloadedNodes, err = h.offloadNodeStatusRepo.Get(string(wf.UID), wf.GetOffloadNodeStatusVersion())
+			offloadedNodes, err = h.offloadNodeStatusRepo.Get(cluster, string(wf.UID), wf.GetOffloadNodeStatusVersion())
 			return !errorsutil.IsTransientErr(err), err
 		})
 		if err != nil {
@@ -88,7 +88,7 @@ func (h hydrator) Hydrate(wf *wfv1.Workflow) error {
 	return nil
 }
 
-func (h hydrator) Dehydrate(wf *wfv1.Workflow) error {
+func (h hydrator) Dehydrate(cluster string, wf *wfv1.Workflow) error {
 	if !h.IsHydrated(wf) {
 		return nil
 	}
@@ -108,7 +108,7 @@ func (h hydrator) Dehydrate(wf *wfv1.Workflow) error {
 		}
 		offloadErr := waitutil.Backoff(writeRetry, func() (bool, error) {
 			var offloadErr error
-			offloadVersion, offloadErr = h.offloadNodeStatusRepo.Save(string(wf.UID), wf.Namespace, wf.Status.Nodes)
+			offloadVersion, offloadErr = h.offloadNodeStatusRepo.Save(cluster, string(wf.UID), wf.Namespace, wf.Status.Nodes)
 			return !errorsutil.IsTransientErr(offloadErr), offloadErr
 		})
 		if offloadErr != nil {

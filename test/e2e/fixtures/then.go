@@ -60,7 +60,7 @@ func (t *Then) expectWorkflow(workflowName string, block ExpectBlock) *Then {
 	if err != nil {
 		t.t.Fatal(err)
 	}
-	err = t.hydrator.Hydrate(wf)
+	err = t.hydrator.Hydrate(common.PrimaryCluster(), wf)
 	if err != nil {
 		t.t.Fatal(err)
 	}

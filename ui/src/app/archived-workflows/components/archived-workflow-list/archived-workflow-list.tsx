@@ -21,6 +21,7 @@ import {ArchivedWorkflowFilters} from '../archived-workflow-filters/archived-wor
 
 interface State {
     pagination: Pagination;
+    cluster: string;
     namespace: string;
     name: string;
     namePrefix: string;
@@ -49,6 +50,7 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
         const labelQueryParam = this.queryParams('label');
         this.state = {
             pagination: {offset: this.queryParam('offset'), limit: parseLimit(this.queryParam('limit')) || savedOptions.pagination.limit},
+            cluster: this.props.match.params.cluster,
             namespace: Utils.getNamespace(this.props.match.params.namespace) || '',
             name: this.queryParams('name').toString() || '',
             namePrefix: this.queryParams('namePrefix').toString() || '',
@@ -61,6 +63,7 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
 
     public componentDidMount(): void {
         this.fetchArchivedWorkflows(
+            this.state.cluster,
             this.state.namespace,
             this.state.name,
             this.state.namePrefix,
@@ -86,6 +89,7 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
                     <div className='columns small-12 xlarge-2'>
                         <div>
                             <ArchivedWorkflowFilters
+                                cluster={this.state.cluster}
                                 workflows={this.state.workflows || []}
                                 namespace={this.state.namespace}
                                 name={this.state.name}
@@ -95,8 +99,8 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
                                 selectedLabels={this.state.selectedLabels}
                                 minStartedAt={this.state.minStartedAt}
                                 maxStartedAt={this.state.maxStartedAt}
-                                onChange={(namespace, name, namePrefix, selectedPhases, selectedLabels, minStartedAt, maxStartedAt) =>
-                                    this.changeFilters(namespace, name, namePrefix, selectedPhases, selectedLabels, minStartedAt, maxStartedAt, {
+                                onChange={(cluster, namespace, name, namePrefix, selectedPhases, selectedLabels, minStartedAt, maxStartedAt) =>
+                                    this.changeFilters(cluster, namespace, name, namePrefix, selectedPhases, selectedLabels, minStartedAt, maxStartedAt, {
                                         limit: this.state.pagination.limit
                                     })
                                 }
@@ -130,6 +134,7 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
     }
 
     private changeFilters(
+        cluster: string,
         namespace: string,
         name: string,
         namePrefix: string,
@@ -139,7 +144,7 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
         maxStartedAt: Date,
         pagination: Pagination
     ) {
-        this.fetchArchivedWorkflows(namespace, name, namePrefix, selectedPhases, selectedLabels, minStartedAt, maxStartedAt, pagination);
+        this.fetchArchivedWorkflows(cluster, namespace, name, namePrefix, selectedPhases, selectedLabels, minStartedAt, maxStartedAt, pagination);
     }
 
     private get filterParams() {
@@ -179,6 +184,7 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
     }
 
     private fetchArchivedWorkflows(
+        cluster: string,
         namespace: string,
         name: string,
         namePrefix: string,
@@ -188,20 +194,26 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
         maxStartedAt: Date,
         pagination: Pagination
     ): void {
+        this.setState(
+            {
+                error: null,
+                cluster,
+                namespace,
+                name,
+                namePrefix,
+                selectedPhases,
+                selectedLabels,
+                minStartedAt,
+                maxStartedAt
+            },
+            this.saveHistory
+        );
         services.archivedWorkflows
-            .list(namespace, name, namePrefix, selectedPhases, selectedLabels, minStartedAt, maxStartedAt, pagination)
+            .list(cluster, namespace, name, namePrefix, selectedPhases, selectedLabels, minStartedAt, maxStartedAt, pagination)
             .then(list => {
                 this.setState(
                     {
-                        error: null,
-                        namespace,
-                        name,
-                        namePrefix,
                         workflows: list.items || [],
-                        selectedPhases,
-                        selectedLabels,
-                        minStartedAt,
-                        maxStartedAt,
                         pagination: {
                             limit: pagination.limit,
                             offset: pagination.offset,
@@ -262,6 +274,7 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
                 <PaginationPanel
                     onChange={pagination =>
                         this.changeFilters(
+                            this.state.cluster,
                             this.state.namespace,
                             this.state.name,
                             this.state.namePrefix,

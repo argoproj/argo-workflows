@@ -28,10 +28,6 @@ func (c *argoKubeWorkflowServiceClient) ListWorkflows(ctx context.Context, req *
 	return c.delegate.ListWorkflows(ctx, req)
 }
 
-func (c *argoKubeWorkflowServiceClient) ListWorkflowsV2(ctx context.Context, req *workflowpkg.WorkflowListRequest, _ ...grpc.CallOption) (*v1alpha1.WorkflowList, error) {
-	return c.delegate.ListWorkflowsV2(ctx, req)
-}
-
 func (c *argoKubeWorkflowServiceClient) WatchWorkflows(ctx context.Context, req *workflowpkg.WatchWorkflowsRequest, _ ...grpc.CallOption) (workflowpkg.WorkflowService_WatchWorkflowsClient, error) {
 	intermediary := newWorkflowWatchIntermediary(ctx)
 	go func() {

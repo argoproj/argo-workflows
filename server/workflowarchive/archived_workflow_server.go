@@ -21,6 +21,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/server/auth"
+	servertypes "github.com/argoproj/argo-workflows/v3/server/types"
 	"github.com/argoproj/argo-workflows/v3/workflow/util"
 )
 
@@ -102,7 +103,7 @@ func (w *archivedWorkflowServer) ListArchivedWorkflows(ctx context.Context, req 
 		limitWithMore = limit + 1
 	}
 
-	items, err := w.wfArchive.ListWorkflows(namespace, name, namePrefix, minStartedAt, maxStartedAt, requirements, limitWithMore, offset)
+	items, err := w.wfArchive.ListWorkflows(servertypes.Cluster(req), namespace, name, namePrefix, minStartedAt, maxStartedAt, requirements, limitWithMore, offset)
 	if err != nil {
 		return nil, err
 	}
@@ -119,7 +120,7 @@ func (w *archivedWorkflowServer) ListArchivedWorkflows(ctx context.Context, req 
 }
 
 func (w *archivedWorkflowServer) GetArchivedWorkflow(ctx context.Context, req *workflowarchivepkg.GetArchivedWorkflowRequest) (*wfv1.Workflow, error) {
-	wf, err := w.wfArchive.GetWorkflow(req.Uid)
+	wf, err := w.wfArchive.GetWorkflow(servertypes.Cluster(req), req.Uid)
 	if err != nil {
 		return nil, err
 	}
@@ -148,7 +149,7 @@ func (w *archivedWorkflowServer) DeleteArchivedWorkflow(ctx context.Context, req
 	if !allowed {
 		return nil, status.Error(codes.PermissionDenied, "permission denied")
 	}
-	err = w.wfArchive.DeleteWorkflow(req.Uid)
+	err = w.wfArchive.DeleteWorkflow(servertypes.Cluster(req), req.Uid)
 	if err != nil {
 		return nil, err
 	}

@@ -270,7 +270,7 @@ func TestResumeWorkflowByNodeName(t *testing.T) {
 	assert.NoError(t, err)
 
 	// will return error as displayName does not match any nodes
-	err = ResumeWorkflow(ctx, wfIf, hydratorfake.Noop, "suspend", "displayName=nonexistant")
+	err = ResumeWorkflow(ctx, wfIf, hydratorfake.Noop, "", "suspend", "displayName=nonexistant")
 	assert.Error(t, err)
 
 	// displayName didn't match suspend node so should still be running
@@ -278,7 +278,7 @@ func TestResumeWorkflowByNodeName(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes.FindByDisplayName("approve").Phase)
 
-	err = ResumeWorkflow(ctx, wfIf, hydratorfake.Noop, "suspend", "displayName=approve")
+	err = ResumeWorkflow(ctx, wfIf, hydratorfake.Noop, "", "suspend", "displayName=approve")
 	assert.NoError(t, err)
 
 	// displayName matched node so has succeeded
@@ -297,7 +297,7 @@ func TestStopWorkflowByNodeName(t *testing.T) {
 	assert.NoError(t, err)
 
 	// will return error as displayName does not match any nodes
-	err = StopWorkflow(ctx, wfIf, hydratorfake.Noop, "suspend", "displayName=nonexistant", "error occurred")
+	err = StopWorkflow(ctx, wfIf, hydratorfake.Noop, "", "suspend", "displayName=nonexistant", "error occurred")
 	assert.Error(t, err)
 
 	// displayName didn't match suspend node so should still be running
@@ -305,7 +305,7 @@ func TestStopWorkflowByNodeName(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes.FindByDisplayName("approve").Phase)
 
-	err = StopWorkflow(ctx, wfIf, hydratorfake.Noop, "suspend", "displayName=approve", "error occurred")
+	err = StopWorkflow(ctx, wfIf, hydratorfake.Noop, "", "suspend", "displayName=approve", "error occurred")
 	assert.NoError(t, err)
 
 	// displayName matched node so has succeeded
@@ -447,15 +447,15 @@ func TestUpdateSuspendedNode(t *testing.T) {
 	ctx := context.Background()
 	_, err := wfIf.Create(ctx, origWf, metav1.CreateOptions{})
 	if assert.NoError(t, err) {
-		err = updateSuspendedNode(ctx, wfIf, hydratorfake.Noop, "does-not-exist", "displayName=approve", SetOperationValues{OutputParameters: map[string]string{"message": "Hello World"}})
+		err = updateSuspendedNode(ctx, wfIf, hydratorfake.Noop, "", "does-not-exist", "displayName=approve", SetOperationValues{OutputParameters: map[string]string{"message": "Hello World"}})
 		assert.EqualError(t, err, "workflows.argoproj.io \"does-not-exist\" not found")
-		err = updateSuspendedNode(ctx, wfIf, hydratorfake.Noop, "suspend-template", "displayName=does-not-exists", SetOperationValues{OutputParameters: map[string]string{"message": "Hello World"}})
+		err = updateSuspendedNode(ctx, wfIf, hydratorfake.Noop, "", "suspend-template", "displayName=does-not-exists", SetOperationValues{OutputParameters: map[string]string{"message": "Hello World"}})
 		assert.EqualError(t, err, "currently, set only targets suspend nodes: no suspend nodes matching nodeFieldSelector: displayName=does-not-exists")
-		err = updateSuspendedNode(ctx, wfIf, hydratorfake.Noop, "suspend-template", "displayName=approve", SetOperationValues{OutputParameters: map[string]string{"does-not-exist": "Hello World"}})
+		err = updateSuspendedNode(ctx, wfIf, hydratorfake.Noop, "", "suspend-template", "displayName=approve", SetOperationValues{OutputParameters: map[string]string{"does-not-exist": "Hello World"}})
 		assert.EqualError(t, err, "node is not expecting output parameter 'does-not-exist'")
-		err = updateSuspendedNode(ctx, wfIf, hydratorfake.Noop, "suspend-template", "displayName=approve", SetOperationValues{OutputParameters: map[string]string{"message": "Hello World"}})
+		err = updateSuspendedNode(ctx, wfIf, hydratorfake.Noop, "", "suspend-template", "displayName=approve", SetOperationValues{OutputParameters: map[string]string{"message": "Hello World"}})
 		assert.NoError(t, err)
-		err = updateSuspendedNode(ctx, wfIf, hydratorfake.Noop, "suspend-template", "name=suspend-template-kgfn7[0].approve", SetOperationValues{OutputParameters: map[string]string{"message2": "Hello World 2"}})
+		err = updateSuspendedNode(ctx, wfIf, hydratorfake.Noop, "", "suspend-template", "name=suspend-template-kgfn7[0].approve", SetOperationValues{OutputParameters: map[string]string{"message2": "Hello World 2"}})
 		assert.NoError(t, err)
 
 		//make sure global variable was updated
@@ -471,7 +471,7 @@ func TestUpdateSuspendedNode(t *testing.T) {
 	noSpaceWf.Status.Nodes["suspend-template-kgfn7-2667278707"] = node
 	_, err = wfIf.Create(ctx, noSpaceWf, metav1.CreateOptions{})
 	if assert.NoError(t, err) {
-		err = updateSuspendedNode(ctx, wfIf, hydratorfake.Noop, "suspend-template-no-outputs", "displayName=approve", SetOperationValues{OutputParameters: map[string]string{"message": "Hello World"}})
+		err = updateSuspendedNode(ctx, wfIf, hydratorfake.Noop, "", "suspend-template-no-outputs", "displayName=approve", SetOperationValues{OutputParameters: map[string]string{"message": "Hello World"}})
 		assert.EqualError(t, err, "cannot set output parameters because node is not expecting any raw parameters")
 	}
 }

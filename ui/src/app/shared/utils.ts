@@ -105,6 +105,7 @@ export const Utils = {
     },
 
     queryParams(filter: {
+        cluster?: string;
         namespace?: string;
         name?: string;
         namePrefix?: string;
@@ -131,6 +132,9 @@ export const Utils = {
             if (filter.pagination.limit) {
                 queryParams.push(`listOptions.limit=${filter.pagination.limit}`);
             }
+        }
+        if (filter.cluster) {
+            queryParams.push(`cluster=${filter.cluster}`);
         }
         if (filter.namePrefix) {
             queryParams.push(`namePrefix=${filter.namePrefix}`);

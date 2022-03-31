@@ -2,12 +2,12 @@ package types
 
 import "github.com/argoproj/argo-workflows/v3/workflow/common"
 
-type ClusterRequest interface {
+type Clusterer interface {
 	GetCluster() string
 }
 
-func Cluster(req interface{}) string {
-	if v, ok := req.(ClusterRequest); ok {
+func Cluster(m interface{}) string {
+	if v, ok := m.(Clusterer); ok {
 		return v.GetCluster()
 	}
 	return common.PrimaryCluster()

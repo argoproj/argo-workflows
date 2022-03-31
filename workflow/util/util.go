@@ -366,9 +366,9 @@ func SuspendWorkflow(ctx context.Context, wfIf v1alpha1.WorkflowInterface, workf
 
 // ResumeWorkflow resumes a workflow by setting spec.suspend to nil and any suspended nodes to Successful.
 // Retries conflict errors
-func ResumeWorkflow(ctx context.Context, wfIf v1alpha1.WorkflowInterface, hydrator hydrator.Interface, workflowName string, nodeFieldSelector string) error {
+func ResumeWorkflow(ctx context.Context, wfIf v1alpha1.WorkflowInterface, hydrator hydrator.Interface, cluster, workflowName string, nodeFieldSelector string) error {
 	if len(nodeFieldSelector) > 0 {
-		return updateSuspendedNode(ctx, wfIf, hydrator, workflowName, nodeFieldSelector, SetOperationValues{Phase: wfv1.NodeSucceeded})
+		return updateSuspendedNode(ctx, wfIf, hydrator, cluster, workflowName, nodeFieldSelector, SetOperationValues{Phase: wfv1.NodeSucceeded})
 	} else {
 		err := waitutil.Backoff(retry.DefaultRetry, func() (bool, error) {
 			wf, err := wfIf.Get(ctx, workflowName, metav1.GetOptions{})
@@ -376,7 +376,7 @@ func ResumeWorkflow(ctx context.Context, wfIf v1alpha1.WorkflowInterface, hydrat
 				return !errorsutil.IsTransientErr(err), err
 			}
 
-			err = hydrator.Hydrate(wf)
+			err = hydrator.Hydrate(cluster, wf)
 			if err != nil {
 				return true, err
 			}
@@ -410,7 +410,7 @@ func ResumeWorkflow(ctx context.Context, wfIf v1alpha1.WorkflowInterface, hydrat
 			}
 
 			if workflowUpdated {
-				err := hydrator.Dehydrate(wf)
+				err := hydrator.Dehydrate(cluster, wf)
 				if err != nil {
 					return false, fmt.Errorf("unable to compress or offload workflow nodes: %s", err)
 				}
@@ -489,7 +489,7 @@ func AddParamToGlobalScope(wf *wfv1.Workflow, log *log.Entry, param wfv1.Paramet
 	return wfUpdated
 }
 
-func updateSuspendedNode(ctx context.Context, wfIf v1alpha1.WorkflowInterface, hydrator hydrator.Interface, workflowName string, nodeFieldSelector string, values SetOperationValues) error {
+func updateSuspendedNode(ctx context.Context, wfIf v1alpha1.WorkflowInterface, hydrator hydrator.Interface, cluster, workflowName string, nodeFieldSelector string, values SetOperationValues) error {
 	selector, err := fields.ParseSelector(nodeFieldSelector)
 	if err != nil {
 		return err
@@ -500,7 +500,7 @@ func updateSuspendedNode(ctx context.Context, wfIf v1alpha1.WorkflowInterface, h
 			return !errorsutil.IsTransientErr(err), err
 		}
 
-		err = hydrator.Hydrate(wf)
+		err = hydrator.Hydrate(cluster, wf)
 		if err != nil {
 			return false, err
 		}
@@ -560,7 +560,7 @@ func updateSuspendedNode(ctx context.Context, wfIf v1alpha1.WorkflowInterface, h
 			return true, fmt.Errorf("currently, set only targets suspend nodes: no suspend nodes matching nodeFieldSelector: %s", nodeFieldSelector)
 		}
 
-		err = hydrator.Dehydrate(wf)
+		err = hydrator.Dehydrate(cluster, wf)
 		if err != nil {
 			return true, fmt.Errorf("unable to compress or offload workflow nodes: %s", err)
 		}
@@ -899,9 +899,9 @@ func TerminateWorkflow(ctx context.Context, wfClient v1alpha1.WorkflowInterface,
 
 // StopWorkflow terminates a workflow by setting its spec.shutdown to ShutdownStrategyStop
 // Or terminates a single resume step referenced by nodeFieldSelector
-func StopWorkflow(ctx context.Context, wfClient v1alpha1.WorkflowInterface, hydrator hydrator.Interface, name string, nodeFieldSelector string, message string) error {
+func StopWorkflow(ctx context.Context, wfClient v1alpha1.WorkflowInterface, hydrator hydrator.Interface, cluster, name string, nodeFieldSelector string, message string) error {
 	if len(nodeFieldSelector) > 0 {
-		return updateSuspendedNode(ctx, wfClient, hydrator, name, nodeFieldSelector, SetOperationValues{Phase: wfv1.NodeFailed, Message: message})
+		return updateSuspendedNode(ctx, wfClient, hydrator, cluster, name, nodeFieldSelector, SetOperationValues{Phase: wfv1.NodeFailed, Message: message})
 	}
 	return patchShutdownStrategy(ctx, wfClient, name, wfv1.ShutdownStrategyStop)
 }
@@ -928,9 +928,9 @@ func patchShutdownStrategy(ctx context.Context, wfClient v1alpha1.WorkflowInterf
 	return err
 }
 
-func SetWorkflow(ctx context.Context, wfClient v1alpha1.WorkflowInterface, hydrator hydrator.Interface, name string, nodeFieldSelector string, values SetOperationValues) error {
+func SetWorkflow(ctx context.Context, wfClient v1alpha1.WorkflowInterface, hydrator hydrator.Interface, cluster, name string, nodeFieldSelector string, values SetOperationValues) error {
 	if nodeFieldSelector != "" {
-		return updateSuspendedNode(ctx, wfClient, hydrator, name, nodeFieldSelector, values)
+		return updateSuspendedNode(ctx, wfClient, hydrator, cluster, name, nodeFieldSelector, values)
 	}
 	return fmt.Errorf("'set' currently only targets suspend nodes, use a node field selector to target them")
 }

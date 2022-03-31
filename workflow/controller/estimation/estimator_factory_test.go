@@ -53,21 +53,21 @@ metadata:
 	wfArchive := &sqldbmocks.WorkflowArchive{}
 	r, err := labels.ParseToRequirements("workflows.argoproj.io/phase=Succeeded,workflows.argoproj.io/workflow-template=my-archived-wftmpl")
 	assert.NoError(t, err)
-	wfArchive.On("ListWorkflows", "my-ns", "", "", time.Time{}, time.Time{}, labels.Requirements(r), 1, 0).Return(wfv1.Workflows{
+	wfArchive.On("ListWorkflows", "my-cluster", "my-ns", "", "", time.Time{}, time.Time{}, labels.Requirements(r), 1, 0).Return(wfv1.Workflows{
 		*testutil.MustUnmarshalWorkflow(`
 metadata:
   name: my-archived-wftmpl-baseline`),
 	}, nil)
 	f := NewEstimatorFactory(informer, hydratorfake.Always, wfArchive)
 	t.Run("None", func(t *testing.T) {
-		p, err := f.NewEstimator(&wfv1.Workflow{})
+		p, err := f.NewEstimator("my-cluster", &wfv1.Workflow{})
 		if assert.NoError(t, err) && assert.NotNil(t, p) {
 			e := p.(*estimator)
 			assert.Nil(t, e.baselineWF)
 		}
 	})
 	t.Run("WorkflowTemplate", func(t *testing.T) {
-		p, err := f.NewEstimator(&wfv1.Workflow{
+		p, err := f.NewEstimator("my-cluster", &wfv1.Workflow{
 			ObjectMeta: metav1.ObjectMeta{Namespace: "my-ns", Labels: map[string]string{common.LabelKeyWorkflowTemplate: "my-wftmpl"}},
 		})
 		if assert.NoError(t, err) && assert.NotNil(t, p) {
@@ -78,7 +78,7 @@ metadata:
 		}
 	})
 	t.Run("ClusterWorkflowTemplate", func(t *testing.T) {
-		p, err := f.NewEstimator(&wfv1.Workflow{
+		p, err := f.NewEstimator(common.PrimaryCluster(), &wfv1.Workflow{
 			ObjectMeta: metav1.ObjectMeta{Namespace: "my-ns", Labels: map[string]string{common.LabelKeyClusterWorkflowTemplate: "my-cwft"}},
 		})
 		if assert.NoError(t, err) && assert.NotNil(t, p) {
@@ -89,7 +89,7 @@ metadata:
 		}
 	})
 	t.Run("CronWorkflowTemplate", func(t *testing.T) {
-		p, err := f.NewEstimator(&wfv1.Workflow{
+		p, err := f.NewEstimator("my-cluster", &wfv1.Workflow{
 			ObjectMeta: metav1.ObjectMeta{Namespace: "my-ns", Labels: map[string]string{common.LabelKeyCronWorkflow: "my-cwf"}},
 		})
 		if assert.NoError(t, err) && assert.NotNil(t, p) {
@@ -100,7 +100,7 @@ metadata:
 		}
 	})
 	t.Run("WorkflowArchive", func(t *testing.T) {
-		p, err := f.NewEstimator(&wfv1.Workflow{
+		p, err := f.NewEstimator("my-cluster", &wfv1.Workflow{
 			ObjectMeta: metav1.ObjectMeta{Namespace: "my-ns", Labels: map[string]string{common.LabelKeyWorkflowTemplate: "my-archived-wftmpl"}},
 		})
 		if assert.NoError(t, err) && assert.NotNil(t, p) {

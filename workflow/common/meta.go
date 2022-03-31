@@ -11,7 +11,7 @@ func PrimaryCluster() string {
 	if v, ok := os.LookupEnv("ARGO_CLUSTER"); ok {
 		return v
 	}
-	return "undefined"
+	return "default"
 }
 
 func Cluster(m metav1.Object) string {

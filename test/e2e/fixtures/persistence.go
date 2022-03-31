@@ -28,12 +28,12 @@ func newPersistence(kubeClient kubernetes.Interface, wcConfig *config.Config) *P
 		if err != nil {
 			panic(err)
 		}
-		offloadNodeStatusRepo, err := sqldb.NewOffloadNodeStatusRepo(session, persistence.GetClusterName(), tableName)
+		offloadNodeStatusRepo, err := sqldb.NewOffloadNodeStatusRepo(session, tableName)
 		if err != nil {
 			panic(err)
 		}
 		instanceIDService := instanceid.NewService(wcConfig.InstanceID)
-		workflowArchive := sqldb.NewWorkflowArchive(session, persistence.GetClusterName(), Namespace, instanceIDService)
+		workflowArchive := sqldb.NewWorkflowArchive(session, Namespace, instanceIDService)
 		return &Persistence{session, offloadNodeStatusRepo, workflowArchive}
 	} else {
 		return &Persistence{offloadNodeStatusRepo: sqldb.ExplosiveOffloadNodeStatusRepo, workflowArchive: sqldb.NullWorkflowArchive}

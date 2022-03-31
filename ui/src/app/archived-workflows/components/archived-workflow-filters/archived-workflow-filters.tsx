@@ -8,11 +8,13 @@ import {TagsInput} from '../../../shared/components/tags-input/tags-input';
 import {services} from '../../../shared/services';
 
 import 'react-datepicker/dist/react-datepicker.css';
+import {ClusterFilter} from '../../../shared/components/cluster-filter';
 
 require('./archived-workflow-filters.scss');
 
 interface ArchivedWorkflowFilterProps {
     workflows: models.Workflow[];
+    cluster: string;
     namespace: string;
     name: string;
     namePrefix: string;
@@ -21,7 +23,7 @@ interface ArchivedWorkflowFilterProps {
     selectedLabels: string[];
     minStartedAt?: Date;
     maxStartedAt?: Date;
-    onChange: (namespace: string, name: string, namePrefix: string, selectedPhases: string[], labels: string[], minStartedAt: Date, maxStartedAt: Date) => void;
+    onChange: (cluster: string, namespace: string, name: string, namePrefix: string, selectedPhases: string[], labels: string[], minStartedAt: Date, maxStartedAt: Date) => void;
 }
 
 interface State {
@@ -45,11 +47,30 @@ export class ArchivedWorkflowFilters extends React.Component<ArchivedWorkflowFil
             <div className='wf-filters-container'>
                 <div className='row'>
                     <div className='columns small-2 xlarge-12'>
+                        <p className='wf-filters-container__title'>Cluster</p>
+                        <ClusterFilter
+                            value={this.props.cluster}
+                            onChange={v => {
+                                this.props.onChange(
+                                    v,
+                                    this.props.namespace,
+                                    this.props.name,
+                                    this.props.namePrefix,
+                                    this.props.selectedPhases,
+                                    this.props.selectedLabels,
+                                    this.props.minStartedAt,
+                                    this.props.maxStartedAt
+                                );
+                            }}
+                        />
+                    </div>
+                    <div className='columns small-2 xlarge-12'>
                         <p className='wf-filters-container__title'>Namespace</p>
                         <NamespaceFilter
                             value={this.props.namespace}
                             onChange={ns => {
                                 this.props.onChange(
+                                    this.props.cluster,
                                     ns,
                                     this.props.name,
                                     this.props.namePrefix,
@@ -68,6 +89,7 @@ export class ArchivedWorkflowFilters extends React.Component<ArchivedWorkflowFil
                             name='wfname'
                             onChange={wfname => {
                                 this.props.onChange(
+                                    this.props.cluster,
                                     this.props.namespace,
                                     wfname,
                                     this.props.namePrefix,
@@ -86,6 +108,7 @@ export class ArchivedWorkflowFilters extends React.Component<ArchivedWorkflowFil
                             name='wfnamePrefix'
                             onChange={wfnamePrefix => {
                                 this.props.onChange(
+                                    this.props.cluster,
                                     this.props.namespace,
                                     this.props.name,
                                     wfnamePrefix,
@@ -106,6 +129,7 @@ export class ArchivedWorkflowFilters extends React.Component<ArchivedWorkflowFil
                             tags={this.props.selectedLabels}
                             onChange={tags => {
                                 this.props.onChange(
+                                    this.props.cluster,
                                     this.props.namespace,
                                     this.props.name,
                                     this.props.namePrefix,
@@ -123,6 +147,7 @@ export class ArchivedWorkflowFilters extends React.Component<ArchivedWorkflowFil
                             selected={this.props.selectedPhases}
                             onChange={selected => {
                                 this.props.onChange(
+                                    this.props.cluster,
                                     this.props.namespace,
                                     this.props.name,
                                     this.props.namePrefix,
@@ -142,6 +167,7 @@ export class ArchivedWorkflowFilters extends React.Component<ArchivedWorkflowFil
                             selected={this.props.minStartedAt}
                             onChange={date => {
                                 this.props.onChange(
+                                    this.props.cluster,
                                     this.props.namespace,
                                     this.props.name,
                                     this.props.namePrefix,
@@ -160,6 +186,7 @@ export class ArchivedWorkflowFilters extends React.Component<ArchivedWorkflowFil
                             selected={this.props.maxStartedAt}
                             onChange={date => {
                                 this.props.onChange(
+                                    this.props.cluster,
                                     this.props.namespace,
                                     this.props.name,
                                     this.props.namePrefix,

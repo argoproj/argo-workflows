@@ -18,8 +18,8 @@ import (
 
 func getMockDBCtx(expectedError error, largeWfSupport bool) (*mocks.OffloadNodeStatusRepo, hydrator.Interface) {
 	mockDBRepo := &mocks.OffloadNodeStatusRepo{}
-	mockDBRepo.On("Save", mock.Anything, mock.Anything, mock.Anything).Return("my-offloaded-version", expectedError)
-	mockDBRepo.On("Get", mock.Anything, mock.Anything).Return(wfv1.Nodes{"my-node": wfv1.NodeStatus{}}, nil)
+	mockDBRepo.On("Save", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return("my-offloaded-version", expectedError)
+	mockDBRepo.On("Get", mock.Anything, mock.Anything, mock.Anything).Return(wfv1.Nodes{"my-node": wfv1.NodeStatus{}}, nil)
 	mockDBRepo.On("IsEnabled").Return(largeWfSupport)
 	return mockDBRepo, hydrator.New(mockDBRepo)
 }

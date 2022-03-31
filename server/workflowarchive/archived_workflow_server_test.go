@@ -47,18 +47,19 @@ func Test_archivedWorkflowServer(t *testing.T) {
 		}, nil
 	})
 	// two pages of results for limit 1
-	repo.On("ListWorkflows", "", "", "", time.Time{}, time.Time{}, labels.Requirements(nil), 2, 0).Return(wfv1.Workflows{{}, {}}, nil)
-	repo.On("ListWorkflows", "", "", "", time.Time{}, time.Time{}, labels.Requirements(nil), 2, 1).Return(wfv1.Workflows{{}}, nil)
+	cluster := "default"
+	repo.On("ListWorkflows", cluster, "", "", "", time.Time{}, time.Time{}, labels.Requirements(nil), 2, 0).Return(wfv1.Workflows{{}, {}}, nil)
+	repo.On("ListWorkflows", cluster, "", "", "", time.Time{}, time.Time{}, labels.Requirements(nil), 2, 1).Return(wfv1.Workflows{{}}, nil)
 	minStartAt, _ := time.Parse(time.RFC3339, "2020-01-01T00:00:00Z")
 	maxStartAt, _ := time.Parse(time.RFC3339, "2020-01-02T00:00:00Z")
 	createdTime := metav1.Time{Time: time.Now().UTC()}
 	finishedTime := metav1.Time{Time: createdTime.Add(time.Second * 2)}
-	repo.On("ListWorkflows", "", "", "", minStartAt, maxStartAt, labels.Requirements(nil), 2, 0).Return(wfv1.Workflows{{}}, nil)
-	repo.On("ListWorkflows", "", "my-name", "", minStartAt, maxStartAt, labels.Requirements(nil), 2, 0).Return(wfv1.Workflows{{}}, nil)
-	repo.On("ListWorkflows", "", "", "my-", minStartAt, maxStartAt, labels.Requirements(nil), 2, 0).Return(wfv1.Workflows{{}}, nil)
-	repo.On("ListWorkflows", "", "my-name", "my-", minStartAt, maxStartAt, labels.Requirements(nil), 2, 0).Return(wfv1.Workflows{{}}, nil)
-	repo.On("GetWorkflow", "").Return(nil, nil)
-	repo.On("GetWorkflow", "my-uid").Return(&wfv1.Workflow{
+	repo.On("ListWorkflows", cluster, "", "", "", minStartAt, maxStartAt, labels.Requirements(nil), 2, 0).Return(wfv1.Workflows{{}}, nil)
+	repo.On("ListWorkflows", cluster, "", "my-name", "", minStartAt, maxStartAt, labels.Requirements(nil), 2, 0).Return(wfv1.Workflows{{}}, nil)
+	repo.On("ListWorkflows", cluster, "", "", "my-", minStartAt, maxStartAt, labels.Requirements(nil), 2, 0).Return(wfv1.Workflows{{}}, nil)
+	repo.On("ListWorkflows", cluster, "", "my-name", "my-", minStartAt, maxStartAt, labels.Requirements(nil), 2, 0).Return(wfv1.Workflows{{}}, nil)
+	repo.On("GetWorkflow", cluster, "").Return(nil, nil)
+	repo.On("GetWorkflow", cluster, "my-uid").Return(&wfv1.Workflow{
 		ObjectMeta: metav1.ObjectMeta{Name: "my-name"},
 		Spec: wfv1.WorkflowSpec{
 			Entrypoint: "my-entrypoint",
@@ -67,7 +68,7 @@ func Test_archivedWorkflowServer(t *testing.T) {
 			},
 		},
 	}, nil)
-	repo.On("GetWorkflow", "failed-uid").Return(&wfv1.Workflow{
+	repo.On("GetWorkflow", cluster, "failed-uid").Return(&wfv1.Workflow{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "failed-wf",
 			Labels: map[string]string{
@@ -84,7 +85,7 @@ func Test_archivedWorkflowServer(t *testing.T) {
 				"succeeded-node": {Name: "succeeded-node", StartedAt: createdTime, FinishedAt: finishedTime, Phase: wfv1.NodeSucceeded, Message: "succeeded"}},
 		},
 	}, nil)
-	repo.On("GetWorkflow", "resubmit-uid").Return(&wfv1.Workflow{
+	repo.On("GetWorkflow", cluster, "resubmit-uid").Return(&wfv1.Workflow{
 		ObjectMeta: metav1.ObjectMeta{Name: "resubmit-wf"},
 		Spec: wfv1.WorkflowSpec{
 			Entrypoint: "my-entrypoint",
@@ -98,17 +99,17 @@ func Test_archivedWorkflowServer(t *testing.T) {
 			ObjectMeta: metav1.ObjectMeta{Name: "my-name-resubmitted"},
 		}, nil
 	})
-	repo.On("DeleteWorkflow", "my-uid").Return(nil)
+	repo.On("DeleteWorkflow", cluster, "my-uid").Return(nil)
 	repo.On("ListWorkflowsLabelKeys").Return(&wfv1.LabelKeys{
 		Items: []string{"foo", "bar"},
 	}, nil)
 	repo.On("ListWorkflowsLabelValues", "my-key").Return(&wfv1.LabelValues{
 		Items: []string{"my-key=foo", "my-key=bar"},
 	}, nil)
-	repo.On("RetryWorkflow", "failed-uid").Return(&wfv1.Workflow{
+	repo.On("RetryWorkflow", cluster, "failed-uid").Return(&wfv1.Workflow{
 		ObjectMeta: metav1.ObjectMeta{Name: "failed-wf"},
 	}, nil)
-	repo.On("ResubmitWorkflow", "my-uid").Return(&wfv1.Workflow{
+	repo.On("ResubmitWorkflow", cluster, "my-uid").Return(&wfv1.Workflow{
 		ObjectMeta: metav1.ObjectMeta{Name: "my-name"},
 		Spec: wfv1.WorkflowSpec{
 			Entrypoint: "my-entrypoint",

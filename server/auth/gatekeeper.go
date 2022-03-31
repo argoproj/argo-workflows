@@ -176,7 +176,7 @@ func getAuthHeaders(md metadata.MD) []string {
 	return authorizations
 }
 
-func (s gatekeeper) getClients(ctx context.Context, req interface{}) (*servertypes.Clients, *types.Claims, error) {
+func (s gatekeeper) getClients(ctx context.Context, m interface{}) (*servertypes.Clients, *types.Claims, error) {
 	md, _ := metadata.FromIncomingContext(ctx)
 	authorizations := getAuthHeaders(md)
 	// Required for GetMode() with Server auth when no auth header specified
@@ -199,21 +199,29 @@ func (s gatekeeper) getClients(ctx context.Context, req interface{}) (*servertyp
 		return nil, nil, status.Error(codes.Unauthenticated, "token not valid for running mode")
 	}
 
-	cluster := servertypes.Cluster(req)
-	namespace := getNamespace(req)
-	method, err := getMethod(ctx)
-	if err != nil {
-		return nil, nil, err
+	msg, ok := m.(*servertypes.Msg)
+	if !ok {
+		method, err := getMethod(ctx)
+		if err != nil {
+			return nil, nil, err
+		}
+		act, resource := parseMethod(method)
+		msg = &servertypes.Msg{
+			Cluster:   servertypes.Cluster(m),
+			Namespace: getNamespace(m),
+			Act:       act,
+			Resource:  resource,
+		}
 	}
-	act, resource := parseMethod(method)
-	obj := fmt.Sprintf("%s:%s:%s", cluster, resource, namespace)
+
+	obj := fmt.Sprintf("%s:%s:%s", msg.Cluster, msg.Resource, msg.Namespace)
 
 	allowed := func(sub string) error {
-		if allowed, err := s.enforcer.Enforce(sub, obj, act); err != nil {
+		if allowed, err := s.enforcer.Enforce(sub, obj, msg.Act); err != nil {
 			return err
 		} else if !allowed {
 			// TODO - is this too much debugging information?
-			return status.Errorf(codes.PermissionDenied, "access denied to %q for %q %q", sub, obj, act)
+			return status.Errorf(codes.PermissionDenied, "access denied to %q for %q %q", sub, obj, msg.Act)
 		} else {
 			return nil
 		}
@@ -234,7 +242,7 @@ func (s gatekeeper) getClients(ctx context.Context, req interface{}) (*servertyp
 		if err := allowed(sub); err != nil {
 			return nil, nil, err
 		}
-		p, err := s.clients.Find(cluster)
+		p, err := s.clients.Find(msg.Cluster)
 		return p, claims, err
 	case SSO:
 		claims, err := s.ssoIf.Authorize(authorization)
@@ -243,7 +251,7 @@ func (s gatekeeper) getClients(ctx context.Context, req interface{}) (*servertyp
 		}
 		clients := s.clients.Primary()
 		if s.ssoIf.IsRBACEnabled() {
-			clients, err = s.rbacAuthorization(claims, namespace)
+			clients, err = s.rbacAuthorization(claims, msg.Namespace)
 			if err != nil {
 				log.WithError(err).Error("failed to perform RBAC authorization")
 				return nil, nil, status.Error(codes.PermissionDenied, "not allowed")
@@ -256,10 +264,10 @@ func (s gatekeeper) getClients(ctx context.Context, req interface{}) (*servertyp
 		if err := allowed(sub); err != nil {
 			return nil, nil, err
 		}
-		if cluster == common.PrimaryCluster() {
+		if msg.Cluster == common.PrimaryCluster() {
 			return clients, claims, err
 		}
-		p, err := s.clients.Find(cluster)
+		p, err := s.clients.Find(msg.Cluster)
 		return p, claims, err
 	default:
 		panic("this should never happen")

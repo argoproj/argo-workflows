@@ -20,7 +20,7 @@ func TestHydrator(t *testing.T) {
 		t.Run("Packed", func(t *testing.T) {
 			hydrator := New(&sqldbmocks.OffloadNodeStatusRepo{})
 			wf := &wfv1.Workflow{Status: wfv1.WorkflowStatus{CompressedNodes: "foo"}}
-			err := hydrator.Dehydrate(wf)
+			err := hydrator.Dehydrate("my-cluster", wf)
 			if assert.NoError(t, err) {
 				assert.NotEmpty(t, wf.Status.CompressedNodes)
 			}
@@ -28,7 +28,7 @@ func TestHydrator(t *testing.T) {
 		t.Run("Offloaded", func(t *testing.T) {
 			hydrator := New(&sqldbmocks.OffloadNodeStatusRepo{})
 			wf := &wfv1.Workflow{Status: wfv1.WorkflowStatus{OffloadNodeStatusVersion: "foo"}}
-			err := hydrator.Dehydrate(wf)
+			err := hydrator.Dehydrate("my-cluster", wf)
 			if assert.NoError(t, err) {
 				assert.True(t, wf.Status.IsOffloadNodeStatus())
 			}
@@ -36,7 +36,7 @@ func TestHydrator(t *testing.T) {
 		t.Run("Noop", func(t *testing.T) {
 			hydrator := New(&sqldbmocks.OffloadNodeStatusRepo{})
 			wf := &wfv1.Workflow{Status: wfv1.WorkflowStatus{Nodes: wfv1.Nodes{"foo": wfv1.NodeStatus{}}}}
-			err := hydrator.Dehydrate(wf)
+			err := hydrator.Dehydrate("my-cluster", wf)
 			if assert.NoError(t, err) {
 				assert.NotEmpty(t, wf.Status.Nodes)
 				assert.Empty(t, wf.Status.CompressedNodes)
@@ -46,7 +46,7 @@ func TestHydrator(t *testing.T) {
 		t.Run("Pack", func(t *testing.T) {
 			hydrator := New(&sqldbmocks.OffloadNodeStatusRepo{})
 			wf := &wfv1.Workflow{Status: wfv1.WorkflowStatus{Nodes: wfv1.Nodes{"foo": wfv1.NodeStatus{}, "bar": wfv1.NodeStatus{}}}}
-			err := hydrator.Dehydrate(wf)
+			err := hydrator.Dehydrate("", wf)
 			if assert.NoError(t, err) {
 				assert.Empty(t, wf.Status.Nodes)
 				assert.NotEmpty(t, wf.Status.CompressedNodes)
@@ -55,14 +55,14 @@ func TestHydrator(t *testing.T) {
 		})
 		t.Run("Offload", func(t *testing.T) {
 			offloadNodeStatusRepo := &sqldbmocks.OffloadNodeStatusRepo{}
-			offloadNodeStatusRepo.On("Save", "my-uid", "my-ns", mock.Anything).Return("my-offload-version", nil)
+			offloadNodeStatusRepo.On("Save", "my-cluster", "my-uid", "my-ns", mock.Anything).Return("my-offload-version", nil)
 			hydrator := New(offloadNodeStatusRepo)
 			wf := &wfv1.Workflow{
 				ObjectMeta: metav1.ObjectMeta{UID: "my-uid", Namespace: "my-ns"},
 				Spec:       wfv1.WorkflowSpec{Entrypoint: "main"},
 				Status:     wfv1.WorkflowStatus{Nodes: wfv1.Nodes{"foo": wfv1.NodeStatus{}, "bar": wfv1.NodeStatus{}, "baz": wfv1.NodeStatus{}, "qux": wfv1.NodeStatus{}}},
 			}
-			err := hydrator.Dehydrate(wf)
+			err := hydrator.Dehydrate("my-cluster", wf)
 			if assert.NoError(t, err) {
 				assert.Empty(t, wf.Status.Nodes)
 				assert.Empty(t, wf.Status.CompressedNodes)
@@ -72,27 +72,27 @@ func TestHydrator(t *testing.T) {
 		})
 		t.Run("WorkflowTooLargeButOffloadNotSupported", func(t *testing.T) {
 			offloadNodeStatusRepo := &sqldbmocks.OffloadNodeStatusRepo{}
-			offloadNodeStatusRepo.On("Save", "my-uid", "my-ns", mock.Anything).Return("my-offload-version", sqldb.OffloadNotSupportedError)
+			offloadNodeStatusRepo.On("Save", "my-cluster", "my-uid", "my-ns", mock.Anything).Return("my-offload-version", sqldb.OffloadNotSupportedError)
 			hydrator := New(offloadNodeStatusRepo)
 			wf := &wfv1.Workflow{
 				ObjectMeta: metav1.ObjectMeta{UID: "my-uid", Namespace: "my-ns"},
 				Spec:       wfv1.WorkflowSpec{Entrypoint: "main"},
 				Status:     wfv1.WorkflowStatus{Nodes: wfv1.Nodes{"foo": wfv1.NodeStatus{}, "bar": wfv1.NodeStatus{}, "baz": wfv1.NodeStatus{}, "qux": wfv1.NodeStatus{}}},
 			}
-			err := hydrator.Dehydrate(wf)
+			err := hydrator.Dehydrate("my-cluster", wf)
 			assert.Error(t, err)
 		})
 	})
 	t.Run("Hydrate", func(t *testing.T) {
 		t.Run("Offloaded", func(t *testing.T) {
 			offloadNodeStatusRepo := &sqldbmocks.OffloadNodeStatusRepo{}
-			offloadNodeStatusRepo.On("Get", "my-uid", "my-offload-version").Return(wfv1.Nodes{"foo": wfv1.NodeStatus{}}, nil)
+			offloadNodeStatusRepo.On("Get", "my-cluster", "my-uid", "my-offload-version").Return(wfv1.Nodes{"foo": wfv1.NodeStatus{}}, nil)
 			hydrator := New(offloadNodeStatusRepo)
 			wf := &wfv1.Workflow{
 				ObjectMeta: metav1.ObjectMeta{UID: "my-uid"},
 				Status:     wfv1.WorkflowStatus{OffloadNodeStatusVersion: "my-offload-version"},
 			}
-			err := hydrator.Hydrate(wf)
+			err := hydrator.Hydrate("my-cluster", wf)
 			if assert.NoError(t, err) {
 				assert.NotEmpty(t, wf.Status.Nodes)
 				assert.Empty(t, wf.Status.CompressedNodes)
@@ -101,13 +101,13 @@ func TestHydrator(t *testing.T) {
 		})
 		t.Run("OffloadingDisabled", func(t *testing.T) {
 			offloadNodeStatusRepo := &sqldbmocks.OffloadNodeStatusRepo{}
-			offloadNodeStatusRepo.On("Get", "my-uid", "my-offload-version").Return(nil, sqldb.OffloadNotSupportedError)
+			offloadNodeStatusRepo.On("Get", "my-cluster", "my-uid", "my-offload-version").Return(nil, sqldb.OffloadNotSupportedError)
 			hydrator := New(offloadNodeStatusRepo)
 			wf := &wfv1.Workflow{
 				ObjectMeta: metav1.ObjectMeta{UID: "my-uid"},
 				Status:     wfv1.WorkflowStatus{OffloadNodeStatusVersion: "my-offload-version"},
 			}
-			err := hydrator.Hydrate(wf)
+			err := hydrator.Hydrate("my-cluster", wf)
 			assert.Error(t, err)
 		})
 		t.Run("Packed", func(t *testing.T) {
@@ -116,7 +116,7 @@ func TestHydrator(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{UID: "my-uid"},
 				Status:     wfv1.WorkflowStatus{CompressedNodes: "H4sIAAAAAAAA/6pWSkosUrKqVspMUbJSUtJRykvMTYWwUjKLC3ISK/3gAiWVBVBWcUliUUlqimOJklVeaU6OjlJaZl5mcQZCpFZHKS0/nwbm1gICAAD//8SSRamxAAAA"},
 			}
-			err := hydrator.Hydrate(wf)
+			err := hydrator.Hydrate("my-cluster", wf)
 			if assert.NoError(t, err) {
 				assert.NotEmpty(t, wf.Status.Nodes)
 				assert.Empty(t, wf.Status.CompressedNodes)
@@ -126,7 +126,7 @@ func TestHydrator(t *testing.T) {
 		t.Run("Hydrated", func(t *testing.T) {
 			hydrator := New(&sqldbmocks.OffloadNodeStatusRepo{})
 			wf := &wfv1.Workflow{Status: wfv1.WorkflowStatus{}}
-			err := hydrator.Hydrate(wf)
+			err := hydrator.Hydrate("my-cluster", wf)
 			assert.NoError(t, err)
 		})
 	})

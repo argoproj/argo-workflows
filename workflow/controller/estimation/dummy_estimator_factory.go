@@ -6,7 +6,7 @@ import (
 
 type dummyEstimatorFactory struct{}
 
-func (d dummyEstimatorFactory) NewEstimator(*wfv1.Workflow) (Estimator, error) {
+func (d dummyEstimatorFactory) NewEstimator(string, *wfv1.Workflow) (Estimator, error) {
 	return &dummyEstimator{}, nil
 }
 

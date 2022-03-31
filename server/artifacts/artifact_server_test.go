@@ -120,7 +120,7 @@ func newServer() *ArtifactServer {
 	ctx := context.WithValue(context.WithValue(context.Background(), auth.KubeKey, kube), auth.WfKey, argo)
 	gatekeeper.On("ContextWithRequest", mock.Anything, mock.Anything).Return(ctx, nil)
 	a := &sqldbmocks.WorkflowArchive{}
-	a.On("GetWorkflow", "my-uuid").Return(wf, nil)
+	a.On("GetWorkflow", "default", "my-uuid").Return(wf, nil)
 
 	fakeArtifactDriverFactory := func(_ context.Context, _ *wfv1.Artifact, _ resource.Interface) (artifactscommon.ArtifactDriver, error) {
 		return &fakeArtifactDriver{data: []byte("my-data")}, nil

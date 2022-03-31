@@ -17,23 +17,23 @@ func (r *nullWorkflowArchive) IsEnabled() bool {
 	return false
 }
 
-func (r *nullWorkflowArchive) ArchiveWorkflow(*wfv1.Workflow) error {
+func (r *nullWorkflowArchive) ArchiveWorkflow(string, *wfv1.Workflow) error {
 	return nil
 }
 
-func (r *nullWorkflowArchive) ListWorkflows(string, string, string, time.Time, time.Time, labels.Requirements, int, int) (wfv1.Workflows, error) {
+func (r *nullWorkflowArchive) ListWorkflows(string, string, string, string, time.Time, time.Time, labels.Requirements, int, int) (wfv1.Workflows, error) {
 	return wfv1.Workflows{}, nil
 }
 
-func (r *nullWorkflowArchive) GetWorkflow(string) (*wfv1.Workflow, error) {
+func (r *nullWorkflowArchive) GetWorkflow(string, string) (*wfv1.Workflow, error) {
 	return nil, fmt.Errorf("getting archived workflows not supported")
 }
 
-func (r *nullWorkflowArchive) DeleteWorkflow(string) error {
+func (r *nullWorkflowArchive) DeleteWorkflow(string, string) error {
 	return fmt.Errorf("deleting archived workflows not supported")
 }
 
-func (r *nullWorkflowArchive) DeleteExpiredWorkflows(time.Duration) error {
+func (r *nullWorkflowArchive) DeleteExpiredWorkflows(string, time.Duration) error {
 	return nil
 }
 

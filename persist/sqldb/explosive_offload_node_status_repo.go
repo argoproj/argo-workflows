@@ -17,22 +17,22 @@ func (n *explosiveOffloadNodeStatusRepo) IsEnabled() bool {
 	return false
 }
 
-func (n *explosiveOffloadNodeStatusRepo) Save(string, string, wfv1.Nodes) (string, error) {
+func (n *explosiveOffloadNodeStatusRepo) Save(string, string, string, wfv1.Nodes) (string, error) {
 	return "", OffloadNotSupportedError
 }
 
-func (n *explosiveOffloadNodeStatusRepo) Get(string, string) (wfv1.Nodes, error) {
+func (n *explosiveOffloadNodeStatusRepo) Get(string, string, string) (wfv1.Nodes, error) {
 	return nil, OffloadNotSupportedError
 }
 
-func (n *explosiveOffloadNodeStatusRepo) List(string) (map[UUIDVersion]wfv1.Nodes, error) {
+func (n *explosiveOffloadNodeStatusRepo) List(string, string) (map[UUIDVersion]wfv1.Nodes, error) {
 	return nil, OffloadNotSupportedError
 }
 
-func (n *explosiveOffloadNodeStatusRepo) Delete(string, string) error {
+func (n *explosiveOffloadNodeStatusRepo) Delete(string, string, string) error {
 	return OffloadNotSupportedError
 }
 
-func (n *explosiveOffloadNodeStatusRepo) ListOldOffloads(string) (map[string][]string, error) {
+func (n *explosiveOffloadNodeStatusRepo) ListOldOffloads(string, string) (map[string][]string, error) {
 	return nil, OffloadNotSupportedError
 }

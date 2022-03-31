@@ -1,6 +1,7 @@
 import * as React from 'react';
 import {useEffect, useState} from 'react';
 import * as models from '../../../../models';
+import {ClusterFilter} from '../../../shared/components/cluster-filter';
 import {NamespaceFilter} from '../../../shared/components/namespace-filter';
 import {TagsInput} from '../../../shared/components/tags-input/tags-input';
 
@@ -8,12 +9,13 @@ require('./workflow-template-filters.scss');
 
 interface WorkflowFilterProps {
     templates: models.WorkflowTemplate[];
+    cluster: string;
     namespace: string;
     labels: string[];
-    onChange: (namespace: string, labels: string[]) => void;
+    onChange: (cluster: string, namespace: string, labels: string[]) => void;
 }
 
-export const WorkflowTemplateFilters = ({templates, namespace, labels, onChange}: WorkflowFilterProps) => {
+export const WorkflowTemplateFilters = ({templates, cluster, namespace, labels, onChange}: WorkflowFilterProps) => {
     const [labelSuggestion, setLabelSuggestion] = useState([]);
 
     useEffect(() => {
@@ -36,11 +38,20 @@ export const WorkflowTemplateFilters = ({templates, namespace, labels, onChange}
         <div className='wf-filters-container'>
             <div className='row'>
                 <div className='columns small-2 xlarge-12'>
+                    <p className='wf-filters-container__title'>Cluster</p>
+                    <ClusterFilter
+                        value={cluster}
+                        onChange={v => {
+                            onChange(v, namespace, labels);
+                        }}
+                    />
+                </div>
+                <div className='columns small-2 xlarge-12'>
                     <p className='wf-filters-container__title'>Namespace</p>
                     <NamespaceFilter
                         value={namespace}
                         onChange={ns => {
-                            onChange(ns, labels);
+                            onChange(cluster, ns, labels);
                         }}
                     />
                 </div>
@@ -51,7 +62,7 @@ export const WorkflowTemplateFilters = ({templates, namespace, labels, onChange}
                         autocomplete={labelSuggestion}
                         tags={labels}
                         onChange={tags => {
-                            onChange(namespace, tags);
+                            onChange(cluster, namespace, tags);
                         }}
                     />
                 </div>

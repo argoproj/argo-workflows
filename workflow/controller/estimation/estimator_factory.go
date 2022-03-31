@@ -18,7 +18,7 @@ import (
 
 type EstimatorFactory interface {
 	// ALWAYS return as estimator, even if it also returns an error.
-	NewEstimator(wf *wfv1.Workflow) (Estimator, error)
+	NewEstimator(cluster string, wf *wfv1.Workflow) (Estimator, error)
 }
 
 type estimatorFactory struct {
@@ -33,7 +33,7 @@ func NewEstimatorFactory(wfInformer cache.SharedIndexInformer, hydrator hydrator
 	return &estimatorFactory{wfInformer, hydrator, wfArchive}
 }
 
-func (f *estimatorFactory) NewEstimator(wf *wfv1.Workflow) (Estimator, error) {
+func (f *estimatorFactory) NewEstimator(cluster string, wf *wfv1.Workflow) (Estimator, error) {
 	defaultEstimator := &estimator{wf: wf}
 	for labelName, indexName := range map[string]string{
 		common.LabelKeyWorkflowTemplate:        indexes.WorkflowTemplateIndex,
@@ -65,7 +65,7 @@ func (f *estimatorFactory) NewEstimator(wf *wfv1.Workflow) (Estimator, error) {
 				if err != nil {
 					return defaultEstimator, fmt.Errorf("failed convert unstructured to workflow: %w", err)
 				}
-				err = f.hydrator.Hydrate(newestWf)
+				err = f.hydrator.Hydrate(cluster, newestWf)
 				if err != nil {
 					return defaultEstimator, fmt.Errorf("failed hydrate last workflow: %w", err)
 				}
@@ -76,7 +76,7 @@ func (f *estimatorFactory) NewEstimator(wf *wfv1.Workflow) (Estimator, error) {
 			if err != nil {
 				return defaultEstimator, fmt.Errorf("failed to parse selector to requirements: %v", err)
 			}
-			workflows, err := f.wfArchive.ListWorkflows(wf.Namespace, "", "", time.Time{}, time.Time{}, requirements, 1, 0)
+			workflows, err := f.wfArchive.ListWorkflows(cluster, wf.Namespace, "", "", time.Time{}, time.Time{}, requirements, 1, 0)
 			if err != nil {
 				return defaultEstimator, fmt.Errorf("failed to list archived workflows: %v", err)
 			}

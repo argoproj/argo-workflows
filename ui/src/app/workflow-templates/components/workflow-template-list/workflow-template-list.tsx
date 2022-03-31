@@ -36,6 +36,7 @@ export const WorkflowTemplateList = ({match, location, history}: RouteComponentP
 
     // state for URL and query parameters
     const [namespace, setNamespace] = useState(Utils.getNamespace(match.params.namespace) || '');
+    const [cluster, setCluster] = useState(queryParams.get('cluster'));
     const [sidePanel, setSidePanel] = useState(queryParams.get('sidePanel') === 'true');
 
     const [labels, setLabels] = useState([]);
@@ -55,11 +56,12 @@ export const WorkflowTemplateList = ({match, location, history}: RouteComponentP
         () =>
             history.push(
                 historyUrl('workflow-templates' + (Utils.managedNamespace ? '' : '/{namespace}'), {
+                    cluster,
                     namespace,
                     sidePanel
                 })
             ),
-        [namespace, sidePanel]
+        [cluster, namespace, sidePanel]
     );
 
     // internal state
@@ -67,7 +69,7 @@ export const WorkflowTemplateList = ({match, location, history}: RouteComponentP
     const [templates, setTemplates] = useState<WorkflowTemplate[]>();
     useEffect(() => {
         services.workflowTemplate
-            .list(namespace, labels, pagination)
+            .list(cluster, namespace, labels, pagination)
             .then(list => {
                 setPagination({...pagination, nextOffset: list.metadata.continue});
                 setTemplates(list.items || []);
@@ -101,10 +103,12 @@ export const WorkflowTemplateList = ({match, location, history}: RouteComponentP
                 <div className='columns small-12 xlarge-2'>
                     <div>
                         <WorkflowTemplateFilters
+                            cluster={cluster}
                             templates={templates || []}
                             namespace={namespace}
                             labels={labels}
-                            onChange={(namespaceValue: string, labelsValue: string[]) => {
+                            onChange={(clusterValue, namespaceValue: string, labelsValue: string[]) => {
+                                setCluster(clusterValue);
                                 setNamespace(namespaceValue);
                                 setLabels(labelsValue);
                             }}

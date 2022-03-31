@@ -198,7 +198,7 @@ func TestServer_GetWFClient(t *testing.T) {
 		ssoIf.On("IsRBACEnabled").Return(true)
 		g, err := NewGatekeeper(Modes{SSO: true}, clients, ssoIf, "my-ns", "my-ns", false, resourceCache, enforcer)
 		if assert.NoError(t, err) {
-			ctx, err := g.ContextWithRequest(x("Bearer v2:whatever"), servertypes.NamespaceHolder("user1-ns"))
+			ctx, err := g.ContextWithRequest(x("Bearer v2:whatever"), reqHolder("user1-ns"))
 			if assert.NoError(t, err) {
 				assert.NotEqual(t, clients, GetWfClient(ctx))
 				assert.NotEqual(t, kubeClient, GetKubeClient(ctx))
@@ -217,7 +217,7 @@ func TestServer_GetWFClient(t *testing.T) {
 		ssoIf.On("IsRBACEnabled").Return(true)
 		g, err := NewGatekeeper(Modes{SSO: true}, clients, ssoIf, "my-ns", "my-ns", true, resourceCache, enforcer)
 		if assert.NoError(t, err) {
-			ctx, err := g.ContextWithRequest(x("Bearer v2:whatever"), servertypes.NamespaceHolder("user1-ns"))
+			ctx, err := g.ContextWithRequest(x("Bearer v2:whatever"), reqHolder("user1-ns"))
 			if assert.NoError(t, err) {
 				assert.NotEqual(t, clients, GetWfClient(ctx))
 				assert.NotEqual(t, kubeClient, GetKubeClient(ctx))
@@ -236,7 +236,7 @@ func TestServer_GetWFClient(t *testing.T) {
 		ssoIf.On("IsRBACEnabled").Return(true)
 		g, err := NewGatekeeper(Modes{SSO: true}, clients, ssoIf, "my-ns", "my-ns", false, resourceCache, enforcer)
 		if assert.NoError(t, err) {
-			ctx, err := g.ContextWithRequest(x("Bearer v2:whatever"), servertypes.NamespaceHolder("user2-ns"))
+			ctx, err := g.ContextWithRequest(x("Bearer v2:whatever"), reqHolder("user2-ns"))
 			if assert.NoError(t, err) {
 				assert.NotEqual(t, clients, GetWfClient(ctx))
 				assert.NotEqual(t, kubeClient, GetKubeClient(ctx))
@@ -256,7 +256,7 @@ func TestServer_GetWFClient(t *testing.T) {
 		ssoIf.On("IsRBACEnabled").Return(true)
 		g, err := NewGatekeeper(Modes{SSO: true}, clients, ssoIf, "my-ns", "my-ns", false, resourceCache, enforcer)
 		if assert.NoError(t, err) {
-			ctx, err := g.ContextWithRequest(x("Bearer v2:whatever"), servertypes.NamespaceHolder("user3-ns"))
+			ctx, err := g.ContextWithRequest(x("Bearer v2:whatever"), reqHolder("user3-ns"))
 			if assert.NoError(t, err) {
 				assert.NotEqual(t, clients, GetWfClient(ctx))
 				assert.NotEqual(t, kubeClient, GetKubeClient(ctx))
@@ -292,6 +292,13 @@ func TestServer_GetWFClient(t *testing.T) {
 			assert.EqualError(t, err, "rpc error: code = PermissionDenied desc = not allowed")
 		}
 	})
+}
+
+func reqHolder(namespace string) *servertypes.Msg {
+	return &servertypes.Msg{
+		Cluster:   common.PrimaryCluster(),
+		Namespace: namespace,
+	}
 }
 
 type testStream struct{}

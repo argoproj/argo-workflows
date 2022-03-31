@@ -31,11 +31,6 @@ func (c *errorTranslatingWorkflowServiceClient) ListWorkflows(ctx context.Contex
 	return workflows, grpcutil.TranslateError(err)
 }
 
-func (c *errorTranslatingWorkflowServiceClient) ListWorkflowsV2(ctx context.Context, req *workflowpkg.WorkflowListRequest, _ ...grpc.CallOption) (*v1alpha1.WorkflowList, error) {
-	workflows, err := c.delegate.ListWorkflowsV2(ctx, req)
-	return workflows, grpcutil.TranslateError(err)
-}
-
 func (c *errorTranslatingWorkflowServiceClient) WatchWorkflows(ctx context.Context, req *workflowpkg.WatchWorkflowsRequest, _ ...grpc.CallOption) (workflowpkg.WorkflowService_WatchWorkflowsClient, error) {
 	workflows, err := c.delegate.WatchWorkflows(ctx, req)
 	return workflows, grpcutil.TranslateError(err)

@@ -12,11 +12,11 @@ func (i noop) IsHydrated(wf *wfv1.Workflow) bool {
 	return true
 }
 
-func (i noop) Hydrate(wf *wfv1.Workflow) error {
+func (i noop) Hydrate(cluster string, wf *wfv1.Workflow) error {
 	return nil
 }
 
-func (i noop) Dehydrate(wf *wfv1.Workflow) error {
+func (i noop) Dehydrate(cluster string, wf *wfv1.Workflow) error {
 	return nil
 }
 

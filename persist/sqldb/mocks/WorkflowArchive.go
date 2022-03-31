@@ -16,13 +16,13 @@ type WorkflowArchive struct {
 	mock.Mock
 }
 
-// ArchiveWorkflow provides a mock function with given fields: wf
-func (_m *WorkflowArchive) ArchiveWorkflow(wf *v1alpha1.Workflow) error {
-	ret := _m.Called(wf)
+// ArchiveWorkflow provides a mock function with given fields: clusterName, wf
+func (_m *WorkflowArchive) ArchiveWorkflow(clusterName string, wf *v1alpha1.Workflow) error {
+	ret := _m.Called(clusterName, wf)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(*v1alpha1.Workflow) error); ok {
-		r0 = rf(wf)
+	if rf, ok := ret.Get(0).(func(string, *v1alpha1.Workflow) error); ok {
+		r0 = rf(clusterName, wf)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -30,13 +30,13 @@ func (_m *WorkflowArchive) ArchiveWorkflow(wf *v1alpha1.Workflow) error {
 	return r0
 }
 
-// DeleteExpiredWorkflows provides a mock function with given fields: ttl
-func (_m *WorkflowArchive) DeleteExpiredWorkflows(ttl time.Duration) error {
-	ret := _m.Called(ttl)
+// DeleteExpiredWorkflows provides a mock function with given fields: clusterName, ttl
+func (_m *WorkflowArchive) DeleteExpiredWorkflows(clusterName string, ttl time.Duration) error {
+	ret := _m.Called(clusterName, ttl)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(time.Duration) error); ok {
-		r0 = rf(ttl)
+	if rf, ok := ret.Get(0).(func(string, time.Duration) error); ok {
+		r0 = rf(clusterName, ttl)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -44,13 +44,13 @@ func (_m *WorkflowArchive) DeleteExpiredWorkflows(ttl time.Duration) error {
 	return r0
 }
 
-// DeleteWorkflow provides a mock function with given fields: uid
-func (_m *WorkflowArchive) DeleteWorkflow(uid string) error {
-	ret := _m.Called(uid)
+// DeleteWorkflow provides a mock function with given fields: clusterName, uid
+func (_m *WorkflowArchive) DeleteWorkflow(clusterName string, uid string) error {
+	ret := _m.Called(clusterName, uid)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(string) error); ok {
-		r0 = rf(uid)
+	if rf, ok := ret.Get(0).(func(string, string) error); ok {
+		r0 = rf(clusterName, uid)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -58,13 +58,13 @@ func (_m *WorkflowArchive) DeleteWorkflow(uid string) error {
 	return r0
 }
 
-// GetWorkflow provides a mock function with given fields: uid
-func (_m *WorkflowArchive) GetWorkflow(uid string) (*v1alpha1.Workflow, error) {
-	ret := _m.Called(uid)
+// GetWorkflow provides a mock function with given fields: clusterName, uid
+func (_m *WorkflowArchive) GetWorkflow(clusterName string, uid string) (*v1alpha1.Workflow, error) {
+	ret := _m.Called(clusterName, uid)
 
 	var r0 *v1alpha1.Workflow
-	if rf, ok := ret.Get(0).(func(string) *v1alpha1.Workflow); ok {
-		r0 = rf(uid)
+	if rf, ok := ret.Get(0).(func(string, string) *v1alpha1.Workflow); ok {
+		r0 = rf(clusterName, uid)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*v1alpha1.Workflow)
@@ -72,8 +72,8 @@ func (_m *WorkflowArchive) GetWorkflow(uid string) (*v1alpha1.Workflow, error) {
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(string) error); ok {
-		r1 = rf(uid)
+	if rf, ok := ret.Get(1).(func(string, string) error); ok {
+		r1 = rf(clusterName, uid)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -95,13 +95,13 @@ func (_m *WorkflowArchive) IsEnabled() bool {
 	return r0
 }
 
-// ListWorkflows provides a mock function with given fields: namespace, name, namePrefix, minStartAt, maxStartAt, labelRequirements, limit, offset
-func (_m *WorkflowArchive) ListWorkflows(namespace string, name string, namePrefix string, minStartAt time.Time, maxStartAt time.Time, labelRequirements labels.Requirements, limit int, offset int) (v1alpha1.Workflows, error) {
-	ret := _m.Called(namespace, name, namePrefix, minStartAt, maxStartAt, labelRequirements, limit, offset)
+// ListWorkflows provides a mock function with given fields: clusterName, namespace, name, namePrefix, minStartAt, maxStartAt, labelRequirements, limit, offset
+func (_m *WorkflowArchive) ListWorkflows(clusterName string, namespace string, name string, namePrefix string, minStartAt time.Time, maxStartAt time.Time, labelRequirements labels.Requirements, limit int, offset int) (v1alpha1.Workflows, error) {
+	ret := _m.Called(clusterName, namespace, name, namePrefix, minStartAt, maxStartAt, labelRequirements, limit, offset)
 
 	var r0 v1alpha1.Workflows
-	if rf, ok := ret.Get(0).(func(string, string, string, time.Time, time.Time, labels.Requirements, int, int) v1alpha1.Workflows); ok {
-		r0 = rf(namespace, name, namePrefix, minStartAt, maxStartAt, labelRequirements, limit, offset)
+	if rf, ok := ret.Get(0).(func(string, string, string, string, time.Time, time.Time, labels.Requirements, int, int) v1alpha1.Workflows); ok {
+		r0 = rf(clusterName, namespace, name, namePrefix, minStartAt, maxStartAt, labelRequirements, limit, offset)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(v1alpha1.Workflows)
@@ -109,8 +109,8 @@ func (_m *WorkflowArchive) ListWorkflows(namespace string, name string, namePref
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(string, string, string, time.Time, time.Time, labels.Requirements, int, int) error); ok {
-		r1 = rf(namespace, name, namePrefix, minStartAt, maxStartAt, labelRequirements, limit, offset)
+	if rf, ok := ret.Get(1).(func(string, string, string, string, time.Time, time.Time, labels.Requirements, int, int) error); ok {
+		r1 = rf(clusterName, namespace, name, namePrefix, minStartAt, maxStartAt, labelRequirements, limit, offset)
 	} else {
 		r1 = ret.Error(1)
 	}

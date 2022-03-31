@@ -144,10 +144,11 @@ func (s *E2ESuite) DeleteResources() {
 		archive := s.Persistence.workflowArchive
 		parse, err := labels.ParseToRequirements(Label)
 		s.CheckError(err)
-		workflows, err := archive.ListWorkflows(Namespace, "", "", time.Time{}, time.Time{}, parse, 0, 0)
+		cluster := common.PrimaryCluster()
+		workflows, err := archive.ListWorkflows(Namespace, cluster, "", "", time.Time{}, time.Time{}, parse, 0, 0)
 		s.CheckError(err)
 		for _, w := range workflows {
-			err := archive.DeleteWorkflow(string(w.UID))
+			err := archive.DeleteWorkflow(cluster, string(w.UID))
 			s.CheckError(err)
 		}
 	}

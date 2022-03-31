@@ -11,8 +11,10 @@ export class WorkflowTemplateService {
             .then(res => res.body as models.WorkflowTemplate);
     }
 
-    public list(namespace: string, labels?: string[], pagination?: Pagination) {
-        return requests.get(`api/v1/workflow-templates/${namespace}?${Utils.queryParams({labels, pagination}).join('&')}`).then(res => res.body as models.WorkflowTemplateList);
+    public list(cluster: string, namespace: string, labels?: string[], pagination?: Pagination) {
+        return requests
+            .get(`api/v1/workflow-templates/${namespace}?${Utils.queryParams({cluster, labels, pagination}).join('&')}`)
+            .then(res => res.body as models.WorkflowTemplateList);
     }
 
     public get(name: string, namespace: string) {

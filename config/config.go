@@ -172,7 +172,6 @@ type PersistConfig struct {
 	ArchiveLabelSelector *metav1.LabelSelector `json:"archiveLabelSelector,omitempty"`
 	// in days
 	ArchiveTTL     TTL               `json:"archiveTTL,omitempty"`
-	ClusterName    string            `json:"clusterName,omitempty"`
 	ConnectionPool *ConnectionPool   `json:"connectionPool,omitempty"`
 	PostgreSQL     *PostgreSQLConfig `json:"postgresql,omitempty"`
 	MySQL          *MySQLConfig      `json:"mysql,omitempty"`
@@ -184,13 +183,6 @@ func (c PersistConfig) GetArchiveLabelSelector() (labels.Selector, error) {
 		return labels.Everything(), nil
 	}
 	return metav1.LabelSelectorAsSelector(c.ArchiveLabelSelector)
-}
-
-func (c PersistConfig) GetClusterName() string {
-	if c.ClusterName != "" {
-		return c.ClusterName
-	}
-	return "default"
 }
 
 type ConnectionPool struct {

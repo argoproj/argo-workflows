@@ -26,6 +26,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/util/instanceid"
 	"github.com/argoproj/argo-workflows/v3/workflow/artifactrepositories"
 	artifact "github.com/argoproj/argo-workflows/v3/workflow/artifacts"
+	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/hydrator"
 )
 
@@ -55,25 +56,32 @@ func (a *ArtifactServer) GetInputArtifact(w http.ResponseWriter, r *http.Request
 }
 
 func (a *ArtifactServer) getArtifact(w http.ResponseWriter, r *http.Request, isInput bool) {
-	requestPath := strings.SplitN(r.URL.Path, "/", 6)
-	if len(requestPath) != 6 {
+	requestPath := strings.Split(r.URL.Path, "/")
+	var cluster, namespace, workflowName, nodeId, artifactName string
+	switch len(requestPath) {
+	case 6:
+		cluster, namespace, workflowName, nodeId, artifactName = common.PrimaryCluster(), requestPath[2], requestPath[3], requestPath[4], requestPath[5]
+	case 7:
+		cluster, namespace, workflowName, nodeId, artifactName = requestPath[2], requestPath[3], requestPath[4], requestPath[5], requestPath[6]
+	default:
 		a.serverInternalError(errors.New("request path is not valid"), w)
 		return
 	}
-	namespace := requestPath[2]
-	workflowName := requestPath[3]
-	nodeId := requestPath[4]
-	artifactName := requestPath[5]
 
-	ctx, err := a.gateKeeping(r, types.NamespaceHolder(namespace))
+	ctx, err := a.gateKeeping(r, &types.Msg{
+		Cluster:   cluster,
+		Namespace: namespace,
+		Resource:  "workflows",
+		Act:       "get",
+	})
 	if err != nil {
 		a.unauthorizedError(err, w)
 		return
 	}
 
-	log.WithFields(log.Fields{"namespace": namespace, "workflowName": workflowName, "nodeId": nodeId, "artifactName": artifactName, "isInput": isInput}).Info("Download artifact")
+	log.WithFields(log.Fields{"cluster": cluster, "namespace": namespace, "workflowName": workflowName, "nodeId": nodeId, "artifactName": artifactName, "isInput": isInput}).Info("Download artifact")
 
-	wf, err := a.getWorkflowAndValidate(ctx, namespace, workflowName)
+	wf, err := a.getWorkflowAndValidate(ctx, cluster, namespace, workflowName)
 	if err != nil {
 		a.serverInternalError(err, w)
 		return
@@ -96,23 +104,32 @@ func (a *ArtifactServer) GetInputArtifactByUID(w http.ResponseWriter, r *http.Re
 }
 
 func (a *ArtifactServer) getArtifactByUID(w http.ResponseWriter, r *http.Request, isInput bool) {
-	requestPath := strings.SplitN(r.URL.Path, "/", 5)
-	if len(requestPath) != 5 {
+	requestPath := strings.Split(r.URL.Path, "/")
+
+	var cluster, uid, nodeId, artifactName string
+	switch len(requestPath) {
+	case 5:
+		cluster, uid, nodeId, artifactName = common.PrimaryCluster(), requestPath[2], requestPath[3], requestPath[4]
+	case 6:
+		cluster, uid, nodeId, artifactName = requestPath[2], requestPath[3], requestPath[4], requestPath[5]
+	default:
 		a.serverInternalError(errors.New("request path is not valid"), w)
 		return
 	}
-	uid := requestPath[2]
-	nodeId := requestPath[3]
-	artifactName := requestPath[4]
 
 	// We need to know the namespace before we can do gate keeping
-	wf, err := a.wfArchive.GetWorkflow(uid)
+	wf, err := a.wfArchive.GetWorkflow(cluster, uid)
 	if err != nil {
 		a.serverInternalError(err, w)
 		return
 	}
 
-	ctx, err := a.gateKeeping(r, types.NamespaceHolder(wf.GetNamespace()))
+	ctx, err := a.gateKeeping(r, &types.Msg{
+		Cluster:   cluster,
+		Namespace: wf.GetNamespace(),
+		Act:       "get",
+		Resource:  "workflows",
+	})
 	if err != nil {
 		a.unauthorizedError(err, w)
 		return
@@ -125,7 +142,7 @@ func (a *ArtifactServer) getArtifactByUID(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	log.WithFields(log.Fields{"uid": uid, "nodeId": nodeId, "artifactName": artifactName, "isInput": isInput}).Info("Download artifact")
+	log.WithFields(log.Fields{"cluster": cluster, "uid": uid, "nodeId": nodeId, "artifactName": artifactName, "isInput": isInput}).Info("Download artifact")
 	err = a.returnArtifact(ctx, w, r, wf, nodeId, artifactName, isInput)
 
 	if err != nil {
@@ -227,7 +244,7 @@ func (a *ArtifactServer) returnArtifact(ctx context.Context, w http.ResponseWrit
 	return nil
 }
 
-func (a *ArtifactServer) getWorkflowAndValidate(ctx context.Context, namespace string, workflowName string) (*wfv1.Workflow, error) {
+func (a *ArtifactServer) getWorkflowAndValidate(ctx context.Context, cluster, namespace, workflowName string) (*wfv1.Workflow, error) {
 	wfClient := auth.GetWfClient(ctx)
 	wf, err := wfClient.ArgoprojV1alpha1().Workflows(namespace).Get(ctx, workflowName, metav1.GetOptions{})
 	if err != nil {
@@ -237,7 +254,7 @@ func (a *ArtifactServer) getWorkflowAndValidate(ctx context.Context, namespace s
 	if err != nil {
 		return nil, err
 	}
-	err = a.hydrator.Hydrate(wf)
+	err = a.hydrator.Hydrate(cluster, wf)
 	if err != nil {
 		return nil, err
 	}

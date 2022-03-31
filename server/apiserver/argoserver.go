@@ -207,13 +207,13 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 		}
 		// we always enable node offload, as this is read-only for the Argo Server, i.e. you can turn it off if you
 		// like and the controller won't offload newly created workflows, but you can still read them
-		offloadRepo, err = sqldb.NewOffloadNodeStatusRepo(session, persistence.GetClusterName(), tableName)
+		offloadRepo, err = sqldb.NewOffloadNodeStatusRepo(session, tableName)
 		if err != nil {
 			log.Fatal(err)
 		}
 		// we always enable the archive for the Argo Server, as the Argo Server does not write records, so you can
 		// disable the archiving - and still read old records
-		wfArchive = sqldb.NewWorkflowArchive(session, persistence.GetClusterName(), as.managedNamespace, instanceIDService)
+		wfArchive = sqldb.NewWorkflowArchive(session, as.managedNamespace, instanceIDService)
 	}
 	eventRecorderManager := events.NewEventRecorderManager(as.clients.Primary().Kubernetes)
 	artifactRepositories := artifactrepositories.New(as.clients.Primary().Kubernetes, as.managedNamespace, &config.ArtifactRepository)

@@ -614,7 +614,7 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 	wfClient := woc.controller.primaryProfile().workflowClient.ArgoprojV1alpha1().Workflows(woc.wf.ObjectMeta.Namespace)
 	// try and compress nodes if needed
 	nodes := woc.wf.Status.Nodes
-	err := woc.controller.hydrator.Dehydrate(woc.wf)
+	err := woc.controller.hydrator.Dehydrate(common.PrimaryCluster(), woc.wf)
 	if err != nil {
 		woc.log.Warnf("Failed to dehydrate: %v", err)
 		woc.markWorkflowError(ctx, err)
@@ -761,7 +761,7 @@ func (woc *wfOperationCtx) reapplyUpdate(ctx context.Context, wfClient v1alpha1.
 	if woc.orig.ResourceVersion != woc.wf.ResourceVersion {
 		woc.log.Panic("cannot re-apply update with mismatched resource versions")
 	}
-	err := woc.controller.hydrator.Hydrate(woc.orig)
+	err := woc.controller.hydrator.Hydrate(common.PrimaryCluster(), woc.orig)
 	if err != nil {
 		return nil, err
 	}
@@ -793,7 +793,7 @@ func (woc *wfOperationCtx) reapplyUpdate(ctx context.Context, wfClient v1alpha1.
 		if currWf.Status.Fulfilled() {
 			return nil, fmt.Errorf("must never update completed workflows")
 		}
-		err = woc.controller.hydrator.Hydrate(currWf)
+		err = woc.controller.hydrator.Hydrate(common.PrimaryCluster(), currWf)
 		if err != nil {
 			return nil, err
 		}
@@ -816,7 +816,7 @@ func (woc *wfOperationCtx) reapplyUpdate(ctx context.Context, wfClient v1alpha1.
 		if err != nil {
 			return nil, err
 		}
-		err = woc.controller.hydrator.Dehydrate(&newWf)
+		err = woc.controller.hydrator.Dehydrate(common.PrimaryCluster(), &newWf)
 		if err != nil {
 			return nil, err
 		}
@@ -2090,7 +2090,7 @@ func (woc *wfOperationCtx) markWorkflowPhase(ctx context.Context, phase wfv1.Wor
 // get a predictor, this maybe null implementation in the case of rare error
 func (woc *wfOperationCtx) getEstimator() estimation.Estimator {
 	if woc.estimator == nil {
-		woc.estimator, _ = woc.controller.estimatorFactory.NewEstimator(woc.wf)
+		woc.estimator, _ = woc.controller.estimatorFactory.NewEstimator(common.PrimaryCluster(), woc.wf)
 	}
 	return woc.estimator
 }

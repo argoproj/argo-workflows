@@ -3,9 +3,19 @@ import {Pagination} from '../pagination';
 import {Utils} from '../utils';
 import requests from './requests';
 export class ArchivedWorkflowsService {
-    public list(namespace: string, name: string, namePrefix: string, phases: string[], labels: string[], minStartedAt: Date, maxStartedAt: Date, pagination: Pagination) {
+    public list(
+        cluster: string,
+        namespace: string,
+        name: string,
+        namePrefix: string,
+        phases: string[],
+        labels: string[],
+        minStartedAt: Date,
+        maxStartedAt: Date,
+        pagination: Pagination
+    ) {
         return requests
-            .get(`api/v1/archived-workflows?${Utils.queryParams({namespace, name, namePrefix, phases, labels, minStartedAt, maxStartedAt, pagination}).join('&')}`)
+            .get(`api/v1/archived-workflows?${Utils.queryParams({cluster, namespace, name, namePrefix, phases, labels, minStartedAt, maxStartedAt, pagination}).join('&')}`)
             .then(res => res.body as models.WorkflowList);
     }
 

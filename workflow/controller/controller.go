@@ -598,7 +598,7 @@ func (wfc *WorkflowController) workflowGarbageCollector(stopCh <-chan struct{}) 
 		case <-ticker.C:
 			if wfc.offloadNodeStatusRepo.IsEnabled() {
 				log.Info("Performing periodic workflow GC")
-				oldRecords, err := wfc.offloadNodeStatusRepo.ListOldOffloads(wfc.GetManagedNamespace())
+				oldRecords, err := wfc.offloadNodeStatusRepo.ListOldOffloads(common.PrimaryCluster(), wfc.GetManagedNamespace())
 				if err != nil {
 					log.WithField("err", err).Error("Failed to list old offloaded nodes")
 					continue
@@ -636,7 +636,7 @@ func (wfc *WorkflowController) deleteOffloadedNodesForWorkflow(uid string, versi
 		// workflow might still be hydrated
 		if wfc.hydrator.IsHydrated(wf) {
 			log.WithField("uid", wf.UID).Info("Hydrated workflow encountered")
-			err = wfc.hydrator.Dehydrate(wf)
+			err = wfc.hydrator.Dehydrate(common.PrimaryCluster(), wf)
 			if err != nil {
 				return err
 			}
@@ -649,7 +649,7 @@ func (wfc *WorkflowController) deleteOffloadedNodesForWorkflow(uid string, versi
 		if wf != nil && wf.Status.OffloadNodeStatusVersion == version {
 			continue
 		}
-		if err := wfc.offloadNodeStatusRepo.Delete(uid, version); err != nil {
+		if err := wfc.offloadNodeStatusRepo.Delete(common.PrimaryCluster(), uid, version); err != nil {
 			return err
 		}
 	}
@@ -682,7 +682,7 @@ func (wfc *WorkflowController) archivedWorkflowGarbageCollector(stopCh <-chan st
 			return
 		case <-ticker.C:
 			log.Info("Performing archived workflow GC")
-			err := wfc.wfArchive.DeleteExpiredWorkflows(time.Duration(ttl))
+			err := wfc.wfArchive.DeleteExpiredWorkflows(common.PrimaryCluster(), time.Duration(ttl))
 			if err != nil {
 				log.WithField("err", err).Error("Failed to delete archived workflows")
 			}
@@ -764,7 +764,7 @@ func (wfc *WorkflowController) processNextItem(ctx context.Context) bool {
 		}
 	}()
 
-	err = wfc.hydrator.Hydrate(woc.wf)
+	err = wfc.hydrator.Hydrate(common.PrimaryCluster(), woc.wf)
 	if err != nil {
 		woc.log.Errorf("hydration failed: %v", err)
 		woc.markWorkflowError(ctx, err)
@@ -921,12 +921,12 @@ func (wfc *WorkflowController) archiveWorkflowAux(ctx context.Context, obj inter
 	if err != nil {
 		return fmt.Errorf("failed to convert to workflow from unstructured: %w", err)
 	}
-	err = wfc.hydrator.Hydrate(wf)
+	err = wfc.hydrator.Hydrate(common.PrimaryCluster(), wf)
 	if err != nil {
 		return fmt.Errorf("failed to hydrate workflow: %w", err)
 	}
 	log.WithFields(log.Fields{"namespace": wf.Namespace, "workflow": wf.Name, "uid": wf.UID}).Info("archiving workflow")
-	err = wfc.wfArchive.ArchiveWorkflow(wf)
+	err = wfc.wfArchive.ArchiveWorkflow(common.PrimaryCluster(), wf)
 	if err != nil {
 		return fmt.Errorf("failed to archive workflow: %w", err)
 	}
