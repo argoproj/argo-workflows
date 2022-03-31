@@ -151,7 +151,8 @@ func ProcessArgs(tmpl *wfv1.Template, args wfv1.ArgumentsProvider, globalParams,
 
 				cmValue, err := GetConfigMapValue(configMapInformer, namespace, cmName, cmKey)
 				if err != nil {
-					if inParam.ValueFrom.Default != nil {
+					err = errors.Cause(err)
+					if inParam.ValueFrom.Default != nil && apierr.IsNotFound(err) {
 						inParam.Value = inParam.ValueFrom.Default
 					} else {
 						return nil, errors.Errorf(errors.CodeBadRequest, "unable to retrieve inputs.parameters.%s from ConfigMap: %s", inParam.Name, err)
