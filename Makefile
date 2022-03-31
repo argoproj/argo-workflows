@@ -351,6 +351,7 @@ pkg/apiclient/workflowtemplate/workflow-template.swagger.json: $(PROTO_BINARIES)
 manifests/base/crds/full/argoproj.io_workflows.yaml: $(GOPATH)/bin/controller-gen $(TYPES) ./hack/crdgen.sh ./hack/crds.go
 	./hack/crdgen.sh
 
+.PHONY: manifests
 manifests: \
 	manifests/base/workflow-controller/workflow-controller-authz-configmap.yaml \
 	manifests/base/argo-server/argo-server-authz-configmap.yaml \
@@ -367,16 +368,27 @@ manifests: \
 
 manifests/base/workflow-controller/workflow-controller-authz-configmap.yaml: /dev/null
 	kubectl create --dry-run=client -o yaml cm workflow-controller-authz --from-file=model.conf=workflow/authz/model.conf --from-file=policy.csv=/dev/null > manifests/base/workflow-controller/workflow-controller-authz-configmap.yaml
+
 manifests/base/argo-server/argo-server-authz-configmap.yaml: /dev/null
 	kubectl create --dry-run=client -o yaml cm argo-server-authz --from-file=model.conf=server/authz/model.conf --from-file=policy.csv=server/authz/default-policy.csv > manifests/base/argo-server/argo-server-authz-configmap.yaml
+
+.PHONY: manifests/install.yaml
 manifests/install.yaml: /dev/null
 	kubectl kustomize --load-restrictor=LoadRestrictionsNone manifests/cluster-install | ./hack/auto-gen-msg.sh > manifests/install.yaml
+
+.PHONY: manifests/namespace-install.yaml
 manifests/namespace-install.yaml: /dev/null
 	kubectl kustomize --load-restrictor=LoadRestrictionsNone manifests/namespace-install | ./hack/auto-gen-msg.sh > manifests/namespace-install.yaml
+
+.PHONY: manifests/quick-start-minimal.yaml
 manifests/quick-start-minimal.yaml: /dev/null
 	kubectl kustomize --load-restrictor=LoadRestrictionsNone manifests/quick-start/minimal | ./hack/auto-gen-msg.sh > manifests/quick-start-minimal.yaml
+
+.PHONY: manifests/quick-start-mysql.yaml
 manifests/quick-start-mysql.yaml: /dev/null
 	kubectl kustomize --load-restrictor=LoadRestrictionsNone manifests/quick-start/mysql | ./hack/auto-gen-msg.sh > manifests/quick-start-mysql.yaml
+
+.PHONY: manifests/quick-start-postgres.yaml
 manifests/quick-start-postgres.yaml: /dev/null
 	kubectl kustomize --load-restrictor=LoadRestrictionsNone manifests/quick-start/postgres | ./hack/auto-gen-msg.sh > manifests/quick-start-postgres.yaml
 
