@@ -15,7 +15,7 @@ Method | HTTP request | Description
 
 <a name="archivedWorkflowServiceDeleteArchivedWorkflow"></a>
 # **archivedWorkflowServiceDeleteArchivedWorkflow**
-> Object archivedWorkflowServiceDeleteArchivedWorkflow(uid)
+> Object archivedWorkflowServiceDeleteArchivedWorkflow(uid, cluster)
 
 
 
@@ -35,8 +35,9 @@ public class Example {
 
     ArchivedWorkflowServiceApi apiInstance = new ArchivedWorkflowServiceApi(defaultClient);
     String uid = "uid_example"; // String | 
+    String cluster = "cluster_example"; // String | 
     try {
-      Object result = apiInstance.archivedWorkflowServiceDeleteArchivedWorkflow(uid);
+      Object result = apiInstance.archivedWorkflowServiceDeleteArchivedWorkflow(uid, cluster);
       System.out.println(result);
     } catch (ApiException e) {
       System.err.println("Exception when calling ArchivedWorkflowServiceApi#archivedWorkflowServiceDeleteArchivedWorkflow");
@@ -54,6 +55,7 @@ public class Example {
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **uid** | **String**|  |
+ **cluster** | **String**|  | [optional]
 
 ### Return type
 
@@ -76,7 +78,7 @@ No authorization required
 
 <a name="archivedWorkflowServiceGetArchivedWorkflow"></a>
 # **archivedWorkflowServiceGetArchivedWorkflow**
-> IoArgoprojWorkflowV1alpha1Workflow archivedWorkflowServiceGetArchivedWorkflow(uid)
+> IoArgoprojWorkflowV1alpha1Workflow archivedWorkflowServiceGetArchivedWorkflow(uid, cluster)
 
 
 
@@ -96,8 +98,9 @@ public class Example {
 
     ArchivedWorkflowServiceApi apiInstance = new ArchivedWorkflowServiceApi(defaultClient);
     String uid = "uid_example"; // String | 
+    String cluster = "cluster_example"; // String | 
     try {
-      IoArgoprojWorkflowV1alpha1Workflow result = apiInstance.archivedWorkflowServiceGetArchivedWorkflow(uid);
+      IoArgoprojWorkflowV1alpha1Workflow result = apiInstance.archivedWorkflowServiceGetArchivedWorkflow(uid, cluster);
       System.out.println(result);
     } catch (ApiException e) {
       System.err.println("Exception when calling ArchivedWorkflowServiceApi#archivedWorkflowServiceGetArchivedWorkflow");
@@ -115,6 +118,7 @@ public class Example {
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **uid** | **String**|  |
+ **cluster** | **String**|  | [optional]
 
 ### Return type
 

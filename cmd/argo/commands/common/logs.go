@@ -13,7 +13,7 @@ import (
 
 func LogWorkflow(ctx context.Context, serviceClient workflowpkg.WorkflowServiceClient, namespace, workflow, podName, grep, selector string, logOptions *corev1.PodLogOptions) {
 	// logs
-	stream, err := serviceClient.WorkflowLogs(ctx, &workflowpkg.WorkflowLogRequest{
+	stream, err := serviceClient.WatchWorkflowLogs(ctx, &workflowpkg.WorkflowLogRequest{
 		Name:       workflow,
 		Namespace:  namespace,
 		PodName:    podName,

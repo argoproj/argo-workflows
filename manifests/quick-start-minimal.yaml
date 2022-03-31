@@ -1126,13 +1126,19 @@ data:
     r = sub, obj, act
 
     [policy_definition]
-    p = sub, obj, acts
+    p = sub, obj, act
+
+    [role_definition]
+    g = _, _
 
     [policy_effect]
     e = some(where (p.eft == allow))
 
     [matchers]
-    m = keyMatch(r.sub, p.sub) && keyMatch(r.obj, p.obj) && (contains(p.acts, r.act) || p.acts == '*')
+    m = g(r.sub, p.sub) && r.obj == p.obj && r.act == p.act
+
+    [matchers]
+    m = g(r.sub, p.sub) && keyMatch(r.sub, p.sub) && keyMatch(r.obj, p.obj) && (contains(p.acts, r.act) || p.acts == '*')
   policy.csv: |
     # The argo-server has read-write access in cluster-0.
     p, serviceaccount:cluster-0:argo:argo-server, cluster-0:*, *

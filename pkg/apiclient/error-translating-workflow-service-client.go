@@ -86,13 +86,13 @@ func (c *errorTranslatingWorkflowServiceClient) LintWorkflow(ctx context.Context
 	return workflow, grpcutil.TranslateError(err)
 }
 
-func (c *errorTranslatingWorkflowServiceClient) PodLogs(ctx context.Context, req *workflowpkg.WorkflowLogRequest, _ ...grpc.CallOption) (workflowpkg.WorkflowService_PodLogsClient, error) {
-	logs, err := c.delegate.PodLogs(ctx, req)
+func (c *errorTranslatingWorkflowServiceClient) WatchPodLogs(ctx context.Context, req *workflowpkg.WorkflowLogRequest, _ ...grpc.CallOption) (workflowpkg.WorkflowService_WatchPodLogsClient, error) {
+	logs, err := c.delegate.WatchPodLogs(ctx, req)
 	return logs, grpcutil.TranslateError(err)
 }
 
-func (c *errorTranslatingWorkflowServiceClient) WorkflowLogs(ctx context.Context, req *workflowpkg.WorkflowLogRequest, _ ...grpc.CallOption) (workflowpkg.WorkflowService_WorkflowLogsClient, error) {
-	logs, err := c.delegate.WorkflowLogs(ctx, req)
+func (c *errorTranslatingWorkflowServiceClient) WatchWorkflowLogs(ctx context.Context, req *workflowpkg.WorkflowLogRequest, _ ...grpc.CallOption) (workflowpkg.WorkflowService_WatchWorkflowLogsClient, error) {
+	logs, err := c.delegate.WatchWorkflowLogs(ctx, req)
 	return logs, grpcutil.TranslateError(err)
 }
 

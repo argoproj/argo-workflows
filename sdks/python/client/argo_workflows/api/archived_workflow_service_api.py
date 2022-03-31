@@ -59,6 +59,7 @@ class ArchivedWorkflowServiceApi(object):
                 uid (str):
 
             Keyword Args:
+                cluster (str): [optional]
                 _return_http_data_only (bool): response data without head status
                     code and headers. Default is True.
                 _preload_content (bool): if False, the urllib3.HTTPResponse object
@@ -119,6 +120,7 @@ class ArchivedWorkflowServiceApi(object):
             params_map={
                 'all': [
                     'uid',
+                    'cluster',
                 ],
                 'required': [
                     'uid',
@@ -138,12 +140,16 @@ class ArchivedWorkflowServiceApi(object):
                 'openapi_types': {
                     'uid':
                         (str,),
+                    'cluster':
+                        (str,),
                 },
                 'attribute_map': {
                     'uid': 'uid',
+                    'cluster': 'cluster',
                 },
                 'location_map': {
                     'uid': 'path',
+                    'cluster': 'query',
                 },
                 'collection_format_map': {
                 }
@@ -175,6 +181,7 @@ class ArchivedWorkflowServiceApi(object):
                 uid (str):
 
             Keyword Args:
+                cluster (str): [optional]
                 _return_http_data_only (bool): response data without head status
                     code and headers. Default is True.
                 _preload_content (bool): if False, the urllib3.HTTPResponse object
@@ -235,6 +242,7 @@ class ArchivedWorkflowServiceApi(object):
             params_map={
                 'all': [
                     'uid',
+                    'cluster',
                 ],
                 'required': [
                     'uid',
@@ -254,12 +262,16 @@ class ArchivedWorkflowServiceApi(object):
                 'openapi_types': {
                     'uid':
                         (str,),
+                    'cluster':
+                        (str,),
                 },
                 'attribute_map': {
                     'uid': 'uid',
+                    'cluster': 'cluster',
                 },
                 'location_map': {
                     'uid': 'path',
+                    'cluster': 'query',
                 },
                 'collection_format_map': {
                 }

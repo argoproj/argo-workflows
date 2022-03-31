@@ -106,10 +106,10 @@ func local_request_SensorService_ListSensors_0(ctx context.Context, marshaler ru
 }
 
 var (
-	filter_SensorService_SensorsLogs_0 = &utilities.DoubleArray{Encoding: map[string]int{"namespace": 0}, Base: []int{1, 1, 0}, Check: []int{0, 1, 2}}
+	filter_SensorService_WatchSensorsLogs_0 = &utilities.DoubleArray{Encoding: map[string]int{"namespace": 0}, Base: []int{1, 1, 0}, Check: []int{0, 1, 2}}
 )
 
-func request_SensorService_SensorsLogs_0(ctx context.Context, marshaler runtime.Marshaler, client SensorServiceClient, req *http.Request, pathParams map[string]string) (SensorService_SensorsLogsClient, runtime.ServerMetadata, error) {
+func request_SensorService_WatchSensorsLogs_0(ctx context.Context, marshaler runtime.Marshaler, client SensorServiceClient, req *http.Request, pathParams map[string]string) (SensorService_WatchSensorsLogsClient, runtime.ServerMetadata, error) {
 	var protoReq SensorsLogsRequest
 	var metadata runtime.ServerMetadata
 
@@ -134,11 +134,11 @@ func request_SensorService_SensorsLogs_0(ctx context.Context, marshaler runtime.
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_SensorService_SensorsLogs_0); err != nil {
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_SensorService_WatchSensorsLogs_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
-	stream, err := client.SensorsLogs(ctx, &protoReq)
+	stream, err := client.WatchSensorsLogs(ctx, &protoReq)
 	if err != nil {
 		return nil, metadata, err
 	}
@@ -576,7 +576,7 @@ func RegisterSensorServiceHandlerServer(ctx context.Context, mux *runtime.ServeM
 
 	})
 
-	mux.Handle("GET", pattern_SensorService_SensorsLogs_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("GET", pattern_SensorService_WatchSensorsLogs_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		err := status.Error(codes.Unimplemented, "streaming calls are not yet supported in the in-process transport")
 		_, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
@@ -743,7 +743,7 @@ func RegisterSensorServiceHandlerClient(ctx context.Context, mux *runtime.ServeM
 
 	})
 
-	mux.Handle("GET", pattern_SensorService_SensorsLogs_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("GET", pattern_SensorService_WatchSensorsLogs_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
@@ -752,14 +752,14 @@ func RegisterSensorServiceHandlerClient(ctx context.Context, mux *runtime.ServeM
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_SensorService_SensorsLogs_0(rctx, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_SensorService_WatchSensorsLogs_0(rctx, inboundMarshaler, client, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
 
-		forward_SensorService_SensorsLogs_0(ctx, mux, outboundMarshaler, w, req, func() (proto.Message, error) { return resp.Recv() }, mux.GetForwardResponseOptions()...)
+		forward_SensorService_WatchSensorsLogs_0(ctx, mux, outboundMarshaler, w, req, func() (proto.Message, error) { return resp.Recv() }, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -869,7 +869,7 @@ func RegisterSensorServiceHandlerClient(ctx context.Context, mux *runtime.ServeM
 var (
 	pattern_SensorService_ListSensors_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3}, []string{"api", "v1", "sensors", "namespace"}, "", runtime.AssumeColonVerbOpt(true)))
 
-	pattern_SensorService_SensorsLogs_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 4, 2, 5}, []string{"api", "v1", "stream", "sensors", "namespace", "logs"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_SensorService_WatchSensorsLogs_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 4, 2, 5}, []string{"api", "v1", "stream", "sensors", "namespace", "logs"}, "", runtime.AssumeColonVerbOpt(true)))
 
 	pattern_SensorService_WatchSensors_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 4}, []string{"api", "v1", "stream", "sensors", "namespace"}, "", runtime.AssumeColonVerbOpt(true)))
 
@@ -885,7 +885,7 @@ var (
 var (
 	forward_SensorService_ListSensors_0 = runtime.ForwardResponseMessage
 
-	forward_SensorService_SensorsLogs_0 = runtime.ForwardResponseStream
+	forward_SensorService_WatchSensorsLogs_0 = runtime.ForwardResponseStream
 
 	forward_SensorService_WatchSensors_0 = runtime.ForwardResponseStream
 

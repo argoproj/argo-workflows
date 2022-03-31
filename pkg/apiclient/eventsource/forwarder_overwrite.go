@@ -5,6 +5,6 @@ import (
 )
 
 func init() {
-	forward_EventSourceService_EventSourcesLogs_0 = http.StreamForwarder
+	forward_EventSourceService_WatchEventSourcesLogs_0 = http.StreamForwarder
 	forward_EventSourceService_WatchEventSources_0 = http.StreamForwarder
 }

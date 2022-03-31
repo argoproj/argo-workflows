@@ -188,6 +188,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                         <SlidingPanel isShown={!!this.sidePanel} onClose={() => ctx.navigation.goto('.', {sidePanel: null})}>
                             {this.sidePanel === 'submit-new-workflow' && (
                                 <WorkflowCreator
+                                    cluster={this.state.cluster}
                                     namespace={Utils.getNamespaceWithDefault(this.state.namespace)}
                                     onCreate={wf => ctx.navigation.goto(uiUrl(`workflows/${wf.metadata.namespace}/${wf.metadata.name}`))}
                                 />

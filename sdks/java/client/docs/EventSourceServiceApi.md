@@ -6,11 +6,11 @@ Method | HTTP request | Description
 ------------- | ------------- | -------------
 [**eventSourceServiceCreateEventSource**](EventSourceServiceApi.md#eventSourceServiceCreateEventSource) | **POST** /api/v1/event-sources/{namespace} | 
 [**eventSourceServiceDeleteEventSource**](EventSourceServiceApi.md#eventSourceServiceDeleteEventSource) | **DELETE** /api/v1/event-sources/{namespace}/{name} | 
-[**eventSourceServiceEventSourcesLogs**](EventSourceServiceApi.md#eventSourceServiceEventSourcesLogs) | **GET** /api/v1/stream/event-sources/{namespace}/logs | 
 [**eventSourceServiceGetEventSource**](EventSourceServiceApi.md#eventSourceServiceGetEventSource) | **GET** /api/v1/event-sources/{namespace}/{name} | 
 [**eventSourceServiceListEventSources**](EventSourceServiceApi.md#eventSourceServiceListEventSources) | **GET** /api/v1/event-sources/{namespace} | 
 [**eventSourceServiceUpdateEventSource**](EventSourceServiceApi.md#eventSourceServiceUpdateEventSource) | **PUT** /api/v1/event-sources/{namespace}/{name} | 
 [**eventSourceServiceWatchEventSources**](EventSourceServiceApi.md#eventSourceServiceWatchEventSources) | **GET** /api/v1/stream/event-sources/{namespace} | 
+[**eventSourceServiceWatchEventSourcesLogs**](EventSourceServiceApi.md#eventSourceServiceWatchEventSourcesLogs) | **GET** /api/v1/stream/event-sources/{namespace}/logs | 
 
 
 <a name="eventSourceServiceCreateEventSource"></a>
@@ -149,95 +149,6 @@ No authorization required
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | A successful response. |  -  |
-**0** | An unexpected error response. |  -  |
-
-<a name="eventSourceServiceEventSourcesLogs"></a>
-# **eventSourceServiceEventSourcesLogs**
-> StreamResultOfEventsourceLogEntry eventSourceServiceEventSourcesLogs(namespace, name, eventSourceType, eventName, grep, podLogOptionsContainer, podLogOptionsFollow, podLogOptionsPrevious, podLogOptionsSinceSeconds, podLogOptionsSinceTimeSeconds, podLogOptionsSinceTimeNanos, podLogOptionsTimestamps, podLogOptionsTailLines, podLogOptionsLimitBytes, podLogOptionsInsecureSkipTLSVerifyBackend)
-
-
-
-### Example
-```java
-// Import classes:
-import io.argoproj.workflow.ApiClient;
-import io.argoproj.workflow.ApiException;
-import io.argoproj.workflow.Configuration;
-import io.argoproj.workflow.models.*;
-import io.argoproj.workflow.apis.EventSourceServiceApi;
-
-public class Example {
-  public static void main(String[] args) {
-    ApiClient defaultClient = Configuration.getDefaultApiClient();
-    defaultClient.setBasePath("http://localhost:2746");
-
-    EventSourceServiceApi apiInstance = new EventSourceServiceApi(defaultClient);
-    String namespace = "namespace_example"; // String | 
-    String name = "name_example"; // String | optional - only return entries for this event source.
-    String eventSourceType = "eventSourceType_example"; // String | optional - only return entries for this event source type (e.g. `webhook`).
-    String eventName = "eventName_example"; // String | optional - only return entries for this event name (e.g. `example`).
-    String grep = "grep_example"; // String | optional - only return entries where `msg` matches this regular expression.
-    String podLogOptionsContainer = "podLogOptionsContainer_example"; // String | The container for which to stream logs. Defaults to only container if there is one container in the pod. +optional.
-    Boolean podLogOptionsFollow = true; // Boolean | Follow the log stream of the pod. Defaults to false. +optional.
-    Boolean podLogOptionsPrevious = true; // Boolean | Return previous terminated container logs. Defaults to false. +optional.
-    String podLogOptionsSinceSeconds = "podLogOptionsSinceSeconds_example"; // String | A relative time in seconds before the current time from which to show logs. If this value precedes the time a pod was started, only logs since the pod start will be returned. If this value is in the future, no logs will be returned. Only one of sinceSeconds or sinceTime may be specified. +optional.
-    String podLogOptionsSinceTimeSeconds = "podLogOptionsSinceTimeSeconds_example"; // String | Represents seconds of UTC time since Unix epoch 1970-01-01T00:00:00Z. Must be from 0001-01-01T00:00:00Z to 9999-12-31T23:59:59Z inclusive.
-    Integer podLogOptionsSinceTimeNanos = 56; // Integer | Non-negative fractions of a second at nanosecond resolution. Negative second values with fractions must still have non-negative nanos values that count forward in time. Must be from 0 to 999,999,999 inclusive. This field may be limited in precision depending on context.
-    Boolean podLogOptionsTimestamps = true; // Boolean | If true, add an RFC3339 or RFC3339Nano timestamp at the beginning of every line of log output. Defaults to false. +optional.
-    String podLogOptionsTailLines = "podLogOptionsTailLines_example"; // String | If set, the number of lines from the end of the logs to show. If not specified, logs are shown from the creation of the container or sinceSeconds or sinceTime +optional.
-    String podLogOptionsLimitBytes = "podLogOptionsLimitBytes_example"; // String | If set, the number of bytes to read from the server before terminating the log output. This may not display a complete final line of logging, and may return slightly more or slightly less than the specified limit. +optional.
-    Boolean podLogOptionsInsecureSkipTLSVerifyBackend = true; // Boolean | insecureSkipTLSVerifyBackend indicates that the apiserver should not confirm the validity of the serving certificate of the backend it is connecting to.  This will make the HTTPS connection between the apiserver and the backend insecure. This means the apiserver cannot verify the log data it is receiving came from the real kubelet.  If the kubelet is configured to verify the apiserver's TLS credentials, it does not mean the connection to the real kubelet is vulnerable to a man in the middle attack (e.g. an attacker could not intercept the actual log data coming from the real kubelet). +optional.
-    try {
-      StreamResultOfEventsourceLogEntry result = apiInstance.eventSourceServiceEventSourcesLogs(namespace, name, eventSourceType, eventName, grep, podLogOptionsContainer, podLogOptionsFollow, podLogOptionsPrevious, podLogOptionsSinceSeconds, podLogOptionsSinceTimeSeconds, podLogOptionsSinceTimeNanos, podLogOptionsTimestamps, podLogOptionsTailLines, podLogOptionsLimitBytes, podLogOptionsInsecureSkipTLSVerifyBackend);
-      System.out.println(result);
-    } catch (ApiException e) {
-      System.err.println("Exception when calling EventSourceServiceApi#eventSourceServiceEventSourcesLogs");
-      System.err.println("Status code: " + e.getCode());
-      System.err.println("Reason: " + e.getResponseBody());
-      System.err.println("Response headers: " + e.getResponseHeaders());
-      e.printStackTrace();
-    }
-  }
-}
-```
-
-### Parameters
-
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **namespace** | **String**|  |
- **name** | **String**| optional - only return entries for this event source. | [optional]
- **eventSourceType** | **String**| optional - only return entries for this event source type (e.g. &#x60;webhook&#x60;). | [optional]
- **eventName** | **String**| optional - only return entries for this event name (e.g. &#x60;example&#x60;). | [optional]
- **grep** | **String**| optional - only return entries where &#x60;msg&#x60; matches this regular expression. | [optional]
- **podLogOptionsContainer** | **String**| The container for which to stream logs. Defaults to only container if there is one container in the pod. +optional. | [optional]
- **podLogOptionsFollow** | **Boolean**| Follow the log stream of the pod. Defaults to false. +optional. | [optional]
- **podLogOptionsPrevious** | **Boolean**| Return previous terminated container logs. Defaults to false. +optional. | [optional]
- **podLogOptionsSinceSeconds** | **String**| A relative time in seconds before the current time from which to show logs. If this value precedes the time a pod was started, only logs since the pod start will be returned. If this value is in the future, no logs will be returned. Only one of sinceSeconds or sinceTime may be specified. +optional. | [optional]
- **podLogOptionsSinceTimeSeconds** | **String**| Represents seconds of UTC time since Unix epoch 1970-01-01T00:00:00Z. Must be from 0001-01-01T00:00:00Z to 9999-12-31T23:59:59Z inclusive. | [optional]
- **podLogOptionsSinceTimeNanos** | **Integer**| Non-negative fractions of a second at nanosecond resolution. Negative second values with fractions must still have non-negative nanos values that count forward in time. Must be from 0 to 999,999,999 inclusive. This field may be limited in precision depending on context. | [optional]
- **podLogOptionsTimestamps** | **Boolean**| If true, add an RFC3339 or RFC3339Nano timestamp at the beginning of every line of log output. Defaults to false. +optional. | [optional]
- **podLogOptionsTailLines** | **String**| If set, the number of lines from the end of the logs to show. If not specified, logs are shown from the creation of the container or sinceSeconds or sinceTime +optional. | [optional]
- **podLogOptionsLimitBytes** | **String**| If set, the number of bytes to read from the server before terminating the log output. This may not display a complete final line of logging, and may return slightly more or slightly less than the specified limit. +optional. | [optional]
- **podLogOptionsInsecureSkipTLSVerifyBackend** | **Boolean**| insecureSkipTLSVerifyBackend indicates that the apiserver should not confirm the validity of the serving certificate of the backend it is connecting to.  This will make the HTTPS connection between the apiserver and the backend insecure. This means the apiserver cannot verify the log data it is receiving came from the real kubelet.  If the kubelet is configured to verify the apiserver&#39;s TLS credentials, it does not mean the connection to the real kubelet is vulnerable to a man in the middle attack (e.g. an attacker could not intercept the actual log data coming from the real kubelet). +optional. | [optional]
-
-### Return type
-
-[**StreamResultOfEventsourceLogEntry**](StreamResultOfEventsourceLogEntry.md)
-
-### Authorization
-
-No authorization required
-
-### HTTP request headers
-
- - **Content-Type**: Not defined
- - **Accept**: application/json
-
-### HTTP response details
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-**200** | A successful response.(streaming responses) |  -  |
 **0** | An unexpected error response. |  -  |
 
 <a name="eventSourceServiceGetEventSource"></a>
@@ -510,6 +421,95 @@ Name | Type | Description  | Notes
 ### Return type
 
 [**StreamResultOfEventsourceEventSourceWatchEvent**](StreamResultOfEventsourceEventSourceWatchEvent.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/json
+
+### HTTP response details
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+**200** | A successful response.(streaming responses) |  -  |
+**0** | An unexpected error response. |  -  |
+
+<a name="eventSourceServiceWatchEventSourcesLogs"></a>
+# **eventSourceServiceWatchEventSourcesLogs**
+> StreamResultOfEventsourceLogEntry eventSourceServiceWatchEventSourcesLogs(namespace, name, eventSourceType, eventName, grep, podLogOptionsContainer, podLogOptionsFollow, podLogOptionsPrevious, podLogOptionsSinceSeconds, podLogOptionsSinceTimeSeconds, podLogOptionsSinceTimeNanos, podLogOptionsTimestamps, podLogOptionsTailLines, podLogOptionsLimitBytes, podLogOptionsInsecureSkipTLSVerifyBackend)
+
+
+
+### Example
+```java
+// Import classes:
+import io.argoproj.workflow.ApiClient;
+import io.argoproj.workflow.ApiException;
+import io.argoproj.workflow.Configuration;
+import io.argoproj.workflow.models.*;
+import io.argoproj.workflow.apis.EventSourceServiceApi;
+
+public class Example {
+  public static void main(String[] args) {
+    ApiClient defaultClient = Configuration.getDefaultApiClient();
+    defaultClient.setBasePath("http://localhost:2746");
+
+    EventSourceServiceApi apiInstance = new EventSourceServiceApi(defaultClient);
+    String namespace = "namespace_example"; // String | 
+    String name = "name_example"; // String | optional - only return entries for this event source.
+    String eventSourceType = "eventSourceType_example"; // String | optional - only return entries for this event source type (e.g. `webhook`).
+    String eventName = "eventName_example"; // String | optional - only return entries for this event name (e.g. `example`).
+    String grep = "grep_example"; // String | optional - only return entries where `msg` matches this regular expression.
+    String podLogOptionsContainer = "podLogOptionsContainer_example"; // String | The container for which to stream logs. Defaults to only container if there is one container in the pod. +optional.
+    Boolean podLogOptionsFollow = true; // Boolean | Follow the log stream of the pod. Defaults to false. +optional.
+    Boolean podLogOptionsPrevious = true; // Boolean | Return previous terminated container logs. Defaults to false. +optional.
+    String podLogOptionsSinceSeconds = "podLogOptionsSinceSeconds_example"; // String | A relative time in seconds before the current time from which to show logs. If this value precedes the time a pod was started, only logs since the pod start will be returned. If this value is in the future, no logs will be returned. Only one of sinceSeconds or sinceTime may be specified. +optional.
+    String podLogOptionsSinceTimeSeconds = "podLogOptionsSinceTimeSeconds_example"; // String | Represents seconds of UTC time since Unix epoch 1970-01-01T00:00:00Z. Must be from 0001-01-01T00:00:00Z to 9999-12-31T23:59:59Z inclusive.
+    Integer podLogOptionsSinceTimeNanos = 56; // Integer | Non-negative fractions of a second at nanosecond resolution. Negative second values with fractions must still have non-negative nanos values that count forward in time. Must be from 0 to 999,999,999 inclusive. This field may be limited in precision depending on context.
+    Boolean podLogOptionsTimestamps = true; // Boolean | If true, add an RFC3339 or RFC3339Nano timestamp at the beginning of every line of log output. Defaults to false. +optional.
+    String podLogOptionsTailLines = "podLogOptionsTailLines_example"; // String | If set, the number of lines from the end of the logs to show. If not specified, logs are shown from the creation of the container or sinceSeconds or sinceTime +optional.
+    String podLogOptionsLimitBytes = "podLogOptionsLimitBytes_example"; // String | If set, the number of bytes to read from the server before terminating the log output. This may not display a complete final line of logging, and may return slightly more or slightly less than the specified limit. +optional.
+    Boolean podLogOptionsInsecureSkipTLSVerifyBackend = true; // Boolean | insecureSkipTLSVerifyBackend indicates that the apiserver should not confirm the validity of the serving certificate of the backend it is connecting to.  This will make the HTTPS connection between the apiserver and the backend insecure. This means the apiserver cannot verify the log data it is receiving came from the real kubelet.  If the kubelet is configured to verify the apiserver's TLS credentials, it does not mean the connection to the real kubelet is vulnerable to a man in the middle attack (e.g. an attacker could not intercept the actual log data coming from the real kubelet). +optional.
+    try {
+      StreamResultOfEventsourceLogEntry result = apiInstance.eventSourceServiceWatchEventSourcesLogs(namespace, name, eventSourceType, eventName, grep, podLogOptionsContainer, podLogOptionsFollow, podLogOptionsPrevious, podLogOptionsSinceSeconds, podLogOptionsSinceTimeSeconds, podLogOptionsSinceTimeNanos, podLogOptionsTimestamps, podLogOptionsTailLines, podLogOptionsLimitBytes, podLogOptionsInsecureSkipTLSVerifyBackend);
+      System.out.println(result);
+    } catch (ApiException e) {
+      System.err.println("Exception when calling EventSourceServiceApi#eventSourceServiceWatchEventSourcesLogs");
+      System.err.println("Status code: " + e.getCode());
+      System.err.println("Reason: " + e.getResponseBody());
+      System.err.println("Response headers: " + e.getResponseHeaders());
+      e.printStackTrace();
+    }
+  }
+}
+```
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **namespace** | **String**|  |
+ **name** | **String**| optional - only return entries for this event source. | [optional]
+ **eventSourceType** | **String**| optional - only return entries for this event source type (e.g. &#x60;webhook&#x60;). | [optional]
+ **eventName** | **String**| optional - only return entries for this event name (e.g. &#x60;example&#x60;). | [optional]
+ **grep** | **String**| optional - only return entries where &#x60;msg&#x60; matches this regular expression. | [optional]
+ **podLogOptionsContainer** | **String**| The container for which to stream logs. Defaults to only container if there is one container in the pod. +optional. | [optional]
+ **podLogOptionsFollow** | **Boolean**| Follow the log stream of the pod. Defaults to false. +optional. | [optional]
+ **podLogOptionsPrevious** | **Boolean**| Return previous terminated container logs. Defaults to false. +optional. | [optional]
+ **podLogOptionsSinceSeconds** | **String**| A relative time in seconds before the current time from which to show logs. If this value precedes the time a pod was started, only logs since the pod start will be returned. If this value is in the future, no logs will be returned. Only one of sinceSeconds or sinceTime may be specified. +optional. | [optional]
+ **podLogOptionsSinceTimeSeconds** | **String**| Represents seconds of UTC time since Unix epoch 1970-01-01T00:00:00Z. Must be from 0001-01-01T00:00:00Z to 9999-12-31T23:59:59Z inclusive. | [optional]
+ **podLogOptionsSinceTimeNanos** | **Integer**| Non-negative fractions of a second at nanosecond resolution. Negative second values with fractions must still have non-negative nanos values that count forward in time. Must be from 0 to 999,999,999 inclusive. This field may be limited in precision depending on context. | [optional]
+ **podLogOptionsTimestamps** | **Boolean**| If true, add an RFC3339 or RFC3339Nano timestamp at the beginning of every line of log output. Defaults to false. +optional. | [optional]
+ **podLogOptionsTailLines** | **String**| If set, the number of lines from the end of the logs to show. If not specified, logs are shown from the creation of the container or sinceSeconds or sinceTime +optional. | [optional]
+ **podLogOptionsLimitBytes** | **String**| If set, the number of bytes to read from the server before terminating the log output. This may not display a complete final line of logging, and may return slightly more or slightly less than the specified limit. +optional. | [optional]
+ **podLogOptionsInsecureSkipTLSVerifyBackend** | **Boolean**| insecureSkipTLSVerifyBackend indicates that the apiserver should not confirm the validity of the serving certificate of the backend it is connecting to.  This will make the HTTPS connection between the apiserver and the backend insecure. This means the apiserver cannot verify the log data it is receiving came from the real kubelet.  If the kubelet is configured to verify the apiserver&#39;s TLS credentials, it does not mean the connection to the real kubelet is vulnerable to a man in the middle attack (e.g. an attacker could not intercept the actual log data coming from the real kubelet). +optional. | [optional]
+
+### Return type
+
+[**StreamResultOfEventsourceLogEntry**](StreamResultOfEventsourceLogEntry.md)
 
 ### Authorization
 

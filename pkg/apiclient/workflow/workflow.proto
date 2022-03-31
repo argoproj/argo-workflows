@@ -218,12 +218,12 @@ service WorkflowService {
   }
 
   // DEPRECATED: Cannot work via HTTP if podName is an empty string. Use WorkflowLogs.
-  rpc PodLogs (WorkflowLogRequest) returns (stream LogEntry) {
+  rpc WatchPodLogs (WorkflowLogRequest) returns (stream LogEntry) {
     option deprecated = true;
     option (google.api.http).get = "/api/v1/workflows/{namespace}/{name}/{podName}/log";
   }
 
-  rpc WorkflowLogs (WorkflowLogRequest) returns (stream LogEntry) {
+  rpc WatchWorkflowLogs (WorkflowLogRequest) returns (stream LogEntry) {
     option (google.api.http).get = "/api/v1/workflows/{namespace}/{name}/log";
   }
 

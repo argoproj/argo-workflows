@@ -5,6 +5,8 @@ import (
 	"os"
 	"testing"
 
+	"github.com/argoproj/argo-workflows/v3/util/authz"
+
 	"github.com/casbin/casbin/v2"
 	"github.com/go-jose/go-jose/v3/jwt"
 	log "github.com/sirupsen/logrus"
@@ -113,7 +115,11 @@ func TestServer_GetWFClient(t *testing.T) {
 		Workflow:   wfClient,
 		Kubernetes: kubeClient,
 	}}
-	enforcer := &casbin.Enforcer{}
+	enforcer, err := casbin.NewEnforcer("../authz/model.conf", "testdata/policy.csv")
+	if !assert.NoError(t, err) {
+		t.FailNow()
+	}
+	enforcer.AddFunction("contains", authz.ContainsFunc)
 	t.Run("None", func(t *testing.T) {
 		_, err := NewGatekeeper(Modes{}, clients, nil, "", "", true, resourceCache, enforcer)
 		assert.Error(t, err)

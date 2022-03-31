@@ -260,7 +260,20 @@ func (s gatekeeper) getClients(ctx context.Context, req interface{}) (*servertyp
 			// important! write an audit entry (i.e. log entry) so we know which user performed an operation
 			log.WithFields(addClaimsLogFields(claims, nil)).Info("using the default service account for user")
 		}
+
 		sub := fmt.Sprintf("user:%s:%s", common.PrimaryCluster(), claims.Subject)
+
+		if err := s.addPolicies(claims, msg.Cluster, sub); err != nil {
+			return nil, nil, err
+		}
+		defer func() {
+			if err := s.removePolicies(claims, msg.Cluster, sub); err != nil {
+				log.WithField("sub", sub).
+					WithError(err).
+					Error("failed to remove policy")
+			}
+		}()
+
 		if err := allowed(sub); err != nil {
 			return nil, nil, err
 		}
@@ -272,6 +285,28 @@ func (s gatekeeper) getClients(ctx context.Context, req interface{}) (*servertyp
 	default:
 		panic("this should never happen")
 	}
+}
+
+func (s gatekeeper) removePolicies(claims *types.Claims, cluster string, sub string) error {
+	for _, g := range claims.Groups {
+		group := fmt.Sprintf("group:%s:%s", cluster, g)
+		_, err := s.enforcer.RemoveGroupingPolicy(sub, group)
+		if err != nil {
+			return fmt.Errorf("failed to remove policy for group %q", group)
+		}
+	}
+	return nil
+}
+
+func (s gatekeeper) addPolicies(claims *types.Claims, cluster, sub string) error {
+	for _, g := range claims.Groups {
+		group := fmt.Sprintf("group:%s:%s", cluster, g)
+		_, err := s.enforcer.AddGroupingPolicy(sub, group)
+		if err != nil {
+			return fmt.Errorf("failed to add policy for group %q", group)
+		}
+	}
+	return nil
 }
 
 func precedence(serviceAccount *corev1.ServiceAccount) int {

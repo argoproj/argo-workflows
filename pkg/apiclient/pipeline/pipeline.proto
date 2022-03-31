@@ -88,7 +88,7 @@ service PipelineService {
     rpc DeletePipeline (DeletePipelineRequest) returns (DeletePipelineResponse) {
         option (google.api.http).delete = "/api/v1/pipelines/{namespace}/{name}";
     }
-    rpc PipelineLogs (PipelineLogsRequest) returns (stream LogEntry) {
+    rpc WatchPipelineLogs (PipelineLogsRequest) returns (stream LogEntry) {
         option (google.api.http).get = "/api/v1/stream/pipelines/{namespace}/logs";
     }
     rpc WatchSteps (WatchStepRequest) returns (stream StepWatchEvent) {

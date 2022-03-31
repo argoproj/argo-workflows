@@ -6586,6 +6586,9 @@
     },
     "io.argoproj.workflow.v1alpha1.ResubmitArchivedWorkflowRequest": {
       "properties": {
+        "cluster": {
+          "type": "string"
+        },
         "memoized": {
           "type": "boolean"
         },
@@ -6612,6 +6615,9 @@
     },
     "io.argoproj.workflow.v1alpha1.RetryArchivedWorkflowRequest": {
       "properties": {
+        "cluster": {
+          "type": "string"
+        },
         "name": {
           "type": "string"
         },

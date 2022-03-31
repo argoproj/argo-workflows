@@ -788,214 +788,6 @@ class WorkflowServiceApi(object):
             callable=__list_workflows
         )
 
-        def __pod_logs(
-            self,
-            namespace,
-            name,
-            pod_name,
-            **kwargs
-        ):
-            """DEPRECATED: Cannot work via HTTP if podName is an empty string. Use WorkflowLogs.  # noqa: E501
-
-            This method makes a synchronous HTTP request by default. To make an
-            asynchronous HTTP request, please pass async_req=True
-
-            >>> thread = api.pod_logs(namespace, name, pod_name, async_req=True)
-            >>> result = thread.get()
-
-            Args:
-                namespace (str):
-                name (str):
-                pod_name (str):
-
-            Keyword Args:
-                log_options_container (str): The container for which to stream logs. Defaults to only container if there is one container in the pod. +optional.. [optional]
-                log_options_follow (bool): Follow the log stream of the pod. Defaults to false. +optional.. [optional]
-                log_options_previous (bool): Return previous terminated container logs. Defaults to false. +optional.. [optional]
-                log_options_since_seconds (str): A relative time in seconds before the current time from which to show logs. If this value precedes the time a pod was started, only logs since the pod start will be returned. If this value is in the future, no logs will be returned. Only one of sinceSeconds or sinceTime may be specified. +optional.. [optional]
-                log_options_since_time_seconds (str): Represents seconds of UTC time since Unix epoch 1970-01-01T00:00:00Z. Must be from 0001-01-01T00:00:00Z to 9999-12-31T23:59:59Z inclusive.. [optional]
-                log_options_since_time_nanos (int): Non-negative fractions of a second at nanosecond resolution. Negative second values with fractions must still have non-negative nanos values that count forward in time. Must be from 0 to 999,999,999 inclusive. This field may be limited in precision depending on context.. [optional]
-                log_options_timestamps (bool): If true, add an RFC3339 or RFC3339Nano timestamp at the beginning of every line of log output. Defaults to false. +optional.. [optional]
-                log_options_tail_lines (str): If set, the number of lines from the end of the logs to show. If not specified, logs are shown from the creation of the container or sinceSeconds or sinceTime +optional.. [optional]
-                log_options_limit_bytes (str): If set, the number of bytes to read from the server before terminating the log output. This may not display a complete final line of logging, and may return slightly more or slightly less than the specified limit. +optional.. [optional]
-                log_options_insecure_skip_tls_verify_backend (bool): insecureSkipTLSVerifyBackend indicates that the apiserver should not confirm the validity of the serving certificate of the backend it is connecting to.  This will make the HTTPS connection between the apiserver and the backend insecure. This means the apiserver cannot verify the log data it is receiving came from the real kubelet.  If the kubelet is configured to verify the apiserver's TLS credentials, it does not mean the connection to the real kubelet is vulnerable to a man in the middle attack (e.g. an attacker could not intercept the actual log data coming from the real kubelet). +optional.. [optional]
-                grep (str): [optional]
-                selector (str): [optional]
-                _return_http_data_only (bool): response data without head status
-                    code and headers. Default is True.
-                _preload_content (bool): if False, the urllib3.HTTPResponse object
-                    will be returned without reading/decoding response data.
-                    Default is True.
-                _request_timeout (int/float/tuple): timeout setting for this request. If
-                    one number provided, it will be total request timeout. It can also
-                    be a pair (tuple) of (connection, read) timeouts.
-                    Default is None.
-                _check_input_type (bool): specifies if type checking
-                    should be done one the data sent to the server.
-                    Default is True.
-                _check_return_type (bool): specifies if type checking
-                    should be done one the data received from the server.
-                    Default is True.
-                _host_index (int/None): specifies the index of the server
-                    that we want to use.
-                    Default is read from the configuration.
-                async_req (bool): execute request asynchronously
-
-            Returns:
-                StreamResultOfIoArgoprojWorkflowV1alpha1LogEntry
-                    If the method is called asynchronously, returns the request
-                    thread.
-            """
-            kwargs['async_req'] = kwargs.get(
-                'async_req', False
-            )
-            kwargs['_return_http_data_only'] = kwargs.get(
-                '_return_http_data_only', True
-            )
-            kwargs['_preload_content'] = kwargs.get(
-                '_preload_content', True
-            )
-            kwargs['_request_timeout'] = kwargs.get(
-                '_request_timeout', None
-            )
-            kwargs['_check_input_type'] = kwargs.get(
-                '_check_input_type', True
-            )
-            kwargs['_check_return_type'] = kwargs.get(
-                '_check_return_type', True
-            )
-            kwargs['_host_index'] = kwargs.get('_host_index')
-            kwargs['namespace'] = \
-                namespace
-            kwargs['name'] = \
-                name
-            kwargs['pod_name'] = \
-                pod_name
-            return self.call_with_http_info(**kwargs)
-
-        self.pod_logs = _Endpoint(
-            settings={
-                'response_type': (StreamResultOfIoArgoprojWorkflowV1alpha1LogEntry,),
-                'auth': [],
-                'endpoint_path': '/api/v1/workflows/{namespace}/{name}/{podName}/log',
-                'operation_id': 'pod_logs',
-                'http_method': 'GET',
-                'servers': None,
-            },
-            params_map={
-                'all': [
-                    'namespace',
-                    'name',
-                    'pod_name',
-                    'log_options_container',
-                    'log_options_follow',
-                    'log_options_previous',
-                    'log_options_since_seconds',
-                    'log_options_since_time_seconds',
-                    'log_options_since_time_nanos',
-                    'log_options_timestamps',
-                    'log_options_tail_lines',
-                    'log_options_limit_bytes',
-                    'log_options_insecure_skip_tls_verify_backend',
-                    'grep',
-                    'selector',
-                ],
-                'required': [
-                    'namespace',
-                    'name',
-                    'pod_name',
-                ],
-                'nullable': [
-                ],
-                'enum': [
-                ],
-                'validation': [
-                ]
-            },
-            root_map={
-                'validations': {
-                },
-                'allowed_values': {
-                },
-                'openapi_types': {
-                    'namespace':
-                        (str,),
-                    'name':
-                        (str,),
-                    'pod_name':
-                        (str,),
-                    'log_options_container':
-                        (str,),
-                    'log_options_follow':
-                        (bool,),
-                    'log_options_previous':
-                        (bool,),
-                    'log_options_since_seconds':
-                        (str,),
-                    'log_options_since_time_seconds':
-                        (str,),
-                    'log_options_since_time_nanos':
-                        (int,),
-                    'log_options_timestamps':
-                        (bool,),
-                    'log_options_tail_lines':
-                        (str,),
-                    'log_options_limit_bytes':
-                        (str,),
-                    'log_options_insecure_skip_tls_verify_backend':
-                        (bool,),
-                    'grep':
-                        (str,),
-                    'selector':
-                        (str,),
-                },
-                'attribute_map': {
-                    'namespace': 'namespace',
-                    'name': 'name',
-                    'pod_name': 'podName',
-                    'log_options_container': 'logOptions.container',
-                    'log_options_follow': 'logOptions.follow',
-                    'log_options_previous': 'logOptions.previous',
-                    'log_options_since_seconds': 'logOptions.sinceSeconds',
-                    'log_options_since_time_seconds': 'logOptions.sinceTime.seconds',
-                    'log_options_since_time_nanos': 'logOptions.sinceTime.nanos',
-                    'log_options_timestamps': 'logOptions.timestamps',
-                    'log_options_tail_lines': 'logOptions.tailLines',
-                    'log_options_limit_bytes': 'logOptions.limitBytes',
-                    'log_options_insecure_skip_tls_verify_backend': 'logOptions.insecureSkipTLSVerifyBackend',
-                    'grep': 'grep',
-                    'selector': 'selector',
-                },
-                'location_map': {
-                    'namespace': 'path',
-                    'name': 'path',
-                    'pod_name': 'path',
-                    'log_options_container': 'query',
-                    'log_options_follow': 'query',
-                    'log_options_previous': 'query',
-                    'log_options_since_seconds': 'query',
-                    'log_options_since_time_seconds': 'query',
-                    'log_options_since_time_nanos': 'query',
-                    'log_options_timestamps': 'query',
-                    'log_options_tail_lines': 'query',
-                    'log_options_limit_bytes': 'query',
-                    'log_options_insecure_skip_tls_verify_backend': 'query',
-                    'grep': 'query',
-                    'selector': 'query',
-                },
-                'collection_format_map': {
-                }
-            },
-            headers_map={
-                'accept': [
-                    'application/json'
-                ],
-                'content_type': [],
-            },
-            api_client=api_client,
-            callable=__pod_logs
-        )
-
         def __resubmit_workflow(
             self,
             namespace,
@@ -2252,6 +2044,418 @@ class WorkflowServiceApi(object):
             callable=__watch_events
         )
 
+        def __watch_pod_logs(
+            self,
+            namespace,
+            name,
+            pod_name,
+            **kwargs
+        ):
+            """DEPRECATED: Cannot work via HTTP if podName is an empty string. Use WorkflowLogs.  # noqa: E501
+
+            This method makes a synchronous HTTP request by default. To make an
+            asynchronous HTTP request, please pass async_req=True
+
+            >>> thread = api.watch_pod_logs(namespace, name, pod_name, async_req=True)
+            >>> result = thread.get()
+
+            Args:
+                namespace (str):
+                name (str):
+                pod_name (str):
+
+            Keyword Args:
+                log_options_container (str): The container for which to stream logs. Defaults to only container if there is one container in the pod. +optional.. [optional]
+                log_options_follow (bool): Follow the log stream of the pod. Defaults to false. +optional.. [optional]
+                log_options_previous (bool): Return previous terminated container logs. Defaults to false. +optional.. [optional]
+                log_options_since_seconds (str): A relative time in seconds before the current time from which to show logs. If this value precedes the time a pod was started, only logs since the pod start will be returned. If this value is in the future, no logs will be returned. Only one of sinceSeconds or sinceTime may be specified. +optional.. [optional]
+                log_options_since_time_seconds (str): Represents seconds of UTC time since Unix epoch 1970-01-01T00:00:00Z. Must be from 0001-01-01T00:00:00Z to 9999-12-31T23:59:59Z inclusive.. [optional]
+                log_options_since_time_nanos (int): Non-negative fractions of a second at nanosecond resolution. Negative second values with fractions must still have non-negative nanos values that count forward in time. Must be from 0 to 999,999,999 inclusive. This field may be limited in precision depending on context.. [optional]
+                log_options_timestamps (bool): If true, add an RFC3339 or RFC3339Nano timestamp at the beginning of every line of log output. Defaults to false. +optional.. [optional]
+                log_options_tail_lines (str): If set, the number of lines from the end of the logs to show. If not specified, logs are shown from the creation of the container or sinceSeconds or sinceTime +optional.. [optional]
+                log_options_limit_bytes (str): If set, the number of bytes to read from the server before terminating the log output. This may not display a complete final line of logging, and may return slightly more or slightly less than the specified limit. +optional.. [optional]
+                log_options_insecure_skip_tls_verify_backend (bool): insecureSkipTLSVerifyBackend indicates that the apiserver should not confirm the validity of the serving certificate of the backend it is connecting to.  This will make the HTTPS connection between the apiserver and the backend insecure. This means the apiserver cannot verify the log data it is receiving came from the real kubelet.  If the kubelet is configured to verify the apiserver's TLS credentials, it does not mean the connection to the real kubelet is vulnerable to a man in the middle attack (e.g. an attacker could not intercept the actual log data coming from the real kubelet). +optional.. [optional]
+                grep (str): [optional]
+                selector (str): [optional]
+                _return_http_data_only (bool): response data without head status
+                    code and headers. Default is True.
+                _preload_content (bool): if False, the urllib3.HTTPResponse object
+                    will be returned without reading/decoding response data.
+                    Default is True.
+                _request_timeout (int/float/tuple): timeout setting for this request. If
+                    one number provided, it will be total request timeout. It can also
+                    be a pair (tuple) of (connection, read) timeouts.
+                    Default is None.
+                _check_input_type (bool): specifies if type checking
+                    should be done one the data sent to the server.
+                    Default is True.
+                _check_return_type (bool): specifies if type checking
+                    should be done one the data received from the server.
+                    Default is True.
+                _host_index (int/None): specifies the index of the server
+                    that we want to use.
+                    Default is read from the configuration.
+                async_req (bool): execute request asynchronously
+
+            Returns:
+                StreamResultOfIoArgoprojWorkflowV1alpha1LogEntry
+                    If the method is called asynchronously, returns the request
+                    thread.
+            """
+            kwargs['async_req'] = kwargs.get(
+                'async_req', False
+            )
+            kwargs['_return_http_data_only'] = kwargs.get(
+                '_return_http_data_only', True
+            )
+            kwargs['_preload_content'] = kwargs.get(
+                '_preload_content', True
+            )
+            kwargs['_request_timeout'] = kwargs.get(
+                '_request_timeout', None
+            )
+            kwargs['_check_input_type'] = kwargs.get(
+                '_check_input_type', True
+            )
+            kwargs['_check_return_type'] = kwargs.get(
+                '_check_return_type', True
+            )
+            kwargs['_host_index'] = kwargs.get('_host_index')
+            kwargs['namespace'] = \
+                namespace
+            kwargs['name'] = \
+                name
+            kwargs['pod_name'] = \
+                pod_name
+            return self.call_with_http_info(**kwargs)
+
+        self.watch_pod_logs = _Endpoint(
+            settings={
+                'response_type': (StreamResultOfIoArgoprojWorkflowV1alpha1LogEntry,),
+                'auth': [],
+                'endpoint_path': '/api/v1/workflows/{namespace}/{name}/{podName}/log',
+                'operation_id': 'watch_pod_logs',
+                'http_method': 'GET',
+                'servers': None,
+            },
+            params_map={
+                'all': [
+                    'namespace',
+                    'name',
+                    'pod_name',
+                    'log_options_container',
+                    'log_options_follow',
+                    'log_options_previous',
+                    'log_options_since_seconds',
+                    'log_options_since_time_seconds',
+                    'log_options_since_time_nanos',
+                    'log_options_timestamps',
+                    'log_options_tail_lines',
+                    'log_options_limit_bytes',
+                    'log_options_insecure_skip_tls_verify_backend',
+                    'grep',
+                    'selector',
+                ],
+                'required': [
+                    'namespace',
+                    'name',
+                    'pod_name',
+                ],
+                'nullable': [
+                ],
+                'enum': [
+                ],
+                'validation': [
+                ]
+            },
+            root_map={
+                'validations': {
+                },
+                'allowed_values': {
+                },
+                'openapi_types': {
+                    'namespace':
+                        (str,),
+                    'name':
+                        (str,),
+                    'pod_name':
+                        (str,),
+                    'log_options_container':
+                        (str,),
+                    'log_options_follow':
+                        (bool,),
+                    'log_options_previous':
+                        (bool,),
+                    'log_options_since_seconds':
+                        (str,),
+                    'log_options_since_time_seconds':
+                        (str,),
+                    'log_options_since_time_nanos':
+                        (int,),
+                    'log_options_timestamps':
+                        (bool,),
+                    'log_options_tail_lines':
+                        (str,),
+                    'log_options_limit_bytes':
+                        (str,),
+                    'log_options_insecure_skip_tls_verify_backend':
+                        (bool,),
+                    'grep':
+                        (str,),
+                    'selector':
+                        (str,),
+                },
+                'attribute_map': {
+                    'namespace': 'namespace',
+                    'name': 'name',
+                    'pod_name': 'podName',
+                    'log_options_container': 'logOptions.container',
+                    'log_options_follow': 'logOptions.follow',
+                    'log_options_previous': 'logOptions.previous',
+                    'log_options_since_seconds': 'logOptions.sinceSeconds',
+                    'log_options_since_time_seconds': 'logOptions.sinceTime.seconds',
+                    'log_options_since_time_nanos': 'logOptions.sinceTime.nanos',
+                    'log_options_timestamps': 'logOptions.timestamps',
+                    'log_options_tail_lines': 'logOptions.tailLines',
+                    'log_options_limit_bytes': 'logOptions.limitBytes',
+                    'log_options_insecure_skip_tls_verify_backend': 'logOptions.insecureSkipTLSVerifyBackend',
+                    'grep': 'grep',
+                    'selector': 'selector',
+                },
+                'location_map': {
+                    'namespace': 'path',
+                    'name': 'path',
+                    'pod_name': 'path',
+                    'log_options_container': 'query',
+                    'log_options_follow': 'query',
+                    'log_options_previous': 'query',
+                    'log_options_since_seconds': 'query',
+                    'log_options_since_time_seconds': 'query',
+                    'log_options_since_time_nanos': 'query',
+                    'log_options_timestamps': 'query',
+                    'log_options_tail_lines': 'query',
+                    'log_options_limit_bytes': 'query',
+                    'log_options_insecure_skip_tls_verify_backend': 'query',
+                    'grep': 'query',
+                    'selector': 'query',
+                },
+                'collection_format_map': {
+                }
+            },
+            headers_map={
+                'accept': [
+                    'application/json'
+                ],
+                'content_type': [],
+            },
+            api_client=api_client,
+            callable=__watch_pod_logs
+        )
+
+        def __watch_workflow_logs(
+            self,
+            namespace,
+            name,
+            **kwargs
+        ):
+            """watch_workflow_logs  # noqa: E501
+
+            This method makes a synchronous HTTP request by default. To make an
+            asynchronous HTTP request, please pass async_req=True
+
+            >>> thread = api.watch_workflow_logs(namespace, name, async_req=True)
+            >>> result = thread.get()
+
+            Args:
+                namespace (str):
+                name (str):
+
+            Keyword Args:
+                pod_name (str): [optional]
+                log_options_container (str): The container for which to stream logs. Defaults to only container if there is one container in the pod. +optional.. [optional]
+                log_options_follow (bool): Follow the log stream of the pod. Defaults to false. +optional.. [optional]
+                log_options_previous (bool): Return previous terminated container logs. Defaults to false. +optional.. [optional]
+                log_options_since_seconds (str): A relative time in seconds before the current time from which to show logs. If this value precedes the time a pod was started, only logs since the pod start will be returned. If this value is in the future, no logs will be returned. Only one of sinceSeconds or sinceTime may be specified. +optional.. [optional]
+                log_options_since_time_seconds (str): Represents seconds of UTC time since Unix epoch 1970-01-01T00:00:00Z. Must be from 0001-01-01T00:00:00Z to 9999-12-31T23:59:59Z inclusive.. [optional]
+                log_options_since_time_nanos (int): Non-negative fractions of a second at nanosecond resolution. Negative second values with fractions must still have non-negative nanos values that count forward in time. Must be from 0 to 999,999,999 inclusive. This field may be limited in precision depending on context.. [optional]
+                log_options_timestamps (bool): If true, add an RFC3339 or RFC3339Nano timestamp at the beginning of every line of log output. Defaults to false. +optional.. [optional]
+                log_options_tail_lines (str): If set, the number of lines from the end of the logs to show. If not specified, logs are shown from the creation of the container or sinceSeconds or sinceTime +optional.. [optional]
+                log_options_limit_bytes (str): If set, the number of bytes to read from the server before terminating the log output. This may not display a complete final line of logging, and may return slightly more or slightly less than the specified limit. +optional.. [optional]
+                log_options_insecure_skip_tls_verify_backend (bool): insecureSkipTLSVerifyBackend indicates that the apiserver should not confirm the validity of the serving certificate of the backend it is connecting to.  This will make the HTTPS connection between the apiserver and the backend insecure. This means the apiserver cannot verify the log data it is receiving came from the real kubelet.  If the kubelet is configured to verify the apiserver's TLS credentials, it does not mean the connection to the real kubelet is vulnerable to a man in the middle attack (e.g. an attacker could not intercept the actual log data coming from the real kubelet). +optional.. [optional]
+                grep (str): [optional]
+                selector (str): [optional]
+                _return_http_data_only (bool): response data without head status
+                    code and headers. Default is True.
+                _preload_content (bool): if False, the urllib3.HTTPResponse object
+                    will be returned without reading/decoding response data.
+                    Default is True.
+                _request_timeout (int/float/tuple): timeout setting for this request. If
+                    one number provided, it will be total request timeout. It can also
+                    be a pair (tuple) of (connection, read) timeouts.
+                    Default is None.
+                _check_input_type (bool): specifies if type checking
+                    should be done one the data sent to the server.
+                    Default is True.
+                _check_return_type (bool): specifies if type checking
+                    should be done one the data received from the server.
+                    Default is True.
+                _host_index (int/None): specifies the index of the server
+                    that we want to use.
+                    Default is read from the configuration.
+                async_req (bool): execute request asynchronously
+
+            Returns:
+                StreamResultOfIoArgoprojWorkflowV1alpha1LogEntry
+                    If the method is called asynchronously, returns the request
+                    thread.
+            """
+            kwargs['async_req'] = kwargs.get(
+                'async_req', False
+            )
+            kwargs['_return_http_data_only'] = kwargs.get(
+                '_return_http_data_only', True
+            )
+            kwargs['_preload_content'] = kwargs.get(
+                '_preload_content', True
+            )
+            kwargs['_request_timeout'] = kwargs.get(
+                '_request_timeout', None
+            )
+            kwargs['_check_input_type'] = kwargs.get(
+                '_check_input_type', True
+            )
+            kwargs['_check_return_type'] = kwargs.get(
+                '_check_return_type', True
+            )
+            kwargs['_host_index'] = kwargs.get('_host_index')
+            kwargs['namespace'] = \
+                namespace
+            kwargs['name'] = \
+                name
+            return self.call_with_http_info(**kwargs)
+
+        self.watch_workflow_logs = _Endpoint(
+            settings={
+                'response_type': (StreamResultOfIoArgoprojWorkflowV1alpha1LogEntry,),
+                'auth': [],
+                'endpoint_path': '/api/v1/workflows/{namespace}/{name}/log',
+                'operation_id': 'watch_workflow_logs',
+                'http_method': 'GET',
+                'servers': None,
+            },
+            params_map={
+                'all': [
+                    'namespace',
+                    'name',
+                    'pod_name',
+                    'log_options_container',
+                    'log_options_follow',
+                    'log_options_previous',
+                    'log_options_since_seconds',
+                    'log_options_since_time_seconds',
+                    'log_options_since_time_nanos',
+                    'log_options_timestamps',
+                    'log_options_tail_lines',
+                    'log_options_limit_bytes',
+                    'log_options_insecure_skip_tls_verify_backend',
+                    'grep',
+                    'selector',
+                ],
+                'required': [
+                    'namespace',
+                    'name',
+                ],
+                'nullable': [
+                ],
+                'enum': [
+                ],
+                'validation': [
+                ]
+            },
+            root_map={
+                'validations': {
+                },
+                'allowed_values': {
+                },
+                'openapi_types': {
+                    'namespace':
+                        (str,),
+                    'name':
+                        (str,),
+                    'pod_name':
+                        (str,),
+                    'log_options_container':
+                        (str,),
+                    'log_options_follow':
+                        (bool,),
+                    'log_options_previous':
+                        (bool,),
+                    'log_options_since_seconds':
+                        (str,),
+                    'log_options_since_time_seconds':
+                        (str,),
+                    'log_options_since_time_nanos':
+                        (int,),
+                    'log_options_timestamps':
+                        (bool,),
+                    'log_options_tail_lines':
+                        (str,),
+                    'log_options_limit_bytes':
+                        (str,),
+                    'log_options_insecure_skip_tls_verify_backend':
+                        (bool,),
+                    'grep':
+                        (str,),
+                    'selector':
+                        (str,),
+                },
+                'attribute_map': {
+                    'namespace': 'namespace',
+                    'name': 'name',
+                    'pod_name': 'podName',
+                    'log_options_container': 'logOptions.container',
+                    'log_options_follow': 'logOptions.follow',
+                    'log_options_previous': 'logOptions.previous',
+                    'log_options_since_seconds': 'logOptions.sinceSeconds',
+                    'log_options_since_time_seconds': 'logOptions.sinceTime.seconds',
+                    'log_options_since_time_nanos': 'logOptions.sinceTime.nanos',
+                    'log_options_timestamps': 'logOptions.timestamps',
+                    'log_options_tail_lines': 'logOptions.tailLines',
+                    'log_options_limit_bytes': 'logOptions.limitBytes',
+                    'log_options_insecure_skip_tls_verify_backend': 'logOptions.insecureSkipTLSVerifyBackend',
+                    'grep': 'grep',
+                    'selector': 'selector',
+                },
+                'location_map': {
+                    'namespace': 'path',
+                    'name': 'path',
+                    'pod_name': 'query',
+                    'log_options_container': 'query',
+                    'log_options_follow': 'query',
+                    'log_options_previous': 'query',
+                    'log_options_since_seconds': 'query',
+                    'log_options_since_time_seconds': 'query',
+                    'log_options_since_time_nanos': 'query',
+                    'log_options_timestamps': 'query',
+                    'log_options_tail_lines': 'query',
+                    'log_options_limit_bytes': 'query',
+                    'log_options_insecure_skip_tls_verify_backend': 'query',
+                    'grep': 'query',
+                    'selector': 'query',
+                },
+                'collection_format_map': {
+                }
+            },
+            headers_map={
+                'accept': [
+                    'application/json'
+                ],
+                'content_type': [],
+            },
+            api_client=api_client,
+            callable=__watch_workflow_logs
+        )
+
         def __watch_workflows(
             self,
             namespace,
@@ -2426,208 +2630,4 @@ class WorkflowServiceApi(object):
             },
             api_client=api_client,
             callable=__watch_workflows
-        )
-
-        def __workflow_logs(
-            self,
-            namespace,
-            name,
-            **kwargs
-        ):
-            """workflow_logs  # noqa: E501
-
-            This method makes a synchronous HTTP request by default. To make an
-            asynchronous HTTP request, please pass async_req=True
-
-            >>> thread = api.workflow_logs(namespace, name, async_req=True)
-            >>> result = thread.get()
-
-            Args:
-                namespace (str):
-                name (str):
-
-            Keyword Args:
-                pod_name (str): [optional]
-                log_options_container (str): The container for which to stream logs. Defaults to only container if there is one container in the pod. +optional.. [optional]
-                log_options_follow (bool): Follow the log stream of the pod. Defaults to false. +optional.. [optional]
-                log_options_previous (bool): Return previous terminated container logs. Defaults to false. +optional.. [optional]
-                log_options_since_seconds (str): A relative time in seconds before the current time from which to show logs. If this value precedes the time a pod was started, only logs since the pod start will be returned. If this value is in the future, no logs will be returned. Only one of sinceSeconds or sinceTime may be specified. +optional.. [optional]
-                log_options_since_time_seconds (str): Represents seconds of UTC time since Unix epoch 1970-01-01T00:00:00Z. Must be from 0001-01-01T00:00:00Z to 9999-12-31T23:59:59Z inclusive.. [optional]
-                log_options_since_time_nanos (int): Non-negative fractions of a second at nanosecond resolution. Negative second values with fractions must still have non-negative nanos values that count forward in time. Must be from 0 to 999,999,999 inclusive. This field may be limited in precision depending on context.. [optional]
-                log_options_timestamps (bool): If true, add an RFC3339 or RFC3339Nano timestamp at the beginning of every line of log output. Defaults to false. +optional.. [optional]
-                log_options_tail_lines (str): If set, the number of lines from the end of the logs to show. If not specified, logs are shown from the creation of the container or sinceSeconds or sinceTime +optional.. [optional]
-                log_options_limit_bytes (str): If set, the number of bytes to read from the server before terminating the log output. This may not display a complete final line of logging, and may return slightly more or slightly less than the specified limit. +optional.. [optional]
-                log_options_insecure_skip_tls_verify_backend (bool): insecureSkipTLSVerifyBackend indicates that the apiserver should not confirm the validity of the serving certificate of the backend it is connecting to.  This will make the HTTPS connection between the apiserver and the backend insecure. This means the apiserver cannot verify the log data it is receiving came from the real kubelet.  If the kubelet is configured to verify the apiserver's TLS credentials, it does not mean the connection to the real kubelet is vulnerable to a man in the middle attack (e.g. an attacker could not intercept the actual log data coming from the real kubelet). +optional.. [optional]
-                grep (str): [optional]
-                selector (str): [optional]
-                _return_http_data_only (bool): response data without head status
-                    code and headers. Default is True.
-                _preload_content (bool): if False, the urllib3.HTTPResponse object
-                    will be returned without reading/decoding response data.
-                    Default is True.
-                _request_timeout (int/float/tuple): timeout setting for this request. If
-                    one number provided, it will be total request timeout. It can also
-                    be a pair (tuple) of (connection, read) timeouts.
-                    Default is None.
-                _check_input_type (bool): specifies if type checking
-                    should be done one the data sent to the server.
-                    Default is True.
-                _check_return_type (bool): specifies if type checking
-                    should be done one the data received from the server.
-                    Default is True.
-                _host_index (int/None): specifies the index of the server
-                    that we want to use.
-                    Default is read from the configuration.
-                async_req (bool): execute request asynchronously
-
-            Returns:
-                StreamResultOfIoArgoprojWorkflowV1alpha1LogEntry
-                    If the method is called asynchronously, returns the request
-                    thread.
-            """
-            kwargs['async_req'] = kwargs.get(
-                'async_req', False
-            )
-            kwargs['_return_http_data_only'] = kwargs.get(
-                '_return_http_data_only', True
-            )
-            kwargs['_preload_content'] = kwargs.get(
-                '_preload_content', True
-            )
-            kwargs['_request_timeout'] = kwargs.get(
-                '_request_timeout', None
-            )
-            kwargs['_check_input_type'] = kwargs.get(
-                '_check_input_type', True
-            )
-            kwargs['_check_return_type'] = kwargs.get(
-                '_check_return_type', True
-            )
-            kwargs['_host_index'] = kwargs.get('_host_index')
-            kwargs['namespace'] = \
-                namespace
-            kwargs['name'] = \
-                name
-            return self.call_with_http_info(**kwargs)
-
-        self.workflow_logs = _Endpoint(
-            settings={
-                'response_type': (StreamResultOfIoArgoprojWorkflowV1alpha1LogEntry,),
-                'auth': [],
-                'endpoint_path': '/api/v1/workflows/{namespace}/{name}/log',
-                'operation_id': 'workflow_logs',
-                'http_method': 'GET',
-                'servers': None,
-            },
-            params_map={
-                'all': [
-                    'namespace',
-                    'name',
-                    'pod_name',
-                    'log_options_container',
-                    'log_options_follow',
-                    'log_options_previous',
-                    'log_options_since_seconds',
-                    'log_options_since_time_seconds',
-                    'log_options_since_time_nanos',
-                    'log_options_timestamps',
-                    'log_options_tail_lines',
-                    'log_options_limit_bytes',
-                    'log_options_insecure_skip_tls_verify_backend',
-                    'grep',
-                    'selector',
-                ],
-                'required': [
-                    'namespace',
-                    'name',
-                ],
-                'nullable': [
-                ],
-                'enum': [
-                ],
-                'validation': [
-                ]
-            },
-            root_map={
-                'validations': {
-                },
-                'allowed_values': {
-                },
-                'openapi_types': {
-                    'namespace':
-                        (str,),
-                    'name':
-                        (str,),
-                    'pod_name':
-                        (str,),
-                    'log_options_container':
-                        (str,),
-                    'log_options_follow':
-                        (bool,),
-                    'log_options_previous':
-                        (bool,),
-                    'log_options_since_seconds':
-                        (str,),
-                    'log_options_since_time_seconds':
-                        (str,),
-                    'log_options_since_time_nanos':
-                        (int,),
-                    'log_options_timestamps':
-                        (bool,),
-                    'log_options_tail_lines':
-                        (str,),
-                    'log_options_limit_bytes':
-                        (str,),
-                    'log_options_insecure_skip_tls_verify_backend':
-                        (bool,),
-                    'grep':
-                        (str,),
-                    'selector':
-                        (str,),
-                },
-                'attribute_map': {
-                    'namespace': 'namespace',
-                    'name': 'name',
-                    'pod_name': 'podName',
-                    'log_options_container': 'logOptions.container',
-                    'log_options_follow': 'logOptions.follow',
-                    'log_options_previous': 'logOptions.previous',
-                    'log_options_since_seconds': 'logOptions.sinceSeconds',
-                    'log_options_since_time_seconds': 'logOptions.sinceTime.seconds',
-                    'log_options_since_time_nanos': 'logOptions.sinceTime.nanos',
-                    'log_options_timestamps': 'logOptions.timestamps',
-                    'log_options_tail_lines': 'logOptions.tailLines',
-                    'log_options_limit_bytes': 'logOptions.limitBytes',
-                    'log_options_insecure_skip_tls_verify_backend': 'logOptions.insecureSkipTLSVerifyBackend',
-                    'grep': 'grep',
-                    'selector': 'selector',
-                },
-                'location_map': {
-                    'namespace': 'path',
-                    'name': 'path',
-                    'pod_name': 'query',
-                    'log_options_container': 'query',
-                    'log_options_follow': 'query',
-                    'log_options_previous': 'query',
-                    'log_options_since_seconds': 'query',
-                    'log_options_since_time_seconds': 'query',
-                    'log_options_since_time_nanos': 'query',
-                    'log_options_timestamps': 'query',
-                    'log_options_tail_lines': 'query',
-                    'log_options_limit_bytes': 'query',
-                    'log_options_insecure_skip_tls_verify_backend': 'query',
-                    'grep': 'query',
-                    'selector': 'query',
-                },
-                'collection_format_map': {
-                }
-            },
-            headers_map={
-                'accept': [
-                    'application/json'
-                ],
-                'content_type': [],
-            },
-            api_client=api_client,
-            callable=__workflow_logs
         )

@@ -1,0 +1,3 @@
+p, serviceaccount:default::argo-server, *, *
+p, user:default:, *, *
+p, user:default:my-sub, *, *

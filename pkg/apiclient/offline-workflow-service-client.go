@@ -29,10 +29,6 @@ func (o OfflineWorkflowServiceClient) ListWorkflows(context.Context, *workflowpk
 	return nil, OfflineErr
 }
 
-func (o OfflineWorkflowServiceClient) ListWorkflowsV2(context.Context, *workflowpkg.WorkflowListRequest, ...grpc.CallOption) (*wfv1.WorkflowList, error) {
-	return nil, OfflineErr
-}
-
 func (o OfflineWorkflowServiceClient) WatchWorkflows(context.Context, *workflowpkg.WatchWorkflowsRequest, ...grpc.CallOption) (workflowpkg.WorkflowService_WatchWorkflowsClient, error) {
 	return nil, OfflineErr
 }
@@ -93,11 +89,11 @@ func (o OfflineWorkflowServiceClient) LintWorkflow(_ context.Context, req *workf
 	return req.Workflow, nil
 }
 
-func (o OfflineWorkflowServiceClient) PodLogs(context.Context, *workflowpkg.WorkflowLogRequest, ...grpc.CallOption) (workflowpkg.WorkflowService_PodLogsClient, error) {
+func (o OfflineWorkflowServiceClient) WatchPodLogs(context.Context, *workflowpkg.WorkflowLogRequest, ...grpc.CallOption) (workflowpkg.WorkflowService_WatchPodLogsClient, error) {
 	return nil, OfflineErr
 }
 
-func (o OfflineWorkflowServiceClient) WorkflowLogs(context.Context, *workflowpkg.WorkflowLogRequest, ...grpc.CallOption) (workflowpkg.WorkflowService_WorkflowLogsClient, error) {
+func (o OfflineWorkflowServiceClient) WatchWorkflowLogs(context.Context, *workflowpkg.WorkflowLogRequest, ...grpc.CallOption) (workflowpkg.WorkflowService_WatchWorkflowLogsClient, error) {
 	return nil, OfflineErr
 }
 

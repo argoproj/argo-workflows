@@ -92,7 +92,7 @@ func (c *argoKubeWorkflowServiceClient) LintWorkflow(ctx context.Context, req *w
 	return c.delegate.LintWorkflow(ctx, req)
 }
 
-func (c *argoKubeWorkflowServiceClient) logs(ctx context.Context, req *workflowpkg.WorkflowLogRequest, f func(*workflowpkg.WorkflowLogRequest, *logsIntermediary) error) (workflowpkg.WorkflowService_PodLogsClient, error) {
+func (c *argoKubeWorkflowServiceClient) logs(ctx context.Context, req *workflowpkg.WorkflowLogRequest, f func(*workflowpkg.WorkflowLogRequest, *logsIntermediary) error) (workflowpkg.WorkflowService_WatchPodLogsClient, error) {
 	intermediary := newLogsIntermediary(ctx)
 	go func() {
 		defer intermediary.cancel()
@@ -106,15 +106,15 @@ func (c *argoKubeWorkflowServiceClient) logs(ctx context.Context, req *workflowp
 	return intermediary, nil
 }
 
-func (c *argoKubeWorkflowServiceClient) PodLogs(ctx context.Context, req *workflowpkg.WorkflowLogRequest, _ ...grpc.CallOption) (workflowpkg.WorkflowService_PodLogsClient, error) {
+func (c *argoKubeWorkflowServiceClient) WatchPodLogs(ctx context.Context, req *workflowpkg.WorkflowLogRequest, _ ...grpc.CallOption) (workflowpkg.WorkflowService_WatchPodLogsClient, error) {
 	return c.logs(ctx, req, func(req *workflowpkg.WorkflowLogRequest, i *logsIntermediary) error {
-		return c.delegate.PodLogs(req, i)
+		return c.delegate.WatchPodLogs(req, i)
 	})
 }
 
-func (c *argoKubeWorkflowServiceClient) WorkflowLogs(ctx context.Context, req *workflowpkg.WorkflowLogRequest, _ ...grpc.CallOption) (workflowpkg.WorkflowService_WorkflowLogsClient, error) {
+func (c *argoKubeWorkflowServiceClient) WatchWorkflowLogs(ctx context.Context, req *workflowpkg.WorkflowLogRequest, _ ...grpc.CallOption) (workflowpkg.WorkflowService_WatchWorkflowLogsClient, error) {
 	return c.logs(ctx, req, func(req *workflowpkg.WorkflowLogRequest, i *logsIntermediary) error {
-		return c.delegate.WorkflowLogs(req, i)
+		return c.delegate.WatchWorkflowLogs(req, i)
 	})
 }
 

@@ -8,6 +8,8 @@ import (
 	"os"
 	"time"
 
+	"github.com/casbin/casbin/v2"
+
 	"github.com/argoproj/argo-workflows/v3/util/authz"
 
 	"github.com/gorilla/handlers"
@@ -145,7 +147,7 @@ func NewArgoServer(ctx context.Context, opts ArgoServerOpts) (*argoServer, error
 		log.Info("SSO disabled")
 	}
 
-	enforcer, err := authz.NewEnforcer("server/authz")
+	enforcer, err := newEnforcer()
 	if err != nil {
 		return nil, err
 	}
@@ -180,6 +182,17 @@ func NewArgoServer(ctx context.Context, opts ArgoServerOpts) (*argoServer, error
 		accessControlAllowOrigin: opts.AccessControlAllowOrigin,
 		cache:                    resourceCache,
 	}, nil
+}
+
+func newEnforcer() (casbin.IEnforcer, error) {
+	dirname := "server/authz"
+	// use a synced enforcer, so we can modify at runtime to add/remove group policies
+	enforcer, err := casbin.NewSyncedEnforcer(dirname+"/model.conf", dirname+"/policy.csv", authz.Logger)
+	if err != nil {
+		return nil, err
+	}
+	enforcer.AddFunction("contains", authz.ContainsFunc)
+	return enforcer, nil
 }
 
 var backoff = wait.Backoff{

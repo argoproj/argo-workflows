@@ -75,7 +75,7 @@ service SensorService {
     rpc ListSensors (ListSensorsRequest) returns (github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.SensorList) {
         option (google.api.http).get = "/api/v1/sensors/{namespace}";
     }
-    rpc SensorsLogs (SensorsLogsRequest) returns (stream LogEntry) {
+    rpc WatchSensorsLogs (SensorsLogsRequest) returns (stream LogEntry) {
         option (google.api.http).get = "/api/v1/stream/sensors/{namespace}/logs";
     }
     rpc WatchSensors (ListSensorsRequest) returns (stream SensorWatchEvent) {

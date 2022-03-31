@@ -72,7 +72,7 @@ export class WorkflowFilters extends React.Component<WorkflowFilterProps, {}> {
                             value={this.workflowTemplate}
                             load={() =>
                                 services.workflowTemplate
-                                    .list(this.props.namespace, [])
+                                    .list(this.props.cluster, this.props.namespace, [])
                                     .then(list => list.items || [])
                                     .then(list => list.map(x => x.metadata.name))
                             }

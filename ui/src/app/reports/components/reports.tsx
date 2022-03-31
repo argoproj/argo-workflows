@@ -318,7 +318,7 @@ export class Reports extends BasePage<RouteComponentProps<any>, State> {
                             value={this.workflowTemplate}
                             load={() =>
                                 services.workflowTemplate
-                                    .list(this.state.namespace, [])
+                                    .list(this.state.cluster, this.state.namespace, [])
                                     .then(list => list.items || [])
                                     .then(list => list.map(x => x.metadata.name))
                             }

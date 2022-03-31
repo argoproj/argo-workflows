@@ -221,6 +221,11 @@
             "name": "uid",
             "in": "path",
             "required": true
+          },
+          {
+            "type": "string",
+            "name": "cluster",
+            "in": "query"
           }
         ],
         "responses": {
@@ -249,6 +254,11 @@
             "name": "uid",
             "in": "path",
             "required": true
+          },
+          {
+            "type": "string",
+            "name": "cluster",
+            "in": "query"
           }
         ],
         "responses": {
@@ -1999,7 +2009,7 @@
         "tags": [
           "EventSourceService"
         ],
-        "operationId": "EventSourceService_EventSourcesLogs",
+        "operationId": "EventSourceService_WatchEventSourcesLogs",
         "parameters": [
           {
             "type": "string",
@@ -2317,7 +2327,7 @@
         "tags": [
           "PipelineService"
         ],
-        "operationId": "PipelineService_PipelineLogs",
+        "operationId": "PipelineService_WatchPipelineLogs",
         "parameters": [
           {
             "type": "string",
@@ -2534,7 +2544,7 @@
         "tags": [
           "SensorService"
         ],
-        "operationId": "SensorService_SensorsLogs",
+        "operationId": "SensorService_WatchSensorsLogs",
         "parameters": [
           {
             "type": "string",
@@ -3633,7 +3643,7 @@
         "tags": [
           "WorkflowService"
         ],
-        "operationId": "WorkflowService_WorkflowLogs",
+        "operationId": "WorkflowService_WatchWorkflowLogs",
         "parameters": [
           {
             "type": "string",
@@ -4067,7 +4077,7 @@
           "WorkflowService"
         ],
         "summary": "DEPRECATED: Cannot work via HTTP if podName is an empty string. Use WorkflowLogs.",
-        "operationId": "WorkflowService_PodLogs",
+        "operationId": "WorkflowService_WatchPodLogs",
         "parameters": [
           {
             "type": "string",
@@ -10935,6 +10945,9 @@
     "io.argoproj.workflow.v1alpha1.ResubmitArchivedWorkflowRequest": {
       "type": "object",
       "properties": {
+        "cluster": {
+          "type": "string"
+        },
         "memoized": {
           "type": "boolean"
         },
@@ -10961,6 +10974,9 @@
     "io.argoproj.workflow.v1alpha1.RetryArchivedWorkflowRequest": {
       "type": "object",
       "properties": {
+        "cluster": {
+          "type": "string"
+        },
         "name": {
           "type": "string"
         },

@@ -38,10 +38,19 @@ with argo_workflows.ApiClient() as api_client:
     # Create an instance of the API class
     api_instance = archived_workflow_service_api.ArchivedWorkflowServiceApi(api_client)
     uid = "uid_example" # str | 
+    cluster = "cluster_example" # str |  (optional)
 
     # example passing only required values which don't have defaults set
     try:
         api_response = api_instance.delete_archived_workflow(uid)
+        pprint(api_response)
+    except argo_workflows.ApiException as e:
+        print("Exception when calling ArchivedWorkflowServiceApi->delete_archived_workflow: %s\n" % e)
+
+    # example passing only required values which don't have defaults set
+    # and optional values
+    try:
+        api_response = api_instance.delete_archived_workflow(uid, cluster=cluster)
         pprint(api_response)
     except argo_workflows.ApiException as e:
         print("Exception when calling ArchivedWorkflowServiceApi->delete_archived_workflow: %s\n" % e)
@@ -53,6 +62,7 @@ with argo_workflows.ApiClient() as api_client:
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **uid** | **str**|  |
+ **cluster** | **str**|  | [optional]
 
 ### Return type
 
@@ -102,10 +112,19 @@ with argo_workflows.ApiClient() as api_client:
     # Create an instance of the API class
     api_instance = archived_workflow_service_api.ArchivedWorkflowServiceApi(api_client)
     uid = "uid_example" # str | 
+    cluster = "cluster_example" # str |  (optional)
 
     # example passing only required values which don't have defaults set
     try:
         api_response = api_instance.get_archived_workflow(uid)
+        pprint(api_response)
+    except argo_workflows.ApiException as e:
+        print("Exception when calling ArchivedWorkflowServiceApi->get_archived_workflow: %s\n" % e)
+
+    # example passing only required values which don't have defaults set
+    # and optional values
+    try:
+        api_response = api_instance.get_archived_workflow(uid, cluster=cluster)
         pprint(api_response)
     except argo_workflows.ApiException as e:
         print("Exception when calling ArchivedWorkflowServiceApi->get_archived_workflow: %s\n" % e)
@@ -117,6 +136,7 @@ with argo_workflows.ApiClient() as api_client:
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **uid** | **str**|  |
+ **cluster** | **str**|  | [optional]
 
 ### Return type
 
@@ -394,6 +414,7 @@ with argo_workflows.ApiClient() as api_client:
     api_instance = archived_workflow_service_api.ArchivedWorkflowServiceApi(api_client)
     uid = "uid_example" # str | 
     body = IoArgoprojWorkflowV1alpha1ResubmitArchivedWorkflowRequest(
+        cluster="cluster_example",
         memoized=True,
         name="name_example",
         namespace="namespace_example",
@@ -466,6 +487,7 @@ with argo_workflows.ApiClient() as api_client:
     api_instance = archived_workflow_service_api.ArchivedWorkflowServiceApi(api_client)
     uid = "uid_example" # str | 
     body = IoArgoprojWorkflowV1alpha1RetryArchivedWorkflowRequest(
+        cluster="cluster_example",
         name="name_example",
         namespace="namespace_example",
         node_field_selector="node_field_selector_example",

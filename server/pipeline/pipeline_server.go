@@ -112,7 +112,7 @@ func (s *server) DeletePipeline(ctx context.Context, req *pipelinepkg.DeletePipe
 	return &pipelinepkg.DeletePipelineResponse{}, nil
 }
 
-func (s *server) PipelineLogs(in *pipelinepkg.PipelineLogsRequest, svr pipelinepkg.PipelineService_PipelineLogsServer) error {
+func (s *server) WatchPipelineLogs(in *pipelinepkg.PipelineLogsRequest, svr pipelinepkg.PipelineService_WatchPipelineLogsServer) error {
 	labelSelector := dfv1.KeyPipelineName
 	if in.Name != "" {
 		labelSelector += "=" + in.Name

@@ -416,10 +416,10 @@ func local_request_PipelineService_DeletePipeline_0(ctx context.Context, marshal
 }
 
 var (
-	filter_PipelineService_PipelineLogs_0 = &utilities.DoubleArray{Encoding: map[string]int{"namespace": 0}, Base: []int{1, 1, 0}, Check: []int{0, 1, 2}}
+	filter_PipelineService_WatchPipelineLogs_0 = &utilities.DoubleArray{Encoding: map[string]int{"namespace": 0}, Base: []int{1, 1, 0}, Check: []int{0, 1, 2}}
 )
 
-func request_PipelineService_PipelineLogs_0(ctx context.Context, marshaler runtime.Marshaler, client PipelineServiceClient, req *http.Request, pathParams map[string]string) (PipelineService_PipelineLogsClient, runtime.ServerMetadata, error) {
+func request_PipelineService_WatchPipelineLogs_0(ctx context.Context, marshaler runtime.Marshaler, client PipelineServiceClient, req *http.Request, pathParams map[string]string) (PipelineService_WatchPipelineLogsClient, runtime.ServerMetadata, error) {
 	var protoReq PipelineLogsRequest
 	var metadata runtime.ServerMetadata
 
@@ -444,11 +444,11 @@ func request_PipelineService_PipelineLogs_0(ctx context.Context, marshaler runti
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_PipelineService_PipelineLogs_0); err != nil {
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_PipelineService_WatchPipelineLogs_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
-	stream, err := client.PipelineLogs(ctx, &protoReq)
+	stream, err := client.WatchPipelineLogs(ctx, &protoReq)
 	if err != nil {
 		return nil, metadata, err
 	}
@@ -612,7 +612,7 @@ func RegisterPipelineServiceHandlerServer(ctx context.Context, mux *runtime.Serv
 
 	})
 
-	mux.Handle("GET", pattern_PipelineService_PipelineLogs_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("GET", pattern_PipelineService_WatchPipelineLogs_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		err := status.Error(codes.Unimplemented, "streaming calls are not yet supported in the in-process transport")
 		_, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
@@ -767,7 +767,7 @@ func RegisterPipelineServiceHandlerClient(ctx context.Context, mux *runtime.Serv
 
 	})
 
-	mux.Handle("GET", pattern_PipelineService_PipelineLogs_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("GET", pattern_PipelineService_WatchPipelineLogs_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
@@ -776,14 +776,14 @@ func RegisterPipelineServiceHandlerClient(ctx context.Context, mux *runtime.Serv
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_PipelineService_PipelineLogs_0(rctx, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_PipelineService_WatchPipelineLogs_0(rctx, inboundMarshaler, client, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
 
-		forward_PipelineService_PipelineLogs_0(ctx, mux, outboundMarshaler, w, req, func() (proto.Message, error) { return resp.Recv() }, mux.GetForwardResponseOptions()...)
+		forward_PipelineService_WatchPipelineLogs_0(ctx, mux, outboundMarshaler, w, req, func() (proto.Message, error) { return resp.Recv() }, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -821,7 +821,7 @@ var (
 
 	pattern_PipelineService_DeletePipeline_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 1, 0, 4, 1, 5, 4}, []string{"api", "v1", "pipelines", "namespace", "name"}, "", runtime.AssumeColonVerbOpt(true)))
 
-	pattern_PipelineService_PipelineLogs_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 4, 2, 5}, []string{"api", "v1", "stream", "pipelines", "namespace", "logs"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_PipelineService_WatchPipelineLogs_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 4, 2, 5}, []string{"api", "v1", "stream", "pipelines", "namespace", "logs"}, "", runtime.AssumeColonVerbOpt(true)))
 
 	pattern_PipelineService_WatchSteps_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 4}, []string{"api", "v1", "stream", "steps", "namespace"}, "", runtime.AssumeColonVerbOpt(true)))
 )
@@ -837,7 +837,7 @@ var (
 
 	forward_PipelineService_DeletePipeline_0 = runtime.ForwardResponseMessage
 
-	forward_PipelineService_PipelineLogs_0 = runtime.ForwardResponseStream
+	forward_PipelineService_WatchPipelineLogs_0 = runtime.ForwardResponseStream
 
 	forward_PipelineService_WatchSteps_0 = runtime.ForwardResponseStream
 )

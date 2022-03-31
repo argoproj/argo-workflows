@@ -7,6 +7,7 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
+**cluster** | **String** |  |  [optional]
 **memoized** | **Boolean** |  |  [optional]
 **name** | **String** |  |  [optional]
 **namespace** | **String** |  |  [optional]

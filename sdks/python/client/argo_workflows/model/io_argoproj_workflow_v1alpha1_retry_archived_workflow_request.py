@@ -81,6 +81,7 @@ class IoArgoprojWorkflowV1alpha1RetryArchivedWorkflowRequest(ModelNormal):
                 and the value is attribute type.
         """
         return {
+            'cluster': (str,),  # noqa: E501
             'name': (str,),  # noqa: E501
             'namespace': (str,),  # noqa: E501
             'node_field_selector': (str,),  # noqa: E501
@@ -94,6 +95,7 @@ class IoArgoprojWorkflowV1alpha1RetryArchivedWorkflowRequest(ModelNormal):
 
 
     attribute_map = {
+        'cluster': 'cluster',  # noqa: E501
         'name': 'name',  # noqa: E501
         'namespace': 'namespace',  # noqa: E501
         'node_field_selector': 'nodeFieldSelector',  # noqa: E501
@@ -142,6 +144,7 @@ class IoArgoprojWorkflowV1alpha1RetryArchivedWorkflowRequest(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
+            cluster (str): [optional]  # noqa: E501
             name (str): [optional]  # noqa: E501
             namespace (str): [optional]  # noqa: E501
             node_field_selector (str): [optional]  # noqa: E501
@@ -228,6 +231,7 @@ class IoArgoprojWorkflowV1alpha1RetryArchivedWorkflowRequest(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
+            cluster (str): [optional]  # noqa: E501
             name (str): [optional]  # noqa: E501
             namespace (str): [optional]  # noqa: E501
             node_field_selector (str): [optional]  # noqa: E501

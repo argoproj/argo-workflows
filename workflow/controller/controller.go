@@ -8,6 +8,8 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/argoproj/argo-workflows/v3/util/authz"
+
 	"github.com/argoproj/pkg/errors"
 	syncpkg "github.com/argoproj/pkg/sync"
 	"github.com/casbin/casbin/v2"
@@ -46,7 +48,6 @@ import (
 	wfextvv1alpha1 "github.com/argoproj/argo-workflows/v3/pkg/client/informers/externalversions/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/pkg/plugins/spec"
 	authutil "github.com/argoproj/argo-workflows/v3/util/auth"
-	"github.com/argoproj/argo-workflows/v3/util/authz"
 	"github.com/argoproj/argo-workflows/v3/util/diff"
 	"github.com/argoproj/argo-workflows/v3/util/env"
 	errorsutil "github.com/argoproj/argo-workflows/v3/util/errors"
@@ -152,7 +153,10 @@ func NewWorkflowController(
 	if err != nil {
 		return nil, err
 	}
-	enforcer, err := authz.NewEnforcer("workflow/authz")
+
+	dirname := "workflow/authz"
+	enforcer, err := casbin.NewSyncedEnforcer(dirname+"/model.conf", dirname+"/policy.csv", authz.Logger)
+
 	if err != nil {
 		return nil, err
 	}

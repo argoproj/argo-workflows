@@ -96,7 +96,7 @@ service EventSourceService {
     rpc ListEventSources (ListEventSourcesRequest) returns (github.com.argoproj.argo_events.pkg.apis.eventsource.v1alpha1.EventSourceList) {
         option (google.api.http).get = "/api/v1/event-sources/{namespace}";
     }
-    rpc EventSourcesLogs (EventSourcesLogsRequest) returns (stream LogEntry) {
+    rpc WatchEventSourcesLogs (EventSourcesLogsRequest) returns (stream LogEntry) {
         option (google.api.http).get = "/api/v1/stream/event-sources/{namespace}/logs";
     }
     rpc WatchEventSources (ListEventSourcesRequest) returns (stream EventSourceWatchEvent) {
