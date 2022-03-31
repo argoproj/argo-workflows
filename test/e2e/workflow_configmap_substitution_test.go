@@ -169,8 +169,13 @@ spec:
         - "{{inputs.parameters.message}}"
 `).
 		When().
+		CreateConfigMap(
+			"cmref-parameters",
+			map[string]string{"msg": "hello world"},
+			map[string]string{"workflows.argoproj.io/configmap-type": "Parameter"}).
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeSucceeded).
+		DeleteConfigMap("cmref-parameters").
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
