@@ -151,7 +151,6 @@ func ProcessArgs(tmpl *wfv1.Template, args wfv1.ArgumentsProvider, globalParams,
 
 				cmValue, err := GetConfigMapValue(configMapInformer, namespace, cmName, cmKey)
 				if err != nil {
-					err = errors.Cause(err)
 					if inParam.ValueFrom.Default != nil && apierr.IsNotFound(err) {
 						inParam.Value = inParam.ValueFrom.Default
 					} else {
