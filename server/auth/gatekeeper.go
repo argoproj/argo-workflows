@@ -176,7 +176,7 @@ func getAuthHeaders(md metadata.MD) []string {
 	return authorizations
 }
 
-func (s gatekeeper) getClients(ctx context.Context, m interface{}) (*servertypes.Clients, *types.Claims, error) {
+func (s gatekeeper) getClients(ctx context.Context, req interface{}) (*servertypes.Clients, *types.Claims, error) {
 	md, _ := metadata.FromIncomingContext(ctx)
 	authorizations := getAuthHeaders(md)
 	// Required for GetMode() with Server auth when no auth header specified
@@ -199,16 +199,16 @@ func (s gatekeeper) getClients(ctx context.Context, m interface{}) (*servertypes
 		return nil, nil, status.Error(codes.Unauthenticated, "token not valid for running mode")
 	}
 
-	msg, ok := m.(*servertypes.Msg)
+	msg, ok := req.(*servertypes.Req)
 	if !ok {
 		method, err := getMethod(ctx)
 		if err != nil {
 			return nil, nil, err
 		}
 		act, resource := parseMethod(method)
-		msg = &servertypes.Msg{
-			Cluster:   servertypes.Cluster(m),
-			Namespace: getNamespace(m),
+		msg = &servertypes.Req{
+			Cluster:   servertypes.Cluster(req),
+			Namespace: servertypes.Namespace(req),
 			Act:       act,
 			Resource:  resource,
 		}

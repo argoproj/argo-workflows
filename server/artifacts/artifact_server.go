@@ -13,6 +13,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/argoproj/argo-workflows/v3/workflow/common"
+
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
@@ -26,7 +28,6 @@ import (
 	"github.com/argoproj/argo-workflows/v3/util/instanceid"
 	"github.com/argoproj/argo-workflows/v3/workflow/artifactrepositories"
 	artifact "github.com/argoproj/argo-workflows/v3/workflow/artifacts"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/hydrator"
 )
 
@@ -56,19 +57,21 @@ func (a *ArtifactServer) GetInputArtifact(w http.ResponseWriter, r *http.Request
 }
 
 func (a *ArtifactServer) getArtifact(w http.ResponseWriter, r *http.Request, isInput bool) {
-	requestPath := strings.Split(r.URL.Path, "/")
-	var cluster, namespace, workflowName, nodeId, artifactName string
-	switch len(requestPath) {
-	case 6:
-		cluster, namespace, workflowName, nodeId, artifactName = common.PrimaryCluster(), requestPath[2], requestPath[3], requestPath[4], requestPath[5]
-	case 7:
-		cluster, namespace, workflowName, nodeId, artifactName = requestPath[2], requestPath[3], requestPath[4], requestPath[5], requestPath[6]
-	default:
+	requestPath := strings.SplitN(r.URL.Path, "/", 6)
+	if len(requestPath) != 6 {
 		a.serverInternalError(errors.New("request path is not valid"), w)
 		return
 	}
+	cluster := r.URL.Query().Get("cluster")
+	if cluster == "" {
+		cluster = common.PrimaryCluster()
+	}
+	namespace := requestPath[2]
+	workflowName := requestPath[3]
+	nodeId := requestPath[4]
+	artifactName := requestPath[5]
 
-	ctx, err := a.gateKeeping(r, &types.Msg{
+	ctx, err := a.gateKeeping(r, &types.Req{
 		Cluster:   cluster,
 		Namespace: namespace,
 		Resource:  "workflows",
@@ -104,18 +107,18 @@ func (a *ArtifactServer) GetInputArtifactByUID(w http.ResponseWriter, r *http.Re
 }
 
 func (a *ArtifactServer) getArtifactByUID(w http.ResponseWriter, r *http.Request, isInput bool) {
-	requestPath := strings.Split(r.URL.Path, "/")
-
-	var cluster, uid, nodeId, artifactName string
-	switch len(requestPath) {
-	case 5:
-		cluster, uid, nodeId, artifactName = common.PrimaryCluster(), requestPath[2], requestPath[3], requestPath[4]
-	case 6:
-		cluster, uid, nodeId, artifactName = requestPath[2], requestPath[3], requestPath[4], requestPath[5]
-	default:
+	requestPath := strings.SplitN(r.URL.Path, "/", 5)
+	if len(requestPath) != 5 {
 		a.serverInternalError(errors.New("request path is not valid"), w)
 		return
 	}
+	cluster := r.URL.Query().Get("cluster")
+	if cluster == "" {
+		cluster = common.PrimaryCluster()
+	}
+	uid := requestPath[2]
+	nodeId := requestPath[3]
+	artifactName := requestPath[4]
 
 	// We need to know the namespace before we can do gate keeping
 	wf, err := a.wfArchive.GetWorkflow(cluster, uid)
@@ -124,7 +127,7 @@ func (a *ArtifactServer) getArtifactByUID(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	ctx, err := a.gateKeeping(r, &types.Msg{
+	ctx, err := a.gateKeeping(r, &types.Req{
 		Cluster:   cluster,
 		Namespace: wf.GetNamespace(),
 		Act:       "get",

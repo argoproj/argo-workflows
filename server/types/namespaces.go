@@ -4,8 +4,8 @@ type NamespacedRequest interface {
 	GetNamespace() string
 }
 
-func Namespace(m interface{}) string {
-	if v, ok := m.(NamespacedRequest); ok {
+func Namespace(req interface{}) string {
+	if v, ok := req.(NamespacedRequest); ok {
 		return v.GetNamespace()
 	}
 	return ""

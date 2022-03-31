@@ -5,15 +5,13 @@ import (
 	"os"
 	"testing"
 
-	"google.golang.org/grpc"
-
 	"github.com/casbin/casbin/v2"
-
 	"github.com/go-jose/go-jose/v3/jwt"
 	log "github.com/sirupsen/logrus"
 	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -294,8 +292,8 @@ func TestServer_GetWFClient(t *testing.T) {
 	})
 }
 
-func reqHolder(namespace string) *servertypes.Msg {
-	return &servertypes.Msg{
+func reqHolder(namespace string) *servertypes.Req {
+	return &servertypes.Req{
 		Cluster:   common.PrimaryCluster(),
 		Namespace: namespace,
 	}
