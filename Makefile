@@ -349,6 +349,7 @@ pkg/apiclient/workflowtemplate/workflow-template.swagger.json: $(PROTO_BINARIES)
 manifests/base/crds/full/argoproj.io_workflows.yaml: $(GOPATH)/bin/controller-gen $(TYPES) ./hack/crdgen.sh ./hack/crds.go
 	./hack/crdgen.sh
 
+.PHONY: manifests
 manifests: \
 	manifests/install.yaml \
 	manifests/namespace-install.yaml \
@@ -361,14 +362,23 @@ manifests: \
 	dist/manifests/quick-start-mysql.yaml \
 	dist/manifests/quick-start-postgres.yaml
 
+.PHONY: manifests/install.yaml
 manifests/install.yaml: /dev/null
 	kubectl kustomize --load-restrictor=LoadRestrictionsNone manifests/cluster-install | ./hack/auto-gen-msg.sh > manifests/install.yaml
+
+.PHONY: manifests/namespace-install.yaml
 manifests/namespace-install.yaml: /dev/null
 	kubectl kustomize --load-restrictor=LoadRestrictionsNone manifests/namespace-install | ./hack/auto-gen-msg.sh > manifests/namespace-install.yaml
+
+.PHONY: manifests/quick-start-minimal.yaml
 manifests/quick-start-minimal.yaml: /dev/null
 	kubectl kustomize --load-restrictor=LoadRestrictionsNone manifests/quick-start/minimal | ./hack/auto-gen-msg.sh > manifests/quick-start-minimal.yaml
+
+.PHONY: manifests/quick-start-mysql.yaml
 manifests/quick-start-mysql.yaml: /dev/null
 	kubectl kustomize --load-restrictor=LoadRestrictionsNone manifests/quick-start/mysql | ./hack/auto-gen-msg.sh > manifests/quick-start-mysql.yaml
+
+.PHONY: manifests/quick-start-postgres.yaml
 manifests/quick-start-postgres.yaml: /dev/null
 	kubectl kustomize --load-restrictor=LoadRestrictionsNone manifests/quick-start/postgres | ./hack/auto-gen-msg.sh > manifests/quick-start-postgres.yaml
 
@@ -379,7 +389,7 @@ dist/manifests/%: manifests/%
 # lint/test/etc
 
 $(GOPATH)/bin/golangci-lint:
-	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b `go env GOPATH`/bin v1.42.0
+	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b `go env GOPATH`/bin
 
 .PHONY: lint
 lint: server/static/files.go $(GOPATH)/bin/golangci-lint
