@@ -443,6 +443,8 @@ ifeq ($(PROFILE),multi-cluster)
 
 	# install profile into primary cluster
 	argo cluster get-profile cluster-1 default argo.cluster-0 argo | kubectl -n argo apply -f  -
+	kubectl annotate secret argo.profile.cluster-1 --overwrite workflows.argoproj.io/workflow-namespace=argo
+	kubectl annotate secret argo.profile.cluster-1 --overwrite workflows.argoproj.io/namespace=default
 	argo cluster get-profile cluster-1 default argo-server.cluster-0 argo-server | kubectl -n argo apply -f  -
 
 	# create default bindings for the executor

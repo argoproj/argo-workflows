@@ -771,7 +771,7 @@ func (s *ArgoServerSuite) TestWorkflowService() {
 		WaitForWorkflow(fixtures.ToBeRunning)
 
 	s.Run("List", func() {
-		j := s.e().GET("/api/v2/cluster-0/workflows/argo").
+		j := s.e().GET("/api/v1/workflows/argo").
 			WithQuery("listOptions.labelSelector", "workflows.argoproj.io/test=subject-1").
 			Expect().
 			Status(200).

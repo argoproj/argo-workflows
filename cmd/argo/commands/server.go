@@ -95,7 +95,9 @@ See %s`, help.ArgoServer),
 			for _, secret := range items.Items {
 				key := common.Cluster(&secret)
 
-				log.WithField("key", key).Info("Loading profile")
+				log.WithField("key", key).
+					WithField("secretName", secret.Name).
+					Info("Loading profile")
 
 				clientConfig, err := clientcmd.Load(secret.Data["kubeconfig"])
 				if err != nil {

@@ -57,6 +57,7 @@ func (wfc *WorkflowController) loadProfile(secret *apiv1.Secret) error {
 
 	log.WithField("cluster", cluster).
 		WithField("namespace", namespace).
+		WithField("secretName", secret.Name).
 		Info("Loading profile")
 
 	clientConfig, err := clientcmd.Load(secret.Data["kubeconfig"])
