@@ -20,7 +20,7 @@ spec:
 
 I'm going to make some assumptions:
 
-* Your default Kubernetes context is the local cluster.
+* Your default Kubernetes context is the primary cluster.
 * There is a Kubernetes context for the remote cluster (named `cluster-1`).
 
 Update the config map with permissions:
@@ -39,15 +39,15 @@ data:
     e = some(where (p.eft == allow))
 
     [matchers]
-    m = keyMatch(r.sub, p.sub) && keyMatch(r.obj, p.obj)
+    m = r.sub == r.obj || keyMatch(r.sub, p.sub) && keyMatch(r.obj, p.obj)
   policy.csv: |
     # Workflows in the "argo" namespace may create resources in the "cluster-1" cluster's "default" namespace
     p, cluster-0:argo, cluster-1:default
-    # Workflows in the "argo" namespace may create resources in the local cluster's "default" namespace
+
+    # Workflows in the "argo" namespace may create resources in the primary cluster's "default" namespace
     p, cluster-0:argo, cluster-0:default
 kind: ConfigMap
 metadata:
-  creationTimestamp: null
   name: workflow-controller-authz
 ```
 
@@ -68,22 +68,24 @@ spec:
               value: cluster-0
 ```
 
-Restart the controller:
-
-```bash
-kubectl rollout restart deploy/workflow-controller
-```
+Set-up resources in the remote and primary cluser:
 
 ```bash
 # install resources into remote cluster
 kubectl kustomize --load-restrictor=LoadRestrictionsNone manifests/quick-start/cluster-1 | kubectl --context=cluster-1 -n default apply -f -
 
-# install profile into local cluster
+# install profile into primary cluster
 argo cluster get-profile cluster-1 default argo.cluster-0 argo --server=https://`ipconfig getifaddr en0`:`kubectl config view --raw --minify --context=cluster-1|grep server|cut -c 29-` --insecure-skip-tls-verify | kubectl -n argo apply -f  -
 
 # create default bindings for the executor
 kubectl --context=cluster-1 create role executor --verb=create,patch --resource=workflowtaskresults.argoproj.io
 kubectl --context=cluster-1 create rolebinding default-executor --role=executor --user=system:serviceaccount:default:default
+```
+
+Restart the controller:
+
+```bash
+kubectl rollout restart deploy/workflow-controller
 ```
 
 Finally, run a test workflow.
@@ -106,3 +108,25 @@ Kubernetes would do this.
 ⚠️ This garbage collection is done on best effort, and that might be long time after the workflow is deleted. To
 mitigate this, use `podGCStrategy`.
 
+## Authorization
+
+We use Casbin for access control. The default model.conf should work for most cases. When you have mulitple cluster, you
+need to write your own policy.csv to replace the default one.
+
+```csv
+# Workflows in the "argo" namespace may create resources in the "cluster-1" cluster's "default" namespace
+p, cluster-0:argo, cluster-1:default
+
+# Workflows in the "argo" namespace may create resources in the primary cluster's "default" namespace
+p, cluster-0:argo, cluster-0:default
+```
+
+Running a workflow in its own namespace is allowed by the model.conf.
+
+## Scaling
+
+An controller configured with multiple clusters will need to be scaled-up to match load.
+
+## Reliability
+
+Network requests will be disrupted by network problems more often.

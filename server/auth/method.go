@@ -22,7 +22,7 @@ func getMethod(ctx context.Context) (string, error) {
 	return parts[2], nil
 }
 
-func parseMethod(method string) (string, string) {
+func ParseMethod(method string) (string, string) {
 	h := regexp.MustCompile(`[A-Z][a-z]*`).FindString(method)
-	return strings.ToLower(h), strings.ToLower(strings.TrimPrefix(method, h))
+	return strings.ToLower(h), strings.TrimSuffix(strings.ToLower(strings.TrimPrefix(method, h)), "s") + "s"
 }

@@ -205,7 +205,7 @@ func (s gatekeeper) getClients(ctx context.Context, req interface{}) (*servertyp
 		if err != nil {
 			return nil, nil, err
 		}
-		act, resource := parseMethod(method)
+		act, resource := ParseMethod(method)
 		msg = &servertypes.Req{
 			Cluster:   servertypes.Cluster(req),
 			Namespace: servertypes.Namespace(req),

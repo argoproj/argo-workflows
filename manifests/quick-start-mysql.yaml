@@ -1139,6 +1139,9 @@ data:
   policy.csv: |
     # The argo-server has read-write access in cluster-0.
     p, serviceaccount:cluster-0:argo:argo-server, cluster-0:*, *
+
+    # Users have read-write access in cluster-0.
+    p, user:cluster-0:*, cluster-0:*:*, *
 kind: ConfigMap
 metadata:
   creationTimestamp: null

@@ -429,7 +429,7 @@ ifeq ($(PROFILE),multi-cluster)
 	kubectl kustomize --load-restrictor=LoadRestrictionsNone manifests/quick-start/cluster-1 | kubectl --context=cluster-1 -n default apply -f -
 	sleep 3s
 
-	# install profile into local cluster
+	# install profile into primary cluster
 	argo cluster get-profile cluster-1 default argo.cluster-0 argo | kubectl -n argo apply -f  -
 	argo cluster get-profile cluster-1 default argo-server.cluster-0 argo-server | kubectl -n argo apply -f  -
 

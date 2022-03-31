@@ -1,4 +1,5 @@
 # Workflows in the "argo" namespace may create resources in the "cluster-1" cluster's "default" namespace
 p, cluster-0:argo, cluster-1:default
-# Workflows in the "argo" namespace may create resources in the local cluster's "default" namespace
+
+# Workflows in the "argo" namespace may create resources in the primary cluster's "default" namespace
 p, cluster-0:argo, cluster-0:default
