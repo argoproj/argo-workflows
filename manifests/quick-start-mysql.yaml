@@ -1520,7 +1520,7 @@ spec:
           failureThreshold: 3
           httpGet:
             path: /healthz
-            port: 6060
+            port: healthz
           initialDelaySeconds: 90
           periodSeconds: 60
           timeoutSeconds: 30
@@ -1529,6 +1529,11 @@ spec:
         - containerPort: 9090
           name: metrics
         - containerPort: 6060
+          name: healthz
+        readinessProbe:
+          httpGet:
+            path: /metrics
+            port: metrics
         securityContext:
           allowPrivilegeEscalation: false
           capabilities:
