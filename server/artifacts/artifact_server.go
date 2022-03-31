@@ -166,7 +166,7 @@ func (a *ArtifactServer) gateKeeping(r *http.Request, ns types.NamespacedRequest
 		}
 	}
 	ctx := metadata.NewIncomingContext(r.Context(), metadata.MD{"authorization": []string{token}})
-	return a.gatekeeper.ContextWithRequest(ctx, ns)
+	return a.gatekeeper.Context(ctx, ns)
 }
 
 func (a *ArtifactServer) unauthorizedError(err error, w http.ResponseWriter) {

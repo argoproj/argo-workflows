@@ -8,6 +8,8 @@ import (
 	"os"
 	"time"
 
+	"github.com/argoproj/argo-workflows/v3/workflow/common"
+
 	"github.com/casbin/casbin/v2"
 
 	"github.com/argoproj/argo-workflows/v3/util/authz"
@@ -382,7 +384,7 @@ func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServe
 		if os.Getenv("ARGO_SERVER_METRICS_AUTH") != "false" {
 			header := metadata.New(map[string]string{"authorization": r.Header.Get("Authorization")})
 			ctx := metadata.NewIncomingContext(context.Background(), header)
-			if _, err := as.gatekeeper.Context(ctx); err != nil {
+			if _, err := as.gatekeeper.Context(ctx, &types.Req{Cluster: common.PrimaryCluster(), Act: "get", Resource: "metrics"}); err != nil {
 				log.WithError(err).Error("failed to authenticate /metrics endpoint")
 				w.WriteHeader(403)
 				return
