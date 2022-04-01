@@ -1089,20 +1089,6 @@ func (wfc *WorkflowController) GetManagedNamespace() string {
 	return wfc.Config.Namespace
 }
 
-func (wfc *WorkflowController) GetContainerRuntimeExecutor(labels labels.Labels) string {
-	executor, err := wfc.Config.GetContainerRuntimeExecutor(labels)
-	if err != nil {
-		log.WithError(err).Info("failed to determine container runtime executor")
-	}
-	if executor != "" {
-		return executor
-	}
-	if wfc.containerRuntimeExecutor != "" {
-		return wfc.containerRuntimeExecutor
-	}
-	return common.ContainerRuntimeExecutorEmissary
-}
-
 func (wfc *WorkflowController) getMetricsServerConfig() (metrics.ServerConfig, metrics.ServerConfig) {
 	// Metrics config
 	path := wfc.Config.MetricsConfig.Path

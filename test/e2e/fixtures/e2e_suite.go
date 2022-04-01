@@ -153,15 +153,6 @@ func (s *E2ESuite) DeleteResources() {
 	}
 }
 
-func (s *E2ESuite) Need(needs ...Need) {
-	for _, n := range needs {
-		met, message := n(s)
-		if !met {
-			s.T().Skip("unmet need: " + message)
-		}
-	}
-}
-
 func (s *E2ESuite) dynamicFor(r schema.GroupVersionResource) dynamic.ResourceInterface {
 	resourceInterface := dynamic.NewForConfigOrDie(s.RestConfig).Resource(r)
 	if r.Resource == workflow.ClusterWorkflowTemplatePlural {
