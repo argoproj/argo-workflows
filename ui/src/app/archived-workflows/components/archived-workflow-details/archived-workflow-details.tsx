@@ -31,6 +31,10 @@ interface State {
 }
 
 export class ArchivedWorkflowDetails extends BasePage<RouteComponentProps<any>, State> {
+    private get cluster() {
+        return this.queryParam("cluster");
+    }
+
     private get namespace() {
         return this.props.match.params.namespace;
     }
@@ -229,7 +233,7 @@ export class ArchivedWorkflowDetails extends BasePage<RouteComponentProps<any>, 
                 <SlidingPanel isShown={!!this.sidePanel} onClose={() => (this.sidePanel = null)}>
                     {this.sidePanel === 'yaml' && <WorkflowYamlViewer workflow={this.state.workflow} selectedNode={this.node} />}
                     {this.sidePanel === 'logs' && (
-                        <WorkflowLogsViewer workflow={this.state.workflow} initialPodName={this.podName} nodeId={this.nodeId} container={this.container} archived={true} />
+                        <WorkflowLogsViewer cluster={this.cluster} workflow={this.state.workflow} initialPodName={this.podName} nodeId={this.nodeId} container={this.container} archived={true} />
                     )}
                 </SlidingPanel>
             </>

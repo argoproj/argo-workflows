@@ -50,7 +50,7 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
         const labelQueryParam = this.queryParams('label');
         this.state = {
             pagination: {offset: this.queryParam('offset'), limit: parseLimit(this.queryParam('limit')) || savedOptions.pagination.limit},
-            cluster: this.props.match.params.cluster,
+            cluster: this.queryParam('cluster'),
             namespace: Utils.getNamespace(this.props.match.params.namespace) || '',
             name: this.queryParams('name').toString() || '',
             namePrefix: this.queryParams('namePrefix').toString() || '',

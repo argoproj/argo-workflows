@@ -154,7 +154,7 @@ func NewWorkflowController(
 		return nil, err
 	}
 
-	dirname := "/workflow/authz"
+	dirname := "workflow/authz"
 	enforcer, err := casbin.NewSyncedEnforcer(dirname+"/model.conf", dirname+"/policy.csv", authz.Logger)
 
 	if err != nil {

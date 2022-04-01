@@ -13,6 +13,7 @@ require('./workflow-drawer.scss');
 
 interface WorkflowDrawerProps {
     name: string;
+    cluster: string;
     namespace: string;
     onChange: (key: string) => void;
 }
@@ -28,7 +29,7 @@ export class WorkflowDrawer extends React.Component<WorkflowDrawerProps, Workflo
     }
 
     public componentDidMount() {
-        services.workflows.get(this.props.namespace, this.props.name).then(workflow => {
+        services.workflows.get(this.props.cluster, this.props.namespace, this.props.name).then(workflow => {
             this.setState({workflow});
         });
     }

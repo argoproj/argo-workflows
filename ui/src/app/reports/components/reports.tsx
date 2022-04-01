@@ -59,7 +59,7 @@ export class Reports extends BasePage<RouteComponentProps<any>, State> {
     constructor(props: RouteComponentProps<any>, context: any) {
         super(props, context);
         this.state = {
-            cluster: this.props.match.params.cluster,
+            cluster: this.queryParam('cluster'),
             archivedWorkflows: !!this.queryParam('archivedWorkflows'),
             namespace: Utils.getNamespace(this.props.match.params.namespace) || '',
             labels: (this.queryParam('labels') || '').split(',').filter(v => v !== ''),

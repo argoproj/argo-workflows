@@ -10,6 +10,7 @@ import {wfDuration} from '../../../shared/duration';
 import {WorkflowDrawer} from '../workflow-drawer/workflow-drawer';
 
 interface WorkflowsRowProps {
+    cluster: string;
     workflow: Workflow;
     onChange: (key: string) => void;
     select: (wf: Workflow) => void;
@@ -86,6 +87,7 @@ export class WorkflowsRow extends React.Component<WorkflowsRowProps, WorkflowRow
                         ) : (
                             <WorkflowDrawer
                                 name={wf.metadata.name}
+                                cluster={this.props.cluster}
                                 namespace={wf.metadata.namespace}
                                 onChange={key => {
                                     this.props.onChange(key);

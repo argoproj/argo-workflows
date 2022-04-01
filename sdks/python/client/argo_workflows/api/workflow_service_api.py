@@ -362,6 +362,7 @@ class WorkflowServiceApi(object):
             Keyword Args:
                 get_options_resource_version (str): resourceVersion sets a constraint on what resource versions a request may be served from. See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset +optional. [optional]
                 fields (str): Fields to be included or excluded in the response. e.g. \"spec,status.phase\", \"-status.nodes\".. [optional]
+                cluster (str): [optional]
                 _return_http_data_only (bool): response data without head status
                     code and headers. Default is True.
                 _preload_content (bool): if False, the urllib3.HTTPResponse object
@@ -427,6 +428,7 @@ class WorkflowServiceApi(object):
                     'name',
                     'get_options_resource_version',
                     'fields',
+                    'cluster',
                 ],
                 'required': [
                     'namespace',
@@ -453,18 +455,22 @@ class WorkflowServiceApi(object):
                         (str,),
                     'fields':
                         (str,),
+                    'cluster':
+                        (str,),
                 },
                 'attribute_map': {
                     'namespace': 'namespace',
                     'name': 'name',
                     'get_options_resource_version': 'getOptions.resourceVersion',
                     'fields': 'fields',
+                    'cluster': 'cluster',
                 },
                 'location_map': {
                     'namespace': 'path',
                     'name': 'path',
                     'get_options_resource_version': 'query',
                     'fields': 'query',
+                    'cluster': 'query',
                 },
                 'collection_format_map': {
                 }

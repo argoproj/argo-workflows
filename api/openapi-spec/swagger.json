@@ -3545,6 +3545,11 @@
             "description": "Fields to be included or excluded in the response. e.g. \"spec,status.phase\", \"-status.nodes\".",
             "name": "fields",
             "in": "query"
+          },
+          {
+            "type": "string",
+            "name": "cluster",
+            "in": "query"
           }
         ],
         "responses": {

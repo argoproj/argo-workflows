@@ -44,6 +44,7 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
     const {navigation, popup} = useContext(Context);
     const queryParams = new URLSearchParams(location.search);
 
+    const cluster = queryParams.get('cluster');
     const [namespace] = useState(match.params.namespace);
     const [name, setName] = useState(match.params.name);
     const [tab, setTab] = useState(queryParams.get('tab') || 'workflow');
@@ -63,7 +64,7 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
 
     useEffect(() => {
         history.push(historyUrl('workflows/{namespace}/{name}', {namespace, name, tab, nodeId, nodePanelView, sidePanel}));
-    }, [namespace, name, tab, nodeId, nodePanelView, sidePanel]);
+    }, [cluster, namespace, name, tab, nodeId, nodePanelView, sidePanel]);
 
     const [workflow, setWorkflow] = useState<Workflow>();
     const [links, setLinks] = useState<Link[]>();
@@ -339,7 +340,7 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
             {workflow && (
                 <SlidingPanel isShown={!!sidePanel} onClose={() => setSidePanel(null)}>
                     {parsedSidePanel.type === 'logs' && (
-                        <WorkflowLogsViewer workflow={workflow} initialPodName={podName} nodeId={parsedSidePanel.nodeId} container={parsedSidePanel.container} archived={false} />
+                        <WorkflowLogsViewer cluster={cluster} workflow={workflow} initialPodName={podName} nodeId={parsedSidePanel.nodeId} container={parsedSidePanel.container} archived={false} />
                     )}
                     {parsedSidePanel.type === 'events' && <EventsPanel namespace={namespace} kind='Pod' name={parsedSidePanel.nodeId} />}
                     {parsedSidePanel.type === 'share' && <WidgetGallery namespace={namespace} name={name} />}

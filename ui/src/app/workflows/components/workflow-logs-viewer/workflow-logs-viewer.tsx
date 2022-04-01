@@ -15,6 +15,7 @@ import {services} from '../../../shared/services';
 import {FullHeightLogsViewer} from './full-height-logs-viewer';
 
 interface WorkflowLogsViewerProps {
+    cluster: string;
     workflow: models.Workflow;
     nodeId?: string;
     initialPodName: string;
@@ -26,7 +27,7 @@ function identity<T>(value: T) {
     return () => value;
 }
 
-export const WorkflowLogsViewer = ({workflow, nodeId, initialPodName, container, archived}: WorkflowLogsViewerProps) => {
+export const WorkflowLogsViewer = ({cluster, workflow, nodeId, initialPodName, container, archived}: WorkflowLogsViewerProps) => {
     const [podName, setPodName] = useState(initialPodName || '');
     const [selectedContainer, setContainer] = useState(container);
     const [grep, setGrep] = useState('');
@@ -37,7 +38,7 @@ export const WorkflowLogsViewer = ({workflow, nodeId, initialPodName, container,
     useEffect(() => {
         setError(null);
         setLoaded(false);
-        const source = services.workflows.getContainerLogs(workflow, podName, nodeId, selectedContainer, grep, archived).pipe(
+        const source = services.workflows.getContainerLogs(cluster, workflow, podName, nodeId, selectedContainer, grep, archived).pipe(
             map(e => (!podName ? e.podName + ': ' : '') + e.content + '\n'),
             // this next line highlights the search term in bold with a yellow background, white text
             map(x => {

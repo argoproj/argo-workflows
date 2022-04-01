@@ -152,6 +152,8 @@ Workflow is the definition of a workflow resource
 
 - [`hdfs-artifact.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/hdfs-artifact.yaml)
 
+- [`hello-cluster-1.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/hello-cluster-1.yaml)
+
 - [`hello-hybrid.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/hello-hybrid.yaml)
 
 - [`hello-windows.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/hello-windows.yaml)
@@ -571,6 +573,8 @@ WorkflowSpec is the specification of a Workflow.
 
 - [`hdfs-artifact.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/hdfs-artifact.yaml)
 
+- [`hello-cluster-1.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/hello-cluster-1.yaml)
+
 - [`hello-hybrid.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/hello-hybrid.yaml)
 
 - [`hello-windows.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/hello-windows.yaml)
@@ -989,6 +993,8 @@ CronWorkflowSpec is the specification of a CronWorkflow
 - [`handle-large-output-results.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/handle-large-output-results.yaml)
 
 - [`hdfs-artifact.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/hdfs-artifact.yaml)
+
+- [`hello-cluster-1.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/hello-cluster-1.yaml)
 
 - [`hello-hybrid.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/hello-hybrid.yaml)
 
@@ -4388,6 +4394,8 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 
 - [`hdfs-artifact.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/hdfs-artifact.yaml)
 
+- [`hello-cluster-1.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/hello-cluster-1.yaml)
+
 - [`hello-hybrid.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/hello-hybrid.yaml)
 
 - [`hello-windows.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/hello-windows.yaml)
@@ -4981,6 +4989,8 @@ A single application container that you want to run within a pod.
 - [`handle-large-output-results.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/handle-large-output-results.yaml)
 
 - [`hdfs-artifact.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/hdfs-artifact.yaml)
+
+- [`hello-cluster-1.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/hello-cluster-1.yaml)
 
 - [`hello-hybrid.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/hello-hybrid.yaml)
 
@@ -5676,6 +5686,8 @@ PersistentVolumeClaimSpec describes the common attributes of storage devices and
 - [`handle-large-output-results.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/handle-large-output-results.yaml)
 
 - [`hdfs-artifact.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/hdfs-artifact.yaml)
+
+- [`hello-cluster-1.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/hello-cluster-1.yaml)
 
 - [`hello-hybrid.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/hello-hybrid.yaml)
 

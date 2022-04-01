@@ -22304,6 +22304,7 @@ with argo_workflows.ApiClient() as api_client:
     name = "name_example" # str | 
     get_options_resource_version = "getOptions.resourceVersion_example" # str | resourceVersion sets a constraint on what resource versions a request may be served from. See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset +optional (optional)
     fields = "fields_example" # str | Fields to be included or excluded in the response. e.g. \"spec,status.phase\", \"-status.nodes\". (optional)
+    cluster = "cluster_example" # str |  (optional)
 
     # example passing only required values which don't have defaults set
     try:
@@ -22315,7 +22316,7 @@ with argo_workflows.ApiClient() as api_client:
     # example passing only required values which don't have defaults set
     # and optional values
     try:
-        api_response = api_instance.get_workflow(namespace, name, get_options_resource_version=get_options_resource_version, fields=fields)
+        api_response = api_instance.get_workflow(namespace, name, get_options_resource_version=get_options_resource_version, fields=fields, cluster=cluster)
         pprint(api_response)
     except argo_workflows.ApiException as e:
         print("Exception when calling WorkflowServiceApi->get_workflow: %s\n" % e)
@@ -22330,6 +22331,7 @@ Name | Type | Description  | Notes
  **name** | **str**|  |
  **get_options_resource_version** | **str**| resourceVersion sets a constraint on what resource versions a request may be served from. See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset +optional | [optional]
  **fields** | **str**| Fields to be included or excluded in the response. e.g. \&quot;spec,status.phase\&quot;, \&quot;-status.nodes\&quot;. | [optional]
+ **cluster** | **str**|  | [optional]
 
 ### Return type
 

@@ -318,6 +318,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                             {this.state.workflows.map(wf => {
                                 return (
                                     <WorkflowsRow
+                                        cluster={this.state.cluster}
                                         workflow={wf}
                                         key={wf.metadata.uid}
                                         checked={this.state.selectedWorkflows.has(wf.metadata.uid)}

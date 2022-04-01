@@ -4,6 +4,6 @@ import {EventFlowPage} from './event-flow-details/event-flow-page';
 
 export const EventFlowContainer = (props: RouteComponentProps<any>) => (
     <Switch>
-        <Route path={`${props.match.path}/:cluster/:namespace?`} component={EventFlowPage} />
+        <Route path={`${props.match.path}/:namespace?`} component={EventFlowPage} />
     </Switch>
 );

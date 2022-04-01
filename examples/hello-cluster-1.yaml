@@ -1,0 +1,14 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: hello-cluster-
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    cluster: cluster-1
+    namespace: default
+    container:
+      image: argoproj/argosay:v2
+      command:
+        - /argosay
