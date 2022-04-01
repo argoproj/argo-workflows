@@ -45,7 +45,7 @@ ARG DOCKER_CHANNEL
 ARG DOCKER_VERSION
 ARG KUBECTL_VERSION
 
-RUN apk --no-cache add curl procps git tar libcap jq
+RUN apk --no-cache add curl git tar jq
 
 COPY hack/arch.sh hack/os.sh /bin/
 
@@ -87,7 +87,6 @@ RUN cat .dockerignore >> .gitignore
 RUN git status --porcelain | cut -c4- | xargs git update-index --skip-worktree
 
 RUN --mount=type=cache,target=/root/.cache/go-build make dist/argoexec
-RUN setcap CAP_SYS_PTRACE,CAP_SYS_CHROOT+ei dist/argoexec
 
 ####################################################################################################
 
