@@ -8,7 +8,7 @@
     "scripts": {
         "build": "rm -Rf dist && NODE_ENV=production webpack -p --config ./src/app/webpack.config.js",
         "start": "webpack-dev-server --config ./src/app/webpack.config.js",
-        "lint": "tslint --fix -p ./src/app && ./node_modules/.bin/ts-prune -p src/app/tsconfig.json -i src/models/index.ts",
+        "lint": "tslint --fix -p ./src/app",
         "test": "jest"
     },
     "dependencies": {
@@ -19,7 +19,6 @@
         "cron-parser": "^2.16.3",
         "cronstrue": "^1.109.0",
         "dagre": "^0.8.5",
-        "formik": "^2.1.2",
         "history": "^4.7.2",
         "js-yaml": "^3.13.1",
         "json-merge-patch": "^0.2.3",
@@ -76,7 +75,6 @@
         "ts-jest": "^26.4.4",
         "ts-loader": "^7.0.4",
         "ts-node": "^4.1.0",
-        "ts-prune": "^0.8.4",
         "tslint": "^5.9.1",
         "tslint-config-prettier": "^1.18.0",
         "tslint-plugin-prettier": "^2.1.0",
