@@ -989,6 +989,8 @@ spec:
   selector:
     matchLabels:
       app: workflow-controller
+  strategy:
+    type: Recreate
   template:
     metadata:
       labels:
