@@ -67,8 +67,9 @@ func newArgoKubeClient(ctx context.Context, clientConfig clientcmd.ClientConfig,
 	if err != nil {
 		return nil, nil, err
 	}
+	cluster := common.PrimaryCluster()
 	clients := types.Profiles{
-		common.PrimaryCluster(): &types.Clients{
+		cluster: &types.Clients{
 			RESTConfig:  restConfig,
 			Dynamic:     dynamicClient,
 			EventSource: eventSourceInterface,
@@ -90,7 +91,7 @@ func newArgoKubeClient(ctx context.Context, clientConfig clientcmd.ClientConfig,
 	if err != nil {
 		return nil, nil, err
 	}
-	ctx, err = gatekeeper.Context(ctx, nil)
+	ctx, err = gatekeeper.Context(ctx, &types.Req{Cluster: cluster})
 	if err != nil {
 		return nil, nil, err
 	}
