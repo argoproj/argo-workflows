@@ -340,7 +340,14 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
             {workflow && (
                 <SlidingPanel isShown={!!sidePanel} onClose={() => setSidePanel(null)}>
                     {parsedSidePanel.type === 'logs' && (
-                        <WorkflowLogsViewer cluster={cluster} workflow={workflow} initialPodName={podName} nodeId={parsedSidePanel.nodeId} container={parsedSidePanel.container} archived={false} />
+                        <WorkflowLogsViewer
+                            cluster={cluster}
+                            workflow={workflow}
+                            initialPodName={podName}
+                            nodeId={parsedSidePanel.nodeId}
+                            container={parsedSidePanel.container}
+                            archived={false}
+                        />
                     )}
                     {parsedSidePanel.type === 'events' && <EventsPanel namespace={namespace} kind='Pod' name={parsedSidePanel.nodeId} />}
                     {parsedSidePanel.type === 'share' && <WidgetGallery namespace={namespace} name={name} />}
