@@ -127,8 +127,7 @@ func NewArgoServer(ctx context.Context, opts ArgoServerOpts) (*argoServer, error
 	var resourceCache *cache.ResourceCache = nil
 	ssoIf := sso.NullSSO
 	if opts.AuthModes[auth.SSO] {
-		c := &Config{}
-		err := configController.Get(ctx, c)
+		c, err := configController.Get(ctx)
 		if err != nil {
 			return nil, err
 		}
@@ -173,8 +172,7 @@ var backoff = wait.Backoff{
 }
 
 func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(string)) {
-	config := &Config{}
-	err := as.configController.Get(ctx, config)
+	config, err := as.configController.Get(ctx)
 	if err != nil {
 		log.Fatal(err)
 	}

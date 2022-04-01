@@ -63,8 +63,9 @@ func (s *E2ESuite) SetupSuite() {
 	configController := config.NewController(Namespace, common.ConfigMapName, s.KubeClient)
 
 	ctx := context.Background()
-	err = configController.Get(ctx, &s.Config)
+	c, err := configController.Get(ctx)
 	s.CheckError(err)
+	s.Config = c
 	s.wfClient = versioned.NewForConfigOrDie(s.RestConfig).ArgoprojV1alpha1().Workflows(Namespace)
 	s.wfebClient = versioned.NewForConfigOrDie(s.RestConfig).ArgoprojV1alpha1().WorkflowEventBindings(Namespace)
 	s.wfTemplateClient = versioned.NewForConfigOrDie(s.RestConfig).ArgoprojV1alpha1().WorkflowTemplates(Namespace)

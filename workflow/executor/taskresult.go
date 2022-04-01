@@ -51,10 +51,10 @@ func (we *WorkflowExecutor) createTaskResult(ctx context.Context, result wfv1.No
 	taskResult.SetOwnerReferences(
 		[]metav1.OwnerReference{
 			{
-				APIVersion: workflow.APIVersion,
-				Kind:       workflow.WorkflowKind,
-				Name:       we.workflow,
-				UID:        we.workflowUID,
+				APIVersion: "v1",
+				Kind:       "pods",
+				Name:       we.PodName,
+				UID:        we.podUID,
 			},
 		})
 

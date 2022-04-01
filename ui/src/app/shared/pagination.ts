@@ -1,5 +1,3 @@
-import {isNaN} from 'formik';
-
 export interface Pagination {
     offset?: string;
     limit?: number;

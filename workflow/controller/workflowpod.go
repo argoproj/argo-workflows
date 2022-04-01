@@ -526,6 +526,15 @@ func (woc *wfOperationCtx) createEnvVars() []apiv1.EnvVar {
 				},
 			},
 		},
+		{
+			Name: common.EnvVarPodUID,
+			ValueFrom: &apiv1.EnvVarSource{
+				FieldRef: &apiv1.ObjectFieldSelector{
+					APIVersion: "v1",
+					FieldPath:  "metadata.uid",
+				},
+			},
+		},
 		// This flag was introduced in Go 15 and will be removed in Go 16.
 		// x509: cannot validate certificate for ... because it doesn't contain any IP SANs
 		// https://github.com/argoproj/argo-workflows/issues/5563 - Upgrade to Go 16
@@ -537,10 +546,6 @@ func (woc *wfOperationCtx) createEnvVars() []apiv1.EnvVar {
 		{
 			Name:  common.EnvVarWorkflowName,
 			Value: woc.wf.Name,
-		},
-		{
-			Name:  common.EnvVarWorkflowUID,
-			Value: string(woc.wf.UID),
 		},
 	}
 	if v := woc.controller.Config.InstanceID; v != "" {
