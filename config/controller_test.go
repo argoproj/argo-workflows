@@ -38,4 +38,9 @@ func Test_parseConfigMap(t *testing.T) {
 			assert.NotEmpty(t, c.ArtifactRepository)
 		}
 	})
+	t.Run("Garbage", func(t *testing.T) {
+		c := &Config{}
+		err := parseConfigMap(&apiv1.ConfigMap{Data: map[string]string{"garbage": "garbage"}}, c)
+		assert.Error(t, err)
+	})
 }
