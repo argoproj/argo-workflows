@@ -187,7 +187,7 @@ func NewArgoServer(ctx context.Context, opts ArgoServerOpts) (*argoServer, error
 }
 
 func newEnforcer() (casbin.IEnforcer, error) {
-	dirname := "server/authz"
+	dirname := "/server/authz"
 	// use a synced enforcer, so we can modify at runtime to add/remove group policies
 	enforcer, err := casbin.NewSyncedEnforcer(dirname+"/model.conf", dirname+"/policy.csv", authz.Logger)
 	if err != nil {
