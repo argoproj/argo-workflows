@@ -5,12 +5,11 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"regexp"
-	"strings"
 
 	"github.com/go-git/go-git/v5"
+
 	"github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/transport"
@@ -45,38 +44,29 @@ func GetUser(url string) string {
 	return "git"
 }
 
-func (g *ArtifactDriver) auth(sshUser string) (func(), transport.AuthMethod, []string, error) {
+func (g *ArtifactDriver) auth(sshUser string) (func(), transport.AuthMethod, error) {
 	if g.SSHPrivateKey != "" {
 		signer, err := ssh.ParsePrivateKey([]byte(g.SSHPrivateKey))
 		if err != nil {
-			return nil, nil, nil, err
+			return nil, nil, err
 		}
 		privateKeyFile, err := ioutil.TempFile("", "id_rsa.")
 		if err != nil {
-			return nil, nil, nil, err
+			return nil, nil, err
 		}
 		err = ioutil.WriteFile(privateKeyFile.Name(), []byte(g.SSHPrivateKey), 0o600)
 		if err != nil {
-			return nil, nil, nil, err
+			return nil, nil, err
 		}
 		auth := &ssh2.PublicKeys{User: sshUser, Signer: signer}
 		if g.InsecureIgnoreHostKey {
 			auth.HostKeyCallback = ssh.InsecureIgnoreHostKey()
 		}
-		args := []string{"ssh", "-i", privateKeyFile.Name()}
-		if g.InsecureIgnoreHostKey {
-			args = append(args, "-o", "StrictHostKeyChecking=no", "-o", "UserKnownHostsFile=/dev/null")
-		} else {
-			args = append(args, "-o", "StrictHostKeyChecking=yes", "-o")
-		}
-		env := []string{"GIT_SSH_COMMAND=" + strings.Join(args, " ")}
 		if g.InsecureIgnoreHostKey {
 			auth.HostKeyCallback = ssh.InsecureIgnoreHostKey()
-			env = append(env, "GIT_SSL_NO_VERIFY=true")
 		}
 		return func() { _ = os.Remove(privateKeyFile.Name()) },
 			auth,
-			env,
 			nil
 	}
 	if g.Username != "" || g.Password != "" {
@@ -91,19 +81,14 @@ Password*) echo "${GIT_PASSWORD}" ;;
 esac
 `), 0o755)
 			if err != nil {
-				return nil, nil, nil, err
+				return nil, nil, err
 			}
 		}
 		return func() {},
 			&http.BasicAuth{Username: g.Username, Password: g.Password},
-			[]string{
-				"GIT_ASKPASS=" + filename,
-				"GIT_USERNAME=" + g.Username,
-				"GIT_PASSWORD=" + g.Password,
-			},
 			nil
 	}
-	return func() {}, nil, nil, nil
+	return func() {}, nil, nil
 }
 
 // Save is unsupported for git output artifacts
@@ -113,7 +98,7 @@ func (g *ArtifactDriver) Save(string, *wfv1.Artifact) error {
 
 func (g *ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) error {
 	sshUser := GetUser(inputArtifact.Git.Repo)
-	closer, auth, env, err := g.auth(sshUser)
+	closer, auth, err := g.auth(sshUser)
 	if err != nil {
 		return err
 	}
@@ -173,48 +158,36 @@ func (g *ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) error {
 		}
 	}
 	if inputArtifact.Git.Revision != "" {
-		// We still rely on forking git for checkout, since go-git does not have a reliable
-		// way of resolving revisions (e.g. mybranch, HEAD^, v1.2.3)
-		rev := getRevisionForCheckout(inputArtifact.Git.Revision)
-		log.Info("Checking out revision ", rev)
-		cmd := exec.Command("git", "checkout", rev)
-		cmd.Dir = path
-		cmd.Env = env
-		output, err := cmd.Output()
+		h, err := repo.ResolveRevision(plumbing.Revision(inputArtifact.Git.Revision))
 		if err != nil {
-			return g.error(err, cmd)
+			return err
 		}
-		log.Infof("`%s` stdout:\n%s", cmd.Args, string(output))
+		w, err := repo.Worktree()
+		if err != nil {
+			return err
+		}
+		if err := w.Checkout(&git.CheckoutOptions{Hash: plumbing.NewHash(h.String())}); err != nil {
+			return err
+		}
 		if !inputArtifact.Git.DisableSubmodules {
-			submodulesCmd := exec.Command("git", "submodule", "update", "--init", "--recursive", "--force")
-			submodulesCmd.Dir = path
-			submodulesCmd.Env = env
-			submoduleOutput, err := submodulesCmd.Output()
+			s, err := w.Submodules()
 			if err != nil {
-				return g.error(err, cmd)
+				return err
 			}
-			log.Infof("`%s` stdout:\n%s", cmd.Args, string(submoduleOutput))
+			if err := s.Update(&git.SubmoduleUpdateOptions{
+				Init:              true,
+				RecurseSubmodules: recurseSubmodules,
+				Auth:              auth,
+			}); err != nil {
+				return err
+			}
 		}
 	}
 	return nil
 }
 
-// getRevisionForCheckout trims "refs/heads/" from the revision name (if present)
-// so that `git checkout` will succeed.
-func getRevisionForCheckout(revision string) string {
-	return strings.TrimPrefix(revision, "refs/heads/")
-}
-
 func isAlreadyUpToDateErr(err error) bool {
 	return err != nil && err.Error() != "already up-to-date"
-}
-
-func (g *ArtifactDriver) error(err error, cmd *exec.Cmd) error {
-	if exErr, ok := err.(*exec.ExitError); ok {
-		log.Errorf("`%s` stderr:\n%s", cmd.Args, string(exErr.Stderr))
-		return errors.New(strings.Split(string(exErr.Stderr), "\n")[0])
-	}
-	return err
 }
 
 func (g *ArtifactDriver) ListObjects(artifact *wfv1.Artifact) ([]string, error) {

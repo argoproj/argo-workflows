@@ -808,8 +808,12 @@ func isTarball(filePath string) (bool, error) {
 // renaming it to the desired location
 func untar(tarPath string, destPath string) error {
 	decompressor := func(src string, dest string) error {
-		_, err := common.RunCommand("tar", "-xf", src, "-C", dest)
-		return err
+		f, err := os.Open(tarPath)
+		if err != nil {
+			return err
+		}
+		defer f.Close()
+		return untarGz(destPath, f)
 	}
 
 	return unpack(tarPath, destPath, decompressor)
