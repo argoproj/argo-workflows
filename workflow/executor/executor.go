@@ -55,8 +55,8 @@ const (
 // WorkflowExecutor is program which runs as the init/wait container
 type WorkflowExecutor struct {
 	PodName             string
+	podUID              types.UID
 	workflow            string
-	workflowUID         types.UID
 	nodeId              string
 	Template            wfv1.Template
 	IncludeScriptOutput bool
@@ -113,10 +113,11 @@ type ContainerRuntimeExecutor interface {
 // NewExecutor instantiates a new workflow executor
 func NewExecutor(
 	clientset kubernetes.Interface,
-	taskSetClient argoprojv1.WorkflowTaskResultInterface,
+	taskResultClient argoprojv1.WorkflowTaskResultInterface,
 	restClient rest.Interface,
-	podName, workflow, nodeId, namespace string,
-	workflowUID types.UID,
+	podName string,
+	podUID types.UID,
+	workflow, nodeId, namespace string,
 	cre ContainerRuntimeExecutor,
 	template wfv1.Template,
 	includeScriptOutput bool,
@@ -126,11 +127,11 @@ func NewExecutor(
 	log.WithFields(log.Fields{"Steps": executorretry.Steps, "Duration": executorretry.Duration, "Factor": executorretry.Factor, "Jitter": executorretry.Jitter}).Info("Using executor retry strategy")
 	return WorkflowExecutor{
 		PodName:                      podName,
+		podUID:                       podUID,
 		workflow:                     workflow,
-		workflowUID:                  workflowUID,
 		nodeId:                       nodeId,
 		ClientSet:                    clientset,
-		taskResultClient:             taskSetClient,
+		taskResultClient:             taskResultClient,
 		RESTClient:                   restClient,
 		Namespace:                    namespace,
 		RuntimeExecutor:              cre,
