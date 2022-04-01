@@ -105,6 +105,9 @@ type Config struct {
 
 	// NavColor is an ui navigation bar background color
 	NavColor string `json:"navColor,omitempty"`
+
+	// SSO in settings for single-sign on
+	SSO SSOConfig `json:"sso,omitempty"`
 }
 
 func (c Config) GetContainerRuntimeExecutor(labels labels.Labels) (string, error) {

@@ -421,10 +421,11 @@ func (wfc *WorkflowController) createClusterWorkflowTemplateInformer(ctx context
 }
 
 func (wfc *WorkflowController) UpdateConfig(ctx context.Context) {
-	err := wfc.configController.Get(ctx, &wfc.Config)
+	c, err := wfc.configController.Get(ctx)
 	if err != nil {
 		log.Fatalf("Failed to register watch for controller config map: %v", err)
 	}
+	wfc.Config = *c
 	err = wfc.updateConfig()
 	if err != nil {
 		log.Fatalf("Failed to update config: %v", err)

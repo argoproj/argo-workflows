@@ -177,7 +177,7 @@ func (g *ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) error {
 		// way of resolving revisions (e.g. mybranch, HEAD^, v1.2.3)
 		rev := getRevisionForCheckout(inputArtifact.Git.Revision)
 		log.Info("Checking out revision ", rev)
-		cmd := exec.Command("git", "checkout", rev)
+		cmd := exec.Command("git", "checkout", rev, "--")
 		cmd.Dir = path
 		cmd.Env = env
 		output, err := cmd.Output()
