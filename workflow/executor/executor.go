@@ -575,17 +575,17 @@ func (we *WorkflowExecutor) SaveLogs(ctx context.Context) {
 	}
 }
 
-// SaveLogs saves a single container logs
+// saveContainerLogs saves a single container's log into a file
 func (we *WorkflowExecutor) saveContainerLogs(ctx context.Context, tempLogsDir, containerName string) (*wfv1.Artifact, error) {
 	fileName := containerName + ".log"
-	path := path.Join(tempLogsDir, fileName)
-	err := we.saveLogToFile(ctx, containerName, path)
+	filePath := path.Join(tempLogsDir, fileName)
+	err := we.saveLogToFile(ctx, containerName, filePath)
 	if err != nil {
 		return nil, err
 	}
 
 	art := &wfv1.Artifact{Name: containerName + "-logs"}
-	err = we.saveArtifactFromFile(ctx, art, fileName, path)
+	err = we.saveArtifactFromFile(ctx, art, fileName, filePath)
 	if err != nil {
 		return nil, err
 	}
@@ -740,7 +740,7 @@ func (we *WorkflowExecutor) CaptureScriptResult(ctx context.Context) error {
 	return nil
 }
 
-// AnnotateOutputs annotation to the pod indicating all the outputs.
+// ReportOutputs updates the WorkflowTaskResult (or falls back to annotate the Pod)
 func (we *WorkflowExecutor) ReportOutputs(ctx context.Context, logArt *wfv1.Artifact, containerName string) error {
 	outputs := we.Template.Outputs.DeepCopy()
 	if logArt != nil {
