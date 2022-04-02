@@ -768,9 +768,9 @@ func (we *WorkflowExecutor) reportResult(ctx context.Context, result wfv1.NodeRe
 				if err != nil {
 					return err
 				}
-				//key := fmt.Sprintf("%s-%s", common.AnnotationKeyOutputs, containerName)
 				//TODO: noamg
-				return we.AddAnnotation(ctx, common.AnnotationKeyOutputs, string(value))
+				key := fmt.Sprintf("%s-%s", common.AnnotationKeyOutputs, containerName)
+				return we.AddAnnotation(ctx, key, string(value))
 			}
 			if result.Progress.IsValid() { // this may result in occasionally two patches
 				return we.AddAnnotation(ctx, common.AnnotationKeyProgress, string(result.Progress))
