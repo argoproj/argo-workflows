@@ -1232,8 +1232,6 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, old *wfv1.NodeStatus
 		new.PodIP = pod.Status.PodIP
 	}
 
-	woc.updateNodeOutputs(pod, new)
-
 	new.HostNodeName = pod.Spec.NodeName
 
 	if !new.Progress.IsValid() {
@@ -1246,6 +1244,8 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, old *wfv1.NodeStatus
 			new.Progress = p
 		}
 	}
+
+	woc.updateNodeOutputs(pod, new)
 
 	// We capture the exit-code after we look for the task-result.
 	// All other outputs are set by the executor, only the exit-code is set by the controller.
@@ -1310,7 +1310,6 @@ func (woc *wfOperationCtx) updateNodeOutputs(pod *apiv1.Pod, node *wfv1.NodeStat
 		if childNode, ok := woc.wf.Status.Nodes[childID]; ok {
 			woc.updateNodeOutputs(pod, &childNode)
 			woc.wf.Status.Nodes[childID] = childNode
-			woc.updated = true
 		}
 	}
 }
