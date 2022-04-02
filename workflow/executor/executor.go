@@ -545,33 +545,33 @@ func (we *WorkflowExecutor) SaveParameters(ctx context.Context) error {
 }
 
 func (we *WorkflowExecutor) SaveLogs(ctx context.Context) {
+	var logArtifacts []wfv1.Artifact
 	tempLogsDir := "/tmp/argo/outputs/logs"
-	err := os.MkdirAll(tempLogsDir, os.ModePerm)
-	if err != nil {
-		we.AddError(argoerrs.InternalWrapError(err))
-		return
-	}
 
-	containerNames := we.Template.GetMainContainerNames()
-	for _, containerName := range containerNames {
-		var (
-			art *wfv1.Artifact
-			err error
-		)
-		if we.Template.SaveLogsAsArtifact() {
+	if we.Template.SaveLogsAsArtifact() {
+		err := os.MkdirAll(tempLogsDir, os.ModePerm)
+		if err != nil {
+			we.AddError(argoerrs.InternalWrapError(err))
+		}
+
+		containerNames := we.Template.GetMainContainerNames()
+		logArtifacts = make([]wfv1.Artifact, 0)
+
+		for _, containerName := range containerNames {
 			// Saving logs
-			log.Info("Saving logs with new loop")
-			art, err = we.saveContainerLogs(ctx, tempLogsDir, containerName)
+			art, err := we.saveContainerLogs(ctx, tempLogsDir, containerName)
 			if err != nil {
 				we.AddError(err)
+			} else {
+				logArtifacts = append(logArtifacts, *art)
 			}
 		}
+	}
 
-		// Annotating pod with output
-		err = we.ReportOutputs(ctx, art, containerName)
-		if err != nil {
-			we.AddError(err)
-		}
+	// Annotating pod with output
+	err := we.reportOutputs(ctx, logArtifacts)
+	if err != nil {
+		we.AddError(err)
 	}
 }
 
@@ -740,16 +740,14 @@ func (we *WorkflowExecutor) CaptureScriptResult(ctx context.Context) error {
 	return nil
 }
 
-// ReportOutputs updates the WorkflowTaskResult (or falls back to annotate the Pod)
-func (we *WorkflowExecutor) ReportOutputs(ctx context.Context, logArt *wfv1.Artifact, containerName string) error {
+// reportOutputs updates the WorkflowTaskResult (or falls back to annotate the Pod)
+func (we *WorkflowExecutor) reportOutputs(ctx context.Context, logArtifacts []wfv1.Artifact) error {
 	outputs := we.Template.Outputs.DeepCopy()
-	if logArt != nil {
-		outputs.Artifacts = append(outputs.Artifacts, *logArt)
-	}
-	return we.reportResult(ctx, wfv1.NodeResult{Outputs: outputs}, containerName)
+	outputs.Artifacts = append(outputs.Artifacts, logArtifacts...)
+	return we.reportResult(ctx, wfv1.NodeResult{Outputs: outputs})
 }
 
-func (we *WorkflowExecutor) reportResult(ctx context.Context, result wfv1.NodeResult, containerName string) error {
+func (we *WorkflowExecutor) reportResult(ctx context.Context, result wfv1.NodeResult) error {
 	if !result.Outputs.HasOutputs() && !result.Progress.IsValid() {
 		return nil
 	}
@@ -768,13 +766,14 @@ func (we *WorkflowExecutor) reportResult(ctx context.Context, result wfv1.NodeRe
 				if err != nil {
 					return err
 				}
-				key := fmt.Sprintf("%s-%s", common.AnnotationKeyOutputs, containerName)
-				return we.AddAnnotation(ctx, key, string(value))
+
+				return we.AddAnnotation(ctx, common.AnnotationKeyOutputs, string(value))
 			}
 			if result.Progress.IsValid() { // this may result in occasionally two patches
 				return we.AddAnnotation(ctx, common.AnnotationKeyProgress, string(result.Progress))
 			}
 		}
+
 		return err
 	})
 }
@@ -1020,7 +1019,7 @@ func (we *WorkflowExecutor) monitorProgress(ctx context.Context, progressFile st
 			log.WithError(ctx.Err()).Info("stopping progress monitor (context done)")
 			return
 		case <-annotationPatchTicker.C:
-			if err := we.reportResult(ctx, wfv1.NodeResult{Progress: we.progress}, ""); err != nil {
+			if err := we.reportResult(ctx, wfv1.NodeResult{Progress: we.progress}); err != nil {
 				log.WithError(err).Info("failed to report progress")
 			} else {
 				we.progress = ""
