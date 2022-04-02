@@ -312,12 +312,12 @@ func listPods(woc *wfOperationCtx) (*apiv1.PodList, error) {
 
 type with func(pod *apiv1.Pod)
 
-func withOutputs(cm string, v interface{}) with {
+func withOutputs(v interface{}) with {
 	switch x := v.(type) {
 	case string:
-		return withAnnotation(common.AnnotationKeyOutputs+"-"+cm, x)
+		return withAnnotation(common.AnnotationKeyOutputs, x)
 	default:
-		return withOutputs(cm, wfv1.MustMarshallJSON(x))
+		return withOutputs(wfv1.MustMarshallJSON(x))
 	}
 }
 func withProgress(v string) with { return withAnnotation(common.AnnotationKeyProgress, v) }
@@ -338,9 +338,7 @@ func withExitCode(v int32) with {
 }
 
 func withAnnotation(key, val string) with {
-	return func(pod *apiv1.Pod) {
-		pod.Annotations[key] = val
-	}
+	return func(pod *apiv1.Pod) { pod.Annotations[key] = val }
 }
 
 // createRunningPods creates the pods that are marked as running in a given test so that they can be accessed by the
