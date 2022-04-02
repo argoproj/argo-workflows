@@ -158,6 +158,38 @@ func (s *ArtifactsSuite) TestMainLog() {
 	})
 }
 
+func (s *ArtifactsSuite) TestContainersetLogs() {
+	s.Run("Basic", func() {
+		s.Given().
+			Workflow(`
+			apiVersion: argoproj.io/v1alpha1
+			kind: Workflow
+			metadata:
+				generateName: containerset-logs-
+			spec:
+				entrypoint: main
+				templates:
+					- name: main
+						containerSet:
+							containers:
+								- name: a
+									image: argoproj/argosay:v2
+								- name: b
+								  image: argoproj/argosay:v2
+`).
+			When().
+			SubmitWorkflow().
+			WaitForWorkflow(fixtures.ToBeSucceeded).
+			Then().
+			ExpectWorkflow(func(t *testing.T, m *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+				n := status.Nodes[m.Name]
+				if assert.NotNil(t, n) {
+					assert.Len(t, n.Outputs.Artifacts, 1)
+				}
+			})
+	})
+}
+
 func TestArtifactsSuite(t *testing.T) {
 	suite.Run(t, new(ArtifactsSuite))
 }
