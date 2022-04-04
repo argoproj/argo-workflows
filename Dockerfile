@@ -92,7 +92,7 @@ RUN --mount=type=cache,target=/root/.cache/go-build make dist/argo
 
 ####################################################################################################
 
-FROM scratch as argoexec
+FROM gcr.io/distroless/static as argoexec
 
 COPY --from=argoexec-build /usr/local/bin/kubectl /bin/
 COPY --from=argoexec-build /usr/local/bin/jq /bin/
