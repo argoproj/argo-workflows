@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"path/filepath"
 	"regexp"
 
 	"github.com/go-git/go-git/v5"
@@ -64,28 +63,10 @@ func (g *ArtifactDriver) auth(sshUser string) (func(), transport.AuthMethod, err
 		if g.InsecureIgnoreHostKey {
 			auth.HostKeyCallback = ssh.InsecureIgnoreHostKey()
 		}
-		return func() { _ = os.Remove(privateKeyFile.Name()) },
-			auth,
-			nil
+		return func() { _ = os.Remove(privateKeyFile.Name()) }, auth, nil
 	}
 	if g.Username != "" || g.Password != "" {
-		filename := filepath.Join(os.TempDir(), "git-ask-pass.sh")
-		_, err := os.Stat(filename)
-		if os.IsNotExist(err) {
-			//nolint:gosec
-			err := ioutil.WriteFile(filename, []byte(`#!/bin/sh
-case "$1" in
-Username*) echo "${GIT_USERNAME}" ;;
-Password*) echo "${GIT_PASSWORD}" ;;
-esac
-`), 0o755)
-			if err != nil {
-				return nil, nil, err
-			}
-		}
-		return func() {},
-			&http.BasicAuth{Username: g.Username, Password: g.Password},
-			nil
+		return func() {}, &http.BasicAuth{Username: g.Username, Password: g.Password}, nil
 	}
 	return func() {}, nil, nil
 }
@@ -96,96 +77,84 @@ func (g *ArtifactDriver) Save(string, *wfv1.Artifact) error {
 }
 
 func (g *ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) error {
-	sshUser := GetUser(inputArtifact.Git.Repo)
+	a := inputArtifact.Git
+	sshUser := GetUser(a.Repo)
 	closer, auth, err := g.auth(sshUser)
 	if err != nil {
 		return err
 	}
 	defer closer()
-
-	var recurseSubmodules = git.DefaultSubmoduleRecursionDepth
-	if inputArtifact.Git.DisableSubmodules {
-		log.Info("Recursive cloning of submodules is disabled")
-		recurseSubmodules = git.NoRecurseSubmodules
-	}
-	repo, err := git.PlainClone(path, false, &git.CloneOptions{
-		URL:               inputArtifact.Git.Repo,
-		RecurseSubmodules: recurseSubmodules,
-		Auth:              auth,
-		Depth:             inputArtifact.Git.GetDepth(),
-	})
+	depth := a.GetDepth()
+	r, err := git.PlainClone(path, false, &git.CloneOptions{URL: a.Repo, Auth: auth, Depth: depth})
 	switch err {
 	case transport.ErrEmptyRemoteRepository:
-		log.Info("Cloned an empty repository ")
+		log.Info("Cloned an empty repository")
 		r, err := git.PlainInit(path, false)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to plain init: %w", err)
 		}
-		if _, err := r.CreateRemote(&config.RemoteConfig{Name: git.DefaultRemoteName, URLs: []string{inputArtifact.Git.Repo}}); err != nil {
-			return err
+		if _, err := r.CreateRemote(&config.RemoteConfig{Name: git.DefaultRemoteName, URLs: []string{a.Repo}}); err != nil {
+			return fmt.Errorf("failed to create remote %q: %w", a.Repo, err)
 		}
-		branchName := inputArtifact.Git.Revision
+		branchName := a.Revision
 		if branchName == "" {
 			branchName = "master"
 		}
 		if err = r.CreateBranch(&config.Branch{Name: branchName, Remote: git.DefaultRemoteName, Merge: plumbing.Master}); err != nil {
-			return err
+			return fmt.Errorf("failed to create branch %q: %w", branchName, err)
 		}
 		return nil
-	default:
-		return err
 	case nil:
 		// fallthrough ...
+	default:
+		return fmt.Errorf("failed to clone %q: %w", a.Repo, err)
 	}
-	if inputArtifact.Git.Fetch != nil {
-		refSpecs := make([]config.RefSpec, len(inputArtifact.Git.Fetch))
-		for i, spec := range inputArtifact.Git.Fetch {
+	if len(a.Fetch) > 0 {
+		refSpecs := make([]config.RefSpec, len(a.Fetch))
+		for i, spec := range a.Fetch {
 			refSpecs[i] = config.RefSpec(spec)
 		}
-		fetchOptions := git.FetchOptions{
-			Auth:     auth,
-			RefSpecs: refSpecs,
-			Depth:    inputArtifact.Git.GetDepth(),
+		opts := &git.FetchOptions{Auth: auth, RefSpecs: refSpecs, Depth: depth}
+		if err := opts.Validate(); err != nil {
+			return fmt.Errorf("failed to validate fetch %v: %w", refSpecs, err)
 		}
-		err = fetchOptions.Validate()
-		if err != nil {
-			return err
-		}
-		err = repo.Fetch(&fetchOptions)
-		if isAlreadyUpToDateErr(err) {
-			return err
+		if err = r.Fetch(opts); isFetchError(err) {
+			return fmt.Errorf("failed to fetch %v: %w", refSpecs, err)
 		}
 	}
-	if inputArtifact.Git.Revision != "" {
-		h, err := repo.ResolveRevision(plumbing.Revision(inputArtifact.Git.Revision))
-		if err != nil {
-			return err
+	w, err := r.Worktree()
+	if err != nil {
+		return fmt.Errorf("failed to get work tree: %w", err)
+	}
+	if a.Revision != "" {
+		if err := r.Fetch(&git.FetchOptions{RefSpecs: []config.RefSpec{"refs/heads/*:refs/heads/*"}}); isFetchError(err) {
+			return fmt.Errorf("failed to fatch refs: %w", err)
 		}
-		w, err := repo.Worktree()
+		h, err := r.ResolveRevision(plumbing.Revision(a.Revision))
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to get resolve revision: %w", err)
 		}
 		if err := w.Checkout(&git.CheckoutOptions{Hash: plumbing.NewHash(h.String())}); err != nil {
-			return err
+			return fmt.Errorf("failed to checkout %q: %w", h, err)
 		}
-		if !inputArtifact.Git.DisableSubmodules {
-			s, err := w.Submodules()
-			if err != nil {
-				return err
-			}
-			if err := s.Update(&git.SubmoduleUpdateOptions{
-				Init:              true,
-				RecurseSubmodules: recurseSubmodules,
-				Auth:              auth,
-			}); err != nil {
-				return err
-			}
+	}
+	if !a.DisableSubmodules {
+		s, err := w.Submodules()
+		if err != nil {
+			return fmt.Errorf("failed to get submodules: %w", err)
+		}
+		if err := s.Update(&git.SubmoduleUpdateOptions{
+			Init:              true,
+			RecurseSubmodules: git.DefaultSubmoduleRecursionDepth,
+			Auth:              auth,
+		}); err != nil {
+			return fmt.Errorf("failed to update submodules: %w", err)
 		}
 	}
 	return nil
 }
 
-func isAlreadyUpToDateErr(err error) bool {
+func isFetchError(err error) bool {
 	return err != nil && err.Error() != "already up-to-date"
 }
 
