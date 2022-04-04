@@ -5,15 +5,6 @@ data:
       requests:
         cpu: 10m
         memory: 64Mi
-  containerRuntimeExecutors: |
-    - name: emissary
-      selector:
-        matchLabels:
-          workflows.argoproj.io/container-runtime-executor: emissary
-    - name: pns
-      selector:
-        matchLabels:
-          workflows.argoproj.io/container-runtime-executor: pns
   images: |
     argoproj/argosay:v1:
       command: [cowsay]

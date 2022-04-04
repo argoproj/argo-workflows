@@ -1164,15 +1164,6 @@ data:
       secretKeySecret:
         name: my-minio-cred
         key: secretkey
-  containerRuntimeExecutors: |
-    - name: emissary
-      selector:
-        matchLabels:
-          workflows.argoproj.io/container-runtime-executor: emissary
-    - name: pns
-      selector:
-        matchLabels:
-          workflows.argoproj.io/container-runtime-executor: pns
   executor: |
     resources:
       requests:
