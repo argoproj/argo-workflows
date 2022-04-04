@@ -78,7 +78,7 @@ func initExecutor() *executor.WorkflowExecutor {
 	log.WithFields(log.Fields{"version": version.Version}).Info("Starting Workflow Executor")
 	config, err := clientConfig.ClientConfig()
 	checkErr(err)
-	config = restclient.AddUserAgent(config, fmt.Sprintf("argo-workflows/%s", version.Version))
+	config = restclient.AddUserAgent(config, fmt.Sprintf("argo-workflows/%s argo-executor", version.Version))
 
 	logs.AddK8SLogTransportWrapper(config) // lets log all request as we should typically do < 5 per pod, so this is will show up problems
 
