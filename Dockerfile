@@ -1,6 +1,5 @@
 #syntax=docker/dockerfile:1.2
 
-
 # NOTE: kubectl version should be one minor version less than https://storage.googleapis.com/kubernetes-release/release/stable.txt
 ARG KUBECTL_VERSION=1.22.3
 ARG JQ_VERSION=1.6
@@ -14,9 +13,7 @@ RUN apt-get update && apt-get --no-install-recommends install -y \
     apt-transport-https \
     ca-certificates \
     wget \
-    gcc \
-    libcap2-bin \
-    zip && \
+    gcc && \
     apt-get clean \
     && rm -rf \
         /var/lib/apt/lists/* \
@@ -69,7 +66,6 @@ RUN cat .dockerignore >> .gitignore
 RUN git status --porcelain | cut -c4- | xargs git update-index --skip-worktree
 
 RUN --mount=type=cache,target=/root/.cache/go-build make dist/argoexec
-RUN setcap CAP_SYS_PTRACE,CAP_SYS_CHROOT+ei dist/argoexec
 
 ####################################################################################################
 
@@ -101,17 +97,16 @@ RUN --mount=type=cache,target=/root/.cache/go-build make dist/argo
 
 ####################################################################################################
 
-FROM alpine:3 as argoexec
+FROM gcr.io/distroless/static as argoexec
 
-# procps and libcap are needed by the PNS executor
-RUN apk --no-cache add procps libcap
+USER 8737
 
-COPY --from=argoexec-build /usr/local/bin/kubectl /usr/local/bin/
-COPY --from=argoexec-build /usr/local/bin/jq /usr/local/bin/
-COPY --from=argoexec-build /go/src/github.com/argoproj/argo-workflows/dist/argoexec /usr/local/bin/
-COPY --from=argoexec-build /etc/mime.types /etc/mime.types
-COPY hack/ssh_known_hosts /etc/ssh/
-COPY hack/nsswitch.conf /etc/
+COPY --chown=8737 --from=argoexec-build /usr/local/bin/kubectl /bin/
+COPY --chown=8737 --from=argoexec-build /usr/local/bin/jq /bin/
+COPY --chown=8737 --from=argoexec-build /go/src/github.com/argoproj/argo-workflows/dist/argoexec /bin/
+COPY --chown=8737 --from=argoexec-build /etc/mime.types /etc/mime.types
+COPY --chown=8737 hack/ssh_known_hosts /etc/ssh/
+COPY --chown=8737 hack/nsswitch.conf /etc/
 
 ENTRYPOINT [ "argoexec" ]
 
