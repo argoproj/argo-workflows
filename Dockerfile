@@ -94,14 +94,12 @@ RUN --mount=type=cache,target=/root/.cache/go-build make dist/argo
 
 FROM scratch as argoexec
 
-USER 8737
-
-COPY --chown=8737 --from=argoexec-build /usr/local/bin/kubectl /bin/
-COPY --chown=8737 --from=argoexec-build /usr/local/bin/jq /bin/
-COPY --chown=8737 --from=argoexec-build /go/src/github.com/argoproj/argo-workflows/dist/argoexec /bin/
-COPY --chown=8737 --from=argoexec-build /etc/mime.types /etc/mime.types
-COPY --chown=8737 hack/ssh_known_hosts /etc/ssh/
-COPY --chown=8737 hack/nsswitch.conf /etc/
+COPY --from=argoexec-build /usr/local/bin/kubectl /bin/
+COPY --from=argoexec-build /usr/local/bin/jq /bin/
+COPY --from=argoexec-build /go/src/github.com/argoproj/argo-workflows/dist/argoexec /bin/
+COPY --from=argoexec-build /etc/mime.types /etc/mime.types
+COPY hack/ssh_known_hosts /etc/ssh/
+COPY hack/nsswitch.conf /etc/
 
 ENTRYPOINT [ "argoexec" ]
 
