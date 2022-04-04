@@ -653,20 +653,17 @@ func Test_createWorkflowPod_containerName(t *testing.T) {
 func Test_createWorkflowPod_emissary(t *testing.T) {
 	t.Run("NoCommand", func(t *testing.T) {
 		woc := newWoc()
-		woc.controller.containerRuntimeExecutor = common.ContainerRuntimeExecutorEmissary
 		_, err := woc.createWorkflowPod(context.Background(), "", []apiv1.Container{{}}, &wfv1.Template{Name: "my-tmpl"}, &createWorkflowPodOpts{})
 		assert.EqualError(t, err, "container \"main\" in template \"my-tmpl\", does not have the command specified: when using the emissary executor you must either explicitly specify the command, or list the image's command in the index: https://argoproj.github.io/argo-workflows/workflow-executors/#emissary-emissary")
 	})
 	t.Run("CommandNoArgs", func(t *testing.T) {
 		woc := newWoc()
-		woc.controller.containerRuntimeExecutor = common.ContainerRuntimeExecutorEmissary
 		pod, err := woc.createWorkflowPod(context.Background(), "", []apiv1.Container{{Command: []string{"foo"}}}, &wfv1.Template{}, &createWorkflowPodOpts{})
 		assert.NoError(t, err)
 		assert.Equal(t, []string{"/var/run/argo/argoexec", "emissary", "--", "foo"}, pod.Spec.Containers[1].Command)
 	})
 	t.Run("NoCommandWithImageIndex", func(t *testing.T) {
 		woc := newWoc()
-		woc.controller.containerRuntimeExecutor = common.ContainerRuntimeExecutorEmissary
 		pod, err := woc.createWorkflowPod(context.Background(), "", []apiv1.Container{{Image: "my-image"}}, &wfv1.Template{}, &createWorkflowPodOpts{})
 		if assert.NoError(t, err) {
 			assert.Equal(t, []string{"/var/run/argo/argoexec", "emissary", "--", "my-cmd"}, pod.Spec.Containers[1].Command)
@@ -675,7 +672,6 @@ func Test_createWorkflowPod_emissary(t *testing.T) {
 	})
 	t.Run("NoCommandWithArgsWithImageIndex", func(t *testing.T) {
 		woc := newWoc()
-		woc.controller.containerRuntimeExecutor = common.ContainerRuntimeExecutorEmissary
 		pod, err := woc.createWorkflowPod(context.Background(), "", []apiv1.Container{{Image: "my-image", Args: []string{"foo"}}}, &wfv1.Template{}, &createWorkflowPodOpts{})
 		if assert.NoError(t, err) {
 			assert.Equal(t, []string{"/var/run/argo/argoexec", "emissary", "--", "my-cmd"}, pod.Spec.Containers[1].Command)
@@ -684,7 +680,6 @@ func Test_createWorkflowPod_emissary(t *testing.T) {
 	})
 	t.Run("CommandFromPodSpecPatch", func(t *testing.T) {
 		woc := newWoc()
-		woc.controller.containerRuntimeExecutor = common.ContainerRuntimeExecutorEmissary
 		podSpec := &apiv1.PodSpec{}
 		podSpec.Containers = []apiv1.Container{{
 			Name:    "main",
@@ -721,7 +716,6 @@ func TestVolumeAndVolumeMounts(t *testing.T) {
 		woc := newWoc()
 		woc.volumes = volumes
 		woc.execWf.Spec.Templates[0].Container.VolumeMounts = volumeMounts
-		woc.controller.Config.ContainerRuntimeExecutor = common.ContainerRuntimeExecutorEmissary
 
 		tmplCtx, err := woc.createTemplateContext(wfv1.ResourceScopeLocal, "")
 		assert.NoError(t, err)
@@ -787,7 +781,6 @@ func TestVolumesPodSubstitution(t *testing.T) {
 	woc.volumes = volumes
 	woc.execWf.Spec.Templates[0].Container.VolumeMounts = volumeMounts
 	woc.execWf.Spec.Templates[0].Inputs.Parameters = inputParameters
-	woc.controller.Config.ContainerRuntimeExecutor = common.ContainerRuntimeExecutorEmissary
 
 	tmplCtx, err := woc.createTemplateContext(wfv1.ResourceScopeLocal, "")
 	assert.NoError(t, err)

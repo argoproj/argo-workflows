@@ -26,7 +26,7 @@ try:
         print(UNTAGGED_VERSION)  # this goes to sys.stdout, so it's captured by the Makefile
         exit(0)
 
-    rc_version_suffix = re.findall("-rc\d+", git_tag)
+    rc_version_suffix = re.findall("-.*", git_tag)
     if len(rc_version_suffix) > 0:
         git_tag = git_tag.replace(rc_version_suffix[0], '')
     version_digits = [int(i) for i in git_tag.replace(VERSION_PREFIX, '').split('.')]

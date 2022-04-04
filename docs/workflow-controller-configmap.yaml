@@ -146,6 +146,7 @@ data:
   # Specifies the container runtime interface to use (default: emissary)
   # must be one of: docker, kubelet, k8sapi, pns, emissary
   # It has lower precedence than either `--container-runtime-executor` and `containerRuntimeExecutors`.
+  # (removed in v3.4)
   containerRuntimeExecutor: emissary
 
   # Specifies the executor to use.
@@ -158,6 +159,7 @@ data:
   #
   # The list is in order of precedence; the first matching executor is used.
   # This has precedence over `containerRuntimeExecutor`.
+  # (removed in v3.4)
   containerRuntimeExecutors: |
     - name: emissary
       selector:
@@ -173,9 +175,11 @@ data:
   dockerSockPath: /var/someplace/else/docker.sock
 
   # kubelet port when using kubelet executor (default: 10250) (kubelet executor will be deprecated use emissary instead)
+  # (removed in v3.4)
   kubeletPort: 10250
 
   # disable the TLS verification of the kubelet executor (default: false)
+  # (removed in v3.4)
   kubeletInsecure: false
 
   # The command/args for each image, needed when the command is not specified and the emissary executor is used.

@@ -90,7 +90,7 @@ make argoexec-image
 4. Run the profile in a terminal window
 
     ```shell
-    make start PROFILE=minimal E2E_EXECUTOR=emissary AUTH_MODE=client STATIC_FILES=false LOG_LEVEL=info API=true UI=false
+    make start PROFILE=minimal AUTH_MODE=client STATIC_FILES=false LOG_LEVEL=info API=true UI=false
     ```
 
 5. Run the test in your IDE

@@ -88,28 +88,18 @@ jobs:
       matrix:
         include:
           - test: test-plugins
-            containerRuntimeExecutor: emissary
             profile: plugins
           - test: test-functional
-            containerRuntimeExecutor: emissary
             profile: minimal
           - test: test-api
-            containerRuntimeExecutor: emissary
             profile: mysql
           - test: test-cli
-            containerRuntimeExecutor: emissary
             profile: mysql
           - test: test-cron
-            containerRuntimeExecutor: emissary
             profile: minimal
           - test: test-examples
-            containerRuntimeExecutor: emissary
             profile: minimal
           - test: test-executor
-            containerRuntimeExecutor: emissary
-            profile: minimal
-          - test: test-executor
-            containerRuntimeExecutor: pns
             profile: minimal
     steps:
       - uses: actions/checkout@v3
@@ -144,11 +134,11 @@ jobs:
           echo '127.0.0.1 minio'    | sudo tee -a /etc/hosts
           echo '127.0.0.1 postgres' | sudo tee -a /etc/hosts
           echo '127.0.0.1 mysql'    | sudo tee -a /etc/hosts
-      - run: make install PROFILE=${{matrix.profile}} E2E_EXECUTOR=${{matrix.containerRuntimeExecutor}} STATIC_FILES=false
+      - run: make install PROFILE=${{matrix.profile}} STATIC_FILES=false
       - run: make controller $(go env GOPATH)/bin/goreman STATIC_FILES=false
       - run: make cli STATIC_FILES=false
         if: ${{matrix.test == 'test-api' || matrix.test == 'test-cli'}}
-      - run: make start PROFILE=${{matrix.profile}} E2E_EXECUTOR=${{matrix.containerRuntimeExecutor}} AUTH_MODE=client STATIC_FILES=false LOG_LEVEL=info API=${{matrix.test == 'test-api' || matrix.test == 'test-cli'}} UI=false > /tmp/argo.log 2>&1 &
+      - run: make start PROFILE=${{matrix.profile}} AUTH_MODE=client STATIC_FILES=false LOG_LEVEL=info API=${{matrix.test == 'test-api' || matrix.test == 'test-cli'}} UI=false > /tmp/argo.log 2>&1 &
       - run: make wait
         timeout-minutes: 4
       - run: make ${{matrix.test}} E2E_TIMEOUT=1m STATIC_FILES=false
