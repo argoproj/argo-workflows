@@ -1,7 +1,7 @@
 #syntax=docker/dockerfile:1.2
 
 ARG DOCKER_CHANNEL=stable
-ARG DOCKER_VERSION=20.10.12
+ARG DOCKER_VERSION=20.10.14
 # NOTE: kubectl version should be one minor version less than https://storage.googleapis.com/kubernetes-release/release/stable.txt
 ARG KUBECTL_VERSION=1.22.3
 ARG JQ_VERSION=1.6
