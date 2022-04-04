@@ -11,14 +11,13 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	"github.com/argoproj/argo-workflows/v3/server/auth"
+	"k8s.io/client-go/kubernetes"
 )
 
 type Callback func(pod *corev1.Pod, data []byte) error
 
-func LogPods(ctx context.Context, namespace, labelSelector, grep string, podLogOptions *corev1.PodLogOptions, callback Callback) error {
-	coreV1 := auth.GetKubeClient(ctx).CoreV1()
+func LogPods(ctx context.Context, kubernetesClient kubernetes.Interface, namespace, labelSelector, grep string, podLogOptions *corev1.PodLogOptions, callback Callback) error {
+	coreV1 := kubernetesClient.CoreV1()
 	if podLogOptions == nil {
 		podLogOptions = &corev1.PodLogOptions{}
 	}
