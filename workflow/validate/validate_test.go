@@ -38,11 +38,6 @@ func validate(yamlStr string) (*wfv1.Conditions, error) {
 	return ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{})
 }
 
-func validateWithOptions(yamlStr string, opts ValidateOpts) (*wfv1.Conditions, error) {
-	wf := unmarshalWf(yamlStr)
-	return ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, opts)
-}
-
 // validateWorkflowTemplate is a test helper to accept WorkflowTemplate YAML as a string and return
 // its validation result.
 func validateWorkflowTemplate(yamlStr string, opts ValidateOpts) error {
@@ -1496,122 +1491,6 @@ func TestCustomTemplatVariable(t *testing.T) {
 	assert.Equal(t, err, nil)
 }
 
-var baseImageOutputArtifact = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: base-image-out-art-
-spec:
-  entrypoint: base-image-out-art
-  templates:
-  - name: base-image-out-art
-    container:
-      image: alpine:latest
-      command: [echo, hello]
-    outputs:
-      artifacts:
-      - name: tmp
-        path: /tmp
-`
-
-var baseImageOutputParameter = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: base-image-out-art-
-spec:
-  entrypoint: base-image-out-art
-  templates:
-  - name: base-image-out-art
-    container:
-      image: alpine:latest
-      command: [echo, hello]
-    outputs:
-      parameters:
-      - name: tmp
-        valueFrom:
-          path: /tmp/file
-`
-
-var volumeMountOutputArtifact = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: base-image-out-art-
-spec:
-  entrypoint: base-image-out-art
-  volumes:
-  - name: workdir
-    emptyDir: {}
-  templates:
-  - name: base-image-out-art
-    container:
-      image: alpine:latest
-      command: [echo, hello]
-      volumeMounts:
-      - name: workdir
-        mountPath: /mnt/vol
-    outputs:
-      artifacts:
-      - name: workdir
-        path: /mnt/vol
-`
-
-var baseImageDirWithEmptyDirOutputArtifact = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: base-image-out-art-
-spec:
-  entrypoint: base-image-out-art
-  volumes:
-  - name: workdir
-    emptyDir: {}
-  templates:
-  - name: base-image-out-art
-    container:
-      image: alpine:latest
-      command: [echo, hello]
-      volumeMounts:
-      - name: workdir
-        mountPath: /mnt/vol
-    outputs:
-      artifacts:
-      - name: workdir
-        path: /mnt
-`
-
-// TestBaseImageOutputVerify verifies we error when we detect the condition when the container
-// runtime executor doesn't support output artifacts from a base image layer, and fails validation
-func TestBaseImageOutputVerify(t *testing.T) {
-	wfBaseOutArt := unmarshalWf(baseImageOutputArtifact)
-	wfBaseOutParam := unmarshalWf(baseImageOutputParameter)
-	wfEmptyDirOutArt := unmarshalWf(volumeMountOutputArtifact)
-	wfBaseWithEmptyDirOutArt := unmarshalWf(baseImageDirWithEmptyDirOutputArtifact)
-	var err error
-
-	for _, executor := range []string{common.ContainerRuntimeExecutorPNS, common.ContainerRuntimeExecutorEmissary, ""} {
-		switch executor {
-		case common.ContainerRuntimeExecutorPNS:
-			_, err = ValidateWorkflow(wftmplGetter, cwftmplGetter, wfBaseOutArt, ValidateOpts{ContainerRuntimeExecutor: executor})
-			assert.NoError(t, err)
-			_, err = ValidateWorkflow(wftmplGetter, cwftmplGetter, wfBaseOutParam, ValidateOpts{ContainerRuntimeExecutor: executor})
-			assert.NoError(t, err)
-			_, err = ValidateWorkflow(wftmplGetter, cwftmplGetter, wfBaseWithEmptyDirOutArt, ValidateOpts{ContainerRuntimeExecutor: executor})
-			assert.Error(t, err)
-		case common.ContainerRuntimeExecutorEmissary, "":
-			_, err = ValidateWorkflow(wftmplGetter, cwftmplGetter, wfBaseOutArt, ValidateOpts{ContainerRuntimeExecutor: executor})
-			assert.NoError(t, err)
-			_, err = ValidateWorkflow(wftmplGetter, cwftmplGetter, wfBaseOutParam, ValidateOpts{ContainerRuntimeExecutor: executor})
-			assert.NoError(t, err)
-			_, err = ValidateWorkflow(wftmplGetter, cwftmplGetter, wfBaseWithEmptyDirOutArt, ValidateOpts{ContainerRuntimeExecutor: executor})
-			assert.NoError(t, err)
-		}
-		_, err = ValidateWorkflow(wftmplGetter, cwftmplGetter, wfEmptyDirOutArt, ValidateOpts{ContainerRuntimeExecutor: executor})
-		assert.NoError(t, err)
-	}
-}
-
 var templateRefTarget = `
 apiVersion: argoproj.io/v1alpha1
 kind: WorkflowTemplate
@@ -2414,67 +2293,6 @@ func TestWorkflowWithWFTRefWithOverrideParam(t *testing.T) {
 	assert.NoError(t, err)
 	_, err = validate(wfWithWFTRefOverrideParam)
 	assert.NoError(t, err)
-}
-
-var dagAndStepLevelOutputArtifacts = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: dag-target-
-spec:
-  entrypoint: main
-  templates:
-  - name: main
-    outputs:
-      artifacts:
-        - name: artifact
-          from: "{{tasks.artifact-svn-retrieve.outputs.artifacts.artifact}}"
-    dag:
-      tasks:
-      - name: artifact-svn-retrieve
-        template: artifact-svn-retrieve
-      - name: step-tmpl
-        template: step
-
-  - name: step
-    outputs:
-      artifacts:
-        - name: artifact
-          from: "{{steps.artifact-svn-retrieve.outputs.artifacts.artifact}}"
-    steps:
-    - - name: artifact-svn-retrieve
-        template: artifact-svn-retrieve
-
-  - name: artifact-svn-retrieve
-    outputs:
-      artifacts:
-      - name: artifact
-        path: "/vol/hello_world.txt"
-    container:
-      image: docker/whalesay:latest
-      command: [sh, -c]
-      args: ["sleep 1; cowsay hello world | tee /vol/hello_world.txt"]
-      volumeMounts:
-      - name: vol
-        mountPath: "/vol"
-    volumes:
-    - name: vol
-      emptyDir: {}
-`
-
-func TestDagAndStepLevelOutputArtifactsForDiffExecutor(t *testing.T) {
-	t.Run("DefaultExecutor", func(t *testing.T) {
-		_, err := validateWithOptions(dagAndStepLevelOutputArtifacts, ValidateOpts{ContainerRuntimeExecutor: ""})
-		assert.NoError(t, err)
-	})
-	t.Run("EmissaryExecutor", func(t *testing.T) {
-		_, err := validateWithOptions(dagAndStepLevelOutputArtifacts, ValidateOpts{ContainerRuntimeExecutor: common.ContainerRuntimeExecutorEmissary})
-		assert.NoError(t, err)
-	})
-	t.Run("PNSExecutor", func(t *testing.T) {
-		_, err := validateWithOptions(dagAndStepLevelOutputArtifacts, ValidateOpts{ContainerRuntimeExecutor: common.ContainerRuntimeExecutorPNS})
-		assert.NoError(t, err)
-	})
 }
 
 var testWorkflowTemplateLabels = `
