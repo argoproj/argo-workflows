@@ -115,7 +115,7 @@ SWAGGER_FILES := pkg/apiclient/_.primary.swagger.json \
 	pkg/apiclient/workflow/workflow.swagger.json \
 	pkg/apiclient/workflowarchive/workflow-archive.swagger.json \
 	pkg/apiclient/workflowtemplate/workflow-template.swagger.json
-PROTO_BINARIES := $(GOPATH)/bin/protoc-gen-gogo $(GOPATH)/bin/protoc-gen-gogofast $(GOPATH)/bin/goimports $(GOPATH)/bin/protoc-gen-grpc-gateway $(GOPATH)/bin/protoc-gen-swagger
+PROTO_BINARIES := $(GOPATH)/bin/protoc-gen-gogo $(GOPATH)/bin/protoc-gen-gogofast $(GOPATH)/bin/goimports $(GOPATH)/bin/protoc-gen-grpc-gateway $(GOPATH)/bin/protoc-gen-swagger /usr/local/bin/clang-format
 
 # protoc,my.proto
 define protoc
@@ -301,9 +301,19 @@ $(GOPATH)/bin/swagger:
 $(GOPATH)/bin/goimports:
 	go install golang.org/x/tools/cmd/goimports@v0.1.7
 
+/usr/local/bin/clang-format:
+ifeq ($(shell uname),Darwin)
+	brew install clang-format
+else
+	sudo apt-get install clang-format
+endif
+
 pkg/apis/workflow/v1alpha1/generated.proto: $(GOPATH)/bin/go-to-protobuf $(PROTO_BINARIES) $(TYPES) $(GOPATH)/src/github.com/gogo/protobuf
 	# These files are generated on a v3/ folder by the tool. Link them to the root folder
 	[ -e ./v3 ] || ln -s . v3
+	# Format proto files. Formatting changes generated code, so we do it here, rather that at lint time.
+	# Why clang-format? Google uses it.
+	find pkg/apiclient -name '*.proto'|xargs clang-format -i
 	$(GOPATH)/bin/go-to-protobuf \
 		--go-header-file=./hack/custom-boilerplate.go.txt \
 		--packages=github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1 \
