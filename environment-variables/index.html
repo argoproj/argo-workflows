@@ -3135,24 +3135,6 @@ prefix. For example:</p>
 </thead>
 <tbody>
 <tr>
-<td><code>ARGO_CONTAINER_RUNTIME_EXECUTOR</code></td>
-<td><code>string</code></td>
-<td><code>"docker"</code></td>
-<td>The name of the container runtime executor.</td>
-</tr>
-<tr>
-<td><code>ARGO_KUBELET_PORT</code></td>
-<td><code>int</code></td>
-<td><code>10250</code></td>
-<td>The port to the Kubelet API.</td>
-</tr>
-<tr>
-<td><code>ARGO_KUBELET_INSECURE</code></td>
-<td><code>bool</code></td>
-<td><code>false</code></td>
-<td>Whether to disable the TLS verification.</td>
-</tr>
-<tr>
 <td><code>EXECUTOR_RETRY_BACKOFF_DURATION</code></td>
 <td><code>time.Duration</code></td>
 <td><code>1s</code></td>
@@ -3175,12 +3157,6 @@ prefix. For example:</p>
 <td><code>int</code></td>
 <td><code>5</code></td>
 <td>The retry backoff steps when the workflow executor performs retries.</td>
-</tr>
-<tr>
-<td><code>PNS_PRIVILEGED</code></td>
-<td><code>bool</code></td>
-<td><code>false</code></td>
-<td>Whether to always set privileged on for PNS when PNS executor is used.</td>
 </tr>
 <tr>
 <td><code>REMOVE_LOCAL_ART_PATH</code></td>

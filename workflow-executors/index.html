@@ -2935,7 +2935,7 @@ a <a href="../workflow-controller-configmap.yaml">configuration item</a>.</p>
 <h3 id="exit-code-64">Exit Code 64<a class="headerlink" href="#exit-code-64" title="Permanent link">&para;</a></h3>
 <p>The emissary will exit with code 64 if it fails. This may indicate a bug in the emissary.</p>
 <h2 id="docker-docker">Docker (docker)<a class="headerlink" href="#docker-docker" title="Permanent link">&para;</a></h2>
-<p>⚠️Deprecated. </p>
+<p>⚠️Deprecated. Removed in v3.4.</p>
 <p><strong>default in &lt;= v3.2</strong></p>
 <ul>
 <li>Least secure:<ul>
@@ -2959,7 +2959,7 @@ a <a href="../workflow-controller-configmap.yaml">configuration item</a>.</p>
 </ul>
 <p><strong>Note</strong>: when using docker as workflow executors, messages printed in both <code>stdout</code> and <code>stderr</code> are captured in the <a href="../variables/#scripttemplate">Argo variable</a> <code>.outputs.result</code>.</p>
 <h2 id="kubelet-kubelet">Kubelet (kubelet)<a class="headerlink" href="#kubelet-kubelet" title="Permanent link">&para;</a></h2>
-<p>⚠️Deprecated.</p>
+<p>⚠️Deprecated. Removed in v3.4.</p>
 <ul>
 <li>Secure<ul>
 <li>No <code>privileged</code> access</li>
@@ -2985,7 +2985,7 @@ a <a href="../workflow-controller-configmap.yaml">configuration item</a>.</p>
 </li>
 </ul>
 <h2 id="kubernetes-api-k8sapi">Kubernetes API (k8sapi)<a class="headerlink" href="#kubernetes-api-k8sapi" title="Permanent link">&para;</a></h2>
-<p>⚠️Deprecated.</p>
+<p>⚠️Deprecated. Removed in v3.4.</p>
 <ul>
 <li>Reliability:<ul>
 <li>Works on GKE Autopilot</li>
@@ -3015,6 +3015,7 @@ a <a href="../workflow-controller-configmap.yaml">configuration item</a>.</p>
 </li>
 </ul>
 <h2 id="process-namespace-sharing-pns">Process Namespace Sharing (pns)<a class="headerlink" href="#process-namespace-sharing-pns" title="Permanent link">&para;</a></h2>
+<p>⚠️Deprecated. Removed in v3.4.</p>
 <ul>
 <li>More secure:<ul>
 <li>No <code>privileged</code> access</li>
