@@ -99,6 +99,8 @@ jobs:
             profile: minimal
           - test: test-examples
             profile: minimal
+          - test: test-executor
+            profile: minimal
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-go@v2
