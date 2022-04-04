@@ -56,7 +56,7 @@ RUN curl -o /usr/local/bin/jq https://github.com/stedolan/jq/releases/download/j
   chmod +x /usr/local/bin/jq
 
 # Tell git to forget about all of the files that were not included because of .dockerignore in order to ensure that
-# the git state is "clean" even though said .dockerignore files are not presentmake st
+# the git state is "clean" even though said .dockerignore files are not present
 RUN cat .dockerignore >> .gitignore
 RUN git status --porcelain | cut -c4- | xargs git update-index --skip-worktree
 
@@ -92,7 +92,7 @@ RUN --mount=type=cache,target=/root/.cache/go-build make dist/argo
 
 ####################################################################################################
 
-FROM gcr.io/distroless/static as argoexec
+FROM scratch as argoexec
 
 USER 8737
 

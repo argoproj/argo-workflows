@@ -118,7 +118,7 @@ func (g *ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) error {
 		if err := opts.Validate(); err != nil {
 			return fmt.Errorf("failed to validate fetch %v: %w", refSpecs, err)
 		}
-		if err = r.Fetch(opts); isFetchError(err) {
+		if err = r.Fetch(opts); isFetchErr(err) {
 			return fmt.Errorf("failed to fetch %v: %w", refSpecs, err)
 		}
 	}
@@ -127,7 +127,7 @@ func (g *ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) error {
 		return fmt.Errorf("failed to get work tree: %w", err)
 	}
 	if a.Revision != "" {
-		if err := r.Fetch(&git.FetchOptions{RefSpecs: []config.RefSpec{"refs/heads/*:refs/heads/*"}}); isFetchError(err) {
+		if err := r.Fetch(&git.FetchOptions{RefSpecs: []config.RefSpec{"refs/heads/*:refs/heads/*"}}); isFetchErr(err) {
 			return fmt.Errorf("failed to fatch refs: %w", err)
 		}
 		h, err := r.ResolveRevision(plumbing.Revision(a.Revision))
@@ -154,7 +154,7 @@ func (g *ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) error {
 	return nil
 }
 
-func isFetchError(err error) bool {
+func isFetchErr(err error) bool {
 	return err != nil && err.Error() != "already up-to-date"
 }
 
