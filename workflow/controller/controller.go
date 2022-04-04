@@ -436,10 +436,11 @@ func (wfc *WorkflowController) createClusterWorkflowTemplateInformer(ctx context
 }
 
 func (wfc *WorkflowController) UpdateConfig(ctx context.Context, kubernetesClient kubernetes.Interface) {
-	err := wfc.configController.Get(ctx, &wfc.Config)
+	c, err := wfc.configController.Get(ctx)
 	if err != nil {
 		log.Fatalf("Failed to register watch for controller config map: %v", err)
 	}
+	wfc.Config = *c
 	err = wfc.updateConfig(kubernetesClient)
 	if err != nil {
 		log.Fatalf("Failed to update config: %v", err)
@@ -1173,20 +1174,6 @@ func (wfc *WorkflowController) GetManagedNamespace() string {
 		return wfc.managedNamespace
 	}
 	return wfc.Config.Namespace
-}
-
-func (wfc *WorkflowController) GetContainerRuntimeExecutor(labels labels.Labels) string {
-	executor, err := wfc.Config.GetContainerRuntimeExecutor(labels)
-	if err != nil {
-		log.WithError(err).Info("failed to determine container runtime executor")
-	}
-	if executor != "" {
-		return executor
-	}
-	if wfc.containerRuntimeExecutor != "" {
-		return wfc.containerRuntimeExecutor
-	}
-	return common.ContainerRuntimeExecutorEmissary
 }
 
 func (wfc *WorkflowController) getMetricsServerConfig() (metrics.ServerConfig, metrics.ServerConfig) {

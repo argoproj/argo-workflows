@@ -15,6 +15,8 @@ import (
 	"sync"
 	"time"
 
+	"k8s.io/apimachinery/pkg/labels"
+
 	"github.com/antonmedv/expr"
 	"github.com/argoproj/pkg/humanize"
 	argokubeerr "github.com/argoproj/pkg/kube/errors"
@@ -26,7 +28,6 @@ import (
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/selection"
 	"k8s.io/apimachinery/pkg/util/strategicpatch"
@@ -510,10 +511,6 @@ func (woc *wfOperationCtx) updateWorkflowMetadata() error {
 		woc.updated = true
 	}
 	return nil
-}
-
-func (woc *wfOperationCtx) getContainerRuntimeExecutor() string {
-	return woc.controller.GetContainerRuntimeExecutor(labels.Set(woc.wf.Labels))
 }
 
 func (woc *wfOperationCtx) getWorkflowDeadline() *time.Time {
@@ -3481,9 +3478,10 @@ func (woc *wfOperationCtx) setExecWorkflow(ctx context.Context) error {
 
 	// Perform one-time workflow validation
 	if woc.wf.Status.Phase == wfv1.WorkflowUnknown {
-		validateOpts := validate.ValidateOpts{ContainerRuntimeExecutor: woc.getContainerRuntimeExecutor()}
-		wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(woc.controller.primaryProfile().workflowClient.ArgoprojV1alpha1().WorkflowTemplates(woc.wf.Namespace))
-		cwftmplGetter := templateresolution.WrapClusterWorkflowTemplateInterface(woc.controller.primaryProfile().workflowClient.ArgoprojV1alpha1().ClusterWorkflowTemplates())
+		validateOpts := validate.ValidateOpts{}
+		workflowsInterface := woc.controller.primaryProfile().workflowClient.ArgoprojV1alpha1()
+		wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(workflowsInterface.WorkflowTemplates(woc.wf.Namespace))
+		cwftmplGetter := templateresolution.WrapClusterWorkflowTemplateInterface(workflowsInterface.ClusterWorkflowTemplates())
 
 		// Validate the execution wfSpec
 		var wfConditions *wfv1.Conditions

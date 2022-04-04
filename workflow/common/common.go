@@ -112,6 +112,8 @@ const (
 
 	// EnvVarPodName contains the name of the pod (currently unused)
 	EnvVarPodName = "ARGO_POD_NAME"
+	// EnvVarPodUID is the workflow's UID
+	EnvVarPodUID = "ARGO_POD_UID"
 	// EnvVarWorkflowCluster is the workflow's cluster.
 	EnvVarWorkflowCluster = "ARGO_WORKFLOW_CLUSTER"
 	// EnvVarWorkflowNamespace is workflow's namespace.
@@ -120,8 +122,6 @@ const (
 	EnvVarInstanceID = "ARGO_INSTANCE_ID"
 	// EnvVarWorkflowName is the name of the workflow for which the an agent is responsible for
 	EnvVarWorkflowName = "ARGO_WORKFLOW_NAME"
-	// EnvVarWorkflowUID is the workflow's UID
-	EnvVarWorkflowUID = "ARGO_WORKFLOW_UID"
 	// EnvVarNodeID is the node ID of the node.
 	EnvVarNodeID = "ARGO_NODE_ID"
 	// EnvVarPluginAddresses is a list of plugin addresses
@@ -138,14 +138,6 @@ const (
 	EnvVarIncludeScriptOutput = "ARGO_INCLUDE_SCRIPT_OUTPUT"
 	// EnvVarTemplate is the template
 	EnvVarTemplate = "ARGO_TEMPLATE"
-	// EnvVarContainerRuntimeExecutor contains the name of the container runtime executor to use.
-	EnvVarContainerRuntimeExecutor = "ARGO_CONTAINER_RUNTIME_EXECUTOR"
-	// EnvVarDownwardAPINodeIP is the envvar used to get the `status.hostIP`
-	EnvVarDownwardAPINodeIP = "ARGO_KUBELET_HOST"
-	// EnvVarKubeletPort is used to configure the kubelet api port
-	EnvVarKubeletPort = "ARGO_KUBELET_PORT"
-	// EnvVarKubeletInsecure is used to disable the TLS verification
-	EnvVarKubeletInsecure = "ARGO_KUBELET_INSECURE"
 	// EnvVarArgoTrace is used enable tracing statements in Argo components
 	EnvVarArgoTrace = "ARGO_TRACE"
 	// EnvVarProgressPatchTickDuration sets the tick duration for patching pod annotations upon progress changes.
@@ -162,12 +154,6 @@ const (
 	EnvAgentTaskWorkers = "ARGO_AGENT_TASK_WORKERS"
 	// EnvAgentPatchRate is the rate that the Argo Agent will patch the Workflow TaskSet
 	EnvAgentPatchRate = "ARGO_AGENT_PATCH_RATE"
-
-	// ContainerRuntimeExecutorPNS indicates to use process namespace sharing as the container runtime executor
-	ContainerRuntimeExecutorPNS = "pns"
-
-	// ContainerRuntimeExecutorEmissary indicates to use emissary container runtime executor
-	ContainerRuntimeExecutorEmissary = "emissary"
 
 	// Variables that are added to the scope during template execution and can be referenced using {{}} syntax
 

@@ -7,14 +7,13 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
-	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"sigs.k8s.io/yaml"
 )
 
 type Controller interface {
-	Get(context.Context, interface{}) error
+	Get(context.Context) (*Config, error)
 }
 
 type controller struct {
@@ -33,7 +32,7 @@ func NewController(namespace, name string, kubeclientset kubernetes.Interface) C
 	}
 }
 
-func parseConfigMap(cm *apiv1.ConfigMap, config interface{}) error {
+func parseConfigMap(cm *apiv1.ConfigMap, config *Config) error {
 	// The key in the configmap to retrieve workflow configuration from.
 	// Content encoding is expected to be YAML.
 	rawConfig, ok := cm.Data["config"]
@@ -50,15 +49,16 @@ func parseConfigMap(cm *apiv1.ConfigMap, config interface{}) error {
 			}
 		}
 	}
-	err := yaml.Unmarshal([]byte(rawConfig), config)
+	err := yaml.UnmarshalStrict([]byte(rawConfig), config)
 	return err
 }
 
-func (cc *controller) Get(ctx context.Context, config interface{}) error {
+func (cc *controller) Get(ctx context.Context) (*Config, error) {
+	config := &Config{}
 	cmClient := cc.kubeclientset.CoreV1().ConfigMaps(cc.namespace)
 	cm, err := cmClient.Get(ctx, cc.configMap, metav1.GetOptions{})
-	if err != nil && !apierr.IsNotFound(err) {
-		return err
+	if err != nil {
+		return nil, err
 	}
-	return parseConfigMap(cm, config)
+	return config, parseConfigMap(cm, config)
 }

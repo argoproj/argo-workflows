@@ -49,27 +49,24 @@ func (we *WorkflowExecutor) createTaskResult(ctx context.Context, result wfv1.No
 		},
 		NodeResult: result,
 	}
-	cluster := os.Getenv(common.EnvVarWorkflowCluster)
-	workflowNamespace := os.Getenv(common.EnvVarWorkflowNamespace)
-	if cluster == "" && workflowNamespace == "" {
-		taskResult.SetOwnerReferences(
-			[]metav1.OwnerReference{
-				{
-					APIVersion: workflow.APIVersion,
-					Kind:       workflow.WorkflowKind,
-					Name:       we.workflow,
-					UID:        we.workflowUID,
-				},
-			})
-	}
-	if cluster != "" {
-		taskResult.Labels[common.LabelKeyCluster] = cluster
+	taskResult.SetOwnerReferences(
+		[]metav1.OwnerReference{
+			{
+				APIVersion: "v1",
+				Kind:       "pods",
+				Name:       we.PodName,
+				UID:        we.podUID,
+			},
+		})
+
+	if v := os.Getenv(common.EnvVarWorkflowCluster); v != "" {
+		taskResult.Labels[common.LabelKeyCluster] = v
 	}
 	if v := os.Getenv(common.EnvVarInstanceID); v != "" {
 		taskResult.Labels[common.LabelKeyControllerInstanceID] = v
 	}
-	if workflowNamespace != "" {
-		taskResult.Annotations[common.AnnotationKeyWorkflowNamespace] = workflowNamespace
+	if v := os.Getenv(common.EnvVarWorkflowNamespace); v != "" {
+		taskResult.Annotations[common.AnnotationKeyWorkflowNamespace] = v
 	}
 	_, err := we.taskResultClient.Create(ctx,
 		taskResult,

@@ -1,7 +1,7 @@
 #syntax=docker/dockerfile:1.2
 
 ARG DOCKER_CHANNEL=stable
-ARG DOCKER_VERSION=20.10.12
+ARG DOCKER_VERSION=20.10.14
 # NOTE: kubectl version should be one minor version less than https://storage.googleapis.com/kubernetes-release/release/stable.txt
 ARG KUBECTL_VERSION=1.22.3
 ARG JQ_VERSION=1.6
@@ -45,7 +45,7 @@ ARG DOCKER_CHANNEL
 ARG DOCKER_VERSION
 ARG KUBECTL_VERSION
 
-RUN apk --no-cache add curl procps git tar libcap jq
+RUN apk --no-cache add curl git tar jq
 
 COPY hack/arch.sh hack/os.sh /bin/
 
@@ -87,7 +87,6 @@ RUN cat .dockerignore >> .gitignore
 RUN git status --porcelain | cut -c4- | xargs git update-index --skip-worktree
 
 RUN --mount=type=cache,target=/root/.cache/go-build make dist/argoexec
-RUN setcap CAP_SYS_PTRACE,CAP_SYS_CHROOT+ei dist/argoexec
 
 ####################################################################################################
 
