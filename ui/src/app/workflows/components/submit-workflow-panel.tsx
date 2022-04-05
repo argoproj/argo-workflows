@@ -44,7 +44,7 @@ export class SubmitWorkflowPanel extends React.Component<Props, State> {
             entrypoints: this.props.templates.map(t => t.name),
             selectedTemplate: defaultTemplate,
             parameters: [] as Parameter[],
-            workflowParameters: this.props.workflowParameters,
+            workflowParameters: JSON.parse(JSON.stringify(this.props.workflowParameters)),
             templates: [defaultTemplate].concat(this.props.templates),
             labels: ['submit-from-ui=true'],
             isSubmitting: false
