@@ -1,5 +1,5 @@
-//go:build executor
-// +build executor
+//go:build functional
+// +build functional
 
 package e2e
 
