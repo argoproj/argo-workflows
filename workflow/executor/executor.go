@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/argoproj/argo-workflows/v3/util/file"
 	"io"
 	"io/fs"
 	"io/ioutil"
@@ -814,7 +815,7 @@ func untar(tarPath string, destPath string) error {
 			return err
 		}
 		defer f.Close()
-		gzr, err := gzip.NewReader(f)
+		gzr, err := file.GetGzipReader(f)
 		if err != nil {
 			return err
 		}
