@@ -9,7 +9,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/argoproj/argo-workflows/v3/util/file"
 	"io"
 	"io/fs"
 	"io/ioutil"
@@ -22,6 +21,8 @@ import (
 	"strings"
 	"syscall"
 	"time"
+
+	"github.com/argoproj/argo-workflows/v3/util/file"
 
 	argofile "github.com/argoproj/pkg/file"
 	log "github.com/sirupsen/logrus"
