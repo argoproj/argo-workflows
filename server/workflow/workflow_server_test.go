@@ -867,7 +867,7 @@ func TestPodLogs(t *testing.T) {
 	server, ctx := getWorkflowServer()
 	ctx, cancel := context.WithCancel(ctx)
 	go func() {
-		err := server.WatchPodLogs(&workflowpkg.WorkflowLogRequest{
+		err := server.PodLogs(&workflowpkg.WorkflowLogRequest{
 			Name:       "hello-world-9tql2",
 			Namespace:  "workflows",
 			LogOptions: &corev1.PodLogOptions{},

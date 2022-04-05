@@ -69,10 +69,6 @@ func local_request_ArchivedWorkflowService_ListArchivedWorkflows_0(ctx context.C
 
 }
 
-var (
-	filter_ArchivedWorkflowService_GetArchivedWorkflow_0 = &utilities.DoubleArray{Encoding: map[string]int{"uid": 0}, Base: []int{1, 1, 0}, Check: []int{0, 1, 2}}
-)
-
 func request_ArchivedWorkflowService_GetArchivedWorkflow_0(ctx context.Context, marshaler runtime.Marshaler, client ArchivedWorkflowServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq GetArchivedWorkflowRequest
 	var metadata runtime.ServerMetadata
@@ -93,13 +89,6 @@ func request_ArchivedWorkflowService_GetArchivedWorkflow_0(ctx context.Context, 
 
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "uid", err)
-	}
-
-	if err := req.ParseForm(); err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
-	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_ArchivedWorkflowService_GetArchivedWorkflow_0); err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
 	msg, err := client.GetArchivedWorkflow(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
@@ -129,21 +118,10 @@ func local_request_ArchivedWorkflowService_GetArchivedWorkflow_0(ctx context.Con
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "uid", err)
 	}
 
-	if err := req.ParseForm(); err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
-	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_ArchivedWorkflowService_GetArchivedWorkflow_0); err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
-	}
-
 	msg, err := server.GetArchivedWorkflow(ctx, &protoReq)
 	return msg, metadata, err
 
 }
-
-var (
-	filter_ArchivedWorkflowService_DeleteArchivedWorkflow_0 = &utilities.DoubleArray{Encoding: map[string]int{"uid": 0}, Base: []int{1, 1, 0}, Check: []int{0, 1, 2}}
-)
 
 func request_ArchivedWorkflowService_DeleteArchivedWorkflow_0(ctx context.Context, marshaler runtime.Marshaler, client ArchivedWorkflowServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq DeleteArchivedWorkflowRequest
@@ -165,13 +143,6 @@ func request_ArchivedWorkflowService_DeleteArchivedWorkflow_0(ctx context.Contex
 
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "uid", err)
-	}
-
-	if err := req.ParseForm(); err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
-	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_ArchivedWorkflowService_DeleteArchivedWorkflow_0); err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
 	msg, err := client.DeleteArchivedWorkflow(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
@@ -199,13 +170,6 @@ func local_request_ArchivedWorkflowService_DeleteArchivedWorkflow_0(ctx context.
 
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "uid", err)
-	}
-
-	if err := req.ParseForm(); err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
-	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_ArchivedWorkflowService_DeleteArchivedWorkflow_0); err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
 	msg, err := server.DeleteArchivedWorkflow(ctx, &protoReq)

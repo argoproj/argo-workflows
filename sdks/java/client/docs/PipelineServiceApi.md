@@ -7,8 +7,8 @@ Method | HTTP request | Description
 [**pipelineServiceDeletePipeline**](PipelineServiceApi.md#pipelineServiceDeletePipeline) | **DELETE** /api/v1/pipelines/{namespace}/{name} | 
 [**pipelineServiceGetPipeline**](PipelineServiceApi.md#pipelineServiceGetPipeline) | **GET** /api/v1/pipelines/{namespace}/{name} | 
 [**pipelineServiceListPipelines**](PipelineServiceApi.md#pipelineServiceListPipelines) | **GET** /api/v1/pipelines/{namespace} | 
+[**pipelineServicePipelineLogs**](PipelineServiceApi.md#pipelineServicePipelineLogs) | **GET** /api/v1/stream/pipelines/{namespace}/logs | 
 [**pipelineServiceRestartPipeline**](PipelineServiceApi.md#pipelineServiceRestartPipeline) | **POST** /api/v1/pipelines/{namespace}/{name}/restart | 
-[**pipelineServiceWatchPipelineLogs**](PipelineServiceApi.md#pipelineServiceWatchPipelineLogs) | **GET** /api/v1/stream/pipelines/{namespace}/logs | 
 [**pipelineServiceWatchPipelines**](PipelineServiceApi.md#pipelineServiceWatchPipelines) | **GET** /api/v1/stream/pipelines/{namespace} | 
 [**pipelineServiceWatchSteps**](PipelineServiceApi.md#pipelineServiceWatchSteps) | **GET** /api/v1/stream/steps/{namespace} | 
 
@@ -232,6 +232,93 @@ No authorization required
 **200** | A successful response. |  -  |
 **0** | An unexpected error response. |  -  |
 
+<a name="pipelineServicePipelineLogs"></a>
+# **pipelineServicePipelineLogs**
+> StreamResultOfPipelineLogEntry pipelineServicePipelineLogs(namespace, name, stepName, grep, podLogOptionsContainer, podLogOptionsFollow, podLogOptionsPrevious, podLogOptionsSinceSeconds, podLogOptionsSinceTimeSeconds, podLogOptionsSinceTimeNanos, podLogOptionsTimestamps, podLogOptionsTailLines, podLogOptionsLimitBytes, podLogOptionsInsecureSkipTLSVerifyBackend)
+
+
+
+### Example
+```java
+// Import classes:
+import io.argoproj.workflow.ApiClient;
+import io.argoproj.workflow.ApiException;
+import io.argoproj.workflow.Configuration;
+import io.argoproj.workflow.models.*;
+import io.argoproj.workflow.apis.PipelineServiceApi;
+
+public class Example {
+  public static void main(String[] args) {
+    ApiClient defaultClient = Configuration.getDefaultApiClient();
+    defaultClient.setBasePath("http://localhost:2746");
+
+    PipelineServiceApi apiInstance = new PipelineServiceApi(defaultClient);
+    String namespace = "namespace_example"; // String | 
+    String name = "name_example"; // String | optional - only return entries for this pipeline.
+    String stepName = "stepName_example"; // String | optional - only return entries for this step.
+    String grep = "grep_example"; // String | optional - only return entries which match this expresssion.
+    String podLogOptionsContainer = "podLogOptionsContainer_example"; // String | The container for which to stream logs. Defaults to only container if there is one container in the pod. +optional.
+    Boolean podLogOptionsFollow = true; // Boolean | Follow the log stream of the pod. Defaults to false. +optional.
+    Boolean podLogOptionsPrevious = true; // Boolean | Return previous terminated container logs. Defaults to false. +optional.
+    String podLogOptionsSinceSeconds = "podLogOptionsSinceSeconds_example"; // String | A relative time in seconds before the current time from which to show logs. If this value precedes the time a pod was started, only logs since the pod start will be returned. If this value is in the future, no logs will be returned. Only one of sinceSeconds or sinceTime may be specified. +optional.
+    String podLogOptionsSinceTimeSeconds = "podLogOptionsSinceTimeSeconds_example"; // String | Represents seconds of UTC time since Unix epoch 1970-01-01T00:00:00Z. Must be from 0001-01-01T00:00:00Z to 9999-12-31T23:59:59Z inclusive.
+    Integer podLogOptionsSinceTimeNanos = 56; // Integer | Non-negative fractions of a second at nanosecond resolution. Negative second values with fractions must still have non-negative nanos values that count forward in time. Must be from 0 to 999,999,999 inclusive. This field may be limited in precision depending on context.
+    Boolean podLogOptionsTimestamps = true; // Boolean | If true, add an RFC3339 or RFC3339Nano timestamp at the beginning of every line of log output. Defaults to false. +optional.
+    String podLogOptionsTailLines = "podLogOptionsTailLines_example"; // String | If set, the number of lines from the end of the logs to show. If not specified, logs are shown from the creation of the container or sinceSeconds or sinceTime +optional.
+    String podLogOptionsLimitBytes = "podLogOptionsLimitBytes_example"; // String | If set, the number of bytes to read from the server before terminating the log output. This may not display a complete final line of logging, and may return slightly more or slightly less than the specified limit. +optional.
+    Boolean podLogOptionsInsecureSkipTLSVerifyBackend = true; // Boolean | insecureSkipTLSVerifyBackend indicates that the apiserver should not confirm the validity of the serving certificate of the backend it is connecting to.  This will make the HTTPS connection between the apiserver and the backend insecure. This means the apiserver cannot verify the log data it is receiving came from the real kubelet.  If the kubelet is configured to verify the apiserver's TLS credentials, it does not mean the connection to the real kubelet is vulnerable to a man in the middle attack (e.g. an attacker could not intercept the actual log data coming from the real kubelet). +optional.
+    try {
+      StreamResultOfPipelineLogEntry result = apiInstance.pipelineServicePipelineLogs(namespace, name, stepName, grep, podLogOptionsContainer, podLogOptionsFollow, podLogOptionsPrevious, podLogOptionsSinceSeconds, podLogOptionsSinceTimeSeconds, podLogOptionsSinceTimeNanos, podLogOptionsTimestamps, podLogOptionsTailLines, podLogOptionsLimitBytes, podLogOptionsInsecureSkipTLSVerifyBackend);
+      System.out.println(result);
+    } catch (ApiException e) {
+      System.err.println("Exception when calling PipelineServiceApi#pipelineServicePipelineLogs");
+      System.err.println("Status code: " + e.getCode());
+      System.err.println("Reason: " + e.getResponseBody());
+      System.err.println("Response headers: " + e.getResponseHeaders());
+      e.printStackTrace();
+    }
+  }
+}
+```
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **namespace** | **String**|  |
+ **name** | **String**| optional - only return entries for this pipeline. | [optional]
+ **stepName** | **String**| optional - only return entries for this step. | [optional]
+ **grep** | **String**| optional - only return entries which match this expresssion. | [optional]
+ **podLogOptionsContainer** | **String**| The container for which to stream logs. Defaults to only container if there is one container in the pod. +optional. | [optional]
+ **podLogOptionsFollow** | **Boolean**| Follow the log stream of the pod. Defaults to false. +optional. | [optional]
+ **podLogOptionsPrevious** | **Boolean**| Return previous terminated container logs. Defaults to false. +optional. | [optional]
+ **podLogOptionsSinceSeconds** | **String**| A relative time in seconds before the current time from which to show logs. If this value precedes the time a pod was started, only logs since the pod start will be returned. If this value is in the future, no logs will be returned. Only one of sinceSeconds or sinceTime may be specified. +optional. | [optional]
+ **podLogOptionsSinceTimeSeconds** | **String**| Represents seconds of UTC time since Unix epoch 1970-01-01T00:00:00Z. Must be from 0001-01-01T00:00:00Z to 9999-12-31T23:59:59Z inclusive. | [optional]
+ **podLogOptionsSinceTimeNanos** | **Integer**| Non-negative fractions of a second at nanosecond resolution. Negative second values with fractions must still have non-negative nanos values that count forward in time. Must be from 0 to 999,999,999 inclusive. This field may be limited in precision depending on context. | [optional]
+ **podLogOptionsTimestamps** | **Boolean**| If true, add an RFC3339 or RFC3339Nano timestamp at the beginning of every line of log output. Defaults to false. +optional. | [optional]
+ **podLogOptionsTailLines** | **String**| If set, the number of lines from the end of the logs to show. If not specified, logs are shown from the creation of the container or sinceSeconds or sinceTime +optional. | [optional]
+ **podLogOptionsLimitBytes** | **String**| If set, the number of bytes to read from the server before terminating the log output. This may not display a complete final line of logging, and may return slightly more or slightly less than the specified limit. +optional. | [optional]
+ **podLogOptionsInsecureSkipTLSVerifyBackend** | **Boolean**| insecureSkipTLSVerifyBackend indicates that the apiserver should not confirm the validity of the serving certificate of the backend it is connecting to.  This will make the HTTPS connection between the apiserver and the backend insecure. This means the apiserver cannot verify the log data it is receiving came from the real kubelet.  If the kubelet is configured to verify the apiserver&#39;s TLS credentials, it does not mean the connection to the real kubelet is vulnerable to a man in the middle attack (e.g. an attacker could not intercept the actual log data coming from the real kubelet). +optional. | [optional]
+
+### Return type
+
+[**StreamResultOfPipelineLogEntry**](StreamResultOfPipelineLogEntry.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/json
+
+### HTTP response details
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+**200** | A successful response.(streaming responses) |  -  |
+**0** | An unexpected error response. |  -  |
+
 <a name="pipelineServiceRestartPipeline"></a>
 # **pipelineServiceRestartPipeline**
 > Object pipelineServiceRestartPipeline(namespace, name)
@@ -293,93 +380,6 @@ No authorization required
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | A successful response. |  -  |
-**0** | An unexpected error response. |  -  |
-
-<a name="pipelineServiceWatchPipelineLogs"></a>
-# **pipelineServiceWatchPipelineLogs**
-> StreamResultOfPipelineLogEntry pipelineServiceWatchPipelineLogs(namespace, name, stepName, grep, podLogOptionsContainer, podLogOptionsFollow, podLogOptionsPrevious, podLogOptionsSinceSeconds, podLogOptionsSinceTimeSeconds, podLogOptionsSinceTimeNanos, podLogOptionsTimestamps, podLogOptionsTailLines, podLogOptionsLimitBytes, podLogOptionsInsecureSkipTLSVerifyBackend)
-
-
-
-### Example
-```java
-// Import classes:
-import io.argoproj.workflow.ApiClient;
-import io.argoproj.workflow.ApiException;
-import io.argoproj.workflow.Configuration;
-import io.argoproj.workflow.models.*;
-import io.argoproj.workflow.apis.PipelineServiceApi;
-
-public class Example {
-  public static void main(String[] args) {
-    ApiClient defaultClient = Configuration.getDefaultApiClient();
-    defaultClient.setBasePath("http://localhost:2746");
-
-    PipelineServiceApi apiInstance = new PipelineServiceApi(defaultClient);
-    String namespace = "namespace_example"; // String | 
-    String name = "name_example"; // String | optional - only return entries for this pipeline.
-    String stepName = "stepName_example"; // String | optional - only return entries for this step.
-    String grep = "grep_example"; // String | optional - only return entries which match this expresssion.
-    String podLogOptionsContainer = "podLogOptionsContainer_example"; // String | The container for which to stream logs. Defaults to only container if there is one container in the pod. +optional.
-    Boolean podLogOptionsFollow = true; // Boolean | Follow the log stream of the pod. Defaults to false. +optional.
-    Boolean podLogOptionsPrevious = true; // Boolean | Return previous terminated container logs. Defaults to false. +optional.
-    String podLogOptionsSinceSeconds = "podLogOptionsSinceSeconds_example"; // String | A relative time in seconds before the current time from which to show logs. If this value precedes the time a pod was started, only logs since the pod start will be returned. If this value is in the future, no logs will be returned. Only one of sinceSeconds or sinceTime may be specified. +optional.
-    String podLogOptionsSinceTimeSeconds = "podLogOptionsSinceTimeSeconds_example"; // String | Represents seconds of UTC time since Unix epoch 1970-01-01T00:00:00Z. Must be from 0001-01-01T00:00:00Z to 9999-12-31T23:59:59Z inclusive.
-    Integer podLogOptionsSinceTimeNanos = 56; // Integer | Non-negative fractions of a second at nanosecond resolution. Negative second values with fractions must still have non-negative nanos values that count forward in time. Must be from 0 to 999,999,999 inclusive. This field may be limited in precision depending on context.
-    Boolean podLogOptionsTimestamps = true; // Boolean | If true, add an RFC3339 or RFC3339Nano timestamp at the beginning of every line of log output. Defaults to false. +optional.
-    String podLogOptionsTailLines = "podLogOptionsTailLines_example"; // String | If set, the number of lines from the end of the logs to show. If not specified, logs are shown from the creation of the container or sinceSeconds or sinceTime +optional.
-    String podLogOptionsLimitBytes = "podLogOptionsLimitBytes_example"; // String | If set, the number of bytes to read from the server before terminating the log output. This may not display a complete final line of logging, and may return slightly more or slightly less than the specified limit. +optional.
-    Boolean podLogOptionsInsecureSkipTLSVerifyBackend = true; // Boolean | insecureSkipTLSVerifyBackend indicates that the apiserver should not confirm the validity of the serving certificate of the backend it is connecting to.  This will make the HTTPS connection between the apiserver and the backend insecure. This means the apiserver cannot verify the log data it is receiving came from the real kubelet.  If the kubelet is configured to verify the apiserver's TLS credentials, it does not mean the connection to the real kubelet is vulnerable to a man in the middle attack (e.g. an attacker could not intercept the actual log data coming from the real kubelet). +optional.
-    try {
-      StreamResultOfPipelineLogEntry result = apiInstance.pipelineServiceWatchPipelineLogs(namespace, name, stepName, grep, podLogOptionsContainer, podLogOptionsFollow, podLogOptionsPrevious, podLogOptionsSinceSeconds, podLogOptionsSinceTimeSeconds, podLogOptionsSinceTimeNanos, podLogOptionsTimestamps, podLogOptionsTailLines, podLogOptionsLimitBytes, podLogOptionsInsecureSkipTLSVerifyBackend);
-      System.out.println(result);
-    } catch (ApiException e) {
-      System.err.println("Exception when calling PipelineServiceApi#pipelineServiceWatchPipelineLogs");
-      System.err.println("Status code: " + e.getCode());
-      System.err.println("Reason: " + e.getResponseBody());
-      System.err.println("Response headers: " + e.getResponseHeaders());
-      e.printStackTrace();
-    }
-  }
-}
-```
-
-### Parameters
-
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **namespace** | **String**|  |
- **name** | **String**| optional - only return entries for this pipeline. | [optional]
- **stepName** | **String**| optional - only return entries for this step. | [optional]
- **grep** | **String**| optional - only return entries which match this expresssion. | [optional]
- **podLogOptionsContainer** | **String**| The container for which to stream logs. Defaults to only container if there is one container in the pod. +optional. | [optional]
- **podLogOptionsFollow** | **Boolean**| Follow the log stream of the pod. Defaults to false. +optional. | [optional]
- **podLogOptionsPrevious** | **Boolean**| Return previous terminated container logs. Defaults to false. +optional. | [optional]
- **podLogOptionsSinceSeconds** | **String**| A relative time in seconds before the current time from which to show logs. If this value precedes the time a pod was started, only logs since the pod start will be returned. If this value is in the future, no logs will be returned. Only one of sinceSeconds or sinceTime may be specified. +optional. | [optional]
- **podLogOptionsSinceTimeSeconds** | **String**| Represents seconds of UTC time since Unix epoch 1970-01-01T00:00:00Z. Must be from 0001-01-01T00:00:00Z to 9999-12-31T23:59:59Z inclusive. | [optional]
- **podLogOptionsSinceTimeNanos** | **Integer**| Non-negative fractions of a second at nanosecond resolution. Negative second values with fractions must still have non-negative nanos values that count forward in time. Must be from 0 to 999,999,999 inclusive. This field may be limited in precision depending on context. | [optional]
- **podLogOptionsTimestamps** | **Boolean**| If true, add an RFC3339 or RFC3339Nano timestamp at the beginning of every line of log output. Defaults to false. +optional. | [optional]
- **podLogOptionsTailLines** | **String**| If set, the number of lines from the end of the logs to show. If not specified, logs are shown from the creation of the container or sinceSeconds or sinceTime +optional. | [optional]
- **podLogOptionsLimitBytes** | **String**| If set, the number of bytes to read from the server before terminating the log output. This may not display a complete final line of logging, and may return slightly more or slightly less than the specified limit. +optional. | [optional]
- **podLogOptionsInsecureSkipTLSVerifyBackend** | **Boolean**| insecureSkipTLSVerifyBackend indicates that the apiserver should not confirm the validity of the serving certificate of the backend it is connecting to.  This will make the HTTPS connection between the apiserver and the backend insecure. This means the apiserver cannot verify the log data it is receiving came from the real kubelet.  If the kubelet is configured to verify the apiserver&#39;s TLS credentials, it does not mean the connection to the real kubelet is vulnerable to a man in the middle attack (e.g. an attacker could not intercept the actual log data coming from the real kubelet). +optional. | [optional]
-
-### Return type
-
-[**StreamResultOfPipelineLogEntry**](StreamResultOfPipelineLogEntry.md)
-
-### Authorization
-
-No authorization required
-
-### HTTP request headers
-
- - **Content-Type**: Not defined
- - **Accept**: application/json
-
-### HTTP response details
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-**200** | A successful response.(streaming responses) |  -  |
 **0** | An unexpected error response. |  -  |
 
 <a name="pipelineServiceWatchPipelines"></a>

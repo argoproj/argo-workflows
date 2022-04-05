@@ -43,7 +43,7 @@ func (i *infoServer) GetInfo(context.Context, *infopkg.GetInfoRequest) (*infopkg
 		Links:            i.links,
 		Modals:           modals,
 		NavColor:         i.navColor,
-		Clusters:         i.clusters,
+		// TODO Clusters:         i.clusters,
 	}, nil
 }
 

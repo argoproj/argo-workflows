@@ -196,11 +196,11 @@ func (s gatekeeper) getClients(ctx context.Context, req interface{}) (*servertyp
 
 	msg, ok := req.(*servertypes.Req)
 	if !ok {
-		method, err := getMethod(ctx)
+		method, err := getOperationID(ctx)
 		if err != nil {
 			return nil, nil, err
 		}
-		act, resource := ParseMethod(method)
+		act, resource := splitOp(method)
 		msg = &servertypes.Req{
 			Cluster:   servertypes.Cluster(req),
 			Namespace: servertypes.Namespace(req),

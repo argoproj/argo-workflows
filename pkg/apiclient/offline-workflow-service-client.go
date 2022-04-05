@@ -89,11 +89,11 @@ func (o OfflineWorkflowServiceClient) LintWorkflow(_ context.Context, req *workf
 	return req.Workflow, nil
 }
 
-func (o OfflineWorkflowServiceClient) WatchPodLogs(context.Context, *workflowpkg.WorkflowLogRequest, ...grpc.CallOption) (workflowpkg.WorkflowService_WatchPodLogsClient, error) {
+func (o OfflineWorkflowServiceClient) PodLogs(context.Context, *workflowpkg.WorkflowLogRequest, ...grpc.CallOption) (workflowpkg.WorkflowService_PodLogsClient, error) {
 	return nil, OfflineErr
 }
 
-func (o OfflineWorkflowServiceClient) WatchWorkflowLogs(context.Context, *workflowpkg.WorkflowLogRequest, ...grpc.CallOption) (workflowpkg.WorkflowService_WatchWorkflowLogsClient, error) {
+func (o OfflineWorkflowServiceClient) WorkflowLogs(context.Context, *workflowpkg.WorkflowLogRequest, ...grpc.CallOption) (workflowpkg.WorkflowService_WorkflowLogsClient, error) {
 	return nil, OfflineErr
 }
 

@@ -87,7 +87,7 @@ func (h WorkflowServiceClient) LintWorkflow(_ context.Context, in *workflowpkg.W
 	return out, h.Post(in, out, "/api/v1/workflows/{namespace}/lint")
 }
 
-func (h WorkflowServiceClient) WatchPodLogs(ctx context.Context, in *workflowpkg.WorkflowLogRequest, _ ...grpc.CallOption) (workflowpkg.WorkflowService_WatchPodLogsClient, error) {
+func (h WorkflowServiceClient) PodLogs(ctx context.Context, in *workflowpkg.WorkflowLogRequest, _ ...grpc.CallOption) (workflowpkg.WorkflowService_PodLogsClient, error) {
 	reader, err := h.EventStreamReader(in, "/api/v1/workflows/{namespace}/{name}/{podName}/log")
 	if err != nil {
 		return nil, err
@@ -95,7 +95,7 @@ func (h WorkflowServiceClient) WatchPodLogs(ctx context.Context, in *workflowpkg
 	return &podLogsClient{serverSentEventsClient{ctx, reader}}, nil
 }
 
-func (h WorkflowServiceClient) WatchWorkflowLogs(ctx context.Context, in *workflowpkg.WorkflowLogRequest, _ ...grpc.CallOption) (workflowpkg.WorkflowService_WatchWorkflowLogsClient, error) {
+func (h WorkflowServiceClient) WorkflowLogs(ctx context.Context, in *workflowpkg.WorkflowLogRequest, _ ...grpc.CallOption) (workflowpkg.WorkflowService_WorkflowLogsClient, error) {
 	reader, err := h.EventStreamReader(in, "/api/v1/workflows/{namespace}/{name}/log")
 	if err != nil {
 		return nil, err

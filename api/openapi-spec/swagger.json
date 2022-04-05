@@ -84,11 +84,6 @@
             "type": "string",
             "name": "namePrefix",
             "in": "query"
-          },
-          {
-            "type": "string",
-            "name": "cluster",
-            "in": "query"
           }
         ],
         "responses": {
@@ -221,11 +216,6 @@
             "name": "uid",
             "in": "path",
             "required": true
-          },
-          {
-            "type": "string",
-            "name": "cluster",
-            "in": "query"
           }
         ],
         "responses": {
@@ -254,11 +244,6 @@
             "name": "uid",
             "in": "path",
             "required": true
-          },
-          {
-            "type": "string",
-            "name": "cluster",
-            "in": "query"
           }
         ],
         "responses": {
@@ -2009,7 +1994,7 @@
         "tags": [
           "EventSourceService"
         ],
-        "operationId": "EventSourceService_WatchEventSourcesLogs",
+        "operationId": "EventSourceService_EventSourcesLogs",
         "parameters": [
           {
             "type": "string",
@@ -2327,7 +2312,7 @@
         "tags": [
           "PipelineService"
         ],
-        "operationId": "PipelineService_WatchPipelineLogs",
+        "operationId": "PipelineService_PipelineLogs",
         "parameters": [
           {
             "type": "string",
@@ -2544,7 +2529,7 @@
         "tags": [
           "SensorService"
         ],
-        "operationId": "SensorService_WatchSensorsLogs",
+        "operationId": "SensorService_SensorsLogs",
         "parameters": [
           {
             "type": "string",
@@ -3380,11 +3365,6 @@
             "description": "Fields to be included or excluded in the response. e.g. \"items.spec,items.status.phase\", \"-items.status.nodes\".",
             "name": "fields",
             "in": "query"
-          },
-          {
-            "type": "string",
-            "name": "cluster",
-            "in": "query"
           }
         ],
         "responses": {
@@ -3545,11 +3525,6 @@
             "description": "Fields to be included or excluded in the response. e.g. \"spec,status.phase\", \"-status.nodes\".",
             "name": "fields",
             "in": "query"
-          },
-          {
-            "type": "string",
-            "name": "cluster",
-            "in": "query"
           }
         ],
         "responses": {
@@ -3648,7 +3623,7 @@
         "tags": [
           "WorkflowService"
         ],
-        "operationId": "WorkflowService_WatchWorkflowLogs",
+        "operationId": "WorkflowService_WorkflowLogs",
         "parameters": [
           {
             "type": "string",
@@ -4082,7 +4057,7 @@
           "WorkflowService"
         ],
         "summary": "DEPRECATED: Cannot work via HTTP if podName is an empty string. Use WorkflowLogs.",
-        "operationId": "WorkflowService_WatchPodLogs",
+        "operationId": "WorkflowService_PodLogs",
         "parameters": [
           {
             "type": "string",
@@ -10214,12 +10189,6 @@
     "io.argoproj.workflow.v1alpha1.InfoResponse": {
       "type": "object",
       "properties": {
-        "clusters": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        },
         "links": {
           "type": "array",
           "items": {
@@ -10950,9 +10919,6 @@
     "io.argoproj.workflow.v1alpha1.ResubmitArchivedWorkflowRequest": {
       "type": "object",
       "properties": {
-        "cluster": {
-          "type": "string"
-        },
         "memoized": {
           "type": "boolean"
         },
@@ -10979,9 +10945,6 @@
     "io.argoproj.workflow.v1alpha1.RetryArchivedWorkflowRequest": {
       "type": "object",
       "properties": {
-        "cluster": {
-          "type": "string"
-        },
         "name": {
           "type": "string"
         },

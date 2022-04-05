@@ -169,6 +169,36 @@ func (_m *WorkflowServiceClient) ListWorkflows(ctx context.Context, in *workflow
 	return r0, r1
 }
 
+// PodLogs provides a mock function with given fields: ctx, in, opts
+func (_m *WorkflowServiceClient) PodLogs(ctx context.Context, in *workflow.WorkflowLogRequest, opts ...grpc.CallOption) (workflow.WorkflowService_PodLogsClient, error) {
+	_va := make([]interface{}, len(opts))
+	for _i := range opts {
+		_va[_i] = opts[_i]
+	}
+	var _ca []interface{}
+	_ca = append(_ca, ctx, in)
+	_ca = append(_ca, _va...)
+	ret := _m.Called(_ca...)
+
+	var r0 workflow.WorkflowService_PodLogsClient
+	if rf, ok := ret.Get(0).(func(context.Context, *workflow.WorkflowLogRequest, ...grpc.CallOption) workflow.WorkflowService_PodLogsClient); ok {
+		r0 = rf(ctx, in, opts...)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(workflow.WorkflowService_PodLogsClient)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(context.Context, *workflow.WorkflowLogRequest, ...grpc.CallOption) error); ok {
+		r1 = rf(ctx, in, opts...)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // ResubmitWorkflow provides a mock function with given fields: ctx, in, opts
 func (_m *WorkflowServiceClient) ResubmitWorkflow(ctx context.Context, in *workflow.WorkflowResubmitRequest, opts ...grpc.CallOption) (*v1alpha1.Workflow, error) {
 	_va := make([]interface{}, len(opts))
@@ -439,66 +469,6 @@ func (_m *WorkflowServiceClient) WatchEvents(ctx context.Context, in *workflow.W
 	return r0, r1
 }
 
-// WatchPodLogs provides a mock function with given fields: ctx, in, opts
-func (_m *WorkflowServiceClient) WatchPodLogs(ctx context.Context, in *workflow.WorkflowLogRequest, opts ...grpc.CallOption) (workflow.WorkflowService_WatchPodLogsClient, error) {
-	_va := make([]interface{}, len(opts))
-	for _i := range opts {
-		_va[_i] = opts[_i]
-	}
-	var _ca []interface{}
-	_ca = append(_ca, ctx, in)
-	_ca = append(_ca, _va...)
-	ret := _m.Called(_ca...)
-
-	var r0 workflow.WorkflowService_WatchPodLogsClient
-	if rf, ok := ret.Get(0).(func(context.Context, *workflow.WorkflowLogRequest, ...grpc.CallOption) workflow.WorkflowService_WatchPodLogsClient); ok {
-		r0 = rf(ctx, in, opts...)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(workflow.WorkflowService_WatchPodLogsClient)
-		}
-	}
-
-	var r1 error
-	if rf, ok := ret.Get(1).(func(context.Context, *workflow.WorkflowLogRequest, ...grpc.CallOption) error); ok {
-		r1 = rf(ctx, in, opts...)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
-// WatchWorkflowLogs provides a mock function with given fields: ctx, in, opts
-func (_m *WorkflowServiceClient) WatchWorkflowLogs(ctx context.Context, in *workflow.WorkflowLogRequest, opts ...grpc.CallOption) (workflow.WorkflowService_WatchWorkflowLogsClient, error) {
-	_va := make([]interface{}, len(opts))
-	for _i := range opts {
-		_va[_i] = opts[_i]
-	}
-	var _ca []interface{}
-	_ca = append(_ca, ctx, in)
-	_ca = append(_ca, _va...)
-	ret := _m.Called(_ca...)
-
-	var r0 workflow.WorkflowService_WatchWorkflowLogsClient
-	if rf, ok := ret.Get(0).(func(context.Context, *workflow.WorkflowLogRequest, ...grpc.CallOption) workflow.WorkflowService_WatchWorkflowLogsClient); ok {
-		r0 = rf(ctx, in, opts...)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(workflow.WorkflowService_WatchWorkflowLogsClient)
-		}
-	}
-
-	var r1 error
-	if rf, ok := ret.Get(1).(func(context.Context, *workflow.WorkflowLogRequest, ...grpc.CallOption) error); ok {
-		r1 = rf(ctx, in, opts...)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
 // WatchWorkflows provides a mock function with given fields: ctx, in, opts
 func (_m *WorkflowServiceClient) WatchWorkflows(ctx context.Context, in *workflow.WatchWorkflowsRequest, opts ...grpc.CallOption) (workflow.WorkflowService_WatchWorkflowsClient, error) {
 	_va := make([]interface{}, len(opts))
@@ -521,6 +491,36 @@ func (_m *WorkflowServiceClient) WatchWorkflows(ctx context.Context, in *workflo
 
 	var r1 error
 	if rf, ok := ret.Get(1).(func(context.Context, *workflow.WatchWorkflowsRequest, ...grpc.CallOption) error); ok {
+		r1 = rf(ctx, in, opts...)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// WorkflowLogs provides a mock function with given fields: ctx, in, opts
+func (_m *WorkflowServiceClient) WorkflowLogs(ctx context.Context, in *workflow.WorkflowLogRequest, opts ...grpc.CallOption) (workflow.WorkflowService_WorkflowLogsClient, error) {
+	_va := make([]interface{}, len(opts))
+	for _i := range opts {
+		_va[_i] = opts[_i]
+	}
+	var _ca []interface{}
+	_ca = append(_ca, ctx, in)
+	_ca = append(_ca, _va...)
+	ret := _m.Called(_ca...)
+
+	var r0 workflow.WorkflowService_WorkflowLogsClient
+	if rf, ok := ret.Get(0).(func(context.Context, *workflow.WorkflowLogRequest, ...grpc.CallOption) workflow.WorkflowService_WorkflowLogsClient); ok {
+		r0 = rf(ctx, in, opts...)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(workflow.WorkflowService_WorkflowLogsClient)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(context.Context, *workflow.WorkflowLogRequest, ...grpc.CallOption) error); ok {
 		r1 = rf(ctx, in, opts...)
 	} else {
 		r1 = ret.Error(1)

@@ -7,7 +7,6 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**clusters** | **List&lt;String&gt;** |  |  [optional]
 **links** | [**List&lt;IoArgoprojWorkflowV1alpha1Link&gt;**](IoArgoprojWorkflowV1alpha1Link.md) |  |  [optional]
 **managedNamespace** | **String** |  |  [optional]
 **modals** | **Map&lt;String, Boolean&gt;** |  |  [optional]

@@ -537,7 +537,7 @@ func (s *workflowServer) LintWorkflow(ctx context.Context, req *workflowpkg.Work
 	return req.Workflow, nil
 }
 
-func (s *workflowServer) WatchPodLogs(req *workflowpkg.WorkflowLogRequest, ws workflowpkg.WorkflowService_WatchPodLogsServer) error {
+func (s *workflowServer) PodLogs(req *workflowpkg.WorkflowLogRequest, ws workflowpkg.WorkflowService_PodLogsServer) error {
 	ctx := ws.Context()
 	wfClient := auth.GetWfClient(ctx)
 	kubeClient := auth.GetKubeClient(ctx)
@@ -560,8 +560,8 @@ func (s *workflowServer) WatchPodLogs(req *workflowpkg.WorkflowLogRequest, ws wo
 	return logs.WorkflowLogs(ctx, wfClient, kubeClient, req, ws)
 }
 
-func (s *workflowServer) WatchWorkflowLogs(req *workflowpkg.WorkflowLogRequest, ws workflowpkg.WorkflowService_WatchWorkflowLogsServer) error {
-	return s.WatchPodLogs(req, ws)
+func (s *workflowServer) WorkflowLogs(req *workflowpkg.WorkflowLogRequest, ws workflowpkg.WorkflowService_WorkflowLogsServer) error {
+	return s.PodLogs(req, ws)
 }
 
 func (s *workflowServer) getWorkflow(ctx context.Context, wfClient versioned.Interface, namespace string, name string, options metav1.GetOptions) (*wfv1.Workflow, error) {

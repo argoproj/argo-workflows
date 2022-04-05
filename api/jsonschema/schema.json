@@ -5850,12 +5850,6 @@
     },
     "io.argoproj.workflow.v1alpha1.InfoResponse": {
       "properties": {
-        "clusters": {
-          "items": {
-            "type": "string"
-          },
-          "type": "array"
-        },
         "links": {
           "items": {
             "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Link"
@@ -6586,9 +6580,6 @@
     },
     "io.argoproj.workflow.v1alpha1.ResubmitArchivedWorkflowRequest": {
       "properties": {
-        "cluster": {
-          "type": "string"
-        },
         "memoized": {
           "type": "boolean"
         },
@@ -6615,9 +6606,6 @@
     },
     "io.argoproj.workflow.v1alpha1.RetryArchivedWorkflowRequest": {
       "properties": {
-        "cluster": {
-          "type": "string"
-        },
         "name": {
           "type": "string"
         },

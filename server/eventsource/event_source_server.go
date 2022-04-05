@@ -64,7 +64,7 @@ func (e *eventSourceServer) ListEventSources(ctx context.Context, in *eventsourc
 	return list, nil
 }
 
-func (e *eventSourceServer) WatchEventSourcesLogs(in *eventsourcepkg.EventSourcesLogsRequest, svr eventsourcepkg.EventSourceService_WatchEventSourcesLogsServer) error {
+func (e *eventSourceServer) EventSourcesLogs(in *eventsourcepkg.EventSourcesLogsRequest, svr eventsourcepkg.EventSourceService_EventSourcesLogsServer) error {
 	labelSelector := "eventsource-name"
 	if in.Name != "" {
 		labelSelector += "=" + in.Name

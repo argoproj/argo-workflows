@@ -49,7 +49,7 @@ func (s *sensorServer) DeleteSensor(ctx context.Context, in *sensorpkg.DeleteSen
 	return &sensorpkg.DeleteSensorResponse{}, nil
 }
 
-func (s *sensorServer) WatchSensorsLogs(in *sensorpkg.SensorsLogsRequest, svr sensorpkg.SensorService_WatchSensorsLogsServer) error {
+func (s *sensorServer) SensorsLogs(in *sensorpkg.SensorsLogsRequest, svr sensorpkg.SensorService_SensorsLogsServer) error {
 	labelSelector := "sensor-name"
 	if in.Name != "" {
 		labelSelector += "=" + in.Name
