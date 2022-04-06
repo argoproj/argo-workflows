@@ -186,7 +186,7 @@ func (r *workflowArchive) ListWorkflows(clusterName, namespace, name, namePrefix
 
 func (r *workflowArchive) clusterManagedNamespaceAndInstanceID(clusterName string) db.Compound {
 	return db.And(
-		clusterNameEqual(clusterName),
+		db.Cond{"clustername": clusterName},
 		namespaceEqual(r.managedNamespace),
 		db.Cond{"instanceid": r.instanceIDService.InstanceID()},
 	)
@@ -201,14 +201,6 @@ func startedAtClause(from, to time.Time) db.Compound {
 		conds = append(conds, db.Cond{"startedat < ": to})
 	}
 	return db.And(conds...)
-}
-
-func clusterNameEqual(v string) db.Cond {
-	if v == "" {
-		return db.Cond{}
-	} else {
-		return db.Cond{"clustername": v}
-	}
 }
 
 func namespaceEqual(namespace string) db.Cond {

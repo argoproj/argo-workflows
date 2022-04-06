@@ -606,6 +606,10 @@ func (woc *wfOperationCtx) createEnvVars(tmpl *wfv1.Template) []apiv1.EnvVar {
 			Name:  "GODEBUG",
 			Value: "x509ignoreCN=0",
 		},
+		{
+			Name:  common.EnvVarWorkflowName,
+			Value: woc.wf.Name,
+		},
 	}
 
 	cluster, namespace := woc.clusterNamespaceForTemplate(tmpl)
