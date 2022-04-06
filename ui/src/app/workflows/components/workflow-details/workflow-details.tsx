@@ -48,6 +48,7 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
     const [name, setName] = useState(match.params.name);
     const [tab, setTab] = useState(queryParams.get('tab') || 'workflow');
     const [nodeId, setNodeId] = useState(queryParams.get('nodeId'));
+    const [showArtifacts, setShowArtifacts] = useState(false);
     const [nodePanelView, setNodePanelView] = useState(queryParams.get('nodePanelView'));
     const [sidePanel, setSidePanel] = useState(queryParams.get('sidePanel'));
 
@@ -57,13 +58,14 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
             setNodeId(p.get('nodeId'));
             setNodePanelView(p.get('nodePanelView'));
             setSidePanel(p.get('sidePanel'));
+            setShowArtifacts(p.get('showArtifacts') !== 'false');
         }),
         [history]
     );
 
     useEffect(() => {
-        history.push(historyUrl('workflows/{namespace}/{name}', {namespace, name, tab, nodeId, nodePanelView, sidePanel}));
-    }, [namespace, name, tab, nodeId, nodePanelView, sidePanel]);
+        history.push(historyUrl('workflows/{namespace}/{name}', {namespace, name, tab, nodeId, nodePanelView, sidePanel, showArtifacts}));
+    }, [namespace, name, tab, nodeId, nodePanelView, sidePanel, showArtifacts]);
 
     const [workflow, setWorkflow] = useState<Workflow>();
     const [links, setLinks] = useState<Link[]>();
@@ -105,6 +107,12 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
                     }
                 };
             });
+
+        items.push({
+            title: 'Artifacts',
+            iconClassName: showArtifacts ? 'fa fa-toggle-on' : 'fa fa-toggle-off',
+            action: () => setShowArtifacts(!showArtifacts)
+        });
 
         items.push({
             action: () => setSidePanel('logs'),
@@ -308,7 +316,13 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
                         <div>
                             <div className='workflow-details__graph-container'>
                                 {(tab === 'workflow' && (
-                                    <WorkflowPanel workflowMetadata={workflow.metadata} workflowStatus={workflow.status} selectedNodeId={nodeId} nodeClicked={setNodeId} />
+                                    <WorkflowPanel
+                                        workflowMetadata={workflow.metadata}
+                                        workflowStatus={workflow.status}
+                                        selectedNodeId={nodeId}
+                                        nodeClicked={setNodeId}
+                                        showArtifacts={showArtifacts}
+                                    />
                                 )) ||
                                     (tab === 'events' && <EventsPanel namespace={workflow.metadata.namespace} kind='Workflow' name={workflow.metadata.name} />) || (
                                         <WorkflowTimeline workflow={workflow} selectedNodeId={nodeId} nodeClicked={node => setNodeId(node.id)} />
