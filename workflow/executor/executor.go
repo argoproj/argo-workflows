@@ -807,10 +807,6 @@ func isTarball(filePath string) (bool, error) {
 	return err == nil, nil
 }
 
-func clean(f string) string {
-	return filepath.Clean(f)
-}
-
 // untar extracts a tarball to a temporary directory,
 // renaming it to the desired location
 func untar(tarPath string, destPath string) error {
