@@ -1,11 +1,5 @@
 #syntax=docker/dockerfile:1.2
 
-ARG DOCKER_CHANNEL=stable
-ARG DOCKER_VERSION=20.10.12
-# NOTE: kubectl version should be one minor version less than https://storage.googleapis.com/kubernetes-release/release/stable.txt
-ARG KUBECTL_VERSION=1.22.3
-ARG JQ_VERSION=1.6
-
 FROM golang:1.17 as builder
 
 RUN apt-get update && apt-get --no-install-recommends install -y \
@@ -15,9 +9,7 @@ RUN apt-get update && apt-get --no-install-recommends install -y \
     apt-transport-https \
     ca-certificates \
     wget \
-    gcc \
-    libcap2-bin \
-    zip && \
+    gcc && \
     apt-get clean \
     && rm -rf \
         /var/lib/apt/lists/* \
@@ -39,33 +31,6 @@ COPY . .
 
 ####################################################################################################
 
-FROM alpine:3 as argoexec-base
-
-ARG DOCKER_CHANNEL
-ARG DOCKER_VERSION
-ARG KUBECTL_VERSION
-
-RUN apk --no-cache add curl procps git tar libcap jq
-
-COPY hack/arch.sh hack/os.sh /bin/
-
-RUN if [ $(arch.sh) = ppc64le ] || [ $(arch.sh) = s390x ]; then \
-        curl -o docker.tgz https://download.docker.com/$(os.sh)/static/${DOCKER_CHANNEL}/$(uname -m)/docker-18.06.3-ce.tgz; \
-    else \
-        curl -o docker.tgz https://download.docker.com/$(os.sh)/static/${DOCKER_CHANNEL}/$(uname -m)/docker-${DOCKER_VERSION}.tgz; \
-    fi && \
-    tar --extract --file docker.tgz --strip-components 1 --directory /usr/local/bin/ && \
-    rm docker.tgz
-RUN curl -o /usr/local/bin/kubectl https://storage.googleapis.com/kubernetes-release/release/v${KUBECTL_VERSION}/bin/$(os.sh)/$(arch.sh)/kubectl && \
-    chmod +x /usr/local/bin/kubectl
-RUN rm /bin/arch.sh /bin/os.sh
-
-COPY hack/ssh_known_hosts /etc/ssh/
-COPY hack/nsswitch.conf /etc/
-
-
-####################################################################################################
-
 FROM node:16 as argo-ui
 
 COPY ui/package.json ui/yarn.lock ui/
@@ -81,13 +46,21 @@ RUN NODE_OPTIONS="--max-old-space-size=2048" JOBS=max yarn --cwd ui build
 
 FROM builder as argoexec-build
 
+COPY hack/arch.sh hack/os.sh /bin/
+
+# NOTE: kubectl version should be one minor version less than https://storage.googleapis.com/kubernetes-release/release/stable.txt
+RUN curl -o /usr/local/bin/kubectl https://storage.googleapis.com/kubernetes-release/release/v1.22.3/bin/$(os.sh)/$(arch.sh)/kubectl && \
+    chmod +x /usr/local/bin/kubectl
+
+RUN curl -o /usr/local/bin/jq https://github.com/stedolan/jq/releases/download/jq-1.6/jq-linux64 && \
+  chmod +x /usr/local/bin/jq
+
 # Tell git to forget about all of the files that were not included because of .dockerignore in order to ensure that
 # the git state is "clean" even though said .dockerignore files are not present
 RUN cat .dockerignore >> .gitignore
 RUN git status --porcelain | cut -c4- | xargs git update-index --skip-worktree
 
 RUN --mount=type=cache,target=/root/.cache/go-build make dist/argoexec
-RUN setcap CAP_SYS_PTRACE,CAP_SYS_CHROOT+ei dist/argoexec
 
 ####################################################################################################
 
@@ -119,9 +92,15 @@ RUN --mount=type=cache,target=/root/.cache/go-build make dist/argo
 
 ####################################################################################################
 
-FROM argoexec-base as argoexec
+FROM gcr.io/distroless/static as argoexec
 
-COPY --from=argoexec-build /go/src/github.com/argoproj/argo-workflows/dist/argoexec /usr/local/bin/
+COPY --from=argoexec-build /usr/local/bin/kubectl /bin/
+COPY --from=argoexec-build /usr/local/bin/jq /bin/
+COPY --from=argoexec-build /go/src/github.com/argoproj/argo-workflows/dist/argoexec /bin/
+COPY --from=argoexec-build /etc/mime.types /etc/mime.types
+COPY hack/ssh_known_hosts /etc/ssh/
+COPY hack/nsswitch.conf /etc/
+
 ENTRYPOINT [ "argoexec" ]
 
 ####################################################################################################

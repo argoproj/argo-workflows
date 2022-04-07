@@ -69,8 +69,10 @@ func (e *eventSourceServer) EventSourcesLogs(in *eventsourcepkg.EventSourcesLogs
 	if in.Name != "" {
 		labelSelector += "=" + in.Name
 	}
+	ctx := svr.Context()
 	return logs.LogPods(
-		svr.Context(),
+		ctx,
+		auth.GetKubeClient(ctx),
 		in.Namespace,
 		labelSelector,
 		in.Grep,

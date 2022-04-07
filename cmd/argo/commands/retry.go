@@ -11,6 +11,7 @@ import (
 	"k8s.io/apimachinery/pkg/fields"
 
 	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
+	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/common"
 	workflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflow"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
@@ -33,7 +34,7 @@ func (o *retryOps) hasSelector() bool {
 
 func NewRetryCommand() *cobra.Command {
 	var (
-		cliSubmitOpts cliSubmitOpts
+		cliSubmitOpts common.CliSubmitOpts
 		retryOpts     retryOps
 	)
 	command := &cobra.Command{
@@ -84,10 +85,10 @@ func NewRetryCommand() *cobra.Command {
 			errors.CheckError(err)
 		},
 	}
-	command.Flags().StringVarP(&cliSubmitOpts.output, "output", "o", "", "Output format. One of: name|json|yaml|wide")
-	command.Flags().BoolVarP(&cliSubmitOpts.wait, "wait", "w", false, "wait for the workflow to complete, only works when a single workflow is retried")
-	command.Flags().BoolVar(&cliSubmitOpts.watch, "watch", false, "watch the workflow until it completes, only works when a single workflow is retried")
-	command.Flags().BoolVar(&cliSubmitOpts.log, "log", false, "log the workflow until it completes")
+	command.Flags().StringVarP(&cliSubmitOpts.Output, "output", "o", "", "Output format. One of: name|json|yaml|wide")
+	command.Flags().BoolVarP(&cliSubmitOpts.Wait, "wait", "w", false, "wait for the workflow to complete, only works when a single workflow is retried")
+	command.Flags().BoolVar(&cliSubmitOpts.Watch, "watch", false, "watch the workflow until it completes, only works when a single workflow is retried")
+	command.Flags().BoolVar(&cliSubmitOpts.Log, "log", false, "log the workflow until it completes")
 	command.Flags().BoolVar(&retryOpts.restartSuccessful, "restart-successful", false, "indicates to restart successful nodes matching the --node-field-selector")
 	command.Flags().StringVar(&retryOpts.nodeFieldSelector, "node-field-selector", "", "selector of nodes to reset, eg: --node-field-selector inputs.paramaters.myparam.value=abc")
 	command.Flags().StringVarP(&retryOpts.labelSelector, "selector", "l", "", "Selector (label query) to filter on, not including uninitialized ones, supports '=', '==', and '!='.(e.g. -l key1=value1,key2=value2)")
@@ -96,7 +97,7 @@ func NewRetryCommand() *cobra.Command {
 }
 
 // retryWorkflows retries workflows by given retryArgs or workflow names
-func retryWorkflows(ctx context.Context, serviceClient workflowpkg.WorkflowServiceClient, retryOpts retryOps, cliSubmitOpts cliSubmitOpts, args []string) error {
+func retryWorkflows(ctx context.Context, serviceClient workflowpkg.WorkflowServiceClient, retryOpts retryOps, cliSubmitOpts common.CliSubmitOpts, args []string) error {
 	selector, err := fields.ParseSelector(retryOpts.nodeFieldSelector)
 	if err != nil {
 		return fmt.Errorf("unable to parse node field selector '%s': %s", retryOpts.nodeFieldSelector, err)
@@ -140,11 +141,11 @@ func retryWorkflows(ctx context.Context, serviceClient workflowpkg.WorkflowServi
 		if err != nil {
 			return err
 		}
-		printWorkflow(lastRetried, getFlags{output: cliSubmitOpts.output})
+		printWorkflow(lastRetried, common.GetFlags{Output: cliSubmitOpts.Output})
 	}
 	if len(retriedNames) == 1 {
 		// watch or wait when there is only one workflow retried
-		waitWatchOrLog(ctx, serviceClient, lastRetried.Namespace, []string{lastRetried.Name}, cliSubmitOpts)
+		common.WaitWatchOrLog(ctx, serviceClient, lastRetried.Namespace, []string{lastRetried.Name}, cliSubmitOpts)
 	}
 	return nil
 }

@@ -13,9 +13,6 @@ spec:
           - name: progress
             template: progress
     - name: progress
-      metadata:
-        annotations:
-          workflows.argoproj.io/progress: 0/100
       container:
         image: argoproj/argosay:v2
         command: ["/bin/sh", "-c"]

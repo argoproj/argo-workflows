@@ -48,7 +48,7 @@ The emissary will exit with code 64 if it fails. This may indicate a bug in the 
 
 ## Docker (docker) 
 
-⚠️Deprecated. 
+⚠️Deprecated. Removed in v3.4.
 
 **default in <= v3.2**
 
@@ -67,6 +67,8 @@ The emissary will exit with code 64 if it fails. This may indicate a bug in the 
 
 ## Kubelet (kubelet)
 
+⚠️Deprecated. Removed in v3.4.
+
 * Secure
     * No `privileged` access
     * Cannot escape the privileges of the pod's service account
@@ -81,6 +83,8 @@ The emissary will exit with code 64 if it fails. This may indicate a bug in the 
     * Additional Kubelet configuration maybe needed
 
 ## Kubernetes API (k8sapi)
+
+⚠️Deprecated. Removed in v3.4.
 
 * Reliability:
     * Works on GKE Autopilot
@@ -98,6 +102,8 @@ The emissary will exit with code 64 if it fails. This may indicate a bug in the 
     * No additional configuration needed.
 
 ## Process Namespace Sharing (pns)
+
+⚠️Deprecated. Removed in v3.4.
 
 * More secure:
     * No `privileged` access

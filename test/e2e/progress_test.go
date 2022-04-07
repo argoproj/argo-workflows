@@ -44,10 +44,12 @@ func (s *ProgressSuite) TestLoggedProgress() {
 		Workflow("@testdata/progress-workflow.yaml").
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(fixtures.ToBeRunning).
-		WaitForWorkflow(toHaveProgress("0/100")).
 		WaitForWorkflow(toHaveProgress("50/100")).
-		WaitForWorkflow(toHaveProgress("100/100"))
+		WaitForWorkflow().
+		Then().
+		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.Progress("100/100"), status.Nodes[metadata.Name].Progress)
+		})
 }
 
 func TestProgressSuite(t *testing.T) {

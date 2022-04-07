@@ -1,15 +1,15 @@
 # Installation
 
-## Argo On Desktop
+## Argo on Desktop
 
 Use the [quick-start manifests](quick-start.md).
 
-## Argo In Production
+## Argo in Production
 
 Determine your base installation option.
 
 * A **cluster install** will watch and execute workflows in all namespaces.
-* A **namespace install** only execute workflows in the  namespace it is installed install in (typically `argo`).
+* A **namespace install** only executes workflows in the namespace it is installed in (typically `argo`).
 * A **managed namespace install**: only executes workflows in a specific namespace ([learn more](managed-namespace.md)).
 
 ⚠️ `latest` is tip, not stable. Never run it. Make sure you're using the manifests attached to each Github release. See [this link](https://github.com/argoproj/argo-workflows/releases/latest) for the most recent manifests. 

@@ -1,4 +1,4 @@
-package commands
+package common
 
 import (
 	"bytes"
@@ -15,7 +15,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/workflow/util"
 )
 
-func testPrintNodeImpl(t *testing.T, expected string, node wfv1.NodeStatus, getArgs getFlags) {
+func testPrintNodeImpl(t *testing.T, expected string, node wfv1.NodeStatus, getArgs GetFlags) {
 	var result bytes.Buffer
 	w := tabwriter.NewWriter(&result, 0, 8, 1, '\t', 0)
 	filtered, _ := filterNode(node, getArgs)
@@ -35,8 +35,8 @@ func TestPrintNode(t *testing.T) {
 	nodeTemplateRefName := "testTemplateRef"
 	nodeID := "testID"
 	nodeMessage := "test"
-	getArgs := getFlags{
-		output: "",
+	getArgs := GetFlags{
+		Output: "",
 	}
 	timestamp := metav1.Time{
 		Time: time.Now(),
@@ -52,57 +52,57 @@ func TestPrintNode(t *testing.T) {
 		Message:     nodeMessage,
 	}
 	node.HostNodeName = kubernetesNodeName
-	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t%s\t%s\t%s\t%s\t%s\n", jobStatusIconMap[wfv1.NodeRunning], nodeName, "", nodeID, "0s", nodeMessage, ""), node, getArgs)
+	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t%s\t%s\t%s\t%s\t%s\n", JobStatusIconMap[wfv1.NodeRunning], nodeName, "", nodeID, "0s", nodeMessage, ""), node, getArgs)
 
 	// Compatibility test
-	getArgs.status = "Running"
-	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t\t%s\t%s\t%s\t\n", jobStatusIconMap[wfv1.NodeRunning], nodeName, nodeID, "0s", nodeMessage), node, getArgs)
+	getArgs.Status = "Running"
+	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t\t%s\t%s\t%s\t\n", JobStatusIconMap[wfv1.NodeRunning], nodeName, nodeID, "0s", nodeMessage), node, getArgs)
 
-	getArgs.status = ""
-	getArgs.nodeFieldSelectorString = "phase=Running"
-	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t\t%s\t%s\t%s\t\n", jobStatusIconMap[wfv1.NodeRunning], nodeName, nodeID, "0s", nodeMessage), node, getArgs)
+	getArgs.Status = ""
+	getArgs.NodeFieldSelectorString = "phase=Running"
+	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t\t%s\t%s\t%s\t\n", JobStatusIconMap[wfv1.NodeRunning], nodeName, nodeID, "0s", nodeMessage), node, getArgs)
 
-	getArgs.nodeFieldSelectorString = "phase!=foobar"
-	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t\t%s\t%s\t%s\t\n", jobStatusIconMap[wfv1.NodeRunning], nodeName, nodeID, "0s", nodeMessage), node, getArgs)
+	getArgs.NodeFieldSelectorString = "phase!=foobar"
+	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t\t%s\t%s\t%s\t\n", JobStatusIconMap[wfv1.NodeRunning], nodeName, nodeID, "0s", nodeMessage), node, getArgs)
 
-	getArgs.nodeFieldSelectorString = "phase!=Running"
+	getArgs.NodeFieldSelectorString = "phase!=Running"
 	testPrintNodeImpl(t, "", node, getArgs)
 
 	// Compatibility test
-	getArgs.nodeFieldSelectorString = ""
-	getArgs.status = "foobar"
+	getArgs.NodeFieldSelectorString = ""
+	getArgs.Status = "foobar"
 	testPrintNodeImpl(t, "", node, getArgs)
 
-	getArgs.status = ""
-	getArgs.nodeFieldSelectorString = "phase=foobar"
+	getArgs.Status = ""
+	getArgs.NodeFieldSelectorString = "phase=foobar"
 	testPrintNodeImpl(t, "", node, getArgs)
 
-	getArgs = getFlags{
-		output: "",
+	getArgs = GetFlags{
+		Output: "",
 	}
 
 	node.TemplateName = nodeTemplateName
-	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t%s\t%s\t%s\t%s\t%s\n", jobStatusIconMap[wfv1.NodeRunning], nodeName, nodeTemplateName, nodeID, "0s", nodeMessage, ""), node, getArgs)
+	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t%s\t%s\t%s\t%s\t%s\n", JobStatusIconMap[wfv1.NodeRunning], nodeName, nodeTemplateName, nodeID, "0s", nodeMessage, ""), node, getArgs)
 
 	node.Type = wfv1.NodeTypeSuspend
-	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t%s\t%s\t%s\t%s\t%s\n", nodeTypeIconMap[wfv1.NodeTypeSuspend], nodeName, nodeTemplateName, "", "", nodeMessage, ""), node, getArgs)
+	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t%s\t%s\t%s\t%s\t%s\n", NodeTypeIconMap[wfv1.NodeTypeSuspend], nodeName, nodeTemplateName, "", "", nodeMessage, ""), node, getArgs)
 
 	node.TemplateRef = &wfv1.TemplateRef{
 		Name:     nodeTemplateRefName,
 		Template: nodeTemplateRefName,
 	}
-	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t%s/%s\t%s\t%s\t%s\t%s\n", nodeTypeIconMap[wfv1.NodeTypeSuspend], nodeName, nodeTemplateRefName, nodeTemplateRefName, "", "", nodeMessage, ""), node, getArgs)
+	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t%s/%s\t%s\t%s\t%s\t%s\n", NodeTypeIconMap[wfv1.NodeTypeSuspend], nodeName, nodeTemplateRefName, nodeTemplateRefName, "", "", nodeMessage, ""), node, getArgs)
 
-	getArgs.output = "wide"
-	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t%s/%s\t%s\t%s\t%s\t%s\t%s\t\n", nodeTypeIconMap[wfv1.NodeTypeSuspend], nodeName, nodeTemplateRefName, nodeTemplateRefName, "", "", getArtifactsString(node), nodeMessage, ""), node, getArgs)
+	getArgs.Output = "wide"
+	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t%s/%s\t%s\t%s\t%s\t%s\t%s\t\n", NodeTypeIconMap[wfv1.NodeTypeSuspend], nodeName, nodeTemplateRefName, nodeTemplateRefName, "", "", getArtifactsString(node), nodeMessage, ""), node, getArgs)
 
 	node.Type = wfv1.NodeTypePod
-	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t%s/%s\t%s\t%s\t%s\t%s\t%s\t%s\n", jobStatusIconMap[wfv1.NodeRunning], nodeName, nodeTemplateRefName, nodeTemplateRefName, nodeID, "0s", getArtifactsString(node), nodeMessage, "", kubernetesNodeName), node, getArgs)
+	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t%s/%s\t%s\t%s\t%s\t%s\t%s\t%s\n", JobStatusIconMap[wfv1.NodeRunning], nodeName, nodeTemplateRefName, nodeTemplateRefName, nodeID, "0s", getArtifactsString(node), nodeMessage, "", kubernetesNodeName), node, getArgs)
 
-	getArgs.output = "short"
-	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t%s/%s\t%s\t%s\t%s\t%s\n", nodeTypeIconMap[wfv1.NodeTypeSuspend], nodeName, nodeTemplateRefName, nodeTemplateRefName, nodeID, "0s", nodeMessage, kubernetesNodeName), node, getArgs)
+	getArgs.Output = "short"
+	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t%s/%s\t%s\t%s\t%s\t%s\n", NodeTypeIconMap[wfv1.NodeTypeSuspend], nodeName, nodeTemplateRefName, nodeTemplateRefName, nodeID, "0s", nodeMessage, kubernetesNodeName), node, getArgs)
 
-	getArgs.status = "foobar"
+	getArgs.Status = "foobar"
 	testPrintNodeImpl(t, "", node, getArgs)
 }
 
@@ -119,7 +119,7 @@ status:
   phase: Running
   progress: 1/2
 `, &wf)
-		output := printWorkflowHelper(&wf, getFlags{})
+		output := PrintWorkflowHelper(&wf, GetFlags{})
 		assert.Regexp(t, `Progress: *1/2`, output)
 	})
 	t.Run("EstimatedDuration", func(t *testing.T) {
@@ -129,7 +129,7 @@ status:
   estimatedDuration: 1
   phase: Running
 `, &wf)
-		output := printWorkflowHelper(&wf, getFlags{})
+		output := PrintWorkflowHelper(&wf, GetFlags{})
 		assert.Regexp(t, `EstimatedDuration: *1 second`, output)
 	})
 	t.Run("IndexOrdering", func(t *testing.T) {
@@ -353,7 +353,7 @@ status:
   phase: Succeeded
   startedAt: "2020-06-02T16:04:21Z"
 `, &wf)
-		output := printWorkflowHelper(&wf, getFlags{})
+		output := PrintWorkflowHelper(&wf, GetFlags{})
 		assert.Contains(t, output, `         
    ├─ sleep(9:nine)     sleep           many-items-z26lj-2619926859  19s         
    ├─ sleep(10:ten)     sleep           many-items-z26lj-1052882686  23s         
@@ -380,11 +380,11 @@ func Test_printWorkflowHelperNudges(t *testing.T) {
 		"Learn more at https://argoproj.github.io/argo-workflows/workflow-pod-security-context/\n"
 
 	t.Run("SecuredWorkflow", func(t *testing.T) {
-		output := printWorkflowHelper(&securedWf, getFlags{})
+		output := PrintWorkflowHelper(&securedWf, GetFlags{})
 		assert.NotContains(t, output, securityNudges)
 	})
 	t.Run("InsecureWorkflow", func(t *testing.T) {
-		output := printWorkflowHelper(&insecureWf, getFlags{})
+		output := PrintWorkflowHelper(&insecureWf, GetFlags{})
 		assert.Contains(t, output, securityNudges)
 	})
 }

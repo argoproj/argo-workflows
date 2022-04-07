@@ -1,9 +1,6 @@
 package commands
 
 import (
-	"context"
-	"fmt"
-	"io"
 	"log"
 	"os"
 	"time"
@@ -15,7 +12,7 @@ import (
 	"k8s.io/utils/pointer"
 
 	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
-	workflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflow"
+	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/common"
 )
 
 func NewLogsCommand() *cobra.Command {
@@ -97,7 +94,7 @@ func NewLogsCommand() *cobra.Command {
 			serviceClient := apiClient.NewWorkflowServiceClient()
 			namespace := client.Namespace()
 
-			logWorkflow(ctx, serviceClient, namespace, workflow, podName, grep, selector, logOptions)
+			common.LogWorkflow(ctx, serviceClient, namespace, workflow, podName, grep, selector, logOptions)
 		},
 	}
 	command.Flags().StringVarP(&logOptions.Container, "container", "c", "main", "Print the logs of this container")
@@ -109,29 +106,6 @@ func NewLogsCommand() *cobra.Command {
 	command.Flags().StringVar(&grep, "grep", "", "grep for lines")
 	command.Flags().StringVarP(&selector, "selector", "l", "", "log selector for some pod")
 	command.Flags().BoolVar(&logOptions.Timestamps, "timestamps", false, "Include timestamps on each line in the log output")
-	command.Flags().BoolVar(&noColor, "no-color", false, "Disable colorized output")
+	command.Flags().BoolVar(&common.NoColor, "no-color", false, "Disable colorized output")
 	return command
-}
-
-func logWorkflow(ctx context.Context, serviceClient workflowpkg.WorkflowServiceClient, namespace, workflow, podName, grep, selector string, logOptions *corev1.PodLogOptions) {
-	// logs
-	stream, err := serviceClient.WorkflowLogs(ctx, &workflowpkg.WorkflowLogRequest{
-		Name:       workflow,
-		Namespace:  namespace,
-		PodName:    podName,
-		LogOptions: logOptions,
-		Selector:   selector,
-		Grep:       grep,
-	})
-	errors.CheckError(err)
-
-	// loop on log lines
-	for {
-		event, err := stream.Recv()
-		if err == io.EOF {
-			return
-		}
-		errors.CheckError(err)
-		fmt.Println(ansiFormat(fmt.Sprintf("%s: %s", event.PodName, event.Content), ansiColorCode(event.PodName)))
-	}
 }

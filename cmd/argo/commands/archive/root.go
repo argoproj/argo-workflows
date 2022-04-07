@@ -12,10 +12,13 @@ func NewArchiveCommand() *cobra.Command {
 			cmd.HelpFunc()(cmd, args)
 		},
 	}
+
 	command.AddCommand(NewListCommand())
 	command.AddCommand(NewGetCommand())
 	command.AddCommand(NewDeleteCommand())
 	command.AddCommand(NewListLabelKeyCommand())
 	command.AddCommand(NewListLabelValueCommand())
+	command.AddCommand(NewResubmitCommand())
+	command.AddCommand(NewRetryCommand())
 	return command
 }
