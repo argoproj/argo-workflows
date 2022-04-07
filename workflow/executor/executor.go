@@ -807,6 +807,10 @@ func isTarball(filePath string) (bool, error) {
 	return err == nil, nil
 }
 
+func clean(f string) string {
+	return filepath.Clean(f)
+}
+
 // untar extracts a tarball to a temporary directory,
 // renaming it to the desired location
 func untar(tarPath string, destPath string) error {
@@ -832,7 +836,7 @@ func untar(tarPath string, destPath string) error {
 			case header == nil:
 				continue
 			}
-			target := filepath.Join(dest, header.Name)
+			target := filepath.Join(dest, filepath.Clean(header.Name))
 			if err := os.MkdirAll(filepath.Dir(target), 0o700); err != nil && os.IsExist(err) {
 				return err
 			}
