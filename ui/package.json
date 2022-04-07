@@ -23,7 +23,7 @@
         "history": "^4.7.2",
         "js-yaml": "^3.13.1",
         "json-merge-patch": "^0.2.3",
-        "moment": "^2.24.0",
+        "moment": "^2.29.2",
         "monaco-editor": "0.20.0",
         "prop-types": "^15.7.2",
         "react": "^16.8.3",
@@ -35,7 +35,7 @@
         "react-router-dom": "^4.2.2",
         "superagent": "^3.8.2",
         "superagent-promise": "^1.1.0",
-        "swagger-ui-react": "^3.29.0"
+        "swagger-ui-react": "^4.7.0"
     },
     "devDependencies": {
         "@babel/core": "^7.0.0-0",
