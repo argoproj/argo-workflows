@@ -226,7 +226,7 @@ class ArtifactServiceApi(object):
                 async_req (bool): execute request asynchronously
 
             Returns:
-                None
+                file_type
                     If the method is called asynchronously, returns the request
                     thread.
             """
@@ -261,7 +261,7 @@ class ArtifactServiceApi(object):
 
         self.get_input_artifact_by_uid = _Endpoint(
             settings={
-                'response_type': None,
+                'response_type': (file_type,),
                 'auth': [],
                 'endpoint_path': '/input-artifacts-by-uid/{uid}/{podName}/{artifactName}',
                 'operation_id': 'get_input_artifact_by_uid',
@@ -372,7 +372,7 @@ class ArtifactServiceApi(object):
                 async_req (bool): execute request asynchronously
 
             Returns:
-                None
+                file_type
                     If the method is called asynchronously, returns the request
                     thread.
             """
@@ -407,7 +407,7 @@ class ArtifactServiceApi(object):
 
         self.get_output_artifact = _Endpoint(
             settings={
-                'response_type': None,
+                'response_type': (file_type,),
                 'auth': [],
                 'endpoint_path': '/artifacts/{namespace}/{name}/{podName}/{artifactName}',
                 'operation_id': 'get_output_artifact',

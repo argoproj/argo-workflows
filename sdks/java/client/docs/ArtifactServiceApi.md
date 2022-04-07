@@ -78,7 +78,7 @@ No authorization required
 
 <a name="artifactServiceGetInputArtifactByUID"></a>
 # **artifactServiceGetInputArtifactByUID**
-> artifactServiceGetInputArtifactByUID(namespace, uid, podName, artifactName)
+> File artifactServiceGetInputArtifactByUID(namespace, uid, podName, artifactName)
 
 Get an input artifact by UID.
 
@@ -102,7 +102,8 @@ public class Example {
     String podName = "podName_example"; // String | 
     String artifactName = "artifactName_example"; // String | 
     try {
-      apiInstance.artifactServiceGetInputArtifactByUID(namespace, uid, podName, artifactName);
+      File result = apiInstance.artifactServiceGetInputArtifactByUID(namespace, uid, podName, artifactName);
+      System.out.println(result);
     } catch (ApiException e) {
       System.err.println("Exception when calling ArtifactServiceApi#artifactServiceGetInputArtifactByUID");
       System.err.println("Status code: " + e.getCode());
@@ -125,7 +126,7 @@ Name | Type | Description  | Notes
 
 ### Return type
 
-null (empty response body)
+[**File**](File.md)
 
 ### Authorization
 
@@ -144,7 +145,7 @@ No authorization required
 
 <a name="artifactServiceGetOutputArtifact"></a>
 # **artifactServiceGetOutputArtifact**
-> artifactServiceGetOutputArtifact(namespace, name, podName, artifactName)
+> File artifactServiceGetOutputArtifact(namespace, name, podName, artifactName)
 
 Get an output artifact.
 
@@ -168,7 +169,8 @@ public class Example {
     String podName = "podName_example"; // String | 
     String artifactName = "artifactName_example"; // String | 
     try {
-      apiInstance.artifactServiceGetOutputArtifact(namespace, name, podName, artifactName);
+      File result = apiInstance.artifactServiceGetOutputArtifact(namespace, name, podName, artifactName);
+      System.out.println(result);
     } catch (ApiException e) {
       System.err.println("Exception when calling ArtifactServiceApi#artifactServiceGetOutputArtifact");
       System.err.println("Status code: " + e.getCode());
@@ -191,7 +193,7 @@ Name | Type | Description  | Notes
 
 ### Return type
 
-null (empty response body)
+[**File**](File.md)
 
 ### Authorization
 
