@@ -28,7 +28,7 @@ func (s *FunctionalSuite) TestArchiveStrategies() {
 		Workflow(`@testdata/archive-strategies.yaml`).
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(time.Minute).
+		WaitForWorkflow(fixtures.ToBeCompleted).
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
@@ -310,7 +310,7 @@ func (s *FunctionalSuite) TestEventOnWorkflowSuccess() {
 		Workflow("@functional/success-event.yaml").
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(60*time.Second).
+		WaitForWorkflow(fixtures.ToBeCompleted).
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			uid = metadata.UID
