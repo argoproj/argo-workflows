@@ -76,4 +76,5 @@ install:
 
 test:
 	../../hack/access-token.sh init
+	kubectl delete wf --all
 	env ARGO_TOKEN="`../../hack/access-token.sh get`" mvn -f tests test

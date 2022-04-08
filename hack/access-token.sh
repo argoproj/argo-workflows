@@ -4,7 +4,7 @@ set -eu
 case $1 in
   init)
     kubectl delete role jenkins --ignore-not-found
-    kubectl create role jenkins --verb=create,list,update --resource=workflows.argoproj.io
+    kubectl create role jenkins --verb=create,list,watch --resource=workflows.argoproj.io
     kubectl delete sa jenkins --ignore-not-found
     kubectl create sa jenkins
     kubectl delete rolebinding jenkins --ignore-not-found
