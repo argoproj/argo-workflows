@@ -116,9 +116,7 @@ class ArtifactServiceApi(object):
         self.get_input_artifact = _Endpoint(
             settings={
                 'response_type': None,
-                'auth': [
-                    'BearerToken'
-                ],
+                'auth': [],
                 'endpoint_path': '/input-artifacts/{namespace}/{name}/{podName}/{artifactName}',
                 'operation_id': 'get_input_artifact',
                 'http_method': 'GET',
@@ -228,7 +226,7 @@ class ArtifactServiceApi(object):
                 async_req (bool): execute request asynchronously
 
             Returns:
-                None
+                file_type
                     If the method is called asynchronously, returns the request
                     thread.
             """
@@ -263,10 +261,8 @@ class ArtifactServiceApi(object):
 
         self.get_input_artifact_by_uid = _Endpoint(
             settings={
-                'response_type': None,
-                'auth': [
-                    'BearerToken'
-                ],
+                'response_type': (file_type,),
+                'auth': [],
                 'endpoint_path': '/input-artifacts-by-uid/{uid}/{podName}/{artifactName}',
                 'operation_id': 'get_input_artifact_by_uid',
                 'http_method': 'GET',
@@ -376,7 +372,7 @@ class ArtifactServiceApi(object):
                 async_req (bool): execute request asynchronously
 
             Returns:
-                None
+                file_type
                     If the method is called asynchronously, returns the request
                     thread.
             """
@@ -411,10 +407,8 @@ class ArtifactServiceApi(object):
 
         self.get_output_artifact = _Endpoint(
             settings={
-                'response_type': None,
-                'auth': [
-                    'BearerToken'
-                ],
+                'response_type': (file_type,),
+                'auth': [],
                 'endpoint_path': '/artifacts/{namespace}/{name}/{podName}/{artifactName}',
                 'operation_id': 'get_output_artifact',
                 'http_method': 'GET',
@@ -556,9 +550,7 @@ class ArtifactServiceApi(object):
         self.get_output_artifact_by_uid = _Endpoint(
             settings={
                 'response_type': None,
-                'auth': [
-                    'BearerToken'
-                ],
+                'auth': [],
                 'endpoint_path': '/artifacts-by-uid/{uid}/{podName}/{artifactName}',
                 'operation_id': 'get_output_artifact_by_uid',
                 'http_method': 'GET',
