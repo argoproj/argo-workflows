@@ -114,6 +114,7 @@ jobs:
       - uses: actions/setup-java@v3
         with:
           java-version: '8'
+          distribution: adopt
       - uses: actions/setup-python@v3
         with:
           python-version: '3.x'
