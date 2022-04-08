@@ -71,8 +71,8 @@ generate:
 	# adding kubernetes-client
 	cd client && sed 's/<dependencies>/<dependencies><dependency><groupId>io.kubernetes<\/groupId><artifactId>client-java<\/artifactId><version>14.0.1<\/version><\/dependency>/g' pom.xml > tmp && mv tmp pom.xml
 
-
-.PHONY: test
-test:
+install:
 	mvn -f client install
+
+test:
 	mvn -f tests test

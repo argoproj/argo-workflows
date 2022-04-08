@@ -98,7 +98,7 @@ if __name__ == '__main__':
 
 ## Examples
 
-You can find additional examples [here](examples).
+You can find additional examples [here](tests).
 
 ## API Reference
 

@@ -521,7 +521,7 @@ test-examples:
 
 .PHONY: test-%-sdk
 test-%-sdk:
-	make --directory sdks/$* test -B
+	make --directory sdks/$* install test -B
 
 # clean
 

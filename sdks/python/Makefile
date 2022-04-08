@@ -42,5 +42,8 @@ generate:
 	# https://vsupalov.com/docker-shared-permissions/#set-the-docker-user-when-running-your-container
 	$(CHOWN) $(WD) || sudo $(CHOWN) $(WD)
 
+install:
+	pip3 install ./client
+
 test:
-	exit 1
+	python3 tests/*.py
