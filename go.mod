@@ -37,7 +37,6 @@ require (
 	github.com/prometheus/client_model v0.2.0
 	github.com/prometheus/common v0.33.0
 	github.com/robfig/cron/v3 v3.0.1
-	github.com/satori/go.uuid v1.2.0 // indirect
 	github.com/sirupsen/logrus v1.8.1
 	github.com/skratchdot/open-golang v0.0.0-20200116055534-eef842397966
 	github.com/soheilhy/cmux v0.1.5
@@ -83,7 +82,7 @@ require (
 	github.com/Azure/go-autorest/tracing v0.6.0 // indirect
 	github.com/Masterminds/goutils v1.1.1 // indirect
 	github.com/Masterminds/semver/v3 v3.1.1 // indirect
-	github.com/Microsoft/go-winio v0.5.0 // indirect
+	github.com/Microsoft/go-winio v0.5.1 // indirect
 	github.com/ProtonMail/go-crypto v0.0.0-20210428141323-04723f9f07d7 // indirect
 	github.com/PuerkitoBio/purell v1.1.1 // indirect
 	github.com/PuerkitoBio/urlesc v0.0.0-20170810143723-de5bf2ad4578 // indirect
@@ -185,8 +184,16 @@ require (
 	sigs.k8s.io/structured-merge-diff/v4 v4.2.1 // indirect
 )
 
+require github.com/google/go-containerregistry v0.8.0
+
 require (
+	github.com/docker/cli v20.10.12+incompatible // indirect
+	github.com/docker/distribution v2.8.1+incompatible // indirect
+	github.com/docker/docker v20.10.12+incompatible // indirect
+	github.com/docker/docker-credential-helpers v0.6.4 // indirect
 	github.com/googleapis/go-type-adapters v1.0.0 // indirect
+	github.com/opencontainers/go-digest v1.0.0 // indirect
+	github.com/opencontainers/image-spec v1.0.2 // indirect
 	github.com/whilp/git-urls v1.0.0 // indirect
 )
 

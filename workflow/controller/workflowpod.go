@@ -8,6 +8,8 @@ import (
 	"strconv"
 	"time"
 
+	imageindex "github.com/argoproj/argo-workflows/v3/workflow/controller/image"
+
 	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
@@ -473,7 +475,12 @@ func (woc *wfOperationCtx) getImage(image string) config.Image {
 	if woc.controller.Config.Images == nil {
 		return config.Image{}
 	}
-	return woc.controller.Config.Images[image]
+	v, ok := woc.controller.Config.Images[image]
+	if ok {
+		return v
+	}
+	cmd, _ := imageindex.Lookup(image)
+	return config.Image{Command: cmd}
 }
 
 // substitutePodParams returns a pod spec with parameter references substituted as well as pod.name
