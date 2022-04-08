@@ -79,7 +79,8 @@ jobs:
     name: E2E Tests
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    needs: [ tests, argoexec-image ]
+    needs: [ argoexec-image ]
+    # needs: [ tests, argoexec-image ]
     env:
       KUBECONFIG: /home/runner/.kubeconfig
     strategy:
@@ -110,6 +111,9 @@ jobs:
       - uses: actions/setup-go@v2
         with:
           go-version: "1.17"
+      - uses: actions/setup-java@v3
+        with:
+          java-version: '8'
       - uses: actions/cache@v3
         with:
           path: |

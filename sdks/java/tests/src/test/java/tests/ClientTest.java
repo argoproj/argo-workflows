@@ -2,22 +2,21 @@ package tests;
 
 
 import io.argoproj.workflow.ApiClient;
-import io.argoproj.workflow.ApiException;
 import io.argoproj.workflow.Configuration;
 import io.argoproj.workflow.apis.WorkflowServiceApi;
-import io.argoproj.workflow.models.IoArgoprojWorkflowV1alpha1WorkflowList;
 import org.junit.Test;
+
+import static org.junit.Assert.assertNotNull;
 
 public class ClientTest {
 
+    private final ApiClient defaultClient = Configuration.getDefaultApiClient();
+    private final WorkflowServiceApi apiInstance = new WorkflowServiceApi(defaultClient);
+
     @Test
-    public void testClient() throws ApiException {
-        ApiClient defaultClient = Configuration.getDefaultApiClient()
-                .setBasePath("http://localhost:2746");
-
-        WorkflowServiceApi apiInstance = new WorkflowServiceApi(defaultClient);
-
-        IoArgoprojWorkflowV1alpha1WorkflowList result = apiInstance.workflowServiceListWorkflows("argo",
+    public void testClient() throws Exception {
+        assertNotNull(apiInstance.workflowServiceListWorkflows(
+                "argo",
                 null,
                 null,
                 null,
@@ -28,7 +27,6 @@ public class ClientTest {
                 null,
                 null,
                 null
-        );
-        System.out.println(result);
+        ));
     }
 }
