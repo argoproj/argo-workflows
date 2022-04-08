@@ -167,6 +167,7 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [Zhihu](https://www.zhihu.com/)
 1. [Xueqiu](https://www.xueqiu.com/)
 1. [bimspot](https://bimspot.io)
+1. [Trendyol](https://trendyol.com)
 
 ### Projects Using Argo
 
