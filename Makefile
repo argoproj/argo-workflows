@@ -519,6 +519,10 @@ test-%:
 test-examples:
 	./hack/test-examples.sh
 
+.PHONY: test-%-sdk
+test-%-sdk:
+	make --directory sdks/$* test -B
+
 # clean
 
 .PHONY: clean

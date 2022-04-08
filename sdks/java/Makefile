@@ -70,3 +70,7 @@ generate:
 	# replace the generated pom.xml, because that has too many dependencies
 	sed 's/0.0.0-VERSION/$(VERSION)/' pom.xml > $(WD)/pom.xml
 
+.PHONY: test
+test:
+	mvn install -f client
+	mvn test -f tests
