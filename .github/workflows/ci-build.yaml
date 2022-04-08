@@ -148,8 +148,8 @@ jobs:
       - run: make install PROFILE=${{matrix.profile}} STATIC_FILES=false
       - run: make controller $(go env GOPATH)/bin/goreman STATIC_FILES=false
       - run: make cli STATIC_FILES=false
-        if: ${{matrix.test == 'test-api' || matrix.test == 'test-cli'}}
-      - run: make start PROFILE=${{matrix.profile}} AUTH_MODE=client STATIC_FILES=false LOG_LEVEL=info API=${{matrix.test == 'test-api' || matrix.test == 'test-cli'}} UI=false > /tmp/argo.log 2>&1 &
+        if: ${{matrix.test == 'test-java-sdk' || matrix.test == 'test-python-sdk'}}
+      - run: make start PROFILE=${{matrix.profile}} AUTH_MODE=client STATIC_FILES=false LOG_LEVEL=info API=${{matrix.test == 'test-api' || matrix.test == 'test-cli' || matrix.test == 'test-java-sdk' || matrix.test == 'test-python-sdk'}} UI=false > /tmp/argo.log 2>&1 &
       - run: make wait
         timeout-minutes: 4
       - run: make ${{matrix.test}} E2E_TIMEOUT=1m STATIC_FILES=false

@@ -32,7 +32,7 @@ generate:
 		-g java \
 		-o /wd \
 		-p hideGenerationTimestamp=true \
-		-p library=native \
+		-p serializationLibrary=jsonb \
 		-p dateLibrary=java8 \
 		--api-package io.argoproj.workflow.apis \
 		--invoker-package io.argoproj.workflow \
@@ -75,4 +75,5 @@ install:
 	mvn -f client install
 
 test:
-	mvn -f tests test
+	../../hack/access-token.sh init
+	env ARGO_TOKEN="`../../hack/access-token.sh get`" mvn -f tests test

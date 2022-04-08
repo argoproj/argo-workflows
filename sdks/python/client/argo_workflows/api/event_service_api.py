@@ -114,7 +114,9 @@ class EventServiceApi(object):
         self.list_workflow_event_bindings = _Endpoint(
             settings={
                 'response_type': (IoArgoprojWorkflowV1alpha1WorkflowEventBindingList,),
-                'auth': [],
+                'auth': [
+                    'BearerToken'
+                ],
                 'endpoint_path': '/api/v1/workflow-event-bindings/{namespace}',
                 'operation_id': 'list_workflow_event_bindings',
                 'http_method': 'GET',
@@ -283,7 +285,9 @@ class EventServiceApi(object):
         self.receive_event = _Endpoint(
             settings={
                 'response_type': (bool, date, datetime, dict, float, int, list, str, none_type,),
-                'auth': [],
+                'auth': [
+                    'BearerToken'
+                ],
                 'endpoint_path': '/api/v1/events/{namespace}/{discriminator}',
                 'operation_id': 'receive_event',
                 'http_method': 'POST',

@@ -1,3 +1,4 @@
+import os
 import unittest
 from pprint import pprint
 
@@ -13,6 +14,7 @@ from argo_workflows.model.io_argoproj_workflow_v1alpha1_workflow_spec import \
 from argo_workflows.model.object_meta import ObjectMeta
 
 configuration = argo_workflows.Configuration(host="http://127.0.0.1:2746")
+configuration.api_key['BearerToken'] = os.getenv("ARGO_TOKEN")
 
 
 class ClientTest(unittest.TestCase):
