@@ -152,7 +152,7 @@ The argo CLI provides a convenient way to override parameters used to invoke the
 argo submit arguments-parameters.yaml -p message="goodbye world"
 ```
 
-In case of multiple parameters that can be overriten, the argo CLI provides a command to load parameters files in YAML or JSON format. Here is an example of that kind of parameter file:
+In case of multiple parameters that can be overridden, the argo CLI provides a command to load parameters files in YAML or JSON format. Here is an example of that kind of parameter file:
 
 ```yaml
 message: goodbye world
