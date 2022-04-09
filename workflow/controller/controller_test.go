@@ -5,8 +5,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/argoproj/argo-workflows/v3/workflow/controller/entrypoint"
-
 	"github.com/argoproj/pkg/sync"
 	"github.com/stretchr/testify/assert"
 	authorizationv1 "k8s.io/api/authorization/v1"
@@ -34,6 +32,7 @@ import (
 	armocks "github.com/argoproj/argo-workflows/v3/workflow/artifactrepositories/mocks"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	controllercache "github.com/argoproj/argo-workflows/v3/workflow/controller/cache"
+	"github.com/argoproj/argo-workflows/v3/workflow/controller/entrypoint"
 	"github.com/argoproj/argo-workflows/v3/workflow/controller/estimation"
 	"github.com/argoproj/argo-workflows/v3/workflow/events"
 	hydratorfake "github.com/argoproj/argo-workflows/v3/workflow/hydrator/fake"
