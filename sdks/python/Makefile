@@ -9,8 +9,6 @@ WD := $(shell echo "`pwd`/client")
 DOCKER = docker run --rm -v $(WD):/wd --workdir /wd
 CHOWN = chown -R $(shell id -u):$(shell id -g)
 
-all: generate install test
-
 publish: generate
 	pip install setuptools twine build
 	python -m build --sdist --wheel --outdir client/dist/ client
