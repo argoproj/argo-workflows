@@ -1,3 +1,7 @@
+/client/.openapi-generator/
+/client/api/
+/client/src/
+/client/gradle/
 /client/.gitignore
 /client/.openapi-generator-ignore
 /client/.openapi-generator/
@@ -10,9 +14,4 @@
 /client/gradle
 /client/gradle.properties
 /client/gradlew
-/client/gradlew.bat
-/client/pom.xml
-/client/settings.gradle
-/client/settings.xml
-/client/swagger.json
-/client/target
+/client/*.*
