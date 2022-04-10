@@ -19,7 +19,7 @@
         "cron-parser": "^2.16.3",
         "cronstrue": "^1.125.0",
         "dagre": "^0.8.5",
-        "history": "^4.7.2",
+        "history": "^4.10.1",
         "js-yaml": "^3.13.1",
         "json-merge-patch": "^0.2.3",
         "moment": "^2.29.2",
