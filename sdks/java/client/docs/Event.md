@@ -12,10 +12,10 @@ Name | Type | Description | Notes
 **apiVersion** | **String** | APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources |  [optional]
 **count** | **Integer** | The number of times this event has occurred. |  [optional]
 **eventTime** | **OffsetDateTime** | MicroTime is version of Time with microsecond level precision. |  [optional]
-**firstTimestamp** | **java.time.Instant** |  |  [optional]
+**firstTimestamp** | **OffsetDateTime** | Time is a wrapper around time.Time which supports correct marshaling to YAML and JSON.  Wrappers are provided for many of the factory methods that the time package offers. |  [optional]
 **involvedObject** | [**io.kubernetes.client.openapi.models.V1ObjectReference**](io.kubernetes.client.openapi.models.V1ObjectReference.md) |  | 
 **kind** | **String** | Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds |  [optional]
-**lastTimestamp** | **java.time.Instant** |  |  [optional]
+**lastTimestamp** | **OffsetDateTime** | Time is a wrapper around time.Time which supports correct marshaling to YAML and JSON.  Wrappers are provided for many of the factory methods that the time package offers. |  [optional]
 **message** | **String** | A human-readable description of the status of this operation. |  [optional]
 **metadata** | [**io.kubernetes.client.openapi.models.V1ObjectMeta**](io.kubernetes.client.openapi.models.V1ObjectMeta.md) |  | 
 **reason** | **String** | This should be a short, machine understandable string that gives the reason for the transition into the object&#39;s current status. |  [optional]

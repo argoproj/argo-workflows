@@ -32,6 +32,7 @@ generate:
 		-g java \
 		-o /wd \
 		-p hideGenerationTimestamp=true \
+		-p serializationLibrary=jsonb \
 		-p dateLibrary=java8 \
 		--api-package io.argoproj.workflow.apis \
 		--invoker-package io.argoproj.workflow \

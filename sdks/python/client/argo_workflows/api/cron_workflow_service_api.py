@@ -115,7 +115,9 @@ class CronWorkflowServiceApi(object):
         self.create_cron_workflow = _Endpoint(
             settings={
                 'response_type': (IoArgoprojWorkflowV1alpha1CronWorkflow,),
-                'auth': [],
+                'auth': [
+                    'BearerToken'
+                ],
                 'endpoint_path': '/api/v1/cron-workflows/{namespace}',
                 'operation_id': 'create_cron_workflow',
                 'http_method': 'POST',
@@ -248,7 +250,9 @@ class CronWorkflowServiceApi(object):
         self.delete_cron_workflow = _Endpoint(
             settings={
                 'response_type': (bool, date, datetime, dict, float, int, list, str, none_type,),
-                'auth': [],
+                'auth': [
+                    'BearerToken'
+                ],
                 'endpoint_path': '/api/v1/cron-workflows/{namespace}/{name}',
                 'operation_id': 'delete_cron_workflow',
                 'http_method': 'DELETE',
@@ -406,7 +410,9 @@ class CronWorkflowServiceApi(object):
         self.get_cron_workflow = _Endpoint(
             settings={
                 'response_type': (IoArgoprojWorkflowV1alpha1CronWorkflow,),
-                'auth': [],
+                'auth': [
+                    'BearerToken'
+                ],
                 'endpoint_path': '/api/v1/cron-workflows/{namespace}/{name}',
                 'operation_id': 'get_cron_workflow',
                 'http_method': 'GET',
@@ -537,7 +543,9 @@ class CronWorkflowServiceApi(object):
         self.lint_cron_workflow = _Endpoint(
             settings={
                 'response_type': (IoArgoprojWorkflowV1alpha1CronWorkflow,),
-                'auth': [],
+                'auth': [
+                    'BearerToken'
+                ],
                 'endpoint_path': '/api/v1/cron-workflows/{namespace}/lint',
                 'operation_id': 'lint_cron_workflow',
                 'http_method': 'POST',
@@ -669,7 +677,9 @@ class CronWorkflowServiceApi(object):
         self.list_cron_workflows = _Endpoint(
             settings={
                 'response_type': (IoArgoprojWorkflowV1alpha1CronWorkflowList,),
-                'auth': [],
+                'auth': [
+                    'BearerToken'
+                ],
                 'endpoint_path': '/api/v1/cron-workflows/{namespace}',
                 'operation_id': 'list_cron_workflows',
                 'http_method': 'GET',
@@ -838,7 +848,9 @@ class CronWorkflowServiceApi(object):
         self.resume_cron_workflow = _Endpoint(
             settings={
                 'response_type': (IoArgoprojWorkflowV1alpha1CronWorkflow,),
-                'auth': [],
+                'auth': [
+                    'BearerToken'
+                ],
                 'endpoint_path': '/api/v1/cron-workflows/{namespace}/{name}/resume',
                 'operation_id': 'resume_cron_workflow',
                 'http_method': 'PUT',
@@ -975,7 +987,9 @@ class CronWorkflowServiceApi(object):
         self.suspend_cron_workflow = _Endpoint(
             settings={
                 'response_type': (IoArgoprojWorkflowV1alpha1CronWorkflow,),
-                'auth': [],
+                'auth': [
+                    'BearerToken'
+                ],
                 'endpoint_path': '/api/v1/cron-workflows/{namespace}/{name}/suspend',
                 'operation_id': 'suspend_cron_workflow',
                 'http_method': 'PUT',
@@ -1112,7 +1126,9 @@ class CronWorkflowServiceApi(object):
         self.update_cron_workflow = _Endpoint(
             settings={
                 'response_type': (IoArgoprojWorkflowV1alpha1CronWorkflow,),
-                'auth': [],
+                'auth': [
+                    'BearerToken'
+                ],
                 'endpoint_path': '/api/v1/cron-workflows/{namespace}/{name}',
                 'operation_id': 'update_cron_workflow',
                 'http_method': 'PUT',
