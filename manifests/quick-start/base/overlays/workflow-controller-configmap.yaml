@@ -7,7 +7,7 @@ data:
         memory: 64Mi
   images: |
     docker/whalesay:latest:
-       command: [cowsay]
+       cmd: [cowsay]
   artifactRepository: |
     s3:
       bucket: my-bucket

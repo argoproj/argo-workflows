@@ -1176,7 +1176,7 @@ data:
         memory: 64Mi
   images: |
     docker/whalesay:latest:
-       command: [cowsay]
+       cmd: [cowsay]
   links: |
     - name: Workflow Link
       scope: workflow
