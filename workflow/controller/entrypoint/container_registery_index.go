@@ -35,13 +35,10 @@ func (i *containerRegistryIndex) Lookup(ctx context.Context, image string, optio
 	if err != nil {
 		return nil, err
 	}
-	cmd := &Image{}
-	if len(f.Config.Entrypoint) > 0 {
-		cmd.Cmd = f.Config.Entrypoint
-	} else {
-		cmd.Cmd = f.Config.Cmd
-	}
-	return cmd, nil
+	return &Image{
+		Entrypoint: f.Config.Entrypoint,
+		Cmd:        f.Config.Cmd,
+	}, nil
 }
 
 func imagePullSecretNames(secrets []v1.LocalObjectReference) []string {
