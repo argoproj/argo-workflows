@@ -20,7 +20,7 @@ jobs:
     timeout-minutes: 8
     steps:
       - uses: actions/checkout@v3
-      - uses: actions/setup-go@v2
+      - uses: actions/setup-go@v3
         with:
           go-version: "1.17"
       # https://github.com/actions/cache/blob/main/examples.md#go---modules
@@ -103,7 +103,7 @@ jobs:
             profile: minimal
     steps:
       - uses: actions/checkout@v3
-      - uses: actions/setup-go@v2
+      - uses: actions/setup-go@v3
         with:
           go-version: "1.17"
       - uses: actions/cache@v3
@@ -155,7 +155,7 @@ jobs:
       GOPATH: /home/runner/go
     steps:
       - uses: actions/checkout@v3
-      - uses: actions/setup-go@v2
+      - uses: actions/setup-go@v3
         with:
           go-version: "1.17"
       - uses: actions/cache@v3
