@@ -62,7 +62,7 @@ jobs:
             --output=type=docker \
             .
       - run: docker save quay.io/argoproj/argoexec:latest > /tmp/argoexec_image.tar
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         with:
           name: argoexec
           path: /tmp/argoexec_image.tar
