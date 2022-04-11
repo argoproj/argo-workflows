@@ -20,7 +20,7 @@ jobs:
     timeout-minutes: 8
     steps:
       - uses: actions/checkout@v3
-      - uses: actions/setup-go@v2
+      - uses: actions/setup-go@v3
         with:
           go-version: "1.17"
       # https://github.com/actions/cache/blob/main/examples.md#go---modules
@@ -62,7 +62,7 @@ jobs:
             --output=type=docker \
             .
       - run: docker save quay.io/argoproj/argoexec:latest > /tmp/argoexec_image.tar
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         with:
           name: argoexec
           path: /tmp/argoexec_image.tar
@@ -103,7 +103,7 @@ jobs:
             profile: minimal
     steps:
       - uses: actions/checkout@v3
-      - uses: actions/setup-go@v2
+      - uses: actions/setup-go@v3
         with:
           go-version: "1.17"
       - uses: actions/cache@v3
@@ -123,7 +123,7 @@ jobs:
           echo "  user:" >> $KUBECONFIG
           echo "    token: xxxxxx" >> $KUBECONFIG
           until kubectl cluster-info ; do sleep 10s ; done
-      - uses: actions/download-artifact@v2
+      - uses: actions/download-artifact@v3
         with:
           name: argoexec
           path: /tmp
@@ -155,7 +155,7 @@ jobs:
       GOPATH: /home/runner/go
     steps:
       - uses: actions/checkout@v3
-      - uses: actions/setup-go@v2
+      - uses: actions/setup-go@v3
         with:
           go-version: "1.17"
       - uses: actions/cache@v3

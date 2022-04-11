@@ -65,12 +65,9 @@
         "responses": {
           "200": {
             "description": "An artifact file.",
-            "content": {
-              "text/plain": {
-                "schema": {
-                  "type": "string"
-                }
-              }
+            "schema": {
+              "type": "string",
+              "format": "binary"
             }
           },
           "default": {
@@ -119,10 +116,9 @@
           "200": {
             "description": "An artifact file.",
             "content": {
-              "text/plain": {
-                "schema": {
-                  "type": "string"
-                }
+              "schema": {
+                "type": "string",
+                "format": "binary"
               }
             }
           },
@@ -166,10 +162,9 @@
           "200": {
             "description": "An artifact file.",
             "content": {
-              "text/plain": {
-                "schema": {
-                  "type": "string"
-                }
+              "schema": {
+                "type": "string",
+                "format": "binary"
               }
             }
           },
@@ -218,12 +213,9 @@
         "responses": {
           "200": {
             "description": "An artifact file.",
-            "content": {
-              "text/plain": {
-                "schema": {
-                  "type": "string"
-                }
-              }
+            "schema": {
+              "type": "string",
+              "format": "binary"
             }
           },
           "default": {
