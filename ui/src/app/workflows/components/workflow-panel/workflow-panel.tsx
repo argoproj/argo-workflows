@@ -8,9 +8,8 @@ import {WorkflowDag} from '../workflow-dag/workflow-dag';
 interface Props {
     workflowMetadata: ObjectMeta;
     workflowStatus: WorkflowStatus;
-    showArtifacts: boolean;
     selectedNodeId: string;
-    nodeClicked: (nodedId: string) => void;
+    nodeClicked: (nodeId: string) => void;
 }
 
 export class WorkflowPanel extends React.Component<Props> {
@@ -30,7 +29,6 @@ export class WorkflowPanel extends React.Component<Props> {
                 workflowName={this.props.workflowMetadata.name}
                 nodes={this.props.workflowStatus.nodes}
                 artifactRepositoryRef={this.props.workflowStatus.artifactRepositoryRef}
-                showArtifacts={this.props.showArtifacts}
                 selectedNodeId={this.props.selectedNodeId}
                 nodeClicked={this.props.nodeClicked}
             />

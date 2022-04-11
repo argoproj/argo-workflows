@@ -124,6 +124,7 @@ WORKDIR /home/argo
 
 COPY hack/ssh_known_hosts /etc/ssh/
 COPY hack/nsswitch.conf /etc/
+COPY --from=argocli-build /etc/mime.types /etc/
 COPY --from=argocli-build /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 COPY --from=argocli-build /go/src/github.com/argoproj/argo-workflows/dist/argo /bin/
 

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"mime"
 	"net/http"
 	"os"
 	"path"
@@ -214,13 +215,34 @@ func (a *ArtifactServer) returnArtifact(ctx context.Context, w http.ResponseWrit
 	if err != nil {
 		return err
 	}
-
 	contentLength := strconv.FormatInt(stats.Size(), 10)
-	log.WithFields(log.Fields{"size": contentLength}).Debug("Artifact file size")
+
+	// Only the first 512 bytes are used to sniff the content type.
+	buffer := make([]byte, 512)
+	_, err = file.Read(buffer)
+	if err != nil {
+		return err
+	}
+
+	_, err = file.Seek(0, 0)
+	if err != nil {
+		return err
+	}
+
+	contentType := http.DetectContentType(buffer)
 
 	key, _ := art.GetKey()
+	if contentType == "application/octet-stream" {
+		v := mime.TypeByExtension(filepath.Ext(key))
+		if v != "" {
+			contentType = v
+		}
+	}
+
+	log.WithFields(log.Fields{"size": contentLength, "contentType": contentType}).Debug("Artifact file size")
+
 	w.Header().Add("Content-Disposition", fmt.Sprintf(`filename="%s"`, path.Base(key)))
-	w.WriteHeader(200)
+	w.Header().Add("Content-Tye", contentType)
 
 	http.ServeContent(w, r, "", time.Time{}, file)
 

@@ -1,6 +1,6 @@
 import * as React from 'react';
 
-import {Artifact, ArtifactRepositoryRefStatus, NODE_PHASE, NodeStatus} from '../../../../models';
+import {Artifact, ArtifactRepository, ArtifactRepositoryRefStatus, NODE_PHASE, NodeStatus} from '../../../../models';
 import {GraphPanel} from '../../../shared/components/graph/graph-panel';
 import {Graph} from '../../../shared/components/graph/types';
 import {Utils} from '../../../shared/utils';
@@ -15,13 +15,12 @@ export interface WorkflowDagRenderOptions {
 
 interface WorkflowDagProps {
     workflowName: string;
-    showArtifacts: boolean;
     artifactRepositoryRef?: ArtifactRepositoryRefStatus;
     nodes: {[nodeId: string]: NodeStatus};
     selectedNodeId?: string;
     nodeSize?: number;
     hideOptions?: boolean;
-    nodeClicked?: (nodeId: string) => any;
+    nodeClicked?: (nodeId: string) => void;
 }
 
 function progress(n: NodeStatus) {
@@ -58,6 +57,44 @@ const classNames = (() => {
 })();
 
 export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRenderOptions> {
+    private get artifactRepository() {
+        return this.props.artifactRepositoryRef?.artifactRepository || {};
+    }
+
+    public static artifactDescription(a: Artifact, ar: ArtifactRepository) {
+        let id = 'unknown';
+        let label = 'unknown';
+        if (a.gcs) {
+            label = a.gcs.key;
+            id = 'artifact:gcs:' + (a.gcs.endpoint || ar.gcs?.endpoint) + ':' + (a.gcs.bucket || ar.gcs?.bucket) + ':' + label;
+        }
+        if (a.git) {
+            const revision = a.git.revision || 'HEAD';
+            label = a.git.repo + '#' + revision;
+            id = 'artifact:git:' + a.git.repo + ':' + revision;
+        }
+        if (a.http) {
+            label = a.http.url;
+            id = 'artifact:http::' + a.http.url;
+        }
+        if (a.s3) {
+            label = a.s3.key;
+            id = 'artifact:s3:' + (a.s3.endpoint || ar.s3.endpoint) + ':' + (a.s3?.bucket || ar.s3?.bucket) + ':' + label;
+        }
+        if (a.oss) {
+            label = a.oss.key;
+            id = 'artifact:oss:' + (a.oss.endpoint || ar.oss?.endpoint) + ':' + (a.oss.bucket || ar.oss?.bucket) + ':' + label;
+        }
+        if (a.raw) {
+            label = 'raw';
+            id = 'artifact:raw:' + a.raw.data;
+        }
+        return {
+            id,
+            label,
+            name: a.name
+        };
+    }
     private graph: Graph;
 
     constructor(props: Readonly<WorkflowDagProps>) {
@@ -239,74 +276,37 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
             traverse(onExitRoot);
         }
 
-        if (this.props.showArtifacts) {
-            Object.values(this.props.nodes)
-                .filter(node => nodes.has(node.id))
-                .forEach(node => {
-                    (node.inputs?.artifacts || [])
-                        .map(a => this.generifyArtifact(a))
-                        .forEach(a => {
-                            nodes.set(a.id, a.label);
-                            edges.set(
-                                {v: a.id, w: node.id},
-                                {
-                                    label: a.name
-                                }
-                            );
-                        });
-                    (node.outputs?.artifacts || [])
-                        .filter(a => !a.name.endsWith('-logs'))
-                        .map(a => this.generifyArtifact(a))
-                        .forEach(a => {
-                            nodes.set(a.id, a.label);
-                            edges.set({v: node.id, w: a.id}, {label: a.name});
-                        });
-                });
-        }
+        Object.values(this.props.nodes)
+            .filter(node => nodes.has(node.id))
+            .forEach(node => {
+                (node.inputs?.artifacts || [])
+                    .map(a => this.artifactLabel(a))
+                    .forEach(a => {
+                        nodes.set(a.id, a.label);
+                        edges.set({v: a.id, w: node.id}, {label: a.name});
+                    });
+                (node.outputs?.artifacts || [])
+                    .filter(a => !a.name.endsWith('-logs'))
+                    .map(a => this.artifactLabel(a))
+                    .forEach(a => {
+                        nodes.set(a.id, a.label);
+                        edges.set({v: node.id, w: a.id}, {label: a.name});
+                    });
+            });
     }
 
-    private generifyArtifact(a: Artifact) {
-        let id = 'unknown';
-        let label = 'unknown';
-        if (a.gcs) {
-            label = a.gcs.key;
-            id = 'artifact:gcs:' + (a.gcs.endpoint || this.artifactRepository.gcs?.endpoint) + ':' + (a.gcs.bucket || this.artifactRepository.gcs?.bucket) + ':' + label;
-        }
-        if (a.git) {
-            const revision = a.git.revision || 'HEAD';
-            label = a.git.repo + '#' + revision;
-            id = 'artifact:git:' + a.git.repo + ':' + revision;
-        }
-        if (a.http) {
-            label = a.http.url;
-            id = 'artifact:http::' + a.http.url;
-        }
-        if (a.s3) {
-            label = a.s3.key;
-            id = 'artifact:s3:' + (a.s3.endpoint || this.artifactRepository.s3.endpoint) + ':' + (a.s3?.bucket || this.artifactRepository.s3?.bucket) + ':' + label;
-        }
-        if (a.oss) {
-            label = a.oss.key;
-            id = 'artifact:oss:' + (a.oss.endpoint || this.artifactRepository.oss?.endpoint) + ':' + (a.oss.bucket || this.artifactRepository.oss?.bucket) + ':' + label;
-        }
-        if (a.raw) {
-            label = 'raw';
-            id = 'artifact:raw:' + a.raw.data;
-        }
+    private artifactLabel(a: Artifact) {
+        const d = WorkflowDag.artifactDescription(a, this.artifactRepository);
         return {
-            id,
-            name: a.name,
+            id: d.id,
+            name: d.name,
             label: {
                 genre: 'Artifact',
-                label,
+                label: d.label,
                 icon: icons.Artifact,
                 classNames: 'Artifact'
             }
         };
-    }
-
-    private get artifactRepository() {
-        return this.props.artifactRepositoryRef?.artifactRepository || {};
     }
 
     private selectNode(nodeId: string) {

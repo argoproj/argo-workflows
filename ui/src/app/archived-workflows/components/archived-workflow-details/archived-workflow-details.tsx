@@ -67,14 +67,6 @@ export class ArchivedWorkflowDetails extends BasePage<RouteComponentProps<any>, 
         this.setQueryParams({sidePanel});
     }
 
-    private get showArtifacts() {
-        return this.queryParam('showArtifacts') === 'true';
-    }
-
-    private set showArtifacts(showArtifacts: boolean) {
-        this.setQueryParams({showArtifacts});
-    }
-
     constructor(props: RouteComponentProps<any>, context: any) {
         super(props, context);
         this.state = {};
@@ -115,11 +107,6 @@ export class ArchivedWorkflowDetails extends BasePage<RouteComponentProps<any>, 
                 iconClassName: 'fa fa-trash',
                 disabled: false,
                 action: () => this.deleteArchivedWorkflow()
-            },
-            {
-                title: 'Artifacts',
-                iconClassName: this.showArtifacts ? 'fa fa-toggle-on' : 'fa fa-toggle-off',
-                action: () => (this.showArtifacts = !this.showArtifacts)
             }
         ];
         if (this.state.links) {
@@ -204,7 +191,6 @@ export class ArchivedWorkflowDetails extends BasePage<RouteComponentProps<any>, 
                                 <WorkflowPanel
                                     workflowMetadata={this.state.workflow.metadata}
                                     workflowStatus={this.state.workflow.status}
-                                    showArtifacts={this.showArtifacts}
                                     selectedNodeId={this.nodeId}
                                     nodeClicked={nodeId => (this.nodeId = nodeId)}
                                 />

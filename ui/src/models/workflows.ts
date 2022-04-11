@@ -103,6 +103,8 @@ export interface Artifact {
      * Path is the container path to the artifact
      */
     path?: string;
+
+    archive?: {none?: any};
 }
 
 /**

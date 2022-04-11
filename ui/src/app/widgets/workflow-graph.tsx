@@ -65,7 +65,6 @@ export const WorkflowGraph = ({history, match}: RouteComponentProps<any>) => {
                 nodeClicked={nodeId => window.open(uiUrl(`workflows/${namespace}/${displayName}?nodeId=${nodeId}`), target)}
                 workflowName={displayName}
                 artifactRepositoryRef={artifactRepositoryRef}
-                showArtifacts={false}
                 nodes={nodes || {}}
                 hideOptions={!showOptions}
                 nodeSize={nodeSize}
