@@ -116,7 +116,9 @@ class ArtifactServiceApi(object):
         self.get_input_artifact = _Endpoint(
             settings={
                 'response_type': None,
-                'auth': [],
+                'auth': [
+                    'BearerToken'
+                ],
                 'endpoint_path': '/input-artifacts/{namespace}/{name}/{nodeId}/{artifactName}',
                 'operation_id': 'get_input_artifact',
                 'http_method': 'GET',
@@ -262,7 +264,9 @@ class ArtifactServiceApi(object):
         self.get_input_artifact_by_uid = _Endpoint(
             settings={
                 'response_type': (file_type,),
-                'auth': [],
+                'auth': [
+                    'BearerToken'
+                ],
                 'endpoint_path': '/input-artifacts-by-uid/{uid}/{nodeId}/{artifactName}',
                 'operation_id': 'get_input_artifact_by_uid',
                 'http_method': 'GET',
@@ -408,7 +412,9 @@ class ArtifactServiceApi(object):
         self.get_output_artifact = _Endpoint(
             settings={
                 'response_type': (file_type,),
-                'auth': [],
+                'auth': [
+                    'BearerToken'
+                ],
                 'endpoint_path': '/artifacts/{namespace}/{name}/{nodeId}/{artifactName}',
                 'operation_id': 'get_output_artifact',
                 'http_method': 'GET',
@@ -550,7 +556,9 @@ class ArtifactServiceApi(object):
         self.get_output_artifact_by_uid = _Endpoint(
             settings={
                 'response_type': None,
-                'auth': [],
+                'auth': [
+                    'BearerToken'
+                ],
                 'endpoint_path': '/artifacts-by-uid/{uid}/{nodeId}/{artifactName}',
                 'operation_id': 'get_output_artifact_by_uid',
                 'http_method': 'GET',

@@ -15679,12 +15679,13 @@
     "BearerToken": {
       "description": "Bearer Token authentication",
       "type": "apiKey",
-      "name": "authorization",
+      "name": "Authorization",
       "in": "header"
-    },
-    "HTTPBasic": {
-      "description": "HTTP Basic authentication",
-      "type": "basic"
     }
-  }
+  },
+  "security": [
+    {
+      "BearerToken": []
+    }
+  ]
 }
