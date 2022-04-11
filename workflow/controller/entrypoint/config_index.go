@@ -13,7 +13,7 @@ func (c configIndex) Lookup(ctx context.Context, image string, options Options) 
 	if !ok {
 		return nil, nil
 	}
-	return &Image{Command: v.Command, Args: v.Args}, nil
+	return &Image{Cmd: v.Cmd, Entrypoint: v.Entrypoint}, nil
 }
 
 var _ Interface = &configIndex{}

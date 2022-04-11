@@ -37,9 +37,9 @@ func (i *containerRegistryIndex) Lookup(ctx context.Context, image string, optio
 	}
 	cmd := &Image{}
 	if len(f.Config.Entrypoint) > 0 {
-		cmd.Command = f.Config.Entrypoint
+		cmd.Cmd = f.Config.Entrypoint
 	} else {
-		cmd.Command = f.Config.Cmd
+		cmd.Cmd = f.Config.Cmd
 	}
 	return cmd, nil
 }

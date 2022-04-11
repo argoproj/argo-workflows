@@ -21,8 +21,8 @@ type Options struct {
 }
 
 type Image struct {
-	Command []string
-	Args    []string
+	Entrypoint []string
+	Cmd        []string
 }
 
 func New(kubernetesClient kubernetes.Interface, config map[string]config.Image) Interface {

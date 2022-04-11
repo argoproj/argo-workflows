@@ -173,12 +173,12 @@ func newController(options ...interface{}) (context.CancelFunc, *WorkflowControl
 		Config: config.Config{
 			Images: map[string]config.Image{
 				"my-image": {
-					Command: []string{"my-cmd"},
-					Args:    []string{"my-args"},
+					Entrypoint: []string{"my-entrypoint"},
+					Cmd:        []string{"my-cmd"},
 				},
-				"argoproj/argosay:v2":    {Command: []string{""}},
-				"docker/whalesay:latest": {Command: []string{""}},
-				"busybox":                {Command: []string{""}},
+				"argoproj/argosay:v2":    {Cmd: []string{""}},
+				"docker/whalesay:latest": {Cmd: []string{""}},
+				"busybox":                {Cmd: []string{""}},
 			},
 		},
 		artifactRepositories: armocks.DummyArtifactRepositories(&wfv1.ArtifactRepository{
