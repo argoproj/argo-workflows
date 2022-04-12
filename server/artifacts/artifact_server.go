@@ -67,7 +67,7 @@ func (a *ArtifactServer) getArtifact(w http.ResponseWriter, r *http.Request, isI
 
 	ctx, err := a.gateKeeping(r, types.NamespaceHolder(namespace))
 	if err != nil {
-		a.unauthorizedError(err, w)
+		a.unauthorizedError(w)
 		return
 	}
 
@@ -114,14 +114,14 @@ func (a *ArtifactServer) getArtifactByUID(w http.ResponseWriter, r *http.Request
 
 	ctx, err := a.gateKeeping(r, types.NamespaceHolder(wf.GetNamespace()))
 	if err != nil {
-		a.unauthorizedError(err, w)
+		a.unauthorizedError(w)
 		return
 	}
 
 	// return 401 if the client does not have permission to get wf
 	err = a.validateAccess(ctx, wf)
 	if err != nil {
-		a.unauthorizedError(err, w)
+		a.unauthorizedError(w)
 		return
 	}
 
@@ -150,9 +150,8 @@ func (a *ArtifactServer) gateKeeping(r *http.Request, ns types.NamespacedRequest
 	return a.gatekeeper.ContextWithRequest(ctx, ns)
 }
 
-func (a *ArtifactServer) unauthorizedError(err error, w http.ResponseWriter) {
+func (a *ArtifactServer) unauthorizedError(w http.ResponseWriter) {
 	w.WriteHeader(401)
-	_, _ = w.Write([]byte(err.Error()))
 }
 
 func (a *ArtifactServer) serverInternalError(err error, w http.ResponseWriter) {
