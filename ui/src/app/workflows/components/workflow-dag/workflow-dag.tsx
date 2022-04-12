@@ -1,6 +1,7 @@
 import * as React from 'react';
 
-import {Artifact, ArtifactRepository, ArtifactRepositoryRefStatus, NODE_PHASE, NodeStatus} from '../../../../models';
+import {ArtifactRepositoryRefStatus, NODE_PHASE, NodeStatus} from '../../../../models';
+import {artifactDescription, nodeArtifacts} from '../../../shared/artifacts';
 import {GraphPanel} from '../../../shared/components/graph/graph-panel';
 import {Graph} from '../../../shared/components/graph/types';
 import {Utils} from '../../../shared/utils';
@@ -61,40 +62,6 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
         return this.props.artifactRepositoryRef?.artifactRepository || {};
     }
 
-    public static artifactDescription(a: Artifact, ar: ArtifactRepository) {
-        let id = 'unknown';
-        let label = 'unknown';
-        if (a.gcs) {
-            label = a.gcs.key;
-            id = 'artifact:gcs:' + (a.gcs.endpoint || ar.gcs?.endpoint) + ':' + (a.gcs.bucket || ar.gcs?.bucket) + ':' + label;
-        }
-        if (a.git) {
-            const revision = a.git.revision || 'HEAD';
-            label = a.git.repo + '#' + revision;
-            id = 'artifact:git:' + a.git.repo + ':' + revision;
-        }
-        if (a.http) {
-            label = a.http.url;
-            id = 'artifact:http::' + a.http.url;
-        }
-        if (a.s3) {
-            label = a.s3.key;
-            id = 'artifact:s3:' + (a.s3.endpoint || ar.s3.endpoint) + ':' + (a.s3?.bucket || ar.s3?.bucket) + ':' + label;
-        }
-        if (a.oss) {
-            label = a.oss.key;
-            id = 'artifact:oss:' + (a.oss.endpoint || ar.oss?.endpoint) + ':' + (a.oss.bucket || ar.oss?.bucket) + ':' + label;
-        }
-        if (a.raw) {
-            label = 'raw';
-            id = 'artifact:raw:' + a.raw.data;
-        }
-        return {
-            id,
-            label,
-            name: a.name
-        };
-    }
     private graph: Graph;
 
     constructor(props: Readonly<WorkflowDagProps>) {
@@ -279,34 +246,19 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
         Object.values(this.props.nodes)
             .filter(node => nodes.has(node.id))
             .forEach(node => {
-                (node.inputs?.artifacts || [])
-                    .map(a => this.artifactLabel(a))
-                    .forEach(a => {
-                        nodes.set(a.id, a.label);
-                        edges.set({v: a.id, w: node.id}, {label: a.name});
-                    });
-                (node.outputs?.artifacts || [])
-                    .filter(a => !a.name.endsWith('-logs'))
-                    .map(a => this.artifactLabel(a))
-                    .forEach(a => {
-                        nodes.set(a.id, a.label);
-                        edges.set({v: node.id, w: a.id}, {label: a.name});
+                nodeArtifacts(node)
+                    .filter(({name}) => !name.endsWith('-logs'))
+                    .map(a => ({...artifactDescription(a, this.artifactRepository)}))
+                    .forEach(ad => {
+                        nodes.set(ad.urn, {
+                            genre: 'Artifact',
+                            label: ad.desc,
+                            icon: icons.Artifact,
+                            classNames: 'Artifact'
+                        });
+                        edges.set({v: ad.input ? ad.urn : node.id, w: ad.input ? node.id : ad.urn}, {label: ad.name});
                     });
             });
-    }
-
-    private artifactLabel(a: Artifact) {
-        const d = WorkflowDag.artifactDescription(a, this.artifactRepository);
-        return {
-            id: d.id,
-            name: d.name,
-            label: {
-                genre: 'Artifact',
-                label: d.label,
-                icon: icons.Artifact,
-                classNames: 'Artifact'
-            }
-        };
     }
 
     private selectNode(nodeId: string) {

@@ -5,6 +5,7 @@ import {useContext, useEffect, useState} from 'react';
 import {RouteComponentProps} from 'react-router';
 import {execSpec, Link, NodeStatus, Workflow} from '../../../../models';
 import {ANNOTATION_KEY_POD_NAME_VERSION} from '../../../shared/annotations';
+import {findArtifact} from '../../../shared/artifacts';
 import {uiUrl} from '../../../shared/base';
 import {CostOptimisationNudge} from '../../../shared/components/cost-optimisation-nudge';
 import {ErrorNotice} from '../../../shared/components/error-notice';
@@ -272,7 +273,7 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
     const selectedNode = workflow && workflow.status && workflow.status.nodes && workflow.status.nodes[nodeId];
     const podName = ensurePodName(workflow, selectedNode, nodeId);
 
-    const selectedArtifact = nodeId && nodeId.startsWith('artifact:') && nodeId;
+    const selectedArtifact = workflow && workflow.status && findArtifact(workflow.status, nodeId);
 
     return (
         <Page
@@ -335,7 +336,7 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
                                         onResume={() => renderResumePopup()}
                                     />
                                 )}
-                                {selectedArtifact && <ArtifactPanel workflow={workflow} selectedArtifact={selectedArtifact} />}
+                                {selectedArtifact && <ArtifactPanel workflow={workflow} artifact={selectedArtifact} />}
                             </div>
                         </div>
                     ))}
