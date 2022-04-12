@@ -20,8 +20,8 @@ jobs:
           python-version: 3.9
       - uses: actions/setup-go@v3
         with:
-          go-version: '1.17'
-      - run: pip install jinja2==3.0.0 mkdocs==1.2.3 mkdocs_material==8.1.9
+          go-version: '1.18'
+      - run: pip install mkdocs==1.2.4 mkdocs_material==8.1.9
       - run: mkdocs build
       - run: make parse-examples
       - uses: peaceiris/actions-gh-pages@v2.9.0

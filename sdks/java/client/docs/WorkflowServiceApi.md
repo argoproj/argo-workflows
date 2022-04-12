@@ -35,6 +35,7 @@ Method | HTTP request | Description
 import io.argoproj.workflow.ApiClient;
 import io.argoproj.workflow.ApiException;
 import io.argoproj.workflow.Configuration;
+import io.argoproj.workflow.auth.*;
 import io.argoproj.workflow.models.*;
 import io.argoproj.workflow.apis.WorkflowServiceApi;
 
@@ -42,6 +43,12 @@ public class Example {
   public static void main(String[] args) {
     ApiClient defaultClient = Configuration.getDefaultApiClient();
     defaultClient.setBasePath("http://localhost:2746");
+    
+    // Configure API key authorization: BearerToken
+    ApiKeyAuth BearerToken = (ApiKeyAuth) defaultClient.getAuthentication("BearerToken");
+    BearerToken.setApiKey("YOUR API KEY");
+    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
+    //BearerToken.setApiKeyPrefix("Token");
 
     WorkflowServiceApi apiInstance = new WorkflowServiceApi(defaultClient);
     String namespace = "namespace_example"; // String | 
@@ -73,7 +80,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-No authorization required
+[BearerToken](../README.md#BearerToken)
 
 ### HTTP request headers
 
@@ -98,6 +105,7 @@ No authorization required
 import io.argoproj.workflow.ApiClient;
 import io.argoproj.workflow.ApiException;
 import io.argoproj.workflow.Configuration;
+import io.argoproj.workflow.auth.*;
 import io.argoproj.workflow.models.*;
 import io.argoproj.workflow.apis.WorkflowServiceApi;
 
@@ -105,6 +113,12 @@ public class Example {
   public static void main(String[] args) {
     ApiClient defaultClient = Configuration.getDefaultApiClient();
     defaultClient.setBasePath("http://localhost:2746");
+    
+    // Configure API key authorization: BearerToken
+    ApiKeyAuth BearerToken = (ApiKeyAuth) defaultClient.getAuthentication("BearerToken");
+    BearerToken.setApiKey("YOUR API KEY");
+    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
+    //BearerToken.setApiKeyPrefix("Token");
 
     WorkflowServiceApi apiInstance = new WorkflowServiceApi(defaultClient);
     String namespace = "namespace_example"; // String | 
@@ -148,7 +162,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-No authorization required
+[BearerToken](../README.md#BearerToken)
 
 ### HTTP request headers
 
@@ -173,6 +187,7 @@ No authorization required
 import io.argoproj.workflow.ApiClient;
 import io.argoproj.workflow.ApiException;
 import io.argoproj.workflow.Configuration;
+import io.argoproj.workflow.auth.*;
 import io.argoproj.workflow.models.*;
 import io.argoproj.workflow.apis.WorkflowServiceApi;
 
@@ -180,6 +195,12 @@ public class Example {
   public static void main(String[] args) {
     ApiClient defaultClient = Configuration.getDefaultApiClient();
     defaultClient.setBasePath("http://localhost:2746");
+    
+    // Configure API key authorization: BearerToken
+    ApiKeyAuth BearerToken = (ApiKeyAuth) defaultClient.getAuthentication("BearerToken");
+    BearerToken.setApiKey("YOUR API KEY");
+    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
+    //BearerToken.setApiKeyPrefix("Token");
 
     WorkflowServiceApi apiInstance = new WorkflowServiceApi(defaultClient);
     String namespace = "namespace_example"; // String | 
@@ -215,7 +236,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-No authorization required
+[BearerToken](../README.md#BearerToken)
 
 ### HTTP request headers
 
@@ -240,6 +261,7 @@ No authorization required
 import io.argoproj.workflow.ApiClient;
 import io.argoproj.workflow.ApiException;
 import io.argoproj.workflow.Configuration;
+import io.argoproj.workflow.auth.*;
 import io.argoproj.workflow.models.*;
 import io.argoproj.workflow.apis.WorkflowServiceApi;
 
@@ -247,6 +269,12 @@ public class Example {
   public static void main(String[] args) {
     ApiClient defaultClient = Configuration.getDefaultApiClient();
     defaultClient.setBasePath("http://localhost:2746");
+    
+    // Configure API key authorization: BearerToken
+    ApiKeyAuth BearerToken = (ApiKeyAuth) defaultClient.getAuthentication("BearerToken");
+    BearerToken.setApiKey("YOUR API KEY");
+    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
+    //BearerToken.setApiKeyPrefix("Token");
 
     WorkflowServiceApi apiInstance = new WorkflowServiceApi(defaultClient);
     String namespace = "namespace_example"; // String | 
@@ -278,7 +306,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-No authorization required
+[BearerToken](../README.md#BearerToken)
 
 ### HTTP request headers
 
@@ -303,6 +331,7 @@ No authorization required
 import io.argoproj.workflow.ApiClient;
 import io.argoproj.workflow.ApiException;
 import io.argoproj.workflow.Configuration;
+import io.argoproj.workflow.auth.*;
 import io.argoproj.workflow.models.*;
 import io.argoproj.workflow.apis.WorkflowServiceApi;
 
@@ -310,6 +339,12 @@ public class Example {
   public static void main(String[] args) {
     ApiClient defaultClient = Configuration.getDefaultApiClient();
     defaultClient.setBasePath("http://localhost:2746");
+    
+    // Configure API key authorization: BearerToken
+    ApiKeyAuth BearerToken = (ApiKeyAuth) defaultClient.getAuthentication("BearerToken");
+    BearerToken.setApiKey("YOUR API KEY");
+    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
+    //BearerToken.setApiKeyPrefix("Token");
 
     WorkflowServiceApi apiInstance = new WorkflowServiceApi(defaultClient);
     String namespace = "namespace_example"; // String | 
@@ -359,7 +394,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-No authorization required
+[BearerToken](../README.md#BearerToken)
 
 ### HTTP request headers
 
@@ -384,6 +419,7 @@ DEPRECATED: Cannot work via HTTP if podName is an empty string. Use WorkflowLogs
 import io.argoproj.workflow.ApiClient;
 import io.argoproj.workflow.ApiException;
 import io.argoproj.workflow.Configuration;
+import io.argoproj.workflow.auth.*;
 import io.argoproj.workflow.models.*;
 import io.argoproj.workflow.apis.WorkflowServiceApi;
 
@@ -391,6 +427,12 @@ public class Example {
   public static void main(String[] args) {
     ApiClient defaultClient = Configuration.getDefaultApiClient();
     defaultClient.setBasePath("http://localhost:2746");
+    
+    // Configure API key authorization: BearerToken
+    ApiKeyAuth BearerToken = (ApiKeyAuth) defaultClient.getAuthentication("BearerToken");
+    BearerToken.setApiKey("YOUR API KEY");
+    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
+    //BearerToken.setApiKeyPrefix("Token");
 
     WorkflowServiceApi apiInstance = new WorkflowServiceApi(defaultClient);
     String namespace = "namespace_example"; // String | 
@@ -448,7 +490,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-No authorization required
+[BearerToken](../README.md#BearerToken)
 
 ### HTTP request headers
 
@@ -473,6 +515,7 @@ No authorization required
 import io.argoproj.workflow.ApiClient;
 import io.argoproj.workflow.ApiException;
 import io.argoproj.workflow.Configuration;
+import io.argoproj.workflow.auth.*;
 import io.argoproj.workflow.models.*;
 import io.argoproj.workflow.apis.WorkflowServiceApi;
 
@@ -480,6 +523,12 @@ public class Example {
   public static void main(String[] args) {
     ApiClient defaultClient = Configuration.getDefaultApiClient();
     defaultClient.setBasePath("http://localhost:2746");
+    
+    // Configure API key authorization: BearerToken
+    ApiKeyAuth BearerToken = (ApiKeyAuth) defaultClient.getAuthentication("BearerToken");
+    BearerToken.setApiKey("YOUR API KEY");
+    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
+    //BearerToken.setApiKeyPrefix("Token");
 
     WorkflowServiceApi apiInstance = new WorkflowServiceApi(defaultClient);
     String namespace = "namespace_example"; // String | 
@@ -513,7 +562,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-No authorization required
+[BearerToken](../README.md#BearerToken)
 
 ### HTTP request headers
 
@@ -538,6 +587,7 @@ No authorization required
 import io.argoproj.workflow.ApiClient;
 import io.argoproj.workflow.ApiException;
 import io.argoproj.workflow.Configuration;
+import io.argoproj.workflow.auth.*;
 import io.argoproj.workflow.models.*;
 import io.argoproj.workflow.apis.WorkflowServiceApi;
 
@@ -545,6 +595,12 @@ public class Example {
   public static void main(String[] args) {
     ApiClient defaultClient = Configuration.getDefaultApiClient();
     defaultClient.setBasePath("http://localhost:2746");
+    
+    // Configure API key authorization: BearerToken
+    ApiKeyAuth BearerToken = (ApiKeyAuth) defaultClient.getAuthentication("BearerToken");
+    BearerToken.setApiKey("YOUR API KEY");
+    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
+    //BearerToken.setApiKeyPrefix("Token");
 
     WorkflowServiceApi apiInstance = new WorkflowServiceApi(defaultClient);
     String namespace = "namespace_example"; // String | 
@@ -578,7 +634,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-No authorization required
+[BearerToken](../README.md#BearerToken)
 
 ### HTTP request headers
 
@@ -603,6 +659,7 @@ No authorization required
 import io.argoproj.workflow.ApiClient;
 import io.argoproj.workflow.ApiException;
 import io.argoproj.workflow.Configuration;
+import io.argoproj.workflow.auth.*;
 import io.argoproj.workflow.models.*;
 import io.argoproj.workflow.apis.WorkflowServiceApi;
 
@@ -610,6 +667,12 @@ public class Example {
   public static void main(String[] args) {
     ApiClient defaultClient = Configuration.getDefaultApiClient();
     defaultClient.setBasePath("http://localhost:2746");
+    
+    // Configure API key authorization: BearerToken
+    ApiKeyAuth BearerToken = (ApiKeyAuth) defaultClient.getAuthentication("BearerToken");
+    BearerToken.setApiKey("YOUR API KEY");
+    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
+    //BearerToken.setApiKeyPrefix("Token");
 
     WorkflowServiceApi apiInstance = new WorkflowServiceApi(defaultClient);
     String namespace = "namespace_example"; // String | 
@@ -643,7 +706,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-No authorization required
+[BearerToken](../README.md#BearerToken)
 
 ### HTTP request headers
 
@@ -668,6 +731,7 @@ No authorization required
 import io.argoproj.workflow.ApiClient;
 import io.argoproj.workflow.ApiException;
 import io.argoproj.workflow.Configuration;
+import io.argoproj.workflow.auth.*;
 import io.argoproj.workflow.models.*;
 import io.argoproj.workflow.apis.WorkflowServiceApi;
 
@@ -675,6 +739,12 @@ public class Example {
   public static void main(String[] args) {
     ApiClient defaultClient = Configuration.getDefaultApiClient();
     defaultClient.setBasePath("http://localhost:2746");
+    
+    // Configure API key authorization: BearerToken
+    ApiKeyAuth BearerToken = (ApiKeyAuth) defaultClient.getAuthentication("BearerToken");
+    BearerToken.setApiKey("YOUR API KEY");
+    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
+    //BearerToken.setApiKeyPrefix("Token");
 
     WorkflowServiceApi apiInstance = new WorkflowServiceApi(defaultClient);
     String namespace = "namespace_example"; // String | 
@@ -708,7 +778,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-No authorization required
+[BearerToken](../README.md#BearerToken)
 
 ### HTTP request headers
 
@@ -733,6 +803,7 @@ No authorization required
 import io.argoproj.workflow.ApiClient;
 import io.argoproj.workflow.ApiException;
 import io.argoproj.workflow.Configuration;
+import io.argoproj.workflow.auth.*;
 import io.argoproj.workflow.models.*;
 import io.argoproj.workflow.apis.WorkflowServiceApi;
 
@@ -740,6 +811,12 @@ public class Example {
   public static void main(String[] args) {
     ApiClient defaultClient = Configuration.getDefaultApiClient();
     defaultClient.setBasePath("http://localhost:2746");
+    
+    // Configure API key authorization: BearerToken
+    ApiKeyAuth BearerToken = (ApiKeyAuth) defaultClient.getAuthentication("BearerToken");
+    BearerToken.setApiKey("YOUR API KEY");
+    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
+    //BearerToken.setApiKeyPrefix("Token");
 
     WorkflowServiceApi apiInstance = new WorkflowServiceApi(defaultClient);
     String namespace = "namespace_example"; // String | 
@@ -773,7 +850,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-No authorization required
+[BearerToken](../README.md#BearerToken)
 
 ### HTTP request headers
 
@@ -798,6 +875,7 @@ No authorization required
 import io.argoproj.workflow.ApiClient;
 import io.argoproj.workflow.ApiException;
 import io.argoproj.workflow.Configuration;
+import io.argoproj.workflow.auth.*;
 import io.argoproj.workflow.models.*;
 import io.argoproj.workflow.apis.WorkflowServiceApi;
 
@@ -805,6 +883,12 @@ public class Example {
   public static void main(String[] args) {
     ApiClient defaultClient = Configuration.getDefaultApiClient();
     defaultClient.setBasePath("http://localhost:2746");
+    
+    // Configure API key authorization: BearerToken
+    ApiKeyAuth BearerToken = (ApiKeyAuth) defaultClient.getAuthentication("BearerToken");
+    BearerToken.setApiKey("YOUR API KEY");
+    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
+    //BearerToken.setApiKeyPrefix("Token");
 
     WorkflowServiceApi apiInstance = new WorkflowServiceApi(defaultClient);
     String namespace = "namespace_example"; // String | 
@@ -836,7 +920,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-No authorization required
+[BearerToken](../README.md#BearerToken)
 
 ### HTTP request headers
 
@@ -861,6 +945,7 @@ No authorization required
 import io.argoproj.workflow.ApiClient;
 import io.argoproj.workflow.ApiException;
 import io.argoproj.workflow.Configuration;
+import io.argoproj.workflow.auth.*;
 import io.argoproj.workflow.models.*;
 import io.argoproj.workflow.apis.WorkflowServiceApi;
 
@@ -868,6 +953,12 @@ public class Example {
   public static void main(String[] args) {
     ApiClient defaultClient = Configuration.getDefaultApiClient();
     defaultClient.setBasePath("http://localhost:2746");
+    
+    // Configure API key authorization: BearerToken
+    ApiKeyAuth BearerToken = (ApiKeyAuth) defaultClient.getAuthentication("BearerToken");
+    BearerToken.setApiKey("YOUR API KEY");
+    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
+    //BearerToken.setApiKeyPrefix("Token");
 
     WorkflowServiceApi apiInstance = new WorkflowServiceApi(defaultClient);
     String namespace = "namespace_example"; // String | 
@@ -901,7 +992,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-No authorization required
+[BearerToken](../README.md#BearerToken)
 
 ### HTTP request headers
 
@@ -926,6 +1017,7 @@ No authorization required
 import io.argoproj.workflow.ApiClient;
 import io.argoproj.workflow.ApiException;
 import io.argoproj.workflow.Configuration;
+import io.argoproj.workflow.auth.*;
 import io.argoproj.workflow.models.*;
 import io.argoproj.workflow.apis.WorkflowServiceApi;
 
@@ -933,6 +1025,12 @@ public class Example {
   public static void main(String[] args) {
     ApiClient defaultClient = Configuration.getDefaultApiClient();
     defaultClient.setBasePath("http://localhost:2746");
+    
+    // Configure API key authorization: BearerToken
+    ApiKeyAuth BearerToken = (ApiKeyAuth) defaultClient.getAuthentication("BearerToken");
+    BearerToken.setApiKey("YOUR API KEY");
+    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
+    //BearerToken.setApiKeyPrefix("Token");
 
     WorkflowServiceApi apiInstance = new WorkflowServiceApi(defaultClient);
     String namespace = "namespace_example"; // String | 
@@ -966,7 +1064,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-No authorization required
+[BearerToken](../README.md#BearerToken)
 
 ### HTTP request headers
 
@@ -991,6 +1089,7 @@ No authorization required
 import io.argoproj.workflow.ApiClient;
 import io.argoproj.workflow.ApiException;
 import io.argoproj.workflow.Configuration;
+import io.argoproj.workflow.auth.*;
 import io.argoproj.workflow.models.*;
 import io.argoproj.workflow.apis.WorkflowServiceApi;
 
@@ -998,6 +1097,12 @@ public class Example {
   public static void main(String[] args) {
     ApiClient defaultClient = Configuration.getDefaultApiClient();
     defaultClient.setBasePath("http://localhost:2746");
+    
+    // Configure API key authorization: BearerToken
+    ApiKeyAuth BearerToken = (ApiKeyAuth) defaultClient.getAuthentication("BearerToken");
+    BearerToken.setApiKey("YOUR API KEY");
+    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
+    //BearerToken.setApiKeyPrefix("Token");
 
     WorkflowServiceApi apiInstance = new WorkflowServiceApi(defaultClient);
     String namespace = "namespace_example"; // String | 
@@ -1045,7 +1150,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-No authorization required
+[BearerToken](../README.md#BearerToken)
 
 ### HTTP request headers
 
@@ -1070,6 +1175,7 @@ No authorization required
 import io.argoproj.workflow.ApiClient;
 import io.argoproj.workflow.ApiException;
 import io.argoproj.workflow.Configuration;
+import io.argoproj.workflow.auth.*;
 import io.argoproj.workflow.models.*;
 import io.argoproj.workflow.apis.WorkflowServiceApi;
 
@@ -1077,6 +1183,12 @@ public class Example {
   public static void main(String[] args) {
     ApiClient defaultClient = Configuration.getDefaultApiClient();
     defaultClient.setBasePath("http://localhost:2746");
+    
+    // Configure API key authorization: BearerToken
+    ApiKeyAuth BearerToken = (ApiKeyAuth) defaultClient.getAuthentication("BearerToken");
+    BearerToken.setApiKey("YOUR API KEY");
+    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
+    //BearerToken.setApiKeyPrefix("Token");
 
     WorkflowServiceApi apiInstance = new WorkflowServiceApi(defaultClient);
     String namespace = "namespace_example"; // String | 
@@ -1126,7 +1238,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-No authorization required
+[BearerToken](../README.md#BearerToken)
 
 ### HTTP request headers
 
@@ -1151,6 +1263,7 @@ No authorization required
 import io.argoproj.workflow.ApiClient;
 import io.argoproj.workflow.ApiException;
 import io.argoproj.workflow.Configuration;
+import io.argoproj.workflow.auth.*;
 import io.argoproj.workflow.models.*;
 import io.argoproj.workflow.apis.WorkflowServiceApi;
 
@@ -1158,6 +1271,12 @@ public class Example {
   public static void main(String[] args) {
     ApiClient defaultClient = Configuration.getDefaultApiClient();
     defaultClient.setBasePath("http://localhost:2746");
+    
+    // Configure API key authorization: BearerToken
+    ApiKeyAuth BearerToken = (ApiKeyAuth) defaultClient.getAuthentication("BearerToken");
+    BearerToken.setApiKey("YOUR API KEY");
+    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
+    //BearerToken.setApiKeyPrefix("Token");
 
     WorkflowServiceApi apiInstance = new WorkflowServiceApi(defaultClient);
     String namespace = "namespace_example"; // String | 
@@ -1215,7 +1334,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-No authorization required
+[BearerToken](../README.md#BearerToken)
 
 ### HTTP request headers
 

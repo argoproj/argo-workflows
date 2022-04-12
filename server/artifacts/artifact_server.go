@@ -16,10 +16,9 @@ import (
 	"strings"
 	"time"
 
-	"k8s.io/apimachinery/pkg/util/rand"
-
 	"google.golang.org/grpc/metadata"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/rand"
 
 	"github.com/argoproj/argo-workflows/v3/persist/sqldb"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
@@ -66,9 +65,8 @@ func (a *ArtifactServer) gateKeeping(r *http.Request, ns types.NamespacedRequest
 	return a.gatekeeper.ContextWithRequest(ctx, ns)
 }
 
-func (a *ArtifactServer) unauthorizedError(err error, w http.ResponseWriter) {
+func (a *ArtifactServer) unauthorizedError(w http.ResponseWriter) {
 	w.WriteHeader(401)
-	_, _ = w.Write([]byte(err.Error()))
 }
 
 func (a *ArtifactServer) serverInternalError(err error, w http.ResponseWriter) {
@@ -169,13 +167,13 @@ func (a *ArtifactServer) DownloadArtifact(w http.ResponseWriter, r *http.Request
 
 	ctx, err := a.gateKeeping(r, types.NamespaceHolder(namespace))
 	if err != nil {
-		a.unauthorizedError(err, w)
+		a.unauthorizedError(w)
 		return
 	}
 
 	wf, err := a.getWorkflowAndValidate(ctx, namespace, idDiscriminator, id)
 	if errors.Is(err, errPermissionDenied) {
-		a.unauthorizedError(err, w)
+		a.unauthorizedError(w)
 		return
 	}
 	if err != nil {
@@ -277,13 +275,13 @@ func (a *ArtifactServer) GetArtifactDescription(w http.ResponseWriter, r *http.R
 
 	ctx, err := a.gateKeeping(r, types.NamespaceHolder(namespace))
 	if err != nil {
-		a.unauthorizedError(err, w)
+		a.unauthorizedError(w)
 		return
 	}
 
 	wf, err := a.getWorkflowAndValidate(ctx, namespace, idDiscriminator, id)
 	if errors.Is(err, errPermissionDenied) {
-		a.unauthorizedError(err, w)
+		a.unauthorizedError(w)
 		return
 	}
 	if err != nil {
