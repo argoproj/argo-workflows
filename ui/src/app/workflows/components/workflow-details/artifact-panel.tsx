@@ -1,37 +1,101 @@
 import * as React from 'react';
+import {useEffect, useState} from 'react';
 import {Artifact, Workflow} from '../../../../models';
-import {InfoIcon} from '../../../shared/components/fa-icons';
+import {uiUrl} from '../../../shared/base';
+import {ErrorNotice} from '../../../shared/components/error-notice';
 import {LinkButton} from '../../../shared/components/link-button';
 import {services} from '../../../shared/services';
+import {ArtifactDescription} from '../../../shared/services/artifact-service';
 
-export const ArtifactPanel = ({workflow, artifact, archived}: {workflow: Workflow; artifact: Artifact & {nodeId: string; input: boolean}; archived?: boolean}) => {
-    const url = services.workflows.getArtifactDownloadUrl(workflow, artifact.nodeId, artifact.name, archived, artifact.input);
+require('./artifact-panel.scss');
+
+function formatBytes(bytes: number) {
+    const sizes = ['bytes', 'KB', 'MB', 'GB', 'TB'];
+    if (bytes === 0) {
+        return '0 bytes';
+    }
+    const i = Math.floor(Math.log(bytes) / Math.log(1024));
+    return Math.round(bytes / Math.pow(1024, i)) + ' ' + sizes[i];
+}
+
+const ItemViewer = ({src}: {src: string}) => (
+    <div className='white-box'>
+        <iframe src={src} frameBorder={0} width='100%' height={400} />
+    </div>
+);
+
+export const ArtifactPanel = ({workflow, artifact, archived}: {workflow: Workflow; artifact: Artifact & {nodeId: string; artifactDiscriminator: string}; archived?: boolean}) => {
+    const [error, setError] = useState<Error>();
+    const [description, setDescription] = useState<ArtifactDescription>();
+    const [selectedItem, setSelectedItem] = useState<string>();
+    const [showAnyway, setShowAnyway] = useState<boolean>();
+
+    useEffect(() => {
+        setDescription(null);
+        setError(null);
+        setSelectedItem(null);
+        setShowAnyway(false);
+        services.artifacts
+            .getArtifactDescription(workflow.metadata.namespace, workflow.metadata.name, artifact.nodeId, artifact.artifactDiscriminator, artifact.name)
+            .then(setDescription)
+            .catch(setError);
+    }, [workflow.metadata.namespace, workflow.metadata.name, artifact.nodeId, artifact.artifactDiscriminator, artifact.name]);
+
+    useEffect(() => {
+        if (description?.items?.length === 1 && (description.items[0].contentType?.startsWith('text/') || showAnyway)) {
+            setSelectedItem(description.items[0].name);
+        }
+    }, [description, showAnyway]);
+
+    const idDiscriminator = archived ? 'uid' : 'name';
+    const id = archived ? workflow.metadata.uid : workflow.metadata.name;
+
+    const downloadUrl = uiUrl(`artifact-downloads/${workflow.metadata.namespace}/${idDiscriminator}/${id}/${artifact.nodeId}/${artifact.artifactDiscriminator}/${artifact.name}`);
+    const itemDownloadUrl = (item: string) => `${downloadUrl}/${item}`;
+
+    const filename = description?.key?.split('/').pop();
+
     return (
         <div style={{margin: 16, marginTop: 48}}>
-            <div>
-                <h3>{artifact.name}</h3>
-                <p>{artifact.path}</p>
-                {artifact.archive?.none ? (
-                    <div className='white-box'>
-                        <iframe src={url} frameBorder={0} width='100%' height={400} />
-                    </div>
-                ) : (
-                    <p>
-                        <InfoIcon /> Artifacts are viewable if they use "archive: none".
-                    </p>
-                )}
+            <h3>{filename || artifact.name}</h3>
+            {error && <ErrorNotice error={error} />}
+            {description?.items && (
+                <div className='white-box'>
+                    {description.items.map(item => (
+                        <div className='row' key={item.name}>
+                            <div className='columns small-8'>
+                                <a onClick={() => setSelectedItem(item.name)} className={item.name === selectedItem && 'selectedItem'}>
+                                    {item.name}
+                                </a>
+                            </div>
+                            <div className='columns small-4'>
+                                <a href={itemDownloadUrl(item.name)}>
+                                    <i className='fa fa-download' />
+                                </a>{' '}
+                                <span className=' muted'>{formatBytes(item.size)}</span>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            )}
+            {selectedItem ? (
+                <ItemViewer src={itemDownloadUrl(selectedItem)} />
+            ) : description?.contentType?.startsWith('text/') || showAnyway ? (
+                <ItemViewer src={downloadUrl} />
+            ) : (
                 <p>
-                    <LinkButton to={url}>
-                        <i className='fa fa-download' /> Download
-                    </LinkButton>
+                    Does not appear to be a text file <a onClick={() => setShowAnyway(true)}>show anyway</a>
                 </p>
-            </div>
-            <p className='fa-pull-right'>
-                <small>
-                    <a href='https://github.com/argoproj/argo-workflows/issues/8324'>
-                        <i className='fa fa-comment' /> Give feedback{' '}
-                    </a>
-                </small>
+            )}
+            <p>
+                <LinkButton to={downloadUrl}>
+                    <i className='fa fa-download' /> {filename || 'Download'}
+                </LinkButton>
+            </p>
+            <p className='fa-pull-right muted'>
+                <a href='https://github.com/argoproj/argo-workflows/issues/8324'>
+                    <i className='fa fa-comment' /> Give feedback
+                </a>
             </p>
         </div>
     );

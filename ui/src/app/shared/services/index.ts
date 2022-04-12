@@ -1,4 +1,5 @@
 import {ArchivedWorkflowsService} from './archived-workflows-service';
+import {ArtifactService} from './artifact-service';
 import {ClusterWorkflowTemplateService} from './cluster-workflow-template-service';
 import {CronWorkflowService} from './cron-workflow-service';
 import {EventService} from './event-service';
@@ -10,6 +11,7 @@ import {WorkflowTemplateService} from './workflow-template-service';
 import {WorkflowsService} from './workflows-service';
 
 interface Services {
+    artifacts: ArtifactService;
     info: InfoService;
     sensor: SensorService;
     pipeline: PipelineService;
@@ -23,6 +25,7 @@ interface Services {
 }
 
 export const services: Services = {
+    artifacts: new ArtifactService(),
     info: new InfoService(),
     workflows: new WorkflowsService(),
     workflowTemplate: new WorkflowTemplateService(),

@@ -4,9 +4,9 @@ export const nodeArtifacts = (node: NodeStatus) =>
     (node.inputs?.artifacts || [])
         .map(a => ({
             ...a,
-            input: true
+            artifactDiscriminator: 'input'
         }))
-        .concat((node.outputs?.artifacts || []).map(a => ({...a, input: false})));
+        .concat((node.outputs?.artifacts || []).map(a => ({...a, artifactDiscriminator: 'output'})));
 
 export const artifactDescription = <A extends Artifact>(a: A, ar: ArtifactRepository) => {
     let urn = 'unknown';
@@ -44,7 +44,7 @@ export const artifactDescription = <A extends Artifact>(a: A, ar: ArtifactReposi
 };
 
 export const findArtifact = (status: WorkflowStatus, urn: string) => {
-    const artifacts: (Artifact & {nodeId: string; input: boolean})[] = [];
+    const artifacts: (Artifact & {nodeId: string; artifactDiscriminator: string})[] = [];
 
     Object.values(status.nodes).map(node => {
         return nodeArtifacts(node)

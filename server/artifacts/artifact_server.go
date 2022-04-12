@@ -1,23 +1,24 @@
 package artifacts
 
 import (
+	"archive/tar"
+	"compress/gzip"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"mime"
 	"net/http"
 	"os"
 	"path"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"time"
 
-	log "github.com/sirupsen/logrus"
-	"google.golang.org/grpc/codes"
+	"k8s.io/apimachinery/pkg/util/rand"
+
 	"google.golang.org/grpc/metadata"
-	"google.golang.org/grpc/status"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/argoproj/argo-workflows/v3/persist/sqldb"
@@ -29,6 +30,8 @@ import (
 	artifact "github.com/argoproj/argo-workflows/v3/workflow/artifacts"
 	"github.com/argoproj/argo-workflows/v3/workflow/hydrator"
 )
+
+var errPermissionDenied = fmt.Errorf("permission denied")
 
 type ArtifactServer struct {
 	gatekeeper           auth.Gatekeeper
@@ -45,94 +48,6 @@ func NewArtifactServer(authN auth.Gatekeeper, hydrator hydrator.Interface, wfArc
 
 func newArtifactServer(authN auth.Gatekeeper, hydrator hydrator.Interface, wfArchive sqldb.WorkflowArchive, instanceIDService instanceid.Service, artDriverFactory artifact.NewDriverFunc, artifactRepositories artifactrepositories.Interface) *ArtifactServer {
 	return &ArtifactServer{authN, hydrator, wfArchive, instanceIDService, artDriverFactory, artifactRepositories}
-}
-
-func (a *ArtifactServer) GetOutputArtifact(w http.ResponseWriter, r *http.Request) {
-	a.getArtifact(w, r, false)
-}
-
-func (a *ArtifactServer) GetInputArtifact(w http.ResponseWriter, r *http.Request) {
-	a.getArtifact(w, r, true)
-}
-
-func (a *ArtifactServer) getArtifact(w http.ResponseWriter, r *http.Request, isInput bool) {
-	requestPath := strings.SplitN(r.URL.Path, "/", 6)
-	if len(requestPath) != 6 {
-		a.serverInternalError(errors.New("request path is not valid"), w)
-		return
-	}
-	namespace := requestPath[2]
-	workflowName := requestPath[3]
-	nodeId := requestPath[4]
-	artifactName := requestPath[5]
-
-	ctx, err := a.gateKeeping(r, types.NamespaceHolder(namespace))
-	if err != nil {
-		a.unauthorizedError(err, w)
-		return
-	}
-
-	log.WithFields(log.Fields{"namespace": namespace, "workflowName": workflowName, "nodeId": nodeId, "artifactName": artifactName, "isInput": isInput}).Info("Download artifact")
-
-	wf, err := a.getWorkflowAndValidate(ctx, namespace, workflowName)
-	if err != nil {
-		a.serverInternalError(err, w)
-		return
-	}
-
-	err = a.returnArtifact(ctx, w, r, wf, nodeId, artifactName, isInput)
-
-	if err != nil {
-		a.serverInternalError(err, w)
-		return
-	}
-}
-
-func (a *ArtifactServer) GetOutputArtifactByUID(w http.ResponseWriter, r *http.Request) {
-	a.getArtifactByUID(w, r, false)
-}
-
-func (a *ArtifactServer) GetInputArtifactByUID(w http.ResponseWriter, r *http.Request) {
-	a.getArtifactByUID(w, r, true)
-}
-
-func (a *ArtifactServer) getArtifactByUID(w http.ResponseWriter, r *http.Request, isInput bool) {
-	requestPath := strings.SplitN(r.URL.Path, "/", 5)
-	if len(requestPath) != 5 {
-		a.serverInternalError(errors.New("request path is not valid"), w)
-		return
-	}
-	uid := requestPath[2]
-	nodeId := requestPath[3]
-	artifactName := requestPath[4]
-
-	// We need to know the namespace before we can do gate keeping
-	wf, err := a.wfArchive.GetWorkflow(uid)
-	if err != nil {
-		a.serverInternalError(err, w)
-		return
-	}
-
-	ctx, err := a.gateKeeping(r, types.NamespaceHolder(wf.GetNamespace()))
-	if err != nil {
-		a.unauthorizedError(err, w)
-		return
-	}
-
-	// return 401 if the client does not have permission to get wf
-	err = a.validateAccess(ctx, wf)
-	if err != nil {
-		a.unauthorizedError(err, w)
-		return
-	}
-
-	log.WithFields(log.Fields{"uid": uid, "nodeId": nodeId, "artifactName": artifactName, "isInput": isInput}).Info("Download artifact")
-	err = a.returnArtifact(ctx, w, r, wf, nodeId, artifactName, isInput)
-
-	if err != nil {
-		a.serverInternalError(err, w)
-		return
-	}
 }
 
 func (a *ArtifactServer) gateKeeping(r *http.Request, ns types.NamespacedRequest) (context.Context, error) {
@@ -157,11 +72,10 @@ func (a *ArtifactServer) unauthorizedError(err error, w http.ResponseWriter) {
 }
 
 func (a *ArtifactServer) serverInternalError(err error, w http.ResponseWriter) {
-	w.WriteHeader(500)
-	_, _ = w.Write([]byte(err.Error()))
+	http.Error(w, err.Error(), http.StatusInternalServerError)
 }
 
-func (a *ArtifactServer) returnArtifact(ctx context.Context, w http.ResponseWriter, r *http.Request, wf *wfv1.Workflow, nodeId, artifactName string, isInput bool) error {
+func (a *ArtifactServer) downloadArtifact(ctx context.Context, wf *wfv1.Workflow, nodeId string, isInput bool, artifactName string) (*os.File, string, error) {
 	kubeClient := auth.GetKubeClient(ctx)
 
 	var art *wfv1.Artifact
@@ -171,99 +85,163 @@ func (a *ArtifactServer) returnArtifact(ctx context.Context, w http.ResponseWrit
 		art = wf.Status.Nodes[nodeId].Outputs.GetArtifactByName(artifactName)
 	}
 	if art == nil {
-		return fmt.Errorf("artifact not found")
+		return nil, "", fmt.Errorf("artifact not found")
 	}
 
 	ar, err := a.artifactRepositories.Get(ctx, wf.Status.ArtifactRepositoryRef)
 	if err != nil {
-		return err
+		return nil, "", err
 	}
 	l := ar.ToArtifactLocation()
 	err = art.Relocate(l)
 	if err != nil {
-		return err
+		return nil, "", err
 	}
+
+	key, _ := art.GetKey()
 
 	driver, err := a.artDriverFactory(ctx, art, resources{kubeClient, wf.Namespace})
 	if err != nil {
-		return err
+		return nil, "", err
 	}
-	tmp, err := ioutil.TempFile("/tmp", "artifact")
-	if err != nil {
-		return err
-	}
-	tmpPath := tmp.Name()
-	defer func() { _ = os.Remove(tmpPath) }()
 
+	tmpPath := filepath.Join("/tmp", "artifact-"+rand.String(32))
 	err = driver.Load(art, tmpPath)
 	if err != nil {
-		return err
+		return nil, "", err
 	}
 
-	file, err := os.Open(filepath.Clean(tmpPath))
+	file, err := os.Open(tmpPath)
 	if err != nil {
-		return err
+		return nil, "", err
 	}
 
-	defer func() {
-		if err := file.Close(); err != nil {
-			log.Fatalf("Error closing file[%s]: %v", tmpPath, err)
-		}
-	}()
-
-	stats, err := file.Stat()
-	if err != nil {
-		return err
-	}
-	contentLength := strconv.FormatInt(stats.Size(), 10)
-
-	// Only the first 512 bytes are used to sniff the content type.
-	buffer := make([]byte, 512)
-	_, err = file.Read(buffer)
-	if err != nil {
-		return err
-	}
-
-	_, err = file.Seek(0, 0)
-	if err != nil {
-		return err
-	}
-
-	contentType := http.DetectContentType(buffer)
-
-	key, _ := art.GetKey()
-	if contentType == "application/octet-stream" {
-		v := mime.TypeByExtension(filepath.Ext(key))
-		if v != "" {
-			contentType = v
-		}
-	}
-
-	log.WithFields(log.Fields{"size": contentLength, "contentType": contentType}).Debug("Artifact file size")
-
-	w.Header().Add("Content-Disposition", fmt.Sprintf(`filename="%s"`, path.Base(key)))
-	w.Header().Add("Content-Tye", contentType)
-
-	http.ServeContent(w, r, "", time.Time{}, file)
-
-	return nil
+	return file, key, nil
 }
 
-func (a *ArtifactServer) getWorkflowAndValidate(ctx context.Context, namespace string, workflowName string) (*wfv1.Workflow, error) {
-	wfClient := auth.GetWfClient(ctx)
-	wf, err := wfClient.ArgoprojV1alpha1().Workflows(namespace).Get(ctx, workflowName, metav1.GetOptions{})
+func (a *ArtifactServer) DownloadArtifact(w http.ResponseWriter, r *http.Request) {
+	requestPath := strings.Split(r.URL.Path, "/")
+	basePath := requestPath[1]
+
+	minPathParts := map[string]int{
+		"artifact-downloads":     7,
+		"artifacts":              6,
+		"input-artifacts":        6,
+		"artifacts-by-uid":       5,
+		"input-artifacts-by-uid": 5,
+	}[basePath]
+
+	if len(requestPath) < minPathParts {
+		http.Error(w, "request path is not valid", http.StatusBadRequest)
+		return
+	}
+
+	var namespace, idDiscriminator, id, nodeId, artifactDiscriminator, artifactName, item string
+	switch basePath {
+	case "artifact-downloads":
+		// "/artifacts-downloads/{namespace}/{idDiscriminator}/{id}/{nodeId}/{artifactDiscriminator}/{artifactName}"
+		namespace, idDiscriminator, id, nodeId, artifactDiscriminator, artifactName = requestPath[2], requestPath[3], requestPath[4], requestPath[5], requestPath[6], requestPath[7]
+		if len(requestPath) == 9 {
+			item = requestPath[8]
+		}
+	case "artifacts":
+		// "/artifacts/{namespace}/{name}/{nodeId}/{artifactName}"
+		namespace, idDiscriminator, id, nodeId, artifactDiscriminator, artifactName = requestPath[2], "name", requestPath[3], requestPath[4], "output", requestPath[5]
+	case "input-artifacts":
+		// "/input-artifacts/{namespace}/{name}/{nodeId}/{artifactName}"
+		namespace, idDiscriminator, id, nodeId, artifactDiscriminator, artifactName = requestPath[2], "name", requestPath[3], requestPath[4], "input", requestPath[5]
+	case "artifacts-by-uid":
+		// "/artifacts-by-uid/{uid}/{nodeId}/{artifactName}"
+		namespace, idDiscriminator, id, nodeId, artifactDiscriminator, artifactName = "???", "uid", requestPath[2], requestPath[3], "output", requestPath[4]
+	case "input-artifacts-by-uid":
+		// "/input-artifacts-by-uid/{uid}/{nodeId}/{artifactName}"
+		namespace, idDiscriminator, id, nodeId, artifactDiscriminator, artifactName = "???", "uid", requestPath[2], requestPath[3], "input", requestPath[4]
+	}
+
+	if namespace == "???" && idDiscriminator == "uid" {
+		wf, err := a.wfArchive.GetWorkflow(id)
+		if err != nil {
+			a.serverInternalError(err, w)
+			return
+		}
+		namespace = wf.GetNamespace()
+	}
+
+	ctx, err := a.gateKeeping(r, types.NamespaceHolder(namespace))
 	if err != nil {
+		a.unauthorizedError(err, w)
+		return
+	}
+
+	wf, err := a.getWorkflowAndValidate(ctx, namespace, idDiscriminator, id)
+	if errors.Is(err, errPermissionDenied) {
+		a.unauthorizedError(err, w)
+		return
+	}
+	if err != nil {
+		a.serverInternalError(err, w)
+		return
+	}
+
+	file, key, err := a.downloadArtifact(ctx, wf, nodeId, artifactDiscriminator == "input", artifactName)
+	if err != nil {
+		a.serverInternalError(err, w)
+		return
+	}
+
+	defer os.Remove(file.Name())
+
+	if item == "" {
+		w.Header().Add("Content-Disposition", fmt.Sprintf(`filename="%s"`, path.Base(key)))
+		http.ServeContent(w, r, "", time.Time{}, file)
+	} else {
+		gr, err := gzip.NewReader(file)
+		if err != nil {
+			a.serverInternalError(err, w)
+			return
+		}
+		tr := tar.NewReader(gr)
+		for {
+			header, err := tr.Next()
+			if err == io.EOF {
+				break
+			}
+			if header.Name != item {
+				continue
+			}
+			w.Header().Add("Content-Disposition", fmt.Sprintf(`filename="%s"`, path.Base(item)))
+			w.WriteHeader(http.StatusOK)
+			_, _ = io.Copy(w, tr)
+			return
+		}
+	}
+}
+
+func (a *ArtifactServer) getWorkflowAndValidate(ctx context.Context, namespace, idDiscriminator, id string) (*wfv1.Workflow, error) {
+	var wf *wfv1.Workflow
+	var err error
+	if idDiscriminator == "uid" {
+		wf, err = a.wfArchive.GetWorkflow(id)
+		if err != nil {
+			return nil, err
+		}
+		if err := a.validateAccess(ctx, wf); err != nil {
+			return nil, err
+		}
+	} else {
+		wfClient := auth.GetWfClient(ctx)
+		wf, err = wfClient.ArgoprojV1alpha1().Workflows(namespace).Get(ctx, id, metav1.GetOptions{})
+		if err != nil {
+			return nil, err
+		}
+	}
+	if err := a.instanceIDService.Validate(wf); err != nil {
 		return nil, err
 	}
-	err = a.instanceIDService.Validate(wf)
-	if err != nil {
+	if err := a.hydrator.Hydrate(wf); err != nil {
 		return nil, err
 	}
-	err = a.hydrator.Hydrate(wf)
-	if err != nil {
-		return nil, err
-	}
-	return wf, nil
+	return wf, err
 }
 
 func (a *ArtifactServer) validateAccess(ctx context.Context, wf *wfv1.Workflow) error {
@@ -272,7 +250,84 @@ func (a *ArtifactServer) validateAccess(ctx context.Context, wf *wfv1.Workflow) 
 		return err
 	}
 	if !allowed {
-		return status.Error(codes.PermissionDenied, "permission denied")
+		return errPermissionDenied
 	}
 	return nil
+}
+
+type Item struct {
+	Name        string `json:"name"`
+	Size        int64  `json:"size"`
+	ContentType string `json:"contentType"`
+}
+
+type artifactDescription struct {
+	Key         string `json:"key,omitempty"`
+	Items       []Item `json:"items,omitempty"`
+	ContentType string `json:"contentType,omitempty"`
+}
+
+func (a *ArtifactServer) GetArtifactDescription(w http.ResponseWriter, r *http.Request) {
+	requestPath := strings.Split(r.URL.Path, "/")
+	if len(requestPath) != 8 {
+		a.serverInternalError(errors.New("request path is not valid"), w)
+		return
+	}
+	namespace, idDiscriminator, id, nodeId, artifactDiscriminator, artifactName := requestPath[2], requestPath[3], requestPath[4], requestPath[5], requestPath[6], requestPath[7]
+
+	ctx, err := a.gateKeeping(r, types.NamespaceHolder(namespace))
+	if err != nil {
+		a.unauthorizedError(err, w)
+		return
+	}
+
+	wf, err := a.getWorkflowAndValidate(ctx, namespace, idDiscriminator, id)
+	if errors.Is(err, errPermissionDenied) {
+		a.unauthorizedError(err, w)
+		return
+	}
+	if err != nil {
+		a.serverInternalError(err, w)
+		return
+	}
+
+	file, key, err := a.downloadArtifact(ctx, wf, nodeId, artifactDiscriminator == "input", artifactName)
+	if err != nil {
+		a.serverInternalError(err, w)
+		return
+	}
+	defer os.Remove(file.Name())
+
+	d := &artifactDescription{
+		Key:         key,
+		ContentType: mime.TypeByExtension(filepath.Ext(key)),
+	}
+
+	if strings.HasSuffix(key, ".tgz") {
+		gr, err := gzip.NewReader(file)
+		if err != nil {
+			a.serverInternalError(err, w)
+			return
+		}
+		tr := tar.NewReader(gr)
+		for {
+			header, err := tr.Next()
+			if err == io.EOF {
+				break
+			}
+			if err != nil {
+				a.serverInternalError(err, w)
+				return
+			}
+			d.Items = append(d.Items, Item{
+				Name:        header.Name,
+				Size:        header.FileInfo().Size(),
+				ContentType: mime.TypeByExtension(filepath.Ext(header.Name)),
+			})
+		}
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	_ = json.NewEncoder(w).Encode(d)
 }

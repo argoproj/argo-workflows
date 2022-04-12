@@ -29,7 +29,7 @@
     }
   },
   "paths": {
-    "/artifacts/{namespace}/{name}/{podName}/{artifactName}": {
+    "/artifacts/{namespace}/{name}/{nodeId}/{artifactName}": {
       "get": {
         "tags": [
           "ArtifactService"
@@ -51,7 +51,7 @@
           },
           {
             "type": "string",
-            "name": "podName",
+            "name": "nodeId",
             "in": "path",
             "required": true
           },
@@ -79,7 +79,7 @@
         }
       }
     },
-    "/input-artifacts/{namespace}/{name}/{podName}/{artifactName}": {
+    "/input-artifacts/{namespace}/{name}/{nodeId}/{artifactName}": {
       "get": {
         "tags": [
           "ArtifactService"
@@ -101,7 +101,7 @@
           },
           {
             "type": "string",
-            "name": "podName",
+            "name": "nodeId",
             "in": "path",
             "required": true
           },
@@ -131,7 +131,7 @@
         }
       }
     },
-    "/artifacts-by-uid/{uid}/{podName}/{artifactName}": {
+    "/artifacts-by-uid/{uid}/{nodeId}/{artifactName}": {
       "get": {
         "tags": [
           "ArtifactService"
@@ -147,7 +147,7 @@
           },
           {
             "type": "string",
-            "name": "podName",
+            "name": "nodeId",
             "in": "path",
             "required": true
           },
@@ -177,7 +177,7 @@
         }
       }
     },
-    "/input-artifacts-by-uid/{uid}/{podName}/{artifactName}": {
+    "/input-artifacts-by-uid/{uid}/{nodeId}/{artifactName}": {
       "get": {
         "tags": [
           "ArtifactService"
@@ -199,7 +199,7 @@
           },
           {
             "type": "string",
-            "name": "podName",
+            "name": "nodeId",
             "in": "path",
             "required": true
           },

@@ -164,7 +164,8 @@ func TestArtifactServer_GetOutputArtifact(t *testing.T) {
 			r := &http.Request{}
 			r.URL = mustParse(fmt.Sprintf("/artifacts/my-ns/my-wf/my-node/%s", tt.artifactName))
 			w := &testhttp.TestResponseWriter{}
-			s.GetOutputArtifact(w, r)
+			var w2 http.ResponseWriter = w
+			s.DownloadArtifact(w2, r)
 			if assert.Equal(t, 200, w.StatusCode) {
 				assert.Equal(t, fmt.Sprintf(`filename="%s"`, tt.fileName), w.Header().Get("Content-Disposition"))
 				assert.Equal(t, "my-data", w.Output)
@@ -191,7 +192,8 @@ func TestArtifactServer_GetInputArtifact(t *testing.T) {
 			r := &http.Request{}
 			r.URL = mustParse(fmt.Sprintf("/input-artifacts/my-ns/my-wf/my-node/%s", tt.artifactName))
 			w := &testhttp.TestResponseWriter{}
-			s.GetInputArtifact(w, r)
+			var w2 http.ResponseWriter = w
+			s.DownloadArtifact(w2, r)
 			if assert.Equal(t, 200, w.StatusCode) {
 				assert.Equal(t, fmt.Sprintf(`filename="%s"`, tt.fileName), w.Header().Get("Content-Disposition"))
 				assert.Equal(t, "my-data", w.Output)
@@ -207,10 +209,12 @@ func TestArtifactServer_NodeWithoutArtifact(t *testing.T) {
 	r := &http.Request{}
 	r.URL = mustParse(fmt.Sprintf("/input-artifacts/my-ns/my-wf/my-node-no-artifacts/%s", "my-artifact"))
 	w := &testhttp.TestResponseWriter{}
-	s.GetInputArtifact(w, r)
+	var w3 http.ResponseWriter = w
+	s.DownloadArtifact(w3, r)
 	// make sure there is no nil pointer panic
 	assert.Equal(t, 500, w.StatusCode)
-	s.GetOutputArtifact(w, r)
+	var w2 http.ResponseWriter = w
+	s.DownloadArtifact(w2, r)
 	assert.Equal(t, 500, w.StatusCode)
 }
 
@@ -219,16 +223,18 @@ func TestArtifactServer_GetOutputArtifactWithoutInstanceID(t *testing.T) {
 	r := &http.Request{}
 	r.URL = mustParse("/artifacts/my-ns/your-wf/my-node/my-artifact")
 	w := &testhttp.TestResponseWriter{}
-	s.GetOutputArtifact(w, r)
+	var w2 http.ResponseWriter = w
+	s.DownloadArtifact(w2, r)
 	assert.NotEqual(t, 200, w.StatusCode)
 }
 
 func TestArtifactServer_GetOutputArtifactByUID(t *testing.T) {
 	s := newServer()
 	r := &http.Request{}
-	r.URL = mustParse("/artifacts/my-uuid/my-node/my-artifact")
+	r.URL = mustParse("/artifacts-by-uid/my-uuid/my-node/my-artifact")
 	w := &testhttp.TestResponseWriter{}
-	s.GetOutputArtifactByUID(w, r)
+	var w2 http.ResponseWriter = w
+	s.DownloadArtifact(w2, r)
 	assert.Equal(t, 401, w.StatusCode)
 }
 
@@ -236,15 +242,17 @@ func TestArtifactServer_GetArtifactByUIDInvalidRequestPath(t *testing.T) {
 	s := newServer()
 	r := &http.Request{}
 	// missing my-artifact part to have a valid URL
-	r.URL = mustParse("/input-artifacts/my-uuid/my-node")
+	r.URL = mustParse("/input-artifacts-by-uid/my-uuid/my-node")
 	w := &testhttp.TestResponseWriter{}
-	s.GetInputArtifactByUID(w, r)
+	var w3 http.ResponseWriter = w
+	s.DownloadArtifact(w3, r)
 	// make sure there is no index out of bounds error
-	assert.Equal(t, 500, w.StatusCode)
-	assert.Equal(t, "request path is not valid", w.Output)
+	assert.Equal(t, http.StatusBadRequest, w.StatusCode)
+	assert.Equal(t, "request path is not valid\n", w.Output)
 
 	w = &testhttp.TestResponseWriter{}
-	s.GetOutputArtifactByUID(w, r)
-	assert.Equal(t, 500, w.StatusCode)
-	assert.Equal(t, "request path is not valid", w.Output)
+	var w2 http.ResponseWriter = w
+	s.DownloadArtifact(w2, r)
+	assert.Equal(t, http.StatusBadRequest, w.StatusCode)
+	assert.Equal(t, "request path is not valid\n", w.Output)
 }
