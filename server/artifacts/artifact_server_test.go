@@ -190,10 +190,10 @@ func TestArtifactServer_GetInputArtifact(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.artifactName, func(t *testing.T) {
 			r := &http.Request{}
-			r.URL = mustParse(fmt.Sprintf("//workflow-artifacts/v2/artifacts/my-ns/name/my-wf/my-node/input/%s", tt.artifactName))
+			r.URL = mustParse(fmt.Sprintf("/workflow-artifacts/v2/artifacts/my-ns/name/my-wf/my-node/input/%s", tt.artifactName))
 			w := &testhttp.TestResponseWriter{}
 			var w2 http.ResponseWriter = w
-			s.Redirect(w2, r)
+			s.HandlerFunc()(w2, r)
 			if assert.Equal(t, 200, w.StatusCode) {
 				assert.Equal(t, fmt.Sprintf(`filename="%s"`, tt.fileName), w.Header().Get("Content-Disposition"))
 				assert.Equal(t, "my-data", w.Output)
