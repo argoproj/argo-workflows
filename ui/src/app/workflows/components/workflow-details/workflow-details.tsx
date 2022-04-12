@@ -305,7 +305,7 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
                     </div>
                 )
             }}>
-            <div className={classNames('workflow-details', {'workflow-details--step-node-expanded': selectedNode})}>
+            <div className={classNames('workflow-details', {'workflow-details--step-node-expanded': selectedArtifact || selectedNode})}>
                 <ErrorNotice error={error} />
                 {(tab === 'summary' && renderSummaryTab()) ||
                     (workflow && (
@@ -336,6 +336,7 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
                                         onResume={() => renderResumePopup()}
                                     />
                                 )}
+                                {selectedArtifact && <ArtifactPanel workflow={workflow} artifact={selectedArtifact} />}
                             </div>
                         </div>
                     ))}
@@ -349,11 +350,6 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
                     {parsedSidePanel.type === 'share' && <WidgetGallery namespace={namespace} name={name} />}
                     {parsedSidePanel.type === 'yaml' && <WorkflowYamlViewer workflow={workflow} selectedNode={selectedNode} />}
                     {!parsedSidePanel}
-                </SlidingPanel>
-            )}
-            {selectedArtifact && (
-                <SlidingPanel isShown={true} onClose={() => setNodeId(null)} isMiddle={true}>
-                    <ArtifactPanel workflow={workflow} artifact={selectedArtifact} />
                 </SlidingPanel>
             )}
         </Page>
