@@ -23,7 +23,7 @@ func Exec(name string, args ...string) (string, error) {
 	cmd.Env = os.Environ()
 	_, _ = fmt.Println(cmd.String())
 	output, err := runWithTimeout(cmd)
-	// Cmd completed before timeout. Print output and error if it exists.
+	// Command completed before timeout. Print output and error if it exists.
 	if err != nil {
 		errorln(err)
 	}
