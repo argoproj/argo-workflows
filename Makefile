@@ -478,7 +478,7 @@ dist/argosay:
 
 .PHONY: pull-images
 pull-images:
-	docker pull golang:1.17
+	docker pull golang:1.18
 	docker pull debian:10.7-slim
 	docker pull mysql:8
 	docker pull argoproj/argosay:v1
@@ -552,6 +552,10 @@ test-%:
 .PHONY: test-examples
 test-examples:
 	./hack/test-examples.sh
+
+.PHONY: test-%-sdk
+test-%-sdk:
+	make --directory sdks/$* install test -B
 
 # clean
 

@@ -2,7 +2,7 @@
 
 ## Requirements
 
-* [Go 1.17](https://golang.org/dl/)
+* [Go 1.18](https://golang.org/dl/)
 * [Yarn](https://classic.yarnpkg.com/en/docs/install/#mac-stable)
 * [Docker](https://docs.docker.com/get-docker/)
 * [protoc](http://google.github.io/proto-lens/installing-protoc.html) 
