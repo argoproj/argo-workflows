@@ -1051,23 +1051,69 @@ func (s *ArgoServerSuite) TestArtifactServer() {
 			uid = metadata.UID
 		})
 
+	s.Run("GetInputArtifact", func() {
+		s.e().GET("/input-artifacts/argo/" + name + "/" + name + "/input-file").
+			Expect().
+			Status(301).
+			Header("Location").
+			Match("/workflow-artifacts/v2/artifacts/argo/name/artifact-.*/artifact-.*/input/input-file")
+	})
+
 	s.Run("GetArtifact", func() {
 		s.e().GET("/artifacts/argo/" + name + "/" + name + "/main-file").
+			Expect().
+			Status(301).
+			Header("Location").
+			Match("/workflow-artifacts/v2/artifacts/argo/name/artifact-.*/artifact-.*/output/main-file")
+		s.e().GET("/workflow-artifacts/v2/artifacts/argo/name/" + name + "/" + name + "/output/main-file").
+			Expect().
+			Status(200).
+			Header("Content-Disposition").
+			Equal("filename=\"main-file.tgz\"")
+	})
+
+	s.Run("GetArtifactDescription", func() {
+		j := s.e().GET("/workflow-artifacts/v2/artifact-descriptions/argo/uid/{uid}/{name}/output/main-file", uid, name).
+			Expect().
+			Status(200).
+			JSON()
+		j.
+			Path("$.filename").
+			Equal("main-file.tgz")
+		j.Path("$.items").
+			Array().
+			Length().
+			Equal(1)
+	})
+
+	s.Run("GetArtifactItem", func() {
+		s.e().GET("/workflow-artifacts/v2/artifact-items/argo/uid/{uid}/{name}/output/main-file/main-file", uid, name).
 			Expect().
 			Status(200).
 			Body().
 			Contains(":) Hello Argo!")
 	})
-	s.Run("GetArtifactByUID", func() {
-		s.e().DELETE("/api/v1/workflows/argo/" + name).
-			Expect().
-			Status(200)
 
+	s.Run("GetInputArtifactByUID", func() {
+		s.e().GET("/input-artifacts-by-uid/{uid}/{name}/input-file", uid, name).
+			Expect().
+			Status(301).
+			Header("Location").
+			Match("/workflow-artifacts/v2/artifacts/argo/uid/.*/artifact-.*/input/input-file")
+	})
+
+	s.Run("GetArtifactByUID", func() {
 		s.e().GET("/artifacts-by-uid/{uid}/{name}/main-file", uid, name).
 			Expect().
+			Status(301).
+			Header("Location").
+			Match("/workflow-artifacts/v2/artifacts/argo/uid/.*/artifact-.*/output/main-file")
+
+		s.e().GET("/workflow-artifacts/v2/artifacts/argo/uid/{uid}/{name}/output/main-file", uid, name).
+			Expect().
 			Status(200).
-			Body().
-			Contains(":) Hello Argo!")
+			Header("Content-Disposition").
+			Equal("filename=\"main-file.tgz\"")
 	})
 
 	// as the artifact server has some special code for cookies, we best test that too
@@ -1075,7 +1121,7 @@ func (s *ArgoServerSuite) TestArtifactServer() {
 		token := s.bearerToken
 		defer func() { s.bearerToken = token }()
 		s.bearerToken = ""
-		s.e().GET("/artifacts-by-uid/{uid}/{name}/main-file", uid, name).
+		s.e().GET("/workflow-artifacts/v2/artifacts/argo/uid/{uid}/{name}/output/main-file", uid, name).
 			WithHeader("Cookie", "authorization=Bearer "+token).
 			Expect().
 			Status(200)

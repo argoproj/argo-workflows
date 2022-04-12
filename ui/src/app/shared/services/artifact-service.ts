@@ -1,19 +1,19 @@
 import requests from './requests';
 
 export interface ArtifactDescription {
-    key?: string;
+    filename?: string;
     contentType?: string;
     items?: {
-        contentType?: string;
-        name: string;
+        filename: string;
         size: number;
+        contentType?: string;
     }[];
 }
 
 export class ArtifactService {
-    public getArtifactDescription(namespace: string, workflowName: string, nodeId: string, artifactDiscriminator: string, artifactName: string) {
+    public getArtifactDescription(namespace: string, workflowName: string, nodeId: string, artifactDiscrim: string, artifactName: string) {
         return requests
-            .get(`artifact-descriptions/${namespace}/name/${workflowName}/${nodeId}/${artifactDiscriminator}/${artifactName}`)
+            .get(`workflow-artifacts/v2/artifact-descriptions/${namespace}/name/${workflowName}/${nodeId}/${artifactDiscrim}/${artifactName}`)
             .then(res => res.body as ArtifactDescription);
     }
 }

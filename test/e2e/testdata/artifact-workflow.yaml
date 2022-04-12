@@ -6,6 +6,12 @@ spec:
   entrypoint: main
   templates:
     - name: main
+      inputs:
+        artifacts:
+          - name: input-file
+            path: /tmp/input-file
+            raw:
+              data: Whoa Argo!
       container:
         image: argoproj/argosay:v2
         args:
@@ -16,5 +22,3 @@ spec:
         artifacts:
           - name: main-file
             path: /tmp/main-file
-            archive:
-              none: { }

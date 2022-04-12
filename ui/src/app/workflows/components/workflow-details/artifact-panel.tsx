@@ -24,7 +24,7 @@ const ItemViewer = ({src}: {src: string}) => (
     </div>
 );
 
-export const ArtifactPanel = ({workflow, artifact, archived}: {workflow: Workflow; artifact: Artifact & {nodeId: string; artifactDiscriminator: string}; archived?: boolean}) => {
+export const ArtifactPanel = ({workflow, artifact, archived}: {workflow: Workflow; artifact: Artifact & {nodeId: string; artifactDiscrim: string}; archived?: boolean}) => {
     const [error, setError] = useState<Error>();
     const [description, setDescription] = useState<ArtifactDescription>();
     const [selectedItem, setSelectedItem] = useState<string>();
@@ -36,24 +36,25 @@ export const ArtifactPanel = ({workflow, artifact, archived}: {workflow: Workflo
         setSelectedItem(null);
         setShowAnyway(false);
         services.artifacts
-            .getArtifactDescription(workflow.metadata.namespace, workflow.metadata.name, artifact.nodeId, artifact.artifactDiscriminator, artifact.name)
+            .getArtifactDescription(workflow.metadata.namespace, workflow.metadata.name, artifact.nodeId, artifact.artifactDiscrim, artifact.name)
             .then(setDescription)
             .catch(setError);
-    }, [workflow.metadata.namespace, workflow.metadata.name, artifact.nodeId, artifact.artifactDiscriminator, artifact.name]);
+    }, [workflow.metadata.namespace, workflow.metadata.name, artifact.nodeId, artifact.artifactDiscrim, artifact.name]);
 
     useEffect(() => {
         if (description?.items?.length === 1 && (description.items[0].contentType?.startsWith('text/') || showAnyway)) {
-            setSelectedItem(description.items[0].name);
+            setSelectedItem(description.items[0].filename);
         }
     }, [description, showAnyway]);
 
-    const idDiscriminator = archived ? 'uid' : 'name';
+    const idDiscrim = archived ? 'uid' : 'name';
     const id = archived ? workflow.metadata.uid : workflow.metadata.name;
 
-    const downloadUrl = uiUrl(`artifact-downloads/${workflow.metadata.namespace}/${idDiscriminator}/${id}/${artifact.nodeId}/${artifact.artifactDiscriminator}/${artifact.name}`);
-    const itemDownloadUrl = (item: string) => `${downloadUrl}/${item}`;
+    const downloadUrl = uiUrl(`workflow-artifacts/v2/artifacts/${workflow.metadata.namespace}/${idDiscrim}/${id}/${artifact.nodeId}/${artifact.artifactDiscrim}/${artifact.name}`);
+    const itemDownloadUrl = (item: string) =>
+        uiUrl(`workflow-artifacts/v2/artifact-items/${workflow.metadata.namespace}/${idDiscrim}/${id}/${artifact.nodeId}/${artifact.artifactDiscrim}/${artifact.name}/${item}`);
 
-    const filename = description?.key?.split('/').pop();
+    const filename = description?.filename;
 
     return (
         <div style={{margin: 16, marginTop: 48}}>
@@ -62,14 +63,14 @@ export const ArtifactPanel = ({workflow, artifact, archived}: {workflow: Workflo
             {description?.items && (
                 <div className='white-box'>
                     {description.items.map(item => (
-                        <div className='row' key={item.name}>
+                        <div className='row' key={item.filename}>
                             <div className='columns small-8'>
-                                <a onClick={() => setSelectedItem(item.name)} className={item.name === selectedItem && 'selectedItem'}>
-                                    {item.name}
+                                <a onClick={() => setSelectedItem(item.filename)} className={item.filename === selectedItem && 'selectedItem'}>
+                                    {item.filename}
                                 </a>
                             </div>
                             <div className='columns small-4'>
-                                <a href={itemDownloadUrl(item.name)}>
+                                <a href={itemDownloadUrl(item.filename)}>
                                     <i className='fa fa-download' />
                                 </a>{' '}
                                 <span className=' muted'>{formatBytes(item.size)}</span>
@@ -84,7 +85,7 @@ export const ArtifactPanel = ({workflow, artifact, archived}: {workflow: Workflo
                 <ItemViewer src={downloadUrl} />
             ) : (
                 <p>
-                    Does not appear to be a text file <a onClick={() => setShowAnyway(true)}>show anyway</a>
+                    Does not appear to be a text file, <a onClick={() => setShowAnyway(true)}>show anyway</a>.
                 </p>
             )}
             <p>

@@ -90,11 +90,7 @@ const config = {
         "target": isProd ? "" : "http://localhost:2746",
         "secure": false
       },
-      "/artifact-descriptions": {
-        "target": isProd ? "" : "http://localhost:2746",
-        "secure": false
-      },
-      "/artifact-downloads": {
+      "/workflow-artifacts/v2": {
         "target": isProd ? "" : "http://localhost:2746",
         "secure": false
       },

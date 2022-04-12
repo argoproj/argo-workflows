@@ -183,6 +183,8 @@ require (
 	sigs.k8s.io/structured-merge-diff/v4 v4.2.1 // indirect
 )
 
+require github.com/gorilla/mux v1.8.0
+
 require (
 	github.com/googleapis/go-type-adapters v1.0.0 // indirect
 	github.com/whilp/git-urls v1.0.0 // indirect

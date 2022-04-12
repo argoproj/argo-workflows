@@ -243,7 +243,7 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
             traverse(onExitRoot);
         }
 
-        Object.values(this.props.nodes)
+        Object.values(this.props.nodes || {})
             .filter(node => nodes.has(node.id))
             .forEach(node => {
                 nodeArtifacts(node)
@@ -256,7 +256,8 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
                             icon: icons.Artifact,
                             classNames: 'Artifact'
                         });
-                        edges.set({v: ad.input ? ad.urn : node.id, w: ad.input ? node.id : ad.urn}, {label: ad.name});
+                        const input = ad.artifactDiscrim === 'input';
+                        edges.set({v: input ? ad.urn : node.id, w: input ? node.id : ad.urn}, {label: ad.name});
                     });
             });
     }
