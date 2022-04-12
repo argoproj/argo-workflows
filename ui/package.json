@@ -15,7 +15,7 @@
         "argo-ui": "https://github.com/argoproj/argo-ui.git#v2.5.0",
         "chart.js": "^2.9.4",
         "chartjs-plugin-annotation": "^0.5.7",
-        "classnames": "^2.2.5",
+        "classnames": "^2.3.1",
         "cron-parser": "^2.16.3",
         "cronstrue": "^1.125.0",
         "dagre": "^0.8.5",
