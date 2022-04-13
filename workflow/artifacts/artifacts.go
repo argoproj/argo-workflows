@@ -4,8 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/logging"
-
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/artifactory"
 	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/common"
@@ -13,6 +11,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/git"
 	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/hdfs"
 	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/http"
+	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/logging"
 	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/oss"
 	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/raw"
 	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/resource"

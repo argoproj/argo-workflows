@@ -9,8 +9,6 @@ import (
 
 // Interceptor returns a handler that provides as access logging.
 //
-//
-//
 // github.com/gorilla/handlers/logging.go
 // https://arunvelsriram.medium.com/simple-golang-http-logging-middleware-315656ff8722
 func Interceptor(h http.Handler) http.Handler {
