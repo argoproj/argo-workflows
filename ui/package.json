@@ -24,7 +24,7 @@
         "json-merge-patch": "^0.2.3",
         "moment": "^2.29.2",
         "monaco-editor": "0.20.0",
-        "prop-types": "^15.7.2",
+        "prop-types": "^15.8.1",
         "react": "^16.14.0",
         "react-chartjs-2": "^2.11.2",
         "react-datepicker": "^2.14.0",
