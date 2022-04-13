@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/logging"
+
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/artifactory"
 	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/common"
@@ -23,6 +25,14 @@ type NewDriverFunc func(ctx context.Context, art *wfv1.Artifact, ri resource.Int
 
 // NewDriver initializes an instance of an artifact driver
 func NewDriver(ctx context.Context, art *wfv1.Artifact, ri resource.Interface) (common.ArtifactDriver, error) {
+	drv, err := newDriver(ctx, art, ri)
+	if err != nil {
+		return nil, err
+	}
+	return logging.New(drv), nil
+
+}
+func newDriver(ctx context.Context, art *wfv1.Artifact, ri resource.Interface) (common.ArtifactDriver, error) {
 	if art.S3 != nil {
 		var accessKey string
 		var secretKey string

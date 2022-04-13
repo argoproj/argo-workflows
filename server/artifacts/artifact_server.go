@@ -219,7 +219,6 @@ func (a *ArtifactServer) returnArtifact(ctx context.Context, w http.ResponseWrit
 
 	key, _ := art.GetKey()
 	w.Header().Add("Content-Disposition", fmt.Sprintf(`filename="%s"`, path.Base(key)))
-	w.WriteHeader(200)
 
 	http.ServeContent(w, r, "", time.Time{}, file)
 
