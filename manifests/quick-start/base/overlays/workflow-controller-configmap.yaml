@@ -8,6 +8,7 @@ data:
   images: |
     docker/whalesay:latest:
        cmd: [cowsay]
+       args: [nope]
   artifactRepository: |
     s3:
       bucket: my-bucket

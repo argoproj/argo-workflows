@@ -40,7 +40,7 @@ class ArtifactServiceApi(object):
             self,
             namespace,
             name,
-            pod_name,
+            node_id,
             artifact_name,
             **kwargs
         ):
@@ -49,13 +49,13 @@ class ArtifactServiceApi(object):
             This method makes a synchronous HTTP request by default. To make an
             asynchronous HTTP request, please pass async_req=True
 
-            >>> thread = api.get_input_artifact(namespace, name, pod_name, artifact_name, async_req=True)
+            >>> thread = api.get_input_artifact(namespace, name, node_id, artifact_name, async_req=True)
             >>> result = thread.get()
 
             Args:
                 namespace (str):
                 name (str):
-                pod_name (str):
+                node_id (str):
                 artifact_name (str):
 
             Keyword Args:
@@ -107,8 +107,8 @@ class ArtifactServiceApi(object):
                 namespace
             kwargs['name'] = \
                 name
-            kwargs['pod_name'] = \
-                pod_name
+            kwargs['node_id'] = \
+                node_id
             kwargs['artifact_name'] = \
                 artifact_name
             return self.call_with_http_info(**kwargs)
@@ -116,8 +116,10 @@ class ArtifactServiceApi(object):
         self.get_input_artifact = _Endpoint(
             settings={
                 'response_type': None,
-                'auth': [],
-                'endpoint_path': '/input-artifacts/{namespace}/{name}/{podName}/{artifactName}',
+                'auth': [
+                    'BearerToken'
+                ],
+                'endpoint_path': '/input-artifacts/{namespace}/{name}/{nodeId}/{artifactName}',
                 'operation_id': 'get_input_artifact',
                 'http_method': 'GET',
                 'servers': None,
@@ -126,13 +128,13 @@ class ArtifactServiceApi(object):
                 'all': [
                     'namespace',
                     'name',
-                    'pod_name',
+                    'node_id',
                     'artifact_name',
                 ],
                 'required': [
                     'namespace',
                     'name',
-                    'pod_name',
+                    'node_id',
                     'artifact_name',
                 ],
                 'nullable': [
@@ -152,7 +154,7 @@ class ArtifactServiceApi(object):
                         (str,),
                     'name':
                         (str,),
-                    'pod_name':
+                    'node_id':
                         (str,),
                     'artifact_name':
                         (str,),
@@ -160,13 +162,13 @@ class ArtifactServiceApi(object):
                 'attribute_map': {
                     'namespace': 'namespace',
                     'name': 'name',
-                    'pod_name': 'podName',
+                    'node_id': 'nodeId',
                     'artifact_name': 'artifactName',
                 },
                 'location_map': {
                     'namespace': 'path',
                     'name': 'path',
-                    'pod_name': 'path',
+                    'node_id': 'path',
                     'artifact_name': 'path',
                 },
                 'collection_format_map': {
@@ -186,7 +188,7 @@ class ArtifactServiceApi(object):
             self,
             namespace,
             uid,
-            pod_name,
+            node_id,
             artifact_name,
             **kwargs
         ):
@@ -195,13 +197,13 @@ class ArtifactServiceApi(object):
             This method makes a synchronous HTTP request by default. To make an
             asynchronous HTTP request, please pass async_req=True
 
-            >>> thread = api.get_input_artifact_by_uid(namespace, uid, pod_name, artifact_name, async_req=True)
+            >>> thread = api.get_input_artifact_by_uid(namespace, uid, node_id, artifact_name, async_req=True)
             >>> result = thread.get()
 
             Args:
                 namespace (str):
                 uid (str):
-                pod_name (str):
+                node_id (str):
                 artifact_name (str):
 
             Keyword Args:
@@ -253,8 +255,8 @@ class ArtifactServiceApi(object):
                 namespace
             kwargs['uid'] = \
                 uid
-            kwargs['pod_name'] = \
-                pod_name
+            kwargs['node_id'] = \
+                node_id
             kwargs['artifact_name'] = \
                 artifact_name
             return self.call_with_http_info(**kwargs)
@@ -262,8 +264,10 @@ class ArtifactServiceApi(object):
         self.get_input_artifact_by_uid = _Endpoint(
             settings={
                 'response_type': (file_type,),
-                'auth': [],
-                'endpoint_path': '/input-artifacts-by-uid/{uid}/{podName}/{artifactName}',
+                'auth': [
+                    'BearerToken'
+                ],
+                'endpoint_path': '/input-artifacts-by-uid/{uid}/{nodeId}/{artifactName}',
                 'operation_id': 'get_input_artifact_by_uid',
                 'http_method': 'GET',
                 'servers': None,
@@ -272,13 +276,13 @@ class ArtifactServiceApi(object):
                 'all': [
                     'namespace',
                     'uid',
-                    'pod_name',
+                    'node_id',
                     'artifact_name',
                 ],
                 'required': [
                     'namespace',
                     'uid',
-                    'pod_name',
+                    'node_id',
                     'artifact_name',
                 ],
                 'nullable': [
@@ -298,7 +302,7 @@ class ArtifactServiceApi(object):
                         (str,),
                     'uid':
                         (str,),
-                    'pod_name':
+                    'node_id':
                         (str,),
                     'artifact_name':
                         (str,),
@@ -306,13 +310,13 @@ class ArtifactServiceApi(object):
                 'attribute_map': {
                     'namespace': 'namespace',
                     'uid': 'uid',
-                    'pod_name': 'podName',
+                    'node_id': 'nodeId',
                     'artifact_name': 'artifactName',
                 },
                 'location_map': {
                     'namespace': 'path',
                     'uid': 'path',
-                    'pod_name': 'path',
+                    'node_id': 'path',
                     'artifact_name': 'path',
                 },
                 'collection_format_map': {
@@ -332,7 +336,7 @@ class ArtifactServiceApi(object):
             self,
             namespace,
             name,
-            pod_name,
+            node_id,
             artifact_name,
             **kwargs
         ):
@@ -341,13 +345,13 @@ class ArtifactServiceApi(object):
             This method makes a synchronous HTTP request by default. To make an
             asynchronous HTTP request, please pass async_req=True
 
-            >>> thread = api.get_output_artifact(namespace, name, pod_name, artifact_name, async_req=True)
+            >>> thread = api.get_output_artifact(namespace, name, node_id, artifact_name, async_req=True)
             >>> result = thread.get()
 
             Args:
                 namespace (str):
                 name (str):
-                pod_name (str):
+                node_id (str):
                 artifact_name (str):
 
             Keyword Args:
@@ -399,8 +403,8 @@ class ArtifactServiceApi(object):
                 namespace
             kwargs['name'] = \
                 name
-            kwargs['pod_name'] = \
-                pod_name
+            kwargs['node_id'] = \
+                node_id
             kwargs['artifact_name'] = \
                 artifact_name
             return self.call_with_http_info(**kwargs)
@@ -408,8 +412,10 @@ class ArtifactServiceApi(object):
         self.get_output_artifact = _Endpoint(
             settings={
                 'response_type': (file_type,),
-                'auth': [],
-                'endpoint_path': '/artifacts/{namespace}/{name}/{podName}/{artifactName}',
+                'auth': [
+                    'BearerToken'
+                ],
+                'endpoint_path': '/artifacts/{namespace}/{name}/{nodeId}/{artifactName}',
                 'operation_id': 'get_output_artifact',
                 'http_method': 'GET',
                 'servers': None,
@@ -418,13 +424,13 @@ class ArtifactServiceApi(object):
                 'all': [
                     'namespace',
                     'name',
-                    'pod_name',
+                    'node_id',
                     'artifact_name',
                 ],
                 'required': [
                     'namespace',
                     'name',
-                    'pod_name',
+                    'node_id',
                     'artifact_name',
                 ],
                 'nullable': [
@@ -444,7 +450,7 @@ class ArtifactServiceApi(object):
                         (str,),
                     'name':
                         (str,),
-                    'pod_name':
+                    'node_id':
                         (str,),
                     'artifact_name':
                         (str,),
@@ -452,13 +458,13 @@ class ArtifactServiceApi(object):
                 'attribute_map': {
                     'namespace': 'namespace',
                     'name': 'name',
-                    'pod_name': 'podName',
+                    'node_id': 'nodeId',
                     'artifact_name': 'artifactName',
                 },
                 'location_map': {
                     'namespace': 'path',
                     'name': 'path',
-                    'pod_name': 'path',
+                    'node_id': 'path',
                     'artifact_name': 'path',
                 },
                 'collection_format_map': {
@@ -477,7 +483,7 @@ class ArtifactServiceApi(object):
         def __get_output_artifact_by_uid(
             self,
             uid,
-            pod_name,
+            node_id,
             artifact_name,
             **kwargs
         ):
@@ -486,12 +492,12 @@ class ArtifactServiceApi(object):
             This method makes a synchronous HTTP request by default. To make an
             asynchronous HTTP request, please pass async_req=True
 
-            >>> thread = api.get_output_artifact_by_uid(uid, pod_name, artifact_name, async_req=True)
+            >>> thread = api.get_output_artifact_by_uid(uid, node_id, artifact_name, async_req=True)
             >>> result = thread.get()
 
             Args:
                 uid (str):
-                pod_name (str):
+                node_id (str):
                 artifact_name (str):
 
             Keyword Args:
@@ -541,8 +547,8 @@ class ArtifactServiceApi(object):
             kwargs['_host_index'] = kwargs.get('_host_index')
             kwargs['uid'] = \
                 uid
-            kwargs['pod_name'] = \
-                pod_name
+            kwargs['node_id'] = \
+                node_id
             kwargs['artifact_name'] = \
                 artifact_name
             return self.call_with_http_info(**kwargs)
@@ -550,8 +556,10 @@ class ArtifactServiceApi(object):
         self.get_output_artifact_by_uid = _Endpoint(
             settings={
                 'response_type': None,
-                'auth': [],
-                'endpoint_path': '/artifacts-by-uid/{uid}/{podName}/{artifactName}',
+                'auth': [
+                    'BearerToken'
+                ],
+                'endpoint_path': '/artifacts-by-uid/{uid}/{nodeId}/{artifactName}',
                 'operation_id': 'get_output_artifact_by_uid',
                 'http_method': 'GET',
                 'servers': None,
@@ -559,12 +567,12 @@ class ArtifactServiceApi(object):
             params_map={
                 'all': [
                     'uid',
-                    'pod_name',
+                    'node_id',
                     'artifact_name',
                 ],
                 'required': [
                     'uid',
-                    'pod_name',
+                    'node_id',
                     'artifact_name',
                 ],
                 'nullable': [
@@ -582,19 +590,19 @@ class ArtifactServiceApi(object):
                 'openapi_types': {
                     'uid':
                         (str,),
-                    'pod_name':
+                    'node_id':
                         (str,),
                     'artifact_name':
                         (str,),
                 },
                 'attribute_map': {
                     'uid': 'uid',
-                    'pod_name': 'podName',
+                    'node_id': 'nodeId',
                     'artifact_name': 'artifactName',
                 },
                 'location_map': {
                     'uid': 'path',
-                    'pod_name': 'path',
+                    'node_id': 'path',
                     'artifact_name': 'path',
                 },
                 'collection_format_map': {

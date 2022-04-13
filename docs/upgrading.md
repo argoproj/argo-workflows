@@ -13,14 +13,14 @@ Affected if:
 * Using the Emissary executor.
 * Used the `args` field for any entry in `images`.
 
-This PR automatically looks up the command and entrypoint. This implementation for config look-up was incorrect (it
+This PR automatically looks up the command and entrypoint. The implementation for config look-up was incorrect (it
 allowed you to specify `args` but not `entrypoint`). `args` has been removed to correct the behaviour.
 
 If you are incorrectly configured, the workflow controller will error on start-up. 
 
 #### Actions
 
-Remove any images that uses a v2 Docker manifest (e.g. argoproj/argosay:v2):
+You don't need to configure images that use v2 manifests anymore. You can just remove them (e.g. argoproj/argosay:v2):
 
 ```bash
 % docker manifest inspect argoproj/argosay:v2

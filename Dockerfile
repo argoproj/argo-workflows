@@ -1,6 +1,6 @@
 #syntax=docker/dockerfile:1.2
 
-FROM golang:1.17 as builder
+FROM golang:1.18 as builder
 
 RUN apt-get update && apt-get --no-install-recommends install -y \
     git \
