@@ -188,4 +188,4 @@ require (
 	github.com/whilp/git-urls v1.0.0 // indirect
 )
 
-replace github.com/go-git/go-git/v5 => github.com/argoproj-labs/go-git/v5 v5.4.3
+replace github.com/go-git/go-git/v5 => github.com/argoproj-labs/go-git/v5 v5.4.4
