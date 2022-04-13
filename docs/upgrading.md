@@ -47,6 +47,10 @@ images:
 The workflow controller will error on start-up if incorrectly configured, rather than silently ignoring
 mis-configuration.
 
+```
+Failed to register watch for controller config map: error unmarshaling JSON: while decoding JSON: json: unknown field \"args\"
+```
+
 ## Upgrading to v3.3
 
 ### [662a7295b](https://github.com/argoproj/argo-workflows/commit/662a7295b) feat: Replace `patch pod` with `create workflowtaskresult`. Fixes #3961 (#8000)
