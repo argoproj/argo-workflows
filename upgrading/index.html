@@ -2082,6 +2082,46 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#upgrading-to-v34" class="md-nav__link">
+    Upgrading to v3.4
+  </a>
+  
+    <nav class="md-nav" aria-label="Upgrading to v3.4">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#feat-add-entrypoint-lookup-fixes-8344" class="md-nav__link">
+    feat!: Add entrypoint lookup. Fixes #8344
+  </a>
+  
+    <nav class="md-nav" aria-label="feat!: Add entrypoint lookup. Fixes #8344">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#actions" class="md-nav__link">
+    Actions
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#feat-fail-on-invalid-config-8295" class="md-nav__link">
+    feat: Fail on invalid config. (#8295)
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#upgrading-to-v33" class="md-nav__link">
     Upgrading to v3.3
   </a>
@@ -2939,6 +2979,46 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#upgrading-to-v34" class="md-nav__link">
+    Upgrading to v3.4
+  </a>
+  
+    <nav class="md-nav" aria-label="Upgrading to v3.4">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#feat-add-entrypoint-lookup-fixes-8344" class="md-nav__link">
+    feat!: Add entrypoint lookup. Fixes #8344
+  </a>
+  
+    <nav class="md-nav" aria-label="feat!: Add entrypoint lookup. Fixes #8344">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#actions" class="md-nav__link">
+    Actions
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#feat-fail-on-invalid-config-8295" class="md-nav__link">
+    feat: Fail on invalid config. (#8295)
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#upgrading-to-v33" class="md-nav__link">
     Upgrading to v3.3
   </a>
@@ -3136,6 +3216,38 @@
 <h1 id="upgrading">Upgrading<a class="headerlink" href="#upgrading" title="Permanent link">&para;</a></h1>
 <p>Breaking changes  typically (sometimes we don't realise they are breaking) have "!" in the commit message, as per
 the <a href="https://www.conventionalcommits.org/en/v1.0.0/#summary">conventional commits</a>.</p>
+<h2 id="upgrading-to-v34">Upgrading to v3.4<a class="headerlink" href="#upgrading-to-v34" title="Permanent link">&para;</a></h2>
+<h3 id="feat-add-entrypoint-lookup-fixes-8344">feat!: Add entrypoint lookup. Fixes #8344<a class="headerlink" href="#feat-add-entrypoint-lookup-fixes-8344" title="Permanent link">&para;</a></h3>
+<p>Affected if:</p>
+<ul>
+<li>Using the Emissary executor.</li>
+<li>Used the <code>args</code> field for any entry in <code>images</code>.</li>
+</ul>
+<p>This PR automatically looks up the command and entrypoint. The implementation for config look-up was incorrect (it
+allowed you to specify <code>args</code> but not <code>entrypoint</code>). <code>args</code> has been removed to correct the behaviour.</p>
+<p>If you are incorrectly configured, the workflow controller will error on start-up. </p>
+<h4 id="actions">Actions<a class="headerlink" href="#actions" title="Permanent link">&para;</a></h4>
+<p>You don't need to configure images that use v2 manifests anymore. You can just remove them (e.g. argoproj/argosay:v2):</p>
+<div class="highlight"><pre><span></span><code>% docker manifest inspect argoproj/argosay:v2
+...
+<span class="s2">&quot;schemaVersion&quot;</span>: <span class="m">2</span>,
+...
+</code></pre></div>
+<p>For v1 manifests (e.g. docker/whalesay:latest):</p>
+<div class="highlight"><pre><span></span><code>% docker image inspect -f <span class="s1">&#39;{{.Config.Entrypoint}} {{.Config.Cmd}}&#39;</span> docker/whalesay:latest
+<span class="o">[]</span> <span class="o">[</span>/bin/bash<span class="o">]</span>
+<span class="sb">````</span>
+
+<span class="sb">```</span>yaml
+images:
+  docker/whalesay:latest:
+    cmd: <span class="o">[</span>/bin/bash<span class="o">]</span>
+</code></pre></div>
+<h2 id="feat-fail-on-invalid-config-8295">feat: Fail on invalid config. (#8295)<a class="headerlink" href="#feat-fail-on-invalid-config-8295" title="Permanent link">&para;</a></h2>
+<p>The workflow controller will error on start-up if incorrectly configured, rather than silently ignoring
+mis-configuration.</p>
+<div class="highlight"><pre><span></span><code>Failed to register watch for controller config map: error unmarshaling JSON: while decoding JSON: json: unknown field \&quot;args\&quot;
+</code></pre></div>
 <h2 id="upgrading-to-v33">Upgrading to v3.3<a class="headerlink" href="#upgrading-to-v33" title="Permanent link">&para;</a></h2>
 <h3 id="662a7295b-feat-replace-patch-pod-with-create-workflowtaskresult-fixes-3961-8000"><a href="https://github.com/argoproj/argo-workflows/commit/662a7295b">662a7295b</a> feat: Replace <code>patch pod</code> with <code>create workflowtaskresult</code>. Fixes #3961 (#8000)<a class="headerlink" href="#662a7295b-feat-replace-patch-pod-with-create-workflowtaskresult-fixes-3961-8000" title="Permanent link">&para;</a></h3>
 <p>The PR changes the permissions that can be used by a workflow to remove the <code>pod patch</code> permission. </p>
