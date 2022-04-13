@@ -14,7 +14,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/strategicpatch"
 
-	"github.com/argoproj/argo-workflows/v3/config"
 	"github.com/argoproj/argo-workflows/v3/errors"
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
@@ -22,6 +21,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/util/intstr"
 	"github.com/argoproj/argo-workflows/v3/util/template"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
+	"github.com/argoproj/argo-workflows/v3/workflow/controller/entrypoint"
 	"github.com/argoproj/argo-workflows/v3/workflow/controller/indexes"
 	"github.com/argoproj/argo-workflows/v3/workflow/util"
 )
@@ -372,14 +372,16 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 		if c.Name != common.WaitContainerName {
 			// https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#notes
 			if len(c.Command) == 0 {
-				x := woc.getImage(c.Image)
-				c.Command = x.Command
-				if c.Args == nil { // check nil rather than length, as zero-length is valid args
-					c.Args = x.Args
+				x, err := woc.controller.entrypoint.Lookup(ctx, c.Image, entrypoint.Options{
+					Namespace: woc.wf.Namespace, ServiceAccountName: woc.wf.Spec.ServiceAccountName, ImagePullSecrets: woc.wf.Spec.ImagePullSecrets,
+				})
+				if err != nil {
+					return nil, fmt.Errorf("failed to look-up entrypoint/cmd for image %q, you must either explicitly specify the command, or list the image's command in the index: https://argoproj.github.io/argo-workflows/workflow-executors/#emissary-emissary: %w", c.Image, err)
 				}
-			}
-			if len(c.Command) == 0 {
-				return nil, fmt.Errorf("container %q in template %q, does not have the command specified: when using the emissary executor you must either explicitly specify the command, or list the image's command in the index: https://argoproj.github.io/argo-workflows/workflow-executors/#emissary-emissary", c.Name, tmpl.Name)
+				c.Command = x.Entrypoint
+				if c.Args == nil { // check nil rather than length, as zero-length is valid args
+					c.Args = x.Cmd
+				}
 			}
 			c.Command = append([]string{common.VarRunArgoPath + "/argoexec", "emissary", "--"}, c.Command...)
 		}
@@ -467,13 +469,6 @@ func (woc *wfOperationCtx) getDeadline(opts *createWorkflowPodOpts) *time.Time {
 		deadline = opts.executionDeadline
 	}
 	return &deadline
-}
-
-func (woc *wfOperationCtx) getImage(image string) config.Image {
-	if woc.controller.Config.Images == nil {
-		return config.Image{}
-	}
-	return woc.controller.Config.Images[image]
 }
 
 // substitutePodParams returns a pod spec with parameter references substituted as well as pod.name
