@@ -14946,7 +14946,7 @@ func (this *GCSArtifact) String() string {
 	}
 	s := strings.Join([]string{`&GCSArtifact{`,
 		`GCSBucket:` + strings.Replace(strings.Replace(this.GCSBucket.String(), "GCSBucket", "GCSBucket", 1), `&`, ``, 1) + `,`,
-		`Filename:` + fmt.Sprintf("%v", this.Key) + `,`,
+		`Key:` + fmt.Sprintf("%v", this.Key) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -15221,7 +15221,7 @@ func (this *MemoizationStatus) String() string {
 	}
 	s := strings.Join([]string{`&MemoizationStatus{`,
 		`Hit:` + fmt.Sprintf("%v", this.Hit) + `,`,
-		`Filename:` + fmt.Sprintf("%v", this.Key) + `,`,
+		`Key:` + fmt.Sprintf("%v", this.Key) + `,`,
 		`CacheName:` + fmt.Sprintf("%v", this.CacheName) + `,`,
 		`}`,
 	}, "")
@@ -15232,7 +15232,7 @@ func (this *Memoize) String() string {
 		return "nil"
 	}
 	s := strings.Join([]string{`&Memoize{`,
-		`Filename:` + fmt.Sprintf("%v", this.Key) + `,`,
+		`Key:` + fmt.Sprintf("%v", this.Key) + `,`,
 		`Cache:` + strings.Replace(this.Cache.String(), "Cache", "Cache", 1) + `,`,
 		`MaxAge:` + fmt.Sprintf("%v", this.MaxAge) + `,`,
 		`}`,
@@ -15275,7 +15275,7 @@ func (this *MetricLabel) String() string {
 		return "nil"
 	}
 	s := strings.Join([]string{`&MetricLabel{`,
-		`Filename:` + fmt.Sprintf("%v", this.Key) + `,`,
+		`Key:` + fmt.Sprintf("%v", this.Key) + `,`,
 		`Value:` + fmt.Sprintf("%v", this.Value) + `,`,
 		`}`,
 	}, "")
@@ -15419,7 +15419,7 @@ func (this *OSSArtifact) String() string {
 	}
 	s := strings.Join([]string{`&OSSArtifact{`,
 		`OSSBucket:` + strings.Replace(strings.Replace(this.OSSBucket.String(), "OSSBucket", "OSSBucket", 1), `&`, ``, 1) + `,`,
-		`Filename:` + fmt.Sprintf("%v", this.Key) + `,`,
+		`Key:` + fmt.Sprintf("%v", this.Key) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -15632,7 +15632,7 @@ func (this *S3Artifact) String() string {
 	}
 	s := strings.Join([]string{`&S3Artifact{`,
 		`S3Bucket:` + strings.Replace(strings.Replace(this.S3Bucket.String(), "S3Bucket", "S3Bucket", 1), `&`, ``, 1) + `,`,
-		`Filename:` + fmt.Sprintf("%v", this.Key) + `,`,
+		`Key:` + fmt.Sprintf("%v", this.Key) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -17954,7 +17954,7 @@ func (m *ArtifactRepositoryRef) Unmarshal(dAtA []byte) error {
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Filename", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field Key", wireType)
 			}
 			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
@@ -21669,7 +21669,7 @@ func (m *GCSArtifact) Unmarshal(dAtA []byte) error {
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Filename", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field Key", wireType)
 			}
 			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
@@ -24703,7 +24703,7 @@ func (m *MemoizationStatus) Unmarshal(dAtA []byte) error {
 			m.Hit = bool(v != 0)
 		case 2:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Filename", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field Key", wireType)
 			}
 			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
@@ -24817,7 +24817,7 @@ func (m *Memoize) Unmarshal(dAtA []byte) error {
 		switch fieldNum {
 		case 1:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Filename", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field Key", wireType)
 			}
 			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
@@ -25271,7 +25271,7 @@ func (m *MetricLabel) Unmarshal(dAtA []byte) error {
 		switch fieldNum {
 		case 1:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Filename", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field Key", wireType)
 			}
 			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
@@ -27027,7 +27027,7 @@ func (m *OSSArtifact) Unmarshal(dAtA []byte) error {
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Filename", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field Key", wireType)
 			}
 			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
@@ -29409,7 +29409,7 @@ func (m *S3Artifact) Unmarshal(dAtA []byte) error {
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Filename", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field Key", wireType)
 			}
 			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {

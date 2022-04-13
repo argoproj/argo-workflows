@@ -1928,7 +1928,7 @@ func schema_pkg_apis_workflow_v1alpha1_GCSArtifact(ref common.ReferenceCallback)
 					},
 					"key": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Filename is the path in the bucket where the artifact resides",
+							Description: "Key is the path in the bucket where the artifact resides",
 							Default:     "",
 							Type:        []string{"string"},
 							Format:      "",
@@ -2907,7 +2907,7 @@ func schema_pkg_apis_workflow_v1alpha1_MemoizationStatus(ref common.ReferenceCal
 					},
 					"key": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Filename is the name of the key used for this node's cache",
+							Description: "Key is the name of the key used for this node's cache",
 							Default:     "",
 							Type:        []string{"string"},
 							Format:      "",
@@ -2937,7 +2937,7 @@ func schema_pkg_apis_workflow_v1alpha1_Memoize(ref common.ReferenceCallback) com
 				Properties: map[string]spec.Schema{
 					"key": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Filename is the key to use as the caching key",
+							Description: "Key is the key to use as the caching key",
 							Default:     "",
 							Type:        []string{"string"},
 							Format:      "",
@@ -3496,7 +3496,7 @@ func schema_pkg_apis_workflow_v1alpha1_OSSArtifact(ref common.ReferenceCallback)
 					},
 					"key": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Filename is the path in the bucket where the artifact resides",
+							Description: "Key is the path in the bucket where the artifact resides",
 							Default:     "",
 							Type:        []string{"string"},
 							Format:      "",
@@ -4186,7 +4186,7 @@ func schema_pkg_apis_workflow_v1alpha1_S3Artifact(ref common.ReferenceCallback) 
 					},
 					"key": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Filename is the key in the bucket where the artifact resides",
+							Description: "Key is the key in the bucket where the artifact resides",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -4382,7 +4382,7 @@ func schema_pkg_apis_workflow_v1alpha1_S3EncryptionOptions(ref common.ReferenceC
 				Properties: map[string]spec.Schema{
 					"kmsKeyId": {
 						SchemaProps: spec.SchemaProps{
-							Description: "KMSKeyId tells the driver to encrypt the object using the specified KMS Filename.",
+							Description: "KMSKeyId tells the driver to encrypt the object using the specified KMS Key.",
 							Type:        []string{"string"},
 							Format:      "",
 						},
