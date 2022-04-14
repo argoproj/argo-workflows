@@ -56,6 +56,24 @@ func (s *SignalsSuite) TestStopBehavior() {
 		})
 }
 
+func (s *SignalsSuite) TestStopBehaviorWithDaemon() {
+	s.Given().
+		Workflow("@functional/stop-terminate-daemon.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToHaveRunningPod, kill2xDuration).
+		ShutdownWorkflow(wfv1.ShutdownStrategyStop).
+		WaitForWorkflow(kill2xDuration).
+		Then().
+		ExpectWorkflow(func(t *testing.T, m *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Contains(t, []wfv1.WorkflowPhase{wfv1.WorkflowFailed, wfv1.WorkflowError}, status.Phase)
+			nodeStatus := status.Nodes.FindByDisplayName("Daemon")
+			if assert.NotNil(t, nodeStatus) {
+				assert.Equal(t, wfv1.NodeSucceeded, nodeStatus.Phase)
+			}
+		})
+}
+
 func (s *SignalsSuite) TestTerminateBehavior() {
 	s.Given().
 		Workflow("@functional/stop-terminate.yaml").
