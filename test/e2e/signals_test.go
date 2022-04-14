@@ -52,7 +52,7 @@ func (s *SignalsSuite) TestStopBehavior() {
 
 func (s *SignalsSuite) TestStopBehaviorWithDaemon() {
 	s.Given().
-		Workflow("@functional/stop-terminate-Daemon.yaml").
+		Workflow("@functional/stop-terminate-daemon.yaml").
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToHaveRunningPod, kill2xDuration).
