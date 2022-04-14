@@ -38,7 +38,7 @@ func newWoc(wfs ...wfv1.Workflow) *wfOperationCtx {
 	} else {
 		wf = &wfs[0]
 	}
-	cancel, controller := newController(wf)
+	cancel, controller := newController(wf, defaultServiceAccount)
 	defer cancel()
 	woc := newWorkflowOperationCtx(wf, controller)
 	return woc
@@ -653,8 +653,8 @@ func Test_createWorkflowPod_containerName(t *testing.T) {
 func Test_createWorkflowPod_emissary(t *testing.T) {
 	t.Run("NoCommand", func(t *testing.T) {
 		woc := newWoc()
-		_, err := woc.createWorkflowPod(context.Background(), "", []apiv1.Container{{}}, &wfv1.Template{Name: "my-tmpl"}, &createWorkflowPodOpts{})
-		assert.EqualError(t, err, "container \"main\" in template \"my-tmpl\", does not have the command specified: when using the emissary executor you must either explicitly specify the command, or list the image's command in the index: https://argoproj.github.io/argo-workflows/workflow-executors/#emissary-emissary")
+		_, err := woc.createWorkflowPod(context.Background(), "", []apiv1.Container{{Image: "docker/whalesay:nope"}}, &wfv1.Template{Name: "my-tmpl"}, &createWorkflowPodOpts{})
+		assert.EqualError(t, err, "failed to look-up entrypoint/cmd for image \"docker/whalesay:nope\", you must either explicitly specify the command, or list the image's command in the index: https://argoproj.github.io/argo-workflows/workflow-executors/#emissary-emissary: GET https://index.docker.io/v2/docker/whalesay/manifests/nope: MANIFEST_UNKNOWN: manifest unknown; unknown tag=nope")
 	})
 	t.Run("CommandNoArgs", func(t *testing.T) {
 		woc := newWoc()
@@ -666,15 +666,15 @@ func Test_createWorkflowPod_emissary(t *testing.T) {
 		woc := newWoc()
 		pod, err := woc.createWorkflowPod(context.Background(), "", []apiv1.Container{{Image: "my-image"}}, &wfv1.Template{}, &createWorkflowPodOpts{})
 		if assert.NoError(t, err) {
-			assert.Equal(t, []string{"/var/run/argo/argoexec", "emissary", "--", "my-cmd"}, pod.Spec.Containers[1].Command)
-			assert.Equal(t, []string{"my-args"}, pod.Spec.Containers[1].Args)
+			assert.Equal(t, []string{"/var/run/argo/argoexec", "emissary", "--", "my-entrypoint"}, pod.Spec.Containers[1].Command)
+			assert.Equal(t, []string{"my-cmd"}, pod.Spec.Containers[1].Args)
 		}
 	})
 	t.Run("NoCommandWithArgsWithImageIndex", func(t *testing.T) {
 		woc := newWoc()
 		pod, err := woc.createWorkflowPod(context.Background(), "", []apiv1.Container{{Image: "my-image", Args: []string{"foo"}}}, &wfv1.Template{}, &createWorkflowPodOpts{})
 		if assert.NoError(t, err) {
-			assert.Equal(t, []string{"/var/run/argo/argoexec", "emissary", "--", "my-cmd"}, pod.Spec.Containers[1].Command)
+			assert.Equal(t, []string{"/var/run/argo/argoexec", "emissary", "--", "my-entrypoint"}, pod.Spec.Containers[1].Command)
 			assert.Equal(t, []string{"foo"}, pod.Spec.Containers[1].Args)
 		}
 	})
