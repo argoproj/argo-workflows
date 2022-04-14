@@ -32,7 +32,7 @@ require (
 	github.com/grpc-ecosystem/grpc-gateway v1.16.0
 	github.com/imkira/go-interpol v1.1.0 // indirect
 	github.com/klauspost/pgzip v1.2.5
-	github.com/minio/minio-go/v7 v7.0.23
+	github.com/minio/minio-go/v7 v7.0.24
 	github.com/mitchellh/go-ps v0.0.0-20190716172923-621e5597135b
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.12.1
