@@ -51,8 +51,3 @@ func TestHTTPArtifactDriver_Load(t *testing.T) {
 		}
 	})
 }
-
-func TestHTTPArtifactDriver_Save(t *testing.T) {
-	driver := &ArtifactDriver{}
-	assert.Error(t, driver.Save("", nil))
-}

@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"path/filepath"
 
 	"github.com/argoproj/argo-workflows/v3/errors"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
@@ -48,8 +49,30 @@ func (h *ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) error {
 	return err
 }
 
-func (h *ArtifactDriver) Save(string, *wfv1.Artifact) error {
-	return errors.Errorf(errors.CodeBadRequest, "HTTP output artifacts unsupported")
+// Save upload artifacts to an HTTP URL
+func (h *ArtifactDriver) Save(path string, artifact *wfv1.Artifact) error {
+	f, err := os.Open(filepath.Clean(path))
+	if err != nil {
+		return err
+	}
+	req, err := http.NewRequest(http.MethodPut, artifact.HTTP.URL, f)
+	if err != nil {
+		return err
+	}
+	for _, h := range artifact.HTTP.Headers {
+		req.Header.Add(h.Name, h.Value)
+	}
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		_ = res.Body.Close()
+	}()
+	if res.StatusCode < 200 || res.StatusCode >= 300 {
+		return errors.Errorf("saving artifact to %s failed with status code %d", artifact.HTTP.URL, res.StatusCode)
+	}
+	return nil
 }
 
 func (h *ArtifactDriver) ListObjects(artifact *wfv1.Artifact) ([]string, error) {
