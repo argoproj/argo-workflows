@@ -482,6 +482,8 @@ spec:
                               type: object
                             git:
                               properties:
+                                branch:
+                                  type: string
                                 depth:
                                   format: int64
                                   type: integer
@@ -508,6 +510,8 @@ spec:
                                   type: string
                                 revision:
                                   type: string
+                                singleBranch:
+                                  type: boolean
                                 sshPrivateKeySecret:
                                   properties:
                                     key:
@@ -941,6 +945,8 @@ spec:
                                     type: object
                                   git:
                                     properties:
+                                      branch:
+                                        type: string
                                       depth:
                                         format: int64
                                         type: integer
@@ -967,6 +973,8 @@ spec:
                                         type: string
                                       revision:
                                         type: string
+                                      singleBranch:
+                                        type: boolean
                                       sshPrivateKeySecret:
                                         properties:
                                           key:
@@ -2005,6 +2013,8 @@ spec:
                             type: object
                           git:
                             properties:
+                              branch:
+                                type: string
                               depth:
                                 format: int64
                                 type: integer
@@ -2031,6 +2041,8 @@ spec:
                                 type: string
                               revision:
                                 type: string
+                              singleBranch:
+                                type: boolean
                               sshPrivateKeySecret:
                                 properties:
                                   key:
@@ -3570,6 +3582,8 @@ spec:
                                             type: object
                                           git:
                                             properties:
+                                              branch:
+                                                type: string
                                               depth:
                                                 format: int64
                                                 type: integer
@@ -3596,6 +3610,8 @@ spec:
                                                 type: string
                                               revision:
                                                 type: string
+                                              singleBranch:
+                                                type: boolean
                                               sshPrivateKeySecret:
                                                 properties:
                                                   key:
@@ -3995,6 +4011,8 @@ spec:
                                                   type: object
                                                 git:
                                                   properties:
+                                                    branch:
+                                                      type: string
                                                     depth:
                                                       format: int64
                                                       type: integer
@@ -4021,6 +4039,8 @@ spec:
                                                       type: string
                                                     revision:
                                                       type: string
+                                                    singleBranch:
+                                                      type: boolean
                                                     sshPrivateKeySecret:
                                                       properties:
                                                         key:
@@ -4473,6 +4493,8 @@ spec:
                                     type: object
                                   git:
                                     properties:
+                                      branch:
+                                        type: string
                                       depth:
                                         format: int64
                                         type: integer
@@ -4499,6 +4521,8 @@ spec:
                                         type: string
                                       revision:
                                         type: string
+                                      singleBranch:
+                                        type: boolean
                                       sshPrivateKeySecret:
                                         properties:
                                           key:
@@ -5493,6 +5517,8 @@ spec:
                                   type: object
                                 git:
                                   properties:
+                                    branch:
+                                      type: string
                                     depth:
                                       format: int64
                                       type: integer
@@ -5519,6 +5545,8 @@ spec:
                                       type: string
                                     revision:
                                       type: string
+                                    singleBranch:
+                                      type: boolean
                                     sshPrivateKeySecret:
                                       properties:
                                         key:
@@ -6006,6 +6034,8 @@ spec:
                                   type: object
                                 git:
                                   properties:
+                                    branch:
+                                      type: string
                                     depth:
                                       format: int64
                                       type: integer
@@ -6032,6 +6062,8 @@ spec:
                                       type: string
                                     revision:
                                       type: string
+                                    singleBranch:
+                                      type: boolean
                                     sshPrivateKeySecret:
                                       properties:
                                         key:
@@ -8798,6 +8830,8 @@ spec:
                               type: object
                             git:
                               properties:
+                                branch:
+                                  type: string
                                 depth:
                                   format: int64
                                   type: integer
@@ -8824,6 +8858,8 @@ spec:
                                   type: string
                                 revision:
                                   type: string
+                                singleBranch:
+                                  type: boolean
                                 sshPrivateKeySecret:
                                   properties:
                                     key:
@@ -10363,6 +10399,8 @@ spec:
                                               type: object
                                             git:
                                               properties:
+                                                branch:
+                                                  type: string
                                                 depth:
                                                   format: int64
                                                   type: integer
@@ -10389,6 +10427,8 @@ spec:
                                                   type: string
                                                 revision:
                                                   type: string
+                                                singleBranch:
+                                                  type: boolean
                                                 sshPrivateKeySecret:
                                                   properties:
                                                     key:
@@ -10788,6 +10828,8 @@ spec:
                                                     type: object
                                                   git:
                                                     properties:
+                                                      branch:
+                                                        type: string
                                                       depth:
                                                         format: int64
                                                         type: integer
@@ -10814,6 +10856,8 @@ spec:
                                                         type: string
                                                       revision:
                                                         type: string
+                                                      singleBranch:
+                                                        type: boolean
                                                       sshPrivateKeySecret:
                                                         properties:
                                                           key:
@@ -11266,6 +11310,8 @@ spec:
                                       type: object
                                     git:
                                       properties:
+                                        branch:
+                                          type: string
                                         depth:
                                           format: int64
                                           type: integer
@@ -11292,6 +11338,8 @@ spec:
                                           type: string
                                         revision:
                                           type: string
+                                        singleBranch:
+                                          type: boolean
                                         sshPrivateKeySecret:
                                           properties:
                                             key:
@@ -12286,6 +12334,8 @@ spec:
                                     type: object
                                   git:
                                     properties:
+                                      branch:
+                                        type: string
                                       depth:
                                         format: int64
                                         type: integer
@@ -12312,6 +12362,8 @@ spec:
                                         type: string
                                       revision:
                                         type: string
+                                      singleBranch:
+                                        type: boolean
                                       sshPrivateKeySecret:
                                         properties:
                                           key:
@@ -12799,6 +12851,8 @@ spec:
                                     type: object
                                   git:
                                     properties:
+                                      branch:
+                                        type: string
                                       depth:
                                         format: int64
                                         type: integer
@@ -12825,6 +12879,8 @@ spec:
                                         type: string
                                       revision:
                                         type: string
+                                      singleBranch:
+                                        type: boolean
                                       sshPrivateKeySecret:
                                         properties:
                                           key:

@@ -3204,6 +3204,7 @@ GitArtifact is the location of an git artifact
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
+|`branch`|`string`|Branch is the branch to fetch when `SingleBranch` is enabled|
 |`depth`|`integer`|Depth specifies clones/fetches should be shallow and include the given number of commits from the branch tip|
 |`disableSubmodules`|`boolean`|DisableSubmodules disables submodules during git clone|
 |`fetch`|`Array< string >`|Fetch specifies a number of refs that should be fetched before checkout|
@@ -3211,6 +3212,7 @@ GitArtifact is the location of an git artifact
 |`passwordSecret`|[`SecretKeySelector`](#secretkeyselector)|PasswordSecret is the secret selector to the repository password|
 |`repo`|`string`|Repo is the git repository|
 |`revision`|`string`|Revision is the git commit, tag, branch to checkout|
+|`singleBranch`|`boolean`|SingleBranch enables single branch clone, using the `branch` parameter|
 |`sshPrivateKeySecret`|[`SecretKeySelector`](#secretkeyselector)|SSHPrivateKeySecret is the secret selector to the repository ssh private key|
 |`usernameSecret`|[`SecretKeySelector`](#secretkeyselector)|UsernameSecret is the secret selector to the repository username|
 
