@@ -1273,9 +1273,14 @@ metadata:
   name: minio
 spec:
   ports:
-  - port: 9000
+  - name: api
+    port: 9000
     protocol: TCP
     targetPort: 9000
+  - name: dashboard
+    port: 9001
+    protocol: TCP
+    targetPort: 9001
   selector:
     app: minio
 ---
@@ -1377,6 +1382,8 @@ spec:
       - command:
         - minio
         - server
+        - --console-address
+        - :9001
         - /data
         env:
         - name: MINIO_ACCESS_KEY
@@ -1400,6 +1407,9 @@ spec:
         name: main
         ports:
         - containerPort: 9000
+          name: api
+        - containerPort: 9001
+          name: dashboard
         readinessProbe:
           httpGet:
             path: /minio/health/ready
