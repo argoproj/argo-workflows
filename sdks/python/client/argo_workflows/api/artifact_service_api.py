@@ -116,9 +116,7 @@ class ArtifactServiceApi(object):
         self.get_input_artifact = _Endpoint(
             settings={
                 'response_type': None,
-                'auth': [
-                    'BearerToken'
-                ],
+                'auth': [],
                 'endpoint_path': '/input-artifacts/{namespace}/{name}/{nodeId}/{artifactName}',
                 'operation_id': 'get_input_artifact',
                 'http_method': 'GET',
@@ -264,15 +262,8 @@ class ArtifactServiceApi(object):
         self.get_input_artifact_by_uid = _Endpoint(
             settings={
                 'response_type': (file_type,),
-<<<<<<< HEAD
                 'auth': [],
-                'endpoint_path': '/input-artifacts-by-uid/{uid}/{podName}/{artifactName}',
-=======
-                'auth': [
-                    'BearerToken'
-                ],
                 'endpoint_path': '/input-artifacts-by-uid/{uid}/{nodeId}/{artifactName}',
->>>>>>> 637d14c88... fix: replace `podName` with `nodeId` in `_.primary.swagger.json` (#8385)
                 'operation_id': 'get_input_artifact_by_uid',
                 'http_method': 'GET',
                 'servers': None,
@@ -417,15 +408,8 @@ class ArtifactServiceApi(object):
         self.get_output_artifact = _Endpoint(
             settings={
                 'response_type': (file_type,),
-<<<<<<< HEAD
                 'auth': [],
-                'endpoint_path': '/artifacts/{namespace}/{name}/{podName}/{artifactName}',
-=======
-                'auth': [
-                    'BearerToken'
-                ],
                 'endpoint_path': '/artifacts/{namespace}/{name}/{nodeId}/{artifactName}',
->>>>>>> 637d14c88... fix: replace `podName` with `nodeId` in `_.primary.swagger.json` (#8385)
                 'operation_id': 'get_output_artifact',
                 'http_method': 'GET',
                 'servers': None,
@@ -566,15 +550,8 @@ class ArtifactServiceApi(object):
         self.get_output_artifact_by_uid = _Endpoint(
             settings={
                 'response_type': None,
-<<<<<<< HEAD
                 'auth': [],
-                'endpoint_path': '/artifacts-by-uid/{uid}/{podName}/{artifactName}',
-=======
-                'auth': [
-                    'BearerToken'
-                ],
                 'endpoint_path': '/artifacts-by-uid/{uid}/{nodeId}/{artifactName}',
->>>>>>> 637d14c88... fix: replace `podName` with `nodeId` in `_.primary.swagger.json` (#8385)
                 'operation_id': 'get_output_artifact_by_uid',
                 'http_method': 'GET',
                 'servers': None,
