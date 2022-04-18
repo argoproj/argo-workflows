@@ -11582,7 +11582,7 @@
 </tbody>
 </table>
 <h2 id="httpartifact">HTTPArtifact<a class="headerlink" href="#httpartifact" title="Permanent link">&para;</a></h2>
-<p>HTTPArtifact allows an file served on HTTP to be placed as an input artifact in a container</p>
+<p>HTTPArtifact allows a file served on HTTP to be placed as an input artifact in a container</p>
 <details>
 <summary>Examples with this field (click to open)</summary>
 <br>
@@ -11634,9 +11634,19 @@
 <td>Headers are an optional list of headers to send with HTTP requests for artifacts</td>
 </tr>
 <tr>
+<td align="center"><code>passwordSecret</code></td>
+<td align="center"><a href="#secretkeyselector"><code>SecretKeySelector</code></a></td>
+<td>PasswordSecret is the secret selector to the repository password</td>
+</tr>
+<tr>
 <td align="center"><code>url</code></td>
 <td align="center"><code>string</code></td>
 <td>URL of the artifact</td>
+</tr>
+<tr>
+<td align="center"><code>usernameSecret</code></td>
+<td align="center"><a href="#secretkeyselector"><code>SecretKeySelector</code></a></td>
+<td>UsernameSecret is the secret selector to the repository username</td>
 </tr>
 </tbody>
 </table>
