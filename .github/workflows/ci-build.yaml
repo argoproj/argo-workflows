@@ -218,6 +218,7 @@ jobs:
       - uses: golangci/golangci-lint-action@v2
         with:
           version: v1.42.0
+          cache: false
       - run: git diff --exit-code
 
   ui:
