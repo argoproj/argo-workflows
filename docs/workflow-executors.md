@@ -27,7 +27,7 @@ This is the most fully featured executor.
 * Configuration:
     * `command` must be specified for containers.
 
-You can determine the command and args as follows:
+You can determine values as follows:
 
 ```bash
 docker image inspect -f '{{.Config.Entrypoint}} {{.Config.Cmd}}' argoproj/argosay:v2

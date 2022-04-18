@@ -1175,14 +1175,8 @@ data:
         cpu: 10m
         memory: 64Mi
   images: |
-    argoproj/argosay:v1:
-      command: [cowsay]
-    argoproj/argosay:v2:
-      command: [/argosay]
     docker/whalesay:latest:
-       command: [cowsay]
-    python:alpine3.6:
-       command: [python3]
+       cmd: [cowsay]
   links: |
     - name: Workflow Link
       scope: workflow
@@ -1299,9 +1293,14 @@ metadata:
   name: minio
 spec:
   ports:
-  - port: 9000
+  - name: api
+    port: 9000
     protocol: TCP
     targetPort: 9000
+  - name: dashboard
+    port: 9001
+    protocol: TCP
+    targetPort: 9001
   selector:
     app: minio
 ---
@@ -1412,6 +1411,8 @@ spec:
       - command:
         - minio
         - server
+        - --console-address
+        - :9001
         - /data
         env:
         - name: MINIO_ACCESS_KEY
@@ -1435,6 +1436,9 @@ spec:
         name: main
         ports:
         - containerPort: 9000
+          name: api
+        - containerPort: 9001
+          name: dashboard
         readinessProbe:
           httpGet:
             path: /minio/health/ready
