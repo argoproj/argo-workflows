@@ -7,7 +7,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// Interceptor returns a handler that provides as access logging.
+// Interceptor returns a handler that provides access logging.
 //
 // github.com/gorilla/handlers/logging.go
 // https://arunvelsriram.medium.com/simple-golang-http-logging-middleware-315656ff8722
