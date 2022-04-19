@@ -45,7 +45,7 @@ func (s *ProgressSuite) TestLoggedProgress() {
 		Workflow("@testdata/progress-workflow.yaml").
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(toHaveProgress("50/100"), 40*time.Second). // ARGO_PROGRESS_PATCH_TICK_DURATION=30s
+		WaitForWorkflow(toHaveProgress("50/100"), time.Minute). // ARGO_PROGRESS_PATCH_TICK_DURATION=1m
 		WaitForWorkflow().
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
