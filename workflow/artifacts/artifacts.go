@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/artifactory"
 	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/gcs"
 	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/git"
@@ -87,19 +88,7 @@ func newDriver(ctx context.Context, art *wfv1.Artifact, ri resource.Interface) (
 		return &driver, nil
 	}
 	if art.HTTP != nil {
-		usernameBytes, err := ri.GetSecret(ctx, art.HTTP.UsernameSecret.Name, art.HTTP.UsernameSecret.Key)
-		if err != nil {
-			return nil, err
-		}
-		passwordBytes, err := ri.GetSecret(ctx, art.HTTP.PasswordSecret.Name, art.HTTP.PasswordSecret.Key)
-		if err != nil {
-			return nil, err
-		}
-		driver := http.ArtifactDriver{
-			Username: usernameBytes,
-			Password: passwordBytes,
-		}
-		return &driver, nil
+		return &http.ArtifactDriver{}, nil
 	}
 	if art.Git != nil {
 		gitDriver := git.ArtifactDriver{
@@ -139,7 +128,7 @@ func newDriver(ctx context.Context, art *wfv1.Artifact, ri resource.Interface) (
 		if err != nil {
 			return nil, err
 		}
-		driver := http.ArtifactDriver{
+		driver := artifactory.ArtifactDriver{
 			Username: usernameBytes,
 			Password: passwordBytes,
 		}

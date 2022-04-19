@@ -3231,7 +3231,7 @@ HDFSArtifact is the location of an HDFS artifact
 
 ## HTTPArtifact
 
-HTTPArtifact allows a file served on HTTP to be placed as an input artifact in a container
+HTTPArtifact allows an file served on HTTP to be placed as an input artifact in a container
 
 <details>
 <summary>Examples with this field (click to open)</summary>
@@ -3270,9 +3270,7 @@ HTTPArtifact allows a file served on HTTP to be placed as an input artifact in a
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
 |`headers`|`Array<`[`Header`](#header)`>`|Headers are an optional list of headers to send with HTTP requests for artifacts|
-|`passwordSecret`|[`SecretKeySelector`](#secretkeyselector)|PasswordSecret is the secret selector to the repository password|
 |`url`|`string`|URL of the artifact|
-|`usernameSecret`|[`SecretKeySelector`](#secretkeyselector)|UsernameSecret is the secret selector to the repository username|
 
 ## OSSArtifact
 
