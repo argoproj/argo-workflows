@@ -20,11 +20,11 @@ jobs:
     timeout-minutes: 8
     steps:
       - uses: actions/checkout@v3
-      - uses: actions/setup-go@v2
+      - uses: actions/setup-go@v3
         with:
-          go-version: "1.17"
+          go-version: "1.18"
       # https://github.com/actions/cache/blob/main/examples.md#go---modules
-      - uses: actions/cache@v2
+      - uses: actions/cache@v3
         with:
           path: |
             ~/.cache/go-build
@@ -46,7 +46,7 @@ jobs:
       - uses: actions/checkout@v3
       - uses: docker/setup-buildx-action@v1
       - name: Cache Docker layers
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: /tmp/.buildx-cache
           key: ${{ runner.os }}-single-buildx-${{ github.sha }}
@@ -62,7 +62,7 @@ jobs:
             --output=type=docker \
             .
       - run: docker save quay.io/argoproj/argoexec:latest > /tmp/argoexec_image.tar
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         with:
           name: argoexec
           path: /tmp/argoexec_image.tar
@@ -87,45 +87,37 @@ jobs:
       max-parallel: 4
       matrix:
         include:
+          - test: test-java-sdk
+            profile: minimal
+          - test: test-python-sdk
+            profile: minimal
           - test: test-plugins
-            containerRuntimeExecutor: emissary
             profile: plugins
           - test: test-functional
-            containerRuntimeExecutor: emissary
             profile: minimal
           - test: test-api
-            containerRuntimeExecutor: emissary
             profile: mysql
           - test: test-cli
-            containerRuntimeExecutor: emissary
             profile: mysql
           - test: test-cron
-            containerRuntimeExecutor: emissary
             profile: minimal
           - test: test-examples
-            containerRuntimeExecutor: emissary
             profile: minimal
           - test: test-executor
-            containerRuntimeExecutor: emissary
-            profile: minimal
-          - test: test-executor
-            containerRuntimeExecutor: docker
-            profile: minimal
-          - test: test-executor
-            containerRuntimeExecutor: k8sapi
-            profile: minimal
-          - test: test-executor
-            containerRuntimeExecutor: kubelet
-            profile: minimal
-          - test: test-executor
-            containerRuntimeExecutor: pns
             profile: minimal
     steps:
       - uses: actions/checkout@v3
-      - uses: actions/setup-go@v2
+      - uses: actions/setup-go@v3
         with:
-          go-version: "1.17"
-      - uses: actions/cache@v2
+          go-version: "1.18"
+      - uses: actions/setup-java@v3
+        with:
+          java-version: '8'
+          distribution: adopt
+      - uses: actions/setup-python@v3
+        with:
+          python-version: '3.x'
+      - uses: actions/cache@v3
         with:
           path: |
             ~/.cache/go-build
@@ -142,7 +134,7 @@ jobs:
           echo "  user:" >> $KUBECONFIG
           echo "    token: xxxxxx" >> $KUBECONFIG
           until kubectl cluster-info ; do sleep 10s ; done
-      - uses: actions/download-artifact@v2
+      - uses: actions/download-artifact@v3
         with:
           name: argoexec
           path: /tmp
@@ -153,11 +145,11 @@ jobs:
           echo '127.0.0.1 minio'    | sudo tee -a /etc/hosts
           echo '127.0.0.1 postgres' | sudo tee -a /etc/hosts
           echo '127.0.0.1 mysql'    | sudo tee -a /etc/hosts
-      - run: make install PROFILE=${{matrix.profile}} E2E_EXECUTOR=${{matrix.containerRuntimeExecutor}} STATIC_FILES=false
+      - run: make install PROFILE=${{matrix.profile}} STATIC_FILES=false
       - run: make controller $(go env GOPATH)/bin/goreman STATIC_FILES=false
       - run: make cli STATIC_FILES=false
-        if: ${{matrix.test == 'test-api' || matrix.test == 'test-cli'}}
-      - run: make start PROFILE=${{matrix.profile}} E2E_EXECUTOR=${{matrix.containerRuntimeExecutor}} AUTH_MODE=client STATIC_FILES=false LOG_LEVEL=info API=${{matrix.test == 'test-api' || matrix.test == 'test-cli'}} UI=false > /tmp/argo.log 2>&1 &
+        if: ${{matrix.test == 'test-api' || matrix.test == 'test-cli' || matrix.test == 'test-java-sdk' || matrix.test == 'test-python-sdk'}}
+      - run: make start PROFILE=${{matrix.profile}} AUTH_MODE=client STATIC_FILES=false LOG_LEVEL=info API=${{matrix.test == 'test-api' || matrix.test == 'test-cli' || matrix.test == 'test-java-sdk' || matrix.test == 'test-python-sdk'}} UI=false > /tmp/argo.log 2>&1 &
       - run: make wait
         timeout-minutes: 4
       - run: make ${{matrix.test}} E2E_TIMEOUT=1m STATIC_FILES=false
@@ -174,10 +166,10 @@ jobs:
       GOPATH: /home/runner/go
     steps:
       - uses: actions/checkout@v3
-      - uses: actions/setup-go@v2
+      - uses: actions/setup-go@v3
         with:
-          go-version: "1.17"
-      - uses: actions/cache@v2
+          go-version: "1.18"
+      - uses: actions/cache@v3
         with:
           path: |
             ~/.cache/go-build
@@ -216,8 +208,6 @@ jobs:
           fetch-depth: 0
       - run: cp server/static/files.go.stub server/static/files.go
       - uses: golangci/golangci-lint-action@v2
-        with:
-          version: v1.42.0
       - run: git diff --exit-code
 
   ui:
@@ -231,7 +221,7 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version: "16"
-      - uses: actions/cache@v2
+      - uses: actions/cache@v3
         with:
           path: ui/node_modules
           key: ${{ runner.os }}-node-dep-v1-${{ hashFiles('**/yarn.lock') }}

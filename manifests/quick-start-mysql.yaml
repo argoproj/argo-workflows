@@ -138,6 +138,11 @@ spec:
       jsonPath: .status.startedAt
       name: Age
       type: date
+    - description: Human readable message indicating details about why the workflow
+        is in this condition.
+      jsonPath: .status.message
+      name: Message
+      type: string
     name: v1alpha1
     schema:
       openAPIV3Schema:
@@ -1164,29 +1169,14 @@ data:
       secretKeySecret:
         name: my-minio-cred
         key: secretkey
-  containerRuntimeExecutors: |
-    - name: emissary
-      selector:
-        matchLabels:
-          workflows.argoproj.io/container-runtime-executor: emissary
-    - name: pns
-      selector:
-        matchLabels:
-          workflows.argoproj.io/container-runtime-executor: pns
   executor: |
     resources:
       requests:
         cpu: 10m
         memory: 64Mi
   images: |
-    argoproj/argosay:v1:
-      command: [cowsay]
-    argoproj/argosay:v2:
-      command: [/argosay]
     docker/whalesay:latest:
-       command: [cowsay]
-    python:alpine3.6:
-       command: [python3]
+       cmd: [cowsay]
   links: |
     - name: Workflow Link
       scope: workflow
@@ -1303,9 +1293,14 @@ metadata:
   name: minio
 spec:
   ports:
-  - port: 9000
+  - name: api
+    port: 9000
     protocol: TCP
     targetPort: 9000
+  - name: dashboard
+    port: 9001
+    protocol: TCP
+    targetPort: 9001
   selector:
     app: minio
 ---
@@ -1379,9 +1374,12 @@ spec:
           initialDelaySeconds: 10
           periodSeconds: 20
         securityContext:
+          allowPrivilegeEscalation: false
           capabilities:
             drop:
             - ALL
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
         volumeMounts:
         - mountPath: /tmp
           name: tmp
@@ -1413,6 +1411,8 @@ spec:
       - command:
         - minio
         - server
+        - --console-address
+        - :9001
         - /data
         env:
         - name: MINIO_ACCESS_KEY
@@ -1436,6 +1436,9 @@ spec:
         name: main
         ports:
         - containerPort: 9000
+          name: api
+        - containerPort: 9001
+          name: dashboard
         readinessProbe:
           httpGet:
             path: /minio/health/ready
@@ -1496,6 +1499,8 @@ spec:
   selector:
     matchLabels:
       app: workflow-controller
+  strategy:
+    type: Recreate
   template:
     metadata:
       labels:
@@ -1503,10 +1508,6 @@ spec:
     spec:
       containers:
       - args:
-        - --configmap
-        - workflow-controller-configmap
-        - --executor-image
-        - quay.io/argoproj/argoexec:latest
         - --namespaced
         command:
         - workflow-controller
@@ -1521,7 +1522,7 @@ spec:
           failureThreshold: 3
           httpGet:
             path: /healthz
-            port: 6060
+            port: healthz
           initialDelaySeconds: 90
           periodSeconds: 60
           timeoutSeconds: 30
@@ -1530,6 +1531,11 @@ spec:
         - containerPort: 9090
           name: metrics
         - containerPort: 6060
+          name: healthz
+        readinessProbe:
+          httpGet:
+            path: /metrics
+            port: metrics
         securityContext:
           allowPrivilegeEscalation: false
           capabilities:

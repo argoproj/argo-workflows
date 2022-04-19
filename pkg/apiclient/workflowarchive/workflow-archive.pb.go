@@ -305,6 +305,156 @@ func (m *ListArchivedWorkflowLabelValuesRequest) GetListOptions() *v1.ListOption
 	return nil
 }
 
+type RetryArchivedWorkflowRequest struct {
+	Uid                  string   `protobuf:"bytes,1,opt,name=uid,proto3" json:"uid,omitempty"`
+	Name                 string   `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	Namespace            string   `protobuf:"bytes,3,opt,name=namespace,proto3" json:"namespace,omitempty"`
+	RestartSuccessful    bool     `protobuf:"varint,4,opt,name=restartSuccessful,proto3" json:"restartSuccessful,omitempty"`
+	NodeFieldSelector    string   `protobuf:"bytes,5,opt,name=nodeFieldSelector,proto3" json:"nodeFieldSelector,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *RetryArchivedWorkflowRequest) Reset()         { *m = RetryArchivedWorkflowRequest{} }
+func (m *RetryArchivedWorkflowRequest) String() string { return proto.CompactTextString(m) }
+func (*RetryArchivedWorkflowRequest) ProtoMessage()    {}
+func (*RetryArchivedWorkflowRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_95ca9a2d33e8bb19, []int{6}
+}
+func (m *RetryArchivedWorkflowRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *RetryArchivedWorkflowRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_RetryArchivedWorkflowRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *RetryArchivedWorkflowRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_RetryArchivedWorkflowRequest.Merge(m, src)
+}
+func (m *RetryArchivedWorkflowRequest) XXX_Size() int {
+	return m.Size()
+}
+func (m *RetryArchivedWorkflowRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_RetryArchivedWorkflowRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_RetryArchivedWorkflowRequest proto.InternalMessageInfo
+
+func (m *RetryArchivedWorkflowRequest) GetUid() string {
+	if m != nil {
+		return m.Uid
+	}
+	return ""
+}
+
+func (m *RetryArchivedWorkflowRequest) GetName() string {
+	if m != nil {
+		return m.Name
+	}
+	return ""
+}
+
+func (m *RetryArchivedWorkflowRequest) GetNamespace() string {
+	if m != nil {
+		return m.Namespace
+	}
+	return ""
+}
+
+func (m *RetryArchivedWorkflowRequest) GetRestartSuccessful() bool {
+	if m != nil {
+		return m.RestartSuccessful
+	}
+	return false
+}
+
+func (m *RetryArchivedWorkflowRequest) GetNodeFieldSelector() string {
+	if m != nil {
+		return m.NodeFieldSelector
+	}
+	return ""
+}
+
+type ResubmitArchivedWorkflowRequest struct {
+	Uid                  string   `protobuf:"bytes,1,opt,name=uid,proto3" json:"uid,omitempty"`
+	Name                 string   `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	Namespace            string   `protobuf:"bytes,3,opt,name=namespace,proto3" json:"namespace,omitempty"`
+	Memoized             bool     `protobuf:"varint,4,opt,name=memoized,proto3" json:"memoized,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *ResubmitArchivedWorkflowRequest) Reset()         { *m = ResubmitArchivedWorkflowRequest{} }
+func (m *ResubmitArchivedWorkflowRequest) String() string { return proto.CompactTextString(m) }
+func (*ResubmitArchivedWorkflowRequest) ProtoMessage()    {}
+func (*ResubmitArchivedWorkflowRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_95ca9a2d33e8bb19, []int{7}
+}
+func (m *ResubmitArchivedWorkflowRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *ResubmitArchivedWorkflowRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_ResubmitArchivedWorkflowRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *ResubmitArchivedWorkflowRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ResubmitArchivedWorkflowRequest.Merge(m, src)
+}
+func (m *ResubmitArchivedWorkflowRequest) XXX_Size() int {
+	return m.Size()
+}
+func (m *ResubmitArchivedWorkflowRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_ResubmitArchivedWorkflowRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ResubmitArchivedWorkflowRequest proto.InternalMessageInfo
+
+func (m *ResubmitArchivedWorkflowRequest) GetUid() string {
+	if m != nil {
+		return m.Uid
+	}
+	return ""
+}
+
+func (m *ResubmitArchivedWorkflowRequest) GetName() string {
+	if m != nil {
+		return m.Name
+	}
+	return ""
+}
+
+func (m *ResubmitArchivedWorkflowRequest) GetNamespace() string {
+	if m != nil {
+		return m.Namespace
+	}
+	return ""
+}
+
+func (m *ResubmitArchivedWorkflowRequest) GetMemoized() bool {
+	if m != nil {
+		return m.Memoized
+	}
+	return false
+}
+
 func init() {
 	proto.RegisterType((*ListArchivedWorkflowsRequest)(nil), "workflowarchive.ListArchivedWorkflowsRequest")
 	proto.RegisterType((*GetArchivedWorkflowRequest)(nil), "workflowarchive.GetArchivedWorkflowRequest")
@@ -312,6 +462,8 @@ func init() {
 	proto.RegisterType((*ArchivedWorkflowDeletedResponse)(nil), "workflowarchive.ArchivedWorkflowDeletedResponse")
 	proto.RegisterType((*ListArchivedWorkflowLabelKeysRequest)(nil), "workflowarchive.ListArchivedWorkflowLabelKeysRequest")
 	proto.RegisterType((*ListArchivedWorkflowLabelValuesRequest)(nil), "workflowarchive.ListArchivedWorkflowLabelValuesRequest")
+	proto.RegisterType((*RetryArchivedWorkflowRequest)(nil), "workflowarchive.RetryArchivedWorkflowRequest")
+	proto.RegisterType((*ResubmitArchivedWorkflowRequest)(nil), "workflowarchive.ResubmitArchivedWorkflowRequest")
 }
 
 func init() {
@@ -319,44 +471,54 @@ func init() {
 }
 
 var fileDescriptor_95ca9a2d33e8bb19 = []byte{
-	// 579 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xb4, 0x95, 0xdf, 0x6a, 0x13, 0x4f,
-	0x14, 0xc7, 0x99, 0xfe, 0xe0, 0x27, 0x9d, 0x5e, 0x28, 0x23, 0x6a, 0x59, 0xd2, 0x34, 0x0e, 0xda,
-	0x46, 0x65, 0x67, 0xdc, 0xb6, 0xa2, 0x97, 0x2a, 0x82, 0x60, 0xd3, 0x2a, 0x29, 0x28, 0x78, 0x23,
-	0x93, 0xec, 0xe9, 0x66, 0xcc, 0x66, 0x67, 0xdd, 0x99, 0x6c, 0x2d, 0xd2, 0x1b, 0x5f, 0xa1, 0xaf,
-	0xe0, 0x43, 0x88, 0x4f, 0xe0, 0xa5, 0xe8, 0x9d, 0x57, 0x12, 0xbc, 0xf2, 0x29, 0x64, 0x27, 0xd9,
-	0x24, 0xe6, 0x3f, 0x58, 0xef, 0x26, 0x27, 0xe7, 0x7c, 0xe7, 0x73, 0xce, 0x7e, 0x0f, 0x83, 0x77,
-	0xe2, 0x66, 0xc0, 0x45, 0x2c, 0xeb, 0xa1, 0x84, 0xc8, 0xf0, 0x23, 0x95, 0x34, 0x0f, 0x43, 0x75,
-	0x24, 0x92, 0x7a, 0x43, 0xa6, 0xd0, 0xff, 0xed, 0xf6, 0x02, 0x2c, 0x4e, 0x94, 0x51, 0xe4, 0xfc,
-	0x48, 0x9e, 0x53, 0x08, 0x94, 0x0a, 0x42, 0xc8, 0x94, 0xb8, 0x88, 0x22, 0x65, 0x84, 0x91, 0x2a,
-	0xd2, 0xdd, 0x74, 0x67, 0xa7, 0x79, 0x4f, 0x33, 0xa9, 0xb2, 0x7f, 0x5b, 0xa2, 0xde, 0x90, 0x11,
-	0x24, 0xc7, 0xbc, 0x77, 0xb1, 0xe6, 0x2d, 0x30, 0x82, 0xa7, 0x1e, 0x0f, 0x20, 0x82, 0x44, 0x18,
-	0xf0, 0x7b, 0x55, 0x7b, 0x81, 0x34, 0x8d, 0x76, 0x8d, 0xd5, 0x55, 0x8b, 0x8b, 0x24, 0x50, 0x71,
-	0xa2, 0x5e, 0xdb, 0x83, 0x9b, 0xdf, 0xae, 0x07, 0x22, 0x79, 0x88, 0xa7, 0x9e, 0x08, 0xe3, 0x86,
-	0x18, 0x93, 0xa3, 0xa7, 0x08, 0x17, 0x2a, 0x52, 0x9b, 0x07, 0x5d, 0x64, 0xff, 0x45, 0x2e, 0x52,
-	0x85, 0x37, 0x6d, 0xd0, 0x86, 0x1c, 0xe0, 0x95, 0x50, 0x6a, 0xf3, 0x34, 0xb6, 0xe8, 0xab, 0xa8,
-	0x84, 0xca, 0x2b, 0x5b, 0x1e, 0xeb, 0xb2, 0xb3, 0x61, 0x76, 0x16, 0x37, 0x83, 0x2c, 0xa0, 0x59,
-	0xc6, 0xce, 0x52, 0x8f, 0x55, 0x06, 0x85, 0xd5, 0x61, 0x15, 0x52, 0xc4, 0x38, 0x12, 0x2d, 0x78,
-	0x96, 0xc0, 0xa1, 0x7c, 0xbb, 0xba, 0x54, 0x42, 0xe5, 0xe5, 0xea, 0x50, 0x84, 0x32, 0xec, 0x3c,
-	0x86, 0x31, 0xa6, 0x1c, 0xe9, 0x02, 0xfe, 0xaf, 0x2d, 0x7d, 0x8b, 0xb2, 0x5c, 0xcd, 0x8e, 0xd4,
-	0xc3, 0x6b, 0x8f, 0x20, 0x04, 0x03, 0x8b, 0x97, 0x5c, 0xc5, 0xeb, 0xa3, 0xc9, 0x5d, 0x09, 0xbf,
-	0x0a, 0x3a, 0x56, 0x91, 0x06, 0xba, 0x81, 0xaf, 0x4d, 0x1a, 0x4d, 0x45, 0xd4, 0x20, 0xdc, 0x85,
-	0xe3, 0x7c, 0x44, 0xf4, 0x04, 0x6f, 0x4c, 0xcd, 0x7b, 0x2e, 0xc2, 0x36, 0xfc, 0xd3, 0x61, 0x6e,
-	0xfd, 0x3a, 0x87, 0xaf, 0x8c, 0xde, 0x7d, 0x00, 0x49, 0x2a, 0xeb, 0x40, 0x3e, 0x21, 0x7c, 0x69,
-	0xe2, 0xe7, 0x25, 0x2e, 0x1b, 0x71, 0x2b, 0x9b, 0x65, 0x03, 0x67, 0x9f, 0x0d, 0x7c, 0xc7, 0x72,
-	0xdf, 0xd9, 0xc3, 0xab, 0xbe, 0xef, 0x58, 0xba, 0x3d, 0xc0, 0xce, 0xa3, 0x2c, 0xb7, 0x1e, 0xeb,
-	0xcf, 0x45, 0x6a, 0x43, 0xe9, 0xfb, 0x6f, 0x3f, 0x4f, 0x97, 0x0a, 0xc4, 0xb1, 0xcb, 0x91, 0x7a,
-	0xbc, 0x47, 0xe1, 0x0f, 0x6c, 0x4c, 0x3e, 0x22, 0x7c, 0x71, 0x82, 0x0d, 0xc8, 0xad, 0x31, 0xf4,
-	0xe9, 0x66, 0x71, 0x9e, 0x9c, 0x1d, 0x38, 0x2d, 0x5b, 0x68, 0x4a, 0x4a, 0xd3, 0xa1, 0xf9, 0xbb,
-	0xb6, 0xf4, 0x4f, 0xc8, 0x07, 0x84, 0x2f, 0x4f, 0x76, 0x24, 0x61, 0x63, 0xf4, 0x33, 0xad, 0xeb,
-	0xdc, 0x1e, 0xcb, 0x9f, 0xe7, 0xdb, 0x1e, 0xe6, 0xcd, 0xf9, 0x98, 0x5f, 0x11, 0x5e, 0x9b, 0x69,
-	0x71, 0x72, 0x67, 0x21, 0x9b, 0x8c, 0xae, 0x84, 0xb3, 0xfb, 0xf7, 0x53, 0xef, 0x6b, 0x52, 0xd7,
-	0xf6, 0xb3, 0x49, 0xae, 0x4f, 0xef, 0xc7, 0x0d, 0xb3, 0x6c, 0xb7, 0x99, 0x21, 0x7f, 0x47, 0x78,
-	0x7d, 0xce, 0x3e, 0x92, 0xbb, 0x8b, 0xb7, 0xf5, 0xc7, 0x06, 0x3b, 0x7b, 0x67, 0xd4, 0x58, 0x57,
-	0x95, 0x72, 0xdb, 0xda, 0x0d, 0xb2, 0x39, 0xb7, 0xb5, 0xd4, 0x16, 0x3c, 0xdc, 0xff, 0xdc, 0x29,
-	0xa2, 0x2f, 0x9d, 0x22, 0xfa, 0xd1, 0x29, 0xa2, 0x97, 0xf7, 0x17, 0x7f, 0x0c, 0x26, 0x3f, 0x65,
-	0xb5, 0xff, 0xed, 0x33, 0xb0, 0xfd, 0x3b, 0x00, 0x00, 0xff, 0xff, 0x42, 0xe1, 0x0d, 0xc1, 0xf2,
-	0x06, 0x00, 0x00,
+	// 747 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xb4, 0x96, 0xcd, 0x6e, 0xd3, 0x4a,
+	0x14, 0xc7, 0x35, 0x6d, 0xef, 0x55, 0x3b, 0x5d, 0xdc, 0xcb, 0xa0, 0x42, 0x64, 0xa5, 0x69, 0xb0,
+	0xa0, 0x4d, 0x5b, 0x32, 0x6e, 0xda, 0x22, 0x50, 0x57, 0x80, 0x10, 0x48, 0xf4, 0x03, 0xe4, 0x48,
+	0x20, 0xb1, 0x41, 0x13, 0xfb, 0x34, 0x19, 0xe2, 0x78, 0x8c, 0x67, 0xec, 0x52, 0x50, 0x17, 0xc0,
+	0x23, 0xf4, 0x15, 0x78, 0x08, 0xc4, 0x82, 0x1d, 0x12, 0x2b, 0x84, 0x60, 0xc7, 0x0a, 0x55, 0x3c,
+	0x08, 0xb2, 0x13, 0x27, 0x25, 0x71, 0x3e, 0x24, 0xd2, 0x55, 0xc6, 0x67, 0x8e, 0x8f, 0x7f, 0xff,
+	0x93, 0xf9, 0x1f, 0x0d, 0xde, 0xf4, 0xea, 0x55, 0x83, 0x79, 0xdc, 0x72, 0x38, 0xb8, 0xca, 0x38,
+	0x10, 0x7e, 0x7d, 0xdf, 0x11, 0x07, 0xcc, 0xb7, 0x6a, 0x3c, 0x84, 0xf6, 0x73, 0xb1, 0x15, 0xa0,
+	0x9e, 0x2f, 0x94, 0x20, 0xff, 0x75, 0xe5, 0x69, 0xd9, 0xaa, 0x10, 0x55, 0x07, 0xa2, 0x4a, 0x06,
+	0x73, 0x5d, 0xa1, 0x98, 0xe2, 0xc2, 0x95, 0xcd, 0x74, 0x6d, 0xb3, 0x7e, 0x43, 0x52, 0x2e, 0xa2,
+	0xdd, 0x06, 0xb3, 0x6a, 0xdc, 0x05, 0xff, 0xd0, 0x68, 0x7d, 0x58, 0x1a, 0x0d, 0x50, 0xcc, 0x08,
+	0x4b, 0x46, 0x15, 0x5c, 0xf0, 0x99, 0x02, 0xbb, 0xf5, 0xd6, 0x6e, 0x95, 0xab, 0x5a, 0x50, 0xa1,
+	0x96, 0x68, 0x18, 0xcc, 0xaf, 0x0a, 0xcf, 0x17, 0xcf, 0xe2, 0x45, 0x31, 0xf9, 0xba, 0xec, 0x14,
+	0x49, 0x42, 0x46, 0x58, 0x62, 0x8e, 0x57, 0x63, 0x3d, 0xe5, 0xf4, 0x63, 0x84, 0xb3, 0x3b, 0x5c,
+	0xaa, 0x5b, 0x4d, 0x64, 0xfb, 0x71, 0x52, 0xc4, 0x84, 0xe7, 0x01, 0x48, 0x45, 0xca, 0x78, 0xd6,
+	0xe1, 0x52, 0x3d, 0xf0, 0x62, 0xf4, 0x0c, 0xca, 0xa3, 0xc2, 0xec, 0x7a, 0x89, 0x36, 0xd9, 0xe9,
+	0x69, 0x76, 0xea, 0xd5, 0xab, 0x51, 0x40, 0xd2, 0x88, 0x9d, 0x86, 0x25, 0xba, 0xd3, 0x79, 0xd1,
+	0x3c, 0x5d, 0x85, 0xe4, 0x30, 0x76, 0x59, 0x03, 0x1e, 0xfa, 0xb0, 0xcf, 0x5f, 0x64, 0x26, 0xf2,
+	0xa8, 0x30, 0x63, 0x9e, 0x8a, 0xe8, 0x14, 0x6b, 0xf7, 0xa0, 0x87, 0x29, 0x41, 0xfa, 0x1f, 0x4f,
+	0x06, 0xdc, 0x8e, 0x51, 0x66, 0xcc, 0x68, 0xa9, 0x97, 0xf0, 0xfc, 0x1d, 0x70, 0x40, 0xc1, 0xe8,
+	0xaf, 0x5c, 0xc2, 0x0b, 0xdd, 0xc9, 0xcd, 0x12, 0xb6, 0x09, 0xd2, 0x13, 0xae, 0x04, 0x7d, 0x11,
+	0x5f, 0x4e, 0x6b, 0xcd, 0x0e, 0xab, 0x80, 0xb3, 0x0d, 0x87, 0x49, 0x8b, 0xf4, 0x23, 0xbc, 0xd8,
+	0x37, 0xef, 0x11, 0x73, 0x02, 0x38, 0xd3, 0x66, 0xea, 0x1f, 0x11, 0xce, 0x9a, 0xa0, 0xfc, 0xc3,
+	0x91, 0xc5, 0x13, 0x82, 0xa7, 0xa2, 0x6e, 0xb7, 0x3a, 0x1f, 0xaf, 0x49, 0x16, 0xcf, 0x44, 0xbf,
+	0xd2, 0x63, 0x16, 0x64, 0x26, 0xe3, 0x8d, 0x4e, 0x80, 0x5c, 0xc5, 0xe7, 0x7c, 0x90, 0x8a, 0xf9,
+	0xaa, 0x1c, 0x58, 0x16, 0x48, 0xb9, 0x1f, 0x38, 0x99, 0xa9, 0x3c, 0x2a, 0x4c, 0x9b, 0xbd, 0x1b,
+	0x51, 0xb6, 0x2b, 0x6c, 0xb8, 0xcb, 0xc1, 0xb1, 0xcb, 0xe0, 0x80, 0xa5, 0x84, 0x9f, 0xf9, 0x27,
+	0xae, 0xd9, 0xbb, 0xa1, 0xbf, 0x46, 0x78, 0xc1, 0x04, 0x19, 0x54, 0x1a, 0x5c, 0x9d, 0xa5, 0x06,
+	0x0d, 0x4f, 0x37, 0xa0, 0x21, 0xf8, 0x4b, 0xb0, 0x5b, 0xe8, 0xed, 0xe7, 0xf5, 0xb7, 0xb3, 0xf8,
+	0x62, 0xf7, 0xb7, 0xcb, 0xe0, 0x87, 0xdc, 0x02, 0xf2, 0x01, 0xe1, 0xb9, 0x54, 0x8f, 0x90, 0x22,
+	0xed, 0xb2, 0x3c, 0x1d, 0xe4, 0x25, 0x6d, 0x8f, 0x76, 0xcc, 0x4b, 0x13, 0xf3, 0xc6, 0x8b, 0xa7,
+	0x6d, 0xf3, 0xd2, 0x70, 0xa3, 0xf3, 0xdf, 0x27, 0x51, 0x9a, 0xf8, 0x97, 0xb6, 0x0f, 0x17, 0x97,
+	0x4a, 0xd7, 0xdf, 0x7c, 0xff, 0x75, 0x3c, 0x91, 0x25, 0x5a, 0x3c, 0x61, 0xc2, 0x92, 0xd1, 0xa2,
+	0xb0, 0x3b, 0xb3, 0x80, 0xbc, 0x47, 0xf8, 0x7c, 0x8a, 0x97, 0xc8, 0x6a, 0x0f, 0x7a, 0x7f, 0xc7,
+	0x69, 0xf7, 0xc7, 0x07, 0xae, 0x17, 0x62, 0x68, 0x9d, 0xe4, 0xfb, 0x43, 0x1b, 0xaf, 0x02, 0x6e,
+	0x1f, 0x91, 0x77, 0x08, 0x5f, 0x48, 0xb7, 0x35, 0xa1, 0x3d, 0xf4, 0x03, 0xfd, 0xaf, 0xad, 0xf5,
+	0xe4, 0x0f, 0x33, 0x7f, 0x0b, 0x73, 0x65, 0x38, 0xe6, 0x37, 0x84, 0xe7, 0x07, 0xce, 0x09, 0x72,
+	0x6d, 0xa4, 0x63, 0xd2, 0x3d, 0x57, 0xb4, 0xed, 0xbf, 0xef, 0x7a, 0xbb, 0xa6, 0x5e, 0x8c, 0xf5,
+	0x2c, 0x91, 0x2b, 0xfd, 0xf5, 0x14, 0x9d, 0x28, 0xbb, 0x58, 0x8f, 0x90, 0x7f, 0x20, 0xbc, 0x30,
+	0x64, 0xa8, 0x91, 0xeb, 0xa3, 0xcb, 0xfa, 0x63, 0x0c, 0x6a, 0xbb, 0x63, 0x12, 0xd6, 0xac, 0xaa,
+	0x1b, 0xb1, 0xb4, 0x65, 0xb2, 0x34, 0x54, 0x5a, 0xd8, 0x04, 0xff, 0x84, 0xf0, 0x5c, 0xea, 0xc4,
+	0x4c, 0x31, 0xf4, 0xa0, 0xc9, 0x3a, 0x56, 0x5f, 0x94, 0x62, 0x15, 0xab, 0xda, 0xe2, 0xb0, 0x03,
+	0x67, 0xf8, 0x11, 0xd2, 0x16, 0x5a, 0x21, 0x5f, 0x10, 0xce, 0xf4, 0x1b, 0x9c, 0x64, 0x2d, 0x45,
+	0xca, 0xc0, 0x19, 0x3b, 0x56, 0x35, 0x9b, 0xb1, 0x1a, 0xaa, 0x2d, 0x8f, 0xa0, 0xa6, 0x49, 0xb5,
+	0x85, 0x56, 0x6e, 0xef, 0x7d, 0x3e, 0xc9, 0xa1, 0xaf, 0x27, 0x39, 0xf4, 0xf3, 0x24, 0x87, 0x9e,
+	0xdc, 0x1c, 0xfd, 0xaa, 0x93, 0x7e, 0x51, 0xab, 0xfc, 0x1b, 0x5f, 0x72, 0x36, 0x7e, 0x07, 0x00,
+	0x00, 0xff, 0xff, 0xd2, 0xb2, 0x06, 0xc2, 0xd0, 0x09, 0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -376,6 +538,8 @@ type ArchivedWorkflowServiceClient interface {
 	DeleteArchivedWorkflow(ctx context.Context, in *DeleteArchivedWorkflowRequest, opts ...grpc.CallOption) (*ArchivedWorkflowDeletedResponse, error)
 	ListArchivedWorkflowLabelKeys(ctx context.Context, in *ListArchivedWorkflowLabelKeysRequest, opts ...grpc.CallOption) (*v1alpha1.LabelKeys, error)
 	ListArchivedWorkflowLabelValues(ctx context.Context, in *ListArchivedWorkflowLabelValuesRequest, opts ...grpc.CallOption) (*v1alpha1.LabelValues, error)
+	RetryArchivedWorkflow(ctx context.Context, in *RetryArchivedWorkflowRequest, opts ...grpc.CallOption) (*v1alpha1.Workflow, error)
+	ResubmitArchivedWorkflow(ctx context.Context, in *ResubmitArchivedWorkflowRequest, opts ...grpc.CallOption) (*v1alpha1.Workflow, error)
 }
 
 type archivedWorkflowServiceClient struct {
@@ -431,6 +595,24 @@ func (c *archivedWorkflowServiceClient) ListArchivedWorkflowLabelValues(ctx cont
 	return out, nil
 }
 
+func (c *archivedWorkflowServiceClient) RetryArchivedWorkflow(ctx context.Context, in *RetryArchivedWorkflowRequest, opts ...grpc.CallOption) (*v1alpha1.Workflow, error) {
+	out := new(v1alpha1.Workflow)
+	err := c.cc.Invoke(ctx, "/workflowarchive.ArchivedWorkflowService/RetryArchivedWorkflow", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *archivedWorkflowServiceClient) ResubmitArchivedWorkflow(ctx context.Context, in *ResubmitArchivedWorkflowRequest, opts ...grpc.CallOption) (*v1alpha1.Workflow, error) {
+	out := new(v1alpha1.Workflow)
+	err := c.cc.Invoke(ctx, "/workflowarchive.ArchivedWorkflowService/ResubmitArchivedWorkflow", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ArchivedWorkflowServiceServer is the server API for ArchivedWorkflowService service.
 type ArchivedWorkflowServiceServer interface {
 	ListArchivedWorkflows(context.Context, *ListArchivedWorkflowsRequest) (*v1alpha1.WorkflowList, error)
@@ -438,6 +620,8 @@ type ArchivedWorkflowServiceServer interface {
 	DeleteArchivedWorkflow(context.Context, *DeleteArchivedWorkflowRequest) (*ArchivedWorkflowDeletedResponse, error)
 	ListArchivedWorkflowLabelKeys(context.Context, *ListArchivedWorkflowLabelKeysRequest) (*v1alpha1.LabelKeys, error)
 	ListArchivedWorkflowLabelValues(context.Context, *ListArchivedWorkflowLabelValuesRequest) (*v1alpha1.LabelValues, error)
+	RetryArchivedWorkflow(context.Context, *RetryArchivedWorkflowRequest) (*v1alpha1.Workflow, error)
+	ResubmitArchivedWorkflow(context.Context, *ResubmitArchivedWorkflowRequest) (*v1alpha1.Workflow, error)
 }
 
 // UnimplementedArchivedWorkflowServiceServer can be embedded to have forward compatible implementations.
@@ -458,6 +642,12 @@ func (*UnimplementedArchivedWorkflowServiceServer) ListArchivedWorkflowLabelKeys
 }
 func (*UnimplementedArchivedWorkflowServiceServer) ListArchivedWorkflowLabelValues(ctx context.Context, req *ListArchivedWorkflowLabelValuesRequest) (*v1alpha1.LabelValues, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListArchivedWorkflowLabelValues not implemented")
+}
+func (*UnimplementedArchivedWorkflowServiceServer) RetryArchivedWorkflow(ctx context.Context, req *RetryArchivedWorkflowRequest) (*v1alpha1.Workflow, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RetryArchivedWorkflow not implemented")
+}
+func (*UnimplementedArchivedWorkflowServiceServer) ResubmitArchivedWorkflow(ctx context.Context, req *ResubmitArchivedWorkflowRequest) (*v1alpha1.Workflow, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ResubmitArchivedWorkflow not implemented")
 }
 
 func RegisterArchivedWorkflowServiceServer(s *grpc.Server, srv ArchivedWorkflowServiceServer) {
@@ -554,6 +744,42 @@ func _ArchivedWorkflowService_ListArchivedWorkflowLabelValues_Handler(srv interf
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ArchivedWorkflowService_RetryArchivedWorkflow_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RetryArchivedWorkflowRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ArchivedWorkflowServiceServer).RetryArchivedWorkflow(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/workflowarchive.ArchivedWorkflowService/RetryArchivedWorkflow",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ArchivedWorkflowServiceServer).RetryArchivedWorkflow(ctx, req.(*RetryArchivedWorkflowRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ArchivedWorkflowService_ResubmitArchivedWorkflow_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ResubmitArchivedWorkflowRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ArchivedWorkflowServiceServer).ResubmitArchivedWorkflow(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/workflowarchive.ArchivedWorkflowService/ResubmitArchivedWorkflow",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ArchivedWorkflowServiceServer).ResubmitArchivedWorkflow(ctx, req.(*ResubmitArchivedWorkflowRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 var _ArchivedWorkflowService_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "workflowarchive.ArchivedWorkflowService",
 	HandlerType: (*ArchivedWorkflowServiceServer)(nil),
@@ -577,6 +803,14 @@ var _ArchivedWorkflowService_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ListArchivedWorkflowLabelValues",
 			Handler:    _ArchivedWorkflowService_ListArchivedWorkflowLabelValues_Handler,
+		},
+		{
+			MethodName: "RetryArchivedWorkflow",
+			Handler:    _ArchivedWorkflowService_RetryArchivedWorkflow_Handler,
+		},
+		{
+			MethodName: "ResubmitArchivedWorkflow",
+			Handler:    _ArchivedWorkflowService_ResubmitArchivedWorkflow_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
@@ -790,6 +1024,129 @@ func (m *ListArchivedWorkflowLabelValuesRequest) MarshalToSizedBuffer(dAtA []byt
 	return len(dAtA) - i, nil
 }
 
+func (m *RetryArchivedWorkflowRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *RetryArchivedWorkflowRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *RetryArchivedWorkflowRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.XXX_unrecognized != nil {
+		i -= len(m.XXX_unrecognized)
+		copy(dAtA[i:], m.XXX_unrecognized)
+	}
+	if len(m.NodeFieldSelector) > 0 {
+		i -= len(m.NodeFieldSelector)
+		copy(dAtA[i:], m.NodeFieldSelector)
+		i = encodeVarintWorkflowArchive(dAtA, i, uint64(len(m.NodeFieldSelector)))
+		i--
+		dAtA[i] = 0x2a
+	}
+	if m.RestartSuccessful {
+		i--
+		if m.RestartSuccessful {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i--
+		dAtA[i] = 0x20
+	}
+	if len(m.Namespace) > 0 {
+		i -= len(m.Namespace)
+		copy(dAtA[i:], m.Namespace)
+		i = encodeVarintWorkflowArchive(dAtA, i, uint64(len(m.Namespace)))
+		i--
+		dAtA[i] = 0x1a
+	}
+	if len(m.Name) > 0 {
+		i -= len(m.Name)
+		copy(dAtA[i:], m.Name)
+		i = encodeVarintWorkflowArchive(dAtA, i, uint64(len(m.Name)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.Uid) > 0 {
+		i -= len(m.Uid)
+		copy(dAtA[i:], m.Uid)
+		i = encodeVarintWorkflowArchive(dAtA, i, uint64(len(m.Uid)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *ResubmitArchivedWorkflowRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *ResubmitArchivedWorkflowRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *ResubmitArchivedWorkflowRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.XXX_unrecognized != nil {
+		i -= len(m.XXX_unrecognized)
+		copy(dAtA[i:], m.XXX_unrecognized)
+	}
+	if m.Memoized {
+		i--
+		if m.Memoized {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i--
+		dAtA[i] = 0x20
+	}
+	if len(m.Namespace) > 0 {
+		i -= len(m.Namespace)
+		copy(dAtA[i:], m.Namespace)
+		i = encodeVarintWorkflowArchive(dAtA, i, uint64(len(m.Namespace)))
+		i--
+		dAtA[i] = 0x1a
+	}
+	if len(m.Name) > 0 {
+		i -= len(m.Name)
+		copy(dAtA[i:], m.Name)
+		i = encodeVarintWorkflowArchive(dAtA, i, uint64(len(m.Name)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.Uid) > 0 {
+		i -= len(m.Uid)
+		copy(dAtA[i:], m.Uid)
+		i = encodeVarintWorkflowArchive(dAtA, i, uint64(len(m.Uid)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
 func encodeVarintWorkflowArchive(dAtA []byte, offset int, v uint64) int {
 	offset -= sovWorkflowArchive(v)
 	base := offset
@@ -886,6 +1243,64 @@ func (m *ListArchivedWorkflowLabelValuesRequest) Size() (n int) {
 	if m.ListOptions != nil {
 		l = m.ListOptions.Size()
 		n += 1 + l + sovWorkflowArchive(uint64(l))
+	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *RetryArchivedWorkflowRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Uid)
+	if l > 0 {
+		n += 1 + l + sovWorkflowArchive(uint64(l))
+	}
+	l = len(m.Name)
+	if l > 0 {
+		n += 1 + l + sovWorkflowArchive(uint64(l))
+	}
+	l = len(m.Namespace)
+	if l > 0 {
+		n += 1 + l + sovWorkflowArchive(uint64(l))
+	}
+	if m.RestartSuccessful {
+		n += 2
+	}
+	l = len(m.NodeFieldSelector)
+	if l > 0 {
+		n += 1 + l + sovWorkflowArchive(uint64(l))
+	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *ResubmitArchivedWorkflowRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Uid)
+	if l > 0 {
+		n += 1 + l + sovWorkflowArchive(uint64(l))
+	}
+	l = len(m.Name)
+	if l > 0 {
+		n += 1 + l + sovWorkflowArchive(uint64(l))
+	}
+	l = len(m.Namespace)
+	if l > 0 {
+		n += 1 + l + sovWorkflowArchive(uint64(l))
+	}
+	if m.Memoized {
+		n += 2
 	}
 	if m.XXX_unrecognized != nil {
 		n += len(m.XXX_unrecognized)
@@ -1351,6 +1766,372 @@ func (m *ListArchivedWorkflowLabelValuesRequest) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipWorkflowArchive(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthWorkflowArchive
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *RetryArchivedWorkflowRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowWorkflowArchive
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: RetryArchivedWorkflowRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: RetryArchivedWorkflowRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Uid", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowWorkflowArchive
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthWorkflowArchive
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthWorkflowArchive
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Uid = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Name", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowWorkflowArchive
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthWorkflowArchive
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthWorkflowArchive
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Name = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Namespace", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowWorkflowArchive
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthWorkflowArchive
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthWorkflowArchive
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Namespace = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 4:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field RestartSuccessful", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowWorkflowArchive
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				v |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.RestartSuccessful = bool(v != 0)
+		case 5:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field NodeFieldSelector", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowWorkflowArchive
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthWorkflowArchive
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthWorkflowArchive
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.NodeFieldSelector = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipWorkflowArchive(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthWorkflowArchive
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *ResubmitArchivedWorkflowRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowWorkflowArchive
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: ResubmitArchivedWorkflowRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: ResubmitArchivedWorkflowRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Uid", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowWorkflowArchive
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthWorkflowArchive
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthWorkflowArchive
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Uid = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Name", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowWorkflowArchive
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthWorkflowArchive
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthWorkflowArchive
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Name = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Namespace", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowWorkflowArchive
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthWorkflowArchive
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthWorkflowArchive
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Namespace = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 4:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Memoized", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowWorkflowArchive
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				v |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.Memoized = bool(v != 0)
 		default:
 			iNdEx = preIndex
 			skippy, err := skipWorkflowArchive(dAtA[iNdEx:])

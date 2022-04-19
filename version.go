@@ -17,6 +17,15 @@ var (
 	gitTreeState = ""                     // determined from `git status --porcelain`. either 'clean' or 'dirty'
 )
 
+// ImageTag return the image tag.
+// GetVersion().Version adulterates the version making it useless as the image tag.
+func ImageTag() string {
+	if version != "untagged" {
+		return version
+	}
+	return "latest"
+}
+
 // GetVersion returns the version information
 func GetVersion() wfv1.Version {
 	var versionStr string

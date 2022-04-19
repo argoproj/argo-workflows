@@ -117,14 +117,10 @@ spec:
 
 | Name | Type | Default | Description |
 |------|------|---------|-------------|
-| `ARGO_CONTAINER_RUNTIME_EXECUTOR` | `string` | `"docker"` | The name of the container runtime executor. |
-| `ARGO_KUBELET_PORT` | `int` | `10250` | The port to the Kubelet API. |
-| `ARGO_KUBELET_INSECURE` | `bool` | `false` | Whether to disable the TLS verification. |
 | `EXECUTOR_RETRY_BACKOFF_DURATION` | `time.Duration` | `1s` | The retry backoff duration when the workflow executor performs retries. |
 | `EXECUTOR_RETRY_BACKOFF_FACTOR` | `float` | `1.6` | The retry backoff factor when the workflow executor performs retries. |
 | `EXECUTOR_RETRY_BACKOFF_JITTER` | `float` | `0.5` | The retry backoff jitter when the workflow executor performs retries. |
 | `EXECUTOR_RETRY_BACKOFF_STEPS` | `int` | `5` | The retry backoff steps when the workflow executor performs retries. |
-| `PNS_PRIVILEGED` | `bool` | `false` | Whether to always set privileged on for PNS when PNS executor is used. |
 | `REMOVE_LOCAL_ART_PATH` | `bool` | `false` | Whether to remove local artifacts. |
 | `RESOURCE_STATE_CHECK_INTERVAL` | `time.Duration` | `5s` | The time interval between resource status checks against the specified success and failure conditions. |
 | `WAIT_CONTAINER_STATUS_CHECK_INTERVAL` | `time.Duration` | `5s` | The time interval for wait container to check whether the containers have completed. |

@@ -307,7 +307,7 @@ func (c *DocGeneratorContext) getTemplate(key string) string {
 	}
 
 	var properties map[string]interface{}
-	def,ok  := c.defs[key]
+	def, ok := c.defs[key]
 	if !ok {
 		return out
 	}

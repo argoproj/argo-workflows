@@ -60,12 +60,12 @@ func (s *E2ESuite) SetupSuite() {
 	s.CheckError(err)
 	s.KubeClient, err = kubernetes.NewForConfig(s.RestConfig)
 	s.CheckError(err)
-	configController := config.NewController(Namespace, "workflow-controller-configmap", s.KubeClient, config.EmptyConfigFunc)
+	configController := config.NewController(Namespace, common.ConfigMapName, s.KubeClient)
 
 	ctx := context.Background()
 	c, err := configController.Get(ctx)
 	s.CheckError(err)
-	s.Config = c.(*config.Config)
+	s.Config = c
 	s.wfClient = versioned.NewForConfigOrDie(s.RestConfig).ArgoprojV1alpha1().Workflows(Namespace)
 	s.wfebClient = versioned.NewForConfigOrDie(s.RestConfig).ArgoprojV1alpha1().WorkflowEventBindings(Namespace)
 	s.wfTemplateClient = versioned.NewForConfigOrDie(s.RestConfig).ArgoprojV1alpha1().WorkflowTemplates(Namespace)
@@ -150,15 +150,6 @@ func (s *E2ESuite) DeleteResources() {
 		for _, w := range workflows {
 			err := archive.DeleteWorkflow(string(w.UID))
 			s.CheckError(err)
-		}
-	}
-}
-
-func (s *E2ESuite) Need(needs ...Need) {
-	for _, n := range needs {
-		met, message := n(s)
-		if !met {
-			s.T().Skip("unmet need: " + message)
 		}
 	}
 }

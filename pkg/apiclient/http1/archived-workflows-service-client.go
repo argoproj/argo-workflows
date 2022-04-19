@@ -46,3 +46,13 @@ func (h ArchivedWorkflowsServiceClient) ListArchivedWorkflowLabelValues(_ contex
 	out := &wfv1.LabelValues{}
 	return out, h.Get(in, out, "/api/v1/archived-workflows-label-values")
 }
+
+func (h ArchivedWorkflowsServiceClient) RetryArchivedWorkflow(_ context.Context, in *workflowarchivepkg.RetryArchivedWorkflowRequest, _ ...grpc.CallOption) (*wfv1.Workflow, error) {
+	out := &wfv1.Workflow{}
+	return out, h.Put(in, out, "/api/v1/archived-workflows/{uid}/retry")
+}
+
+func (h ArchivedWorkflowsServiceClient) ResubmitArchivedWorkflow(_ context.Context, in *workflowarchivepkg.ResubmitArchivedWorkflowRequest, _ ...grpc.CallOption) (*wfv1.Workflow, error) {
+	out := &wfv1.Workflow{}
+	return out, h.Put(in, out, "/api/v1/archived-workflows/{uid}/resubmit")
+}

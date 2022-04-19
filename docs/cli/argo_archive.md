@@ -53,4 +53,6 @@ argo archive [flags]
 * [argo archive list](argo_archive_list.md)	 - list workflows in the archive
 * [argo archive list-label-keys](argo_archive_list-label-keys.md)	 - list workflows label keys in the archive
 * [argo archive list-label-values](argo_archive_list-label-values.md)	 - get workflow label values in the archive
+* [argo archive resubmit](argo_archive_resubmit.md)	 - resubmit one or more workflows
+* [argo archive retry](argo_archive_retry.md)	 - retry zero or more workflows
 

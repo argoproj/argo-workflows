@@ -319,10 +319,34 @@ func (s *workflowServer) RetryWorkflow(ctx context.Context, req *workflowpkg.Wor
 		return nil, err
 	}
 
-	wf, err = util.RetryWorkflow(ctx, kubeClient, s.hydrator, wfClient.ArgoprojV1alpha1().Workflows(req.Namespace), wf.Name, req.RestartSuccessful, req.NodeFieldSelector)
+	err = s.hydrator.Hydrate(wf)
 	if err != nil {
 		return nil, err
 	}
+
+	wf, podsToDelete, err := util.FormulateRetryWorkflow(ctx, wf, req.RestartSuccessful, req.NodeFieldSelector)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, podName := range podsToDelete {
+		log.WithFields(log.Fields{"podDeleted": podName}).Info("Deleting pod")
+		err := kubeClient.CoreV1().Pods(wf.Namespace).Delete(ctx, podName, metav1.DeleteOptions{})
+		if err != nil && !apierr.IsNotFound(err) {
+			return nil, err
+		}
+	}
+
+	err = s.hydrator.Dehydrate(wf)
+	if err != nil {
+		return nil, err
+	}
+
+	wf, err = wfClient.ArgoprojV1alpha1().Workflows(req.Namespace).Update(ctx, wf, metav1.UpdateOptions{})
+	if err != nil {
+		return nil, err
+	}
+
 	return wf, nil
 }
 

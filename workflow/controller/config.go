@@ -2,6 +2,7 @@ package controller
 
 import (
 	"context"
+	"fmt"
 
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/time/rate"
@@ -9,27 +10,19 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"sigs.k8s.io/yaml"
 
-	"github.com/argoproj/argo-workflows/v3/config"
+	"github.com/argoproj/argo-workflows/v3"
 	"github.com/argoproj/argo-workflows/v3/persist/sqldb"
 	"github.com/argoproj/argo-workflows/v3/util/instanceid"
 	"github.com/argoproj/argo-workflows/v3/workflow/artifactrepositories"
 	"github.com/argoproj/argo-workflows/v3/workflow/hydrator"
 )
 
-func (wfc *WorkflowController) updateConfig(v interface{}) error {
-	config := v.(*config.Config)
-	bytes, err := yaml.Marshal(config)
+func (wfc *WorkflowController) updateConfig() error {
+	bytes, err := yaml.Marshal(wfc.Config)
 	if err != nil {
 		return err
 	}
 	log.Info("Configuration:\n" + string(bytes))
-	wfc.Config = *config
-	if wfc.session != nil {
-		err := wfc.session.Close()
-		if err != nil {
-			return err
-		}
-	}
 	wfc.session = nil
 	wfc.artifactRepositories = artifactrepositories.New(wfc.kubeclientset, wfc.namespace, &wfc.Config.ArtifactRepository)
 	wfc.offloadNodeStatusRepo = sqldb.ExplosiveOffloadNodeStatusRepo
@@ -80,6 +73,11 @@ func (wfc *WorkflowController) updateConfig(v interface{}) error {
 	wfc.hydrator = hydrator.New(wfc.offloadNodeStatusRepo)
 	wfc.updateEstimatorFactory()
 	wfc.rateLimiter = wfc.newRateLimiter()
+
+	log.WithField("executorImage", wfc.executorImage()).
+		WithField("executorImagePullPolicy", wfc.executorImagePullPolicy()).
+		WithField("managedNamespace", wfc.GetManagedNamespace()).
+		Info()
 	return nil
 }
 
@@ -92,7 +90,10 @@ func (wfc *WorkflowController) executorImage() string {
 	if wfc.cliExecutorImage != "" {
 		return wfc.cliExecutorImage
 	}
-	return wfc.Config.GetExecutor().Image
+	if v := wfc.Config.GetExecutor().Image; v != "" {
+		return v
+	}
+	return fmt.Sprintf("quay.io/argoproj/argoexec:" + argo.ImageTag())
 }
 
 // executorImagePullPolicy returns the imagePullPolicy to use for the workflow executor

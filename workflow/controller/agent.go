@@ -154,6 +154,7 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 		volumeVarArgo,
 		*tokenVolume,
 	}
+
 	podVolumeMounts := []apiv1.VolumeMount{
 		volumeMountVarArgo,
 		*tokenVolumeMount,
@@ -251,14 +252,16 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 	return created, nil
 }
 
-func (woc *wfOperationCtx) getExecutorPlugins() []apiv1.Container {
+func (woc *wfOperationCtx) getExecutorPlugins(ctx context.Context) ([]apiv1.Container, []apiv1.Volume, error) {
 	var sidecars []apiv1.Container
+	var volumes []apiv1.Volume
 	namespaces := map[string]bool{} // de-dupes executorPlugins when their namespaces are the same
 	namespaces[woc.controller.namespace] = true
 	namespaces[woc.wf.Namespace] = true
 	for namespace := range namespaces {
 		for _, plug := range woc.controller.executorPlugins[namespace] {
 			c := plug.Spec.Sidecar.Container.DeepCopy()
+
 			c.VolumeMounts = append(c.VolumeMounts, apiv1.VolumeMount{
 				Name:      volumeMountVarArgo.Name,
 				MountPath: volumeMountVarArgo.MountPath,
@@ -266,10 +269,11 @@ func (woc *wfOperationCtx) getExecutorPlugins() []apiv1.Container {
 				// only mount the token for this plugin, not others
 				SubPath: c.Name,
 			})
+
 			sidecars = append(sidecars, *c)
 		}
 	}
-	return sidecars
+	return sidecars, volumes, nil
 }
 
 func addresses(containers []apiv1.Container) []string {
