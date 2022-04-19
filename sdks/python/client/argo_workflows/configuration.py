@@ -96,22 +96,6 @@ conf = argo_workflows.Configuration(
 
     The following cookie will be added to the HTTP request:
        Cookie: JSESSIONID abc123
-
-    HTTP Basic Authentication Example.
-    Given the following security scheme in the OpenAPI specification:
-      components:
-        securitySchemes:
-          http_basic_auth:
-            type: http
-            scheme: basic
-
-    Configure API client with HTTP basic authentication:
-
-conf = argo_workflows.Configuration(
-    username='the-user',
-    password='the-password',
-)
-
     """
 
     _default = None
@@ -406,17 +390,10 @@ conf = argo_workflows.Configuration(
             auth['BearerToken'] = {
                 'type': 'api_key',
                 'in': 'header',
-                'key': 'authorization',
+                'key': 'Authorization',
                 'value': self.get_api_key_with_prefix(
                     'BearerToken',
                 ),
-            }
-        if self.username is not None and self.password is not None:
-            auth['HTTPBasic'] = {
-                'type': 'basic',
-                'in': 'header',
-                'key': 'Authorization',
-                'value': self.get_basic_auth_token()
             }
         return auth
 

@@ -20,6 +20,7 @@ Method | HTTP request | Description
 
 ### Example
 
+* Api Key Authentication (BearerToken):
 ```python
 import time
 import argo_workflows
@@ -32,9 +33,19 @@ configuration = argo_workflows.Configuration(
     host = "http://localhost:2746"
 )
 
+# The client must configure the authentication and authorization parameters
+# in accordance with the API server security policy.
+# Examples for each auth method are provided below, use the example that
+# satisfies your auth use case.
+
+# Configure API key authorization: BearerToken
+configuration.api_key['BearerToken'] = 'YOUR_API_KEY'
+
+# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
+# configuration.api_key_prefix['BearerToken'] = 'Bearer'
 
 # Enter a context with an instance of the API client
-with argo_workflows.ApiClient() as api_client:
+with argo_workflows.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = pipeline_service_api.PipelineServiceApi(api_client)
     namespace = "namespace_example" # str | 
@@ -84,7 +95,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-No authorization required
+[BearerToken](../README.md#BearerToken)
 
 ### HTTP request headers
 
@@ -107,6 +118,7 @@ No authorization required
 
 ### Example
 
+* Api Key Authentication (BearerToken):
 ```python
 import time
 import argo_workflows
@@ -120,9 +132,19 @@ configuration = argo_workflows.Configuration(
     host = "http://localhost:2746"
 )
 
+# The client must configure the authentication and authorization parameters
+# in accordance with the API server security policy.
+# Examples for each auth method are provided below, use the example that
+# satisfies your auth use case.
+
+# Configure API key authorization: BearerToken
+configuration.api_key['BearerToken'] = 'YOUR_API_KEY'
+
+# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
+# configuration.api_key_prefix['BearerToken'] = 'Bearer'
 
 # Enter a context with an instance of the API client
-with argo_workflows.ApiClient() as api_client:
+with argo_workflows.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = pipeline_service_api.PipelineServiceApi(api_client)
     namespace = "namespace_example" # str | 
@@ -160,7 +182,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-No authorization required
+[BearerToken](../README.md#BearerToken)
 
 ### HTTP request headers
 
@@ -183,6 +205,7 @@ No authorization required
 
 ### Example
 
+* Api Key Authentication (BearerToken):
 ```python
 import time
 import argo_workflows
@@ -196,9 +219,19 @@ configuration = argo_workflows.Configuration(
     host = "http://localhost:2746"
 )
 
+# The client must configure the authentication and authorization parameters
+# in accordance with the API server security policy.
+# Examples for each auth method are provided below, use the example that
+# satisfies your auth use case.
+
+# Configure API key authorization: BearerToken
+configuration.api_key['BearerToken'] = 'YOUR_API_KEY'
+
+# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
+# configuration.api_key_prefix['BearerToken'] = 'Bearer'
 
 # Enter a context with an instance of the API client
-with argo_workflows.ApiClient() as api_client:
+with argo_workflows.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = pipeline_service_api.PipelineServiceApi(api_client)
     namespace = "namespace_example" # str | 
@@ -250,7 +283,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-No authorization required
+[BearerToken](../README.md#BearerToken)
 
 ### HTTP request headers
 
@@ -273,6 +306,7 @@ No authorization required
 
 ### Example
 
+* Api Key Authentication (BearerToken):
 ```python
 import time
 import argo_workflows
@@ -286,9 +320,19 @@ configuration = argo_workflows.Configuration(
     host = "http://localhost:2746"
 )
 
+# The client must configure the authentication and authorization parameters
+# in accordance with the API server security policy.
+# Examples for each auth method are provided below, use the example that
+# satisfies your auth use case.
+
+# Configure API key authorization: BearerToken
+configuration.api_key['BearerToken'] = 'YOUR_API_KEY'
+
+# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
+# configuration.api_key_prefix['BearerToken'] = 'Bearer'
 
 # Enter a context with an instance of the API client
-with argo_workflows.ApiClient() as api_client:
+with argo_workflows.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = pipeline_service_api.PipelineServiceApi(api_client)
     namespace = "namespace_example" # str | 
@@ -348,7 +392,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-No authorization required
+[BearerToken](../README.md#BearerToken)
 
 ### HTTP request headers
 
@@ -371,6 +415,7 @@ No authorization required
 
 ### Example
 
+* Api Key Authentication (BearerToken):
 ```python
 import time
 import argo_workflows
@@ -383,9 +428,19 @@ configuration = argo_workflows.Configuration(
     host = "http://localhost:2746"
 )
 
+# The client must configure the authentication and authorization parameters
+# in accordance with the API server security policy.
+# Examples for each auth method are provided below, use the example that
+# satisfies your auth use case.
+
+# Configure API key authorization: BearerToken
+configuration.api_key['BearerToken'] = 'YOUR_API_KEY'
+
+# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
+# configuration.api_key_prefix['BearerToken'] = 'Bearer'
 
 # Enter a context with an instance of the API client
-with argo_workflows.ApiClient() as api_client:
+with argo_workflows.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = pipeline_service_api.PipelineServiceApi(api_client)
     namespace = "namespace_example" # str | 
@@ -413,7 +468,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-No authorization required
+[BearerToken](../README.md#BearerToken)
 
 ### HTTP request headers
 
@@ -436,6 +491,7 @@ No authorization required
 
 ### Example
 
+* Api Key Authentication (BearerToken):
 ```python
 import time
 import argo_workflows
@@ -449,9 +505,19 @@ configuration = argo_workflows.Configuration(
     host = "http://localhost:2746"
 )
 
+# The client must configure the authentication and authorization parameters
+# in accordance with the API server security policy.
+# Examples for each auth method are provided below, use the example that
+# satisfies your auth use case.
+
+# Configure API key authorization: BearerToken
+configuration.api_key['BearerToken'] = 'YOUR_API_KEY'
+
+# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
+# configuration.api_key_prefix['BearerToken'] = 'Bearer'
 
 # Enter a context with an instance of the API client
-with argo_workflows.ApiClient() as api_client:
+with argo_workflows.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = pipeline_service_api.PipelineServiceApi(api_client)
     namespace = "namespace_example" # str | 
@@ -503,7 +569,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-No authorization required
+[BearerToken](../README.md#BearerToken)
 
 ### HTTP request headers
 
@@ -526,6 +592,7 @@ No authorization required
 
 ### Example
 
+* Api Key Authentication (BearerToken):
 ```python
 import time
 import argo_workflows
@@ -539,9 +606,19 @@ configuration = argo_workflows.Configuration(
     host = "http://localhost:2746"
 )
 
+# The client must configure the authentication and authorization parameters
+# in accordance with the API server security policy.
+# Examples for each auth method are provided below, use the example that
+# satisfies your auth use case.
+
+# Configure API key authorization: BearerToken
+configuration.api_key['BearerToken'] = 'YOUR_API_KEY'
+
+# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
+# configuration.api_key_prefix['BearerToken'] = 'Bearer'
 
 # Enter a context with an instance of the API client
-with argo_workflows.ApiClient() as api_client:
+with argo_workflows.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = pipeline_service_api.PipelineServiceApi(api_client)
     namespace = "namespace_example" # str | 
@@ -593,7 +670,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-No authorization required
+[BearerToken](../README.md#BearerToken)
 
 ### HTTP request headers
 

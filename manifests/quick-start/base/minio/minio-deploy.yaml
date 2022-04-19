@@ -23,7 +23,10 @@ spec:
               value: password
           ports:
             - containerPort: 9000
-          command: [minio, server, /data]
+              name: api
+            - containerPort: 9001
+              name: dashboard
+          command: [minio, server, --console-address, ":9001", /data]
           lifecycle:
             postStart:
               exec:

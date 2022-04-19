@@ -48,6 +48,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/workflow/artifactrepositories"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	controllercache "github.com/argoproj/argo-workflows/v3/workflow/controller/cache"
+	"github.com/argoproj/argo-workflows/v3/workflow/controller/entrypoint"
 	"github.com/argoproj/argo-workflows/v3/workflow/controller/estimation"
 	"github.com/argoproj/argo-workflows/v3/workflow/controller/indexes"
 	"github.com/argoproj/argo-workflows/v3/workflow/controller/informer"
@@ -74,6 +75,8 @@ type WorkflowController struct {
 	Config config.Config
 	// get the artifact repository
 	artifactRepositories artifactrepositories.Interface
+	// get images
+	entrypoint entrypoint.Interface
 
 	// cliExecutorImage is the executor image as specified from the command line
 	cliExecutorImage string
@@ -170,6 +173,7 @@ func NewWorkflowController(ctx context.Context, restConfig *rest.Config, kubecli
 	wfc.UpdateConfig(ctx)
 
 	wfc.metrics = metrics.New(wfc.getMetricsServerConfig())
+	wfc.entrypoint = entrypoint.New(kubeclientset, wfc.Config.Images)
 
 	workqueue.SetProvider(wfc.metrics) // must execute SetProvider before we created the queues
 	wfc.wfQueue = wfc.metrics.RateLimiterWithBusyWorkers(&fixedItemIntervalRateLimiter{}, "workflow_queue")
@@ -1088,20 +1092,6 @@ func (wfc *WorkflowController) GetManagedNamespace() string {
 		return wfc.managedNamespace
 	}
 	return wfc.Config.Namespace
-}
-
-func (wfc *WorkflowController) GetContainerRuntimeExecutor(labels labels.Labels) string {
-	executor, err := wfc.Config.GetContainerRuntimeExecutor(labels)
-	if err != nil {
-		log.WithError(err).Info("failed to determine container runtime executor")
-	}
-	if executor != "" {
-		return executor
-	}
-	if wfc.containerRuntimeExecutor != "" {
-		return wfc.containerRuntimeExecutor
-	}
-	return common.ContainerRuntimeExecutorEmissary
 }
 
 func (wfc *WorkflowController) getMetricsServerConfig() (metrics.ServerConfig, metrics.ServerConfig) {

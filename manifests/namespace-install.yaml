@@ -138,6 +138,11 @@ spec:
       jsonPath: .status.startedAt
       name: Age
       type: date
+    - description: Human readable message indicating details about why the workflow
+        is in this condition.
+      jsonPath: .status.message
+      name: Message
+      type: string
     name: v1alpha1
     schema:
       openAPIV3Schema:
@@ -385,8 +390,30 @@ spec:
                             - value
                             type: object
                           type: array
+                        passwordSecret:
+                          properties:
+                            key:
+                              type: string
+                            name:
+                              type: string
+                            optional:
+                              type: boolean
+                          required:
+                          - key
+                          type: object
                         url:
                           type: string
+                        usernameSecret:
+                          properties:
+                            key:
+                              type: string
+                            name:
+                              type: string
+                            optional:
+                              type: boolean
+                          required:
+                          - key
+                          type: object
                       required:
                       - url
                       type: object
@@ -989,6 +1016,8 @@ spec:
   selector:
     matchLabels:
       app: workflow-controller
+  strategy:
+    type: Recreate
   template:
     metadata:
       labels:
@@ -1010,7 +1039,7 @@ spec:
           failureThreshold: 3
           httpGet:
             path: /healthz
-            port: 6060
+            port: healthz
           initialDelaySeconds: 90
           periodSeconds: 60
           timeoutSeconds: 30
@@ -1019,6 +1048,11 @@ spec:
         - containerPort: 9090
           name: metrics
         - containerPort: 6060
+          name: healthz
+        readinessProbe:
+          httpGet:
+            path: /metrics
+            port: metrics
         securityContext:
           allowPrivilegeEscalation: false
           capabilities:

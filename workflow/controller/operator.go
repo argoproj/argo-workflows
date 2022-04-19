@@ -26,7 +26,6 @@ import (
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/strategicpatch"
 	"k8s.io/client-go/tools/cache"
@@ -510,10 +509,6 @@ func (woc *wfOperationCtx) updateWorkflowMetadata() error {
 	return nil
 }
 
-func (woc *wfOperationCtx) getContainerRuntimeExecutor() string {
-	return woc.controller.GetContainerRuntimeExecutor(labels.Set(woc.wf.Labels))
-}
-
 func (woc *wfOperationCtx) getWorkflowDeadline() *time.Time {
 	if woc.execWf.Spec.ActiveDeadlineSeconds == nil {
 		return nil
@@ -906,7 +901,7 @@ func (woc *wfOperationCtx) processNodeRetries(node *wfv1.NodeStatus, retryStrate
 		}
 
 		// See if we have waited past the deadline
-		if time.Now().Before(waitingDeadline) {
+		if time.Now().Before(waitingDeadline) && int32(len(node.Children)) <= retryStrategy.Limit.IntVal {
 			woc.requeueAfter(timeToWait)
 			retryMessage := fmt.Sprintf("Backoff for %s", humanize.Duration(timeToWait))
 			return woc.markNodePhase(node.Name, node.Phase, retryMessage), false, nil
@@ -3442,7 +3437,7 @@ func (woc *wfOperationCtx) setExecWorkflow(ctx context.Context) error {
 
 	// Perform one-time workflow validation
 	if woc.wf.Status.Phase == wfv1.WorkflowUnknown {
-		validateOpts := validate.ValidateOpts{ContainerRuntimeExecutor: woc.getContainerRuntimeExecutor()}
+		validateOpts := validate.ValidateOpts{}
 		wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTemplates(woc.wf.Namespace))
 		cwftmplGetter := templateresolution.WrapClusterWorkflowTemplateInterface(woc.controller.wfclientset.ArgoprojV1alpha1().ClusterWorkflowTemplates())
 

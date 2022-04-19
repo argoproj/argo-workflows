@@ -5,18 +5,12 @@ import (
 	"fmt"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
 
 func (woc *wfOperationCtx) executeContainerSet(ctx context.Context, nodeName string, templateScope string, tmpl *wfv1.Template, orgTmpl wfv1.TemplateReferenceHolder, opts *executeTemplateOpts) (*wfv1.NodeStatus, error) {
 	node := woc.wf.GetNodeByName(nodeName)
 	if node == nil {
 		node = woc.initializeExecutableNode(nodeName, wfv1.NodeTypePod, templateScope, tmpl, orgTmpl, opts.boundaryID, wfv1.NodePending)
-	}
-
-	if woc.getContainerRuntimeExecutor() != common.ContainerRuntimeExecutorEmissary && tmpl.HasSequencedContainers() {
-		woc.markNodePhase(nodeName, wfv1.NodeFailed, fmt.Sprintf("template has sequenced containers, so you must use the emissary executor rather than %q, learn more: https://argoproj.github.io/argo-workflows/workflow-executors/#emissary-emissary", woc.getContainerRuntimeExecutor()))
-		return woc.wf.GetNodeByName(nodeName), nil
 	}
 	includeScriptOutput, err := woc.includeScriptOutput(nodeName, opts.boundaryID)
 	if err != nil {

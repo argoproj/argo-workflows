@@ -40,6 +40,7 @@ import (
 	workflowarchivepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowarchive"
 	workflowtemplatepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowtemplate"
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/server/apiserver/accesslog"
 	"github.com/argoproj/argo-workflows/v3/server/artifacts"
 	"github.com/argoproj/argo-workflows/v3/server/auth"
 	"github.com/argoproj/argo-workflows/v3/server/auth/sso"
@@ -299,7 +300,7 @@ func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServe
 	mux := http.NewServeMux()
 	httpServer := http.Server{
 		Addr:      endpoint,
-		Handler:   mux,
+		Handler:   accesslog.Interceptor(mux),
 		TLSConfig: as.tlsConfig,
 	}
 	dialOpts := []grpc.DialOption{

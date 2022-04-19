@@ -121,6 +121,7 @@ const (
 // +kubebuilder:resource:shortName=wf
 // +kubebuilder:printcolumn:name="Status",type="string",JSONPath=".status.phase",description="Status of the workflow"
 // +kubebuilder:printcolumn:name="Age",type="date",format="date-time",JSONPath=".status.startedAt",description="When the workflow was started"
+// +kubebuilder:printcolumn:name="Message",type="string",JSONPath=".status.message",description="Human readable message indicating details about why the workflow is in this condition."
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 type Workflow struct {
 	metav1.TypeMeta   `json:",inline"`
@@ -2269,13 +2270,25 @@ type Header struct {
 	Value string `json:"value" protobuf:"bytes,2,opt,name=value"`
 }
 
-// HTTPArtifact allows an file served on HTTP to be placed as an input artifact in a container
+// BasicAuth describes the secret selectors required for basic authentication
+type BasicAuth struct {
+	// UsernameSecret is the secret selector to the repository username
+	UsernameSecret *apiv1.SecretKeySelector `json:"usernameSecret,omitempty" protobuf:"bytes,1,opt,name=usernameSecret"`
+
+	// PasswordSecret is the secret selector to the repository password
+	PasswordSecret *apiv1.SecretKeySelector `json:"passwordSecret,omitempty" protobuf:"bytes,2,opt,name=passwordSecret"`
+}
+
+// HTTPArtifact allows a file served on HTTP to be placed as an input artifact in a container
 type HTTPArtifact struct {
 	// URL of the artifact
 	URL string `json:"url" protobuf:"bytes,1,opt,name=url"`
 
 	// Headers are an optional list of headers to send with HTTP requests for artifacts
 	Headers []Header `json:"headers,omitempty" protobuf:"bytes,2,opt,name=headers"`
+
+	// BasicAuth is the secret selector for basic authentication
+	BasicAuth `json:",inline" protobuf:"bytes,3,opt,name=basicAuth"`
 }
 
 func (h *HTTPArtifact) GetKey() (string, error) {

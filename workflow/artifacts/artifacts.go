@@ -5,12 +5,12 @@ import (
 	"fmt"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/artifactory"
 	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/gcs"
 	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/git"
 	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/hdfs"
 	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/http"
+	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/logging"
 	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/oss"
 	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/raw"
 	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/resource"
@@ -23,6 +23,14 @@ type NewDriverFunc func(ctx context.Context, art *wfv1.Artifact, ri resource.Int
 
 // NewDriver initializes an instance of an artifact driver
 func NewDriver(ctx context.Context, art *wfv1.Artifact, ri resource.Interface) (common.ArtifactDriver, error) {
+	drv, err := newDriver(ctx, art, ri)
+	if err != nil {
+		return nil, err
+	}
+	return logging.New(drv), nil
+
+}
+func newDriver(ctx context.Context, art *wfv1.Artifact, ri resource.Interface) (common.ArtifactDriver, error) {
 	if art.S3 != nil {
 		var accessKey string
 		var secretKey string
@@ -79,7 +87,19 @@ func NewDriver(ctx context.Context, art *wfv1.Artifact, ri resource.Interface) (
 		return &driver, nil
 	}
 	if art.HTTP != nil {
-		return &http.ArtifactDriver{}, nil
+		usernameBytes, err := ri.GetSecret(ctx, art.HTTP.UsernameSecret.Name, art.HTTP.UsernameSecret.Key)
+		if err != nil {
+			return nil, err
+		}
+		passwordBytes, err := ri.GetSecret(ctx, art.HTTP.PasswordSecret.Name, art.HTTP.PasswordSecret.Key)
+		if err != nil {
+			return nil, err
+		}
+		driver := http.ArtifactDriver{
+			Username: usernameBytes,
+			Password: passwordBytes,
+		}
+		return &driver, nil
 	}
 	if art.Git != nil {
 		gitDriver := git.ArtifactDriver{
@@ -119,7 +139,7 @@ func NewDriver(ctx context.Context, art *wfv1.Artifact, ri resource.Interface) (
 		if err != nil {
 			return nil, err
 		}
-		driver := artifactory.ArtifactDriver{
+		driver := http.ArtifactDriver{
 			Username: usernameBytes,
 			Password: passwordBytes,
 		}

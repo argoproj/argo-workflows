@@ -27,6 +27,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactoryArtifactRepository": schema_pkg_apis_workflow_v1alpha1_ArtifactoryArtifactRepository(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactoryAuth":               schema_pkg_apis_workflow_v1alpha1_ArtifactoryAuth(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Backoff":                       schema_pkg_apis_workflow_v1alpha1_Backoff(ref),
+		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.BasicAuth":                     schema_pkg_apis_workflow_v1alpha1_BasicAuth(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Cache":                         schema_pkg_apis_workflow_v1alpha1_Cache(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ClusterWorkflowTemplate":       schema_pkg_apis_workflow_v1alpha1_ClusterWorkflowTemplate(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ClusterWorkflowTemplateList":   schema_pkg_apis_workflow_v1alpha1_ClusterWorkflowTemplateList(ref),
@@ -847,6 +848,33 @@ func schema_pkg_apis_workflow_v1alpha1_Backoff(ref common.ReferenceCallback) com
 		},
 		Dependencies: []string{
 			"k8s.io/apimachinery/pkg/util/intstr.IntOrString"},
+	}
+}
+
+func schema_pkg_apis_workflow_v1alpha1_BasicAuth(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "BasicAuth describes the secret selectors required for basic authentication",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"usernameSecret": {
+						SchemaProps: spec.SchemaProps{
+							Description: "UsernameSecret is the secret selector to the repository username",
+							Ref:         ref("k8s.io/api/core/v1.SecretKeySelector"),
+						},
+					},
+					"passwordSecret": {
+						SchemaProps: spec.SchemaProps{
+							Description: "PasswordSecret is the secret selector to the repository password",
+							Ref:         ref("k8s.io/api/core/v1.SecretKeySelector"),
+						},
+					},
+				},
+			},
+		},
+		Dependencies: []string{
+			"k8s.io/api/core/v1.SecretKeySelector"},
 	}
 }
 
@@ -2508,7 +2536,7 @@ func schema_pkg_apis_workflow_v1alpha1_HTTPArtifact(ref common.ReferenceCallback
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "HTTPArtifact allows an file served on HTTP to be placed as an input artifact in a container",
+				Description: "HTTPArtifact allows a file served on HTTP to be placed as an input artifact in a container",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"url": {
@@ -2533,12 +2561,24 @@ func schema_pkg_apis_workflow_v1alpha1_HTTPArtifact(ref common.ReferenceCallback
 							},
 						},
 					},
+					"usernameSecret": {
+						SchemaProps: spec.SchemaProps{
+							Description: "UsernameSecret is the secret selector to the repository username",
+							Ref:         ref("k8s.io/api/core/v1.SecretKeySelector"),
+						},
+					},
+					"passwordSecret": {
+						SchemaProps: spec.SchemaProps{
+							Description: "PasswordSecret is the secret selector to the repository password",
+							Ref:         ref("k8s.io/api/core/v1.SecretKeySelector"),
+						},
+					},
 				},
 				Required: []string{"url"},
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Header"},
+			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Header", "k8s.io/api/core/v1.SecretKeySelector"},
 	}
 }
 

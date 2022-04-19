@@ -22,6 +22,8 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/argoproj/argo-workflows/v3/util/file"
+
 	argofile "github.com/argoproj/pkg/file"
 	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
@@ -809,8 +811,45 @@ func isTarball(filePath string) (bool, error) {
 // renaming it to the desired location
 func untar(tarPath string, destPath string) error {
 	decompressor := func(src string, dest string) error {
-		_, err := common.RunCommand("tar", "-xf", src, "-C", dest)
-		return err
+		f, err := os.Open(src)
+		if err != nil {
+			return err
+		}
+		defer f.Close()
+		gzr, err := file.GetGzipReader(f)
+		if err != nil {
+			return err
+		}
+		defer gzr.Close()
+		tr := tar.NewReader(gzr)
+		for {
+			header, err := tr.Next()
+			switch {
+			case err == io.EOF:
+				return nil
+			case err != nil:
+				return err
+			case header == nil:
+				continue
+			}
+			target := filepath.Join(dest, filepath.Clean(header.Name))
+			if err := os.MkdirAll(filepath.Dir(target), 0o700); err != nil && os.IsExist(err) {
+				return err
+			}
+			switch header.Typeflag {
+			case tar.TypeReg:
+				f, err := os.OpenFile(target, os.O_CREATE|os.O_RDWR, os.FileMode(header.Mode))
+				if err != nil {
+					return err
+				}
+				if _, err := io.Copy(f, tr); err != nil {
+					return err
+				}
+				if err := f.Close(); err != nil {
+					return err
+				}
+			}
+		}
 	}
 
 	return unpack(tarPath, destPath, decompressor)
