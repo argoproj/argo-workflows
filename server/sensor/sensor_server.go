@@ -54,10 +54,8 @@ func (s *sensorServer) SensorsLogs(in *sensorpkg.SensorsLogsRequest, svr sensorp
 	if in.Name != "" {
 		labelSelector += "=" + in.Name
 	}
-	ctx := svr.Context()
 	return logs.LogPods(
-		ctx,
-		auth.GetKubeClient(ctx),
+		svr.Context(),
 		in.Namespace,
 		labelSelector,
 		in.Grep,

@@ -48,7 +48,6 @@ import (
 	"github.com/argoproj/argo-workflows/v3/workflow/artifactrepositories"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	controllercache "github.com/argoproj/argo-workflows/v3/workflow/controller/cache"
-	"github.com/argoproj/argo-workflows/v3/workflow/controller/entrypoint"
 	"github.com/argoproj/argo-workflows/v3/workflow/controller/estimation"
 	"github.com/argoproj/argo-workflows/v3/workflow/controller/indexes"
 	"github.com/argoproj/argo-workflows/v3/workflow/controller/informer"
@@ -75,8 +74,6 @@ type WorkflowController struct {
 	Config config.Config
 	// get the artifact repository
 	artifactRepositories artifactrepositories.Interface
-	// get images
-	entrypoint entrypoint.Interface
 
 	// cliExecutorImage is the executor image as specified from the command line
 	cliExecutorImage string
@@ -113,7 +110,7 @@ type WorkflowController struct {
 	archiveLabelSelector  labels.Selector
 	cacheFactory          controllercache.Factory
 	wfTaskSetInformer     wfextvv1alpha1.WorkflowTaskSetInformer
-	taskResultInformer    cache.SharedIndexInformer
+	taskResultInformer    wfextvv1alpha1.WorkflowTaskResultInformer
 
 	// progressPatchTickDuration defines how often the executor will patch pod annotations if an updated progress is found.
 	// Default is 1m and can be configured using the env var ARGO_PROGRESS_PATCH_TICK_DURATION.
@@ -158,7 +155,7 @@ func NewWorkflowController(ctx context.Context, restConfig *rest.Config, kubecli
 		cliExecutorImage:           executorImage,
 		cliExecutorImagePullPolicy: executorImagePullPolicy,
 		containerRuntimeExecutor:   containerRuntimeExecutor,
-		configController:           config.NewController(namespace, configMap, kubeclientset),
+		configController:           config.NewController(namespace, configMap, kubeclientset, config.EmptyConfigFunc),
 		workflowKeyLock:            syncpkg.NewKeyLock(),
 		cacheFactory:               controllercache.NewCacheFactory(kubeclientset, namespace),
 		eventRecorderManager:       events.NewEventRecorderManager(kubeclientset),
@@ -173,7 +170,6 @@ func NewWorkflowController(ctx context.Context, restConfig *rest.Config, kubecli
 	wfc.UpdateConfig(ctx)
 
 	wfc.metrics = metrics.New(wfc.getMetricsServerConfig())
-	wfc.entrypoint = entrypoint.New(kubeclientset, wfc.Config.Images)
 
 	workqueue.SetProvider(wfc.metrics) // must execute SetProvider before we created the queues
 	wfc.wfQueue = wfc.metrics.RateLimiterWithBusyWorkers(&fixedItemIntervalRateLimiter{}, "workflow_queue")
@@ -256,12 +252,13 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 	}
 
 	go wfc.runConfigMapWatcher(ctx.Done())
+	go wfc.configController.Run(ctx.Done(), wfc.updateConfig)
 	go wfc.wfInformer.Run(ctx.Done())
 	go wfc.wftmplInformer.Informer().Run(ctx.Done())
 	go wfc.podInformer.Run(ctx.Done())
 	go wfc.configMapInformer.Run(ctx.Done())
 	go wfc.wfTaskSetInformer.Informer().Run(ctx.Done())
-	go wfc.taskResultInformer.Run(ctx.Done())
+	go wfc.taskResultInformer.Informer().Run(ctx.Done())
 
 	// Wait for all involved caches to be synced, before processing items from the queue is started
 	if !cache.WaitForCacheSync(
@@ -271,7 +268,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 		wfc.podInformer.HasSynced,
 		wfc.configMapInformer.HasSynced,
 		wfc.wfTaskSetInformer.Informer().HasSynced,
-		wfc.taskResultInformer.HasSynced,
+		wfc.taskResultInformer.Informer().HasSynced,
 	) {
 		log.Fatal("Timed out waiting for caches to sync")
 	}
@@ -425,12 +422,11 @@ func (wfc *WorkflowController) createClusterWorkflowTemplateInformer(ctx context
 }
 
 func (wfc *WorkflowController) UpdateConfig(ctx context.Context) {
-	c, err := wfc.configController.Get(ctx)
+	config, err := wfc.configController.Get(ctx)
 	if err != nil {
 		log.Fatalf("Failed to register watch for controller config map: %v", err)
 	}
-	wfc.Config = *c
-	err = wfc.updateConfig()
+	err = wfc.updateConfig(config)
 	if err != nil {
 		log.Fatalf("Failed to update config: %v", err)
 	}
@@ -935,20 +931,13 @@ func (wfc *WorkflowController) archiveWorkflowAux(ctx context.Context, obj inter
 	return nil
 }
 
-var incompleteReq, _ = labels.NewRequirement(common.LabelKeyCompleted, selection.Equals, []string{"false"})
-var workflowReq, _ = labels.NewRequirement(common.LabelKeyWorkflow, selection.Exists, nil)
-
-func (wfc *WorkflowController) instanceIDReq() labels.Requirement {
-	return util.InstanceIDRequirement(wfc.Config.InstanceID)
-}
-
 func (wfc *WorkflowController) newWorkflowPodWatch(ctx context.Context) *cache.ListWatch {
 	c := wfc.kubeclientset.CoreV1().Pods(wfc.GetManagedNamespace())
 	// completed=false
+	incompleteReq, _ := labels.NewRequirement(common.LabelKeyCompleted, selection.Equals, []string{"false"})
 	labelSelector := labels.NewSelector().
-		Add(*workflowReq).
 		Add(*incompleteReq).
-		Add(wfc.instanceIDReq())
+		Add(util.InstanceIDRequirement(wfc.Config.InstanceID))
 
 	listFunc := func(options metav1.ListOptions) (runtime.Object, error) {
 		options.LabelSelector = labelSelector.String()
@@ -1092,6 +1081,20 @@ func (wfc *WorkflowController) GetManagedNamespace() string {
 		return wfc.managedNamespace
 	}
 	return wfc.Config.Namespace
+}
+
+func (wfc *WorkflowController) GetContainerRuntimeExecutor(labels labels.Labels) string {
+	executor, err := wfc.Config.GetContainerRuntimeExecutor(labels)
+	if err != nil {
+		log.WithError(err).Info("failed to determine container runtime executor")
+	}
+	if executor != "" {
+		return executor
+	}
+	if wfc.containerRuntimeExecutor != "" {
+		return wfc.containerRuntimeExecutor
+	}
+	return common.ContainerRuntimeExecutorEmissary
 }
 
 func (wfc *WorkflowController) getMetricsServerConfig() (metrics.ServerConfig, metrics.ServerConfig) {

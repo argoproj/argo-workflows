@@ -23,3 +23,4 @@ data:
     completed: 10
     failed: 2
     errored: 2
+  kubeletInsecure: "true"

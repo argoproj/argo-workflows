@@ -12,6 +12,8 @@ import (
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
 
+var EmptyConfigFunc = func() interface{} { return &Config{} }
+
 type ResourceRateLimit struct {
 	Limit float64 `json:"limit"`
 	Burst int     `json:"burst"`
@@ -31,6 +33,17 @@ type Config struct {
 
 	// KubeConfig specifies a kube config file for the wait & init containers
 	KubeConfig *KubeConfig `json:"kubeConfig,omitempty"`
+
+	// ContainerRuntimeExecutor specifies the container runtime interface to use, default is emissary
+	ContainerRuntimeExecutor string `json:"containerRuntimeExecutor,omitempty"`
+
+	ContainerRuntimeExecutors ContainerRuntimeExecutors `json:"containerRuntimeExecutors,omitempty"`
+
+	// KubeletPort is needed when using the kubelet containerRuntimeExecutor, default to 10250
+	KubeletPort int `json:"kubeletPort,omitempty"`
+
+	// KubeletInsecure disable the TLS verification of the kubelet containerRuntimeExecutor, default to false
+	KubeletInsecure bool `json:"kubeletInsecure,omitempty"`
 
 	// ArtifactRepository contains the default location of an artifact repository for container artifacts
 	ArtifactRepository wfv1.ArtifactRepository `json:"artifactRepository,omitempty"`
@@ -70,6 +83,9 @@ type Config struct {
 	// Links to related apps.
 	Links []*wfv1.Link `json:"links,omitempty"`
 
+	// Config customized Docker Sock path
+	DockerSockPath string `json:"dockerSockPath,omitempty"`
+
 	// WorkflowDefaults are values that will apply to all Workflows from this controller, unless overridden on the Workflow-level
 	WorkflowDefaults *wfv1.Workflow `json:"workflowDefaults,omitempty"`
 
@@ -100,9 +116,17 @@ type Config struct {
 
 	// NavColor is an ui navigation bar background color
 	NavColor string `json:"navColor,omitempty"`
+}
 
-	// SSO in settings for single-sign on
-	SSO SSOConfig `json:"sso,omitempty"`
+func (c Config) GetContainerRuntimeExecutor(labels labels.Labels) (string, error) {
+	name, err := c.ContainerRuntimeExecutors.Select(labels)
+	if err != nil {
+		return "", err
+	}
+	if name != "" {
+		return name, nil
+	}
+	return c.ContainerRuntimeExecutor, nil
 }
 
 func (c Config) GetExecutor() *apiv1.Container {

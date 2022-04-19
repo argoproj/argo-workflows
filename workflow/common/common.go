@@ -12,6 +12,9 @@ const (
 	InitContainerName = "init"
 	WaitContainerName = "wait"
 
+	// DockerSockVolumeName is the volume name for the /var/run/docker.sock host path volume
+	DockerSockVolumeName = "docker-sock"
+
 	// AnnotationKeyDefaultContainer is the annotation that specify container that will be used by default in case of kubectl commands for example
 	AnnotationKeyDefaultContainer = "kubectl.kubernetes.io/default-container"
 
@@ -103,18 +106,16 @@ const (
 
 	// EnvVarPodName contains the name of the pod (currently unused)
 	EnvVarPodName = "ARGO_POD_NAME"
-	// EnvVarPodUID is the workflow's UID
-	EnvVarPodUID = "ARGO_POD_UID"
 	// EnvVarInstanceID is the instance ID
 	EnvVarInstanceID = "ARGO_INSTANCE_ID"
 	// EnvVarWorkflowName is the name of the workflow for which the an agent is responsible for
 	EnvVarWorkflowName = "ARGO_WORKFLOW_NAME"
+	// EnvVarWorkflowUID is the workflow's UID
+	EnvVarWorkflowUID = "ARGO_WORKFLOW_UID"
 	// EnvVarNodeID is the node ID of the node.
 	EnvVarNodeID = "ARGO_NODE_ID"
 	// EnvVarPluginAddresses is a list of plugin addresses
 	EnvVarPluginAddresses = "ARGO_PLUGIN_ADDRESSES"
-	// EnvVarPluginNames is a list of plugin names
-	EnvVarPluginNames = "ARGO_PLUGIN_NAMES"
 	// EnvVarContainerName container the container's name for the current pod
 	EnvVarContainerName = "ARGO_CONTAINER_NAME"
 	// EnvVarDeadline is the deadline for the pod
@@ -125,6 +126,14 @@ const (
 	EnvVarIncludeScriptOutput = "ARGO_INCLUDE_SCRIPT_OUTPUT"
 	// EnvVarTemplate is the template
 	EnvVarTemplate = "ARGO_TEMPLATE"
+	// EnvVarContainerRuntimeExecutor contains the name of the container runtime executor to use, empty is equal to "docker"
+	EnvVarContainerRuntimeExecutor = "ARGO_CONTAINER_RUNTIME_EXECUTOR"
+	// EnvVarDownwardAPINodeIP is the envvar used to get the `status.hostIP`
+	EnvVarDownwardAPINodeIP = "ARGO_KUBELET_HOST"
+	// EnvVarKubeletPort is used to configure the kubelet api port
+	EnvVarKubeletPort = "ARGO_KUBELET_PORT"
+	// EnvVarKubeletInsecure is used to disable the TLS verification
+	EnvVarKubeletInsecure = "ARGO_KUBELET_INSECURE"
 	// EnvVarArgoTrace is used enable tracing statements in Argo components
 	EnvVarArgoTrace = "ARGO_TRACE"
 	// EnvVarProgressPatchTickDuration sets the tick duration for patching pod annotations upon progress changes.
@@ -141,6 +150,21 @@ const (
 	EnvAgentTaskWorkers = "ARGO_AGENT_TASK_WORKERS"
 	// EnvAgentPatchRate is the rate that the Argo Agent will patch the Workflow TaskSet
 	EnvAgentPatchRate = "ARGO_AGENT_PATCH_RATE"
+
+	// ContainerRuntimeExecutorDocker to use docker as container runtime executor
+	ContainerRuntimeExecutorDocker = "docker"
+
+	// ContainerRuntimeExecutorKubelet to use the kubelet as container runtime executor
+	ContainerRuntimeExecutorKubelet = "kubelet"
+
+	// ContainerRuntimeExecutorK8sAPI to use the Kubernetes API server as container runtime executor
+	ContainerRuntimeExecutorK8sAPI = "k8sapi"
+
+	// ContainerRuntimeExecutorPNS indicates to use process namespace sharing as the container runtime executor
+	ContainerRuntimeExecutorPNS = "pns"
+
+	// ContainerRuntimeExecutorEmissary indicates to use emissary container runtime executor
+	ContainerRuntimeExecutorEmissary = "emissary"
 
 	// Variables that are added to the scope during template execution and can be referenced using {{}} syntax
 
@@ -206,19 +230,11 @@ const (
 	ServiceAccountTokenVolumeName = "exec-sa-token"                                 //nolint:gosec
 	SecretVolMountPath            = "/argo/secret"
 
-	// CACertificatesVolumeMountName is the name of the secret that contains the CA certificates.
-	CACertificatesVolumeMountName = "argo-workflows-agent-ca-certificates"
-
-	// VarRunArgoPath is the standard path for the shared volume
-	VarRunArgoPath = "/var/run/argo"
-
 	// ArgoProgressPath defines the path to a file used for self reporting progress
-	ArgoProgressPath = VarRunArgoPath + "/progress"
+	ArgoProgressPath = "/var/run/argo/progress"
 
 	// ErrDeadlineExceeded is the pod status reason when exceed deadline
 	ErrDeadlineExceeded = "DeadlineExceeded"
-
-	ConfigMapName = "workflow-controller-configmap"
 )
 
 // AnnotationKeyKillCmd specifies the command to use to kill to container, useful for injected sidecars

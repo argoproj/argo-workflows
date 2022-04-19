@@ -16,7 +16,6 @@ import (
 
 	"github.com/argoproj/argo-workflows/v3/errors"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/executor"
 	osspecific "github.com/argoproj/argo-workflows/v3/workflow/executor/os-specific"
 )
@@ -67,11 +66,11 @@ func (e emissary) writeTemplate(t wfv1.Template) error {
 	if err != nil {
 		return err
 	}
-	return ioutil.WriteFile(common.VarRunArgoPath+"/template", data, 0o444) // chmod -r--r--r--
+	return ioutil.WriteFile("/var/run/argo/template", data, 0o444) // chmod -r--r--r--
 }
 
 func (e emissary) GetFileContents(_ string, sourcePath string) (string, error) {
-	data, err := ioutil.ReadFile(filepath.Clean(filepath.Join(common.VarRunArgoPath, "outputs", "parameters", sourcePath)))
+	data, err := ioutil.ReadFile(filepath.Clean(filepath.Join("/var/run/argo/outputs/parameters", sourcePath)))
 	return string(data), err
 }
 
@@ -79,7 +78,7 @@ func (e emissary) CopyFile(_ string, sourcePath string, destPath string, _ int) 
 	// this implementation is very different, because we expect the emissary binary has already compressed the file
 	// so no compression can or needs to be implemented here
 	// TODO - warn the user we ignored compression?
-	sourceFile := filepath.Join(common.VarRunArgoPath, "outputs", "artifacts", strings.TrimSuffix(sourcePath, "/")+".tgz")
+	sourceFile := filepath.Join("/var/run/argo/outputs/artifacts", strings.TrimSuffix(sourcePath, "/")+".tgz")
 	log.Infof("%s -> %s", sourceFile, destPath)
 	src, err := os.Open(filepath.Clean(sourceFile))
 	if err != nil {
@@ -108,7 +107,7 @@ func (e emissary) GetOutputStream(_ context.Context, containerName string, combi
 	if combinedOutput {
 		name = "combined"
 	}
-	return os.Open(filepath.Clean(filepath.Join(common.VarRunArgoPath, "ctr", containerName, name)))
+	return os.Open(filepath.Clean("/var/run/argo/ctr/" + containerName + "/" + name))
 }
 
 func (e emissary) Wait(ctx context.Context, containerNames []string) error {
@@ -127,7 +126,7 @@ func (e emissary) Wait(ctx context.Context, containerNames []string) error {
 
 func (e emissary) isComplete(containerNames []string) bool {
 	for _, containerName := range containerNames {
-		_, err := os.Stat(filepath.Join(common.VarRunArgoPath, "ctr", containerName, "exitcode"))
+		_, err := os.Stat("/var/run/argo/ctr/" + containerName + "/exitcode")
 		if os.IsNotExist(err) {
 			return false
 		}
@@ -139,7 +138,7 @@ func (e emissary) Kill(ctx context.Context, containerNames []string, termination
 	for _, containerName := range containerNames {
 		// allow write-access by other users, because other containers
 		// should delete the signal after receiving it
-		if err := ioutil.WriteFile(filepath.Join(common.VarRunArgoPath, "ctr", containerName, "signal"), []byte(strconv.Itoa(int(syscall.SIGTERM))), 0o666); err != nil { //nolint:gosec
+		if err := ioutil.WriteFile("/var/run/argo/ctr/"+containerName+"/signal", []byte(strconv.Itoa(int(syscall.SIGTERM))), 0o666); err != nil { //nolint:gosec
 			return err
 		}
 	}
@@ -152,7 +151,7 @@ func (e emissary) Kill(ctx context.Context, containerNames []string, termination
 	for _, containerName := range containerNames {
 		// allow write-access by other users, because other containers
 		// should delete the signal after receiving it
-		if err := ioutil.WriteFile(filepath.Join(common.VarRunArgoPath, "ctr", containerName, "signal"), []byte(strconv.Itoa(int(syscall.SIGKILL))), 0o666); err != nil { //nolint:gosec
+		if err := ioutil.WriteFile("/var/run/argo/ctr/"+containerName+"/signal", []byte(strconv.Itoa(int(syscall.SIGKILL))), 0o666); err != nil { //nolint:gosec
 			return err
 		}
 	}
@@ -161,7 +160,7 @@ func (e emissary) Kill(ctx context.Context, containerNames []string, termination
 
 func (e emissary) ListContainerNames(ctx context.Context) ([]string, error) {
 	var containerNames []string
-	dir, err := ioutil.ReadDir(filepath.Join(common.VarRunArgoPath, "ctr"))
+	dir, err := ioutil.ReadDir("/var/run/argo/ctr")
 	if err != nil {
 		return nil, err
 	}

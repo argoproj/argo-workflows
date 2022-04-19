@@ -45,7 +45,6 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [Codec](https://www.codec.ai/)
 1. [Commodus Tech](https://www.commodus.tech)
 1. [Concierge Render](https://www.conciergerender.com)
-1. [Cookpad](https://cookpad.com/)
 1. [CoreFiling](https://www.corefiling.com/)
 1. [Cratejoy](https://www.cratejoy.com/)
 1. [CoreWeave Cloud](https://www.coreweave.com)
@@ -142,7 +141,6 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [SegmentStream](https://segmentstream.com)
 1. [Sendible](https://sendible.com)
 1. [Sidecar Technologies](https://hello.getsidecar.com/)
-1. [smallcase](https://smallcase.com/)
 1. [Softonic](https://hello.softonic.com/)
 1. [Sohu](https://www.sohu.com/)
 1. [Stillwater Supercomputing, Inc](http://www.stillwater-sc.com/)
@@ -166,8 +164,6 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [Yubo](https://www.yubo.live/)
 1. [Zhihu](https://www.zhihu.com/)
 1. [Xueqiu](https://www.xueqiu.com/)
-1. [bimspot](https://bimspot.io)
-1. [Trendyol](https://trendyol.com)
 
 ### Projects Using Argo
 

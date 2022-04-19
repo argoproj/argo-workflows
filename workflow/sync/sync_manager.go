@@ -192,9 +192,7 @@ func (cm *Manager) Release(wf *wfv1.Workflow, nodeName string, syncRef *wfv1.Syn
 		syncLockHolder.removeFromQueue(holderKey)
 		log.Debugf("%s sync lock is released by %s", lockName.EncodeName(), holderKey)
 		lockKey := lockName.EncodeName()
-		if wf.Status.Synchronization != nil {
-			wf.Status.Synchronization.GetStatus(syncRef.GetType()).LockReleased(holderKey, lockKey)
-		}
+		wf.Status.Synchronization.GetStatus(syncRef.GetType()).LockReleased(holderKey, lockKey)
 	}
 }
 

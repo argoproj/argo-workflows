@@ -22,8 +22,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/argoproj/argo-workflows/v3/util/file"
-
 	argofile "github.com/argoproj/pkg/file"
 	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
@@ -57,8 +55,8 @@ const (
 // WorkflowExecutor is program which runs as the init/wait container
 type WorkflowExecutor struct {
 	PodName             string
-	podUID              types.UID
 	workflow            string
+	workflowUID         types.UID
 	nodeId              string
 	Template            wfv1.Template
 	IncludeScriptOutput bool
@@ -90,7 +88,7 @@ type Initializer interface {
 
 //go:generate mockery --name=ContainerRuntimeExecutor
 
-// ContainerRuntimeExecutor is the interface for interacting with a container runtime
+// ContainerRuntimeExecutor is the interface for interacting with a container runtime (e.g. docker)
 type ContainerRuntimeExecutor interface {
 	// GetFileContents returns the file contents of a file in a container as a string
 	GetFileContents(containerName string, sourcePath string) (string, error)
@@ -115,11 +113,10 @@ type ContainerRuntimeExecutor interface {
 // NewExecutor instantiates a new workflow executor
 func NewExecutor(
 	clientset kubernetes.Interface,
-	taskResultClient argoprojv1.WorkflowTaskResultInterface,
+	taskSetClient argoprojv1.WorkflowTaskResultInterface,
 	restClient rest.Interface,
-	podName string,
-	podUID types.UID,
-	workflow, nodeId, namespace string,
+	podName, workflow, nodeId, namespace string,
+	workflowUID types.UID,
 	cre ContainerRuntimeExecutor,
 	template wfv1.Template,
 	includeScriptOutput bool,
@@ -129,11 +126,11 @@ func NewExecutor(
 	log.WithFields(log.Fields{"Steps": executorretry.Steps, "Duration": executorretry.Duration, "Factor": executorretry.Factor, "Jitter": executorretry.Jitter}).Info("Using executor retry strategy")
 	return WorkflowExecutor{
 		PodName:                      podName,
-		podUID:                       podUID,
 		workflow:                     workflow,
+		workflowUID:                  workflowUID,
 		nodeId:                       nodeId,
 		ClientSet:                    clientset,
-		taskResultClient:             taskResultClient,
+		taskResultClient:             taskSetClient,
 		RESTClient:                   restClient,
 		Namespace:                    namespace,
 		RuntimeExecutor:              cre,
@@ -510,6 +507,12 @@ func (we *WorkflowExecutor) SaveParameters(ctx context.Context) error {
 
 		var output *wfv1.AnyString
 		if we.isBaseImagePath(param.ValueFrom.Path) {
+			executorType := os.Getenv(common.EnvVarContainerRuntimeExecutor)
+			if executorType == common.ContainerRuntimeExecutorK8sAPI || executorType == common.ContainerRuntimeExecutorKubelet {
+				log.Infof("Copying output parameter %s from base image layer %s is not supported for k8sapi and kubelet executors. "+
+					"Consider using an emptyDir volume: https://argoproj.github.io/argo-workflows/empty-dir/.", param.Name, param.ValueFrom.Path)
+				continue
+			}
 			log.Infof("Copying %s from base image layer", param.ValueFrom.Path)
 			fileContents, err := we.RuntimeExecutor.GetFileContents(common.MainContainerName, param.ValueFrom.Path)
 			if err != nil {
@@ -811,45 +814,8 @@ func isTarball(filePath string) (bool, error) {
 // renaming it to the desired location
 func untar(tarPath string, destPath string) error {
 	decompressor := func(src string, dest string) error {
-		f, err := os.Open(src)
-		if err != nil {
-			return err
-		}
-		defer f.Close()
-		gzr, err := file.GetGzipReader(f)
-		if err != nil {
-			return err
-		}
-		defer gzr.Close()
-		tr := tar.NewReader(gzr)
-		for {
-			header, err := tr.Next()
-			switch {
-			case err == io.EOF:
-				return nil
-			case err != nil:
-				return err
-			case header == nil:
-				continue
-			}
-			target := filepath.Join(dest, filepath.Clean(header.Name))
-			if err := os.MkdirAll(filepath.Dir(target), 0o700); err != nil && os.IsExist(err) {
-				return err
-			}
-			switch header.Typeflag {
-			case tar.TypeReg:
-				f, err := os.OpenFile(target, os.O_CREATE|os.O_RDWR, os.FileMode(header.Mode))
-				if err != nil {
-					return err
-				}
-				if _, err := io.Copy(f, tr); err != nil {
-					return err
-				}
-				if err := f.Close(); err != nil {
-					return err
-				}
-			}
-		}
+		_, err := common.RunCommand("tar", "-xf", src, "-C", dest)
+		return err
 	}
 
 	return unpack(tarPath, destPath, decompressor)

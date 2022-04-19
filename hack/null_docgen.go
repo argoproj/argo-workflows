@@ -1,4 +1,3 @@
-//go:build fields
 // +build fields
 
 package main

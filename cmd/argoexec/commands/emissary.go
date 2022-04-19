@@ -27,7 +27,7 @@ import (
 )
 
 var (
-	varRunArgo          = common.VarRunArgoPath
+	varRunArgo          = "/var/run/argo"
 	containerName       = os.Getenv(common.EnvVarContainerName)
 	includeScriptOutput = os.Getenv(common.EnvVarIncludeScriptOutput) == "true" // capture stdout/combined
 	template            = &wfv1.Template{}

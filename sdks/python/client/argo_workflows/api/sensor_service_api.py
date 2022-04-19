@@ -114,9 +114,7 @@ class SensorServiceApi(object):
         self.create_sensor = _Endpoint(
             settings={
                 'response_type': (IoArgoprojEventsV1alpha1Sensor,),
-                'auth': [
-                    'BearerToken'
-                ],
+                'auth': [],
                 'endpoint_path': '/api/v1/sensors/{namespace}',
                 'operation_id': 'create_sensor',
                 'http_method': 'POST',
@@ -249,9 +247,7 @@ class SensorServiceApi(object):
         self.delete_sensor = _Endpoint(
             settings={
                 'response_type': (bool, date, datetime, dict, float, int, list, str, none_type,),
-                'auth': [
-                    'BearerToken'
-                ],
+                'auth': [],
                 'endpoint_path': '/api/v1/sensors/{namespace}/{name}',
                 'operation_id': 'delete_sensor',
                 'http_method': 'DELETE',
@@ -409,9 +405,7 @@ class SensorServiceApi(object):
         self.get_sensor = _Endpoint(
             settings={
                 'response_type': (IoArgoprojEventsV1alpha1Sensor,),
-                'auth': [
-                    'BearerToken'
-                ],
+                'auth': [],
                 'endpoint_path': '/api/v1/sensors/{namespace}/{name}',
                 'operation_id': 'get_sensor',
                 'http_method': 'GET',
@@ -547,9 +541,7 @@ class SensorServiceApi(object):
         self.list_sensors = _Endpoint(
             settings={
                 'response_type': (IoArgoprojEventsV1alpha1SensorList,),
-                'auth': [
-                    'BearerToken'
-                ],
+                'auth': [],
                 'endpoint_path': '/api/v1/sensors/{namespace}',
                 'operation_id': 'list_sensors',
                 'http_method': 'GET',
@@ -723,9 +715,7 @@ class SensorServiceApi(object):
         self.sensors_logs = _Endpoint(
             settings={
                 'response_type': (StreamResultOfSensorLogEntry,),
-                'auth': [
-                    'BearerToken'
-                ],
+                'auth': [],
                 'endpoint_path': '/api/v1/stream/sensors/{namespace}/logs',
                 'operation_id': 'sensors_logs',
                 'http_method': 'GET',
@@ -914,9 +904,7 @@ class SensorServiceApi(object):
         self.update_sensor = _Endpoint(
             settings={
                 'response_type': (IoArgoprojEventsV1alpha1Sensor,),
-                'auth': [
-                    'BearerToken'
-                ],
+                'auth': [],
                 'endpoint_path': '/api/v1/sensors/{namespace}/{name}',
                 'operation_id': 'update_sensor',
                 'http_method': 'PUT',
@@ -1054,9 +1042,7 @@ class SensorServiceApi(object):
         self.watch_sensors = _Endpoint(
             settings={
                 'response_type': (StreamResultOfSensorSensorWatchEvent,),
-                'auth': [
-                    'BearerToken'
-                ],
+                'auth': [],
                 'endpoint_path': '/api/v1/stream/sensors/{namespace}',
                 'operation_id': 'watch_sensors',
                 'http_method': 'GET',

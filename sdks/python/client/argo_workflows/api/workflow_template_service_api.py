@@ -113,9 +113,7 @@ class WorkflowTemplateServiceApi(object):
         self.create_workflow_template = _Endpoint(
             settings={
                 'response_type': (IoArgoprojWorkflowV1alpha1WorkflowTemplate,),
-                'auth': [
-                    'BearerToken'
-                ],
+                'auth': [],
                 'endpoint_path': '/api/v1/workflow-templates/{namespace}',
                 'operation_id': 'create_workflow_template',
                 'http_method': 'POST',
@@ -248,9 +246,7 @@ class WorkflowTemplateServiceApi(object):
         self.delete_workflow_template = _Endpoint(
             settings={
                 'response_type': (bool, date, datetime, dict, float, int, list, str, none_type,),
-                'auth': [
-                    'BearerToken'
-                ],
+                'auth': [],
                 'endpoint_path': '/api/v1/workflow-templates/{namespace}/{name}',
                 'operation_id': 'delete_workflow_template',
                 'http_method': 'DELETE',
@@ -408,9 +404,7 @@ class WorkflowTemplateServiceApi(object):
         self.get_workflow_template = _Endpoint(
             settings={
                 'response_type': (IoArgoprojWorkflowV1alpha1WorkflowTemplate,),
-                'auth': [
-                    'BearerToken'
-                ],
+                'auth': [],
                 'endpoint_path': '/api/v1/workflow-templates/{namespace}/{name}',
                 'operation_id': 'get_workflow_template',
                 'http_method': 'GET',
@@ -541,9 +535,7 @@ class WorkflowTemplateServiceApi(object):
         self.lint_workflow_template = _Endpoint(
             settings={
                 'response_type': (IoArgoprojWorkflowV1alpha1WorkflowTemplate,),
-                'auth': [
-                    'BearerToken'
-                ],
+                'auth': [],
                 'endpoint_path': '/api/v1/workflow-templates/{namespace}/lint',
                 'operation_id': 'lint_workflow_template',
                 'http_method': 'POST',
@@ -675,9 +667,7 @@ class WorkflowTemplateServiceApi(object):
         self.list_workflow_templates = _Endpoint(
             settings={
                 'response_type': (IoArgoprojWorkflowV1alpha1WorkflowTemplateList,),
-                'auth': [
-                    'BearerToken'
-                ],
+                'auth': [],
                 'endpoint_path': '/api/v1/workflow-templates/{namespace}',
                 'operation_id': 'list_workflow_templates',
                 'http_method': 'GET',
@@ -846,9 +836,7 @@ class WorkflowTemplateServiceApi(object):
         self.update_workflow_template = _Endpoint(
             settings={
                 'response_type': (IoArgoprojWorkflowV1alpha1WorkflowTemplate,),
-                'auth': [
-                    'BearerToken'
-                ],
+                'auth': [],
                 'endpoint_path': '/api/v1/workflow-templates/{namespace}/{name}',
                 'operation_id': 'update_workflow_template',
                 'http_method': 'PUT',

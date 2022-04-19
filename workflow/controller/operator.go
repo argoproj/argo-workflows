@@ -26,6 +26,7 @@ import (
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/strategicpatch"
 	"k8s.io/client-go/tools/cache"
@@ -85,6 +86,8 @@ type wfOperationCtx struct {
 	volumes []apiv1.Volume
 	// ArtifactRepository contains the default location of an artifact repository for container artifacts
 	artifactRepository *wfv1.ArtifactRepository
+	// map of completed pods with their corresponding phases
+	completedPods map[string]*apiv1.Pod
 	// deadline is the dealine time in which this operation should relinquish
 	// its hold on the workflow so that an operation does not run for too long
 	// and starve other workqueue items. It also enables workflow progress to
@@ -155,6 +158,7 @@ func newWorkflowOperationCtx(wf *wfv1.Workflow, wfc *WorkflowController) *wfOper
 		controller:             wfc,
 		globalParams:           make(map[string]string),
 		volumes:                wf.Spec.DeepCopy().Volumes,
+		completedPods:          make(map[string]*apiv1.Pod),
 		deadline:               time.Now().UTC().Add(maxOperationTime),
 		eventRecorder:          wfc.eventRecorderManager.Get(wf.Namespace),
 		preExecutionNodePhases: make(map[string]wfv1.NodePhase),
@@ -288,7 +292,6 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 		woc.wf.Status.EstimatedDuration = woc.estimateWorkflowDuration()
 	} else {
 		woc.workflowDeadline = woc.getWorkflowDeadline()
-		woc.taskResultReconciliation()
 		err := woc.podReconciliation(ctx)
 		if err == nil {
 			woc.failSuspendedAndPendingNodesAfterDeadlineOrShutdown()
@@ -507,6 +510,10 @@ func (woc *wfOperationCtx) updateWorkflowMetadata() error {
 		woc.updated = true
 	}
 	return nil
+}
+
+func (woc *wfOperationCtx) getContainerRuntimeExecutor() string {
+	return woc.controller.GetContainerRuntimeExecutor(labels.Set(woc.wf.Labels))
 }
 
 func (woc *wfOperationCtx) getWorkflowDeadline() *time.Time {
@@ -901,7 +908,7 @@ func (woc *wfOperationCtx) processNodeRetries(node *wfv1.NodeStatus, retryStrate
 		}
 
 		// See if we have waited past the deadline
-		if time.Now().Before(waitingDeadline) && int32(len(node.Children)) <= retryStrategy.Limit.IntVal {
+		if time.Now().Before(waitingDeadline) {
 			woc.requeueAfter(timeToWait)
 			retryMessage := fmt.Sprintf("Backoff for %s", humanize.Duration(timeToWait))
 			return woc.markNodePhase(node.Name, node.Phase, retryMessage), false, nil
@@ -1010,6 +1017,10 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) error {
 						printPodSpecLog(pod, woc.wf.Name)
 					}
 				}
+			}
+			switch pod.Status.Phase {
+			case apiv1.PodSucceeded, apiv1.PodFailed:
+				woc.completedPods[pod.Name] = pod
 			}
 		}
 	}
@@ -1248,6 +1259,19 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, old *wfv1.NodeStatus
 		woc.log.Warn("workflow uses legacy/insecure pod patch, see https://argoproj.github.io/argo-workflows/workflow-rbac/")
 		if p, ok := wfv1.ParseProgress(x); ok {
 			new.Progress = p
+		}
+	}
+
+	obj, _, _ := woc.controller.taskResultInformer.Informer().GetStore().GetByKey(woc.wf.Namespace + "/" + old.ID)
+	if result, ok := obj.(*wfv1.WorkflowTaskResult); ok {
+		if result.Outputs.HasOutputs() {
+			if new.Outputs == nil {
+				new.Outputs = &wfv1.Outputs{}
+			}
+			result.Outputs.DeepCopyInto(new.Outputs) // preserve any existing values
+		}
+		if result.Progress.IsValid() {
+			new.Progress = result.Progress
 		}
 	}
 
@@ -3437,7 +3461,7 @@ func (woc *wfOperationCtx) setExecWorkflow(ctx context.Context) error {
 
 	// Perform one-time workflow validation
 	if woc.wf.Status.Phase == wfv1.WorkflowUnknown {
-		validateOpts := validate.ValidateOpts{}
+		validateOpts := validate.ValidateOpts{ContainerRuntimeExecutor: woc.getContainerRuntimeExecutor()}
 		wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTemplates(woc.wf.Namespace))
 		cwftmplGetter := templateresolution.WrapClusterWorkflowTemplateInterface(woc.controller.wfclientset.ArgoprojV1alpha1().ClusterWorkflowTemplates())
 
@@ -3530,7 +3554,7 @@ func (woc *wfOperationCtx) setStoredWfSpec() error {
 			return err
 		}
 		if mergedWf.Spec.String() != woc.wf.Status.StoredWorkflowSpec.String() {
-			return fmt.Errorf("WorkflowSpec may not change during execution when the controller is set `templateReferencing: Secure`")
+			return fmt.Errorf("workflowTemplateRef reference may not change during execution when the controller is in reference mode")
 		}
 	}
 	return nil

@@ -32,7 +32,6 @@ generate:
 		-g java \
 		-o /wd \
 		-p hideGenerationTimestamp=true \
-		-p serializationLibrary=jsonb \
 		-p dateLibrary=java8 \
 		--api-package io.argoproj.workflow.apis \
 		--invoker-package io.argoproj.workflow \
@@ -40,7 +39,6 @@ generate:
 		--skip-validate-spec \
 		--group-id io.argoproj.workflow \
 		--artifact-id argo-client-java \
-		--artifact-version $(VERSION) \
 		--import-mappings Time=java.time.Instant \
 		--import-mappings Affinity=io.kubernetes.client.openapi.models.V1Affinity \
 		--import-mappings ConfigMapKeySelector=io.kubernetes.client.openapi.models.V1ConfigMapKeySelector \
@@ -69,15 +67,6 @@ generate:
 		--generate-alias-as-model
 	# https://vsupalov.com/docker-shared-permissions/#set-the-docker-user-when-running-your-container
 	$(CHOWN) $(WD) || sudo $(CHOWN) $(WD)
-	# adding kubernetes-client
-	cd client && sed 's/<dependencies>/<dependencies><dependency><groupId>io.kubernetes<\/groupId><artifactId>client-java<\/artifactId><version>14.0.1<\/version><\/dependency>/g' pom.xml > tmp && mv tmp pom.xml
+	# replace the generated pom.xml, because that has too many dependencies
+	sed 's/0.0.0-VERSION/$(VERSION)/' pom.xml > $(WD)/pom.xml
 
-client/pom.xml: generate
-
-install: client/pom.xml
-	mvn -f client install
-
-test:
-	../../hack/access-token.sh init
-	kubectl delete wf --all
-	env ARGO_TOKEN="`../../hack/access-token.sh get`" mvn -f tests test

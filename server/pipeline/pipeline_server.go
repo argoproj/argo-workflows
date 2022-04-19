@@ -120,10 +120,8 @@ func (s *server) PipelineLogs(in *pipelinepkg.PipelineLogsRequest, svr pipelinep
 	if in.StepName != "" {
 		labelSelector += "," + dfv1.KeyStepName + "=" + in.StepName
 	}
-	ctx := svr.Context()
 	return logs.LogPods(
-		ctx,
-		auth.GetKubeClient(ctx),
+		svr.Context(),
 		in.Namespace,
 		labelSelector,
 		in.Grep,

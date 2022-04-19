@@ -20,17 +20,16 @@
     "BearerToken": {
       "description": "Bearer Token authentication",
       "type": "apiKey",
-      "name": "Authorization",
+      "name": "authorization",
       "in": "header"
+    },
+    "HTTPBasic": {
+      "description": "HTTP Basic authentication",
+      "type": "basic"
     }
   },
-  "security": [
-    {
-      "BearerToken": []
-    }
-  ],
   "paths": {
-    "/artifacts/{namespace}/{name}/{nodeId}/{artifactName}": {
+    "/artifacts/{namespace}/{name}/{podName}/{artifactName}": {
       "get": {
         "tags": [
           "ArtifactService"
@@ -52,7 +51,7 @@
           },
           {
             "type": "string",
-            "name": "nodeId",
+            "name": "podName",
             "in": "path",
             "required": true
           },
@@ -66,9 +65,12 @@
         "responses": {
           "200": {
             "description": "An artifact file.",
-            "schema": {
-              "type": "string",
-              "format": "binary"
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
             }
           },
           "default": {
@@ -80,7 +82,7 @@
         }
       }
     },
-    "/input-artifacts/{namespace}/{name}/{nodeId}/{artifactName}": {
+    "/input-artifacts/{namespace}/{name}/{podName}/{artifactName}": {
       "get": {
         "tags": [
           "ArtifactService"
@@ -102,7 +104,7 @@
           },
           {
             "type": "string",
-            "name": "nodeId",
+            "name": "podName",
             "in": "path",
             "required": true
           },
@@ -117,9 +119,10 @@
           "200": {
             "description": "An artifact file.",
             "content": {
-              "schema": {
-                "type": "string",
-                "format": "binary"
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
               }
             }
           },
@@ -132,7 +135,7 @@
         }
       }
     },
-    "/artifacts-by-uid/{uid}/{nodeId}/{artifactName}": {
+    "/artifacts-by-uid/{uid}/{podName}/{artifactName}": {
       "get": {
         "tags": [
           "ArtifactService"
@@ -148,7 +151,7 @@
           },
           {
             "type": "string",
-            "name": "nodeId",
+            "name": "podName",
             "in": "path",
             "required": true
           },
@@ -163,9 +166,10 @@
           "200": {
             "description": "An artifact file.",
             "content": {
-              "schema": {
-                "type": "string",
-                "format": "binary"
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
               }
             }
           },
@@ -178,7 +182,7 @@
         }
       }
     },
-    "/input-artifacts-by-uid/{uid}/{nodeId}/{artifactName}": {
+    "/input-artifacts-by-uid/{uid}/{podName}/{artifactName}": {
       "get": {
         "tags": [
           "ArtifactService"
@@ -200,7 +204,7 @@
           },
           {
             "type": "string",
-            "name": "nodeId",
+            "name": "podName",
             "in": "path",
             "required": true
           },
@@ -214,9 +218,12 @@
         "responses": {
           "200": {
             "description": "An artifact file.",
-            "schema": {
-              "type": "string",
-              "format": "binary"
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
             }
           },
           "default": {

@@ -13,6 +13,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/fields"
+	kubefake "k8s.io/client-go/kubernetes/fake"
 	"sigs.k8s.io/yaml"
 
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
@@ -588,27 +589,27 @@ func TestApplySubmitOpts(t *testing.T) {
 			assert.Equal(t, "81861780812", parameters[0].Value.String())
 		}
 	})
+	t.Run("ParameterFile", func(t *testing.T) {
+		wf := &wfv1.Workflow{}
+		file, err := ioutil.TempFile("", "")
+		assert.NoError(t, err)
+		defer func() { _ = os.Remove(file.Name()) }()
+		err = ioutil.WriteFile(file.Name(), []byte(`a: 81861780812`), 0o600)
+		assert.NoError(t, err)
+		err = ApplySubmitOpts(wf, &wfv1.SubmitOpts{ParameterFile: file.Name()})
+		assert.NoError(t, err)
+		parameters := wf.Spec.Arguments.Parameters
+		if assert.Len(t, parameters, 1) {
+			assert.Equal(t, "a", parameters[0].Name)
+			assert.Equal(t, "81861780812", parameters[0].Value.String())
+		}
+	})
 	t.Run("PodPriorityClassName", func(t *testing.T) {
 		wf := &wfv1.Workflow{}
 		err := ApplySubmitOpts(wf, &wfv1.SubmitOpts{PodPriorityClassName: "abc"})
 		assert.NoError(t, err)
 		assert.Equal(t, "abc", wf.Spec.PodPriorityClassName)
 	})
-}
-
-func TestReadParametersFile(t *testing.T) {
-	file, err := ioutil.TempFile("", "")
-	assert.NoError(t, err)
-	defer func() { _ = os.Remove(file.Name()) }()
-	err = ioutil.WriteFile(file.Name(), []byte(`a: 81861780812`), 0o600)
-	assert.NoError(t, err)
-	opts := &wfv1.SubmitOpts{}
-	err = ReadParametersFile(file.Name(), opts)
-	assert.NoError(t, err)
-	parameters := opts.Parameters
-	if assert.Len(t, parameters, 1) {
-		assert.Equal(t, "a=81861780812", parameters[0])
-	}
 }
 
 func TestFormulateResubmitWorkflow(t *testing.T) {
@@ -804,12 +805,13 @@ status:
 
 func TestDeepDeleteNodes(t *testing.T) {
 	wfIf := argofake.NewSimpleClientset().ArgoprojV1alpha1().Workflows("")
+	kubeClient := &kubefake.Clientset{}
 	origWf := wfv1.MustUnmarshalWorkflow(deepDeleteOfNodes)
 
 	ctx := context.Background()
 	wf, err := wfIf.Create(ctx, origWf, metav1.CreateOptions{})
 	if assert.NoError(t, err) {
-		newWf, _, err := FormulateRetryWorkflow(ctx, wf, false, "")
+		newWf, err := RetryWorkflow(ctx, kubeClient, hydratorfake.Noop, wfIf, wf.Name, false, "")
 		assert.NoError(t, err)
 		newWfBytes, err := yaml.Marshal(newWf)
 		assert.NoError(t, err)
@@ -817,8 +819,9 @@ func TestDeepDeleteNodes(t *testing.T) {
 	}
 }
 
-func TestFormulateRetryWorkflow(t *testing.T) {
+func TestRetryWorkflow(t *testing.T) {
 	ctx := context.Background()
+	kubeClient := kubefake.NewSimpleClientset()
 	wfClient := argofake.NewSimpleClientset().ArgoprojV1alpha1().Workflows("my-ns")
 	createdTime := metav1.Time{Time: time.Now().UTC()}
 	finishedTime := metav1.Time{Time: createdTime.Add(time.Second * 2)}
@@ -842,7 +845,7 @@ func TestFormulateRetryWorkflow(t *testing.T) {
 		}
 		_, err := wfClient.Create(ctx, wf, metav1.CreateOptions{})
 		assert.NoError(t, err)
-		wf, _, err = FormulateRetryWorkflow(ctx, wf, false, "")
+		wf, err = RetryWorkflow(ctx, kubeClient, hydratorfake.Noop, wfClient, wf.Name, false, "")
 		if assert.NoError(t, err) {
 			assert.Equal(t, wfv1.WorkflowRunning, wf.Status.Phase)
 			assert.Equal(t, metav1.Time{}, wf.Status.FinishedAt)
@@ -879,7 +882,7 @@ func TestFormulateRetryWorkflow(t *testing.T) {
 		}
 		_, err := wfClient.Create(ctx, wf, metav1.CreateOptions{})
 		assert.NoError(t, err)
-		wf, _, err = FormulateRetryWorkflow(ctx, wf, false, "")
+		wf, err = RetryWorkflow(ctx, kubeClient, hydratorfake.Noop, wfClient, wf.Name, false, "")
 		if assert.NoError(t, err) {
 			if assert.Len(t, wf.Status.Nodes, 1) {
 				assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes[""].Phase)

@@ -123,9 +123,7 @@ class WorkflowServiceApi(object):
         self.create_workflow = _Endpoint(
             settings={
                 'response_type': (IoArgoprojWorkflowV1alpha1Workflow,),
-                'auth': [
-                    'BearerToken'
-                ],
+                'auth': [],
                 'endpoint_path': '/api/v1/workflows/{namespace}',
                 'operation_id': 'create_workflow',
                 'http_method': 'POST',
@@ -258,9 +256,7 @@ class WorkflowServiceApi(object):
         self.delete_workflow = _Endpoint(
             settings={
                 'response_type': (bool, date, datetime, dict, float, int, list, str, none_type,),
-                'auth': [
-                    'BearerToken'
-                ],
+                'auth': [],
                 'endpoint_path': '/api/v1/workflows/{namespace}/{name}',
                 'operation_id': 'delete_workflow',
                 'http_method': 'DELETE',
@@ -419,9 +415,7 @@ class WorkflowServiceApi(object):
         self.get_workflow = _Endpoint(
             settings={
                 'response_type': (IoArgoprojWorkflowV1alpha1Workflow,),
-                'auth': [
-                    'BearerToken'
-                ],
+                'auth': [],
                 'endpoint_path': '/api/v1/workflows/{namespace}/{name}',
                 'operation_id': 'get_workflow',
                 'http_method': 'GET',
@@ -557,9 +551,7 @@ class WorkflowServiceApi(object):
         self.lint_workflow = _Endpoint(
             settings={
                 'response_type': (IoArgoprojWorkflowV1alpha1Workflow,),
-                'auth': [
-                    'BearerToken'
-                ],
+                'auth': [],
                 'endpoint_path': '/api/v1/workflows/{namespace}/lint',
                 'operation_id': 'lint_workflow',
                 'http_method': 'POST',
@@ -692,9 +684,7 @@ class WorkflowServiceApi(object):
         self.list_workflows = _Endpoint(
             settings={
                 'response_type': (IoArgoprojWorkflowV1alpha1WorkflowList,),
-                'auth': [
-                    'BearerToken'
-                ],
+                'auth': [],
                 'endpoint_path': '/api/v1/workflows/{namespace}',
                 'operation_id': 'list_workflows',
                 'http_method': 'GET',
@@ -880,9 +870,7 @@ class WorkflowServiceApi(object):
         self.pod_logs = _Endpoint(
             settings={
                 'response_type': (StreamResultOfIoArgoprojWorkflowV1alpha1LogEntry,),
-                'auth': [
-                    'BearerToken'
-                ],
+                'auth': [],
                 'endpoint_path': '/api/v1/workflows/{namespace}/{name}/{podName}/log',
                 'operation_id': 'pod_logs',
                 'http_method': 'GET',
@@ -1078,9 +1066,7 @@ class WorkflowServiceApi(object):
         self.resubmit_workflow = _Endpoint(
             settings={
                 'response_type': (IoArgoprojWorkflowV1alpha1Workflow,),
-                'auth': [
-                    'BearerToken'
-                ],
+                'auth': [],
                 'endpoint_path': '/api/v1/workflows/{namespace}/{name}/resubmit',
                 'operation_id': 'resubmit_workflow',
                 'http_method': 'PUT',
@@ -1217,9 +1203,7 @@ class WorkflowServiceApi(object):
         self.resume_workflow = _Endpoint(
             settings={
                 'response_type': (IoArgoprojWorkflowV1alpha1Workflow,),
-                'auth': [
-                    'BearerToken'
-                ],
+                'auth': [],
                 'endpoint_path': '/api/v1/workflows/{namespace}/{name}/resume',
                 'operation_id': 'resume_workflow',
                 'http_method': 'PUT',
@@ -1356,9 +1340,7 @@ class WorkflowServiceApi(object):
         self.retry_workflow = _Endpoint(
             settings={
                 'response_type': (IoArgoprojWorkflowV1alpha1Workflow,),
-                'auth': [
-                    'BearerToken'
-                ],
+                'auth': [],
                 'endpoint_path': '/api/v1/workflows/{namespace}/{name}/retry',
                 'operation_id': 'retry_workflow',
                 'http_method': 'PUT',
@@ -1495,9 +1477,7 @@ class WorkflowServiceApi(object):
         self.set_workflow = _Endpoint(
             settings={
                 'response_type': (IoArgoprojWorkflowV1alpha1Workflow,),
-                'auth': [
-                    'BearerToken'
-                ],
+                'auth': [],
                 'endpoint_path': '/api/v1/workflows/{namespace}/{name}/set',
                 'operation_id': 'set_workflow',
                 'http_method': 'PUT',
@@ -1634,9 +1614,7 @@ class WorkflowServiceApi(object):
         self.stop_workflow = _Endpoint(
             settings={
                 'response_type': (IoArgoprojWorkflowV1alpha1Workflow,),
-                'auth': [
-                    'BearerToken'
-                ],
+                'auth': [],
                 'endpoint_path': '/api/v1/workflows/{namespace}/{name}/stop',
                 'operation_id': 'stop_workflow',
                 'http_method': 'PUT',
@@ -1769,9 +1747,7 @@ class WorkflowServiceApi(object):
         self.submit_workflow = _Endpoint(
             settings={
                 'response_type': (IoArgoprojWorkflowV1alpha1Workflow,),
-                'auth': [
-                    'BearerToken'
-                ],
+                'auth': [],
                 'endpoint_path': '/api/v1/workflows/{namespace}/submit',
                 'operation_id': 'submit_workflow',
                 'http_method': 'POST',
@@ -1902,9 +1878,7 @@ class WorkflowServiceApi(object):
         self.suspend_workflow = _Endpoint(
             settings={
                 'response_type': (IoArgoprojWorkflowV1alpha1Workflow,),
-                'auth': [
-                    'BearerToken'
-                ],
+                'auth': [],
                 'endpoint_path': '/api/v1/workflows/{namespace}/{name}/suspend',
                 'operation_id': 'suspend_workflow',
                 'http_method': 'PUT',
@@ -2041,9 +2015,7 @@ class WorkflowServiceApi(object):
         self.terminate_workflow = _Endpoint(
             settings={
                 'response_type': (IoArgoprojWorkflowV1alpha1Workflow,),
-                'auth': [
-                    'BearerToken'
-                ],
+                'auth': [],
                 'endpoint_path': '/api/v1/workflows/{namespace}/{name}/terminate',
                 'operation_id': 'terminate_workflow',
                 'http_method': 'PUT',
@@ -2181,9 +2153,7 @@ class WorkflowServiceApi(object):
         self.watch_events = _Endpoint(
             settings={
                 'response_type': (StreamResultOfEvent,),
-                'auth': [
-                    'BearerToken'
-                ],
+                'auth': [],
                 'endpoint_path': '/api/v1/stream/events/{namespace}',
                 'operation_id': 'watch_events',
                 'http_method': 'GET',
@@ -2354,9 +2324,7 @@ class WorkflowServiceApi(object):
         self.watch_workflows = _Endpoint(
             settings={
                 'response_type': (StreamResultOfIoArgoprojWorkflowV1alpha1WorkflowWatchEvent,),
-                'auth': [
-                    'BearerToken'
-                ],
+                'auth': [],
                 'endpoint_path': '/api/v1/workflow-events/{namespace}',
                 'operation_id': 'watch_workflows',
                 'http_method': 'GET',
@@ -2539,9 +2507,7 @@ class WorkflowServiceApi(object):
         self.workflow_logs = _Endpoint(
             settings={
                 'response_type': (StreamResultOfIoArgoprojWorkflowV1alpha1LogEntry,),
-                'auth': [
-                    'BearerToken'
-                ],
+                'auth': [],
                 'endpoint_path': '/api/v1/workflows/{namespace}/{name}/log',
                 'operation_id': 'workflow_logs',
                 'http_method': 'GET',

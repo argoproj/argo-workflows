@@ -21,11 +21,7 @@ func (woc *wfOperationCtx) applyExecutionControl(ctx context.Context, pod *apiv1
 	}
 
 	nodeID := woc.nodeID(pod)
-	node := woc.wf.Status.Nodes[nodeID]
-	//node is already completed
-	if node.Fulfilled() {
-		return
-	}
+
 	switch pod.Status.Phase {
 	case apiv1.PodSucceeded, apiv1.PodFailed:
 		// Skip any pod which are already completed

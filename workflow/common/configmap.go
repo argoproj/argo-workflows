@@ -5,8 +5,6 @@ import (
 
 	apiv1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/tools/cache"
-
-	"github.com/argoproj/argo-workflows/v3/errors"
 )
 
 // GetConfigMapValue retrieves a configmap value
@@ -27,10 +25,10 @@ func GetConfigMapValue(configMapInformer cache.SharedIndexInformer, namespace, n
 		}
 		cmValue, ok := cm.Data[key]
 		if !ok {
-			return "", errors.Errorf(errors.CodeNotFound, "ConfigMap '%s' does not have the key '%s'", name, key)
+			return "", fmt.Errorf("ConfigMap '%s' does not have the key '%s'", name, key)
 		}
 		return cmValue, nil
 	}
-	return "", errors.Errorf(errors.CodeNotFound, "ConfigMap '%s' does not exist. Please make sure it has the label %s: %s to be detectable by the controller",
+	return "", fmt.Errorf("ConfigMap '%s' does not exist. Please make sure it has the label %s: %s to be detectable by the controller",
 		name, LabelKeyConfigMapType, LabelValueTypeConfigMapParameter)
 }

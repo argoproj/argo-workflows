@@ -60,7 +60,7 @@ func printTable(wfList []wfv1.Workflow, out io.Writer, opts PrintOpts) {
 		if opts.Namespace {
 			_, _ = fmt.Fprint(w, "NAMESPACE\t")
 		}
-		_, _ = fmt.Fprint(w, "NAME\tSTATUS\tAGE\tDURATION\tPRIORITY\tMESSAGE")
+		_, _ = fmt.Fprint(w, "NAME\tSTATUS\tAGE\tDURATION\tPRIORITY")
 		if opts.Output == "wide" {
 			_, _ = fmt.Fprint(w, "\tP/R/C\tPARAMETERS")
 		}
@@ -72,7 +72,6 @@ func printTable(wfList []wfv1.Workflow, out io.Writer, opts PrintOpts) {
 	for _, wf := range wfList {
 		ageStr := humanize.RelativeDurationShort(wf.ObjectMeta.CreationTimestamp.Time, time.Now())
 		durationStr := humanize.RelativeDurationShort(wf.Status.StartedAt.Time, wf.Status.FinishedAt.Time)
-		messageStr := wf.Status.Message
 		if opts.Namespace {
 			_, _ = fmt.Fprintf(w, "%s\t", wf.ObjectMeta.Namespace)
 		}
@@ -80,7 +79,7 @@ func printTable(wfList []wfv1.Workflow, out io.Writer, opts PrintOpts) {
 		if wf.Spec.Priority != nil {
 			priority = int(*wf.Spec.Priority)
 		}
-		_, _ = fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%d\t%s", wf.ObjectMeta.Name, WorkflowStatus(&wf), ageStr, durationStr, priority, messageStr)
+		_, _ = fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%d", wf.ObjectMeta.Name, WorkflowStatus(&wf), ageStr, durationStr, priority)
 		if opts.Output == "wide" {
 			pending, running, completed := countPendingRunningCompletedNodes(&wf)
 			_, _ = fmt.Fprintf(w, "\t%d/%d/%d", pending, running, completed)

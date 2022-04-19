@@ -119,9 +119,7 @@ class PipelineServiceApi(object):
         self.delete_pipeline = _Endpoint(
             settings={
                 'response_type': (bool, date, datetime, dict, float, int, list, str, none_type,),
-                'auth': [
-                    'BearerToken'
-                ],
+                'auth': [],
                 'endpoint_path': '/api/v1/pipelines/{namespace}/{name}',
                 'operation_id': 'delete_pipeline',
                 'http_method': 'DELETE',
@@ -279,9 +277,7 @@ class PipelineServiceApi(object):
         self.get_pipeline = _Endpoint(
             settings={
                 'response_type': (GithubComArgoprojLabsArgoDataflowApiV1alpha1Pipeline,),
-                'auth': [
-                    'BearerToken'
-                ],
+                'auth': [],
                 'endpoint_path': '/api/v1/pipelines/{namespace}/{name}',
                 'operation_id': 'get_pipeline',
                 'http_method': 'GET',
@@ -417,9 +413,7 @@ class PipelineServiceApi(object):
         self.list_pipelines = _Endpoint(
             settings={
                 'response_type': (GithubComArgoprojLabsArgoDataflowApiV1alpha1PipelineList,),
-                'auth': [
-                    'BearerToken'
-                ],
+                'auth': [],
                 'endpoint_path': '/api/v1/pipelines/{namespace}',
                 'operation_id': 'list_pipelines',
                 'http_method': 'GET',
@@ -593,9 +587,7 @@ class PipelineServiceApi(object):
         self.pipeline_logs = _Endpoint(
             settings={
                 'response_type': (StreamResultOfPipelineLogEntry,),
-                'auth': [
-                    'BearerToken'
-                ],
+                'auth': [],
                 'endpoint_path': '/api/v1/stream/pipelines/{namespace}/logs',
                 'operation_id': 'pipeline_logs',
                 'http_method': 'GET',
@@ -780,9 +772,7 @@ class PipelineServiceApi(object):
         self.restart_pipeline = _Endpoint(
             settings={
                 'response_type': (bool, date, datetime, dict, float, int, list, str, none_type,),
-                'auth': [
-                    'BearerToken'
-                ],
+                'auth': [],
                 'endpoint_path': '/api/v1/pipelines/{namespace}/{name}/restart',
                 'operation_id': 'restart_pipeline',
                 'http_method': 'POST',
@@ -913,9 +903,7 @@ class PipelineServiceApi(object):
         self.watch_pipelines = _Endpoint(
             settings={
                 'response_type': (StreamResultOfPipelinePipelineWatchEvent,),
-                'auth': [
-                    'BearerToken'
-                ],
+                'auth': [],
                 'endpoint_path': '/api/v1/stream/pipelines/{namespace}',
                 'operation_id': 'watch_pipelines',
                 'http_method': 'GET',
@@ -1085,9 +1073,7 @@ class PipelineServiceApi(object):
         self.watch_steps = _Endpoint(
             settings={
                 'response_type': (StreamResultOfPipelineStepWatchEvent,),
-                'auth': [
-                    'BearerToken'
-                ],
+                'auth': [],
                 'endpoint_path': '/api/v1/stream/steps/{namespace}',
                 'operation_id': 'watch_steps',
                 'http_method': 'GET',

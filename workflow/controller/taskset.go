@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"strconv"
 
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -174,11 +173,6 @@ func (woc *wfOperationCtx) createTaskSet(ctx context.Context) error {
 	if apierr.IsConflict(err) || apierr.IsAlreadyExists(err) {
 		woc.log.Debug("patching the exiting taskset")
 		spec := map[string]interface{}{
-			"metadata": metav1.ObjectMeta{
-				Labels: map[string]string{
-					common.LabelKeyCompleted: strconv.FormatBool(woc.wf.Status.Fulfilled()),
-				},
-			},
 			"spec": wfv1.WorkflowTaskSetSpec{Tasks: woc.taskSet},
 		}
 		// patch the new templates into taskset

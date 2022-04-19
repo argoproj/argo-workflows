@@ -102,9 +102,7 @@ class InfoServiceApi(object):
         self.get_info = _Endpoint(
             settings={
                 'response_type': (IoArgoprojWorkflowV1alpha1InfoResponse,),
-                'auth': [
-                    'BearerToken'
-                ],
+                'auth': [],
                 'endpoint_path': '/api/v1/info',
                 'operation_id': 'get_info',
                 'http_method': 'GET',
@@ -208,9 +206,7 @@ class InfoServiceApi(object):
         self.get_user_info = _Endpoint(
             settings={
                 'response_type': (IoArgoprojWorkflowV1alpha1GetUserInfoResponse,),
-                'auth': [
-                    'BearerToken'
-                ],
+                'auth': [],
                 'endpoint_path': '/api/v1/userinfo',
                 'operation_id': 'get_user_info',
                 'http_method': 'GET',
@@ -314,9 +310,7 @@ class InfoServiceApi(object):
         self.get_version = _Endpoint(
             settings={
                 'response_type': (IoArgoprojWorkflowV1alpha1Version,),
-                'auth': [
-                    'BearerToken'
-                ],
+                'auth': [],
                 'endpoint_path': '/api/v1/version',
                 'operation_id': 'get_version',
                 'http_method': 'GET',

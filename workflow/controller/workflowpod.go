@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
 	"path/filepath"
 	"strconv"
 	"time"
@@ -13,7 +14,9 @@ import (
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/strategicpatch"
+	"k8s.io/utils/pointer"
 
+	"github.com/argoproj/argo-workflows/v3/config"
 	"github.com/argoproj/argo-workflows/v3/errors"
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
@@ -21,7 +24,6 @@ import (
 	"github.com/argoproj/argo-workflows/v3/util/intstr"
 	"github.com/argoproj/argo-workflows/v3/util/template"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
-	"github.com/argoproj/argo-workflows/v3/workflow/controller/entrypoint"
 	"github.com/argoproj/argo-workflows/v3/workflow/controller/indexes"
 	"github.com/argoproj/argo-workflows/v3/workflow/util"
 )
@@ -35,9 +37,60 @@ var (
 	}
 	volumeMountVarArgo = apiv1.VolumeMount{
 		Name:      volumeVarArgo.Name,
-		MountPath: common.VarRunArgoPath,
+		MountPath: "/var/run/argo",
 	}
+	hostPathSocket = apiv1.HostPathSocket
 )
+
+func (woc *wfOperationCtx) getVolumeMountDockerSock(tmpl *wfv1.Template) apiv1.VolumeMount {
+	return apiv1.VolumeMount{
+		Name:      common.DockerSockVolumeName,
+		MountPath: getDockerSockPath(tmpl),
+		ReadOnly:  getDockerSockReadOnly(tmpl),
+	}
+}
+
+func getDockerSockReadOnly(tmpl *wfv1.Template) bool {
+	return !util.HasWindowsOSNodeSelector(tmpl.NodeSelector)
+}
+
+func getDockerSockPath(tmpl *wfv1.Template) string {
+	if util.HasWindowsOSNodeSelector(tmpl.NodeSelector) {
+		return "\\\\.\\pipe\\docker_engine"
+	}
+
+	return "/var/run/docker.sock"
+}
+
+func getVolumeHostPathType(tmpl *wfv1.Template) *apiv1.HostPathType {
+	if util.HasWindowsOSNodeSelector(tmpl.NodeSelector) {
+		return nil
+	}
+
+	return &hostPathSocket
+}
+
+func (woc *wfOperationCtx) getVolumeDockerSock(tmpl *wfv1.Template) apiv1.Volume {
+	dockerSockPath := getDockerSockPath(tmpl)
+
+	if woc.controller.Config.DockerSockPath != "" {
+		dockerSockPath = woc.controller.Config.DockerSockPath
+	}
+
+	// volumeDockerSock provides the wait container direct access to the minion's host docker daemon.
+	// The primary purpose of this is to make available `docker cp` to collect an output artifact
+	// from a container. Alternatively, we could use `kubectl cp`, but `docker cp` avoids the extra
+	// hop to the kube api server.
+	return apiv1.Volume{
+		Name: common.DockerSockVolumeName,
+		VolumeSource: apiv1.VolumeSource{
+			HostPath: &apiv1.HostPathVolumeSource{
+				Path: dockerSockPath,
+				Type: getVolumeHostPathType(tmpl),
+			},
+		},
+	}
+}
 
 func (woc *wfOperationCtx) hasPodSpecPatch(tmpl *wfv1.Template) bool {
 	return woc.execWf.Spec.HasPodSpecPatch() || tmpl.HasPodSpecPatch()
@@ -194,6 +247,9 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 	if woc.controller.Config.InstanceID != "" {
 		pod.ObjectMeta.Labels[common.LabelKeyControllerInstanceID] = woc.controller.Config.InstanceID
 	}
+	if woc.getContainerRuntimeExecutor() == common.ContainerRuntimeExecutorPNS {
+		pod.Spec.ShareProcessNamespace = pointer.BoolPtr(true)
+	}
 
 	woc.addArchiveLocation(tmpl)
 
@@ -228,8 +284,10 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 
 	// Add init container only if it needs input artifacts. This is also true for
 	// script templates (which needs to populate the script)
-	initCtr := woc.newInitContainer(tmpl)
-	pod.Spec.InitContainers = []apiv1.Container{initCtr}
+	if len(tmpl.Inputs.Artifacts) > 0 || tmpl.GetType() == wfv1.TemplateTypeScript || woc.getContainerRuntimeExecutor() == common.ContainerRuntimeExecutorEmissary {
+		initCtr := woc.newInitContainer(tmpl)
+		pod.Spec.InitContainers = []apiv1.Container{initCtr}
+	}
 
 	addSchedulingConstraints(pod, wfSpec, tmpl)
 	woc.addMetadata(pod, tmpl)
@@ -369,21 +427,19 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 	}
 
 	for i, c := range pod.Spec.Containers {
-		if c.Name != common.WaitContainerName {
+		if woc.getContainerRuntimeExecutor() == common.ContainerRuntimeExecutorEmissary && c.Name != common.WaitContainerName {
 			// https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#notes
 			if len(c.Command) == 0 {
-				x, err := woc.controller.entrypoint.Lookup(ctx, c.Image, entrypoint.Options{
-					Namespace: woc.wf.Namespace, ServiceAccountName: woc.wf.Spec.ServiceAccountName, ImagePullSecrets: woc.wf.Spec.ImagePullSecrets,
-				})
-				if err != nil {
-					return nil, fmt.Errorf("failed to look-up entrypoint/cmd for image %q, you must either explicitly specify the command, or list the image's command in the index: https://argoproj.github.io/argo-workflows/workflow-executors/#emissary-emissary: %w", c.Image, err)
-				}
-				c.Command = x.Entrypoint
+				x := woc.getImage(c.Image)
+				c.Command = x.Command
 				if c.Args == nil { // check nil rather than length, as zero-length is valid args
-					c.Args = x.Cmd
+					c.Args = x.Args
 				}
 			}
-			c.Command = append([]string{common.VarRunArgoPath + "/argoexec", "emissary", "--"}, c.Command...)
+			if len(c.Command) == 0 {
+				return nil, fmt.Errorf("container %q in template %q, does not have the command specified: when using the emissary executor you must either explicitly specify the command, or list the image's command in the index: https://argoproj.github.io/argo-workflows/workflow-executors/#emissary-emissary", c.Name, tmpl.Name)
+			}
+			c.Command = append([]string{"/var/run/argo/argoexec", "emissary", "--"}, c.Command...)
 		}
 		c.VolumeMounts = append(c.VolumeMounts, volumeMountVarArgo)
 		if x := pod.Spec.TerminationGracePeriodSeconds; x != nil && c.Name == common.WaitContainerName {
@@ -471,6 +527,13 @@ func (woc *wfOperationCtx) getDeadline(opts *createWorkflowPodOpts) *time.Time {
 	return &deadline
 }
 
+func (woc *wfOperationCtx) getImage(image string) config.Image {
+	if woc.controller.Config.Images == nil {
+		return config.Image{}
+	}
+	return woc.controller.Config.Images[image]
+}
+
 // substitutePodParams returns a pod spec with parameter references substituted as well as pod.name
 func substitutePodParams(pod *apiv1.Pod, globalParams common.Parameters, tmpl *wfv1.Template) (*apiv1.Pod, error) {
 	podParams := globalParams.DeepCopy()
@@ -503,11 +566,52 @@ func (woc *wfOperationCtx) newInitContainer(tmpl *wfv1.Template) apiv1.Container
 func (woc *wfOperationCtx) newWaitContainer(tmpl *wfv1.Template) *apiv1.Container {
 	ctr := woc.newExecContainer(common.WaitContainerName, tmpl)
 	ctr.Command = []string{"argoexec", "wait", "--loglevel", getExecutorLogLevel()}
+	switch woc.getContainerRuntimeExecutor() {
+	case common.ContainerRuntimeExecutorPNS:
+		ctr.SecurityContext = &apiv1.SecurityContext{
+			Capabilities: &apiv1.Capabilities{
+				Add: []apiv1.Capability{
+					// necessary to access main's root filesystem when run with a different user id
+					apiv1.Capability("SYS_PTRACE"),
+					apiv1.Capability("SYS_CHROOT"),
+				},
+			},
+		}
+		// PNS_PRIVILEGED allows you to always set privileged on for PNS, this seems to be needed for certain systems
+		// https://github.com/argoproj/argo-workflows/issues/1256
+		if hasPrivilegedContainers(tmpl) || os.Getenv("PNS_PRIVILEGED") == "true" {
+			// if the main or sidecar is privileged, the wait sidecar must also run privileged,
+			// in order to SIGTERM/SIGKILL the pid
+			ctr.SecurityContext.Privileged = pointer.BoolPtr(true)
+		}
+	case common.ContainerRuntimeExecutorDocker:
+		ctr.VolumeMounts = append(ctr.VolumeMounts, woc.getVolumeMountDockerSock(tmpl))
+	}
 	return ctr
 }
 
 func getExecutorLogLevel() string {
 	return log.GetLevel().String()
+}
+
+// hasPrivilegedContainers tests if the main container or sidecars is privileged
+func hasPrivilegedContainers(tmpl *wfv1.Template) bool {
+	if containerIsPrivileged(tmpl.Container) {
+		return true
+	}
+	for _, side := range tmpl.Sidecars {
+		if containerIsPrivileged(&side.Container) {
+			return true
+		}
+	}
+	return false
+}
+
+func containerIsPrivileged(ctr *apiv1.Container) bool {
+	if ctr != nil && ctr.SecurityContext != nil && ctr.SecurityContext.Privileged != nil && *ctr.SecurityContext.Privileged {
+		return true
+	}
+	return false
 }
 
 func (woc *wfOperationCtx) createEnvVars() []apiv1.EnvVar {
@@ -522,13 +626,8 @@ func (woc *wfOperationCtx) createEnvVars() []apiv1.EnvVar {
 			},
 		},
 		{
-			Name: common.EnvVarPodUID,
-			ValueFrom: &apiv1.EnvVarSource{
-				FieldRef: &apiv1.ObjectFieldSelector{
-					APIVersion: "v1",
-					FieldPath:  "metadata.uid",
-				},
-			},
+			Name:  common.EnvVarContainerRuntimeExecutor,
+			Value: woc.getContainerRuntimeExecutor(),
 		},
 		// This flag was introduced in Go 15 and will be removed in Go 16.
 		// x509: cannot validate certificate for ... because it doesn't contain any IP SANs
@@ -542,6 +641,10 @@ func (woc *wfOperationCtx) createEnvVars() []apiv1.EnvVar {
 			Name:  common.EnvVarWorkflowName,
 			Value: woc.wf.Name,
 		},
+		{
+			Name:  common.EnvVarWorkflowUID,
+			Value: string(woc.wf.UID),
+		},
 	}
 	if v := woc.controller.Config.InstanceID; v != "" {
 		execEnvVars = append(execEnvVars,
@@ -550,6 +653,27 @@ func (woc *wfOperationCtx) createEnvVars() []apiv1.EnvVar {
 	}
 	if woc.controller.Config.Executor != nil {
 		execEnvVars = append(execEnvVars, woc.controller.Config.Executor.Env...)
+	}
+	switch woc.getContainerRuntimeExecutor() {
+	case common.ContainerRuntimeExecutorKubelet:
+		execEnvVars = append(execEnvVars,
+			apiv1.EnvVar{
+				Name: common.EnvVarDownwardAPINodeIP,
+				ValueFrom: &apiv1.EnvVarSource{
+					FieldRef: &apiv1.ObjectFieldSelector{
+						FieldPath: "status.hostIP",
+					},
+				},
+			},
+			apiv1.EnvVar{
+				Name:  common.EnvVarKubeletPort,
+				Value: strconv.Itoa(woc.controller.Config.KubeletPort),
+			},
+			apiv1.EnvVar{
+				Name:  common.EnvVarKubeletInsecure,
+				Value: strconv.FormatBool(woc.controller.Config.KubeletInsecure),
+			},
+		)
 	}
 	return execEnvVars
 }
@@ -572,6 +696,11 @@ func (woc *wfOperationCtx) createVolumes(tmpl *wfv1.Template) []apiv1.Volume {
 	}
 
 	volumes = append(volumes, volumeVarArgo)
+
+	switch woc.getContainerRuntimeExecutor() {
+	case common.ContainerRuntimeExecutorDocker:
+		volumes = append(volumes, woc.getVolumeDockerSock(tmpl))
+	}
 	volumes = append(volumes, tmpl.Volumes...)
 	return volumes
 }

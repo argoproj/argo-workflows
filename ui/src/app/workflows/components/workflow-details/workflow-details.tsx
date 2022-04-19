@@ -129,26 +129,6 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
                     });
                 });
         }
-
-        if (workflow?.spec?.workflowTemplateRef) {
-            const templateName: string = workflow.spec.workflowTemplateRef.name;
-            const clusterScope: boolean = workflow.spec.workflowTemplateRef.clusterScope;
-            const url: string = clusterScope ? `/cluster-workflow-templates/${templateName}` : `/workflow-templates/${workflow.metadata.namespace}/${templateName}`;
-            const icon: string = clusterScope ? 'fa fa-window-restore' : 'fa fa-window-maximize';
-
-            const templateLink: Link = {
-                name: 'Open Workflow Template',
-                scope: 'workflow',
-                url
-            };
-
-            items.push({
-                title: templateLink.name,
-                iconClassName: icon,
-                action: () => openLink(templateLink)
-            });
-        }
-
         return items;
     };
 

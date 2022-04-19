@@ -36,6 +36,7 @@ func (s *ArtifactsSuite) TestOutputOnMount() {
 }
 
 func (s *ArtifactsSuite) TestOutputOnInput() {
+	s.Need(fixtures.BaseLayerArtifacts) // I believe this would work on both K8S and Kubelet, but validation does not allow it
 	s.Given().
 		Workflow("@testdata/output-on-input-workflow.yaml").
 		When().
@@ -44,6 +45,7 @@ func (s *ArtifactsSuite) TestOutputOnInput() {
 }
 
 func (s *ArtifactsSuite) TestArtifactPassing() {
+	s.Need(fixtures.BaseLayerArtifacts)
 	s.Given().
 		Workflow("@smoke/artifact-passing.yaml").
 		When().
@@ -52,6 +54,7 @@ func (s *ArtifactsSuite) TestArtifactPassing() {
 }
 
 func (s *ArtifactsSuite) TestDefaultParameterOutputs() {
+	s.Need(fixtures.BaseLayerArtifacts)
 	s.Given().
 		Workflow(`
 apiVersion: argoproj.io/v1alpha1
@@ -104,6 +107,7 @@ spec:
 }
 
 func (s *ArtifactsSuite) TestSameInputOutputPathOptionalArtifact() {
+	s.Need(fixtures.BaseLayerArtifacts)
 	s.Given().
 		Workflow("@testdata/same-input-output-path-optional.yaml").
 		When().
@@ -142,6 +146,7 @@ func (s *ArtifactsSuite) TestMainLog() {
 				}
 			})
 	})
+	s.Need(fixtures.None(fixtures.Docker, fixtures.Kubelet))
 	s.Run("ActiveDeadlineSeconds", func() {
 		s.Given().
 			Workflow("@expectedfailures/timeouts-step.yaml").
@@ -151,7 +156,7 @@ func (s *ArtifactsSuite) TestMainLog() {
 			Then().
 			ExpectWorkflow(func(t *testing.T, m *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 				n := status.Nodes[m.Name]
-				if assert.NotNil(t, n.Outputs) {
+				if assert.NotNil(t, n) {
 					assert.Len(t, n.Outputs.Artifacts, 1)
 				}
 			})

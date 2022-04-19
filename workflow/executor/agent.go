@@ -116,11 +116,7 @@ func (ae *AgentExecutor) Agent(ctx context.Context) error {
 }
 
 func (ae *AgentExecutor) taskWorker(ctx context.Context, taskQueue chan task, responseQueue chan response) {
-	for {
-		task, ok := <-taskQueue
-		if !ok {
-			break
-		}
+	for task := range taskQueue {
 		nodeID, tmpl := task.NodeId, task.Template
 		log := log.WithField("nodeID", nodeID)
 
@@ -155,7 +151,6 @@ func (ae *AgentExecutor) taskWorker(ctx context.Context, taskQueue chan task, re
 		}
 		if requeue > 0 {
 			time.AfterFunc(requeue, func() {
-				delete(ae.consideredTasks, nodeID)
 				taskQueue <- task
 			})
 		}

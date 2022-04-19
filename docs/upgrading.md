@@ -4,60 +4,7 @@
 Breaking changes  typically (sometimes we don't realise they are breaking) have "!" in the commit message, as per
 the [conventional commits](https://www.conventionalcommits.org/en/v1.0.0/#summary).
 
-## Upgrading to v3.4
-
-### feat!: Add entrypoint lookup. Fixes #8344
-
-Affected if:
-
-* Using the Emissary executor.
-* Used the `args` field for any entry in `images`.
-
-This PR automatically looks up the command and entrypoint. The implementation for config look-up was incorrect (it
-allowed you to specify `args` but not `entrypoint`). `args` has been removed to correct the behaviour.
-
-If you are incorrectly configured, the workflow controller will error on start-up. 
-
-#### Actions
-
-You don't need to configure images that use v2 manifests anymore. You can just remove them (e.g. argoproj/argosay:v2):
-
-```bash
-% docker manifest inspect argoproj/argosay:v2
-...
-"schemaVersion": 2,
-...
-```
-
-For v1 manifests (e.g. docker/whalesay:latest):
-
-```bash
-% docker image inspect -f '{{.Config.Entrypoint}} {{.Config.Cmd}}' docker/whalesay:latest
-[] [/bin/bash]
-````
-
-```yaml
-images:
-  docker/whalesay:latest:
-    cmd: [/bin/bash]
-```
-
-## feat: Fail on invalid config. (#8295)
-
-The workflow controller will error on start-up if incorrectly configured, rather than silently ignoring
-mis-configuration.
-
-```
-Failed to register watch for controller config map: error unmarshaling JSON: while decoding JSON: json: unknown field \"args\"
-```
-
-## Upgrading to v3.3
-
-### [662a7295b](https://github.com/argoproj/argo-workflows/commit/662a7295b) feat: Replace `patch pod` with `create workflowtaskresult`. Fixes #3961 (#8000)
-
-The PR changes the permissions that can be used by a workflow to remove the `pod patch` permission. 
-
-See [workflow RBAC](workflow-rbac.md) and [#8013](https://github.com/argoproj/argo-workflows/issues/3961).
+### Upgrading to v3.4
 
 ### [06d4bf76f](https://github.com/argoproj/argo-workflows/commit/06d4bf76f) fix: Reduce agent permissions. Fixes #7986 (#7987)
 
@@ -80,6 +27,8 @@ rules:
 Workflows running during any upgrade should be give both permissions.
 
 See [#8013](https://github.com/argoproj/argo-workflows/issues/8013).
+
+## Upgrading to v3.3
 
 ### feat!: Remove deprecated config flags
 
@@ -205,9 +154,7 @@ This add the template name to the pod name, to make it easier to understand whic
 
 ### [be63efe89](https://github.com/argoproj/argo-workflows/commit/be63efe89) feat(executor)!: Change `argoexec` base image to alpine. Closes #5720 (#6006)
 
-Changing from Debian to Alpine reduces the size of the `argoexec` image, resulting is faster starting workflow pods, and it also reduce the risk of security issues. There is not such thing as a free lunch. There maybe other behaviour changes we don't know of yet.
-
-Some users found this change prevented workflow with very large parameters from running. See [#7586](https://github.com/argoproj/argo-workflows/issues/7586)
+Changing from Debian to Alpine reduces the size of the `argoexec` image, resulting is faster starting workflow pods, and it also reduce the risk of security issues. There is not such thing as a free lunch. There maybe other behaviour changes we don't know of yet. 
 
 ### [48d7ad3](https://github.com/argoproj/argo-workflows/commit/48d7ad36c14e4a50c50332d6decd543a1b732b69) chore: Remove onExit naming transition scaffolding code (#6297)
 

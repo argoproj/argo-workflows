@@ -23,7 +23,11 @@ import (
 	"github.com/argoproj/argo-workflows/v3/util/logs"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/executor"
+	"github.com/argoproj/argo-workflows/v3/workflow/executor/docker"
 	"github.com/argoproj/argo-workflows/v3/workflow/executor/emissary"
+	"github.com/argoproj/argo-workflows/v3/workflow/executor/k8sapi"
+	"github.com/argoproj/argo-workflows/v3/workflow/executor/kubelet"
+	"github.com/argoproj/argo-workflows/v3/workflow/executor/pns"
 )
 
 const (
@@ -75,10 +79,11 @@ func NewRootCommand() *cobra.Command {
 
 func initExecutor() *executor.WorkflowExecutor {
 	version := argo.GetVersion()
-	log.WithFields(log.Fields{"version": version.Version}).Info("Starting Workflow Executor")
+	executorType := os.Getenv(common.EnvVarContainerRuntimeExecutor)
+	log.WithFields(log.Fields{"version": version.Version, "executorType": executorType}).Info("Starting Workflow Executor")
 	config, err := clientConfig.ClientConfig()
 	checkErr(err)
-	config = restclient.AddUserAgent(config, fmt.Sprintf("argo-workflows/%s argo-executor", version.Version))
+	config = restclient.AddUserAgent(config, fmt.Sprintf("argo-workflows/%s argo-executor/%s", version.Version, executorType))
 
 	logs.AddK8SLogTransportWrapper(config) // lets log all request as we should typically do < 5 per pod, so this is will show up problems
 
@@ -106,7 +111,20 @@ func initExecutor() *executor.WorkflowExecutor {
 	annotationPatchTickDuration, _ := time.ParseDuration(os.Getenv(common.EnvVarProgressPatchTickDuration))
 	progressFileTickDuration, _ := time.ParseDuration(os.Getenv(common.EnvVarProgressFileTickDuration))
 
-	cre, err := emissary.New()
+	var cre executor.ContainerRuntimeExecutor
+	log.Infof("Creating a %s executor", executorType)
+	switch executorType {
+	case common.ContainerRuntimeExecutorK8sAPI:
+		cre = k8sapi.NewK8sAPIExecutor(clientset, config, podName, namespace)
+	case common.ContainerRuntimeExecutorKubelet:
+		cre, err = kubelet.NewKubeletExecutor(namespace, podName)
+	case common.ContainerRuntimeExecutorPNS:
+		cre, err = pns.NewPNSExecutor(clientset, podName, namespace)
+	case common.ContainerRuntimeExecutorDocker:
+		cre, err = docker.NewDockerExecutor(namespace, podName)
+	default:
+		cre, err = emissary.New()
+	}
 	checkErr(err)
 
 	wfExecutor := executor.NewExecutor(
@@ -114,10 +132,10 @@ func initExecutor() *executor.WorkflowExecutor {
 		versioned.NewForConfigOrDie(config).ArgoprojV1alpha1().WorkflowTaskResults(namespace),
 		restClient,
 		podName,
-		types.UID(os.Getenv(common.EnvVarPodUID)),
 		os.Getenv(common.EnvVarWorkflowName),
 		os.Getenv(common.EnvVarNodeID),
 		namespace,
+		types.UID(os.Getenv(common.EnvVarWorkflowUID)),
 		cre,
 		*tmpl,
 		includeScriptOutput,

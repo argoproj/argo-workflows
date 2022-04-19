@@ -1,10 +1,11 @@
-import {Select, Tooltip} from 'argo-ui';
 import * as React from 'react';
 import {Parameter, Template, Workflow} from '../../../models';
 import {uiUrl} from '../../shared/base';
 import {ErrorNotice} from '../../shared/components/error-notice';
-import {TagsInput} from '../../shared/components/tags-input/tags-input';
 import {services} from '../../shared/services';
+
+import {Select, Tooltip} from 'argo-ui';
+import {TagsInput} from '../../shared/components/tags-input/tags-input';
 
 interface Props {
     kind: string;
@@ -19,7 +20,6 @@ interface State {
     entrypoint: string;
     entrypoints: string[];
     parameters: Parameter[];
-    workflowParameters: Parameter[];
     selectedTemplate: Template;
     templates: Template[];
     labels: string[];
@@ -28,7 +28,6 @@ interface State {
 }
 
 const workflowEntrypoint = '<default>';
-type ParamSelector = 'parameters' | 'workflowParameters';
 
 export class SubmitWorkflowPanel extends React.Component<Props, State> {
     constructor(props: any) {
@@ -36,15 +35,14 @@ export class SubmitWorkflowPanel extends React.Component<Props, State> {
         const defaultTemplate: Template = {
             name: workflowEntrypoint,
             inputs: {
-                parameters: []
+                parameters: this.props.workflowParameters
             }
         };
-        const state: State = {
+        const state = {
             entrypoint: workflowEntrypoint,
             entrypoints: this.props.templates.map(t => t.name),
             selectedTemplate: defaultTemplate,
-            parameters: [] as Parameter[],
-            workflowParameters: JSON.parse(JSON.stringify(this.props.workflowParameters)),
+            parameters: this.props.workflowParameters || [],
             templates: [defaultTemplate].concat(this.props.templates),
             labels: ['submit-from-ui=true'],
             isSubmitting: false
@@ -81,15 +79,25 @@ export class SubmitWorkflowPanel extends React.Component<Props, State> {
                     </div>
                     <div key='parameters' style={{marginBottom: 25}}>
                         <label>Parameters</label>
-                        {this.state.workflowParameters.length > 0 && this.renderParameters(this.state.workflowParameters, 'workflowParameters')}
-                        {this.state.parameters.length > 0 && this.renderParameters(this.state.parameters, 'parameters')}
-                        {this.state.workflowParameters.length === 0 && this.state.parameters.length === 0 ? (
+                        {this.state.parameters.length > 0 ? (
+                            <>
+                                {this.state.parameters.map((parameter, index) => (
+                                    <div key={parameter.name + '_' + index} style={{marginBottom: 14}}>
+                                        <label>{parameter.name}</label>
+                                        {parameter.description && (
+                                            <Tooltip content={parameter.description}>
+                                                <i className='fa fa-question-circle' />
+                                            </Tooltip>
+                                        )}
+                                        {(parameter.enum && this.displaySelectFieldForEnumValues(parameter)) || this.displayInputFieldForSingleValue(parameter)}
+                                    </div>
+                                ))}
+                            </>
+                        ) : (
                             <>
                                 <br />
                                 <label>No parameters</label>
                             </>
-                        ) : (
-                            <></>
                         )}
                     </div>
                     <div key='labels' style={{marginBottom: 25}}>
@@ -115,7 +123,7 @@ export class SubmitWorkflowPanel extends React.Component<Props, State> {
         return null;
     }
 
-    private displaySelectFieldForEnumValues(parameter: Parameter, parameterStateName: ParamSelector) {
+    private displaySelectFieldForEnumValues(parameter: Parameter) {
         return (
             <Select
                 key={parameter.name}
@@ -125,52 +133,33 @@ export class SubmitWorkflowPanel extends React.Component<Props, State> {
                     title: value
                 }))}
                 onChange={event => {
-                    const update = {} as State;
-                    update[parameterStateName] = this.state[parameterStateName].map(p => ({
-                        name: p.name,
-                        value: p.name === parameter.name ? event.value : this.getValue(p),
-                        enum: p.enum
-                    }));
-                    this.setState(update);
+                    this.setState({
+                        parameters: this.state.parameters.map(p => ({
+                            name: p.name,
+                            value: p.name === parameter.name ? event.value : this.getValue(p),
+                            enum: p.enum
+                        }))
+                    });
                 }}
             />
         );
     }
 
-    private displayInputFieldForSingleValue(parameter: Parameter, parameterStateName: ParamSelector) {
+    private displayInputFieldForSingleValue(parameter: Parameter) {
         return (
             <textarea
                 className='argo-field'
                 value={this.getValue(parameter)}
                 onChange={event => {
-                    const update = {} as State;
-                    update[parameterStateName] = this.state[parameterStateName].map(p => ({
-                        name: p.name,
-                        value: p.name === parameter.name ? event.target.value : this.getValue(p),
-                        enum: p.enum
-                    }));
-                    this.setState(update);
+                    this.setState({
+                        parameters: this.state.parameters.map(p => ({
+                            name: p.name,
+                            value: p.name === parameter.name ? event.target.value : this.getValue(p),
+                            enum: p.enum
+                        }))
+                    });
                 }}
             />
-        );
-    }
-
-    private renderParameters(parameters: Parameter[], parameterStateName: ParamSelector) {
-        return (
-            <>
-                {parameters.map((parameter, index) => (
-                    <div key={parameter.name + '_' + index} style={{marginBottom: 14}}>
-                        <label>{parameter.name}</label>
-                        {parameter.description && (
-                            <Tooltip content={parameter.description}>
-                                <i className='fa fa-question-circle' />
-                            </Tooltip>
-                        )}
-                        {(parameter.enum && this.displaySelectFieldForEnumValues(parameter, parameterStateName)) ||
-                            this.displayInputFieldForSingleValue(parameter, parameterStateName)}
-                    </div>
-                ))}
-            </>
         );
     }
 
@@ -187,10 +176,7 @@ export class SubmitWorkflowPanel extends React.Component<Props, State> {
         services.workflows
             .submit(this.props.kind, this.props.name, this.props.namespace, {
                 entryPoint: this.state.entrypoint === workflowEntrypoint ? null : this.state.entrypoint,
-                parameters: [
-                    ...this.state.workflowParameters.filter(p => this.getValue(p) !== undefined).map(p => p.name + '=' + this.getValue(p)),
-                    ...this.state.parameters.filter(p => this.getValue(p) !== undefined).map(p => p.name + '=' + this.getValue(p))
-                ],
+                parameters: this.state.parameters.filter(p => this.getValue(p) !== undefined).map(p => p.name + '=' + this.getValue(p)),
                 labels: this.state.labels.join(',')
             })
             .then((submitted: Workflow) => (document.location.href = uiUrl(`workflows/${submitted.metadata.namespace}/${submitted.metadata.name}`)))

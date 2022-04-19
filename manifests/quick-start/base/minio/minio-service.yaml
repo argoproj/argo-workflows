@@ -8,11 +8,6 @@ spec:
   selector:
     app: minio
   ports:
-    - port: 9000
-      name: api
-      protocol: TCP
+    - protocol: TCP
+      port: 9000
       targetPort: 9000
-    - port: 9001
-      name: dashboard
-      protocol: TCP
-      targetPort: 9001

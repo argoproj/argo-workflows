@@ -24,7 +24,6 @@ Method | HTTP request | Description
 import io.argoproj.workflow.ApiClient;
 import io.argoproj.workflow.ApiException;
 import io.argoproj.workflow.Configuration;
-import io.argoproj.workflow.auth.*;
 import io.argoproj.workflow.models.*;
 import io.argoproj.workflow.apis.ClusterWorkflowTemplateServiceApi;
 
@@ -32,12 +31,6 @@ public class Example {
   public static void main(String[] args) {
     ApiClient defaultClient = Configuration.getDefaultApiClient();
     defaultClient.setBasePath("http://localhost:2746");
-    
-    // Configure API key authorization: BearerToken
-    ApiKeyAuth BearerToken = (ApiKeyAuth) defaultClient.getAuthentication("BearerToken");
-    BearerToken.setApiKey("YOUR API KEY");
-    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
-    //BearerToken.setApiKeyPrefix("Token");
 
     ClusterWorkflowTemplateServiceApi apiInstance = new ClusterWorkflowTemplateServiceApi(defaultClient);
     IoArgoprojWorkflowV1alpha1ClusterWorkflowTemplateCreateRequest body = new IoArgoprojWorkflowV1alpha1ClusterWorkflowTemplateCreateRequest(); // IoArgoprojWorkflowV1alpha1ClusterWorkflowTemplateCreateRequest | 
@@ -67,7 +60,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[BearerToken](../README.md#BearerToken)
+No authorization required
 
 ### HTTP request headers
 
@@ -92,7 +85,6 @@ Name | Type | Description  | Notes
 import io.argoproj.workflow.ApiClient;
 import io.argoproj.workflow.ApiException;
 import io.argoproj.workflow.Configuration;
-import io.argoproj.workflow.auth.*;
 import io.argoproj.workflow.models.*;
 import io.argoproj.workflow.apis.ClusterWorkflowTemplateServiceApi;
 
@@ -100,12 +92,6 @@ public class Example {
   public static void main(String[] args) {
     ApiClient defaultClient = Configuration.getDefaultApiClient();
     defaultClient.setBasePath("http://localhost:2746");
-    
-    // Configure API key authorization: BearerToken
-    ApiKeyAuth BearerToken = (ApiKeyAuth) defaultClient.getAuthentication("BearerToken");
-    BearerToken.setApiKey("YOUR API KEY");
-    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
-    //BearerToken.setApiKeyPrefix("Token");
 
     ClusterWorkflowTemplateServiceApi apiInstance = new ClusterWorkflowTemplateServiceApi(defaultClient);
     String name = "name_example"; // String | 
@@ -147,7 +133,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[BearerToken](../README.md#BearerToken)
+No authorization required
 
 ### HTTP request headers
 
@@ -172,7 +158,6 @@ Name | Type | Description  | Notes
 import io.argoproj.workflow.ApiClient;
 import io.argoproj.workflow.ApiException;
 import io.argoproj.workflow.Configuration;
-import io.argoproj.workflow.auth.*;
 import io.argoproj.workflow.models.*;
 import io.argoproj.workflow.apis.ClusterWorkflowTemplateServiceApi;
 
@@ -180,12 +165,6 @@ public class Example {
   public static void main(String[] args) {
     ApiClient defaultClient = Configuration.getDefaultApiClient();
     defaultClient.setBasePath("http://localhost:2746");
-    
-    // Configure API key authorization: BearerToken
-    ApiKeyAuth BearerToken = (ApiKeyAuth) defaultClient.getAuthentication("BearerToken");
-    BearerToken.setApiKey("YOUR API KEY");
-    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
-    //BearerToken.setApiKeyPrefix("Token");
 
     ClusterWorkflowTemplateServiceApi apiInstance = new ClusterWorkflowTemplateServiceApi(defaultClient);
     String name = "name_example"; // String | 
@@ -217,7 +196,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[BearerToken](../README.md#BearerToken)
+No authorization required
 
 ### HTTP request headers
 
@@ -242,7 +221,6 @@ Name | Type | Description  | Notes
 import io.argoproj.workflow.ApiClient;
 import io.argoproj.workflow.ApiException;
 import io.argoproj.workflow.Configuration;
-import io.argoproj.workflow.auth.*;
 import io.argoproj.workflow.models.*;
 import io.argoproj.workflow.apis.ClusterWorkflowTemplateServiceApi;
 
@@ -250,12 +228,6 @@ public class Example {
   public static void main(String[] args) {
     ApiClient defaultClient = Configuration.getDefaultApiClient();
     defaultClient.setBasePath("http://localhost:2746");
-    
-    // Configure API key authorization: BearerToken
-    ApiKeyAuth BearerToken = (ApiKeyAuth) defaultClient.getAuthentication("BearerToken");
-    BearerToken.setApiKey("YOUR API KEY");
-    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
-    //BearerToken.setApiKeyPrefix("Token");
 
     ClusterWorkflowTemplateServiceApi apiInstance = new ClusterWorkflowTemplateServiceApi(defaultClient);
     IoArgoprojWorkflowV1alpha1ClusterWorkflowTemplateLintRequest body = new IoArgoprojWorkflowV1alpha1ClusterWorkflowTemplateLintRequest(); // IoArgoprojWorkflowV1alpha1ClusterWorkflowTemplateLintRequest | 
@@ -285,7 +257,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[BearerToken](../README.md#BearerToken)
+No authorization required
 
 ### HTTP request headers
 
@@ -310,7 +282,6 @@ Name | Type | Description  | Notes
 import io.argoproj.workflow.ApiClient;
 import io.argoproj.workflow.ApiException;
 import io.argoproj.workflow.Configuration;
-import io.argoproj.workflow.auth.*;
 import io.argoproj.workflow.models.*;
 import io.argoproj.workflow.apis.ClusterWorkflowTemplateServiceApi;
 
@@ -318,12 +289,6 @@ public class Example {
   public static void main(String[] args) {
     ApiClient defaultClient = Configuration.getDefaultApiClient();
     defaultClient.setBasePath("http://localhost:2746");
-    
-    // Configure API key authorization: BearerToken
-    ApiKeyAuth BearerToken = (ApiKeyAuth) defaultClient.getAuthentication("BearerToken");
-    BearerToken.setApiKey("YOUR API KEY");
-    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
-    //BearerToken.setApiKeyPrefix("Token");
 
     ClusterWorkflowTemplateServiceApi apiInstance = new ClusterWorkflowTemplateServiceApi(defaultClient);
     String listOptionsLabelSelector = "listOptionsLabelSelector_example"; // String | A selector to restrict the list of returned objects by their labels. Defaults to everything. +optional.
@@ -369,7 +334,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[BearerToken](../README.md#BearerToken)
+No authorization required
 
 ### HTTP request headers
 
@@ -394,7 +359,6 @@ Name | Type | Description  | Notes
 import io.argoproj.workflow.ApiClient;
 import io.argoproj.workflow.ApiException;
 import io.argoproj.workflow.Configuration;
-import io.argoproj.workflow.auth.*;
 import io.argoproj.workflow.models.*;
 import io.argoproj.workflow.apis.ClusterWorkflowTemplateServiceApi;
 
@@ -402,12 +366,6 @@ public class Example {
   public static void main(String[] args) {
     ApiClient defaultClient = Configuration.getDefaultApiClient();
     defaultClient.setBasePath("http://localhost:2746");
-    
-    // Configure API key authorization: BearerToken
-    ApiKeyAuth BearerToken = (ApiKeyAuth) defaultClient.getAuthentication("BearerToken");
-    BearerToken.setApiKey("YOUR API KEY");
-    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
-    //BearerToken.setApiKeyPrefix("Token");
 
     ClusterWorkflowTemplateServiceApi apiInstance = new ClusterWorkflowTemplateServiceApi(defaultClient);
     String name = "name_example"; // String | DEPRECATED: This field is ignored.
@@ -439,7 +397,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[BearerToken](../README.md#BearerToken)
+No authorization required
 
 ### HTTP request headers
 

@@ -9,7 +9,6 @@ import (
 	"github.com/stretchr/testify/mock"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/common"
 	workflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflow"
 	workflowmocks "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflow/mocks"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
@@ -21,7 +20,7 @@ func Test_retryWorkflows(t *testing.T) {
 		retryOpts := retryOps{
 			namespace: "argo",
 		}
-		cliSubmitOpts := common.CliSubmitOpts{}
+		cliSubmitOpts := cliSubmitOpts{}
 
 		c.On("RetryWorkflow", mock.Anything, mock.Anything).Return(&wfv1.Workflow{}, nil)
 
@@ -37,7 +36,7 @@ func Test_retryWorkflows(t *testing.T) {
 			namespace:     "argo",
 			labelSelector: "custom-label=true",
 		}
-		cliSubmitOpts := common.CliSubmitOpts{}
+		cliSubmitOpts := cliSubmitOpts{}
 
 		wfListReq := &workflowpkg.WorkflowListRequest{
 			Namespace: "argo",
@@ -78,7 +77,7 @@ func Test_retryWorkflows(t *testing.T) {
 			namespace:     "argo",
 			labelSelector: "custom-label=true",
 		}
-		cliSubmitOpts := common.CliSubmitOpts{}
+		cliSubmitOpts := cliSubmitOpts{}
 
 		wfListReq := &workflowpkg.WorkflowListRequest{
 			Namespace: "argo",
@@ -130,7 +129,7 @@ func Test_retryWorkflows(t *testing.T) {
 			namespace:     "argo",
 			labelSelector: "custom-label=true",
 		}
-		cliSubmitOpts := common.CliSubmitOpts{}
+		cliSubmitOpts := cliSubmitOpts{}
 		c.On("ListWorkflows", mock.Anything, mock.Anything).Return(nil, fmt.Errorf("mock error"))
 		err := retryWorkflows(context.Background(), c, retryOpts, cliSubmitOpts, []string{})
 		assert.Errorf(t, err, "mock error")
@@ -141,7 +140,7 @@ func Test_retryWorkflows(t *testing.T) {
 		retryOpts := retryOps{
 			namespace: "argo",
 		}
-		cliSubmitOpts := common.CliSubmitOpts{}
+		cliSubmitOpts := cliSubmitOpts{}
 		c.On("RetryWorkflow", mock.Anything, mock.Anything).Return(nil, fmt.Errorf("mock error"))
 		err := retryWorkflows(context.Background(), c, retryOpts, cliSubmitOpts, []string{"foo"})
 		assert.Errorf(t, err, "mock error")
