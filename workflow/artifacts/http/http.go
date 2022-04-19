@@ -47,7 +47,9 @@ func (h *ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) error {
 		for _, h := range inputArtifact.HTTP.Headers {
 			req.Header.Add(h.Name, h.Value)
 		}
-		req.SetBasicAuth(h.Username, h.Password)
+		if h.Username != "" && h.Password != "" {
+			req.SetBasicAuth(h.Username, h.Password)
+		}
 	}
 
 	res, err := (&http.Client{}).Do(req)
@@ -93,7 +95,9 @@ func (h *ArtifactDriver) Save(path string, outputArtifact *wfv1.Artifact) error 
 		for _, h := range outputArtifact.HTTP.Headers {
 			req.Header.Add(h.Name, h.Value)
 		}
-		req.SetBasicAuth(h.Username, h.Password)
+		if h.Username != "" && h.Password != "" {
+			req.SetBasicAuth(h.Username, h.Password)
+		}
 	}
 	res, err := (&http.Client{}).Do(req)
 	if err != nil {
