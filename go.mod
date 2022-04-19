@@ -186,36 +186,6 @@ require (
 )
 
 require (
-	github.com/google/go-containerregistry v0.8.1-0.20220414143355-892d7a808387
-	github.com/google/go-containerregistry/pkg/authn/k8schain v0.0.0-20220414154538-570ba6c88a50
-)
-
-require (
-	github.com/Azure/azure-sdk-for-go v62.0.0+incompatible // indirect
-	github.com/Azure/go-autorest/autorest/azure/auth v0.5.11 // indirect
-	github.com/Azure/go-autorest/autorest/azure/cli v0.4.5 // indirect
-	github.com/aws/aws-sdk-go-v2 v1.14.0 // indirect
-	github.com/aws/aws-sdk-go-v2/config v1.14.0 // indirect
-	github.com/aws/aws-sdk-go-v2/credentials v1.9.0 // indirect
-	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.11.0 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/configsources v1.1.5 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.3.0 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/ini v1.3.6 // indirect
-	github.com/aws/aws-sdk-go-v2/service/ecr v1.15.0 // indirect
-	github.com/aws/aws-sdk-go-v2/service/ecrpublic v1.12.0 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.8.0 // indirect
-	github.com/aws/aws-sdk-go-v2/service/sso v1.10.0 // indirect
-	github.com/aws/aws-sdk-go-v2/service/sts v1.15.0 // indirect
-	github.com/aws/smithy-go v1.11.0 // indirect
-	github.com/awslabs/amazon-ecr-credential-helper/ecr-login v0.0.0-20220228164355-396b2034c795 // indirect
-	github.com/chrismellard/docker-credential-acr-env v0.0.0-20220119192733-fe33c00cee21 // indirect
-	github.com/dimchansky/utfbom v1.1.1 // indirect
-	github.com/docker/cli v20.10.12+incompatible // indirect
-	github.com/docker/distribution v2.8.0+incompatible // indirect
-	github.com/docker/docker v20.10.12+incompatible // indirect
-	github.com/docker/docker-credential-helpers v0.6.4 // indirect
 	github.com/golang-jwt/jwt/v4 v4.3.0 // indirect
-	github.com/google/go-containerregistry/pkg/authn/kubernetes v0.0.0-20220414143355-892d7a808387 // indirect
-	github.com/opencontainers/go-digest v1.0.0 // indirect
-	github.com/opencontainers/image-spec v1.0.3-0.20220114050600-8b9d41f48198 // indirect
+	github.com/matryer/is v1.4.0 // indirect
 )
