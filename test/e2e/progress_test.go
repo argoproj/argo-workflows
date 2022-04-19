@@ -6,6 +6,7 @@ package e2e
 import (
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
@@ -44,7 +45,7 @@ func (s *ProgressSuite) TestLoggedProgress() {
 		Workflow("@testdata/progress-workflow.yaml").
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(toHaveProgress("50/100")).
+		WaitForWorkflow(toHaveProgress("50/100"), 40*time.Second). // ARGO_PROGRESS_PATCH_TICK_DURATION=30s
 		WaitForWorkflow().
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
