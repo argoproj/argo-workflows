@@ -201,6 +201,15 @@ message Backoff {
   optional string maxDuration = 3;
 }
 
+// BasicAuth describes the secret selectors required for basic authentication
+message BasicAuth {
+  // UsernameSecret is the secret selector to the repository username
+  optional k8s.io.api.core.v1.SecretKeySelector usernameSecret = 1;
+
+  // PasswordSecret is the secret selector to the repository password
+  optional k8s.io.api.core.v1.SecretKeySelector passwordSecret = 2;
+}
+
 // Cache is the configuration for the type of cache to be used
 message Cache {
   // ConfigMap sets a ConfigMap-based cache
@@ -594,13 +603,16 @@ message HTTP {
   optional bool insecureSkipVerify = 7;
 }
 
-// HTTPArtifact allows an file served on HTTP to be placed as an input artifact in a container
+// HTTPArtifact allows a file served on HTTP to be placed as an input artifact in a container
 message HTTPArtifact {
   // URL of the artifact
   optional string url = 1;
 
   // Headers are an optional list of headers to send with HTTP requests for artifacts
   repeated Header headers = 2;
+
+  // BasicAuth is the secret selector for basic authentication
+  optional BasicAuth basicAuth = 3;
 }
 
 message HTTPHeader {
