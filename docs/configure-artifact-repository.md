@@ -23,6 +23,7 @@ The actual repository used by a workflow is chosen by the following rules:
 3. From a workflow controller configmap.
 
 ## Configuring Minio
+NOTE: Minio is already included in the [quick-start manifests](quick-start.md).
 
 ```
 $ brew install helm # mac, helm 3.x

@@ -52,7 +52,30 @@ func TestHTTPArtifactDriver_Load(t *testing.T) {
 	})
 }
 
-func TestHTTPArtifactDriver_Save(t *testing.T) {
+func TestArtifactoryArtifactDriver_Load(t *testing.T) {
 	driver := &ArtifactDriver{}
-	assert.Error(t, driver.Save("", nil))
+	t.Run("NotFound", func(t *testing.T) {
+		err := driver.Load(&wfv1.Artifact{
+			ArtifactLocation: wfv1.ArtifactLocation{
+				Artifactory: &wfv1.ArtifactoryArtifact{URL: "https://github.com/argoproj/argo-workflows/not-found"},
+			},
+		}, "/tmp/not-found")
+		if assert.Error(t, err) {
+			argoError, ok := err.(errors.ArgoError)
+			if assert.True(t, ok) {
+				assert.Equal(t, errors.CodeNotFound, argoError.Code())
+			}
+		}
+	})
+	t.Run("Found", func(t *testing.T) {
+		err := driver.Load(&wfv1.Artifact{
+			ArtifactLocation: wfv1.ArtifactLocation{
+				Artifactory: &wfv1.ArtifactoryArtifact{URL: "https://github.com/argoproj/argo-workflows"},
+			},
+		}, "/tmp/found")
+		if assert.NoError(t, err) {
+			_, err := os.Stat("/tmp/found")
+			assert.NoError(t, err)
+		}
+	})
 }

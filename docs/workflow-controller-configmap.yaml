@@ -185,14 +185,10 @@ data:
   # The command/args for each image, needed when the command is not specified and the emissary executor is used.
   # https://argoproj.github.io/argo-workflows/workflow-executors/#emissary-emissary
   images: |
-    argoproj/argosay:v1:
-      command: [cowsay]
     argoproj/argosay:v2:
-      command: [/argosay]
+      cmd: [/argosay]
     docker/whalesay:latest:
-      command: [cowsay]
-    python:alpine3.6:
-      command: [python3]
+      cmd: [/bin/bash]
 
   # Defaults for main containers. These can be overridden by the template.
   # <= v3.3 only `resources` are supported.
