@@ -13,6 +13,16 @@ export class WorkflowDagRenderOptionsPanel extends React.Component<WorkflowDagRe
                     onClick={() =>
                         this.props.onChange({
                             ...this.workflowDagRenderOptions,
+                            showArtifacts: !this.workflowDagRenderOptions.showArtifacts
+                        })
+                    }
+                    title='Toggle artifacts'>
+                    <i className='fa fa-file' />
+                </a>
+                <a
+                    onClick={() =>
+                        this.props.onChange({
+                            ...this.workflowDagRenderOptions,
                             expandNodes: new Set()
                         })
                     }

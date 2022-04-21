@@ -12,6 +12,7 @@ import {WorkflowDagRenderOptionsPanel} from './workflow-dag-render-options-panel
 
 export interface WorkflowDagRenderOptions {
     expandNodes: Set<string>;
+    showArtifacts: boolean;
 }
 
 interface WorkflowDagProps {
@@ -67,8 +68,9 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
     constructor(props: Readonly<WorkflowDagProps>) {
         super(props);
         this.state = {
-            expandNodes: new Set()
-        };
+            expandNodes: new Set(),
+            showArtifacts: true,
+        }
     }
 
     public render() {
@@ -244,23 +246,28 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
             traverse(onExitRoot);
         }
 
-        Object.values(this.props.nodes || {})
-            .filter(node => nodes.has(node.id))
-            .forEach(node => {
-                nodeArtifacts(node)
-                    .filter(({name}) => !name.endsWith('-logs'))
-                    .map(a => ({...artifactDescription(a, this.artifactRepository)}))
-                    .forEach(ad => {
-                        nodes.set(ad.urn, {
-                            genre: 'Artifact',
-                            label: ad.desc,
-                            icon: icons.Artifact,
-                            classNames: 'Artifact'
+        if (this.state.showArtifacts) {
+            Object.values(this.props.nodes || {})
+                .filter(node => nodes.has(node.id))
+                .forEach(node => {
+                    nodeArtifacts(node)
+                        .filter(({name}) => !name.endsWith('-logs'))
+                        .map(a => ({...artifactDescription(a, this.artifactRepository)}))
+                        .forEach(ad => {
+                            nodes.set(ad.urn, {
+                                genre: 'Artifact',
+                                label: ad.desc,
+                                icon: icons.Artifact,
+                                classNames: 'Artifact'
+                            });
+                            const input = ad.artifactDiscrim === 'input';
+                            edges.set({v: input ? ad.urn : node.id, w: input ? node.id : ad.urn}, {
+                                label: ad.name,
+                                classNames: 'related'
+                            });
                         });
-                        const input = ad.artifactDiscrim === 'input';
-                        edges.set({v: input ? ad.urn : node.id, w: input ? node.id : ad.urn}, {label: ad.name, classNames: 'related'});
-                    });
-            });
+                });
+        }
     }
 
     private selectNode(nodeId: string) {
