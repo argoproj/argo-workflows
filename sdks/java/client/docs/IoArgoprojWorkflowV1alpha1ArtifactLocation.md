@@ -17,6 +17,7 @@ Name | Type | Description | Notes
 **oss** | [**IoArgoprojWorkflowV1alpha1OSSArtifact**](IoArgoprojWorkflowV1alpha1OSSArtifact.md) |  |  [optional]
 **raw** | [**IoArgoprojWorkflowV1alpha1RawArtifact**](IoArgoprojWorkflowV1alpha1RawArtifact.md) |  |  [optional]
 **s3** | [**IoArgoprojWorkflowV1alpha1S3Artifact**](IoArgoprojWorkflowV1alpha1S3Artifact.md) |  |  [optional]
+**webHDFS** | [**IoArgoprojWorkflowV1alpha1WebHDFSArtifact**](IoArgoprojWorkflowV1alpha1WebHDFSArtifact.md) |  |  [optional]
 
 
 

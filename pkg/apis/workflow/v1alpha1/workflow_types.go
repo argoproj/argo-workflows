@@ -1040,6 +1040,9 @@ type ArtifactLocation struct {
 
 	// GCS contains GCS artifact location details
 	GCS *GCSArtifact `json:"gcs,omitempty" protobuf:"bytes,9,opt,name=gcs"`
+
+	// webHDFS contains webHDFS artifact location details
+	WebHDFS *WebHDFSArtifact `json:"webHDFS,omitempty" protobuf:"bytes,10,opt,name=webHDFS"`
 }
 
 func (a *ArtifactLocation) Get() (ArtifactLocationType, error) {
@@ -1061,6 +1064,8 @@ func (a *ArtifactLocation) Get() (ArtifactLocationType, error) {
 		return a.Raw, nil
 	} else if a.S3 != nil {
 		return a.S3, nil
+	} else if a.WebHDFS != nil {
+		return a.WebHDFS, nil
 	}
 	return nil, fmt.Errorf("You need to configure artifact storage. More information on how to do this can be found in the docs: https://argoproj.github.io/argo-workflows/configure-artifact-repository/")
 }
@@ -1083,6 +1088,8 @@ func (a *ArtifactLocation) SetType(x ArtifactLocationType) error {
 		a.Raw = &RawArtifact{}
 	case *S3Artifact:
 		a.S3 = &S3Artifact{}
+	case *WebHDFSArtifact:
+		a.WebHDFS = &WebHDFSArtifact{}
 	default:
 		return fmt.Errorf("set type not supported for type: %v", reflect.TypeOf(v))
 	}
@@ -2395,6 +2402,72 @@ func (o *OSSArtifact) SetKey(key string) error {
 
 func (o *OSSArtifact) HasLocation() bool {
 	return o != nil && o.Bucket != "" && o.Endpoint != "" && o.Key != ""
+}
+
+type WebHDFSAuthType string
+
+// currently supported authentication methods
+const (
+	ClientCert WebHDFSAuthType = "ClientCert"
+	OAuth2     WebHDFSAuthType = "OAuth2"
+)
+
+type WebHDFSAuth struct {
+	AuthType   WebHDFSAuthType `json:"authType,omitempty" protobuf:"bytes,1,opt,name=authType,casttype=WebHDFSAuthType"`
+	ClientCert ClientCertAuth  `json:"clientCert,omitempty" protobuf:"bytes,2,opt,name=clientCert"`
+	OAuth2     OAuth2Auth      `json:"oauth2,omitempty" protobuf:"bytes,3,opt,name=oauth2"`
+}
+
+// ClientCertAuth holds necessary information for client authentication via certificates
+type ClientCertAuth struct {
+	ClientCertSecret *apiv1.SecretKeySelector `json:"clientCertSecret,omitempty" protobuf:"bytes,1,opt,name=clientCertSecret"`
+	ClientKeySecret  *apiv1.SecretKeySelector `json:"clientKeySecret,omitempty" protobuf:"bytes,2,opt,name=clientKeySecret"`
+}
+
+// OAuth2Auth holds all information for client authentication via OAuth2 tokens
+type OAuth2Auth struct {
+	ClientIDSecret     *apiv1.SecretKeySelector `json:"clientIDSecret,omitempty" protobuf:"bytes,1,opt,name=clientIDSecret"`
+	ClientSecretSecret *apiv1.SecretKeySelector `json:"clientSecretSecret,omitempty" protobuf:"bytes,2,opt,name=clientSecretSecret"`
+	TokenURLSecret     apiv1.SecretKeySelector  `json:"tokenURLSecret,omitempty" protobuf:"bytes,3,opt,name=tokenURLSecret"`
+	EndpointParams     []EndpointParam          `json:"endpointParams,omitempty" protobuf:"bytes,4,rep,name=endpointParams"`
+}
+
+// EndpointParam is for requesting optional fields that should be sent in the oauth request
+type EndpointParam struct {
+	// Name is the header name
+	Key string `json:"key" protobuf:"bytes,1,opt,name=key"`
+
+	// Value is the literal value to use for the header
+	Value string `json:"value,omitempty" protobuf:"bytes,2,opt,name=value"`
+}
+type WebHDFSArtifact struct {
+	// webHDFS endpoint
+	Endpoint string `json:"endpoint,omitempty" protobuf:"bytes,1,opt,name=endpoint"`
+
+	// path to the artifact
+	Path string `json:"path,omitempty" protobuf:"bytes,2,opt,name=path"`
+
+	// authentication information
+	WebHDFSAuth `json:",inline" protobuf:"bytes,3,opt,name=webHDFSAuth"`
+
+	// Headers are an optional list of headers to send with HTTP requests for artifacts
+	Headers []Header `json:"headers,omitempty" protobuf:"bytes,4,rep,name=headers"`
+
+	// whether to overwrite existing output artifacts (default: unset, meaning the endpoint's default behavior is used)
+	Overwrite *bool `json:"overwrite,omitempty" protobuf:"varint,5,opt,name=overwrite"`
+}
+
+func (w *WebHDFSArtifact) GetKey() (string, error) {
+	return w.Path, nil
+}
+
+func (w *WebHDFSArtifact) SetKey(key string) error {
+	w.Path = key
+	return nil
+}
+
+func (w *WebHDFSArtifact) HasLocation() bool {
+	return w != nil && w.Endpoint != "" && w.Path != ""
 }
 
 // ExecutorConfig holds configurations of an executor container.

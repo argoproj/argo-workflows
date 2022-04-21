@@ -14,6 +14,7 @@ Name | Type | Description | Notes
 **hdfs** | [**IoArgoprojWorkflowV1alpha1HDFSArtifactRepository**](IoArgoprojWorkflowV1alpha1HDFSArtifactRepository.md) |  |  [optional]
 **oss** | [**IoArgoprojWorkflowV1alpha1OSSArtifactRepository**](IoArgoprojWorkflowV1alpha1OSSArtifactRepository.md) |  |  [optional]
 **s3** | [**IoArgoprojWorkflowV1alpha1S3ArtifactRepository**](IoArgoprojWorkflowV1alpha1S3ArtifactRepository.md) |  |  [optional]
+**webHDFS** | [**IoArgoprojWorkflowV1alpha1WebHDFSArtifactRepository**](IoArgoprojWorkflowV1alpha1WebHDFSArtifactRepository.md) |  |  [optional]
 
 
 

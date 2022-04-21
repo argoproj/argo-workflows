@@ -27,6 +27,7 @@ Name | Type | Description | Notes
 **recurseMode** | **Boolean** | If mode is set, apply the permission recursively into the artifact if it is a folder |  [optional]
 **s3** | [**IoArgoprojWorkflowV1alpha1S3Artifact**](IoArgoprojWorkflowV1alpha1S3Artifact.md) |  |  [optional]
 **subPath** | **String** | SubPath allows an artifact to be sourced from a subpath within the specified source |  [optional]
+**webHDFS** | [**IoArgoprojWorkflowV1alpha1WebHDFSArtifact**](IoArgoprojWorkflowV1alpha1WebHDFSArtifact.md) |  |  [optional]
 
 
 

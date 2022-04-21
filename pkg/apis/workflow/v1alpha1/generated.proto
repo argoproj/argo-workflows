@@ -112,6 +112,9 @@ message ArtifactLocation {
 
   // GCS contains GCS artifact location details
   optional GCSArtifact gcs = 9;
+
+  // webHDFS contains webHDFS artifact location details
+  optional WebHDFSArtifact webHDFS = 10;
 }
 
 // ArtifactPaths expands a step from a collection of artifacts
@@ -139,6 +142,9 @@ message ArtifactRepository {
 
   // GCS stores artifact in a GCS object store
   optional GCSArtifactRepository gcs = 6;
+
+  // webHDFS stores artifacts in webHDFS compliant object store
+  optional WebHDFSArtifactRepository webHDFS = 7;
 }
 
 // +protobuf.options.(gogoproto.goproto_stringer)=false
@@ -214,6 +220,13 @@ message BasicAuth {
 message Cache {
   // ConfigMap sets a ConfigMap-based cache
   optional k8s.io.api.core.v1.ConfigMapKeySelector configMap = 1;
+}
+
+// ClientCertAuth holds necessary information for client authentication via certificates
+message ClientCertAuth {
+  optional k8s.io.api.core.v1.SecretKeySelector clientCertSecret = 1;
+
+  optional k8s.io.api.core.v1.SecretKeySelector clientKeySecret = 2;
 }
 
 // ClusterWorkflowTemplate is the definition of a workflow template resource in cluster scope
@@ -441,6 +454,15 @@ message Data {
 message DataSource {
   // ArtifactPaths is a data transformation that collects a list of artifact paths
   optional ArtifactPaths artifactPaths = 1;
+}
+
+// EndpointParam is for requesting optional fields that should be sent in the oauth request
+message EndpointParam {
+  // Name is the header name
+  optional string key = 1;
+
+  // Value is the literal value to use for the header
+  optional string value = 2;
 }
 
 message Event {
@@ -898,6 +920,17 @@ message NodeSynchronizationStatus {
 // files. Note that if the artifact is a directory, the artifact driver must support the ability to
 // save/load the directory appropriately.
 message NoneStrategy {
+}
+
+// OAuth2Auth holds all information for client authentication via OAuth2 tokens
+message OAuth2Auth {
+  optional k8s.io.api.core.v1.SecretKeySelector clientIDSecret = 1;
+
+  optional k8s.io.api.core.v1.SecretKeySelector clientSecretSecret = 2;
+
+  optional k8s.io.api.core.v1.SecretKeySelector tokenURLSecret = 3;
+
+  repeated EndpointParam endpointParams = 4;
 }
 
 // OSSArtifact is the location of an Alibaba Cloud OSS artifact
@@ -1549,6 +1582,47 @@ message Version {
 message VolumeClaimGC {
   // Strategy is the strategy to use. One of "OnWorkflowCompletion", "OnWorkflowSuccess"
   optional string strategy = 1;
+}
+
+message WebHDFSArtifact {
+  // webHDFS endpoint
+  optional string endpoint = 1;
+
+  // path to the artifact
+  optional string path = 2;
+
+  // authentication information
+  optional WebHDFSAuth webHDFSAuth = 3;
+
+  // Headers are an optional list of headers to send with HTTP requests for artifacts
+  repeated Header headers = 4;
+
+  // whether to overwrite existing output artifacts (default: unset, meaning the endpoint's default behavior is used)
+  optional bool overwrite = 5;
+}
+
+// WebHDFSArtifactRepository defines the controller configuration for a webHDFS artifact repository
+message WebHDFSArtifactRepository {
+  optional WebHDFSAuth webHDFSAuth = 1;
+
+  optional string endpoint = 2;
+
+  // PathFormat is defines the format of path to store a file. Can reference workflow variables
+  optional string pathFormat = 3;
+
+  // Optional headers to be passed in the webHDFS HTTP requests
+  repeated Header headers = 4;
+
+  // whether to overwrite existing files
+  optional bool overwrite = 5;
+}
+
+message WebHDFSAuth {
+  optional string authType = 1;
+
+  optional ClientCertAuth clientCert = 2;
+
+  optional OAuth2Auth oauth2 = 3;
 }
 
 // Workflow is the definition of a workflow resource

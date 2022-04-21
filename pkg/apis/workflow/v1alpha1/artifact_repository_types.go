@@ -24,6 +24,8 @@ type ArtifactRepository struct {
 	OSS *OSSArtifactRepository `json:"oss,omitempty" protobuf:"bytes,5,opt,name=oss"`
 	// GCS stores artifact in a GCS object store
 	GCS *GCSArtifactRepository `json:"gcs,omitempty" protobuf:"bytes,6,opt,name=gcs"`
+	// webHDFS stores artifacts in webHDFS compliant object store
+	WebHDFS *WebHDFSArtifactRepository `json:"webHDFS,omitempty" protobuf:"bytes,7,opt,name=webHDFS"`
 }
 
 func (a *ArtifactRepository) IsArchiveLogs() bool {
@@ -47,6 +49,8 @@ func (a *ArtifactRepository) Get() ArtifactRepositoryType {
 		return a.OSS
 	} else if a.S3 != nil {
 		return a.S3
+	} else if a.WebHDFS != nil {
+		return a.WebHDFS
 	}
 	return nil
 }
@@ -150,6 +154,30 @@ func (r *HDFSArtifactRepository) IntoArtifactLocation(l *ArtifactLocation) {
 		p = DefaultArchivePattern
 	}
 	l.HDFS = &HDFSArtifact{HDFSConfig: r.HDFSConfig, Path: p, Force: r.Force}
+}
+
+// WebHDFSArtifactRepository defines the controller configuration for a webHDFS artifact repository
+type WebHDFSArtifactRepository struct {
+	WebHDFSAuth `json:",inline" protobuf:"bytes,1,opt,name=webHDFSAuth"`
+
+	Endpoint string `json:"endpoint,omitempty" protobuf:"bytes,2,opt,name=endpoint"`
+
+	// PathFormat is defines the format of path to store a file. Can reference workflow variables
+	PathFormat string `json:"pathFormat,omitempty" protobuf:"bytes,3,opt,name=pathFormat"`
+
+	// Optional headers to be passed in the webHDFS HTTP requests
+	Headers []Header `json:"headers,omitempty" protobuf:"bytes,4,rep,name=headers"`
+
+	// whether to overwrite existing files
+	Overwrite *bool `json:"overwrite,omitempty" protobuf:"varint,5,opt,name=overwrite"`
+}
+
+func (r *WebHDFSArtifactRepository) IntoArtifactLocation(l *ArtifactLocation) {
+	p := r.PathFormat
+	if p == "" {
+		p = DefaultArchivePattern
+	}
+	l.WebHDFS = &WebHDFSArtifact{Path: p, WebHDFSAuth: r.WebHDFSAuth, Endpoint: r.Endpoint, Headers: r.Headers, Overwrite: r.Overwrite}
 }
 
 // MetricsConfig defines a config for a metrics server

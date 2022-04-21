@@ -4563,6 +4563,10 @@
         "subPath": {
           "description": "SubPath allows an artifact to be sourced from a subpath within the specified source",
           "type": "string"
+        },
+        "webHDFS": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WebHDFSArtifact",
+          "description": "webHDFS contains webHDFS artifact location details"
         }
       },
       "required": [
@@ -4608,6 +4612,10 @@
         "s3": {
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.S3Artifact",
           "description": "S3 contains S3 artifact location details"
+        },
+        "webHDFS": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WebHDFSArtifact",
+          "description": "webHDFS contains webHDFS artifact location details"
         }
       },
       "type": "object"
@@ -4690,6 +4698,10 @@
         "subPath": {
           "description": "SubPath allows an artifact to be sourced from a subpath within the specified source",
           "type": "string"
+        },
+        "webHDFS": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WebHDFSArtifact",
+          "description": "webHDFS contains webHDFS artifact location details"
         }
       },
       "required": [
@@ -4723,6 +4735,10 @@
         "s3": {
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.S3ArtifactRepository",
           "description": "S3 stores artifact in a S3-compliant object store"
+        },
+        "webHDFS": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WebHDFSArtifactRepository",
+          "description": "webHDFS stores artifacts in webHDFS compliant object store"
         }
       },
       "type": "object"
@@ -4833,6 +4849,18 @@
       "required": [
         "configMap"
       ],
+      "type": "object"
+    },
+    "io.argoproj.workflow.v1alpha1.ClientCertAuth": {
+      "description": "ClientCertAuth holds necessary information for client authentication via certificates",
+      "properties": {
+        "clientCertSecret": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
+        },
+        "clientKeySecret": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
+        }
+      },
       "type": "object"
     },
     "io.argoproj.workflow.v1alpha1.ClusterWorkflowTemplate": {
@@ -5466,6 +5494,23 @@
           "description": "ArtifactPaths is a data transformation that collects a list of artifact paths"
         }
       },
+      "type": "object"
+    },
+    "io.argoproj.workflow.v1alpha1.EndpointParam": {
+      "description": "EndpointParam is for requesting optional fields that should be sent in the oauth request",
+      "properties": {
+        "key": {
+          "description": "Name is the header name",
+          "type": "string"
+        },
+        "value": {
+          "description": "Value is the literal value to use for the header",
+          "type": "string"
+        }
+      },
+      "required": [
+        "key"
+      ],
       "type": "object"
     },
     "io.argoproj.workflow.v1alpha1.Event": {
@@ -6301,6 +6346,27 @@
     },
     "io.argoproj.workflow.v1alpha1.NoneStrategy": {
       "description": "NoneStrategy indicates to skip tar process and upload the files or directory tree as independent files. Note that if the artifact is a directory, the artifact driver must support the ability to save/load the directory appropriately.",
+      "type": "object"
+    },
+    "io.argoproj.workflow.v1alpha1.OAuth2Auth": {
+      "description": "OAuth2Auth holds all information for client authentication via OAuth2 tokens",
+      "properties": {
+        "clientIDSecret": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
+        },
+        "clientSecretSecret": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
+        },
+        "endpointParams": {
+          "items": {
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.EndpointParam"
+          },
+          "type": "array"
+        },
+        "tokenURLSecret": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
+        }
+      },
       "type": "object"
     },
     "io.argoproj.workflow.v1alpha1.OSSArtifact": {
@@ -7596,6 +7662,72 @@
       "properties": {
         "strategy": {
           "description": "Strategy is the strategy to use. One of \"OnWorkflowCompletion\", \"OnWorkflowSuccess\"",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "io.argoproj.workflow.v1alpha1.WebHDFSArtifact": {
+      "properties": {
+        "authType": {
+          "type": "string"
+        },
+        "clientCert": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ClientCertAuth"
+        },
+        "endpoint": {
+          "description": "webHDFS endpoint",
+          "type": "string"
+        },
+        "headers": {
+          "description": "Headers are an optional list of headers to send with HTTP requests for artifacts",
+          "items": {
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Header"
+          },
+          "type": "array"
+        },
+        "oauth2": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.OAuth2Auth"
+        },
+        "overwrite": {
+          "description": "whether to overwrite existing output artifacts (default: unset, meaning the endpoint's default behavior is used)",
+          "type": "boolean"
+        },
+        "path": {
+          "description": "path to the artifact",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "io.argoproj.workflow.v1alpha1.WebHDFSArtifactRepository": {
+      "description": "WebHDFSArtifactRepository defines the controller configuration for a webHDFS artifact repository",
+      "properties": {
+        "authType": {
+          "type": "string"
+        },
+        "clientCert": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ClientCertAuth"
+        },
+        "endpoint": {
+          "type": "string"
+        },
+        "headers": {
+          "description": "Optional headers to be passed in the webHDFS HTTP requests",
+          "items": {
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Header"
+          },
+          "type": "array"
+        },
+        "oauth2": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.OAuth2Auth"
+        },
+        "overwrite": {
+          "description": "whether to overwrite existing files",
+          "type": "boolean"
+        },
+        "pathFormat": {
+          "description": "PathFormat is defines the format of path to store a file. Can reference workflow variables",
           "type": "string"
         }
       },

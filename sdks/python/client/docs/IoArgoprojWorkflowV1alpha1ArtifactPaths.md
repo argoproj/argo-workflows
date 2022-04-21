@@ -24,6 +24,7 @@ Name | Type | Description | Notes
 **recurse_mode** | **bool** | If mode is set, apply the permission recursively into the artifact if it is a folder | [optional] 
 **s3** | [**IoArgoprojWorkflowV1alpha1S3Artifact**](IoArgoprojWorkflowV1alpha1S3Artifact.md) |  | [optional] 
 **sub_path** | **str** | SubPath allows an artifact to be sourced from a subpath within the specified source | [optional] 
+**web_hdfs** | [**IoArgoprojWorkflowV1alpha1WebHDFSArtifact**](IoArgoprojWorkflowV1alpha1WebHDFSArtifact.md) |  | [optional] 
 **any string name** | **bool, date, datetime, dict, float, int, list, str, none_type** | any string name can be used but the value must be the correct type | [optional]
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)

@@ -180,6 +180,8 @@ Workflow is the definition of a workflow resource
 
 - [`input-artifact-s3.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/input-artifact-s3.yaml)
 
+- [`input-output-artifact-webhdfs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/input-output-artifact-webhdfs.yaml)
+
 - [`k8s-jobs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-jobs.yaml)
 
 - [`k8s-json-patch-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-json-patch-workflow.yaml)
@@ -599,6 +601,8 @@ WorkflowSpec is the specification of a Workflow.
 
 - [`input-artifact-s3.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/input-artifact-s3.yaml)
 
+- [`input-output-artifact-webhdfs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/input-output-artifact-webhdfs.yaml)
+
 - [`k8s-json-patch-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-json-patch-workflow.yaml)
 
 - [`k8s-owner-reference.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-owner-reference.yaml)
@@ -1017,6 +1021,8 @@ CronWorkflowSpec is the specification of a CronWorkflow
 - [`input-artifact-raw.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/input-artifact-raw.yaml)
 
 - [`input-artifact-s3.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/input-artifact-s3.yaml)
+
+- [`input-output-artifact-webhdfs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/input-output-artifact-webhdfs.yaml)
 
 - [`k8s-json-patch-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-json-patch-workflow.yaml)
 
@@ -1814,6 +1820,8 @@ Outputs hold parameters, artifacts, and results from a step
 
 - [`influxdb-ci.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/influxdb-ci.yaml)
 
+- [`input-output-artifact-webhdfs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/input-output-artifact-webhdfs.yaml)
+
 - [`k8s-wait-wf.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-wait-wf.yaml)
 
 - [`key-only-artifact.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/key-only-artifact.yaml)
@@ -1924,6 +1932,8 @@ Artifact indicates an artifact to place at a specified path
 
 - [`input-artifact-s3.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/input-artifact-s3.yaml)
 
+- [`input-output-artifact-webhdfs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/input-output-artifact-webhdfs.yaml)
+
 - [`key-only-artifact.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/key-only-artifact.yaml)
 
 - [`map-reduce.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/map-reduce.yaml)
@@ -1959,6 +1969,7 @@ Artifact indicates an artifact to place at a specified path
 |`recurseMode`|`boolean`|If mode is set, apply the permission recursively into the artifact if it is a folder|
 |`s3`|[`S3Artifact`](#s3artifact)|S3 contains S3 artifact location details|
 |`subPath`|`string`|SubPath allows an artifact to be sourced from a subpath within the specified source|
+|`webHDFS`|[`WebHDFSArtifact`](#webhdfsartifact)|webHDFS contains webHDFS artifact location details|
 
 ## Parameter
 
@@ -2285,6 +2296,7 @@ ArtifactLocation describes a location for a single or multiple artifacts. It is 
 |`oss`|[`OSSArtifact`](#ossartifact)|OSS contains OSS artifact location details|
 |`raw`|[`RawArtifact`](#rawartifact)|Raw contains raw artifact location details|
 |`s3`|[`S3Artifact`](#s3artifact)|S3 contains S3 artifact location details|
+|`webHDFS`|[`WebHDFSArtifact`](#webhdfsartifact)|webHDFS contains webHDFS artifact location details|
 
 ## ContainerSetTemplate
 
@@ -2602,6 +2614,8 @@ Inputs are the mechanism for passing parameters, artifacts, volumes from one tem
 - [`input-artifact-raw.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/input-artifact-raw.yaml)
 
 - [`input-artifact-s3.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/input-artifact-s3.yaml)
+
+- [`input-output-artifact-webhdfs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/input-output-artifact-webhdfs.yaml)
 
 - [`k8s-wait-wf.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-wait-wf.yaml)
 
@@ -3060,6 +3074,7 @@ ArtifactRepository represents an artifact repository in which a controller will 
 |`hdfs`|[`HDFSArtifactRepository`](#hdfsartifactrepository)|HDFS stores artifacts in HDFS|
 |`oss`|[`OSSArtifactRepository`](#ossartifactrepository)|OSS stores artifact in a OSS-compliant object store|
 |`s3`|[`S3ArtifactRepository`](#s3artifactrepository)|S3 stores artifact in a S3-compliant object store|
+|`webHDFS`|[`WebHDFSArtifactRepository`](#webhdfsartifactrepository)|webHDFS stores artifacts in webHDFS compliant object store|
 
 ## MemoizationStatus
 
@@ -3333,6 +3348,28 @@ S3Artifact is the location of an S3 artifact
 |`roleARN`|`string`|RoleARN is the Amazon Resource Name (ARN) of the role to assume.|
 |`secretKeySecret`|[`SecretKeySelector`](#secretkeyselector)|SecretKeySecret is the secret selector to the bucket's secret key|
 |`useSDKCreds`|`boolean`|UseSDKCreds tells the driver to figure out credentials based on sdk defaults.|
+
+## WebHDFSArtifact
+
+_No description available_
+
+<details>
+<summary>Examples with this field (click to open)</summary>
+<br>
+
+- [`input-output-artifact-webhdfs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/input-output-artifact-webhdfs.yaml)
+</details>
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`authType`|`string`|_No description available_|
+|`clientCert`|[`ClientCertAuth`](#clientcertauth)|_No description available_|
+|`endpoint`|`string`|webHDFS endpoint|
+|`headers`|`Array<`[`Header`](#header)`>`|Headers are an optional list of headers to send with HTTP requests for artifacts|
+|`oauth2`|[`OAuth2Auth`](#oauth2auth)|_No description available_|
+|`overwrite`|`boolean`|whether to overwrite existing output artifacts (default: unset, meaning the endpoint's default behavior is used)|
+|`path`|`string`|path to the artifact|
 
 ## ValueFrom
 
@@ -3799,6 +3836,13 @@ _No description available_
 
 _No description available_
 
+<details>
+<summary>Examples with this field (click to open)</summary>
+<br>
+
+- [`input-output-artifact-webhdfs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/input-output-artifact-webhdfs.yaml)
+</details>
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -4013,6 +4057,28 @@ S3ArtifactRepository defines the controller configuration for an S3 artifact rep
 |`secretKeySecret`|[`SecretKeySelector`](#secretkeyselector)|SecretKeySecret is the secret selector to the bucket's secret key|
 |`useSDKCreds`|`boolean`|UseSDKCreds tells the driver to figure out credentials based on sdk defaults.|
 
+## WebHDFSArtifactRepository
+
+WebHDFSArtifactRepository defines the controller configuration for a webHDFS artifact repository
+
+<details>
+<summary>Examples with this field (click to open)</summary>
+<br>
+
+- [`input-output-artifact-webhdfs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/input-output-artifact-webhdfs.yaml)
+</details>
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`authType`|`string`|_No description available_|
+|`clientCert`|[`ClientCertAuth`](#clientcertauth)|_No description available_|
+|`endpoint`|`string`|_No description available_|
+|`headers`|`Array<`[`Header`](#header)`>`|Optional headers to be passed in the webHDFS HTTP requests|
+|`oauth2`|[`OAuth2Auth`](#oauth2auth)|_No description available_|
+|`overwrite`|`boolean`|whether to overwrite existing files|
+|`pathFormat`|`string`|PathFormat is defines the format of path to store a file. Can reference workflow variables|
+
 ## MutexHolding
 
 MutexHolding describes the mutex and the object which is holding it.
@@ -4074,6 +4140,13 @@ ZipStrategy will unzip zipped input artifacts
 
 Header indicate a key-value request header to be used when fetching artifacts over HTTP
 
+<details>
+<summary>Examples with this field (click to open)</summary>
+<br>
+
+- [`input-output-artifact-webhdfs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/input-output-artifact-webhdfs.yaml)
+</details>
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -4110,6 +4183,35 @@ S3EncryptionOptions used to determine encryption options during s3 operations
 |`kmsEncryptionContext`|`string`|KmsEncryptionContext is a json blob that contains an encryption context. See https://docs.aws.amazon.com/kms/latest/developerguide/concepts.html#encrypt_context for more information|
 |`kmsKeyId`|`string`|KMSKeyId tells the driver to encrypt the object using the specified KMS Key.|
 |`serverSideCustomerKeySecret`|[`SecretKeySelector`](#secretkeyselector)|ServerSideCustomerKeySecret tells the driver to encrypt the output artifacts using SSE-C with the specified secret.|
+
+## ClientCertAuth
+
+ClientCertAuth holds necessary information for client authentication via certificates
+
+<details>
+<summary>Examples with this field (click to open)</summary>
+<br>
+
+- [`input-output-artifact-webhdfs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/input-output-artifact-webhdfs.yaml)
+</details>
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`clientCertSecret`|[`SecretKeySelector`](#secretkeyselector)|_No description available_|
+|`clientKeySecret`|[`SecretKeySelector`](#secretkeyselector)|_No description available_|
+
+## OAuth2Auth
+
+OAuth2Auth holds all information for client authentication via OAuth2 tokens
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`clientIDSecret`|[`SecretKeySelector`](#secretkeyselector)|_No description available_|
+|`clientSecretSecret`|[`SecretKeySelector`](#secretkeyselector)|_No description available_|
+|`endpointParams`|`Array<`[`EndpointParam`](#endpointparam)`>`|_No description available_|
+|`tokenURLSecret`|[`SecretKeySelector`](#secretkeyselector)|_No description available_|
 
 ## SuppliedValueFrom
 
@@ -4166,6 +4268,7 @@ ArtifactPaths expands a step from a collection of artifacts
 |`recurseMode`|`boolean`|If mode is set, apply the permission recursively into the artifact if it is a folder|
 |`s3`|[`S3Artifact`](#s3artifact)|S3 contains S3 artifact location details|
 |`subPath`|`string`|SubPath allows an artifact to be sourced from a subpath within the specified source|
+|`webHDFS`|[`WebHDFSArtifact`](#webhdfsartifact)|webHDFS contains webHDFS artifact location details|
 
 ## HTTPHeaderSource
 
@@ -4222,6 +4325,23 @@ _No description available_
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
 |`secretKeyRef`|[`SecretKeySelector`](#secretkeyselector)|_No description available_|
+
+## EndpointParam
+
+EndpointParam is for requesting optional fields that should be sent in the oauth request
+
+<details>
+<summary>Examples with this field (click to open)</summary>
+<br>
+
+- [`input-output-artifact-webhdfs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/input-output-artifact-webhdfs.yaml)
+</details>
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`key`|`string`|Name is the header name|
+|`value`|`string`|Value is the literal value to use for the header|
 
 # External Fields
 
@@ -4415,6 +4535,8 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 - [`input-artifact-raw.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/input-artifact-raw.yaml)
 
 - [`input-artifact-s3.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/input-artifact-s3.yaml)
+
+- [`input-output-artifact-webhdfs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/input-output-artifact-webhdfs.yaml)
 
 - [`k8s-json-patch-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-json-patch-workflow.yaml)
 
@@ -5005,6 +5127,8 @@ A single application container that you want to run within a pod.
 - [`input-artifact-raw.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/input-artifact-raw.yaml)
 
 - [`input-artifact-s3.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/input-artifact-s3.yaml)
+
+- [`input-output-artifact-webhdfs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/input-output-artifact-webhdfs.yaml)
 
 - [`k8s-owner-reference.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-owner-reference.yaml)
 
@@ -5704,6 +5828,8 @@ PersistentVolumeClaimSpec describes the common attributes of storage devices and
 - [`input-artifact-raw.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/input-artifact-raw.yaml)
 
 - [`input-artifact-s3.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/input-artifact-s3.yaml)
+
+- [`input-output-artifact-webhdfs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/input-output-artifact-webhdfs.yaml)
 
 - [`k8s-json-patch-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-json-patch-workflow.yaml)
 

@@ -39,6 +39,7 @@ def lazy_import():
     from argo_workflows.model.io_argoproj_workflow_v1alpha1_oss_artifact import IoArgoprojWorkflowV1alpha1OSSArtifact
     from argo_workflows.model.io_argoproj_workflow_v1alpha1_raw_artifact import IoArgoprojWorkflowV1alpha1RawArtifact
     from argo_workflows.model.io_argoproj_workflow_v1alpha1_s3_artifact import IoArgoprojWorkflowV1alpha1S3Artifact
+    from argo_workflows.model.io_argoproj_workflow_v1alpha1_web_hdfs_artifact import IoArgoprojWorkflowV1alpha1WebHDFSArtifact
     globals()['IoArgoprojWorkflowV1alpha1ArchiveStrategy'] = IoArgoprojWorkflowV1alpha1ArchiveStrategy
     globals()['IoArgoprojWorkflowV1alpha1ArtifactoryArtifact'] = IoArgoprojWorkflowV1alpha1ArtifactoryArtifact
     globals()['IoArgoprojWorkflowV1alpha1GCSArtifact'] = IoArgoprojWorkflowV1alpha1GCSArtifact
@@ -48,6 +49,7 @@ def lazy_import():
     globals()['IoArgoprojWorkflowV1alpha1OSSArtifact'] = IoArgoprojWorkflowV1alpha1OSSArtifact
     globals()['IoArgoprojWorkflowV1alpha1RawArtifact'] = IoArgoprojWorkflowV1alpha1RawArtifact
     globals()['IoArgoprojWorkflowV1alpha1S3Artifact'] = IoArgoprojWorkflowV1alpha1S3Artifact
+    globals()['IoArgoprojWorkflowV1alpha1WebHDFSArtifact'] = IoArgoprojWorkflowV1alpha1WebHDFSArtifact
 
 
 class IoArgoprojWorkflowV1alpha1Artifact(ModelNormal):
@@ -122,6 +124,7 @@ class IoArgoprojWorkflowV1alpha1Artifact(ModelNormal):
             'recurse_mode': (bool,),  # noqa: E501
             's3': (IoArgoprojWorkflowV1alpha1S3Artifact,),  # noqa: E501
             'sub_path': (str,),  # noqa: E501
+            'web_hdfs': (IoArgoprojWorkflowV1alpha1WebHDFSArtifact,),  # noqa: E501
         }
 
     @cached_property
@@ -149,6 +152,7 @@ class IoArgoprojWorkflowV1alpha1Artifact(ModelNormal):
         'recurse_mode': 'recurseMode',  # noqa: E501
         's3': 's3',  # noqa: E501
         'sub_path': 'subPath',  # noqa: E501
+        'web_hdfs': 'webHDFS',  # noqa: E501
     }
 
     read_only_vars = {
@@ -213,6 +217,7 @@ class IoArgoprojWorkflowV1alpha1Artifact(ModelNormal):
             recurse_mode (bool): If mode is set, apply the permission recursively into the artifact if it is a folder. [optional]  # noqa: E501
             s3 (IoArgoprojWorkflowV1alpha1S3Artifact): [optional]  # noqa: E501
             sub_path (str): SubPath allows an artifact to be sourced from a subpath within the specified source. [optional]  # noqa: E501
+            web_hdfs (IoArgoprojWorkflowV1alpha1WebHDFSArtifact): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -316,6 +321,7 @@ class IoArgoprojWorkflowV1alpha1Artifact(ModelNormal):
             recurse_mode (bool): If mode is set, apply the permission recursively into the artifact if it is a folder. [optional]  # noqa: E501
             s3 (IoArgoprojWorkflowV1alpha1S3Artifact): [optional]  # noqa: E501
             sub_path (str): SubPath allows an artifact to be sourced from a subpath within the specified source. [optional]  # noqa: E501
+            web_hdfs (IoArgoprojWorkflowV1alpha1WebHDFSArtifact): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)

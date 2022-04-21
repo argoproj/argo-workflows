@@ -1,0 +1,77 @@
+# This example demonstrates the usage of an input or output artifact via a webhdfs endpoint. 
+# The different providers support different ways of authentication. For Azure datalake, for example, this is done via an oauth2 token. 
+# On the other hand, SAP Hana datalake uses client authentication via certificates. The authType distinguishes between them. 
+# Right now, authentication via certificates and via OAuth2 is supported. The input artifact shows an example for OAuth2 while the output artifact shows an example for usign certificates.
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: input-output-artifact-webhdfs-
+spec:
+  entrypoint: input-output-artifact-webhdfs-example
+  templates:
+  - name: input-output-artifact-webhdfs-example
+    inputs:
+      artifacts:
+      - name: my-art
+        path: /my-artifact
+        webHDFS:
+          # specify to use a webHDFS artifact
+          # below is an example on how to use authentication via oauth2
+          # endpoint: has to consist of the full URL, i.e. including https and the webhdfs/v1 suffix
+          # path: path to the file in the data storage provider
+          # authType: either "OAuth2" or "ClientCert" (for "ClientCert", see the output artifacts)
+          # oauth2.clientID: points to a kubernetes secret named oauth-sec with a data entry of "clientID"
+          # oauth2.clientSecret: points to a kubernetes secret named oauth-sec with a data entry of "clientSecret"
+          # oauth2.TokenURL: points to a kubernetes secret named oauth-sec with a data entry of "tokenURL"
+          endpoint: https://example.com/webhdfs/v1
+          path: example/file.txt
+          authType: OAuth2
+          oauth2:
+            clientIDSecret:
+              name: oauth-sec
+              key: clientID
+            clientSecretSecret:
+              name: oauth-sec
+              key: clientSecret
+            tokenURLSecret:
+              name: oauth-sec
+              key: tokenURL
+            # optional: endpointParams can hold additional fields that may be needed in the oauth request
+            endpointParams:
+             - key: customkey
+               value: customvalue
+          # optional: headers which should be sent in the HTTP requests
+          headers:
+           - name: CustomHeader
+             value: CustomValue
+    outputs:
+      artifacts:
+      - name: my-art2
+        path: /my-artifact
+        overwrite: true
+        webHDFS:
+          # below is an example on how to use authentication via certificates
+          # overwrite: whether to overwrite existing files (behavior depends on the provider, if unset, the provider's default behavior is used)
+          # authType: either "OAuth2" or "ClientCert" (for OAuth2, see the input artifacts)
+          # clientCert.clientCertSecret: points to a kubernetes secret named cert-sec with a data entry of "certificate.pem"
+          # clientCert.clientKeySecret: points to a kubernetes secret named cert-sec with a data entry of "key.pem"
+          #   clientCertSecret and clientKeySecret secrets should contain the raw PEM contents of the tls certificate pair
+          endpoint: https://<instance-id>.files.hdl.canary-eu10.hanacloud.ondemand.com/webhdfs/v1
+          path: path/to/file
+          overwrite: true
+          authType: ClientCert
+          clientCert:
+            clientCertSecret:
+              name: cert-sec
+              key: certificate.pem
+            clientKeySecret:
+              name: cert-sec
+              key: key.pem
+          # optional: headers which should be sent in the HTTP requests
+          headers:
+           - name: CustomHeader
+             value: CustomValue
+    container:
+      image: debian:latest
+      command: [sh, -c]
+      args: ["cat /my-artifact"]

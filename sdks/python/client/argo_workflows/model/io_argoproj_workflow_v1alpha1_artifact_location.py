@@ -38,6 +38,7 @@ def lazy_import():
     from argo_workflows.model.io_argoproj_workflow_v1alpha1_oss_artifact import IoArgoprojWorkflowV1alpha1OSSArtifact
     from argo_workflows.model.io_argoproj_workflow_v1alpha1_raw_artifact import IoArgoprojWorkflowV1alpha1RawArtifact
     from argo_workflows.model.io_argoproj_workflow_v1alpha1_s3_artifact import IoArgoprojWorkflowV1alpha1S3Artifact
+    from argo_workflows.model.io_argoproj_workflow_v1alpha1_web_hdfs_artifact import IoArgoprojWorkflowV1alpha1WebHDFSArtifact
     globals()['IoArgoprojWorkflowV1alpha1ArtifactoryArtifact'] = IoArgoprojWorkflowV1alpha1ArtifactoryArtifact
     globals()['IoArgoprojWorkflowV1alpha1GCSArtifact'] = IoArgoprojWorkflowV1alpha1GCSArtifact
     globals()['IoArgoprojWorkflowV1alpha1GitArtifact'] = IoArgoprojWorkflowV1alpha1GitArtifact
@@ -46,6 +47,7 @@ def lazy_import():
     globals()['IoArgoprojWorkflowV1alpha1OSSArtifact'] = IoArgoprojWorkflowV1alpha1OSSArtifact
     globals()['IoArgoprojWorkflowV1alpha1RawArtifact'] = IoArgoprojWorkflowV1alpha1RawArtifact
     globals()['IoArgoprojWorkflowV1alpha1S3Artifact'] = IoArgoprojWorkflowV1alpha1S3Artifact
+    globals()['IoArgoprojWorkflowV1alpha1WebHDFSArtifact'] = IoArgoprojWorkflowV1alpha1WebHDFSArtifact
 
 
 class IoArgoprojWorkflowV1alpha1ArtifactLocation(ModelNormal):
@@ -110,6 +112,7 @@ class IoArgoprojWorkflowV1alpha1ArtifactLocation(ModelNormal):
             'oss': (IoArgoprojWorkflowV1alpha1OSSArtifact,),  # noqa: E501
             'raw': (IoArgoprojWorkflowV1alpha1RawArtifact,),  # noqa: E501
             's3': (IoArgoprojWorkflowV1alpha1S3Artifact,),  # noqa: E501
+            'web_hdfs': (IoArgoprojWorkflowV1alpha1WebHDFSArtifact,),  # noqa: E501
         }
 
     @cached_property
@@ -127,6 +130,7 @@ class IoArgoprojWorkflowV1alpha1ArtifactLocation(ModelNormal):
         'oss': 'oss',  # noqa: E501
         'raw': 'raw',  # noqa: E501
         's3': 's3',  # noqa: E501
+        'web_hdfs': 'webHDFS',  # noqa: E501
     }
 
     read_only_vars = {
@@ -179,6 +183,7 @@ class IoArgoprojWorkflowV1alpha1ArtifactLocation(ModelNormal):
             oss (IoArgoprojWorkflowV1alpha1OSSArtifact): [optional]  # noqa: E501
             raw (IoArgoprojWorkflowV1alpha1RawArtifact): [optional]  # noqa: E501
             s3 (IoArgoprojWorkflowV1alpha1S3Artifact): [optional]  # noqa: E501
+            web_hdfs (IoArgoprojWorkflowV1alpha1WebHDFSArtifact): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -269,6 +274,7 @@ class IoArgoprojWorkflowV1alpha1ArtifactLocation(ModelNormal):
             oss (IoArgoprojWorkflowV1alpha1OSSArtifact): [optional]  # noqa: E501
             raw (IoArgoprojWorkflowV1alpha1RawArtifact): [optional]  # noqa: E501
             s3 (IoArgoprojWorkflowV1alpha1S3Artifact): [optional]  # noqa: E501
+            web_hdfs (IoArgoprojWorkflowV1alpha1WebHDFSArtifact): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)

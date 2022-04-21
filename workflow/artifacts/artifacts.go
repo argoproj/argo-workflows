@@ -3,6 +3,7 @@ package executor
 import (
 	"context"
 	"fmt"
+	gohttp "net/http"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/common"
@@ -15,6 +16,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/raw"
 	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/resource"
 	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/s3"
+	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/webhdfs"
 )
 
 var ErrUnsupportedDriver = fmt.Errorf("unsupported artifact driver")
@@ -194,6 +196,47 @@ func newDriver(ctx context.Context, art *wfv1.Artifact, ri resource.Interface) (
 		}
 		// key is not set, assume it is using Workload Idendity
 		return &driver, nil
+	}
+
+	if art.WebHDFS != nil {
+		// depending on the auth type, either create a http client using OAuth2 or using client certificates for authentication
+		client := gohttp.DefaultClient
+		headers := art.WebHDFS.Headers
+		switch art.WebHDFS.AuthType {
+		case wfv1.OAuth2:
+			clientId, err := ri.GetSecret(ctx, art.WebHDFS.OAuth2.ClientIDSecret.Name, art.WebHDFS.OAuth2.ClientIDSecret.Key)
+			if err != nil {
+				return nil, err
+			}
+			clientSecret, err := ri.GetSecret(ctx, art.WebHDFS.OAuth2.ClientSecretSecret.Name, art.WebHDFS.OAuth2.ClientSecretSecret.Key)
+			if err != nil {
+				return nil, err
+			}
+			tokenURL, err := ri.GetSecret(ctx, art.WebHDFS.OAuth2.TokenURLSecret.Name, art.WebHDFS.OAuth2.TokenURLSecret.Key)
+			if err != nil {
+				return nil, err
+			}
+			client = webhdfs.CreateOauth2Client(clientId, clientSecret, tokenURL, art.WebHDFS.OAuth2.EndpointParams)
+		case wfv1.ClientCert:
+			clientCert, err := ri.GetSecret(ctx, art.WebHDFS.ClientCert.ClientCertSecret.Name, art.WebHDFS.ClientCert.ClientCertSecret.Key)
+			if err != nil {
+				return nil, err
+			}
+			clientKey, err := ri.GetSecret(ctx, art.WebHDFS.ClientCert.ClientKeySecret.Name, art.WebHDFS.ClientCert.ClientKeySecret.Key)
+			if err != nil {
+				return nil, err
+			}
+			client, err = webhdfs.CreateClientWithCertificate([]byte(clientCert), []byte(clientKey))
+			if err != nil {
+				return nil, err
+			}
+		}
+		webHDFSDriver := webhdfs.ArtifactDriver{
+			Endpoint: art.WebHDFS.Endpoint,
+			Headers:  headers,
+			Client:   client,
+		}
+		return &webHDFSDriver, nil
 	}
 
 	return nil, ErrUnsupportedDriver

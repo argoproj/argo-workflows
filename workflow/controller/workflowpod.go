@@ -1128,6 +1128,12 @@ func createArchiveLocationSecret(tmpl *wfv1.Template, volMap map[string]apiv1.Vo
 		createSecretVal(volMap, ossRepo.SecretKeySecret, uniqueKeyMap)
 	} else if gcsRepo := tmpl.ArchiveLocation.GCS; gcsRepo != nil {
 		createSecretVal(volMap, gcsRepo.ServiceAccountKeySecret, uniqueKeyMap)
+	} else if webHDFSArtRepo := tmpl.ArchiveLocation.WebHDFS; webHDFSArtRepo != nil {
+		createSecretVal(volMap, webHDFSArtRepo.ClientCert.ClientCertSecret, uniqueKeyMap)
+		createSecretVal(volMap, webHDFSArtRepo.ClientCert.ClientKeySecret, uniqueKeyMap)
+		createSecretVal(volMap, webHDFSArtRepo.OAuth2.ClientIDSecret, uniqueKeyMap)
+		createSecretVal(volMap, webHDFSArtRepo.OAuth2.ClientSecretSecret, uniqueKeyMap)
+		createSecretVal(volMap, &webHDFSArtRepo.OAuth2.TokenURLSecret, uniqueKeyMap)
 	}
 }
 
@@ -1150,6 +1156,12 @@ func createSecretVolume(volMap map[string]apiv1.Volume, art wfv1.Artifact, keyMa
 		createSecretVal(volMap, art.OSS.SecretKeySecret, keyMap)
 	} else if art.GCS != nil {
 		createSecretVal(volMap, art.GCS.ServiceAccountKeySecret, keyMap)
+	} else if art.WebHDFS != nil {
+		createSecretVal(volMap, art.WebHDFS.ClientCert.ClientCertSecret, keyMap)
+		createSecretVal(volMap, art.WebHDFS.ClientCert.ClientKeySecret, keyMap)
+		createSecretVal(volMap, art.WebHDFS.OAuth2.ClientIDSecret, keyMap)
+		createSecretVal(volMap, art.WebHDFS.OAuth2.ClientSecretSecret, keyMap)
+		createSecretVal(volMap, &art.WebHDFS.OAuth2.TokenURLSecret, keyMap)
 	}
 }
 
