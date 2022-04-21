@@ -80,6 +80,7 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
         return (
             <GraphPanel
                 storageScope='workflow-dag'
+                classNames='workflow-dag'
                 graph={this.graph}
                 nodeGenresTitle={'Node Type'}
                 nodeGenres={genres}
@@ -257,7 +258,7 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
                             classNames: 'Artifact'
                         });
                         const input = ad.artifactDiscrim === 'input';
-                        edges.set({v: input ? ad.urn : node.id, w: input ? node.id : ad.urn}, {label: ad.name});
+                        edges.set({v: input ? ad.urn : node.id, w: input ? node.id : ad.urn}, {label: ad.name, classNames: 'related'});
                     });
             });
     }
