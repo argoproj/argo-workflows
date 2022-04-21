@@ -3060,8 +3060,8 @@
 <h3 id="managed-namespace">Managed Namespace<a class="headerlink" href="#managed-namespace" title="Permanent link">&para;</a></h3>
 <p>See <a href="../managed-namespace/">managed namespace</a>.</p>
 <h3 id="base-href">Base href<a class="headerlink" href="#base-href" title="Permanent link">&para;</a></h3>
-<p>If the server is running behind reverse proxy with a subpath different from <code>/</code> (for example, 
-<code>/argo</code>), you can set an alternative subpath with the <code>--base-href</code> flag or the <code>BASE_HREF</code> 
+<p>If the server is running behind reverse proxy with a subpath different from <code>/</code> (for example,
+<code>/argo</code>), you can set an alternative subpath with the <code>--base-href</code> flag or the <code>BASE_HREF</code>
 environment variable.</p>
 <p>You probably now should <a href="#ingress">read how to set-up an ingress</a></p>
 <h3 id="transport-layer-security">Transport Layer Security<a class="headerlink" href="#transport-layer-security" title="Permanent link">&para;</a></h3>
@@ -3140,7 +3140,7 @@ uses <code>nginx.ingress.kubernetes.io/backend-protocol</code></p>
 <h2 id="security">Security<a class="headerlink" href="#security" title="Permanent link">&para;</a></h2>
 <p>Users should consider the following in their set-up of the Argo Server:</p>
 <h3 id="api-authentication-rate-limiting">API Authentication Rate Limiting<a class="headerlink" href="#api-authentication-rate-limiting" title="Permanent link">&para;</a></h3>
-<p>Argo Server does not perform authenticatinon directly. It delegates this to either the Kubernetes API Server (when <code>--auth-mode=client</code>) and the OAuth provider (when <code>--auth-mode=sso</code>). In each case, it is recommended that the delegate implements any authentication rate limiting you need. </p>
+<p>Argo Server does not perform authentication directly. It delegates this to either the Kubernetes API Server (when <code>--auth-mode=client</code>) and the OAuth provider (when <code>--auth-mode=sso</code>). In each case, it is recommended that the delegate implements any authentication rate limiting you need.</p>
 <h3 id="ip-address-logging">IP Address Logging<a class="headerlink" href="#ip-address-logging" title="Permanent link">&para;</a></h3>
 <p>Argo Server does not log the IP addresses of API requests. We recommend you put the Argo Server behind a load balancer, and that load balancer is configured to log the IP addresses of requests that return authentication or authorization errors.</p>
 

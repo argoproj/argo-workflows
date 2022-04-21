@@ -2968,12 +2968,12 @@
 <h3 id="user-permissions">User Permissions<a class="headerlink" href="#user-permissions" title="Permanent link">&para;</a></h3>
 <p>Users minimally need permission to create/read workflows. The controller will then create workflow pods (config maps etc) on behalf of the users, even if the user does not have permission to do this themselves. The controller will only create workflow pods in the workflow's namespace.</p>
 <p>A way to think of this is that, if the user has permission to create a workflow in a namespace, then it is OK to create pods or anything else for them in that namespace.</p>
-<p>If the user only has permission to create workflows, then they will be typically unable to configure other necessary resources such as config maps, or view the outcome of their workflow. This is useful when the user is a service.  </p>
+<p>If the user only has permission to create workflows, then they will be typically unable to configure other necessary resources such as config maps, or view the outcome of their workflow. This is useful when the user is a service.</p>
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
 <p>If you allow users to create workflows in the controller's namespace (typically <code>argo</code>), it may be possible for users to modify the controller itself.  In a namespace-install the managed namespace should therefore not be the controller's namespace.</p>
 </div>
-<p>You can typically further restrict what a user can do to just being able to submit workflows from templates using <a href="../workflow-restrictions/">the workflow requriments feature</a>.</p>
+<p>You can typically further restrict what a user can do to just being able to submit workflows from templates using <a href="../workflow-restrictions/">the workflow requirements feature</a>.</p>
 <h3 id="workflow-pod-permissions">Workflow Pod Permissions<a class="headerlink" href="#workflow-pod-permissions" title="Permanent link">&para;</a></h3>
 <p>Workflow pods run using either:</p>
 <ul>
@@ -2985,7 +2985,7 @@
 <p>Different service accounts should be used if a workflow pod needs to have elevated permissions, e.g. to create other resources.</p>
 <p>The main container will have the service account token mounted , allowing the main container to patch pods (amongst other permissions). Set <code>automountServiceAccountToken</code> to false to prevent this. See <a href="../fields/">fields</a>.</p>
 <p>By default, workflows pods run as <code>root</code>. To further secure workflow pods, set the <a href="../workflow-pod-security-context/">workflow pod security context</a>.</p>
-<p>You should configure the controller with the correct <a href="../workflow-executors/">workflow executor</a> for your trade off between security and scalabily.</p>
+<p>You should configure the controller with the correct <a href="../workflow-executors/">workflow executor</a> for your trade off between security and scalability.</p>
 <p>These settings can be set by default using <a href="../default-workflow-specs/">workflow defaults</a>.</p>
 <h2 id="argo-server-security">Argo Server Security<a class="headerlink" href="#argo-server-security" title="Permanent link">&para;</a></h2>
 <p>Argo Server implements security in three layers.</p>

@@ -2991,14 +2991,14 @@ release branch. There should be a single release branch per minor release (e.g. 
 <ol>
 <li>
 <p>Checkout the release branch and cherry-pick commits</p>
-<div class="highlight"><pre><span></span><code>$ git checkout relesae-3.0
+<div class="highlight"><pre><span></span><code>$ git checkout release-3.0
 $ git cherry-pick <span class="o">[</span>COMMIT_IDS...<span class="o">]</span>
 </code></pre></div>
 </li>
 <li>
 <p>Hope for few merge conflicts!</p>
-<p>A merge conflict during cherry-picking usually means the commit is based on another commit that should be 
-cherry-picked first. In case of a merge conflict, you can undo the cherry-picking by <code>git cherry-pick --abort</code> and 
+<p>A merge conflict during cherry-picking usually means the commit is based on another commit that should be
+cherry-picked first. In case of a merge conflict, you can undo the cherry-picking by <code>git cherry-pick --abort</code> and
 revisit the list of commits to make sure the prior commits are cherry-picked as well.</p>
 </li>
 <li>
@@ -3076,7 +3076,7 @@ $ docker run argoproj/argocli:v3.0.3 version
 </code></pre></div>
 <ol>
 <li>
-<p>Check the manifests contain the correct tags (search for <code>v3.0.3</code>): <a href="https://raw.githubusercontent.com/argoproj/argo-workflows/v3.0.3/manifests/install.yaml">https://raw.githubusercontent.com/argoproj/argo-workflows/v3.0.3/manifests/install.yaml</a> </p>
+<p>Check the manifests contain the correct tags (search for <code>v3.0.3</code>): <a href="https://raw.githubusercontent.com/argoproj/argo-workflows/v3.0.3/manifests/install.yaml">https://raw.githubusercontent.com/argoproj/argo-workflows/v3.0.3/manifests/install.yaml</a></p>
 </li>
 <li>
 <p>Check the manifests apply: <code>kubectl -n argo apply -f https://raw.githubusercontent.com/argoproj/argo-workflows/v3.0.3/manifests/install.yaml</code></p>
@@ -3158,7 +3158,7 @@ make publish VERSION=v3.0.3
 <blockquote>
 <p>v3.1 and after</p>
 </blockquote>
-<p>This is done automatically by a Github action. </p>
+<p>This is done automatically by a Github action.</p>
 
               
             </article>

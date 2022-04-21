@@ -2845,7 +2845,7 @@ empty-dir volumes instead of persistent volume claims to share data between step
 <span class="w">        </span><span class="nt">parameters</span><span class="p">:</span><span class="w"></span>
 <span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">message</span><span class="w"></span>
 <span class="w">            </span><span class="nt">valueFrom</span><span class="p">:</span><span class="w"></span>
-<span class="w">              </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/workpsace/message</span><span class="w"></span>
+<span class="w">              </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/workspace/message</span><span class="w"></span>
 </code></pre></div>
 <p>There are a couple of caveats:</p>
 <ol>
@@ -2864,7 +2864,7 @@ named <code>main</code>.</p>
 <p>That is may not be practical.</p>
 <p>Instead, have a workspace volume and make sure all artifacts paths are on that volume.</p>
 <h2 id="resource-requests">⚠️ Resource Requests<a class="headerlink" href="#resource-requests" title="Permanent link">&para;</a></h2>
-<p>A container set actually starts all containers, and the Emmissary only starts the main container process when the containers it depends on have completed. This mean that even though the container is doing no useful work, it is still consume resources and you're still getting billed for them.</p>
+<p>A container set actually starts all containers, and the Emissary only starts the main container process when the containers it depends on have completed. This mean that even though the container is doing no useful work, it is still consume resources and you're still getting billed for them.</p>
 <p>If your requests are small, this won't be a problem.</p>
 <p>If your request are large, set the resource requests so the sum total is the most you'll need at once.</p>
 <p>Example A: a simple sequence e.g. <code>a -&gt; b -&gt; c</code></p>
