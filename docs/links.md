@@ -6,7 +6,7 @@
 
 You can configure Argo Server to show custom links:
 
-* A "Get Help" button in the bottom right of the window linking to you organisation help pages or chat room. 
+* A "Get Help" button in the bottom right of the window linking to you organisation help pages or chat room.
 * Deep-links to your facilities (e.g. logging facility) in the user interface for both the workflow and each workflow pod.
 
 Links can contain placeholder variables. Placeholder variables are indicated by the dollar sign and curly braces: `${variable}`.
@@ -27,7 +27,7 @@ or [DataDog](https://datadoghq.com/), as they support Unix epoch timestamp forma
 parameters:
 
 - `${status.startedAtEpoch}`: Start timestamp of the workflow/pod, in the Unix epoch time format in **milliseconds**, e.g. `1609497000000`.
-- `${status.finishedAtEpoch}`: End timestamp of the workflow/pod, in the Unix epoch time format in  **milliseconds**, e.g. `1609497000000`. If the workflow/pod is still running, this variable will represent the currnet time.
+- `${status.finishedAtEpoch}`: End timestamp of the workflow/pod, in the Unix epoch time format in  **milliseconds**, e.g. `1609497000000`. If the workflow/pod is still running, this variable will represent the current time.
 
 > v3.1 and after
 

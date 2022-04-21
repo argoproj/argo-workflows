@@ -22,12 +22,12 @@ Users minimally need permission to create/read workflows. The controller will th
 
 A way to think of this is that, if the user has permission to create a workflow in a namespace, then it is OK to create pods or anything else for them in that namespace.
 
-If the user only has permission to create workflows, then they will be typically unable to configure other necessary resources such as config maps, or view the outcome of their workflow. This is useful when the user is a service.  
+If the user only has permission to create workflows, then they will be typically unable to configure other necessary resources such as config maps, or view the outcome of their workflow. This is useful when the user is a service.
 
 !!! Warning
     If you allow users to create workflows in the controller's namespace (typically `argo`), it may be possible for users to modify the controller itself.  In a namespace-install the managed namespace should therefore not be the controller's namespace.
 
-You can typically further restrict what a user can do to just being able to submit workflows from templates using [the workflow requriments feature](workflow-restrictions.md).
+You can typically further restrict what a user can do to just being able to submit workflows from templates using [the workflow requirements feature](workflow-restrictions.md).
 
 ### Workflow Pod Permissions
 
@@ -46,7 +46,7 @@ The main container will have the service account token mounted , allowing the ma
 
 By default, workflows pods run as `root`. To further secure workflow pods, set the [workflow pod security context](workflow-pod-security-context.md).
 
-You should configure the controller with the correct [workflow executor](workflow-executors.md) for your trade off between security and scalabily.
+You should configure the controller with the correct [workflow executor](workflow-executors.md) for your trade off between security and scalability.
 
 These settings can be set by default using [workflow defaults](default-workflow-specs.md).
 

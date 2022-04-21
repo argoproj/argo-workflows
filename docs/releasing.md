@@ -9,7 +9,7 @@ Create a cherry-pick issue to allow the team and community to comment on the rel
 1. Locate the previous cherry-pick issue
 2. Get the hash of the most recent commit still available on the previous issue
 3. Generate new issue contents:
-    
+
     ```sh
     $ git checkout master # Ensure we are on master
     $ git log --pretty=format:"%an: %s %h"  [COMMIT_HASH]..HEAD
@@ -25,14 +25,14 @@ release branch. There should be a single release branch per minor release (e.g. 
 1. Checkout the release branch and cherry-pick commits
 
     ```sh
-    $ git checkout relesae-3.0
+    $ git checkout release-3.0
     $ git cherry-pick [COMMIT_IDS...]
     ```
 
 2. Hope for few merge conflicts!
 
-    A merge conflict during cherry-picking usually means the commit is based on another commit that should be 
-    cherry-picked first. In case of a merge conflict, you can undo the cherry-picking by `git cherry-pick --abort` and 
+    A merge conflict during cherry-picking usually means the commit is based on another commit that should be
+    cherry-picked first. In case of a merge conflict, you can undo the cherry-picking by `git cherry-pick --abort` and
     revisit the list of commits to make sure the prior commits are cherry-picked as well.
 
 3. Once done cherry-picking, push the release branch to ensure the branch can build and all tests pass.
@@ -59,14 +59,14 @@ Then follow all the normal steps. You should delete the `argo` folder once the r
 > Before v3.1
 
 1. Releasing requires a clean tree state, so back-up any untracked files in your Git directory.
-   
+
    **Only once your files are backed up**, run:
       ```shell
        $ git clean -fdx  # WARNING: Will delete untracked files!
       ```
 
 2. To generate new manifests and perform basic checks:
-   
+
       ```shell
       $ make prepare-release -B VERSION=v3.0.3
       ```
@@ -106,14 +106,14 @@ The release will then be done automatically by a Github action.
    $ docker run argoproj/workflow-controller:v3.0.3 version
    $ docker run argoproj/argocli:v3.0.3 version
    ```
-   
+
 1. Check the correct versions are printed. Ensure the `GitTreeState` is `Clean`.
 
    ```sh
    $ ./dist/argo-darwin-amd64 version
    ```
 
-1. Check the manifests contain the correct tags (search for `v3.0.3`): [https://raw.githubusercontent.com/argoproj/argo-workflows/v3.0.3/manifests/install.yaml](https://raw.githubusercontent.com/argoproj/argo-workflows/v3.0.3/manifests/install.yaml) 
+1. Check the manifests contain the correct tags (search for `v3.0.3`): [https://raw.githubusercontent.com/argoproj/argo-workflows/v3.0.3/manifests/install.yaml](https://raw.githubusercontent.com/argoproj/argo-workflows/v3.0.3/manifests/install.yaml)
 
 1. Check the manifests apply: `kubectl -n argo apply -f https://raw.githubusercontent.com/argoproj/argo-workflows/v3.0.3/manifests/install.yaml`
 
@@ -194,7 +194,7 @@ brew bump-formula-pr argo --version 3.0.3
 ```
 
 Check that Homebrew was successfully updated after the PR was merged:
- 
+
  ```
  brew upgrade argo
  /usr/local/bin/argo version
@@ -222,4 +222,4 @@ Finally, press publish on the GitHub release. Congrats, you're done!
 
 > v3.1 and after
 
-This is done automatically by a Github action. 
+This is done automatically by a Github action.

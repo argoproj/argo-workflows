@@ -6,7 +6,7 @@
 
 ## Introduction
 
-`CronWorkflow` are workflows that run on a preset schedule. They are designed to be converted from `Workflow` easily and to mimick the same options as Kubernetes `CronJob`. In essence, `CronWorkflow` = `Workflow` + some specific cron options.
+`CronWorkflow` are workflows that run on a preset schedule. They are designed to be converted from `Workflow` easily and to mimic the same options as Kubernetes `CronJob`. In essence, `CronWorkflow` = `Workflow` + some specific cron options.
 
 ## `CronWorkflow` Spec
 
@@ -35,7 +35,7 @@ spec:
 
 `CronWorkflow.spec.workflowSpec` is the same type as `Workflow.spec` and serves as a template for `Workflow` objects that are created from it. Everything under this spec will be converted to a `Workflow`.
 
-The resuling `Workflow` name will be a generated name based on the `CronWorkflow` name. In this example it could be something like `test-cron-wf-tj6fe`.
+The resulting `Workflow` name will be a generated name based on the `CronWorkflow` name. In this example it could be something like `test-cron-wf-tj6fe`.
 
 `CronWorkflow.spec.workflowMetadata` can be used to add `labels` and `annotations`.
 
@@ -65,7 +65,7 @@ This setting can also be configured in tandem with `concurrencyPolicy` to achiev
 
 Daylight Saving (DST) is taken into account when using timezone. This means that, depending on the local time of the scheduled job, argo will schedule the workflow once, twice, or not at all when the clock moves forward or back.
 
-For example, with timezone set at `America/Los_Angeles`, we have daylight saving 
+For example, with timezone set at `America/Los_Angeles`, we have daylight saving
 
 - +1 hour (DST start) at 2020-03-08 02:00:00:
 

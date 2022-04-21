@@ -2,7 +2,7 @@
 
 
 # The API for an executor plugin.
-  
+
 
 ## Informations
 
@@ -28,7 +28,7 @@
 | Method  | URI     | Name   | Summary |
 |---------|---------|--------|---------|
 | POST | /api/v1/template.execute | [execute template](#execute-template) |  |
-  
+
 
 
 ## Paths
@@ -57,8 +57,8 @@ POST /api/v1/template.execute
 Status: OK
 
 ###### <span id="execute-template-200-schema"></span> Schema
-   
-  
+
+
 
 [ExecuteTemplateReply](#execute-template-reply)
 
@@ -71,7 +71,7 @@ Status: OK
 must also be in the same AWS zone as the kubelet. An AWS EBS disk
 can only be mounted as read/write once. AWS EBS volumes support
 ownership management and SELinux relabeling.
-  
+
 
 
 
@@ -104,7 +104,7 @@ More info: https://kubernetes.io/docs/concepts/storage/volumes#awselasticblockst
 ### <span id="affinity"></span> Affinity
 
 
-  
+
 
 
 
@@ -122,7 +122,7 @@ More info: https://kubernetes.io/docs/concepts/storage/volumes#awselasticblockst
 
 
 > +kubebuilder:validation:Type=number
-  
+
 
 
 
@@ -133,7 +133,7 @@ More info: https://kubernetes.io/docs/concepts/storage/volumes#awselasticblockst
 
 > It will unmarshall int64, int32, float64, float32, boolean, a plain string and represents it as string.
 It will marshall back to string - marshalling is not symmetric.
-  
+
 
 
 
@@ -148,7 +148,7 @@ It will marshall back to string - marshalling is not symmetric. |  |
 
 
 > ArchiveStrategy describes how to archive files/directory when saving artifacts
-  
+
 
 
 
@@ -168,7 +168,7 @@ It will marshall back to string - marshalling is not symmetric. |  |
 
 
 > Arguments to a template
-  
+
 
 
 
@@ -189,7 +189,7 @@ It will marshall back to string - marshalling is not symmetric. |  |
 
 
 > Artifact indicates an artifact to place at a specified path
-  
+
 
 
 
@@ -229,7 +229,7 @@ set when loading input artifacts. |  |
 > It is used as single artifact in the context of inputs/outputs (e.g. outputs.artifacts.artname).
 It is also used to describe the location of multiple artifacts such as the archive location
 of a single workflow step, which the executor will use as a default location to store its files.
-  
+
 
 
 
@@ -255,7 +255,7 @@ of a single workflow step, which the executor will use as a default location to 
 
 
 > ArtifactPaths expands a step from a collection of artifacts
-  
+
 
 
 
@@ -293,7 +293,7 @@ set when loading input artifacts. |  |
 
 
 > ArtifactoryArtifact is the location of an artifactory artifact
-  
+
 
 
 
@@ -312,14 +312,14 @@ set when loading input artifacts. |  |
 ### <span id="artifacts"></span> Artifacts
 
 
-  
+
 
 [][Artifact](#artifact)
 
 ### <span id="azure-data-disk-caching-mode"></span> AzureDataDiskCachingMode
 
 
-  
+
 
 | Name | Type | Go type | Default | Description | Example |
 |------|------|---------| ------- |-------------|---------|
@@ -330,7 +330,7 @@ set when loading input artifacts. |  |
 ### <span id="azure-data-disk-kind"></span> AzureDataDiskKind
 
 
-  
+
 
 | Name | Type | Go type | Default | Description | Example |
 |------|------|---------| ------- |-------------|---------|
@@ -341,7 +341,7 @@ set when loading input artifacts. |  |
 ### <span id="azure-disk-volume-source"></span> AzureDiskVolumeSource
 
 
-  
+
 
 
 
@@ -366,7 +366,7 @@ the ReadOnly setting in VolumeMounts.
 ### <span id="azure-file-volume-source"></span> AzureFileVolumeSource
 
 
-  
+
 
 
 
@@ -386,7 +386,7 @@ the ReadOnly setting in VolumeMounts.
 
 
 > Backoff is a backoff strategy to use within retryStrategy
-  
+
 
 
 
@@ -406,7 +406,7 @@ the ReadOnly setting in VolumeMounts.
 
 
 > Represents a source location of a volume to mount, managed by an external CSI driver
-  
+
 
 
 
@@ -436,7 +436,7 @@ driver. Consult your driver's documentation for supported values.
 
 
 > Cache is the configuration for the type of cache to be used
-  
+
 
 
 
@@ -453,7 +453,7 @@ driver. Consult your driver's documentation for supported values.
 ### <span id="capabilities"></span> Capabilities
 
 
-  
+
 
 
 
@@ -472,7 +472,7 @@ driver. Consult your driver's documentation for supported values.
 
 
 > Capability represent POSIX capabilities type
-  
+
 
 
 
@@ -487,7 +487,7 @@ driver. Consult your driver's documentation for supported values.
 
 > Represents a Ceph Filesystem mount that lasts the lifetime of a pod
 Cephfs volumes do not support ownership management or SELinux relabeling.
-  
+
 
 
 
@@ -521,7 +521,7 @@ More info: https://examples.k8s.io/volumes/cephfs/README.md#how-to-use-it
 > A Cinder volume must exist before mounting to a container.
 The volume must also be in the same region as the kubelet.
 Cinder volumes support ownership management and SELinux relabeling.
-  
+
 
 
 
@@ -551,7 +551,7 @@ More info: https://examples.k8s.io/mysql-cinder-pd/README.md |  |
 
 > The contents of the target ConfigMap's Data field will represent the
 key-value pairs as environment variables.
-  
+
 
 
 
@@ -573,7 +573,7 @@ TODO: Add other useful fields. apiVersion, kind, uid?
 ### <span id="config-map-key-selector"></span> ConfigMapKeySelector
 
 
-  
+
 
 
 
@@ -599,7 +599,7 @@ projected volume as files using the keys in the Data field as the file names,
 unless the items element is populated with specific mappings of keys to paths.
 Note that this is identical to a configmap volume source without the default
 mode.
-  
+
 
 
 
@@ -633,7 +633,7 @@ TODO: Add other useful fields. apiVersion, kind, uid?
 volume as files using the keys in the Data field as the file names, unless
 the items element is populated with specific mappings of keys to paths.
 ConfigMap volumes support ownership management and SELinux relabeling.
-  
+
 
 
 
@@ -671,7 +671,7 @@ TODO: Add other useful fields. apiVersion, kind, uid?
 ### <span id="container"></span> Container
 
 
-  
+
 
 
 
@@ -781,7 +781,7 @@ Cannot be updated.
 ### <span id="container-node"></span> ContainerNode
 
 
-  
+
 
 
 
@@ -892,7 +892,7 @@ Cannot be updated.
 ### <span id="container-port"></span> ContainerPort
 
 
-  
+
 
 
 
@@ -920,7 +920,7 @@ referred to by services.
 ### <span id="container-set-template"></span> ContainerSetTemplate
 
 
-  
+
 
 
 
@@ -937,7 +937,7 @@ referred to by services.
 
 
 > It can be specified if the workflow should continue when the pod errors, fails or both.
-  
+
 
 
 
@@ -956,7 +956,7 @@ referred to by services.
 
 
 > Counter is a Counter prometheus metric
-  
+
 
 
 
@@ -974,7 +974,7 @@ referred to by services.
 
 
 > CreateS3BucketOptions options used to determine automatic automatic bucket-creation process
-  
+
 
 
 
@@ -992,7 +992,7 @@ referred to by services.
 
 
 > DAGTask represents a node in the graph during DAG execution
-  
+
 
 
 
@@ -1027,7 +1027,7 @@ which is expected to be a JSON list. |  |
 
 
 > DAGTemplate is a template subtype for directed acyclic graph templates
-  
+
 
 
 
@@ -1054,7 +1054,7 @@ More info and example about this feature at https://github.com/argoproj/argo-wor
 
 
 > Data is a data template
-  
+
 
 
 
@@ -1073,7 +1073,7 @@ More info and example about this feature at https://github.com/argoproj/argo-wor
 
 
 > DataSource sources external data into a data template
-  
+
 
 
 
@@ -1092,7 +1092,7 @@ More info and example about this feature at https://github.com/argoproj/argo-wor
 
 > Note that this is identical to a downwardAPI volume source without the default
 mode.
-  
+
 
 
 
@@ -1111,7 +1111,7 @@ mode.
 
 
 > DownwardAPIVolumeFile represents information to create the file containing the pod field
-  
+
 
 
 
@@ -1138,7 +1138,7 @@ mode, like fsGroup, and the result can be other mode bits set.
 
 
 > Downward API volumes support ownership management and SELinux relabeling.
-  
+
 
 
 
@@ -1168,7 +1168,7 @@ mode, like fsGroup, and the result can be other mode bits set.
 > Duration is a wrapper around time.Duration which supports correct
 marshaling to YAML and JSON. In particular, it marshals into strings, which
 can be used as map keys in json.
-  
+
 
 
 
@@ -1178,7 +1178,7 @@ can be used as map keys in json.
 
 
 > Empty directory volumes support ownership management and SELinux relabeling.
-  
+
 
 
 
@@ -1197,7 +1197,7 @@ can be used as map keys in json.
 
 
 > EnvFromSource represents the source of a set of ConfigMaps
-  
+
 
 
 
@@ -1217,7 +1217,7 @@ can be used as map keys in json.
 ### <span id="env-var"></span> EnvVar
 
 
-  
+
 
 
 
@@ -1242,7 +1242,7 @@ Defaults to "".
 ### <span id="env-var-source"></span> EnvVarSource
 
 
-  
+
 
 
 
@@ -1260,7 +1260,7 @@ Defaults to "".
 ### <span id="ephemeral-volume-source"></span> EphemeralVolumeSource
 
 
-  
+
 
 
 
@@ -1275,7 +1275,7 @@ Defaults to "".
 ### <span id="exec-action"></span> ExecAction
 
 
-  
+
 
 
 
@@ -1295,7 +1295,7 @@ Exit status of 0 is treated as live/healthy and non-zero is unhealthy.
 ### <span id="execute-template-args"></span> ExecuteTemplateArgs
 
 
-  
+
 
 
 
@@ -1311,7 +1311,7 @@ Exit status of 0 is treated as live/healthy and non-zero is unhealthy.
 ### <span id="execute-template-reply"></span> ExecuteTemplateReply
 
 
-  
+
 
 
 
@@ -1327,7 +1327,7 @@ Exit status of 0 is treated as live/healthy and non-zero is unhealthy.
 ### <span id="executor-config"></span> ExecutorConfig
 
 
-  
+
 
 
 
@@ -1344,7 +1344,7 @@ Exit status of 0 is treated as live/healthy and non-zero is unhealthy.
 
 > Fibre Channel volumes can only be mounted as read/write once.
 Fibre Channel volumes support ownership management and SELinux relabeling.
-  
+
 
 
 
@@ -1385,7 +1385,7 @@ If a key maps to an empty Fields value, the field that key represents is part of
 
 The exact format is defined in sigs.k8s.io/structured-merge-diff
 +protobuf.options.(gogoproto.goproto_stringer)=false
-  
+
 
 
 
@@ -1396,7 +1396,7 @@ The exact format is defined in sigs.k8s.io/structured-merge-diff
 
 > FlexVolume represents a generic volume resource that is
 provisioned/attached using an exec based plugin.
-  
+
 
 
 
@@ -1425,7 +1425,7 @@ the ReadOnly setting in VolumeMounts.
 
 > One and only one of datasetName and datasetUUID should be set.
 Flocker volumes do not support ownership management or SELinux relabeling.
-  
+
 
 
 
@@ -1450,7 +1450,7 @@ should be considered as deprecated
 also be in the same GCE project and zone as the kubelet. A GCE PD
 can only be mounted as read/write once or read-only many times. GCE
 PDs support ownership management and SELinux relabeling.
-  
+
 
 
 
@@ -1485,7 +1485,7 @@ More info: https://kubernetes.io/docs/concepts/storage/volumes#gcepersistentdisk
 
 
 > GCSArtifact is the location of a GCS artifact
-  
+
 
 
 
@@ -1505,7 +1505,7 @@ More info: https://kubernetes.io/docs/concepts/storage/volumes#gcepersistentdisk
 
 
 > Gauge is a Gauge prometheus metric
-  
+
 
 
 
@@ -1524,7 +1524,7 @@ More info: https://kubernetes.io/docs/concepts/storage/volumes#gcepersistentdisk
 
 
 > GitArtifact is the location of an git artifact
-  
+
 
 
 
@@ -1553,7 +1553,7 @@ number of commits from the branch tip |  |
 > DEPRECATED: GitRepo is deprecated. To provision a container with a git repo, mount an
 EmptyDir into an InitContainer that clones the repo using git, then mount the EmptyDir
 into the Pod's container.
-  
+
 
 
 
@@ -1578,7 +1578,7 @@ the subdirectory with the given name.
 
 
 > Glusterfs volumes do not support ownership management or SELinux relabeling.
-  
+
 
 
 
@@ -1603,7 +1603,7 @@ More info: https://examples.k8s.io/volumes/glusterfs/README.md#create-a-pod
 
 
 > HDFSArtifact is the location of an HDFS artifact
-  
+
 
 
 
@@ -1633,7 +1633,7 @@ It must be set if keytab is used. |  |
 ### <span id="http"></span> HTTP
 
 
-  
+
 
 
 
@@ -1653,7 +1653,7 @@ It must be set if keytab is used. |  |
 
 
 > HTTPArtifact allows an file served on HTTP to be placed as an input artifact in a container
-  
+
 
 
 
@@ -1671,7 +1671,7 @@ It must be set if keytab is used. |  |
 ### <span id="http-get-action"></span> HTTPGetAction
 
 
-  
+
 
 
 
@@ -1694,7 +1694,7 @@ It must be set if keytab is used. |  |
 ### <span id="http-header"></span> HTTPHeader
 
 
-  
+
 
 
 
@@ -1711,7 +1711,7 @@ It must be set if keytab is used. |  |
 ### <span id="http-header-source"></span> HTTPHeaderSource
 
 
-  
+
 
 
 
@@ -1728,7 +1728,7 @@ It must be set if keytab is used. |  |
 
 > Handler defines a specific action that should be taken
 TODO: pass structured data to these actions, and document that data here.
-  
+
 
 
 
@@ -1748,7 +1748,7 @@ TODO: pass structured data to these actions, and document that data here.
 
 
 > Header indicate a key-value request header to be used when fetching artifacts over HTTP
-  
+
 
 
 
@@ -1767,7 +1767,7 @@ TODO: pass structured data to these actions, and document that data here.
 
 
 > Histogram is a Histogram prometheus metric
-  
+
 
 
 
@@ -1787,7 +1787,7 @@ TODO: pass structured data to these actions, and document that data here.
 
 > HostAlias holds the mapping between IP and hostnames that will be injected as an entry in the
 pod's hosts file.
-  
+
 
 
 
@@ -1805,7 +1805,7 @@ pod's hosts file.
 ### <span id="host-path-type"></span> HostPathType
 
 
-  
+
 
 | Name | Type | Go type | Default | Description | Example |
 |------|------|---------| ------- |-------------|---------|
@@ -1817,7 +1817,7 @@ pod's hosts file.
 
 
 > Host path volumes do not support ownership management or SELinux relabeling.
-  
+
 
 
 
@@ -1839,7 +1839,7 @@ More info: https://kubernetes.io/docs/concepts/storage/volumes#hostpath |  |
 
 > ISCSI volumes can only be mounted as read/write once.
 ISCSI volumes support ownership management and SELinux relabeling.
-  
+
 
 
 
@@ -1884,7 +1884,7 @@ is other than default (typically TCP ports 860 and 3260). |  |
 
 
 > Inputs are the mechanism for passing parameters, artifacts, volumes from one template to another
-  
+
 
 
 
@@ -1907,7 +1907,7 @@ is other than default (typically TCP ports 860 and 3260). |  |
 > +protobuf=true
 +protobuf.options.(gogoproto.goproto_stringer)=false
 +k8s:openapi-gen=true
-  
+
 
 
 
@@ -1928,7 +1928,7 @@ is other than default (typically TCP ports 860 and 3260). |  |
 
 > +protobuf.options.(gogoproto.goproto_stringer)=false
 +kubebuilder:validation:Type=object
-  
+
 
 
 
@@ -1937,7 +1937,7 @@ is other than default (typically TCP ports 860 and 3260). |  |
 ### <span id="key-to-path"></span> KeyToPath
 
 
-  
+
 
 
 
@@ -1967,7 +1967,7 @@ May not start with the string '..'. |  |
 matchExpressions are ANDed. An empty label selector matches all objects. A null
 label selector matches no objects.
 +structType=atomic
-  
+
 
 
 
@@ -1989,7 +1989,7 @@ operator is "In", and the values array contains only "value". The requirements a
 ### <span id="label-selector-operator"></span> LabelSelectorOperator
 
 
-  
+
 
 | Name | Type | Go type | Default | Description | Example |
 |------|------|---------| ------- |-------------|---------|
@@ -2002,7 +2002,7 @@ operator is "In", and the values array contains only "value". The requirements a
 
 > A label selector requirement is a selector that contains values, a key, and an operator that
 relates the key and values.
-  
+
 
 
 
@@ -2030,7 +2030,7 @@ merge patch.
 > Lifecycle describes actions that the management system should take in response to container lifecycle
 events. For the PostStart and PreStop lifecycle handlers, management of the container blocks
 until the action is complete, unless the container process fails, in which case the handler is aborted.
-  
+
 
 
 
@@ -2048,7 +2048,7 @@ until the action is complete, unless the container process fails, in which case 
 ### <span id="lifecycle-hook"></span> LifecycleHook
 
 
-  
+
 
 
 
@@ -2064,7 +2064,7 @@ until the action is complete, unless the container process fails, in which case 
 ### <span id="lifecycle-hooks"></span> LifecycleHooks
 
 
-  
+
 
 [LifecycleHooks](#lifecycle-hooks)
 
@@ -2073,7 +2073,7 @@ until the action is complete, unless the container process fails, in which case 
 
 > LocalObjectReference contains enough information to let you locate the
 referenced object inside the same namespace.
-  
+
 
 
 
@@ -2095,7 +2095,7 @@ TODO: Add other useful fields. apiVersion, kind, uid?
 
 > ManagedFieldsEntry is a workflow-id, a FieldSet and the group version of the resource
 that the fieldset applies to.
-  
+
 
 
 
@@ -2121,7 +2121,7 @@ There is currently only one possible value: "FieldsV1" |  |
 ### <span id="managed-fields-operation-type"></span> ManagedFieldsOperationType
 
 
-  
+
 
 | Name | Type | Go type | Default | Description | Example |
 |------|------|---------| ------- |-------------|---------|
@@ -2133,7 +2133,7 @@ There is currently only one possible value: "FieldsV1" |  |
 
 
 > Memoization enables caching for the Outputs of the template
-  
+
 
 
 
@@ -2154,7 +2154,7 @@ than the MaxAge, it will be ignored. |  |
 
 
 > Pod metdata
-  
+
 
 
 
@@ -2173,7 +2173,7 @@ than the MaxAge, it will be ignored. |  |
 
 
 > MetricLabel is a single label for a prometheus metric
-  
+
 
 
 
@@ -2192,7 +2192,7 @@ than the MaxAge, it will be ignored. |  |
 
 
 > Metrics are a list of metrics emitted from a Workflow/Template
-  
+
 
 
 
@@ -2209,7 +2209,7 @@ than the MaxAge, it will be ignored. |  |
 ### <span id="mount-propagation-mode"></span> MountPropagationMode
 
 
-  
+
 
 | Name | Type | Go type | Default | Description | Example |
 |------|------|---------| ------- |-------------|---------|
@@ -2221,7 +2221,7 @@ than the MaxAge, it will be ignored. |  |
 
 
 > Mutex holds Mutex configuration
-  
+
 
 
 
@@ -2239,7 +2239,7 @@ than the MaxAge, it will be ignored. |  |
 
 
 > NFS volumes do not support ownership management or SELinux relabeling.
-  
+
 
 
 
@@ -2264,7 +2264,7 @@ More info: https://kubernetes.io/docs/concepts/storage/volumes#nfs |  |
 ### <span id="node-affinity"></span> NodeAffinity
 
 
-  
+
 
 
 
@@ -2289,7 +2289,7 @@ node(s) with the highest sum are the most preferred.
 ### <span id="node-phase"></span> NodePhase
 
 
-  
+
 
 | Name | Type | Go type | Default | Description | Example |
 |------|------|---------| ------- |-------------|---------|
@@ -2300,7 +2300,7 @@ node(s) with the highest sum are the most preferred.
 ### <span id="node-result"></span> NodeResult
 
 
-  
+
 
 
 
@@ -2320,7 +2320,7 @@ node(s) with the highest sum are the most preferred.
 > A node selector represents the union of the results of one or more label queries
 over a set of nodes; that is, it represents the OR of the selectors represented
 by the node selector terms.
-  
+
 
 
 
@@ -2339,7 +2339,7 @@ by the node selector terms.
 
 > A node selector operator is the set of operators that can be used in
 a node selector requirement.
-  
+
 
 
 
@@ -2355,7 +2355,7 @@ a node selector requirement. |  |
 
 > A node selector requirement is a selector that contains values, a key, and an operator
 that relates the key and values.
-  
+
 
 
 
@@ -2382,7 +2382,7 @@ This array is replaced during a strategic merge patch.
 > A null or empty node selector term matches no objects. The requirements of
 them are ANDed.
 The TopologySelectorTerm type implements a subset of the NodeSelectorTerm.
-  
+
 
 
 
@@ -2405,7 +2405,7 @@ The TopologySelectorTerm type implements a subset of the NodeSelectorTerm.
 > NoneStrategy indicates to skip tar process and upload the files or directory tree as independent
 files. Note that if the artifact is a directory, the artifact driver must support the ability to
 save/load the directory appropriately.
-  
+
 
 
 
@@ -2415,7 +2415,7 @@ save/load the directory appropriately.
 
 
 > OSSArtifact is the location of an Alibaba Cloud OSS artifact
-  
+
 
 
 
@@ -2440,7 +2440,7 @@ save/load the directory appropriately.
 
 
 > OSSLifecycleRule specifies how to manage bucket's lifecycle
-  
+
 
 
 
@@ -2459,7 +2459,7 @@ save/load the directory appropriately.
 
 
 > +kubebuilder:validation:Type=object
-  
+
 
 
 
@@ -2468,7 +2468,7 @@ save/load the directory appropriately.
 ### <span id="object-field-selector"></span> ObjectFieldSelector
 
 
-  
+
 
 
 
@@ -2485,7 +2485,7 @@ save/load the directory appropriately.
 ### <span id="object-meta"></span> ObjectMeta
 
 
-  
+
 
 
 
@@ -2501,7 +2501,7 @@ save/load the directory appropriately.
 
 
 > Outputs hold parameters, artifacts, and results from a step
-  
+
 
 
 
@@ -2526,7 +2526,7 @@ save/load the directory appropriately.
 > OwnerReference contains enough information to let you identify an owning
 object. An owning object must be in the same namespace as the dependent, or
 be cluster-scoped, so there is no namespace field.
-  
+
 
 
 
@@ -2558,7 +2558,7 @@ More info: http://kubernetes.io/docs/user-guide/identifiers#names |  |
 
 
 > +kubebuilder:validation:Type=array
-  
+
 
 
 
@@ -2568,7 +2568,7 @@ More info: http://kubernetes.io/docs/user-guide/identifiers#names |  |
 
 
 > Parameter indicate a passed string parameter to a service template with an optional default value
-  
+
 
 
 
@@ -2591,7 +2591,7 @@ More info: http://kubernetes.io/docs/user-guide/identifiers#names |  |
 ### <span id="persistent-volume-access-mode"></span> PersistentVolumeAccessMode
 
 
-  
+
 
 | Name | Type | Go type | Default | Description | Example |
 |------|------|---------| ------- |-------------|---------|
@@ -2604,7 +2604,7 @@ More info: http://kubernetes.io/docs/user-guide/identifiers#names |  |
 
 > PersistentVolumeClaimSpec describes the common attributes of storage devices
 and allows a Source for provider-specific attributes
-  
+
 
 
 
@@ -2634,7 +2634,7 @@ More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#class-
 
 > PersistentVolumeClaimTemplate is used to produce
 PersistentVolumeClaim objects as part of an EphemeralVolumeSource.
-  
+
 
 
 
@@ -2761,7 +2761,7 @@ to be removed in 1.21 release.
 > This volume finds the bound PV and mounts that volume for the pod. A
 PersistentVolumeClaimVolumeSource is, essentially, a wrapper around another
 type of volume that is owned by someone else (the system).
-  
+
 
 
 
@@ -2782,7 +2782,7 @@ Default false.
 ### <span id="persistent-volume-mode"></span> PersistentVolumeMode
 
 
-  
+
 
 | Name | Type | Go type | Default | Description | Example |
 |------|------|---------| ------- |-------------|---------|
@@ -2793,7 +2793,7 @@ Default false.
 ### <span id="photon-persistent-disk-volume-source"></span> PhotonPersistentDiskVolumeSource
 
 
-  
+
 
 
 
@@ -2811,7 +2811,7 @@ Ex. "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified. |  |
 ### <span id="pod-affinity"></span> PodAffinity
 
 
-  
+
 
 
 
@@ -2849,7 +2849,7 @@ co-located (affinity) or not co-located (anti-affinity) with,
 where co-located is defined as running on a node whose value of
 the label with key <topologyKey> matches that of any node on which
 a pod of the set of pods is running
-  
+
 
 
 
@@ -2877,7 +2877,7 @@ Empty topologyKey is not allowed. |  |
 ### <span id="pod-anti-affinity"></span> PodAntiAffinity
 
 
-  
+
 
 
 
@@ -2911,7 +2911,7 @@ podAffinityTerm are intersected, i.e. all terms must be satisfied.
 
 > PodFSGroupChangePolicy holds policies that will be used for applying fsGroup to a volume
 when volume is mounted.
-  
+
 
 
 
@@ -2927,7 +2927,7 @@ when volume is mounted. |  |
 
 > Some fields are also present in container.securityContext.  Field values of
 container.securityContext take precedence over field values of PodSecurityContext.
-  
+
 
 
 
@@ -2983,7 +2983,7 @@ sysctls (by the container runtime) might fail to launch.
 ### <span id="portworx-volume-source"></span> PortworxVolumeSource
 
 
-  
+
 
 
 
@@ -3006,7 +3006,7 @@ the ReadOnly setting in VolumeMounts.
 
 > An empty preferred scheduling term matches all objects with implicit weight 0
 (i.e. it's a no-op). A null preferred scheduling term matches no objects (i.e. is also a no-op).
-  
+
 
 
 
@@ -3026,7 +3026,7 @@ the ReadOnly setting in VolumeMounts.
 
 > Probe describes a health check to be performed against a container to determine whether it is
 alive or ready to receive traffic.
-  
+
 
 
 
@@ -3071,7 +3071,7 @@ More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#cont
 ### <span id="proc-mount-type"></span> ProcMountType
 
 
-  
+
 
 | Name | Type | Go type | Default | Description | Example |
 |------|------|---------| ------- |-------------|---------|
@@ -3083,7 +3083,7 @@ More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#cont
 
 
 > Represents a projected volume source
-  
+
 
 
 
@@ -3109,7 +3109,7 @@ mode, like fsGroup, and the result can be other mode bits set.
 
 
 > Prometheus is a prometheus metric to be emitted
-  
+
 
 
 
@@ -3132,7 +3132,7 @@ mode, like fsGroup, and the result can be other mode bits set.
 ### <span id="protocol"></span> Protocol
 
 
-  
+
 
 | Name | Type | Go type | Default | Description | Example |
 |------|------|---------| ------- |-------------|---------|
@@ -3144,7 +3144,7 @@ mode, like fsGroup, and the result can be other mode bits set.
 
 
 > PullPolicy describes a policy for if/when to pull a container image
-  
+
 
 
 
@@ -3211,7 +3211,7 @@ cause implementors to also use a fixed point implementation.
 +protobuf.options.(gogoproto.goproto_stringer)=false
 +k8s:deepcopy-gen=true
 +k8s:openapi-gen=true
-  
+
 
 
 
@@ -3221,7 +3221,7 @@ cause implementors to also use a fixed point implementation.
 
 
 > Quobyte volumes do not support ownership management or SELinux relabeling.
-  
+
 
 
 
@@ -3254,7 +3254,7 @@ Defaults to serivceaccount user
 
 
 > RBD volumes support ownership management and SELinux relabeling.
-  
+
 
 
 
@@ -3298,7 +3298,7 @@ More info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it
 
 
 > RawArtifact allows raw string content to be placed as an artifact in a container
-  
+
 
 
 
@@ -3316,7 +3316,7 @@ More info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it
 
 
 > ResourceFieldSelector represents container resources (cpu, memory) and their output format
-  
+
 
 
 
@@ -3336,14 +3336,14 @@ More info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it
 ### <span id="resource-list"></span> ResourceList
 
 
-  
+
 
 [ResourceList](#resource-list)
 
 ### <span id="resource-requirements"></span> ResourceRequirements
 
 
-  
+
 
 
 
@@ -3360,7 +3360,7 @@ More info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it
 
 
 > ResourceTemplate is a template subtype to manipulate kubernetes resources
-  
+
 
 
 
@@ -3391,7 +3391,7 @@ of the k8s resource in which it is acceptable to proceed to the following step |
 ### <span id="retry-affinity"></span> RetryAffinity
 
 
-  
+
 
 
 
@@ -3407,7 +3407,7 @@ of the k8s resource in which it is acceptable to proceed to the following step |
 
 
 > In order to prevent running steps on the same host, it uses "kubernetes.io/hostname".
-  
+
 
 
 
@@ -3416,7 +3416,7 @@ of the k8s resource in which it is acceptable to proceed to the following step |
 ### <span id="retry-policy"></span> RetryPolicy
 
 
-  
+
 
 | Name | Type | Go type | Default | Description | Example |
 |------|------|---------| ------- |-------------|---------|
@@ -3428,7 +3428,7 @@ of the k8s resource in which it is acceptable to proceed to the following step |
 
 
 > RetryStrategy provides controls on how to retry a workflow step
-  
+
 
 
 
@@ -3451,7 +3451,7 @@ be retried and the retry strategy will be ignored |  |
 
 
 > S3Artifact is the location of an S3 artifact
-  
+
 
 
 
@@ -3479,7 +3479,7 @@ be retried and the retry strategy will be ignored |  |
 
 
 > S3EncryptionOptions used to determine encryption options during s3 operations
-  
+
 
 
 
@@ -3500,7 +3500,7 @@ be retried and the retry strategy will be ignored |  |
 
 
 > SELinuxOptions are the labels to be applied to the container
-  
+
 
 
 
@@ -3525,7 +3525,7 @@ be retried and the retry strategy will be ignored |  |
 
 
 > ScaleIOVolumeSource represents a persistent ScaleIO volume
-  
+
 
 
 
@@ -3564,7 +3564,7 @@ that is associated with this volume source. |  |
 
 
 > ScriptTemplate is a template subtype to enable scripting through code steps
-  
+
 
 
 
@@ -3679,7 +3679,7 @@ Cannot be updated.
 
 > Only one profile source may be set.
 +union
-  
+
 
 
 
@@ -3701,7 +3701,7 @@ Must only be set if type is "Localhost".
 ### <span id="seccomp-profile-type"></span> SeccompProfileType
 
 
-  
+
 
 | Name | Type | Go type | Default | Description | Example |
 |------|------|---------| ------- |-------------|---------|
@@ -3714,7 +3714,7 @@ Must only be set if type is "Localhost".
 
 > The contents of the target Secret's Data field will represent the
 key-value pairs as environment variables.
-  
+
 
 
 
@@ -3736,7 +3736,7 @@ TODO: Add other useful fields. apiVersion, kind, uid?
 ### <span id="secret-key-selector"></span> SecretKeySelector
 
 
-  
+
 
 
 
@@ -3761,7 +3761,7 @@ TODO: Add other useful fields. apiVersion, kind, uid?
 projected volume as files using the keys in the Data field as the file names.
 Note that this is identical to a secret volume source without the default
 mode.
-  
+
 
 
 
@@ -3794,7 +3794,7 @@ TODO: Add other useful fields. apiVersion, kind, uid?
 > The contents of the target Secret's Data field will be presented in a volume
 as files using the keys in the Data field as the file names.
 Secret volumes support ownership management and SELinux relabeling.
-  
+
 
 
 
@@ -3833,7 +3833,7 @@ More info: https://kubernetes.io/docs/concepts/storage/volumes#secret
 
 > Some fields are present in both SecurityContext and PodSecurityContext.  When both
 are set, the values in SecurityContext take precedence.
-  
+
 
 
 
@@ -3886,7 +3886,7 @@ PodSecurityContext, the value specified in SecurityContext takes precedence.
 
 
 > SemaphoreRef is a reference of Semaphore
-  
+
 
 
 
@@ -3904,7 +3904,7 @@ PodSecurityContext, the value specified in SecurityContext takes precedence.
 
 
 > Sequence expands a workflow step into numeric range
-  
+
 
 
 
@@ -3928,7 +3928,7 @@ PodSecurityContext, the value specified in SecurityContext takes precedence.
 volume. This projection can be used to insert a service account token into
 the pods runtime filesystem for use against APIs (Kubernetes API Server or
 otherwise).
-  
+
 
 
 
@@ -3958,7 +3958,7 @@ token into. |  |
 ### <span id="storage-medium"></span> StorageMedium
 
 
-  
+
 
 | Name | Type | Go type | Default | Description | Example |
 |------|------|---------| ------- |-------------|---------|
@@ -3969,7 +3969,7 @@ token into. |  |
 ### <span id="storage-o-s-volume-source"></span> StorageOSVolumeSource
 
 
-  
+
 
 
 
@@ -4000,7 +4000,7 @@ Namespaces that do not pre-exist within StorageOS will be created.
 ### <span id="supplied-value-from"></span> SuppliedValueFrom
 
 
-  
+
 
 [interface{}](#interface)
 
@@ -4008,7 +4008,7 @@ Namespaces that do not pre-exist within StorageOS will be created.
 
 
 > SuspendTemplate is a template subtype to suspend a workflow at a predetermined point in time
-  
+
 
 
 
@@ -4026,7 +4026,7 @@ Namespaces that do not pre-exist within StorageOS will be created.
 
 
 > Synchronization holds synchronization lock configuration
-  
+
 
 
 
@@ -4045,7 +4045,7 @@ Namespaces that do not pre-exist within StorageOS will be created.
 
 
 > Sysctl defines a kernel parameter to be set
-  
+
 
 
 
@@ -4064,7 +4064,7 @@ Namespaces that do not pre-exist within StorageOS will be created.
 
 
 > TCPSocketAction describes an action based on opening a socket
-  
+
 
 
 
@@ -4083,7 +4083,7 @@ Namespaces that do not pre-exist within StorageOS will be created.
 ### <span id="taint-effect"></span> TaintEffect
 
 
-  
+
 
 | Name | Type | Go type | Default | Description | Example |
 |------|------|---------| ------- |-------------|---------|
@@ -4095,7 +4095,7 @@ Namespaces that do not pre-exist within StorageOS will be created.
 
 
 > TarStrategy will tar and gzip the file or directory when saving
-  
+
 
 
 
@@ -4114,7 +4114,7 @@ Defaults to gzip.DefaultCompression. |  |
 
 
 > Template is a reusable and composable unit of execution in a workflow
-  
+
 
 
 
@@ -4176,7 +4176,7 @@ Sidecars are automatically killed when the main container completes
 | steps | [][ParallelSteps](#parallel-steps)| `[]ParallelSteps` |  | | Steps define a series of sequential/parallel workflow steps |  |
 | suspend | [SuspendTemplate](#suspend-template)| `SuspendTemplate` |  | |  |  |
 | synchronization | [Synchronization](#synchronization)| `Synchronization` |  | |  |  |
-| timeout | string| `string` |  | | Timout allows to set the total node execution timeout duration counting from the node's start time.
+| timeout | string| `string` |  | | Timeout allows to set the total node execution timeout duration counting from the node's start time.
 This duration also includes time in which the node spends in Pending state. This duration may not be applied to Step or DAG templates. |  |
 | tolerations | [][Toleration](#toleration)| `[]*Toleration` |  | | Tolerations to apply to workflow pods.
 +patchStrategy=merge
@@ -4190,7 +4190,7 @@ This duration also includes time in which the node spends in Pending state. This
 ### <span id="template-ref"></span> TemplateRef
 
 
-  
+
 
 
 
@@ -4207,7 +4207,7 @@ This duration also includes time in which the node spends in Pending state. This
 ### <span id="termination-message-policy"></span> TerminationMessagePolicy
 
 
-  
+
 
 | Name | Type | Go type | Default | Description | Example |
 |------|------|---------| ------- |-------------|---------|
@@ -4221,7 +4221,7 @@ This duration also includes time in which the node spends in Pending state. This
 > +protobuf.options.marshal=false
 +protobuf.as=Timestamp
 +protobuf.options.(gogoproto.goproto_stringer)=false
-  
+
 
 
 
@@ -4232,7 +4232,7 @@ This duration also includes time in which the node spends in Pending state. This
 
 > The pod this Toleration is attached to tolerates any taint that matches
 the triple <key,value,effect> using the matching operator <operator>.
-  
+
 
 
 
@@ -4261,7 +4261,7 @@ If the operator is Exists, the value should be empty, otherwise just a regular s
 ### <span id="toleration-operator"></span> TolerationOperator
 
 
-  
+
 
 | Name | Type | Go type | Default | Description | Example |
 |------|------|---------| ------- |-------------|---------|
@@ -4272,14 +4272,14 @@ If the operator is Exists, the value should be empty, otherwise just a regular s
 ### <span id="transformation"></span> Transformation
 
 
-  
+
 
 [][TransformationStep](#transformation-step)
 
 ### <span id="transformation-step"></span> TransformationStep
 
 
-  
+
 
 
 
@@ -4294,7 +4294,7 @@ If the operator is Exists, the value should be empty, otherwise just a regular s
 ### <span id="type"></span> Type
 
 
-  
+
 
 | Name | Type | Go type | Default | Description | Example |
 |------|------|---------| ------- |-------------|---------|
@@ -4307,7 +4307,7 @@ If the operator is Exists, the value should be empty, otherwise just a regular s
 
 > TypedLocalObjectReference contains enough information to let you locate the
 typed referenced object inside the same namespace.
-  
+
 
 
 
@@ -4332,7 +4332,7 @@ For any other third-party types, APIGroup is required.
 > UID is a type that holds unique ID values, including UUIDs.  Because we
 don't ONLY use UUIDs, this is an alias to string.  Being a type captures
 intent and helps make sure that UIDs and names do not get conflated.
-  
+
 
 
 
@@ -4348,7 +4348,7 @@ intent and helps make sure that UIDs and names do not get conflated. |  |
 
 
 > URIScheme identifies the scheme used for connection to a host for Get actions
-  
+
 
 
 
@@ -4361,7 +4361,7 @@ intent and helps make sure that UIDs and names do not get conflated. |  |
 ### <span id="user-container"></span> UserContainer
 
 
-  
+
 
 
 
@@ -4476,7 +4476,7 @@ Cannot be updated.
 
 
 > ValueFrom describes a location in which to obtain the value to a parameter
-  
+
 
 
 
@@ -4502,7 +4502,7 @@ Cannot be updated.
 ### <span id="volume"></span> Volume
 
 
-  
+
 
 
 
@@ -4548,7 +4548,7 @@ More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/nam
 ### <span id="volume-device"></span> VolumeDevice
 
 
-  
+
 
 
 
@@ -4564,7 +4564,7 @@ More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/nam
 ### <span id="volume-mount"></span> VolumeMount
 
 
-  
+
 
 
 
@@ -4594,7 +4594,7 @@ SubPathExpr and SubPath are mutually exclusive.
 
 
 > Projection that may be projected along with other supported volume types
-  
+
 
 
 
@@ -4614,7 +4614,7 @@ SubPathExpr and SubPath are mutually exclusive.
 ### <span id="vsphere-virtual-disk-volume-source"></span> VsphereVirtualDiskVolumeSource
 
 
-  
+
 
 
 
@@ -4638,7 +4638,7 @@ Ex. "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified.
 
 
 > The weights of all of the matched WeightedPodAffinityTerm fields are added per-node to find the most preferred node(s)
-  
+
 
 
 
@@ -4657,7 +4657,7 @@ in the range 1-100. |  |
 ### <span id="windows-security-context-options"></span> WindowsSecurityContextOptions
 
 
-  
+
 
 
 
@@ -4682,7 +4682,7 @@ PodSecurityContext, the value specified in SecurityContext takes precedence.
 ### <span id="workflow"></span> Workflow
 
 
-  
+
 
 
 
@@ -4698,7 +4698,7 @@ PodSecurityContext, the value specified in SecurityContext takes precedence.
 
 
 > ZipStrategy will unzip zipped input artifacts
-  
+
 
 
 
