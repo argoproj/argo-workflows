@@ -2,6 +2,7 @@
 
 ## v3.3.2 (2022-04-20)
 
+ * [35492a170](https://github.com/argoproj/argo-workflows/commit/35492a1700a0f279694cac874b6d9c07a08265d1) fix: Remove binaries from Windows image. Fixes #8417 (#8420)
  * [bfc3b6cad](https://github.com/argoproj/argo-workflows/commit/bfc3b6cad02c0a38141201d7f77e14e3f0e637a4) fix: Skip TestRunAsNonRootWithOutputParams
  * [1c34f9801](https://github.com/argoproj/argo-workflows/commit/1c34f9801b502d1566064726145ce5d68124b213) fix: go.sum
  * [be35b54b0](https://github.com/argoproj/argo-workflows/commit/be35b54b00e44339f8dcb63d0411bc80f8983764) fix: create cache lint
@@ -47,6 +48,7 @@
  * Aatman
  * Alex Collins
  * Dillen Padhiar
+ * Markus Lippert
  * Michael Weibel
  * Rohan Kumar
  * Saravanan Balasubramanian
