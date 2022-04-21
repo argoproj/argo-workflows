@@ -18,7 +18,6 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/gorilla/mux"
 	"google.golang.org/grpc/metadata"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/rand"
@@ -53,17 +52,6 @@ func NewArtifactServer(authN auth.Gatekeeper, hydrator hydrator.Interface, wfArc
 
 func newArtifactServer(authN auth.Gatekeeper, hydrator hydrator.Interface, wfArchive sqldb.WorkflowArchive, instanceIDService instanceid.Service, artDriverFactory artifact.NewDriverFunc, artifactRepositories artifactrepositories.Interface) *ArtifactServer {
 	return &ArtifactServer{authN, hydrator, wfArchive, instanceIDService, artDriverFactory, artifactRepositories}
-}
-
-func (a *ArtifactServer) HandlerFunc() http.HandlerFunc {
-	h := mux.NewRouter()
-	h.HandleFunc("/workflow-artifacts/v2/artifact-descriptions/{namespace}/{idDiscrim}/{id}/{nodeId}/{artifactDiscrim}/{artifactName}", a.getArtifactDescription)
-	h.HandleFunc("/workflow-artifacts/v2/artifacts/{namespace}/{idDiscrim}/{id}/{nodeId}/{artifactDiscrim}/{artifactName}", a.getArtifact)
-	h.HandleFunc("/workflow-artifacts/v2/artifact-items/{namespace}/{idDiscrim}/{id}/{nodeId}/{artifactDiscrim}/{artifactName}/{item}", a.getArtifactItem)
-	return func(w http.ResponseWriter, r *http.Request) {
-		log.WithField("url", r.URL).Info("artifact server request")
-		h.ServeHTTP(w, r)
-	}
 }
 
 func (a *ArtifactServer) gateKeeping(r *http.Request, ns types.NamespacedRequest) (context.Context, error) {
@@ -187,15 +175,20 @@ func (a *ArtifactServer) Redirect(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, fmt.Sprintf("/workflow-artifacts/v2/artifacts/%s/%s/%s/%s/%s/%s", namespace, idDiscrim, id, nodeId, artifactDiscrim, artifactName), http.StatusMovedPermanently)
 }
 
-func (a *ArtifactServer) getArtifact(w http.ResponseWriter, r *http.Request) {
-	a.getArtifactItem(w, r)
-}
+func (a *ArtifactServer) GetArtifact(w http.ResponseWriter, r *http.Request) {
 
-func (a *ArtifactServer) getArtifactItem(w http.ResponseWriter, r *http.Request) {
-
-	vars := mux.Vars(r)
-	namespace, idDiscrim, id, nodeId, artifactDiscrim, artifactName := vars["namespace"], vars["idDiscrim"], vars["id"], vars["nodeId"], vars["artifactDiscrim"], vars["artifactName"]
-	item := vars["item"]
+	p := strings.Split(r.URL.Path, "/")
+	i := 4 // `/workflow-artifacts/v2/artifacts`
+	if len(p) < i+6 {
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
+	namespace, idDiscrim, id, nodeId, artifactDiscrim, artifactName := p[i], p[i+1], p[i+2], p[i+3], p[i+4], p[i+5]
+	// item is a sub-path, which means that HTML documents that have relative path images and links will work
+	item := ""
+	if len(p) >= i+7 {
+		item = strings.Join(p[i+6:], "/")
+	}
 
 	ctx, err := a.gateKeeping(r, types.NamespaceHolder(namespace))
 	if err != nil {
@@ -287,8 +280,8 @@ func (a *ArtifactServer) validateAccess(ctx context.Context, wf *wfv1.Workflow) 
 }
 
 type Item struct {
-	// Name is the file name within the archive
-	Name        string `json:"filename"`
+	// Filename is the file name within the archive
+	Filename    string `json:"filename"`
 	Size        int64  `json:"size"`
 	ContentType string `json:"contentType,omitempty"`
 }
@@ -299,10 +292,15 @@ type artifactDescription struct {
 	ContentType string `json:"contentType,omitempty"`
 }
 
-func (a *ArtifactServer) getArtifactDescription(w http.ResponseWriter, r *http.Request) {
+func (a *ArtifactServer) GetArtifactDescription(w http.ResponseWriter, r *http.Request) {
 
-	vars := mux.Vars(r)
-	namespace, idDiscrim, id, nodeId, artifactDiscrim, artifactName := vars["namespace"], vars["idDiscrim"], vars["id"], vars["nodeId"], vars["artifactDiscrim"], vars["artifactName"]
+	p := strings.Split(r.URL.Path, "/")
+	i := 4 // `/workflow-artifacts/v2/artifact-descriptions`
+	if len(p) < i+6 {
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
+	namespace, idDiscrim, id, nodeId, artifactDiscrim, artifactName := p[i], p[i+1], p[i+2], p[i+3], p[i+4], p[i+5]
 
 	ctx, err := a.gateKeeping(r, types.NamespaceHolder(namespace))
 	if err != nil {
@@ -339,7 +337,7 @@ func (a *ArtifactServer) getArtifactDescription(w http.ResponseWriter, r *http.R
 		}
 		tr := tar.NewReader(gr)
 		for {
-			header, err := tr.Next()
+			h, err := tr.Next()
 			if err == io.EOF {
 				break
 			}
@@ -348,9 +346,9 @@ func (a *ArtifactServer) getArtifactDescription(w http.ResponseWriter, r *http.R
 				return
 			}
 			d.Items = append(d.Items, Item{
-				Name:        header.Name,
-				Size:        header.FileInfo().Size(),
-				ContentType: mime.TypeByExtension(filepath.Ext(header.Name)),
+				Filename:    h.Name,
+				Size:        h.FileInfo().Size(),
+				ContentType: mime.TypeByExtension(filepath.Ext(h.Name)),
 			})
 		}
 	}

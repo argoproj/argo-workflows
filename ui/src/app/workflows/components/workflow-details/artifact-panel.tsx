@@ -42,9 +42,7 @@ export const ArtifactPanel = ({workflow, artifact, archived}: {workflow: Workflo
     }, [workflow.metadata.namespace, workflow.metadata.name, artifact.nodeId, artifact.artifactDiscrim, artifact.name]);
 
     useEffect(() => {
-        if (description?.items?.length === 1 && (description.items[0].contentType?.startsWith('text/') || showAnyway)) {
-            setSelectedItem(description.items[0].filename);
-        }
+        setSelectedItem((description?.items || []).find(item => showAnyway || item.contentType?.startsWith('text/'))?.filename);
     }, [description, showAnyway]);
 
     const idDiscrim = archived ? 'uid' : 'name';
@@ -52,7 +50,7 @@ export const ArtifactPanel = ({workflow, artifact, archived}: {workflow: Workflo
 
     const downloadUrl = uiUrl(`workflow-artifacts/v2/artifacts/${workflow.metadata.namespace}/${idDiscrim}/${id}/${artifact.nodeId}/${artifact.artifactDiscrim}/${artifact.name}`);
     const itemDownloadUrl = (item: string) =>
-        uiUrl(`workflow-artifacts/v2/artifact-items/${workflow.metadata.namespace}/${idDiscrim}/${id}/${artifact.nodeId}/${artifact.artifactDiscrim}/${artifact.name}/${item}`);
+        uiUrl(`workflow-artifacts/v2/artifacts/${workflow.metadata.namespace}/${idDiscrim}/${id}/${artifact.nodeId}/${artifact.artifactDiscrim}/${artifact.name}/${item}`);
 
     const filename = description?.filename;
 
@@ -65,6 +63,9 @@ export const ArtifactPanel = ({workflow, artifact, archived}: {workflow: Workflo
                     {description.items.map(item => (
                         <div className='row' key={item.filename}>
                             <div className='columns small-8'>
+                                <a href={itemDownloadUrl(item.filename)} target='_blank'>
+                                    <i className='fa fa-external-link-alt' />
+                                </a>{' '}
                                 <a onClick={() => setSelectedItem(item.filename)} className={item.filename === selectedItem && 'selectedItem'}>
                                     {item.filename}
                                 </a>

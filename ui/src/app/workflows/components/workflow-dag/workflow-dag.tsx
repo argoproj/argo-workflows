@@ -69,8 +69,8 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
         super(props);
         this.state = {
             expandNodes: new Set(),
-            showArtifacts: true,
-        }
+            showArtifacts: true
+        };
     }
 
     public render() {
@@ -261,10 +261,13 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
                                 classNames: 'Artifact'
                             });
                             const input = ad.artifactDiscrim === 'input';
-                            edges.set({v: input ? ad.urn : node.id, w: input ? node.id : ad.urn}, {
-                                label: ad.name,
-                                classNames: 'related'
-                            });
+                            edges.set(
+                                {v: input ? ad.urn : node.id, w: input ? node.id : ad.urn},
+                                {
+                                    label: ad.name,
+                                    classNames: 'related'
+                                }
+                            );
                         });
                 });
         }
