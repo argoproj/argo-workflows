@@ -1,6 +1,8 @@
 package s3
 
 import (
+	"bytes"
+	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -23,7 +25,7 @@ type mockS3Client struct {
 	mockedErrs map[string]error
 }
 
-func newMockS3Client(files map[string][]string, mockedErrs map[string]error) *mockS3Client {
+func newMockS3Client(files map[string][]string, mockedErrs map[string]error) argos3.S3Client {
 	return &mockS3Client{
 		files:      files,
 		mockedErrs: mockedErrs,
@@ -52,6 +54,10 @@ func (s *mockS3Client) PutDirectory(bucket, key, path string) error {
 // GetFile downloads a file to a local file path
 func (s *mockS3Client) GetFile(bucket, key, path string) error {
 	return s.getMockedErr("GetFile")
+}
+
+func (s *mockS3Client) OpenFile(bucket, key string) (io.ReadCloser, error) {
+	return io.NopCloser(&bytes.Buffer{}), s.getMockedErr("OpenFile")
 }
 
 // GetDirectory downloads a directory to a local file path
