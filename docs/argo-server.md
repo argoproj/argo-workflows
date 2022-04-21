@@ -50,8 +50,8 @@ See [managed namespace](managed-namespace.md).
 
 ### Base href
 
-If the server is running behind reverse proxy with a subpath different from `/` (for example, 
-`/argo`), you can set an alternative subpath with the `--base-href` flag or the `BASE_HREF` 
+If the server is running behind reverse proxy with a subpath different from `/` (for example,
+`/argo`), you can set an alternative subpath with the `--base-href` flag or the `BASE_HREF`
 environment variable.
 
 You probably now should [read how to set-up an ingress](#ingress)
@@ -60,7 +60,7 @@ You probably now should [read how to set-up an ingress](#ingress)
 
 See [TLS](tls.md).
 
-### SSO 
+### SSO
 
 See [SSO](argo-server-sso.md). See [here](argo-server-sso-argocd.md) about sharing ArgoCD's Dex with ArgoWorkflows.
 
@@ -164,7 +164,7 @@ Users should consider the following in their set-up of the Argo Server:
 
 ### API Authentication Rate Limiting
 
-Argo Server does not perform authenticatinon directly. It delegates this to either the Kubernetes API Server (when `--auth-mode=client`) and the OAuth provider (when `--auth-mode=sso`). In each case, it is recommended that the delegate implements any authentication rate limiting you need. 
+Argo Server does not perform authentication directly. It delegates this to either the Kubernetes API Server (when `--auth-mode=client`) and the OAuth provider (when `--auth-mode=sso`). In each case, it is recommended that the delegate implements any authentication rate limiting you need.
 
 ### IP Address Logging
 

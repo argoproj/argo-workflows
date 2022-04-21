@@ -40,7 +40,7 @@ spec:
         parameters:
           - name: message
             valueFrom:
-              path: /workpsace/message
+              path: /workspace/message
 ```
 
 There are a couple of caveats:
@@ -68,7 +68,7 @@ Instead, have a workspace volume and make sure all artifacts paths are on that v
 
 ## ⚠️ Resource Requests
 
-A container set actually starts all containers, and the Emmissary only starts the main container process when the containers it depends on have completed. This mean that even though the container is doing no useful work, it is still consume resources and you're still getting billed for them.
+A container set actually starts all containers, and the Emissary only starts the main container process when the containers it depends on have completed. This mean that even though the container is doing no useful work, it is still consume resources and you're still getting billed for them.
 
 If your requests are small, this won't be a problem.
 
