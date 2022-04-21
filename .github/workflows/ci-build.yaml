@@ -204,10 +204,18 @@ jobs:
       GOPATH: /home/runner/go
     steps:
       - uses: actions/checkout@v3
+      - uses: actions/setup-go@v3
         with:
-          fetch-depth: 0
-      - run: cp server/static/files.go.stub server/static/files.go
-      - uses: golangci/golangci-lint-action@v2
+          go-version: "1.18"
+      - uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+      - run: make lint STATIC_FILES=false
       - run: git diff --exit-code
 
   ui:
