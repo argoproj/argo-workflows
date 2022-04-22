@@ -3388,21 +3388,21 @@ func (woc *wfOperationCtx) includeScriptOutput(nodeName, boundaryID string) (boo
 }
 
 func (woc *wfOperationCtx) fetchWorkflowSpec() (wfv1.WorkflowSpecHolder, error) {
-	if woc.wf.Spec.WorkflowTemplateRef == nil {
+	if woc.wf.Spec.WorkflowTemplateRef == nil { // not-woc-misuse
 		return nil, fmt.Errorf("cannot fetch workflow spec without workflowTemplateRef")
 	}
 
 	var specHolder wfv1.WorkflowSpecHolder
 	var err error
 	// Logic for workflow refers Workflow template
-	if woc.wf.Spec.WorkflowTemplateRef.ClusterScope {
+	if woc.wf.Spec.WorkflowTemplateRef.ClusterScope { // not-woc-misuse
 		if woc.controller.cwftmplInformer == nil {
 			woc.log.WithError(err).Error("clusterWorkflowTemplate RBAC is missing")
 			return nil, fmt.Errorf("cannot get resource clusterWorkflowTemplate at cluster scope")
 		}
-		specHolder, err = woc.controller.cwftmplInformer.Lister().Get(woc.wf.Spec.WorkflowTemplateRef.Name)
+		specHolder, err = woc.controller.cwftmplInformer.Lister().Get(woc.wf.Spec.WorkflowTemplateRef.Name) // not-woc-misuse
 	} else {
-		specHolder, err = woc.controller.wftmplInformer.Lister().WorkflowTemplates(woc.wf.Namespace).Get(woc.wf.Spec.WorkflowTemplateRef.Name)
+		specHolder, err = woc.controller.wftmplInformer.Lister().WorkflowTemplates(woc.wf.Namespace).Get(woc.wf.Spec.WorkflowTemplateRef.Name) // not-woc-misuse
 	}
 	if err != nil {
 		return nil, err
@@ -3418,7 +3418,7 @@ func (woc *wfOperationCtx) retryStrategy(tmpl *wfv1.Template) *wfv1.RetryStrateg
 }
 
 func (woc *wfOperationCtx) setExecWorkflow(ctx context.Context) error {
-	if woc.wf.Spec.WorkflowTemplateRef != nil {
+	if woc.wf.Spec.WorkflowTemplateRef != nil { // not-woc-misuse
 		err := woc.setStoredWfSpec()
 		if err != nil {
 			woc.markWorkflowError(ctx, err)
@@ -3436,7 +3436,7 @@ func (woc *wfOperationCtx) setExecWorkflow(ctx context.Context) error {
 			woc.markWorkflowError(ctx, err)
 			return err
 		}
-		woc.volumes = woc.wf.Spec.DeepCopy().Volumes
+		woc.volumes = woc.wf.Spec.DeepCopy().Volumes // not-woc-misuse
 	}
 
 	// Perform one-time workflow validation
@@ -3492,9 +3492,9 @@ func (woc *wfOperationCtx) needsStoredWfSpecUpdate() bool {
 	// woc.wf.Status.StoredWorkflowSpec.Entrypoint == "" check is mainly to support  backward compatible with 2.11.x workflow to 2.12.x
 	// Need to recalculate StoredWorkflowSpec in 2.12.x format.
 	// This check can be removed once all user migrated from 2.11.x to 2.12.x
-	return woc.wf.Status.StoredWorkflowSpec == nil || (woc.wf.Spec.Entrypoint != "" && woc.wf.Status.StoredWorkflowSpec.Entrypoint == "") ||
-		(woc.wf.Spec.Suspend != woc.wf.Status.StoredWorkflowSpec.Suspend) ||
-		(woc.wf.Spec.Shutdown != woc.wf.Status.StoredWorkflowSpec.Shutdown)
+	return woc.wf.Status.StoredWorkflowSpec == nil || (woc.wf.Spec.Entrypoint != "" && woc.wf.Status.StoredWorkflowSpec.Entrypoint == "") || // not-woc-misuse
+		(woc.wf.Spec.Suspend != woc.wf.Status.StoredWorkflowSpec.Suspend) || // not-woc-misuse
+		(woc.wf.Spec.Shutdown != woc.wf.Status.StoredWorkflowSpec.Shutdown) // not-woc-misuse
 }
 
 func (woc *wfOperationCtx) setStoredWfSpec() error {
@@ -3518,7 +3518,7 @@ func (woc *wfOperationCtx) setStoredWfSpec() error {
 	// Update the Entrypoint, ShutdownStrategy and Suspend
 	if woc.needsStoredWfSpecUpdate() {
 		// Join workflow, workflow template, and workflow default metadata to workflow spec.
-		mergedWf, err := wfutil.JoinWorkflowSpec(&woc.wf.Spec, workflowTemplateSpec, &wfDefault.Spec)
+		mergedWf, err := wfutil.JoinWorkflowSpec(&woc.wf.Spec, workflowTemplateSpec, &wfDefault.Spec) // not-woc-misuse
 		if err != nil {
 			return err
 		}
@@ -3529,7 +3529,7 @@ func (woc *wfOperationCtx) setStoredWfSpec() error {
 		if err != nil {
 			return err
 		}
-		mergedWf, err := wfutil.JoinWorkflowSpec(&woc.wf.Spec, wftHolder.GetWorkflowSpec(), &wfDefault.Spec)
+		mergedWf, err := wfutil.JoinWorkflowSpec(&woc.wf.Spec, wftHolder.GetWorkflowSpec(), &wfDefault.Spec) // not-woc-misuse
 		if err != nil {
 			return err
 		}
