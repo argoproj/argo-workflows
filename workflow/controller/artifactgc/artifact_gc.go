@@ -97,10 +97,11 @@ func (i *impl) deleteArtifacts(ctx context.Context, un *unstructured.Unstructure
 		WithField("name", un.GetName()).
 		Info("artifact garbage collection")
 	for _, n := range wf.Status.Nodes {
-		// wfv1.NodeStatus has the ArtifactGC field, but it is never set
+		// NodeStatus has the ArtifactGC field, but it is never set
 		t := wf.GetTemplateByName(n.TemplateName)
-		for _, a := range n.Outputs.GetArtifacts() {
-			strategy := t.Outputs.GetArtifactByName(a.Name).GetArtifactGC().GetStrategy()
+		for _, a := range n.GetOutputs().GetArtifacts() {
+			artifactByName := t.GetOutputs().GetArtifactByName(a.Name)
+			strategy := artifactByName.GetArtifactGC().GetStrategy()
 			if strategies.Contains(strategy) {
 				if err := i.deleteArtifact(ctx, wf, a); err != nil {
 					return err

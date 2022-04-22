@@ -1147,6 +1147,9 @@ func (a *ArtifactLocation) IsArchiveLogs() bool {
 }
 
 func (a *ArtifactLocation) GetKey() (string, error) {
+	if a == nil {
+		return "", fmt.Errorf("nil artifact location")
+	}
 	v, err := a.Get()
 	if err != nil {
 		return "", err
@@ -2017,6 +2020,13 @@ func (n NodeStatus) HasChild(childID string) bool {
 	return false
 }
 
+func (n *NodeStatus) GetOutputs() *Outputs {
+	if n == nil {
+		return nil
+	}
+	return n.Outputs
+}
+
 // S3Bucket contains the access information required for interfacing with an S3 bucket
 type S3Bucket struct {
 	// Endpoint is the hostname of the bucket endpoint
@@ -2573,6 +2583,13 @@ func (t *Template) GetRetryStrategy() (wait.Backoff, error) {
 
 func (t *Template) HasOutputs() bool {
 	return t != nil && t.Outputs.HasOutputs()
+}
+
+func (t *Template) GetOutputs() *Outputs {
+	if t == nil {
+		return nil
+	}
+	return &t.Outputs
 }
 
 // DAGTemplate is a template subtype for directed acyclic graph templates
