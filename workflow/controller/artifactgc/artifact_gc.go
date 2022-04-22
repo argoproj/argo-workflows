@@ -131,4 +131,5 @@ func (i *impl) deleteArtifact(ctx context.Context, wf *wfv1.Workflow, a wfv1.Art
 	return drv.Delete(a)
 }
 
+// Finalizer prevents workflows from being deleted until they have had their artifacts GCed.
 const Finalizer = "workflows.argoproj.io/artifact-gc"
