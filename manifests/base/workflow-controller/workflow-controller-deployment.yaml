@@ -6,8 +6,6 @@ spec:
   selector:
     matchLabels:
       app: workflow-controller
-  strategy:
-    type: Recreate
   template:
     metadata:
       labels:
@@ -37,15 +35,10 @@ spec:
           ports:
             - name: metrics
               containerPort: 9090
-            - name: healthz
-              containerPort: 6060
-          readinessProbe:
-            httpGet:
-              port: metrics
-              path: /metrics
+            - containerPort: 6060
           livenessProbe:
             httpGet:
-              port: healthz
+              port: 6060
               path: /healthz
             # Require three failures to tolerate transient errors.
             failureThreshold: 3
