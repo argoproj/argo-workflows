@@ -367,6 +367,26 @@ spec:
 		WaitForPod(fixtures.PodDeleted)
 }
 
+func (s *PodCleanupSuite) TestOnWorkflowTemplate() {
+	s.Given().
+		WorkflowTemplate(`
+metadata:
+  name: test-pod-cleanup
+spec:
+  podGC:
+    strategy: OnWorkflowCompletion
+  entrypoint: main
+  templates:
+    - name: main
+      container:
+        image: argoproj/argosay:v2
+`).
+		When().
+		CreateWorkflowTemplates().
+		SubmitWorkflowsFromWorkflowTemplates().
+		WaitForPod(fixtures.PodDeleted)
+}
+
 func TestPodCleanupSuite(t *testing.T) {
 	suite.Run(t, new(PodCleanupSuite))
 }

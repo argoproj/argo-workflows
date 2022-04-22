@@ -373,7 +373,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 			// https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#notes
 			if len(c.Command) == 0 {
 				x, err := woc.controller.entrypoint.Lookup(ctx, c.Image, entrypoint.Options{
-					Namespace: woc.wf.Namespace, ServiceAccountName: woc.wf.Spec.ServiceAccountName, ImagePullSecrets: woc.wf.Spec.ImagePullSecrets,
+					Namespace: woc.wf.Namespace, ServiceAccountName: woc.execWf.Spec.ServiceAccountName, ImagePullSecrets: woc.execWf.Spec.ImagePullSecrets,
 				})
 				if err != nil {
 					return nil, fmt.Errorf("failed to look-up entrypoint/cmd for image %q, you must either explicitly specify the command, or list the image's command in the index: https://argoproj.github.io/argo-workflows/workflow-executors/#emissary-emissary: %w", c.Image, err)

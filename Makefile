@@ -166,11 +166,12 @@ server/static/files.go:
 endif
 
 dist/argo-linux-amd64: GOARGS = GOOS=linux GOARCH=amd64
-dist/argo-darwin-amd64: GOARGS = GOOS=darwin GOARCH=amd64
-dist/argo-windows-amd64: GOARGS = GOOS=windows GOARCH=amd64
 dist/argo-linux-arm64: GOARGS = GOOS=linux GOARCH=arm64
 dist/argo-linux-ppc64le: GOARGS = GOOS=linux GOARCH=ppc64le
 dist/argo-linux-s390x: GOARGS = GOOS=linux GOARCH=s390x
+dist/argo-darwin-amd64: GOARGS = GOOS=darwin GOARCH=amd64
+dist/argo-darwin-arm64: GOARGS = GOOS=darwin GOARCH=arm64
+dist/argo-windows-amd64: GOARGS = GOOS=windows GOARCH=amd64
 
 dist/argo-windows-%.gz: dist/argo-windows-%
 	gzip --force --keep dist/argo-windows-$*.exe
@@ -195,7 +196,7 @@ endif
 argocli-image:
 
 .PHONY: clis
-clis: dist/argo-linux-amd64.gz dist/argo-linux-arm64.gz dist/argo-linux-ppc64le.gz dist/argo-linux-s390x.gz dist/argo-darwin-amd64.gz dist/argo-windows-amd64.gz
+clis: dist/argo-linux-amd64.gz dist/argo-linux-arm64.gz dist/argo-linux-ppc64le.gz dist/argo-linux-s390x.gz dist/argo-darwin-amd64.gz dist/argo-darwin-arm64.gz dist/argo-windows-amd64.gz
 
 # controller
 
