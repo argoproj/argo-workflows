@@ -1087,7 +1087,7 @@ func (s *ArgoServerSuite) TestArtifactServer() {
 	})
 
 	s.Run("GetArtifactItem", func() {
-		s.e().GET("/workflow-artifacts/v2/artifact-items/argo/uid/{uid}/{name}/output/main-file/main-file", uid, name).
+		s.e().GET("/workflow-artifacts/v2/artifacts/argo/uid/{uid}/{name}/output/main-file/main-file", uid, name).
 			Expect().
 			Status(200).
 			Body().
