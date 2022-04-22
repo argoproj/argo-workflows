@@ -914,6 +914,11 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
+  annotations:
+    workflows.argoproj.io/description: |
+      This service is deprecated. It will be removed in v3.4.
+
+      https://github.com/argoproj/argo-workflows/issues/8441
   labels:
     app: workflow-controller
   name: workflow-controller-metrics
@@ -989,8 +994,6 @@ spec:
   selector:
     matchLabels:
       app: workflow-controller
-  strategy:
-    type: Recreate
   template:
     metadata:
       labels:
@@ -1016,7 +1019,7 @@ spec:
           failureThreshold: 3
           httpGet:
             path: /healthz
-            port: healthz
+            port: 6060
           initialDelaySeconds: 90
           periodSeconds: 60
           timeoutSeconds: 30
@@ -1025,11 +1028,6 @@ spec:
         - containerPort: 9090
           name: metrics
         - containerPort: 6060
-          name: healthz
-        readinessProbe:
-          httpGet:
-            path: /metrics
-            port: metrics
         securityContext:
           allowPrivilegeEscalation: false
           capabilities:
