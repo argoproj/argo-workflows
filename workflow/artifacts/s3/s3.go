@@ -120,6 +120,14 @@ func (s3Driver *ArtifactDriver) Save(path string, outputArtifact *wfv1.Artifact)
 	return err
 }
 
+func (s3Driver *ArtifactDriver) Delete(a wfv1.Artifact) error {
+	c, err := s3Driver.newS3Client(context.Background())
+	if err != nil {
+		return err
+	}
+	return c.Delete(a.S3.Bucket, a.S3.Key)
+}
+
 // saveS3Artifact uploads artifacts to an S3 compliant storage
 // returns true if the upload is completed or can't be retried (non-transient error)
 // returns false if it can be retried (transient error)

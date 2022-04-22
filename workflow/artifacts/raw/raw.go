@@ -11,6 +11,10 @@ import (
 
 type ArtifactDriver struct{}
 
+func (a2 *ArtifactDriver) Delete(a wfv1.Artifact) error {
+	return common.ErrDeleteNotSupported
+}
+
 var _ common.ArtifactDriver = &ArtifactDriver{}
 
 // Store raw content as artifact

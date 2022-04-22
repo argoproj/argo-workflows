@@ -8,6 +8,8 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/argoproj/argo-workflows/v3/workflow/controller/artifactgc"
+
 	"github.com/argoproj/pkg/errors"
 	syncpkg "github.com/argoproj/pkg/sync"
 	log "github.com/sirupsen/logrus"
@@ -105,6 +107,7 @@ type WorkflowController struct {
 	session               sqlbuilder.Database
 	offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo
 	hydrator              hydrator.Interface
+	artifactGc            artifactgc.Interface
 	wfArchive             sqldb.WorkflowArchive
 	estimatorFactory      estimation.EstimatorFactory
 	syncManager           *sync.Manager
@@ -241,6 +244,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 	wfc.wftmplInformer = informer.NewTolerantWorkflowTemplateInformer(wfc.dynamicInterface, workflowTemplateResyncPeriod, wfc.managedNamespace)
 	wfc.wfTaskSetInformer = wfc.newWorkflowTaskSetInformer()
 	wfc.taskResultInformer = wfc.newWorkflowTaskResultInformer()
+	wfc.artifactGc = artifactgc.New(wfc.kubeclientset, wfc.wfclientset, wfc.wfInformer, wfc.artifactRepositories)
 
 	wfc.addWorkflowInformerHandlers(ctx)
 	wfc.podInformer = wfc.newPodInformer(ctx)
@@ -288,6 +292,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 	go wfc.archivedWorkflowGarbageCollector(ctx.Done())
 
 	go wfc.runGCcontroller(ctx, workflowTTLWorkers)
+	go wfc.artifactGc.Run(ctx)
 	go wfc.runCronController(ctx)
 	go wait.Until(wfc.syncWorkflowPhaseMetrics, 15*time.Second, ctx.Done())
 	go wait.Until(wfc.syncPodPhaseMetrics, 15*time.Second, ctx.Done())

@@ -19,10 +19,10 @@ spec:
                 - name: in
                   from: "{{tasks.generate-artifact.outputs.artifacts.out}}"
 
-    - name: generate-message
+``    - name: generate-message
       container:
         image: argoproj/argosay:v2
-        args: [ "echo", "hello world", "/mnt/out/message" ]
+        args: [ "echo", "hello world", "/mnt/out/message" ]``
       outputs:
         artifacts:
           - name: out

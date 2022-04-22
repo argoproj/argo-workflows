@@ -1,0 +1,21 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: artifact-gc-
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      container:
+        image: argoproj/argosay:v2
+        args: [ "echo", "hello world", "/tmp/message" ]
+      outputs:
+        artifacts:
+          - name: will-be-deleted-on-completion
+            path: /tmp/message
+            artifactGC:
+              strategy: WorkflowCompletion
+          - name: will-be-deleted-on-deletion
+            path: /tmp/message
+            artifactGC:
+              strategy: WorkflowDeletion

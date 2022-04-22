@@ -29,6 +29,10 @@ type ArtifactDriver struct {
 	DisableSubmodules     bool
 }
 
+func (g *ArtifactDriver) Delete(a wfv1.Artifact) error {
+	return common.ErrDeleteNotSupported
+}
+
 var _ common.ArtifactDriver = &ArtifactDriver{}
 
 var sshURLRegex = regexp.MustCompile("^(ssh://)?([^/:]*?)@[^@]+$")

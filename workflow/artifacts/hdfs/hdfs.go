@@ -26,6 +26,10 @@ type ArtifactDriver struct {
 	KrbOptions *KrbOptions
 }
 
+func (driver *ArtifactDriver) Delete(a wfv1.Artifact) error {
+	return common.ErrDeleteNotSupported
+}
+
 var _ common.ArtifactDriver = &ArtifactDriver{}
 
 // KrbOptions is options for Kerberos

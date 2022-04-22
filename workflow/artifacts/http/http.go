@@ -18,6 +18,10 @@ type ArtifactDriver struct {
 	Password string
 }
 
+func (h *ArtifactDriver) Delete(a wfv1.Artifact) error {
+	return common.ErrDeleteNotSupported
+}
+
 var _ common.ArtifactDriver = &ArtifactDriver{}
 
 // Load reads the artifact from the HTTP URL

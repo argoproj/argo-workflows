@@ -20,6 +20,7 @@ wait-for() {
 
 wait-for minio
 pf minio 9000
+pf minio 9001
 
 dex=$(kubectl -n argo get pod -l app=dex -o name)
 if [[ "$dex" != "" ]]; then

@@ -8864,6 +8864,9 @@
           "description": "ArchiveLogs indicates if the container logs should be archived",
           "type": "boolean"
         },
+        "artifactGC": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactGC"
+        },
         "artifactory": {
           "description": "Artifactory contains artifactory artifact location details",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactoryArtifact"
@@ -8934,6 +8937,15 @@
         }
       }
     },
+    "io.argoproj.workflow.v1alpha1.ArtifactGC": {
+      "type": "object",
+      "properties": {
+        "strategy": {
+          "description": "Strategy is the strategy to use. \"\" - do nothing WorkflowCompletion - delete the artifact on completion of the workflow WorkflowDeletion - delete the artifact when the workflow is deleted",
+          "type": "string"
+        }
+      }
+    },
     "io.argoproj.workflow.v1alpha1.ArtifactLocation": {
       "description": "ArtifactLocation describes a location for a single or multiple artifacts. It is used as single artifact in the context of inputs/outputs (e.g. outputs.artifacts.artname). It is also used to describe the location of multiple artifacts such as the archive location of a single workflow step, which the executor will use as a default location to store its files.",
       "type": "object",
@@ -8990,6 +9002,9 @@
         "archiveLogs": {
           "description": "ArchiveLogs indicates if the container logs should be archived",
           "type": "boolean"
+        },
+        "artifactGC": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactGC"
         },
         "artifactory": {
           "description": "Artifactory contains artifactory artifact location details",

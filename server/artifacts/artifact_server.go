@@ -13,6 +13,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/resource"
+
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
@@ -182,7 +184,7 @@ func (a *ArtifactServer) returnArtifact(ctx context.Context, w http.ResponseWrit
 		return err
 	}
 
-	driver, err := a.artDriverFactory(ctx, art, resources{kubeClient, wf.Namespace})
+	driver, err := a.artDriverFactory(ctx, art, resource.New(kubeClient, wf.Namespace))
 	if err != nil {
 		return err
 	}

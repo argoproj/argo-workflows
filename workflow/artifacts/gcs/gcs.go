@@ -31,6 +31,10 @@ type ArtifactDriver struct {
 	ServiceAccountKey string
 }
 
+func (g *ArtifactDriver) Delete(a wfv1.Artifact) error {
+	return common.ErrDeleteNotSupported
+}
+
 var (
 	_            common.ArtifactDriver = &ArtifactDriver{}
 	defaultRetry                       = wait.Backoff{Duration: time.Second * 2, Factor: 2.0, Steps: 5, Jitter: 0.1, Cap: time.Minute * 10}

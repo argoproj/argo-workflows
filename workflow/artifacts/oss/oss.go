@@ -28,6 +28,10 @@ type ArtifactDriver struct {
 	SecurityToken string
 }
 
+func (ossDriver *ArtifactDriver) Delete(a wfv1.Artifact) error {
+	return common.ErrDeleteNotSupported
+}
+
 var (
 	_            common.ArtifactDriver = &ArtifactDriver{}
 	defaultRetry                       = wait.Backoff{Duration: time.Second * 2, Factor: 2.0, Steps: 5, Jitter: 0.1}

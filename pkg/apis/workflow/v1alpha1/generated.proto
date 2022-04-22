@@ -79,6 +79,17 @@ message Artifact {
 
   // FromExpression, if defined, is evaluated to specify the value for the artifact
   optional string fromExpression = 11;
+
+  optional ArtifactGC artifactGC = 12;
+}
+
+message ArtifactGC {
+  // Strategy is the strategy to use.
+  // "" - do nothing
+  // WorkflowCompletion - delete the artifact on completion of the workflow
+  // WorkflowDeletion - delete the artifact when the workflow is deleted
+  // +kubebuilder:validation:Enum=WorkflowCompletion;WorkflowDeletion
+  optional string strategy = 1;
 }
 
 // ArtifactLocation describes a location for a single or multiple artifacts.

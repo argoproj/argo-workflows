@@ -907,6 +907,8 @@ type Artifact struct {
 
 	// FromExpression, if defined, is evaluated to specify the value for the artifact
 	FromExpression string `json:"fromExpression,omitempty" protobuf:"bytes,11,opt,name=fromExpression"`
+
+	ArtifactGC *ArtifactGC `json:"artifactGC,omitempty" protobuf:"bytes,12,opt,name=artifactGC"`
 }
 
 // CleanPath validates and cleans the artifact path.
@@ -2710,6 +2712,13 @@ func (in *Inputs) HasInputs() bool {
 	return false
 }
 
+func (in *Inputs) getArtifacts() Artifacts {
+	if in == nil {
+		return nil
+	}
+	return in.Artifacts
+}
+
 // HasOutputs returns whether or not there are any outputs
 func (out *Outputs) HasOutputs() bool {
 	if out == nil {
@@ -2763,6 +2772,13 @@ func (out *Outputs) HasLogs() bool {
 	return false
 }
 
+func (in *Outputs) GetArtifacts() Artifacts {
+	if in == nil {
+		return nil
+	}
+	return in.Artifacts
+}
+
 // GetArtifactByName retrieves an artifact by its name
 func (args *Arguments) GetArtifactByName(name string) *Artifact {
 	return args.Artifacts.GetArtifactByName(name)
@@ -2783,6 +2799,14 @@ func (a *Artifact) GetArchive() *ArchiveStrategy {
 		return &ArchiveStrategy{}
 	}
 	return a.Archive
+}
+
+func (a *Artifact) GetArtifactGC() *ArtifactGC {
+	if a == nil {
+		return nil
+	}
+	return a.ArtifactGC
+
 }
 
 // GetTemplateByName retrieves a defined template by its name

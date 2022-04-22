@@ -60,6 +60,10 @@ func (s *mockS3Client) OpenFile(bucket, key string) (io.ReadCloser, error) {
 	return io.NopCloser(&bytes.Buffer{}), s.getMockedErr("OpenFile")
 }
 
+func (s *mockS3Client) Delete(bucket, key string) error {
+	return s.getMockedErr("Delete")
+}
+
 // GetDirectory downloads a directory to a local file path
 func (s *mockS3Client) GetDirectory(bucket, key, path string) error {
 	return s.getMockedErr("GetDirectory")

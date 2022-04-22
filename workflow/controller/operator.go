@@ -15,6 +15,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/argoproj/argo-workflows/v3/workflow/controller/artifactgc"
+
 	"github.com/antonmedv/expr"
 	"github.com/argoproj/pkg/humanize"
 	argokubeerr "github.com/argoproj/pkg/kube/errors"
@@ -286,6 +288,9 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 		}
 
 		woc.wf.Status.EstimatedDuration = woc.estimateWorkflowDuration()
+
+		woc.wf.Finalizers = append(woc.wf.Finalizers, artifactgc.Finalizer)
+
 	} else {
 		woc.workflowDeadline = woc.getWorkflowDeadline()
 		woc.taskResultReconciliation()
