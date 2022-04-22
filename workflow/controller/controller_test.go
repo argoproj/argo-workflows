@@ -819,7 +819,8 @@ spec:
 	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
 
 	woc.operate(ctx)
-	controller.processNextPodCleanupItem(ctx)
+	assert.True(t, controller.processNextPodCleanupItem(ctx))
+	assert.True(t, controller.processNextPodCleanupItem(ctx))
 	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
 	podCleanupKey := "test/my-wf/labelPodCompleted"
 	assert.Equal(t, 0, controller.podCleanupQueue.NumRequeues(podCleanupKey))
