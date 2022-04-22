@@ -1,0 +1,32 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: pod-gc-strategy
+spec:
+  entrypoint: pod-gc-strategy
+  podGC:
+    # Pod GC strategy must be one of the following:
+    # * OnPodCompletion - delete pods immediately when pod is completed (including errors/failures)
+    # * OnPodSuccess - delete pods immediately when pod is successful
+    # * OnWorkflowCompletion - delete pods when workflow is completed
+    # * OnWorkflowSuccess - delete pods when workflow is successful
+    strategy: "OnWorkflowCompletion"
+
+  templates:
+    - name: pod-gc-strategy
+      steps:
+        - - name: fail
+            template: fail
+          - name: succeed
+            template: succeed
+
+    - name: fail
+      container:
+        image: alpine:3.7
+        command: [sh, -c]
+        args: ["exit 1"]
+
+    - name: succeed
+      container:
+        image: alpine:3.7
+        command: [sh, -c]
