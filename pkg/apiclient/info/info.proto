@@ -32,6 +32,13 @@ message GetUserInfoResponse {
   string serviceAccountName = 6;
 }
 
+message CollectEventRequest {
+  map<string, string> param = 1;
+}
+
+message CollectEventResponse {
+}
+
 service InfoService {
   rpc GetInfo(GetInfoRequest) returns (InfoResponse) {
     option (google.api.http).get = "/api/v1/info";
@@ -41,5 +48,11 @@ service InfoService {
   }
   rpc GetUserInfo(GetUserInfoRequest) returns (GetUserInfoResponse) {
     option (google.api.http).get = "/api/v1/userinfo";
+  }
+  rpc CollectEvent(CollectEventRequest) returns (CollectEventResponse) {
+    option (google.api.http) = {
+      post : "/api/v1/tracking/event"
+      body : "*"
+    };
   }
 }

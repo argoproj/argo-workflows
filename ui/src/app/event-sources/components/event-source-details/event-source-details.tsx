@@ -12,6 +12,7 @@ import {Context} from '../../../shared/context';
 import {historyUrl} from '../../../shared/history';
 import {services} from '../../../shared/services';
 import {useQueryParams} from '../../../shared/use-query-params';
+import {TrackEvent} from '../../../shared/components/track-user-interface-event';
 import {EventsPanel} from '../../../workflows/components/events-panel';
 import {EventSourceEditor} from '../event-source-editor';
 import {EventSourceLogsViewer} from '../event-source-log-viewer';
@@ -163,6 +164,7 @@ export const EventSourceDetails = ({history, location, match}: RouteComponentPro
                     </div>
                 )}
             </SlidingPanel>
+            <TrackEvent name={'openedEventSourceDetails'} />
         </Page>
     );
 };

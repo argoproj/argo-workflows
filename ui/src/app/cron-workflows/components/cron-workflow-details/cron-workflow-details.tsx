@@ -9,6 +9,7 @@ import {Loading} from '../../../shared/components/loading';
 import {Context} from '../../../shared/context';
 import {historyUrl} from '../../../shared/history';
 import {services} from '../../../shared/services';
+import {TrackEvent} from '../../../shared/components/track-user-interface-event';
 import {useQueryParams} from '../../../shared/use-query-params';
 import {WidgetGallery} from '../../../widgets/widget-gallery';
 import {CronWorkflowEditor} from '../cron-workflow-editor';
@@ -205,6 +206,7 @@ export const CronWorkflowDetails = ({match, location, history}: RouteComponentPr
                     {sidePanel === 'share' && <WidgetGallery namespace={namespace} label={'workflows.argoproj.io/cron-workflow=' + name} />}
                 </SlidingPanel>
             </>
+            <TrackEvent name={'openedCronWorkflowDetails'} />
         </Page>
     );
 };

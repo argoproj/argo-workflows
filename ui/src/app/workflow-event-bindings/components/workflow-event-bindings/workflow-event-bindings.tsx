@@ -16,6 +16,7 @@ import {Context} from '../../../shared/context';
 import {Footnote} from '../../../shared/footnote';
 import {historyUrl} from '../../../shared/history';
 import {services} from '../../../shared/services';
+import {TrackEvent} from '../../../shared/components/track-user-interface-event';
 import {useQueryParams} from '../../../shared/use-query-params';
 import {Utils} from '../../../shared/utils';
 import {ID} from './id';
@@ -142,6 +143,7 @@ export const WorkflowEventBindings = ({match, location, history}: RouteComponent
                     </SlidingPanel>
                 </>
             )}
+            <TrackEvent name={'openedWorkflowEventBindings'} />
         </Page>
     );
 };

@@ -20,6 +20,7 @@ import {useQueryParams} from '../../../shared/use-query-params';
 import {Utils} from '../../../shared/utils';
 import {SensorCreator} from '../sensor-creator';
 import {SensorSidePanel} from '../sensor-side-panel';
+import {TrackEvent} from '../../../shared/components/track-user-interface-event';
 import {Utils as EventsUtils} from '../utils';
 
 const learnMore = <a href='https://argoproj.github.io/argo-events/concepts/sensor/'>Learn more</a>;
@@ -165,6 +166,7 @@ export const SensorList = ({match, location, history}: RouteComponentProps<any>)
                     onClose={() => setSelectedNode(null)}
                 />
             )}
+            <TrackEvent name={'openedSensorList'} />
         </Page>
     );
 };

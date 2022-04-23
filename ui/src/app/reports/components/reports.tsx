@@ -18,6 +18,7 @@ import {denominator} from '../../shared/duration';
 import {Footnote} from '../../shared/footnote';
 import {services} from '../../shared/services';
 import {Utils} from '../../shared/utils';
+import {TrackEvent} from '../../shared/components/track-user-interface-event';
 
 interface Chart {
     data: ChartData<any>;
@@ -87,6 +88,7 @@ export class Reports extends BasePage<RouteComponentProps<any>, State> {
 
                             <div className='columns small-12 xlarge-10'>{this.renderReport(ctx)}</div>
                         </div>
+                        <TrackEvent name={'openedReports'} />
                     </Page>
                 )}
             </Consumer>

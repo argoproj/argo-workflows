@@ -14,6 +14,7 @@ import {services} from '../../../shared/services';
 import {useQueryParams} from '../../../shared/use-query-params';
 import {SensorEditor} from '../sensor-editor';
 import {SensorSidePanel} from '../sensor-side-panel';
+import {TrackEvent} from '../../../shared/components/track-user-interface-event';
 
 require('../../../workflows/components/workflow-details/workflow-details.scss');
 
@@ -136,6 +137,7 @@ export const SensorDetails = ({match, location, history}: RouteComponentProps<an
                     onClose={() => setSelectedLogNode(null)}
                 />
             )}
+            <TrackEvent name={'openedSensorDetails'} />
         </Page>
     );
 };

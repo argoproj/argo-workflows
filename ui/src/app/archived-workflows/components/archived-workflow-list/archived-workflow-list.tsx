@@ -16,6 +16,7 @@ import {formatDuration, wfDuration} from '../../../shared/duration';
 import {Pagination, parseLimit} from '../../../shared/pagination';
 import {ScopedLocalStorage} from '../../../shared/scoped-local-storage';
 import {services} from '../../../shared/services';
+import {TrackEvent} from '../../../shared/components/track-user-interface-event';
 import {Utils} from '../../../shared/utils';
 import {ArchivedWorkflowFilters} from '../archived-workflow-filters/archived-workflow-filters';
 
@@ -105,6 +106,7 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
                     </div>
                     <div className='columns small-12 xlarge-10'>{this.renderWorkflows()}</div>
                 </div>
+                <TrackEvent name={'openedArchivedWorkflowList'} />
             </Page>
         );
     }

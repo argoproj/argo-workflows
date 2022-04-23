@@ -13,6 +13,7 @@ import {historyUrl} from '../../../shared/history';
 import {ListWatch} from '../../../shared/list-watch';
 import {services} from '../../../shared/services';
 import {StepSidePanel} from '../step-side-panel';
+import {TrackEvent} from '../../../shared/components/track-user-interface-event';
 import {graph} from './pipeline-graph';
 
 require('./pipeline.scss');
@@ -168,6 +169,7 @@ export const PipelineDetails = ({history, match, location}: RouteComponentProps<
                     </>
                 )}
             </>
+            <TrackEvent name={'openedPipelineDetails'} />
         </Page>
     );
 };

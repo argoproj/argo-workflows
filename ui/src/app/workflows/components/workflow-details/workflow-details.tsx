@@ -17,6 +17,7 @@ import {historyUrl} from '../../../shared/history';
 import {getPodName, getTemplateNameFromNode} from '../../../shared/pod-name';
 import {RetryWatch} from '../../../shared/retry-watch';
 import {services} from '../../../shared/services';
+import {TrackEvent} from '../../../shared/components/track-user-interface-event';
 import {useQueryParams} from '../../../shared/use-query-params';
 import * as Operations from '../../../shared/workflow-operations-map';
 import {WorkflowOperations} from '../../../shared/workflow-operations-map';
@@ -403,6 +404,7 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
                     {!parsedSidePanel}
                 </SlidingPanel>
             )}
+        <TrackEvent name={'openedWorkflowDetails'} />
         </Page>
     );
 };

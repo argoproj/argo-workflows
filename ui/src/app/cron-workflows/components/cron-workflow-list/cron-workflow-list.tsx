@@ -15,6 +15,7 @@ import {getNextScheduledTime} from '../../../shared/cron';
 import {Footnote} from '../../../shared/footnote';
 import {historyUrl} from '../../../shared/history';
 import {services} from '../../../shared/services';
+import {TrackEvent} from '../../../shared/components/track-user-interface-event';
 import {useQueryParams} from '../../../shared/use-query-params';
 import {Utils} from '../../../shared/utils';
 import {CronWorkflowCreator} from '../cron-workflow-creator';
@@ -169,6 +170,7 @@ export const CronWorkflowList = ({match, location, history}: RouteComponentProps
             <SlidingPanel isShown={sidePanel} onClose={() => setSidePanel(false)}>
                 <CronWorkflowCreator namespace={namespace} onCreate={wf => navigation.goto(uiUrl(`cron-workflows/${wf.metadata.namespace}/${wf.metadata.name}`))} />
             </SlidingPanel>
+            <TrackEvent name={'openedCronWorkflowList'} />
         </Page>
     );
 };

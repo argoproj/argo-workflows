@@ -9,6 +9,7 @@ import {ErrorNotice} from '../../../shared/components/error-notice';
 import {Loading} from '../../../shared/components/loading';
 import {NamespaceFilter} from '../../../shared/components/namespace-filter';
 import {PhaseIcon} from '../../../shared/components/phase-icon';
+import {TrackEvent} from '../../../shared/components/track-user-interface-event';
 import {Timestamp} from '../../../shared/components/timestamp';
 import {ZeroState} from '../../../shared/components/zero-state';
 import {historyUrl} from '../../../shared/history';
@@ -108,6 +109,7 @@ export const PipelineList = ({match, history}: RouteComponentProps<any>) => {
                     </div>
                 </>
             )}
+            <TrackEvent name={'openedPipelineList'} />
         </Page>
     );
 };

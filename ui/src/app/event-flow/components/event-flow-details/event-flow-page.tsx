@@ -23,6 +23,7 @@ import {historyUrl} from '../../../shared/history';
 import {ListWatch} from '../../../shared/list-watch';
 import {RetryObservable} from '../../../shared/retry-observable';
 import {services} from '../../../shared/services';
+import {TrackEvent} from '../../../shared/components/track-user-interface-event';
 import {useQueryParams} from '../../../shared/use-query-params';
 import {Utils} from '../../../shared/utils';
 import {EventsPanel} from '../../../workflows/components/events-panel';
@@ -351,6 +352,7 @@ export const EventFlowPage = ({history, location, match}: RouteComponentProps<an
                     </div>
                 )}
             </SlidingPanel>
+            <TrackEvent name={'openedEventFlow'} />
         </Page>
     );
 };

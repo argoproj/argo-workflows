@@ -20,4 +20,15 @@ export class InfoService {
     public getUserInfo() {
         return requests.get(`api/v1/userinfo`).then(res => res.body as GetUserInfoResponse);
     }
+
+    public collectEvent(param: Map<string, string>) {
+        let obj = Object.create(null);
+        for (let [k,v] of param) {
+            obj[k] = v;
+        }
+        return requests.post(`api/v1/tracking/event`).send(obj);
+    }
 }
+
+export const EventParams = ['name'] as const;
+export type EventParam = typeof EventParams[number];
