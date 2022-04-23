@@ -4,6 +4,8 @@ import (
 	"context"
 	"os"
 
+	log "github.com/sirupsen/logrus"
+
 	"github.com/argoproj/argo-workflows/v3"
 	infopkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/info"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
@@ -48,6 +50,23 @@ func (i *infoServer) GetInfo(context.Context, *infopkg.GetInfoRequest) (*infopkg
 func (i *infoServer) GetVersion(context.Context, *infopkg.GetVersionRequest) (*wfv1.Version, error) {
 	version := argo.GetVersion()
 	return &version, nil
+}
+
+func (i *infoServer) CollectEvent(ctx context.Context, req *infopkg.CollectEventRequest) (*infopkg.CollectEventResponse, error) {
+	var (
+		subject string
+		email   string
+	)
+
+	claims := auth.GetClaims(ctx)
+	if claims != nil {
+		subject = claims.Subject
+		email = claims.Email
+	}
+
+	log.WithFields(log.Fields{"subject": subject, "email": email, "eventName": req.Param["name"]}).Info("tracking UI usage️️")
+
+	return &infopkg.CollectEventResponse{}, nil
 }
 
 func NewInfoServer(managedNamespace string, links []*wfv1.Link, navColor string) infopkg.InfoServiceServer {

@@ -10,6 +10,7 @@ import {Loading} from '../../../shared/components/loading';
 import {Context} from '../../../shared/context';
 import {historyUrl} from '../../../shared/history';
 import {services} from '../../../shared/services';
+import {TrackEvent} from '../../../shared/components/track-user-interface-event';
 import {useQueryParams} from '../../../shared/use-query-params';
 import {Utils} from '../../../shared/utils';
 import {SubmitWorkflowPanel} from '../../../workflows/components/submit-workflow-panel';
@@ -134,6 +135,7 @@ export const ClusterWorkflowTemplateDetails = ({history, location, match}: Route
                     />
                 </SlidingPanel>
             )}
+            <TrackEvent name={'openedClusterWorkflowTemplateDetails'} />
         </Page>
     );
 };

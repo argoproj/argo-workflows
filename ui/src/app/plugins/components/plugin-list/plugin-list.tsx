@@ -6,6 +6,7 @@ import {uiUrl} from '../../../shared/base';
 import {ZeroState} from '../../../shared/components/zero-state';
 import {historyUrl} from '../../../shared/history';
 import {Utils} from '../../../shared/utils';
+import {TrackEvent} from '../../../shared/components/track-user-interface-event';
 
 export const PluginList = ({match, history}: RouteComponentProps<any>) => {
     // state for URL and query parameters
@@ -35,6 +36,7 @@ export const PluginList = ({match, history}: RouteComponentProps<any>) => {
                     <a href='https://argoproj.github.io/argo-workflows/plugins/'>Learn more</a>.
                 </p>
             </ZeroState>
+            <TrackEvent name={'openedPlugins'} />
         </Page>
     );
 };

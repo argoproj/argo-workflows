@@ -1,6 +1,7 @@
 import {Page} from 'argo-ui';
 import * as React from 'react';
 import {uiUrl, uiUrlWithParams} from '../../shared/base';
+import {TrackEvent} from '../../shared/components/track-user-interface-event';
 
 require('./login.scss');
 
@@ -72,5 +73,6 @@ export const Login = () => (
                 </div>
             </div>
         </div>
+        <TrackEvent name={'openedLogin'} />
     </Page>
 );

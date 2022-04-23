@@ -9,6 +9,7 @@ import {ErrorNotice} from '../../../shared/components/error-notice';
 import {ProcessURL} from '../../../shared/components/links';
 import {Loading} from '../../../shared/components/loading';
 import {services} from '../../../shared/services';
+import {TrackEvent} from '../../../shared/components/track-user-interface-event';
 import {WorkflowArtifacts} from '../../../workflows/components/workflow-artifacts';
 
 import {ANNOTATION_KEY_POD_NAME_VERSION} from '../../../shared/annotations';
@@ -154,6 +155,7 @@ export class ArchivedWorkflowDetails extends BasePage<RouteComponentProps<any>, 
                     )
                 }}>
                 <div className={classNames('workflow-details', {'workflow-details--step-node-expanded': !!this.nodeId})}>{this.renderArchivedWorkflowDetails()}</div>
+                <TrackEvent name={'openedArchivedWorkflowDetails'} />
             </Page>
         );
     }

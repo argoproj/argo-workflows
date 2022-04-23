@@ -17,6 +17,7 @@ import {historyUrl} from '../../../shared/history';
 import {Pagination, parseLimit} from '../../../shared/pagination';
 import {ScopedLocalStorage} from '../../../shared/scoped-local-storage';
 import {services} from '../../../shared/services';
+import {TrackEvent} from '../../../shared/components/track-user-interface-event';
 import {useQueryParams} from '../../../shared/use-query-params';
 import {Utils} from '../../../shared/utils';
 import {WorkflowTemplateCreator} from '../workflow-template-creator';
@@ -158,6 +159,7 @@ export const WorkflowTemplateList = ({match, location, history}: RouteComponentP
             <SlidingPanel isShown={sidePanel} onClose={() => setSidePanel(false)}>
                 <WorkflowTemplateCreator namespace={namespace} onCreate={wf => navigation.goto(uiUrl(`workflow-templates/${wf.metadata.namespace}/${wf.metadata.name}`))} />
             </SlidingPanel>
+            <TrackEvent name={'openedWorkflowTemplateList'} />
         </Page>
     );
 };

@@ -17,6 +17,7 @@ import {Context} from '../../../shared/context';
 import {Footnote} from '../../../shared/footnote';
 import {historyUrl} from '../../../shared/history';
 import {services} from '../../../shared/services';
+import {TrackEvent} from '../../../shared/components/track-user-interface-event';
 import {useQueryParams} from '../../../shared/use-query-params';
 import {Utils} from '../../../shared/utils';
 import {EventsPanel} from '../../../workflows/components/events-panel';
@@ -182,6 +183,7 @@ export const EventSourceList = ({match, location, history}: RouteComponentProps<
                     </div>
                 )}
             </SlidingPanel>
+            <TrackEvent name={'openedEventSourceList'} />
         </Page>
     );
 };

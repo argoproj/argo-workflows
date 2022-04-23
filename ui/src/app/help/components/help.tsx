@@ -1,6 +1,7 @@
 import {Page} from 'argo-ui';
 import * as React from 'react';
 import {uiUrl} from '../../shared/base';
+import {TrackEvent} from '../../shared/components/track-user-interface-event';
 
 require('./help.scss');
 
@@ -38,5 +39,6 @@ export const Help = () => (
                 </div>
             </div>
         </div>
+        <TrackEvent name={'openedHelp'} />
     </Page>
 );
