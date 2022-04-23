@@ -92,7 +92,7 @@ RUN --mount=type=cache,target=/root/.cache/go-build make dist/argo
 
 ####################################################################################################
 
-FROM gcr.io/distroless/static as argoexec
+FROM scratch as argoexec
 
 COPY --from=argoexec-build /usr/local/bin/kubectl /bin/
 COPY --from=argoexec-build /usr/local/bin/jq /bin/
@@ -101,6 +101,8 @@ COPY --from=argoexec-build /etc/mime.types /etc/mime.types
 COPY --from=argocli-build /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 COPY hack/ssh_known_hosts /etc/ssh/
 COPY hack/nsswitch.conf /etc/
+
+RUN --mount=from=busybox:latest,src=/bin/,dst=/bin/ mkdir -m 1755 /tmp
 
 ENTRYPOINT [ "argoexec" ]
 
