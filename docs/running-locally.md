@@ -45,6 +45,8 @@ Run:
 make start 
 ```
 
+Make sure you don't see any errors in your terminal.
+
 You can submit a workflow for testing using `kubectl`:
 
 ```shell
@@ -154,6 +156,6 @@ a few moments to start-up).
 
 As a convenience, `CTRL=false` implies `UI=true`, so just run:
 
-```
+```shell
 make start CTRL=false
 ```
