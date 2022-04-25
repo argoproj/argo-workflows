@@ -1261,6 +1261,14 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, old *wfv1.NodeStatus
 		new.Outputs.ExitCode = pointer.StringPtr(fmt.Sprint(*exitCode))
 	}
 
+	// We cannot fail the node until the wait container is finished because it may be busy saving outputs, and these
+	// would not get captured successfully.
+	for _, c := range pod.Status.ContainerStatuses {
+		if c.Name == common.WaitContainerName && c.State.Terminated == nil {
+			new.Phase = old.Phase
+		}
+	}
+
 	// if we are transitioning from Pending to a different state, clear out unchanged message
 	if old.Phase == wfv1.NodePending && new.Phase != wfv1.NodePending && old.Message == new.Message {
 		new.Message = ""
@@ -1298,11 +1306,9 @@ func getExitCode(pod *apiv1.Pod) *int32 {
 
 func podHasContainerNeedingTermination(pod *apiv1.Pod, tmpl wfv1.Template) bool {
 	for _, c := range pod.Status.ContainerStatuses {
-		// Only clean up pod when both the wait and the main containers are terminated
-		if c.Name == common.WaitContainerName || tmpl.IsMainContainerName(c.Name) {
-			if c.State.Terminated == nil {
-				return false
-			}
+		// Only clean up pod when all main containers are terminated
+		if tmpl.IsMainContainerName(c.Name) && c.State.Terminated == nil {
+			return false
 		}
 	}
 	return true

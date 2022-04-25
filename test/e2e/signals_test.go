@@ -15,7 +15,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/test/e2e/fixtures"
 )
 
-const kill2xDuration = 70 * time.Second
+const kill2xDuration = 80 * time.Second
 
 // Tests the use of signals to kill containers.
 // argoproj/argosay:v2 does not contain sh, so you must use argoproj/argosay:v1.
@@ -96,7 +96,7 @@ func (s *SignalsSuite) TestDoNotCreatePodsUnderStopBehavior() {
 		Workflow("@functional/stop-terminate-2.yaml").
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(fixtures.ToHaveRunningPod, kill2xDuration).
+		WaitForWorkflow(fixtures.ToHaveRunningPod, kill2xDuration+10*time.Second).
 		ShutdownWorkflow(wfv1.ShutdownStrategyStop).
 		WaitForWorkflow(kill2xDuration).
 		Then().

@@ -1001,15 +1001,21 @@ func (we *WorkflowExecutor) Wait(ctx context.Context) error {
 		log.WithField("annotationPatchTickDuration", we.annotationPatchTickDuration).WithField("readProgressFileTickDuration", we.readProgressFileTickDuration).Info("monitoring progress disabled")
 	}
 
+	// this allows us to gracefully shutdown, capturing artifacts
+	ctx, cancel := signal.NotifyContext(ctx, syscall.SIGTERM)
+	defer cancel()
+
 	go we.monitorDeadline(ctx, containerNames)
-	err := waitutil.Backoff(executorretry.ExecutorRetry, func() (bool, error) {
-		err := we.RuntimeExecutor.Wait(ctx, containerNames)
-		return err == nil, err
+
+	err := retryutil.OnError(executorretry.ExecutorRetry, errorsutil.IsTransientErr, func() error {
+		return we.RuntimeExecutor.Wait(ctx, containerNames)
 	})
-	if err != nil {
+
+	log.WithError(err).Info("Main container completed")
+
+	if err != nil && err != context.Canceled {
 		return fmt.Errorf("failed to wait for main container to complete: %w", err)
 	}
-	log.Infof("Main container completed")
 	return nil
 }
 
@@ -1068,8 +1074,6 @@ func (we *WorkflowExecutor) monitorProgress(ctx context.Context, progressFile st
 // monitorDeadline checks to see if we exceeded the deadline for the step and
 // terminates the main container if we did
 func (we *WorkflowExecutor) monitorDeadline(ctx context.Context, containerNames []string) {
-	terminate := make(chan os.Signal, 1)
-	signal.Notify(terminate, syscall.SIGTERM)
 
 	deadlineExceeded := make(chan bool, 1)
 	if !we.Deadline.IsZero() {
@@ -1087,8 +1091,6 @@ func (we *WorkflowExecutor) monitorDeadline(ctx context.Context, containerNames 
 		return
 	case <-deadlineExceeded:
 		message = "Step exceeded its deadline"
-	case <-terminate:
-		message = "Step terminated"
 	}
 	log.Info(message)
 	util.WriteTerminateMessage(message)
