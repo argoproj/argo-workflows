@@ -1,6 +1,7 @@
 package http
 
 import (
+	"bufio"
 	"fmt"
 	"io"
 	"net/http"
@@ -16,6 +17,12 @@ import (
 type ArtifactDriver struct {
 	Username string
 	Password string
+	Client   HttpClient
+}
+
+// to be able to mock the http client in unit tests
+type HttpClient interface {
+	Do(req *http.Request) (*http.Response, error)
 }
 
 var _ common.ArtifactDriver = &ArtifactDriver{}
@@ -29,41 +36,38 @@ func (h *ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) error {
 	defer func() {
 		_ = lf.Close()
 	}()
-	var req *http.Request
+
 	var url string
 	if inputArtifact.Artifactory != nil && inputArtifact.HTTP == nil {
 		url = inputArtifact.Artifactory.URL
-		req, err = http.NewRequest(http.MethodGet, url, nil)
-		if err != nil {
-			return err
-		}
-		req.SetBasicAuth(h.Username, h.Password)
 	} else {
 		url = inputArtifact.HTTP.URL
-		req, err = http.NewRequest(http.MethodGet, url, nil)
-		if err != nil {
-			return err
-		}
-		for _, h := range inputArtifact.HTTP.Headers {
-			req.Header.Add(h.Name, h.Value)
-		}
-		if h.Username != "" && h.Password != "" {
-			req.SetBasicAuth(h.Username, h.Password)
-		}
 	}
 
-	res, err := (&http.Client{}).Do(req)
+	res, err := h.doRequest(http.MethodGet, url, nil, inputArtifact)
 	if err != nil {
 		return err
 	}
-	defer func() {
-		_ = res.Body.Close()
-	}()
+	defer res.Body.Close()
+
+	if res.StatusCode == 307 && inputArtifact.HTTP.FollowTemporaryRedirects {
+		// we have been redirected and need to do a GET again on the given location (for webHDFS support)
+		redirectUrl, err := res.Location()
+		if err != nil {
+			return err
+		}
+		res, err = h.doRequest(http.MethodGet, redirectUrl.String(), nil, inputArtifact)
+		if err != nil {
+			return err
+		}
+		defer res.Body.Close()
+	}
+
 	if res.StatusCode == 404 {
 		return errors.New(errors.CodeNotFound, res.Status)
 	}
 	if res.StatusCode < 200 || res.StatusCode >= 300 {
-		return errors.InternalErrorf("loading file from %s failed with reason:%s", url, res.Status)
+		return errors.InternalErrorf("loading file from %s failed with reason: %s", url, res.Status)
 	}
 
 	_, err = io.Copy(lf, res.Body)
@@ -77,39 +81,64 @@ func (h *ArtifactDriver) Save(path string, outputArtifact *wfv1.Artifact) error 
 	if err != nil {
 		return err
 	}
-	var req *http.Request
+	defer f.Close()
+	reader := bufio.NewReader(f)
+
 	var url string
 	if outputArtifact.Artifactory != nil && outputArtifact.HTTP == nil {
 		url = outputArtifact.Artifactory.URL
-		req, err = http.NewRequest(http.MethodPut, url, f)
-		if err != nil {
-			return err
-		}
-		req.SetBasicAuth(h.Username, h.Password)
 	} else {
 		url = outputArtifact.HTTP.URL
-		req, err = http.NewRequest(http.MethodPut, url, f)
+	}
+
+	res, err := h.doRequest(http.MethodPut, url, reader, outputArtifact)
+	if err != nil {
+		return err
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode == 307 && outputArtifact.HTTP.FollowTemporaryRedirects {
+		// we have been redirected and need to do a GET again on the given location (for webHDFS support)
+		redirectUrl, err := res.Location()
 		if err != nil {
 			return err
 		}
-		for _, h := range outputArtifact.HTTP.Headers {
+		// reset the file, in case it already read something
+		_, err = f.Seek(0, io.SeekStart)
+		reader.Reset(f)
+		if err != nil {
+			return err
+		}
+		res, err = h.doRequest(http.MethodPut, redirectUrl.String(), reader, outputArtifact)
+		if err != nil {
+			return err
+		}
+		defer res.Body.Close()
+	}
+
+	if res.StatusCode < 200 || res.StatusCode >= 300 {
+		return errors.InternalErrorf("saving file %s to %s failed with reason: %s", path, url, res.Status)
+	}
+	return nil
+}
+
+func (h *ArtifactDriver) doRequest(method, url string, body io.Reader, artifact *wfv1.Artifact) (*http.Response, error) {
+	req, err := http.NewRequest(method, url, body)
+	if err != nil {
+		return nil, err
+	}
+	if artifact.Artifactory != nil && artifact.HTTP == nil {
+		req.SetBasicAuth(h.Username, h.Password)
+	} else {
+		for _, h := range artifact.HTTP.Headers {
 			req.Header.Add(h.Name, h.Value)
 		}
 		if h.Username != "" && h.Password != "" {
 			req.SetBasicAuth(h.Username, h.Password)
 		}
 	}
-	res, err := (&http.Client{}).Do(req)
-	if err != nil {
-		return err
-	}
-	defer func() {
-		_ = res.Body.Close()
-	}()
-	if res.StatusCode < 200 || res.StatusCode >= 300 {
-		return errors.InternalErrorf("saving file %s to %s failed with reason:%s", path, url, res.Status)
-	}
-	return nil
+	resp, err := h.Client.Do(req)
+	return resp, err
 }
 
 func (h *ArtifactDriver) ListObjects(artifact *wfv1.Artifact) ([]string, error) {

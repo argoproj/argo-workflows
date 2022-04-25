@@ -455,23 +455,64 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     path="path_example",
                                 ),
                                 http=IoArgoprojWorkflowV1alpha1HTTPArtifact(
+                                    basic_auth=IoArgoprojWorkflowV1alpha1BasicAuth(
+                                        password_secret=SecretKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
+                                        username_secret=SecretKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
+                                    ),
+                                    client_cert=IoArgoprojWorkflowV1alpha1ClientCertAuth(
+                                        client_cert_secret=SecretKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
+                                        client_key_secret=SecretKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
+                                    ),
+                                    follow_temporary_redirects=True,
                                     headers=[
                                         IoArgoprojWorkflowV1alpha1Header(
                                             name="name_example",
                                             value="value_example",
                                         ),
                                     ],
-                                    password_secret=SecretKeySelector(
-                                        key="key_example",
-                                        name="name_example",
-                                        optional=True,
+                                    oauth2=IoArgoprojWorkflowV1alpha1OAuth2Auth(
+                                        client_id_secret=SecretKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
+                                        client_secret_secret=SecretKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
+                                        endpoint_params=[
+                                            IoArgoprojWorkflowV1alpha1EndpointParam(
+                                                key="key_example",
+                                                value="value_example",
+                                            ),
+                                        ],
+                                        scopes=[
+                                            "scopes_example",
+                                        ],
+                                        token_url_secret=SecretKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
                                     ),
                                     url="url_example",
-                                    username_secret=SecretKeySelector(
-                                        key="key_example",
-                                        name="name_example",
-                                        optional=True,
-                                    ),
                                 ),
                                 mode=1,
                                 name="name_example",
@@ -679,23 +720,64 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             path="path_example",
                                         ),
                                         http=IoArgoprojWorkflowV1alpha1HTTPArtifact(
+                                            basic_auth=IoArgoprojWorkflowV1alpha1BasicAuth(
+                                                password_secret=SecretKeySelector(
+                                                    key="key_example",
+                                                    name="name_example",
+                                                    optional=True,
+                                                ),
+                                                username_secret=SecretKeySelector(
+                                                    key="key_example",
+                                                    name="name_example",
+                                                    optional=True,
+                                                ),
+                                            ),
+                                            client_cert=IoArgoprojWorkflowV1alpha1ClientCertAuth(
+                                                client_cert_secret=SecretKeySelector(
+                                                    key="key_example",
+                                                    name="name_example",
+                                                    optional=True,
+                                                ),
+                                                client_key_secret=SecretKeySelector(
+                                                    key="key_example",
+                                                    name="name_example",
+                                                    optional=True,
+                                                ),
+                                            ),
+                                            follow_temporary_redirects=True,
                                             headers=[
                                                 IoArgoprojWorkflowV1alpha1Header(
                                                     name="name_example",
                                                     value="value_example",
                                                 ),
                                             ],
-                                            password_secret=SecretKeySelector(
-                                                key="key_example",
-                                                name="name_example",
-                                                optional=True,
+                                            oauth2=IoArgoprojWorkflowV1alpha1OAuth2Auth(
+                                                client_id_secret=SecretKeySelector(
+                                                    key="key_example",
+                                                    name="name_example",
+                                                    optional=True,
+                                                ),
+                                                client_secret_secret=SecretKeySelector(
+                                                    key="key_example",
+                                                    name="name_example",
+                                                    optional=True,
+                                                ),
+                                                endpoint_params=[
+                                                    IoArgoprojWorkflowV1alpha1EndpointParam(
+                                                        key="key_example",
+                                                        value="value_example",
+                                                    ),
+                                                ],
+                                                scopes=[
+                                                    "scopes_example",
+                                                ],
+                                                token_url_secret=SecretKeySelector(
+                                                    key="key_example",
+                                                    name="name_example",
+                                                    optional=True,
+                                                ),
                                             ),
                                             url="url_example",
-                                            username_secret=SecretKeySelector(
-                                                key="key_example",
-                                                name="name_example",
-                                                optional=True,
-                                            ),
                                         ),
                                         mode=1,
                                         name="name_example",
@@ -1238,23 +1320,64 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 path="path_example",
                             ),
                             http=IoArgoprojWorkflowV1alpha1HTTPArtifact(
+                                basic_auth=IoArgoprojWorkflowV1alpha1BasicAuth(
+                                    password_secret=SecretKeySelector(
+                                        key="key_example",
+                                        name="name_example",
+                                        optional=True,
+                                    ),
+                                    username_secret=SecretKeySelector(
+                                        key="key_example",
+                                        name="name_example",
+                                        optional=True,
+                                    ),
+                                ),
+                                client_cert=IoArgoprojWorkflowV1alpha1ClientCertAuth(
+                                    client_cert_secret=SecretKeySelector(
+                                        key="key_example",
+                                        name="name_example",
+                                        optional=True,
+                                    ),
+                                    client_key_secret=SecretKeySelector(
+                                        key="key_example",
+                                        name="name_example",
+                                        optional=True,
+                                    ),
+                                ),
+                                follow_temporary_redirects=True,
                                 headers=[
                                     IoArgoprojWorkflowV1alpha1Header(
                                         name="name_example",
                                         value="value_example",
                                     ),
                                 ],
-                                password_secret=SecretKeySelector(
-                                    key="key_example",
-                                    name="name_example",
-                                    optional=True,
+                                oauth2=IoArgoprojWorkflowV1alpha1OAuth2Auth(
+                                    client_id_secret=SecretKeySelector(
+                                        key="key_example",
+                                        name="name_example",
+                                        optional=True,
+                                    ),
+                                    client_secret_secret=SecretKeySelector(
+                                        key="key_example",
+                                        name="name_example",
+                                        optional=True,
+                                    ),
+                                    endpoint_params=[
+                                        IoArgoprojWorkflowV1alpha1EndpointParam(
+                                            key="key_example",
+                                            value="value_example",
+                                        ),
+                                    ],
+                                    scopes=[
+                                        "scopes_example",
+                                    ],
+                                    token_url_secret=SecretKeySelector(
+                                        key="key_example",
+                                        name="name_example",
+                                        optional=True,
+                                    ),
                                 ),
                                 url="url_example",
-                                username_secret=SecretKeySelector(
-                                    key="key_example",
-                                    name="name_example",
-                                    optional=True,
-                                ),
                             ),
                             oss=IoArgoprojWorkflowV1alpha1OSSArtifact(
                                 access_key_secret=SecretKeySelector(
@@ -1969,23 +2092,64 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                     path="path_example",
                                                 ),
                                                 http=IoArgoprojWorkflowV1alpha1HTTPArtifact(
+                                                    basic_auth=IoArgoprojWorkflowV1alpha1BasicAuth(
+                                                        password_secret=SecretKeySelector(
+                                                            key="key_example",
+                                                            name="name_example",
+                                                            optional=True,
+                                                        ),
+                                                        username_secret=SecretKeySelector(
+                                                            key="key_example",
+                                                            name="name_example",
+                                                            optional=True,
+                                                        ),
+                                                    ),
+                                                    client_cert=IoArgoprojWorkflowV1alpha1ClientCertAuth(
+                                                        client_cert_secret=SecretKeySelector(
+                                                            key="key_example",
+                                                            name="name_example",
+                                                            optional=True,
+                                                        ),
+                                                        client_key_secret=SecretKeySelector(
+                                                            key="key_example",
+                                                            name="name_example",
+                                                            optional=True,
+                                                        ),
+                                                    ),
+                                                    follow_temporary_redirects=True,
                                                     headers=[
                                                         IoArgoprojWorkflowV1alpha1Header(
                                                             name="name_example",
                                                             value="value_example",
                                                         ),
                                                     ],
-                                                    password_secret=SecretKeySelector(
-                                                        key="key_example",
-                                                        name="name_example",
-                                                        optional=True,
+                                                    oauth2=IoArgoprojWorkflowV1alpha1OAuth2Auth(
+                                                        client_id_secret=SecretKeySelector(
+                                                            key="key_example",
+                                                            name="name_example",
+                                                            optional=True,
+                                                        ),
+                                                        client_secret_secret=SecretKeySelector(
+                                                            key="key_example",
+                                                            name="name_example",
+                                                            optional=True,
+                                                        ),
+                                                        endpoint_params=[
+                                                            IoArgoprojWorkflowV1alpha1EndpointParam(
+                                                                key="key_example",
+                                                                value="value_example",
+                                                            ),
+                                                        ],
+                                                        scopes=[
+                                                            "scopes_example",
+                                                        ],
+                                                        token_url_secret=SecretKeySelector(
+                                                            key="key_example",
+                                                            name="name_example",
+                                                            optional=True,
+                                                        ),
                                                     ),
                                                     url="url_example",
-                                                    username_secret=SecretKeySelector(
-                                                        key="key_example",
-                                                        name="name_example",
-                                                        optional=True,
-                                                    ),
                                                 ),
                                                 mode=1,
                                                 name="name_example",
@@ -2177,23 +2341,64 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             path="path_example",
                                                         ),
                                                         http=IoArgoprojWorkflowV1alpha1HTTPArtifact(
+                                                            basic_auth=IoArgoprojWorkflowV1alpha1BasicAuth(
+                                                                password_secret=SecretKeySelector(
+                                                                    key="key_example",
+                                                                    name="name_example",
+                                                                    optional=True,
+                                                                ),
+                                                                username_secret=SecretKeySelector(
+                                                                    key="key_example",
+                                                                    name="name_example",
+                                                                    optional=True,
+                                                                ),
+                                                            ),
+                                                            client_cert=IoArgoprojWorkflowV1alpha1ClientCertAuth(
+                                                                client_cert_secret=SecretKeySelector(
+                                                                    key="key_example",
+                                                                    name="name_example",
+                                                                    optional=True,
+                                                                ),
+                                                                client_key_secret=SecretKeySelector(
+                                                                    key="key_example",
+                                                                    name="name_example",
+                                                                    optional=True,
+                                                                ),
+                                                            ),
+                                                            follow_temporary_redirects=True,
                                                             headers=[
                                                                 IoArgoprojWorkflowV1alpha1Header(
                                                                     name="name_example",
                                                                     value="value_example",
                                                                 ),
                                                             ],
-                                                            password_secret=SecretKeySelector(
-                                                                key="key_example",
-                                                                name="name_example",
-                                                                optional=True,
+                                                            oauth2=IoArgoprojWorkflowV1alpha1OAuth2Auth(
+                                                                client_id_secret=SecretKeySelector(
+                                                                    key="key_example",
+                                                                    name="name_example",
+                                                                    optional=True,
+                                                                ),
+                                                                client_secret_secret=SecretKeySelector(
+                                                                    key="key_example",
+                                                                    name="name_example",
+                                                                    optional=True,
+                                                                ),
+                                                                endpoint_params=[
+                                                                    IoArgoprojWorkflowV1alpha1EndpointParam(
+                                                                        key="key_example",
+                                                                        value="value_example",
+                                                                    ),
+                                                                ],
+                                                                scopes=[
+                                                                    "scopes_example",
+                                                                ],
+                                                                token_url_secret=SecretKeySelector(
+                                                                    key="key_example",
+                                                                    name="name_example",
+                                                                    optional=True,
+                                                                ),
                                                             ),
                                                             url="url_example",
-                                                            username_secret=SecretKeySelector(
-                                                                key="key_example",
-                                                                name="name_example",
-                                                                optional=True,
-                                                            ),
                                                         ),
                                                         mode=1,
                                                         name="name_example",
@@ -2407,23 +2612,64 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         path="path_example",
                                     ),
                                     http=IoArgoprojWorkflowV1alpha1HTTPArtifact(
+                                        basic_auth=IoArgoprojWorkflowV1alpha1BasicAuth(
+                                            password_secret=SecretKeySelector(
+                                                key="key_example",
+                                                name="name_example",
+                                                optional=True,
+                                            ),
+                                            username_secret=SecretKeySelector(
+                                                key="key_example",
+                                                name="name_example",
+                                                optional=True,
+                                            ),
+                                        ),
+                                        client_cert=IoArgoprojWorkflowV1alpha1ClientCertAuth(
+                                            client_cert_secret=SecretKeySelector(
+                                                key="key_example",
+                                                name="name_example",
+                                                optional=True,
+                                            ),
+                                            client_key_secret=SecretKeySelector(
+                                                key="key_example",
+                                                name="name_example",
+                                                optional=True,
+                                            ),
+                                        ),
+                                        follow_temporary_redirects=True,
                                         headers=[
                                             IoArgoprojWorkflowV1alpha1Header(
                                                 name="name_example",
                                                 value="value_example",
                                             ),
                                         ],
-                                        password_secret=SecretKeySelector(
-                                            key="key_example",
-                                            name="name_example",
-                                            optional=True,
+                                        oauth2=IoArgoprojWorkflowV1alpha1OAuth2Auth(
+                                            client_id_secret=SecretKeySelector(
+                                                key="key_example",
+                                                name="name_example",
+                                                optional=True,
+                                            ),
+                                            client_secret_secret=SecretKeySelector(
+                                                key="key_example",
+                                                name="name_example",
+                                                optional=True,
+                                            ),
+                                            endpoint_params=[
+                                                IoArgoprojWorkflowV1alpha1EndpointParam(
+                                                    key="key_example",
+                                                    value="value_example",
+                                                ),
+                                            ],
+                                            scopes=[
+                                                "scopes_example",
+                                            ],
+                                            token_url_secret=SecretKeySelector(
+                                                key="key_example",
+                                                name="name_example",
+                                                optional=True,
+                                            ),
                                         ),
                                         url="url_example",
-                                        username_secret=SecretKeySelector(
-                                            key="key_example",
-                                            name="name_example",
-                                            optional=True,
-                                        ),
                                     ),
                                     mode=1,
                                     name="name_example",
@@ -2889,23 +3135,64 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         path="path_example",
                                     ),
                                     http=IoArgoprojWorkflowV1alpha1HTTPArtifact(
+                                        basic_auth=IoArgoprojWorkflowV1alpha1BasicAuth(
+                                            password_secret=SecretKeySelector(
+                                                key="key_example",
+                                                name="name_example",
+                                                optional=True,
+                                            ),
+                                            username_secret=SecretKeySelector(
+                                                key="key_example",
+                                                name="name_example",
+                                                optional=True,
+                                            ),
+                                        ),
+                                        client_cert=IoArgoprojWorkflowV1alpha1ClientCertAuth(
+                                            client_cert_secret=SecretKeySelector(
+                                                key="key_example",
+                                                name="name_example",
+                                                optional=True,
+                                            ),
+                                            client_key_secret=SecretKeySelector(
+                                                key="key_example",
+                                                name="name_example",
+                                                optional=True,
+                                            ),
+                                        ),
+                                        follow_temporary_redirects=True,
                                         headers=[
                                             IoArgoprojWorkflowV1alpha1Header(
                                                 name="name_example",
                                                 value="value_example",
                                             ),
                                         ],
-                                        password_secret=SecretKeySelector(
-                                            key="key_example",
-                                            name="name_example",
-                                            optional=True,
+                                        oauth2=IoArgoprojWorkflowV1alpha1OAuth2Auth(
+                                            client_id_secret=SecretKeySelector(
+                                                key="key_example",
+                                                name="name_example",
+                                                optional=True,
+                                            ),
+                                            client_secret_secret=SecretKeySelector(
+                                                key="key_example",
+                                                name="name_example",
+                                                optional=True,
+                                            ),
+                                            endpoint_params=[
+                                                IoArgoprojWorkflowV1alpha1EndpointParam(
+                                                    key="key_example",
+                                                    value="value_example",
+                                                ),
+                                            ],
+                                            scopes=[
+                                                "scopes_example",
+                                            ],
+                                            token_url_secret=SecretKeySelector(
+                                                key="key_example",
+                                                name="name_example",
+                                                optional=True,
+                                            ),
                                         ),
                                         url="url_example",
-                                        username_secret=SecretKeySelector(
-                                            key="key_example",
-                                            name="name_example",
-                                            optional=True,
-                                        ),
                                     ),
                                     mode=1,
                                     name="name_example",
@@ -3138,23 +3425,64 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         path="path_example",
                                     ),
                                     http=IoArgoprojWorkflowV1alpha1HTTPArtifact(
+                                        basic_auth=IoArgoprojWorkflowV1alpha1BasicAuth(
+                                            password_secret=SecretKeySelector(
+                                                key="key_example",
+                                                name="name_example",
+                                                optional=True,
+                                            ),
+                                            username_secret=SecretKeySelector(
+                                                key="key_example",
+                                                name="name_example",
+                                                optional=True,
+                                            ),
+                                        ),
+                                        client_cert=IoArgoprojWorkflowV1alpha1ClientCertAuth(
+                                            client_cert_secret=SecretKeySelector(
+                                                key="key_example",
+                                                name="name_example",
+                                                optional=True,
+                                            ),
+                                            client_key_secret=SecretKeySelector(
+                                                key="key_example",
+                                                name="name_example",
+                                                optional=True,
+                                            ),
+                                        ),
+                                        follow_temporary_redirects=True,
                                         headers=[
                                             IoArgoprojWorkflowV1alpha1Header(
                                                 name="name_example",
                                                 value="value_example",
                                             ),
                                         ],
-                                        password_secret=SecretKeySelector(
-                                            key="key_example",
-                                            name="name_example",
-                                            optional=True,
+                                        oauth2=IoArgoprojWorkflowV1alpha1OAuth2Auth(
+                                            client_id_secret=SecretKeySelector(
+                                                key="key_example",
+                                                name="name_example",
+                                                optional=True,
+                                            ),
+                                            client_secret_secret=SecretKeySelector(
+                                                key="key_example",
+                                                name="name_example",
+                                                optional=True,
+                                            ),
+                                            endpoint_params=[
+                                                IoArgoprojWorkflowV1alpha1EndpointParam(
+                                                    key="key_example",
+                                                    value="value_example",
+                                                ),
+                                            ],
+                                            scopes=[
+                                                "scopes_example",
+                                            ],
+                                            token_url_secret=SecretKeySelector(
+                                                key="key_example",
+                                                name="name_example",
+                                                optional=True,
+                                            ),
                                         ),
                                         url="url_example",
-                                        username_secret=SecretKeySelector(
-                                            key="key_example",
-                                            name="name_example",
-                                            optional=True,
-                                        ),
                                     ),
                                     mode=1,
                                     name="name_example",
@@ -3948,23 +4276,64 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                     path="path_example",
                                                 ),
                                                 http=IoArgoprojWorkflowV1alpha1HTTPArtifact(
+                                                    basic_auth=IoArgoprojWorkflowV1alpha1BasicAuth(
+                                                        password_secret=SecretKeySelector(
+                                                            key="key_example",
+                                                            name="name_example",
+                                                            optional=True,
+                                                        ),
+                                                        username_secret=SecretKeySelector(
+                                                            key="key_example",
+                                                            name="name_example",
+                                                            optional=True,
+                                                        ),
+                                                    ),
+                                                    client_cert=IoArgoprojWorkflowV1alpha1ClientCertAuth(
+                                                        client_cert_secret=SecretKeySelector(
+                                                            key="key_example",
+                                                            name="name_example",
+                                                            optional=True,
+                                                        ),
+                                                        client_key_secret=SecretKeySelector(
+                                                            key="key_example",
+                                                            name="name_example",
+                                                            optional=True,
+                                                        ),
+                                                    ),
+                                                    follow_temporary_redirects=True,
                                                     headers=[
                                                         IoArgoprojWorkflowV1alpha1Header(
                                                             name="name_example",
                                                             value="value_example",
                                                         ),
                                                     ],
-                                                    password_secret=SecretKeySelector(
-                                                        key="key_example",
-                                                        name="name_example",
-                                                        optional=True,
+                                                    oauth2=IoArgoprojWorkflowV1alpha1OAuth2Auth(
+                                                        client_id_secret=SecretKeySelector(
+                                                            key="key_example",
+                                                            name="name_example",
+                                                            optional=True,
+                                                        ),
+                                                        client_secret_secret=SecretKeySelector(
+                                                            key="key_example",
+                                                            name="name_example",
+                                                            optional=True,
+                                                        ),
+                                                        endpoint_params=[
+                                                            IoArgoprojWorkflowV1alpha1EndpointParam(
+                                                                key="key_example",
+                                                                value="value_example",
+                                                            ),
+                                                        ],
+                                                        scopes=[
+                                                            "scopes_example",
+                                                        ],
+                                                        token_url_secret=SecretKeySelector(
+                                                            key="key_example",
+                                                            name="name_example",
+                                                            optional=True,
+                                                        ),
                                                     ),
                                                     url="url_example",
-                                                    username_secret=SecretKeySelector(
-                                                        key="key_example",
-                                                        name="name_example",
-                                                        optional=True,
-                                                    ),
                                                 ),
                                                 mode=1,
                                                 name="name_example",
@@ -4152,23 +4521,64 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             path="path_example",
                                                         ),
                                                         http=IoArgoprojWorkflowV1alpha1HTTPArtifact(
+                                                            basic_auth=IoArgoprojWorkflowV1alpha1BasicAuth(
+                                                                password_secret=SecretKeySelector(
+                                                                    key="key_example",
+                                                                    name="name_example",
+                                                                    optional=True,
+                                                                ),
+                                                                username_secret=SecretKeySelector(
+                                                                    key="key_example",
+                                                                    name="name_example",
+                                                                    optional=True,
+                                                                ),
+                                                            ),
+                                                            client_cert=IoArgoprojWorkflowV1alpha1ClientCertAuth(
+                                                                client_cert_secret=SecretKeySelector(
+                                                                    key="key_example",
+                                                                    name="name_example",
+                                                                    optional=True,
+                                                                ),
+                                                                client_key_secret=SecretKeySelector(
+                                                                    key="key_example",
+                                                                    name="name_example",
+                                                                    optional=True,
+                                                                ),
+                                                            ),
+                                                            follow_temporary_redirects=True,
                                                             headers=[
                                                                 IoArgoprojWorkflowV1alpha1Header(
                                                                     name="name_example",
                                                                     value="value_example",
                                                                 ),
                                                             ],
-                                                            password_secret=SecretKeySelector(
-                                                                key="key_example",
-                                                                name="name_example",
-                                                                optional=True,
+                                                            oauth2=IoArgoprojWorkflowV1alpha1OAuth2Auth(
+                                                                client_id_secret=SecretKeySelector(
+                                                                    key="key_example",
+                                                                    name="name_example",
+                                                                    optional=True,
+                                                                ),
+                                                                client_secret_secret=SecretKeySelector(
+                                                                    key="key_example",
+                                                                    name="name_example",
+                                                                    optional=True,
+                                                                ),
+                                                                endpoint_params=[
+                                                                    IoArgoprojWorkflowV1alpha1EndpointParam(
+                                                                        key="key_example",
+                                                                        value="value_example",
+                                                                    ),
+                                                                ],
+                                                                scopes=[
+                                                                    "scopes_example",
+                                                                ],
+                                                                token_url_secret=SecretKeySelector(
+                                                                    key="key_example",
+                                                                    name="name_example",
+                                                                    optional=True,
+                                                                ),
                                                             ),
                                                             url="url_example",
-                                                            username_secret=SecretKeySelector(
-                                                                key="key_example",
-                                                                name="name_example",
-                                                                optional=True,
-                                                            ),
                                                         ),
                                                         mode=1,
                                                         name="name_example",
@@ -4977,23 +5387,64 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     path="path_example",
                                 ),
                                 http=IoArgoprojWorkflowV1alpha1HTTPArtifact(
+                                    basic_auth=IoArgoprojWorkflowV1alpha1BasicAuth(
+                                        password_secret=SecretKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
+                                        username_secret=SecretKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
+                                    ),
+                                    client_cert=IoArgoprojWorkflowV1alpha1ClientCertAuth(
+                                        client_cert_secret=SecretKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
+                                        client_key_secret=SecretKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
+                                    ),
+                                    follow_temporary_redirects=True,
                                     headers=[
                                         IoArgoprojWorkflowV1alpha1Header(
                                             name="name_example",
                                             value="value_example",
                                         ),
                                     ],
-                                    password_secret=SecretKeySelector(
-                                        key="key_example",
-                                        name="name_example",
-                                        optional=True,
+                                    oauth2=IoArgoprojWorkflowV1alpha1OAuth2Auth(
+                                        client_id_secret=SecretKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
+                                        client_secret_secret=SecretKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
+                                        endpoint_params=[
+                                            IoArgoprojWorkflowV1alpha1EndpointParam(
+                                                key="key_example",
+                                                value="value_example",
+                                            ),
+                                        ],
+                                        scopes=[
+                                            "scopes_example",
+                                        ],
+                                        token_url_secret=SecretKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
                                     ),
                                     url="url_example",
-                                    username_secret=SecretKeySelector(
-                                        key="key_example",
-                                        name="name_example",
-                                        optional=True,
-                                    ),
                                 ),
                                 oss=IoArgoprojWorkflowV1alpha1OSSArtifact(
                                     access_key_secret=SecretKeySelector(
@@ -5708,23 +6159,64 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         path="path_example",
                                                     ),
                                                     http=IoArgoprojWorkflowV1alpha1HTTPArtifact(
+                                                        basic_auth=IoArgoprojWorkflowV1alpha1BasicAuth(
+                                                            password_secret=SecretKeySelector(
+                                                                key="key_example",
+                                                                name="name_example",
+                                                                optional=True,
+                                                            ),
+                                                            username_secret=SecretKeySelector(
+                                                                key="key_example",
+                                                                name="name_example",
+                                                                optional=True,
+                                                            ),
+                                                        ),
+                                                        client_cert=IoArgoprojWorkflowV1alpha1ClientCertAuth(
+                                                            client_cert_secret=SecretKeySelector(
+                                                                key="key_example",
+                                                                name="name_example",
+                                                                optional=True,
+                                                            ),
+                                                            client_key_secret=SecretKeySelector(
+                                                                key="key_example",
+                                                                name="name_example",
+                                                                optional=True,
+                                                            ),
+                                                        ),
+                                                        follow_temporary_redirects=True,
                                                         headers=[
                                                             IoArgoprojWorkflowV1alpha1Header(
                                                                 name="name_example",
                                                                 value="value_example",
                                                             ),
                                                         ],
-                                                        password_secret=SecretKeySelector(
-                                                            key="key_example",
-                                                            name="name_example",
-                                                            optional=True,
+                                                        oauth2=IoArgoprojWorkflowV1alpha1OAuth2Auth(
+                                                            client_id_secret=SecretKeySelector(
+                                                                key="key_example",
+                                                                name="name_example",
+                                                                optional=True,
+                                                            ),
+                                                            client_secret_secret=SecretKeySelector(
+                                                                key="key_example",
+                                                                name="name_example",
+                                                                optional=True,
+                                                            ),
+                                                            endpoint_params=[
+                                                                IoArgoprojWorkflowV1alpha1EndpointParam(
+                                                                    key="key_example",
+                                                                    value="value_example",
+                                                                ),
+                                                            ],
+                                                            scopes=[
+                                                                "scopes_example",
+                                                            ],
+                                                            token_url_secret=SecretKeySelector(
+                                                                key="key_example",
+                                                                name="name_example",
+                                                                optional=True,
+                                                            ),
                                                         ),
                                                         url="url_example",
-                                                        username_secret=SecretKeySelector(
-                                                            key="key_example",
-                                                            name="name_example",
-                                                            optional=True,
-                                                        ),
                                                     ),
                                                     mode=1,
                                                     name="name_example",
@@ -5916,23 +6408,64 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                                 path="path_example",
                                                             ),
                                                             http=IoArgoprojWorkflowV1alpha1HTTPArtifact(
+                                                                basic_auth=IoArgoprojWorkflowV1alpha1BasicAuth(
+                                                                    password_secret=SecretKeySelector(
+                                                                        key="key_example",
+                                                                        name="name_example",
+                                                                        optional=True,
+                                                                    ),
+                                                                    username_secret=SecretKeySelector(
+                                                                        key="key_example",
+                                                                        name="name_example",
+                                                                        optional=True,
+                                                                    ),
+                                                                ),
+                                                                client_cert=IoArgoprojWorkflowV1alpha1ClientCertAuth(
+                                                                    client_cert_secret=SecretKeySelector(
+                                                                        key="key_example",
+                                                                        name="name_example",
+                                                                        optional=True,
+                                                                    ),
+                                                                    client_key_secret=SecretKeySelector(
+                                                                        key="key_example",
+                                                                        name="name_example",
+                                                                        optional=True,
+                                                                    ),
+                                                                ),
+                                                                follow_temporary_redirects=True,
                                                                 headers=[
                                                                     IoArgoprojWorkflowV1alpha1Header(
                                                                         name="name_example",
                                                                         value="value_example",
                                                                     ),
                                                                 ],
-                                                                password_secret=SecretKeySelector(
-                                                                    key="key_example",
-                                                                    name="name_example",
-                                                                    optional=True,
+                                                                oauth2=IoArgoprojWorkflowV1alpha1OAuth2Auth(
+                                                                    client_id_secret=SecretKeySelector(
+                                                                        key="key_example",
+                                                                        name="name_example",
+                                                                        optional=True,
+                                                                    ),
+                                                                    client_secret_secret=SecretKeySelector(
+                                                                        key="key_example",
+                                                                        name="name_example",
+                                                                        optional=True,
+                                                                    ),
+                                                                    endpoint_params=[
+                                                                        IoArgoprojWorkflowV1alpha1EndpointParam(
+                                                                            key="key_example",
+                                                                            value="value_example",
+                                                                        ),
+                                                                    ],
+                                                                    scopes=[
+                                                                        "scopes_example",
+                                                                    ],
+                                                                    token_url_secret=SecretKeySelector(
+                                                                        key="key_example",
+                                                                        name="name_example",
+                                                                        optional=True,
+                                                                    ),
                                                                 ),
                                                                 url="url_example",
-                                                                username_secret=SecretKeySelector(
-                                                                    key="key_example",
-                                                                    name="name_example",
-                                                                    optional=True,
-                                                                ),
                                                             ),
                                                             mode=1,
                                                             name="name_example",
@@ -6146,23 +6679,64 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             path="path_example",
                                         ),
                                         http=IoArgoprojWorkflowV1alpha1HTTPArtifact(
+                                            basic_auth=IoArgoprojWorkflowV1alpha1BasicAuth(
+                                                password_secret=SecretKeySelector(
+                                                    key="key_example",
+                                                    name="name_example",
+                                                    optional=True,
+                                                ),
+                                                username_secret=SecretKeySelector(
+                                                    key="key_example",
+                                                    name="name_example",
+                                                    optional=True,
+                                                ),
+                                            ),
+                                            client_cert=IoArgoprojWorkflowV1alpha1ClientCertAuth(
+                                                client_cert_secret=SecretKeySelector(
+                                                    key="key_example",
+                                                    name="name_example",
+                                                    optional=True,
+                                                ),
+                                                client_key_secret=SecretKeySelector(
+                                                    key="key_example",
+                                                    name="name_example",
+                                                    optional=True,
+                                                ),
+                                            ),
+                                            follow_temporary_redirects=True,
                                             headers=[
                                                 IoArgoprojWorkflowV1alpha1Header(
                                                     name="name_example",
                                                     value="value_example",
                                                 ),
                                             ],
-                                            password_secret=SecretKeySelector(
-                                                key="key_example",
-                                                name="name_example",
-                                                optional=True,
+                                            oauth2=IoArgoprojWorkflowV1alpha1OAuth2Auth(
+                                                client_id_secret=SecretKeySelector(
+                                                    key="key_example",
+                                                    name="name_example",
+                                                    optional=True,
+                                                ),
+                                                client_secret_secret=SecretKeySelector(
+                                                    key="key_example",
+                                                    name="name_example",
+                                                    optional=True,
+                                                ),
+                                                endpoint_params=[
+                                                    IoArgoprojWorkflowV1alpha1EndpointParam(
+                                                        key="key_example",
+                                                        value="value_example",
+                                                    ),
+                                                ],
+                                                scopes=[
+                                                    "scopes_example",
+                                                ],
+                                                token_url_secret=SecretKeySelector(
+                                                    key="key_example",
+                                                    name="name_example",
+                                                    optional=True,
+                                                ),
                                             ),
                                             url="url_example",
-                                            username_secret=SecretKeySelector(
-                                                key="key_example",
-                                                name="name_example",
-                                                optional=True,
-                                            ),
                                         ),
                                         mode=1,
                                         name="name_example",
@@ -6628,23 +7202,64 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             path="path_example",
                                         ),
                                         http=IoArgoprojWorkflowV1alpha1HTTPArtifact(
+                                            basic_auth=IoArgoprojWorkflowV1alpha1BasicAuth(
+                                                password_secret=SecretKeySelector(
+                                                    key="key_example",
+                                                    name="name_example",
+                                                    optional=True,
+                                                ),
+                                                username_secret=SecretKeySelector(
+                                                    key="key_example",
+                                                    name="name_example",
+                                                    optional=True,
+                                                ),
+                                            ),
+                                            client_cert=IoArgoprojWorkflowV1alpha1ClientCertAuth(
+                                                client_cert_secret=SecretKeySelector(
+                                                    key="key_example",
+                                                    name="name_example",
+                                                    optional=True,
+                                                ),
+                                                client_key_secret=SecretKeySelector(
+                                                    key="key_example",
+                                                    name="name_example",
+                                                    optional=True,
+                                                ),
+                                            ),
+                                            follow_temporary_redirects=True,
                                             headers=[
                                                 IoArgoprojWorkflowV1alpha1Header(
                                                     name="name_example",
                                                     value="value_example",
                                                 ),
                                             ],
-                                            password_secret=SecretKeySelector(
-                                                key="key_example",
-                                                name="name_example",
-                                                optional=True,
+                                            oauth2=IoArgoprojWorkflowV1alpha1OAuth2Auth(
+                                                client_id_secret=SecretKeySelector(
+                                                    key="key_example",
+                                                    name="name_example",
+                                                    optional=True,
+                                                ),
+                                                client_secret_secret=SecretKeySelector(
+                                                    key="key_example",
+                                                    name="name_example",
+                                                    optional=True,
+                                                ),
+                                                endpoint_params=[
+                                                    IoArgoprojWorkflowV1alpha1EndpointParam(
+                                                        key="key_example",
+                                                        value="value_example",
+                                                    ),
+                                                ],
+                                                scopes=[
+                                                    "scopes_example",
+                                                ],
+                                                token_url_secret=SecretKeySelector(
+                                                    key="key_example",
+                                                    name="name_example",
+                                                    optional=True,
+                                                ),
                                             ),
                                             url="url_example",
-                                            username_secret=SecretKeySelector(
-                                                key="key_example",
-                                                name="name_example",
-                                                optional=True,
-                                            ),
                                         ),
                                         mode=1,
                                         name="name_example",
@@ -6877,23 +7492,64 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             path="path_example",
                                         ),
                                         http=IoArgoprojWorkflowV1alpha1HTTPArtifact(
+                                            basic_auth=IoArgoprojWorkflowV1alpha1BasicAuth(
+                                                password_secret=SecretKeySelector(
+                                                    key="key_example",
+                                                    name="name_example",
+                                                    optional=True,
+                                                ),
+                                                username_secret=SecretKeySelector(
+                                                    key="key_example",
+                                                    name="name_example",
+                                                    optional=True,
+                                                ),
+                                            ),
+                                            client_cert=IoArgoprojWorkflowV1alpha1ClientCertAuth(
+                                                client_cert_secret=SecretKeySelector(
+                                                    key="key_example",
+                                                    name="name_example",
+                                                    optional=True,
+                                                ),
+                                                client_key_secret=SecretKeySelector(
+                                                    key="key_example",
+                                                    name="name_example",
+                                                    optional=True,
+                                                ),
+                                            ),
+                                            follow_temporary_redirects=True,
                                             headers=[
                                                 IoArgoprojWorkflowV1alpha1Header(
                                                     name="name_example",
                                                     value="value_example",
                                                 ),
                                             ],
-                                            password_secret=SecretKeySelector(
-                                                key="key_example",
-                                                name="name_example",
-                                                optional=True,
+                                            oauth2=IoArgoprojWorkflowV1alpha1OAuth2Auth(
+                                                client_id_secret=SecretKeySelector(
+                                                    key="key_example",
+                                                    name="name_example",
+                                                    optional=True,
+                                                ),
+                                                client_secret_secret=SecretKeySelector(
+                                                    key="key_example",
+                                                    name="name_example",
+                                                    optional=True,
+                                                ),
+                                                endpoint_params=[
+                                                    IoArgoprojWorkflowV1alpha1EndpointParam(
+                                                        key="key_example",
+                                                        value="value_example",
+                                                    ),
+                                                ],
+                                                scopes=[
+                                                    "scopes_example",
+                                                ],
+                                                token_url_secret=SecretKeySelector(
+                                                    key="key_example",
+                                                    name="name_example",
+                                                    optional=True,
+                                                ),
                                             ),
                                             url="url_example",
-                                            username_secret=SecretKeySelector(
-                                                key="key_example",
-                                                name="name_example",
-                                                optional=True,
-                                            ),
                                         ),
                                         mode=1,
                                         name="name_example",
@@ -7687,23 +8343,64 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         path="path_example",
                                                     ),
                                                     http=IoArgoprojWorkflowV1alpha1HTTPArtifact(
+                                                        basic_auth=IoArgoprojWorkflowV1alpha1BasicAuth(
+                                                            password_secret=SecretKeySelector(
+                                                                key="key_example",
+                                                                name="name_example",
+                                                                optional=True,
+                                                            ),
+                                                            username_secret=SecretKeySelector(
+                                                                key="key_example",
+                                                                name="name_example",
+                                                                optional=True,
+                                                            ),
+                                                        ),
+                                                        client_cert=IoArgoprojWorkflowV1alpha1ClientCertAuth(
+                                                            client_cert_secret=SecretKeySelector(
+                                                                key="key_example",
+                                                                name="name_example",
+                                                                optional=True,
+                                                            ),
+                                                            client_key_secret=SecretKeySelector(
+                                                                key="key_example",
+                                                                name="name_example",
+                                                                optional=True,
+                                                            ),
+                                                        ),
+                                                        follow_temporary_redirects=True,
                                                         headers=[
                                                             IoArgoprojWorkflowV1alpha1Header(
                                                                 name="name_example",
                                                                 value="value_example",
                                                             ),
                                                         ],
-                                                        password_secret=SecretKeySelector(
-                                                            key="key_example",
-                                                            name="name_example",
-                                                            optional=True,
+                                                        oauth2=IoArgoprojWorkflowV1alpha1OAuth2Auth(
+                                                            client_id_secret=SecretKeySelector(
+                                                                key="key_example",
+                                                                name="name_example",
+                                                                optional=True,
+                                                            ),
+                                                            client_secret_secret=SecretKeySelector(
+                                                                key="key_example",
+                                                                name="name_example",
+                                                                optional=True,
+                                                            ),
+                                                            endpoint_params=[
+                                                                IoArgoprojWorkflowV1alpha1EndpointParam(
+                                                                    key="key_example",
+                                                                    value="value_example",
+                                                                ),
+                                                            ],
+                                                            scopes=[
+                                                                "scopes_example",
+                                                            ],
+                                                            token_url_secret=SecretKeySelector(
+                                                                key="key_example",
+                                                                name="name_example",
+                                                                optional=True,
+                                                            ),
                                                         ),
                                                         url="url_example",
-                                                        username_secret=SecretKeySelector(
-                                                            key="key_example",
-                                                            name="name_example",
-                                                            optional=True,
-                                                        ),
                                                     ),
                                                     mode=1,
                                                     name="name_example",
@@ -7891,23 +8588,64 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                                 path="path_example",
                                                             ),
                                                             http=IoArgoprojWorkflowV1alpha1HTTPArtifact(
+                                                                basic_auth=IoArgoprojWorkflowV1alpha1BasicAuth(
+                                                                    password_secret=SecretKeySelector(
+                                                                        key="key_example",
+                                                                        name="name_example",
+                                                                        optional=True,
+                                                                    ),
+                                                                    username_secret=SecretKeySelector(
+                                                                        key="key_example",
+                                                                        name="name_example",
+                                                                        optional=True,
+                                                                    ),
+                                                                ),
+                                                                client_cert=IoArgoprojWorkflowV1alpha1ClientCertAuth(
+                                                                    client_cert_secret=SecretKeySelector(
+                                                                        key="key_example",
+                                                                        name="name_example",
+                                                                        optional=True,
+                                                                    ),
+                                                                    client_key_secret=SecretKeySelector(
+                                                                        key="key_example",
+                                                                        name="name_example",
+                                                                        optional=True,
+                                                                    ),
+                                                                ),
+                                                                follow_temporary_redirects=True,
                                                                 headers=[
                                                                     IoArgoprojWorkflowV1alpha1Header(
                                                                         name="name_example",
                                                                         value="value_example",
                                                                     ),
                                                                 ],
-                                                                password_secret=SecretKeySelector(
-                                                                    key="key_example",
-                                                                    name="name_example",
-                                                                    optional=True,
+                                                                oauth2=IoArgoprojWorkflowV1alpha1OAuth2Auth(
+                                                                    client_id_secret=SecretKeySelector(
+                                                                        key="key_example",
+                                                                        name="name_example",
+                                                                        optional=True,
+                                                                    ),
+                                                                    client_secret_secret=SecretKeySelector(
+                                                                        key="key_example",
+                                                                        name="name_example",
+                                                                        optional=True,
+                                                                    ),
+                                                                    endpoint_params=[
+                                                                        IoArgoprojWorkflowV1alpha1EndpointParam(
+                                                                            key="key_example",
+                                                                            value="value_example",
+                                                                        ),
+                                                                    ],
+                                                                    scopes=[
+                                                                        "scopes_example",
+                                                                    ],
+                                                                    token_url_secret=SecretKeySelector(
+                                                                        key="key_example",
+                                                                        name="name_example",
+                                                                        optional=True,
+                                                                    ),
                                                                 ),
                                                                 url="url_example",
-                                                                username_secret=SecretKeySelector(
-                                                                    key="key_example",
-                                                                    name="name_example",
-                                                                    optional=True,
-                                                                ),
                                                             ),
                                                             mode=1,
                                                             name="name_example",
@@ -9632,23 +10370,64 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     path="path_example",
                                 ),
                                 http=IoArgoprojWorkflowV1alpha1HTTPArtifact(
+                                    basic_auth=IoArgoprojWorkflowV1alpha1BasicAuth(
+                                        password_secret=SecretKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
+                                        username_secret=SecretKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
+                                    ),
+                                    client_cert=IoArgoprojWorkflowV1alpha1ClientCertAuth(
+                                        client_cert_secret=SecretKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
+                                        client_key_secret=SecretKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
+                                    ),
+                                    follow_temporary_redirects=True,
                                     headers=[
                                         IoArgoprojWorkflowV1alpha1Header(
                                             name="name_example",
                                             value="value_example",
                                         ),
                                     ],
-                                    password_secret=SecretKeySelector(
-                                        key="key_example",
-                                        name="name_example",
-                                        optional=True,
+                                    oauth2=IoArgoprojWorkflowV1alpha1OAuth2Auth(
+                                        client_id_secret=SecretKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
+                                        client_secret_secret=SecretKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
+                                        endpoint_params=[
+                                            IoArgoprojWorkflowV1alpha1EndpointParam(
+                                                key="key_example",
+                                                value="value_example",
+                                            ),
+                                        ],
+                                        scopes=[
+                                            "scopes_example",
+                                        ],
+                                        token_url_secret=SecretKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
                                     ),
                                     url="url_example",
-                                    username_secret=SecretKeySelector(
-                                        key="key_example",
-                                        name="name_example",
-                                        optional=True,
-                                    ),
                                 ),
                                 mode=1,
                                 name="name_example",
@@ -9856,23 +10635,64 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             path="path_example",
                                         ),
                                         http=IoArgoprojWorkflowV1alpha1HTTPArtifact(
+                                            basic_auth=IoArgoprojWorkflowV1alpha1BasicAuth(
+                                                password_secret=SecretKeySelector(
+                                                    key="key_example",
+                                                    name="name_example",
+                                                    optional=True,
+                                                ),
+                                                username_secret=SecretKeySelector(
+                                                    key="key_example",
+                                                    name="name_example",
+                                                    optional=True,
+                                                ),
+                                            ),
+                                            client_cert=IoArgoprojWorkflowV1alpha1ClientCertAuth(
+                                                client_cert_secret=SecretKeySelector(
+                                                    key="key_example",
+                                                    name="name_example",
+                                                    optional=True,
+                                                ),
+                                                client_key_secret=SecretKeySelector(
+                                                    key="key_example",
+                                                    name="name_example",
+                                                    optional=True,
+                                                ),
+                                            ),
+                                            follow_temporary_redirects=True,
                                             headers=[
                                                 IoArgoprojWorkflowV1alpha1Header(
                                                     name="name_example",
                                                     value="value_example",
                                                 ),
                                             ],
-                                            password_secret=SecretKeySelector(
-                                                key="key_example",
-                                                name="name_example",
-                                                optional=True,
+                                            oauth2=IoArgoprojWorkflowV1alpha1OAuth2Auth(
+                                                client_id_secret=SecretKeySelector(
+                                                    key="key_example",
+                                                    name="name_example",
+                                                    optional=True,
+                                                ),
+                                                client_secret_secret=SecretKeySelector(
+                                                    key="key_example",
+                                                    name="name_example",
+                                                    optional=True,
+                                                ),
+                                                endpoint_params=[
+                                                    IoArgoprojWorkflowV1alpha1EndpointParam(
+                                                        key="key_example",
+                                                        value="value_example",
+                                                    ),
+                                                ],
+                                                scopes=[
+                                                    "scopes_example",
+                                                ],
+                                                token_url_secret=SecretKeySelector(
+                                                    key="key_example",
+                                                    name="name_example",
+                                                    optional=True,
+                                                ),
                                             ),
                                             url="url_example",
-                                            username_secret=SecretKeySelector(
-                                                key="key_example",
-                                                name="name_example",
-                                                optional=True,
-                                            ),
                                         ),
                                         mode=1,
                                         name="name_example",
@@ -10415,23 +11235,64 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 path="path_example",
                             ),
                             http=IoArgoprojWorkflowV1alpha1HTTPArtifact(
+                                basic_auth=IoArgoprojWorkflowV1alpha1BasicAuth(
+                                    password_secret=SecretKeySelector(
+                                        key="key_example",
+                                        name="name_example",
+                                        optional=True,
+                                    ),
+                                    username_secret=SecretKeySelector(
+                                        key="key_example",
+                                        name="name_example",
+                                        optional=True,
+                                    ),
+                                ),
+                                client_cert=IoArgoprojWorkflowV1alpha1ClientCertAuth(
+                                    client_cert_secret=SecretKeySelector(
+                                        key="key_example",
+                                        name="name_example",
+                                        optional=True,
+                                    ),
+                                    client_key_secret=SecretKeySelector(
+                                        key="key_example",
+                                        name="name_example",
+                                        optional=True,
+                                    ),
+                                ),
+                                follow_temporary_redirects=True,
                                 headers=[
                                     IoArgoprojWorkflowV1alpha1Header(
                                         name="name_example",
                                         value="value_example",
                                     ),
                                 ],
-                                password_secret=SecretKeySelector(
-                                    key="key_example",
-                                    name="name_example",
-                                    optional=True,
+                                oauth2=IoArgoprojWorkflowV1alpha1OAuth2Auth(
+                                    client_id_secret=SecretKeySelector(
+                                        key="key_example",
+                                        name="name_example",
+                                        optional=True,
+                                    ),
+                                    client_secret_secret=SecretKeySelector(
+                                        key="key_example",
+                                        name="name_example",
+                                        optional=True,
+                                    ),
+                                    endpoint_params=[
+                                        IoArgoprojWorkflowV1alpha1EndpointParam(
+                                            key="key_example",
+                                            value="value_example",
+                                        ),
+                                    ],
+                                    scopes=[
+                                        "scopes_example",
+                                    ],
+                                    token_url_secret=SecretKeySelector(
+                                        key="key_example",
+                                        name="name_example",
+                                        optional=True,
+                                    ),
                                 ),
                                 url="url_example",
-                                username_secret=SecretKeySelector(
-                                    key="key_example",
-                                    name="name_example",
-                                    optional=True,
-                                ),
                             ),
                             oss=IoArgoprojWorkflowV1alpha1OSSArtifact(
                                 access_key_secret=SecretKeySelector(
@@ -11146,23 +12007,64 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                     path="path_example",
                                                 ),
                                                 http=IoArgoprojWorkflowV1alpha1HTTPArtifact(
+                                                    basic_auth=IoArgoprojWorkflowV1alpha1BasicAuth(
+                                                        password_secret=SecretKeySelector(
+                                                            key="key_example",
+                                                            name="name_example",
+                                                            optional=True,
+                                                        ),
+                                                        username_secret=SecretKeySelector(
+                                                            key="key_example",
+                                                            name="name_example",
+                                                            optional=True,
+                                                        ),
+                                                    ),
+                                                    client_cert=IoArgoprojWorkflowV1alpha1ClientCertAuth(
+                                                        client_cert_secret=SecretKeySelector(
+                                                            key="key_example",
+                                                            name="name_example",
+                                                            optional=True,
+                                                        ),
+                                                        client_key_secret=SecretKeySelector(
+                                                            key="key_example",
+                                                            name="name_example",
+                                                            optional=True,
+                                                        ),
+                                                    ),
+                                                    follow_temporary_redirects=True,
                                                     headers=[
                                                         IoArgoprojWorkflowV1alpha1Header(
                                                             name="name_example",
                                                             value="value_example",
                                                         ),
                                                     ],
-                                                    password_secret=SecretKeySelector(
-                                                        key="key_example",
-                                                        name="name_example",
-                                                        optional=True,
+                                                    oauth2=IoArgoprojWorkflowV1alpha1OAuth2Auth(
+                                                        client_id_secret=SecretKeySelector(
+                                                            key="key_example",
+                                                            name="name_example",
+                                                            optional=True,
+                                                        ),
+                                                        client_secret_secret=SecretKeySelector(
+                                                            key="key_example",
+                                                            name="name_example",
+                                                            optional=True,
+                                                        ),
+                                                        endpoint_params=[
+                                                            IoArgoprojWorkflowV1alpha1EndpointParam(
+                                                                key="key_example",
+                                                                value="value_example",
+                                                            ),
+                                                        ],
+                                                        scopes=[
+                                                            "scopes_example",
+                                                        ],
+                                                        token_url_secret=SecretKeySelector(
+                                                            key="key_example",
+                                                            name="name_example",
+                                                            optional=True,
+                                                        ),
                                                     ),
                                                     url="url_example",
-                                                    username_secret=SecretKeySelector(
-                                                        key="key_example",
-                                                        name="name_example",
-                                                        optional=True,
-                                                    ),
                                                 ),
                                                 mode=1,
                                                 name="name_example",
@@ -11354,23 +12256,64 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             path="path_example",
                                                         ),
                                                         http=IoArgoprojWorkflowV1alpha1HTTPArtifact(
+                                                            basic_auth=IoArgoprojWorkflowV1alpha1BasicAuth(
+                                                                password_secret=SecretKeySelector(
+                                                                    key="key_example",
+                                                                    name="name_example",
+                                                                    optional=True,
+                                                                ),
+                                                                username_secret=SecretKeySelector(
+                                                                    key="key_example",
+                                                                    name="name_example",
+                                                                    optional=True,
+                                                                ),
+                                                            ),
+                                                            client_cert=IoArgoprojWorkflowV1alpha1ClientCertAuth(
+                                                                client_cert_secret=SecretKeySelector(
+                                                                    key="key_example",
+                                                                    name="name_example",
+                                                                    optional=True,
+                                                                ),
+                                                                client_key_secret=SecretKeySelector(
+                                                                    key="key_example",
+                                                                    name="name_example",
+                                                                    optional=True,
+                                                                ),
+                                                            ),
+                                                            follow_temporary_redirects=True,
                                                             headers=[
                                                                 IoArgoprojWorkflowV1alpha1Header(
                                                                     name="name_example",
                                                                     value="value_example",
                                                                 ),
                                                             ],
-                                                            password_secret=SecretKeySelector(
-                                                                key="key_example",
-                                                                name="name_example",
-                                                                optional=True,
+                                                            oauth2=IoArgoprojWorkflowV1alpha1OAuth2Auth(
+                                                                client_id_secret=SecretKeySelector(
+                                                                    key="key_example",
+                                                                    name="name_example",
+                                                                    optional=True,
+                                                                ),
+                                                                client_secret_secret=SecretKeySelector(
+                                                                    key="key_example",
+                                                                    name="name_example",
+                                                                    optional=True,
+                                                                ),
+                                                                endpoint_params=[
+                                                                    IoArgoprojWorkflowV1alpha1EndpointParam(
+                                                                        key="key_example",
+                                                                        value="value_example",
+                                                                    ),
+                                                                ],
+                                                                scopes=[
+                                                                    "scopes_example",
+                                                                ],
+                                                                token_url_secret=SecretKeySelector(
+                                                                    key="key_example",
+                                                                    name="name_example",
+                                                                    optional=True,
+                                                                ),
                                                             ),
                                                             url="url_example",
-                                                            username_secret=SecretKeySelector(
-                                                                key="key_example",
-                                                                name="name_example",
-                                                                optional=True,
-                                                            ),
                                                         ),
                                                         mode=1,
                                                         name="name_example",
@@ -11584,23 +12527,64 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         path="path_example",
                                     ),
                                     http=IoArgoprojWorkflowV1alpha1HTTPArtifact(
+                                        basic_auth=IoArgoprojWorkflowV1alpha1BasicAuth(
+                                            password_secret=SecretKeySelector(
+                                                key="key_example",
+                                                name="name_example",
+                                                optional=True,
+                                            ),
+                                            username_secret=SecretKeySelector(
+                                                key="key_example",
+                                                name="name_example",
+                                                optional=True,
+                                            ),
+                                        ),
+                                        client_cert=IoArgoprojWorkflowV1alpha1ClientCertAuth(
+                                            client_cert_secret=SecretKeySelector(
+                                                key="key_example",
+                                                name="name_example",
+                                                optional=True,
+                                            ),
+                                            client_key_secret=SecretKeySelector(
+                                                key="key_example",
+                                                name="name_example",
+                                                optional=True,
+                                            ),
+                                        ),
+                                        follow_temporary_redirects=True,
                                         headers=[
                                             IoArgoprojWorkflowV1alpha1Header(
                                                 name="name_example",
                                                 value="value_example",
                                             ),
                                         ],
-                                        password_secret=SecretKeySelector(
-                                            key="key_example",
-                                            name="name_example",
-                                            optional=True,
+                                        oauth2=IoArgoprojWorkflowV1alpha1OAuth2Auth(
+                                            client_id_secret=SecretKeySelector(
+                                                key="key_example",
+                                                name="name_example",
+                                                optional=True,
+                                            ),
+                                            client_secret_secret=SecretKeySelector(
+                                                key="key_example",
+                                                name="name_example",
+                                                optional=True,
+                                            ),
+                                            endpoint_params=[
+                                                IoArgoprojWorkflowV1alpha1EndpointParam(
+                                                    key="key_example",
+                                                    value="value_example",
+                                                ),
+                                            ],
+                                            scopes=[
+                                                "scopes_example",
+                                            ],
+                                            token_url_secret=SecretKeySelector(
+                                                key="key_example",
+                                                name="name_example",
+                                                optional=True,
+                                            ),
                                         ),
                                         url="url_example",
-                                        username_secret=SecretKeySelector(
-                                            key="key_example",
-                                            name="name_example",
-                                            optional=True,
-                                        ),
                                     ),
                                     mode=1,
                                     name="name_example",
@@ -12066,23 +13050,64 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         path="path_example",
                                     ),
                                     http=IoArgoprojWorkflowV1alpha1HTTPArtifact(
+                                        basic_auth=IoArgoprojWorkflowV1alpha1BasicAuth(
+                                            password_secret=SecretKeySelector(
+                                                key="key_example",
+                                                name="name_example",
+                                                optional=True,
+                                            ),
+                                            username_secret=SecretKeySelector(
+                                                key="key_example",
+                                                name="name_example",
+                                                optional=True,
+                                            ),
+                                        ),
+                                        client_cert=IoArgoprojWorkflowV1alpha1ClientCertAuth(
+                                            client_cert_secret=SecretKeySelector(
+                                                key="key_example",
+                                                name="name_example",
+                                                optional=True,
+                                            ),
+                                            client_key_secret=SecretKeySelector(
+                                                key="key_example",
+                                                name="name_example",
+                                                optional=True,
+                                            ),
+                                        ),
+                                        follow_temporary_redirects=True,
                                         headers=[
                                             IoArgoprojWorkflowV1alpha1Header(
                                                 name="name_example",
                                                 value="value_example",
                                             ),
                                         ],
-                                        password_secret=SecretKeySelector(
-                                            key="key_example",
-                                            name="name_example",
-                                            optional=True,
+                                        oauth2=IoArgoprojWorkflowV1alpha1OAuth2Auth(
+                                            client_id_secret=SecretKeySelector(
+                                                key="key_example",
+                                                name="name_example",
+                                                optional=True,
+                                            ),
+                                            client_secret_secret=SecretKeySelector(
+                                                key="key_example",
+                                                name="name_example",
+                                                optional=True,
+                                            ),
+                                            endpoint_params=[
+                                                IoArgoprojWorkflowV1alpha1EndpointParam(
+                                                    key="key_example",
+                                                    value="value_example",
+                                                ),
+                                            ],
+                                            scopes=[
+                                                "scopes_example",
+                                            ],
+                                            token_url_secret=SecretKeySelector(
+                                                key="key_example",
+                                                name="name_example",
+                                                optional=True,
+                                            ),
                                         ),
                                         url="url_example",
-                                        username_secret=SecretKeySelector(
-                                            key="key_example",
-                                            name="name_example",
-                                            optional=True,
-                                        ),
                                     ),
                                     mode=1,
                                     name="name_example",
@@ -12315,23 +13340,64 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         path="path_example",
                                     ),
                                     http=IoArgoprojWorkflowV1alpha1HTTPArtifact(
+                                        basic_auth=IoArgoprojWorkflowV1alpha1BasicAuth(
+                                            password_secret=SecretKeySelector(
+                                                key="key_example",
+                                                name="name_example",
+                                                optional=True,
+                                            ),
+                                            username_secret=SecretKeySelector(
+                                                key="key_example",
+                                                name="name_example",
+                                                optional=True,
+                                            ),
+                                        ),
+                                        client_cert=IoArgoprojWorkflowV1alpha1ClientCertAuth(
+                                            client_cert_secret=SecretKeySelector(
+                                                key="key_example",
+                                                name="name_example",
+                                                optional=True,
+                                            ),
+                                            client_key_secret=SecretKeySelector(
+                                                key="key_example",
+                                                name="name_example",
+                                                optional=True,
+                                            ),
+                                        ),
+                                        follow_temporary_redirects=True,
                                         headers=[
                                             IoArgoprojWorkflowV1alpha1Header(
                                                 name="name_example",
                                                 value="value_example",
                                             ),
                                         ],
-                                        password_secret=SecretKeySelector(
-                                            key="key_example",
-                                            name="name_example",
-                                            optional=True,
+                                        oauth2=IoArgoprojWorkflowV1alpha1OAuth2Auth(
+                                            client_id_secret=SecretKeySelector(
+                                                key="key_example",
+                                                name="name_example",
+                                                optional=True,
+                                            ),
+                                            client_secret_secret=SecretKeySelector(
+                                                key="key_example",
+                                                name="name_example",
+                                                optional=True,
+                                            ),
+                                            endpoint_params=[
+                                                IoArgoprojWorkflowV1alpha1EndpointParam(
+                                                    key="key_example",
+                                                    value="value_example",
+                                                ),
+                                            ],
+                                            scopes=[
+                                                "scopes_example",
+                                            ],
+                                            token_url_secret=SecretKeySelector(
+                                                key="key_example",
+                                                name="name_example",
+                                                optional=True,
+                                            ),
                                         ),
                                         url="url_example",
-                                        username_secret=SecretKeySelector(
-                                            key="key_example",
-                                            name="name_example",
-                                            optional=True,
-                                        ),
                                     ),
                                     mode=1,
                                     name="name_example",
@@ -13125,23 +14191,64 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                     path="path_example",
                                                 ),
                                                 http=IoArgoprojWorkflowV1alpha1HTTPArtifact(
+                                                    basic_auth=IoArgoprojWorkflowV1alpha1BasicAuth(
+                                                        password_secret=SecretKeySelector(
+                                                            key="key_example",
+                                                            name="name_example",
+                                                            optional=True,
+                                                        ),
+                                                        username_secret=SecretKeySelector(
+                                                            key="key_example",
+                                                            name="name_example",
+                                                            optional=True,
+                                                        ),
+                                                    ),
+                                                    client_cert=IoArgoprojWorkflowV1alpha1ClientCertAuth(
+                                                        client_cert_secret=SecretKeySelector(
+                                                            key="key_example",
+                                                            name="name_example",
+                                                            optional=True,
+                                                        ),
+                                                        client_key_secret=SecretKeySelector(
+                                                            key="key_example",
+                                                            name="name_example",
+                                                            optional=True,
+                                                        ),
+                                                    ),
+                                                    follow_temporary_redirects=True,
                                                     headers=[
                                                         IoArgoprojWorkflowV1alpha1Header(
                                                             name="name_example",
                                                             value="value_example",
                                                         ),
                                                     ],
-                                                    password_secret=SecretKeySelector(
-                                                        key="key_example",
-                                                        name="name_example",
-                                                        optional=True,
+                                                    oauth2=IoArgoprojWorkflowV1alpha1OAuth2Auth(
+                                                        client_id_secret=SecretKeySelector(
+                                                            key="key_example",
+                                                            name="name_example",
+                                                            optional=True,
+                                                        ),
+                                                        client_secret_secret=SecretKeySelector(
+                                                            key="key_example",
+                                                            name="name_example",
+                                                            optional=True,
+                                                        ),
+                                                        endpoint_params=[
+                                                            IoArgoprojWorkflowV1alpha1EndpointParam(
+                                                                key="key_example",
+                                                                value="value_example",
+                                                            ),
+                                                        ],
+                                                        scopes=[
+                                                            "scopes_example",
+                                                        ],
+                                                        token_url_secret=SecretKeySelector(
+                                                            key="key_example",
+                                                            name="name_example",
+                                                            optional=True,
+                                                        ),
                                                     ),
                                                     url="url_example",
-                                                    username_secret=SecretKeySelector(
-                                                        key="key_example",
-                                                        name="name_example",
-                                                        optional=True,
-                                                    ),
                                                 ),
                                                 mode=1,
                                                 name="name_example",
@@ -13329,23 +14436,64 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             path="path_example",
                                                         ),
                                                         http=IoArgoprojWorkflowV1alpha1HTTPArtifact(
+                                                            basic_auth=IoArgoprojWorkflowV1alpha1BasicAuth(
+                                                                password_secret=SecretKeySelector(
+                                                                    key="key_example",
+                                                                    name="name_example",
+                                                                    optional=True,
+                                                                ),
+                                                                username_secret=SecretKeySelector(
+                                                                    key="key_example",
+                                                                    name="name_example",
+                                                                    optional=True,
+                                                                ),
+                                                            ),
+                                                            client_cert=IoArgoprojWorkflowV1alpha1ClientCertAuth(
+                                                                client_cert_secret=SecretKeySelector(
+                                                                    key="key_example",
+                                                                    name="name_example",
+                                                                    optional=True,
+                                                                ),
+                                                                client_key_secret=SecretKeySelector(
+                                                                    key="key_example",
+                                                                    name="name_example",
+                                                                    optional=True,
+                                                                ),
+                                                            ),
+                                                            follow_temporary_redirects=True,
                                                             headers=[
                                                                 IoArgoprojWorkflowV1alpha1Header(
                                                                     name="name_example",
                                                                     value="value_example",
                                                                 ),
                                                             ],
-                                                            password_secret=SecretKeySelector(
-                                                                key="key_example",
-                                                                name="name_example",
-                                                                optional=True,
+                                                            oauth2=IoArgoprojWorkflowV1alpha1OAuth2Auth(
+                                                                client_id_secret=SecretKeySelector(
+                                                                    key="key_example",
+                                                                    name="name_example",
+                                                                    optional=True,
+                                                                ),
+                                                                client_secret_secret=SecretKeySelector(
+                                                                    key="key_example",
+                                                                    name="name_example",
+                                                                    optional=True,
+                                                                ),
+                                                                endpoint_params=[
+                                                                    IoArgoprojWorkflowV1alpha1EndpointParam(
+                                                                        key="key_example",
+                                                                        value="value_example",
+                                                                    ),
+                                                                ],
+                                                                scopes=[
+                                                                    "scopes_example",
+                                                                ],
+                                                                token_url_secret=SecretKeySelector(
+                                                                    key="key_example",
+                                                                    name="name_example",
+                                                                    optional=True,
+                                                                ),
                                                             ),
                                                             url="url_example",
-                                                            username_secret=SecretKeySelector(
-                                                                key="key_example",
-                                                                name="name_example",
-                                                                optional=True,
-                                                            ),
                                                         ),
                                                         mode=1,
                                                         name="name_example",
@@ -14154,23 +15302,64 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     path="path_example",
                                 ),
                                 http=IoArgoprojWorkflowV1alpha1HTTPArtifact(
+                                    basic_auth=IoArgoprojWorkflowV1alpha1BasicAuth(
+                                        password_secret=SecretKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
+                                        username_secret=SecretKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
+                                    ),
+                                    client_cert=IoArgoprojWorkflowV1alpha1ClientCertAuth(
+                                        client_cert_secret=SecretKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
+                                        client_key_secret=SecretKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
+                                    ),
+                                    follow_temporary_redirects=True,
                                     headers=[
                                         IoArgoprojWorkflowV1alpha1Header(
                                             name="name_example",
                                             value="value_example",
                                         ),
                                     ],
-                                    password_secret=SecretKeySelector(
-                                        key="key_example",
-                                        name="name_example",
-                                        optional=True,
+                                    oauth2=IoArgoprojWorkflowV1alpha1OAuth2Auth(
+                                        client_id_secret=SecretKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
+                                        client_secret_secret=SecretKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
+                                        endpoint_params=[
+                                            IoArgoprojWorkflowV1alpha1EndpointParam(
+                                                key="key_example",
+                                                value="value_example",
+                                            ),
+                                        ],
+                                        scopes=[
+                                            "scopes_example",
+                                        ],
+                                        token_url_secret=SecretKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
                                     ),
                                     url="url_example",
-                                    username_secret=SecretKeySelector(
-                                        key="key_example",
-                                        name="name_example",
-                                        optional=True,
-                                    ),
                                 ),
                                 oss=IoArgoprojWorkflowV1alpha1OSSArtifact(
                                     access_key_secret=SecretKeySelector(
@@ -14885,23 +16074,64 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         path="path_example",
                                                     ),
                                                     http=IoArgoprojWorkflowV1alpha1HTTPArtifact(
+                                                        basic_auth=IoArgoprojWorkflowV1alpha1BasicAuth(
+                                                            password_secret=SecretKeySelector(
+                                                                key="key_example",
+                                                                name="name_example",
+                                                                optional=True,
+                                                            ),
+                                                            username_secret=SecretKeySelector(
+                                                                key="key_example",
+                                                                name="name_example",
+                                                                optional=True,
+                                                            ),
+                                                        ),
+                                                        client_cert=IoArgoprojWorkflowV1alpha1ClientCertAuth(
+                                                            client_cert_secret=SecretKeySelector(
+                                                                key="key_example",
+                                                                name="name_example",
+                                                                optional=True,
+                                                            ),
+                                                            client_key_secret=SecretKeySelector(
+                                                                key="key_example",
+                                                                name="name_example",
+                                                                optional=True,
+                                                            ),
+                                                        ),
+                                                        follow_temporary_redirects=True,
                                                         headers=[
                                                             IoArgoprojWorkflowV1alpha1Header(
                                                                 name="name_example",
                                                                 value="value_example",
                                                             ),
                                                         ],
-                                                        password_secret=SecretKeySelector(
-                                                            key="key_example",
-                                                            name="name_example",
-                                                            optional=True,
+                                                        oauth2=IoArgoprojWorkflowV1alpha1OAuth2Auth(
+                                                            client_id_secret=SecretKeySelector(
+                                                                key="key_example",
+                                                                name="name_example",
+                                                                optional=True,
+                                                            ),
+                                                            client_secret_secret=SecretKeySelector(
+                                                                key="key_example",
+                                                                name="name_example",
+                                                                optional=True,
+                                                            ),
+                                                            endpoint_params=[
+                                                                IoArgoprojWorkflowV1alpha1EndpointParam(
+                                                                    key="key_example",
+                                                                    value="value_example",
+                                                                ),
+                                                            ],
+                                                            scopes=[
+                                                                "scopes_example",
+                                                            ],
+                                                            token_url_secret=SecretKeySelector(
+                                                                key="key_example",
+                                                                name="name_example",
+                                                                optional=True,
+                                                            ),
                                                         ),
                                                         url="url_example",
-                                                        username_secret=SecretKeySelector(
-                                                            key="key_example",
-                                                            name="name_example",
-                                                            optional=True,
-                                                        ),
                                                     ),
                                                     mode=1,
                                                     name="name_example",
@@ -15093,23 +16323,64 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                                 path="path_example",
                                                             ),
                                                             http=IoArgoprojWorkflowV1alpha1HTTPArtifact(
+                                                                basic_auth=IoArgoprojWorkflowV1alpha1BasicAuth(
+                                                                    password_secret=SecretKeySelector(
+                                                                        key="key_example",
+                                                                        name="name_example",
+                                                                        optional=True,
+                                                                    ),
+                                                                    username_secret=SecretKeySelector(
+                                                                        key="key_example",
+                                                                        name="name_example",
+                                                                        optional=True,
+                                                                    ),
+                                                                ),
+                                                                client_cert=IoArgoprojWorkflowV1alpha1ClientCertAuth(
+                                                                    client_cert_secret=SecretKeySelector(
+                                                                        key="key_example",
+                                                                        name="name_example",
+                                                                        optional=True,
+                                                                    ),
+                                                                    client_key_secret=SecretKeySelector(
+                                                                        key="key_example",
+                                                                        name="name_example",
+                                                                        optional=True,
+                                                                    ),
+                                                                ),
+                                                                follow_temporary_redirects=True,
                                                                 headers=[
                                                                     IoArgoprojWorkflowV1alpha1Header(
                                                                         name="name_example",
                                                                         value="value_example",
                                                                     ),
                                                                 ],
-                                                                password_secret=SecretKeySelector(
-                                                                    key="key_example",
-                                                                    name="name_example",
-                                                                    optional=True,
+                                                                oauth2=IoArgoprojWorkflowV1alpha1OAuth2Auth(
+                                                                    client_id_secret=SecretKeySelector(
+                                                                        key="key_example",
+                                                                        name="name_example",
+                                                                        optional=True,
+                                                                    ),
+                                                                    client_secret_secret=SecretKeySelector(
+                                                                        key="key_example",
+                                                                        name="name_example",
+                                                                        optional=True,
+                                                                    ),
+                                                                    endpoint_params=[
+                                                                        IoArgoprojWorkflowV1alpha1EndpointParam(
+                                                                            key="key_example",
+                                                                            value="value_example",
+                                                                        ),
+                                                                    ],
+                                                                    scopes=[
+                                                                        "scopes_example",
+                                                                    ],
+                                                                    token_url_secret=SecretKeySelector(
+                                                                        key="key_example",
+                                                                        name="name_example",
+                                                                        optional=True,
+                                                                    ),
                                                                 ),
                                                                 url="url_example",
-                                                                username_secret=SecretKeySelector(
-                                                                    key="key_example",
-                                                                    name="name_example",
-                                                                    optional=True,
-                                                                ),
                                                             ),
                                                             mode=1,
                                                             name="name_example",
@@ -15323,23 +16594,64 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             path="path_example",
                                         ),
                                         http=IoArgoprojWorkflowV1alpha1HTTPArtifact(
+                                            basic_auth=IoArgoprojWorkflowV1alpha1BasicAuth(
+                                                password_secret=SecretKeySelector(
+                                                    key="key_example",
+                                                    name="name_example",
+                                                    optional=True,
+                                                ),
+                                                username_secret=SecretKeySelector(
+                                                    key="key_example",
+                                                    name="name_example",
+                                                    optional=True,
+                                                ),
+                                            ),
+                                            client_cert=IoArgoprojWorkflowV1alpha1ClientCertAuth(
+                                                client_cert_secret=SecretKeySelector(
+                                                    key="key_example",
+                                                    name="name_example",
+                                                    optional=True,
+                                                ),
+                                                client_key_secret=SecretKeySelector(
+                                                    key="key_example",
+                                                    name="name_example",
+                                                    optional=True,
+                                                ),
+                                            ),
+                                            follow_temporary_redirects=True,
                                             headers=[
                                                 IoArgoprojWorkflowV1alpha1Header(
                                                     name="name_example",
                                                     value="value_example",
                                                 ),
                                             ],
-                                            password_secret=SecretKeySelector(
-                                                key="key_example",
-                                                name="name_example",
-                                                optional=True,
+                                            oauth2=IoArgoprojWorkflowV1alpha1OAuth2Auth(
+                                                client_id_secret=SecretKeySelector(
+                                                    key="key_example",
+                                                    name="name_example",
+                                                    optional=True,
+                                                ),
+                                                client_secret_secret=SecretKeySelector(
+                                                    key="key_example",
+                                                    name="name_example",
+                                                    optional=True,
+                                                ),
+                                                endpoint_params=[
+                                                    IoArgoprojWorkflowV1alpha1EndpointParam(
+                                                        key="key_example",
+                                                        value="value_example",
+                                                    ),
+                                                ],
+                                                scopes=[
+                                                    "scopes_example",
+                                                ],
+                                                token_url_secret=SecretKeySelector(
+                                                    key="key_example",
+                                                    name="name_example",
+                                                    optional=True,
+                                                ),
                                             ),
                                             url="url_example",
-                                            username_secret=SecretKeySelector(
-                                                key="key_example",
-                                                name="name_example",
-                                                optional=True,
-                                            ),
                                         ),
                                         mode=1,
                                         name="name_example",
@@ -15805,23 +17117,64 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             path="path_example",
                                         ),
                                         http=IoArgoprojWorkflowV1alpha1HTTPArtifact(
+                                            basic_auth=IoArgoprojWorkflowV1alpha1BasicAuth(
+                                                password_secret=SecretKeySelector(
+                                                    key="key_example",
+                                                    name="name_example",
+                                                    optional=True,
+                                                ),
+                                                username_secret=SecretKeySelector(
+                                                    key="key_example",
+                                                    name="name_example",
+                                                    optional=True,
+                                                ),
+                                            ),
+                                            client_cert=IoArgoprojWorkflowV1alpha1ClientCertAuth(
+                                                client_cert_secret=SecretKeySelector(
+                                                    key="key_example",
+                                                    name="name_example",
+                                                    optional=True,
+                                                ),
+                                                client_key_secret=SecretKeySelector(
+                                                    key="key_example",
+                                                    name="name_example",
+                                                    optional=True,
+                                                ),
+                                            ),
+                                            follow_temporary_redirects=True,
                                             headers=[
                                                 IoArgoprojWorkflowV1alpha1Header(
                                                     name="name_example",
                                                     value="value_example",
                                                 ),
                                             ],
-                                            password_secret=SecretKeySelector(
-                                                key="key_example",
-                                                name="name_example",
-                                                optional=True,
+                                            oauth2=IoArgoprojWorkflowV1alpha1OAuth2Auth(
+                                                client_id_secret=SecretKeySelector(
+                                                    key="key_example",
+                                                    name="name_example",
+                                                    optional=True,
+                                                ),
+                                                client_secret_secret=SecretKeySelector(
+                                                    key="key_example",
+                                                    name="name_example",
+                                                    optional=True,
+                                                ),
+                                                endpoint_params=[
+                                                    IoArgoprojWorkflowV1alpha1EndpointParam(
+                                                        key="key_example",
+                                                        value="value_example",
+                                                    ),
+                                                ],
+                                                scopes=[
+                                                    "scopes_example",
+                                                ],
+                                                token_url_secret=SecretKeySelector(
+                                                    key="key_example",
+                                                    name="name_example",
+                                                    optional=True,
+                                                ),
                                             ),
                                             url="url_example",
-                                            username_secret=SecretKeySelector(
-                                                key="key_example",
-                                                name="name_example",
-                                                optional=True,
-                                            ),
                                         ),
                                         mode=1,
                                         name="name_example",
@@ -16054,23 +17407,64 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             path="path_example",
                                         ),
                                         http=IoArgoprojWorkflowV1alpha1HTTPArtifact(
+                                            basic_auth=IoArgoprojWorkflowV1alpha1BasicAuth(
+                                                password_secret=SecretKeySelector(
+                                                    key="key_example",
+                                                    name="name_example",
+                                                    optional=True,
+                                                ),
+                                                username_secret=SecretKeySelector(
+                                                    key="key_example",
+                                                    name="name_example",
+                                                    optional=True,
+                                                ),
+                                            ),
+                                            client_cert=IoArgoprojWorkflowV1alpha1ClientCertAuth(
+                                                client_cert_secret=SecretKeySelector(
+                                                    key="key_example",
+                                                    name="name_example",
+                                                    optional=True,
+                                                ),
+                                                client_key_secret=SecretKeySelector(
+                                                    key="key_example",
+                                                    name="name_example",
+                                                    optional=True,
+                                                ),
+                                            ),
+                                            follow_temporary_redirects=True,
                                             headers=[
                                                 IoArgoprojWorkflowV1alpha1Header(
                                                     name="name_example",
                                                     value="value_example",
                                                 ),
                                             ],
-                                            password_secret=SecretKeySelector(
-                                                key="key_example",
-                                                name="name_example",
-                                                optional=True,
+                                            oauth2=IoArgoprojWorkflowV1alpha1OAuth2Auth(
+                                                client_id_secret=SecretKeySelector(
+                                                    key="key_example",
+                                                    name="name_example",
+                                                    optional=True,
+                                                ),
+                                                client_secret_secret=SecretKeySelector(
+                                                    key="key_example",
+                                                    name="name_example",
+                                                    optional=True,
+                                                ),
+                                                endpoint_params=[
+                                                    IoArgoprojWorkflowV1alpha1EndpointParam(
+                                                        key="key_example",
+                                                        value="value_example",
+                                                    ),
+                                                ],
+                                                scopes=[
+                                                    "scopes_example",
+                                                ],
+                                                token_url_secret=SecretKeySelector(
+                                                    key="key_example",
+                                                    name="name_example",
+                                                    optional=True,
+                                                ),
                                             ),
                                             url="url_example",
-                                            username_secret=SecretKeySelector(
-                                                key="key_example",
-                                                name="name_example",
-                                                optional=True,
-                                            ),
                                         ),
                                         mode=1,
                                         name="name_example",
@@ -16864,23 +18258,64 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         path="path_example",
                                                     ),
                                                     http=IoArgoprojWorkflowV1alpha1HTTPArtifact(
+                                                        basic_auth=IoArgoprojWorkflowV1alpha1BasicAuth(
+                                                            password_secret=SecretKeySelector(
+                                                                key="key_example",
+                                                                name="name_example",
+                                                                optional=True,
+                                                            ),
+                                                            username_secret=SecretKeySelector(
+                                                                key="key_example",
+                                                                name="name_example",
+                                                                optional=True,
+                                                            ),
+                                                        ),
+                                                        client_cert=IoArgoprojWorkflowV1alpha1ClientCertAuth(
+                                                            client_cert_secret=SecretKeySelector(
+                                                                key="key_example",
+                                                                name="name_example",
+                                                                optional=True,
+                                                            ),
+                                                            client_key_secret=SecretKeySelector(
+                                                                key="key_example",
+                                                                name="name_example",
+                                                                optional=True,
+                                                            ),
+                                                        ),
+                                                        follow_temporary_redirects=True,
                                                         headers=[
                                                             IoArgoprojWorkflowV1alpha1Header(
                                                                 name="name_example",
                                                                 value="value_example",
                                                             ),
                                                         ],
-                                                        password_secret=SecretKeySelector(
-                                                            key="key_example",
-                                                            name="name_example",
-                                                            optional=True,
+                                                        oauth2=IoArgoprojWorkflowV1alpha1OAuth2Auth(
+                                                            client_id_secret=SecretKeySelector(
+                                                                key="key_example",
+                                                                name="name_example",
+                                                                optional=True,
+                                                            ),
+                                                            client_secret_secret=SecretKeySelector(
+                                                                key="key_example",
+                                                                name="name_example",
+                                                                optional=True,
+                                                            ),
+                                                            endpoint_params=[
+                                                                IoArgoprojWorkflowV1alpha1EndpointParam(
+                                                                    key="key_example",
+                                                                    value="value_example",
+                                                                ),
+                                                            ],
+                                                            scopes=[
+                                                                "scopes_example",
+                                                            ],
+                                                            token_url_secret=SecretKeySelector(
+                                                                key="key_example",
+                                                                name="name_example",
+                                                                optional=True,
+                                                            ),
                                                         ),
                                                         url="url_example",
-                                                        username_secret=SecretKeySelector(
-                                                            key="key_example",
-                                                            name="name_example",
-                                                            optional=True,
-                                                        ),
                                                     ),
                                                     mode=1,
                                                     name="name_example",
@@ -17068,23 +18503,64 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                                 path="path_example",
                                                             ),
                                                             http=IoArgoprojWorkflowV1alpha1HTTPArtifact(
+                                                                basic_auth=IoArgoprojWorkflowV1alpha1BasicAuth(
+                                                                    password_secret=SecretKeySelector(
+                                                                        key="key_example",
+                                                                        name="name_example",
+                                                                        optional=True,
+                                                                    ),
+                                                                    username_secret=SecretKeySelector(
+                                                                        key="key_example",
+                                                                        name="name_example",
+                                                                        optional=True,
+                                                                    ),
+                                                                ),
+                                                                client_cert=IoArgoprojWorkflowV1alpha1ClientCertAuth(
+                                                                    client_cert_secret=SecretKeySelector(
+                                                                        key="key_example",
+                                                                        name="name_example",
+                                                                        optional=True,
+                                                                    ),
+                                                                    client_key_secret=SecretKeySelector(
+                                                                        key="key_example",
+                                                                        name="name_example",
+                                                                        optional=True,
+                                                                    ),
+                                                                ),
+                                                                follow_temporary_redirects=True,
                                                                 headers=[
                                                                     IoArgoprojWorkflowV1alpha1Header(
                                                                         name="name_example",
                                                                         value="value_example",
                                                                     ),
                                                                 ],
-                                                                password_secret=SecretKeySelector(
-                                                                    key="key_example",
-                                                                    name="name_example",
-                                                                    optional=True,
+                                                                oauth2=IoArgoprojWorkflowV1alpha1OAuth2Auth(
+                                                                    client_id_secret=SecretKeySelector(
+                                                                        key="key_example",
+                                                                        name="name_example",
+                                                                        optional=True,
+                                                                    ),
+                                                                    client_secret_secret=SecretKeySelector(
+                                                                        key="key_example",
+                                                                        name="name_example",
+                                                                        optional=True,
+                                                                    ),
+                                                                    endpoint_params=[
+                                                                        IoArgoprojWorkflowV1alpha1EndpointParam(
+                                                                            key="key_example",
+                                                                            value="value_example",
+                                                                        ),
+                                                                    ],
+                                                                    scopes=[
+                                                                        "scopes_example",
+                                                                    ],
+                                                                    token_url_secret=SecretKeySelector(
+                                                                        key="key_example",
+                                                                        name="name_example",
+                                                                        optional=True,
+                                                                    ),
                                                                 ),
                                                                 url="url_example",
-                                                                username_secret=SecretKeySelector(
-                                                                    key="key_example",
-                                                                    name="name_example",
-                                                                    optional=True,
-                                                                ),
                                                             ),
                                                             mode=1,
                                                             name="name_example",
@@ -18892,23 +20368,64 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     path="path_example",
                                 ),
                                 http=IoArgoprojWorkflowV1alpha1HTTPArtifact(
+                                    basic_auth=IoArgoprojWorkflowV1alpha1BasicAuth(
+                                        password_secret=SecretKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
+                                        username_secret=SecretKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
+                                    ),
+                                    client_cert=IoArgoprojWorkflowV1alpha1ClientCertAuth(
+                                        client_cert_secret=SecretKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
+                                        client_key_secret=SecretKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
+                                    ),
+                                    follow_temporary_redirects=True,
                                     headers=[
                                         IoArgoprojWorkflowV1alpha1Header(
                                             name="name_example",
                                             value="value_example",
                                         ),
                                     ],
-                                    password_secret=SecretKeySelector(
-                                        key="key_example",
-                                        name="name_example",
-                                        optional=True,
+                                    oauth2=IoArgoprojWorkflowV1alpha1OAuth2Auth(
+                                        client_id_secret=SecretKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
+                                        client_secret_secret=SecretKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
+                                        endpoint_params=[
+                                            IoArgoprojWorkflowV1alpha1EndpointParam(
+                                                key="key_example",
+                                                value="value_example",
+                                            ),
+                                        ],
+                                        scopes=[
+                                            "scopes_example",
+                                        ],
+                                        token_url_secret=SecretKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
                                     ),
                                     url="url_example",
-                                    username_secret=SecretKeySelector(
-                                        key="key_example",
-                                        name="name_example",
-                                        optional=True,
-                                    ),
                                 ),
                                 mode=1,
                                 name="name_example",
@@ -19116,23 +20633,64 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             path="path_example",
                                         ),
                                         http=IoArgoprojWorkflowV1alpha1HTTPArtifact(
+                                            basic_auth=IoArgoprojWorkflowV1alpha1BasicAuth(
+                                                password_secret=SecretKeySelector(
+                                                    key="key_example",
+                                                    name="name_example",
+                                                    optional=True,
+                                                ),
+                                                username_secret=SecretKeySelector(
+                                                    key="key_example",
+                                                    name="name_example",
+                                                    optional=True,
+                                                ),
+                                            ),
+                                            client_cert=IoArgoprojWorkflowV1alpha1ClientCertAuth(
+                                                client_cert_secret=SecretKeySelector(
+                                                    key="key_example",
+                                                    name="name_example",
+                                                    optional=True,
+                                                ),
+                                                client_key_secret=SecretKeySelector(
+                                                    key="key_example",
+                                                    name="name_example",
+                                                    optional=True,
+                                                ),
+                                            ),
+                                            follow_temporary_redirects=True,
                                             headers=[
                                                 IoArgoprojWorkflowV1alpha1Header(
                                                     name="name_example",
                                                     value="value_example",
                                                 ),
                                             ],
-                                            password_secret=SecretKeySelector(
-                                                key="key_example",
-                                                name="name_example",
-                                                optional=True,
+                                            oauth2=IoArgoprojWorkflowV1alpha1OAuth2Auth(
+                                                client_id_secret=SecretKeySelector(
+                                                    key="key_example",
+                                                    name="name_example",
+                                                    optional=True,
+                                                ),
+                                                client_secret_secret=SecretKeySelector(
+                                                    key="key_example",
+                                                    name="name_example",
+                                                    optional=True,
+                                                ),
+                                                endpoint_params=[
+                                                    IoArgoprojWorkflowV1alpha1EndpointParam(
+                                                        key="key_example",
+                                                        value="value_example",
+                                                    ),
+                                                ],
+                                                scopes=[
+                                                    "scopes_example",
+                                                ],
+                                                token_url_secret=SecretKeySelector(
+                                                    key="key_example",
+                                                    name="name_example",
+                                                    optional=True,
+                                                ),
                                             ),
                                             url="url_example",
-                                            username_secret=SecretKeySelector(
-                                                key="key_example",
-                                                name="name_example",
-                                                optional=True,
-                                            ),
                                         ),
                                         mode=1,
                                         name="name_example",
@@ -19675,23 +21233,64 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 path="path_example",
                             ),
                             http=IoArgoprojWorkflowV1alpha1HTTPArtifact(
+                                basic_auth=IoArgoprojWorkflowV1alpha1BasicAuth(
+                                    password_secret=SecretKeySelector(
+                                        key="key_example",
+                                        name="name_example",
+                                        optional=True,
+                                    ),
+                                    username_secret=SecretKeySelector(
+                                        key="key_example",
+                                        name="name_example",
+                                        optional=True,
+                                    ),
+                                ),
+                                client_cert=IoArgoprojWorkflowV1alpha1ClientCertAuth(
+                                    client_cert_secret=SecretKeySelector(
+                                        key="key_example",
+                                        name="name_example",
+                                        optional=True,
+                                    ),
+                                    client_key_secret=SecretKeySelector(
+                                        key="key_example",
+                                        name="name_example",
+                                        optional=True,
+                                    ),
+                                ),
+                                follow_temporary_redirects=True,
                                 headers=[
                                     IoArgoprojWorkflowV1alpha1Header(
                                         name="name_example",
                                         value="value_example",
                                     ),
                                 ],
-                                password_secret=SecretKeySelector(
-                                    key="key_example",
-                                    name="name_example",
-                                    optional=True,
+                                oauth2=IoArgoprojWorkflowV1alpha1OAuth2Auth(
+                                    client_id_secret=SecretKeySelector(
+                                        key="key_example",
+                                        name="name_example",
+                                        optional=True,
+                                    ),
+                                    client_secret_secret=SecretKeySelector(
+                                        key="key_example",
+                                        name="name_example",
+                                        optional=True,
+                                    ),
+                                    endpoint_params=[
+                                        IoArgoprojWorkflowV1alpha1EndpointParam(
+                                            key="key_example",
+                                            value="value_example",
+                                        ),
+                                    ],
+                                    scopes=[
+                                        "scopes_example",
+                                    ],
+                                    token_url_secret=SecretKeySelector(
+                                        key="key_example",
+                                        name="name_example",
+                                        optional=True,
+                                    ),
                                 ),
                                 url="url_example",
-                                username_secret=SecretKeySelector(
-                                    key="key_example",
-                                    name="name_example",
-                                    optional=True,
-                                ),
                             ),
                             oss=IoArgoprojWorkflowV1alpha1OSSArtifact(
                                 access_key_secret=SecretKeySelector(
@@ -20406,23 +22005,64 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                     path="path_example",
                                                 ),
                                                 http=IoArgoprojWorkflowV1alpha1HTTPArtifact(
+                                                    basic_auth=IoArgoprojWorkflowV1alpha1BasicAuth(
+                                                        password_secret=SecretKeySelector(
+                                                            key="key_example",
+                                                            name="name_example",
+                                                            optional=True,
+                                                        ),
+                                                        username_secret=SecretKeySelector(
+                                                            key="key_example",
+                                                            name="name_example",
+                                                            optional=True,
+                                                        ),
+                                                    ),
+                                                    client_cert=IoArgoprojWorkflowV1alpha1ClientCertAuth(
+                                                        client_cert_secret=SecretKeySelector(
+                                                            key="key_example",
+                                                            name="name_example",
+                                                            optional=True,
+                                                        ),
+                                                        client_key_secret=SecretKeySelector(
+                                                            key="key_example",
+                                                            name="name_example",
+                                                            optional=True,
+                                                        ),
+                                                    ),
+                                                    follow_temporary_redirects=True,
                                                     headers=[
                                                         IoArgoprojWorkflowV1alpha1Header(
                                                             name="name_example",
                                                             value="value_example",
                                                         ),
                                                     ],
-                                                    password_secret=SecretKeySelector(
-                                                        key="key_example",
-                                                        name="name_example",
-                                                        optional=True,
+                                                    oauth2=IoArgoprojWorkflowV1alpha1OAuth2Auth(
+                                                        client_id_secret=SecretKeySelector(
+                                                            key="key_example",
+                                                            name="name_example",
+                                                            optional=True,
+                                                        ),
+                                                        client_secret_secret=SecretKeySelector(
+                                                            key="key_example",
+                                                            name="name_example",
+                                                            optional=True,
+                                                        ),
+                                                        endpoint_params=[
+                                                            IoArgoprojWorkflowV1alpha1EndpointParam(
+                                                                key="key_example",
+                                                                value="value_example",
+                                                            ),
+                                                        ],
+                                                        scopes=[
+                                                            "scopes_example",
+                                                        ],
+                                                        token_url_secret=SecretKeySelector(
+                                                            key="key_example",
+                                                            name="name_example",
+                                                            optional=True,
+                                                        ),
                                                     ),
                                                     url="url_example",
-                                                    username_secret=SecretKeySelector(
-                                                        key="key_example",
-                                                        name="name_example",
-                                                        optional=True,
-                                                    ),
                                                 ),
                                                 mode=1,
                                                 name="name_example",
@@ -20614,23 +22254,64 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             path="path_example",
                                                         ),
                                                         http=IoArgoprojWorkflowV1alpha1HTTPArtifact(
+                                                            basic_auth=IoArgoprojWorkflowV1alpha1BasicAuth(
+                                                                password_secret=SecretKeySelector(
+                                                                    key="key_example",
+                                                                    name="name_example",
+                                                                    optional=True,
+                                                                ),
+                                                                username_secret=SecretKeySelector(
+                                                                    key="key_example",
+                                                                    name="name_example",
+                                                                    optional=True,
+                                                                ),
+                                                            ),
+                                                            client_cert=IoArgoprojWorkflowV1alpha1ClientCertAuth(
+                                                                client_cert_secret=SecretKeySelector(
+                                                                    key="key_example",
+                                                                    name="name_example",
+                                                                    optional=True,
+                                                                ),
+                                                                client_key_secret=SecretKeySelector(
+                                                                    key="key_example",
+                                                                    name="name_example",
+                                                                    optional=True,
+                                                                ),
+                                                            ),
+                                                            follow_temporary_redirects=True,
                                                             headers=[
                                                                 IoArgoprojWorkflowV1alpha1Header(
                                                                     name="name_example",
                                                                     value="value_example",
                                                                 ),
                                                             ],
-                                                            password_secret=SecretKeySelector(
-                                                                key="key_example",
-                                                                name="name_example",
-                                                                optional=True,
+                                                            oauth2=IoArgoprojWorkflowV1alpha1OAuth2Auth(
+                                                                client_id_secret=SecretKeySelector(
+                                                                    key="key_example",
+                                                                    name="name_example",
+                                                                    optional=True,
+                                                                ),
+                                                                client_secret_secret=SecretKeySelector(
+                                                                    key="key_example",
+                                                                    name="name_example",
+                                                                    optional=True,
+                                                                ),
+                                                                endpoint_params=[
+                                                                    IoArgoprojWorkflowV1alpha1EndpointParam(
+                                                                        key="key_example",
+                                                                        value="value_example",
+                                                                    ),
+                                                                ],
+                                                                scopes=[
+                                                                    "scopes_example",
+                                                                ],
+                                                                token_url_secret=SecretKeySelector(
+                                                                    key="key_example",
+                                                                    name="name_example",
+                                                                    optional=True,
+                                                                ),
                                                             ),
                                                             url="url_example",
-                                                            username_secret=SecretKeySelector(
-                                                                key="key_example",
-                                                                name="name_example",
-                                                                optional=True,
-                                                            ),
                                                         ),
                                                         mode=1,
                                                         name="name_example",
@@ -20844,23 +22525,64 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         path="path_example",
                                     ),
                                     http=IoArgoprojWorkflowV1alpha1HTTPArtifact(
+                                        basic_auth=IoArgoprojWorkflowV1alpha1BasicAuth(
+                                            password_secret=SecretKeySelector(
+                                                key="key_example",
+                                                name="name_example",
+                                                optional=True,
+                                            ),
+                                            username_secret=SecretKeySelector(
+                                                key="key_example",
+                                                name="name_example",
+                                                optional=True,
+                                            ),
+                                        ),
+                                        client_cert=IoArgoprojWorkflowV1alpha1ClientCertAuth(
+                                            client_cert_secret=SecretKeySelector(
+                                                key="key_example",
+                                                name="name_example",
+                                                optional=True,
+                                            ),
+                                            client_key_secret=SecretKeySelector(
+                                                key="key_example",
+                                                name="name_example",
+                                                optional=True,
+                                            ),
+                                        ),
+                                        follow_temporary_redirects=True,
                                         headers=[
                                             IoArgoprojWorkflowV1alpha1Header(
                                                 name="name_example",
                                                 value="value_example",
                                             ),
                                         ],
-                                        password_secret=SecretKeySelector(
-                                            key="key_example",
-                                            name="name_example",
-                                            optional=True,
+                                        oauth2=IoArgoprojWorkflowV1alpha1OAuth2Auth(
+                                            client_id_secret=SecretKeySelector(
+                                                key="key_example",
+                                                name="name_example",
+                                                optional=True,
+                                            ),
+                                            client_secret_secret=SecretKeySelector(
+                                                key="key_example",
+                                                name="name_example",
+                                                optional=True,
+                                            ),
+                                            endpoint_params=[
+                                                IoArgoprojWorkflowV1alpha1EndpointParam(
+                                                    key="key_example",
+                                                    value="value_example",
+                                                ),
+                                            ],
+                                            scopes=[
+                                                "scopes_example",
+                                            ],
+                                            token_url_secret=SecretKeySelector(
+                                                key="key_example",
+                                                name="name_example",
+                                                optional=True,
+                                            ),
                                         ),
                                         url="url_example",
-                                        username_secret=SecretKeySelector(
-                                            key="key_example",
-                                            name="name_example",
-                                            optional=True,
-                                        ),
                                     ),
                                     mode=1,
                                     name="name_example",
@@ -21326,23 +23048,64 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         path="path_example",
                                     ),
                                     http=IoArgoprojWorkflowV1alpha1HTTPArtifact(
+                                        basic_auth=IoArgoprojWorkflowV1alpha1BasicAuth(
+                                            password_secret=SecretKeySelector(
+                                                key="key_example",
+                                                name="name_example",
+                                                optional=True,
+                                            ),
+                                            username_secret=SecretKeySelector(
+                                                key="key_example",
+                                                name="name_example",
+                                                optional=True,
+                                            ),
+                                        ),
+                                        client_cert=IoArgoprojWorkflowV1alpha1ClientCertAuth(
+                                            client_cert_secret=SecretKeySelector(
+                                                key="key_example",
+                                                name="name_example",
+                                                optional=True,
+                                            ),
+                                            client_key_secret=SecretKeySelector(
+                                                key="key_example",
+                                                name="name_example",
+                                                optional=True,
+                                            ),
+                                        ),
+                                        follow_temporary_redirects=True,
                                         headers=[
                                             IoArgoprojWorkflowV1alpha1Header(
                                                 name="name_example",
                                                 value="value_example",
                                             ),
                                         ],
-                                        password_secret=SecretKeySelector(
-                                            key="key_example",
-                                            name="name_example",
-                                            optional=True,
+                                        oauth2=IoArgoprojWorkflowV1alpha1OAuth2Auth(
+                                            client_id_secret=SecretKeySelector(
+                                                key="key_example",
+                                                name="name_example",
+                                                optional=True,
+                                            ),
+                                            client_secret_secret=SecretKeySelector(
+                                                key="key_example",
+                                                name="name_example",
+                                                optional=True,
+                                            ),
+                                            endpoint_params=[
+                                                IoArgoprojWorkflowV1alpha1EndpointParam(
+                                                    key="key_example",
+                                                    value="value_example",
+                                                ),
+                                            ],
+                                            scopes=[
+                                                "scopes_example",
+                                            ],
+                                            token_url_secret=SecretKeySelector(
+                                                key="key_example",
+                                                name="name_example",
+                                                optional=True,
+                                            ),
                                         ),
                                         url="url_example",
-                                        username_secret=SecretKeySelector(
-                                            key="key_example",
-                                            name="name_example",
-                                            optional=True,
-                                        ),
                                     ),
                                     mode=1,
                                     name="name_example",
@@ -21575,23 +23338,64 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         path="path_example",
                                     ),
                                     http=IoArgoprojWorkflowV1alpha1HTTPArtifact(
+                                        basic_auth=IoArgoprojWorkflowV1alpha1BasicAuth(
+                                            password_secret=SecretKeySelector(
+                                                key="key_example",
+                                                name="name_example",
+                                                optional=True,
+                                            ),
+                                            username_secret=SecretKeySelector(
+                                                key="key_example",
+                                                name="name_example",
+                                                optional=True,
+                                            ),
+                                        ),
+                                        client_cert=IoArgoprojWorkflowV1alpha1ClientCertAuth(
+                                            client_cert_secret=SecretKeySelector(
+                                                key="key_example",
+                                                name="name_example",
+                                                optional=True,
+                                            ),
+                                            client_key_secret=SecretKeySelector(
+                                                key="key_example",
+                                                name="name_example",
+                                                optional=True,
+                                            ),
+                                        ),
+                                        follow_temporary_redirects=True,
                                         headers=[
                                             IoArgoprojWorkflowV1alpha1Header(
                                                 name="name_example",
                                                 value="value_example",
                                             ),
                                         ],
-                                        password_secret=SecretKeySelector(
-                                            key="key_example",
-                                            name="name_example",
-                                            optional=True,
+                                        oauth2=IoArgoprojWorkflowV1alpha1OAuth2Auth(
+                                            client_id_secret=SecretKeySelector(
+                                                key="key_example",
+                                                name="name_example",
+                                                optional=True,
+                                            ),
+                                            client_secret_secret=SecretKeySelector(
+                                                key="key_example",
+                                                name="name_example",
+                                                optional=True,
+                                            ),
+                                            endpoint_params=[
+                                                IoArgoprojWorkflowV1alpha1EndpointParam(
+                                                    key="key_example",
+                                                    value="value_example",
+                                                ),
+                                            ],
+                                            scopes=[
+                                                "scopes_example",
+                                            ],
+                                            token_url_secret=SecretKeySelector(
+                                                key="key_example",
+                                                name="name_example",
+                                                optional=True,
+                                            ),
                                         ),
                                         url="url_example",
-                                        username_secret=SecretKeySelector(
-                                            key="key_example",
-                                            name="name_example",
-                                            optional=True,
-                                        ),
                                     ),
                                     mode=1,
                                     name="name_example",
@@ -22385,23 +24189,64 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                     path="path_example",
                                                 ),
                                                 http=IoArgoprojWorkflowV1alpha1HTTPArtifact(
+                                                    basic_auth=IoArgoprojWorkflowV1alpha1BasicAuth(
+                                                        password_secret=SecretKeySelector(
+                                                            key="key_example",
+                                                            name="name_example",
+                                                            optional=True,
+                                                        ),
+                                                        username_secret=SecretKeySelector(
+                                                            key="key_example",
+                                                            name="name_example",
+                                                            optional=True,
+                                                        ),
+                                                    ),
+                                                    client_cert=IoArgoprojWorkflowV1alpha1ClientCertAuth(
+                                                        client_cert_secret=SecretKeySelector(
+                                                            key="key_example",
+                                                            name="name_example",
+                                                            optional=True,
+                                                        ),
+                                                        client_key_secret=SecretKeySelector(
+                                                            key="key_example",
+                                                            name="name_example",
+                                                            optional=True,
+                                                        ),
+                                                    ),
+                                                    follow_temporary_redirects=True,
                                                     headers=[
                                                         IoArgoprojWorkflowV1alpha1Header(
                                                             name="name_example",
                                                             value="value_example",
                                                         ),
                                                     ],
-                                                    password_secret=SecretKeySelector(
-                                                        key="key_example",
-                                                        name="name_example",
-                                                        optional=True,
+                                                    oauth2=IoArgoprojWorkflowV1alpha1OAuth2Auth(
+                                                        client_id_secret=SecretKeySelector(
+                                                            key="key_example",
+                                                            name="name_example",
+                                                            optional=True,
+                                                        ),
+                                                        client_secret_secret=SecretKeySelector(
+                                                            key="key_example",
+                                                            name="name_example",
+                                                            optional=True,
+                                                        ),
+                                                        endpoint_params=[
+                                                            IoArgoprojWorkflowV1alpha1EndpointParam(
+                                                                key="key_example",
+                                                                value="value_example",
+                                                            ),
+                                                        ],
+                                                        scopes=[
+                                                            "scopes_example",
+                                                        ],
+                                                        token_url_secret=SecretKeySelector(
+                                                            key="key_example",
+                                                            name="name_example",
+                                                            optional=True,
+                                                        ),
                                                     ),
                                                     url="url_example",
-                                                    username_secret=SecretKeySelector(
-                                                        key="key_example",
-                                                        name="name_example",
-                                                        optional=True,
-                                                    ),
                                                 ),
                                                 mode=1,
                                                 name="name_example",
@@ -22589,23 +24434,64 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             path="path_example",
                                                         ),
                                                         http=IoArgoprojWorkflowV1alpha1HTTPArtifact(
+                                                            basic_auth=IoArgoprojWorkflowV1alpha1BasicAuth(
+                                                                password_secret=SecretKeySelector(
+                                                                    key="key_example",
+                                                                    name="name_example",
+                                                                    optional=True,
+                                                                ),
+                                                                username_secret=SecretKeySelector(
+                                                                    key="key_example",
+                                                                    name="name_example",
+                                                                    optional=True,
+                                                                ),
+                                                            ),
+                                                            client_cert=IoArgoprojWorkflowV1alpha1ClientCertAuth(
+                                                                client_cert_secret=SecretKeySelector(
+                                                                    key="key_example",
+                                                                    name="name_example",
+                                                                    optional=True,
+                                                                ),
+                                                                client_key_secret=SecretKeySelector(
+                                                                    key="key_example",
+                                                                    name="name_example",
+                                                                    optional=True,
+                                                                ),
+                                                            ),
+                                                            follow_temporary_redirects=True,
                                                             headers=[
                                                                 IoArgoprojWorkflowV1alpha1Header(
                                                                     name="name_example",
                                                                     value="value_example",
                                                                 ),
                                                             ],
-                                                            password_secret=SecretKeySelector(
-                                                                key="key_example",
-                                                                name="name_example",
-                                                                optional=True,
+                                                            oauth2=IoArgoprojWorkflowV1alpha1OAuth2Auth(
+                                                                client_id_secret=SecretKeySelector(
+                                                                    key="key_example",
+                                                                    name="name_example",
+                                                                    optional=True,
+                                                                ),
+                                                                client_secret_secret=SecretKeySelector(
+                                                                    key="key_example",
+                                                                    name="name_example",
+                                                                    optional=True,
+                                                                ),
+                                                                endpoint_params=[
+                                                                    IoArgoprojWorkflowV1alpha1EndpointParam(
+                                                                        key="key_example",
+                                                                        value="value_example",
+                                                                    ),
+                                                                ],
+                                                                scopes=[
+                                                                    "scopes_example",
+                                                                ],
+                                                                token_url_secret=SecretKeySelector(
+                                                                    key="key_example",
+                                                                    name="name_example",
+                                                                    optional=True,
+                                                                ),
                                                             ),
                                                             url="url_example",
-                                                            username_secret=SecretKeySelector(
-                                                                key="key_example",
-                                                                name="name_example",
-                                                                optional=True,
-                                                            ),
                                                         ),
                                                         mode=1,
                                                         name="name_example",
@@ -23414,23 +25300,64 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     path="path_example",
                                 ),
                                 http=IoArgoprojWorkflowV1alpha1HTTPArtifact(
+                                    basic_auth=IoArgoprojWorkflowV1alpha1BasicAuth(
+                                        password_secret=SecretKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
+                                        username_secret=SecretKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
+                                    ),
+                                    client_cert=IoArgoprojWorkflowV1alpha1ClientCertAuth(
+                                        client_cert_secret=SecretKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
+                                        client_key_secret=SecretKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
+                                    ),
+                                    follow_temporary_redirects=True,
                                     headers=[
                                         IoArgoprojWorkflowV1alpha1Header(
                                             name="name_example",
                                             value="value_example",
                                         ),
                                     ],
-                                    password_secret=SecretKeySelector(
-                                        key="key_example",
-                                        name="name_example",
-                                        optional=True,
+                                    oauth2=IoArgoprojWorkflowV1alpha1OAuth2Auth(
+                                        client_id_secret=SecretKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
+                                        client_secret_secret=SecretKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
+                                        endpoint_params=[
+                                            IoArgoprojWorkflowV1alpha1EndpointParam(
+                                                key="key_example",
+                                                value="value_example",
+                                            ),
+                                        ],
+                                        scopes=[
+                                            "scopes_example",
+                                        ],
+                                        token_url_secret=SecretKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
                                     ),
                                     url="url_example",
-                                    username_secret=SecretKeySelector(
-                                        key="key_example",
-                                        name="name_example",
-                                        optional=True,
-                                    ),
                                 ),
                                 oss=IoArgoprojWorkflowV1alpha1OSSArtifact(
                                     access_key_secret=SecretKeySelector(
@@ -24145,23 +26072,64 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         path="path_example",
                                                     ),
                                                     http=IoArgoprojWorkflowV1alpha1HTTPArtifact(
+                                                        basic_auth=IoArgoprojWorkflowV1alpha1BasicAuth(
+                                                            password_secret=SecretKeySelector(
+                                                                key="key_example",
+                                                                name="name_example",
+                                                                optional=True,
+                                                            ),
+                                                            username_secret=SecretKeySelector(
+                                                                key="key_example",
+                                                                name="name_example",
+                                                                optional=True,
+                                                            ),
+                                                        ),
+                                                        client_cert=IoArgoprojWorkflowV1alpha1ClientCertAuth(
+                                                            client_cert_secret=SecretKeySelector(
+                                                                key="key_example",
+                                                                name="name_example",
+                                                                optional=True,
+                                                            ),
+                                                            client_key_secret=SecretKeySelector(
+                                                                key="key_example",
+                                                                name="name_example",
+                                                                optional=True,
+                                                            ),
+                                                        ),
+                                                        follow_temporary_redirects=True,
                                                         headers=[
                                                             IoArgoprojWorkflowV1alpha1Header(
                                                                 name="name_example",
                                                                 value="value_example",
                                                             ),
                                                         ],
-                                                        password_secret=SecretKeySelector(
-                                                            key="key_example",
-                                                            name="name_example",
-                                                            optional=True,
+                                                        oauth2=IoArgoprojWorkflowV1alpha1OAuth2Auth(
+                                                            client_id_secret=SecretKeySelector(
+                                                                key="key_example",
+                                                                name="name_example",
+                                                                optional=True,
+                                                            ),
+                                                            client_secret_secret=SecretKeySelector(
+                                                                key="key_example",
+                                                                name="name_example",
+                                                                optional=True,
+                                                            ),
+                                                            endpoint_params=[
+                                                                IoArgoprojWorkflowV1alpha1EndpointParam(
+                                                                    key="key_example",
+                                                                    value="value_example",
+                                                                ),
+                                                            ],
+                                                            scopes=[
+                                                                "scopes_example",
+                                                            ],
+                                                            token_url_secret=SecretKeySelector(
+                                                                key="key_example",
+                                                                name="name_example",
+                                                                optional=True,
+                                                            ),
                                                         ),
                                                         url="url_example",
-                                                        username_secret=SecretKeySelector(
-                                                            key="key_example",
-                                                            name="name_example",
-                                                            optional=True,
-                                                        ),
                                                     ),
                                                     mode=1,
                                                     name="name_example",
@@ -24353,23 +26321,64 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                                 path="path_example",
                                                             ),
                                                             http=IoArgoprojWorkflowV1alpha1HTTPArtifact(
+                                                                basic_auth=IoArgoprojWorkflowV1alpha1BasicAuth(
+                                                                    password_secret=SecretKeySelector(
+                                                                        key="key_example",
+                                                                        name="name_example",
+                                                                        optional=True,
+                                                                    ),
+                                                                    username_secret=SecretKeySelector(
+                                                                        key="key_example",
+                                                                        name="name_example",
+                                                                        optional=True,
+                                                                    ),
+                                                                ),
+                                                                client_cert=IoArgoprojWorkflowV1alpha1ClientCertAuth(
+                                                                    client_cert_secret=SecretKeySelector(
+                                                                        key="key_example",
+                                                                        name="name_example",
+                                                                        optional=True,
+                                                                    ),
+                                                                    client_key_secret=SecretKeySelector(
+                                                                        key="key_example",
+                                                                        name="name_example",
+                                                                        optional=True,
+                                                                    ),
+                                                                ),
+                                                                follow_temporary_redirects=True,
                                                                 headers=[
                                                                     IoArgoprojWorkflowV1alpha1Header(
                                                                         name="name_example",
                                                                         value="value_example",
                                                                     ),
                                                                 ],
-                                                                password_secret=SecretKeySelector(
-                                                                    key="key_example",
-                                                                    name="name_example",
-                                                                    optional=True,
+                                                                oauth2=IoArgoprojWorkflowV1alpha1OAuth2Auth(
+                                                                    client_id_secret=SecretKeySelector(
+                                                                        key="key_example",
+                                                                        name="name_example",
+                                                                        optional=True,
+                                                                    ),
+                                                                    client_secret_secret=SecretKeySelector(
+                                                                        key="key_example",
+                                                                        name="name_example",
+                                                                        optional=True,
+                                                                    ),
+                                                                    endpoint_params=[
+                                                                        IoArgoprojWorkflowV1alpha1EndpointParam(
+                                                                            key="key_example",
+                                                                            value="value_example",
+                                                                        ),
+                                                                    ],
+                                                                    scopes=[
+                                                                        "scopes_example",
+                                                                    ],
+                                                                    token_url_secret=SecretKeySelector(
+                                                                        key="key_example",
+                                                                        name="name_example",
+                                                                        optional=True,
+                                                                    ),
                                                                 ),
                                                                 url="url_example",
-                                                                username_secret=SecretKeySelector(
-                                                                    key="key_example",
-                                                                    name="name_example",
-                                                                    optional=True,
-                                                                ),
                                                             ),
                                                             mode=1,
                                                             name="name_example",
@@ -24583,23 +26592,64 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             path="path_example",
                                         ),
                                         http=IoArgoprojWorkflowV1alpha1HTTPArtifact(
+                                            basic_auth=IoArgoprojWorkflowV1alpha1BasicAuth(
+                                                password_secret=SecretKeySelector(
+                                                    key="key_example",
+                                                    name="name_example",
+                                                    optional=True,
+                                                ),
+                                                username_secret=SecretKeySelector(
+                                                    key="key_example",
+                                                    name="name_example",
+                                                    optional=True,
+                                                ),
+                                            ),
+                                            client_cert=IoArgoprojWorkflowV1alpha1ClientCertAuth(
+                                                client_cert_secret=SecretKeySelector(
+                                                    key="key_example",
+                                                    name="name_example",
+                                                    optional=True,
+                                                ),
+                                                client_key_secret=SecretKeySelector(
+                                                    key="key_example",
+                                                    name="name_example",
+                                                    optional=True,
+                                                ),
+                                            ),
+                                            follow_temporary_redirects=True,
                                             headers=[
                                                 IoArgoprojWorkflowV1alpha1Header(
                                                     name="name_example",
                                                     value="value_example",
                                                 ),
                                             ],
-                                            password_secret=SecretKeySelector(
-                                                key="key_example",
-                                                name="name_example",
-                                                optional=True,
+                                            oauth2=IoArgoprojWorkflowV1alpha1OAuth2Auth(
+                                                client_id_secret=SecretKeySelector(
+                                                    key="key_example",
+                                                    name="name_example",
+                                                    optional=True,
+                                                ),
+                                                client_secret_secret=SecretKeySelector(
+                                                    key="key_example",
+                                                    name="name_example",
+                                                    optional=True,
+                                                ),
+                                                endpoint_params=[
+                                                    IoArgoprojWorkflowV1alpha1EndpointParam(
+                                                        key="key_example",
+                                                        value="value_example",
+                                                    ),
+                                                ],
+                                                scopes=[
+                                                    "scopes_example",
+                                                ],
+                                                token_url_secret=SecretKeySelector(
+                                                    key="key_example",
+                                                    name="name_example",
+                                                    optional=True,
+                                                ),
                                             ),
                                             url="url_example",
-                                            username_secret=SecretKeySelector(
-                                                key="key_example",
-                                                name="name_example",
-                                                optional=True,
-                                            ),
                                         ),
                                         mode=1,
                                         name="name_example",
@@ -25065,23 +27115,64 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             path="path_example",
                                         ),
                                         http=IoArgoprojWorkflowV1alpha1HTTPArtifact(
+                                            basic_auth=IoArgoprojWorkflowV1alpha1BasicAuth(
+                                                password_secret=SecretKeySelector(
+                                                    key="key_example",
+                                                    name="name_example",
+                                                    optional=True,
+                                                ),
+                                                username_secret=SecretKeySelector(
+                                                    key="key_example",
+                                                    name="name_example",
+                                                    optional=True,
+                                                ),
+                                            ),
+                                            client_cert=IoArgoprojWorkflowV1alpha1ClientCertAuth(
+                                                client_cert_secret=SecretKeySelector(
+                                                    key="key_example",
+                                                    name="name_example",
+                                                    optional=True,
+                                                ),
+                                                client_key_secret=SecretKeySelector(
+                                                    key="key_example",
+                                                    name="name_example",
+                                                    optional=True,
+                                                ),
+                                            ),
+                                            follow_temporary_redirects=True,
                                             headers=[
                                                 IoArgoprojWorkflowV1alpha1Header(
                                                     name="name_example",
                                                     value="value_example",
                                                 ),
                                             ],
-                                            password_secret=SecretKeySelector(
-                                                key="key_example",
-                                                name="name_example",
-                                                optional=True,
+                                            oauth2=IoArgoprojWorkflowV1alpha1OAuth2Auth(
+                                                client_id_secret=SecretKeySelector(
+                                                    key="key_example",
+                                                    name="name_example",
+                                                    optional=True,
+                                                ),
+                                                client_secret_secret=SecretKeySelector(
+                                                    key="key_example",
+                                                    name="name_example",
+                                                    optional=True,
+                                                ),
+                                                endpoint_params=[
+                                                    IoArgoprojWorkflowV1alpha1EndpointParam(
+                                                        key="key_example",
+                                                        value="value_example",
+                                                    ),
+                                                ],
+                                                scopes=[
+                                                    "scopes_example",
+                                                ],
+                                                token_url_secret=SecretKeySelector(
+                                                    key="key_example",
+                                                    name="name_example",
+                                                    optional=True,
+                                                ),
                                             ),
                                             url="url_example",
-                                            username_secret=SecretKeySelector(
-                                                key="key_example",
-                                                name="name_example",
-                                                optional=True,
-                                            ),
                                         ),
                                         mode=1,
                                         name="name_example",
@@ -25314,23 +27405,64 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             path="path_example",
                                         ),
                                         http=IoArgoprojWorkflowV1alpha1HTTPArtifact(
+                                            basic_auth=IoArgoprojWorkflowV1alpha1BasicAuth(
+                                                password_secret=SecretKeySelector(
+                                                    key="key_example",
+                                                    name="name_example",
+                                                    optional=True,
+                                                ),
+                                                username_secret=SecretKeySelector(
+                                                    key="key_example",
+                                                    name="name_example",
+                                                    optional=True,
+                                                ),
+                                            ),
+                                            client_cert=IoArgoprojWorkflowV1alpha1ClientCertAuth(
+                                                client_cert_secret=SecretKeySelector(
+                                                    key="key_example",
+                                                    name="name_example",
+                                                    optional=True,
+                                                ),
+                                                client_key_secret=SecretKeySelector(
+                                                    key="key_example",
+                                                    name="name_example",
+                                                    optional=True,
+                                                ),
+                                            ),
+                                            follow_temporary_redirects=True,
                                             headers=[
                                                 IoArgoprojWorkflowV1alpha1Header(
                                                     name="name_example",
                                                     value="value_example",
                                                 ),
                                             ],
-                                            password_secret=SecretKeySelector(
-                                                key="key_example",
-                                                name="name_example",
-                                                optional=True,
+                                            oauth2=IoArgoprojWorkflowV1alpha1OAuth2Auth(
+                                                client_id_secret=SecretKeySelector(
+                                                    key="key_example",
+                                                    name="name_example",
+                                                    optional=True,
+                                                ),
+                                                client_secret_secret=SecretKeySelector(
+                                                    key="key_example",
+                                                    name="name_example",
+                                                    optional=True,
+                                                ),
+                                                endpoint_params=[
+                                                    IoArgoprojWorkflowV1alpha1EndpointParam(
+                                                        key="key_example",
+                                                        value="value_example",
+                                                    ),
+                                                ],
+                                                scopes=[
+                                                    "scopes_example",
+                                                ],
+                                                token_url_secret=SecretKeySelector(
+                                                    key="key_example",
+                                                    name="name_example",
+                                                    optional=True,
+                                                ),
                                             ),
                                             url="url_example",
-                                            username_secret=SecretKeySelector(
-                                                key="key_example",
-                                                name="name_example",
-                                                optional=True,
-                                            ),
                                         ),
                                         mode=1,
                                         name="name_example",
@@ -26124,23 +28256,64 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         path="path_example",
                                                     ),
                                                     http=IoArgoprojWorkflowV1alpha1HTTPArtifact(
+                                                        basic_auth=IoArgoprojWorkflowV1alpha1BasicAuth(
+                                                            password_secret=SecretKeySelector(
+                                                                key="key_example",
+                                                                name="name_example",
+                                                                optional=True,
+                                                            ),
+                                                            username_secret=SecretKeySelector(
+                                                                key="key_example",
+                                                                name="name_example",
+                                                                optional=True,
+                                                            ),
+                                                        ),
+                                                        client_cert=IoArgoprojWorkflowV1alpha1ClientCertAuth(
+                                                            client_cert_secret=SecretKeySelector(
+                                                                key="key_example",
+                                                                name="name_example",
+                                                                optional=True,
+                                                            ),
+                                                            client_key_secret=SecretKeySelector(
+                                                                key="key_example",
+                                                                name="name_example",
+                                                                optional=True,
+                                                            ),
+                                                        ),
+                                                        follow_temporary_redirects=True,
                                                         headers=[
                                                             IoArgoprojWorkflowV1alpha1Header(
                                                                 name="name_example",
                                                                 value="value_example",
                                                             ),
                                                         ],
-                                                        password_secret=SecretKeySelector(
-                                                            key="key_example",
-                                                            name="name_example",
-                                                            optional=True,
+                                                        oauth2=IoArgoprojWorkflowV1alpha1OAuth2Auth(
+                                                            client_id_secret=SecretKeySelector(
+                                                                key="key_example",
+                                                                name="name_example",
+                                                                optional=True,
+                                                            ),
+                                                            client_secret_secret=SecretKeySelector(
+                                                                key="key_example",
+                                                                name="name_example",
+                                                                optional=True,
+                                                            ),
+                                                            endpoint_params=[
+                                                                IoArgoprojWorkflowV1alpha1EndpointParam(
+                                                                    key="key_example",
+                                                                    value="value_example",
+                                                                ),
+                                                            ],
+                                                            scopes=[
+                                                                "scopes_example",
+                                                            ],
+                                                            token_url_secret=SecretKeySelector(
+                                                                key="key_example",
+                                                                name="name_example",
+                                                                optional=True,
+                                                            ),
                                                         ),
                                                         url="url_example",
-                                                        username_secret=SecretKeySelector(
-                                                            key="key_example",
-                                                            name="name_example",
-                                                            optional=True,
-                                                        ),
                                                     ),
                                                     mode=1,
                                                     name="name_example",
@@ -26328,23 +28501,64 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                                 path="path_example",
                                                             ),
                                                             http=IoArgoprojWorkflowV1alpha1HTTPArtifact(
+                                                                basic_auth=IoArgoprojWorkflowV1alpha1BasicAuth(
+                                                                    password_secret=SecretKeySelector(
+                                                                        key="key_example",
+                                                                        name="name_example",
+                                                                        optional=True,
+                                                                    ),
+                                                                    username_secret=SecretKeySelector(
+                                                                        key="key_example",
+                                                                        name="name_example",
+                                                                        optional=True,
+                                                                    ),
+                                                                ),
+                                                                client_cert=IoArgoprojWorkflowV1alpha1ClientCertAuth(
+                                                                    client_cert_secret=SecretKeySelector(
+                                                                        key="key_example",
+                                                                        name="name_example",
+                                                                        optional=True,
+                                                                    ),
+                                                                    client_key_secret=SecretKeySelector(
+                                                                        key="key_example",
+                                                                        name="name_example",
+                                                                        optional=True,
+                                                                    ),
+                                                                ),
+                                                                follow_temporary_redirects=True,
                                                                 headers=[
                                                                     IoArgoprojWorkflowV1alpha1Header(
                                                                         name="name_example",
                                                                         value="value_example",
                                                                     ),
                                                                 ],
-                                                                password_secret=SecretKeySelector(
-                                                                    key="key_example",
-                                                                    name="name_example",
-                                                                    optional=True,
+                                                                oauth2=IoArgoprojWorkflowV1alpha1OAuth2Auth(
+                                                                    client_id_secret=SecretKeySelector(
+                                                                        key="key_example",
+                                                                        name="name_example",
+                                                                        optional=True,
+                                                                    ),
+                                                                    client_secret_secret=SecretKeySelector(
+                                                                        key="key_example",
+                                                                        name="name_example",
+                                                                        optional=True,
+                                                                    ),
+                                                                    endpoint_params=[
+                                                                        IoArgoprojWorkflowV1alpha1EndpointParam(
+                                                                            key="key_example",
+                                                                            value="value_example",
+                                                                        ),
+                                                                    ],
+                                                                    scopes=[
+                                                                        "scopes_example",
+                                                                    ],
+                                                                    token_url_secret=SecretKeySelector(
+                                                                        key="key_example",
+                                                                        name="name_example",
+                                                                        optional=True,
+                                                                    ),
                                                                 ),
                                                                 url="url_example",
-                                                                username_secret=SecretKeySelector(
-                                                                    key="key_example",
-                                                                    name="name_example",
-                                                                    optional=True,
-                                                                ),
                                                             ),
                                                             mode=1,
                                                             name="name_example",

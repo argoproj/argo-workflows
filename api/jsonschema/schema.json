@@ -4822,6 +4822,20 @@
       },
       "type": "object"
     },
+    "io.argoproj.workflow.v1alpha1.BasicAuth": {
+      "description": "BasicAuth describes the secret selectors required for basic authentication",
+      "properties": {
+        "passwordSecret": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
+          "description": "PasswordSecret is the secret selector to the repository password"
+        },
+        "usernameSecret": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
+          "description": "UsernameSecret is the secret selector to the repository username"
+        }
+      },
+      "type": "object"
+    },
     "io.argoproj.workflow.v1alpha1.Cache": {
       "description": "Cache is the configuration for the type of cache to be used",
       "properties": {
@@ -4833,6 +4847,18 @@
       "required": [
         "configMap"
       ],
+      "type": "object"
+    },
+    "io.argoproj.workflow.v1alpha1.ClientCertAuth": {
+      "description": "ClientCertAuth holds necessary information for client authentication via certificates",
+      "properties": {
+        "clientCertSecret": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
+        },
+        "clientKeySecret": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
+        }
+      },
       "type": "object"
     },
     "io.argoproj.workflow.v1alpha1.ClusterWorkflowTemplate": {
@@ -5468,6 +5494,23 @@
       },
       "type": "object"
     },
+    "io.argoproj.workflow.v1alpha1.EndpointParam": {
+      "description": "EndpointParam is for requesting optional fields that should be sent in the oauth request",
+      "properties": {
+        "key": {
+          "description": "Name is the header name",
+          "type": "string"
+        },
+        "value": {
+          "description": "Value is the literal value to use for the header",
+          "type": "string"
+        }
+      },
+      "required": [
+        "key"
+      ],
+      "type": "object"
+    },
     "io.argoproj.workflow.v1alpha1.Event": {
       "properties": {
         "selector": {
@@ -5767,6 +5810,16 @@
     "io.argoproj.workflow.v1alpha1.HTTPArtifact": {
       "description": "HTTPArtifact allows a file served on HTTP to be placed as an input artifact in a container",
       "properties": {
+        "basicAuth": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.BasicAuth"
+        },
+        "clientCert": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ClientCertAuth"
+        },
+        "followTemporaryRedirects": {
+          "description": "whether to follow temporary redirects, needed for webHDFS",
+          "type": "boolean"
+        },
         "headers": {
           "description": "Headers are an optional list of headers to send with HTTP requests for artifacts",
           "items": {
@@ -5774,17 +5827,12 @@
           },
           "type": "array"
         },
-        "passwordSecret": {
-          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
-          "description": "PasswordSecret is the secret selector to the repository password"
+        "oauth2": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.OAuth2Auth"
         },
         "url": {
           "description": "URL of the artifact",
           "type": "string"
-        },
-        "usernameSecret": {
-          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
-          "description": "UsernameSecret is the secret selector to the repository username"
         }
       },
       "required": [
@@ -6301,6 +6349,33 @@
     },
     "io.argoproj.workflow.v1alpha1.NoneStrategy": {
       "description": "NoneStrategy indicates to skip tar process and upload the files or directory tree as independent files. Note that if the artifact is a directory, the artifact driver must support the ability to save/load the directory appropriately.",
+      "type": "object"
+    },
+    "io.argoproj.workflow.v1alpha1.OAuth2Auth": {
+      "description": "OAuth2Auth holds all information for client authentication via OAuth2 tokens",
+      "properties": {
+        "clientIDSecret": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
+        },
+        "clientSecretSecret": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
+        },
+        "endpointParams": {
+          "items": {
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.EndpointParam"
+          },
+          "type": "array"
+        },
+        "scopes": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "tokenURLSecret": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
+        }
+      },
       "type": "object"
     },
     "io.argoproj.workflow.v1alpha1.OSSArtifact": {

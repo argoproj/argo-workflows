@@ -29,6 +29,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Backoff":                       schema_pkg_apis_workflow_v1alpha1_Backoff(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.BasicAuth":                     schema_pkg_apis_workflow_v1alpha1_BasicAuth(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Cache":                         schema_pkg_apis_workflow_v1alpha1_Cache(ref),
+		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ClientCertAuth":                schema_pkg_apis_workflow_v1alpha1_ClientCertAuth(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ClusterWorkflowTemplate":       schema_pkg_apis_workflow_v1alpha1_ClusterWorkflowTemplate(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ClusterWorkflowTemplateList":   schema_pkg_apis_workflow_v1alpha1_ClusterWorkflowTemplateList(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Condition":                     schema_pkg_apis_workflow_v1alpha1_Condition(ref),
@@ -46,6 +47,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.DAGTemplate":                   schema_pkg_apis_workflow_v1alpha1_DAGTemplate(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Data":                          schema_pkg_apis_workflow_v1alpha1_Data(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.DataSource":                    schema_pkg_apis_workflow_v1alpha1_DataSource(ref),
+		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.EndpointParam":                 schema_pkg_apis_workflow_v1alpha1_EndpointParam(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Event":                         schema_pkg_apis_workflow_v1alpha1_Event(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ExecutorConfig":                schema_pkg_apis_workflow_v1alpha1_ExecutorConfig(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.GCSArtifact":                   schema_pkg_apis_workflow_v1alpha1_GCSArtifact(ref),
@@ -59,6 +61,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.HDFSKrbConfig":                 schema_pkg_apis_workflow_v1alpha1_HDFSKrbConfig(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.HTTP":                          schema_pkg_apis_workflow_v1alpha1_HTTP(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.HTTPArtifact":                  schema_pkg_apis_workflow_v1alpha1_HTTPArtifact(ref),
+		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.HTTPAuth":                      schema_pkg_apis_workflow_v1alpha1_HTTPAuth(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.HTTPHeader":                    schema_pkg_apis_workflow_v1alpha1_HTTPHeader(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.HTTPHeaderSource":              schema_pkg_apis_workflow_v1alpha1_HTTPHeaderSource(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Header":                        schema_pkg_apis_workflow_v1alpha1_Header(ref),
@@ -82,6 +85,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.NodeStatus":                    schema_pkg_apis_workflow_v1alpha1_NodeStatus(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.NodeSynchronizationStatus":     schema_pkg_apis_workflow_v1alpha1_NodeSynchronizationStatus(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.NoneStrategy":                  schema_pkg_apis_workflow_v1alpha1_NoneStrategy(ref),
+		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.OAuth2Auth":                    schema_pkg_apis_workflow_v1alpha1_OAuth2Auth(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.OSSArtifact":                   schema_pkg_apis_workflow_v1alpha1_OSSArtifact(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.OSSArtifactRepository":         schema_pkg_apis_workflow_v1alpha1_OSSArtifactRepository(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.OSSBucket":                     schema_pkg_apis_workflow_v1alpha1_OSSBucket(ref),
@@ -897,6 +901,31 @@ func schema_pkg_apis_workflow_v1alpha1_Cache(ref common.ReferenceCallback) commo
 		},
 		Dependencies: []string{
 			"k8s.io/api/core/v1.ConfigMapKeySelector"},
+	}
+}
+
+func schema_pkg_apis_workflow_v1alpha1_ClientCertAuth(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "ClientCertAuth holds necessary information for client authentication via certificates",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"clientCertSecret": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("k8s.io/api/core/v1.SecretKeySelector"),
+						},
+					},
+					"clientKeySecret": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("k8s.io/api/core/v1.SecretKeySelector"),
+						},
+					},
+				},
+			},
+		},
+		Dependencies: []string{
+			"k8s.io/api/core/v1.SecretKeySelector"},
 	}
 }
 
@@ -1893,6 +1922,35 @@ func schema_pkg_apis_workflow_v1alpha1_DataSource(ref common.ReferenceCallback) 
 	}
 }
 
+func schema_pkg_apis_workflow_v1alpha1_EndpointParam(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "EndpointParam is for requesting optional fields that should be sent in the oauth request",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"key": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Name is the header name",
+							Default:     "",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"value": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Value is the literal value to use for the header",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+				},
+				Required: []string{"key"},
+			},
+		},
+	}
+}
+
 func schema_pkg_apis_workflow_v1alpha1_Event(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
@@ -2561,16 +2619,29 @@ func schema_pkg_apis_workflow_v1alpha1_HTTPArtifact(ref common.ReferenceCallback
 							},
 						},
 					},
-					"usernameSecret": {
+					"clientCert": {
 						SchemaProps: spec.SchemaProps{
-							Description: "UsernameSecret is the secret selector to the repository username",
-							Ref:         ref("k8s.io/api/core/v1.SecretKeySelector"),
+							Default: map[string]interface{}{},
+							Ref:     ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ClientCertAuth"),
 						},
 					},
-					"passwordSecret": {
+					"oauth2": {
 						SchemaProps: spec.SchemaProps{
-							Description: "PasswordSecret is the secret selector to the repository password",
-							Ref:         ref("k8s.io/api/core/v1.SecretKeySelector"),
+							Default: map[string]interface{}{},
+							Ref:     ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.OAuth2Auth"),
+						},
+					},
+					"basicAuth": {
+						SchemaProps: spec.SchemaProps{
+							Default: map[string]interface{}{},
+							Ref:     ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.BasicAuth"),
+						},
+					},
+					"followTemporaryRedirects": {
+						SchemaProps: spec.SchemaProps{
+							Description: "whether to follow temporary redirects, needed for webHDFS",
+							Type:        []string{"boolean"},
+							Format:      "",
 						},
 					},
 				},
@@ -2578,7 +2649,39 @@ func schema_pkg_apis_workflow_v1alpha1_HTTPArtifact(ref common.ReferenceCallback
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Header", "k8s.io/api/core/v1.SecretKeySelector"},
+			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.BasicAuth", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ClientCertAuth", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Header", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.OAuth2Auth"},
+	}
+}
+
+func schema_pkg_apis_workflow_v1alpha1_HTTPAuth(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"clientCert": {
+						SchemaProps: spec.SchemaProps{
+							Default: map[string]interface{}{},
+							Ref:     ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ClientCertAuth"),
+						},
+					},
+					"oauth2": {
+						SchemaProps: spec.SchemaProps{
+							Default: map[string]interface{}{},
+							Ref:     ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.OAuth2Auth"),
+						},
+					},
+					"basicAuth": {
+						SchemaProps: spec.SchemaProps{
+							Default: map[string]interface{}{},
+							Ref:     ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.BasicAuth"),
+						},
+					},
+				},
+			},
+		},
+		Dependencies: []string{
+			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.BasicAuth", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ClientCertAuth", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.OAuth2Auth"},
 	}
 }
 
@@ -3478,6 +3581,63 @@ func schema_pkg_apis_workflow_v1alpha1_NoneStrategy(ref common.ReferenceCallback
 				Type:        []string{"object"},
 			},
 		},
+	}
+}
+
+func schema_pkg_apis_workflow_v1alpha1_OAuth2Auth(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "OAuth2Auth holds all information for client authentication via OAuth2 tokens",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"clientIDSecret": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("k8s.io/api/core/v1.SecretKeySelector"),
+						},
+					},
+					"clientSecretSecret": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("k8s.io/api/core/v1.SecretKeySelector"),
+						},
+					},
+					"tokenURLSecret": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("k8s.io/api/core/v1.SecretKeySelector"),
+						},
+					},
+					"scopes": {
+						SchemaProps: spec.SchemaProps{
+							Type: []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: "",
+										Type:    []string{"string"},
+										Format:  "",
+									},
+								},
+							},
+						},
+					},
+					"endpointParams": {
+						SchemaProps: spec.SchemaProps{
+							Type: []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.EndpointParam"),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		Dependencies: []string{
+			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.EndpointParam", "k8s.io/api/core/v1.SecretKeySelector"},
 	}
 }
 
