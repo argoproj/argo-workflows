@@ -30,12 +30,6 @@ func waitContainer(ctx context.Context) error {
 	defer stats.LogStats()
 	stats.StartStatsTicker(5 * time.Minute)
 
-	defer func() {
-		if err := wfExecutor.KillSidecars(ctx); err != nil {
-			wfExecutor.AddError(err)
-		}
-	}()
-
 	// Wait for main container to complete
 	err := wfExecutor.Wait(ctx)
 	if err != nil {
