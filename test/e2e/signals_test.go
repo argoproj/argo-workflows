@@ -96,7 +96,7 @@ func (s *SignalsSuite) TestDoNotCreatePodsUnderStopBehavior() {
 		Workflow("@functional/stop-terminate-2.yaml").
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(fixtures.ToHaveRunningPod, kill2xDuration+20*time.Second).
+		WaitForWorkflow(fixtures.ToHaveRunningPod, kill2xDuration).
 		ShutdownWorkflow(wfv1.ShutdownStrategyStop).
 		WaitForWorkflow(kill2xDuration).
 		Then().
