@@ -2593,6 +2593,20 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#troubleshooting" class="md-nav__link">
+    Troubleshooting
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#using-multiple-terminals" class="md-nav__link">
+    Using Multiple Terminals
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -2828,6 +2842,20 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#troubleshooting" class="md-nav__link">
+    Troubleshooting
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#using-multiple-terminals" class="md-nav__link">
+    Using Multiple Terminals
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -2851,7 +2879,7 @@
 <li><a href="https://golang.org/dl/">Go 1.18</a></li>
 <li><a href="https://classic.yarnpkg.com/en/docs/install/#mac-stable">Yarn</a></li>
 <li><a href="https://docs.docker.com/get-docker/">Docker</a></li>
-<li><a href="http://google.github.io/proto-lens/installing-protoc.html">protoc</a> </li>
+<li><a href="http://google.github.io/proto-lens/installing-protoc.html">protoc</a></li>
 <li><a href="https://stedolan.github.io/jq/download/">jq</a></li>
 <li>A local Kubernetes cluster (<code>k3d</code>, <code>kind</code>, or <code>minikube</code>)</li>
 </ul>
@@ -2863,51 +2891,67 @@ set-up and is fast. You can set-up K3D to be part of your default kube config as
 Once a local Kubernetes cluster has started via <code>minikube start</code>, your kube config will use Minikube's context
 automatically.</p>
 <h2 id="developing-locally">Developing locally<a class="headerlink" href="#developing-locally" title="Permanent link">&para;</a></h2>
-<div class="admonition warning">
-<p class="admonition-title">Warning</p>
-<p>The git repo must be checked out into: <code>$(GOPATH)/src/github.com/argoproj/argo-workflows</code></p>
-</div>
+<p>Close the Git repo into: <code>$(GOPATH)/src/github.com/argoproj/argo-workflows</code>. Any other path will mean the code
+generation does not work.</p>
 <p>Add the following to your <code>/etc/hosts</code>:</p>
 <div class="highlight"><pre><span></span><code>127.0.0.1 dex
 127.0.0.1 minio
 127.0.0.1 postgres
 127.0.0.1 mysql
 </code></pre></div>
-<p>To run the controller and argo-server API locally, with MinIO inside the "argo" namespace of your cluster:</p>
+<p>To start:</p>
+<ul>
+<li>The controller, so you can run workflows.</li>
+<li>MinIO (http://localhost:9000, use admin/password) so you can use artifacts:</li>
+</ul>
+<p>Run:</p>
+<div class="highlight"><pre><span></span><code>make start 
+</code></pre></div>
+<p>Make sure you don't see any errors in your terminal.</p>
+<p>You can submit a workflow for testing using <code>kubectl</code>:</p>
+<div class="highlight"><pre><span></span><code>kubectl create -f examples/hello-world.yaml 
+</code></pre></div>
+<p>If you made changes to how the executor, you need to build the image:</p>
+<div class="highlight"><pre><span></span><code>make argoexec-image
+</code></pre></div>
+<p>To also start the API on https://localhost:2746:</p>
 <div class="highlight"><pre><span></span><code>make start <span class="nv">API</span><span class="o">=</span><span class="nb">true</span>
 </code></pre></div>
-<p>To start the UI, use <code>UI=true</code>:</p>
-<div class="highlight"><pre><span></span><code>make start <span class="nv">API</span><span class="o">=</span><span class="nb">true</span> <span class="nv">UI</span><span class="o">=</span><span class="nb">true</span>
+<p>To also start the UI on http://localhost:8080 (<code>UI=true</code> implies <code>API=true</code>):</p>
+<div class="highlight"><pre><span></span><code>make start <span class="nv">UI</span><span class="o">=</span><span class="nb">true</span>
 </code></pre></div>
-<p>To test the workflow archive, use <code>PROFILE=mysql</code>:</p>
-<div class="highlight"><pre><span></span><code>make start <span class="nv">API</span><span class="o">=</span><span class="nb">true</span> <span class="nv">UI</span><span class="o">=</span><span class="nb">true</span> <span class="nv">PROFILE</span><span class="o">=</span>mysql
+<p>If you are making change to the CLI, you can build it:</p>
+<div class="highlight"><pre><span></span><code>make cli 
+./dist/argo submit examples/hello-world.yaml <span class="p">;</span><span class="c1"># new CLI is created as `./dist/argo` </span>
 </code></pre></div>
-<p>To test SSO integration, use <code>PROFILE=sso</code>:</p>
-<div class="highlight"><pre><span></span><code>make start <span class="nv">API</span><span class="o">=</span><span class="nb">true</span> <span class="nv">UI</span><span class="o">=</span><span class="nb">true</span> <span class="nv">PROFILE</span><span class="o">=</span>sso
+<p>To test the workflow archive, use <code>PROFILE=mysql</code> or <code>PROFILE=postgres</code>:</p>
+<div class="highlight"><pre><span></span><code>make start <span class="nv">PROFILE</span><span class="o">=</span>mysql
 </code></pre></div>
-<p>You’ll now have:</p>
+<p>You'll have, either:</p>
 <ul>
-<li>Argo UI on http://localhost:8080</li>
-<li>Argo Server API on https://localhost:2746</li>
-<li>MinIO on http://localhost:9000 (use admin/password)</li>
 <li>Postgres on http://localhost:5432, run <code>make postgres-cli</code> to access.</li>
 <li>MySQL on http://localhost:3306, run <code>make mysql-cli</code> to access.</li>
 </ul>
-<p>Before submitting/running workflows, build the executor images with this command:</p>
-<div class="highlight"><pre><span></span><code>make argoexec-image
+<p>To test SSO integration, use <code>PROFILE=sso</code>:</p>
+<div class="highlight"><pre><span></span><code>make start <span class="nv">UI</span><span class="o">=</span><span class="nb">true</span> <span class="nv">PROFILE</span><span class="o">=</span>sso
 </code></pre></div>
 <h3 id="running-e2e-tests-locally">Running E2E tests locally<a class="headerlink" href="#running-e2e-tests-locally" title="Permanent link">&para;</a></h3>
 <ol>
 <li>Configure your IDE to set the <code>KUBECONFIG</code> environment variable to your k3d kubeconfig file</li>
 <li>Find an e2e test that you want to run in <code>test/e2e</code></li>
-<li>
-<p>Determine which profile the e2e test is using by inspecting the go build flag at the top of the file and referring to <a href="https://github.com/argoproj/argo-workflows/blob/master/.github/workflows/ci-build.yaml">ci-build.yaml</a></p>
+<li>Determine which profile the e2e test is using by inspecting the go build flag at the top of the file and referring
+   to <a href="https://github.com/argoproj/argo-workflows/blob/master/.github/workflows/ci-build.yaml">ci-build.yaml</a></li>
+</ol>
 <p>For example <code>TestArchiveStrategies</code> in <code>test/e2e/functional_test.go</code> has the following build flags</p>
-<div class="highlight"><pre><span></span><code><span class="c1">//go:build functional</span><span class="w"></span>
-<span class="c1">// +build functional</span><span class="w"></span>
+<div class="codehilite"><pre><span></span><code><span class="err">```</span><span class="k">go</span><span class="w"></span>
+<span class="o">//</span><span class="k">go</span><span class="err">:</span><span class="n">build</span><span class="w"> </span><span class="n">functional</span><span class="w"></span>
+<span class="o">//</span><span class="w"> </span><span class="o">+</span><span class="n">build</span><span class="w"> </span><span class="n">functional</span><span class="w"></span>
+<span class="err">```</span><span class="w"></span>
 </code></pre></div>
-<p>In <a href="https://github.com/argoproj/argo-workflows/blob/master/.github/workflows/ci-build.yaml">ci-build.yaml</a> the functional test suite is using the <code>minimal</code> profile</p>
-</li>
+
+<p>In <a href="https://github.com/argoproj/argo-workflows/blob/master/.github/workflows/ci-build.yaml">ci-build.yaml</a> the
+   functional test suite is using the <code>minimal</code> profile</p>
+<ol>
 <li>
 <p>Run the profile in a terminal window</p>
 <div class="highlight"><pre><span></span><code>make start <span class="nv">PROFILE</span><span class="o">=</span>minimal <span class="nv">AUTH_MODE</span><span class="o">=</span>client <span class="nv">STATIC_FILES</span><span class="o">=</span><span class="nb">false</span> <span class="nv">LOG_LEVEL</span><span class="o">=</span>info <span class="nv">API</span><span class="o">=</span><span class="nb">true</span> <span class="nv">UI</span><span class="o">=</span><span class="nb">false</span>
@@ -2921,7 +2965,7 @@ automatically.</p>
 <p>Before you commit code and raise a PR, always run:</p>
 <div class="highlight"><pre><span></span><code>make pre-commit -B
 </code></pre></div>
-<p>Please adhere to the following when creating your commits:</p>
+<p>Please do the following when creating your PR:</p>
 <ul>
 <li>Sign-off your commits.</li>
 <li>Use <a href="https://www.conventionalcommits.org/en/v1.0.0/">Conventional Commit messages</a>.</li>
@@ -2930,14 +2974,21 @@ automatically.</p>
 <p>Example:</p>
 <div class="highlight"><pre><span></span><code>git commit --signoff -m <span class="s1">&#39;fix: Fixed broken thing. Fixes #1234&#39;</span>
 </code></pre></div>
-<p>Troubleshooting:</p>
+<h2 id="troubleshooting">Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permanent link">&para;</a></h2>
 <ul>
 <li>When running <code>make pre-commit -B</code>, if you encounter errors like
-  <code>make: *** [pkg/apiclient/clusterworkflowtemplate/cluster-workflow-template.swagger.json] Error 1</code>,
-  ensure that you have checked out your code into <code>$(GOPATH)/src/github.com/argoproj/argo-workflows</code>.</li>
+  <code>make: *** [pkg/apiclient/clusterworkflowtemplate/cluster-workflow-template.swagger.json] Error 1</code>, ensure that you
+  have checked out your code into <code>$(GOPATH)/src/github.com/argoproj/argo-workflows</code>.</li>
 <li>If you encounter "out of heap" issues when building UI through Docker, please validate resources allocated to Docker.
   Compilation may fail if allocated RAM is less than 4Gi.</li>
 </ul>
+<h2 id="using-multiple-terminals">Using Multiple Terminals<a class="headerlink" href="#using-multiple-terminals" title="Permanent link">&para;</a></h2>
+<p>I run the controller in one terminal, and the UI in another. I like the UI: it is much faster to debug workflows than
+the terminal. This allows you to makes changes to the controller and re-start it, without restarting the UI (which takes
+a few moments to start-up).</p>
+<p>As a convenience, <code>CTRL=false</code> implies <code>UI=true</code>, so just run:</p>
+<div class="highlight"><pre><span></span><code>make start <span class="nv">CTRL</span><span class="o">=</span><span class="nb">false</span>
+</code></pre></div>
 
               
             </article>
