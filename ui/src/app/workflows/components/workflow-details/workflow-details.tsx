@@ -3,7 +3,7 @@ import * as classNames from 'classnames';
 import * as React from 'react';
 import {useContext, useEffect, useState} from 'react';
 import {RouteComponentProps} from 'react-router';
-import {execSpec, Link, NodeStatus, Workflow} from '../../../../models';
+import {execSpec, Link, NodeStatus, Workflow, Parameter} from '../../../../models';
 import {ANNOTATION_KEY_POD_NAME_VERSION} from '../../../shared/annotations';
 import {uiUrl} from '../../../shared/base';
 import {CostOptimisationNudge} from '../../../shared/components/cost-optimisation-nudge';
@@ -31,6 +31,7 @@ import {WorkflowSummaryPanel} from '../workflow-summary-panel';
 import {WorkflowTimeline} from '../workflow-timeline/workflow-timeline';
 import {WorkflowYamlViewer} from '../workflow-yaml-viewer/workflow-yaml-viewer';
 import {WorkflowResourcePanel} from './workflow-resource-panel';
+import {SuspendInputs} from './suspend-inputs';
 
 require('./workflow-details.scss');
 
@@ -50,6 +51,7 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
     const [nodeId, setNodeId] = useState(queryParams.get('nodeId'));
     const [nodePanelView, setNodePanelView] = useState(queryParams.get('nodePanelView'));
     const [sidePanel, setSidePanel] = useState(queryParams.get('sidePanel'));
+    const [stateParameters, setParameters] = useState<Parameter[]>([]);
 
     useEffect(
         useQueryParams(history, p => {
@@ -60,6 +62,15 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
         }),
         [history]
     );
+
+    useEffect(() => {
+        console.log({stateParameters});
+    }, [stateParameters])
+
+    const getParameterValueAsMap = (nodeId: string): Parameter[] => {
+        const selectedNode = workflow && workflow.status && workflow.status.nodes && workflow.status.nodes[nodeId];
+        return selectedNode?.inputs?.parameters || [];
+    }
 
     useEffect(() => {
         history.push(historyUrl('workflows/{namespace}/{name}', {namespace, name, tab, nodeId, nodePanelView, sidePanel}));
@@ -75,6 +86,10 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
             .then(info => setLinks(info.links))
             .catch(setError);
     }, []);
+
+    useEffect(() => {
+        setParameters(getParameterValueAsMap(nodeId))
+    }, [nodeId, workflow]);
 
     const parsedSidePanel = parseSidePanelParam(sidePanel);
 
@@ -246,10 +261,48 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
         }
     };
 
+    const setParameter = (key: string, value: string) => {
+        setParameters(previous => {
+            return previous?.map(parameter => {
+                if (parameter.name == key) {
+                    parameter.value = value;
+                }
+                return parameter;
+            });
+        })
+    }
+
+    const renderNodeOptions = () => {
+        const selectedNode = workflow && workflow.status && workflow.status.nodes && workflow.status.nodes[nodeId];
+        console.log({selectedNode});
+        return (
+            <SuspendInputs
+                parameters={stateParameters}
+                nodeId={nodeId}
+                setParameter={setParameter}
+            />
+        );
+    }
+
+    const getInputValueString = () => {
+        var outputVariables: {[x: string]: string} = {}
+        stateParameters.forEach(param => {
+            outputVariables[param.name] = param.value;
+        })
+        return JSON.stringify(outputVariables);
+    }
+
     const renderResumePopup = () => {
-        return popup.confirm('Confirm', `Are you sure you want to resume node: ${nodeId}?`).then(yes => {
+        return popup.confirm('Confirm', renderNodeOptions).then(yes => {
             if (yes) {
-                services.workflows.resume(workflow.metadata.name, workflow.metadata.namespace, 'id=' + nodeId).catch(setError);
+                services
+                    .workflows
+                    .set(workflow.metadata.name, workflow.metadata.namespace, 'id=' + nodeId, getInputValueString())
+                .then(() => {
+                    services
+                        .workflows
+                        .resume(workflow.metadata.name, workflow.metadata.namespace, 'id=' + nodeId)
+                }).catch(setError);
             }
         });
     };

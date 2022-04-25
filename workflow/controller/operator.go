@@ -2936,6 +2936,7 @@ func (woc *wfOperationCtx) executeData(ctx context.Context, nodeName string, tem
 func (woc *wfOperationCtx) executeSuspend(nodeName string, templateScope string, tmpl *wfv1.Template, orgTmpl wfv1.TemplateReferenceHolder, opts *executeTemplateOpts) (*wfv1.NodeStatus, error) {
 	node := woc.wf.GetNodeByName(nodeName)
 	if node == nil {
+		resolveInputFieldsForSuspendTemplate(tmpl)
 		node = woc.initializeExecutableNode(nodeName, wfv1.NodeTypeSuspend, templateScope, tmpl, orgTmpl, opts.boundaryID, wfv1.NodePending)
 	}
 	woc.log.Infof("node %s suspended", nodeName)
@@ -2975,6 +2976,26 @@ func (woc *wfOperationCtx) executeSuspend(nodeName string, templateScope string,
 
 	_ = woc.markNodePhase(nodeName, wfv1.NodeRunning)
 	return node, nil
+}
+
+func resolveInputFieldsForSuspendTemplate(tmpl *wfv1.Template) {
+	parameters := tmpl.Inputs.Parameters
+	for i, parameter := range parameters {
+		if parameter.Value != nil {
+
+			value := parameter.Value.String()
+			valueMap := map[string][]wfv1.AnyString{}
+
+			if err := json.Unmarshal([]byte(value), &valueMap); err != nil {
+				continue
+			}
+
+			if enum, ok := valueMap["enum"]; ok && len(enum) > 0 {
+				parameters[i].Enum = enum
+				parameters[i].Default = wfv1.AnyStringPtr(enum[0])
+			}
+		}
+	}
 }
 
 func addRawOutputFields(node *wfv1.NodeStatus, tmpl *wfv1.Template) *wfv1.NodeStatus {
