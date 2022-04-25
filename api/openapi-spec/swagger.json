@@ -8934,6 +8934,16 @@
         }
       }
     },
+    "io.argoproj.workflow.v1alpha1.ArtifactGC": {
+      "description": "ArtifactGC describes how to delete artifacts from completed Workflows",
+      "type": "object",
+      "properties": {
+        "strategy": {
+          "description": "Strategy is the strategy to use. One of \"OnWorkflowCompletion\", \"OnWorkflowDeletion\"",
+          "type": "string"
+        }
+      }
+    },
     "io.argoproj.workflow.v1alpha1.ArtifactLocation": {
       "description": "ArtifactLocation describes a location for a single or multiple artifacts. It is used as single artifact in the context of inputs/outputs (e.g. outputs.artifacts.artname). It is also used to describe the location of multiple artifacts such as the archive location of a single workflow step, which the executor will use as a default location to store its files.",
       "type": "object",
@@ -12213,6 +12223,10 @@
         "arguments": {
           "description": "Arguments contain the parameters and artifacts sent to the workflow entrypoint Parameters are referencable globally using the 'workflow' variable prefix. e.g. {{io.argoproj.workflow.v1alpha1.parameters.myparam}}",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Arguments"
+        },
+        "artifactGC": {
+          "description": "ArtifactGC describes the strategy to use when to deleting artifacts from completed or deleted workflows",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactGC"
         },
         "artifactRepositoryRef": {
           "description": "ArtifactRepositoryRef specifies the configMap name and key containing the artifact repository config.",

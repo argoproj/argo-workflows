@@ -765,6 +765,7 @@ WorkflowSpec is the specification of a Workflow.
 |`affinity`|[`Affinity`](#affinity)|Affinity sets the scheduling constraints for all pods in the io.argoproj.workflow.v1alpha1. Can be overridden by an affinity specified in the template|
 |`archiveLogs`|`boolean`|ArchiveLogs indicates if the container logs should be archived|
 |`arguments`|[`Arguments`](#arguments)|Arguments contain the parameters and artifacts sent to the workflow entrypoint Parameters are referencable globally using the 'workflow' variable prefix. e.g. {{io.argoproj.workflow.v1alpha1.parameters.myparam}}|
+|`artifactGC`|[`ArtifactGC`](#artifactgc)|ArtifactGC describes the strategy to use when to deleting artifacts from completed or deleted workflows|
 |`artifactRepositoryRef`|[`ArtifactRepositoryRef`](#artifactrepositoryref)|ArtifactRepositoryRef specifies the configMap name and key containing the artifact repository config.|
 |`automountServiceAccountToken`|`boolean`|AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods. ServiceAccountName of ExecutorConfig must be specified if this value is false.|
 |`dnsConfig`|[`PodDNSConfig`](#poddnsconfig)|PodDNSConfig defines the DNS parameters of a pod in addition to those generated from DNSPolicy.|
@@ -1389,6 +1390,15 @@ Arguments to a template
 |:----------:|:----------:|---------------|
 |`artifacts`|`Array<`[`Artifact`](#artifact)`>`|Artifacts is the list of artifacts to pass to the template or workflow|
 |`parameters`|`Array<`[`Parameter`](#parameter)`>`|Parameters is the list of parameters to pass to the template or workflow|
+
+## ArtifactGC
+
+ArtifactGC describes how to delete artifacts from completed Workflows
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`strategy`|`string`|Strategy is the strategy to use. One of "OnWorkflowCompletion", "OnWorkflowDeletion"|
 
 ## ArtifactRepositoryRef
 

@@ -513,6 +513,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         ),
                     ],
                 ),
+                artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                    strategy="strategy_example",
+                ),
                 artifact_repository_ref=IoArgoprojWorkflowV1alpha1ArtifactRepositoryRef(
                     config_map="config_map_example",
                     key="key_example",
@@ -9624,6 +9627,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         ),
                     ],
                 ),
+                artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                    strategy="strategy_example",
+                ),
                 artifact_repository_ref=IoArgoprojWorkflowV1alpha1ArtifactRepositoryRef(
                     config_map="config_map_example",
                     key="key_example",
@@ -18645,6 +18651,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             ),
                         ),
                     ],
+                ),
+                artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                    strategy="strategy_example",
                 ),
                 artifact_repository_ref=IoArgoprojWorkflowV1alpha1ArtifactRepositoryRef(
                     config_map="config_map_example",

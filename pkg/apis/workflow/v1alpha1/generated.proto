@@ -81,6 +81,13 @@ message Artifact {
   optional string fromExpression = 11;
 }
 
+// ArtifactGC describes how to delete artifacts from completed Workflows
+message ArtifactGC {
+  // Strategy is the strategy to use. One of "OnWorkflowCompletion", "OnWorkflowDeletion"
+  // +kubebuilder:validation:Enum="";OnWorkflowCompletion;OnWorkflowDeletion
+  optional string strategy = 1;
+}
+
 // ArtifactLocation describes a location for a single or multiple artifacts.
 // It is used as single artifact in the context of inputs/outputs (e.g. outputs.artifacts.artname).
 // It is also used to describe the location of multiple artifacts such as the archive location
@@ -1780,6 +1787,9 @@ message WorkflowSpec {
 
   // WorkflowMetadata contains some metadata of the workflow to be refer
   optional WorkflowMetadata workflowMetadata = 42;
+
+  // ArtifactGC describes the strategy to use when to deleting artifacts from completed or deleted workflows
+  optional ArtifactGC artifactGC = 43;
 }
 
 // WorkflowStatus contains overall status information about a workflow
