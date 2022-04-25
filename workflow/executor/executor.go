@@ -107,9 +107,6 @@ type ContainerRuntimeExecutor interface {
 
 	// Kill a list of containers first with a SIGTERM then with a SIGKILL after a grace period
 	Kill(ctx context.Context, containerNames []string, terminationGracePeriodDuration time.Duration) error
-
-	// List all the containers the executor is aware of, including any injected sidecars.
-	ListContainerNames(ctx context.Context) ([]string, error)
 }
 
 // NewExecutor instantiates a new workflow executor
@@ -1103,26 +1100,6 @@ func (we *WorkflowExecutor) killContainers(ctx context.Context, containerNames [
 	if err := we.RuntimeExecutor.Kill(ctx, containerNames, terminationGracePeriodDuration); err != nil {
 		log.Warnf("Failed to kill %q: %v", containerNames, err)
 	}
-}
-
-// KillSidecars kills any sidecars to the main container
-func (we *WorkflowExecutor) KillSidecars(ctx context.Context) error {
-	containerNames, err := we.RuntimeExecutor.ListContainerNames(ctx)
-	if err != nil {
-		return err
-	}
-	var sidecarNames []string
-	for _, n := range containerNames {
-		if n != common.WaitContainerName && !we.Template.IsMainContainerName(n) {
-			sidecarNames = append(sidecarNames, n)
-		}
-	}
-	log.Infof("Killing sidecars %q", sidecarNames)
-	if len(sidecarNames) == 0 {
-		return nil // exit early as GetTerminationGracePeriodDuration performs `get pod`
-	}
-	terminationGracePeriodDuration := getTerminationGracePeriodDuration()
-	return we.RuntimeExecutor.Kill(ctx, sidecarNames, terminationGracePeriodDuration)
 }
 
 func (we *WorkflowExecutor) Init() error {
