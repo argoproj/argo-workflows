@@ -1264,7 +1264,8 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, old *wfv1.NodeStatus
 	// We cannot fail the node until the wait container is finished because it may be busy saving outputs, and these
 	// would not get captured successfully.
 	for _, c := range pod.Status.ContainerStatuses {
-		if c.Name == common.WaitContainerName && c.State.Terminated == nil {
+		if c.Name == common.WaitContainerName && c.State.Terminated == nil && new.Phase.Completed() {
+			woc.log.WithField("new.phase", new.Phase).Info("leaving phase un-changed: wait container is not yet terminated ")
 			new.Phase = old.Phase
 		}
 	}
@@ -1280,7 +1281,7 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, old *wfv1.NodeStatus
 	}
 
 	if !reflect.DeepEqual(old, new) {
-		log.WithField("nodeID", old.ID).
+		woc.log.WithField("nodeID", old.ID).
 			WithField("old.phase", old.Phase).
 			WithField("new.phase", new.Phase).
 			WithField("old.message", old.Message).
@@ -1290,7 +1291,7 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, old *wfv1.NodeStatus
 			Info("node changed")
 		return new
 	}
-	log.WithField("nodeID", old.ID).
+	woc.log.WithField("nodeID", old.ID).
 		Info("node unchanged")
 	return nil
 }
