@@ -4,14 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
-	"os"
 	"path"
-	"path/filepath"
-	"strconv"
 	"strings"
-	"time"
 
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc/codes"
@@ -186,41 +182,79 @@ func (a *ArtifactServer) returnArtifact(ctx context.Context, w http.ResponseWrit
 	if err != nil {
 		return err
 	}
-	tmp, err := ioutil.TempFile("/tmp", "artifact")
-	if err != nil {
-		return err
-	}
-	tmpPath := tmp.Name()
-	defer func() { _ = os.Remove(tmpPath) }()
+	/*
+		tmp, err := ioutil.TempFile("/tmp", "artifact")
+		if err != nil {
+			return err
+		}
+		tmpPath := tmp.Name()
+		defer func() { _ = os.Remove(tmpPath) }()
 
-	err = driver.Load(art, tmpPath)
-	if err != nil {
-		return err
-	}
+		err = driver.Load(art, tmpPath)
+		if err != nil {
+			return err
+		}
 
-	file, err := os.Open(filepath.Clean(tmpPath))
+		file, err := os.Open(filepath.Clean(tmpPath))
+		if err != nil {
+			return err
+		}
+
+		defer func() {
+			if err := file.Close(); err != nil {
+				log.Fatalf("Error closing file[%s]: %v", tmpPath, err)
+			}
+		}()
+
+		stats, err := file.Stat()
+		if err != nil {
+			return err
+		}
+
+		contentLength := strconv.FormatInt(stats.Size(), 10)
+		log.WithFields(log.Fields{"size": contentLength}).Debug("Artifact file size")
+
+		key, _ := art.GetKey()
+		w.Header().Add("Content-Disposition", fmt.Sprintf(`filename="%s"`, path.Base(key)))
+
+		http.ServeContent(w, r, "", time.Time{}, file)*/
+
+	stream, err := driver.OpenStream(art)
 	if err != nil {
 		return err
 	}
 
 	defer func() {
-		if err := file.Close(); err != nil {
-			log.Fatalf("Error closing file[%s]: %v", tmpPath, err)
+		if err := stream.Close(); err != nil {
+			log.Fatalf("Error closing stream[%s]: %v", stream, err)
 		}
 	}()
 
-	stats, err := file.Stat()
-	if err != nil {
-		return err
-	}
+	//todo: content length?
+	/*
+		flusher, ok := w.(http.Flusher)
+		if !ok {
+			fmt.Printf("flusher failed\n") // todo: delete
+			http.NotFound(w, r)            // todo: should we not return an internalservererror?
+			return fmt.Errorf("failed to cast http.ResponseWriter to http.Flusher")
+		}
 
-	contentLength := strconv.FormatInt(stats.Size(), 10)
-	log.WithFields(log.Fields{"size": contentLength}).Debug("Artifact file size")
-
+		fmt.Printf("flusher succeeded\n") // todo: delete
+	*/
 	key, _ := art.GetKey()
 	w.Header().Add("Content-Disposition", fmt.Sprintf(`filename="%s"`, path.Base(key)))
 
-	http.ServeContent(w, r, "", time.Time{}, file)
+	// Send the initial headers saying we're going to stream the response.
+	w.Header().Set("Transfer-Encoding", "chunked")
+	w.WriteHeader(http.StatusOK)
+	//flusher.Flush()
+
+	_, err = io.Copy(w, stream)
+	if err != nil {
+		fmt.Printf("io.Copy failed: %v\n", err) // todo: delete
+		w.WriteHeader(http.StatusInternalServerError)
+		return fmt.Errorf("failed to copy stream for artifact, err:%v", err)
+	}
 
 	return nil
 }

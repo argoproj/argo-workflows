@@ -1,8 +1,10 @@
 package artifacts
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -42,6 +44,17 @@ type fakeArtifactDriver struct {
 
 func (a *fakeArtifactDriver) Load(_ *wfv1.Artifact, path string) error {
 	return ioutil.WriteFile(path, a.data, 0o600)
+}
+
+func (a *fakeArtifactDriver) OpenStream(_ *wfv1.Artifact) (io.ReadCloser, error) {
+	/*resp, err := http.Get("https://golangcode.com/logo.svg")
+	if err != nil {
+		fmt.Println(err)
+		return nil, err
+	}
+	return resp.Body, nil*/
+
+	return io.NopCloser(bytes.NewReader(a.data)), nil
 }
 
 func (a *fakeArtifactDriver) Save(_ string, _ *wfv1.Artifact) error {

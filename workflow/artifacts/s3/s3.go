@@ -108,6 +108,8 @@ func (s3Driver *ArtifactDriver) OpenStream(inputArtifact *wfv1.Artifact) (io.Rea
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
+	fmt.Printf("called OpenStream()") // todo: delete
+
 	var stream io.ReadCloser
 	var done bool
 

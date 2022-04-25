@@ -110,6 +110,56 @@ func (s *mockS3Client) MakeBucket(bucketName string, opts minio.MakeBucketOption
 	return s.getMockedErr("MakeBucket")
 }
 
+func TestOpenStreamS3Artifact(t *testing.T) {
+	tests := map[string]struct {
+		s3client  argos3.S3Client
+		bucket    string
+		key       string
+		localPath string
+		done      bool
+		errMsg    string
+	}{
+		"Success": {
+			s3client: newMockS3Client(
+				map[string][]string{
+					"my-bucket": []string{
+						"/folder/hello-art.tar.gz",
+					},
+				},
+				map[string]error{}),
+			bucket:    "my-bucket",
+			key:       "/folder/hello-art.tar.gz",
+			localPath: "/tmp/hello-art.tar.gz",
+			done:      true,
+			errMsg:    "",
+		},
+	}
+
+	_ = os.Setenv(transientEnvVarKey, "this error is transient")
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			stream, success, err := streamS3Artifact(tc.s3client, &wfv1.Artifact{
+				ArtifactLocation: wfv1.ArtifactLocation{
+					S3: &wfv1.S3Artifact{
+						S3Bucket: wfv1.S3Bucket{
+							Bucket: tc.bucket,
+						},
+						Key: tc.key,
+					},
+				},
+			})
+			assert.Equal(t, tc.done, success)
+			if err != nil {
+				assert.Equal(t, tc.errMsg, err.Error())
+			} else {
+				assert.Equal(t, tc.errMsg, "")
+				assert.NotNil(t, stream)
+			}
+		})
+	}
+	_ = os.Unsetenv(transientEnvVarKey)
+}
+
 func TestLoadS3Artifact(t *testing.T) {
 	tests := map[string]struct {
 		s3client  argos3.S3Client
