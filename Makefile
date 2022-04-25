@@ -1,4 +1,4 @@
-export SHELL:=/bin/bash
+
 export SHELLOPTS:=$(if $(SHELLOPTS),$(SHELLOPTS):)pipefail:errexit
 
 # https://stackoverflow.com/questions/4122831/disable-make-builtin-rules-and-variables-from-inside-the-make-file
@@ -462,7 +462,7 @@ pull-images:
 	docker pull python:alpine3.6
 
 $(GOPATH)/bin/goreman:
-	go install github.com/mattn/goreman@v0.3.7
+	go install github.com/mattn/goreman@v0.3.11
 
 .PHONY: start
 ifeq ($(RUN_MODE),local)
@@ -507,7 +507,7 @@ $(GOPATH)/bin/stern:
 
 .PHONY: logs
 logs: $(GOPATH)/bin/stern
-	stern -l workflows.argoproj.io/workflow 2>&1
+	$(GOPATH)/bin/stern -l workflows.argoproj.io/workflow 2>&1
 
 .PHONY: wait
 wait:
