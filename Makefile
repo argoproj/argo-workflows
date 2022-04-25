@@ -507,7 +507,7 @@ $(GOPATH)/bin/stern:
 
 .PHONY: logs
 logs: $(GOPATH)/bin/stern
-	stern -l workflows.argoproj.io/workflow 2>&1
+	$(GOPATH)/bin/stern -l workflows.argoproj.io/workflow 2>&1
 
 .PHONY: wait
 wait:
