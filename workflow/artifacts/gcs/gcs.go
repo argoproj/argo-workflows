@@ -200,6 +200,10 @@ func listByPrefix(client *storage.Client, bucket, prefix, delim string) ([]strin
 	return results, nil
 }
 
+func (g *ArtifactDriver) OpenStream(inputArtifact *wfv1.Artifact) (io.ReadCloser, error) {
+	return nil, fmt.Errorf("OpenStream is not yet implemented for GCS")
+}
+
 // Save an artifact to GCS compliant storage, e.g., uploading a local file to GCS bucket
 func (g *ArtifactDriver) Save(path string, outputArtifact *wfv1.Artifact) error {
 	err := waitutil.Backoff(defaultRetry,

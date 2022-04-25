@@ -2,6 +2,7 @@ package oss
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -91,6 +92,10 @@ func (ossDriver *ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string)
 			return true, nil
 		})
 	return err
+}
+
+func (ossDriver *ArtifactDriver) OpenStream(inputArtifact *wfv1.Artifact) (io.ReadCloser, error) {
+	return nil, fmt.Errorf("OpenStream is not yet implemented for OSS")
 }
 
 // Save stores an artifact to OSS compliant storage, e.g., uploading a local file to OSS bucket

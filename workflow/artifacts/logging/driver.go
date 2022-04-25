@@ -1,6 +1,8 @@
 package logging
 
 import (
+	"fmt"
+	"io"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -28,6 +30,10 @@ func (d driver) Load(a *wfv1.Artifact, path string) error {
 		WithError(err).
 		Info("Load artifact")
 	return err
+}
+
+func (d driver) OpenStream(inputArtifact *wfv1.Artifact) (io.ReadCloser, error) {
+	return nil, fmt.Errorf("OpenStream is not yet implemented for logging ArtifactDriver")
 }
 
 func (d driver) Save(path string, a *wfv1.Artifact) error {

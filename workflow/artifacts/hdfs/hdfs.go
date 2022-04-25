@@ -3,6 +3,7 @@ package hdfs
 import (
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 
@@ -184,6 +185,10 @@ func (driver *ArtifactDriver) Load(_ *wfv1.Artifact, path string) error {
 		return err
 	}
 	return nil
+}
+
+func (driver *ArtifactDriver) OpenStream(inputArtifact *wfv1.Artifact) (io.ReadCloser, error) {
+	return nil, fmt.Errorf("OpenStream is not yet implemented for HDFS")
 }
 
 // Save saves an artifact to HDFS compliant storage
