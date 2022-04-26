@@ -3,6 +3,9 @@ package common
 import (
 	"io"
 	"os"
+	"reflect"
+
+	log "github.com/sirupsen/logrus"
 
 	"k8s.io/apimachinery/pkg/util/rand"
 
@@ -23,6 +26,8 @@ func (w selfDestructingFile) Close() error {
 // Use ArtifactDriver.Load() to get a stream, which we can use for all implementations of ArtifactDriver.OpenStream()
 // that aren't yet implemented the "right way" and/or for those that don't have a natural way of streaming
 func LoadToStream(a *wfv1.Artifact, g ArtifactDriver) (io.ReadCloser, error) {
+	log.Infof("Efficient artifact streaming is not supported for type %v: see https://github.com/argoproj/argo-workflows/issues/8489",
+		reflect.TypeOf(g))
 	filename := "/tmp/" + rand.String(32)
 	if err := g.Load(a, filename); err != nil {
 		return nil, err
