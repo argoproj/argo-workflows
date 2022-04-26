@@ -1957,6 +1957,59 @@ func TestSuspendWithDeadline(t *testing.T) {
 	assert.True(t, found)
 }
 
+var suspendTemplateInputResolution = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: suspend-template
+spec:
+  entrypoint: suspend
+  templates:
+  - name: suspend
+    inputs:
+        parameters:
+            - name: param1
+              value: "{\"enum\": [\"one\", \"two\", \"three\"]}"
+            - name: param2
+              value: "value2"
+    suspend: {}
+`
+
+func TestSuspendInputsResolution(t *testing.T) {
+	cancel, controller := newController()
+	defer cancel()
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+
+	ctx := context.Background()
+	wf := wfv1.MustUnmarshalWorkflow(suspendTemplateInputResolution)
+	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
+	assert.Nil(t, err)
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate(ctx)
+
+	updatedWf, err := wfcset.Get(ctx, wf.Name, metav1.GetOptions{})
+
+	found := false
+	for _, node := range updatedWf.Status.Nodes {
+		if node.Type == wfv1.NodeTypeSuspend {
+			assert.Equal(t, node.Phase, wfv1.NodeRunning)
+
+			assert.Equal(t, node.Inputs.Parameters[0].Name, "param1")
+			assert.Equal(t, node.Inputs.Parameters[0].Value.String(), "{\"enum\": [\"one\", \"two\", \"three\"]}")
+			assert.Equal(t, len(node.Inputs.Parameters[0].Enum), 3)
+			assert.Equal(t, node.Inputs.Parameters[0].Enum[0].String(), "one")
+			assert.Equal(t, node.Inputs.Parameters[0].Enum[1].String(), "two")
+			assert.Equal(t, node.Inputs.Parameters[0].Enum[2].String(), "three")
+
+			assert.Equal(t, node.Inputs.Parameters[1].Name, "param2")
+			assert.Equal(t, node.Inputs.Parameters[1].Value.String(), "value2")
+
+			found = true
+		}
+	}
+	assert.True(t, found)
+}
+
 var sequence = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -6422,7 +6475,7 @@ func TestRetryOnDiffHost(t *testing.T) {
 
 	// Verify if template's Affinity has the right value
 	targetNodeSelectorRequirement :=
-		pod.Spec.Affinity.NodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution.NodeSelectorTerms[0].MatchExpressions[0]
+			pod.Spec.Affinity.NodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution.NodeSelectorTerms[0].MatchExpressions[0]
 	sourceNodeSelectorRequirement := apiv1.NodeSelectorRequirement{
 		Key:      hostSelector,
 		Operator: apiv1.NodeSelectorOpNotIn,
