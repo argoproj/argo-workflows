@@ -16,7 +16,7 @@ export const SuspendInputs = (props: SuspendInputProps) => {
         props.setParameter(key, value);
         setParameters(previous => {
             return previous.map(parameter => {
-                if (parameter.name == key) {
+                if (parameter.name === key) {
                     parameter.value = value;
                 }
                 return parameter;

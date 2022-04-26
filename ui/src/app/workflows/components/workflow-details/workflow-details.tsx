@@ -51,7 +51,7 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
     const [nodeId, setNodeId] = useState(queryParams.get('nodeId'));
     const [nodePanelView, setNodePanelView] = useState(queryParams.get('nodePanelView'));
     const [sidePanel, setSidePanel] = useState(queryParams.get('sidePanel'));
-    const [stateParameters, setParameters] = useState<Parameter[]>([]);
+    const [parameters, setParameters] = useState<Parameter[]>([]);
 
     useEffect(
         useQueryParams(history, p => {
@@ -63,13 +63,15 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
         [history]
     );
 
-    useEffect(() => {
-        console.log({stateParameters});
-    }, [stateParameters])
-
-    const getParameterValueAsMap = (nodeId: string): Parameter[] => {
+    const getInputParametersForNode = (nodeId: string): Parameter[] => {
         const selectedNode = workflow && workflow.status && workflow.status.nodes && workflow.status.nodes[nodeId];
-        return selectedNode?.inputs?.parameters || [];
+        return selectedNode?.inputs?.parameters?.map(param => {
+            var paramClone = {...param}
+            if (paramClone.enum) {
+                paramClone.value = paramClone.default
+            }
+            return paramClone;
+        }) || [];
     }
 
     useEffect(() => {
@@ -88,7 +90,7 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
     }, []);
 
     useEffect(() => {
-        setParameters(getParameterValueAsMap(nodeId))
+        setParameters(getInputParametersForNode(nodeId))
     }, [nodeId, workflow]);
 
     const parsedSidePanel = parseSidePanelParam(sidePanel);
@@ -264,7 +266,7 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
     const setParameter = (key: string, value: string) => {
         setParameters(previous => {
             return previous?.map(parameter => {
-                if (parameter.name == key) {
+                if (parameter.name === key) {
                     parameter.value = value;
                 }
                 return parameter;
@@ -274,10 +276,9 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
 
     const renderNodeOptions = () => {
         const selectedNode = workflow && workflow.status && workflow.status.nodes && workflow.status.nodes[nodeId];
-        console.log({selectedNode});
         return (
             <SuspendInputs
-                parameters={stateParameters}
+                parameters={parameters}
                 nodeId={nodeId}
                 setParameter={setParameter}
             />
@@ -286,7 +287,7 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
 
     const getInputValueString = () => {
         var outputVariables: {[x: string]: string} = {}
-        stateParameters.forEach(param => {
+        parameters.forEach(param => {
             outputVariables[param.name] = param.value;
         })
         return JSON.stringify(outputVariables);
