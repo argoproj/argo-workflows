@@ -293,7 +293,7 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
         if (parameters.length > 0) {
             return services.workflows.set(workflow.metadata.name, workflow.metadata.namespace, 'id=' + nodeId, getParametersAsJsonString());
         }
-        return Promise.resolve();
+        return Promise.resolve(null);
     };
 
     const resumeNode = () => {
