@@ -90,8 +90,7 @@ templates:
           - '-c'
         args:
           - >-
-            echo "{\"enum\": [\"db1\", \"db2\", \"db3\"]}" | tee
-             /tmp/db_list.txt
+            echo "{\"enum\": [\"db1\", \"db2\", \"db3\"]}" | tee /tmp/db_list.txt
     - name: choose-db
       inputs:
         parameters:
