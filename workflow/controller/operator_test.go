@@ -1987,7 +1987,7 @@ func TestSuspendInputsResolution(t *testing.T) {
 	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate(ctx)
 
-	updatedWf, err := wfcset.Get(ctx, wf.Name, metav1.GetOptions{})
+	updatedWf, _ := wfcset.Get(ctx, wf.Name, metav1.GetOptions{})
 
 	found := false
 	for _, node := range updatedWf.Status.Nodes {
@@ -6475,7 +6475,7 @@ func TestRetryOnDiffHost(t *testing.T) {
 
 	// Verify if template's Affinity has the right value
 	targetNodeSelectorRequirement :=
-			pod.Spec.Affinity.NodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution.NodeSelectorTerms[0].MatchExpressions[0]
+		pod.Spec.Affinity.NodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution.NodeSelectorTerms[0].MatchExpressions[0]
 	sourceNodeSelectorRequirement := apiv1.NodeSelectorRequirement{
 		Key:      hostSelector,
 		Operator: apiv1.NodeSelectorOpNotIn,
