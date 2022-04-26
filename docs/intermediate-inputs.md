@@ -129,7 +129,7 @@ templates:
           - echo Updating DB {{inputs.parameters.db_name}}
 ```
 
-### Some important Details
+### Some Important Details
 - The suspend node should have the **SAME** parameters defined in `inputs.parameters` and `outputs.parameters`.
 - All the output parameters in the suspended node should have `valueFrom.supplied: {}` 
 - The selected values will be available at `<SUSPENDED_NODE>.outputs.parameters.<PARAMETER_NAME>`
