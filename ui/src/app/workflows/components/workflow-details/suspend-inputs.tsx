@@ -9,6 +9,20 @@ interface SuspendInputProps {
 }
 
 export const SuspendInputs = (props: SuspendInputProps) => {
+    const [parameters, setParameters] = React.useState(props.parameters);
+
+    const setParameter = (key: string, value: string) => {
+        props.setParameter(key, value);
+        setParameters(previous => {
+            return previous.map(param => {
+                if (param.name === key) {
+                    param.value = value;
+                }
+                return param;
+            });
+        });
+    };
+
     const renderSelectField = (parameter: Parameter) => {
         return (
             <React.Fragment key={parameter.name}>
@@ -20,9 +34,7 @@ export const SuspendInputs = (props: SuspendInputProps) => {
                         value,
                         title: value
                     }))}
-                    onChange={selected => {
-                        props.setParameter(parameter.name, selected.value);
-                    }}
+                    onChange={selected => setParameter(parameter.name, selected.value)}
                 />
             </React.Fragment>
         );
@@ -33,13 +45,7 @@ export const SuspendInputs = (props: SuspendInputProps) => {
             <React.Fragment key={parameter.name}>
                 <br />
                 <label>{parameter.name}</label>
-                <input
-                    className='argo-field'
-                    defaultValue={parameter.value || parameter.default}
-                    onChange={event => {
-                        props.setParameter(parameter.name, event.target.value);
-                    }}
-                />
+                <input className='argo-field' defaultValue={parameter.value || parameter.default} onChange={event => setParameter(parameter.name, event.target.value)} />
             </React.Fragment>
         );
     };
@@ -51,11 +57,22 @@ export const SuspendInputs = (props: SuspendInputProps) => {
         return renderInputField(parameter);
     };
 
+    const renderInputContentIfApplicable = () => {
+        if (parameters.length === 0) {
+            return <React.Fragment />;
+        }
+        return (
+            <React.Fragment>
+                <h2>Modify parameters</h2>
+                {parameters.map(renderFields)}
+                <br />
+            </React.Fragment>
+        );
+    };
+
     return (
         <div>
-            <h2>Modify parameters</h2>
-            {props.parameters.map(renderFields)}
-            <br />
+            {renderInputContentIfApplicable()}
             <br />
             Are you sure you want to resume node {props.nodeId} ?
         </div>
