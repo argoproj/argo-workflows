@@ -160,6 +160,7 @@ func isFetchErr(err error) bool {
 }
 
 func (g *ArtifactDriver) OpenStream(inputArtifact *wfv1.Artifact) (io.ReadCloser, error) {
+	// todo: this is a temporary implementation which loads file to disk first
 	return common.LoadToStream(inputArtifact, g)
 }
 

@@ -72,6 +72,7 @@ func (h *ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) error {
 }
 
 func (h *ArtifactDriver) OpenStream(inputArtifact *wfv1.Artifact) (io.ReadCloser, error) {
+	// todo: this is a temporary implementation which loads file to disk first
 	return common.LoadToStream(inputArtifact, h)
 }
 

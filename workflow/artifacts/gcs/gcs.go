@@ -201,6 +201,7 @@ func listByPrefix(client *storage.Client, bucket, prefix, delim string) ([]strin
 }
 
 func (g *ArtifactDriver) OpenStream(inputArtifact *wfv1.Artifact) (io.ReadCloser, error) {
+	// todo: this is a temporary implementation which loads file to disk first
 	return common.LoadToStream(inputArtifact, g)
 }
 
