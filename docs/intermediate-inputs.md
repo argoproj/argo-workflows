@@ -14,6 +14,8 @@ Choosing from a list of available databases which the workflow itself is generat
 
 This feature is achieved via `suspend template`.
 
+The UI will pause at a `Suspend` node, and user will be able to update parameters using fields type text or dropdown.
+
 ## Intermediate Parameters Approval Example
 
 ```yaml
@@ -116,7 +118,6 @@ templates:
 ```
 
 ### Some important Details
-- The UI will pause at a `Suspend` node, and user will be able to update parameters using DB of type text/dropdown.
 - The suspend node should have the **SAME** parameters defined in `inputs.parameters` and `outputs.parameters`.
 - All the output parameters in the suspended node should have `valueFrom.supplied: {}` 
 - The selected values will be available at `<SUSPENDED_NODE>.outputs.parameters.<PARAMETER_NAME>`
