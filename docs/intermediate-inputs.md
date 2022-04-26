@@ -3,9 +3,9 @@
 > v3.3 and after
 
 Traditionally, Argo workflows has supported input parameters from UI only when the workflow starts, 
-and after that, its pretty much on auto pilot. We imagine a lot of use cases where human interaction is required. 
+and after that, it's pretty much on auto pilot. But, there are a lot of use cases where human interaction is required. 
 
-This interaction is in generally in the form of providing input text in the middle of the workflow, choosing from a dropdown of the options which a workflow step itself is intelligently generating.
+This interaction is in the form of providing input text in the middle of the workflow, choosing from a dropdown of the options which a workflow step itself is intelligently generating.
 
 A similar feature which you can see in jenkins is [pipeline-input-step](https://www.jenkins.io/doc/pipeline/steps/pipeline-input-step/)
 

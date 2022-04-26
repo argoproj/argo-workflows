@@ -280,7 +280,7 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
         return <SuspendInputs parameters={parameters} nodeId={nodeId} setParameter={setParameter} />;
     };
 
-    const getInputValueString = () => {
+    const getParametersAsJsonString = () => {
         const outputVariables: {[x: string]: string} = {};
         parameters.forEach(param => {
             outputVariables[param.name] = param.value;
@@ -288,15 +288,28 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
         return JSON.stringify(outputVariables);
     };
 
+    const updateOutputParametersForNodeIfRequired = () => {
+        // No need to set outputs on node if there are no parameters
+        if (parameters.length > 0) {
+            return services
+                    .workflows
+                    .set(workflow.metadata.name, workflow.metadata.namespace, 'id=' + nodeId, getParametersAsJsonString())
+        }
+        return Promise.resolve()
+    }
+
+    const resumeNode = () => {
+        return services
+                    .workflows
+                    .resume(workflow.metadata.name, workflow.metadata.namespace, 'id=' + nodeId);
+    }
+
     const renderResumePopup = () => {
         return popup.confirm('Confirm', renderSuspendNodeOptions).then(yes => {
             if (yes) {
-                services.workflows
-                    .set(workflow.metadata.name, workflow.metadata.namespace, 'id=' + nodeId, getInputValueString())
-                    .then(() => {
-                        services.workflows.resume(workflow.metadata.name, workflow.metadata.namespace, 'id=' + nodeId);
-                    })
-                    .catch(setError);
+                updateOutputParametersForNodeIfRequired()
+                .then(resumeNode)
+                .catch(setError)
             }
         });
     };
