@@ -2990,7 +2990,7 @@ func (woc *wfOperationCtx) resolveInputFieldsForSuspendNode(node *wfv1.NodeStatu
 			tempParameter := wfv1.Parameter{}
 
 			if err := json.Unmarshal([]byte(value), &tempParameter); err != nil {
-				woc.log.Debugf("Unable to parse input string %s to Parameter %s, %w", value, parameter.Name, err)
+				woc.log.Debugf("Unable to parse input string %s to Parameter %s, %v", value, parameter.Name, err)
 				continue
 			}
 

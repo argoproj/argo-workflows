@@ -1,16 +1,15 @@
-import * as React from 'react';
-import { Parameter } from "../../../../models";
 import {Select} from 'argo-ui';
+import * as React from 'react';
+import {Parameter} from '../../../../models';
 
 interface SuspendInputProps {
-    parameters: Parameter[]
-    nodeId: string
-    setParameter: (key: string, value: string) => void
+    parameters: Parameter[];
+    nodeId: string;
+    setParameter: (key: string, value: string) => void;
 }
 
 export const SuspendInputs = (props: SuspendInputProps) => {
-
-    const [parameters, setParameters] = React.useState(props.parameters)
+    const [parameters, setParameters] = React.useState(props.parameters);
 
     const setParameter = (key: string, value: string) => {
         props.setParameter(key, value);
@@ -21,12 +20,12 @@ export const SuspendInputs = (props: SuspendInputProps) => {
                 }
                 return parameter;
             });
-        })
-    }
+        });
+    };
 
-    const renderSelectField = (parameter: Parameter, index: Number) => {
+    const renderSelectField = (parameter: Parameter) => {
         return (
-            <React.Fragment key={parameter.name + "_" + index}>
+            <React.Fragment key={parameter.name}>
                 <br />
                 <label>{parameter.name}</label>
                 <Select
@@ -36,45 +35,43 @@ export const SuspendInputs = (props: SuspendInputProps) => {
                         title: value
                     }))}
                     onChange={selected => {
-                        setParameter(parameter.name, selected.value)
+                        setParameter(parameter.name, selected.value);
                     }}
                 />
             </React.Fragment>
         );
-    }
+    };
 
-    const renderInputField = (parameter: Parameter, index: Number) => {
+    const renderInputField = (parameter: Parameter) => {
         return (
-            <React.Fragment key={parameter.name + "_" + index}>
+            <React.Fragment key={parameter.name}>
                 <br />
                 <label>{parameter.name}</label>
                 <input
                     className='argo-field'
                     defaultValue={parameter.value || parameter.default}
                     onChange={event => {
-                        setParameter(parameter.name, event.target.value)
+                        setParameter(parameter.name, event.target.value);
                     }}
                 />
             </React.Fragment>
         );
-    }
+    };
 
-
-    const renderFields = (parameter: Parameter, index: Number) => {
+    const renderFields = (parameter: Parameter) => {
         if (parameter.enum) {
-            return renderSelectField(parameter, index);
+            return renderSelectField(parameter);
         }
-        return renderInputField(parameter, index);
-    }
-
+        return renderInputField(parameter);
+    };
 
     return (
         <div>
             <h2>Modify parameters</h2>
-            {parameters.map((parameter, i) => renderFields(parameter, i))}
+            {parameters.map(renderFields)}
             <br />
             <br />
             Are you sure you want to resume node {props.nodeId} ?
         </div>
     );
-}
+};
