@@ -1,9 +1,9 @@
 package common
 
 import (
-	"io"
-
+	"errors"
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"io"
 )
 
 // ArtifactDriver is the interface for loading and saving of artifacts
@@ -22,5 +22,11 @@ type ArtifactDriver interface {
 	// Save uploads the path to artifact destination
 	Save(path string, outputArtifact *v1alpha1.Artifact) error
 
+	Delete(artifact *v1alpha1.Artifact) error
+
 	ListObjects(artifact *v1alpha1.Artifact) ([]string, error)
 }
+
+// ErrDeleteNotSupported Sentinel error definition for artifact deletion
+var ErrDeleteNotSupported = errors.New("delete not supported for this artifact storage, please check" +
+	" the following issue for details: https://github.com/argoproj/argo-workflows/issues/3102")
