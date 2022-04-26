@@ -190,7 +190,7 @@ func (a *ArtifactServer) returnArtifact(ctx context.Context, w http.ResponseWrit
 
 	defer func() {
 		if err := stream.Close(); err != nil {
-			log.Fatalf("Error closing stream[%s]: %v", stream, err)
+			log.Warningf("Error closing stream[%s]: %v", stream, err)
 		}
 	}()
 
