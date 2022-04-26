@@ -9,19 +9,6 @@ interface SuspendInputProps {
 }
 
 export const SuspendInputs = (props: SuspendInputProps) => {
-    const [parameters, setParameters] = React.useState(props.parameters);
-
-    const setParameter = (key: string, value: string) => {
-        props.setParameter(key, value);
-        setParameters(previous => {
-            return previous.map(parameter => {
-                if (parameter.name === key) {
-                    parameter.value = value;
-                }
-                return parameter;
-            });
-        });
-    };
 
     const renderSelectField = (parameter: Parameter) => {
         return (
@@ -35,7 +22,7 @@ export const SuspendInputs = (props: SuspendInputProps) => {
                         title: value
                     }))}
                     onChange={selected => {
-                        setParameter(parameter.name, selected.value);
+                        props.setParameter(parameter.name, selected.value);
                     }}
                 />
             </React.Fragment>
@@ -51,7 +38,7 @@ export const SuspendInputs = (props: SuspendInputProps) => {
                     className='argo-field'
                     defaultValue={parameter.value || parameter.default}
                     onChange={event => {
-                        setParameter(parameter.name, event.target.value);
+                        props.setParameter(parameter.name, event.target.value);
                     }}
                 />
             </React.Fragment>
@@ -68,7 +55,7 @@ export const SuspendInputs = (props: SuspendInputProps) => {
     return (
         <div>
             <h2>Modify parameters</h2>
-            {parameters.map(renderFields)}
+            {props.parameters.map(renderFields)}
             <br />
             <br />
             Are you sure you want to resume node {props.nodeId} ?
