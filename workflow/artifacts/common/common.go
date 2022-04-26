@@ -2,9 +2,9 @@ package common
 
 import (
 	"errors"
+	"io"
 
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"io"
 )
 
 // ArtifactDriver is the interface for loading and saving of artifacts
