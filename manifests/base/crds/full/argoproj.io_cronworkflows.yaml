@@ -2269,6 +2269,15 @@ spec:
                                 type: boolean
                             type: object
                         type: object
+                      artifactGC:
+                        properties:
+                          strategy:
+                            enum:
+                            - ""
+                            - OnWorkflowCompletion
+                            - OnWorkflowDeletion
+                            type: string
+                        type: object
                       automountServiceAccountToken:
                         type: boolean
                       container:
@@ -9061,6 +9070,15 @@ spec:
                                 useSDKCreds:
                                   type: boolean
                               type: object
+                          type: object
+                        artifactGC:
+                          properties:
+                            strategy:
+                              enum:
+                              - ""
+                              - OnWorkflowCompletion
+                              - OnWorkflowDeletion
+                              type: string
                           type: object
                         automountServiceAccountToken:
                           type: boolean
