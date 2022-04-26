@@ -202,6 +202,8 @@ func (a *ArtifactServer) returnArtifact(ctx context.Context, w http.ResponseWrit
 		return fmt.Errorf("failed to copy stream for artifact, err:%v", err)
 	}
 
+	w.WriteHeader(http.StatusOK)
+
 	return nil
 }
 
