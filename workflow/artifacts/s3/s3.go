@@ -64,17 +64,18 @@ func (s3Driver *ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	log.Infof("S3 Load path: %s, key: %s", path, inputArtifact.S3.Key)
-	s3cli, err := s3Driver.newS3Client(ctx)
-	if err != nil {
-		return fmt.Errorf("failed to create new S3 client: %v", err)
-	}
-	_, err = loadS3Artifact(s3cli, inputArtifact, path)
+	err := waitutil.Backoff(executorretry.ExecutorRetry,
+		func() (bool, error) {
+			log.Infof("S3 Load path: %s, key: %s", path, inputArtifact.S3.Key)
+			s3cli, err := s3Driver.newS3Client(ctx)
+			if err != nil {
+				return !isTransientS3Err(err), fmt.Errorf("failed to create new S3 client: %v", err)
+			}
+			return loadS3Artifact(s3cli, inputArtifact, path)
+		})
 
 	return err
 }
-
-// todo: no need for separate function below
 
 // loadS3Artifact downloads artifacts from an S3 compliant storage
 // returns true if the download is completed or can't be retried (non-transient error)
@@ -103,25 +104,33 @@ func loadS3Artifact(s3cli argos3.S3Client, inputArtifact *wfv1.Artifact, path st
 	return true, nil
 }
 
+// OpenStream opens a stream reader for an artifact from S3 compliant storage
 func (s3Driver *ArtifactDriver) OpenStream(inputArtifact *wfv1.Artifact) (io.ReadCloser, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	var stream io.ReadCloser
-	var done bool
-
-	err := waitutil.Backoff(executorretry.ExecutorRetry,
-		func() (bool, error) {
-			log.Infof("S3 OpenStream: key: %s", inputArtifact.S3.Key)
-			s3cli, err := s3Driver.newS3Client(ctx)
-			if err != nil {
-				return !isTransientS3Err(err), fmt.Errorf("failed to create new S3 client: %v", err)
-			}
-			stream, done, err = streamS3Artifact(s3cli, inputArtifact)
-			return done, err
-		})
-
-	return stream, err
+	log.Infof("S3 OpenStream: key: %s", inputArtifact.S3.Key)
+	s3cli, err := s3Driver.newS3Client(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create new S3 client: %v", err)
+	}
+	stream, origErr := s3cli.OpenFile(inputArtifact.S3.Bucket, inputArtifact.S3.Key)
+	if origErr == nil {
+		return stream, nil
+	}
+	// If we get here, the error was a NoSuchKey. The key might be a s3 "directory"
+	isDir, err := s3cli.IsDirectory(inputArtifact.S3.Bucket, inputArtifact.S3.Key)
+	if err != nil {
+		return nil, fmt.Errorf("failed to test if %s is a directory: %v", inputArtifact.S3.Key, err)
+	}
+	if !isDir {
+		// It's neither a file, nor a directory. Return the original NoSuchKey error
+		return nil, errors.New(errors.CodeNotFound, origErr.Error())
+	}
+	// directory case:
+	// todo: make a .tgz file which can be streamed to user
+	return nil, fmt.Errorf("Directory Stream capability currently unimplemented for S3")
 
 }
 
