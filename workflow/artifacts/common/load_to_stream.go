@@ -4,8 +4,9 @@ import (
 	"io"
 	"os"
 
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"k8s.io/apimachinery/pkg/util/rand"
+
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
 
 // wrapper around os.File enables us to remove the file when it gets closed
