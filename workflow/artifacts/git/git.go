@@ -77,6 +77,11 @@ func (g *ArtifactDriver) Save(string, *wfv1.Artifact) error {
 	return errors.New("git output artifacts unsupported")
 }
 
+// Delete is unsupported for git artifacts
+func (g *ArtifactDriver) Delete(s *wfv1.Artifact) error {
+	return common.ErrDeleteNotSupported
+}
+
 func (g *ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) error {
 	a := inputArtifact.Git
 	sshUser := GetUser(a.Repo)
