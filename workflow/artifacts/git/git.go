@@ -77,6 +77,11 @@ func (g *ArtifactDriver) Save(string, *wfv1.Artifact) error {
 	return errors.New("git output artifacts unsupported")
 }
 
+// Delete is unsupported for git artifacts
+func (g *ArtifactDriver) Delete(s *wfv1.Artifact) error {
+	return common.ErrDeleteNotSupported
+}
+
 func (g *ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) error {
 	a := inputArtifact.Git
 	sshUser := GetUser(a.Repo)
@@ -86,7 +91,20 @@ func (g *ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) error {
 	}
 	defer closer()
 	depth := a.GetDepth()
-	r, err := git.PlainClone(path, false, &git.CloneOptions{URL: a.Repo, Auth: auth, Depth: depth})
+	cloneOptions := &git.CloneOptions{
+		URL:          a.Repo,
+		Auth:         auth,
+		Depth:        depth,
+		SingleBranch: a.SingleBranch,
+	}
+	if a.SingleBranch && a.Branch == "" {
+		return errors.New("single branch mode without a branch specified")
+	}
+	if a.SingleBranch {
+		cloneOptions.ReferenceName = plumbing.NewBranchReferenceName(a.Branch)
+	}
+
+	r, err := git.PlainClone(path, false, cloneOptions)
 	switch err {
 	case transport.ErrEmptyRemoteRepository:
 		log.Info("Cloned an empty repository")
@@ -127,8 +145,13 @@ func (g *ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) error {
 	if err != nil {
 		return fmt.Errorf("failed to get work tree: %w", err)
 	}
+
 	if a.Revision != "" {
-		if err := r.Fetch(&git.FetchOptions{RefSpecs: []config.RefSpec{"refs/heads/*:refs/heads/*"}}); isFetchErr(err) {
+		refspecs := []config.RefSpec{"refs/heads/*:refs/heads/*"}
+		if a.SingleBranch {
+			refspecs = []config.RefSpec{config.RefSpec(fmt.Sprintf("refs/heads/%s:refs/heads/%s", a.Branch, a.Branch))}
+		}
+		if err := r.Fetch(&git.FetchOptions{RefSpecs: refspecs}); isFetchErr(err) {
 			return fmt.Errorf("failed to fatch refs: %w", err)
 		}
 		h, err := r.ResolveRevision(plumbing.Revision(a.Revision))
