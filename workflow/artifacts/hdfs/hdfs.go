@@ -188,7 +188,7 @@ func (driver *ArtifactDriver) Load(_ *wfv1.Artifact, path string) error {
 }
 
 func (driver *ArtifactDriver) OpenStream(inputArtifact *wfv1.Artifact) (io.ReadCloser, error) {
-	return nil, fmt.Errorf("OpenStream is not yet implemented for HDFS")
+	return common.LoadToStream(inputArtifact, driver)
 }
 
 // Save saves an artifact to HDFS compliant storage

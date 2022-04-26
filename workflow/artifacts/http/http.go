@@ -72,7 +72,7 @@ func (h *ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) error {
 }
 
 func (h *ArtifactDriver) OpenStream(inputArtifact *wfv1.Artifact) (io.ReadCloser, error) {
-	return nil, fmt.Errorf("OpenStream is not yet implemented for http")
+	return common.LoadToStream(inputArtifact, h)
 }
 
 // Save writes the artifact to the URL

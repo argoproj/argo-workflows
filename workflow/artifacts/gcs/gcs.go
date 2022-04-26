@@ -201,7 +201,7 @@ func listByPrefix(client *storage.Client, bucket, prefix, delim string) ([]strin
 }
 
 func (g *ArtifactDriver) OpenStream(inputArtifact *wfv1.Artifact) (io.ReadCloser, error) {
-	return nil, fmt.Errorf("OpenStream is not yet implemented for GCS")
+	return common.LoadToStream(inputArtifact, g)
 }
 
 // Save an artifact to GCS compliant storage, e.g., uploading a local file to GCS bucket

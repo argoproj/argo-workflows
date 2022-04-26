@@ -95,7 +95,7 @@ func (ossDriver *ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string)
 }
 
 func (ossDriver *ArtifactDriver) OpenStream(inputArtifact *wfv1.Artifact) (io.ReadCloser, error) {
-	return nil, fmt.Errorf("OpenStream is not yet implemented for OSS")
+	return common.LoadToStream(inputArtifact, ossDriver)
 }
 
 // Save stores an artifact to OSS compliant storage, e.g., uploading a local file to OSS bucket

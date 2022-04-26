@@ -1,7 +1,6 @@
 package logging
 
 import (
-	"fmt"
 	"io"
 	"time"
 
@@ -33,7 +32,7 @@ func (d driver) Load(a *wfv1.Artifact, path string) error {
 }
 
 func (d driver) OpenStream(inputArtifact *wfv1.Artifact) (io.ReadCloser, error) {
-	return nil, fmt.Errorf("OpenStream is not yet implemented for logging ArtifactDriver")
+	return common.LoadToStream(inputArtifact, d)
 }
 
 func (d driver) Save(path string, a *wfv1.Artifact) error {

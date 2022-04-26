@@ -160,7 +160,7 @@ func isFetchErr(err error) bool {
 }
 
 func (g *ArtifactDriver) OpenStream(inputArtifact *wfv1.Artifact) (io.ReadCloser, error) {
-	return nil, fmt.Errorf("OpenStream is not yet implemented for Git")
+	return common.LoadToStream(inputArtifact, g)
 }
 
 func (g *ArtifactDriver) ListObjects(artifact *wfv1.Artifact) ([]string, error) {

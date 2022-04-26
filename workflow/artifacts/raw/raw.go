@@ -28,7 +28,7 @@ func (a *ArtifactDriver) Load(artifact *wfv1.Artifact, path string) error {
 	return err
 }
 func (a *ArtifactDriver) OpenStream(inputArtifact *wfv1.Artifact) (io.ReadCloser, error) {
-	return nil, fmt.Errorf("OpenStream is not yet implemented for raw ArtifactDriver")
+	return common.LoadToStream(inputArtifact, a)
 }
 
 // Save is unsupported for raw output artifacts

@@ -182,42 +182,6 @@ func (a *ArtifactServer) returnArtifact(ctx context.Context, w http.ResponseWrit
 	if err != nil {
 		return err
 	}
-	/*
-		tmp, err := ioutil.TempFile("/tmp", "artifact")
-		if err != nil {
-			return err
-		}
-		tmpPath := tmp.Name()
-		defer func() { _ = os.Remove(tmpPath) }()
-
-		err = driver.Load(art, tmpPath)
-		if err != nil {
-			return err
-		}
-
-		file, err := os.Open(filepath.Clean(tmpPath))
-		if err != nil {
-			return err
-		}
-
-		defer func() {
-			if err := file.Close(); err != nil {
-				log.Fatalf("Error closing file[%s]: %v", tmpPath, err)
-			}
-		}()
-
-		stats, err := file.Stat()
-		if err != nil {
-			return err
-		}
-
-		contentLength := strconv.FormatInt(stats.Size(), 10)
-		log.WithFields(log.Fields{"size": contentLength}).Debug("Artifact file size")
-
-		key, _ := art.GetKey()
-		w.Header().Add("Content-Disposition", fmt.Sprintf(`filename="%s"`, path.Base(key)))
-
-		http.ServeContent(w, r, "", time.Time{}, file)*/
 
 	stream, err := driver.OpenStream(art)
 	if err != nil {
