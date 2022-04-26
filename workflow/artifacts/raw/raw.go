@@ -2,6 +2,7 @@ package raw
 
 import (
 	"fmt"
+	"io"
 	"os"
 
 	"github.com/argoproj/argo-workflows/v3/errors"
@@ -26,9 +27,13 @@ func (a *ArtifactDriver) Load(artifact *wfv1.Artifact, path string) error {
 	_, err = lf.WriteString(artifact.Raw.Data)
 	return err
 }
+func (a *ArtifactDriver) OpenStream(art *wfv1.Artifact) (io.ReadCloser, error) {
+	// todo: this is a temporary implementation which loads file to disk first
+	return common.LoadToStream(art, a)
+}
 
 // Save is unsupported for raw output artifacts
-func (g *ArtifactDriver) Save(string, *wfv1.Artifact) error {
+func (a *ArtifactDriver) Save(string, *wfv1.Artifact) error {
 	return errors.Errorf(errors.CodeBadRequest, "Raw output artifacts unsupported")
 }
 

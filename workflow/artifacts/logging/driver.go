@@ -1,6 +1,7 @@
 package logging
 
 import (
+	"io"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -28,6 +29,18 @@ func (d driver) Load(a *wfv1.Artifact, path string) error {
 		WithError(err).
 		Info("Load artifact")
 	return err
+}
+
+func (d driver) OpenStream(a *wfv1.Artifact) (io.ReadCloser, error) {
+	t := time.Now()
+	key, _ := a.GetKey()
+	rc, err := d.ArtifactDriver.OpenStream(a)
+	log.WithField("artifactName", a.Name).
+		WithField("key", key).
+		WithField("duration", time.Since(t)).
+		WithError(err).
+		Info("Stream artifact")
+	return rc, err
 }
 
 func (d driver) Save(path string, a *wfv1.Artifact) error {

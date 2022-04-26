@@ -2,6 +2,7 @@ package oss
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -91,6 +92,11 @@ func (ossDriver *ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string)
 			return true, nil
 		})
 	return err
+}
+
+func (ossDriver *ArtifactDriver) OpenStream(a *wfv1.Artifact) (io.ReadCloser, error) {
+	// todo: this is a temporary implementation which loads file to disk first
+	return common.LoadToStream(a, ossDriver)
 }
 
 // Save stores an artifact to OSS compliant storage, e.g., uploading a local file to OSS bucket

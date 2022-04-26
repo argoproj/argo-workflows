@@ -3,6 +3,7 @@ package git
 import (
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
 	"regexp"
@@ -156,6 +157,11 @@ func (g *ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) error {
 
 func isFetchErr(err error) bool {
 	return err != nil && err.Error() != "already up-to-date"
+}
+
+func (g *ArtifactDriver) OpenStream(a *wfv1.Artifact) (io.ReadCloser, error) {
+	// todo: this is a temporary implementation which loads file to disk first
+	return common.LoadToStream(a, g)
 }
 
 func (g *ArtifactDriver) ListObjects(artifact *wfv1.Artifact) ([]string, error) {
