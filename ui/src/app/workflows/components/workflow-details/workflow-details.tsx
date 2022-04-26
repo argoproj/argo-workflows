@@ -274,8 +274,7 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
         })
     }
 
-    const renderNodeOptions = () => {
-        const selectedNode = workflow && workflow.status && workflow.status.nodes && workflow.status.nodes[nodeId];
+    const renderSuspendNodeOptions = () => {
         return (
             <SuspendInputs
                 parameters={parameters}
@@ -294,7 +293,7 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
     }
 
     const renderResumePopup = () => {
-        return popup.confirm('Confirm', renderNodeOptions).then(yes => {
+        return popup.confirm('Confirm', renderSuspendNodeOptions).then(yes => {
             if (yes) {
                 services
                     .workflows
