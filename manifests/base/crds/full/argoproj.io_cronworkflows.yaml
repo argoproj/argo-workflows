@@ -816,6 +816,15 @@ spec:
                           type: object
                         type: array
                     type: object
+                  artifactGC:
+                    properties:
+                      strategy:
+                        enum:
+                        - ""
+                        - OnWorkflowCompletion
+                        - OnWorkflowDeletion
+                        type: string
+                    type: object
                   artifactRepositoryRef:
                     properties:
                       configMap:
