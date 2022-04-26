@@ -516,6 +516,21 @@ func TestArtifact_GetArchive(t *testing.T) {
 	assert.Equal(t, &ArchiveStrategy{None: &NoneStrategy{}}, (&Artifact{Archive: &ArchiveStrategy{None: &NoneStrategy{}}}).GetArchive())
 }
 
+func TestArtifactGC_GetStrategy(t *testing.T) {
+	t.Run("Nil", func(t *testing.T) {
+		var artifactGC *ArtifactGC
+		assert.Equal(t, ArtifactGCNever, artifactGC.GetStrategy())
+	})
+	t.Run("Unspecified", func(t *testing.T) {
+		var artifactGC = &ArtifactGC{}
+		assert.Equal(t, ArtifactGCNever, artifactGC.GetStrategy())
+	})
+	t.Run("Specified", func(t *testing.T) {
+		var artifactGC = &ArtifactGC{Strategy: ArtifactGCOnWorkflowCompletion}
+		assert.Equal(t, ArtifactGCOnWorkflowCompletion, artifactGC.GetStrategy())
+	})
+}
+
 func TestPodGCStrategy_IsValid(t *testing.T) {
 	for _, s := range []PodGCStrategy{
 		PodGCOnPodNone,
@@ -751,6 +766,13 @@ func TestPrometheus_GetDescIsStable(t *testing.T) {
 			break
 		}
 	}
+}
+
+func TestWorkflowSpec_GetArtifactGC(t *testing.T) {
+	spec := WorkflowSpec{}
+
+	assert.NotNil(t, spec.GetArtifactGC())
+	assert.Equal(t, &ArtifactGC{Strategy: ArtifactGCNever}, spec.GetArtifactGC())
 }
 
 func TestWorkflowSpec_GetVolumeGC(t *testing.T) {
