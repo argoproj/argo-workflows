@@ -31,8 +31,16 @@ func (d driver) Load(a *wfv1.Artifact, path string) error {
 	return err
 }
 
-func (d driver) OpenStream(inputArtifact *wfv1.Artifact) (io.ReadCloser, error) {
-	return common.LoadToStream(inputArtifact, d)
+func (d driver) OpenStream(a *wfv1.Artifact) (io.ReadCloser, error) {
+	t := time.Now()
+	key, _ := a.GetKey()
+	rc, err := d.ArtifactDriver.OpenStream(a)
+	log.WithField("artifactName", a.Name).
+		WithField("key", key).
+		WithField("duration", time.Since(t)).
+		WithError(err).
+		Info("Stream artifact")
+	return rc, err
 }
 
 func (d driver) Save(path string, a *wfv1.Artifact) error {
