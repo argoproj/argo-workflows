@@ -27,9 +27,9 @@ func (a *ArtifactDriver) Load(artifact *wfv1.Artifact, path string) error {
 	_, err = lf.WriteString(artifact.Raw.Data)
 	return err
 }
-func (a *ArtifactDriver) OpenStream(inputArtifact *wfv1.Artifact) (io.ReadCloser, error) {
+func (a *ArtifactDriver) OpenStream(art *wfv1.Artifact) (io.ReadCloser, error) {
 	// todo: this is a temporary implementation which loads file to disk first
-	return common.LoadToStream(inputArtifact, a)
+	return common.LoadToStream(art, a)
 }
 
 // Save is unsupported for raw output artifacts

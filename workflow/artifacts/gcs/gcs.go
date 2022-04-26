@@ -200,9 +200,9 @@ func listByPrefix(client *storage.Client, bucket, prefix, delim string) ([]strin
 	return results, nil
 }
 
-func (g *ArtifactDriver) OpenStream(inputArtifact *wfv1.Artifact) (io.ReadCloser, error) {
+func (g *ArtifactDriver) OpenStream(a *wfv1.Artifact) (io.ReadCloser, error) {
 	// todo: this is a temporary implementation which loads file to disk first
-	return common.LoadToStream(inputArtifact, g)
+	return common.LoadToStream(a, g)
 }
 
 // Save an artifact to GCS compliant storage, e.g., uploading a local file to GCS bucket

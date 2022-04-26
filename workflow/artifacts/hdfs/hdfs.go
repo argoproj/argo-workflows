@@ -187,9 +187,9 @@ func (driver *ArtifactDriver) Load(_ *wfv1.Artifact, path string) error {
 	return nil
 }
 
-func (driver *ArtifactDriver) OpenStream(inputArtifact *wfv1.Artifact) (io.ReadCloser, error) {
+func (driver *ArtifactDriver) OpenStream(a *wfv1.Artifact) (io.ReadCloser, error) {
 	// todo: this is a temporary implementation which loads file to disk first
-	return common.LoadToStream(inputArtifact, driver)
+	return common.LoadToStream(a, driver)
 }
 
 // Save saves an artifact to HDFS compliant storage
