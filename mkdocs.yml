@@ -59,6 +59,7 @@ nav:
           - artifact-repository-ref.md
           - key-only-artifacts.md
           - conditional-artifacts-parameters.md
+          - intermediate-inputs.md
           - resource-duration.md
           - estimated-duration.md
           - workflow-pod-security-context.md
