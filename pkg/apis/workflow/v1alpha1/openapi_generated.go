@@ -2160,6 +2160,20 @@ func schema_pkg_apis_workflow_v1alpha1_GitArtifact(ref common.ReferenceCallback)
 							Format:      "",
 						},
 					},
+					"singleBranch": {
+						SchemaProps: spec.SchemaProps{
+							Description: "SingleBranch enables single branch clone, using the `branch` parameter",
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
+					"branch": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Branch is the branch to fetch when `SingleBranch` is enabled",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
 				},
 				Required: []string{"repo"},
 			},
