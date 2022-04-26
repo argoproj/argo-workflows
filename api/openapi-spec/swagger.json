@@ -9939,6 +9939,10 @@
         "repo"
       ],
       "properties": {
+        "branch": {
+          "description": "Branch is the branch to fetch when `SingleBranch` is enabled",
+          "type": "string"
+        },
         "depth": {
           "description": "Depth specifies clones/fetches should be shallow and include the given number of commits from the branch tip",
           "type": "integer"
@@ -9969,6 +9973,10 @@
         "revision": {
           "description": "Revision is the git commit, tag, branch to checkout",
           "type": "string"
+        },
+        "singleBranch": {
+          "description": "SingleBranch enables single branch clone, using the `branch` parameter",
+          "type": "boolean"
         },
         "sshPrivateKeySecret": {
           "description": "SSHPrivateKeySecret is the secret selector to the repository ssh private key",

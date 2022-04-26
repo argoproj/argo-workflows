@@ -524,6 +524,12 @@ message GitArtifact {
 
   // DisableSubmodules disables submodules during git clone
   optional bool disableSubmodules = 9;
+
+  // SingleBranch enables single branch clone, using the `branch` parameter
+  optional bool singleBranch = 10;
+
+  // Branch is the branch to fetch when `SingleBranch` is enabled
+  optional string branch = 11;
 }
 
 // HDFSArtifact is the location of an HDFS artifact

@@ -4,14 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
-	"os"
 	"path"
-	"path/filepath"
-	"strconv"
 	"strings"
-	"time"
 
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc/codes"
@@ -157,6 +153,7 @@ func (a *ArtifactServer) unauthorizedError(w http.ResponseWriter) {
 func (a *ArtifactServer) serverInternalError(err error, w http.ResponseWriter) {
 	w.WriteHeader(500)
 	_, _ = w.Write([]byte(err.Error()))
+	log.Errorf("Artifact Server returned internal error:%v", err)
 }
 
 func (a *ArtifactServer) returnArtifact(ctx context.Context, w http.ResponseWriter, r *http.Request, wf *wfv1.Workflow, nodeId, artifactName string, isInput bool) error {
@@ -186,41 +183,27 @@ func (a *ArtifactServer) returnArtifact(ctx context.Context, w http.ResponseWrit
 	if err != nil {
 		return err
 	}
-	tmp, err := ioutil.TempFile("/tmp", "artifact")
-	if err != nil {
-		return err
-	}
-	tmpPath := tmp.Name()
-	defer func() { _ = os.Remove(tmpPath) }()
 
-	err = driver.Load(art, tmpPath)
-	if err != nil {
-		return err
-	}
-
-	file, err := os.Open(filepath.Clean(tmpPath))
+	stream, err := driver.OpenStream(art)
 	if err != nil {
 		return err
 	}
 
 	defer func() {
-		if err := file.Close(); err != nil {
-			log.Fatalf("Error closing file[%s]: %v", tmpPath, err)
+		if err := stream.Close(); err != nil {
+			log.Warningf("Error closing stream[%s]: %v", stream, err)
 		}
 	}()
-
-	stats, err := file.Stat()
-	if err != nil {
-		return err
-	}
-
-	contentLength := strconv.FormatInt(stats.Size(), 10)
-	log.WithFields(log.Fields{"size": contentLength}).Debug("Artifact file size")
 
 	key, _ := art.GetKey()
 	w.Header().Add("Content-Disposition", fmt.Sprintf(`filename="%s"`, path.Base(key)))
 
-	http.ServeContent(w, r, "", time.Time{}, file)
+	_, err = io.Copy(w, stream)
+	if err != nil {
+		return fmt.Errorf("failed to copy stream for artifact, err:%v", err)
+	}
+
+	w.WriteHeader(http.StatusOK)
 
 	return nil
 }
