@@ -64,18 +64,17 @@ func (s3Driver *ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	err := waitutil.Backoff(executorretry.ExecutorRetry,
-		func() (bool, error) {
-			log.Infof("S3 Load path: %s, key: %s", path, inputArtifact.S3.Key)
-			s3cli, err := s3Driver.newS3Client(ctx)
-			if err != nil {
-				return !isTransientS3Err(err), fmt.Errorf("failed to create new S3 client: %v", err)
-			}
-			return loadS3Artifact(s3cli, inputArtifact, path)
-		})
+	log.Infof("S3 Load path: %s, key: %s", path, inputArtifact.S3.Key)
+	s3cli, err := s3Driver.newS3Client(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to create new S3 client: %v", err)
+	}
+	_, err = loadS3Artifact(s3cli, inputArtifact, path)
 
 	return err
 }
+
+// todo: no need for separate function below
 
 // loadS3Artifact downloads artifacts from an S3 compliant storage
 // returns true if the download is completed or can't be retried (non-transient error)
@@ -107,8 +106,6 @@ func loadS3Artifact(s3cli argos3.S3Client, inputArtifact *wfv1.Artifact, path st
 func (s3Driver *ArtifactDriver) OpenStream(inputArtifact *wfv1.Artifact) (io.ReadCloser, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-
-	fmt.Printf("called OpenStream()") // todo: delete
 
 	var stream io.ReadCloser
 	var done bool

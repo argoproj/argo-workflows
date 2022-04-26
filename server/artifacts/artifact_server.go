@@ -230,31 +230,19 @@ func (a *ArtifactServer) returnArtifact(ctx context.Context, w http.ResponseWrit
 		}
 	}()
 
-	//todo: content length?
-	/*
-		flusher, ok := w.(http.Flusher)
-		if !ok {
-			fmt.Printf("flusher failed\n") // todo: delete
-			http.NotFound(w, r)            // todo: should we not return an internalservererror?
-			return fmt.Errorf("failed to cast http.ResponseWriter to http.Flusher")
-		}
-
-		fmt.Printf("flusher succeeded\n") // todo: delete
-	*/
 	key, _ := art.GetKey()
 	w.Header().Add("Content-Disposition", fmt.Sprintf(`filename="%s"`, path.Base(key)))
 
 	// Send the initial headers saying we're going to stream the response.
-	w.Header().Set("Transfer-Encoding", "chunked")
-	w.WriteHeader(http.StatusOK)
-	//flusher.Flush()
+	w.Header().Set("Transfer-Encoding", "chunked") // todo: do we need this?
 
 	_, err = io.Copy(w, stream)
 	if err != nil {
-		fmt.Printf("io.Copy failed: %v\n", err) // todo: delete
 		w.WriteHeader(http.StatusInternalServerError)
+
 		return fmt.Errorf("failed to copy stream for artifact, err:%v", err)
 	}
+	w.WriteHeader(http.StatusOK)
 
 	return nil
 }

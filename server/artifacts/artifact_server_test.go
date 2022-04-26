@@ -7,6 +7,7 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"net/http/httptest"
 	"net/url"
 	"testing"
 
@@ -47,13 +48,6 @@ func (a *fakeArtifactDriver) Load(_ *wfv1.Artifact, path string) error {
 }
 
 func (a *fakeArtifactDriver) OpenStream(_ *wfv1.Artifact) (io.ReadCloser, error) {
-	/*resp, err := http.Get("https://golangcode.com/logo.svg")
-	if err != nil {
-		fmt.Println(err)
-		return nil, err
-	}
-	return resp.Body, nil*/
-
 	return io.NopCloser(bytes.NewReader(a.data)), nil
 }
 
@@ -176,11 +170,16 @@ func TestArtifactServer_GetOutputArtifact(t *testing.T) {
 		t.Run(tt.artifactName, func(t *testing.T) {
 			r := &http.Request{}
 			r.URL = mustParse(fmt.Sprintf("/artifacts/my-ns/my-wf/my-node/%s", tt.artifactName))
-			w := &testhttp.TestResponseWriter{}
-			s.GetOutputArtifact(w, r)
-			if assert.Equal(t, 200, w.StatusCode) {
-				assert.Equal(t, fmt.Sprintf(`filename="%s"`, tt.fileName), w.Header().Get("Content-Disposition"))
-				assert.Equal(t, "my-data", w.Output)
+			recorder := httptest.NewRecorder()
+
+			s.GetOutputArtifact(recorder, r)
+			if assert.Equal(t, 200, recorder.Result().StatusCode) {
+				assert.Equal(t, fmt.Sprintf(`filename="%s"`, tt.fileName), recorder.Header().Get("Content-Disposition"))
+				all, err := io.ReadAll(recorder.Result().Body)
+				if err != nil {
+					panic(fmt.Sprintf("failed to read http body: %v", err))
+				}
+				assert.Equal(t, "my-data", string(all))
 			}
 		})
 	}
@@ -203,11 +202,15 @@ func TestArtifactServer_GetInputArtifact(t *testing.T) {
 		t.Run(tt.artifactName, func(t *testing.T) {
 			r := &http.Request{}
 			r.URL = mustParse(fmt.Sprintf("/input-artifacts/my-ns/my-wf/my-node/%s", tt.artifactName))
-			w := &testhttp.TestResponseWriter{}
-			s.GetInputArtifact(w, r)
-			if assert.Equal(t, 200, w.StatusCode) {
-				assert.Equal(t, fmt.Sprintf(`filename="%s"`, tt.fileName), w.Header().Get("Content-Disposition"))
-				assert.Equal(t, "my-data", w.Output)
+			recorder := httptest.NewRecorder()
+			s.GetInputArtifact(recorder, r)
+			if assert.Equal(t, 200, recorder.Result().StatusCode) {
+				assert.Equal(t, fmt.Sprintf(`filename="%s"`, tt.fileName), recorder.Result().Header.Get("Content-Disposition"))
+				all, err := io.ReadAll(recorder.Result().Body)
+				if err != nil {
+					panic(fmt.Sprintf("failed to read http body: %v", err))
+				}
+				assert.Equal(t, "my-data", string(all))
 			}
 		})
 	}
