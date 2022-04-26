@@ -63,8 +63,8 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
         [history]
     );
 
-    const getInputParametersForNode = (renderFields: string): Parameter[] => {
-        const selectedWorkflowNode = workflow && workflow.status && workflow.status.nodes && workflow.status.nodes[renderFields];
+    const getInputParametersForNode = (selectedWorkflowNodeId: string): Parameter[] => {
+        const selectedWorkflowNode = workflow && workflow.status && workflow.status.nodes && workflow.status.nodes[selectedWorkflowNodeId];
         return (
             selectedWorkflowNode?.inputs?.parameters?.map(param => {
                 const paramClone = {...param};

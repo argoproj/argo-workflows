@@ -9,7 +9,6 @@ interface SuspendInputProps {
 }
 
 export const SuspendInputs = (props: SuspendInputProps) => {
-
     const renderSelectField = (parameter: Parameter) => {
         return (
             <React.Fragment key={parameter.name}>
