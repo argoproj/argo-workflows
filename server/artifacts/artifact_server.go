@@ -153,6 +153,7 @@ func (a *ArtifactServer) unauthorizedError(w http.ResponseWriter) {
 func (a *ArtifactServer) serverInternalError(err error, w http.ResponseWriter) {
 	w.WriteHeader(500)
 	_, _ = w.Write([]byte(err.Error()))
+	log.Errorf("Artifact Server returned internal error:%v", err)
 }
 
 func (a *ArtifactServer) returnArtifact(ctx context.Context, w http.ResponseWriter, r *http.Request, wf *wfv1.Workflow, nodeId, artifactName string, isInput bool) error {

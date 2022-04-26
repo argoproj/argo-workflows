@@ -106,11 +106,8 @@ func loadS3Artifact(s3cli argos3.S3Client, inputArtifact *wfv1.Artifact, path st
 
 // OpenStream opens a stream reader for an artifact from S3 compliant storage
 func (s3Driver *ArtifactDriver) OpenStream(inputArtifact *wfv1.Artifact) (io.ReadCloser, error) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
 	log.Infof("S3 OpenStream: key: %s", inputArtifact.S3.Key)
-	s3cli, err := s3Driver.newS3Client(ctx)
+	s3cli, err := s3Driver.newS3Client(context.TODO())
 	if err != nil {
 		return nil, fmt.Errorf("failed to create new S3 client: %v", err)
 	}
