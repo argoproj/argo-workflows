@@ -2979,6 +2979,9 @@ func (woc *wfOperationCtx) executeSuspend(nodeName string, templateScope string,
 }
 
 func (woc *wfOperationCtx) resolveInputFieldsForSuspendNode(node *wfv1.NodeStatus) {
+	if node.Inputs == nil || node.Inputs.Parameters == nil {
+		return
+	}
 	parameters := node.Inputs.Parameters
 	for i, parameter := range parameters {
 		if parameter.Value != nil {
