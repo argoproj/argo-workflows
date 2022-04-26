@@ -5,6 +5,7 @@ import {useContext, useEffect, useState} from 'react';
 import {RouteComponentProps} from 'react-router';
 import {execSpec, Link, NodeStatus, Workflow} from '../../../../models';
 import {ANNOTATION_KEY_POD_NAME_VERSION} from '../../../shared/annotations';
+import {findArtifact} from '../../../shared/artifacts';
 import {uiUrl} from '../../../shared/base';
 import {CostOptimisationNudge} from '../../../shared/components/cost-optimisation-nudge';
 import {ErrorNotice} from '../../../shared/components/error-notice';
@@ -30,6 +31,7 @@ import {WorkflowParametersPanel} from '../workflow-parameters-panel';
 import {WorkflowSummaryPanel} from '../workflow-summary-panel';
 import {WorkflowTimeline} from '../workflow-timeline/workflow-timeline';
 import {WorkflowYamlViewer} from '../workflow-yaml-viewer/workflow-yaml-viewer';
+import {ArtifactPanel} from './artifact-panel';
 import {WorkflowResourcePanel} from './workflow-resource-panel';
 
 require('./workflow-details.scss');
@@ -271,6 +273,8 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
     const selectedNode = workflow && workflow.status && workflow.status.nodes && workflow.status.nodes[nodeId];
     const podName = ensurePodName(workflow, selectedNode, nodeId);
 
+    const selectedArtifact = workflow && workflow.status && findArtifact(workflow.status, nodeId);
+
     return (
         <Page
             title={'Workflow Details'}
@@ -301,7 +305,7 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
                     </div>
                 )
             }}>
-            <div className={classNames('workflow-details', {'workflow-details--step-node-expanded': !!selectedNode})}>
+            <div className={classNames('workflow-details', {'workflow-details--step-node-expanded': selectedArtifact || selectedNode})}>
                 <ErrorNotice error={error} />
                 {(tab === 'summary' && renderSummaryTab()) ||
                     (workflow && (
@@ -332,6 +336,7 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
                                         onResume={() => renderResumePopup()}
                                     />
                                 )}
+                                {selectedArtifact && <ArtifactPanel workflow={workflow} artifact={selectedArtifact} />}
                             </div>
                         </div>
                     ))}
