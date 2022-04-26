@@ -3,14 +3,14 @@ package s3
 import (
 	"context"
 	"fmt"
-	argoerr "github.com/argoproj/argo-workflows/v3/util/errors"
+	"os"
+
 	"github.com/argoproj/pkg/file"
 	argos3 "github.com/argoproj/pkg/s3"
 	"github.com/minio/minio-go/v7"
 	log "github.com/sirupsen/logrus"
 	"io"
 	"k8s.io/client-go/util/retry"
-	"os"
 
 	"github.com/argoproj/argo-workflows/v3/errors"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
@@ -161,15 +161,15 @@ func (s3Driver *ArtifactDriver) Delete(artifact *wfv1.Artifact) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	err := waitutil.Backoff(executorretry.ExecutorRetry,
-		func() (bool, error) {
-			log.Infof("S3 Delete artifact: key: %s", artifact.S3.Key)
-			s3cli, err := s3Driver.newS3Client(ctx)
-			if err != nil {
-				return !isTransientS3Err(err), fmt.Errorf("failed to create new S3 client: %v", err)
-			}
-			return deleteS3Artifact(s3cli, artifact)
-		})
+	err := retry.OnError(retry.DefaultBackoff, isTransientS3Err, func() error {
+		log.Infof("S3 Delete artifact: key: %s", artifact.S3.Key)
+		s3cli, err := s3Driver.newS3Client(ctx)
+		if err != nil {
+			return err
+		}
+		return s3cli.Delete(artifact.S3.Bucket, artifact.S3.Key)
+	})
+
 	return err
 }
 
@@ -203,23 +203,6 @@ func saveS3Artifact(s3cli argos3.S3Client, path string, outputArtifact *wfv1.Art
 			return !isTransientS3Err(err), fmt.Errorf("failed to put file: %v", err)
 		}
 	}
-	return true, nil
-}
-
-// deleteS3Artifact deletes artifacts from an S3 compliant storage
-// returns true if the deletion is completed or can't be retried (non-transient error)
-// returns false if it can be retried (transient error)
-func deleteS3Artifact(s3cli argos3.S3Client, artifact *wfv1.Artifact) (bool, error) {
-	if err := s3cli.Delete(artifact.S3.Bucket, artifact.S3.Key); err != nil {
-		err = retry.OnError(retry.DefaultBackoff, argoerr.IsTransientErr, func() error {
-			return err
-		})
-
-		if err != nil {
-			return false, err
-		}
-	}
-
 	return true, nil
 }
 
