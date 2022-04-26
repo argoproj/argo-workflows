@@ -138,7 +138,7 @@ func streamS3Artifact(s3cli argos3.S3Client, inputArtifact *wfv1.Artifact) (io.R
 	}
 	// directory case:
 	// todo: make a .tgz file which can be streamed to user
-	return nil, fmt.Errorf("Directory Stream capability currently unimplemented for S3")
+	return nil, errors.New(errors.CodeNotImplemented, "Directory Stream capability currently unimplemented for S3")
 }
 
 // Save saves an artifact to S3 compliant storage
