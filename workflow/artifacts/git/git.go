@@ -74,12 +74,12 @@ func (g *ArtifactDriver) auth(sshUser string) (func(), transport.AuthMethod, err
 
 // Save is unsupported for git output artifacts
 func (g *ArtifactDriver) Save(string, *wfv1.Artifact) error {
-	return common.ErrDeleteNotSupported
+	return errors.New("git output artifacts unsupported")
 }
 
 // Delete is unsupported for git artifacts
 func (g *ArtifactDriver) Delete(s *wfv1.Artifact) error {
-	return errors.New("git delete artifacts unsupported")
+	return common.ErrDeleteNotSupported
 }
 
 func (g *ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) error {
