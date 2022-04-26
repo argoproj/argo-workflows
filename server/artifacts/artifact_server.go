@@ -197,9 +197,6 @@ func (a *ArtifactServer) returnArtifact(ctx context.Context, w http.ResponseWrit
 	key, _ := art.GetKey()
 	w.Header().Add("Content-Disposition", fmt.Sprintf(`filename="%s"`, path.Base(key)))
 
-	// Send the initial headers saying we're going to stream the response.
-	w.Header().Set("Transfer-Encoding", "chunked") // todo: do we need this?
-
 	_, err = io.Copy(w, stream)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
