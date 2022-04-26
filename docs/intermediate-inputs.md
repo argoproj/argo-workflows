@@ -20,6 +20,7 @@ The workflow will pause at a `Suspend` node, and user will be able to update par
 
 - The below example shows static enum values `approval` step.
 - The user will be able to choose between `[YES, NO]` which will be used in subsequent steps.
+- Demo link: https://youtu.be/eyeZ2oddwWE
 
 ```yaml
 
@@ -64,6 +65,7 @@ templates:
 - This output is of type `json`.
 - Since this `json` has a `key` called `enum`, with an array of options, the UI will parse this and display it as a dropdown.
 - The output can be any string also, in which case the UI will display it as a text field. Which the user can later edit.
+- Demo link: https://youtu.be/QgE-1782YJc
 
 ```yaml
 entrypoint: db-schema-update
