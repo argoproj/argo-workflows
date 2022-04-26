@@ -2937,7 +2937,7 @@ func (woc *wfOperationCtx) executeSuspend(nodeName string, templateScope string,
 	node := woc.wf.GetNodeByName(nodeName)
 	if node == nil {
 		node = woc.initializeExecutableNode(nodeName, wfv1.NodeTypeSuspend, templateScope, tmpl, orgTmpl, opts.boundaryID, wfv1.NodePending)
-		resolveInputFieldsForSuspendNode(node)
+		woc.resolveInputFieldsForSuspendNode(node)
 	}
 	woc.log.Infof("node %s suspended", nodeName)
 
@@ -2978,19 +2978,20 @@ func (woc *wfOperationCtx) executeSuspend(nodeName string, templateScope string,
 	return node, nil
 }
 
-func resolveInputFieldsForSuspendNode(node *wfv1.NodeStatus) {
+func (woc *wfOperationCtx) resolveInputFieldsForSuspendNode(node *wfv1.NodeStatus) {
 	parameters := node.Inputs.Parameters
 	for i, parameter := range parameters {
 		if parameter.Value != nil {
 
 			value := parameter.Value.String()
-			parameter := wfv1.Parameter{}
+			tempParameter := wfv1.Parameter{}
 
-			if err := json.Unmarshal([]byte(value), &parameter); err != nil {
+			if err := json.Unmarshal([]byte(value), &tempParameter); err != nil {
+				woc.log.Debugf("Unable to parse input string %s to Parameter %s, %w", value, parameter.Name, err)
 				continue
 			}
 
-			enum := parameter.Enum
+			enum := tempParameter.Enum
 			if enum != nil && len(enum) > 0 {
 				parameters[i].Enum = enum
 				if parameters[i].Default == nil {
