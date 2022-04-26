@@ -291,25 +291,21 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
     const updateOutputParametersForNodeIfRequired = () => {
         // No need to set outputs on node if there are no parameters
         if (parameters.length > 0) {
-            return services
-                    .workflows
-                    .set(workflow.metadata.name, workflow.metadata.namespace, 'id=' + nodeId, getParametersAsJsonString())
+            return services.workflows.set(workflow.metadata.name, workflow.metadata.namespace, 'id=' + nodeId, getParametersAsJsonString());
         }
-        return Promise.resolve()
-    }
+        return Promise.resolve();
+    };
 
     const resumeNode = () => {
-        return services
-                    .workflows
-                    .resume(workflow.metadata.name, workflow.metadata.namespace, 'id=' + nodeId);
-    }
+        return services.workflows.resume(workflow.metadata.name, workflow.metadata.namespace, 'id=' + nodeId);
+    };
 
     const renderResumePopup = () => {
         return popup.confirm('Confirm', renderSuspendNodeOptions).then(yes => {
             if (yes) {
                 updateOutputParametersForNodeIfRequired()
-                .then(resumeNode)
-                .catch(setError)
+                    .then(resumeNode)
+                    .catch(setError);
             }
         });
     };
