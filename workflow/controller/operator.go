@@ -2979,7 +2979,7 @@ func (woc *wfOperationCtx) executeSuspend(nodeName string, templateScope string,
 }
 
 func (woc *wfOperationCtx) resolveInputFieldsForSuspendNode(node *wfv1.NodeStatus) {
-	if node.Inputs == nil || node.Inputs.Parameters == nil {
+	if node.Inputs == nil {
 		return
 	}
 	parameters := node.Inputs.Parameters
@@ -2995,7 +2995,7 @@ func (woc *wfOperationCtx) resolveInputFieldsForSuspendNode(node *wfv1.NodeStatu
 			}
 
 			enum := tempParameter.Enum
-			if enum != nil && len(enum) > 0 {
+			if len(enum) > 0 {
 				parameters[i].Enum = enum
 				if parameters[i].Default == nil {
 					parameters[i].Default = wfv1.AnyStringPtr(enum[0])

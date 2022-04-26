@@ -14,9 +14,12 @@ Choosing from a list of available databases which the workflow itself is generat
 
 This feature is achieved via `suspend template`.
 
-The UI will pause at a `Suspend` node, and user will be able to update parameters using fields type text or dropdown.
+The workflow will pause at a `Suspend` node, and user will be able to update parameters using fields type text or dropdown.
 
 ## Intermediate Parameters Approval Example
+
+- The below example shows static enum values `approval` step.
+- The user will be able to choose between `[YES, NO]` which will be used in subsequent steps.
 
 ```yaml
 
@@ -56,6 +59,11 @@ templates:
 ```
 
 ## Intermediate Parameters DB Schema update Example
+- The below example shows programatic generation of `enum` values.
+- The `generate-db-list` template generates an output called `db_list`.
+- This output is of type `json`.
+- Since this `json` has a `key` called `enum`, with an array of options, the UI will parse this and display it as a dropdown.
+- The output can be any string also, in which case the UI will display it as a text field. Which the user can later edit.
 
 ```yaml
 entrypoint: db-schema-update
@@ -112,8 +120,7 @@ templates:
           - sh
           - '-c'
         args:
-          - >-
-            echo Updating DB {{inputs.parameters.db_name}}
+          - echo Updating DB {{inputs.parameters.db_name}}
 ```
 
 ### Some important Details
