@@ -7,7 +7,7 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**param** | **Map&lt;String, String&gt;** |  |  [optional]
+**name** | **String** |  |  [optional]
 
 
 

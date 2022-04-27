@@ -21,14 +21,7 @@ export class InfoService {
         return requests.get(`api/v1/userinfo`).then(res => res.body as GetUserInfoResponse);
     }
 
-    public collectEvent(param: Map<string, string>) {
-        const obj = Object.create(null);
-        for (const [k, v] of param) {
-            obj[k] = v;
-        }
-        return requests.post(`api/v1/tracking/event`).send(obj);
+    public collectEvent(name: string) {
+        return requests.post(`api/v1/tracking/event`).send({name});
     }
 }
-
-export const EventParams = ['name'] as const;
-export type EventParam = typeof EventParams[number];

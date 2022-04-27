@@ -47,9 +47,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = info_service_api.InfoServiceApi(api_client)
     body = IoArgoprojWorkflowV1alpha1CollectEventRequest(
-        param={
-            "key": "key_example",
-        },
+        name="name_example",
     ) # IoArgoprojWorkflowV1alpha1CollectEventRequest | 
 
     # example passing only required values which don't have defaults set
