@@ -23,7 +23,6 @@ import (
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	envutil "github.com/argoproj/argo-workflows/v3/util/env"
 	argoerr "github.com/argoproj/argo-workflows/v3/util/errors"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
 
 // ExecResource will run kubectl action against a manifest
@@ -318,6 +317,6 @@ func (we *WorkflowExecutor) SaveResourceParameters(ctx context.Context, resource
 		we.Template.Outputs.Parameters[i].Value = wfv1.AnyStringPtr(output)
 		log.Infof("Saved output parameter: %s, value: %s", param.Name, output)
 	}
-	err := we.ReportOutputs(ctx, nil, common.MainContainerName)
+	err := we.reportOutputs(ctx, nil)
 	return err
 }

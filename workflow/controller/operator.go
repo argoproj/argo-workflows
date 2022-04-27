@@ -1227,6 +1227,17 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, old *wfv1.NodeStatus
 		new.PodIP = pod.Status.PodIP
 	}
 
+	if x, ok := pod.Annotations[common.AnnotationKeyOutputs]; ok {
+		woc.log.Warn("workflow uses legacy/insecure pod patch, see https://argoproj.github.io/argo-workflows/workflow-rbac/")
+		if new.Outputs == nil {
+			new.Outputs = &wfv1.Outputs{}
+		}
+		if err := json.Unmarshal([]byte(x), new.Outputs); err != nil {
+			new.Phase = wfv1.NodeError
+			new.Message = err.Error()
+		}
+	}
+
 	new.HostNodeName = pod.Spec.NodeName
 
 	if !new.Progress.IsValid() {
@@ -1240,12 +1251,15 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, old *wfv1.NodeStatus
 		}
 	}
 
-	woc.updateNodeOutputs(pod, new)
-
 	// We capture the exit-code after we look for the task-result.
 	// All other outputs are set by the executor, only the exit-code is set by the controller.
 	// By waiting, we avoid breaking the race-condition check.
-	woc.updateExitCode(pod, new)
+	if exitCode := getExitCode(pod); exitCode != nil {
+		if new.Outputs == nil {
+			new.Outputs = &wfv1.Outputs{}
+		}
+		new.Outputs.ExitCode = pointer.StringPtr(fmt.Sprint(*exitCode))
+	}
 
 	// We cannot fail the node until the wait container is finished because it may be busy saving outputs, and these
 	// would not get captured successfully.
@@ -1282,61 +1296,13 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, old *wfv1.NodeStatus
 	return nil
 }
 
-func (woc *wfOperationCtx) updateNodeOutputs(pod *apiv1.Pod, node *wfv1.NodeStatus) {
-	containerName := node.GetContainerName()
-	key := fmt.Sprintf("%s-%s", common.AnnotationKeyOutputs, containerName)
-	if x, ok := pod.Annotations[key]; ok {
-		woc.log.Warn("workflow uses legacy/insecure pod patch, see https://argoproj.github.io/argo-workflows/workflow-rbac/")
-		if node.Outputs == nil {
-			node.Outputs = &wfv1.Outputs{}
-		}
-
-		if err := json.Unmarshal([]byte(x), node.Outputs); err != nil {
-			node.Phase = wfv1.NodeError
-			node.Message = err.Error()
-		}
-	}
-
-	obj, _, _ := woc.controller.taskResultInformer.Informer().GetStore().GetByKey(woc.wf.Namespace + "/" + node.ID)
-	if result, ok := obj.(*wfv1.WorkflowTaskResult); ok {
-		if result.Outputs.HasOutputs() {
-			if node.Outputs == nil {
-				node.Outputs = &wfv1.Outputs{}
-			}
-			result.Outputs.DeepCopyInto(node.Outputs) // preserve any existing values
-		}
-		if result.Progress.IsValid() {
-			node.Progress = result.Progress
-		}
-	}
-
-	for _, childID := range node.Children {
-		if childNode, ok := woc.wf.Status.Nodes[childID]; ok {
-			woc.updateNodeOutputs(pod, &childNode)
-			woc.wf.Status.Nodes[childID] = childNode
-		}
-	}
-}
-
-func (woc *wfOperationCtx) updateExitCode(pod *apiv1.Pod, node *wfv1.NodeStatus) {
-	containerName := node.GetContainerName()
+func getExitCode(pod *apiv1.Pod) *int32 {
 	for _, c := range pod.Status.ContainerStatuses {
-		if c.Name == containerName && c.State.Terminated != nil {
-			if node.Outputs == nil {
-				node.Outputs = &wfv1.Outputs{}
-			}
-			node.Outputs.ExitCode = pointer.StringPtr(fmt.Sprint(c.State.Terminated.ExitCode))
-			break
+		if c.Name == common.MainContainerName && c.State.Terminated != nil {
+			return pointer.Int32Ptr(c.State.Terminated.ExitCode)
 		}
 	}
-
-	for _, childID := range node.Children {
-		if childNode, ok := woc.wf.Status.Nodes[childID]; ok {
-			woc.updateExitCode(pod, &childNode)
-			woc.wf.Status.Nodes[childID] = childNode
-			woc.updated = true
-		}
-	}
+	return nil
 }
 
 func podHasContainerNeedingTermination(pod *apiv1.Pod, tmpl wfv1.Template) bool {
