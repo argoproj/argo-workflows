@@ -8,8 +8,8 @@ import {BasePage} from '../../../shared/components/base-page';
 import {ErrorNotice} from '../../../shared/components/error-notice';
 import {ProcessURL} from '../../../shared/components/links';
 import {Loading} from '../../../shared/components/loading';
-import {services} from '../../../shared/services';
 import {TrackEvent} from '../../../shared/components/track-user-interface-event';
+import {services} from '../../../shared/services';
 import {WorkflowArtifacts} from '../../../workflows/components/workflow-artifacts';
 
 import {ANNOTATION_KEY_POD_NAME_VERSION} from '../../../shared/annotations';

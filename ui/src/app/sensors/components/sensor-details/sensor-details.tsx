@@ -8,13 +8,13 @@ import {uiUrl} from '../../../shared/base';
 import {ErrorNotice} from '../../../shared/components/error-notice';
 import {Node} from '../../../shared/components/graph/types';
 import {Loading} from '../../../shared/components/loading';
+import {TrackEvent} from '../../../shared/components/track-user-interface-event';
 import {Context} from '../../../shared/context';
 import {historyUrl} from '../../../shared/history';
 import {services} from '../../../shared/services';
 import {useQueryParams} from '../../../shared/use-query-params';
 import {SensorEditor} from '../sensor-editor';
 import {SensorSidePanel} from '../sensor-side-panel';
-import {TrackEvent} from '../../../shared/components/track-user-interface-event';
 
 require('../../../workflows/components/workflow-details/workflow-details.scss');
 

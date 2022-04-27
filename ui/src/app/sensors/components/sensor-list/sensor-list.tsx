@@ -11,6 +11,7 @@ import {Node} from '../../../shared/components/graph/types';
 import {Loading} from '../../../shared/components/loading';
 import {NamespaceFilter} from '../../../shared/components/namespace-filter';
 import {Timestamp} from '../../../shared/components/timestamp';
+import {TrackEvent} from '../../../shared/components/track-user-interface-event';
 import {ZeroState} from '../../../shared/components/zero-state';
 import {Context} from '../../../shared/context';
 import {Footnote} from '../../../shared/footnote';
@@ -20,7 +21,6 @@ import {useQueryParams} from '../../../shared/use-query-params';
 import {Utils} from '../../../shared/utils';
 import {SensorCreator} from '../sensor-creator';
 import {SensorSidePanel} from '../sensor-side-panel';
-import {TrackEvent} from '../../../shared/components/track-user-interface-event';
 import {Utils as EventsUtils} from '../utils';
 
 const learnMore = <a href='https://argoproj.github.io/argo-events/concepts/sensor/'>Learn more</a>;

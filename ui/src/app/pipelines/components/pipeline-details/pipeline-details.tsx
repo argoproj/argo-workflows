@@ -8,12 +8,12 @@ import {uiUrl} from '../../../shared/base';
 import {ErrorNotice} from '../../../shared/components/error-notice';
 import {GraphPanel} from '../../../shared/components/graph/graph-panel';
 import {Loading} from '../../../shared/components/loading';
+import {TrackEvent} from '../../../shared/components/track-user-interface-event';
 import {Context} from '../../../shared/context';
 import {historyUrl} from '../../../shared/history';
 import {ListWatch} from '../../../shared/list-watch';
 import {services} from '../../../shared/services';
 import {StepSidePanel} from '../step-side-panel';
-import {TrackEvent} from '../../../shared/components/track-user-interface-event';
 import {graph} from './pipeline-graph';
 
 require('./pipeline.scss');

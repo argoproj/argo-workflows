@@ -22,8 +22,8 @@ export class InfoService {
     }
 
     public collectEvent(param: Map<string, string>) {
-        let obj = Object.create(null);
-        for (let [k,v] of param) {
+        const obj = Object.create(null);
+        for (const [k, v] of param) {
             obj[k] = v;
         }
         return requests.post(`api/v1/tracking/event`).send(obj);
