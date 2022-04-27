@@ -229,6 +229,11 @@ func TestOpenStreamS3Artifact(t *testing.T) {
 	_ = os.Unsetenv(transientEnvVarKey)
 }
 
+// Delete deletes an S3 artifact by artifact key
+func (s *mockS3Client) Delete(bucket, key string) error {
+	return s.getMockedErr("Delete")
+}
+
 func TestLoadS3Artifact(t *testing.T) {
 	tests := map[string]struct {
 		s3client  argos3.S3Client

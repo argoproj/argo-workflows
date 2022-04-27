@@ -2788,6 +2788,11 @@ func (in *Template) DeepCopyInto(out *Template) {
 		*out = new(Memoize)
 		(*in).DeepCopyInto(*out)
 	}
+	if in.ArtifactGC != nil {
+		in, out := &in.ArtifactGC, &out.ArtifactGC
+		*out = new(ArtifactGC)
+		**out = **in
+	}
 	return
 }
 

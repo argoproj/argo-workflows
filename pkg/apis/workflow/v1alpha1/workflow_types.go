@@ -717,6 +717,9 @@ type Template struct {
 	// Timeout allows to set the total node execution timeout duration counting from the node's start time.
 	// This duration also includes time in which the node spends in Pending state. This duration may not be applied to Step or DAG templates.
 	Timeout string `json:"timeout,omitempty" protobuf:"bytes,38,opt,name=timeout"`
+
+	// ArtifactGC describes the strategy to use when to deleting artifacts from executed templates
+	ArtifactGC *ArtifactGC `json:"artifactGC,omitempty" protobuf:"bytes,44,opt,name=artifactGC"`
 }
 
 // SetType will set the template object based on template type.
@@ -2146,6 +2149,12 @@ type GitArtifact struct {
 
 	// DisableSubmodules disables submodules during git clone
 	DisableSubmodules bool `json:"disableSubmodules,omitempty" protobuf:"varint,9,opt,name=disableSubmodules"`
+
+	// SingleBranch enables single branch clone, using the `branch` parameter
+	SingleBranch bool `json:"singleBranch,omitempty" protobuf:"varint,10,opt,name=singleBranch"`
+
+	// Branch is the branch to fetch when `SingleBranch` is enabled
+	Branch string `json:"branch,omitempty" protobuf:"bytes,11,opt,name=branch"`
 }
 
 func (g *GitArtifact) HasLocation() bool {
