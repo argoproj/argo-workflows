@@ -3,15 +3,19 @@ package executor
 import (
 	"context"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	mock "github.com/stretchr/testify/mock"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
+	"k8s.io/utils/pointer"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	argofake "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/fake"
@@ -424,4 +428,25 @@ func TestMonitorProgress(t *testing.T) {
 		assert.Len(t, result.OwnerReferences, 1)
 		assert.Equal(t, wfv1.Progress("100/100"), result.Progress)
 	}
+}
+
+func TestSaveLogs(t *testing.T) {
+	const artStorageError = "You need to configure artifact storage. More information on how to do this can be found in the docs: https://argoproj.github.io/argo-workflows/configure-artifact-repository/"
+	mockRuntimeExecutor := mocks.ContainerRuntimeExecutor{}
+	mockRuntimeExecutor.On("GetOutputStream", mock.Anything, mock.AnythingOfType("string"), true).Return(io.NopCloser(strings.NewReader("hello world")), nil)
+	t.Run("Simple Pod node", func(t *testing.T) {
+		templateWithArchiveLogs := wfv1.Template{
+			ArchiveLocation: &wfv1.ArtifactLocation{
+				ArchiveLogs: pointer.BoolPtr(true),
+			},
+		}
+		we := WorkflowExecutor{
+			Template:        templateWithArchiveLogs,
+			RuntimeExecutor: &mockRuntimeExecutor,
+		}
+
+		ctx := context.Background()
+		we.SaveLogs(ctx)
+		assert.EqualError(t, we.errors[0], artStorageError)
+	})
 }

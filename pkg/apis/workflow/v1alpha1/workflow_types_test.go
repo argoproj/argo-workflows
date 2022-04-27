@@ -945,16 +945,6 @@ func TestTemplate_SaveLogsAsArtifact(t *testing.T) {
 		x := &Template{ArchiveLocation: &ArtifactLocation{ArchiveLogs: pointer.BoolPtr(true)}}
 		assert.True(t, x.SaveLogsAsArtifact())
 	})
-	t.Run("ContainerSet", func(t *testing.T) {
-		t.Run("NoMain", func(t *testing.T) {
-			x := &Template{ArchiveLocation: &ArtifactLocation{ArchiveLogs: pointer.BoolPtr(true)}, ContainerSet: &ContainerSetTemplate{}}
-			assert.False(t, x.SaveLogsAsArtifact())
-		})
-		t.Run("Main", func(t *testing.T) {
-			x := &Template{ArchiveLocation: &ArtifactLocation{ArchiveLogs: pointer.BoolPtr(true)}, ContainerSet: &ContainerSetTemplate{Containers: []ContainerNode{{Container: corev1.Container{Name: "main"}}}}}
-			assert.True(t, x.SaveLogsAsArtifact())
-		})
-	})
 }
 
 func TestTemplate_ExcludeTemplateTypes(t *testing.T) {

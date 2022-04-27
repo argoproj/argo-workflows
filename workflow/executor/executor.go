@@ -543,28 +543,52 @@ func (we *WorkflowExecutor) SaveParameters(ctx context.Context) error {
 	return nil
 }
 
-// SaveLogs saves logs
-func (we *WorkflowExecutor) SaveLogs(ctx context.Context) (*wfv1.Artifact, error) {
-	if !we.Template.SaveLogsAsArtifact() {
-		return nil, nil
-	}
-	log.Infof("Saving logs")
+func (we *WorkflowExecutor) SaveLogs(ctx context.Context) {
+	var logArtifacts []wfv1.Artifact
 	tempLogsDir := "/tmp/argo/outputs/logs"
-	err := os.MkdirAll(tempLogsDir, os.ModePerm)
-	if err != nil {
-		return nil, argoerrs.InternalWrapError(err)
+
+	if we.Template.SaveLogsAsArtifact() {
+		err := os.MkdirAll(tempLogsDir, os.ModePerm)
+		if err != nil {
+			we.AddError(argoerrs.InternalWrapError(err))
+		}
+
+		containerNames := we.Template.GetMainContainerNames()
+		logArtifacts = make([]wfv1.Artifact, 0)
+
+		for _, containerName := range containerNames {
+			// Saving logs
+			art, err := we.saveContainerLogs(ctx, tempLogsDir, containerName)
+			if err != nil {
+				we.AddError(err)
+			} else {
+				logArtifacts = append(logArtifacts, *art)
+			}
+		}
 	}
-	fileName := "main.log"
-	mainLog := path.Join(tempLogsDir, fileName)
-	err = we.saveLogToFile(ctx, common.MainContainerName, mainLog)
+
+	// Annotating pod with output
+	err := we.reportOutputs(ctx, logArtifacts)
+	if err != nil {
+		we.AddError(err)
+	}
+}
+
+// saveContainerLogs saves a single container's log into a file
+func (we *WorkflowExecutor) saveContainerLogs(ctx context.Context, tempLogsDir, containerName string) (*wfv1.Artifact, error) {
+	fileName := containerName + ".log"
+	filePath := path.Join(tempLogsDir, fileName)
+	err := we.saveLogToFile(ctx, containerName, filePath)
 	if err != nil {
 		return nil, err
 	}
-	art := &wfv1.Artifact{Name: wfv1.MainLogsArtifactName}
-	err = we.saveArtifactFromFile(ctx, art, fileName, mainLog)
+
+	art := &wfv1.Artifact{Name: containerName + "-logs"}
+	err = we.saveArtifactFromFile(ctx, art, fileName, filePath)
 	if err != nil {
 		return nil, err
 	}
+
 	return art, nil
 }
 
@@ -715,12 +739,10 @@ func (we *WorkflowExecutor) CaptureScriptResult(ctx context.Context) error {
 	return nil
 }
 
-// ReportOutputs annotation to the pod indicating all the outputs.
-func (we *WorkflowExecutor) ReportOutputs(ctx context.Context, logArt *wfv1.Artifact) error {
+// reportOutputs updates the WorkflowTaskResult (or falls back to annotate the Pod)
+func (we *WorkflowExecutor) reportOutputs(ctx context.Context, logArtifacts []wfv1.Artifact) error {
 	outputs := we.Template.Outputs.DeepCopy()
-	if logArt != nil {
-		outputs.Artifacts = append(outputs.Artifacts, *logArt)
-	}
+	outputs.Artifacts = append(outputs.Artifacts, logArtifacts...)
 	return we.reportResult(ctx, wfv1.NodeResult{Outputs: outputs})
 }
 
@@ -743,12 +765,14 @@ func (we *WorkflowExecutor) reportResult(ctx context.Context, result wfv1.NodeRe
 				if err != nil {
 					return err
 				}
+
 				return we.AddAnnotation(ctx, common.AnnotationKeyOutputs, string(value))
 			}
 			if result.Progress.IsValid() { // this may result in occasionally two patches
 				return we.AddAnnotation(ctx, common.AnnotationKeyProgress, string(result.Progress))
 			}
 		}
+
 		return err
 	})
 }
