@@ -142,6 +142,9 @@ const (
 	// EnvAgentPatchRate is the rate that the Argo Agent will patch the Workflow TaskSet
 	EnvAgentPatchRate = "ARGO_AGENT_PATCH_RATE"
 
+	// Finalizer to block deletion of the workflow if deletion of artifacts fail for some reason.
+	FinalizerArtifactGC = workflow.WorkflowFullName + "/artifact-gc"
+
 	// Variables that are added to the scope during template execution and can be referenced using {{}} syntax
 
 	// GlobalVarWorkflowName is a global workflow variable referencing the workflow's metadata.name field
