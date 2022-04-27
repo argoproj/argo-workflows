@@ -2593,6 +2593,33 @@
     Running E2E tests locally
   </a>
   
+    <nav class="md-nav" aria-label="Running E2E tests locally">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#running-one-test" class="md-nav__link">
+    Running One Test
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#running-a-set-of-tests" class="md-nav__link">
+    Running A Set Of Tests
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#diagnosing-test-failure" class="md-nav__link">
+    Diagnosing Test Failure
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
         
       </ul>
@@ -2842,6 +2869,33 @@
     Running E2E tests locally
   </a>
   
+    <nav class="md-nav" aria-label="Running E2E tests locally">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#running-one-test" class="md-nav__link">
+    Running One Test
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#running-a-set-of-tests" class="md-nav__link">
+    Running A Set Of Tests
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#diagnosing-test-failure" class="md-nav__link">
+    Diagnosing Test Failure
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
         
       </ul>
@@ -2904,6 +2958,8 @@ set-up and is fast. You can set-up K3D to be part of your default kube config as
 <p>Alternatively, you can use <a href="https://github.com/kubernetes/minikube">Minikube</a> to set up the local Kubernetes cluster.
 Once a local Kubernetes cluster has started via <code>minikube start</code>, your kube config will use Minikube's context
 automatically.</p>
+<p>⚠️ Do not use Docker for Desktop, it does not support Kubernetes RBAC (i.e. <code>kubectl auth can-i</code> always
+returns <code>allowed</code>).</p>
 <h2 id="developing-locally">Developing locally<a class="headerlink" href="#developing-locally" title="Permanent link">&para;</a></h2>
 <p>Close the Git repo into: <code>$(GOPATH)/src/github.com/argoproj/argo-workflows</code>. Any other path will mean the code
 generation does not work.</p>
@@ -2950,31 +3006,34 @@ generation does not work.</p>
 <div class="highlight"><pre><span></span><code>make start <span class="nv">UI</span><span class="o">=</span><span class="nb">true</span> <span class="nv">PROFILE</span><span class="o">=</span>sso
 </code></pre></div>
 <h3 id="running-e2e-tests-locally">Running E2E tests locally<a class="headerlink" href="#running-e2e-tests-locally" title="Permanent link">&para;</a></h3>
-<ol>
-<li>Configure your IDE to set the <code>KUBECONFIG</code> environment variable to your k3d kubeconfig file</li>
-<li>Find an e2e test that you want to run in <code>test/e2e</code></li>
-<li>Determine which profile the e2e test is using by inspecting the go build flag at the top of the file and referring
-   to <a href="https://github.com/argoproj/argo-workflows/blob/master/.github/workflows/ci-build.yaml">ci-build.yaml</a></li>
-</ol>
-<p>For example <code>TestArchiveStrategies</code> in <code>test/e2e/functional_test.go</code> has the following build flags</p>
-<div class="codehilite"><pre><span></span><code><span class="err">```</span><span class="k">go</span><span class="w"></span>
-<span class="o">//</span><span class="k">go</span><span class="err">:</span><span class="n">build</span><span class="w"> </span><span class="n">functional</span><span class="w"></span>
-<span class="o">//</span><span class="w"> </span><span class="o">+</span><span class="n">build</span><span class="w"> </span><span class="n">functional</span><span class="w"></span>
-<span class="err">```</span><span class="w"></span>
+<p>Start up the Argo Workflows using the following:</p>
+<div class="highlight"><pre><span></span><code>make start <span class="nv">PROFILE</span><span class="o">=</span>mysql <span class="nv">AUTH_MODE</span><span class="o">=</span>client <span class="nv">STATIC_FILES</span><span class="o">=</span><span class="nb">false</span> <span class="nv">API</span><span class="o">=</span><span class="nb">true</span> 
 </code></pre></div>
+<h4 id="running-one-test">Running One Test<a class="headerlink" href="#running-one-test" title="Permanent link">&para;</a></h4>
+<p>In most cases, you want to run the test that relates to your changes locally. You should not run all the tests suites.
+Our CI will run those concurrently when you create a PR, which will give you feedback much faster.</p>
+<p>Find the test that you want to run in <code>test/e2e</code></p>
+<div class="highlight"><pre><span></span><code>make TestArtifactServer<span class="err">&#39;</span>  
+</code></pre></div>
+<h4 id="running-a-set-of-tests">Running A Set Of Tests<a class="headerlink" href="#running-a-set-of-tests" title="Permanent link">&para;</a></h4>
+<p>You can find the build tag at the top of the test file.</p>
+<p>```go
+//go:build api
+<div class="highlight"><pre><span></span><code>You need to run `make test-{buildTag}`, so for `api` that would be:
 
-<p>In <a href="https://github.com/argoproj/argo-workflows/blob/master/.github/workflows/ci-build.yaml">ci-build.yaml</a> the
-   functional test suite is using the <code>minimal</code> profile</p>
-<ol>
-<li>
-<p>Run the profile in a terminal window</p>
-<div class="highlight"><pre><span></span><code>make start <span class="nv">PROFILE</span><span class="o">=</span>minimal <span class="nv">AUTH_MODE</span><span class="o">=</span>client <span class="nv">STATIC_FILES</span><span class="o">=</span><span class="nb">false</span> <span class="nv">LOG_LEVEL</span><span class="o">=</span>info <span class="nv">API</span><span class="o">=</span><span class="nb">true</span> <span class="nv">UI</span><span class="o">=</span><span class="nb">false</span>
-</code></pre></div>
-</li>
-<li>
-<p>Run the test in your IDE</p>
-</li>
-</ol>
+```shell
+make test-api
+</code></pre></div></p>
+<h4 id="diagnosing-test-failure">Diagnosing Test Failure<a class="headerlink" href="#diagnosing-test-failure" title="Permanent link">&para;</a></h4>
+<p>Tests often fail, that's good. To diagnose failure:</p>
+<ul>
+<li>Run <code>kubectl get pods</code>, are pods in the state you expect?</li>
+<li>Run <code>kubectl get wf</code>, is your workflow in the state you expect?</li>
+<li>What do the pod logs say? I.e. <code>kubectl logs</code>.</li>
+<li>Check the controller and argo-server logs. These are printed to the console you ran <code>make start</code> in. Is anything
+  logged at <code>level=error</code>?</li>
+</ul>
+<p>If tests run slowly or time out, factory reset your Kubernetes cluster.</p>
 <h2 id="committing">Committing<a class="headerlink" href="#committing" title="Permanent link">&para;</a></h2>
 <p>Before you commit code and raise a PR, always run:</p>
 <div class="highlight"><pre><span></span><code>make pre-commit -B
@@ -2985,8 +3044,10 @@ generation does not work.</p>
 <li>Use <a href="https://www.conventionalcommits.org/en/v1.0.0/">Conventional Commit messages</a>.</li>
 <li>Suffix the issue number.</li>
 </ul>
-<p>Example:</p>
+<p>Examples:</p>
 <div class="highlight"><pre><span></span><code>git commit --signoff -m <span class="s1">&#39;fix: Fixed broken thing. Fixes #1234&#39;</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>git commit --signoff -m <span class="s1">&#39;feat: Added a new feature. Fixes #1234&#39;</span>
 </code></pre></div>
 <h2 id="troubleshooting">Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permanent link">&para;</a></h2>
 <ul>
@@ -2998,8 +3059,8 @@ generation does not work.</p>
 </ul>
 <h2 id="using-multiple-terminals">Using Multiple Terminals<a class="headerlink" href="#using-multiple-terminals" title="Permanent link">&para;</a></h2>
 <p>I run the controller in one terminal, and the UI in another. I like the UI: it is much faster to debug workflows than
-the terminal. This allows you to makes changes to the controller and re-start it, without restarting the UI (which takes
-a few moments to start-up).</p>
+the terminal. This allows you to make changes to the controller and re-start it, without restarting the UI (which I
+think takes too long to start-up).</p>
 <p>As a convenience, <code>CTRL=false</code> implies <code>UI=true</code>, so just run:</p>
 <div class="highlight"><pre><span></span><code>make start <span class="nv">CTRL</span><span class="o">=</span><span class="nb">false</span>
 </code></pre></div>
