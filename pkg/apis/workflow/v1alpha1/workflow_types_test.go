@@ -768,6 +768,48 @@ func TestPrometheus_GetDescIsStable(t *testing.T) {
 	}
 }
 
+func TestWorkflow_SearchArtifacts(t *testing.T) {
+	wf := Workflow{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test",
+			Namespace: "test",
+		},
+		Spec: WorkflowSpec{
+			ArtifactGC: &ArtifactGC{
+				Strategy: ArtifactGCOnWorkflowCompletion,
+			},
+			Templates: []Template{
+				{
+					Name: "test-template",
+					Outputs: Outputs{
+						Artifacts: Artifacts{
+							Artifact{Name: "test-artifact", Path: ""},
+						},
+					},
+				},
+			},
+		},
+		Status: WorkflowStatus{
+			Nodes: Nodes{
+				"test-id": NodeStatus{
+					TemplateName: "test-template",
+					Outputs: &Outputs{
+						Artifacts: Artifacts{
+							Artifact{Name: "test-artifact", Path: ""},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	query := NewArtifactSearchQuery()
+	query.ArtifactGCStrategies[ArtifactGCOnWorkflowCompletion] = true
+
+	queriedArtifacts := wf.SearchArtifacts(query)
+	assert.NotNil(t, queriedArtifacts)
+}
+
 func TestWorkflowSpec_GetArtifactGC(t *testing.T) {
 	spec := WorkflowSpec{}
 

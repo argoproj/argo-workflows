@@ -1251,7 +1251,13 @@ func (r *ArtifactRepositoryRefStatus) String() string {
 }
 
 type ArtifactSearchQuery struct {
-	ArtifactGCStrategies map[ArtifactGCStrategy]bool
+	ArtifactGCStrategies map[ArtifactGCStrategy]bool `protobuf:"bytes,1,rep,name=artifactGCStrategies,castkey=ArtifactGCStrategy"`
+}
+
+func NewArtifactSearchQuery() *ArtifactSearchQuery {
+	var q ArtifactSearchQuery
+	q.ArtifactGCStrategies = make(map[ArtifactGCStrategy]bool)
+	return &q
 }
 
 func (w *Workflow) SearchArtifacts(q *ArtifactSearchQuery) Artifacts {
