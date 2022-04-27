@@ -1,0 +1,45 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: artifacts-
+  annotations:
+    workflows.argoproj.io/description: |
+      This workflows shows how to produce different types of output that are stored as the orginal file, rather than .tgz.
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      container:
+        image: argoproj/argosay:v2
+        command:
+          - sh
+          - -c
+        args:
+          - |
+            cowsay "hello world" > /cowsay.txt
+            echo '{"cowsay": {"hello world": true}}' > /cowsay.json
+            echo '<html><body><h1>Hello World</h1></body></html>' > /cowsay.html
+      outputs:
+        artifacts:
+          - name: text
+            path: /cowsay.txt
+            s3:
+              key: cowsay.txt
+            archive:
+              none: { }
+          - name: json
+            path: /cowsay.json
+            s3:
+              key: cowsay.json
+            archive:
+              none: { }
+          - name: html
+            path: /cowsay.html
+            s3:
+              key: cowsay.html
+            archive:
+              none: { }
+          - name: tgz
+            path: /cowsay.html
+            s3:
+              key: cowsay.tgz

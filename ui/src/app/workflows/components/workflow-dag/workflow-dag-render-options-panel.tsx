@@ -18,7 +18,7 @@ export class WorkflowDagRenderOptionsPanel extends React.Component<WorkflowDagRe
                     }
                     className={this.workflowDagRenderOptions.showArtifacts ? 'active' : ''}
                     title='Toggle artifacts'>
-                    <i className='fa fa-file' />
+                    <i className='fa fa-file-alt' />
                 </a>
                 <a
                     onClick={() =>

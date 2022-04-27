@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"mime"
 	"net/http"
 	"path"
 	"strings"
@@ -197,6 +198,7 @@ func (a *ArtifactServer) returnArtifact(ctx context.Context, w http.ResponseWrit
 
 	key, _ := art.GetKey()
 	w.Header().Add("Content-Disposition", fmt.Sprintf(`filename="%s"`, path.Base(key)))
+	w.Header().Add("Content-Type", mime.TypeByExtension(path.Ext(key)))
 
 	_, err = io.Copy(w, stream)
 	if err != nil {
