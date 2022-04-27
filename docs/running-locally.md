@@ -97,28 +97,50 @@ make start UI=true PROFILE=sso
 
 ### Running E2E tests locally
 
-1. Configure your IDE to set the `KUBECONFIG` environment variable to your k3d kubeconfig file
-2. Find an e2e test that you want to run in `test/e2e`
-3. Determine which profile the e2e test is using by inspecting the go build flag at the top of the file and referring
-   to [ci-build.yaml](https://github.com/argoproj/argo-workflows/blob/master/.github/workflows/ci-build.yaml)
+Start up the Argo Workflows using the following:
 
-   For example `TestArchiveStrategies` in `test/e2e/functional_test.go` has the following build flags
+```shell
+make start PROFILE=mysql AUTH_MODE=hybrid STATIC_FILES=false API=true 
+```
 
-    ```go
-    //go:build functional
-    // +build functional
-    ```
+#### Running A Set Of Tests
 
-   In [ci-build.yaml](https://github.com/argoproj/argo-workflows/blob/master/.github/workflows/ci-build.yaml) the
-   functional test suite is using the `minimal` profile
+Run `make test-{buildTag}`, e.g.
 
-4. Run the profile in a terminal window
+```yaml
+make test-api
+```
 
-    ```shell
-    make start PROFILE=minimal AUTH_MODE=client STATIC_FILES=false LOG_LEVEL=info API=true UI=false
-    ```
+You can find the build tag at the top of the test file.
 
-5. Run the test in your IDE
+  ```go
+//go:build api
+```
+
+So you run:
+
+```shell
+make test-api
+```
+
+#### Running A Single Test
+
+Find the test that you want to run in `test/e2e`
+
+```shell
+make TestArtifactServer'  
+```
+
+#### Diagnosing Test Failure
+
+Tests often fail, that's good. To diagnose failure:
+
+* Run `kubectl get pods`, are pods in the state you expect? 
+* Run `kubectl get wf`, is your workflow in the state you expect?
+* What do the pod logs say? I.e. `kubectl logs`.
+* Check the controller and argo-server logs. Is anything logged at `level=error` or even `level=fatal`?
+
+If tests run slowly or time out, factory reset your Kubernetes cluster.
 
 ## Committing
 

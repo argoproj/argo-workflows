@@ -529,7 +529,7 @@ mysql-cli:
 test-cli: ./dist/argo
 
 test-%:
-	go test -v -timeout 15m -count 1 --tags $* -parallel 10 ./test/e2e
+	go test -failfast -v -timeout 15m -count 1 --tags $* -parallel 10 ./test/e2e
 
 .PHONY: test-examples
 test-examples:
@@ -538,6 +538,9 @@ test-examples:
 .PHONY: test-%-sdk
 test-%-sdk:
 	make --directory sdks/$* install test -B
+
+Test%:
+	go test -failfast -v -timeout 15m -count 1 --tags api,cli,cron,executor,examples,functional,plugins -parallel 10 ./test/e2e  -run='.*/$*'
 
 # clean
 
