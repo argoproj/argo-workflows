@@ -9,7 +9,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"runtime"
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -52,7 +52,7 @@ func (s *ArgoServerSuite) e() *httpexpect.Expect {
 			BaseURL:  baseUrl,
 			Reporter: httpexpect.NewRequireReporter(s.T()),
 			Printers: []httpexpect.Printer{
-				httpexpect.NewDebugPrinter(&httpLogger{}, true),
+				httpexpect.NewDebugPrinter(s.T(), true),
 			},
 			Client: httpClient,
 		}).
@@ -120,7 +120,7 @@ func (s *ArgoServerSuite) TestMetricsOK() {
 		// Errors: The rate of requests that fail. The failures can be explicit (e.g., HTTP 500 errors) or implicit (e.g., an HTTP 200 OK response with a response body having too few items).
 		Contains(`promhttp_metric_handler_requests_total{code="500"}`)
 
-	if runtime.GOOS != "darwin" {
+	if os.Getenv("CI") == "true" {
 		body.
 			// Saturation: How “full” is the service. This is a measure of the system utilization, emphasizing the resources that are most constrained (e.g., memory, I/O or CPU). Services degrade in performance as they approach high saturation.
 			Contains(`process_cpu_seconds_total`).

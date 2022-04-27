@@ -417,6 +417,8 @@ lint: server/static/files.go $(GOPATH)/bin/golangci-lint
 	go mod tidy
 	# Lint Go files
 	$(GOPATH)/bin/golangci-lint run --fix --verbose
+	# Lint the UI
+	if [ -e ui/node_modules ]; then yarn --cwd ui lint ; fi
 
 # for local we have a faster target that prints to stdout, does not use json, and can cache because it has no coverage
 .PHONY: test
