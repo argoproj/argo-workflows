@@ -50,6 +50,91 @@ func (a *ArtifactServer) GetInputArtifact(w http.ResponseWriter, r *http.Request
 	a.getArtifact(w, r, true)
 }
 
+// valid requests:
+// 1. /artifact-files/{namespace}/[archived-workflows|workflows]/{id}/{nodeId}/outputs/{artifactName}
+// 2. /artifact-files/{namespace}/[archived-workflows|workflows]/{id}/{nodeId}/outputs/{artifactName}/{fileName}
+func (a *ArtifactServer) GetArtifactFile(w http.ResponseWriter, r *http.Request) {
+	fileName := ""
+	requestPath := strings.Split(r.URL.Path, "/")
+	switch len(requestPath) {
+	case 6:
+
+	case 7:
+		fileName = requestPath[6]
+	default:
+		a.serverInternalError(fmt.Errorf("request path is not valid, expected 6 or 7 fields, got %d", len(requestPath)), w)
+		return
+	}
+
+	namespace := requestPath[2]
+	archiveDiscriminator := requestPath[3]
+	id := requestPath[4] // if archiveDiscriminator == "archived-workflows", this represents workflow UID; if archiveDiscriminator == "workflows", this represents workflow name
+	nodeId := requestPath[5]
+	inputsVsOutputs := requestPath[6]
+	artifactName := requestPath[7]
+
+	if fileName != "" {
+		artifactName += "/" + fileName
+	}
+
+	if inputsVsOutputs != "outputs" {
+		a.serverInternalError(fmt.Errorf("request path is not valid, expected field to be 'outputs', got %s", inputsVsOutputs), w)
+		return
+	}
+
+	ctx, err := a.gateKeeping(r, types.NamespaceHolder(namespace))
+	if err != nil {
+		a.unauthorizedError(w)
+		return
+	}
+
+	var wf *wfv1.Workflow
+
+	// getArtifact for artifactName
+	switch archiveDiscriminator {
+	case "workflows":
+		workflowName := id
+		log.WithFields(log.Fields{"namespace": namespace, "workflowName": workflowName, "nodeId": nodeId, "artifactName": artifactName}).Info("Get artifact file")
+
+		wf, err = a.getWorkflowAndValidate(ctx, namespace, workflowName)
+		if err != nil {
+			a.serverInternalError(err, w)
+			return
+		}
+	case "archived-workflows":
+		uid := id
+		log.WithFields(log.Fields{"namespace": namespace, "uid": uid, "nodeId": nodeId, "artifactName": artifactName}).Info("Get artifact file")
+
+		wf, err = a.wfArchive.GetWorkflow(uid)
+		if err != nil {
+			a.serverInternalError(err, w)
+			return
+		}
+
+		// check that the namespace passed in matches this workflow's namespace
+		if wf.GetNamespace() != namespace {
+			a.serverInternalError(fmt.Errorf("request namespace '%s' doesn't match Workflow namespace: '%s'", namespace, wf.GetNamespace()), w)
+			return
+		}
+
+		// return 401 if the client does not have permission to get wf
+		err = a.validateAccess(ctx, wf)
+		if err != nil {
+			a.unauthorizedError(w)
+			return
+		}
+	default:
+		a.serverInternalError(fmt.Errorf("request path is not valid, expected field to be 'workflows' or 'archived-workflows', got %s", archiveDiscriminator), w)
+		return
+	}
+
+	//err := driver.ListObjects(artifact)
+	//if err == IsNotDirectory:    // or do some other test for directory
+	//	returnArtifact(artifact)
+	//else:
+	///	return html page dir listing
+}
+
 func (a *ArtifactServer) getArtifact(w http.ResponseWriter, r *http.Request, isInput bool) {
 	requestPath := strings.SplitN(r.URL.Path, "/", 6)
 	if len(requestPath) != 6 {
