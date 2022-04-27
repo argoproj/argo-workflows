@@ -548,7 +548,7 @@ func (wfc *WorkflowController) signalContainers(namespace string, podName string
 		if c.Name == common.WaitContainerName || c.State.Terminated != nil {
 			continue
 		}
-		if err := signal.SignalContainer(wfc.restConfig, pod, c.Name, sig); err != nil {
+		if err := signal.SignalContainer(wfc.restConfig, pod, c.Name, sig); errorsutil.IgnoreContainerNotFoundErr(err) != nil {
 			return 0, err
 		}
 	}
