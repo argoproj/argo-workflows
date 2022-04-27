@@ -2795,14 +2795,14 @@ func (out *Outputs) HasParameters() bool {
 	return out != nil && len(out.Parameters) > 0
 }
 
-const MainLogsArtifactName = "main-logs"
+const LogsSuffix = "-logs"
 
 func (out *Outputs) HasLogs() bool {
 	if out == nil {
 		return false
 	}
 	for _, a := range out.Artifacts {
-		if a.Name == MainLogsArtifactName {
+		if strings.HasSuffix(a.Name, LogsSuffix) {
 			return true
 		}
 	}

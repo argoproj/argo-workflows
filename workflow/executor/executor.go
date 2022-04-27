@@ -767,7 +767,6 @@ func (we *WorkflowExecutor) reportResult(ctx context.Context, result wfv1.NodeRe
 				if err != nil {
 					return err
 				}
-				//TODO: noamg
 				key := fmt.Sprintf("%s-%s", common.AnnotationKeyOutputs, containerName)
 				return we.AddAnnotation(ctx, key, string(value))
 			}
@@ -1063,7 +1062,6 @@ func (we *WorkflowExecutor) monitorProgress(ctx context.Context, progressFile st
 			log.WithError(ctx.Err()).Info("stopping progress monitor (context done)")
 			return
 		case <-annotationPatchTicker.C:
-			//TODO: noamg
 			if err := we.reportResult(ctx, wfv1.NodeResult{Progress: we.progress}, ""); err != nil {
 				log.WithError(err).Info("failed to report progress")
 			} else {
