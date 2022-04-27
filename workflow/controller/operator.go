@@ -3473,6 +3473,7 @@ func (woc *wfOperationCtx) setExecWorkflow(ctx context.Context) error {
 
 	// Perform one-time workflow validation
 	if woc.wf.Status.Phase == wfv1.WorkflowUnknown {
+		woc.addFinalizers()
 		validateOpts := validate.ValidateOpts{}
 		wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTemplates(woc.wf.Namespace))
 		cwftmplGetter := templateresolution.WrapClusterWorkflowTemplateInterface(woc.controller.wfclientset.ArgoprojV1alpha1().ClusterWorkflowTemplates())
@@ -3510,6 +3511,17 @@ func (woc *wfOperationCtx) setExecWorkflow(ctx context.Context) error {
 		return err
 	}
 	return nil
+}
+
+func (woc *wfOperationCtx) addFinalizers() {
+	woc.addArtifactGCFinalizer()
+}
+
+func (woc *wfOperationCtx) addArtifactGCFinalizer() {
+	if woc.execWf.Spec.ArtifactGC != nil && woc.execWf.Spec.ArtifactGC.Strategy != wfv1.ArtifactGCNever {
+		finalizers := append(woc.wf.GetFinalizers(), common.FinalizerArtifactGC)
+		woc.wf.SetFinalizers(finalizers)
+	}
 }
 
 func (woc *wfOperationCtx) GetShutdownStrategy() wfv1.ShutdownStrategy {
