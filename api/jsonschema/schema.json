@@ -4952,11 +4952,8 @@
     },
     "io.argoproj.workflow.v1alpha1.CollectEventRequest": {
       "properties": {
-        "param": {
-          "additionalProperties": {
-            "type": "string"
-          },
-          "type": "object"
+        "name": {
+          "type": "string"
         }
       },
       "type": "object"

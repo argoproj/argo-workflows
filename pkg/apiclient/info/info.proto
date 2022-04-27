@@ -33,7 +33,7 @@ message GetUserInfoResponse {
 }
 
 message CollectEventRequest {
-  map<string, string> param = 1;
+  string name = 1;
 }
 
 message CollectEventResponse {
