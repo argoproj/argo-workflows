@@ -6,5 +6,5 @@ export const TrackEvent = ({name}: {name: string}): null => {
 
     param.set('name', name);
     services.info.collectEvent(param).then();
-    return null;
+    return;
 };
