@@ -24,6 +24,7 @@ import (
 
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/server/artifacts"
 	"github.com/argoproj/argo-workflows/v3/test/e2e/fixtures"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
@@ -1052,11 +1053,18 @@ func (s *ArgoServerSuite) TestArtifactServer() {
 		})
 
 	s.Run("GetArtifact", func() {
-		s.e().GET("/artifacts/argo/" + name + "/" + name + "/main-file").
+		resp := s.e().GET("/artifacts/argo/" + name + "/" + name + "/main-file").
 			Expect().
-			Status(200).
-			Body().
+			Status(200)
+
+		resp.Body().
 			Contains(":) Hello Argo!")
+
+		resp.Header("Content-Security-Policy").
+			Equal(artifacts.DefaultContentSecurityPolicy) // MSB
+
+		resp.Header("X-Frame-Options").
+			Equal(artifacts.DefaultXFrameOptions)
 	})
 	s.Run("GetArtifactByUID", func() {
 		s.e().DELETE("/api/v1/workflows/argo/" + name).
