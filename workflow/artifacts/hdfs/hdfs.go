@@ -3,6 +3,7 @@ package hdfs
 import (
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 
@@ -186,6 +187,11 @@ func (driver *ArtifactDriver) Load(_ *wfv1.Artifact, path string) error {
 	return nil
 }
 
+func (driver *ArtifactDriver) OpenStream(a *wfv1.Artifact) (io.ReadCloser, error) {
+	// todo: this is a temporary implementation which loads file to disk first
+	return common.LoadToStream(a, driver)
+}
+
 // Save saves an artifact to HDFS compliant storage
 func (driver *ArtifactDriver) Save(path string, outputArtifact *wfv1.Artifact) error {
 	hdfscli, err := createHDFSClient(driver.Addresses, driver.HDFSUser, driver.KrbOptions)
@@ -226,6 +232,11 @@ func (driver *ArtifactDriver) Save(path string, outputArtifact *wfv1.Artifact) e
 	}
 
 	return hdfscli.CopyToRemote(path, driver.Path)
+}
+
+// Delete is unsupported for the hdfs artifacts
+func (driver *ArtifactDriver) Delete(s *wfv1.Artifact) error {
+	return common.ErrDeleteNotSupported
 }
 
 func (driver *ArtifactDriver) ListObjects(artifact *wfv1.Artifact) ([]string, error) {

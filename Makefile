@@ -44,7 +44,12 @@ else
 STATIC_FILES          ?= $(shell [ $(DEV_BRANCH) = true ] && echo false || echo true)
 endif
 
-UI                    ?= false
+# start the Controller
+CTRL                  ?= true
+# tail logs
+LOGS                  ?= $(CTRL)
+# start the UI
+UI                    ?= $(shell [ $(CTRL) = true ] && echo false || echo true)
 # start the Argo Server
 API                   ?= $(UI)
 GOTEST                ?= go test -v
@@ -457,7 +462,7 @@ pull-images:
 	docker pull python:alpine3.6
 
 $(GOPATH)/bin/goreman:
-	go install github.com/mattn/goreman@v0.3.7
+	go install github.com/mattn/goreman@v0.3.11
 
 .PHONY: start
 ifeq ($(RUN_MODE),local)
@@ -470,6 +475,12 @@ else
 start: install
 endif
 	@echo "starting STATIC_FILES=$(STATIC_FILES) (DEV_BRANCH=$(DEV_BRANCH), GIT_BRANCH=$(GIT_BRANCH)), AUTH_MODE=$(AUTH_MODE), RUN_MODE=$(RUN_MODE), MANAGED_NAMESPACE=$(MANAGED_NAMESPACE)"
+ifneq ($(CTRL),true)
+	@echo "⚠️️  not starting controller. If you want to test the controller, use 'make start CTRL=true' to start it"
+endif
+ifneq ($(LOGS),true)
+	@echo "⚠️️  not starting logs. If you want to tail logs, use 'make start LOGS=true' to start it"
+endif
 ifneq ($(API),true)
 	@echo "⚠️️  not starting API. If you want to test the API, use 'make start API=true' to start it"
 endif
@@ -488,7 +499,7 @@ endif
 	grep '127.0.0.1.*mysql' /etc/hosts
 	./hack/port-forward.sh
 ifeq ($(RUN_MODE),local)
-	env DEFAULT_REQUEUE_TIME=$(DEFAULT_REQUEUE_TIME) SECURE=$(SECURE) ALWAYS_OFFLOAD_NODE_STATUS=$(ALWAYS_OFFLOAD_NODE_STATUS) LOG_LEVEL=$(LOG_LEVEL) UPPERIO_DB_DEBUG=$(UPPERIO_DB_DEBUG) IMAGE_NAMESPACE=$(IMAGE_NAMESPACE) VERSION=$(VERSION) AUTH_MODE=$(AUTH_MODE) NAMESPACED=$(NAMESPACED) NAMESPACE=$(KUBE_NAMESPACE) MANAGED_NAMESPACE=$(MANAGED_NAMESPACE) UI=$(UI) API=$(API) PLUGINS=$(PLUGINS) $(GOPATH)/bin/goreman -set-ports=false -logtime=false start $(shell if [ -z $GREP_LOGS ]; then echo; else echo "| grep \"$(GREP_LOGS)\""; fi)
+	env DEFAULT_REQUEUE_TIME=$(DEFAULT_REQUEUE_TIME) SECURE=$(SECURE) ALWAYS_OFFLOAD_NODE_STATUS=$(ALWAYS_OFFLOAD_NODE_STATUS) LOG_LEVEL=$(LOG_LEVEL) UPPERIO_DB_DEBUG=$(UPPERIO_DB_DEBUG) IMAGE_NAMESPACE=$(IMAGE_NAMESPACE) VERSION=$(VERSION) AUTH_MODE=$(AUTH_MODE) NAMESPACED=$(NAMESPACED) NAMESPACE=$(KUBE_NAMESPACE) MANAGED_NAMESPACE=$(MANAGED_NAMESPACE) CTRL=$(CTRL) LOGS=$(LOGS) UI=$(UI) API=$(API) PLUGINS=$(PLUGINS) $(GOPATH)/bin/goreman -set-ports=false -logtime=false start $(shell if [ -z $GREP_LOGS ]; then echo; else echo "| grep \"$(GREP_LOGS)\""; fi)
 endif
 
 $(GOPATH)/bin/stern:
@@ -496,7 +507,7 @@ $(GOPATH)/bin/stern:
 
 .PHONY: logs
 logs: $(GOPATH)/bin/stern
-	stern -l workflows.argoproj.io/workflow 2>&1
+	$(GOPATH)/bin/stern -l workflows.argoproj.io/workflow 2>&1
 
 .PHONY: wait
 wait:

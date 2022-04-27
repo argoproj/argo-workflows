@@ -200,6 +200,11 @@ func listByPrefix(client *storage.Client, bucket, prefix, delim string) ([]strin
 	return results, nil
 }
 
+func (g *ArtifactDriver) OpenStream(a *wfv1.Artifact) (io.ReadCloser, error) {
+	// todo: this is a temporary implementation which loads file to disk first
+	return common.LoadToStream(a, g)
+}
+
 // Save an artifact to GCS compliant storage, e.g., uploading a local file to GCS bucket
 func (g *ArtifactDriver) Save(path string, outputArtifact *wfv1.Artifact) error {
 	err := waitutil.Backoff(defaultRetry,
@@ -299,6 +304,11 @@ func uploadObject(client *storage.Client, bucket, key, localPath string) error {
 		return fmt.Errorf("writer close: %v", err)
 	}
 	return nil
+}
+
+// Delete is unsupported for the gcp artifacts
+func (h *ArtifactDriver) Delete(s *wfv1.Artifact) error {
+	return common.ErrDeleteNotSupported
 }
 
 func (g *ArtifactDriver) ListObjects(artifact *wfv1.Artifact) ([]string, error) {
