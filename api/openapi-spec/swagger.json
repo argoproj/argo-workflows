@@ -8864,9 +8864,6 @@
           "description": "ArchiveLogs indicates if the container logs should be archived",
           "type": "boolean"
         },
-        "artifactGC": {
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactGC"
-        },
         "artifactory": {
           "description": "Artifactory contains artifactory artifact location details",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactoryArtifact"
@@ -9003,9 +9000,6 @@
         "archiveLogs": {
           "description": "ArchiveLogs indicates if the container logs should be archived",
           "type": "boolean"
-        },
-        "artifactGC": {
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactGC"
         },
         "artifactory": {
           "description": "Artifactory contains artifactory artifact location details",

@@ -8,7 +8,6 @@ Name | Type | Description | Notes
 **name** | **str** | name of the artifact. must be unique within a template&#39;s inputs/outputs. | 
 **archive** | [**IoArgoprojWorkflowV1alpha1ArchiveStrategy**](IoArgoprojWorkflowV1alpha1ArchiveStrategy.md) |  | [optional] 
 **archive_logs** | **bool** | ArchiveLogs indicates if the container logs should be archived | [optional] 
-**artifact_gc** | [**IoArgoprojWorkflowV1alpha1ArtifactGC**](IoArgoprojWorkflowV1alpha1ArtifactGC.md) |  | [optional] 
 **artifactory** | [**IoArgoprojWorkflowV1alpha1ArtifactoryArtifact**](IoArgoprojWorkflowV1alpha1ArtifactoryArtifact.md) |  | [optional] 
 **_from** | **str** | From allows an artifact to reference an artifact from a previous step | [optional] 
 **from_expression** | **str** | FromExpression, if defined, is evaluated to specify the value for the artifact | [optional] 

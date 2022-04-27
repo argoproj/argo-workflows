@@ -2808,13 +2808,6 @@ func (in *Inputs) HasInputs() bool {
 	return false
 }
 
-func (in *Inputs) getArtifacts() Artifacts {
-	if in == nil {
-		return nil
-	}
-	return in.Artifacts
-}
-
 // HasOutputs returns whether or not there are any outputs
 func (out *Outputs) HasOutputs() bool {
 	if out == nil {
