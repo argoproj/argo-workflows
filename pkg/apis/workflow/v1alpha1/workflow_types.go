@@ -447,6 +447,15 @@ func (wfs WorkflowSpec) GetVolumeClaimGC() *VolumeClaimGC {
 	return wfs.VolumeClaimGC
 }
 
+// ArtifactGC returns the ArtifactGC that was defined in the workflow spec.  If none was provided, a default value is returned.
+func (wfs WorkflowSpec) GetArtifactGC() *ArtifactGC {
+	if wfs.ArtifactGC == nil {
+		return &ArtifactGC{Strategy: ArtifactGCNever}
+	}
+
+	return wfs.ArtifactGC
+}
+
 func (wfs WorkflowSpec) GetTTLStrategy() *TTLStrategy {
 	return wfs.TTLStrategy
 }
@@ -750,6 +759,14 @@ func (tmpl *Template) setTemplateObjs(steps []ParallelSteps, dag *DAGTemplate, c
 	tmpl.Resource = resource
 	tmpl.Data = data
 	tmpl.Suspend = suspend
+}
+
+func (tmpl *Template) GetOutputs() *Outputs {
+	return &tmpl.Outputs
+}
+
+func (tmpl *Template) GetArtifactGC() *ArtifactGC {
+	return tmpl.ArtifactGC
 }
 
 // GetBaseTemplate returns a base template content.
@@ -1233,6 +1250,39 @@ func (r *ArtifactRepositoryRefStatus) String() string {
 	return fmt.Sprintf("%s/%s", r.Namespace, r.ArtifactRepositoryRef.String())
 }
 
+type ArtifactSearchQuery struct {
+	ArtifactGCStrategies map[ArtifactGCStrategy]bool `protobuf:"bytes,1,rep,name=artifactGCStrategies,castkey=ArtifactGCStrategy"`
+}
+
+func NewArtifactSearchQuery() *ArtifactSearchQuery {
+	var q ArtifactSearchQuery
+	q.ArtifactGCStrategies = make(map[ArtifactGCStrategy]bool)
+	return &q
+}
+
+func (w *Workflow) SearchArtifacts(q *ArtifactSearchQuery) Artifacts {
+
+	var artifacts Artifacts
+
+	for _, n := range w.Status.Nodes {
+		t := w.GetTemplateByName(n.TemplateName)
+		for _, a := range n.GetOutputs().GetArtifacts() {
+			artifactByName := t.GetOutputs().GetArtifactByName(a.Name)
+			templateStrategy := t.GetArtifactGC().GetStrategy()
+			wfStrategy := w.Spec.GetArtifactGC().GetStrategy()
+			strategy := wfStrategy
+			if templateStrategy != ArtifactGCNever {
+				strategy = templateStrategy
+			}
+			if q.ArtifactGCStrategies[strategy] == true {
+				artifacts = append(artifacts, *artifactByName)
+			}
+		}
+	}
+
+	return artifacts
+}
+
 // Outputs hold parameters, artifacts, and results from a step
 type Outputs struct {
 	// Parameters holds the list of output parameters produced by a step
@@ -1250,6 +1300,10 @@ type Outputs struct {
 
 	// ExitCode holds the exit code of a script template
 	ExitCode *string `json:"exitCode,omitempty" protobuf:"bytes,4,opt,name=exitCode"`
+}
+
+func (o *Outputs) GetArtifacts() Artifacts {
+	return o.Artifacts
 }
 
 // WorkflowStep is a reference to a template to execute in a series of step
@@ -2023,6 +2077,10 @@ func (n *NodeStatus) GetTemplateName() string {
 
 func (n *NodeStatus) GetTemplateRef() *TemplateRef {
 	return n.TemplateRef
+}
+
+func (n *NodeStatus) GetOutputs() *Outputs {
+	return n.Outputs
 }
 
 // IsActiveSuspendNode returns whether this node is an active suspend node
