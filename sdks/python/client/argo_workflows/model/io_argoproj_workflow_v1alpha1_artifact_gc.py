@@ -134,7 +134,7 @@ class IoArgoprojWorkflowV1alpha1ArtifactGC(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            strategy (str): Strategy is the strategy to use. \"\" - do nothing WorkflowCompletion - delete the artifact on completion of the workflow WorkflowDeletion - delete the artifact when the workflow is deleted. [optional]  # noqa: E501
+            strategy (str): Strategy is the strategy to use. One of \"OnWorkflowCompletion\", \"OnWorkflowDeletion\". [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -216,7 +216,7 @@ class IoArgoprojWorkflowV1alpha1ArtifactGC(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            strategy (str): Strategy is the strategy to use. \"\" - do nothing WorkflowCompletion - delete the artifact on completion of the workflow WorkflowDeletion - delete the artifact when the workflow is deleted. [optional]  # noqa: E501
+            strategy (str): Strategy is the strategy to use. One of \"OnWorkflowCompletion\", \"OnWorkflowDeletion\". [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)

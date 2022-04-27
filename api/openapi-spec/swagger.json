@@ -8938,10 +8938,11 @@
       }
     },
     "io.argoproj.workflow.v1alpha1.ArtifactGC": {
+      "description": "ArtifactGC describes how to delete artifacts from completed Workflows",
       "type": "object",
       "properties": {
         "strategy": {
-          "description": "Strategy is the strategy to use. \"\" - do nothing WorkflowCompletion - delete the artifact on completion of the workflow WorkflowDeletion - delete the artifact when the workflow is deleted",
+          "description": "Strategy is the strategy to use. One of \"OnWorkflowCompletion\", \"OnWorkflowDeletion\"",
           "type": "string"
         }
       }
@@ -9944,6 +9945,10 @@
         "repo"
       ],
       "properties": {
+        "branch": {
+          "description": "Branch is the branch to fetch when `SingleBranch` is enabled",
+          "type": "string"
+        },
         "depth": {
           "description": "Depth specifies clones/fetches should be shallow and include the given number of commits from the branch tip",
           "type": "integer"
@@ -9974,6 +9979,10 @@
         "revision": {
           "description": "Revision is the git commit, tag, branch to checkout",
           "type": "string"
+        },
+        "singleBranch": {
+          "description": "SingleBranch enables single branch clone, using the `branch` parameter",
+          "type": "boolean"
         },
         "sshPrivateKeySecret": {
           "description": "SSHPrivateKeySecret is the secret selector to the repository ssh private key",
@@ -11514,6 +11523,10 @@
           "description": "Location in which all files related to the step will be stored (logs, artifacts, etc...). Can be overridden by individual items in Outputs. If omitted, will use the default artifact repository location configured in the controller, appended with the \u003cworkflowname\u003e/\u003cnodename\u003e in the key.",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactLocation"
         },
+        "artifactGC": {
+          "description": "ArtifactGC describes the strategy to use when to deleting artifacts from executed templates",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactGC"
+        },
         "automountServiceAccountToken": {
           "description": "AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods. ServiceAccountName of ExecutorConfig must be specified if this value is false.",
           "type": "boolean"
@@ -12228,6 +12241,10 @@
         "arguments": {
           "description": "Arguments contain the parameters and artifacts sent to the workflow entrypoint Parameters are referencable globally using the 'workflow' variable prefix. e.g. {{io.argoproj.workflow.v1alpha1.parameters.myparam}}",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Arguments"
+        },
+        "artifactGC": {
+          "description": "ArtifactGC describes the strategy to use when to deleting artifacts from completed or deleted workflows",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactGC"
         },
         "artifactRepositoryRef": {
           "description": "ArtifactRepositoryRef specifies the configMap name and key containing the artifact repository config.",

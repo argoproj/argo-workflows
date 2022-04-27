@@ -83,12 +83,10 @@ message Artifact {
   optional ArtifactGC artifactGC = 12;
 }
 
+// ArtifactGC describes how to delete artifacts from completed Workflows
 message ArtifactGC {
-  // Strategy is the strategy to use.
-  // "" - do nothing
-  // WorkflowCompletion - delete the artifact on completion of the workflow
-  // WorkflowDeletion - delete the artifact when the workflow is deleted
-  // +kubebuilder:validation:Enum=WorkflowCompletion;WorkflowDeletion
+  // Strategy is the strategy to use. One of "OnWorkflowCompletion", "OnWorkflowDeletion"
+  // +kubebuilder:validation:Enum="";OnWorkflowCompletion;OnWorkflowDeletion
   optional string strategy = 1;
 }
 
@@ -173,6 +171,10 @@ message ArtifactRepositoryRefStatus {
 
   // The repository the workflow will use. This maybe empty before v3.1.
   optional ArtifactRepository artifactRepository = 4;
+}
+
+message ArtifactSearchQuery {
+  map<string, bool> artifactGCStrategies = 1;
 }
 
 // ArtifactoryArtifact is the location of an artifactory artifact
@@ -528,6 +530,12 @@ message GitArtifact {
 
   // DisableSubmodules disables submodules during git clone
   optional bool disableSubmodules = 9;
+
+  // SingleBranch enables single branch clone, using the `branch` parameter
+  optional bool singleBranch = 10;
+
+  // Branch is the branch to fetch when `SingleBranch` is enabled
+  optional string branch = 11;
 }
 
 // HDFSArtifact is the location of an HDFS artifact
@@ -1477,6 +1485,9 @@ message Template {
   // Timeout allows to set the total node execution timeout duration counting from the node's start time.
   // This duration also includes time in which the node spends in Pending state. This duration may not be applied to Step or DAG templates.
   optional string timeout = 38;
+
+  // ArtifactGC describes the strategy to use when to deleting artifacts from executed templates
+  optional ArtifactGC artifactGC = 44;
 }
 
 // TemplateRef is a reference of template resource.
@@ -1791,6 +1802,9 @@ message WorkflowSpec {
 
   // WorkflowMetadata contains some metadata of the workflow to be refer
   optional WorkflowMetadata workflowMetadata = 42;
+
+  // ArtifactGC describes the strategy to use when to deleting artifacts from completed or deleted workflows
+  optional ArtifactGC artifactGC = 43;
 }
 
 // WorkflowStatus contains overall status information about a workflow

@@ -57,11 +57,11 @@ func (s *mockS3Client) GetFile(bucket, key, path string) error {
 }
 
 func (s *mockS3Client) OpenFile(bucket, key string) (io.ReadCloser, error) {
-	return io.NopCloser(&bytes.Buffer{}), s.getMockedErr("OpenFile")
-}
-
-func (s *mockS3Client) Delete(bucket, key string) error {
-	return s.getMockedErr("Delete")
+	err := s.getMockedErr("OpenFile")
+	if err == nil {
+		return io.NopCloser(&bytes.Buffer{}), nil
+	}
+	return nil, err
 }
 
 // GetDirectory downloads a directory to a local file path
@@ -112,6 +112,126 @@ func (s *mockS3Client) BucketExists(bucket string) (bool, error) {
 // MakeBucket creates a bucket with name bucketName and options opts
 func (s *mockS3Client) MakeBucket(bucketName string, opts minio.MakeBucketOptions) error {
 	return s.getMockedErr("MakeBucket")
+}
+
+func TestOpenStreamS3Artifact(t *testing.T) {
+	tests := map[string]struct {
+		s3client  argos3.S3Client
+		bucket    string
+		key       string
+		localPath string
+		errMsg    string
+	}{
+		"Success": {
+			s3client: newMockS3Client(
+				map[string][]string{
+					"my-bucket": []string{
+						"/folder/hello-art.tar.gz",
+					},
+				},
+				map[string]error{}),
+			bucket:    "my-bucket",
+			key:       "/folder/hello-art.tar.gz",
+			localPath: "/tmp/hello-art.tar.gz",
+			errMsg:    "",
+		},
+		"No such bucket": {
+			s3client: newMockS3Client(
+				map[string][]string{},
+				map[string]error{
+					"OpenFile": minio.ErrorResponse{
+						Code: "NoSuchBucket",
+					},
+				}),
+			bucket:    "my-bucket",
+			key:       "/folder/hello-art.tar.gz",
+			localPath: "/tmp/hello-art.tar.gz",
+			errMsg:    "failed to get file: The specified bucket does not exist.",
+		},
+		"No such key": {
+			s3client: newMockS3Client(
+				map[string][]string{
+					"my-bucket": []string{
+						"/folder/hello-art-2.tar.gz",
+					},
+				},
+				map[string]error{
+					"OpenFile": minio.ErrorResponse{
+						Code: "NoSuchKey",
+					},
+				}),
+			bucket:    "my-bucket",
+			key:       "/folder/hello-art.tar.gz",
+			localPath: "/tmp/hello-art.tar.gz",
+			errMsg:    "The specified key does not exist.",
+		},
+		"Is Directory": {
+			s3client: newMockS3Client(
+				map[string][]string{
+					"my-bucket": []string{
+						"/folder/hello-art-2.tar.gz",
+					},
+				},
+				map[string]error{
+					"OpenFile": minio.ErrorResponse{
+						Code: "NoSuchKey",
+					},
+				}),
+			bucket:    "my-bucket",
+			key:       "/folder/",
+			localPath: "/tmp/folder/",
+			errMsg:    "Directory Stream capability currently unimplemented for S3",
+		},
+		"Test Directory Failed": {
+			s3client: newMockS3Client(
+				map[string][]string{
+					"my-bucket": []string{
+						"/folder/hello-art-2.tar.gz",
+					},
+				},
+				map[string]error{
+					"OpenFile": minio.ErrorResponse{
+						Code: "NoSuchKey",
+					},
+					"IsDirectory": minio.ErrorResponse{
+						Code: "InternalError",
+					},
+				}),
+			bucket:    "my-bucket",
+			key:       "/folder/",
+			localPath: "/tmp/folder/",
+			errMsg:    "failed to test if /folder/ is a directory: We encountered an internal error, please try again.",
+		},
+	}
+
+	_ = os.Setenv(transientEnvVarKey, "this error is transient")
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			stream, err := streamS3Artifact(tc.s3client, &wfv1.Artifact{
+				ArtifactLocation: wfv1.ArtifactLocation{
+					S3: &wfv1.S3Artifact{
+						S3Bucket: wfv1.S3Bucket{
+							Bucket: tc.bucket,
+						},
+						Key: tc.key,
+					},
+				},
+			})
+			if tc.errMsg == "" {
+				assert.Nil(t, err)
+				assert.NotNil(t, stream)
+			} else {
+				assert.NotNil(t, err)
+				assert.Equal(t, tc.errMsg, err.Error())
+			}
+		})
+	}
+	_ = os.Unsetenv(transientEnvVarKey)
+}
+
+// Delete deletes an S3 artifact by artifact key
+func (s *mockS3Client) Delete(bucket, key string) error {
+	return s.getMockedErr("Delete")
 }
 
 func TestLoadS3Artifact(t *testing.T) {

@@ -108,6 +108,13 @@ export class WorkflowsService {
         return requests.put(`api/v1/workflows/${namespace}/${name}/suspend`).then(res => res.body as Workflow);
     }
 
+    public set(name: string, namespace: string, nodeFieldSelector: string, outputParameters: string) {
+        return requests
+            .put(`api/v1/workflows/${namespace}/${name}/set`)
+            .send({nodeFieldSelector, outputParameters})
+            .then(res => res.body as Workflow);
+    }
+
     public resume(name: string, namespace: string, nodeFieldSelector: string) {
         return requests
             .put(`api/v1/workflows/${namespace}/${name}/resume`)

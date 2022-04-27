@@ -96,7 +96,7 @@ const (
 	ExecutorStagingEmptyDir = "/argo/staging"
 	// ExecutorScriptSourcePath is the path which init will write the script source file to for script templates
 	ExecutorScriptSourcePath = "/argo/staging/script"
-	// ExecutorResourceManifestPath is the path which init will write the a manifest file to for resource templates
+	// ExecutorResourceManifestPath is the path which init will write the manifest file to for resource templates
 	ExecutorResourceManifestPath = "/tmp/manifest.yaml"
 
 	// Various environment variables containing pod information exposed to the executor container(s)

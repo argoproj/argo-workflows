@@ -4,6 +4,7 @@
 package e2e
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/minio/minio-go/v7"
@@ -149,6 +150,58 @@ func (s *ArtifactsSuite) TestMainLog() {
 			Then().
 			ExpectArtifact("-", "main-logs", func(t *testing.T, object *minio.Object, err error) {
 				assert.NoError(t, err)
+			})
+	})
+}
+
+func (s *ArtifactsSuite) TestContainersetLogs() {
+	s.Run("Basic", func() {
+		s.Given().
+			Workflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: containerset-logs-
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      containerSet:
+        containers:
+          - name: a
+            image: argoproj/argosay:v2
+          - name: b
+            image: argoproj/argosay:v2
+`).
+			When().
+			SubmitWorkflow().
+			WaitForWorkflow(fixtures.ToBeSucceeded).
+			Then().
+			ExpectWorkflow(func(t *testing.T, m *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+				n := status.Nodes[m.Name]
+				expectedOutputs := &wfv1.Outputs{
+					Artifacts: wfv1.Artifacts{
+						{
+							Name: "a-logs",
+							ArtifactLocation: wfv1.ArtifactLocation{
+								S3: &wfv1.S3Artifact{
+									Key: fmt.Sprintf("%s/%s/a.log", m.Name, m.Name),
+								},
+							},
+						},
+						{
+							Name: "b-logs",
+							ArtifactLocation: wfv1.ArtifactLocation{
+								S3: &wfv1.S3Artifact{
+									Key: fmt.Sprintf("%s/%s/b.log", m.Name, m.Name),
+								},
+							},
+						},
+					},
+				}
+				if assert.NotNil(t, n) {
+					assert.Equal(t, n.Outputs, expectedOutputs)
+				}
 			})
 	})
 }

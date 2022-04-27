@@ -4,6 +4,11 @@ metadata:
   name: workflow-controller-metrics
   labels:
     app: workflow-controller
+  annotations:
+    workflows.argoproj.io/description: |
+      This service is deprecated. It will be removed in v3.4.
+      
+      https://github.com/argoproj/argo-workflows/issues/8441
 spec:
   selector:
     app: workflow-controller
