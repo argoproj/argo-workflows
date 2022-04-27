@@ -89,7 +89,7 @@ type ArtifactGCStrategy string
 // ArtifactGCStrategy
 const (
 	ArtifactGCOnWorkflowCompletion ArtifactGCStrategy = "OnWorkflowCompletion"
-	ArtfactGCOnWorkflowDeletion    ArtifactGCStrategy = "OnWorkflowDeletion"
+	ArtifactGCOnWorkflowDeletion   ArtifactGCStrategy = "OnWorkflowDeletion"
 	ArtifactGCNever                ArtifactGCStrategy = ""
 )
 
