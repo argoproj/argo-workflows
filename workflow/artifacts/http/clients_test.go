@@ -9,7 +9,7 @@ import (
 )
 
 func TestCreateOauth2Client(t *testing.T) {
-	endpointParams := []wfv1.EndpointParam{{Key: "key", Value: "value"}}
+	endpointParams := []wfv1.OAuth2EndpointParam{{Key: "key", Value: "value"}}
 	scopes := []string{"some", "scopes"}
 	client := CreateOauth2Client("clientID", "clientSecret", "tokenURL", scopes, endpointParams)
 

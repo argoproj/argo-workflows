@@ -5494,23 +5494,6 @@
       },
       "type": "object"
     },
-    "io.argoproj.workflow.v1alpha1.EndpointParam": {
-      "description": "EndpointParam is for requesting optional fields that should be sent in the oauth request",
-      "properties": {
-        "key": {
-          "description": "Name is the header name",
-          "type": "string"
-        },
-        "value": {
-          "description": "Value is the literal value to use for the header",
-          "type": "string"
-        }
-      },
-      "required": [
-        "key"
-      ],
-      "type": "object"
-    },
     "io.argoproj.workflow.v1alpha1.Event": {
       "properties": {
         "selector": {
@@ -5810,15 +5793,9 @@
     "io.argoproj.workflow.v1alpha1.HTTPArtifact": {
       "description": "HTTPArtifact allows a file served on HTTP to be placed as an input artifact in a container",
       "properties": {
-        "basicAuth": {
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.BasicAuth"
-        },
-        "clientCert": {
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ClientCertAuth"
-        },
-        "followTemporaryRedirects": {
-          "description": "whether to follow temporary redirects, needed for webHDFS",
-          "type": "boolean"
+        "auth": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.HTTPAuth",
+          "description": "Auth contains information for client authentication"
         },
         "headers": {
           "description": "Headers are an optional list of headers to send with HTTP requests for artifacts",
@@ -5826,9 +5803,6 @@
             "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Header"
           },
           "type": "array"
-        },
-        "oauth2": {
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.OAuth2Auth"
         },
         "url": {
           "description": "URL of the artifact",
@@ -5838,6 +5812,20 @@
       "required": [
         "url"
       ],
+      "type": "object"
+    },
+    "io.argoproj.workflow.v1alpha1.HTTPAuth": {
+      "properties": {
+        "basicAuth": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.BasicAuth"
+        },
+        "clientCert": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ClientCertAuth"
+        },
+        "oauth2": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.OAuth2Auth"
+        }
+      },
       "type": "object"
     },
     "io.argoproj.workflow.v1alpha1.HTTPHeader": {
@@ -6362,7 +6350,7 @@
         },
         "endpointParams": {
           "items": {
-            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.EndpointParam"
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.OAuth2EndpointParam"
           },
           "type": "array"
         },
@@ -6376,6 +6364,23 @@
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
         }
       },
+      "type": "object"
+    },
+    "io.argoproj.workflow.v1alpha1.OAuth2EndpointParam": {
+      "description": "EndpointParam is for requesting optional fields that should be sent in the oauth request",
+      "properties": {
+        "key": {
+          "description": "Name is the header name",
+          "type": "string"
+        },
+        "value": {
+          "description": "Value is the literal value to use for the header",
+          "type": "string"
+        }
+      },
+      "required": [
+        "key"
+      ],
       "type": "object"
     },
     "io.argoproj.workflow.v1alpha1.OSSArtifact": {

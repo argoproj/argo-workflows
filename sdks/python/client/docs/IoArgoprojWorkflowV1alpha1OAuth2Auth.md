@@ -7,7 +7,7 @@ Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **client_id_secret** | [**SecretKeySelector**](SecretKeySelector.md) |  | [optional] 
 **client_secret_secret** | [**SecretKeySelector**](SecretKeySelector.md) |  | [optional] 
-**endpoint_params** | [**[IoArgoprojWorkflowV1alpha1EndpointParam]**](IoArgoprojWorkflowV1alpha1EndpointParam.md) |  | [optional] 
+**endpoint_params** | [**[IoArgoprojWorkflowV1alpha1OAuth2EndpointParam]**](IoArgoprojWorkflowV1alpha1OAuth2EndpointParam.md) |  | [optional] 
 **scopes** | **[str]** |  | [optional] 
 **token_url_secret** | [**SecretKeySelector**](SecretKeySelector.md) |  | [optional] 
 **any string name** | **bool, date, datetime, dict, float, int, list, str, none_type** | any string name can be used but the value must be the correct type | [optional]

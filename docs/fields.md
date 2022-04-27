@@ -3285,11 +3285,8 @@ HTTPArtifact allows a file served on HTTP to be placed as an input artifact in a
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`basicAuth`|[`BasicAuth`](#basicauth)|_No description available_|
-|`clientCert`|[`ClientCertAuth`](#clientcertauth)|_No description available_|
-|`followTemporaryRedirects`|`boolean`|whether to follow temporary redirects, needed for webHDFS|
+|`auth`|[`HTTPAuth`](#httpauth)|Auth contains information for client authentication|
 |`headers`|`Array<`[`Header`](#header)`>`|Headers are an optional list of headers to send with HTTP requests for artifacts|
-|`oauth2`|[`OAuth2Auth`](#oauth2auth)|_No description available_|
 |`url`|`string`|URL of the artifact|
 
 ## OSSArtifact
@@ -4095,32 +4092,16 @@ TarStrategy will tar and gzip the file or directory when saving
 
 ZipStrategy will unzip zipped input artifacts
 
-## BasicAuth
+## HTTPAuth
 
-BasicAuth describes the secret selectors required for basic authentication
-
-### Fields
-| Field Name | Field Type | Description   |
-|:----------:|:----------:|---------------|
-|`passwordSecret`|[`SecretKeySelector`](#secretkeyselector)|PasswordSecret is the secret selector to the repository password|
-|`usernameSecret`|[`SecretKeySelector`](#secretkeyselector)|UsernameSecret is the secret selector to the repository username|
-
-## ClientCertAuth
-
-ClientCertAuth holds necessary information for client authentication via certificates
-
-<details>
-<summary>Examples with this field (click to open)</summary>
-<br>
-
-- [`webhdfs-input-output-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/webhdfs-input-output-artifacts.yaml)
-</details>
+_No description available_
 
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`clientCertSecret`|[`SecretKeySelector`](#secretkeyselector)|_No description available_|
-|`clientKeySecret`|[`SecretKeySelector`](#secretkeyselector)|_No description available_|
+|`basicAuth`|[`BasicAuth`](#basicauth)|_No description available_|
+|`clientCert`|[`ClientCertAuth`](#clientcertauth)|_No description available_|
+|`oauth2`|[`OAuth2Auth`](#oauth2auth)|_No description available_|
 
 ## Header
 
@@ -4138,19 +4119,6 @@ Header indicate a key-value request header to be used when fetching artifacts ov
 |:----------:|:----------:|---------------|
 |`name`|`string`|Name is the header name|
 |`value`|`string`|Value is the literal value to use for the header|
-
-## OAuth2Auth
-
-OAuth2Auth holds all information for client authentication via OAuth2 tokens
-
-### Fields
-| Field Name | Field Type | Description   |
-|:----------:|:----------:|---------------|
-|`clientIDSecret`|[`SecretKeySelector`](#secretkeyselector)|_No description available_|
-|`clientSecretSecret`|[`SecretKeySelector`](#secretkeyselector)|_No description available_|
-|`endpointParams`|`Array<`[`EndpointParam`](#endpointparam)`>`|_No description available_|
-|`scopes`|`Array< string >`|_No description available_|
-|`tokenURLSecret`|[`SecretKeySelector`](#secretkeyselector)|_No description available_|
 
 ## OSSLifecycleRule
 
@@ -4295,7 +4263,47 @@ _No description available_
 |:----------:|:----------:|---------------|
 |`secretKeyRef`|[`SecretKeySelector`](#secretkeyselector)|_No description available_|
 
-## EndpointParam
+## BasicAuth
+
+BasicAuth describes the secret selectors required for basic authentication
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`passwordSecret`|[`SecretKeySelector`](#secretkeyselector)|PasswordSecret is the secret selector to the repository password|
+|`usernameSecret`|[`SecretKeySelector`](#secretkeyselector)|UsernameSecret is the secret selector to the repository username|
+
+## ClientCertAuth
+
+ClientCertAuth holds necessary information for client authentication via certificates
+
+<details>
+<summary>Examples with this field (click to open)</summary>
+<br>
+
+- [`webhdfs-input-output-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/webhdfs-input-output-artifacts.yaml)
+</details>
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`clientCertSecret`|[`SecretKeySelector`](#secretkeyselector)|_No description available_|
+|`clientKeySecret`|[`SecretKeySelector`](#secretkeyselector)|_No description available_|
+
+## OAuth2Auth
+
+OAuth2Auth holds all information for client authentication via OAuth2 tokens
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`clientIDSecret`|[`SecretKeySelector`](#secretkeyselector)|_No description available_|
+|`clientSecretSecret`|[`SecretKeySelector`](#secretkeyselector)|_No description available_|
+|`endpointParams`|`Array<`[`OAuth2EndpointParam`](#oauth2endpointparam)`>`|_No description available_|
+|`scopes`|`Array< string >`|_No description available_|
+|`tokenURLSecret`|[`SecretKeySelector`](#secretkeyselector)|_No description available_|
+
+## OAuth2EndpointParam
 
 EndpointParam is for requesting optional fields that should be sent in the oauth request
 

@@ -30,9 +30,9 @@ from argo_workflows.exceptions import ApiAttributeError
 
 
 def lazy_import():
-    from argo_workflows.model.io_argoproj_workflow_v1alpha1_endpoint_param import IoArgoprojWorkflowV1alpha1EndpointParam
+    from argo_workflows.model.io_argoproj_workflow_v1alpha1_o_auth2_endpoint_param import IoArgoprojWorkflowV1alpha1OAuth2EndpointParam
     from argo_workflows.model.secret_key_selector import SecretKeySelector
-    globals()['IoArgoprojWorkflowV1alpha1EndpointParam'] = IoArgoprojWorkflowV1alpha1EndpointParam
+    globals()['IoArgoprojWorkflowV1alpha1OAuth2EndpointParam'] = IoArgoprojWorkflowV1alpha1OAuth2EndpointParam
     globals()['SecretKeySelector'] = SecretKeySelector
 
 
@@ -91,7 +91,7 @@ class IoArgoprojWorkflowV1alpha1OAuth2Auth(ModelNormal):
         return {
             'client_id_secret': (SecretKeySelector,),  # noqa: E501
             'client_secret_secret': (SecretKeySelector,),  # noqa: E501
-            'endpoint_params': ([IoArgoprojWorkflowV1alpha1EndpointParam],),  # noqa: E501
+            'endpoint_params': ([IoArgoprojWorkflowV1alpha1OAuth2EndpointParam],),  # noqa: E501
             'scopes': ([str],),  # noqa: E501
             'token_url_secret': (SecretKeySelector,),  # noqa: E501
         }
@@ -152,7 +152,7 @@ class IoArgoprojWorkflowV1alpha1OAuth2Auth(ModelNormal):
                                 _visited_composed_classes = (Animal,)
             client_id_secret (SecretKeySelector): [optional]  # noqa: E501
             client_secret_secret (SecretKeySelector): [optional]  # noqa: E501
-            endpoint_params ([IoArgoprojWorkflowV1alpha1EndpointParam]): [optional]  # noqa: E501
+            endpoint_params ([IoArgoprojWorkflowV1alpha1OAuth2EndpointParam]): [optional]  # noqa: E501
             scopes ([str]): [optional]  # noqa: E501
             token_url_secret (SecretKeySelector): [optional]  # noqa: E501
         """
@@ -238,7 +238,7 @@ class IoArgoprojWorkflowV1alpha1OAuth2Auth(ModelNormal):
                                 _visited_composed_classes = (Animal,)
             client_id_secret (SecretKeySelector): [optional]  # noqa: E501
             client_secret_secret (SecretKeySelector): [optional]  # noqa: E501
-            endpoint_params ([IoArgoprojWorkflowV1alpha1EndpointParam]): [optional]  # noqa: E501
+            endpoint_params ([IoArgoprojWorkflowV1alpha1OAuth2EndpointParam]): [optional]  # noqa: E501
             scopes ([str]): [optional]  # noqa: E501
             token_url_secret (SecretKeySelector): [optional]  # noqa: E501
         """

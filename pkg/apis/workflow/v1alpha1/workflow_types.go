@@ -2291,11 +2291,11 @@ type OAuth2Auth struct {
 	ClientSecretSecret *apiv1.SecretKeySelector `json:"clientSecretSecret,omitempty" protobuf:"bytes,2,opt,name=clientSecretSecret"`
 	TokenURLSecret     *apiv1.SecretKeySelector `json:"tokenURLSecret,omitempty" protobuf:"bytes,3,opt,name=tokenURLSecret"`
 	Scopes             []string                 `json:"scopes,omitempty" protobuf:"bytes,5,rep,name=scopes"`
-	EndpointParams     []EndpointParam          `json:"endpointParams,omitempty" protobuf:"bytes,4,rep,name=endpointParams"`
+	EndpointParams     []OAuth2EndpointParam    `json:"endpointParams,omitempty" protobuf:"bytes,6,rep,name=endpointParams"`
 }
 
 // EndpointParam is for requesting optional fields that should be sent in the oauth request
-type EndpointParam struct {
+type OAuth2EndpointParam struct {
 	// Name is the header name
 	Key string `json:"key" protobuf:"bytes,1,opt,name=key"`
 
@@ -2317,11 +2317,8 @@ type HTTPArtifact struct {
 	// Headers are an optional list of headers to send with HTTP requests for artifacts
 	Headers []Header `json:"headers,omitempty" protobuf:"bytes,2,rep,name=headers"`
 
-	// HTTPAuth contains information for client authentication
-	HTTPAuth `json:",inline" protobuf:"bytes,3,opt,name=hTTPAuth"`
-
-	// whether to follow temporary redirects, needed for webHDFS
-	FollowTemporaryRedirects bool `json:"followTemporaryRedirects,omitempty" protobuf:"varint,4,opt,name=followTemporaryRedirects"`
+	// Auth contains information for client authentication
+	Auth *HTTPAuth `json:"auth,omitempty" protobuf:"bytes,3,opt,name=auth"`
 }
 
 func (h *HTTPArtifact) GetKey() (string, error) {
