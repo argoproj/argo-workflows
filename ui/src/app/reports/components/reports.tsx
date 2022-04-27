@@ -12,13 +12,13 @@ import {ErrorNotice} from '../../shared/components/error-notice';
 import {InfoIcon} from '../../shared/components/fa-icons';
 import {NamespaceFilter} from '../../shared/components/namespace-filter';
 import {TagsInput} from '../../shared/components/tags-input/tags-input';
+import {TrackEvent} from '../../shared/components/track-user-interface-event';
 import {ZeroState} from '../../shared/components/zero-state';
 import {Consumer, ContextApis} from '../../shared/context';
 import {denominator} from '../../shared/duration';
 import {Footnote} from '../../shared/footnote';
 import {services} from '../../shared/services';
 import {Utils} from '../../shared/utils';
-import {TrackEvent} from '../../shared/components/track-user-interface-event';
 
 interface Chart {
     data: ChartData<any>;
