@@ -225,6 +225,9 @@ func (s *CLISuite) TestSubmitServerDryRun() {
 }
 
 func (s *CLISuite) TestTokenArg() {
+	if os.Getenv("CI") != "true" {
+		s.T().Skip("we only set-up the KUBECONFIG on CI")
+	}
 	s.setMode(KUBE)
 	s.Run("ListWithBadToken", func() {
 		s.Given().RunCli([]string{"list", "--user", "fake_token_user", "--token", "badtoken"}, func(t *testing.T, output string, err error) {
