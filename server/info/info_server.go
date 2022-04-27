@@ -2,6 +2,7 @@ package info
 
 import (
 	"context"
+	"fmt"
 	"os"
 
 	log "github.com/sirupsen/logrus"
@@ -53,18 +54,22 @@ func (i *infoServer) GetVersion(context.Context, *infopkg.GetVersionRequest) (*w
 }
 
 func (i *infoServer) CollectEvent(ctx context.Context, req *infopkg.CollectEventRequest) (*infopkg.CollectEventResponse, error) {
-	var (
-		subject string
-		email   string
-	)
+	if len(req.Param) > 5 {
+		return nil, fmt.Errorf("failed to too many CollectEvent parameters. got %d, but max is 5.", len(req.Param))
+	}
+	logFields := log.Fields{}
 
 	claims := auth.GetClaims(ctx)
 	if claims != nil {
-		subject = claims.Subject
-		email = claims.Email
+		logFields["subject"] = claims.Subject
+		logFields["email"] = claims.Email
 	}
 
-	log.WithFields(log.Fields{"subject": subject, "email": email, "eventName": req.Param["name"]}).Info("tracking UI usage️️")
+	for k, v := range req.Param {
+		logFields[k] = v
+	}
+
+	log.WithFields(logFields).Info("tracking UI usage️️")
 
 	return &infopkg.CollectEventResponse{}, nil
 }
