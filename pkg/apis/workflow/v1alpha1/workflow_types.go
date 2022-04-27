@@ -2599,7 +2599,7 @@ func (t *Template) IsDaemon() bool {
 
 // if logs should be saved as an artifact
 func (tmpl *Template) SaveLogsAsArtifact() bool {
-	return tmpl != nil && tmpl.ArchiveLocation.IsArchiveLogs() && (tmpl.ContainerSet == nil || tmpl.ContainerSet.HasContainerNamed("main"))
+	return tmpl != nil && tmpl.ArchiveLocation.IsArchiveLogs()
 }
 
 func (t *Template) GetRetryStrategy() (wait.Backoff, error) {
@@ -2786,14 +2786,14 @@ func (out *Outputs) HasParameters() bool {
 	return out != nil && len(out.Parameters) > 0
 }
 
-const MainLogsArtifactName = "main-logs"
+const LogsSuffix = "-logs"
 
 func (out *Outputs) HasLogs() bool {
 	if out == nil {
 		return false
 	}
 	for _, a := range out.Artifacts {
-		if a.Name == MainLogsArtifactName {
+		if strings.HasSuffix(a.Name, LogsSuffix) {
 			return true
 		}
 	}
