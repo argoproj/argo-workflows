@@ -7,6 +7,7 @@ import (
 
 	"k8s.io/utils/pointer"
 
+	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/data"
 )
 
@@ -26,7 +27,7 @@ func (we *WorkflowExecutor) Data(ctx context.Context) error {
 		return err
 	}
 	we.Template.Outputs.Result = pointer.StringPtr(string(out))
-	err = we.ReportOutputs(ctx, nil)
+	err = we.ReportOutputs(ctx, nil, common.MainContainerName)
 	if err != nil {
 		return err
 	}

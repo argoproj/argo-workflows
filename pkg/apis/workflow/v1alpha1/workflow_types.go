@@ -2046,6 +2046,15 @@ func (n NodeStatus) HasChild(childID string) bool {
 	return false
 }
 
+func (node NodeStatus) GetContainerName() string {
+	// containerSet nodes are names after their container
+	if node.Type == NodeTypeContainer {
+		return node.DisplayName
+	}
+
+	return "main"
+}
+
 // S3Bucket contains the access information required for interfacing with an S3 bucket
 type S3Bucket struct {
 	// Endpoint is the hostname of the bucket endpoint
@@ -2599,7 +2608,7 @@ func (t *Template) IsDaemon() bool {
 
 // if logs should be saved as an artifact
 func (tmpl *Template) SaveLogsAsArtifact() bool {
-	return tmpl != nil && tmpl.ArchiveLocation.IsArchiveLogs() && (tmpl.ContainerSet == nil || tmpl.ContainerSet.HasContainerNamed("main"))
+	return tmpl != nil && tmpl.ArchiveLocation.IsArchiveLogs()
 }
 
 func (t *Template) GetRetryStrategy() (wait.Backoff, error) {
