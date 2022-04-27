@@ -3513,10 +3513,10 @@ func (woc *wfOperationCtx) setExecWorkflow(ctx context.Context) error {
 }
 
 func (woc *wfOperationCtx) addFinalizers() {
-	woc.addGCFinalizer()
+	woc.addArtifactGCFinalizer()
 }
 
-func (woc *wfOperationCtx) addGCFinalizer() {
+func (woc *wfOperationCtx) addArtifactGCFinalizer() {
 	if woc.execWf.Spec.ArtifactGC != nil && woc.execWf.Spec.ArtifactGC.Strategy != wfv1.ArtifactGCNever {
 		finalizers := append(woc.wf.GetFinalizers(), common.FinalizerArtifactGC)
 		woc.wf.SetFinalizers(finalizers)
