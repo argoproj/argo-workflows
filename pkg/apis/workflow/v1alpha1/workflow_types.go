@@ -940,8 +940,6 @@ type Artifact struct {
 
 	// FromExpression, if defined, is evaluated to specify the value for the artifact
 	FromExpression string `json:"fromExpression,omitempty" protobuf:"bytes,11,opt,name=fromExpression"`
-
-	ArtifactGC *ArtifactGC `json:"artifactGC,omitempty" protobuf:"bytes,12,opt,name=artifactGC"`
 }
 
 // CleanPath validates and cleans the artifact path.
@@ -2890,14 +2888,6 @@ func (a *Artifact) GetArchive() *ArchiveStrategy {
 		return &ArchiveStrategy{}
 	}
 	return a.Archive
-}
-
-func (a *Artifact) GetArtifactGC() *ArtifactGC {
-	if a == nil {
-		return nil
-	}
-	return a.ArtifactGC
-
 }
 
 // GetTemplateByName retrieves a defined template by its name

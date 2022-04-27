@@ -286,7 +286,6 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 		}
 
 		woc.wf.Status.EstimatedDuration = woc.estimateWorkflowDuration()
-
 	} else {
 		woc.workflowDeadline = woc.getWorkflowDeadline()
 		woc.taskResultReconciliation()

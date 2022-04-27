@@ -79,8 +79,6 @@ message Artifact {
 
   // FromExpression, if defined, is evaluated to specify the value for the artifact
   optional string fromExpression = 11;
-
-  optional ArtifactGC artifactGC = 12;
 }
 
 // ArtifactGC describes how to delete artifacts from completed Workflows
