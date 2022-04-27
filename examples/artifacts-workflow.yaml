@@ -22,6 +22,7 @@ spec:
             echo '<html><body><h1>Hello World</h1></body></html>' > /out/index.html
       outputs:
         artifacts:
+          # saving single files
           - name: text
             path: /out/hello.txt
             s3:
@@ -40,6 +41,7 @@ spec:
               key: index.html
             archive:
               none: { }
+          # save a whole directory
           - name: dir
             path: /out
             s3:
