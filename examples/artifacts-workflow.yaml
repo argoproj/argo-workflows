@@ -40,6 +40,12 @@ spec:
               key: index.html
             archive:
               none: { }
+          - name: dir
+            path: /out
+            s3:
+              key: dir
+            archive:
+              none: { }
           # this will be a tgz with a single file
           - name: tgz-file
             path: /out/hello.txt
