@@ -16,30 +16,37 @@ spec:
           - -c
         args:
           - |
-            cowsay "hello world" > /cowsay.txt
-            echo '{"cowsay": {"hello world": true}}' > /cowsay.json
-            echo '<html><body><h1>Hello World</h1></body></html>' > /cowsay.html
+            mkdir /out
+            cowsay "hello world" > /out/hello.txt
+            echo '{"hello": {"world": true}}' > /out/hello.json
+            echo '<html><body><h1>Hello World</h1></body></html>' > /out/index.html
       outputs:
         artifacts:
           - name: text
-            path: /cowsay.txt
+            path: /out/hello.txt
             s3:
-              key: cowsay.txt
+              key: hello.txt
             archive:
               none: { }
           - name: json
-            path: /cowsay.json
+            path: /out/hello.json
             s3:
-              key: cowsay.json
+              key: hello.json
             archive:
               none: { }
           - name: html
-            path: /cowsay.html
+            path: /out/index.html
             s3:
-              key: cowsay.html
+              key: index.html
             archive:
               none: { }
-          - name: tgz
-            path: /cowsay.html
+          # this will be a tgz with a single file
+          - name: tgz-file
+            path: /out/hello.txt
             s3:
-              key: cowsay.tgz
+              key: hello-file.tgz
+          # this will be a tgz with two entries, one dir and one file
+          - name: tgz-dir
+            path: /out
+            s3:
+              key: hello-dir.tgz

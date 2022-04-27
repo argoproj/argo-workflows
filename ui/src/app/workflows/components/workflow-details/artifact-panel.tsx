@@ -67,7 +67,7 @@ export const ArtifactPanel = ({
                     </ViewBox>
                 ) : (
                     <p>
-                        Extension {ext} unknown, <a onClick={() => setShow(true)}>show anyway</a>.
+                        Unknown extension "{ext}", <a onClick={() => setShow(true)}>show anyway</a>.
                     </p>
                 )}
 
