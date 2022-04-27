@@ -3517,7 +3517,7 @@ func (woc *wfOperationCtx) addFinalizers() {
 }
 
 func (woc *wfOperationCtx) addGCFinalizer() {
-	if woc.wf.Spec.ArtifactGC != nil && woc.wf.Spec.ArtifactGC.Strategy != wfv1.ArtifactGCNever {
+	if woc.execWf.Spec.ArtifactGC != nil && woc.execWf.Spec.ArtifactGC.Strategy != wfv1.ArtifactGCNever {
 		finalizers := append(woc.wf.GetFinalizers(), common.FinalizerArtifactGC)
 		woc.wf.SetFinalizers(finalizers)
 	}
