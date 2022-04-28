@@ -86,7 +86,7 @@ func (a *ArtifactServer) GetInputArtifact(w http.ResponseWriter, r *http.Request
 func (a *ArtifactServer) getArtifact(w http.ResponseWriter, r *http.Request, isInput bool) {
 	requestPath := strings.SplitN(r.URL.Path, "/", 6)
 	if len(requestPath) != 6 {
-		a.httpBadRequestError("request path is not valid", w) // MSB
+		a.httpBadRequestError("request path is not valid", w)
 		return
 	}
 	namespace := requestPath[2]
@@ -127,7 +127,7 @@ func (a *ArtifactServer) GetInputArtifactByUID(w http.ResponseWriter, r *http.Re
 func (a *ArtifactServer) getArtifactByUID(w http.ResponseWriter, r *http.Request, isInput bool) {
 	requestPath := strings.SplitN(r.URL.Path, "/", 5)
 	if len(requestPath) != 5 {
-		a.httpBadRequestError("request path is not valid", w) // MSB
+		a.httpBadRequestError("request path is not valid", w)
 		return
 	}
 	uid := requestPath[2]
@@ -188,7 +188,6 @@ func (a *ArtifactServer) serverInternalError(err error, w http.ResponseWriter) {
 	log.WithError(err).Error("Artifact Server returned internal error")
 }
 
-// MSB
 func (a *ArtifactServer) httpError(statusCode int, logText string, w http.ResponseWriter) {
 	statusText := http.StatusText(statusCode)
 	http.Error(w, statusText, statusCode)
