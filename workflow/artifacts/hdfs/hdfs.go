@@ -237,3 +237,7 @@ func (driver *ArtifactDriver) Save(path string, outputArtifact *wfv1.Artifact) e
 func (driver *ArtifactDriver) ListObjects(artifact *wfv1.Artifact) ([]string, error) {
 	return nil, fmt.Errorf("ListObjects is currently not supported for this artifact type, but it will be in a future version")
 }
+
+func (driver *ArtifactDriver) IsDirectory(artifact *wfv1.Artifact) (bool, error) {
+	return false, errors.New(errors.CodeNotImplemented, "IsDirectory currently unimplemented for HDFS")
+}

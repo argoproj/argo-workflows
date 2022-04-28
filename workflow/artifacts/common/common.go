@@ -23,4 +23,6 @@ type ArtifactDriver interface {
 	Save(path string, outputArtifact *v1alpha1.Artifact) error
 
 	ListObjects(artifact *v1alpha1.Artifact) ([]string, error)
+
+	IsDirectory(artifact *v1alpha1.Artifact) (bool, error)
 }

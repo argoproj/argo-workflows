@@ -384,3 +384,7 @@ func ListOssDirectory(bucket *oss.Bucket, objectKey string) (files []string, err
 	}
 	return files, nil
 }
+
+func (g *ArtifactDriver) IsDirectory(artifact *wfv1.Artifact) (bool, error) {
+	return false, errors.New(errors.CodeNotImplemented, "IsDirectory currently unimplemented for OSS")
+}

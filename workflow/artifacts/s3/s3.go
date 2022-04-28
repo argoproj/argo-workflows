@@ -203,8 +203,20 @@ func (s3Driver *ArtifactDriver) ListObjects(artifact *wfv1.Artifact) ([]string, 
 			if err != nil {
 				return !isTransientS3Err(err), fmt.Errorf("failed to list directory: %v", err)
 			}
+			log.Debugf("successfully listing S3 directory associated with bucket: %s and key %s: %v", artifact.S3.Bucket, artifact.S3.Key, files)
 			return true, nil
 		})
 
 	return files, err
+}
+
+func (s3Driver *ArtifactDriver) IsDirectory(artifact *wfv1.Artifact) (bool, error) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	s3cli, err := s3Driver.newS3Client(ctx)
+	if err != nil {
+		return false, err
+	}
+	return s3cli.IsDirectory(artifact.S3.Bucket, artifact.S3.Key)
 }
