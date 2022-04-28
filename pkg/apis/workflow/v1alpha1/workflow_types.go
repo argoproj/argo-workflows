@@ -1251,7 +1251,7 @@ func (r *ArtifactRepositoryRefStatus) String() string {
 }
 
 type ArtifactSearchQuery struct {
-	ArtifactGCStrategies map[ArtifactGCStrategy]bool `protobuf:"bytes,1,rep,name=artifactGCStrategies,castkey=ArtifactGCStrategy"`
+	ArtifactGCStrategies map[ArtifactGCStrategy]bool `json:"artifactGCStrategies,omitempty" protobuf:"bytes,1,rep,name=artifactGCStrategies,castkey=ArtifactGCStrategy"`
 }
 
 func NewArtifactSearchQuery() *ArtifactSearchQuery {
