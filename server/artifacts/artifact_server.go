@@ -155,30 +155,38 @@ func (a *ArtifactServer) GetArtifactFile(w http.ResponseWriter, r *http.Request)
 	}
 
 	if isDir {
+		// return an html page to the user
+
 		files, err := driver.ListObjects(artifact)
 		if err != nil {
 			a.serverInternalError(err, w)
 			return
 		}
 		log.Debugf("this is a directory, artifact: %+v; files: %v", artifact, files)
+
 		w.Write([]byte("<html><body><ul>\n"))
 
 		for _, file := range files {
 
-			// write the full path
 			pathSlice := strings.Split(file, "/")
+
+			// verify the files are formatted as expected
 			if len(pathSlice) < 2 {
 				a.serverInternalError(fmt.Errorf("something went wrong: the files returned should each start with directory followed by file name; files:%+v", files), w)
 			}
 
-			// the artifactname should be the first level directory of our file
+			// the artifactname should be the first level directory of our file - verify
 			if pathSlice[0] != artifactName {
 				a.serverInternalError(fmt.Errorf("something went wrong: the files returned should start with artifact name %s but don't; files:%+v", artifactName, files), w)
 			}
 
 			fullyQualifiedPath := fmt.Sprintf("%s/%s", strings.Join(requestPath[:ARTIFACT_NAME_INDEX], "/"), file)
 
-			w.Write([]byte(fmt.Sprintf("<li>%s</li>\n", fullyQualifiedPath)))
+			// add a link to the html page, which will be a relative filepath
+			removeDirLen := len(requestPath) - ARTIFACT_NAME_INDEX - 1
+			link := strings.Join(pathSlice[removeDirLen:], "/")
+
+			w.Write([]byte(fmt.Sprintf("<li><a href=\"%s\">%s</li></a>\n", link, fullyQualifiedPath)))
 		}
 
 		w.Write([]byte("</ul></body></html>"))
