@@ -180,6 +180,12 @@ message ArtifactSearchQuery {
   optional bool deleted = 2;
 }
 
+message ArtifactSearchResult {
+  optional Artifact artifact = 1;
+
+  optional string nodeID = 2;
+}
+
 // ArtifactoryArtifact is the location of an artifactory artifact
 message ArtifactoryArtifact {
   // URL of the artifact

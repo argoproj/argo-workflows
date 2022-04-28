@@ -23,7 +23,6 @@ import (
 	"github.com/argoproj/argo-workflows/v3/util/instanceid"
 	"github.com/argoproj/argo-workflows/v3/workflow/artifactrepositories"
 	artifact "github.com/argoproj/argo-workflows/v3/workflow/artifacts"
-	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/resource"
 	"github.com/argoproj/argo-workflows/v3/workflow/hydrator"
 )
 
@@ -210,7 +209,7 @@ func (a *ArtifactServer) returnArtifact(ctx context.Context, w http.ResponseWrit
 		return err
 	}
 
-	driver, err := a.artDriverFactory(ctx, art, resource.New(kubeClient, wf.Namespace))
+	driver, err := a.artDriverFactory(ctx, art, resources{kubeClient, wf.Namespace})
 	if err != nil {
 		return err
 	}

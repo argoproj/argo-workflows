@@ -5,13 +5,20 @@ metadata:
 spec:
   entrypoint: main
   artifactGC:
-    strategy: OnWorkflowDeletion
+    strategy: OnWorkflowCompletion
   templates:
     - name: main
       container:
         image: argoproj/argosay:v2
-        args: [ "echo", "hello world", "/tmp/message" ]
+        command:
+          - sh
+          - -c
+        args:
+          - |
+          - echo "hello world" > /tmp/message
       outputs:
         artifacts:
           - name: will-be-deleted-on-completion
             path: /tmp/message
+            s3:
+              key: message

@@ -7,10 +7,11 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/spf13/cobra"
+
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/workflow/artifacts"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
-	"github.com/spf13/cobra"
 )
 
 func NewArtifactDeleteCommand() *cobra.Command {

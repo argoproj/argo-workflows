@@ -520,7 +520,7 @@ func (wfc *WorkflowController) processNextPodCleanupItem(ctx context.Context) bo
 		}
 		return nil
 	}()
-	if err != nil {
+	if err != nil && !apierr.IsNotFound(err) {
 		logCtx.WithError(err).Warn("failed to clean-up pod")
 		if errorsutil.IsTransientErr(err) {
 			wfc.podCleanupQueue.AddRateLimited(key)
@@ -882,17 +882,17 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers(ctx context.Context) 
 		},
 		Handler: cache.ResourceEventHandlerFuncs{
 			AddFunc: func(obj interface{}) {
-				if err := wfc.garbageCollect(ctx, obj); err != nil {
+				if err := wfc.garbageCollectArtifacts(ctx, obj); err != nil {
 					log.WithError(err).Error("failed to GC artifacts")
 				}
 			},
 			UpdateFunc: func(_, obj interface{}) {
-				if err := wfc.garbageCollect(ctx, obj); err != nil {
+				if err := wfc.garbageCollectArtifacts(ctx, obj); err != nil {
 					log.WithError(err).Error("failed to GC artifacts")
 				}
 			},
 			DeleteFunc: func(obj interface{}) {
-				if err := wfc.garbageCollect(ctx, obj); err != nil {
+				if err := wfc.garbageCollectArtifacts(ctx, obj); err != nil {
 					log.WithError(err).Error("failed to GC artifacts")
 				}
 			},

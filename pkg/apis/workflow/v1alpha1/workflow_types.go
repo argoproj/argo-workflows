@@ -1270,8 +1270,8 @@ func NewArtifactSearchQuery() *ArtifactSearchQuery {
 type ArtifactSearchResults []ArtifactSearchResult
 
 type ArtifactSearchResult struct {
-	Artifact `json:",inline"`
-	NodeID   string `json:"nodeID"`
+	Artifact `json:",inline" protobuf:"bytes,1,opt,name=artifact"`
+	NodeID   string `json:"nodeID" protobuf:"bytes,2,opt,name=nodeID"`
 }
 
 func (r *Artifact) GetSecrets() []*apiv1.SecretKeySelector {
