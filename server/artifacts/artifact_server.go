@@ -63,18 +63,17 @@ func (a *ArtifactServer) GetArtifactFile(w http.ResponseWriter, r *http.Request)
 		NODE_ID_INDEX         = 5
 		DIRECTION_INDEX       = 6
 		ARTIFACT_NAME_INDEX   = 7
-		FILE_NAME_INDEX       = 8
+		FILE_NAME_FIRST_INDEX = 8
 	)
 
 	var fileName *string
 	requestPath := strings.Split(r.URL.Path, "/")
-	switch len(requestPath) {
-	case ARTIFACT_NAME_INDEX + 1:
-
-	case FILE_NAME_INDEX + 1:
-		fileName = &requestPath[FILE_NAME_INDEX]
-	default:
-		a.serverInternalError(fmt.Errorf("request path is not valid, expected %d or %d fields, got %d", ARTIFACT_NAME_INDEX+1, FILE_NAME_INDEX+1, len(requestPath)), w)
+	if len(requestPath) == ARTIFACT_NAME_INDEX+1 {
+	} else if len(requestPath) >= FILE_NAME_FIRST_INDEX+1 {
+		joined := strings.Join(requestPath[FILE_NAME_FIRST_INDEX:], "/")
+		fileName = &joined
+	} else {
+		a.serverInternalError(fmt.Errorf("request path is not valid, expected at least %d fields, got %d", ARTIFACT_NAME_INDEX+1, len(requestPath)), w)
 		return
 	}
 
@@ -139,7 +138,7 @@ func (a *ArtifactServer) GetArtifactFile(w http.ResponseWriter, r *http.Request)
 
 	log.Debugf("successfully retrieved workflow %+v", wf) //todo: delete
 
-	// todo: determine what happens when we call get kubeclient both here and in returnArtifact()
+	// todo: we are repeating this same work in returnArtifact() - do we care?
 	artifact, driver, err := a.getArtifactAndDriver(ctx, nodeId, artifactName, false, wf, fileName)
 	if err != nil {
 		// todo: which type of error here?
@@ -160,7 +159,7 @@ func (a *ArtifactServer) GetArtifactFile(w http.ResponseWriter, r *http.Request)
 			return
 		}
 		log.Debugf("this is a directory, artifact: %+v; files: %v", artifact, files)
-		w.Write([]byte("<html><body><ul>"))
+		w.Write([]byte("<html><body><ul>\n"))
 
 		for _, file := range files {
 			// todo: sanitize file path
@@ -184,7 +183,7 @@ func (a *ArtifactServer) GetArtifactFile(w http.ResponseWriter, r *http.Request)
 
 			fullyQualifiedPath := fmt.Sprintf("%s/%s", r.URL.Path, strings.Join(pathSlice[1:], "/"))
 
-			w.Write([]byte(fmt.Sprintf("<li>%s</li>", fullyQualifiedPath)))
+			w.Write([]byte(fmt.Sprintf("<li>%s</li>\n", fullyQualifiedPath)))
 		}
 
 		w.Write([]byte("</ul></body></html>"))
