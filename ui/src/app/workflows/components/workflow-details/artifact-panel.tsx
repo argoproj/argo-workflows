@@ -5,6 +5,8 @@ import {Artifact, Workflow} from '../../../../models';
 import {artifactKey} from '../../../shared/artifacts';
 import ErrorBoundary from '../../../shared/components/error-boundary';
 import {ErrorNotice} from '../../../shared/components/error-notice';
+import {FirstTimeUserPanel} from '../../../shared/components/first-time-user-panel';
+import {GiveFeedbackLink} from '../../../shared/components/give-feedback-link';
 import {LinkButton} from '../../../shared/components/link-button';
 import {services} from '../../../shared/services';
 import requests from '../../../shared/services/requests';
@@ -44,40 +46,50 @@ export const ArtifactPanel = ({
     }, [downloadUrl]);
 
     return (
-        <ErrorBoundary>
-            <div style={{margin: 16, marginTop: 48}} className='white-box'>
-                <h3>{artifact.name}</h3>
-                {error && <ErrorNotice error={error} />}
-                {show ? (
-                    <ViewBox>
-                        {object ? (
-                            <MonacoEditor
-                                value={object}
-                                language='json'
-                                height='500px'
-                                options={{
-                                    readOnly: true,
-                                    minimap: {enabled: false},
-                                    renderIndentGuides: true
-                                }}
-                            />
+        <div style={{margin: 16, marginTop: 48}}>
+            <FirstTimeUserPanel
+                id='ArtifactPanel'
+                explanation={
+                    'This panel shows your workflow artifacts. This will work for any artifact that the argo-server can access. ' +
+                    'That typically means you used access/key to connect to the repository, rather than annotations like eks.amazonaws.com/role-arn.'
+                }>
+                <ErrorBoundary>
+                    <div className='white-box'>
+                        <h3>{artifact.name}</h3>
+                        {error && <ErrorNotice error={error} />}
+                        {show ? (
+                            <ViewBox>
+                                {object ? (
+                                    <MonacoEditor
+                                        value={object}
+                                        language='json'
+                                        height='500px'
+                                        options={{
+                                            readOnly: true,
+                                            minimap: {enabled: false},
+                                            renderIndentGuides: true
+                                        }}
+                                    />
+                                ) : (
+                                    <iframe sandbox='' src={downloadUrl} style={{width: '100%', height: '500px', border: 'none'}} />
+                                )}
+                            </ViewBox>
                         ) : (
-                            <iframe sandbox='' src={downloadUrl} style={{width: '100%', height: '500px', border: 'none'}} />
+                            <p>
+                                Unknown extension "{ext}", <a onClick={() => setShow(true)}>show anyway</a>.
+                            </p>
                         )}
-                    </ViewBox>
-                ) : (
-                    <p>
-                        Unknown extension "{ext}", <a onClick={() => setShow(true)}>show anyway</a>.
-                    </p>
-                )}
 
-                <p style={{marginTop: 10}}>
-                    <LinkButton to={downloadUrl}>
-                        <i className='fa fa-download' /> {key || 'Download'}
-                    </LinkButton>
-                </p>
-            </div>
-        </ErrorBoundary>
+                        <p style={{marginTop: 10}}>
+                            <LinkButton to={downloadUrl}>
+                                <i className='fa fa-download' /> {key || 'Download'}
+                            </LinkButton>
+                        </p>
+                        <GiveFeedbackLink href='https://github.com/argoproj/argo-workflows/issues/7743' />
+                    </div>
+                </ErrorBoundary>
+            </FirstTimeUserPanel>
+        </div>
     );
 };
 

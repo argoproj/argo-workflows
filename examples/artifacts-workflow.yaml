@@ -20,6 +20,7 @@ spec:
             cowsay "hello world" > /out/hello.txt
             echo '{"hello": {"world": true}}' > /out/hello.json
             echo '<html><body><h1>Hello World</h1></body></html>' > /out/index.html
+            echo '<html><body><script>alert("XSS")</script></body></html>' > /out/xss.html
       outputs:
         artifacts:
           # saving single files
@@ -41,6 +42,12 @@ spec:
               key: index.html
             archive:
               none: { }
+          - name: xss
+            path: /out/xss.html
+            s3:
+              key: xss.html
+            archive:
+              none: { }
           # save a whole directory
           - name: dir
             path: /out
@@ -52,9 +59,9 @@ spec:
           - name: tgz-file
             path: /out/hello.txt
             s3:
-              key: hello-file.tgz
+              key: file.tgz
           # this will be a tgz with two entries, one dir and one file
           - name: tgz-dir
             path: /out
             s3:
-              key: hello-dir.tgz
+              key: dir.tgz
