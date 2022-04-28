@@ -163,7 +163,28 @@ func (a *ArtifactServer) GetArtifactFile(w http.ResponseWriter, r *http.Request)
 		w.Write([]byte("<html><body><ul>"))
 
 		for _, file := range files {
-			w.Write([]byte(fmt.Sprintf("<li>%s</li>", file)))
+			// todo: sanitize file path
+
+			// write the full path
+			pathSlice := strings.Split(file, "/")
+			if len(pathSlice) < 2 {
+				a.serverInternalError(fmt.Errorf("something went wrong: the files returned should each start with directory followed by file name; files:%+v", files), w)
+			}
+			if fileName == nil {
+				// the artifactname should be the first level directory of our file
+				if pathSlice[0] != artifactName {
+					a.serverInternalError(fmt.Errorf("something went wrong: the files returned should start with artifact name %s but don't; files:%+v", artifactName, files), w)
+				}
+			} else {
+				// the filename should be the first level directory of our file
+				if pathSlice[0] != *fileName {
+					a.serverInternalError(fmt.Errorf("something went wrong: the files returned should start with filename %s but don't; files:%+v", *fileName, files), w)
+				}
+			}
+
+			fullyQualifiedPath := fmt.Sprintf("%s/%s", r.URL.Path, strings.Join(pathSlice[1:], "/"))
+
+			w.Write([]byte(fmt.Sprintf("<li>%s</li>", fullyQualifiedPath)))
 		}
 
 		w.Write([]byte("</ul></body></html>"))
