@@ -1065,6 +1065,9 @@ type ArtifactLocation struct {
 	// ArchiveLogs indicates if the container logs should be archived
 	ArchiveLogs *bool `json:"archiveLogs,omitempty" protobuf:"varint,1,opt,name=archiveLogs"`
 
+	// Deleted if this is been deleted.
+	Deleted bool `json:"deleted,omitempty" protobuf:"varint,10,opt,name=deleted"`
+
 	// S3 contains S3 artifact location details
 	S3 *S3Artifact `json:"s3,omitempty" protobuf:"bytes,2,opt,name=s3"`
 
@@ -1254,7 +1257,8 @@ func (r *ArtifactRepositoryRefStatus) String() string {
 }
 
 type ArtifactSearchQuery struct {
-	ArtifactGCStrategies map[ArtifactGCStrategy]bool `protobuf:"bytes,1,rep,name=artifactGCStrategies,castkey=ArtifactGCStrategy"`
+	ArtifactGCStrategies map[ArtifactGCStrategy]bool `json:"artifactGCStrategies,omitempty" protobuf:"bytes,1,rep,name=artifactGCStrategies,castkey=ArtifactGCStrategy"`
+	Deleted              *bool                       `json:"deleted,omitempty" protobuf:"varint,2,opt,name=deleted"`
 }
 
 func NewArtifactSearchQuery() *ArtifactSearchQuery {
@@ -1263,23 +1267,41 @@ func NewArtifactSearchQuery() *ArtifactSearchQuery {
 	return &q
 }
 
-func (w *Workflow) SearchArtifacts(q *ArtifactSearchQuery) Artifacts {
+type ArtifactSearchResults []ArtifactSearchResult
 
-	var artifacts Artifacts
+type ArtifactSearchResult struct {
+	Artifact `json:",inline"`
+	NodeID   string `json:"nodeID"`
+}
+
+func (r *Artifact) GetSecrets() []*apiv1.SecretKeySelector {
+	if r.S3 != nil {
+		return r.S3.GetSecrets()
+	}
+	return nil
+}
+
+func (w *Workflow) SearchArtifacts(q *ArtifactSearchQuery) ArtifactSearchResults {
+
+	var artifacts ArtifactSearchResults
 
 	for _, n := range w.Status.Nodes {
 		t := w.GetTemplateByName(n.TemplateName)
 		for _, a := range n.GetOutputs().GetArtifacts() {
-			artifactByName := t.GetOutputs().GetArtifactByName(a.Name)
-			templateStrategy := t.GetArtifactGC().GetStrategy()
-			wfStrategy := w.Spec.GetArtifactGC().GetStrategy()
-			strategy := wfStrategy
-			if templateStrategy != ArtifactGCNever {
+			strategy := w.Spec.GetArtifactGC().GetStrategy()
+			if templateStrategy := t.GetArtifactGC().GetStrategy(); templateStrategy != ArtifactGCNever {
 				strategy = templateStrategy
 			}
-			if q.ArtifactGCStrategies[strategy] == true {
-				artifacts = append(artifacts, *artifactByName)
+			if !q.ArtifactGCStrategies[strategy] {
+				continue
 			}
+			if q.Deleted != nil && a.Deleted != *q.Deleted {
+				continue
+			}
+			artifacts = append(artifacts, ArtifactSearchResult{
+				Artifact: a,
+				NodeID:   n.ID,
+			})
 		}
 	}
 
@@ -2179,6 +2201,10 @@ func (s *S3Artifact) SetKey(key string) error {
 
 func (s *S3Artifact) HasLocation() bool {
 	return s != nil && s.Endpoint != "" && s.Bucket != "" && s.Key != ""
+}
+
+func (s *S3Artifact) GetSecrets() []*apiv1.SecretKeySelector {
+	return []*apiv1.SecretKeySelector{s.SecretKeySecret, s.AccessKeySecret}
 }
 
 // GitArtifact is the location of an git artifact

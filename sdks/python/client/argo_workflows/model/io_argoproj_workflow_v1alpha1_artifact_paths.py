@@ -107,6 +107,7 @@ class IoArgoprojWorkflowV1alpha1ArtifactPaths(ModelNormal):
             'archive': (IoArgoprojWorkflowV1alpha1ArchiveStrategy,),  # noqa: E501
             'archive_logs': (bool,),  # noqa: E501
             'artifactory': (IoArgoprojWorkflowV1alpha1ArtifactoryArtifact,),  # noqa: E501
+            'deleted': (bool,),  # noqa: E501
             '_from': (str,),  # noqa: E501
             'from_expression': (str,),  # noqa: E501
             'gcs': (IoArgoprojWorkflowV1alpha1GCSArtifact,),  # noqa: E501
@@ -134,6 +135,7 @@ class IoArgoprojWorkflowV1alpha1ArtifactPaths(ModelNormal):
         'archive': 'archive',  # noqa: E501
         'archive_logs': 'archiveLogs',  # noqa: E501
         'artifactory': 'artifactory',  # noqa: E501
+        'deleted': 'deleted',  # noqa: E501
         '_from': 'from',  # noqa: E501
         'from_expression': 'fromExpression',  # noqa: E501
         'gcs': 'gcs',  # noqa: E501
@@ -198,6 +200,7 @@ class IoArgoprojWorkflowV1alpha1ArtifactPaths(ModelNormal):
             archive (IoArgoprojWorkflowV1alpha1ArchiveStrategy): [optional]  # noqa: E501
             archive_logs (bool): ArchiveLogs indicates if the container logs should be archived. [optional]  # noqa: E501
             artifactory (IoArgoprojWorkflowV1alpha1ArtifactoryArtifact): [optional]  # noqa: E501
+            deleted (bool): Deleted if this is been deleted.. [optional]  # noqa: E501
             _from (str): From allows an artifact to reference an artifact from a previous step. [optional]  # noqa: E501
             from_expression (str): FromExpression, if defined, is evaluated to specify the value for the artifact. [optional]  # noqa: E501
             gcs (IoArgoprojWorkflowV1alpha1GCSArtifact): [optional]  # noqa: E501
@@ -301,6 +304,7 @@ class IoArgoprojWorkflowV1alpha1ArtifactPaths(ModelNormal):
             archive (IoArgoprojWorkflowV1alpha1ArchiveStrategy): [optional]  # noqa: E501
             archive_logs (bool): ArchiveLogs indicates if the container logs should be archived. [optional]  # noqa: E501
             artifactory (IoArgoprojWorkflowV1alpha1ArtifactoryArtifact): [optional]  # noqa: E501
+            deleted (bool): Deleted if this is been deleted.. [optional]  # noqa: E501
             _from (str): From allows an artifact to reference an artifact from a previous step. [optional]  # noqa: E501
             from_expression (str): FromExpression, if defined, is evaluated to specify the value for the artifact. [optional]  # noqa: E501
             gcs (IoArgoprojWorkflowV1alpha1GCSArtifact): [optional]  # noqa: E501

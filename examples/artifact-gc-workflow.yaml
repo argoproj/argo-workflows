@@ -4,6 +4,8 @@ metadata:
   generateName: artifact-gc-
 spec:
   entrypoint: main
+  artifactGC:
+    strategy: OnWorkflowDeletion
   templates:
     - name: main
       container:
@@ -13,9 +15,3 @@ spec:
         artifacts:
           - name: will-be-deleted-on-completion
             path: /tmp/message
-            artifactGC:
-              strategy: WorkflowCompletion
-          - name: will-be-deleted-on-deletion
-            path: /tmp/message
-            artifactGC:
-              strategy: WorkflowDeletion

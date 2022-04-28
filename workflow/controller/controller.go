@@ -878,17 +878,23 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers(ctx context.Context) 
 	wfc.wfInformer.AddEventHandler(cache.FilteringResourceEventHandler{
 		FilterFunc: func(obj interface{}) bool {
 			un := obj.(*unstructured.Unstructured)
-			return slices.Contains(un.GetFinalizers(), Finalizer)
+			return slices.Contains(un.GetFinalizers(), common.FinalizerArtifactGC)
 		},
 		Handler: cache.ResourceEventHandlerFuncs{
 			AddFunc: func(obj interface{}) {
-				wfc.garbageCollect(ctx, obj)
+				if err := wfc.garbageCollect(ctx, obj); err != nil {
+					log.WithError(err).Error("failed to GC artifacts")
+				}
 			},
 			UpdateFunc: func(_, obj interface{}) {
-				wfc.garbageCollect(ctx, obj)
+				if err := wfc.garbageCollect(ctx, obj); err != nil {
+					log.WithError(err).Error("failed to GC artifacts")
+				}
 			},
 			DeleteFunc: func(obj interface{}) {
-				wfc.garbageCollect(ctx, obj)
+				if err := wfc.garbageCollect(ctx, obj); err != nil {
+					log.WithError(err).Error("failed to GC artifacts")
+				}
 			},
 		},
 	})

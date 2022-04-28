@@ -307,6 +307,11 @@ func (in *ArtifactSearchQuery) DeepCopyInto(out *ArtifactSearchQuery) {
 			(*out)[key] = val
 		}
 	}
+	if in.Deleted != nil {
+		in, out := &in.Deleted, &out.Deleted
+		*out = new(bool)
+		**out = **in
+	}
 	return
 }
 

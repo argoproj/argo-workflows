@@ -435,6 +435,8 @@ spec:
                           required:
                           - url
                           type: object
+                        deleted:
+                          type: boolean
                         from:
                           type: string
                         fromExpression:
@@ -898,6 +900,8 @@ spec:
                                 required:
                                 - url
                                 type: object
+                              deleted:
+                                type: boolean
                               from:
                                 type: string
                               fromExpression:
@@ -1970,6 +1974,8 @@ spec:
                         required:
                         - url
                         type: object
+                      deleted:
+                        type: boolean
                       gcs:
                         properties:
                           bucket:
@@ -3544,6 +3550,8 @@ spec:
                                         required:
                                         - url
                                         type: object
+                                      deleted:
+                                        type: boolean
                                       from:
                                         type: string
                                       fromExpression:
@@ -3973,6 +3981,8 @@ spec:
                                               required:
                                               - url
                                               type: object
+                                            deleted:
+                                              type: boolean
                                             from:
                                               type: string
                                             fromExpression:
@@ -4455,6 +4465,8 @@ spec:
                                 required:
                                 - url
                                 type: object
+                              deleted:
+                                type: boolean
                               from:
                                 type: string
                               fromExpression:
@@ -5479,6 +5491,8 @@ spec:
                               required:
                               - url
                               type: object
+                            deleted:
+                              type: boolean
                             from:
                               type: string
                             fromExpression:
@@ -5996,6 +6010,8 @@ spec:
                               required:
                               - url
                               type: object
+                            deleted:
+                              type: boolean
                             from:
                               type: string
                             fromExpression:
@@ -8796,6 +8812,8 @@ spec:
                           required:
                           - url
                           type: object
+                        deleted:
+                          type: boolean
                         gcs:
                           properties:
                             bucket:
@@ -10370,6 +10388,8 @@ spec:
                                           required:
                                           - url
                                           type: object
+                                        deleted:
+                                          type: boolean
                                         from:
                                           type: string
                                         fromExpression:
@@ -10799,6 +10819,8 @@ spec:
                                                 required:
                                                 - url
                                                 type: object
+                                              deleted:
+                                                type: boolean
                                               from:
                                                 type: string
                                               fromExpression:
@@ -11281,6 +11303,8 @@ spec:
                                   required:
                                   - url
                                   type: object
+                                deleted:
+                                  type: boolean
                                 from:
                                   type: string
                                 fromExpression:
@@ -12305,6 +12329,8 @@ spec:
                                 required:
                                 - url
                                 type: object
+                              deleted:
+                                type: boolean
                               from:
                                 type: string
                               fromExpression:
@@ -12822,6 +12848,8 @@ spec:
                                 required:
                                 - url
                                 type: object
+                              deleted:
+                                type: boolean
                               from:
                                 type: string
                               fromExpression:
