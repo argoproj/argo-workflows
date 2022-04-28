@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"path"
+	"path/filepath"
 	"strings"
 
 	log "github.com/sirupsen/logrus"
@@ -68,11 +69,12 @@ func (a *ArtifactServer) GetArtifactFile(w http.ResponseWriter, r *http.Request)
 
 	var fileName *string
 	requestPath := strings.Split(r.URL.Path, "/")
-	if len(requestPath) == ARTIFACT_NAME_INDEX+1 {
-	} else if len(requestPath) >= FILE_NAME_FIRST_INDEX+1 {
+	if len(requestPath) >= FILE_NAME_FIRST_INDEX+1 {
 		joined := strings.Join(requestPath[FILE_NAME_FIRST_INDEX:], "/")
-		fileName = &joined
-	} else {
+		// sanitize file name
+		cleanedPath := filepath.Clean(joined)
+		fileName = &cleanedPath
+	} else if len(requestPath) < ARTIFACT_NAME_INDEX+1 {
 		a.serverInternalError(fmt.Errorf("request path is not valid, expected at least %d fields, got %d", ARTIFACT_NAME_INDEX+1, len(requestPath)), w)
 		return
 	}
