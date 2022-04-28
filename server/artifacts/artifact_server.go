@@ -66,13 +66,13 @@ func (a *ArtifactServer) GetArtifactFile(w http.ResponseWriter, r *http.Request)
 		FILE_NAME_INDEX       = 8
 	)
 
-	fileName := ""
+	var fileName *string
 	requestPath := strings.Split(r.URL.Path, "/")
 	switch len(requestPath) {
 	case ARTIFACT_NAME_INDEX + 1:
 
 	case FILE_NAME_INDEX + 1:
-		fileName = requestPath[FILE_NAME_INDEX]
+		fileName = &requestPath[FILE_NAME_INDEX]
 	default:
 		a.serverInternalError(fmt.Errorf("request path is not valid, expected %d or %d fields, got %d", ARTIFACT_NAME_INDEX+1, FILE_NAME_INDEX+1, len(requestPath)), w)
 		return
@@ -140,15 +140,12 @@ func (a *ArtifactServer) GetArtifactFile(w http.ResponseWriter, r *http.Request)
 	log.Debugf("successfully retrieved workflow %+v", wf) //todo: delete
 
 	// todo: determine what happens when we call get kubeclient both here and in returnArtifact()
-	artifact, driver, err := a.getArtifactAndDriver(ctx, nodeId, artifactName, false, wf, &fileName)
+	artifact, driver, err := a.getArtifactAndDriver(ctx, nodeId, artifactName, false, wf, fileName)
 	if err != nil {
 		// todo: which type of error here?
 		a.serverInternalError(err, w)
 		return
 	}
-
-	filesTmp, err := driver.ListObjects(artifact)
-	log.Debugf("result of ListObjects for artifact %+v: filesTmp=%v, err=%v", artifact, filesTmp, err)
 
 	isDir, err := driver.IsDirectory(artifact)
 	if err != nil {
@@ -163,8 +160,17 @@ func (a *ArtifactServer) GetArtifactFile(w http.ResponseWriter, r *http.Request)
 			return
 		}
 		log.Debugf("this is a directory, artifact: %+v; files: %v", artifact, files)
+		w.Write([]byte("<html><body><ul>"))
+
+		for _, file := range files {
+			w.Write([]byte(fmt.Sprintf("<li>%s</li>", file)))
+		}
+
+		w.Write([]byte("</ul></body></html>"))
+
 	} else {
 		log.Debugf("not a directory, artifact: %+v", artifact)
+		a.returnArtifact(ctx, w, r, wf, nodeId, artifactName, false, fileName)
 	}
 
 }
