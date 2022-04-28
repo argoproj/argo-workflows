@@ -516,6 +516,21 @@ func TestArtifact_GetArchive(t *testing.T) {
 	assert.Equal(t, &ArchiveStrategy{None: &NoneStrategy{}}, (&Artifact{Archive: &ArchiveStrategy{None: &NoneStrategy{}}}).GetArchive())
 }
 
+func TestArtifactGC_GetStrategy(t *testing.T) {
+	t.Run("Nil", func(t *testing.T) {
+		var artifactGC *ArtifactGC
+		assert.Equal(t, ArtifactGCNever, artifactGC.GetStrategy())
+	})
+	t.Run("Unspecified", func(t *testing.T) {
+		var artifactGC = &ArtifactGC{}
+		assert.Equal(t, ArtifactGCNever, artifactGC.GetStrategy())
+	})
+	t.Run("Specified", func(t *testing.T) {
+		var artifactGC = &ArtifactGC{Strategy: ArtifactGCOnWorkflowCompletion}
+		assert.Equal(t, ArtifactGCOnWorkflowCompletion, artifactGC.GetStrategy())
+	})
+}
+
 func TestPodGCStrategy_IsValid(t *testing.T) {
 	for _, s := range []PodGCStrategy{
 		PodGCOnPodNone,
@@ -751,6 +766,55 @@ func TestPrometheus_GetDescIsStable(t *testing.T) {
 			break
 		}
 	}
+}
+
+func TestWorkflow_SearchArtifacts(t *testing.T) {
+	wf := Workflow{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test",
+			Namespace: "test",
+		},
+		Spec: WorkflowSpec{
+			ArtifactGC: &ArtifactGC{
+				Strategy: ArtifactGCOnWorkflowCompletion,
+			},
+			Templates: []Template{
+				{
+					Name: "test-template",
+					Outputs: Outputs{
+						Artifacts: Artifacts{
+							Artifact{Name: "test-artifact", Path: ""},
+						},
+					},
+				},
+			},
+		},
+		Status: WorkflowStatus{
+			Nodes: Nodes{
+				"test-id": NodeStatus{
+					TemplateName: "test-template",
+					Outputs: &Outputs{
+						Artifacts: Artifacts{
+							Artifact{Name: "test-artifact", Path: ""},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	query := NewArtifactSearchQuery()
+	query.ArtifactGCStrategies[ArtifactGCOnWorkflowCompletion] = true
+
+	queriedArtifacts := wf.SearchArtifacts(query)
+	assert.NotNil(t, queriedArtifacts)
+}
+
+func TestWorkflowSpec_GetArtifactGC(t *testing.T) {
+	spec := WorkflowSpec{}
+
+	assert.NotNil(t, spec.GetArtifactGC())
+	assert.Equal(t, &ArtifactGC{Strategy: ArtifactGCNever}, spec.GetArtifactGC())
 }
 
 func TestWorkflowSpec_GetVolumeGC(t *testing.T) {
