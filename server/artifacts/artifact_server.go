@@ -142,10 +142,8 @@ func (a *ArtifactServer) GetArtifactFile(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	// todo: we are repeating this same work in returnArtifact() - do we care?
 	artifact, driver, err := a.getArtifactAndDriver(ctx, nodeId, artifactName, false, wf, fileName)
 	if err != nil {
-		// todo: which type of error here?
 		a.serverInternalError(err, w)
 		return
 	}
