@@ -195,7 +195,7 @@ func (a *ArtifactServer) GetArtifactFile(w http.ResponseWriter, r *http.Request)
 
 	} else { // stream the file itself
 		log.Debugf("not a directory, artifact: %+v", artifact)
-		a.returnArtifact(ctx, w, r, wf, nodeId, artifactName, false, fileName)
+		a.returnArtifact(ctx, w, r, artifact, driver, fileName)
 	}
 
 }
@@ -224,8 +224,13 @@ func (a *ArtifactServer) getArtifact(w http.ResponseWriter, r *http.Request, isI
 		a.serverInternalError(err, w)
 		return
 	}
+	art, driver, err := a.getArtifactAndDriver(ctx, nodeId, artifactName, isInput, wf, nil)
+	if err != nil {
+		a.serverInternalError(err, w)
+		return
+	}
 
-	err = a.returnArtifact(ctx, w, r, wf, nodeId, artifactName, isInput, nil)
+	err = a.returnArtifact(ctx, w, r, art, driver, nil)
 
 	if err != nil {
 		a.serverInternalError(err, w)
@@ -270,9 +275,14 @@ func (a *ArtifactServer) getArtifactByUID(w http.ResponseWriter, r *http.Request
 		a.unauthorizedError(w)
 		return
 	}
+	art, driver, err := a.getArtifactAndDriver(ctx, nodeId, artifactName, isInput, wf, nil)
+	if err != nil {
+		a.serverInternalError(err, w)
+		return
+	}
 
 	log.WithFields(log.Fields{"uid": uid, "nodeId": nodeId, "artifactName": artifactName, "isInput": isInput}).Info("Download artifact")
-	err = a.returnArtifact(ctx, w, r, wf, nodeId, artifactName, isInput, nil)
+	err = a.returnArtifact(ctx, w, r, art, driver, nil)
 
 	if err != nil {
 		a.serverInternalError(err, w)
@@ -345,12 +355,7 @@ func (a *ArtifactServer) getArtifactAndDriver(ctx context.Context, nodeId, artif
 	return art, driver, nil
 }
 
-func (a *ArtifactServer) returnArtifact(ctx context.Context, w http.ResponseWriter, r *http.Request, wf *wfv1.Workflow, nodeId, artifactName string, isInput bool, fileName *string) error {
-	art, driver, err := a.getArtifactAndDriver(ctx, nodeId, artifactName, isInput, wf, fileName)
-	if err != nil {
-		return err
-	}
-
+func (a *ArtifactServer) returnArtifact(ctx context.Context, w http.ResponseWriter, r *http.Request, art *wfv1.Artifact, driver common.ArtifactDriver, fileName *string) error {
 	stream, err := driver.OpenStream(art)
 	if err != nil {
 		return err
