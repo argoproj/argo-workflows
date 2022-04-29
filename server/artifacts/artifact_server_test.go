@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -55,6 +56,17 @@ func (a *fakeArtifactDriver) Save(_ string, _ *wfv1.Artifact) error {
 	return fmt.Errorf("not implemented")
 }
 
+func (a *fakeArtifactDriver) IsDirectory(artifact *wfv1.Artifact) (bool, error) {
+	return artifact.Name == "my-s3-artifact-directory", nil
+}
+
+func (a *fakeArtifactDriver) ListObjects(artifact *wfv1.Artifact) ([]string, error) {
+	if artifact.Name == "my-s3-artifact-directory" {
+		return []string{"my-s3-artifact-directory/a.txt", "my-s3-artifact-directory/b.txt"}, nil
+	}
+	return []string{}, nil
+}
+
 func newServer() *ArtifactServer {
 	gatekeeper := &authmocks.Gatekeeper{}
 	kube := kubefake.NewSimpleClientset()
@@ -86,6 +98,15 @@ func newServer() *ArtifactServer {
 									S3: &wfv1.S3Artifact{
 										// S3 is a configured artifact repo, so does not need key
 										Key: "my-wf/my-node/my-s3-artifact.tgz",
+									},
+								},
+							},
+							{
+								Name: "my-s3-artifact-directory",
+								ArtifactLocation: wfv1.ArtifactLocation{
+									S3: &wfv1.S3Artifact{
+										// S3 is a configured artifact repo, so does not need key
+										Key: "my-wf/my-node/my-s3-artifact-directory",
 									},
 								},
 							},
@@ -143,6 +164,52 @@ func newServer() *ArtifactServer {
 	})
 
 	return newArtifactServer(gatekeeper, hydratorfake.Noop, a, instanceid.NewService(instanceId), fakeArtifactDriverFactory, artifactRepositories)
+}
+
+func TestArtifactServer_GetArtifactFile(t *testing.T) {
+	s := newServer()
+
+	tests := []struct {
+		path string
+		// expected results:
+		isDirectory    bool
+		directoryFiles []string // verify these files are in there, if this is a directory
+	}{
+		{
+			path:        "/artifact-files/my-ns/workflows/my-wf/my-node/outputs/my-s3-artifact-directory",
+			isDirectory: true,
+			directoryFiles: []string{
+				"/artifact-files/my-ns/workflows/my-wf/my-node/outputs/my-s3-artifact-directory/a.txt",
+				"/artifact-files/my-ns/workflows/my-wf/my-node/outputs/my-s3-artifact-directory/b.txt",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.path, func(t *testing.T) {
+			r := &http.Request{}
+			r.URL = mustParse(tt.path)
+			recorder := httptest.NewRecorder()
+
+			s.GetArtifactFile(recorder, r)
+			if assert.Equal(t, 200, recorder.Result().StatusCode) {
+				all, err := io.ReadAll(recorder.Result().Body)
+				if err != nil {
+					panic(fmt.Sprintf("failed to read http body: %v", err))
+				}
+				if tt.isDirectory {
+					fmt.Printf("got directory listing:\n%s\n", all)
+					// verify that the files are contained in the listing we got back
+					assert.Equal(t, len(tt.directoryFiles), strings.Count(string(all), "<li>"))
+					for _, file := range tt.directoryFiles {
+						assert.True(t, strings.Contains(string(all), file))
+					}
+				} else {
+					assert.Equal(t, "my-data", string(all))
+				}
+			}
+		})
+	}
 }
 
 func TestArtifactServer_GetOutputArtifact(t *testing.T) {
