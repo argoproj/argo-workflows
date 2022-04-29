@@ -83,7 +83,7 @@ func (a *ArtifactServer) GetInputArtifact(w http.ResponseWriter, r *http.Request
 	a.getArtifact(w, r, true)
 }
 
-// single endpoint to be able to handle serving directories as well as files, both those that have been archived adn those that haven't
+// single endpoint to be able to handle serving directories as well as files, both those that have been archived and those that haven't
 // Valid requests:
 //  /artifact-files/{namespace}/[archived-workflows|workflows]/{id}/{nodeId}/outputs/{artifactName}
 //  /artifact-files/{namespace}/[archived-workflows|workflows]/{id}/{nodeId}/outputs/{artifactName}/{fileName}
@@ -200,7 +200,11 @@ func (a *ArtifactServer) GetArtifactFile(w http.ResponseWriter, r *http.Request)
 			w.Header().Add(name, value)
 		}
 
-		w.Write([]byte("<html><body><ul>\n"))
+		_, err = w.Write([]byte("<html><body><ul>\n"))
+		if err != nil {
+			a.serverInternalError(err, w)
+			return
+		}
 
 		for _, file := range files {
 
@@ -222,10 +226,18 @@ func (a *ArtifactServer) GetArtifactFile(w http.ResponseWriter, r *http.Request)
 			removeDirLen := len(requestPath) - ARTIFACT_NAME_INDEX - 1
 			link := strings.Join(pathSlice[removeDirLen:], "/")
 
-			w.Write([]byte(fmt.Sprintf("<li><a href=\"%s\">%s</a></li>\n", link, fullyQualifiedPath)))
+			_, err = w.Write([]byte(fmt.Sprintf("<li><a href=\"%s\">%s</a></li>\n", link, fullyQualifiedPath)))
+			if err != nil {
+				a.serverInternalError(err, w)
+				return
+			}
 		}
 
-		w.Write([]byte("</ul></body></html>"))
+		_, err = w.Write([]byte("</ul></body></html>"))
+		if err != nil {
+			a.serverInternalError(err, w)
+			return
+		}
 
 	} else { // stream the file itself
 		log.Debugf("not a directory, artifact: %+v", artifact)
