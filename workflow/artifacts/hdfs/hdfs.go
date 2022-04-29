@@ -234,6 +234,11 @@ func (driver *ArtifactDriver) Save(path string, outputArtifact *wfv1.Artifact) e
 	return hdfscli.CopyToRemote(path, driver.Path)
 }
 
+// Delete is unsupported for the hdfs artifacts
+func (driver *ArtifactDriver) Delete(s *wfv1.Artifact) error {
+	return common.ErrDeleteNotSupported
+}
+
 func (driver *ArtifactDriver) ListObjects(artifact *wfv1.Artifact) ([]string, error) {
 	return nil, fmt.Errorf("ListObjects is currently not supported for this artifact type, but it will be in a future version")
 }

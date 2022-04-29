@@ -5589,6 +5589,10 @@
     "io.argoproj.workflow.v1alpha1.GitArtifact": {
       "description": "GitArtifact is the location of an git artifact",
       "properties": {
+        "branch": {
+          "description": "Branch is the branch to fetch when `SingleBranch` is enabled",
+          "type": "string"
+        },
         "depth": {
           "description": "Depth specifies clones/fetches should be shallow and include the given number of commits from the branch tip",
           "type": "integer"
@@ -5619,6 +5623,10 @@
         "revision": {
           "description": "Revision is the git commit, tag, branch to checkout",
           "type": "string"
+        },
+        "singleBranch": {
+          "description": "SingleBranch enables single branch clone, using the `branch` parameter",
+          "type": "boolean"
         },
         "sshPrivateKeySecret": {
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
@@ -7161,6 +7169,10 @@
         "archiveLocation": {
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactLocation",
           "description": "Location in which all files related to the step will be stored (logs, artifacts, etc...). Can be overridden by individual items in Outputs. If omitted, will use the default artifact repository location configured in the controller, appended with the \u003cworkflowname\u003e/\u003cnodename\u003e in the key."
+        },
+        "artifactGC": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactGC",
+          "description": "ArtifactGC describes the strategy to use when to deleting artifacts from executed templates"
         },
         "automountServiceAccountToken": {
           "description": "AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods. ServiceAccountName of ExecutorConfig must be specified if this value is false.",

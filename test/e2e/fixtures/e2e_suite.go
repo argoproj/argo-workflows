@@ -80,6 +80,9 @@ func (s *E2ESuite) TearDownSuite() {
 	for _, x := range s.slowTests {
 		_, _ = fmt.Println(color.Ize(color.Yellow, fmt.Sprintf("=== SLOW TEST:  %s", x)))
 	}
+	if s.T().Failed() {
+		s.T().Log("to learn how to diagnose failed tests: https://argoproj.github.io/argo-workflows/running-locally/#running-e2e-tests-locally")
+	}
 }
 
 func (s *E2ESuite) BeforeTest(string, string) {

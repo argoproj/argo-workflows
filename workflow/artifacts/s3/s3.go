@@ -10,6 +10,7 @@ import (
 	argos3 "github.com/argoproj/pkg/s3"
 	"github.com/minio/minio-go/v7"
 	log "github.com/sirupsen/logrus"
+	"k8s.io/client-go/util/retry"
 
 	"github.com/argoproj/argo-workflows/v3/errors"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
@@ -152,6 +153,23 @@ func (s3Driver *ArtifactDriver) Save(path string, outputArtifact *wfv1.Artifact)
 			}
 			return saveS3Artifact(s3cli, path, outputArtifact)
 		})
+	return err
+}
+
+// Delete deletes an artifact from an S3 compliant storage
+func (s3Driver *ArtifactDriver) Delete(artifact *wfv1.Artifact) error {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	err := retry.OnError(retry.DefaultBackoff, isTransientS3Err, func() error {
+		log.Infof("S3 Delete artifact: key: %s", artifact.S3.Key)
+		s3cli, err := s3Driver.newS3Client(ctx)
+		if err != nil {
+			return err
+		}
+		return s3cli.Delete(artifact.S3.Bucket, artifact.S3.Key)
+	})
+
 	return err
 }
 

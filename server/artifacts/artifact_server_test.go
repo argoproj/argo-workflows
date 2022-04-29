@@ -324,10 +324,10 @@ func TestArtifactServer_GetArtifactByUIDInvalidRequestPath(t *testing.T) {
 	s.GetInputArtifactByUID(w, r)
 	// make sure there is no index out of bounds error
 	assert.Equal(t, 500, w.StatusCode)
-	assert.Equal(t, "request path is not valid", w.Output)
+	assert.Empty(t, w.Output)
 
 	w = &testhttp.TestResponseWriter{}
 	s.GetOutputArtifactByUID(w, r)
 	assert.Equal(t, 500, w.StatusCode)
-	assert.Equal(t, "request path is not valid", w.Output)
+	assert.Empty(t, w.Output)
 }

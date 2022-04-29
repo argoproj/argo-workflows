@@ -156,6 +156,11 @@ func (ossDriver *ArtifactDriver) Save(path string, outputArtifact *wfv1.Artifact
 	return err
 }
 
+// Delete is unsupported for the oss artifacts
+func (ossDriver *ArtifactDriver) Delete(s *wfv1.Artifact) error {
+	return common.ErrDeleteNotSupported
+}
+
 func (ossDriver *ArtifactDriver) ListObjects(artifact *wfv1.Artifact) ([]string, error) {
 	var files []string
 	err := waitutil.Backoff(defaultRetry,

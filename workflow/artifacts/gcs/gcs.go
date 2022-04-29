@@ -306,6 +306,11 @@ func uploadObject(client *storage.Client, bucket, key, localPath string) error {
 	return nil
 }
 
+// Delete is unsupported for the gcp artifacts
+func (h *ArtifactDriver) Delete(s *wfv1.Artifact) error {
+	return common.ErrDeleteNotSupported
+}
+
 func (g *ArtifactDriver) ListObjects(artifact *wfv1.Artifact) ([]string, error) {
 	var files []string
 	err := waitutil.Backoff(defaultRetry,

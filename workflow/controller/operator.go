@@ -2944,6 +2944,7 @@ func (woc *wfOperationCtx) executeSuspend(nodeName string, templateScope string,
 	node := woc.wf.GetNodeByName(nodeName)
 	if node == nil {
 		node = woc.initializeExecutableNode(nodeName, wfv1.NodeTypeSuspend, templateScope, tmpl, orgTmpl, opts.boundaryID, wfv1.NodePending)
+		woc.resolveInputFieldsForSuspendNode(node)
 	}
 	woc.log.Infof("node %s suspended", nodeName)
 
@@ -2982,6 +2983,33 @@ func (woc *wfOperationCtx) executeSuspend(nodeName string, templateScope string,
 
 	_ = woc.markNodePhase(nodeName, wfv1.NodeRunning)
 	return node, nil
+}
+
+func (woc *wfOperationCtx) resolveInputFieldsForSuspendNode(node *wfv1.NodeStatus) {
+	if node.Inputs == nil {
+		return
+	}
+	parameters := node.Inputs.Parameters
+	for i, parameter := range parameters {
+		if parameter.Value != nil {
+
+			value := parameter.Value.String()
+			tempParameter := wfv1.Parameter{}
+
+			if err := json.Unmarshal([]byte(value), &tempParameter); err != nil {
+				woc.log.Debugf("Unable to parse input string %s to Parameter %s, %v", value, parameter.Name, err)
+				continue
+			}
+
+			enum := tempParameter.Enum
+			if len(enum) > 0 {
+				parameters[i].Enum = enum
+				if parameters[i].Default == nil {
+					parameters[i].Default = wfv1.AnyStringPtr(enum[0])
+				}
+			}
+		}
+	}
 }
 
 func addRawOutputFields(node *wfv1.NodeStatus, tmpl *wfv1.Template) *wfv1.NodeStatus {
@@ -3444,6 +3472,7 @@ func (woc *wfOperationCtx) setExecWorkflow(ctx context.Context) error {
 
 	// Perform one-time workflow validation
 	if woc.wf.Status.Phase == wfv1.WorkflowUnknown {
+		woc.addFinalizers()
 		validateOpts := validate.ValidateOpts{}
 		wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTemplates(woc.wf.Namespace))
 		cwftmplGetter := templateresolution.WrapClusterWorkflowTemplateInterface(woc.controller.wfclientset.ArgoprojV1alpha1().ClusterWorkflowTemplates())
@@ -3481,6 +3510,17 @@ func (woc *wfOperationCtx) setExecWorkflow(ctx context.Context) error {
 		return err
 	}
 	return nil
+}
+
+func (woc *wfOperationCtx) addFinalizers() {
+	woc.addArtifactGCFinalizer()
+}
+
+func (woc *wfOperationCtx) addArtifactGCFinalizer() {
+	if woc.execWf.Spec.ArtifactGC != nil && woc.execWf.Spec.ArtifactGC.Strategy != wfv1.ArtifactGCNever {
+		finalizers := append(woc.wf.GetFinalizers(), common.FinalizerArtifactGC)
+		woc.wf.SetFinalizers(finalizers)
+	}
 }
 
 func (woc *wfOperationCtx) GetShutdownStrategy() wfv1.ShutdownStrategy {

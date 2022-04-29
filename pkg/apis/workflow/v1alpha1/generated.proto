@@ -171,6 +171,10 @@ message ArtifactRepositoryRefStatus {
   optional ArtifactRepository artifactRepository = 4;
 }
 
+message ArtifactSearchQuery {
+  map<string, bool> artifactGCStrategies = 1;
+}
+
 // ArtifactoryArtifact is the location of an artifactory artifact
 message ArtifactoryArtifact {
   // URL of the artifact
@@ -524,6 +528,12 @@ message GitArtifact {
 
   // DisableSubmodules disables submodules during git clone
   optional bool disableSubmodules = 9;
+
+  // SingleBranch enables single branch clone, using the `branch` parameter
+  optional bool singleBranch = 10;
+
+  // Branch is the branch to fetch when `SingleBranch` is enabled
+  optional string branch = 11;
 }
 
 // HDFSArtifact is the location of an HDFS artifact
@@ -1473,6 +1483,9 @@ message Template {
   // Timeout allows to set the total node execution timeout duration counting from the node's start time.
   // This duration also includes time in which the node spends in Pending state. This duration may not be applied to Step or DAG templates.
   optional string timeout = 38;
+
+  // ArtifactGC describes the strategy to use when to deleting artifacts from executed templates
+  optional ArtifactGC artifactGC = 44;
 }
 
 // TemplateRef is a reference of template resource.

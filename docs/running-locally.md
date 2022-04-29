@@ -20,6 +20,9 @@ Alternatively, you can use [Minikube](https://github.com/kubernetes/minikube) to
 Once a local Kubernetes cluster has started via `minikube start`, your kube config will use Minikube's context
 automatically.
 
+⚠️ Do not use Docker for Desktop, it does not support Kubernetes RBAC (i.e. `kubectl auth can-i` always
+returns `allowed`).
+
 ## Developing locally
 
 Close the Git repo into: `$(GOPATH)/src/github.com/argoproj/argo-workflows`. Any other path will mean the code
@@ -97,28 +100,48 @@ make start UI=true PROFILE=sso
 
 ### Running E2E tests locally
 
-1. Configure your IDE to set the `KUBECONFIG` environment variable to your k3d kubeconfig file
-2. Find an e2e test that you want to run in `test/e2e`
-3. Determine which profile the e2e test is using by inspecting the go build flag at the top of the file and referring
-   to [ci-build.yaml](https://github.com/argoproj/argo-workflows/blob/master/.github/workflows/ci-build.yaml)
+Start up the Argo Workflows using the following:
 
-   For example `TestArchiveStrategies` in `test/e2e/functional_test.go` has the following build flags
+```shell
+make start PROFILE=mysql AUTH_MODE=client STATIC_FILES=false API=true 
+```
 
-    ```go
-    //go:build functional
-    // +build functional
-    ```
+#### Running One Test
 
-   In [ci-build.yaml](https://github.com/argoproj/argo-workflows/blob/master/.github/workflows/ci-build.yaml) the
-   functional test suite is using the `minimal` profile
+In most cases, you want to run the test that relates to your changes locally. You should not run all the tests suites.
+Our CI will run those concurrently when you create a PR, which will give you feedback much faster.
 
-4. Run the profile in a terminal window
+Find the test that you want to run in `test/e2e`
 
-    ```shell
-    make start PROFILE=minimal AUTH_MODE=client STATIC_FILES=false LOG_LEVEL=info API=true UI=false
-    ```
+```shell
+make TestArtifactServer'  
+```
 
-5. Run the test in your IDE
+#### Running A Set Of Tests
+
+You can find the build tag at the top of the test file.
+
+  ```go
+//go:build api
+```
+
+You need to run `make test-{buildTag}`, so for `api` that would be:
+
+```shell
+make test-api
+```
+
+#### Diagnosing Test Failure
+
+Tests often fail, that's good. To diagnose failure:
+
+* Run `kubectl get pods`, are pods in the state you expect?
+* Run `kubectl get wf`, is your workflow in the state you expect?
+* What do the pod logs say? I.e. `kubectl logs`.
+* Check the controller and argo-server logs. These are printed to the console you ran `make start` in. Is anything
+  logged at `level=error`?
+
+If tests run slowly or time out, factory reset your Kubernetes cluster.
 
 ## Committing
 
@@ -134,10 +157,14 @@ Please do the following when creating your PR:
 * Use [Conventional Commit messages](https://www.conventionalcommits.org/en/v1.0.0/).
 * Suffix the issue number.
 
-Example:
+Examples:
 
 ```shell
 git commit --signoff -m 'fix: Fixed broken thing. Fixes #1234'
+```
+
+```shell
+git commit --signoff -m 'feat: Added a new feature. Fixes #1234'
 ```
 
 ## Troubleshooting
@@ -151,8 +178,8 @@ git commit --signoff -m 'fix: Fixed broken thing. Fixes #1234'
 ## Using Multiple Terminals
 
 I run the controller in one terminal, and the UI in another. I like the UI: it is much faster to debug workflows than
-the terminal. This allows you to makes changes to the controller and re-start it, without restarting the UI (which takes
-a few moments to start-up).
+the terminal. This allows you to make changes to the controller and re-start it, without restarting the UI (which I
+think takes too long to start-up).
 
 As a convenience, `CTRL=false` implies `UI=true`, so just run:
 

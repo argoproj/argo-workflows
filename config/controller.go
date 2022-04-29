@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"strings"
 
-	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -24,7 +23,6 @@ type controller struct {
 }
 
 func NewController(namespace, name string, kubeclientset kubernetes.Interface) Controller {
-	log.WithField("name", name).Info("config map")
 	return &controller{
 		namespace:     namespace,
 		configMap:     name,
