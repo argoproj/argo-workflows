@@ -52,9 +52,12 @@ func (a *ArtifactServer) GetInputArtifact(w http.ResponseWriter, r *http.Request
 	a.getArtifact(w, r, true)
 }
 
-// valid requests:
-// 1. /artifact-files/{namespace}/[archived-workflows|workflows]/{id}/{nodeId}/outputs/{artifactName}
-// 2. /artifact-files/{namespace}/[archived-workflows|workflows]/{id}/{nodeId}/outputs/{artifactName}/{fileName}
+// single endpoint to be able to handle serving directories as well as files, both those that have been archived adn those that haven't
+// Valid requests:
+//  /artifact-files/{namespace}/[archived-workflows|workflows]/{id}/{nodeId}/outputs/{artifactName}
+//  /artifact-files/{namespace}/[archived-workflows|workflows]/{id}/{nodeId}/outputs/{artifactName}/{fileName}
+//  /artifact-files/{namespace}/[archived-workflows|workflows]/{id}/{nodeId}/outputs/{artifactName}/{fileDir}/.../{fileName}
+// 'id' field represents 'uid' for archived workflows and 'name' for non-archived
 func (a *ArtifactServer) GetArtifactFile(w http.ResponseWriter, r *http.Request) {
 
 	const (
@@ -69,7 +72,7 @@ func (a *ArtifactServer) GetArtifactFile(w http.ResponseWriter, r *http.Request)
 
 	var fileName *string
 	requestPath := strings.Split(r.URL.Path, "/")
-	if len(requestPath) >= FILE_NAME_FIRST_INDEX+1 {
+	if len(requestPath) >= FILE_NAME_FIRST_INDEX+1 { // they included a file path in the URL (not just artifact name)
 		joined := strings.Join(requestPath[FILE_NAME_FIRST_INDEX:], "/")
 		// sanitize file name
 		cleanedPath := filepath.Clean(joined)
@@ -86,11 +89,12 @@ func (a *ArtifactServer) GetArtifactFile(w http.ResponseWriter, r *http.Request)
 	direction := requestPath[DIRECTION_INDEX]
 	artifactName := requestPath[ARTIFACT_NAME_INDEX]
 
-	if direction != "outputs" {
+	if direction != "outputs" { // for now we just handle output artifacts
 		a.serverInternalError(fmt.Errorf("request path is not valid, expected field at index %d to be 'outputs', got %s", DIRECTION_INDEX, direction), w)
 		return
 	}
 
+	// verify user is authorized
 	ctx, err := a.gateKeeping(r, types.NamespaceHolder(namespace))
 	if err != nil {
 		a.unauthorizedError(w)
@@ -99,7 +103,7 @@ func (a *ArtifactServer) GetArtifactFile(w http.ResponseWriter, r *http.Request)
 
 	var wf *wfv1.Workflow
 
-	// getArtifact for artifactName
+	// retrieve the Workflow
 	switch archiveDiscriminator {
 	case "workflows":
 		workflowName := id
@@ -137,8 +141,6 @@ func (a *ArtifactServer) GetArtifactFile(w http.ResponseWriter, r *http.Request)
 			ARCHIVE_DISCRIM_INDEX, archiveDiscriminator), w)
 		return
 	}
-
-	log.Debugf("successfully retrieved workflow %+v", wf) //todo: delete
 
 	// todo: we are repeating this same work in returnArtifact() - do we care?
 	artifact, driver, err := a.getArtifactAndDriver(ctx, nodeId, artifactName, false, wf, fileName)
@@ -191,7 +193,7 @@ func (a *ArtifactServer) GetArtifactFile(w http.ResponseWriter, r *http.Request)
 
 		w.Write([]byte("</ul></body></html>"))
 
-	} else {
+	} else { // stream the file itself
 		log.Debugf("not a directory, artifact: %+v", artifact)
 		a.returnArtifact(ctx, w, r, wf, nodeId, artifactName, false, fileName)
 	}
@@ -322,7 +324,7 @@ func (a *ArtifactServer) getArtifactAndDriver(ctx context.Context, nodeId, artif
 		return art, nil, err
 	}
 	l := ar.ToArtifactLocation()
-	err = art.Relocate(l) // todo: want a better understanding of why we do this
+	err = art.Relocate(l)
 	if err != nil {
 		return art, nil, err
 	}
@@ -344,39 +346,6 @@ func (a *ArtifactServer) getArtifactAndDriver(ctx context.Context, nodeId, artif
 }
 
 func (a *ArtifactServer) returnArtifact(ctx context.Context, w http.ResponseWriter, r *http.Request, wf *wfv1.Workflow, nodeId, artifactName string, isInput bool, fileName *string) error {
-	/*kubeClient := auth.GetKubeClient(ctx)
-
-	var art *wfv1.Artifact
-	if isInput {
-		art = wf.Status.Nodes[nodeId].Inputs.GetArtifactByName(artifactName)
-	} else {
-		art = wf.Status.Nodes[nodeId].Outputs.GetArtifactByName(artifactName)
-	}
-	if art == nil {
-		return fmt.Errorf("artifact not found")
-	}
-
-	ar, err := a.artifactRepositories.Get(ctx, wf.Status.ArtifactRepositoryRef)
-	if err != nil {
-		return err
-	}
-	l := ar.ToArtifactLocation()
-	err = art.Relocate(l)
-	if err != nil {
-		return err
-	}
-	if fileName != nil {
-		err = art.AppendToKey(*fileName)
-		if err != nil {
-			return fmt.Errorf("error appending filename %s to key of artifact %+v: err: %v", *fileName, art, err)
-		}
-	}
-
-	driver, err := a.artDriverFactory(ctx, art, resources{kubeClient, wf.Namespace})
-	if err != nil {
-		return err
-	}*/
-
 	art, driver, err := a.getArtifactAndDriver(ctx, nodeId, artifactName, isInput, wf, fileName)
 	if err != nil {
 		return err
