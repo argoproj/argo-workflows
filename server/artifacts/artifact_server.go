@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"mime"
 	"net/http"
 	"os"
 	"path"
@@ -261,6 +262,7 @@ func (a *ArtifactServer) returnArtifact(ctx context.Context, w http.ResponseWrit
 
 	key, _ := art.GetKey()
 	w.Header().Add("Content-Disposition", fmt.Sprintf(`filename="%s"`, path.Base(key)))
+	w.Header().Add("Content-Type", mime.TypeByExtension(path.Ext(key)))
 
 	// Iterate and set the rest of the headers
 	for name, value := range a.httpHeaderConfig {

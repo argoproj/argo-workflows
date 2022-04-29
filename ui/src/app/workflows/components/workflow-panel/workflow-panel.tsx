@@ -9,7 +9,7 @@ interface Props {
     workflowMetadata: ObjectMeta;
     workflowStatus: WorkflowStatus;
     selectedNodeId: string;
-    nodeClicked: (nodedId: string) => void;
+    nodeClicked: (nodeId: string) => void;
 }
 
 export class WorkflowPanel extends React.Component<Props> {
@@ -28,6 +28,7 @@ export class WorkflowPanel extends React.Component<Props> {
             <WorkflowDag
                 workflowName={this.props.workflowMetadata.name}
                 nodes={this.props.workflowStatus.nodes}
+                artifactRepositoryRef={this.props.workflowStatus.artifactRepositoryRef}
                 selectedNodeId={this.props.selectedNodeId}
                 nodeClicked={this.props.nodeClicked}
             />
