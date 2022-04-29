@@ -229,7 +229,12 @@ func (a *ArtifactServer) GetArtifactFile(w http.ResponseWriter, r *http.Request)
 
 	} else { // stream the file itself
 		log.Debugf("not a directory, artifact: %+v", artifact)
-		a.returnArtifact(ctx, w, r, artifact, driver, fileName)
+		err = a.returnArtifact(ctx, w, r, artifact, driver, fileName)
+
+		if err != nil {
+			a.serverInternalError(err, w)
+			return
+		}
 	}
 
 }

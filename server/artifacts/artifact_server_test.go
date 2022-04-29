@@ -3,6 +3,7 @@ package artifacts
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -48,7 +49,14 @@ func (a *fakeArtifactDriver) Load(_ *wfv1.Artifact, path string) error {
 	return ioutil.WriteFile(path, a.data, 0o600)
 }
 
-func (a *fakeArtifactDriver) OpenStream(_ *wfv1.Artifact) (io.ReadCloser, error) {
+func (a *fakeArtifactDriver) OpenStream(artifact *wfv1.Artifact) (io.ReadCloser, error) {
+	key, err := artifact.ArtifactLocation.GetKey()
+	if err != nil {
+		return nil, err
+	}
+	if strings.HasSuffix(key, "notafile.txt") {
+		return nil, errors.New("not a valid file")
+	}
 	return io.NopCloser(bytes.NewReader(a.data)), nil
 }
 
@@ -57,7 +65,12 @@ func (a *fakeArtifactDriver) Save(_ string, _ *wfv1.Artifact) error {
 }
 
 func (a *fakeArtifactDriver) IsDirectory(artifact *wfv1.Artifact) (bool, error) {
-	return artifact.Name == "my-s3-artifact-directory", nil
+	key, err := artifact.ArtifactLocation.GetKey()
+	if err != nil {
+		return false, err
+	}
+
+	return strings.HasSuffix(key, "my-s3-artifact-directory"), nil
 }
 
 func (a *fakeArtifactDriver) ListObjects(artifact *wfv1.Artifact) ([]string, error) {
@@ -172,16 +185,28 @@ func TestArtifactServer_GetArtifactFile(t *testing.T) {
 	tests := []struct {
 		path string
 		// expected results:
+		success        bool
 		isDirectory    bool
 		directoryFiles []string // verify these files are in there, if this is a directory
 	}{
 		{
 			path:        "/artifact-files/my-ns/workflows/my-wf/my-node/outputs/my-s3-artifact-directory",
+			success:     true,
 			isDirectory: true,
 			directoryFiles: []string{
 				"/artifact-files/my-ns/workflows/my-wf/my-node/outputs/my-s3-artifact-directory/a.txt",
 				"/artifact-files/my-ns/workflows/my-wf/my-node/outputs/my-s3-artifact-directory/b.txt",
 			},
+		},
+		{
+			path:        "/artifact-files/my-ns/workflows/my-wf/my-node/outputs/my-s3-artifact-directory/a.txt",
+			success:     true,
+			isDirectory: false,
+		},
+		{
+			path:        "/artifact-files/my-ns/workflows/my-wf/my-node/outputs/my-s3-artifact-directory/notafile.txt",
+			success:     false,
+			isDirectory: false,
 		},
 	}
 
@@ -192,21 +217,25 @@ func TestArtifactServer_GetArtifactFile(t *testing.T) {
 			recorder := httptest.NewRecorder()
 
 			s.GetArtifactFile(recorder, r)
-			if assert.Equal(t, 200, recorder.Result().StatusCode) {
-				all, err := io.ReadAll(recorder.Result().Body)
-				if err != nil {
-					panic(fmt.Sprintf("failed to read http body: %v", err))
-				}
-				if tt.isDirectory {
-					fmt.Printf("got directory listing:\n%s\n", all)
-					// verify that the files are contained in the listing we got back
-					assert.Equal(t, len(tt.directoryFiles), strings.Count(string(all), "<li>"))
-					for _, file := range tt.directoryFiles {
-						assert.True(t, strings.Contains(string(all), file))
+			if tt.success {
+				if assert.Equal(t, 200, recorder.Result().StatusCode) {
+					all, err := io.ReadAll(recorder.Result().Body)
+					if err != nil {
+						panic(fmt.Sprintf("failed to read http body: %v", err))
 					}
-				} else {
-					assert.Equal(t, "my-data", string(all))
+					if tt.isDirectory {
+						fmt.Printf("got directory listing:\n%s\n", all)
+						// verify that the files are contained in the listing we got back
+						assert.Equal(t, len(tt.directoryFiles), strings.Count(string(all), "<li>"))
+						for _, file := range tt.directoryFiles {
+							assert.True(t, strings.Contains(string(all), file))
+						}
+					} else {
+						assert.Equal(t, "my-data", string(all))
+					}
 				}
+			} else {
+				assert.NotEqual(t, 200, recorder.Result().StatusCode)
 			}
 		})
 	}

@@ -1073,8 +1073,59 @@ func (s *ArgoServerSuite) TestArtifactServer() {
 			Equal(artifacts.DefaultXFrameOptions)
 	})
 
+	// In this case, the artifact name is a file
 	s.Run("GetArtifactFile", func() {
 		resp := s.e().GET("/artifact-files/argo/workflows/" + name + "/" + name + "/outputs/main-file").
+			Expect().
+			Status(200)
+
+		resp.Body().
+			Contains(":) Hello Argo!")
+
+		resp.Header("Content-Security-Policy").
+			Equal(artifacts.DefaultContentSecurityPolicy) // MSB
+
+		resp.Header("X-Frame-Options").
+			Equal(artifacts.DefaultXFrameOptions)
+	})
+
+	// In this case, the artifact name is a directory
+	s.Run("GetArtifactFileDirectory", func() {
+		resp := s.e().GET("/artifact-files/argo/workflows/" + name + "/" + name + "/outputs/out").
+			Expect().
+			Status(200)
+
+		resp.Body().
+			Contains(fmt.Sprintf("<a href=\"out/subdirectory/sub-file-1\">/artifact-files/argo/workflows/%s/%s/outputs/out/subdirectory/sub-file-1</a>", name, name)).
+			Contains(fmt.Sprintf("<a href=\"out/subdirectory/sub-file-2\">/artifact-files/argo/workflows/%s/%s/outputs/out/subdirectory/sub-file-2</a>", name, name))
+
+		resp.Header("Content-Security-Policy").
+			Equal(artifacts.DefaultContentSecurityPolicy) // MSB
+
+		resp.Header("X-Frame-Options").
+			Equal(artifacts.DefaultXFrameOptions)
+	})
+
+	// In this case, the filename specified in the request is actually a directory
+	s.Run("GetArtifactFileSubdirectory", func() {
+		resp := s.e().GET("/artifact-files/argo/workflows/" + name + "/" + name + "/outputs/out/subdirectory").
+			Expect().
+			Status(200)
+
+		resp.Body().
+			Contains(fmt.Sprintf("<a href=\"subdirectory/sub-file-1\">/artifact-files/argo/workflows/%s/%s/outputs/out/subdirectory/sub-file-1</a>", name, name)).
+			Contains(fmt.Sprintf("<a href=\"subdirectory/sub-file-2\">/artifact-files/argo/workflows/%s/%s/outputs/out/subdirectory/sub-file-2</a>", name, name))
+
+		resp.Header("Content-Security-Policy").
+			Equal(artifacts.DefaultContentSecurityPolicy) // MSB
+
+		resp.Header("X-Frame-Options").
+			Equal(artifacts.DefaultXFrameOptions)
+	})
+
+	// In this case, the filename specified in the request is a subdirectory file
+	s.Run("GetArtifactSubfile", func() {
+		resp := s.e().GET("/artifact-files/argo/workflows/" + name + "/" + name + "/outputs/out/subdirectory/sub-file-1").
 			Expect().
 			Status(200)
 
