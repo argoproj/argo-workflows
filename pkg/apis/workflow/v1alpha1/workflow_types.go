@@ -1252,12 +1252,24 @@ func (r *ArtifactRepositoryRefStatus) String() string {
 
 type ArtifactSearchQuery struct {
 	ArtifactGCStrategies map[ArtifactGCStrategy]bool `json:"artifactGCStrategies,omitempty" protobuf:"bytes,1,rep,name=artifactGCStrategies,castkey=ArtifactGCStrategy"`
+	ArtifactName         string                      `json:"artifactName,omitempty" protobuf:"bytes,2,rep,name=artifactName"`
+	TemplateName         string                      `json:"templateName,omitempty" protobuf:"bytes,3,rep,name=templateName"`
+	NodeId               string                      `json:"nodeId,omitempty" protobuf:"bytes,4,rep,name=nodeId"`
 }
 
 func NewArtifactSearchQuery() *ArtifactSearchQuery {
 	var q ArtifactSearchQuery
 	q.ArtifactGCStrategies = make(map[ArtifactGCStrategy]bool)
 	return &q
+}
+
+func (q *ArtifactSearchQuery) anyArtifactGCStrategy() bool {
+	for _, val := range q.ArtifactGCStrategies {
+		if val == true {
+			return val
+		}
+	}
+	return false
 }
 
 func (w *Workflow) SearchArtifacts(q *ArtifactSearchQuery) Artifacts {
@@ -1267,19 +1279,32 @@ func (w *Workflow) SearchArtifacts(q *ArtifactSearchQuery) Artifacts {
 	for _, n := range w.Status.Nodes {
 		t := w.GetTemplateByName(n.TemplateName)
 		for _, a := range n.GetOutputs().GetArtifacts() {
-			artifactByName := t.GetOutputs().GetArtifactByName(a.Name)
-			templateStrategy := t.GetArtifactGC().GetStrategy()
-			wfStrategy := w.Spec.GetArtifactGC().GetStrategy()
-			strategy := wfStrategy
-			if templateStrategy != ArtifactGCNever {
-				strategy = templateStrategy
+			match := true
+			if q.anyArtifactGCStrategy() {
+				templateStrategy := t.GetArtifactGC().GetStrategy()
+				wfStrategy := w.Spec.GetArtifactGC().GetStrategy()
+				strategy := wfStrategy
+				if templateStrategy != ArtifactGCNever {
+					strategy = templateStrategy
+				}
+				if !q.ArtifactGCStrategies[strategy] {
+					match = false
+				}
 			}
-			if q.ArtifactGCStrategies[strategy] == true {
-				artifacts = append(artifacts, *artifactByName)
+			if q.ArtifactName != "" && a.Name != q.ArtifactName {
+				match = false
+			}
+			if q.TemplateName != "" && n.TemplateName != q.TemplateName {
+				match = false
+			}
+			if q.NodeId != "" && n.ID != q.NodeId {
+				match = false
+			}
+			if match == true {
+				artifacts = append(artifacts, a)
 			}
 		}
 	}
-
 	return artifacts
 }
 

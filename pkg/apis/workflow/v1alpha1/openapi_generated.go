@@ -762,6 +762,24 @@ func schema_pkg_apis_workflow_v1alpha1_ArtifactSearchQuery(ref common.ReferenceC
 							},
 						},
 					},
+					"artifactName": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"templateName": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"nodeId": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
 				},
 			},
 		},
