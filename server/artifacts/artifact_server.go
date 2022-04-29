@@ -10,6 +10,8 @@ import (
 	"path"
 	"strings"
 
+	apierr "k8s.io/apimachinery/pkg/api/errors"
+
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
@@ -84,7 +86,7 @@ func (a *ArtifactServer) GetInputArtifact(w http.ResponseWriter, r *http.Request
 func (a *ArtifactServer) getArtifact(w http.ResponseWriter, r *http.Request, isInput bool) {
 	requestPath := strings.SplitN(r.URL.Path, "/", 6)
 	if len(requestPath) != 6 {
-		a.serverInternalError(errors.New("request path is not valid"), w)
+		a.httpBadRequestError("request path is not valid", w)
 		return
 	}
 	namespace := requestPath[2]
@@ -102,14 +104,14 @@ func (a *ArtifactServer) getArtifact(w http.ResponseWriter, r *http.Request, isI
 
 	wf, err := a.getWorkflowAndValidate(ctx, namespace, workflowName)
 	if err != nil {
-		a.serverInternalError(err, w)
+		a.httpFromError(err, "Artifact Server returned error", w)
 		return
 	}
 
 	err = a.returnArtifact(ctx, w, r, wf, nodeId, artifactName, isInput)
 
 	if err != nil {
-		a.serverInternalError(err, w)
+		a.httpFromError(err, "Artifact Server returned error", w)
 		return
 	}
 }
@@ -125,7 +127,7 @@ func (a *ArtifactServer) GetInputArtifactByUID(w http.ResponseWriter, r *http.Re
 func (a *ArtifactServer) getArtifactByUID(w http.ResponseWriter, r *http.Request, isInput bool) {
 	requestPath := strings.SplitN(r.URL.Path, "/", 5)
 	if len(requestPath) != 5 {
-		a.serverInternalError(errors.New("request path is not valid"), w)
+		a.httpBadRequestError("request path is not valid", w)
 		return
 	}
 	uid := requestPath[2]
@@ -135,7 +137,7 @@ func (a *ArtifactServer) getArtifactByUID(w http.ResponseWriter, r *http.Request
 	// We need to know the namespace before we can do gate keeping
 	wf, err := a.wfArchive.GetWorkflow(uid)
 	if err != nil {
-		a.serverInternalError(err, w)
+		a.httpFromError(err, "Artifact Server returned error", w)
 		return
 	}
 
@@ -156,7 +158,7 @@ func (a *ArtifactServer) getArtifactByUID(w http.ResponseWriter, r *http.Request
 	err = a.returnArtifact(ctx, w, r, wf, nodeId, artifactName, isInput)
 
 	if err != nil {
-		a.serverInternalError(err, w)
+		a.httpFromError(err, "Artifact Server returned error", w)
 		return
 	}
 }
@@ -184,6 +186,38 @@ func (a *ArtifactServer) unauthorizedError(w http.ResponseWriter) {
 func (a *ArtifactServer) serverInternalError(err error, w http.ResponseWriter) {
 	w.WriteHeader(500)
 	log.WithError(err).Error("Artifact Server returned internal error")
+}
+
+func (a *ArtifactServer) httpError(statusCode int, logText string, w http.ResponseWriter) {
+	statusText := http.StatusText(statusCode)
+	http.Error(w, statusText, statusCode)
+	log.WithFields(log.Fields{
+		"statusCode": statusCode,
+		"statusText": statusText,
+	}).Error(logText)
+}
+
+func (a *ArtifactServer) httpBadRequestError(logText string, w http.ResponseWriter) {
+	a.httpError(http.StatusBadRequest, logText, w)
+}
+
+func (a *ArtifactServer) httpFromError(err error, logText string, w http.ResponseWriter) {
+	e := &apierr.StatusError{}
+	if errors.As(err, &e) {
+		// There is a http error code somewhere in the error stack
+		statusCode := int(e.Status().Code)
+		statusText := http.StatusText(statusCode)
+		http.Error(w, statusText, statusCode)
+
+		log.WithError(err).
+			WithFields(log.Fields{
+				"statusCode": statusCode,
+				"statusText": statusText,
+			}).Error(logText)
+	} else {
+		// Unknown error - return internal error
+		a.serverInternalError(err, w)
+	}
 }
 
 func (a *ArtifactServer) returnArtifact(ctx context.Context, w http.ResponseWriter, r *http.Request, wf *wfv1.Workflow, nodeId, artifactName string, isInput bool) error {
