@@ -1139,6 +1139,13 @@ func (s *ArgoServerSuite) TestArtifactServer() {
 			Equal(artifacts.DefaultXFrameOptions)
 	})
 
+	// In this case, the artifact name is a file
+	s.Run("GetArtifactBadFile", func() {
+		_ = s.e().GET("/artifact-files/argo/workflows/" + name + "/" + name + "/outputs/not-a-file").
+			Expect().
+			Status(500)
+	})
+
 	s.Run("GetArtifactByUID", func() {
 		s.e().DELETE("/api/v1/workflows/argo/" + name).
 			Expect().
