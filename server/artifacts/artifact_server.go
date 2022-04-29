@@ -195,6 +195,11 @@ func (a *ArtifactServer) GetArtifactFile(w http.ResponseWriter, r *http.Request)
 		}
 		log.Debugf("this is a directory, artifact: %+v; files: %v", artifact, files)
 
+		// set headers
+		for name, value := range a.httpHeaderConfig {
+			w.Header().Add(name, value)
+		}
+
 		w.Write([]byte("<html><body><ul>\n"))
 
 		for _, file := range files {
@@ -217,7 +222,7 @@ func (a *ArtifactServer) GetArtifactFile(w http.ResponseWriter, r *http.Request)
 			removeDirLen := len(requestPath) - ARTIFACT_NAME_INDEX - 1
 			link := strings.Join(pathSlice[removeDirLen:], "/")
 
-			w.Write([]byte(fmt.Sprintf("<li><a href=\"%s\">%s</li></a>\n", link, fullyQualifiedPath)))
+			w.Write([]byte(fmt.Sprintf("<li><a href=\"%s\">%s</a></li>\n", link, fullyQualifiedPath)))
 		}
 
 		w.Write([]byte("</ul></body></html>"))
