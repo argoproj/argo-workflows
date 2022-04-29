@@ -1072,6 +1072,22 @@ func (s *ArgoServerSuite) TestArtifactServer() {
 		resp.Header("X-Frame-Options").
 			Equal(artifacts.DefaultXFrameOptions)
 	})
+
+	s.Run("GetArtifactFile", func() {
+		resp := s.e().GET("/artifact-files/argo/workflows/" + name + "/" + name + "/outputs/main-file").
+			Expect().
+			Status(200)
+
+		resp.Body().
+			Contains(":) Hello Argo!")
+
+		resp.Header("Content-Security-Policy").
+			Equal(artifacts.DefaultContentSecurityPolicy) // MSB
+
+		resp.Header("X-Frame-Options").
+			Equal(artifacts.DefaultXFrameOptions)
+	})
+
 	s.Run("GetArtifactByUID", func() {
 		s.e().DELETE("/api/v1/workflows/argo/" + name).
 			Expect().
@@ -1093,6 +1109,14 @@ func (s *ArgoServerSuite) TestArtifactServer() {
 			WithHeader("Cookie", "authorization=Bearer "+token).
 			Expect().
 			Status(200)
+	})
+
+	s.Run("GetArtifactFileByUID", func() {
+		s.e().GET("/artifact-files/argo/archived-workflows/{uid}/{name}/outputs/main-file", uid, name).
+			Expect().
+			Status(200).
+			Body().
+			Contains(":) Hello Argo!")
 	})
 }
 
