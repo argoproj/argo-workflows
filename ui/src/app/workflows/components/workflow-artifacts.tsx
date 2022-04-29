@@ -45,7 +45,7 @@ export const WorkflowArtifacts = (props: Props) => {
                             <span>
                                 <a href={artifact.downloadUrl}>
                                     {' '}
-                                    <i className='icon argo-icon-artifact' />
+                                    <i className='fa fa-download' />
                                 </a>{' '}
                                 {artifact.name}
                             </span>
