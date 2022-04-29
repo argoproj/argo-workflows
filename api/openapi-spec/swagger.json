@@ -4278,6 +4278,12 @@
         "parameters": [
           {
             "type": "string",
+            "name": "namespace",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "string",
             "name": "uid",
             "in": "path",
             "required": true
