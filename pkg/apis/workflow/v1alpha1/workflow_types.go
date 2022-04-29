@@ -1263,7 +1263,7 @@ func NewArtifactSearchQuery() *ArtifactSearchQuery {
 	return &q
 }
 
-func agcsQueryHelper(q *ArtifactSearchQuery) bool {
+func (q *ArtifactSearchQuery) anyArtifactGCStrategy() bool {
 	for _, val := range q.ArtifactGCStrategies {
 		if val == true {
 			return val
@@ -1279,28 +1279,28 @@ func (w *Workflow) SearchArtifacts(q *ArtifactSearchQuery) Artifacts {
 	for _, n := range w.Status.Nodes {
 		t := w.GetTemplateByName(n.TemplateName)
 		for _, a := range n.GetOutputs().GetArtifacts() {
-			toQuery := true
-			if agcsQueryHelper(q) == true {
+			match := true
+			if q.anyArtifactGCStrategy() {
 				templateStrategy := t.GetArtifactGC().GetStrategy()
 				wfStrategy := w.Spec.GetArtifactGC().GetStrategy()
 				strategy := wfStrategy
 				if templateStrategy != ArtifactGCNever {
 					strategy = templateStrategy
 				}
-				if q.ArtifactGCStrategies[strategy] != true {
-					toQuery = false
+				if !q.ArtifactGCStrategies[strategy] {
+					match = false
 				}
 			}
 			if q.ArtifactName != "" && a.Name != q.ArtifactName {
-				toQuery = false
+				match = false
 			}
 			if q.TemplateName != "" && n.TemplateName != q.TemplateName {
-				toQuery = false
+				match = false
 			}
 			if q.NodeId != "" && n.ID != q.NodeId {
-				toQuery = false
+				match = false
 			}
-			if toQuery == true {
+			if match == true {
 				artifacts = append(artifacts, a)
 			}
 		}
