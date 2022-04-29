@@ -95,36 +95,36 @@ func (a *ArtifactServer) GetInputArtifact(w http.ResponseWriter, r *http.Request
 func (a *ArtifactServer) GetArtifactFile(w http.ResponseWriter, r *http.Request) {
 
 	const (
-		NAMESPACE_INDEX       = 2
-		ARCHIVE_DISCRIM_INDEX = 3
-		ID_INDEX              = 4
-		NODE_ID_INDEX         = 5
-		DIRECTION_INDEX       = 6
-		ARTIFACT_NAME_INDEX   = 7
-		FILE_NAME_FIRST_INDEX = 8
+		namespaceIndex      = 2
+		archiveDiscrimIndex = 3
+		idIndex             = 4
+		nodeIdIndex         = 5
+		directionIndex      = 6
+		artifactNameIndex   = 7
+		fileNameFirstIndex  = 8
 	)
 
 	var fileName *string
 	requestPath := strings.Split(r.URL.Path, "/")
-	if len(requestPath) >= FILE_NAME_FIRST_INDEX+1 { // they included a file path in the URL (not just artifact name)
-		joined := strings.Join(requestPath[FILE_NAME_FIRST_INDEX:], "/")
+	if len(requestPath) >= fileNameFirstIndex+1 { // they included a file path in the URL (not just artifact name)
+		joined := strings.Join(requestPath[fileNameFirstIndex:], "/")
 		// sanitize file name
 		cleanedPath := filepath.Clean(joined)
 		fileName = &cleanedPath
-	} else if len(requestPath) < ARTIFACT_NAME_INDEX+1 {
-		a.httpBadRequestError(fmt.Sprintf("request path is not valid, expected at least %d fields, got %d", ARTIFACT_NAME_INDEX+1, len(requestPath)), w)
+	} else if len(requestPath) < artifactNameIndex+1 {
+		a.httpBadRequestError(fmt.Sprintf("request path is not valid, expected at least %d fields, got %d", artifactNameIndex+1, len(requestPath)), w)
 		return
 	}
 
-	namespace := requestPath[NAMESPACE_INDEX]
-	archiveDiscriminator := requestPath[ARCHIVE_DISCRIM_INDEX]
-	id := requestPath[ID_INDEX] // if archiveDiscriminator == "archived-workflows", this represents workflow UID; if archiveDiscriminator == "workflows", this represents workflow name
-	nodeId := requestPath[NODE_ID_INDEX]
-	direction := requestPath[DIRECTION_INDEX]
-	artifactName := requestPath[ARTIFACT_NAME_INDEX]
+	namespace := requestPath[namespaceIndex]
+	archiveDiscriminator := requestPath[archiveDiscrimIndex]
+	id := requestPath[idIndex] // if archiveDiscriminator == "archived-workflows", this represents workflow UID; if archiveDiscriminator == "workflows", this represents workflow name
+	nodeId := requestPath[nodeIdIndex]
+	direction := requestPath[directionIndex]
+	artifactName := requestPath[artifactNameIndex]
 
 	if direction != "outputs" { // for now we just handle output artifacts
-		a.httpBadRequestError(fmt.Sprintf("request path is not valid, expected field at index %d to be 'outputs', got %s", DIRECTION_INDEX, direction), w)
+		a.httpBadRequestError(fmt.Sprintf("request path is not valid, expected field at index %d to be 'outputs', got %s", directionIndex, direction), w)
 		return
 	}
 
@@ -172,7 +172,7 @@ func (a *ArtifactServer) GetArtifactFile(w http.ResponseWriter, r *http.Request)
 		}
 	default:
 		a.httpBadRequestError(fmt.Sprintf("request path is not valid, expected field at index %d to be 'workflows' or 'archived-workflows', got %s",
-			ARCHIVE_DISCRIM_INDEX, archiveDiscriminator), w)
+			archiveDiscrimIndex, archiveDiscriminator), w)
 		return
 	}
 
@@ -223,10 +223,10 @@ func (a *ArtifactServer) GetArtifactFile(w http.ResponseWriter, r *http.Request)
 				a.serverInternalError(fmt.Errorf("something went wrong: the files returned should start with artifact name %s but don't; files:%+v", artifactName, files), w)
 			}
 
-			fullyQualifiedPath := fmt.Sprintf("%s/%s", strings.Join(requestPath[:ARTIFACT_NAME_INDEX], "/"), file)
+			fullyQualifiedPath := fmt.Sprintf("%s/%s", strings.Join(requestPath[:artifactNameIndex], "/"), file)
 
 			// add a link to the html page, which will be a relative filepath
-			removeDirLen := len(requestPath) - ARTIFACT_NAME_INDEX - 1
+			removeDirLen := len(requestPath) - artifactNameIndex - 1
 			link := strings.Join(pathSlice[removeDirLen:], "/")
 
 			_, err = w.Write([]byte(fmt.Sprintf("<li><a href=\"%s\">%s</a></li>\n", link, fullyQualifiedPath)))
