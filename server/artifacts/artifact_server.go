@@ -39,9 +39,9 @@ const (
 	EnvArgoArtifactXFrameOptions = "ARGO_ARTIFACT_X_FRAME_OPTIONS"
 	// DefaultContentSecurityPolicy is the default policy added to the Content-Security-Policy HTTP header
 	//   if no environment override has been added
-	DefaultContentSecurityPolicy = "sandbox; base-uri 'none'; default-src 'none'; image-src: 'self'; style-src: 'self'"
+	DefaultContentSecurityPolicy = "sandbox; base-uri 'none'; default-src 'none'; img-src 'self'; style-src 'self'"
 	// DefaultXFrameOptions is the default value for the X-Frame-Options header
-	DefaultXFrameOptions = "SAMESITE"
+	DefaultXFrameOptions = "SAMEORIGIN"
 )
 
 type ArtifactServer struct {
@@ -182,65 +182,73 @@ func (a *ArtifactServer) GetArtifactFile(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	isDir, err := driver.IsDirectory(artifact)
-	if err != nil {
-		a.serverInternalError(err, w)
-		return
+	isDir := strings.HasSuffix(r.URL.Path, "/")
+
+	if !isDir {
+		isDir, err := driver.IsDirectory(artifact)
+		if err != nil {
+			a.serverInternalError(err, w)
+			return
+		}
+		if isDir {
+			http.Redirect(w, r, r.URL.String()+"/", http.StatusTemporaryRedirect)
+			return
+		}
 	}
 
 	if isDir {
 		// return an html page to the user
 
-		files, err := driver.ListObjects(artifact)
+		objects, err := driver.ListObjects(artifact)
 		if err != nil {
 			a.serverInternalError(err, w)
 			return
 		}
-		log.Debugf("this is a directory, artifact: %+v; files: %v", artifact, files)
+		log.Debugf("this is a directory, artifact: %+v; files: %v", artifact, objects)
 
 		// set headers
 		for name, value := range a.httpHeaderConfig {
 			w.Header().Add(name, value)
 		}
 
-		_, err = w.Write([]byte("<html><body><ul>\n"))
-		if err != nil {
-			a.serverInternalError(err, w)
-			return
-		}
+		key, _ := artifact.GetKey()
+		for _, object := range objects {
 
-		for _, file := range files {
+			// object is prefixed the key, we must trim it
+			dir, file := path.Split(strings.TrimPrefix(object, key+"/"))
 
-			pathSlice := strings.Split(file, "/")
-
-			// verify the files are formatted as expected
-			if len(pathSlice) < 2 {
-				a.serverInternalError(fmt.Errorf("something went wrong: the files returned should each start with directory followed by file name; files:%+v", files), w)
-			}
-
-			// the artifactname should be the first level directory of our file - verify
-			if pathSlice[0] != artifactName {
-				a.serverInternalError(fmt.Errorf("something went wrong: the files returned should start with artifact name %s but don't; files:%+v", artifactName, files), w)
-			}
-
-			fullyQualifiedPath := fmt.Sprintf("%s/%s", strings.Join(requestPath[:artifactNameIndex], "/"), file)
-
-			// add a link to the html page, which will be a relative filepath
-			removeDirLen := len(requestPath) - artifactNameIndex - 1
-			link := strings.Join(pathSlice[removeDirLen:], "/")
-
-			_, err = w.Write([]byte(fmt.Sprintf("<li><a href=\"%s\">%s</a></li>\n", link, fullyQualifiedPath)))
-			if err != nil {
-				a.serverInternalError(err, w)
+			// if dir is empty string, we are in the root dir
+			// we found in index.html, abort and redirect there
+			if dir == "" && file == "index.html" {
+				w.Header().Set("Location", r.URL.String()+"index.html")
+				w.WriteHeader(http.StatusTemporaryRedirect)
 				return
 			}
 		}
 
-		_, err = w.Write([]byte("</ul></body></html>"))
-		if err != nil {
-			a.serverInternalError(err, w)
-			return
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("<html><body><ul>\n"))
+
+		dirs := map[string]bool{} // to de-dupe sub-dirs
+
+		_, _ = w.Write([]byte(fmt.Sprintf("<li><a href=\"%s\">%s</a></li>\n", "..", "..")))
+
+		for _, object := range objects {
+
+			// object is prefixed the key, we must trim it
+			dir, file := path.Split(strings.TrimPrefix(object, key+"/"))
+
+			// if dir is empty string, we are in the root dir
+			if dir == "" {
+				_, _ = w.Write([]byte(fmt.Sprintf("<li><a href=\"%s\">%s</a></li>\n", file, file)))
+			} else if dirs[dir] {
+				continue
+			} else {
+				_, _ = w.Write([]byte(fmt.Sprintf("<li><a href=\"%s\">%s</a></li>\n", dir, dir)))
+				dirs[dir] = true
+			}
 		}
+		_, _ = w.Write([]byte("</ul></body></html>"))
 
 	} else { // stream the file itself
 		log.Debugf("not a directory, artifact: %+v", artifact)

@@ -187,12 +187,27 @@ func TestArtifactServer_GetArtifactFile(t *testing.T) {
 	tests := []struct {
 		path string
 		// expected results:
+		redirect       bool
+		location       string
 		success        bool
 		isDirectory    bool
 		directoryFiles []string // verify these files are in there, if this is a directory
 	}{
 		{
-			path:        "/artifact-files/my-ns/workflows/my-wf/my-node/outputs/my-s3-artifact-directory",
+			path:     "/artifact-files/my-ns/workflows/my-wf/my-node/outputs/my-s3-artifact-directory",
+			redirect: true,
+			location: "/artifact-files/my-ns/workflows/my-wf/my-node/outputs/my-s3-artifact-directory/",
+		},
+		{
+			path:     "/artifact-files/my-ns/workflows/my-wf/my-node/outputs/my-s3-artifact-directory/",
+			redirect: true,
+			location: "/artifact-files/my-ns/workflows/my-wf/my-node/outputs/my-s3-artifact-directory/index.html",
+			directoryFiles: []string{
+				"/artifact-files/my-ns/workflows/my-wf/my-node/outputs/my-s3-artifact-directory/index.html",
+			},
+		},
+		{
+			path:        "/artifact-files/my-ns/workflows/my-wf/my-node/outputs/my-s3-artifact-directory/",
 			success:     true,
 			isDirectory: true,
 			directoryFiles: []string{
@@ -219,6 +234,10 @@ func TestArtifactServer_GetArtifactFile(t *testing.T) {
 			recorder := httptest.NewRecorder()
 
 			s.GetArtifactFile(recorder, r)
+			if tt.redirect {
+				assert.Equal(t, 307, recorder.Result().StatusCode)
+				assert.Equal(t, tt.location, recorder.Header().Get("Location"))
+			}
 			if tt.success {
 				if assert.Equal(t, 200, recorder.Result().StatusCode) {
 					all, err := io.ReadAll(recorder.Result().Body)
