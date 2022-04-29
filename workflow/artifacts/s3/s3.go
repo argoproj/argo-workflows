@@ -229,10 +229,7 @@ func (s3Driver *ArtifactDriver) ListObjects(artifact *wfv1.Artifact) ([]string, 
 }
 
 func (s3Driver *ArtifactDriver) IsDirectory(artifact *wfv1.Artifact) (bool, error) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	s3cli, err := s3Driver.newS3Client(ctx)
+	s3cli, err := s3Driver.newS3Client(context.TODO())
 	if err != nil {
 		return false, err
 	}

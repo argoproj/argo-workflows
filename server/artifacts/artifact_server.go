@@ -112,7 +112,7 @@ func (a *ArtifactServer) GetArtifactFile(w http.ResponseWriter, r *http.Request)
 		cleanedPath := filepath.Clean(joined)
 		fileName = &cleanedPath
 	} else if len(requestPath) < ARTIFACT_NAME_INDEX+1 {
-		a.serverInternalError(fmt.Errorf("request path is not valid, expected at least %d fields, got %d", ARTIFACT_NAME_INDEX+1, len(requestPath)), w)
+		a.httpBadRequestError(fmt.Sprintf("request path is not valid, expected at least %d fields, got %d", ARTIFACT_NAME_INDEX+1, len(requestPath)), w)
 		return
 	}
 
@@ -124,7 +124,7 @@ func (a *ArtifactServer) GetArtifactFile(w http.ResponseWriter, r *http.Request)
 	artifactName := requestPath[ARTIFACT_NAME_INDEX]
 
 	if direction != "outputs" { // for now we just handle output artifacts
-		a.serverInternalError(fmt.Errorf("request path is not valid, expected field at index %d to be 'outputs', got %s", DIRECTION_INDEX, direction), w)
+		a.httpBadRequestError(fmt.Sprintf("request path is not valid, expected field at index %d to be 'outputs', got %s", DIRECTION_INDEX, direction), w)
 		return
 	}
 
@@ -160,7 +160,7 @@ func (a *ArtifactServer) GetArtifactFile(w http.ResponseWriter, r *http.Request)
 
 		// check that the namespace passed in matches this workflow's namespace
 		if wf.GetNamespace() != namespace {
-			a.serverInternalError(fmt.Errorf("request namespace '%s' doesn't match Workflow namespace: '%s'", namespace, wf.GetNamespace()), w)
+			a.httpBadRequestError(fmt.Sprintf("request namespace '%s' doesn't match Workflow namespace: '%s'", namespace, wf.GetNamespace()), w)
 			return
 		}
 
@@ -171,7 +171,7 @@ func (a *ArtifactServer) GetArtifactFile(w http.ResponseWriter, r *http.Request)
 			return
 		}
 	default:
-		a.serverInternalError(fmt.Errorf("request path is not valid, expected field at index %d to be 'workflows' or 'archived-workflows', got %s",
+		a.httpBadRequestError(fmt.Sprintf("request path is not valid, expected field at index %d to be 'workflows' or 'archived-workflows', got %s",
 			ARCHIVE_DISCRIM_INDEX, archiveDiscriminator), w)
 		return
 	}
