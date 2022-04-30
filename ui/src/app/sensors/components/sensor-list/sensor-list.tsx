@@ -11,7 +11,6 @@ import {Node} from '../../../shared/components/graph/types';
 import {Loading} from '../../../shared/components/loading';
 import {NamespaceFilter} from '../../../shared/components/namespace-filter';
 import {Timestamp} from '../../../shared/components/timestamp';
-import {TrackEvent} from '../../../shared/components/track-user-interface-event';
 import {ZeroState} from '../../../shared/components/zero-state';
 import {Context} from '../../../shared/context';
 import {Footnote} from '../../../shared/footnote';
@@ -66,6 +65,10 @@ export const SensorList = ({match, location, history}: RouteComponentProps<any>)
             .then(() => setError(null))
             .catch(setError);
     }, [namespace]);
+
+    useEffect(() => {
+        services.info.collectEvent('openedSensorList').then();
+    }, []);
 
     const selected = (() => {
         if (!selectedNode) {
@@ -166,7 +169,6 @@ export const SensorList = ({match, location, history}: RouteComponentProps<any>)
                     onClose={() => setSelectedNode(null)}
                 />
             )}
-            <TrackEvent name={'openedSensorList'} />
         </Page>
     );
 };

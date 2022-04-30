@@ -7,7 +7,6 @@ import {WorkflowTemplate} from '../../../../models';
 import {uiUrl} from '../../../shared/base';
 import {ErrorNotice} from '../../../shared/components/error-notice';
 import {Loading} from '../../../shared/components/loading';
-import {TrackEvent} from '../../../shared/components/track-user-interface-event';
 import {Context} from '../../../shared/context';
 import {historyUrl} from '../../../shared/history';
 import {services} from '../../../shared/services';
@@ -62,6 +61,10 @@ export const WorkflowTemplateDetails = ({history, location, match}: RouteCompone
             .then(() => setError(null))
             .catch(setError);
     }, [name, namespace]);
+
+    useEffect(() => {
+        services.info.collectEvent('openedWorkflowTemplateDetails').then();
+    }, []);
 
     return (
         <Page
@@ -135,7 +138,6 @@ export const WorkflowTemplateDetails = ({history, location, match}: RouteCompone
                     {sidePanel === 'share' && <WidgetGallery namespace={namespace} label={'workflows.argoproj.io/workflow-template=' + name} />}
                 </SlidingPanel>
             )}
-            <TrackEvent name={'openedWorkflowTemplateDetails'} />
         </Page>
     );
 };

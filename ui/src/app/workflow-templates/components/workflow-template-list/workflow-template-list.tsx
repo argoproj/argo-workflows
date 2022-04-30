@@ -10,7 +10,6 @@ import {InfoIcon} from '../../../shared/components/fa-icons';
 import {Loading} from '../../../shared/components/loading';
 import {PaginationPanel} from '../../../shared/components/pagination-panel';
 import {Timestamp} from '../../../shared/components/timestamp';
-import {TrackEvent} from '../../../shared/components/track-user-interface-event';
 import {ZeroState} from '../../../shared/components/zero-state';
 import {Context} from '../../../shared/context';
 import {Footnote} from '../../../shared/footnote';
@@ -79,6 +78,10 @@ export const WorkflowTemplateList = ({match, location, history}: RouteComponentP
     useEffect(() => {
         storage.setItem('paginationLimit', pagination.limit, 0);
     }, [pagination.limit, labels]);
+
+    useEffect(() => {
+        services.info.collectEvent('openedWorkflowTemplateList').then();
+    }, []);
 
     return (
         <Page
@@ -159,7 +162,6 @@ export const WorkflowTemplateList = ({match, location, history}: RouteComponentP
             <SlidingPanel isShown={sidePanel} onClose={() => setSidePanel(false)}>
                 <WorkflowTemplateCreator namespace={namespace} onCreate={wf => navigation.goto(uiUrl(`workflow-templates/${wf.metadata.namespace}/${wf.metadata.name}`))} />
             </SlidingPanel>
-            <TrackEvent name={'openedWorkflowTemplateList'} />
         </Page>
     );
 };

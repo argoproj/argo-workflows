@@ -7,7 +7,6 @@ import {ClusterWorkflowTemplate} from '../../../../models';
 import {uiUrl} from '../../../shared/base';
 import {ErrorNotice} from '../../../shared/components/error-notice';
 import {Loading} from '../../../shared/components/loading';
-import {TrackEvent} from '../../../shared/components/track-user-interface-event';
 import {Context} from '../../../shared/context';
 import {historyUrl} from '../../../shared/history';
 import {services} from '../../../shared/services';
@@ -60,6 +59,7 @@ export const ClusterWorkflowTemplateDetails = ({history, location, match}: Route
             .then(info => setNamespace(Utils.getNamespaceWithDefault(info.managedNamespace)))
             .then(() => setError(null))
             .catch(setError);
+        services.info.collectEvent('openedClusterWorkflowTemplateDetails').then();
     }, []);
 
     return (
@@ -135,7 +135,6 @@ export const ClusterWorkflowTemplateDetails = ({history, location, match}: Route
                     />
                 </SlidingPanel>
             )}
-            <TrackEvent name={'openedClusterWorkflowTemplateDetails'} />
         </Page>
     );
 };

@@ -8,7 +8,6 @@ import {uiUrl} from '../../../shared/base';
 import {ErrorNotice} from '../../../shared/components/error-notice';
 import {GraphPanel} from '../../../shared/components/graph/graph-panel';
 import {Loading} from '../../../shared/components/loading';
-import {TrackEvent} from '../../../shared/components/track-user-interface-event';
 import {Context} from '../../../shared/context';
 import {historyUrl} from '../../../shared/history';
 import {ListWatch} from '../../../shared/list-watch';
@@ -62,6 +61,9 @@ export const PipelineDetails = ({history, match, location}: RouteComponentProps<
         w.start();
         return () => w.stop();
     }, [name, namespace]);
+    useEffect(() => {
+        services.info.collectEvent('openedPipelineDetails').then();
+    }, []);
 
     const step = steps.find(s => s.spec.name === selectedStep);
     return (
@@ -169,7 +171,6 @@ export const PipelineDetails = ({history, match, location}: RouteComponentProps<
                     </>
                 )}
             </>
-            <TrackEvent name={'openedPipelineDetails'} />
         </Page>
     );
 };

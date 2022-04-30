@@ -12,7 +12,6 @@ import {ErrorNotice} from '../../shared/components/error-notice';
 import {InfoIcon} from '../../shared/components/fa-icons';
 import {NamespaceFilter} from '../../shared/components/namespace-filter';
 import {TagsInput} from '../../shared/components/tags-input/tags-input';
-import {TrackEvent} from '../../shared/components/track-user-interface-event';
 import {ZeroState} from '../../shared/components/zero-state';
 import {Consumer, ContextApis} from '../../shared/context';
 import {denominator} from '../../shared/duration';
@@ -69,6 +68,7 @@ export class Reports extends BasePage<RouteComponentProps<any>, State> {
     public componentDidMount() {
         this.fetchReport(this.state.namespace, this.state.labels, this.state.archivedWorkflows);
         this.fetchWorkflowsLabels(this.state.archivedWorkflows);
+        services.info.collectEvent('openedReports').then();
     }
 
     public render() {
@@ -88,7 +88,6 @@ export class Reports extends BasePage<RouteComponentProps<any>, State> {
 
                             <div className='columns small-12 xlarge-10'>{this.renderReport(ctx)}</div>
                         </div>
-                        <TrackEvent name={'openedReports'} />
                     </Page>
                 )}
             </Consumer>

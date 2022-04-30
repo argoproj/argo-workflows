@@ -11,7 +11,6 @@ import {Graph} from '../../../shared/components/graph/types';
 import {Loading} from '../../../shared/components/loading';
 import {NamespaceFilter} from '../../../shared/components/namespace-filter';
 import {ResourceEditor} from '../../../shared/components/resource-editor/resource-editor';
-import {TrackEvent} from '../../../shared/components/track-user-interface-event';
 import {ZeroState} from '../../../shared/components/zero-state';
 import {Context} from '../../../shared/context';
 import {Footnote} from '../../../shared/footnote';
@@ -86,6 +85,10 @@ export const WorkflowEventBindings = ({match, location, history}: RouteComponent
             .catch(setError);
     }, [namespace]);
 
+    useEffect(() => {
+        services.info.collectEvent('openedWorkflowEventBindings').then();
+    }, []);
+
     return (
         <Page
             title='Workflow Event Bindings'
@@ -143,7 +146,6 @@ export const WorkflowEventBindings = ({match, location, history}: RouteComponent
                     </SlidingPanel>
                 </>
             )}
-            <TrackEvent name={'openedWorkflowEventBindings'} />
         </Page>
     );
 };

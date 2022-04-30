@@ -8,7 +8,6 @@ import {uiUrl} from '../../../shared/base';
 import {ErrorNotice} from '../../../shared/components/error-notice';
 import {Node} from '../../../shared/components/graph/types';
 import {Loading} from '../../../shared/components/loading';
-import {TrackEvent} from '../../../shared/components/track-user-interface-event';
 import {Context} from '../../../shared/context';
 import {historyUrl} from '../../../shared/history';
 import {services} from '../../../shared/services';
@@ -63,6 +62,10 @@ export const SensorDetails = ({match, location, history}: RouteComponentProps<an
     }, [namespace, name]);
 
     useEffect(() => setEdited(true), [sensor]);
+
+    useEffect(() => {
+        services.info.collectEvent('openedSensorDetails').then();
+    }, []);
 
     const selected = (() => {
         if (!selectedLogNode) {
@@ -137,7 +140,6 @@ export const SensorDetails = ({match, location, history}: RouteComponentProps<an
                     onClose={() => setSelectedLogNode(null)}
                 />
             )}
-            <TrackEvent name={'openedSensorDetails'} />
         </Page>
     );
 };

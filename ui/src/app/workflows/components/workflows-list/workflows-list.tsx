@@ -13,7 +13,6 @@ import {ExampleManifests} from '../../../shared/components/example-manifests';
 import {Loading} from '../../../shared/components/loading';
 import {PaginationPanel} from '../../../shared/components/pagination-panel';
 import {Query} from '../../../shared/components/query';
-import {TrackEvent} from '../../../shared/components/track-user-interface-event';
 import {ZeroState} from '../../../shared/components/zero-state';
 import {Consumer} from '../../../shared/context';
 import {ListWatch, sortByYouth} from '../../../shared/list-watch';
@@ -124,6 +123,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
         this.setState({selectedWorkflows: new Map<string, models.Workflow>()}, () => {
             this.fetchWorkflows(this.state.namespace, this.state.selectedPhases, this.state.selectedLabels, this.state.pagination);
         });
+        services.info.collectEvent('openedWorkflowList').then();
     }
 
     public componentWillUnmount(): void {
@@ -189,7 +189,6 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                                 />
                             )}
                         </SlidingPanel>
-                        <TrackEvent name={'openedWorkflowList'} />
                     </Page>
                 )}
             </Consumer>

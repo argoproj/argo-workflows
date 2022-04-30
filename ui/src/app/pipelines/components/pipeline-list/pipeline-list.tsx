@@ -10,7 +10,6 @@ import {Loading} from '../../../shared/components/loading';
 import {NamespaceFilter} from '../../../shared/components/namespace-filter';
 import {PhaseIcon} from '../../../shared/components/phase-icon';
 import {Timestamp} from '../../../shared/components/timestamp';
-import {TrackEvent} from '../../../shared/components/track-user-interface-event';
 import {ZeroState} from '../../../shared/components/zero-state';
 import {historyUrl} from '../../../shared/history';
 import {ListWatch} from '../../../shared/list-watch';
@@ -49,6 +48,10 @@ export const PipelineList = ({match, history}: RouteComponentProps<any>) => {
 
     const loading = !error && !pipelines;
     const zeroState = (pipelines || []).length === 0;
+
+    useEffect(() => {
+        services.info.collectEvent('openedPipelineList').then();
+    }, []);
 
     return (
         <Page
@@ -109,7 +112,6 @@ export const PipelineList = ({match, history}: RouteComponentProps<any>) => {
                     </div>
                 </>
             )}
-            <TrackEvent name={'openedPipelineList'} />
         </Page>
     );
 };
