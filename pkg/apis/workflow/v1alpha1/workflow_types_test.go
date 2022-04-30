@@ -826,51 +826,73 @@ func TestWorkflow_SearchArtifacts(t *testing.T) {
 	query := NewArtifactSearchQuery()
 
 	// no filters
-	queriedArtifacts := wf.SearchArtifacts(query)
-	assert.NotNil(t, queriedArtifacts)
-	assert.Len(t, queriedArtifacts, 3)
+	queriedArtifactSearchResults := wf.SearchArtifacts(query)
+	assert.NotNil(t, queriedArtifactSearchResults)
+	assert.Len(t, queriedArtifactSearchResults, 3)
+	assert.Equal(t, "artifact-foo", queriedArtifactSearchResults[0].Artifact.Name)
+	assert.Equal(t, "artifact-bar", queriedArtifactSearchResults[1].Artifact.Name)
+	assert.Equal(t, "artifact-foobar", queriedArtifactSearchResults[2].Artifact.Name)
+	assert.Equal(t, "node-foo", queriedArtifactSearchResults[0].NodeID)
+	assert.Equal(t, "node-foo", queriedArtifactSearchResults[1].NodeID)
+	assert.Equal(t, "node-bar", queriedArtifactSearchResults[2].NodeID)
 
 	// artifact GC strategy
 	query.ArtifactGCStrategies[ArtifactGCOnWorkflowCompletion] = true
-	queriedArtifacts = wf.SearchArtifacts(query)
-	assert.NotNil(t, queriedArtifacts)
-	assert.Len(t, queriedArtifacts, 3)
+	queriedArtifactSearchResults = wf.SearchArtifacts(query)
+	assert.NotNil(t, queriedArtifactSearchResults)
+	assert.Len(t, queriedArtifactSearchResults, 3)
+	assert.Equal(t, "artifact-foo", queriedArtifactSearchResults[0].Artifact.Name)
+	assert.Equal(t, "artifact-bar", queriedArtifactSearchResults[1].Artifact.Name)
+	assert.Equal(t, "artifact-foobar", queriedArtifactSearchResults[2].Artifact.Name)
+	assert.Equal(t, "node-foo", queriedArtifactSearchResults[0].NodeID)
+	assert.Equal(t, "node-foo", queriedArtifactSearchResults[1].NodeID)
+	assert.Equal(t, "node-bar", queriedArtifactSearchResults[2].NodeID)
 
 	// template name
 	query = NewArtifactSearchQuery()
 	query.TemplateName = "template-bar"
-	queriedArtifacts = wf.SearchArtifacts(query)
-	assert.NotNil(t, queriedArtifacts)
-	assert.Len(t, queriedArtifacts, 1)
+	queriedArtifactSearchResults = wf.SearchArtifacts(query)
+	assert.NotNil(t, queriedArtifactSearchResults)
+	assert.Len(t, queriedArtifactSearchResults, 1)
+	assert.Equal(t, "artifact-foobar", queriedArtifactSearchResults[0].Artifact.Name)
+	assert.Equal(t, "node-bar", queriedArtifactSearchResults[0].NodeID)
 
 	// artifact name
 	query = NewArtifactSearchQuery()
 	query.ArtifactName = "artifact-foo"
-	queriedArtifacts = wf.SearchArtifacts(query)
-	assert.NotNil(t, queriedArtifacts)
-	assert.Len(t, queriedArtifacts, 1)
+	queriedArtifactSearchResults = wf.SearchArtifacts(query)
+	assert.NotNil(t, queriedArtifactSearchResults)
+	assert.Len(t, queriedArtifactSearchResults, 1)
+	assert.Equal(t, "artifact-foo", queriedArtifactSearchResults[0].Artifact.Name)
+	assert.Equal(t, "node-foo", queriedArtifactSearchResults[0].NodeID)
 
 	// node id
 	query = NewArtifactSearchQuery()
 	query.NodeId = "node-foo"
-	queriedArtifacts = wf.SearchArtifacts(query)
-	assert.NotNil(t, queriedArtifacts)
-	assert.Len(t, queriedArtifacts, 2)
+	queriedArtifactSearchResults = wf.SearchArtifacts(query)
+	assert.NotNil(t, queriedArtifactSearchResults)
+	assert.Len(t, queriedArtifactSearchResults, 2)
+	assert.Equal(t, "artifact-foo", queriedArtifactSearchResults[0].Artifact.Name)
+	assert.Equal(t, "artifact-bar", queriedArtifactSearchResults[1].Artifact.Name)
+	assert.Equal(t, "node-foo", queriedArtifactSearchResults[0].NodeID)
+	assert.Equal(t, "node-foo", queriedArtifactSearchResults[1].NodeID)
 
 	// bad query
 	query = NewArtifactSearchQuery()
 	query.NodeId = "node-foobar"
-	queriedArtifacts = wf.SearchArtifacts(query)
-	assert.Nil(t, queriedArtifacts)
-	assert.Len(t, queriedArtifacts, 0)
+	queriedArtifactSearchResults = wf.SearchArtifacts(query)
+	assert.Nil(t, queriedArtifactSearchResults)
+	assert.Len(t, queriedArtifactSearchResults, 0)
 
 	// template and artifact name
 	query = NewArtifactSearchQuery()
 	query.TemplateName = "template-foo"
 	query.ArtifactName = "artifact-foo"
-	queriedArtifacts = wf.SearchArtifacts(query)
-	assert.NotNil(t, queriedArtifacts)
-	assert.Len(t, queriedArtifacts, 1)
+	queriedArtifactSearchResults = wf.SearchArtifacts(query)
+	assert.NotNil(t, queriedArtifactSearchResults)
+	assert.Len(t, queriedArtifactSearchResults, 1)
+	assert.Equal(t, "artifact-foo", queriedArtifactSearchResults[0].Artifact.Name)
+	assert.Equal(t, "node-foo", queriedArtifactSearchResults[0].NodeID)
 }
 
 func TestWorkflowSpec_GetArtifactGC(t *testing.T) {
