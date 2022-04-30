@@ -411,7 +411,9 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
                                         onResume={() => renderResumePopup()}
                                     />
                                 )}
-                                {selectedArtifact && <ArtifactPanel workflow={workflow} artifact={selectedArtifact} />}
+                                {selectedArtifact && (
+                                    <ArtifactPanel workflow={workflow} artifact={selectedArtifact} artifactRepository={workflow.status.artifactRepositoryRef.artifactRepository} />
+                                )}
                             </div>
                         </div>
                     ))}
