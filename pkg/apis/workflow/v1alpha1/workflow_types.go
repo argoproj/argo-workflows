@@ -1192,9 +1192,6 @@ func (a *ArtifactLocation) IsArchiveLogs() bool {
 }
 
 func (a *ArtifactLocation) GetKey() (string, error) {
-	if a == nil {
-		return "", fmt.Errorf("nil artifact location")
-	}
 	v, err := a.Get()
 	if err != nil {
 		return "", err
@@ -2217,10 +2214,6 @@ func (s *S3Artifact) SetKey(key string) error {
 
 func (s *S3Artifact) HasLocation() bool {
 	return s != nil && s.Endpoint != "" && s.Bucket != "" && s.Key != ""
-}
-
-func (s *S3Artifact) GetSecrets() []*apiv1.SecretKeySelector {
-	return []*apiv1.SecretKeySelector{s.SecretKeySecret, s.AccessKeySecret}
 }
 
 // GitArtifact is the location of an git artifact
