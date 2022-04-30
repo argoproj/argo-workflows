@@ -10,59 +10,50 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/utils/pointer"
 
-	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
-	"github.com/argoproj/argo-workflows/v3/workflow/controller/indexes"
-
 	log "github.com/sirupsen/logrus"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/types"
 
+	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/util/slice"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
-	"github.com/argoproj/argo-workflows/v3/workflow/util"
+	"github.com/argoproj/argo-workflows/v3/workflow/controller/indexes"
 )
 
 const artifactGCComponent = "artifact-gc"
 
-func (wfc *WorkflowController) garbageCollectArtifacts(ctx context.Context, obj interface{}) error {
-	un := obj.(*unstructured.Unstructured)
+func (woc *wfOperationCtx) garbageCollectArtifacts(ctx context.Context) error {
+
+	if !slice.ContainsString(woc.wf.Finalizers, common.FinalizerArtifactGC) {
+		return nil
+	}
+
 	strategies := map[wfv1.ArtifactGCStrategy]bool{}
 
-	if phase, ok := un.GetLabels()[common.LabelKeyPhase]; ok && wfv1.WorkflowPhase(phase).Completed() {
+	if woc.wf.Labels[common.LabelKeyCompleted] == "true" || woc.wf.DeletionTimestamp != nil {
 		strategies[wfv1.ArtifactGCOnWorkflowCompletion] = true
 	}
-	if un.GetDeletionTimestamp() != nil {
-		strategies[wfv1.ArtifactGCOnWorkflowCompletion] = true
+	if woc.wf.DeletionTimestamp != nil {
 		strategies[wfv1.ArtifactGCOnWorkflowDeletion] = true
 	}
 
 	if len(strategies) == 0 {
+		woc.log.Debug("not artifact GC currently needed")
 		return nil
 	}
 
-	pods, err := wfc.podInformer.GetIndexer().ByIndex(indexes.WorkflowIndex, un.GetNamespace()+"/"+un.GetName())
+	pods, err := woc.controller.podInformer.GetIndexer().ByIndex(indexes.WorkflowIndex, woc.wf.GetNamespace()+"/"+woc.wf.GetName())
 	if err != nil {
-		return fmt.Errorf("%w", err)
+		return fmt.Errorf("failed to get pods from informer: %w", err)
 	}
-	wf, err := util.FromUnstructured(un)
-	if err != nil {
-		return fmt.Errorf("failed to unmarshall workflow: %w", err)
-	}
-
-	log := log.WithField("workflow", wf.Name).WithField("namespace", wf.Namespace)
-
-	if err := wfc.hydrator.Hydrate(wf); err != nil {
-		return fmt.Errorf("failed to hydrate workflow: %w", err)
-	}
-
-	updated := false
 
 	for _, obj := range pods {
 		pod := obj.(*corev1.Pod)
-		nodeID := pod.Annotations[common.EnvVarNodeID]
+		if pod.Labels[common.LabelKeyComponent] != artifactGCComponent {
+			continue
+		}
+		nodeID := pod.Annotations[common.AnnotationKeyNodeID]
 		artifactName := pod.Annotations[common.AnnotationArtifactName]
 		phase := pod.Status.Phase
 		log.WithField("pod", pod.Name).
@@ -70,99 +61,59 @@ func (wfc *WorkflowController) garbageCollectArtifacts(ctx context.Context, obj 
 			WithField("artifactName", artifactName).
 			WithField("phase", phase).
 			WithField("message", pod.Status.Message).
-			Info("artifact-gc pod")
-		if pod.Labels[common.LabelKeyComponent] != artifactGCComponent {
-			continue
-		}
+			Info("reconciling artifact-gc pod")
 
-		if phase == corev1.PodSucceeded {
-			n := wf.Status.Nodes[nodeID]
+		switch phase {
+		case corev1.PodSucceeded:
+			n := woc.wf.Status.Nodes[nodeID]
 			for i, a := range n.Outputs.Artifacts {
 				if a.Name == artifactName {
-					if !a.Deleted {
-						updated = true
-					}
 					a.Deleted = true
 					n.Outputs.Artifacts[i] = a
 				}
 			}
-			wf.Status.Nodes[n.ID] = n
+			woc.wf.Status.Nodes[n.ID] = n
+			woc.updated = true
+			woc.controller.queuePodForCleanup(woc.wf.Namespace, pod.Name, deletePod)
+		case corev1.PodFailed:
+			woc.wf.Status.Conditions.UpsertCondition(wfv1.Condition{
+				Type:    wfv1.ConditionTypeArtifactGCError,
+				Status:  metav1.ConditionTrue,
+				Message: fmt.Sprintf("%s/%s: %s", nodeID, artifactName, pod.Status.Message),
+			})
+			woc.updated = true
 		}
 	}
 
-	if updated {
-		if err := wfc.hydrator.Dehydrate(wf); err != nil {
-			return fmt.Errorf("failed to dehydrate workflow: %w", err)
-		}
-		_, err := wfc.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace).Update(ctx, wf, metav1.UpdateOptions{})
-		if err != nil {
-			return fmt.Errorf("failed to update workflow: %w", err)
-		}
+	artifacts := woc.execWf.SearchArtifacts(&wfv1.ArtifactSearchQuery{ArtifactGCStrategies: strategies, Deleted: pointer.BoolPtr(false)})
+
+	if err := woc.createPodsToDeleteArtifacts(ctx, artifacts); err != nil {
+		return fmt.Errorf("failed to create pods to delete artifacts: %w", err)
 	}
 
-	wfc.deleteSuccessfulArtifactGCPods(pods, log, wf)
+	remaining := woc.execWf.SearchArtifacts(&wfv1.ArtifactSearchQuery{ArtifactGCStrategies: map[wfv1.ArtifactGCStrategy]bool{
+		wfv1.ArtifactGCOnWorkflowCompletion: true,
+		wfv1.ArtifactGCOnWorkflowDeletion:   true,
+	}, Deleted: pointer.BoolPtr(false)})
 
-	if err := wfc.createPodsToDeleteArtifacts(ctx, wf, strategies); err != nil {
-		return fmt.Errorf("failed to delete artifacts: %w", err)
-	}
-
-	if un.GetDeletionTimestamp() == nil {
-		return nil
-	}
-
-	if err := wfc.removeArtifactGCFinalizer(ctx, wf); err != nil {
-		return fmt.Errorf("failed to remove finalizer: %w", err)
+	if len(remaining) == 0 {
+		woc.log.Info("no remaining artifacts to GC, removing artifact GC finalizer")
+		woc.wf.Finalizers = slice.RemoveString(woc.wf.Finalizers, common.FinalizerArtifactGC)
+		woc.updated = true
 	}
 	return nil
 }
 
-func (wfc *WorkflowController) deleteSuccessfulArtifactGCPods(pods []interface{}, log *log.Entry, wf *wfv1.Workflow) {
-	for _, obj := range pods {
-		pod := obj.(*corev1.Pod)
-		phase := pod.Status.Phase
-		log.WithField("pod", pod.Name).
-			WithField("phase", phase).
-			WithField("message", pod.Status.Message).
-			Info("artifact-gc pod")
-		if phase == corev1.PodSucceeded {
-			wfc.queuePodForCleanup(wf.Namespace, pod.Name, deletePod)
-		}
-	}
-}
-
-func (wfc *WorkflowController) removeArtifactGCFinalizer(ctx context.Context, wf metav1.Object) error {
-	data, _ := json.Marshal(map[string]interface{}{
-		"metadata": map[string]interface{}{
-			"finalizers": slice.RemoveString(wf.GetFinalizers(), common.FinalizerArtifactGC),
-		},
-	})
-
-	_, err := wfc.wfclientset.ArgoprojV1alpha1().Workflows(wf.GetNamespace()).Patch(ctx, wf.GetName(), types.MergePatchType, data, metav1.PatchOptions{})
-	if err != nil && !apierr.IsNotFound(err) {
-		return fmt.Errorf("failed to patch workflow finalizer: %w", err)
-	}
-	return nil
-}
-
-func (wfc *WorkflowController) createPodsToDeleteArtifacts(ctx context.Context, wf *wfv1.Workflow, strategies map[wfv1.ArtifactGCStrategy]bool) error {
-
-	as := wf.SearchArtifacts(&wfv1.ArtifactSearchQuery{ArtifactGCStrategies: strategies, Deleted: pointer.BoolPtr(false)})
-
-	log.WithField("strategies", strategies).
-		WithField("namespace", wf.GetNamespace()).
-		WithField("name", wf.GetName()).
-		WithField("artifacts", len(as)).
-		Info("artifact garbage collection")
-
-	for _, a := range as {
-		if err := wfc.createArtifactGCPod(ctx, wf, &a); err != nil {
+func (woc *wfOperationCtx) createPodsToDeleteArtifacts(ctx context.Context, artifacts wfv1.ArtifactSearchResults) error {
+	for _, a := range artifacts {
+		if err := woc.createArtifactGCPod(ctx, &a); err != nil {
 			return fmt.Errorf("failed to delete artifact %q: %w", a.Name, err)
 		}
 	}
 	return nil
 }
 
-func (wfc *WorkflowController) createArtifactGCPod(ctx context.Context, wf *wfv1.Workflow, a *wfv1.ArtifactSearchResult) error {
+func (woc *wfOperationCtx) createArtifactGCPod(ctx context.Context, a *wfv1.ArtifactSearchResult) error {
 	h := fnv.New32()
 	if _, err := h.Write([]byte(a.NodeID)); err != nil {
 		return fmt.Errorf("failed to update hash with node ID: %w", err)
@@ -171,16 +122,16 @@ func (wfc *WorkflowController) createArtifactGCPod(ctx context.Context, wf *wfv1
 		return fmt.Errorf("failed to update hash with artifact name: %w", err)
 	}
 
-	podName := fmt.Sprintf("%s-%x", wf.Name, h.Sum32())
+	podName := fmt.Sprintf("%s-agc-%x", woc.wf.Name, h.Sum32())
 
-	_, exists, err := wfc.podInformer.GetIndexer().GetByKey(wf.Namespace + "/" + podName)
+	_, exists, err := woc.controller.podInformer.GetIndexer().GetByKey(woc.wf.Namespace + "/" + podName)
 	if err != nil {
 		return fmt.Errorf("failed to get pod by key: %w", err)
 	}
 	if exists {
 		return nil
 	}
-	ar, err := wfc.artifactRepositories.Get(ctx, wf.Status.ArtifactRepositoryRef)
+	ar, err := woc.controller.artifactRepositories.Get(ctx, woc.wf.Status.ArtifactRepositoryRef)
 	if err != nil {
 		return fmt.Errorf("failed to get artifact repository: %w", err)
 	}
@@ -188,9 +139,7 @@ func (wfc *WorkflowController) createArtifactGCPod(ctx context.Context, wf *wfv1
 		return fmt.Errorf("failed to relocate artifact: %w", err)
 	}
 
-	log.WithField("name", a.Name).
-		WithField("namespace", wf.Namespace).
-		WithField("workflow", wf.Name).
+	woc.log.
 		WithField("nodeID", a.NodeID).
 		WithField("artifactName", a.Name).
 		Info("create pod to delete artifact")
@@ -202,21 +151,21 @@ func (wfc *WorkflowController) createArtifactGCPod(ctx context.Context, wf *wfv1
 
 	volumes, volumeMounts := createSecretVolumes(&wfv1.Template{Outputs: wfv1.Outputs{Artifacts: []wfv1.Artifact{a.Artifact}}})
 
-	_, err = wfc.kubeclientset.CoreV1().Pods(wf.Namespace).Create(ctx, &corev1.Pod{
+	_, err = woc.controller.kubeclientset.CoreV1().Pods(woc.wf.Namespace).Create(ctx, &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: podName,
 			Labels: map[string]string{
-				common.LabelKeyWorkflow:  wf.Name,
+				common.LabelKeyWorkflow:  woc.wf.Name,
 				common.LabelKeyComponent: artifactGCComponent,
+				common.LabelKeyCompleted: "false",
 				// TODO instance ID
 			},
 			Annotations: map[string]string{
-				common.AnnotationKeyNodeID:           a.NodeID,
-				common.AnnotationArtifactName:        a.Name,
-				common.AnnotationKeyDefaultContainer: common.MainContainerName,
+				common.AnnotationKeyNodeID:    a.NodeID,
+				common.AnnotationArtifactName: a.Name,
 			},
-			OwnerReferences: []metav1.OwnerReference{
-				*metav1.NewControllerRef(wf, wfv1.SchemeGroupVersion.WithKind(workflow.WorkflowKind)),
+			OwnerReferences: []metav1.OwnerReference{ // make sure we get deleted with the workflow
+				*metav1.NewControllerRef(woc.wf, wfv1.SchemeGroupVersion.WithKind(workflow.WorkflowKind)),
 			},
 		},
 		Spec: corev1.PodSpec{
@@ -224,12 +173,13 @@ func (wfc *WorkflowController) createArtifactGCPod(ctx context.Context, wf *wfv1
 			Containers: []corev1.Container{
 				{
 					Name:            common.MainContainerName,
-					Image:           wfc.executorImage(),
-					ImagePullPolicy: wfc.executorImagePullPolicy(),
+					Image:           woc.controller.executorImage(),
+					ImagePullPolicy: woc.controller.executorImagePullPolicy(),
 					Args:            []string{"artifact", "delete", "--loglevel", getExecutorLogLevel()},
 					Env: []corev1.EnvVar{
 						{Name: common.EnvVarArtifact, Value: string(data)},
 					},
+					// we can secure and limit this pod very effectively
 					SecurityContext: &corev1.SecurityContext{
 						Capabilities:             &corev1.Capabilities{Drop: []corev1.Capability{"ALL"}},
 						Privileged:               pointer.Bool(false),
@@ -252,7 +202,7 @@ func (wfc *WorkflowController) createArtifactGCPod(ctx context.Context, wf *wfv1
 				},
 			},
 			RestartPolicy:      corev1.RestartPolicyOnFailure,
-			ServiceAccountName: wf.GetExecSpec().ServiceAccountName,
+			ServiceAccountName: woc.execWf.Spec.ServiceAccountName,
 		},
 	}, metav1.CreateOptions{})
 

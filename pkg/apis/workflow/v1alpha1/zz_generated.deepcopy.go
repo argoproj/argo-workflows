@@ -106,6 +106,11 @@ func (in *Artifact) DeepCopyInto(out *Artifact) {
 		*out = new(ArchiveStrategy)
 		(*in).DeepCopyInto(*out)
 	}
+	if in.ArtifactGC != nil {
+		in, out := &in.ArtifactGC, &out.ArtifactGC
+		*out = new(ArtifactGC)
+		**out = **in
+	}
 	return
 }
 
@@ -2854,11 +2859,6 @@ func (in *Template) DeepCopyInto(out *Template) {
 		in, out := &in.Memoize, &out.Memoize
 		*out = new(Memoize)
 		(*in).DeepCopyInto(*out)
-	}
-	if in.ArtifactGC != nil {
-		in, out := &in.ArtifactGC, &out.ArtifactGC
-		*out = new(ArtifactGC)
-		**out = **in
 	}
 	return
 }

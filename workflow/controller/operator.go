@@ -185,6 +185,16 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 		}
 		woc.persistUpdates(ctx)
 	}()
+
+	if err := woc.garbageCollectArtifacts(ctx); err != nil {
+		woc.log.WithError(err).Error("failed to GC artifacts")
+		return
+	}
+
+	if woc.wf.Labels[common.LabelKeyCompleted] == "true" { // abort now, we do not want to preform any more processing on a complete workflow because we could corrupt it
+		return
+	}
+
 	defer func() {
 		if r := recover(); r != nil {
 			woc.log.WithFields(log.Fields{"stack": string(debug.Stack()), "r": r}).Errorf("Recovered from panic")

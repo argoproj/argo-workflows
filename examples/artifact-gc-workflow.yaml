@@ -5,7 +5,7 @@ metadata:
 spec:
   entrypoint: main
   artifactGC:
-    strategy: OnWorkflowCompletion
+    strategy: OnWorkflowDeletion
   templates:
     - name: main
       container:
@@ -15,10 +15,16 @@ spec:
           - -c
         args:
           - |
-          - echo "hello world" > /tmp/message
+            echo "hello world" > /tmp/message
       outputs:
         artifacts:
-          - name: will-be-deleted-on-completion
+          - name: on-completion
             path: /tmp/message
             s3:
-              key: message
+              key: on-completion.txt
+            artifactGC:
+              strategy: OnWorkflowCompletion
+          - name: on-deletion
+            path: /tmp/message
+            s3:
+              key: on-deletion.txt

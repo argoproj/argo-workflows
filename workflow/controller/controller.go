@@ -708,6 +708,13 @@ func (wfc *WorkflowController) processNextItem(ctx context.Context) bool {
 		return true
 	}
 
+	if !reconciliationNeeded(un) {
+		println("ALEX", "processing not needed")
+		// can get here if we already added the completed=true label,
+		// but we are still draining the controller's workflow workqueue
+		return true
+	}
+
 	wf, err := util.FromUnstructured(un)
 	if err != nil {
 		log.WithFields(log.Fields{"key": key, "error": err}).Warn("Failed to unmarshal key to workflow object")
@@ -717,11 +724,6 @@ func (wfc *WorkflowController) processNextItem(ctx context.Context) bool {
 		return true
 	}
 
-	if wf.Labels[common.LabelKeyCompleted] == "true" {
-		// can get here if we already added the completed=true label,
-		// but we are still draining the controller's workflow workqueue
-		return true
-	}
 	// this will ensure we process every incomplete workflow once every 20m
 	wfc.wfQueue.AddAfter(key, workflowResyncPeriod)
 
@@ -739,7 +741,7 @@ func (wfc *WorkflowController) processNextItem(ctx context.Context) bool {
 	// make sure this is removed from the throttler is complete
 	defer func() {
 		// must be done with woc
-		if woc.wf.Labels[common.LabelKeyCompleted] == "true" {
+		if !reconciliationNeeded(woc.wf) {
 			wfc.throttler.Remove(key.(string))
 		}
 	}()
@@ -766,6 +768,10 @@ func (wfc *WorkflowController) processNextItem(ctx context.Context) bool {
 	// See: https://github.com/kubernetes/client-go/blob/master/examples/workqueue/main.go
 	// c.handleErr(err, key)
 	return true
+}
+
+func reconciliationNeeded(wf metav1.Object) bool {
+	return wf.GetLabels()[common.LabelKeyCompleted] != "true" || slices.Contains(wf.GetFinalizers(), common.FinalizerArtifactGC)
 }
 
 // enqueueWfFromPodLabel will extract the workflow name from pod label and
@@ -813,7 +819,7 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers(ctx context.Context) 
 	wfc.wfInformer.AddEventHandler(
 		cache.FilteringResourceEventHandler{
 			FilterFunc: func(obj interface{}) bool {
-				return !common.UnstructuredHasCompletedLabel(obj)
+				return reconciliationNeeded(obj.(*unstructured.Unstructured))
 			},
 			Handler: cache.ResourceEventHandlerFuncs{
 				AddFunc: func(obj interface{}) {
@@ -873,29 +879,6 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers(ctx context.Context) 
 			if ok { // maybe cache.DeletedFinalStateUnknown
 				wfc.metrics.StopRealtimeMetricsForKey(string(wf.GetUID()))
 			}
-		},
-	})
-	wfc.wfInformer.AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: func(obj interface{}) bool {
-			un := obj.(*unstructured.Unstructured)
-			return slices.Contains(un.GetFinalizers(), common.FinalizerArtifactGC)
-		},
-		Handler: cache.ResourceEventHandlerFuncs{
-			AddFunc: func(obj interface{}) {
-				if err := wfc.garbageCollectArtifacts(ctx, obj); err != nil {
-					log.WithError(err).Error("failed to GC artifacts")
-				}
-			},
-			UpdateFunc: func(_, obj interface{}) {
-				if err := wfc.garbageCollectArtifacts(ctx, obj); err != nil {
-					log.WithError(err).Error("failed to GC artifacts")
-				}
-			},
-			DeleteFunc: func(obj interface{}) {
-				if err := wfc.garbageCollectArtifacts(ctx, obj); err != nil {
-					log.WithError(err).Error("failed to GC artifacts")
-				}
-			},
 		},
 	})
 }

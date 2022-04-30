@@ -18,7 +18,6 @@ func NewArtifactDeleteCommand() *cobra.Command {
 	return &cobra.Command{
 		Use:          "delete",
 		SilenceUsage: true,
-
 		RunE: func(cmd *cobra.Command, args []string) error {
 			a := &wfv1.Artifact{}
 			if err := json.Unmarshal([]byte(os.Getenv(common.EnvVarArtifact)), a); err != nil {

@@ -31,6 +31,7 @@ from argo_workflows.exceptions import ApiAttributeError
 
 def lazy_import():
     from argo_workflows.model.io_argoproj_workflow_v1alpha1_archive_strategy import IoArgoprojWorkflowV1alpha1ArchiveStrategy
+    from argo_workflows.model.io_argoproj_workflow_v1alpha1_artifact_gc import IoArgoprojWorkflowV1alpha1ArtifactGC
     from argo_workflows.model.io_argoproj_workflow_v1alpha1_artifactory_artifact import IoArgoprojWorkflowV1alpha1ArtifactoryArtifact
     from argo_workflows.model.io_argoproj_workflow_v1alpha1_gcs_artifact import IoArgoprojWorkflowV1alpha1GCSArtifact
     from argo_workflows.model.io_argoproj_workflow_v1alpha1_git_artifact import IoArgoprojWorkflowV1alpha1GitArtifact
@@ -40,6 +41,7 @@ def lazy_import():
     from argo_workflows.model.io_argoproj_workflow_v1alpha1_raw_artifact import IoArgoprojWorkflowV1alpha1RawArtifact
     from argo_workflows.model.io_argoproj_workflow_v1alpha1_s3_artifact import IoArgoprojWorkflowV1alpha1S3Artifact
     globals()['IoArgoprojWorkflowV1alpha1ArchiveStrategy'] = IoArgoprojWorkflowV1alpha1ArchiveStrategy
+    globals()['IoArgoprojWorkflowV1alpha1ArtifactGC'] = IoArgoprojWorkflowV1alpha1ArtifactGC
     globals()['IoArgoprojWorkflowV1alpha1ArtifactoryArtifact'] = IoArgoprojWorkflowV1alpha1ArtifactoryArtifact
     globals()['IoArgoprojWorkflowV1alpha1GCSArtifact'] = IoArgoprojWorkflowV1alpha1GCSArtifact
     globals()['IoArgoprojWorkflowV1alpha1GitArtifact'] = IoArgoprojWorkflowV1alpha1GitArtifact
@@ -106,6 +108,7 @@ class IoArgoprojWorkflowV1alpha1ArtifactPaths(ModelNormal):
             'name': (str,),  # noqa: E501
             'archive': (IoArgoprojWorkflowV1alpha1ArchiveStrategy,),  # noqa: E501
             'archive_logs': (bool,),  # noqa: E501
+            'artifact_gc': (IoArgoprojWorkflowV1alpha1ArtifactGC,),  # noqa: E501
             'artifactory': (IoArgoprojWorkflowV1alpha1ArtifactoryArtifact,),  # noqa: E501
             'deleted': (bool,),  # noqa: E501
             '_from': (str,),  # noqa: E501
@@ -134,6 +137,7 @@ class IoArgoprojWorkflowV1alpha1ArtifactPaths(ModelNormal):
         'name': 'name',  # noqa: E501
         'archive': 'archive',  # noqa: E501
         'archive_logs': 'archiveLogs',  # noqa: E501
+        'artifact_gc': 'artifactGC',  # noqa: E501
         'artifactory': 'artifactory',  # noqa: E501
         'deleted': 'deleted',  # noqa: E501
         '_from': 'from',  # noqa: E501
@@ -199,6 +203,7 @@ class IoArgoprojWorkflowV1alpha1ArtifactPaths(ModelNormal):
                                 _visited_composed_classes = (Animal,)
             archive (IoArgoprojWorkflowV1alpha1ArchiveStrategy): [optional]  # noqa: E501
             archive_logs (bool): ArchiveLogs indicates if the container logs should be archived. [optional]  # noqa: E501
+            artifact_gc (IoArgoprojWorkflowV1alpha1ArtifactGC): [optional]  # noqa: E501
             artifactory (IoArgoprojWorkflowV1alpha1ArtifactoryArtifact): [optional]  # noqa: E501
             deleted (bool): Deleted if this is been deleted.. [optional]  # noqa: E501
             _from (str): From allows an artifact to reference an artifact from a previous step. [optional]  # noqa: E501
@@ -303,6 +308,7 @@ class IoArgoprojWorkflowV1alpha1ArtifactPaths(ModelNormal):
                                 _visited_composed_classes = (Animal,)
             archive (IoArgoprojWorkflowV1alpha1ArchiveStrategy): [optional]  # noqa: E501
             archive_logs (bool): ArchiveLogs indicates if the container logs should be archived. [optional]  # noqa: E501
+            artifact_gc (IoArgoprojWorkflowV1alpha1ArtifactGC): [optional]  # noqa: E501
             artifactory (IoArgoprojWorkflowV1alpha1ArtifactoryArtifact): [optional]  # noqa: E501
             deleted (bool): Deleted if this is been deleted.. [optional]  # noqa: E501
             _from (str): From allows an artifact to reference an artifact from a previous step. [optional]  # noqa: E501
