@@ -87,7 +87,7 @@ func TestServer_K8sUtilsCache(t *testing.T) {
 		assert.Equal(t, 1, len(sa))
 		assert.True(t, checkServiceAccountExists(sa, "sa3"))
 
-		secrets, _ := cache.SecretLister.Secrets("ns1").List(labels.Everything())
-		assert.Equal(t, 1, len(secrets))
+		secret, _ := cache.GetSecret("ns1", "s1")
+		assert.NotNil(t, secret)
 	})
 }

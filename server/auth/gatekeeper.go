@@ -318,7 +318,7 @@ func (s *gatekeeper) authorizationForServiceAccount(serviceAccount *corev1.Servi
 	if len(serviceAccount.Secrets) == 0 {
 		return "", fmt.Errorf("expected at least one secret for SSO RBAC service account: %s", serviceAccount.GetName())
 	}
-	secret, err := s.cache.SecretLister.Secrets(serviceAccount.GetNamespace()).Get(serviceAccount.Secrets[0].Name)
+	secret, err := s.cache.GetSecret(serviceAccount.GetNamespace(), serviceAccount.Secrets[0].Name)
 	if err != nil {
 		return "", fmt.Errorf("failed to get service account secret: %w", err)
 	}
