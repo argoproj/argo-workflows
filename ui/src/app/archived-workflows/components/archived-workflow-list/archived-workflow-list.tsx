@@ -11,7 +11,6 @@ import {Loading} from '../../../shared/components/loading';
 import {PaginationPanel} from '../../../shared/components/pagination-panel';
 import {PhaseIcon} from '../../../shared/components/phase-icon';
 import {Timestamp} from '../../../shared/components/timestamp';
-import {TrackEvent} from '../../../shared/components/track-user-interface-event';
 import {ZeroState} from '../../../shared/components/zero-state';
 import {formatDuration, wfDuration} from '../../../shared/duration';
 import {Pagination, parseLimit} from '../../../shared/pagination';
@@ -71,6 +70,7 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
             this.state.maxStartedAt,
             this.state.pagination
         );
+        services.info.collectEvent('openedArchivedWorkflowList').then();
     }
 
     public render() {
@@ -106,7 +106,6 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
                     </div>
                     <div className='columns small-12 xlarge-10'>{this.renderWorkflows()}</div>
                 </div>
-                <TrackEvent name={'openedArchivedWorkflowList'} />
             </Page>
         );
     }

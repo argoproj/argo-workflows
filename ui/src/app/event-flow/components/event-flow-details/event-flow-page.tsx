@@ -16,7 +16,6 @@ import {Node} from '../../../shared/components/graph/types';
 import {Links} from '../../../shared/components/links';
 import {NamespaceFilter} from '../../../shared/components/namespace-filter';
 import {ResourceEditor} from '../../../shared/components/resource-editor/resource-editor';
-import {TrackEvent} from '../../../shared/components/track-user-interface-event';
 import {ZeroState} from '../../../shared/components/zero-state';
 import {Context} from '../../../shared/context';
 import {Footnote} from '../../../shared/footnote';
@@ -194,6 +193,9 @@ export const EventFlowPage = ({history, location, match}: RouteComponentProps<an
         ro.start();
         return () => ro.stop();
     }, [namespace, showFlow]);
+    useEffect(() => {
+        services.info.collectEvent('openedEventFlow').then();
+    }, []);
 
     const graph = buildGraph(eventSources, sensors, workflows, flow, expanded);
 
@@ -352,7 +354,6 @@ export const EventFlowPage = ({history, location, match}: RouteComponentProps<an
                     </div>
                 )}
             </SlidingPanel>
-            <TrackEvent name={'openedEventFlow'} />
         </Page>
     );
 };

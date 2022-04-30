@@ -9,7 +9,6 @@ import {ExampleManifests} from '../../../shared/components/example-manifests';
 import {InfoIcon} from '../../../shared/components/fa-icons';
 import {Loading} from '../../../shared/components/loading';
 import {Timestamp} from '../../../shared/components/timestamp';
-import {TrackEvent} from '../../../shared/components/track-user-interface-event';
 import {ZeroState} from '../../../shared/components/zero-state';
 import {Consumer} from '../../../shared/context';
 import {Footnote} from '../../../shared/footnote';
@@ -39,6 +38,7 @@ export class ClusterWorkflowTemplateList extends BasePage<RouteComponentProps<an
 
     public componentDidMount(): void {
         this.fetchClusterWorkflowTemplates();
+        services.info.collectEvent('openedClusterWorkflowTemplateList').then();
     }
 
     public render() {
@@ -63,7 +63,6 @@ export class ClusterWorkflowTemplateList extends BasePage<RouteComponentProps<an
                         <SlidingPanel isShown={this.sidePanel !== null} onClose={() => (this.sidePanel = null)}>
                             <ClusterWorkflowTemplateCreator onCreate={wf => ctx.navigation.goto(uiUrl(`cluster-workflow-templates/${wf.metadata.name}`))} />
                         </SlidingPanel>
-                        <TrackEvent name={'openedClusterWorkflowTemplateList'} />
                     </Page>
                 )}
             </Consumer>

@@ -12,7 +12,6 @@ import {ErrorNotice} from '../../../shared/components/error-notice';
 import {ProcessURL} from '../../../shared/components/links';
 import {Loading} from '../../../shared/components/loading';
 import {SecurityNudge} from '../../../shared/components/security-nudge';
-import {TrackEvent} from '../../../shared/components/track-user-interface-event';
 import {hasWarningConditionBadge} from '../../../shared/conditions-panel';
 import {Context} from '../../../shared/context';
 import {historyUrl} from '../../../shared/history';
@@ -92,6 +91,7 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
             .getInfo()
             .then(info => setLinks(info.links))
             .catch(setError);
+        services.info.collectEvent('openedWorkflowDetails').then();
     }, []);
 
     useEffect(() => {
@@ -430,7 +430,6 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
                     {!parsedSidePanel}
                 </SlidingPanel>
             )}
-            <TrackEvent name={'openedWorkflowDetails'} />
         </Page>
     );
 };

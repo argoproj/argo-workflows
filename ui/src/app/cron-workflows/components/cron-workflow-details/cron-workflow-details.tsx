@@ -6,7 +6,6 @@ import {CronWorkflow, Link} from '../../../../models';
 import {uiUrl} from '../../../shared/base';
 import {ErrorNotice} from '../../../shared/components/error-notice';
 import {Loading} from '../../../shared/components/loading';
-import {TrackEvent} from '../../../shared/components/track-user-interface-event';
 import {Context} from '../../../shared/context';
 import {historyUrl} from '../../../shared/history';
 import {services} from '../../../shared/services';
@@ -61,6 +60,10 @@ export const CronWorkflowDetails = ({match, location, history}: RouteComponentPr
     }, [namespace, name]);
 
     useEffect(() => setEdited(true), [cronWorkflow]);
+
+    useEffect(() => {
+        services.info.collectEvent('openedCronWorkflowDetails').then();
+    }, []);
 
     const suspendButton =
         cronWorkflow && !cronWorkflow.spec.suspend
@@ -206,7 +209,6 @@ export const CronWorkflowDetails = ({match, location, history}: RouteComponentPr
                     {sidePanel === 'share' && <WidgetGallery namespace={namespace} label={'workflows.argoproj.io/cron-workflow=' + name} />}
                 </SlidingPanel>
             </>
-            <TrackEvent name={'openedCronWorkflowDetails'} />
         </Page>
     );
 };

@@ -9,7 +9,6 @@ import {ExampleManifests} from '../../../shared/components/example-manifests';
 import {InfoIcon} from '../../../shared/components/fa-icons';
 import {Loading} from '../../../shared/components/loading';
 import {Timestamp} from '../../../shared/components/timestamp';
-import {TrackEvent} from '../../../shared/components/track-user-interface-event';
 import {ZeroState} from '../../../shared/components/zero-state';
 import {Context} from '../../../shared/context';
 import {getNextScheduledTime} from '../../../shared/cron';
@@ -76,6 +75,10 @@ export const CronWorkflowList = ({match, location, history}: RouteComponentProps
             .then(() => setError(null))
             .catch(setError);
     }, [namespace, labels, states]);
+
+    useEffect(() => {
+        services.info.collectEvent('openedCronWorkflowList').then();
+    }, []);
 
     return (
         <Page
@@ -170,7 +173,6 @@ export const CronWorkflowList = ({match, location, history}: RouteComponentProps
             <SlidingPanel isShown={sidePanel} onClose={() => setSidePanel(false)}>
                 <CronWorkflowCreator namespace={namespace} onCreate={wf => navigation.goto(uiUrl(`cron-workflows/${wf.metadata.namespace}/${wf.metadata.name}`))} />
             </SlidingPanel>
-            <TrackEvent name={'openedCronWorkflowList'} />
         </Page>
     );
 };

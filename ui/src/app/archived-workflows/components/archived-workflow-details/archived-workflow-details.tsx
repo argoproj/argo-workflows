@@ -8,7 +8,6 @@ import {BasePage} from '../../../shared/components/base-page';
 import {ErrorNotice} from '../../../shared/components/error-notice';
 import {ProcessURL} from '../../../shared/components/links';
 import {Loading} from '../../../shared/components/loading';
-import {TrackEvent} from '../../../shared/components/track-user-interface-event';
 import {services} from '../../../shared/services';
 import {WorkflowArtifacts} from '../../../workflows/components/workflow-artifacts';
 
@@ -86,6 +85,7 @@ export class ArchivedWorkflowDetails extends BasePage<RouteComponentProps<any>, 
                 )
             )
             .catch(error => this.setState({error}));
+        services.info.collectEvent('openedArchivedWorkflowDetails').then();
     }
 
     public render() {
@@ -155,7 +155,6 @@ export class ArchivedWorkflowDetails extends BasePage<RouteComponentProps<any>, 
                     )
                 }}>
                 <div className={classNames('workflow-details', {'workflow-details--step-node-expanded': !!this.nodeId})}>{this.renderArchivedWorkflowDetails()}</div>
-                <TrackEvent name={'openedArchivedWorkflowDetails'} />
             </Page>
         );
     }

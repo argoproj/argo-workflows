@@ -3,9 +3,9 @@ import * as React from 'react';
 import {useEffect, useState} from 'react';
 import {RouteComponentProps} from 'react-router-dom';
 import {uiUrl} from '../../../shared/base';
-import {TrackEvent} from '../../../shared/components/track-user-interface-event';
 import {ZeroState} from '../../../shared/components/zero-state';
 import {historyUrl} from '../../../shared/history';
+import {services} from '../../../shared/services';
 import {Utils} from '../../../shared/utils';
 
 export const PluginList = ({match, history}: RouteComponentProps<any>) => {
@@ -20,6 +20,9 @@ export const PluginList = ({match, history}: RouteComponentProps<any>) => {
             ),
         [namespace]
     );
+    useEffect(() => {
+        services.info.collectEvent('openedPlugins').then();
+    }, []);
 
     return (
         <Page
@@ -36,7 +39,6 @@ export const PluginList = ({match, history}: RouteComponentProps<any>) => {
                     <a href='https://argoproj.github.io/argo-workflows/plugins/'>Learn more</a>.
                 </p>
             </ZeroState>
-            <TrackEvent name={'openedPlugins'} />
         </Page>
     );
 };
