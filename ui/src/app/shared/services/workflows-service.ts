@@ -3,6 +3,7 @@ import {catchError, filter, map, mergeMap, switchMap} from 'rxjs/operators';
 import * as models from '../../../models';
 import {Event, LogEntry, NodeStatus, Workflow, WorkflowList, WorkflowPhase} from '../../../models';
 import {SubmitOpts} from '../../../models/submit-opts';
+import {uiUrl} from '../base';
 import {Pagination} from '../pagination';
 import {Utils} from '../utils';
 import requests from './requests';
@@ -221,10 +222,10 @@ export class WorkflowsService {
     public getArtifactDownloadUrl(workflow: Workflow, nodeId: string, artifactName: string, archived: boolean, isInput: boolean) {
         if (archived) {
             const endpoint = isInput ? 'input-artifacts-by-uid' : 'artifacts-by-uid';
-            return `${endpoint}/${workflow.metadata.uid}/${nodeId}/${encodeURIComponent(artifactName)}`;
+            return uiUrl(`${endpoint}/${workflow.metadata.uid}/${nodeId}/${encodeURIComponent(artifactName)}`);
         } else {
             const endpoint = isInput ? 'input-artifacts' : 'artifacts';
-            return `${endpoint}/${workflow.metadata.namespace}/${workflow.metadata.name}/${nodeId}/${encodeURIComponent(artifactName)}`;
+            return uiUrl(`${endpoint}/${workflow.metadata.namespace}/${workflow.metadata.name}/${nodeId}/${encodeURIComponent(artifactName)}`);
         }
     }
 

@@ -37,9 +37,9 @@ const (
 	EnvArgoArtifactXFrameOptions = "ARGO_ARTIFACT_X_FRAME_OPTIONS"
 	// DefaultContentSecurityPolicy is the default policy added to the Content-Security-Policy HTTP header
 	//   if no environment override has been added
-	DefaultContentSecurityPolicy = "sandbox; base-uri 'none'; default-src 'none'; image-src: 'self'; style-src: 'self'"
+	DefaultContentSecurityPolicy = "sandbox; base-uri 'none'; default-src 'none'; img-src 'self'; style-src 'self'"
 	// DefaultXFrameOptions is the default value for the X-Frame-Options header
-	DefaultXFrameOptions = "SAMESITE"
+	DefaultXFrameOptions = "SAMEORIGIN"
 )
 
 type ArtifactServer struct {
@@ -181,11 +181,11 @@ func (a *ArtifactServer) gateKeeping(r *http.Request, ns types.NamespacedRequest
 }
 
 func (a *ArtifactServer) unauthorizedError(w http.ResponseWriter) {
-	w.WriteHeader(401)
+	http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 }
 
 func (a *ArtifactServer) serverInternalError(err error, w http.ResponseWriter) {
-	w.WriteHeader(500)
+	http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 	log.WithError(err).Error("Artifact Server returned internal error")
 }
 

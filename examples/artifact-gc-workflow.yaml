@@ -20,11 +20,15 @@ spec:
         artifacts:
           - name: on-completion
             path: /tmp/message
+            archive:
+              none: {}
             s3:
               key: on-completion.txt
             artifactGC:
               strategy: OnWorkflowCompletion
           - name: on-deletion
             path: /tmp/message
+            archive:
+              none: {}
             s3:
               key: on-deletion.txt

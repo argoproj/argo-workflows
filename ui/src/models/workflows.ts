@@ -103,6 +103,9 @@ export interface Artifact {
     oss?: OSSArtifact;
     raw?: RawArtifact;
     s3?: S3Artifact;
+    archive?: {
+        none?: {};
+    };
 }
 
 /**
