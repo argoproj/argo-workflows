@@ -14,6 +14,8 @@ import (
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
+	controllercache "github.com/argoproj/argo-workflows/v3/workflow/controller/cache"
+	log "github.com/sirupsen/logrus"
 )
 
 func (woc *wfOperationCtx) patchTaskSet(ctx context.Context, patch interface{}, pathTypeType types.PatchType) error {
@@ -134,6 +136,13 @@ func (woc *wfOperationCtx) reconcileTaskSet(ctx context.Context) error {
 			node.FinishedAt = metav1.Now()
 
 			woc.wf.Status.Nodes[nodeID] = node
+			if node.MemoizationStatus != nil && node.Succeeded() {
+				c := woc.controller.cacheFactory.GetCache(controllercache.ConfigMapCache, node.MemoizationStatus.CacheName)
+				err := c.Save(ctx, node.MemoizationStatus.Key, node.ID, node.Outputs)
+				if err != nil {
+					woc.log.WithFields(log.Fields{"nodeID": node.ID}).WithError(err).Error("Failed to save node outputs to cache")
+				}
+			}
 			woc.updated = true
 		}
 	}
