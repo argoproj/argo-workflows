@@ -151,6 +151,25 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
                 });
         }
 
+        // we only want one link, and we have a preference
+        for (const k of [
+            'workflows.argoproj.io/workflow-template',
+            'workflows.argoproj.io/cluster-workflow-template',
+            'workflows.argoproj.io/cron-workflow',
+            'workflows.argoproj.io/workflow-event-binding',
+            'workflows.argoproj.io/resubmitted-from-workflow'
+        ]) {
+            const v = workflow?.metadata.labels[k];
+            if (v) {
+                items.push({
+                    title: 'Previous Runs',
+                    iconClassName: 'fa fa-search',
+                    action: () => navigation.goto(uiUrl(`workflows/${workflow.metadata.namespace}?label=${k}=${v}`))
+                });
+                break; // only add one item
+            }
+        }
+
         if (workflow?.spec?.workflowTemplateRef) {
             const templateName: string = workflow.spec.workflowTemplateRef.name;
             const clusterScope: boolean = workflow.spec.workflowTemplateRef.clusterScope;

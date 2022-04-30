@@ -26,6 +26,7 @@ export const ArtifactPanel = ({
 
     const urn = artifactURN(artifact, artifactRepository);
     const key = artifactKey(artifact);
+    const isDir = key.endsWith('/');
     const filename = key.split('/').pop();
     const ext = filename.split('.').pop();
 
@@ -33,18 +34,19 @@ export const ArtifactPanel = ({
     const [error, setError] = useState<Error>();
     const [object, setObject] = useState<any>();
 
-    const tgz = !artifact.archive?.none;
-    useEffect(() => setShow(!tgz && ['gif', 'jpg', 'jpeg', 'json', 'html', 'png', 'txt'].includes(ext)), [downloadUrl, ext]);
+    const tgz = !artifact.archive?.none; // the key can be wrong about the file type
+    const supported = !tgz && (isDir || ['gif', 'jpg', 'jpeg', 'json', 'html', 'png', 'txt'].includes(ext));
+    useEffect(() => setShow(supported), [downloadUrl, ext]);
 
     useEffect(() => {
+        setObject(null);
+        setError(null);
         if (ext === 'json') {
             requests
                 .get(downloadUrl)
                 .then(r => r.text)
                 .then(setObject)
                 .catch(setError);
-        } else {
-            setObject(null);
         }
     }, [downloadUrl]);
 
@@ -77,21 +79,16 @@ export const ArtifactPanel = ({
                                         }}
                                     />
                                 ) : (
-                                    <iframe key={artifact.name} src={downloadUrl} style={{width: '100%', height: '500px', border: 'none'}} />
+                                    <iframe src={downloadUrl} style={{width: '100%', height: '500px', border: 'none'}} />
                                 )}
                             </ViewBox>
+                        ) : tgz ? (
+                            <p>Artifact cannot be shown because it is a tgz.</p>
                         ) : (
                             <p>
-                                {tgz ? (
-                                    <>Artifact is a tgz.</>
-                                ) : (
-                                    <>
-                                        Unknown extension "{ext}", <a onClick={() => setShow(true)}>show anyway</a>.
-                                    </>
-                                )}
+                                Unknown extension "{ext}", <a onClick={() => setShow(true)}>show anyway</a>.
                             </p>
                         )}
-
                         <p style={{marginTop: 10}}>
                             <LinkButton to={downloadUrl}>
                                 <i className='fa fa-download' /> {filename || 'Download'}

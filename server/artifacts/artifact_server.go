@@ -271,10 +271,10 @@ func (a *ArtifactServer) returnArtifact(ctx context.Context, w http.ResponseWrit
 
 	_, err = io.Copy(w, stream)
 	if err != nil {
-		return fmt.Errorf("failed to copy stream for artifact, err:%v", err)
+		http.Error(w, fmt.Sprintf("failed to stream artifact: %v", err), http.StatusInternalServerError)
+	} else {
+		w.WriteHeader(http.StatusOK)
 	}
-
-	w.WriteHeader(http.StatusOK)
 
 	return nil
 }
