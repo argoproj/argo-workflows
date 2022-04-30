@@ -11,6 +11,7 @@ Name | Type | Description | Notes
 **archive** | [**IoArgoprojWorkflowV1alpha1ArchiveStrategy**](IoArgoprojWorkflowV1alpha1ArchiveStrategy.md) |  |  [optional]
 **archiveLogs** | **Boolean** | ArchiveLogs indicates if the container logs should be archived |  [optional]
 **artifactory** | [**IoArgoprojWorkflowV1alpha1ArtifactoryArtifact**](IoArgoprojWorkflowV1alpha1ArtifactoryArtifact.md) |  |  [optional]
+**deleted** | **Boolean** | Deleted if this is been deleted. |  [optional]
 **from** | **String** | From allows an artifact to reference an artifact from a previous step |  [optional]
 **fromExpression** | **String** | FromExpression, if defined, is evaluated to specify the value for the artifact |  [optional]
 **gcs** | [**IoArgoprojWorkflowV1alpha1GCSArtifact**](IoArgoprojWorkflowV1alpha1GCSArtifact.md) |  |  [optional]

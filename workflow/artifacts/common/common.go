@@ -23,6 +23,13 @@ type ArtifactDriver interface {
 	// Save uploads the path to artifact destination
 	Save(path string, outputArtifact *v1alpha1.Artifact) error
 
+	// Delete remove an artifact from storage.
+	// Implementations:
+	// * Must be idempotent.
+	// * Must be memory and CPU constrained.
+	// * Should typically take no more than 3s to run.
+	// * Should implement a retry mechanism (e.g. retry.OnError).
+	// * May return ErrDeleteNotSupported if this operation is not supported.
 	Delete(artifact *v1alpha1.Artifact) error
 
 	ListObjects(artifact *v1alpha1.Artifact) ([]string, error)

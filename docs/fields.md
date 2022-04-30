@@ -1981,6 +1981,7 @@ Artifact indicates an artifact to place at a specified path
 |`archive`|[`ArchiveStrategy`](#archivestrategy)|Archive controls how the artifact will be saved to the artifact repository.|
 |`archiveLogs`|`boolean`|ArchiveLogs indicates if the container logs should be archived|
 |`artifactory`|[`ArtifactoryArtifact`](#artifactoryartifact)|Artifactory contains artifactory artifact location details|
+|`deleted`|`boolean`|Deleted if this is been deleted.|
 |`from`|`string`|From allows an artifact to reference an artifact from a previous step|
 |`fromExpression`|`string`|FromExpression, if defined, is evaluated to specify the value for the artifact|
 |`gcs`|[`GCSArtifact`](#gcsartifact)|GCS contains GCS artifact location details|
@@ -2316,6 +2317,7 @@ ArtifactLocation describes a location for a single or multiple artifacts. It is 
 |:----------:|:----------:|---------------|
 |`archiveLogs`|`boolean`|ArchiveLogs indicates if the container logs should be archived|
 |`artifactory`|[`ArtifactoryArtifact`](#artifactoryartifact)|Artifactory contains artifactory artifact location details|
+|`deleted`|`boolean`|Deleted if this is been deleted.|
 |`gcs`|[`GCSArtifact`](#gcsartifact)|GCS contains GCS artifact location details|
 |`git`|[`GitArtifact`](#gitartifact)|Git contains git artifact location details|
 |`hdfs`|[`HDFSArtifact`](#hdfsartifact)|HDFS contains HDFS artifact location details|
@@ -4194,6 +4196,7 @@ ArtifactPaths expands a step from a collection of artifacts
 |`archive`|[`ArchiveStrategy`](#archivestrategy)|Archive controls how the artifact will be saved to the artifact repository.|
 |`archiveLogs`|`boolean`|ArchiveLogs indicates if the container logs should be archived|
 |`artifactory`|[`ArtifactoryArtifact`](#artifactoryartifact)|Artifactory contains artifactory artifact location details|
+|`deleted`|`boolean`|Deleted if this is been deleted.|
 |`from`|`string`|From allows an artifact to reference an artifact from a previous step|
 |`fromExpression`|`string`|FromExpression, if defined, is evaluated to specify the value for the artifact|
 |`gcs`|[`GCSArtifact`](#gcsartifact)|GCS contains GCS artifact location details|

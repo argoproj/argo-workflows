@@ -8868,6 +8868,10 @@
           "description": "Artifactory contains artifactory artifact location details",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactoryArtifact"
         },
+        "deleted": {
+          "description": "Deleted if this is been deleted.",
+          "type": "boolean"
+        },
         "from": {
           "description": "From allows an artifact to reference an artifact from a previous step",
           "type": "string"
@@ -8956,6 +8960,10 @@
           "description": "Artifactory contains artifactory artifact location details",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactoryArtifact"
         },
+        "deleted": {
+          "description": "Deleted if this is been deleted.",
+          "type": "boolean"
+        },
         "gcs": {
           "description": "GCS contains GCS artifact location details",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.GCSArtifact"
@@ -9004,6 +9012,10 @@
         "artifactory": {
           "description": "Artifactory contains artifactory artifact location details",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactoryArtifact"
+        },
+        "deleted": {
+          "description": "Deleted if this is been deleted.",
+          "type": "boolean"
         },
         "from": {
           "description": "From allows an artifact to reference an artifact from a previous step",

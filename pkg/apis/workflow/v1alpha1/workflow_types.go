@@ -1315,7 +1315,7 @@ func (w *Workflow) SearchArtifacts(q *ArtifactSearchQuery) ArtifactSearchResults
 				match = false
 			}
 			if q.Deleted != nil && a.Deleted != *q.Deleted {
-				continue
+				match = false
 			}
 			if match == true {
 				artifacts = append(artifacts, ArtifactSearchResult{Artifact: a, NodeID: n.ID})
