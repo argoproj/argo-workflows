@@ -106,6 +106,10 @@ const config = {
         "target": isProd ? "" : "http://localhost:2746",
         "secure": false
       },
+      "/artifact-files": {
+        "target": isProd ? "" : "http://localhost:2746",
+        "secure": false
+      },
       '/oauth2': {
         'target': isProd ? '' : 'http://localhost:2746',
         'secure': false,

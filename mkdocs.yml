@@ -69,6 +69,7 @@ nav:
           - synchronization.md
           - workflow-of-workflows.md
           - memoization.md
+          - artifact-visualization.md
           - tolerating-pod-deletion.md
           - widgets.md
           - retries.md
@@ -108,6 +109,8 @@ nav:
           - argo archive list: cli/argo_archive_list.md
           - argo archive list-label-keys: cli/argo_archive_list-label-keys.md
           - argo archive list-label-values: cli/argo_archive_list-label-values.md
+          - argo archive resubmit: cli/argo_archive_resubmit.md
+          - argo archive retry: cli/argo_archive_retry.md
           - argo auth: cli/argo_auth.md
           - argo auth token: cli/argo_auth_token.md
           - argo cluster-template: cli/argo_cluster-template.md

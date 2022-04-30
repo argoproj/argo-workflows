@@ -8,7 +8,6 @@ import {ErrorNotice} from '../../../shared/components/error-notice';
 import {FirstTimeUserPanel} from '../../../shared/components/first-time-user-panel';
 import {GiveFeedbackLink} from '../../../shared/components/give-feedback-link';
 import {LinkButton} from '../../../shared/components/link-button';
-import {services} from '../../../shared/services';
 import requests from '../../../shared/services/requests';
 
 export const ArtifactPanel = ({
@@ -20,9 +19,13 @@ export const ArtifactPanel = ({
     artifact: Artifact & {nodeId: string; artifactNameDiscriminator: string};
     archived?: boolean;
 }) => {
-    const downloadUrl = services.workflows.getArtifactDownloadUrl(workflow, artifact.nodeId, artifact.name, archived, artifact.artifactNameDiscriminator === 'input');
+    const archiveDiscriminator = archived ? 'archived-workflows' : 'workflows';
+    const downloadUrl = `artifact-files/${workflow.metadata.namespace}/${archiveDiscriminator}/${workflow.metadata.name}/${artifact.nodeId}/outputs/${artifact.name}`;
 
-    const key = artifactKey(artifact)
+    const key = artifactKey(artifact);
+    const isDir = key.endsWith('/');
+    const filename = key
+        .replace(/\/$/, '')
         .split('/')
         .pop();
     const ext = key.split('.').pop();
@@ -31,17 +34,17 @@ export const ArtifactPanel = ({
     const [error, setError] = useState<Error>();
     const [object, setObject] = useState<any>();
 
-    useEffect(() => setShow(['gif', 'jpg', 'jpeg', 'json', 'html', 'png', 'txt'].includes(ext)), [downloadUrl, ext]);
+    useEffect(() => setShow(isDir || ['gif', 'jpg', 'jpeg', 'json', 'html', 'png', 'txt'].includes(ext)), [key]);
 
     useEffect(() => {
+        setObject(null);
+        setError(null);
         if (ext === 'json') {
             requests
                 .get(downloadUrl)
                 .then(r => r.text)
                 .then(setObject)
                 .catch(setError);
-        } else {
-            setObject(null);
         }
     }, [downloadUrl]);
 
@@ -71,7 +74,7 @@ export const ArtifactPanel = ({
                                         }}
                                     />
                                 ) : (
-                                    <iframe sandbox='' src={downloadUrl} style={{width: '100%', height: '500px', border: 'none'}} />
+                                    <iframe src={downloadUrl} style={{width: '100%', height: '500px', border: 'none'}} />
                                 )}
                             </ViewBox>
                         ) : (
@@ -82,7 +85,7 @@ export const ArtifactPanel = ({
 
                         <p style={{marginTop: 10}}>
                             <LinkButton to={downloadUrl}>
-                                <i className='fa fa-download' /> {key || 'Download'}
+                                <i className='fa fa-download' /> {filename || 'Download'}
                             </LinkButton>
                         </p>
                         <GiveFeedbackLink href='https://github.com/argoproj/argo-workflows/issues/7743' />
