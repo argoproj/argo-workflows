@@ -1260,6 +1260,13 @@ type ArtifactSearchQuery struct {
 	Deleted              *bool                       `json:"deleted,omitempty" protobuf:"varint,5,opt,name=deleted"`
 }
 
+type ArtifactSearchResult struct {
+	Artifact `protobuf:"bytes,1,opt,name=artifact"`
+	NodeID   string `protobuf:"bytes,2,opt,name=nodeID"`
+}
+
+type ArtifactSearchResults []ArtifactSearchResult
+
 func NewArtifactSearchQuery() *ArtifactSearchQuery {
 	var q ArtifactSearchQuery
 	q.ArtifactGCStrategies = make(map[ArtifactGCStrategy]bool)
@@ -1275,16 +1282,9 @@ func (q *ArtifactSearchQuery) anyArtifactGCStrategy() bool {
 	return false
 }
 
-type ArtifactSearchResults []ArtifactSearchResult
-
-type ArtifactSearchResult struct {
-	Artifact `json:",inline" protobuf:"bytes,1,opt,name=artifact"`
-	NodeID   string `json:"nodeID" protobuf:"bytes,2,opt,name=nodeID"`
-}
-
 func (w *Workflow) SearchArtifacts(q *ArtifactSearchQuery) ArtifactSearchResults {
 
-	var artifacts ArtifactSearchResults
+	var results ArtifactSearchResults
 
 	for _, n := range w.Status.Nodes {
 		t := w.GetTemplateByName(n.TemplateName)
@@ -1312,11 +1312,11 @@ func (w *Workflow) SearchArtifacts(q *ArtifactSearchQuery) ArtifactSearchResults
 				match = false
 			}
 			if match == true {
-				artifacts = append(artifacts, ArtifactSearchResult{Artifact: a, NodeID: n.ID})
+				results = append(results, ArtifactSearchResult{Artifact: a, NodeID: n.ID})
 			}
 		}
 	}
-	return artifacts
+	return results
 }
 
 // Outputs hold parameters, artifacts, and results from a step
