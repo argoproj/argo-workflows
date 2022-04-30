@@ -30,6 +30,8 @@ Workflow is the definition of a workflow resource
 
 - [`artifactory-artifact.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/artifactory-artifact.yaml)
 
+- [`artifacts-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/artifacts-workflow.yaml)
+
 - [`ci-output-artifact.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/ci-output-artifact.yaml)
 
 - [`ci.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/ci.yaml)
@@ -440,6 +442,8 @@ WorkflowSpec is the specification of a Workflow.
 - [`artifact-repository-ref.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/artifact-repository-ref.yaml)
 
 - [`artifactory-artifact.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/artifactory-artifact.yaml)
+
+- [`artifacts-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/artifacts-workflow.yaml)
 
 - [`buildkit-template.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/buildkit-template.yaml)
 
@@ -862,6 +866,8 @@ CronWorkflowSpec is the specification of a CronWorkflow
 - [`artifact-repository-ref.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/artifact-repository-ref.yaml)
 
 - [`artifactory-artifact.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/artifactory-artifact.yaml)
+
+- [`artifacts-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/artifacts-workflow.yaml)
 
 - [`buildkit-template.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/buildkit-template.yaml)
 
@@ -1806,6 +1812,8 @@ Outputs hold parameters, artifacts, and results from a step
 
 - [`artifactory-artifact.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/artifactory-artifact.yaml)
 
+- [`artifacts-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/artifacts-workflow.yaml)
+
 - [`ci-output-artifact.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/ci-output-artifact.yaml)
 
 - [`conditional-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/conditional-artifacts.yaml)
@@ -1916,6 +1924,8 @@ Artifact indicates an artifact to place at a specified path
 
 - [`artifactory-artifact.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/artifactory-artifact.yaml)
 
+- [`artifacts-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/artifacts-workflow.yaml)
+
 - [`ci-output-artifact.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/ci-output-artifact.yaml)
 
 - [`ci.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/ci.yaml)
@@ -1971,7 +1981,6 @@ Artifact indicates an artifact to place at a specified path
 |`archive`|[`ArchiveStrategy`](#archivestrategy)|Archive controls how the artifact will be saved to the artifact repository.|
 |`archiveLogs`|`boolean`|ArchiveLogs indicates if the container logs should be archived|
 |`artifactory`|[`ArtifactoryArtifact`](#artifactoryartifact)|Artifactory contains artifactory artifact location details|
-|`deleted`|`boolean`|Deleted if this is been deleted.|
 |`from`|`string`|From allows an artifact to reference an artifact from a previous step|
 |`fromExpression`|`string`|FromExpression, if defined, is evaluated to specify the value for the artifact|
 |`gcs`|[`GCSArtifact`](#gcsartifact)|GCS contains GCS artifact location details|
@@ -2307,7 +2316,6 @@ ArtifactLocation describes a location for a single or multiple artifacts. It is 
 |:----------:|:----------:|---------------|
 |`archiveLogs`|`boolean`|ArchiveLogs indicates if the container logs should be archived|
 |`artifactory`|[`ArtifactoryArtifact`](#artifactoryartifact)|Artifactory contains artifactory artifact location details|
-|`deleted`|`boolean`|Deleted if this is been deleted.|
 |`gcs`|[`GCSArtifact`](#gcsartifact)|GCS contains GCS artifact location details|
 |`git`|[`GitArtifact`](#gitartifact)|Git contains git artifact location details|
 |`hdfs`|[`HDFSArtifact`](#hdfsartifact)|HDFS contains HDFS artifact location details|
@@ -3151,6 +3159,8 @@ ArchiveStrategy describes how to archive files/directory when saving artifacts
 - [`artifact-disable-archive.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/artifact-disable-archive.yaml)
 
 - [`artifact-passing-subpath.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/artifact-passing-subpath.yaml)
+
+- [`artifacts-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/artifacts-workflow.yaml)
 
 - [`map-reduce.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/map-reduce.yaml)
 
@@ -4077,6 +4087,8 @@ NoneStrategy indicates to skip tar process and upload the files or directory tre
 
 - [`artifact-passing-subpath.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/artifact-passing-subpath.yaml)
 
+- [`artifacts-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/artifacts-workflow.yaml)
+
 - [`map-reduce.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/map-reduce.yaml)
 
 - [`output-artifact-s3.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/output-artifact-s3.yaml)
@@ -4182,7 +4194,6 @@ ArtifactPaths expands a step from a collection of artifacts
 |`archive`|[`ArchiveStrategy`](#archivestrategy)|Archive controls how the artifact will be saved to the artifact repository.|
 |`archiveLogs`|`boolean`|ArchiveLogs indicates if the container logs should be archived|
 |`artifactory`|[`ArtifactoryArtifact`](#artifactoryartifact)|Artifactory contains artifactory artifact location details|
-|`deleted`|`boolean`|Deleted if this is been deleted.|
 |`from`|`string`|From allows an artifact to reference an artifact from a previous step|
 |`fromExpression`|`string`|FromExpression, if defined, is evaluated to specify the value for the artifact|
 |`gcs`|[`GCSArtifact`](#gcsartifact)|GCS contains GCS artifact location details|
@@ -4288,6 +4299,8 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 - [`artifact-repository-ref.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/artifact-repository-ref.yaml)
 
 - [`artifactory-artifact.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/artifactory-artifact.yaml)
+
+- [`artifacts-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/artifacts-workflow.yaml)
 
 - [`buildkit-template.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/buildkit-template.yaml)
 
@@ -4920,6 +4933,8 @@ A single application container that you want to run within a pod.
 - [`artifact-repository-ref.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/artifact-repository-ref.yaml)
 
 - [`artifactory-artifact.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/artifactory-artifact.yaml)
+
+- [`artifacts-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/artifacts-workflow.yaml)
 
 - [`buildkit-template.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/buildkit-template.yaml)
 
@@ -5581,6 +5596,8 @@ PersistentVolumeClaimSpec describes the common attributes of storage devices and
 - [`artifact-repository-ref.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/artifact-repository-ref.yaml)
 
 - [`artifactory-artifact.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/artifactory-artifact.yaml)
+
+- [`artifacts-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/artifacts-workflow.yaml)
 
 - [`buildkit-template.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/buildkit-template.yaml)
 

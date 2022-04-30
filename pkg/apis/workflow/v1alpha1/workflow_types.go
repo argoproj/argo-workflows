@@ -1258,13 +1258,25 @@ func (r *ArtifactRepositoryRefStatus) String() string {
 
 type ArtifactSearchQuery struct {
 	ArtifactGCStrategies map[ArtifactGCStrategy]bool `json:"artifactGCStrategies,omitempty" protobuf:"bytes,1,rep,name=artifactGCStrategies,castkey=ArtifactGCStrategy"`
-	Deleted              *bool                       `json:"deleted,omitempty" protobuf:"varint,2,opt,name=deleted"`
+	ArtifactName         string                      `json:"artifactName,omitempty" protobuf:"bytes,2,rep,name=artifactName"`
+	TemplateName         string                      `json:"templateName,omitempty" protobuf:"bytes,3,rep,name=templateName"`
+	NodeId               string                      `json:"nodeId,omitempty" protobuf:"bytes,4,rep,name=nodeId"`
+	Deleted              *bool                       `json:"deleted,omitempty" protobuf:"varint,5,opt,name=deleted"`
 }
 
 func NewArtifactSearchQuery() *ArtifactSearchQuery {
 	var q ArtifactSearchQuery
 	q.ArtifactGCStrategies = make(map[ArtifactGCStrategy]bool)
 	return &q
+}
+
+func (q *ArtifactSearchQuery) anyArtifactGCStrategy() bool {
+	for _, val := range q.ArtifactGCStrategies {
+		if val == true {
+			return val
+		}
+	}
+	return false
 }
 
 type ArtifactSearchResults []ArtifactSearchResult
@@ -1274,13 +1286,6 @@ type ArtifactSearchResult struct {
 	NodeID   string `json:"nodeID" protobuf:"bytes,2,opt,name=nodeID"`
 }
 
-func (r *Artifact) GetSecrets() []*apiv1.SecretKeySelector {
-	if r.S3 != nil {
-		return r.S3.GetSecrets()
-	}
-	return nil
-}
-
 func (w *Workflow) SearchArtifacts(q *ArtifactSearchQuery) ArtifactSearchResults {
 
 	var artifacts ArtifactSearchResults
@@ -1288,23 +1293,35 @@ func (w *Workflow) SearchArtifacts(q *ArtifactSearchQuery) ArtifactSearchResults
 	for _, n := range w.Status.Nodes {
 		t := w.GetTemplateByName(n.TemplateName)
 		for _, a := range n.GetOutputs().GetArtifacts() {
-			strategy := w.Spec.GetArtifactGC().GetStrategy()
-			if templateStrategy := t.GetArtifactGC().GetStrategy(); templateStrategy != ArtifactGCNever {
-				strategy = templateStrategy
+			match := true
+			if q.anyArtifactGCStrategy() {
+				templateStrategy := t.GetArtifactGC().GetStrategy()
+				wfStrategy := w.Spec.GetArtifactGC().GetStrategy()
+				strategy := wfStrategy
+				if templateStrategy != ArtifactGCNever {
+					strategy = templateStrategy
+				}
+				if !q.ArtifactGCStrategies[strategy] {
+					match = false
+				}
 			}
-			if !q.ArtifactGCStrategies[strategy] {
-				continue
+			if q.ArtifactName != "" && a.Name != q.ArtifactName {
+				match = false
+			}
+			if q.TemplateName != "" && n.TemplateName != q.TemplateName {
+				match = false
+			}
+			if q.NodeId != "" && n.ID != q.NodeId {
+				match = false
 			}
 			if q.Deleted != nil && a.Deleted != *q.Deleted {
 				continue
 			}
-			artifacts = append(artifacts, ArtifactSearchResult{
-				Artifact: a,
-				NodeID:   n.ID,
-			})
+			if match == true {
+				artifacts = append(artifacts, ArtifactSearchResult{Artifact: a, NodeID: n.ID})
+			}
 		}
 	}
-
 	return artifacts
 }
 

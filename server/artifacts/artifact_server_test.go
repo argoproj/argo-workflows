@@ -3,6 +3,7 @@ package artifacts
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -10,6 +11,8 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"testing"
+
+	apierr "k8s.io/apimachinery/pkg/api/errors"
 
 	"github.com/stretchr/testify/assert"
 	testhttp "github.com/stretchr/testify/http"
@@ -256,11 +259,48 @@ func TestArtifactServer_GetArtifactByUIDInvalidRequestPath(t *testing.T) {
 	w := &testhttp.TestResponseWriter{}
 	s.GetInputArtifactByUID(w, r)
 	// make sure there is no index out of bounds error
-	assert.Equal(t, 500, w.StatusCode)
-	assert.Empty(t, w.Output)
+	assert.Equal(t, 400, w.StatusCode)
+	assert.Contains(t, w.Output, "Bad Request")
 
 	w = &testhttp.TestResponseWriter{}
 	s.GetOutputArtifactByUID(w, r)
-	assert.Equal(t, 500, w.StatusCode)
+	assert.Equal(t, 400, w.StatusCode)
+	assert.Contains(t, w.Output, "Bad Request")
+}
+
+func TestArtifactServer_httpError(t *testing.T) {
+	s := newServer()
+	w := &testhttp.TestResponseWriter{}
+	s.httpError(http.StatusBadRequest, "Client error", w)
+
+	assert.Equal(t, http.StatusBadRequest, w.StatusCode)
+	assert.Contains(t, w.Output, "Bad Request")
+}
+
+func TestArtifactServer_httpBadRequestError(t *testing.T) {
+	s := newServer()
+	w := &testhttp.TestResponseWriter{}
+	s.httpBadRequestError("Client error", w)
+
+	assert.Equal(t, http.StatusBadRequest, w.StatusCode)
+	assert.Contains(t, w.Output, "Bad Request")
+}
+
+func TestArtifactServer_httpFromError(t *testing.T) {
+	s := newServer()
+	w := &testhttp.TestResponseWriter{}
+	err := errors.New("math: square root of negative number")
+
+	s.httpFromError(err, "Server error", w)
+
+	assert.Equal(t, http.StatusInternalServerError, w.StatusCode)
 	assert.Empty(t, w.Output)
+
+	w = &testhttp.TestResponseWriter{}
+	err = apierr.NewUnauthorized("")
+
+	s.httpFromError(err, "Unauthorized", w)
+
+	assert.Equal(t, http.StatusUnauthorized, w.StatusCode)
+	assert.Contains(t, w.Output, "Unauthorized")
 }

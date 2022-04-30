@@ -103,7 +103,6 @@ class IoArgoprojWorkflowV1alpha1ArtifactLocation(ModelNormal):
         return {
             'archive_logs': (bool,),  # noqa: E501
             'artifactory': (IoArgoprojWorkflowV1alpha1ArtifactoryArtifact,),  # noqa: E501
-            'deleted': (bool,),  # noqa: E501
             'gcs': (IoArgoprojWorkflowV1alpha1GCSArtifact,),  # noqa: E501
             'git': (IoArgoprojWorkflowV1alpha1GitArtifact,),  # noqa: E501
             'hdfs': (IoArgoprojWorkflowV1alpha1HDFSArtifact,),  # noqa: E501
@@ -121,7 +120,6 @@ class IoArgoprojWorkflowV1alpha1ArtifactLocation(ModelNormal):
     attribute_map = {
         'archive_logs': 'archiveLogs',  # noqa: E501
         'artifactory': 'artifactory',  # noqa: E501
-        'deleted': 'deleted',  # noqa: E501
         'gcs': 'gcs',  # noqa: E501
         'git': 'git',  # noqa: E501
         'hdfs': 'hdfs',  # noqa: E501
@@ -174,7 +172,6 @@ class IoArgoprojWorkflowV1alpha1ArtifactLocation(ModelNormal):
                                 _visited_composed_classes = (Animal,)
             archive_logs (bool): ArchiveLogs indicates if the container logs should be archived. [optional]  # noqa: E501
             artifactory (IoArgoprojWorkflowV1alpha1ArtifactoryArtifact): [optional]  # noqa: E501
-            deleted (bool): Deleted if this is been deleted.. [optional]  # noqa: E501
             gcs (IoArgoprojWorkflowV1alpha1GCSArtifact): [optional]  # noqa: E501
             git (IoArgoprojWorkflowV1alpha1GitArtifact): [optional]  # noqa: E501
             hdfs (IoArgoprojWorkflowV1alpha1HDFSArtifact): [optional]  # noqa: E501
@@ -265,7 +262,6 @@ class IoArgoprojWorkflowV1alpha1ArtifactLocation(ModelNormal):
                                 _visited_composed_classes = (Animal,)
             archive_logs (bool): ArchiveLogs indicates if the container logs should be archived. [optional]  # noqa: E501
             artifactory (IoArgoprojWorkflowV1alpha1ArtifactoryArtifact): [optional]  # noqa: E501
-            deleted (bool): Deleted if this is been deleted.. [optional]  # noqa: E501
             gcs (IoArgoprojWorkflowV1alpha1GCSArtifact): [optional]  # noqa: E501
             git (IoArgoprojWorkflowV1alpha1GitArtifact): [optional]  # noqa: E501
             hdfs (IoArgoprojWorkflowV1alpha1HDFSArtifact): [optional]  # noqa: E501

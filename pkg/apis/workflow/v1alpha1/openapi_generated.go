@@ -25,7 +25,6 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactRepositoryRef":         schema_pkg_apis_workflow_v1alpha1_ArtifactRepositoryRef(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactRepositoryRefStatus":   schema_pkg_apis_workflow_v1alpha1_ArtifactRepositoryRefStatus(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactSearchQuery":           schema_pkg_apis_workflow_v1alpha1_ArtifactSearchQuery(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactSearchResult":          schema_pkg_apis_workflow_v1alpha1_ArtifactSearchResult(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactoryArtifact":           schema_pkg_apis_workflow_v1alpha1_ArtifactoryArtifact(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactoryArtifactRepository": schema_pkg_apis_workflow_v1alpha1_ArtifactoryArtifactRepository(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactoryAuth":               schema_pkg_apis_workflow_v1alpha1_ArtifactoryAuth(ref),
@@ -287,13 +286,6 @@ func schema_pkg_apis_workflow_v1alpha1_Artifact(ref common.ReferenceCallback) co
 							Format:      "",
 						},
 					},
-					"deleted": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Deleted if this is been deleted.",
-							Type:        []string{"boolean"},
-							Format:      "",
-						},
-					},
 					"s3": {
 						SchemaProps: spec.SchemaProps{
 							Description: "S3 contains S3 artifact location details",
@@ -426,13 +418,6 @@ func schema_pkg_apis_workflow_v1alpha1_ArtifactLocation(ref common.ReferenceCall
 							Format:      "",
 						},
 					},
-					"deleted": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Deleted if this is been deleted.",
-							Type:        []string{"boolean"},
-							Format:      "",
-						},
-					},
 					"s3": {
 						SchemaProps: spec.SchemaProps{
 							Description: "S3 contains S3 artifact location details",
@@ -528,13 +513,6 @@ func schema_pkg_apis_workflow_v1alpha1_ArtifactPaths(ref common.ReferenceCallbac
 					"archiveLogs": {
 						SchemaProps: spec.SchemaProps{
 							Description: "ArchiveLogs indicates if the container logs should be archived",
-							Type:        []string{"boolean"},
-							Format:      "",
-						},
-					},
-					"deleted": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Deleted if this is been deleted.",
 							Type:        []string{"boolean"},
 							Format:      "",
 						},
@@ -784,169 +762,27 @@ func schema_pkg_apis_workflow_v1alpha1_ArtifactSearchQuery(ref common.ReferenceC
 							},
 						},
 					},
-					"deleted": {
+					"artifactName": {
 						SchemaProps: spec.SchemaProps{
-							Type:   []string{"boolean"},
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"templateName": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"nodeId": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
 							Format: "",
 						},
 					},
 				},
 			},
 		},
-	}
-}
-
-func schema_pkg_apis_workflow_v1alpha1_ArtifactSearchResult(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Type: []string{"object"},
-				Properties: map[string]spec.Schema{
-					"name": {
-						SchemaProps: spec.SchemaProps{
-							Description: "name of the artifact. must be unique within a template's inputs/outputs.",
-							Default:     "",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"path": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Path is the container path to the artifact",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"mode": {
-						SchemaProps: spec.SchemaProps{
-							Description: "mode bits to use on this file, must be a value between 0 and 0777 set when loading input artifacts.",
-							Type:        []string{"integer"},
-							Format:      "int32",
-						},
-					},
-					"from": {
-						SchemaProps: spec.SchemaProps{
-							Description: "From allows an artifact to reference an artifact from a previous step",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"archiveLogs": {
-						SchemaProps: spec.SchemaProps{
-							Description: "ArchiveLogs indicates if the container logs should be archived",
-							Type:        []string{"boolean"},
-							Format:      "",
-						},
-					},
-					"deleted": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Deleted if this is been deleted.",
-							Type:        []string{"boolean"},
-							Format:      "",
-						},
-					},
-					"s3": {
-						SchemaProps: spec.SchemaProps{
-							Description: "S3 contains S3 artifact location details",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.S3Artifact"),
-						},
-					},
-					"git": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Git contains git artifact location details",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.GitArtifact"),
-						},
-					},
-					"http": {
-						SchemaProps: spec.SchemaProps{
-							Description: "HTTP contains HTTP artifact location details",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.HTTPArtifact"),
-						},
-					},
-					"artifactory": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Artifactory contains artifactory artifact location details",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactoryArtifact"),
-						},
-					},
-					"hdfs": {
-						SchemaProps: spec.SchemaProps{
-							Description: "HDFS contains HDFS artifact location details",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.HDFSArtifact"),
-						},
-					},
-					"raw": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Raw contains raw artifact location details",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.RawArtifact"),
-						},
-					},
-					"oss": {
-						SchemaProps: spec.SchemaProps{
-							Description: "OSS contains OSS artifact location details",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.OSSArtifact"),
-						},
-					},
-					"gcs": {
-						SchemaProps: spec.SchemaProps{
-							Description: "GCS contains GCS artifact location details",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.GCSArtifact"),
-						},
-					},
-					"globalName": {
-						SchemaProps: spec.SchemaProps{
-							Description: "GlobalName exports an output artifact to the global scope, making it available as '{{workflow.outputs.artifacts.XXXX}} and in workflow.status.outputs.artifacts",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"archive": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Archive controls how the artifact will be saved to the artifact repository.",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArchiveStrategy"),
-						},
-					},
-					"optional": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Make Artifacts optional, if Artifacts doesn't generate or exist",
-							Type:        []string{"boolean"},
-							Format:      "",
-						},
-					},
-					"subPath": {
-						SchemaProps: spec.SchemaProps{
-							Description: "SubPath allows an artifact to be sourced from a subpath within the specified source",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"recurseMode": {
-						SchemaProps: spec.SchemaProps{
-							Description: "If mode is set, apply the permission recursively into the artifact if it is a folder",
-							Type:        []string{"boolean"},
-							Format:      "",
-						},
-					},
-					"fromExpression": {
-						SchemaProps: spec.SchemaProps{
-							Description: "FromExpression, if defined, is evaluated to specify the value for the artifact",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"nodeID": {
-						SchemaProps: spec.SchemaProps{
-							Default: "",
-							Type:    []string{"string"},
-							Format:  "",
-						},
-					},
-				},
-				Required: []string{"name", "nodeID"},
-			},
-		},
-		Dependencies: []string{
-			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArchiveStrategy", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactoryArtifact", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.GCSArtifact", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.GitArtifact", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.HDFSArtifact", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.HTTPArtifact", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.OSSArtifact", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.RawArtifact", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.S3Artifact"},
 	}
 }
 

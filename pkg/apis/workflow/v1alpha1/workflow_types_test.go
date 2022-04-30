@@ -780,10 +780,19 @@ func TestWorkflow_SearchArtifacts(t *testing.T) {
 			},
 			Templates: []Template{
 				{
-					Name: "test-template",
+					Name: "template-foo",
 					Outputs: Outputs{
 						Artifacts: Artifacts{
-							Artifact{Name: "test-artifact", Path: ""},
+							Artifact{Name: "artifact-foo"},
+							Artifact{Name: "artifact-bar"},
+						},
+					},
+				},
+				{
+					Name: "template-bar",
+					Outputs: Outputs{
+						Artifacts: Artifacts{
+							Artifact{Name: "artifact-foobar"},
 						},
 					},
 				},
@@ -791,11 +800,22 @@ func TestWorkflow_SearchArtifacts(t *testing.T) {
 		},
 		Status: WorkflowStatus{
 			Nodes: Nodes{
-				"test-id": NodeStatus{
-					TemplateName: "test-template",
+				"test-foo": NodeStatus{
+					ID:           "node-foo",
+					TemplateName: "template-foo",
 					Outputs: &Outputs{
 						Artifacts: Artifacts{
-							Artifact{Name: "test-artifact", Path: ""},
+							Artifact{Name: "artifact-foo"},
+							Artifact{Name: "artifact-bar"},
+						},
+					},
+				},
+				"test-bar": NodeStatus{
+					ID:           "node-bar",
+					TemplateName: "template-bar",
+					Outputs: &Outputs{
+						Artifacts: Artifacts{
+							Artifact{Name: "artifact-foobar"},
 						},
 					},
 				},
@@ -804,10 +824,53 @@ func TestWorkflow_SearchArtifacts(t *testing.T) {
 	}
 
 	query := NewArtifactSearchQuery()
-	query.ArtifactGCStrategies[ArtifactGCOnWorkflowCompletion] = true
 
+	// no filters
 	queriedArtifacts := wf.SearchArtifacts(query)
 	assert.NotNil(t, queriedArtifacts)
+	assert.Len(t, queriedArtifacts, 3)
+
+	// artifact GC strategy
+	query.ArtifactGCStrategies[ArtifactGCOnWorkflowCompletion] = true
+	queriedArtifacts = wf.SearchArtifacts(query)
+	assert.NotNil(t, queriedArtifacts)
+	assert.Len(t, queriedArtifacts, 3)
+
+	// template name
+	query = NewArtifactSearchQuery()
+	query.TemplateName = "template-bar"
+	queriedArtifacts = wf.SearchArtifacts(query)
+	assert.NotNil(t, queriedArtifacts)
+	assert.Len(t, queriedArtifacts, 1)
+
+	// artifact name
+	query = NewArtifactSearchQuery()
+	query.ArtifactName = "artifact-foo"
+	queriedArtifacts = wf.SearchArtifacts(query)
+	assert.NotNil(t, queriedArtifacts)
+	assert.Len(t, queriedArtifacts, 1)
+
+	// node id
+	query = NewArtifactSearchQuery()
+	query.NodeId = "node-foo"
+	queriedArtifacts = wf.SearchArtifacts(query)
+	assert.NotNil(t, queriedArtifacts)
+	assert.Len(t, queriedArtifacts, 2)
+
+	// bad query
+	query = NewArtifactSearchQuery()
+	query.NodeId = "node-foobar"
+	queriedArtifacts = wf.SearchArtifacts(query)
+	assert.Nil(t, queriedArtifacts)
+	assert.Len(t, queriedArtifacts, 0)
+
+	// template and artifact name
+	query = NewArtifactSearchQuery()
+	query.TemplateName = "template-foo"
+	query.ArtifactName = "artifact-foo"
+	queriedArtifacts = wf.SearchArtifacts(query)
+	assert.NotNil(t, queriedArtifacts)
+	assert.Len(t, queriedArtifacts, 1)
 }
 
 func TestWorkflowSpec_GetArtifactGC(t *testing.T) {
