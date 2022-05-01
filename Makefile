@@ -140,12 +140,6 @@ define protoc
 
 endef
 
-.PHONY: build
-build: clis images
-
-.PHONY: images
-images: argocli-image argoexec-image workflow-controller-image
-
 # cli
 
 .PHONY: cli
@@ -241,7 +235,9 @@ argoexec-image:
 	if [ $(DOCKER_PUSH) = true ] && [ $(IMAGE_NAMESPACE) != argoproj ] ; then docker push $(IMAGE_NAMESPACE)/$*:$(VERSION) ; fi
 
 .PHONY: codegen
-codegen: types swagger docs manifests
+codegen: types swagger docs manifests $(GOPATH)/bin/mockery
+	# `go generate ./...` takes around 10s, so we only run on specific packages.
+	go generate ./persist/sqldb ./pkg/plugins ./pkg/apiclient/workflow ./server/auth ./server/auth/sso ./workflow/executor
 	make --directory sdks/java generate
 	make --directory sdks/python generate
 
@@ -272,16 +268,6 @@ swagger: \
 	api/openapi-spec/swagger.json \
 	api/jsonschema/schema.json
 
-.PHONY: docs
-docs: \
-	docs/fields.md \
-	docs/cli/argo.md \
-	$(GOPATH)/bin/mockery
-	rm -Rf vendor v3
-	go mod tidy
-	# `go generate ./...` takes around 10s, so we only run on specific packages.
-	go generate ./persist/sqldb ./pkg/plugins ./pkg/apiclient/workflow ./server/auth ./server/auth/sso ./workflow/executor
-	./hack/check-env-doc.sh
 
 $(GOPATH)/bin/mockery:
 	go install github.com/vektra/mockery/v2@v2.10.0
@@ -454,15 +440,6 @@ dist/argosay:
 	mkdir -p dist
 	cp test/e2e/images/argosay/v2/argosay dist/
 
-.PHONY: pull-images
-pull-images:
-	docker pull golang:1.18
-	docker pull debian:10.7-slim
-	docker pull mysql:8
-	docker pull argoproj/argosay:v1
-	docker pull argoproj/argosay:v2
-	docker pull python:alpine3.6
-
 $(GOPATH)/bin/goreman:
 	go install github.com/mattn/goreman@v0.3.11
 
@@ -622,6 +599,23 @@ docs/fields.md: api/openapi-spec/swagger.json $(shell find examples -type f) hac
 docs/cli/argo.md: $(CLI_PKGS) go.sum server/static/files.go hack/cli/main.go
 	go run ./hack/cli
 
+/usr/local/bin/mkdocs:
+	pip install mkdocs==1.2.4 mkdocs_material==8.1.9
+
+.PHONY: docs
+docs: /usr/local/bin/mkdocs \
+	docs/fields.md \
+	docs/cli/argo.md
+	./hack/check-env-doc.sh
+	./hack/check-mkdocs.sh
+	mkdocs build
+	go run -tags fields ./hack parseexamples
+	@echo "If you want to preview you docs, open site/index.html. If you want to edit them with hot-reload, run 'make docs-serve' to start mkdocs on port 8000"
+
+.PHONY: docs-serve
+docs-serve: docs
+	mkdocs serve
+
 # pre-push
 
 .git/hooks/commit-msg: hack/git/hooks/commit-msg
@@ -631,14 +625,11 @@ docs/cli/argo.md: $(CLI_PKGS) go.sum server/static/files.go hack/cli/main.go
 githooks: .git/hooks/commit-msg
 
 .PHONY: pre-commit
-pre-commit: githooks codegen lint
+pre-commit: githooks codegen lint docs
 
 release-notes: /dev/null
 	version=$(VERSION) envsubst < hack/release-notes.md > release-notes
 
-.PHONY: parse-examples
-parse-examples:
-	go run -tags fields ./hack parseexamples
 
 .PHONY: checksums
 checksums:
