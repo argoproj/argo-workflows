@@ -67,17 +67,33 @@ func (a *fakeArtifactDriver) Save(_ string, _ *wfv1.Artifact) error {
 }
 
 func (a *fakeArtifactDriver) IsDirectory(artifact *wfv1.Artifact) (bool, error) {
-	key, err := artifact.ArtifactLocation.GetKey()
+	key, err := artifact.GetKey()
 	if err != nil {
 		return false, err
 	}
 
-	return strings.HasSuffix(key, "my-s3-artifact-directory"), nil
+	return strings.HasSuffix(key, "my-s3-artifact-directory") || strings.HasSuffix(key, "my-s3-artifact-directory/"), nil
 }
 
 func (a *fakeArtifactDriver) ListObjects(artifact *wfv1.Artifact) ([]string, error) {
+	key, err := artifact.GetKey()
+	if err != nil {
+		return nil, err
+	}
 	if artifact.Name == "my-s3-artifact-directory" {
-		return []string{"my-s3-artifact-directory/a.txt", "my-s3-artifact-directory/b.txt"}, nil
+		if strings.HasSuffix(key, "subdirectory") {
+			return []string{
+				"my-wf/my-node/my-s3-artifact-directory/subdirectory/b.txt",
+				"my-wf/my-node/my-s3-artifact-directory/subdirectory/c.txt",
+			}, nil
+		} else {
+			return []string{
+				"my-wf/my-node/my-s3-artifact-directory/a.txt",
+				"my-wf/my-node/my-s3-artifact-directory/index.html",
+				"my-wf/my-node/my-s3-artifact-directory/subdirectory/b.txt",
+				"my-wf/my-node/my-s3-artifact-directory/subdirectory/c.txt",
+			}, nil
+		}
 	}
 	return []string{}, nil
 }
@@ -202,17 +218,15 @@ func TestArtifactServer_GetArtifactFile(t *testing.T) {
 			path:     "/artifact-files/my-ns/workflows/my-wf/my-node/outputs/my-s3-artifact-directory/",
 			redirect: true,
 			location: "/artifact-files/my-ns/workflows/my-wf/my-node/outputs/my-s3-artifact-directory/index.html",
-			directoryFiles: []string{
-				"/artifact-files/my-ns/workflows/my-wf/my-node/outputs/my-s3-artifact-directory/index.html",
-			},
 		},
 		{
-			path:        "/artifact-files/my-ns/workflows/my-wf/my-node/outputs/my-s3-artifact-directory/",
+			path:        "/artifact-files/my-ns/workflows/my-wf/my-node/outputs/my-s3-artifact-directory/subdirectory/",
 			success:     true,
 			isDirectory: true,
 			directoryFiles: []string{
-				"/artifact-files/my-ns/workflows/my-wf/my-node/outputs/my-s3-artifact-directory/a.txt",
-				"/artifact-files/my-ns/workflows/my-wf/my-node/outputs/my-s3-artifact-directory/b.txt",
+				"..",
+				"b.txt",
+				"c.txt",
 			},
 		},
 		{
@@ -237,8 +251,7 @@ func TestArtifactServer_GetArtifactFile(t *testing.T) {
 			if tt.redirect {
 				assert.Equal(t, 307, recorder.Result().StatusCode)
 				assert.Equal(t, tt.location, recorder.Header().Get("Location"))
-			}
-			if tt.success {
+			} else if tt.success {
 				if assert.Equal(t, 200, recorder.Result().StatusCode) {
 					all, err := io.ReadAll(recorder.Result().Body)
 					if err != nil {
