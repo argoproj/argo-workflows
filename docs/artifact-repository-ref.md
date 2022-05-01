@@ -46,4 +46,4 @@ spec:
 
 This feature gives maximum benefit when used with [key-only artifacts](key-only-artifacts.md).
 
-Reference: [fields.md#artifactrepositoryref](fields.md#artifactrepositoryref).
+[Reference](fields.md#artifactrepositoryref).

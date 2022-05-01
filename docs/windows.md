@@ -37,7 +37,7 @@ hello-windows-s9kk5: "Hello from Windows Container!"
 
 ## Schedule hybrid workflows
 
-You can also run different steps on different host OSs. This can for example be very helpful when you need to compile your application on Windows and Linux.
+You can also run different steps on different host operating systems. This can for example be very helpful when you need to compile your application on Windows and Linux.
 
 An example workflow can look like the following:
 ```yaml
@@ -105,14 +105,14 @@ Remember that [volume mounts on Windows can only target a directory](https://kub
 
 ## Limitations
 
-- Sharing process namespaces [doesn't work on Windows](https://kubernetes.io/docs/setup/production-environment/windows/intro-windows-in-kubernetes/#v1-pod) so you can't use the Process Namespace Sharing (pns) workflow executor.
-- The argoexec Windows container is built using [nanoserver:1809](https://github.com/argoproj/argo-workflows/blob/b18b9920f678f420552864eccf3d4b98f3604cfa/Dockerfile.windows#L28) as the base image. Running a newer windows version (e.g. 1909) is currently [not confirmed to be working](https://github.com/argoproj/argo-workflows/issues/5376). If this is required, you need to build the argoexec container yourself by first adjusting the base image.
+- Sharing process namespaces [doesn't work on Windows](https://kubernetes.io/docs/setup/production-environment/windows/intro-windows-in-kubernetes/#v1-pod) so you can't use the Process Namespace Sharing (PNS) workflow executor.
+- The executor Windows container is built using [nanoserver:1809](https://github.com/argoproj/argo-workflows/blob/b18b9920f678f420552864eccf3d4b98f3604cfa/Dockerfile.windows#L28) as the base image. Running a newer windows version (e.g. 1909) is currently [not confirmed to be working](https://github.com/argoproj/argo-workflows/issues/5376). If this is required, you need to build the executor container yourself by first adjusting the base image.
 
 ## Building the workflow executor image for Windows
 
 To build the workflow executor image for Windows you need a Windows machine running Windows Server 2019 with Docker installed like described [in the docs](https://docs.docker.com/ee/docker-ee/windows/docker-ee/#install-docker-engine---enterprise).
 
-You then clone the project and run the Docker build with the Dockerfile for Windows and `argoexec` as a target:
+You then clone the project and run the Docker build with the `Dockerfile` for Windows and `argoexec` as a target:
 
 ```
 git clone https://github.com/argoproj/argo-workflows.git

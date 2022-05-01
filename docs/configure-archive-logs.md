@@ -1,5 +1,7 @@
 # Configuring Archive Logs
 
+⚠️ We do not recommend relying on Argo Workflows to archive logs. Instead, use a conventional Kubernetes logging facility.
+
 To enable automatic pipeline logging, you need to configure ***archiveLogs*** at workflow-controller configmap, workflow spec, or template level. You also need to configure [Artifact Repository](configure-artifact-repository.md) to define where this logging artifact is stored.
 
 Archive logs follows priorities:

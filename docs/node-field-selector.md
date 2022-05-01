@@ -25,12 +25,12 @@ The field can be any of:
 | `displayName`| Display name of the node. This is the name of the node as it is displayed on the CLI or UI, without considering its ancestors (see example below). This is a useful shortcut if there is only one node with the same `displayName` |
 | `name`| Full name of the node. This is the full name of the node, including its ancestors (see example below). Using `name` is necessary when two or more nodes share the same `displayName` and disambiguation is required. |
 | `templateName`| Template name of the node |
-| `phase`| Phase status of the node - eg Running |
-| `templateRef.name`| The name of the WorkflowTemplate the node is referring to |
-| `templateRef.template`| The template within the WorkflowTemplate the node is referring to |
+| `phase`| Phase status of the node - e.g. Running |
+| `templateRef.name`| The name of the workflow template the node is referring to |
+| `templateRef.template`| The template within the workflow template the node is referring to |
 | `inputs.parameters.<NAME>.value`| The value of input parameter NAME |
 
-The operator can be '=' or '!='. Multiple selectors can be combined with a comma, in which case they are ANDed together.
+The operator can be '=' or '!='. Multiple selectors can be combined with a comma, in which case they are anded together.
 
 ## Examples
 

@@ -4,18 +4,23 @@ strict: true
 theme:
   name: material
   font:
-    text: Work Sans
+    text: Roboto
+    code: Roboto Mono
   logo: assets/logo.png
   palette:
-  - scheme: default
-    primary: blue
-    toggle:
-      icon: material/toggle-switch-off-outline
-      name: Switch to dark mode
-  - scheme: slate
-    toggle:
-      icon: material/toggle-switch
-      name: Switch to light mode
+    - scheme: default
+      primary: indigo
+      toggle:
+        icon: material/toggle-switch-off-outline
+        name: Switch to dark mode
+    - scheme: slate
+      toggle:
+        icon: material/toggle-switch
+        name: Switch to light mode
+  features:
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.top
 extra:
   analytics:
     provider: google
@@ -28,56 +33,86 @@ markdown_extensions:
   - toc:
       permalink: true
 nav:
-  - Overview: README.md
-  - core-concepts.md
-  - quick-start.md
-  - training.md
+  - Getting Started:
+      - quick-start.md
+      - training.md
   - User Guide:
-      # topics are ones that can be done using the UI only
-      - Beginner:
+      - Examples:
+          - examples/index.md
+          - examples/argo-cli.md
+          - examples/hello-world.md
+          - examples/parameters.md
+          - examples/steps.md
+          - examples/dag.md
+          - examples/artifacts.md
+          - examples/the-structure-of-workflow-specs.md
+          - examples/secrets.md
+          - examples/scripts-and-results.md
+          - examples/output-parameters.md
+          - examples/loops.md
+          - examples/conditionals.md
+          - examples/retrying-failed-or-errored-steps.md
+          - examples/recursion.md
+          - examples/exit-handlers.md
+          - examples/timeouts.md
+          - examples/volumes.md
+          - examples/suspending.md
+          - examples/daemon-containers.md
+          - examples/sidecars.md
+          - examples/hardwired-artifacts.md
+          - examples/kubernetes-resources.md
+          - examples/docker-in-docker-using-sidecars.md
+          - examples/custom-template-variable-reference.md
+          - examples/continuous-integration-example.md
+      - Concepts:
+          - core-concepts.md
           - workflow-concepts.md
-          - cli.md
           - variables.md
-      # topics that don't require kubectl or re-configuration
-      - Intermediate:
-          - service-accounts.md
-          - workflow-rbac.md
-          - node-field-selector.md
-          - empty-dir.md
+      - Custom Resources:
           - workflow-templates.md
-          - workflow-inputs.md
           - cluster-workflow-templates.md
           - cron-workflows.md
-          - cron-backfill.md
+      - Template Types:
           - templates.md
           - http-template.md
           - container-set-template.md
-          - template-defaults.md
-          - work-avoidance.md
-          - enhanced-depends-logic.md
           - data-sourcing-and-transformation.md
+      - Artifacts:
+          - conditional-artifacts-parameters.md
+          - workflow-inputs.md
           - artifact-repository-ref.md
           - key-only-artifacts.md
-          - conditional-artifacts-parameters.md
+      - Best Practices:
+          - workflow-pod-security-context.md
+          - tolerating-pod-deletion.md
+          - running-at-massive-scale.md
+          - work-avoidance.md
+      - Access Control:
+          - service-accounts.md
+          - workflow-rbac.md
+      - Features:
+          - node-field-selector.md
+          - empty-dir.md
+          - cron-backfill.md
+          - template-defaults.md
+          - enhanced-depends-logic.md
           - intermediate-inputs.md
           - resource-duration.md
           - estimated-duration.md
-          - workflow-pod-security-context.md
           - progress.md
           - lifecyclehook.md
           - workflow-creator.md
           - synchronization.md
           - workflow-of-workflows.md
           - memoization.md
-          - tolerating-pod-deletion.md
           - widgets.md
           - retries.md
-      # all other topics, including API access
-      - Advanced:
+          - kubectl.md
+          - debug-pause.md
           - workflow-restrictions.md
           - workflow-notifications.md
           - workflow-events.md
-          - kubectl.md
+      - API:
           - access-token.md
           - swagger.md
           - rest-api.md
@@ -89,8 +124,6 @@ nav:
           - workflow-submitting-workflow.md
           - resuming-workflow-via-automation.md
           - async-pattern.md
-          - running-at-massive-scale.md
-          - debug-pause.md
       - Plugins:
           - plugins.md
           - executor_plugins.md
@@ -103,11 +136,11 @@ nav:
           - use-cases/machine-learning.md
           - use-cases/other.md
           - use-cases/stream-processing.md
+      - FAQ: faq.md
       - ide-setup.md
-      - security.md
-      - Examples: https://github.com/argoproj/argo-workflows/blob/master/examples/README.md
       - Field Reference: fields.md
       - CLI Reference:
+          - Overview: cli.md
           - argo: cli/argo.md
           - argo archive: cli/argo_archive.md
           - argo archive delete: cli/argo_archive_delete.md
@@ -161,46 +194,45 @@ nav:
           - argo watch: cli/argo_watch.md
   - Operator Manual:
       - installation.md
-      - upgrading.md
       - releases.md
+      - breaking-changes.md
+      - security.md
       - Configuration:
           - managed-namespace.md
+          - workflow-controller-configmap.md
           - configure-artifact-repository.md
           - configure-archive-logs.md
-          - workflow-controller-configmap.md
+          - links.md
+          - environment-variables.md
           - workflow-executors.md
-          - sidecar-injection.md
           - default-workflow-specs.md
+          - sidecar-injection.md
           - offloading-large-workflows.md
           - workflow-archive.md
           - metrics.md
-          - links.md
       - Argo Server:
           - argo-server.md
           - argo-server-auth-mode.md
           - tls.md
           - argo-server-sso.md
           - argo-server-sso-argocd.md
-      - high-availability.md
-      - disaster-recovery.md
-      - scaling.md
-      - cost-optimisation.md
+      - Best Practices:
+          - high-availability.md
+          - disaster-recovery.md
+          - scaling.md
+          - cost-optimisation.md
       - windows.md
-      - environment-variables.md
   - Developer Guide:
       - CONTRIBUTING.md
-      - mentoring.md
       - architecture.md
       - running-locally.md
-      - versioning.md
+      - mentoring.md
       - public-api.md
       - static-code-analysis.md
       - stress-testing.md
       - releasing.md
       - survey-data-privacy.md
-  - FAQ: faq.md
-  - Releases ⧉: https://github.com/argoproj/argo-workflows/releases
   - Roadmap: roadmap.md
-  - Blog ⧉: https://blog.argoproj.io/
-  - Slack ⧉: https://argoproj.github.io/community/join-slack
-  - Twitter ⧉: https://twitter.com/argoproj
+  - Blog: https://blog.argoproj.io/
+  - Slack: https://argoproj.github.io/community/join-slack
+  - Twitter: https://twitter.com/argoproj

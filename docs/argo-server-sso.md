@@ -4,11 +4,11 @@
 
 > v2.9 and after
 
-It is possible to use [Dex](https://github.com/dexidp/dex) for authentication. [This document](argo-server-sso-argocd.md) describes how to set up ArgoWorkflows and ArgoCD so that ArgoWorkflows uses ArgoCD's Dex server for authentication.
+It is possible to use [Dex](https://github.com/dexidp/dex) for authentication. [This document](argo-server-sso-argocd.md) describes how to set up Argo Workflows and Argo CD so that Argo Workflows uses Argo CD's Dex server for authentication.
 
 ## To start Argo Server with SSO.
 
-Firstly, configure the settings [workflow-controller-configmap.yaml](workflow-controller-configmap.yaml) with the correct OAuth 2 values. If working towards an oidc configuration the ArgoCD project has [guides](https://argoproj.github.io/argo-cd/operator-manual/user-management/#existing-oidc-provider) on its similar (though different) process for setting up oidc providers. It also includes examples for specific providers. The main difference is that the ArgoCD docs mention that their callback address endpoint is `/auth/callback`.  For ArgoWorkflows, the default format is `/oauth2/callback` as shown in [this comment](https://github.com/argoproj/argo-workflows/blob/93c11a24ff06049c2197149acd787f702e5c1f9b/docs/workflow-controller-configmap.yaml#L329) in the default values.yaml file in the helm chart.
+Firstly, configure the settings [workflow-controller-configmap.yaml](workflow-controller-configmap.yaml) with the correct OAuth 2 values. If working towards an OIDC configuration the Argo CD project has [guides](https://argo-cd.readthedocs.io/en/stable/operator-manual/user-management/) on its similar (though different) process for setting up OIDC providers. It also includes examples for specific providers. The main difference is that the Argo CD docs mention that their callback address endpoint is `/auth/callback`.  For Argo Workflows, the default format is `/oauth2/callback` as shown in [this comment](https://github.com/argoproj/argo-workflows/blob/93c11a24ff06049c2197149acd787f702e5c1f9b/docs/workflow-controller-configmap.yaml#L329) in the default values.yaml file in the helm chart.
 
 Next, create the k8s secrets for holding the OAuth2 `client-id` and `client-secret`. You may refer to the kubernetes documentation on [Managing secrets](https://kubernetes.io/docs/tasks/configmap-secret/). For example by using kubectl with literals:
 ```
@@ -137,7 +137,7 @@ metadata:
 ```
 
 Now, for the the namespace that you own, configure a service account which would allow members of your team to perform operations in your namespace.
-Make sure that the precedence of the namespace service account is higher than the precedence of the login service account. Create appropriate role that you want to grant to this serviceaccount and bind it with a role-binding.
+Make sure that the precedence of the namespace service account is higher than the precedence of the login service account. Create appropriate role that you want to grant to this service account and bind it with a role-binding.
 
 ```yaml
 apiVersion: v1
@@ -150,7 +150,7 @@ metadata:
     workflows.argoproj.io/rbac-rule-precedence: "1"
 ```
 
-Using this, whenever a user is logged in via SSO and makes a request in 'my-namespace', and the `rbac-rule`matches, we will use this service account to allow the user to perform that operation in the namespace. If no serviceaccount matches in the namespace, the first serviceaccount(`user-default-login`) and its associated role will be used to perform the operation in the namespace.
+Using this, whenever a user is logged in via SSO and makes a request in 'my-namespace', and the `rbac-rule`matches, we will use this service account to allow the user to perform that operation in the namespace. If no service account matches in the namespace, the first service account(`user-default-login`) and its associated role will be used to perform the operation in the namespace.
 
 ## SSO Login Time
 
@@ -185,7 +185,7 @@ sso:
 
 #### Example expr
 
-```shell
+```bash
 # assuming customClaimGroupName: argo_groups
 workflows.argoproj.io/rbac-rule: "'argo_admins' in groups"
 ```

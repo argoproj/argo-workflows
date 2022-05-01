@@ -328,13 +328,13 @@ argo submit https://raw.githubusercontent.com/argoproj/argo-workflows/master/exa
 
 Then submit a `WorkflowTemplate` as a `Workflow`:
 
-```sh
+```bash
 argo submit --from workflowtemplate/workflow-template-submittable
 ```
 
 If you need to submit a `WorkflowTemplate` as a `Workflow` with parameters:
 
-```sh
+```bash
 argo submit --from workflowtemplate/workflow-template-submittable -p param1=value1
 ```
 

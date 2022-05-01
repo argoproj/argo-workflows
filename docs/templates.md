@@ -18,4 +18,4 @@ Examples:
 * [Steps](https://raw.githubusercontent.com/argoproj/argo-workflows/master/examples/steps-inline-workflow.yaml)
 
 !!! Warning
-    You can only inline once. Inlining a DAG within a DAG will not work.
+    You can only inline once. Inline a DAG within a DAG will not work.

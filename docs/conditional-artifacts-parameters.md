@@ -61,7 +61,7 @@ Convenient functions added to support more use cases:
 1. `asInt`    - convert the string to integer (e.g: `asInt('1')`)
 2. `asFloat`  - convert the string to Float (e.g: `asFloat('1.23')`)
 3. `string`   - convert the int/float to string (e.g: `string(1)`)
-4. `jsonpath` - Extract the element from Json using jsonpath (
+4. `jsonpath` - Extract the element from JSON using JSON Path (
    e.g: `jsonpath('{"employee":{"name":"sonoo","salary":56000,"married":true}}", "$.employee.name" )` )
 5. [Sprig](http://masterminds.github.io/sprig/) - Support all `sprig` functions
 

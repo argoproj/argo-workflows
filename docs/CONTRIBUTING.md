@@ -19,7 +19,7 @@ please [see here](https://bit.ly/argo-data-weekly).
 We're always looking for contributors.
 
 * Documentation - something missing or unclear? Please submit a pull request!
-* Code contribution - investigate a [help wanted issue](https://github.com/argoproj/argo-workflows/issues?q=is%3Aopen+is%3Aissue+label%3A%22help+wanted%22+label%3A%22good+first+issue%22), or anything labelled with "good first issue"?
+* Code contribution - investigate a [help wanted issue](https://github.com/argoproj/argo-workflows/issues?q=is%3Aopen+is%3Aissue+label%3A%22help+wanted%22+label%3A%22good+first+issue%22), or anything labeled with "good first issue"?
 * Join the `#argo-contributors` channel on [our Slack](https://argoproj.github.io/community/join-slack).
 * Get a [mentor](mentoring.md) to help you get started.
 

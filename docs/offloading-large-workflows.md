@@ -14,17 +14,17 @@ To enable this feature, configure a Postgres or MySQL database under `persistenc
 
 Offloading is expensive and often unnecessary, so we only offload when we need to. Your workflows aren't probably large enough.
 
-#### Error "Failed to submit workflow: etcdserver: request is too large."
+#### Error `Failed to submit workflow: etcdserver: request is too large.`
 
 You must use the Argo CLI having exported `export ARGO_SERVER=...`.
 
-#### Error "offload node status is not supported"
+#### Error `offload node status is not supported`
 
 Even after compressing node statuses, the workflow exceeded the EtcD
 size limit. To resolve, either enable node status offload as described
 above or look for ways to reduce the size of your workflow manifest:
 
-- Use `withItems` or `withParams` to consolidate similar templates into a single parameterized template
+- Use `withItems` or `withParams` to consolidate similar templates into a single parametrized template
 - Use [template defaults](https://argoproj.github.io/argo-workflows/template-defaults/) to factor shared template options to the workflow level
 - Use [workflow templates](https://argoproj.github.io/argo-workflows/workflow-templates/) to factor frequently-used templates into separate resources
 - Use [workflows of workflows](https://argoproj.github.io/argo-workflows/workflow-of-workflows/) to factor a large workflow into a workflow of smaller workflows

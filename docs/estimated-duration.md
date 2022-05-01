@@ -14,5 +14,5 @@ If you've used tools like Jenkins, you'll know that that estimates can be inaccu
 * The workflow is non-deterministic, e.g. it uses `when` to execute different paths. 
 * The workflow can vary is scale, e.g. sometimes it uses `withItems` and so sometimes run  100 nodes, sometimes a 1000.
 * If the pod runtimes are unpredictable.
-* The workflow is parameterized, and different parameters affect its duration.
+* The workflow is parametrized, and different parameters affect its duration.
   

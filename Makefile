@@ -602,12 +602,36 @@ docs/cli/argo.md: $(CLI_PKGS) go.sum server/static/files.go hack/cli/main.go
 # docs
 
 /usr/local/bin/mkdocs:
-	pip install mkdocs==1.2.4 mkdocs_material==8.1.9
+	pip install mkdocs==1.2.4 mkdocs_material==8.1.9  mkdocs-spellcheck==0.2.1
+
+/usr/local/bin/mdspell:
+	npm i -g markdown-spelling
+
+.PHONY: docs-spellcheck
+docs-spellcheck:
+	# Check spelling.
+	# Tip: code is not spelled-checked, so always add back-ticks to code
+	mdspell --ignore-numbers --ignore-acronyms --en-us $(shell find docs -name '*.md' -not -name fields.md -not -name breaking-changes.md -not -name executor_swagger.md -not -path '*/cli/*')
+
+/usr/local/bin/markdown-link-check:
+	npm i -g markdown-link-check
+
+/usr/local/bin/markdownlint:
+	npm i -g  markdownlint-cli
+
+.PHONY: docs-linkcheck
+docs-linkcheck:
+	markdown-link-check -q -c .mlc_config.json $(shell find docs -name '*.md' -not -name fields.md -not -name executor_swagger.md)
+
+.PHONY: docs-lint
+docs-lint:
 
 .PHONY: docs
 docs: /usr/local/bin/mkdocs \
 	./hack/check-env-doc.sh
-	./hack/check-mkdocs.sh
+	./hack/check-mkdocs.sh \
+	docs-spellcheck \
+	docs-linkcheck
 	mkdocs build
 	go run -tags fields ./hack parseexamples
 	@echo "ℹ️ If you want to preview you docs, open site/index.html. If you want to edit them with hot-reload, run 'make docs-serve' to start mkdocs on port 8000"

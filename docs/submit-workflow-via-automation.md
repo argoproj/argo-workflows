@@ -8,7 +8,7 @@ You may want to consider using [events](events.md) or [webhooks](webhooks.md) in
 
 Firstly, to do any automation, you'll need an ([access token](access-token.md)). For this example, our role needs extra permissions:
 
-```sh
+```bash
 kubectl patch role jenkins -p '{"rules": [{"apiGroups": ["argoproj.io"], "resources": ["workflowtemplates"], "verbs": ["get"]}, {"apiGroups": ["argoproj.io"], "resources": ["workflows"], "verbs": ["create", "list", "get", "update"]}]}'
 ``` 
 
@@ -35,13 +35,13 @@ You can submit this workflow via an CLI or the [Argo Server API](rest-api.md).
 
 Submit via CLI (note how I add a label to help identify it later on):
 
-````sh
+````bash
 argo submit --from wftmpl/hello-argo -l workflows.argoproj.io/workflow-template=hello-argo
 ````
 
 Or submit via API:
 
-```sh
+```bash
 curl $ARGO_SERVER/api/v1/workflows/argo/submit \
   -fs \
   -H "Authorization: $ARGO_TOKEN" \
@@ -50,7 +50,7 @@ curl $ARGO_SERVER/api/v1/workflows/argo/submit \
 
 You'll see that the workflow has been created:
 
-```sh
+```bash
 argo list
 NAME               STATUS    AGE   DURATION   PRIORITY
 hello-argo-77m4l   Running   33s   33s        0

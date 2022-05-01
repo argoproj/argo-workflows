@@ -21,11 +21,11 @@ Argo image/deployment defaults to [Encrypted](#encrypted) with a self-signed cer
 
 ## Plain Text
 
-*Recommended for: dev*
+*Recommended for: development*
 
 Everything is sent in plain text.
 
-Start Argo Server with the --secure=false (or ARGO_SECURE=false) flag, e.g.:
+Start Argo Server with the --secure=false (or `ARGO_SECURE=false`) flag, e.g.:
 
 ```
 export ARGO_SECURE=false

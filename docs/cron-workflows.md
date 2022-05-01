@@ -105,7 +105,7 @@ For example, with timezone set at `America/Los_Angeles`, we have daylight saving
 
 `CronWorkflow` can be created from the CLI by using basic commands:
 
-```sh
+```bash
 $ argo cron create cron.yaml
 Name:                          test-cron-wf
 Namespace:                     argo

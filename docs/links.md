@@ -7,7 +7,7 @@
 You can configure Argo Server to show custom links:
 
 * A "Get Help" button in the bottom right of the window linking to you organisation help pages or chat room.
-* Deep-links to your facilities (e.g. logging facility) in the user interface for both the workflow and each workflow pod.
+* Deep-links to your facilities (e.g. logging facility) in the UI for both the workflow and each workflow pod.
 
 Links can contain placeholder variables. Placeholder variables are indicated by the dollar sign and curly braces: `${variable}`.
 

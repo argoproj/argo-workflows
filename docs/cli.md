@@ -1,8 +1,8 @@
 # CLI
 
-The CLI allows to (amongst other things) submit, watch, and list workflows, e.g.: 
+The CLI allows to (among other things) submit, watch, and list workflows, e.g.: 
 
-```sh
+```bash
 argo submit my-wf.yaml
 argo list
 ```   

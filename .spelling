@@ -1,0 +1,121 @@
+# markdown-spellcheck spelling configuration file
+# Format - lines beginning # are comments
+# global dictionary is at the start, file overrides afterwards
+# one word per line, to define a file override use ' - filename'
+# where filename is relative to this configuration file
+Dataflow
+argo
+e2e
+kubernetes
+jenkins
+params
+auth
+kube
+config
+Github
+natively
+namespace
+namespaces
+90m
+e.g.
+v2.9
+v3.0
+Dex
+Okta
+v2.23.0
+Kustomize
+errored
+daemoned
+cron
+runtimes
+i.e.
+EtcD
+Postgres
+MySQL
+dropdown
+enum
+boolean
+stateful
+workflow-controller-configmap
+yaml
+v2
+v3.1
+untracked
+1h
+2h
+Homebrew
+versioning
+v3.2
+OAuth
+ - docs/estimated-duration.md
+v2.12
+ - docs/offloading-large-workflows.md
+v2.4
+ - docs/intermediate-inputs.md
+v3.4
+ - docs/examples.md
+entrypoint
+FailFast
+gzipped
+govaluate
+expr
+`OnFailure`
+v3.0.0
+rc2
+Nginx
+`CronTab`
+ - docs/tls.md
+v2.8
+v1.2
+v1.0
+v1.1
+v1.3
+ - docs/environment-variables.md
+finalizer
+PVCs
+memoization
+un-reconciled
+v1
+ - docs/workflow-rbac.md
+v3.3
+ - docs/executor_plugins.md
+Tekton
+Node.JS.
+4xx
+5xx
+ - docs/managed-namespace.md
+v2.5
+ - docs/training.md
+Katacoda
+ - docs/conditional-artifacts-parameters.md
+fibonacci
+expr
+ - docs/template-defaults.md
+runtime
+ - docs/workflow-notifications.md
+Heptio
+EventRouter
+ - docs/progress.md
+env
+3s
+ - docs/webhooks.md
+Webhooks
+v2.11
+webhook
+ - docs/lifecyclehook.md
+Lifecycle-Hook
+ - docs/default-workflow-specs.md
+v2.7
+ - docs/stress-testing.md
+PProf
+ - docs/argo-server.md
+backend
+Traefik
+ - docs/workflow-events.md
+v2.7.2
+ - docs/node-field-selector.md
+anded
+ - docs/static-code-analysis.md
+Snyk
+ - docs/rest-examples.md
+localhost

@@ -25,6 +25,6 @@ Review the following:
  * [High-availability](high-availability.md)
  * [Disaster recovery](disaster-recovery.md)
 
-Read the [upgrading guide](upgrading.md) before any major upgrade to be aware of breaking changes.
+Read the [release guide](releases.md) before any major upgrade to be aware of breaking changes.
 
 

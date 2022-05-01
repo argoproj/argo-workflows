@@ -1,14 +1,14 @@
-# Workflow Controller Configmap
+# Workflow Controller Config Map
 
 ## Introduction
 
-The Workflow Controller Configmap is used to set controller-wide settings.
+The Workflow Controller Config Map is used to set controller-wide settings.
 
 For a detailed example, please see [`workflow-controller-configmap.yaml`](./workflow-controller-configmap.yaml).
 
-## Setting the Configmap
+## Setting the Config Map
 
-The configmap should be saved as a K8s Configmap on the cluster in the same namespace as the `workflow-controller`.
+The config map should be saved as a K8S config map on the cluster in the same namespace as the `workflow-controller`.
 It should then be referenced by the `workflow-controller` and `argo-server` as a command argument:
 
 ```yaml

@@ -48,10 +48,10 @@ See [auth](argo-server-auth-mode.md).
 
 See [managed namespace](managed-namespace.md).
 
-### Base href
+### Base HREF
 
-If the server is running behind reverse proxy with a subpath different from `/` (for example,
-`/argo`), you can set an alternative subpath with the `--base-href` flag or the `BASE_HREF`
+If the server is running behind reverse proxy with a sub-path different from `/` (for example,
+`/argo`), you can set an alternative sub-path with the `--base-href` flag or the `BASE_HREF`
 environment variable.
 
 You probably now should [read how to set-up an ingress](#ingress)
@@ -62,7 +62,7 @@ See [TLS](tls.md).
 
 ### SSO
 
-See [SSO](argo-server-sso.md). See [here](argo-server-sso-argocd.md) about sharing ArgoCD's Dex with ArgoWorkflows.
+See [SSO](argo-server-sso.md). See [here](argo-server-sso-argocd.md) about sharing Argo CD's Dex with Argo Workflows.
 
 ## Access the Argo Workflows UI
 
@@ -71,27 +71,27 @@ following:
 
 ### `kubectl port-forward`
 
-```sh
+```bash
 kubectl -n argo port-forward svc/argo-server 2746:2746
 ```
 
-Then visit: https://127.0.0.1:2746
+Then visit: https://localhost:2746
 
 
 ### Expose a `LoadBalancer`
 
 Update the service to be of type `LoadBalancer`.
 
-```sh
+```bash
 kubectl patch svc argo-server -n argo -p '{"spec": {"type": "LoadBalancer"}}'
 ```
 
 Then wait for the external IP to be made available:
 
-```sh
+```bash
 kubectl get svc argo-server -n argo
 ```
-```sh
+```bash
 NAME          TYPE           CLUSTER-IP     EXTERNAL-IP   PORT(S)          AGE
 argo-server   LoadBalancer   10.43.43.130   172.18.0.2    2746:30008/TCP   18h
 ```
@@ -133,7 +133,7 @@ Create a ingress, with the annotation `ingress.kubernetes.io/rewrite-target: /`:
 
 >If TLS is enabled (default in v3.0 and after), the ingress controller must be told
 >that the backend uses HTTPS. The method depends on the ingress controller, e.g.
->Traefik expects an `ingress.kubernetes.io/protocol` annotation, while ingress-nginx
+>Traefik expects an `ingress.kubernetes.io/protocol` annotation, while `ingress-nginx`
 >uses `nginx.ingress.kubernetes.io/backend-protocol`
 
 ```yaml

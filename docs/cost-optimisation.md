@@ -1,12 +1,12 @@
-# Cost Optimisation
+# Cost Optimization
 
-## User Cost Optimisations
+## User Cost Optimizations
 
 Suggestions for users running workflows.
 
 ### Set The Workflows Pod Resource Requests 
 
-> Suitable if you are running a workflow with many homogenous pods.
+> Suitable if you are running a workflow with many homogeneous pods.
 
 [Resource duration](resource-duration.md) shows the amount of CPU and memory requested by a pod and is indicative of the cost. You can use this to find costly steps within your workflow.
 
@@ -81,7 +81,7 @@ argo list --older 7d
 argo delete --older 7d
 ```
 
-## Operator Cost Optimisations
+## Operator Cost Optimizations
 
 Suggestions for operators who installed Argo Workflows.
 

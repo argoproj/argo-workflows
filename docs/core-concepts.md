@@ -1,5 +1,7 @@
 # Core Concepts
 
+Before you start, it is really useful to understand the following key terminology.
+
 !!! note
     Please read [Kubernetes concepts](https://kubernetes.io/docs/concepts/) first. 
 
