@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -24,6 +25,7 @@ import (
 
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/server/artifacts"
 	"github.com/argoproj/argo-workflows/v3/test/e2e/fixtures"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
@@ -51,7 +53,7 @@ func (s *ArgoServerSuite) e() *httpexpect.Expect {
 			BaseURL:  baseUrl,
 			Reporter: httpexpect.NewRequireReporter(s.T()),
 			Printers: []httpexpect.Printer{
-				httpexpect.NewDebugPrinter(&httpLogger{}, true),
+				httpexpect.NewDebugPrinter(s.T(), true),
 			},
 			Client: httpClient,
 		}).
@@ -105,21 +107,26 @@ func (s *ArgoServerSuite) TestMetricsForbidden() {
 }
 
 func (s *ArgoServerSuite) TestMetricsOK() {
-	s.e().
+	body := s.e().
 		GET("/metrics").
 		Expect().
 		Status(200).
-		Body().
+		Body()
+	body.
 		// https://blog.netsil.com/the-4-golden-signals-of-api-health-and-performance-in-cloud-native-applications-a6e87526e74
 		// Latency: The time it takes to service a request, with a focus on distinguishing between the latency of successful requests and the latency of failed requests
 		Contains(`grpc_server_handling_seconds_bucket`).
 		// Traffic: A measure of how much demand is being placed on the service. This is measured using a high-level service-specific metric, like HTTP requests per second in the case of an HTTP REST API.
 		Contains(`promhttp_metric_handler_requests_in_flight`).
 		// Errors: The rate of requests that fail. The failures can be explicit (e.g., HTTP 500 errors) or implicit (e.g., an HTTP 200 OK response with a response body having too few items).
-		Contains(`promhttp_metric_handler_requests_total{code="500"}`).
-		// Saturation: How “full” is the service. This is a measure of the system utilization, emphasizing the resources that are most constrained (e.g., memory, I/O or CPU). Services degrade in performance as they approach high saturation.
-		Contains(`process_cpu_seconds_total`).
-		Contains(`process_resident_memory_bytes`)
+		Contains(`promhttp_metric_handler_requests_total{code="500"}`)
+
+	if os.Getenv("CI") == "true" {
+		body.
+			// Saturation: How “full” is the service. This is a measure of the system utilization, emphasizing the resources that are most constrained (e.g., memory, I/O or CPU). Services degrade in performance as they approach high saturation.
+			Contains(`process_cpu_seconds_total`).
+			Contains(`process_resident_memory_bytes`)
+	}
 }
 
 func (s *ArgoServerSuite) TestSubmitWorkflowTemplateFromGithubWebhook() {
@@ -1052,11 +1059,18 @@ func (s *ArgoServerSuite) TestArtifactServer() {
 		})
 
 	s.Run("GetArtifact", func() {
-		s.e().GET("/artifacts/argo/" + name + "/" + name + "/main-file").
+		resp := s.e().GET("/artifacts/argo/" + name + "/" + name + "/main-file").
 			Expect().
-			Status(200).
-			Body().
+			Status(200)
+
+		resp.Body().
 			Contains(":) Hello Argo!")
+
+		resp.Header("Content-Security-Policy").
+			Equal(artifacts.DefaultContentSecurityPolicy) // MSB
+
+		resp.Header("X-Frame-Options").
+			Equal(artifacts.DefaultXFrameOptions)
 	})
 	s.Run("GetArtifactByUID", func() {
 		s.e().DELETE("/api/v1/workflows/argo/" + name).

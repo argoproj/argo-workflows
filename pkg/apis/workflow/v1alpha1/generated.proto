@@ -171,6 +171,22 @@ message ArtifactRepositoryRefStatus {
   optional ArtifactRepository artifactRepository = 4;
 }
 
+message ArtifactSearchQuery {
+  map<string, bool> artifactGCStrategies = 1;
+
+  optional string artifactName = 2;
+
+  optional string templateName = 3;
+
+  optional string nodeId = 4;
+}
+
+message ArtifactSearchResult {
+  optional Artifact artifact = 1;
+
+  optional string nodeID = 2;
+}
+
 // ArtifactoryArtifact is the location of an artifactory artifact
 message ArtifactoryArtifact {
   // URL of the artifact

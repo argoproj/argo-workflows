@@ -516,6 +516,21 @@ func TestArtifact_GetArchive(t *testing.T) {
 	assert.Equal(t, &ArchiveStrategy{None: &NoneStrategy{}}, (&Artifact{Archive: &ArchiveStrategy{None: &NoneStrategy{}}}).GetArchive())
 }
 
+func TestArtifactGC_GetStrategy(t *testing.T) {
+	t.Run("Nil", func(t *testing.T) {
+		var artifactGC *ArtifactGC
+		assert.Equal(t, ArtifactGCNever, artifactGC.GetStrategy())
+	})
+	t.Run("Unspecified", func(t *testing.T) {
+		var artifactGC = &ArtifactGC{}
+		assert.Equal(t, ArtifactGCNever, artifactGC.GetStrategy())
+	})
+	t.Run("Specified", func(t *testing.T) {
+		var artifactGC = &ArtifactGC{Strategy: ArtifactGCOnWorkflowCompletion}
+		assert.Equal(t, ArtifactGCOnWorkflowCompletion, artifactGC.GetStrategy())
+	})
+}
+
 func TestPodGCStrategy_IsValid(t *testing.T) {
 	for _, s := range []PodGCStrategy{
 		PodGCOnPodNone,
@@ -753,6 +768,140 @@ func TestPrometheus_GetDescIsStable(t *testing.T) {
 	}
 }
 
+func TestWorkflow_SearchArtifacts(t *testing.T) {
+	wf := Workflow{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test",
+			Namespace: "test",
+		},
+		Spec: WorkflowSpec{
+			ArtifactGC: &ArtifactGC{
+				Strategy: ArtifactGCOnWorkflowCompletion,
+			},
+			Templates: []Template{
+				{
+					Name: "template-foo",
+					Outputs: Outputs{
+						Artifacts: Artifacts{
+							Artifact{Name: "artifact-foo"},
+							Artifact{Name: "artifact-bar"},
+						},
+					},
+				},
+				{
+					Name: "template-bar",
+					Outputs: Outputs{
+						Artifacts: Artifacts{
+							Artifact{Name: "artifact-foobar"},
+						},
+					},
+				},
+			},
+		},
+		Status: WorkflowStatus{
+			Nodes: Nodes{
+				"test-foo": NodeStatus{
+					ID:           "node-foo",
+					TemplateName: "template-foo",
+					Outputs: &Outputs{
+						Artifacts: Artifacts{
+							Artifact{Name: "artifact-foo"},
+							Artifact{Name: "artifact-bar"},
+						},
+					},
+				},
+				"test-bar": NodeStatus{
+					ID:           "node-bar",
+					TemplateName: "template-bar",
+					Outputs: &Outputs{
+						Artifacts: Artifacts{
+							Artifact{Name: "artifact-foobar"},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	query := NewArtifactSearchQuery()
+
+	// no filters
+	queriedArtifactSearchResults := wf.SearchArtifacts(query)
+	assert.NotNil(t, queriedArtifactSearchResults)
+	assert.Len(t, queriedArtifactSearchResults, 3)
+	assert.Equal(t, "artifact-foo", queriedArtifactSearchResults[0].Artifact.Name)
+	assert.Equal(t, "artifact-bar", queriedArtifactSearchResults[1].Artifact.Name)
+	assert.Equal(t, "artifact-foobar", queriedArtifactSearchResults[2].Artifact.Name)
+	assert.Equal(t, "node-foo", queriedArtifactSearchResults[0].NodeID)
+	assert.Equal(t, "node-foo", queriedArtifactSearchResults[1].NodeID)
+	assert.Equal(t, "node-bar", queriedArtifactSearchResults[2].NodeID)
+
+	// artifact GC strategy
+	query.ArtifactGCStrategies[ArtifactGCOnWorkflowCompletion] = true
+	queriedArtifactSearchResults = wf.SearchArtifacts(query)
+	assert.NotNil(t, queriedArtifactSearchResults)
+	assert.Len(t, queriedArtifactSearchResults, 3)
+	assert.Equal(t, "artifact-foo", queriedArtifactSearchResults[0].Artifact.Name)
+	assert.Equal(t, "artifact-bar", queriedArtifactSearchResults[1].Artifact.Name)
+	assert.Equal(t, "artifact-foobar", queriedArtifactSearchResults[2].Artifact.Name)
+	assert.Equal(t, "node-foo", queriedArtifactSearchResults[0].NodeID)
+	assert.Equal(t, "node-foo", queriedArtifactSearchResults[1].NodeID)
+	assert.Equal(t, "node-bar", queriedArtifactSearchResults[2].NodeID)
+
+	// template name
+	query = NewArtifactSearchQuery()
+	query.TemplateName = "template-bar"
+	queriedArtifactSearchResults = wf.SearchArtifacts(query)
+	assert.NotNil(t, queriedArtifactSearchResults)
+	assert.Len(t, queriedArtifactSearchResults, 1)
+	assert.Equal(t, "artifact-foobar", queriedArtifactSearchResults[0].Artifact.Name)
+	assert.Equal(t, "node-bar", queriedArtifactSearchResults[0].NodeID)
+
+	// artifact name
+	query = NewArtifactSearchQuery()
+	query.ArtifactName = "artifact-foo"
+	queriedArtifactSearchResults = wf.SearchArtifacts(query)
+	assert.NotNil(t, queriedArtifactSearchResults)
+	assert.Len(t, queriedArtifactSearchResults, 1)
+	assert.Equal(t, "artifact-foo", queriedArtifactSearchResults[0].Artifact.Name)
+	assert.Equal(t, "node-foo", queriedArtifactSearchResults[0].NodeID)
+
+	// node id
+	query = NewArtifactSearchQuery()
+	query.NodeId = "node-foo"
+	queriedArtifactSearchResults = wf.SearchArtifacts(query)
+	assert.NotNil(t, queriedArtifactSearchResults)
+	assert.Len(t, queriedArtifactSearchResults, 2)
+	assert.Equal(t, "artifact-foo", queriedArtifactSearchResults[0].Artifact.Name)
+	assert.Equal(t, "artifact-bar", queriedArtifactSearchResults[1].Artifact.Name)
+	assert.Equal(t, "node-foo", queriedArtifactSearchResults[0].NodeID)
+	assert.Equal(t, "node-foo", queriedArtifactSearchResults[1].NodeID)
+
+	// bad query
+	query = NewArtifactSearchQuery()
+	query.NodeId = "node-foobar"
+	queriedArtifactSearchResults = wf.SearchArtifacts(query)
+	assert.Nil(t, queriedArtifactSearchResults)
+	assert.Len(t, queriedArtifactSearchResults, 0)
+
+	// template and artifact name
+	query = NewArtifactSearchQuery()
+	query.TemplateName = "template-foo"
+	query.ArtifactName = "artifact-foo"
+	queriedArtifactSearchResults = wf.SearchArtifacts(query)
+	assert.NotNil(t, queriedArtifactSearchResults)
+	assert.Len(t, queriedArtifactSearchResults, 1)
+	assert.Equal(t, "artifact-foo", queriedArtifactSearchResults[0].Artifact.Name)
+	assert.Equal(t, "node-foo", queriedArtifactSearchResults[0].NodeID)
+}
+
+func TestWorkflowSpec_GetArtifactGC(t *testing.T) {
+	spec := WorkflowSpec{}
+
+	assert.NotNil(t, spec.GetArtifactGC())
+	assert.Equal(t, &ArtifactGC{Strategy: ArtifactGCNever}, spec.GetArtifactGC())
+}
+
 func TestWorkflowSpec_GetVolumeGC(t *testing.T) {
 	spec := WorkflowSpec{}
 
@@ -944,16 +1093,6 @@ func TestTemplate_SaveLogsAsArtifact(t *testing.T) {
 	t.Run("IsArchiveLogs", func(t *testing.T) {
 		x := &Template{ArchiveLocation: &ArtifactLocation{ArchiveLogs: pointer.BoolPtr(true)}}
 		assert.True(t, x.SaveLogsAsArtifact())
-	})
-	t.Run("ContainerSet", func(t *testing.T) {
-		t.Run("NoMain", func(t *testing.T) {
-			x := &Template{ArchiveLocation: &ArtifactLocation{ArchiveLogs: pointer.BoolPtr(true)}, ContainerSet: &ContainerSetTemplate{}}
-			assert.False(t, x.SaveLogsAsArtifact())
-		})
-		t.Run("Main", func(t *testing.T) {
-			x := &Template{ArchiveLocation: &ArtifactLocation{ArchiveLogs: pointer.BoolPtr(true)}, ContainerSet: &ContainerSetTemplate{Containers: []ContainerNode{{Container: corev1.Container{Name: "main"}}}}}
-			assert.True(t, x.SaveLogsAsArtifact())
-		})
 	})
 }
 
