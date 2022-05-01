@@ -598,6 +598,8 @@ docs/fields.md: api/openapi-spec/swagger.json $(shell find examples -type f) hac
 docs/cli/argo.md: $(CLI_PKGS) go.sum server/static/files.go hack/cli/main.go
 	go run ./hack/cli
 
+# docs
+
 /usr/local/bin/mkdocs:
 	pip install mkdocs==1.2.4 mkdocs_material==8.1.9
 
@@ -615,10 +617,10 @@ docs: /usr/local/bin/mkdocs \
 docs-serve: docs
 	mkdocs serve
 
-# pre-push
+# pre-commit checks
 
 .git/hooks/%: hack/git/hooks/%
-	cp -v hack/git/hooks/$* .git/hooks/$*
+	cp hack/git/hooks/$* .git/hooks/$*
 
 .PHONY: githooks
 githooks: .git/hooks/pre-commit .git/hooks/commit-msg
@@ -627,9 +629,10 @@ githooks: .git/hooks/pre-commit .git/hooks/commit-msg
 pre-commit: githooks codegen lint docs
 	touch dist/pre-commit
 
+# release
+
 release-notes: /dev/null
 	version=$(VERSION) envsubst < hack/release-notes.md > release-notes
-
 
 .PHONY: checksums
 checksums:
