@@ -1,0 +1,9 @@
+#!/bin/sh
+set -eu
+
+if find dist/pre-commit -mmin -15; then
+  echo "✅ 'make pre-commit -B' was run in the last 15m"
+else
+  echo "ℹ️ 'make pre-commit -B' was not run within the last 15m, running now"
+  make pre-commit -B
+fi

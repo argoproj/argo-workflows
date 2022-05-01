@@ -236,8 +236,7 @@ argoexec-image:
 
 .PHONY: codegen
 codegen: types swagger docs manifests $(GOPATH)/bin/mockery
-	# `go generate ./...` takes around 10s, so we only run on specific packages.
-	go generate ./persist/sqldb ./pkg/plugins ./pkg/apiclient/workflow ./server/auth ./server/auth/sso ./workflow/executor
+	go generate ./...
 	make --directory sdks/java generate
 	make --directory sdks/python generate
 
@@ -610,7 +609,7 @@ docs: /usr/local/bin/mkdocs \
 	./hack/check-mkdocs.sh
 	mkdocs build
 	go run -tags fields ./hack parseexamples
-	@echo "If you want to preview you docs, open site/index.html. If you want to edit them with hot-reload, run 'make docs-serve' to start mkdocs on port 8000"
+	@echo "ℹ️ If you want to preview you docs, open site/index.html. If you want to edit them with hot-reload, run 'make docs-serve' to start mkdocs on port 8000"
 
 .PHONY: docs-serve
 docs-serve: docs
@@ -618,14 +617,15 @@ docs-serve: docs
 
 # pre-push
 
-.git/hooks/commit-msg: hack/git/hooks/commit-msg
-	cp -v hack/git/hooks/commit-msg .git/hooks/commit-msg
+.git/hooks/%: hack/git/hooks/%
+	cp -v hack/git/hooks/$* .git/hooks/$*
 
 .PHONY: githooks
-githooks: .git/hooks/commit-msg
+githooks: .git/hooks/pre-commit .git/hooks/commit-msg
 
 .PHONY: pre-commit
 pre-commit: githooks codegen lint docs
+	touch dist/pre-commit
 
 release-notes: /dev/null
 	version=$(VERSION) envsubst < hack/release-notes.md > release-notes
