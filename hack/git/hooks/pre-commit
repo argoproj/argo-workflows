@@ -7,3 +7,10 @@ else
   echo "ℹ️ 'make pre-commit -B' was not run within the last 15m, running now"
   make pre-commit -B
 fi
+
+if find dist/test -mmin -15; then
+  echo "✅ 'make test' was run in the last 15m"
+else
+  echo "ℹ️ 'make test' was not run within the last 15m, running now"
+  make test
+fi

@@ -235,7 +235,7 @@ argoexec-image:
 	if [ $(DOCKER_PUSH) = true ] && [ $(IMAGE_NAMESPACE) != argoproj ] ; then docker push $(IMAGE_NAMESPACE)/$*:$(VERSION) ; fi
 
 .PHONY: codegen
-codegen: types swagger docs manifests $(GOPATH)/bin/mockery
+codegen: types swagger docs manifests $(GOPATH)/bin/mockery docs/fields.md docs/cli/argo.md
 	go generate ./...
 	make --directory sdks/java generate
 	make --directory sdks/python generate
@@ -410,6 +410,7 @@ lint: server/static/files.go $(GOPATH)/bin/golangci-lint
 test: server/static/files.go dist/argosay
 	go build ./...
 	env KUBECONFIG=/dev/null $(GOTEST) ./...
+	touch dist/testmake
 
 .PHONY: install
 install: githooks
@@ -605,8 +606,6 @@ docs/cli/argo.md: $(CLI_PKGS) go.sum server/static/files.go hack/cli/main.go
 
 .PHONY: docs
 docs: /usr/local/bin/mkdocs \
-	docs/fields.md \
-	docs/cli/argo.md
 	./hack/check-env-doc.sh
 	./hack/check-mkdocs.sh
 	mkdocs build
@@ -626,7 +625,7 @@ docs-serve: docs
 githooks: .git/hooks/pre-commit .git/hooks/commit-msg
 
 .PHONY: pre-commit
-pre-commit: githooks codegen lint docs
+pre-commit: codegen lint docs
 	touch dist/pre-commit
 
 # release
