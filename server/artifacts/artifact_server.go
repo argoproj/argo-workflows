@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"os"
 	"path"
-	"path/filepath"
 	"strings"
 
 	apierr "k8s.io/apimachinery/pkg/api/errors"
@@ -109,7 +108,7 @@ func (a *ArtifactServer) GetArtifactFile(w http.ResponseWriter, r *http.Request)
 	if len(requestPath) >= fileNameFirstIndex+1 { // they included a file path in the URL (not just artifact name)
 		joined := strings.Join(requestPath[fileNameFirstIndex:], "/")
 		// sanitize file name
-		cleanedPath := filepath.Clean(joined)
+		cleanedPath := path.Clean(joined)
 		fileName = &cleanedPath
 	} else if len(requestPath) < artifactNameIndex+1 {
 		a.httpBadRequestError(fmt.Sprintf("request path is not valid, expected at least %d fields, got %d", artifactNameIndex+1, len(requestPath)), w)
