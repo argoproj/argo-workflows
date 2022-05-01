@@ -838,7 +838,7 @@ func TestWorkflow_SearchArtifacts(t *testing.T) {
 		}
 		return count
 	}
-	countNodeID :=  func(ars ArtifactSearchResults, nodeID string) int {
+	countNodeID := func(ars ArtifactSearchResults, nodeID string) int {
 		count := 0
 		for _, ar := range ars {
 			if ar.NodeID == nodeID {
