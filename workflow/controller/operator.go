@@ -3526,13 +3526,6 @@ func (woc *wfOperationCtx) addFinalizers() {
 	woc.addArtifactGCFinalizer()
 }
 
-func (woc *wfOperationCtx) addArtifactGCFinalizer() {
-	if woc.execWf.Spec.ArtifactGC != nil && woc.execWf.Spec.ArtifactGC.Strategy != wfv1.ArtifactGCNever {
-		finalizers := append(woc.wf.GetFinalizers(), common.FinalizerArtifactGC)
-		woc.wf.SetFinalizers(finalizers)
-	}
-}
-
 func (woc *wfOperationCtx) GetShutdownStrategy() wfv1.ShutdownStrategy {
 	return woc.execWf.Spec.Shutdown
 }

@@ -93,6 +93,11 @@ const (
 	ArtifactGCNever                ArtifactGCStrategy = ""
 )
 
+var AnyArtifactGCStrategy = map[ArtifactGCStrategy]bool{
+	ArtifactGCOnWorkflowCompletion: true,
+	ArtifactGCOnWorkflowDeletion:   true,
+}
+
 // PodGCStrategy is the strategy when to delete completed pods for GC.
 type PodGCStrategy string
 
@@ -2045,6 +2050,21 @@ func (ws *WorkflowStatus) GetDuration() time.Duration {
 	return ws.FinishedAt.Time.Sub(ws.StartedAt.Time)
 }
 
+func (ws *WorkflowStatus) GetStoredWorkflowSpec() *WorkflowSpec {
+	if ws != nil && ws.StoredWorkflowSpec != nil {
+		return ws.StoredWorkflowSpec
+	}
+	return &WorkflowSpec{}
+}
+
+func (ws *WorkflowStatus) GetStoredTemplates() []Template {
+	var out []Template
+	for _, t := range ws.StoredTemplates {
+		out = append(out, t)
+	}
+	return out
+}
+
 // Pending returns whether or not the node is in pending state
 func (n NodeStatus) Pending() bool {
 	return n.Phase == NodePending
@@ -2925,6 +2945,13 @@ func (a *Artifact) GetArtifactGC() *ArtifactGC {
 	return a.ArtifactGC
 }
 
+func (w *Workflow) GetTemplates() []Template {
+	return append(
+		w.GetExecSpec().Templates,
+		w.Status.GetStoredTemplates()...,
+	)
+}
+
 // GetTemplateByName retrieves a defined template by its name
 func (wf *Workflow) GetTemplateByName(name string) *Template {
 	for _, t := range wf.Spec.Templates {
@@ -3004,6 +3031,17 @@ func (wf *Workflow) SetStoredTemplate(scope ResourceScope, resourceName string, 
 		return true, nil
 	}
 	return false, nil
+}
+
+func (w *Workflow) AnyArtifactGC() bool {
+	for _, t := range w.GetTemplates() {
+		for _, a := range t.GetOutputs().GetArtifacts() {
+			if a.GetArtifactGC().Strategy != ArtifactGCNever {
+				return true
+			}
+		}
+	}
+	return w.Spec.GetArtifactGC().GetStrategy() != ArtifactGCNever
 }
 
 // resolveTemplateReference resolves the stored template name of a given template holder on the template scope and determines

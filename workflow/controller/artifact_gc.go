@@ -6,13 +6,13 @@ import (
 	"fmt"
 	"hash/fnv"
 
-	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/resource"
-	"k8s.io/utils/pointer"
-
 	log "github.com/sirupsen/logrus"
+	corev1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/utils/env"
+	"k8s.io/utils/pointer"
 
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
@@ -23,7 +23,14 @@ import (
 
 const artifactGCComponent = "artifact-gc"
 
+// artifactGCEnabled is a feature flag to globally disabled artifact GC in case of emergency
+var artifactGCEnabled, _ = env.GetBool("ARGO_ARTIFACT_GC_ENABLED", true)
+
 func (woc *wfOperationCtx) garbageCollectArtifacts(ctx context.Context) error {
+
+	if !artifactGCEnabled {
+		return nil
+	}
 
 	if !slice.ContainsString(woc.wf.Finalizers, common.FinalizerArtifactGC) {
 		return nil
@@ -39,7 +46,7 @@ func (woc *wfOperationCtx) garbageCollectArtifacts(ctx context.Context) error {
 	}
 
 	if len(strategies) == 0 {
-		woc.log.Debug("not artifact GC currently needed")
+		woc.log.Debug("artifact GC not currently needed")
 		return nil
 	}
 
@@ -48,11 +55,13 @@ func (woc *wfOperationCtx) garbageCollectArtifacts(ctx context.Context) error {
 		return fmt.Errorf("failed to get pods from informer: %w", err)
 	}
 
+	podCount := 0
 	for _, obj := range pods {
 		pod := obj.(*corev1.Pod)
 		if pod.Labels[common.LabelKeyComponent] != artifactGCComponent {
 			continue
 		}
+		podCount++
 		nodeID := pod.Annotations[common.AnnotationKeyNodeID]
 		artifactName := pod.Annotations[common.AnnotationArtifactName]
 		phase := pod.Status.Phase
@@ -85,16 +94,22 @@ func (woc *wfOperationCtx) garbageCollectArtifacts(ctx context.Context) error {
 		}
 	}
 
+	maxConcurrency, err := env.GetInt("ARGO_ARTIFACT_MAX_CONCURRENT_PODS", 8)
+	if err != nil {
+		return fmt.Errorf("failed to get artifact max concurrent pods env var: %w", err)
+	}
+	if podCount >= maxConcurrency {
+		woc.log.WithField("maxConcurrency", maxConcurrency).Info("max artifact concurrent pods reached")
+		return nil
+	}
+
 	artifacts := woc.execWf.SearchArtifacts(&wfv1.ArtifactSearchQuery{ArtifactGCStrategies: strategies, Deleted: pointer.BoolPtr(false)})
 
 	if err := woc.createPodsToDeleteArtifacts(ctx, artifacts); err != nil {
 		return fmt.Errorf("failed to create pods to delete artifacts: %w", err)
 	}
 
-	remaining := woc.execWf.SearchArtifacts(&wfv1.ArtifactSearchQuery{ArtifactGCStrategies: map[wfv1.ArtifactGCStrategy]bool{
-		wfv1.ArtifactGCOnWorkflowCompletion: true,
-		wfv1.ArtifactGCOnWorkflowDeletion:   true,
-	}, Deleted: pointer.BoolPtr(false)})
+	remaining := woc.execWf.SearchArtifacts(&wfv1.ArtifactSearchQuery{ArtifactGCStrategies: wfv1.AnyArtifactGCStrategy, Deleted: pointer.BoolPtr(false)})
 
 	if len(remaining) == 0 {
 		woc.log.Info("no remaining artifacts to GC, removing artifact GC finalizer")
@@ -102,6 +117,16 @@ func (woc *wfOperationCtx) garbageCollectArtifacts(ctx context.Context) error {
 		woc.updated = true
 	}
 	return nil
+}
+
+func (woc *wfOperationCtx) addArtifactGCFinalizer() {
+	if !artifactGCEnabled {
+		return
+	}
+	if woc.execWf.AnyArtifactGC() {
+		woc.log.Info("adding artifact GC finalizer")
+		woc.wf.Finalizers = append(woc.wf.Finalizers, common.FinalizerArtifactGC)
+	}
 }
 
 func (woc *wfOperationCtx) createPodsToDeleteArtifacts(ctx context.Context, artifacts wfv1.ArtifactSearchResults) error {
@@ -151,14 +176,13 @@ func (woc *wfOperationCtx) createArtifactGCPod(ctx context.Context, a *wfv1.Arti
 
 	volumes, volumeMounts := createSecretVolumes(&wfv1.Template{Outputs: wfv1.Outputs{Artifacts: []wfv1.Artifact{a.Artifact}}})
 
-	_, err = woc.controller.kubeclientset.CoreV1().Pods(woc.wf.Namespace).Create(ctx, &corev1.Pod{
+	pod := &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: podName,
 			Labels: map[string]string{
 				common.LabelKeyWorkflow:  woc.wf.Name,
 				common.LabelKeyComponent: artifactGCComponent,
 				common.LabelKeyCompleted: "false",
-				// TODO instance ID
 			},
 			Annotations: map[string]string{
 				common.AnnotationKeyNodeID:    a.NodeID,
@@ -179,7 +203,9 @@ func (woc *wfOperationCtx) createArtifactGCPod(ctx context.Context, a *wfv1.Arti
 					Env: []corev1.EnvVar{
 						{Name: common.EnvVarArtifact, Value: string(data)},
 					},
-					// we can secure and limit this pod very effectively
+					// if this pod is breached by an attacker we:
+					// * prevent installation of any new packages
+					// * modification of the file-system
 					SecurityContext: &corev1.SecurityContext{
 						Capabilities:             &corev1.Capabilities{Drop: []corev1.Capability{"ALL"}},
 						Privileged:               pointer.Bool(false),
@@ -188,6 +214,7 @@ func (woc *wfOperationCtx) createArtifactGCPod(ctx context.Context, a *wfv1.Arti
 						ReadOnlyRootFilesystem:   pointer.Bool(true),
 						AllowPrivilegeEscalation: pointer.Bool(false),
 					},
+					// if this pod is breached by an attacker these limits prevent excessive CPU and memory usage
 					Resources: corev1.ResourceRequirements{
 						Limits: map[corev1.ResourceName]resource.Quantity{
 							"cpu":    resource.MustParse("100m"),
@@ -201,10 +228,27 @@ func (woc *wfOperationCtx) createArtifactGCPod(ctx context.Context, a *wfv1.Arti
 					VolumeMounts: volumeMounts,
 				},
 			},
-			RestartPolicy:      corev1.RestartPolicyOnFailure,
-			ServiceAccountName: woc.execWf.Spec.ServiceAccountName,
+			// if this pod is breached by an attacker this prevents them making Kubernetes API requests
+			AutomountServiceAccountToken: pointer.Bool(false),
+			RestartPolicy:                corev1.RestartPolicyOnFailure,
+			ServiceAccountName:           woc.execWf.Spec.ServiceAccountName,
 		},
-	}, metav1.CreateOptions{})
+	}
+
+	if v := woc.controller.Config.InstanceID; v != "" {
+		pod.Labels[common.EnvVarInstanceID] = v
+	}
+
+	// we need to run using the same configuration to the template that created the artifact
+	node := woc.wf.Status.Nodes[a.NodeID]
+	tmpl := woc.execWf.GetTemplateByName(node.TemplateName)
+
+	if v := tmpl.ServiceAccountName; v != "" {
+		pod.Spec.ServiceAccountName = v
+	}
+	woc.addMetadata(pod, tmpl)
+
+	_, err = woc.controller.kubeclientset.CoreV1().Pods(woc.wf.Namespace).Create(ctx, pod, metav1.CreateOptions{})
 
 	if err != nil && !apierr.IsAlreadyExists(err) {
 		return fmt.Errorf("failed to create pod: %w", err)

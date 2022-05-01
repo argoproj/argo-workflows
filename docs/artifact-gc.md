@@ -29,9 +29,16 @@ i.e. `status.conditions`) where the most recent error is reported.
 To determine why an artifact could not be deleted, examine the pod that was created to deleted it:
 
 ```bash
-kubectl get pod -l workflows.argoproj.io/workflow -l workflow.argoproj.io/component=artifact-gc
+kubectl get pod -l workflow.argoproj.io/component=artifact-gc -l workflows.argoproj.io/workflow
 ```
 
 If a pod failed to delete the artifact, then it will be `Failed`. Look at the pod logs to find out why.
 
-If the artifact will never be deleted, remove the finalizer. 
+If the artifact will never be deleted, because of some problem, remove the finalizer.
+
+## Configuration
+
+By default, we have assumed you do not want or need to run many garbage collection pods at once. That, unlike workflows,
+you're happy for artifact GC to take a bit of time, with the benefit of preventing a stamped of pods being created,
+potentially overloading your Kubernetes cluster. By default, the maximum concurrency (set
+by `ARGO_ARTIFACT_MAX_CONCURRENT_PODS`) is `8`. 

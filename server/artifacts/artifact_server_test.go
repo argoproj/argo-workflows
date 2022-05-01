@@ -294,7 +294,7 @@ func TestArtifactServer_httpFromError(t *testing.T) {
 	s.httpFromError(err, "Server error", w)
 
 	assert.Equal(t, http.StatusInternalServerError, w.StatusCode)
-	assert.Empty(t, w.Output)
+	assert.Equal(t, "Internal Server Error\n", w.Output)
 
 	w = &testhttp.TestResponseWriter{}
 	err = apierr.NewUnauthorized("")
