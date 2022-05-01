@@ -235,6 +235,11 @@ func TestArtifactServer_GetArtifactFile(t *testing.T) {
 			isDirectory: false,
 		},
 		{
+			path:        "/artifact-files/my-ns/workflows/my-wf/my-node/outputs/my-s3-artifact-directory/subdirectory/b.txt",
+			success:     true,
+			isDirectory: false,
+		},
+		{
 			path:        "/artifact-files/my-ns/workflows/my-wf/my-node/outputs/my-s3-artifact-directory/notafile.txt",
 			success:     false,
 			isDirectory: false,
