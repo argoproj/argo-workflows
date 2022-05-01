@@ -1,16 +1,16 @@
 #!/bin/sh
 set -eu
 
-if find dist/pre-commit -mmin -15; then
-  echo "✅ 'make pre-commit -B' was run in the last 15m"
+if find dist/pre-commit -mmin -15 | grep .; then
+  echo '✅ `make pre-commit -B` was run in the last 15m'
 else
-  echo "ℹ️ 'make pre-commit -B' was not run within the last 15m, running now"
+  echo 'ℹ️ `make pre-commit -B` was not run within the last 15m, running now'
   make pre-commit -B
 fi
 
-if find dist/test -mmin -15; then
-  echo "✅ 'make test' was run in the last 15m"
+if find dist/test -mmin -15 | grep .; then
+  echo '✅ `make test` was run in the last 15m'
 else
-  echo "ℹ️ 'make test' was not run within the last 15m, running now"
+  echo 'ℹ️ `make test` was not run within the last 15m, running now'
   make test
 fi

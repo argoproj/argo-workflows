@@ -410,7 +410,7 @@ lint: server/static/files.go $(GOPATH)/bin/golangci-lint
 test: server/static/files.go dist/argosay
 	go build ./...
 	env KUBECONFIG=/dev/null $(GOTEST) ./...
-	touch dist/testmake
+	touch dist/test
 
 .PHONY: install
 install: githooks
