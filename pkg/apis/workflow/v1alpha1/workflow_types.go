@@ -1252,7 +1252,17 @@ func (r *ArtifactRepositoryRefStatus) String() string {
 
 type ArtifactSearchQuery struct {
 	ArtifactGCStrategies map[ArtifactGCStrategy]bool `json:"artifactGCStrategies,omitempty" protobuf:"bytes,1,rep,name=artifactGCStrategies,castkey=ArtifactGCStrategy"`
+	ArtifactName         string                      `json:"artifactName,omitempty" protobuf:"bytes,2,rep,name=artifactName"`
+	TemplateName         string                      `json:"templateName,omitempty" protobuf:"bytes,3,rep,name=templateName"`
+	NodeId               string                      `json:"nodeId,omitempty" protobuf:"bytes,4,rep,name=nodeId"`
 }
+
+type ArtifactSearchResult struct {
+	Artifact `protobuf:"bytes,1,opt,name=artifact"`
+	NodeID   string `protobuf:"bytes,2,opt,name=nodeID"`
+}
+
+type ArtifactSearchResults []ArtifactSearchResult
 
 func NewArtifactSearchQuery() *ArtifactSearchQuery {
 	var q ArtifactSearchQuery
@@ -1260,27 +1270,49 @@ func NewArtifactSearchQuery() *ArtifactSearchQuery {
 	return &q
 }
 
-func (w *Workflow) SearchArtifacts(q *ArtifactSearchQuery) Artifacts {
+func (q *ArtifactSearchQuery) anyArtifactGCStrategy() bool {
+	for _, val := range q.ArtifactGCStrategies {
+		if val == true {
+			return val
+		}
+	}
+	return false
+}
 
-	var artifacts Artifacts
+func (w *Workflow) SearchArtifacts(q *ArtifactSearchQuery) ArtifactSearchResults {
+
+	var results ArtifactSearchResults
 
 	for _, n := range w.Status.Nodes {
 		t := w.GetTemplateByName(n.TemplateName)
 		for _, a := range n.GetOutputs().GetArtifacts() {
-			artifactByName := t.GetOutputs().GetArtifactByName(a.Name)
-			templateStrategy := t.GetArtifactGC().GetStrategy()
-			wfStrategy := w.Spec.GetArtifactGC().GetStrategy()
-			strategy := wfStrategy
-			if templateStrategy != ArtifactGCNever {
-				strategy = templateStrategy
+			match := true
+			if q.anyArtifactGCStrategy() {
+				templateStrategy := t.GetArtifactGC().GetStrategy()
+				wfStrategy := w.Spec.GetArtifactGC().GetStrategy()
+				strategy := wfStrategy
+				if templateStrategy != ArtifactGCNever {
+					strategy = templateStrategy
+				}
+				if !q.ArtifactGCStrategies[strategy] {
+					match = false
+				}
 			}
-			if q.ArtifactGCStrategies[strategy] == true {
-				artifacts = append(artifacts, *artifactByName)
+			if q.ArtifactName != "" && a.Name != q.ArtifactName {
+				match = false
+			}
+			if q.TemplateName != "" && n.TemplateName != q.TemplateName {
+				match = false
+			}
+			if q.NodeId != "" && n.ID != q.NodeId {
+				match = false
+			}
+			if match == true {
+				results = append(results, ArtifactSearchResult{Artifact: a, NodeID: n.ID})
 			}
 		}
 	}
-
-	return artifacts
+	return results
 }
 
 // Outputs hold parameters, artifacts, and results from a step
