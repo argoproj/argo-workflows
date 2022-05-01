@@ -1091,13 +1091,12 @@ func (s *ArgoServerSuite) TestArtifactServer() {
 
 	// In this case, the artifact name is a directory
 	s.Run("GetArtifactFileDirectory", func() {
-		resp := s.e().GET("/artifact-files/argo/workflows/" + name + "/" + name + "/outputs/out").
+		resp := s.e().GET("/artifact-files/argo/workflows/" + name + "/" + name + "/outputs/out/").
 			Expect().
 			Status(200)
 
 		resp.Body().
-			Contains(fmt.Sprintf("<a href=\"out/subdirectory/sub-file-1\">/artifact-files/argo/workflows/%s/%s/outputs/out/subdirectory/sub-file-1</a>", name, name)).
-			Contains(fmt.Sprintf("<a href=\"out/subdirectory/sub-file-2\">/artifact-files/argo/workflows/%s/%s/outputs/out/subdirectory/sub-file-2</a>", name, name))
+			Contains("<a href=\"subdirectory/\">subdirectory/</a>")
 
 		resp.Header("Content-Security-Policy").
 			Equal(artifacts.DefaultContentSecurityPolicy) // MSB
@@ -1108,13 +1107,13 @@ func (s *ArgoServerSuite) TestArtifactServer() {
 
 	// In this case, the filename specified in the request is actually a directory
 	s.Run("GetArtifactFileSubdirectory", func() {
-		resp := s.e().GET("/artifact-files/argo/workflows/" + name + "/" + name + "/outputs/out/subdirectory").
+		resp := s.e().GET("/artifact-files/argo/workflows/" + name + "/" + name + "/outputs/out/subdirectory/").
 			Expect().
 			Status(200)
 
 		resp.Body().
-			Contains(fmt.Sprintf("<a href=\"subdirectory/sub-file-1\">/artifact-files/argo/workflows/%s/%s/outputs/out/subdirectory/sub-file-1</a>", name, name)).
-			Contains(fmt.Sprintf("<a href=\"subdirectory/sub-file-2\">/artifact-files/argo/workflows/%s/%s/outputs/out/subdirectory/sub-file-2</a>", name, name))
+			Contains("<a href=\"sub-file-1\">sub-file-1</a>").
+			Contains("<a href=\"sub-file-2\">sub-file-2</a>")
 
 		resp.Header("Content-Security-Policy").
 			Equal(artifacts.DefaultContentSecurityPolicy) // MSB
