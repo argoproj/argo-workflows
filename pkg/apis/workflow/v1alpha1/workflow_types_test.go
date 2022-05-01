@@ -829,24 +829,40 @@ func TestWorkflow_SearchArtifacts(t *testing.T) {
 	queriedArtifactSearchResults := wf.SearchArtifacts(query)
 	assert.NotNil(t, queriedArtifactSearchResults)
 	assert.Len(t, queriedArtifactSearchResults, 3)
-	assert.Equal(t, "artifact-foo", queriedArtifactSearchResults[0].Artifact.Name)
-	assert.Equal(t, "artifact-bar", queriedArtifactSearchResults[1].Artifact.Name)
-	assert.Equal(t, "artifact-foobar", queriedArtifactSearchResults[2].Artifact.Name)
-	assert.Equal(t, "node-foo", queriedArtifactSearchResults[0].NodeID)
-	assert.Equal(t, "node-foo", queriedArtifactSearchResults[1].NodeID)
-	assert.Equal(t, "node-bar", queriedArtifactSearchResults[2].NodeID)
+	countArtifactName := func(ars ArtifactSearchResults, name string) int {
+		count := 0
+		for _, ar := range ars {
+			if ar.Artifact.Name == name {
+				count++
+			}
+		}
+		return count
+	}
+	countNodeID :=  func(ars ArtifactSearchResults, nodeID string) int {
+		count := 0
+		for _, ar := range ars {
+			if ar.NodeID == nodeID {
+				count++
+			}
+		}
+		return count
+	}
+	assert.Equal(t, 1, countArtifactName(queriedArtifactSearchResults, "artifact-foo"))
+	assert.Equal(t, 1, countArtifactName(queriedArtifactSearchResults, "artifact-bar"))
+	assert.Equal(t, 1, countArtifactName(queriedArtifactSearchResults, "artifact-foobar"))
+	assert.Equal(t, 2, countNodeID(queriedArtifactSearchResults, "node-foo"))
+	assert.Equal(t, 1, countNodeID(queriedArtifactSearchResults, "node-bar"))
 
 	// artifact GC strategy
 	query.ArtifactGCStrategies[ArtifactGCOnWorkflowCompletion] = true
 	queriedArtifactSearchResults = wf.SearchArtifacts(query)
 	assert.NotNil(t, queriedArtifactSearchResults)
 	assert.Len(t, queriedArtifactSearchResults, 3)
-	assert.Equal(t, "artifact-foo", queriedArtifactSearchResults[0].Artifact.Name)
-	assert.Equal(t, "artifact-bar", queriedArtifactSearchResults[1].Artifact.Name)
-	assert.Equal(t, "artifact-foobar", queriedArtifactSearchResults[2].Artifact.Name)
-	assert.Equal(t, "node-foo", queriedArtifactSearchResults[0].NodeID)
-	assert.Equal(t, "node-foo", queriedArtifactSearchResults[1].NodeID)
-	assert.Equal(t, "node-bar", queriedArtifactSearchResults[2].NodeID)
+	assert.Equal(t, 1, countArtifactName(queriedArtifactSearchResults, "artifact-foo"))
+	assert.Equal(t, 1, countArtifactName(queriedArtifactSearchResults, "artifact-bar"))
+	assert.Equal(t, 1, countArtifactName(queriedArtifactSearchResults, "artifact-foobar"))
+	assert.Equal(t, 2, countNodeID(queriedArtifactSearchResults, "node-foo"))
+	assert.Equal(t, 1, countNodeID(queriedArtifactSearchResults, "node-bar"))
 
 	// template name
 	query = NewArtifactSearchQuery()
