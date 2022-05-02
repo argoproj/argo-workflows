@@ -410,7 +410,7 @@ lint: server/static/files.go $(GOPATH)/bin/golangci-lint
 test: server/static/files.go dist/argosay
 	go build ./...
 	env KUBECONFIG=/dev/null $(GOTEST) ./...
-	# marker file so we can see how old it is the know how long ago the target was run
+	# marker file, based on it's modification time, we know how long ago this target was run
 	touch dist/test
 
 .PHONY: install
@@ -607,6 +607,7 @@ docs/cli/argo.md: $(CLI_PKGS) go.sum server/static/files.go hack/cli/main.go
 
 .PHONY: docs-spellcheck
 docs-spellcheck: /usr/local/bin/mdspell
+	# check docs for spelling mistakes
 	mdspell --ignore-numbers --ignore-acronyms --en-us --no-suggestions --report $(shell find docs -name '*.md' -not -name breaking-changes.md -not -name fields.md -not -name breaking-changes.md -not -name executor_swagger.md -not -path '*/cli/*')
 
 /usr/local/bin/markdown-link-check:
@@ -614,6 +615,7 @@ docs-spellcheck: /usr/local/bin/mdspell
 
 .PHONY: docs-linkcheck
 docs-linkcheck:
+	# check docs for broken links
 	markdown-link-check -q -c .mlc_config.json $(shell find docs -name '*.md' -not -name fields.md -not -name executor_swagger.md)
 
 /usr/local/bin/markdownlint:
@@ -621,6 +623,7 @@ docs-linkcheck:
 
 .PHONY: docs-lint
 docs-lint: /usr/local/bin/markdownlint
+	# lint docs
 	markdownlint docs --fix --ignore docs/fields.md --ignore docs/executor_swagger.md --ignore docs/cli
 
 /usr/local/bin/mkdocs:
@@ -631,10 +634,15 @@ docs: /usr/local/bin/mkdocs \
 	docs-spellcheck \
 	docs-lint \
 	docs-linkcheck
+	# check environment-variables.md contains all variables mentioned in the code
 	./hack/check-env-doc.sh
+	# check all docs are listed in mkdocs.yml
 	./hack/check-mkdocs.sh
+	# build the docs
 	mkdocs build
+	# fix the fields.md document
 	go run -tags fields ./hack parseexamples
+	# tell the user the fastest way to edit docs
 	@echo "ℹ️ If you want to preview you docs, open site/index.html. If you want to edit them with hot-reload, run 'make docs-serve' to start mkdocs on port 8000"
 
 .PHONY: docs-serve
@@ -651,7 +659,7 @@ githooks: .git/hooks/pre-commit .git/hooks/commit-msg
 
 .PHONY: pre-commit
 pre-commit: codegen lint docs
-	# marker file so we can see how old it is the know how long ago this target was run
+	# marker file, based on it's modification time, we know how long ago this target was run
 	touch dist/pre-commit
 
 # release

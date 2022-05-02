@@ -26,8 +26,11 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version: "16"
+      # Use the same make target both locally and on CI to make it easier to debug failures.
       - run: make docs
+      # If markdownlint fixes issues, files will be changed. If so, fail the build.
       - run: git diff --exit-code
+      # Upload the site so reviewers see it.
       - uses: actions/upload-artifact@v3
         with:
           name: docs
