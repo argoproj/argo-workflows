@@ -41,7 +41,7 @@ spec:
 
 Here's the result of a couple of runs of coin-flip for comparison.
 
-```sh
+```bash
 argo get coinflip-recursive-tzcb5
 
 STEP                         PODNAME                              MESSAGE

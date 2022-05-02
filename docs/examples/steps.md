@@ -48,7 +48,7 @@ spec:
 
 The above workflow spec prints three different flavors of "hello". The `hello-hello-hello` template consists of three `steps`. The first step named `hello1` will be run in sequence whereas the next two steps named `hello2a` and `hello2b` will be run in parallel with each other. Using the argo CLI command, we can graphically display the execution history of this workflow spec, which shows that the steps named `hello2a` and `hello2b` ran in parallel with each other.
 
-```sh
+```bash
 STEP            TEMPLATE           PODNAME                 DURATION  MESSAGE
  ✔ steps-z2zdn  hello-hello-hello
  ├───✔ hello1   whalesay           steps-z2zdn-27420706    2s

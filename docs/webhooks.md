@@ -12,9 +12,9 @@ In the namespace that will receive the event, create [access token](access-token
 
 Additionally create:
 
-* A secret named "`argo-workflows-webhook-clients`" listing the service accounts: [example](https://raw.githubusercontent.com/argoproj/argo-workflows/master/manifests/quick-start/base/webhooks/argo-workflows-webhook-clients-secret.yaml)
+* A secret named `argo-workflows-webhook-clients` listing the service accounts: [example](https://raw.githubusercontent.com/argoproj/argo-workflows/master/manifests/quick-start/base/webhooks/argo-workflows-webhook-clients-secret.yaml)
 
-The secret "`argo-workflows-webhook-clients`" tells Argo:
+The secret `argo-workflows-webhook-clients` tells Argo:
 
-* What type of webhook the account can be used for, e.g. "`github`" .
+* What type of webhook the account can be used for, e.g. `github`.
 * What "secret" that webhook is configured for, e.g. in your Github settings page.

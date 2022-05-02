@@ -279,7 +279,7 @@ spec:
 ```
 
 The reasoning for deprecating this behavior is that a `template` is a "definition": it defines inputs and things to be
-done once instantiated. With this deprecated behavior, the same template object is allowed to be an "`instantiator`":
+done once instantiated. With this deprecated behavior, the same template object is allowed to be an "instantiator":
 to pass in "live" arguments and reference other templates (those other templates may be "definitions" or "instantiators").
 
 This behavior has been problematic and dangerous. It causes confusion and has design inconsistencies.

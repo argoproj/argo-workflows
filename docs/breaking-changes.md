@@ -46,7 +46,7 @@ images:
 The workflow controller will error on start-up if incorrectly configured, rather than silently ignoring
 mis-configuration.
 
-```tetx
+```text
 Failed to register watch for controller config map: error unmarshaling JSON: while decoding JSON: json: unknown field \"args\"
 ```
 

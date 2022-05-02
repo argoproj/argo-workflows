@@ -2,7 +2,7 @@
 
 Workflows can be suspended by
 
-```sh
+```bash
 argo suspend WORKFLOW
 ```
 
@@ -43,7 +43,7 @@ spec:
 
 Once suspended, a Workflow will not schedule any new steps until it is resumed. It can be resumed manually by
 
-```sh
+```bash
 argo resume WORKFLOW
 ```
 

@@ -167,6 +167,20 @@ git commit --signoff -m 'fix: Fixed broken thing. Fixes #1234'
 git commit --signoff -m 'feat: Added a new feature. Fixes #1234'
 ```
 
+## Documentation Changes
+
+Docs help our customers understand how to use workflows and fix their own problems.
+
+Doc changes are checked for spelling, broken links, and lint issues by CI. To check locally run `make docs`.
+
+* Explain when a customer would want to use a feature.
+* Provide working examples.
+* Be easy to read - use simple short sentences and avoid jargon.
+* Format code using back-ticks to avoid it being reported spelling error.
+* Do not use title-case mid-sentence. E.g. "the Workflow" rather than "the workflow". 
+
+All users, including those who are fluent in English, might want to use a service like Grammarly to check their grammar. 
+
 ## Troubleshooting
 
 * When running `make pre-commit -B`, if you encounter errors like

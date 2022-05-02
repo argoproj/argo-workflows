@@ -33,7 +33,7 @@ This time, the `whalesay` template takes an input parameter named `message` that
 
 The argo CLI provides a convenient way to override parameters used to invoke the entrypoint. For example, the following command would bind the `message` parameter to "goodbye world" instead of the default "hello world".
 
-```sh
+```bash
 argo submit arguments-parameters.yaml -p message="goodbye world"
 ```
 
@@ -45,13 +45,13 @@ message: goodbye world
 
 To run use following command:
 
-```sh
+```bash
 argo submit arguments-parameters.yaml --parameter-file params.yaml
 ```
 
 Command-line parameters can also be used to override the default entrypoint and invoke any template in the workflow spec. For example, if you add a new version of the `whalesay` template called `whalesay-caps` but you don't want to change the default entrypoint, you can invoke this from the command line as follows:
 
-```sh
+```bash
 argo submit arguments-parameters.yaml --entrypoint whalesay-caps
 ```
 

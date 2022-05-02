@@ -5,7 +5,7 @@ image from Docker Hub.
 
 You can run this directly from your shell with a simple docker command:
 
-```sh
+```bash
 $ docker run docker/whalesay cowsay "hello world"
  _____________
 < hello world >
