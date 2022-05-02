@@ -8,7 +8,7 @@ import (
 
 type timedCache[Key comparable, Value any] struct {
 	timeout time.Duration
-	*lru.Cache
+	cache   *lru.Cache
 }
 
 type timeValueHolder struct {
@@ -19,12 +19,12 @@ type timeValueHolder struct {
 func NewTimedCache[key comparable, value any](timeout time.Duration, size int) *timedCache[key, value] {
 	return &timedCache[key, value]{
 		timeout: timeout,
-		Cache:   lru.New(size),
+		cache:   lru.New(size),
 	}
 }
 
 func (c *timedCache[Key, Value]) Get(key Key) (Value, bool) {
-	if data, ok := c.Cache.Get(key); ok {
+	if data, ok := c.cache.Get(key); ok {
 		holder := data.(*timeValueHolder)
 		deadline := holder.createTime.Add(c.timeout)
 		if c.getCurrentTime().Before(deadline) {
@@ -32,13 +32,13 @@ func (c *timedCache[Key, Value]) Get(key Key) (Value, bool) {
 				return value, true
 			}
 		}
-		c.Cache.Remove(key)
+		c.cache.Remove(key)
 	}
 	return *new(Value), false
 }
 
 func (c *timedCache[Key, Value]) Add(key Key, value Value) {
-	c.Cache.Add(key, &timeValueHolder{
+	c.cache.Add(key, &timeValueHolder{
 		createTime: c.getCurrentTime(),
 		value:      value,
 	})
