@@ -1,7 +1,5 @@
 # Artifact Repository Ref
 
-![GA](assets/ga.svg)
-
 > v2.9 and after
 
 You can reduce duplication in your templates by configuring repositories that can be accessed by any workflow. This can also remove sensitive information from your templates.
@@ -46,4 +44,4 @@ spec:
 
 This feature gives maximum benefit when used with [key-only artifacts](key-only-artifacts.md).
 
-Reference: [fields.md#artifactrepositoryref](fields.md#artifactrepositoryref).
+[Reference](fields.md#artifactrepositoryref).

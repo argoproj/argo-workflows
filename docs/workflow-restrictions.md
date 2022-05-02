@@ -1,17 +1,15 @@
 # Workflow Restrictions
 
-![GA](assets/ga.svg)
-
 > v2.9 and after
 
 ## Introduction
 
-As the administrator of the controller, you may want to limit which types of Workflows your users can run. Setting workflow restrictions allows you to ensure that Workflows comply with certain requirements. 
+As the administrator of the controller, you may want to limit which types of Workflows your users can run. Setting workflow restrictions allows you to ensure that Workflows comply with certain requirements.
 
 ## Available Restrictions
 
-* `templateReferencing: Strict`: Only Workflows using "workflowTemplateRef" will be processed. This allows the administrator of the controller to set a "library" of templates that may be run by its operator, limiting arbitrary Workflow execution.
-* `templateReferencing: Secure`: Only Workflows using "workflowTemplateRef" will be processed and the controller will enforce that the WorkflowTemplate that is referenced hasn't changed between operations. If you want to make sure the operator of the Workflow cannot run an arbitrary Workflow, use this option.
+* `templateReferencing: Strict`: Only Workflows using `workflowTemplateRef` will be processed. This allows the administrator of the controller to set a "library" of templates that may be run by its operator, limiting arbitrary Workflow execution.
+* `templateReferencing: Secure`: Only Workflows using `workflowTemplateRef` will be processed and the controller will enforce that the workflow template that is referenced hasn't changed between operations. If you want to make sure the operator of the Workflow cannot run an arbitrary Workflow, use this option.
 
 ## Setting Workflow Restrictions
 
