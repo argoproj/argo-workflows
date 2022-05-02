@@ -37,9 +37,10 @@ const (
 	EnvArgoArtifactXFrameOptions = "ARGO_ARTIFACT_X_FRAME_OPTIONS"
 	// DefaultContentSecurityPolicy is the default policy added to the Content-Security-Policy HTTP header
 	//   if no environment override has been added
-	DefaultContentSecurityPolicy = "sandbox; base-uri 'none'; default-src 'none'; image-src: 'self'; style-src: 'self'"
+	// Validte using https://csp-evaluator.withgoogle.com
+	DefaultContentSecurityPolicy = "sandbox; base-uri 'none'; default-src 'none'; img-src 'self'; style-src 'self'; require-trusted-types-for 'script';"
 	// DefaultXFrameOptions is the default value for the X-Frame-Options header
-	DefaultXFrameOptions = "SAMESITE"
+	DefaultXFrameOptions = "SAMEORIGIN"
 )
 
 type ArtifactServer struct {
@@ -271,10 +272,10 @@ func (a *ArtifactServer) returnArtifact(ctx context.Context, w http.ResponseWrit
 
 	_, err = io.Copy(w, stream)
 	if err != nil {
-		return fmt.Errorf("failed to copy stream for artifact, err:%v", err)
+		http.Error(w, fmt.Sprintf("failed to stream artifact: %v", err), http.StatusInternalServerError)
+	} else {
+		w.WriteHeader(http.StatusOK)
 	}
-
-	w.WriteHeader(http.StatusOK)
 
 	return nil
 }
