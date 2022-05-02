@@ -1,14 +1,20 @@
 apiVersion: argoproj.io/v1alpha1
-kind: Workflow
+kind: WorkflowTemplate
 metadata:
-  generateName: artifacts-
+  name: artifacts
   annotations:
     workflows.argoproj.io/description: |
-      This workflows shows how to produce different types of output that are stored as the orginal file, rather than .tgz.
+      This example shows how to produce different types of output that are stored as the orginal file, rather than .tgz.
 spec:
   entrypoint: main
   templates:
     - name: main
+      inputs:
+        artifacts:
+          - name: index
+            path: /out/assets/argo.png
+            http:
+              url: https://raw.githubusercontent.com/argoproj/argo-workflows/master/docs/assets/argo.png
       container:
         image: argoproj/argosay:v2
         command:
@@ -18,8 +24,21 @@ spec:
           - |
             mkdir /out
             cowsay "hello world" > /out/hello.txt
-            echo '{"hello": {"world": true}}' > /out/hello.json
-            echo '<html><body><h1>Hello World</h1></body></html>' > /out/index.html
+            cat > /out/hello.json <<EOF
+            {"hello": {"world": true}} 
+            EOF
+            echo '* {font-family: sans-serif}' > /out/assets/styles.css
+            cat > /out/index.html <<EOF
+            <html>
+              <head>
+                <link rel='stylesheet' href='assets/styles.css' type='text/css'/>
+              </head>
+              <body>
+                <h1>Hello World</h1>
+                <img src='assets/argo.png'/>
+              </body>
+            </html>
+            EOF
             echo '<html><body><script>alert("XSS")</script></body></html>' > /out/xss.html
       outputs:
         artifacts:
@@ -30,10 +49,22 @@ spec:
               key: hello.txt
             archive:
               none: { }
+          - name: png
+            path: /out/assets/argo.png
+            s3:
+              key: argo.png
+            archive:
+              none: { }
           - name: json
             path: /out/hello.json
             s3:
               key: hello.json
+            archive:
+              none: { }
+          - name: css
+            path: /out/assets/styles.css
+            s3:
+              key: styles.css
             archive:
               none: { }
           - name: html
@@ -42,6 +73,7 @@ spec:
               key: index.html
             archive:
               none: { }
+          # this artifact tries to run javascript, in the UI this is prevented by our CSP sandbox
           - name: xss
             path: /out/xss.html
             s3:
@@ -52,7 +84,7 @@ spec:
           - name: dir
             path: /out
             s3:
-              key: dir
+              key: dir/
             archive:
               none: { }
           # this will be a tgz with a single file

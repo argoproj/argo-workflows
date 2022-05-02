@@ -1072,6 +1072,79 @@ func (s *ArgoServerSuite) TestArtifactServer() {
 		resp.Header("X-Frame-Options").
 			Equal(artifacts.DefaultXFrameOptions)
 	})
+
+	// In this case, the artifact name is a file
+	s.Run("GetArtifactFile", func() {
+		resp := s.e().GET("/artifact-files/argo/workflows/" + name + "/" + name + "/outputs/main-file").
+			Expect().
+			Status(200)
+
+		resp.Body().
+			Contains(":) Hello Argo!")
+
+		resp.Header("Content-Security-Policy").
+			Equal(artifacts.DefaultContentSecurityPolicy) // MSB
+
+		resp.Header("X-Frame-Options").
+			Equal(artifacts.DefaultXFrameOptions)
+	})
+
+	// In this case, the artifact name is a directory
+	s.Run("GetArtifactFileDirectory", func() {
+		resp := s.e().GET("/artifact-files/argo/workflows/" + name + "/" + name + "/outputs/out/").
+			Expect().
+			Status(200)
+
+		resp.Body().
+			Contains("<a href=\"subdirectory/\">subdirectory/</a>")
+
+		resp.Header("Content-Security-Policy").
+			Equal(artifacts.DefaultContentSecurityPolicy) // MSB
+
+		resp.Header("X-Frame-Options").
+			Equal(artifacts.DefaultXFrameOptions)
+	})
+
+	// In this case, the filename specified in the request is actually a directory
+	s.Run("GetArtifactFileSubdirectory", func() {
+		resp := s.e().GET("/artifact-files/argo/workflows/" + name + "/" + name + "/outputs/out/subdirectory/").
+			Expect().
+			Status(200)
+
+		resp.Body().
+			Contains("<a href=\"sub-file-1\">sub-file-1</a>").
+			Contains("<a href=\"sub-file-2\">sub-file-2</a>")
+
+		resp.Header("Content-Security-Policy").
+			Equal(artifacts.DefaultContentSecurityPolicy) // MSB
+
+		resp.Header("X-Frame-Options").
+			Equal(artifacts.DefaultXFrameOptions)
+	})
+
+	// In this case, the filename specified in the request is a subdirectory file
+	s.Run("GetArtifactSubfile", func() {
+		resp := s.e().GET("/artifact-files/argo/workflows/" + name + "/" + name + "/outputs/out/subdirectory/sub-file-1").
+			Expect().
+			Status(200)
+
+		resp.Body().
+			Contains(":) Hello Argo!")
+
+		resp.Header("Content-Security-Policy").
+			Equal(artifacts.DefaultContentSecurityPolicy) // MSB
+
+		resp.Header("X-Frame-Options").
+			Equal(artifacts.DefaultXFrameOptions)
+	})
+
+	// In this case, the artifact name is a file
+	s.Run("GetArtifactBadFile", func() {
+		_ = s.e().GET("/artifact-files/argo/workflows/" + name + "/" + name + "/outputs/not-a-file").
+			Expect().
+			Status(500)
+	})
+
 	s.Run("GetArtifactByUID", func() {
 		s.e().DELETE("/api/v1/workflows/argo/" + name).
 			Expect().
@@ -1093,6 +1166,14 @@ func (s *ArgoServerSuite) TestArtifactServer() {
 			WithHeader("Cookie", "authorization=Bearer "+token).
 			Expect().
 			Status(200)
+	})
+
+	s.Run("GetArtifactFileByUID", func() {
+		s.e().GET("/artifact-files/argo/archived-workflows/{uid}/{name}/outputs/main-file", uid, name).
+			Expect().
+			Status(200).
+			Body().
+			Contains(":) Hello Argo!")
 	})
 }
 
