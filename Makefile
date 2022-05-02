@@ -602,7 +602,7 @@ docs/cli/argo.md: $(CLI_PKGS) go.sum server/static/files.go hack/cli/main.go
 # docs
 
 /usr/local/bin/mdspell:
-	npm i -g markdown-spelling
+	npm i -g markdown-spellcheck
 
 .PHONY: docs-spellcheck
 docs-spellcheck: /usr/local/bin/mdspell

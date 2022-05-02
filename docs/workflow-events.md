@@ -2,6 +2,8 @@
 
 > v2.7.2
 
+⚠️ Do not use Kubernetes events for automation. Events maybe lost or rolled-up.
+
 We emit Kubernetes events on certain events.
 
 Workflow state change:

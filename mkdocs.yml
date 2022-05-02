@@ -20,7 +20,6 @@ theme:
   features:
     - navigation.tabs
     - navigation.tabs.sticky
-    - navigation.expand
     - navigation.top
 extra:
   analytics:
@@ -67,7 +66,7 @@ nav:
           - walk-through/continuous-integration-example.md
   - User Guide:
       - workflow-concepts.md
-      - Custom Resources:
+      - Custom Resource Kinds:
           - workflow-templates.md
           - cluster-workflow-templates.md
           - cron-workflows.md
@@ -85,34 +84,31 @@ nav:
           - service-accounts.md
           - workflow-rbac.md
       - Features:
+          # this is a bit of a dumping ground, I've tried to order with key features first
           - variables.md
           - retries.md
           - lifecyclehook.md
           - synchronization.md
           - memoization.md
           - template-defaults.md
-          - debug-pause.md
-
           - enhanced-depends-logic.md
-          - empty-dir.md
-          - cron-backfill.md
-
+          - node-field-selector.md
+      - Status:
           - resource-duration.md
           - estimated-duration.md
           - progress.md
           - workflow-creator.md
-
+      - Patterns:
+          - empty-dir.md
+          - cron-backfill.md
           - workflow-of-workflows.md
-
-          - kubectl.md
-          - node-field-selector.md
-
+          - workflow-notifications.md
+      - UI Features:
           - widgets.md
           - intermediate-inputs.md
-
-          - workflow-restrictions.md
-          - workflow-notifications.md
+      - Debugging Tools:
           - workflow-events.md
+          - debug-pause.md
       - API:
           - rest-api.md
           - access-token.md
@@ -129,9 +125,9 @@ nav:
           - executor_swagger.md
           - plugin-directory.md
       - Best Practices:
-        - workflow-pod-security-context.md
-        - tolerating-pod-deletion.md
-        - running-at-massive-scale.md
+          - workflow-pod-security-context.md
+          - tolerating-pod-deletion.md
+          - running-at-massive-scale.md
       - Use Cases:
           - use-cases/ci-cd.md
           - use-cases/data-processing.md
@@ -140,6 +136,7 @@ nav:
           - use-cases/other.md
           - use-cases/stream-processing.md
       - FAQ: faq.md
+      - kubectl.md
       - ide-setup.md
       - Field Reference: fields.md
       - CLI Reference:
@@ -211,6 +208,7 @@ nav:
           - workflow-archive.md
           - metrics.md
           - workflow-executors.md
+          - workflow-restrictions.md
           - sidecar-injection.md
       - Argo Server:
           - argo-server.md
