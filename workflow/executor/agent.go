@@ -40,19 +40,21 @@ type AgentExecutor struct {
 	WorkflowInterface workflow.Interface
 	RESTClient        rest.Interface
 	Namespace         string
+	WorkflowUid       string
 	consideredTasks   map[string]bool
 	plugins           []executorplugins.TemplateExecutor
 }
 
 type templateExecutor = func(ctx context.Context, tmpl wfv1.Template, result *wfv1.NodeResult) (time.Duration, error)
 
-func NewAgentExecutor(clientSet kubernetes.Interface, restClient rest.Interface, config *rest.Config, namespace, workflowName string, plugins []executorplugins.TemplateExecutor) *AgentExecutor {
+func NewAgentExecutor(clientSet kubernetes.Interface, restClient rest.Interface, config *rest.Config, namespace, workflowName, workflowUid string, plugins []executorplugins.TemplateExecutor) *AgentExecutor {
 	return &AgentExecutor{
 		log:               log.WithField("workflow", workflowName),
 		ClientSet:         clientSet,
 		RESTClient:        restClient,
 		Namespace:         namespace,
 		WorkflowName:      workflowName,
+		WorkflowUid:       workflowUid,
 		WorkflowInterface: workflow.NewForConfigOrDie(config),
 		consideredTasks:   make(map[string]bool),
 		plugins:           plugins,
@@ -340,7 +342,11 @@ func (ae *AgentExecutor) executeHTTPTemplateRequest(ctx context.Context, httpTem
 func (ae *AgentExecutor) executePluginTemplate(ctx context.Context, tmpl wfv1.Template, result *wfv1.NodeResult) (time.Duration, error) {
 	args := executorplugins.ExecuteTemplateArgs{
 		Workflow: &executorplugins.Workflow{
-			ObjectMeta: executorplugins.ObjectMeta{Name: ae.WorkflowName},
+			ObjectMeta: executorplugins.ObjectMeta{
+				Name:      ae.WorkflowName,
+				Namespace: ae.Namespace,
+				Uid:       ae.WorkflowUid,
+			},
 		},
 		Template: &tmpl,
 	}
