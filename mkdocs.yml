@@ -3,6 +3,7 @@ repo_url: https://github.com/argoproj/argo-workflows
 strict: true
 theme:
   name: material
+  custom_dir: docs/overrides
   font:
     text: Roboto
     code: Roboto Mono
