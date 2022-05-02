@@ -1,6 +1,6 @@
 # API Examples
 
-Document contains couple of examples of workflow JSON's to submit via argo-server REST API. 
+Document contains couple of examples of workflow JSON's to submit via argo-server REST API.
 
 > v2.5 and after
 
@@ -12,14 +12,14 @@ Assuming
 
 ## Submitting workflow
 
-```
+```bash
 curl --request POST \
   --url https://localhost:2746/api/v1/workflows/argo \
   --header 'content-type: application/json' \
   --data '{
   "namespace": "argo",
   "serverDryRun": false,
-	 "workflow": {
+  "workflow": {
       "metadata": {
         "generateName": "hello-world-",
         "namespace": "argo",
@@ -57,21 +57,21 @@ curl --request POST \
 
 ## Getting workflows for namespace argo
 
-```
+```bash
 curl --request GET \
   --url https://localhost:2746/api/v1/workflows/argo
 ```
 
 ## Getting single workflow for namespace argo
 
-```
+```bash
 curl --request GET \
   --url https://localhost:2746/api/v1/workflows/argo/abc-dthgt
 ```
 
 ## Deleting single workflow for namespace argo
 
-```
+```bash
 curl --request DELETE \
   --url https://localhost:2746/api/v1/workflows/argo/abc-dthgt
 ```

@@ -38,7 +38,8 @@ const (
 	EnvArgoArtifactXFrameOptions = "ARGO_ARTIFACT_X_FRAME_OPTIONS"
 	// DefaultContentSecurityPolicy is the default policy added to the Content-Security-Policy HTTP header
 	//   if no environment override has been added
-	DefaultContentSecurityPolicy = "sandbox; base-uri 'none'; default-src 'none'; img-src 'self'; style-src 'self'"
+	// Validte using https://csp-evaluator.withgoogle.com
+	DefaultContentSecurityPolicy = "sandbox; base-uri 'none'; default-src 'none'; img-src 'self'; style-src 'self'; require-trusted-types-for 'script';"
 	// DefaultXFrameOptions is the default value for the X-Frame-Options header
 	DefaultXFrameOptions = "SAMEORIGIN"
 )

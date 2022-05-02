@@ -1,7 +1,5 @@
 # Container Set Template
 
-![GA](assets/ga.svg)
-
 > v3.1 and after
 
 A container set templates is similar to a normal container or script template, but allows you to specify multiple
@@ -112,4 +110,3 @@ Example B: Lopsided requests, e.g. `a -> b` where `a` is cheap and `b` is expens
 Can you see the problem here? `a` only wont small requests, but the container set will use the  total of all requests. So it's as if you're using all that GPU for 10h. This will be expensive.
 
 Solution: do not use container set when you have lopsided requests.
-

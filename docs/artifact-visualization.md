@@ -14,8 +14,8 @@ Use cases:
 * When you click on the artifact, a panel appears.
 * This first time this opens, it shows explanatory text that helps you understand if you might need to change their
   workflows to use this new feature.
-* Known file types such as images, text or HTML are displayed in an iframe.
-* Artifacts are sandboxed using a Content-Security-Policy that prevents Javascript execution.
+* Known file types such as images, text or HTML are displayed in an inline frame (`iframe`).
+* Artifacts are sandboxed using a Content-Security-Policy that prevents JavaScript execution.
 * JSON, being popular, is displayed in an special viewer.
 
 To start, you should take a look at
@@ -53,13 +53,13 @@ You can create reports using HTML artifacts, which include charts and graphs pro
 
 ### Malicious Artifacts
 
-A **malicious artifact** is a HTML artifact that attempts to use Javascript to perform UI actions, such as creating or
+A **malicious artifact** is a HTML artifact that attempts to use JavaScript to perform UI actions, such as creating or
 deleting workflows.
 
-We assume that artifacts are untrusted, so by default, artifacts are served with a `Content-Security-Policy` that
-disables Javascript.
+We assume that artifacts are not trusted, so by default, artifacts are served with a `Content-Security-Policy` that
+disables JavaScript.
 
-This is similar to what happens when you include third-party scripts, such as analytics tracking, in your website.
+This is similar to what happens when you include third-party scripts, such as analytic tracking, in your website.
 However, those tracking codes are normally served from a different domain to your main website. Artifacts are server
 from the same origin, so normal browser controls are not secure enough.
 
