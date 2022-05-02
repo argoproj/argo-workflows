@@ -1,6 +1,6 @@
 # Docker-in-Docker Using Sidecars
 
-An application of sidecars is to implement Docker-in-Docker (DIND). DIND is useful when you want to run Docker commands from inside a container. For example, you may want to build and push a container image from inside your build container. In the following example, we use the docker:dind container to run a Docker daemon in a sidecar and give the main container access to the daemon.
+An application of sidecars is to implement Docker-in-Docker (DIND). DIND is useful when you want to run Docker commands from inside a container. For example, you may want to build and push a container image from inside your build container. In the following example, we use the `docker:dind` image to run a Docker daemon in a sidecar and give the main container access to the daemon.
 
 ```yaml
 apiVersion: argoproj.io/v1alpha1

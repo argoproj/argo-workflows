@@ -1,4 +1,4 @@
-# Hello World!
+# Hello World
 
 Let's start by creating a very simple workflow template to echo "hello world" using the `docker/whalesay` container
 image from Docker Hub.

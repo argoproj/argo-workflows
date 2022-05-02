@@ -29,9 +29,9 @@ spec:
       args: ["echo -n hello world > /tmp/hello_world.txt"]  # generate the content of hello_world.txt
     outputs:
       parameters:
-      - name: hello-param		# name of output parameter
+      - name: hello-param  # name of output parameter
         valueFrom:
-          path: /tmp/hello_world.txt	# set the value of hello-param to the contents of this hello-world.txt
+          path: /tmp/hello_world.txt # set the value of hello-param to the contents of this hello-world.txt
 
   - name: print-message
     inputs:

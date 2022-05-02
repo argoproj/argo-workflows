@@ -3,13 +3,13 @@
 Before you start, it is really useful to understand the following key terminology.
 
 !!! note
-    Please read [Kubernetes concepts](https://kubernetes.io/docs/concepts/) first. 
+    Please read [Kubernetes concepts](https://kubernetes.io/docs/concepts/) first.
 
-* **Workflow**: a Kubernetes resource defining the execution of one or more **template**. Workflows are named. 
-* **Template**: a **step**, **steps** or **dag**. 
-* **Step**: a single step of a **workflow**, typically run a container based on **inputs** and capture the **outputs**. 
+* **Workflow**: a Kubernetes resource defining the execution of one or more **template**. Workflows are named.
+* **Template**: a **step**, **steps** or **dag**.
+* **Step**: a single step of a **workflow**, typically run a container based on **inputs** and capture the **outputs**.
 * **Steps**: a list of **steps**
-* **Entrypoint**: the first **step** to execute when running a **workflow** 
+* **Entrypoint**: the first **step** to execute when running a **workflow**
 * **Node**: a step
 * **Directed Acyclic Graph (DAG)**: a set of **steps** (nodes) and the dependencies (edges) between them.
 * **Workflow Template**: a Kubernetes resource defining a reusable workflow for a namespace

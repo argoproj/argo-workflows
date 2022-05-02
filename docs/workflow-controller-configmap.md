@@ -8,7 +8,7 @@ For a detailed example, please see [`workflow-controller-configmap.yaml`](./work
 
 ## Setting the Config Map
 
-The config map should be saved as a K8S config map on the cluster in the same namespace as the `workflow-controller`.
+The config map should be saved as a Kubernetes config map on the cluster in the same namespace as the `workflow-controller`.
 It should then be referenced by the `workflow-controller` and `argo-server` as a command argument:
 
 ```yaml
@@ -40,6 +40,7 @@ spec:
       nodeSelector:
               kubernetes.io/os: linux
 ```
+
 ```yaml
 apiVersion: apps/v1
 kind: Deployment

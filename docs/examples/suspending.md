@@ -42,7 +42,9 @@ spec:
 ```
 
 Once suspended, a Workflow will not schedule any new steps until it is resumed. It can be resumed manually by
+
 ```sh
 argo resume WORKFLOW
 ```
+
 Or automatically with a `duration` limit as the example above.

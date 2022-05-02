@@ -10,9 +10,9 @@ Firstly, to do any automation, you'll need an ([access token](access-token.md)).
 
 ```bash
 kubectl patch role jenkins -p '{"rules": [{"apiGroups": ["argoproj.io"], "resources": ["workflowtemplates"], "verbs": ["get"]}, {"apiGroups": ["argoproj.io"], "resources": ["workflows"], "verbs": ["create", "list", "get", "update"]}]}'
-``` 
+```
 
-Next, create a workflow template 
+Next, create a workflow template
 
 ```yaml
 apiVersion: argoproj.io/v1alpha1
@@ -31,7 +31,7 @@ spec:
         image: docker/whalesay:latest
 ```
 
-You can submit this workflow via an CLI or the [Argo Server API](rest-api.md). 
+You can submit this workflow via an CLI or the [Argo Server API](rest-api.md).
 
 Submit via CLI (note how I add a label to help identify it later on):
 

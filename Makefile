@@ -609,29 +609,29 @@ docs/cli/argo.md: $(CLI_PKGS) go.sum server/static/files.go hack/cli/main.go
 
 .PHONY: docs-spellcheck
 docs-spellcheck:
-	# Check spelling.
-	# Tip: code is not spelled-checked, so always add back-ticks to code
-	mdspell --ignore-numbers --ignore-acronyms --en-us $(shell find docs -name '*.md' -not -name fields.md -not -name breaking-changes.md -not -name executor_swagger.md -not -path '*/cli/*')
+	mdspell --ignore-numbers --ignore-acronyms --en-us --no-suggestions --report $(shell find docs -name '*.md' -not -name fields.md -not -name breaking-changes.md -not -name executor_swagger.md -not -path '*/cli/*')
 
 /usr/local/bin/markdown-link-check:
 	npm i -g markdown-link-check
-
-/usr/local/bin/markdownlint:
-	npm i -g  markdownlint-cli
 
 .PHONY: docs-linkcheck
 docs-linkcheck:
 	markdown-link-check -q -c .mlc_config.json $(shell find docs -name '*.md' -not -name fields.md -not -name executor_swagger.md)
 
+/usr/local/bin/markdownlint:
+	npm i -g  markdownlint-cli
+
 .PHONY: docs-lint
 docs-lint:
+	markdownlint docs --ignore docs/fields.md --ignore docs/executor_swagger.md --ignore docs/cli
 
 .PHONY: docs
 docs: /usr/local/bin/mkdocs \
-	./hack/check-env-doc.sh
-	./hack/check-mkdocs.sh \
 	docs-spellcheck \
+	docs-lint \
 	docs-linkcheck
+	./hack/check-env-doc.sh
+	./hack/check-mkdocs.sh
 	mkdocs build
 	go run -tags fields ./hack parseexamples
 	@echo "ℹ️ If you want to preview you docs, open site/index.html. If you want to edit them with hot-reload, run 'make docs-serve' to start mkdocs on port 8000"

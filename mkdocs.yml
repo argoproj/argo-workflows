@@ -33,6 +33,7 @@ markdown_extensions:
   - toc:
       permalink: true
 nav:
+  - Home: README.md
   - Getting Started:
       - quick-start.md
       - training.md

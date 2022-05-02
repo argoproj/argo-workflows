@@ -11,9 +11,10 @@ Create a cherry-pick issue to allow the team and community to comment on the rel
 3. Generate new issue contents:
 
     ```bash
-    $ git checkout master # Ensure we are on master
-    $ git log --pretty=format:"%an: %s %h"  [COMMIT_HASH]..HEAD
+    git checkout master # Ensure we are on master
+    git log --pretty=format:"%an: %s %h"  [COMMIT_HASH]..HEAD
     ```
+
 4. Create a new issue on GitHub with the title `[VERSION] cherry-pick` (e.g. `v3.0.2 cherry-pick`) and the generated commits
 as content.
 
@@ -25,8 +26,8 @@ release branch. There should be a single release branch per minor release (e.g. 
 1. Checkout the release branch and cherry-pick commits
 
     ```bash
-    $ git checkout release-3.0
-    $ git cherry-pick [COMMIT_IDS...]
+    git checkout release-3.0
+    git cherry-pick [COMMIT_IDS...]
     ```
 
 2. Hope for few merge conflicts!

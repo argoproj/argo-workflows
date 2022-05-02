@@ -1,4 +1,5 @@
 # Template Defaults
+
 > v3.1 and after
 
 ## Introduction
@@ -8,6 +9,7 @@
 ## Configuring `templateDefaults` in `WorkflowSpec`
 
 For example:
+
 ```yaml
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -24,9 +26,11 @@ spec:
     container:
       image: docker/whalesay:latest
 ```
+
 [template defaults example](https://raw.githubusercontent.com/argoproj/argo-workflows/master/examples/template-defaults.yaml)
 
 ## Configuring `templateDefaults` in Controller Level
+
 Operator can configure the `templateDefaults` in [workflow defaults](default-workflow-specs.md). This `templateDefault` will be applied to all the workflow which runs on the controller.
 
 The following would be specified in the Config Map:

@@ -4,7 +4,7 @@ In many cases, you will want to manage Kubernetes resources from Argo workflows.
 
 ```yaml
 # in a workflow. The resource template type accepts any k8s manifest
-# (including CRDs) and can perform any kubectl action against it (e.g. create,
+# (including CRDs) and can perform any `kubectl` action against it (e.g. create,
 # apply, delete, patch).
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -51,7 +51,7 @@ Resources created in this way are independent of the workflow. If you want the r
 You can also collect data about the resource in output parameters (see more at [k8s-jobs.yaml](https://github.com/argoproj/argo-workflows/tree/master/examples/k8s-jobs.yaml))
 
 **Note:**
-When patching, the resource will accept another attribute, `mergeStrategy`, which can either be `strategic`, `merge`, or `json`. If this attribute is not supplied, it will default to `strategic`. Keep in mind that Custom Resources cannot be patched with `strategic`, so a different strategy must be chosen. For example, suppose you have the [CronTab CRD](https://kubernetes.io/docs/tasks/access-kubernetes-api/custom-resources/custom-resource-definitions/#create-a-customresourcedefinition) defined, and the following instance of a CronTab:
+When patching, the resource will accept another attribute, `mergeStrategy`, which can either be `strategic`, `merge`, or `json`. If this attribute is not supplied, it will default to `strategic`. Keep in mind that Custom Resources cannot be patched with `strategic`, so a different strategy must be chosen. For example, suppose you have the [`CronTab` CRD](https://kubernetes.io/docs/tasks/access-kubernetes-api/custom-resources/custom-resource-definitions/#create-a-customresourcedefinition) defined, and the following instance of a `CronTab`:
 
 ```yaml
 apiVersion: "stable.example.com/v1"

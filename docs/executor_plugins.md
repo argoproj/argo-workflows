@@ -181,7 +181,7 @@ kubectl -n argo apply -f hello-executor-plugin-configmap.yaml
 
 Check your controller logs:
 
-```
+```text
 level=info msg="Executor plugin added" name=hello-controller-plugin
 ```
 

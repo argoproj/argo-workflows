@@ -1,6 +1,6 @@
 # Templates
 
-See [core concepts](core-concepts.md) for DAG, steps, container templates. 
+See [core concepts](core-concepts.md) for DAG, steps, container templates.
 
 ## Container Set Template
 

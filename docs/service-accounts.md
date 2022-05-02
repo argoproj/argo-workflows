@@ -28,4 +28,3 @@ kubectl create rolebinding default-admin --clusterrole=admin --serviceaccount=ar
 
 **Note that this will grant admin privileges to the `default` `ServiceAccount` in the namespace that the command is run from, so you will only be able to
 run Workflows in the namespace where the `RoleBinding` was made.**
-

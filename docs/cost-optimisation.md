@@ -4,13 +4,13 @@
 
 Suggestions for users running workflows.
 
-### Set The Workflows Pod Resource Requests 
+### Set The Workflows Pod Resource Requests
 
 > Suitable if you are running a workflow with many homogeneous pods.
 
 [Resource duration](resource-duration.md) shows the amount of CPU and memory requested by a pod and is indicative of the cost. You can use this to find costly steps within your workflow.
 
-Smaller requests can be set in the pod spec patch's [resource requirements](fields.md#resourcerequirements). 
+Smaller requests can be set in the pod spec patch's [resource requirements](fields.md#resourcerequirements).
 
 ## Use A Node Selector To Use Cheaper Instances
 
@@ -34,6 +34,7 @@ Consider:
 * Data transfer costs (upload/download vs. copying)
 * Data storage costs (object storage vs. volume)
 * Requirement for parallel access to data (NFS vs. block storage vs. artifact)
+
 ### Limit The Total Number Of Workflows And Pods
 
 > Suitable for all.
@@ -68,7 +69,7 @@ You can set these configurations globally using [Default Workflow Spec](default-
 
 Changing these settings will not delete workflows that have already run. To list old workflows:
 
-```
+```bash
 argo list --completed --since 7d
 ```
 
@@ -76,7 +77,7 @@ argo list --completed --since 7d
 
 To list/delete workflows completed over 7 days ago:
 
-```
+```bash
 argo list --older 7d
 argo delete --older 7d
 ```
@@ -89,7 +90,7 @@ Suggestions for operators who installed Argo Workflows.
 
 > Suitable if you have many instances, e.g. on dozens of clusters or namespaces.
 
-Set a resource requests and limits for the `workflow-controller` and `argo-server`, e.g. 
+Set a resource requests and limits for the `workflow-controller` and `argo-server`, e.g.
 
 ```yaml
 requests:

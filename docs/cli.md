@@ -1,11 +1,11 @@
 # CLI
 
-The CLI allows to (among other things) submit, watch, and list workflows, e.g.: 
+The CLI allows to (among other things) submit, watch, and list workflows, e.g.:
 
 ```bash
 argo submit my-wf.yaml
 argo list
-```   
+```
 
 ## Reference
 
@@ -15,17 +15,17 @@ You can find [detailed reference here](cli/argo.md)
 
 Most help topics are provided by built-in help:
 
-```
+```bash
 argo --help
 ```
 
 ## Argo Server
 
-You'll need to configure your commands to use the Argo Server if you have [offloaded node status](offloading-large-workflows.md) or are trying to access your [workflow archive](workflow-archive.md). 
+You'll need to configure your commands to use the Argo Server if you have [offloaded node status](offloading-large-workflows.md) or are trying to access your [workflow archive](workflow-archive.md).
 
 To do so, set the `ARGO_SERVER` environment variable, e.g.:
 
-```
+```bash
 export ARGO_SERVER=localhost:2746
 ```
 

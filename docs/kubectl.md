@@ -11,4 +11,3 @@ kubectl get wf hello-world-xxx -n argo
 kubectl get po -n argo --selector=workflows.argoproj.io/workflow=hello-world-xxx
 kubectl logs hello-world-yyy -c main -n argo
 ```
-

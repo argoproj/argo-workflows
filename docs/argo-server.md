@@ -31,12 +31,11 @@ Use this mode if:
 
 To run locally:
 
-```
+```bash
 argo server
 ```
 
-This will start a server on port 2746 which you can view at [https://localhost:2746](https://localhost:2746).
-
+This will start a server on port 2746 which you [can view](https://localhost:2746).
 
 ## Options
 
@@ -75,8 +74,7 @@ following:
 kubectl -n argo port-forward svc/argo-server 2746:2746
 ```
 
-Then visit: https://localhost:2746
-
+Then visit: <https://localhost:2746>
 
 ### Expose a `LoadBalancer`
 
@@ -91,6 +89,7 @@ Then wait for the external IP to be made available:
 ```bash
 kubectl get svc argo-server -n argo
 ```
+
 ```bash
 NAME          TYPE           CLUSTER-IP     EXTERNAL-IP   PORT(S)          AGE
 argo-server   LoadBalancer   10.43.43.130   172.18.0.2    2746:30008/TCP   18h
@@ -101,7 +100,6 @@ argo-server   LoadBalancer   10.43.43.130   172.18.0.2    2746:30008/TCP   18h
 You can get ingress working as follows:
 
 Add `BASE_HREF` as environment variable to `deployment/argo-server`. Do not forget to add a trailing '/' character.
-
 
 ```yaml
 ---
@@ -156,7 +154,6 @@ spec:
 ```
 
 [Learn more](https://github.com/argoproj/argo-workflows/issues/3080)
-
 
 ## Security
 

@@ -1,6 +1,6 @@
 # Breaking Changes
 
-Breaking changes typically (sometimes we don't realise they are breaking) have "!" in the commit message, as per
+Breaking changes  typically (sometimes we don't realise they are breaking) have "!" in the commit message, as per
 the [conventional commits](https://www.conventionalcommits.org/en/v1.0.0/#summary).
 
 ## Upgrading to v3.4
@@ -19,7 +19,7 @@ If you are incorrectly configured, the workflow controller will error on start-u
 
 #### Actions
 
-You don't need to configure images that use v2 manifests anymore. You can just remove them (e.g. `argoproj/argosay:v2`):
+You don't need to configure images that use v2 manifests anymore. You can just remove them (e.g. argoproj/argosay:v2):
 
 ```bash
 % docker manifest inspect argoproj/argosay:v2
@@ -28,7 +28,7 @@ You don't need to configure images that use v2 manifests anymore. You can just r
 ...
 ```
 
-For v1 manifests (e.g. `docker/whalesay:latest`):
+For v1 manifests (e.g. docker/whalesay:latest):
 
 ```bash
 % docker image inspect -f '{{.Config.Entrypoint}} {{.Config.Cmd}}' docker/whalesay:latest
@@ -38,7 +38,7 @@ For v1 manifests (e.g. `docker/whalesay:latest`):
 ```yaml
 images:
   docker/whalesay:latest:
-    cmd: [ /bin/bash ]
+    cmd: [/bin/bash]
 ```
 
 ## feat: Fail on invalid config. (#8295)
@@ -46,7 +46,7 @@ images:
 The workflow controller will error on start-up if incorrectly configured, rather than silently ignoring
 mis-configuration.
 
-```
+```tetx
 Failed to register watch for controller config map: error unmarshaling JSON: while decoding JSON: json: unknown field \"args\"
 ```
 
@@ -60,8 +60,7 @@ See [workflow RBAC](workflow-rbac.md) and [#8013](https://github.com/argoproj/ar
 
 ### [06d4bf76f](https://github.com/argoproj/argo-workflows/commit/06d4bf76f) fix: Reduce agent permissions. Fixes #7986 (#7987)
 
-The PR changes the permissions used by the agent to report back the outcome of HTTP template requests. The
-permission `patch workflowtasksets/status` replaces `patch workflowtasksets`, for example:
+The PR changes the permissions used by the agent to report back the outcome of HTTP template requests. The permission `patch workflowtasksets/status` replaces `patch workflowtasksets`, for example:
 
 ```yaml
 apiVersion: rbac.authorization.k8s.io/v1
@@ -85,8 +84,9 @@ See [#8013](https://github.com/argoproj/argo-workflows/issues/8013).
 
 This PR removes the following configmap items -
 
-- executorImage (use executor.image in configmap instead)
-  e.g. Workflow controller configmap similar to the following one given below won't be valid anymore:
+* executorImage (use executor.image in configmap instead)
+  e.g.
+  Workflow controller configmap similar to the following one given below won't be valid anymore:
 
   ```yaml
   apiVersion: v1
@@ -113,8 +113,9 @@ This PR removes the following configmap items -
     ...
   ```
 
-- executorImagePullPolicy (use executor.imagePullPolicy in configmap instead)
-  e.g. Workflow controller configmap similar to the following one given below won't be valid anymore:
+* executorImagePullPolicy (use executor.imagePullPolicy in configmap instead)
+  e.g.
+  Workflow controller configmap similar to the following one given below won't be valid anymore:
 
   ```yaml
   data:
@@ -133,8 +134,9 @@ This PR removes the following configmap items -
     ...
   ```
 
-- executorResources (use executor.resources in configmap instead)
-  e.g. Workflow controller configmap similar to the following one given below won't be valid anymore:
+* executorResources (use executor.resources in configmap instead)
+  e.g.
+  Workflow controller configmap similar to the following one given below won't be valid anymore:
 
   ```yaml
   data:
@@ -167,13 +169,11 @@ This PR removes the following configmap items -
 
 ### [fce82d572](https://github.com/argoproj/argo-workflows/commit/fce82d5727b89cfe49e8e3568fff40725bd43734) feat: Remove pod workers (#7837)
 
-This PR removes pod workers from the code, the pod informer directly writes into the workflow queue. As a result
-the `--pod-workers` flag has been removed.
+This PR removes pod workers from the code, the pod informer directly writes into the workflow queue. As a result the `--pod-workers` flag has been removed.
 
 ### [93c11a24ff](https://github.com/argoproj/argo-workflows/commit/93c11a24ff06049c2197149acd787f702e5c1f9b) feat: Add TLS to Metrics and Telemetry servers (#7041)
 
-This PR adds the ability to send metrics over TLS with a self-signed certificate. In v3.5 this will be enabled by
-default, so it is recommended that users enable this functionality now.
+This PR adds the ability to send metrics over TLS with a self-signed certificate. In v3.5 this will be enabled by default, so it is recommended that users enable this functionality now.
 
 ### [0758eab11](https://github.com/argoproj/argo-workflows/commit/0758eab11decb8a1e741abef3e0ec08c48a69ab8) feat(server)!: Sync dispatch of webhook events by default
 
@@ -192,7 +192,7 @@ HTTPArtifact without a scheme will now defaults to https instead of http
 
 user need to explicitly include a http prefix if they want to retrieve HTTPArtifact through http
 
-### chore!: Remove the hidden flag `--verify` from `argo submit`.
+### chore!: Remove the hidden flag `--verify` from `argo submit`
 
 The hidden flag `--verify` has been removed from `argo submit`. This is a internal testing flag we don't need anymore.
 
@@ -200,25 +200,17 @@ The hidden flag `--verify` has been removed from `argo submit`. This is a intern
 
 ### [e5b131a33](https://github.com/argoproj/argo-workflows/commit/e5b131a33) feat: Add template node to pod name. Fixes #1319 (#6712)
 
-This add the template name to the pod name, to make it easier to understand which pod ran which step. This behaviour can
-be reverted by setting `POD_NAMES=v1` on the workflow controller.
+This add the template name to the pod name, to make it easier to understand which pod ran which step. This behaviour can be reverted by setting `POD_NAMES=v1` on the workflow controller.
 
 ### [be63efe89](https://github.com/argoproj/argo-workflows/commit/be63efe89) feat(executor)!: Change `argoexec` base image to alpine. Closes #5720 (#6006)
 
-Changing from Debian to Alpine reduces the size of the `argoexec` image, resulting is faster starting workflow pods, and
-it also reduce the risk of security issues. There is not such thing as a free lunch. There maybe other behaviour changes
-we don't know of yet.
+Changing from Debian to Alpine reduces the size of the `argoexec` image, resulting is faster starting workflow pods, and it also reduce the risk of security issues. There is not such thing as a free lunch. There maybe other behaviour changes we don't know of yet.
 
-Some users found this change prevented workflow with very large parameters from running.
-See [#7586](https://github.com/argoproj/argo-workflows/issues/7586)
+Some users found this change prevented workflow with very large parameters from running. See [#7586](https://github.com/argoproj/argo-workflows/issues/7586)
 
 ### [48d7ad3](https://github.com/argoproj/argo-workflows/commit/48d7ad36c14e4a50c50332d6decd543a1b732b69) chore: Remove onExit naming transition scaffolding code (#6297)
 
-When upgrading from `<v2.12` to `>v3.2` workflows that are running at the time of the upgrade and have `onExit` steps _
-may_ experience the `onExit` step running twice. This is only applicable for workflows that began running before
-a `workflow-controller` upgrade and are still running after the upgrade is complete. This is only applicable for
-upgrading from `v2.12` or earlier directly to `v3.2` or later. Even under these conditions, duplicate work may not be
-experienced.
+When upgrading from `<v2.12` to `>v3.2` workflows that are running at the time of the upgrade and have `onExit` steps _may_ experience the `onExit` step running twice. This is only applicable for workflows that began running before a `workflow-controller` upgrade and are still running after the upgrade is complete. This is only applicable for upgrading from `v2.12` or earlier directly to `v3.2` or later. Even under these conditions, duplicate work may not be experienced.
 
 ## Upgrading to v3.1
 
@@ -231,10 +223,7 @@ The manifests in the repository on the tag will no longer contain the image tag,
 
 ### [ab361667a](https://github.com/argoproj/argo-workflows/commit/ab361667a) feat(controller) Emissary executor.  (#4925)
 
-The Emissary executor is not a breaking change per-se, but it is brand new so we would not recommend you use it by
-default yet. Instead, we recommend you test it out on some workflows
-using [config map configuration](https://github.com/argoproj/argo-workflows/blob/master/docs/workflow-controller-configmap.yaml#L125)
-.
+The Emissary executor is not a breaking change per-se, but it is brand new so we would not recommend you use it by default yet. Instead, we recommend you test it out on some workflows using [config map configuration](https://github.com/argoproj/argo-workflows/blob/master/docs/workflow-controller-configmap.yaml#L125).
 
 ```yaml
 # Specifies the executor to use.
@@ -261,7 +250,7 @@ always play nicely with the `when` condition syntax (Goevaluate).
 
 This can be resolved using a single quote in your when expression:
 
-```
+```yaml
 when: "'{{inputs.parameters.should-print}}' != '2021-01-01'"
 ```
 
@@ -271,8 +260,7 @@ when: "'{{inputs.parameters.should-print}}' != '2021-01-01'"
 
 ### [defbd600e](https://github.com/argoproj/argo-workflows/commit/defbd600e37258c8cdf30f64d4da9f4563eb7901) fix: Default ARGO_SECURE=true. Fixes #5607 (#5626)
 
-The server now starts with TLS enabled by default if a key is available. The original behaviour can be configured
-with `--secure=false`.
+The server now starts with TLS enabled by default if a key is available. The original behaviour can be configured with `--secure=false`.
 
 If you have an ingress, you may need to add the appropriate annotations:(varies by ingress):
 
@@ -283,11 +271,11 @@ nginx.ingress.kubernetes.io/backend-protocol: HTTPS
 
 ### [01d310235](https://github.com/argoproj/argo-workflows/commit/01d310235a9349e6d552c758964cc2250a9e9616) chore(server)!: Required authentication by default. Resolves #5206 (#5211)
 
-To login to the UI, you must provide a login token. The original behaviour can be configured with `--auth-mode=server`.
+To login to the user interface, you must provide a login token. The original behaviour can be configured with `--auth-mode=server`.
 
 ### [f31e0c6f9](https://github.com/argoproj/argo-workflows/commit/f31e0c6f92ec5e383d2f32f57a822a518cbbef86) chore!: Remove deprecated fields (#5035)
 
-Some fields that were deprecated in early 2020 have been removed.
+Some fields that were deprecated in early 2020 have been removed.  
 
 | Field | Action |
 |---|---|
@@ -303,5 +291,4 @@ kubectl get wf --all-namespaces -o yaml | grep ttlSecondsAfterFinished
 
 ### [c8215f972](https://github.com/argoproj/argo-workflows/commit/c8215f972502435e6bc5b232823ecb6df919f952) feat(controller)!: Key-only artifacts. Fixes #3184 (#4618)
 
-This change is not breaking per-se, but many users do not appear to aware
-of [artifact repository ref](artifact-repository-ref.md), so check your usage of that feature if you have problems.
+This change is not breaking per-se, but many users do not appear to aware of [artifact repository ref](artifact-repository-ref.md), so check your usage of that feature if you have problems.

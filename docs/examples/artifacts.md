@@ -85,4 +85,4 @@ Artifacts are packaged as Tarballs and gzipped by default. You may customize thi
             # no compression (also accepts the standard gzip 1 to 9 values)
             compressionLevel: 0
 <... snipped ...>
-``` 
+```

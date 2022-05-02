@@ -33,5 +33,5 @@ for 4-6 weeks before the release becomes generally available.
 
 Otherwise, we typically release every two weeks:
 
-* Patch fixes for the current stable version. 
+* Patch fixes for the current stable version.
 * The next release candidate, if we are currently in a release-cycle.

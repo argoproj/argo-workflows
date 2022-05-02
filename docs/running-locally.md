@@ -5,8 +5,8 @@
 * [Go 1.18](https://golang.org/dl/)
 * [Yarn](https://classic.yarnpkg.com/en/docs/install/#mac-stable)
 * [Docker](https://docs.docker.com/get-docker/)
-* [protoc](http://google.github.io/proto-lens/installing-protoc.html)
-* [jq](https://stedolan.github.io/jq/download/)
+* [`protoc`](http://google.github.io/proto-lens/installing-protoc.html)
+* [`jq`](https://stedolan.github.io/jq/download/)
 * A local Kubernetes cluster (`k3d`, `kind`, or `minikube`)
 
 We recommend using [K3D](https://k3d.io/) to set up the local Kubernetes cluster since this will allow you to test RBAC
@@ -30,7 +30,7 @@ generation does not work.
 
 Add the following to your `/etc/hosts`:
 
-```
+```text
 127.0.0.1 dex
 127.0.0.1 minio
 127.0.0.1 postgres
@@ -40,7 +40,7 @@ Add the following to your `/etc/hosts`:
 To start:
 
 * The controller, so you can run workflows.
-* MinIO (http://localhost:9000, use admin/password) so you can use artifacts:
+* MinIO (<http://localhost:9000>, use admin/password) so you can use artifacts:
 
 Run:
 
@@ -62,13 +62,13 @@ If you made changes to how the executor, you need to build the image:
 make argoexec-image
 ```
 
-To also start the API on https://localhost:2746:
+To also start the API on <https://localhost:2746>:
 
 ```bash
 make start API=true
 ```
 
-To also start the UI on http://localhost:8080 (`UI=true` implies `API=true`):
+To also start the UI on <http://localhost:8080> (`UI=true` implies `API=true`):
 
 ```bash
 make start UI=true
@@ -89,8 +89,8 @@ make start PROFILE=mysql
 
 You'll have, either:
 
-* Postgres on http://localhost:5432, run `make postgres-cli` to access.
-* MySQL on http://localhost:3306, run `make mysql-cli` to access.
+* Postgres on <http://localhost:5432>, run `make postgres-cli` to access.
+* MySQL on <http://localhost:3306>, run `make mysql-cli` to access.
 
 To test SSO integration, use `PROFILE=sso`:
 

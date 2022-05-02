@@ -26,7 +26,7 @@ spec:
         mode: 0755
         http:
           url: https://storage.googleapis.com/kubernetes-release/release/v1.8.0/bin/linux/amd64/kubectl
-      # Copy an s3 compatible artifact repository bucket (such as AWS, GCS and Minio) and place it at /s3
+      # Copy an s3 compatible artifact repository bucket (such as AWS, GCS and MinIO) and place it at /s3
       - name: objects
         path: /s3
         s3:

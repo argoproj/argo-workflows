@@ -20,7 +20,6 @@ Node state change:
 * `WorkflowNodeFailed`
 * `WorkflowNodeError`
 
-
 The involved object is the workflow in both cases. Additionally, for node state change events, annotations indicate the name and type of the involved node:
 
 ```yaml

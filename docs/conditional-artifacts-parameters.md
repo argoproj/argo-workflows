@@ -33,7 +33,7 @@ under step/DAG level output parameter. Both use the
 
 ## Conditional Parameters
 
-```yaml   
+```yaml
     - name: coinflip
       steps:
         - - name: flip-coin
@@ -67,6 +67,6 @@ Convenient functions added to support more use cases:
 
 * [Advanced example: fibonacci Sequence](https://raw.githubusercontent.com/argoproj/argo-workflows/master/examples/fibonacci-seq-conditional-param.yaml)
 
-!!! NOTE 
+!!! NOTE
     Expressions will decode the `-` as operator if template name has `-`, it will fail the expression. So here solution
     for template name which has `-` in its name. `step['one-two-three'].outputs.artifacts`
