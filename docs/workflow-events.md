@@ -1,7 +1,5 @@
 # Workflow Events
 
-![GA](assets/ga.svg)
-
 > v2.7.2
 
 We emit Kubernetes events on certain events.

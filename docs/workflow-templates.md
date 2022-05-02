@@ -1,7 +1,5 @@
 # Workflow Templates
 
-![GA](assets/ga.svg)
-
 > v2.4 and after
 
 ## Introduction

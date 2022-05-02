@@ -1,7 +1,5 @@
 # Managed Namespace
 
-![GA](assets/ga.svg)
-
 > v2.5 and after
 
 You can install Argo in either cluster scoped or namespace scope configurations.

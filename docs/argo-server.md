@@ -1,7 +1,5 @@
 # Argo Server
 
-![GA](assets/ga.svg)
-
 > v2.5 and after
 
 !!! Warning "HTTP vs HTTPS"

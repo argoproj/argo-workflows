@@ -98,10 +98,3 @@ Instead you need to use the `--restart-successful` option, e.g. if using the tem
 ```bash
 argo retry <WORKFLOWNAME> --restart-successful --node-field-selector templateRef.template=run-external-job,phase=Failed
 ```
-
-See also:
-
-- [access token](access-token.md)
-- [resuming a workflow via automation](resuming-workflow-via-automation.md)
-- [submitting a workflow via automation](submit-workflow-via-automation.md)
-- [one workflow submitting another](workflow-submitting-workflow.md)

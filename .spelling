@@ -48,6 +48,7 @@ GitOps
 Github
 Golang
 Grafana
+Grammarly
 Heptio
 Homebrew
 InsideBoard
@@ -126,6 +127,7 @@ finalizer
 govaluate
 gzipped
 i.e.
+instantiator
 instantiators
 jenkins
 k8s-jobs

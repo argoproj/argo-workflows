@@ -1,12 +1,4 @@
-# Templates
-
-See [core concepts](core-concepts.md) for DAG, steps, container templates.
-
-## Container Set Template
-
-See [container set template](container-set-template.md).
-
-## Inline Templates
+# Inline Templates
 
 > v3.2 and after
 

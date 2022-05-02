@@ -1,7 +1,5 @@
 # Events
 
-![GA](assets/ga.svg)
-
 > v2.11 and after
 
 ## Overview

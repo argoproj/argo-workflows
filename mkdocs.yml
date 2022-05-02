@@ -20,6 +20,7 @@ theme:
   features:
     - navigation.tabs
     - navigation.tabs.sticky
+    - navigation.expand
     - navigation.top
 extra:
   analytics:
@@ -37,99 +38,100 @@ nav:
   - Getting Started:
       - quick-start.md
       - training.md
+      - Walk Through:
+          - walk-through/index.md
+          - walk-through/argo-cli.md
+          - walk-through/hello-world.md
+          - walk-through/parameters.md
+          - walk-through/steps.md
+          - walk-through/dag.md
+          - walk-through/artifacts.md
+          - walk-through/the-structure-of-workflow-specs.md
+          - walk-through/secrets.md
+          - walk-through/scripts-and-results.md
+          - walk-through/output-parameters.md
+          - walk-through/loops.md
+          - walk-through/conditionals.md
+          - walk-through/retrying-failed-or-errored-steps.md
+          - walk-through/recursion.md
+          - walk-through/exit-handlers.md
+          - walk-through/timeouts.md
+          - walk-through/volumes.md
+          - walk-through/suspending.md
+          - walk-through/daemon-containers.md
+          - walk-through/sidecars.md
+          - walk-through/hardwired-artifacts.md
+          - walk-through/kubernetes-resources.md
+          - walk-through/docker-in-docker-using-sidecars.md
+          - walk-through/custom-template-variable-reference.md
+          - walk-through/continuous-integration-example.md
   - User Guide:
-      - Examples:
-          - examples/index.md
-          - examples/argo-cli.md
-          - examples/hello-world.md
-          - examples/parameters.md
-          - examples/steps.md
-          - examples/dag.md
-          - examples/artifacts.md
-          - examples/the-structure-of-workflow-specs.md
-          - examples/secrets.md
-          - examples/scripts-and-results.md
-          - examples/output-parameters.md
-          - examples/loops.md
-          - examples/conditionals.md
-          - examples/retrying-failed-or-errored-steps.md
-          - examples/recursion.md
-          - examples/exit-handlers.md
-          - examples/timeouts.md
-          - examples/volumes.md
-          - examples/suspending.md
-          - examples/daemon-containers.md
-          - examples/sidecars.md
-          - examples/hardwired-artifacts.md
-          - examples/kubernetes-resources.md
-          - examples/docker-in-docker-using-sidecars.md
-          - examples/custom-template-variable-reference.md
-          - examples/continuous-integration-example.md
-      - Concepts:
-          - core-concepts.md
-          - workflow-concepts.md
-          - variables.md
+      - workflow-concepts.md
       - Custom Resources:
           - workflow-templates.md
           - cluster-workflow-templates.md
           - cron-workflows.md
       - Template Types:
-          - templates.md
           - http-template.md
           - container-set-template.md
           - data-sourcing-and-transformation.md
+          - inline-templates.md
       - Artifacts:
-          - conditional-artifacts-parameters.md
           - workflow-inputs.md
-          - artifact-repository-ref.md
           - key-only-artifacts.md
-      - Best Practices:
-          - workflow-pod-security-context.md
-          - tolerating-pod-deletion.md
-          - running-at-massive-scale.md
-          - work-avoidance.md
+          - artifact-repository-ref.md
+          - conditional-artifacts-parameters.md
       - Access Control:
           - service-accounts.md
           - workflow-rbac.md
       - Features:
-          - node-field-selector.md
+          - variables.md
+          - retries.md
+          - lifecyclehook.md
+          - synchronization.md
+          - memoization.md
+          - template-defaults.md
+          - debug-pause.md
+
+          - enhanced-depends-logic.md
           - empty-dir.md
           - cron-backfill.md
-          - template-defaults.md
-          - enhanced-depends-logic.md
-          - intermediate-inputs.md
+
           - resource-duration.md
           - estimated-duration.md
           - progress.md
-          - lifecyclehook.md
           - workflow-creator.md
-          - synchronization.md
+
           - workflow-of-workflows.md
-          - memoization.md
-          - widgets.md
-          - retries.md
+
           - kubectl.md
-          - debug-pause.md
+          - node-field-selector.md
+
+          - widgets.md
+          - intermediate-inputs.md
+
           - workflow-restrictions.md
           - workflow-notifications.md
           - workflow-events.md
       - API:
-          - access-token.md
-          - swagger.md
           - rest-api.md
+          - access-token.md
           - rest-examples.md
-          - client-libraries.md
           - events.md
           - webhooks.md
-          - submit-workflow-via-automation.md
           - workflow-submitting-workflow.md
-          - resuming-workflow-via-automation.md
           - async-pattern.md
+          - client-libraries.md
+          - swagger.md
       - Plugins:
           - plugins.md
           - executor_plugins.md
           - executor_swagger.md
           - plugin-directory.md
+      - Best Practices:
+        - workflow-pod-security-context.md
+        - tolerating-pod-deletion.md
+        - running-at-massive-scale.md
       - Use Cases:
           - use-cases/ci-cd.md
           - use-cases/data-processing.md
@@ -141,7 +143,6 @@ nav:
       - ide-setup.md
       - Field Reference: fields.md
       - CLI Reference:
-          - Overview: cli.md
           - argo: cli/argo.md
           - argo archive: cli/argo_archive.md
           - argo archive delete: cli/argo_archive_delete.md
@@ -205,12 +206,12 @@ nav:
           - configure-archive-logs.md
           - links.md
           - environment-variables.md
-          - workflow-executors.md
           - default-workflow-specs.md
-          - sidecar-injection.md
           - offloading-large-workflows.md
           - workflow-archive.md
           - metrics.md
+          - workflow-executors.md
+          - sidecar-injection.md
       - Argo Server:
           - argo-server.md
           - argo-server-auth-mode.md

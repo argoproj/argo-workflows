@@ -1,7 +1,5 @@
 # Cron Workflows
 
-![GA](assets/ga.svg)
-
 > v2.5 and after
 
 ## Introduction

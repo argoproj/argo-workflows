@@ -1,5 +1,8 @@
 # Quick Start
 
+!!! TIP
+    If you want to try out Argo Workflows and don't want to set-up Kubernetes cluster, try the [Katacoda course](training.md#hands-on).
+
 To see how Argo Workflows work, you can install it and run examples of simple workflows and workflows that use artifacts.
 
 Before you start you need a Kubernetes cluster and `kubectl` set-up
@@ -58,5 +61,3 @@ You can also observe the logs of the Workflow run by running the following:
 ```bash
 argo logs -n argo @latest
 ```
-
-Now check out other [examples](https://github.com/argoproj/argo-workflows/blob/master/examples/README.md).

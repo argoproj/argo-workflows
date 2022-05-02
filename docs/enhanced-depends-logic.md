@@ -1,7 +1,5 @@
 # Enhanced Depends Logic
 
-![GA](assets/ga.svg)
-
 > v2.9 and after
 
 ## Introduction

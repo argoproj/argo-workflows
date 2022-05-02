@@ -601,15 +601,12 @@ docs/cli/argo.md: $(CLI_PKGS) go.sum server/static/files.go hack/cli/main.go
 
 # docs
 
-/usr/local/bin/mkdocs:
-	pip install mkdocs==1.2.4 mkdocs_material==8.1.9  mkdocs-spellcheck==0.2.1
-
 /usr/local/bin/mdspell:
 	npm i -g markdown-spelling
 
 .PHONY: docs-spellcheck
-docs-spellcheck:
-	mdspell --ignore-numbers --ignore-acronyms --en-us --no-suggestions --report $(shell find docs -name '*.md' -not -name fields.md -not -name breaking-changes.md -not -name executor_swagger.md -not -path '*/cli/*')
+docs-spellcheck: /usr/local/bin/mdspell
+	mdspell --ignore-numbers --ignore-acronyms --en-us --no-suggestions --report $(shell find docs -name '*.md' -not -name breaking-changes.md -not -name fields.md -not -name breaking-changes.md -not -name executor_swagger.md -not -path '*/cli/*')
 
 /usr/local/bin/markdown-link-check:
 	npm i -g markdown-link-check
@@ -623,7 +620,10 @@ docs-linkcheck:
 
 .PHONY: docs-lint
 docs-lint:
-	markdownlint docs --ignore docs/fields.md --ignore docs/executor_swagger.md --ignore docs/cli
+	markdownlint docs --fix --ignore docs/fields.md --ignore docs/executor_swagger.md --ignore docs/cli
+
+/usr/local/bin/mkdocs:
+	pip install mkdocs==1.2.4 mkdocs_material==8.1.9  mkdocs-spellcheck==0.2.1
 
 .PHONY: docs
 docs: /usr/local/bin/mkdocs \

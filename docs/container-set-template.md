@@ -1,7 +1,5 @@
 # Container Set Template
 
-![GA](assets/ga.svg)
-
 > v3.1 and after
 
 A container set templates is similar to a normal container or script template, but allows you to specify multiple

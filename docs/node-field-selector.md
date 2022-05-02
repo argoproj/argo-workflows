@@ -1,7 +1,5 @@
 # Node Field Selectors
 
-![GA](assets/ga.svg)
-
 > v2.8 and after
 
 ## Introduction

@@ -1,7 +1,5 @@
 # Argo Server SSO
 
-![GA](assets/ga.svg)
-
 > v2.9 and after
 
 It is possible to use [Dex](https://github.com/dexidp/dex) for authentication. [This document](argo-server-sso-argocd.md) describes how to set up Argo Workflows and Argo CD so that Argo Workflows uses Argo CD's Dex server for authentication.

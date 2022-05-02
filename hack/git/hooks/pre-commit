@@ -4,15 +4,13 @@ set -eu
 m=30
 
 if find dist/pre-commit -mmin -$m | grep .; then
-  echo '✅ `make pre-commit -B` was run in the last ${m}m'
+  echo "✅ \`make pre-commit -B\` was run in the last ${m}m"
 else
-  echo 'ℹ️ `make pre-commit -B` was not run within the last ${m}m, running now'
-  make pre-commit -B
+  echo "⚠️ \`make pre-commit -B\` has not been for over ${m}m"
 fi
 
 if find dist/test -mmin -${m} | grep .; then
-  echo '✅ `make test` was run in the last ${m}m'
+  echo "✅ \`make test\` was run in the last ${m}m"
 else
-  echo 'ℹ️ `make test` was not run within the last ${m}m, running now'
-  make test
+  echo "⚠️️ \`make test\` has not been run for over ${m}m"
 fi

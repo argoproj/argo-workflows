@@ -1,7 +1,5 @@
 # Prometheus Metrics
 
-![GA](assets/ga.svg)
-
 > v2.7 and after
 
 ## Introduction

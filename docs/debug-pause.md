@@ -1,4 +1,4 @@
-# Debug pause
+# Debug Pause
 
 > v3.3 and after
 

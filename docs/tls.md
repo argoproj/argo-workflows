@@ -1,7 +1,5 @@
 # Transport Layer Security
 
-![GA](assets/ga.svg)
-
 > v2.8 and after
 
 If you're running Argo Server you have three options with increasing transport security (note - you should also be

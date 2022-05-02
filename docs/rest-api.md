@@ -2,8 +2,6 @@
 
 ## Argo Server API
 
-![GA](assets/ga.svg)
-
 > v2.5 and after
 
 Argo Workflows ships with a server that provide more features and security than before.

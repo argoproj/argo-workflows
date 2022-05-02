@@ -1,7 +1,5 @@
 # Links
 
-![GA](assets/ga.svg)
-
 > v2.7 and after
 
 You can configure Argo Server to show custom links:

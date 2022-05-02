@@ -1,7 +1,5 @@
 # Workflow Inputs
 
-![GA](assets/ga.svg)
-
 ## Introduction
 
 `Workflows` and `template`s operate on a set of defined parameters and arguments that are supplied to the running container. The precise details of how to manage the inputs can be confusing; this article attempts to clarify concepts and provide simple working examples to illustrate the various configuration options.

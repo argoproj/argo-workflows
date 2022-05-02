@@ -173,13 +173,14 @@ Docs help our customers understand how to use workflows and fix their own proble
 
 Doc changes are checked for spelling, broken links, and lint issues by CI. To check locally run `make docs`.
 
-* Explain when a customer would want to use a feature.
+* Explain when you would want to use a feature.
 * Provide working examples.
-* Be easy to read - use simple short sentences and avoid jargon.
+* Use simple short sentences and avoid jargon.
 * Format code using back-ticks to avoid it being reported spelling error.
-* Do not use title-case mid-sentence. E.g. "the Workflow" rather than "the workflow". 
+* Avoid use title-case mid-sentence. E.g. instead of "the Workflow" write "the workflow".
+* Headings should be title-case. E.g. instead of "and" write "And".
 
-All users, including those who are fluent in English, might want to use a service like Grammarly to check their grammar. 
+All users, including those who are fluent in English, might want to use a service like Grammarly to check their grammar.
 
 ## Troubleshooting
 

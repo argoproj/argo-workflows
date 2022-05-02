@@ -1,7 +1,5 @@
 # Workflow Creator
 
-![GA](assets/ga.svg)
-
 > v2.9 and after
 
 If you create your workflow via the CLI or UI, an attempt will be made to label it with the user who created it
