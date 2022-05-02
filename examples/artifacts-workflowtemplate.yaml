@@ -4,14 +4,14 @@ metadata:
   name: artifacts
   annotations:
     workflows.argoproj.io/description: |
-      This example shows how to produce different types of output that are stored as the orginal file, rather than .tgz.
+      This example shows how to produce different types of artifact.
 spec:
   entrypoint: main
   templates:
     - name: main
       inputs:
         artifacts:
-          - name: index
+          - name: argo-logo
             path: /out/assets/argo.png
             http:
               url: https://raw.githubusercontent.com/argoproj/argo-workflows/master/docs/assets/argo.png
@@ -39,46 +39,56 @@ spec:
               </body>
             </html>
             EOF
-            echo '<html><body><script>alert("XSS")</script></body></html>' > /out/xss.html
+            cat > /out/malicious.html <<EOF
+            <html>
+              <body>
+                <script>alert(1)</script>
+                <p>This page attempts to run a script that shows an alert, but the Argo Server UI Content-Security-Policy will prevent that.</p>
+                <p>To check, open your Web Console and see that "Blocked script execution ... because the document's frame is sandboxed." (or similar) is printed.</p>
+              </body>
+            </html>
+            EOF
       outputs:
         artifacts:
           # saving single files
-          - name: text
+          - name: text-file
             path: /out/hello.txt
             s3:
               key: hello.txt
             archive:
               none: { }
-          - name: png
+          - name: image-file
             path: /out/assets/argo.png
             s3:
               key: argo.png
             archive:
               none: { }
-          - name: json
+          # JSON files are shown with syntax highlighting.
+          - name: json-file
             path: /out/hello.json
             s3:
               key: hello.json
             archive:
               none: { }
-          - name: css
+          # CSS in not considered a known file type
+          - name: css-file
             path: /out/assets/styles.css
             s3:
               key: styles.css
             archive:
               none: { }
-          # this artifact tries to run javascript, in the UI this is prevented by our CSP sandbox
-          - name: xss
-            path: /out/xss.html
+          # this artifact tries to run JavaScript
+          - name: malicious-file
+            path: /out/malicious.html
             s3:
-              key: xss.html
+              key: malicious.html
             archive:
               none: { }
           # save a whole directory
-          - name: dir
+          - name: report
             path: /out
             s3:
-              key: dir/
+              key: report/
             archive:
               none: { }
           # this will be a tgz with a single file

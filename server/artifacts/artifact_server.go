@@ -39,7 +39,7 @@ const (
 	// DefaultContentSecurityPolicy is the default policy added to the Content-Security-Policy HTTP header
 	//   if no environment override has been added
 	// Validte using https://csp-evaluator.withgoogle.com
-	DefaultContentSecurityPolicy = "sandbox; base-uri 'none'; default-src 'none'; img-src 'self'; style-src 'self'; require-trusted-types-for 'script';"
+	DefaultContentSecurityPolicy = "sandbox; base-uri 'none'; default-src 'none'; img-src 'self'; style-src 'self'"
 	// DefaultXFrameOptions is the default value for the X-Frame-Options header
 	DefaultXFrameOptions = "SAMEORIGIN"
 )
