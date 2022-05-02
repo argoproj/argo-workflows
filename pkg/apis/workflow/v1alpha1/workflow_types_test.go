@@ -825,10 +825,6 @@ func TestWorkflow_SearchArtifacts(t *testing.T) {
 
 	query := NewArtifactSearchQuery()
 
-	// no filters
-	queriedArtifactSearchResults := wf.SearchArtifacts(query)
-	assert.NotNil(t, queriedArtifactSearchResults)
-	assert.Len(t, queriedArtifactSearchResults, 3)
 	countArtifactName := func(ars ArtifactSearchResults, name string) int {
 		count := 0
 		for _, ar := range ars {
@@ -847,6 +843,11 @@ func TestWorkflow_SearchArtifacts(t *testing.T) {
 		}
 		return count
 	}
+
+	// no filters
+	queriedArtifactSearchResults := wf.SearchArtifacts(query)
+	assert.NotNil(t, queriedArtifactSearchResults)
+	assert.Len(t, queriedArtifactSearchResults, 3)
 	assert.Equal(t, 1, countArtifactName(queriedArtifactSearchResults, "artifact-foo"))
 	assert.Equal(t, 1, countArtifactName(queriedArtifactSearchResults, "artifact-bar"))
 	assert.Equal(t, 1, countArtifactName(queriedArtifactSearchResults, "artifact-foobar"))
@@ -888,10 +889,9 @@ func TestWorkflow_SearchArtifacts(t *testing.T) {
 	queriedArtifactSearchResults = wf.SearchArtifacts(query)
 	assert.NotNil(t, queriedArtifactSearchResults)
 	assert.Len(t, queriedArtifactSearchResults, 2)
-	assert.Equal(t, "artifact-foo", queriedArtifactSearchResults[0].Artifact.Name)
-	assert.Equal(t, "artifact-bar", queriedArtifactSearchResults[1].Artifact.Name)
-	assert.Equal(t, "node-foo", queriedArtifactSearchResults[0].NodeID)
-	assert.Equal(t, "node-foo", queriedArtifactSearchResults[1].NodeID)
+	assert.Equal(t, 1, countArtifactName(queriedArtifactSearchResults, "artifact-foo"))
+	assert.Equal(t, 1, countArtifactName(queriedArtifactSearchResults, "artifact-bar"))
+	assert.Equal(t, 2, countNodeID(queriedArtifactSearchResults, "node-foo"))
 
 	// bad query
 	query = NewArtifactSearchQuery()
