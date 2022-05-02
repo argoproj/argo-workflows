@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	v12 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"k8s.io/client-go/informers"
@@ -13,15 +13,17 @@ import (
 )
 
 type ResourceCache struct {
-	ctx    context.Context
-	client kubernetes.Interface
+	ctx         context.Context
+	secretCache *timedCache[string, *corev1.Secret]
+	client      kubernetes.Interface
 	v1.ServiceAccountLister
 }
 
-func NewResourceCache(client kubernetes.Interface, ctx context.Context, namespace string) *ResourceCache {
-	informerFactory := informers.NewSharedInformerFactoryWithOptions(client, time.Minute*20, informers.WithNamespace(namespace))
+func NewResourceCacheWithTimeout(client kubernetes.Interface, ctx context.Context, namespace string, timeout time.Duration) *ResourceCache {
+	informerFactory := informers.NewSharedInformerFactoryWithOptions(client, timeout, informers.WithNamespace(namespace))
 	cache := &ResourceCache{
 		ctx:                  ctx,
+		secretCache:          NewTimedCache[string, *corev1.Secret](timeout, 2000),
 		client:               client,
 		ServiceAccountLister: informerFactory.Core().V1().ServiceAccounts().Lister(),
 	}
@@ -30,7 +32,29 @@ func NewResourceCache(client kubernetes.Interface, ctx context.Context, namespac
 	return cache
 }
 
-func (c *ResourceCache) GetSecret(namespace string, secretName string) (*v12.Secret, error) {
-	options := metav1.GetOptions{}
-	return c.client.CoreV1().Secrets(namespace).Get(c.ctx, secretName, options)
+func NewResourceCache(client kubernetes.Interface, ctx context.Context, namespace string) *ResourceCache {
+	return NewResourceCacheWithTimeout(client, ctx, namespace, time.Minute*20)
+}
+
+func (c *ResourceCache) GetSecret(namespace string, secretName string) (*corev1.Secret, error) {
+	cacheKey := c.getSecretCacheKey(namespace, secretName)
+	if secret, ok := c.secretCache.Get(cacheKey); ok {
+		return secret, nil
+	}
+
+	secret, err := c.getSecretFromServer(namespace, secretName)
+	if err != nil {
+		return nil, err
+	}
+
+	c.secretCache.Add(cacheKey, secret)
+	return secret, nil
+}
+
+func (c *ResourceCache) getSecretFromServer(namespace string, secretName string) (*corev1.Secret, error) {
+	return c.client.CoreV1().Secrets(namespace).Get(c.ctx, secretName, metav1.GetOptions{})
+}
+
+func (c *ResourceCache) getSecretCacheKey(namespace string, secretName string) string {
+	return namespace + ":secret:" + secretName
 }
