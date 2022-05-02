@@ -36,3 +36,5 @@ spec:
 ```
 
 Then execute `kubectl delete pod example`. You'll see that the errored node is automatically retried.
+
+💡 Read more on [architecting workflows for reliability](https://blog.argoproj.io/architecting-workflows-for-reliability-d33bd720c6cc).

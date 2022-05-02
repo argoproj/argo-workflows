@@ -2,6 +2,8 @@
 
 [To report security issues](https://github.com/argoproj/argo-workflows/blob/master/SECURITY.md).
 
+💡 Read [Practical Argo Workflows Hardening](https://blog.argoproj.io/practical-argo-workflows-hardening-dd8429acc1ce).
+
 ## Workflow Controller Security
 
 This has three parts.
