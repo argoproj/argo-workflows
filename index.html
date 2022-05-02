@@ -29,8 +29,8 @@
       
         
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Work+Sans:300,400,400i,700%7C&display=fallback">
-        <style>:root{--md-text-font:"Work Sans";--md-code-font:""}</style>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,400i,700%7CRoboto+Mono&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
       
     
     
@@ -60,7 +60,7 @@
     
     
     
-    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="blue" data-md-color-accent="">
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="">
   
     
     
@@ -72,7 +72,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#what-is-argo-workflows" class="md-skip">
+        <a href="#argo-workflows" class="md-skip">
           Skip to content
         </a>
       
@@ -84,7 +84,9 @@
     
       
 
-<header class="md-header" data-md-component="header">
+  
+
+<header class="md-header md-header--lifted" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
     <a href="." title="Argo Workflows - The workflow engine for Kubernetes" class="md-header__button md-logo" aria-label="Argo Workflows - The workflow engine for Kubernetes" data-md-component="logo">
       
@@ -104,7 +106,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Overview
+              Home
             
           </span>
         </div>
@@ -115,7 +117,7 @@
         
           
           
-          <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="blue" data-md-color-accent=""  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_1">
+          <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent=""  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_1">
           
             <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_2" hidden>
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 6H7c-3.31 0-6 2.69-6 6s2.69 6 6 6h10c3.31 0 6-2.69 6-6s-2.69-6-6-6zm0 10H7c-2.21 0-4-1.79-4-4s1.79-4 4-4h10c2.21 0 4 1.79 4 4s-1.79 4-4 4zM7 9c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
@@ -183,13 +185,148 @@
     
   </nav>
   
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-tabs__inner md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+    
+  
+
+
+  <li class="md-tabs__item">
+    <a href="." class="md-tabs__link md-tabs__link--active">
+      Home
+    </a>
+  </li>
+
+      
+        
+  
+  
+
+
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="quick-start/" class="md-tabs__link">
+        Getting Started
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+
+
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="workflow-concepts/" class="md-tabs__link">
+        User Guide
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+
+
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="installation/" class="md-tabs__link">
+        Operator Manual
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+
+
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="CONTRIBUTING/" class="md-tabs__link">
+        Developer Guide
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+
+
+  <li class="md-tabs__item">
+    <a href="roadmap/" class="md-tabs__link">
+      Roadmap
+    </a>
+  </li>
+
+      
+        
+  
+  
+
+
+  <li class="md-tabs__item">
+    <a href="https://blog.argoproj.io/" class="md-tabs__link">
+      Blog
+    </a>
+  </li>
+
+      
+        
+  
+  
+
+
+  <li class="md-tabs__item">
+    <a href="https://argoproj.github.io/community/join-slack" class="md-tabs__link">
+      Slack
+    </a>
+  </li>
+
+      
+        
+  
+  
+
+
+  <li class="md-tabs__item">
+    <a href="https://twitter.com/argoproj" class="md-tabs__link">
+      Twitter
+    </a>
+  </li>
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
 </header>
     
     <div class="md-container" data-md-component="container">
       
       
-        
-          
         
       
       <main class="md-main" data-md-component="main">
@@ -202,8 +339,10 @@
                   <div class="md-sidebar__inner">
                     
 
+  
 
-<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
     <a href="." title="Argo Workflows - The workflow engine for Kubernetes" class="md-nav__button md-logo" aria-label="Argo Workflows - The workflow engine for Kubernetes" data-md-component="logo">
       
@@ -241,14 +380,16 @@
       <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
       
       
+        
+      
       
         <label class="md-nav__link md-nav__link--active" for="__toc">
-          Overview
+          Home
           <span class="md-nav__icon md-icon"></span>
         </label>
       
       <a href="." class="md-nav__link md-nav__link--active">
-        Overview
+        Home
       </a>
       
         
@@ -256,6 +397,8 @@
 <nav class="md-nav md-nav--secondary" aria-label="Table of contents">
   
   
+  
+    
   
   
     <label class="md-nav__title" for="__toc">
@@ -265,50 +408,9 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#what-is-argo-workflows" class="md-nav__link">
-    What is Argo Workflows?
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#why-argo-workflows" class="md-nav__link">
-    Why Argo Workflows?
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#argo-documentation" class="md-nav__link">
-    Argo Documentation
-  </a>
-  
-    <nav class="md-nav" aria-label="Argo Documentation">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
   <a href="#getting-started" class="md-nav__link">
     Getting Started
   </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#examples" class="md-nav__link">
-    Examples
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#fields" class="md-nav__link">
-    Fields
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
@@ -327,18 +429,29 @@
   
   
   
-    <li class="md-nav__item">
-      <a href="core-concepts/" class="md-nav__link">
-        Core Concepts
-      </a>
-    </li>
-  
-
     
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_2" type="checkbox" id="__nav_2" >
       
       
       
-
+      
+        <label class="md-nav__link" for="__nav_2">
+          Getting Started
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Getting Started" data-md-level="1">
+        <label class="md-nav__title" for="__nav_2">
+          <span class="md-nav__icon md-icon"></span>
+          Getting Started
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
   
   
   
@@ -349,11 +462,10 @@
     </li>
   
 
-    
-      
-      
-      
-
+            
+          
+            
+              
   
   
   
@@ -361,6 +473,410 @@
       <a href="training/" class="md-nav__link">
         Training
       </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_2_3" type="checkbox" id="__nav_2_3" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_2_3">
+          Walk Through
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Walk Through" data-md-level="2">
+        <label class="md-nav__title" for="__nav_2_3">
+          <span class="md-nav__icon md-icon"></span>
+          Walk Through
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="walk-through/" class="md-nav__link">
+        About
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="walk-through/argo-cli/" class="md-nav__link">
+        Argo CLI
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="walk-through/hello-world/" class="md-nav__link">
+        Hello World
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="walk-through/parameters/" class="md-nav__link">
+        Parameters
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="walk-through/steps/" class="md-nav__link">
+        Steps
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="walk-through/dag/" class="md-nav__link">
+        DAG
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="walk-through/artifacts/" class="md-nav__link">
+        Artifacts
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="walk-through/the-structure-of-workflow-specs/" class="md-nav__link">
+        The Structure of Workflow Specs
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="walk-through/secrets/" class="md-nav__link">
+        Secrets
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="walk-through/scripts-and-results/" class="md-nav__link">
+        Scripts And Results
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="walk-through/output-parameters/" class="md-nav__link">
+        Output Parameters
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="walk-through/loops/" class="md-nav__link">
+        Loops
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="walk-through/conditionals/" class="md-nav__link">
+        Conditionals
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="walk-through/retrying-failed-or-errored-steps/" class="md-nav__link">
+        Retrying Failed or Errored Steps
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="walk-through/recursion/" class="md-nav__link">
+        Recursion
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="walk-through/exit-handlers/" class="md-nav__link">
+        Exit handlers
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="walk-through/timeouts/" class="md-nav__link">
+        Timeouts
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="walk-through/volumes/" class="md-nav__link">
+        Volumes
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="walk-through/suspending/" class="md-nav__link">
+        Suspending
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="walk-through/daemon-containers/" class="md-nav__link">
+        Daemon Containers
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="walk-through/sidecars/" class="md-nav__link">
+        Sidecars
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="walk-through/hardwired-artifacts/" class="md-nav__link">
+        Hardwired Artifacts
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="walk-through/kubernetes-resources/" class="md-nav__link">
+        Kubernetes Resources
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="walk-through/docker-in-docker-using-sidecars/" class="md-nav__link">
+        Docker-in-Docker Using Sidecars
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="walk-through/custom-template-variable-reference/" class="md-nav__link">
+        Custom Template Variable Reference
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="walk-through/continuous-integration-example/" class="md-nav__link">
+        Continuous Integration Example
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
     </li>
   
 
@@ -376,46 +892,20 @@
     <li class="md-nav__item md-nav__item--nested">
       
       
-        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_5" type="checkbox" id="__nav_5" >
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3" type="checkbox" id="__nav_3" >
       
       
       
       
-        <label class="md-nav__link" for="__nav_5">
+        <label class="md-nav__link" for="__nav_3">
           User Guide
           <span class="md-nav__icon md-icon"></span>
         </label>
       
       <nav class="md-nav" aria-label="User Guide" data-md-level="1">
-        <label class="md-nav__title" for="__nav_5">
+        <label class="md-nav__title" for="__nav_3">
           <span class="md-nav__icon md-icon"></span>
           User Guide
-        </label>
-        <ul class="md-nav__list" data-md-scrollfix>
-          
-            
-              
-  
-  
-  
-    
-    <li class="md-nav__item md-nav__item--nested">
-      
-      
-        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_5_1" type="checkbox" id="__nav_5_1" >
-      
-      
-      
-      
-        <label class="md-nav__link" for="__nav_5_1">
-          Beginner
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <nav class="md-nav" aria-label="Beginner" data-md-level="2">
-        <label class="md-nav__title" for="__nav_5_1">
-          <span class="md-nav__icon md-icon"></span>
-          Beginner
         </label>
         <ul class="md-nav__list" data-md-scrollfix>
           
@@ -438,59 +928,24 @@
   
   
   
-    <li class="md-nav__item">
-      <a href="cli/" class="md-nav__link">
-        CLI
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="variables/" class="md-nav__link">
-        Workflow Variables
-      </a>
-    </li>
-  
-
-            
-          
-        </ul>
-      </nav>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
     
     <li class="md-nav__item md-nav__item--nested">
       
       
-        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_5_2" type="checkbox" id="__nav_5_2" >
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3_2" type="checkbox" id="__nav_3_2" >
       
       
       
       
-        <label class="md-nav__link" for="__nav_5_2">
-          Intermediate
+        <label class="md-nav__link" for="__nav_3_2">
+          Custom Resource Kinds
           <span class="md-nav__icon md-icon"></span>
         </label>
       
-      <nav class="md-nav" aria-label="Intermediate" data-md-level="2">
-        <label class="md-nav__title" for="__nav_5_2">
+      <nav class="md-nav" aria-label="Custom Resource Kinds" data-md-level="2">
+        <label class="md-nav__title" for="__nav_3_2">
           <span class="md-nav__icon md-icon"></span>
-          Intermediate
+          Custom Resource Kinds
         </label>
         <ul class="md-nav__list" data-md-scrollfix>
           
@@ -500,78 +955,8 @@
   
   
     <li class="md-nav__item">
-      <a href="service-accounts/" class="md-nav__link">
-        Service Accounts
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="workflow-rbac/" class="md-nav__link">
-        Workflow RBAC
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="node-field-selector/" class="md-nav__link">
-        Node Field Selectors
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="empty-dir/" class="md-nav__link">
-        Empty Dir
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
       <a href="workflow-templates/" class="md-nav__link">
         Workflow Templates
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="workflow-inputs/" class="md-nav__link">
-        Workflow Inputs
       </a>
     </li>
   
@@ -606,15 +991,8 @@
 
             
           
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="cron-backfill/" class="md-nav__link">
-        Cron Backfill
-      </a>
+        </ul>
+      </nav>
     </li>
   
 
@@ -625,14 +1003,26 @@
   
   
   
-    <li class="md-nav__item">
-      <a href="templates/" class="md-nav__link">
-        Templates
-      </a>
-    </li>
-  
-
-            
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3_3" type="checkbox" id="__nav_3_3" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_3_3">
+          Template Types
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Template Types" data-md-level="2">
+        <label class="md-nav__title" for="__nav_3_3">
+          <span class="md-nav__icon md-icon"></span>
+          Template Types
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
           
             
               
@@ -668,48 +1058,6 @@
   
   
     <li class="md-nav__item">
-      <a href="template-defaults/" class="md-nav__link">
-        Template Defaults
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="work-avoidance/" class="md-nav__link">
-        Work Avoidance
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="enhanced-depends-logic/" class="md-nav__link">
-        Enhanced Depends Logic
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
       <a href="data-sourcing-and-transformation/" class="md-nav__link">
         Data Sourcing and Transformations
       </a>
@@ -724,8 +1072,55 @@
   
   
     <li class="md-nav__item">
-      <a href="artifact-repository-ref/" class="md-nav__link">
-        Artifact Repository Ref
+      <a href="inline-templates/" class="md-nav__link">
+        Inline Templates
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3_4" type="checkbox" id="__nav_3_4" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_3_4">
+          Artifacts
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Artifacts" data-md-level="2">
+        <label class="md-nav__title" for="__nav_3_4">
+          <span class="md-nav__icon md-icon"></span>
+          Artifacts
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="workflow-inputs/" class="md-nav__link">
+        Workflow Inputs
       </a>
     </li>
   
@@ -752,8 +1147,8 @@
   
   
     <li class="md-nav__item">
-      <a href="conditional-artifacts-parameters/" class="md-nav__link">
-        Conditional Artifacts and Parameters
+      <a href="artifact-repository-ref/" class="md-nav__link">
+        Artifact Repository Ref
       </a>
     </li>
   
@@ -766,13 +1161,252 @@
   
   
     <li class="md-nav__item">
-      <a href="intermediate-inputs/" class="md-nav__link">
-        Intermediate Parameters
+      <a href="conditional-artifacts-parameters/" class="md-nav__link">
+        Conditional Artifacts and Parameters
       </a>
     </li>
   
 
             
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3_5" type="checkbox" id="__nav_3_5" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_3_5">
+          Access Control
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Access Control" data-md-level="2">
+        <label class="md-nav__title" for="__nav_3_5">
+          <span class="md-nav__icon md-icon"></span>
+          Access Control
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="service-accounts/" class="md-nav__link">
+        Service Accounts
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="workflow-rbac/" class="md-nav__link">
+        Workflow RBAC
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3_6" type="checkbox" id="__nav_3_6" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_3_6">
+          Features
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Features" data-md-level="2">
+        <label class="md-nav__title" for="__nav_3_6">
+          <span class="md-nav__icon md-icon"></span>
+          Features
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="variables/" class="md-nav__link">
+        Workflow Variables
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="retries/" class="md-nav__link">
+        Retries
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="lifecyclehook/" class="md-nav__link">
+        Lifecycle-Hook
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="synchronization/" class="md-nav__link">
+        Synchronization
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="memoization/" class="md-nav__link">
+        Step Level Memoization
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="template-defaults/" class="md-nav__link">
+        Template Defaults
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="enhanced-depends-logic/" class="md-nav__link">
+        Enhanced Depends Logic
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="node-field-selector/" class="md-nav__link">
+        Node Field Selectors
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3_7" type="checkbox" id="__nav_3_7" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_3_7">
+          Status
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Status" data-md-level="2">
+        <label class="md-nav__title" for="__nav_3_7">
+          <span class="md-nav__icon md-icon"></span>
+          Status
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
           
             
               
@@ -808,36 +1442,8 @@
   
   
     <li class="md-nav__item">
-      <a href="workflow-pod-security-context/" class="md-nav__link">
-        Workflow Pod Security Context
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
       <a href="progress/" class="md-nav__link">
         Workflow Progress
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="lifecyclehook/" class="md-nav__link">
-        LifecycleHook
       </a>
     </li>
   
@@ -858,14 +1464,61 @@
 
             
           
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3_8" type="checkbox" id="__nav_3_8" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_3_8">
+          Patterns
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Patterns" data-md-level="2">
+        <label class="md-nav__title" for="__nav_3_8">
+          <span class="md-nav__icon md-icon"></span>
+          Patterns
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
             
               
   
   
   
     <li class="md-nav__item">
-      <a href="synchronization/" class="md-nav__link">
-        Synchronization
+      <a href="empty-dir/" class="md-nav__link">
+        Empty Dir
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="cron-backfill/" class="md-nav__link">
+        Cron Backfill
       </a>
     </li>
   
@@ -892,50 +1545,8 @@
   
   
     <li class="md-nav__item">
-      <a href="memoization/" class="md-nav__link">
-        Step Level Memoization
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="tolerating-pod-deletion/" class="md-nav__link">
-        Tolerating Pod Deletion
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="widgets/" class="md-nav__link">
-        Widgets
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="retries/" class="md-nav__link">
-        Retries
+      <a href="workflow-notifications/" class="md-nav__link">
+        Workflow Notifications
       </a>
     </li>
   
@@ -958,20 +1569,20 @@
     <li class="md-nav__item md-nav__item--nested">
       
       
-        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_5_3" type="checkbox" id="__nav_5_3" >
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3_9" type="checkbox" id="__nav_3_9" >
       
       
       
       
-        <label class="md-nav__link" for="__nav_5_3">
-          Advanced
+        <label class="md-nav__link" for="__nav_3_9">
+          UI Features
           <span class="md-nav__icon md-icon"></span>
         </label>
       
-      <nav class="md-nav" aria-label="Advanced" data-md-level="2">
-        <label class="md-nav__title" for="__nav_5_3">
+      <nav class="md-nav" aria-label="UI Features" data-md-level="2">
+        <label class="md-nav__title" for="__nav_3_9">
           <span class="md-nav__icon md-icon"></span>
-          Advanced
+          UI Features
         </label>
         <ul class="md-nav__list" data-md-scrollfix>
           
@@ -981,8 +1592,8 @@
   
   
     <li class="md-nav__item">
-      <a href="workflow-restrictions/" class="md-nav__link">
-        Workflow Restrictions
+      <a href="widgets/" class="md-nav__link">
+        Widgets
       </a>
     </li>
   
@@ -995,13 +1606,46 @@
   
   
     <li class="md-nav__item">
-      <a href="workflow-notifications/" class="md-nav__link">
-        Workflow Notifications
+      <a href="intermediate-inputs/" class="md-nav__link">
+        Intermediate Parameters
       </a>
     </li>
   
 
             
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3_10" type="checkbox" id="__nav_3_10" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_3_10">
+          Debugging Tools
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Debugging Tools" data-md-level="2">
+        <label class="md-nav__title" for="__nav_3_10">
+          <span class="md-nav__icon md-icon"></span>
+          Debugging Tools
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
           
             
               
@@ -1023,8 +1667,55 @@
   
   
     <li class="md-nav__item">
-      <a href="kubectl/" class="md-nav__link">
-        Kubectl
+      <a href="debug-pause/" class="md-nav__link">
+        Debug Pause
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3_11" type="checkbox" id="__nav_3_11" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_3_11">
+          API
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="API" data-md-level="2">
+        <label class="md-nav__title" for="__nav_3_11">
+          <span class="md-nav__icon md-icon"></span>
+          API
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="rest-api/" class="md-nav__link">
+        REST API
       </a>
     </li>
   
@@ -1051,50 +1742,8 @@
   
   
     <li class="md-nav__item">
-      <a href="swagger/" class="md-nav__link">
-        Argo Server API
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="rest-api/" class="md-nav__link">
-        REST API
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
       <a href="rest-examples/" class="md-nav__link">
         API Examples
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="client-libraries/" class="md-nav__link">
-        Client Libraries
       </a>
     </li>
   
@@ -1135,36 +1784,8 @@
   
   
     <li class="md-nav__item">
-      <a href="submit-workflow-via-automation/" class="md-nav__link">
-        Submitting A Workflow Via Automation
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
       <a href="workflow-submitting-workflow/" class="md-nav__link">
         One Workflow Submitting Another
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="resuming-workflow-via-automation/" class="md-nav__link">
-        Resume A Workflow
       </a>
     </li>
   
@@ -1191,8 +1812,8 @@
   
   
     <li class="md-nav__item">
-      <a href="running-at-massive-scale/" class="md-nav__link">
-        Running At Massive Scale
+      <a href="client-libraries/" class="md-nav__link">
+        Client Libraries
       </a>
     </li>
   
@@ -1205,8 +1826,8 @@
   
   
     <li class="md-nav__item">
-      <a href="debug-pause/" class="md-nav__link">
-        Debug pause
+      <a href="swagger/" class="md-nav__link">
+        API Reference
       </a>
     </li>
   
@@ -1229,18 +1850,18 @@
     <li class="md-nav__item md-nav__item--nested">
       
       
-        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_5_4" type="checkbox" id="__nav_5_4" >
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3_12" type="checkbox" id="__nav_3_12" >
       
       
       
       
-        <label class="md-nav__link" for="__nav_5_4">
+        <label class="md-nav__link" for="__nav_3_12">
           Plugins
           <span class="md-nav__icon md-icon"></span>
         </label>
       
       <nav class="md-nav" aria-label="Plugins" data-md-level="2">
-        <label class="md-nav__title" for="__nav_5_4">
+        <label class="md-nav__title" for="__nav_3_12">
           <span class="md-nav__icon md-icon"></span>
           Plugins
         </label>
@@ -1314,37 +1935,229 @@
   
   
   
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3_13" type="checkbox" id="__nav_3_13" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_3_13">
+          Best Practices
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Best Practices" data-md-level="2">
+        <label class="md-nav__title" for="__nav_3_13">
+          <span class="md-nav__icon md-icon"></span>
+          Best Practices
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="workflow-pod-security-context/" class="md-nav__link">
+        Workflow Pod Security Context
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="tolerating-pod-deletion/" class="md-nav__link">
+        Tolerating Pod Deletion
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="running-at-massive-scale/" class="md-nav__link">
+        Running At Massive Scale
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3_14" type="checkbox" id="__nav_3_14" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_3_14">
+          Use Cases
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Use Cases" data-md-level="2">
+        <label class="md-nav__title" for="__nav_3_14">
+          <span class="md-nav__icon md-icon"></span>
+          Use Cases
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="use-cases/ci-cd/" class="md-nav__link">
+        CI/CD
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="use-cases/data-processing/" class="md-nav__link">
+        Data Processing
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="use-cases/infrastructure-automation/" class="md-nav__link">
+        Infrastructure Automation
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="use-cases/machine-learning/" class="md-nav__link">
+        Machine Learning
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="use-cases/other/" class="md-nav__link">
+        Other
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="use-cases/stream-processing/" class="md-nav__link">
+        Stream Processing
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="faq/" class="md-nav__link">
+        FAQ
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="kubectl/" class="md-nav__link">
+        `kubectl`
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
     <li class="md-nav__item">
       <a href="ide-setup/" class="md-nav__link">
         IDE Set-Up
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="security/" class="md-nav__link">
-        Security
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="https://github.com/argoproj/argo-workflows/blob/master/examples/README.md" class="md-nav__link">
-        Examples
       </a>
     </li>
   
@@ -1374,18 +2187,18 @@
     <li class="md-nav__item md-nav__item--nested">
       
       
-        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_5_9" type="checkbox" id="__nav_5_9" >
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3_19" type="checkbox" id="__nav_3_19" >
       
       
       
       
-        <label class="md-nav__link" for="__nav_5_9">
+        <label class="md-nav__link" for="__nav_3_19">
           CLI Reference
           <span class="md-nav__icon md-icon"></span>
         </label>
       
       <nav class="md-nav" aria-label="CLI Reference" data-md-level="2">
-        <label class="md-nav__title" for="__nav_5_9">
+        <label class="md-nav__title" for="__nav_3_19">
           <span class="md-nav__icon md-icon"></span>
           CLI Reference
         </label>
@@ -1483,6 +2296,34 @@
     <li class="md-nav__item">
       <a href="cli/argo_archive_list-label-values/" class="md-nav__link">
         argo archive list-label-values
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="cli/argo_archive_resubmit/" class="md-nav__link">
+        argo archive resubmit
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="cli/argo_archive_retry/" class="md-nav__link">
+        argo archive retry
       </a>
     </li>
   
@@ -2101,18 +2942,18 @@
     <li class="md-nav__item md-nav__item--nested">
       
       
-        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_6" type="checkbox" id="__nav_6" >
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_4" type="checkbox" id="__nav_4" >
       
       
       
       
-        <label class="md-nav__link" for="__nav_6">
+        <label class="md-nav__link" for="__nav_4">
           Operator Manual
           <span class="md-nav__icon md-icon"></span>
         </label>
       
       <nav class="md-nav" aria-label="Operator Manual" data-md-level="1">
-        <label class="md-nav__title" for="__nav_6">
+        <label class="md-nav__title" for="__nav_4">
           <span class="md-nav__icon md-icon"></span>
           Operator Manual
         </label>
@@ -2138,8 +2979,8 @@
   
   
     <li class="md-nav__item">
-      <a href="upgrading/" class="md-nav__link">
-        Upgrading
+      <a href="releases/" class="md-nav__link">
+        Releases
       </a>
     </li>
   
@@ -2152,8 +2993,22 @@
   
   
     <li class="md-nav__item">
-      <a href="releases/" class="md-nav__link">
-        Releases
+      <a href="breaking-changes/" class="md-nav__link">
+        Breaking Changes
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="security/" class="md-nav__link">
+        Security
       </a>
     </li>
   
@@ -2169,18 +3024,18 @@
     <li class="md-nav__item md-nav__item--nested">
       
       
-        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_6_4" type="checkbox" id="__nav_6_4" >
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_4_5" type="checkbox" id="__nav_4_5" >
       
       
       
       
-        <label class="md-nav__link" for="__nav_6_4">
+        <label class="md-nav__link" for="__nav_4_5">
           Configuration
           <span class="md-nav__icon md-icon"></span>
         </label>
       
       <nav class="md-nav" aria-label="Configuration" data-md-level="2">
-        <label class="md-nav__title" for="__nav_6_4">
+        <label class="md-nav__title" for="__nav_4_5">
           <span class="md-nav__icon md-icon"></span>
           Configuration
         </label>
@@ -2194,6 +3049,20 @@
     <li class="md-nav__item">
       <a href="managed-namespace/" class="md-nav__link">
         Managed Namespace
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="workflow-controller-configmap/" class="md-nav__link">
+        Workflow Controller Config Map
       </a>
     </li>
   
@@ -2234,8 +3103,8 @@
   
   
     <li class="md-nav__item">
-      <a href="workflow-controller-configmap/" class="md-nav__link">
-        Workflow Controller Configmap
+      <a href="links/" class="md-nav__link">
+        Links
       </a>
     </li>
   
@@ -2248,22 +3117,8 @@
   
   
     <li class="md-nav__item">
-      <a href="workflow-executors/" class="md-nav__link">
-        Workflow Executors
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="sidecar-injection/" class="md-nav__link">
-        Sidecar Injection
+      <a href="environment-variables/" class="md-nav__link">
+        Environment Variables
       </a>
     </li>
   
@@ -2332,8 +3187,36 @@
   
   
     <li class="md-nav__item">
-      <a href="links/" class="md-nav__link">
-        Links
+      <a href="workflow-executors/" class="md-nav__link">
+        Workflow Executors
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="workflow-restrictions/" class="md-nav__link">
+        Workflow Restrictions
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="sidecar-injection/" class="md-nav__link">
+        Sidecar Injection
       </a>
     </li>
   
@@ -2356,18 +3239,18 @@
     <li class="md-nav__item md-nav__item--nested">
       
       
-        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_6_5" type="checkbox" id="__nav_6_5" >
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_4_6" type="checkbox" id="__nav_4_6" >
       
       
       
       
-        <label class="md-nav__link" for="__nav_6_5">
+        <label class="md-nav__link" for="__nav_4_6">
           Argo Server
           <span class="md-nav__icon md-icon"></span>
         </label>
       
       <nav class="md-nav" aria-label="Argo Server" data-md-level="2">
-        <label class="md-nav__title" for="__nav_6_5">
+        <label class="md-nav__title" for="__nav_4_6">
           <span class="md-nav__icon md-icon"></span>
           Argo Server
         </label>
@@ -2436,7 +3319,7 @@
   
     <li class="md-nav__item">
       <a href="argo-server-sso-argocd/" class="md-nav__link">
-        Use ArgoCD Dex for authentication
+        Use Argo CD Dex for authentication
       </a>
     </li>
   
@@ -2449,6 +3332,32 @@
   
 
             
+          
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_4_7" type="checkbox" id="__nav_4_7" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_4_7">
+          Best Practices
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Best Practices" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_7">
+          <span class="md-nav__icon md-icon"></span>
+          Best Practices
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
           
             
               
@@ -2499,8 +3408,15 @@
   
     <li class="md-nav__item">
       <a href="cost-optimisation/" class="md-nav__link">
-        Cost Optimisation
+        Cost Optimization
       </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
     </li>
   
 
@@ -2514,20 +3430,6 @@
     <li class="md-nav__item">
       <a href="windows/" class="md-nav__link">
         Windows Container Support
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="environment-variables/" class="md-nav__link">
-        Environment Variables
       </a>
     </li>
   
@@ -2551,18 +3453,18 @@
     <li class="md-nav__item md-nav__item--nested">
       
       
-        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_7" type="checkbox" id="__nav_7" >
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_5" type="checkbox" id="__nav_5" >
       
       
       
       
-        <label class="md-nav__link" for="__nav_7">
+        <label class="md-nav__link" for="__nav_5">
           Developer Guide
           <span class="md-nav__icon md-icon"></span>
         </label>
       
       <nav class="md-nav" aria-label="Developer Guide" data-md-level="1">
-        <label class="md-nav__title" for="__nav_7">
+        <label class="md-nav__title" for="__nav_5">
           <span class="md-nav__icon md-icon"></span>
           Developer Guide
         </label>
@@ -2576,20 +3478,6 @@
     <li class="md-nav__item">
       <a href="CONTRIBUTING/" class="md-nav__link">
         Contributing
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="mentoring/" class="md-nav__link">
-        Mentoring
       </a>
     </li>
   
@@ -2630,8 +3518,8 @@
   
   
     <li class="md-nav__item">
-      <a href="versioning/" class="md-nav__link">
-        Versioning
+      <a href="mentoring/" class="md-nav__link">
+        Mentoring
       </a>
     </li>
   
@@ -2694,38 +3582,22 @@
 
             
           
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="survey-data-privacy/" class="md-nav__link">
+        Survey Data Privacy
+      </a>
+    </li>
+  
+
+            
+          
         </ul>
       </nav>
-    </li>
-  
-
-    
-      
-      
-      
-
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="faq/" class="md-nav__link">
-        FAQ
-      </a>
-    </li>
-  
-
-    
-      
-      
-      
-
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="https://github.com/argoproj/argo-workflows/releases" class="md-nav__link">
-        Releases ⧉
-      </a>
     </li>
   
 
@@ -2754,7 +3626,7 @@
   
     <li class="md-nav__item">
       <a href="https://blog.argoproj.io/" class="md-nav__link">
-        Blog ⧉
+        Blog
       </a>
     </li>
   
@@ -2769,7 +3641,7 @@
   
     <li class="md-nav__item">
       <a href="https://argoproj.github.io/community/join-slack" class="md-nav__link">
-        Slack ⧉
+        Slack
       </a>
     </li>
   
@@ -2784,7 +3656,7 @@
   
     <li class="md-nav__item">
       <a href="https://twitter.com/argoproj" class="md-nav__link">
-        Twitter ⧉
+        Twitter
       </a>
     </li>
   
@@ -2807,6 +3679,8 @@
   
   
   
+    
+  
   
     <label class="md-nav__title" for="__toc">
       <span class="md-nav__icon md-icon"></span>
@@ -2815,50 +3689,9 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#what-is-argo-workflows" class="md-nav__link">
-    What is Argo Workflows?
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#why-argo-workflows" class="md-nav__link">
-    Why Argo Workflows?
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#argo-documentation" class="md-nav__link">
-    Argo Documentation
-  </a>
-  
-    <nav class="md-nav" aria-label="Argo Documentation">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
   <a href="#getting-started" class="md-nav__link">
     Getting Started
   </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#examples" class="md-nav__link">
-    Examples
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#fields" class="md-nav__link">
-    Fields
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
@@ -2879,40 +3712,30 @@
 </a>
 
 
-<p align="center"><img src="./assets/argo.png" alt="Argo Logo"></p>
-
-<p><a href="https://github.com/argoproj/argo-workflows/actions?query=event%3Apush+branch%3Amaster"><img alt="CI" src="https://github.com/argoproj/argo-workflows/workflows/CI/badge.svg" /></a>
-<a href="https://bestpractices.coreinfrastructure.org/projects/3830"><img alt="CII Best Practices" src="https://bestpractices.coreinfrastructure.org/projects/3830/badge" /></a>
-<a href="https://argoproj.github.io/community/join-slack"><img alt="slack" src="https://img.shields.io/badge/slack-argoproj-brightgreen.svg?logo=slack" /></a></p>
-<h2 id="what-is-argo-workflows">What is Argo Workflows?<a class="headerlink" href="#what-is-argo-workflows" title="Permanent link">&para;</a></h2>
-<p>Argo Workflows is an open source container-native workflow engine for orchestrating parallel jobs on Kubernetes. Argo Workflows is implemented as a Kubernetes CRD (Custom Resource Definition).</p>
+<h1 id="argo-workflows">Argo Workflows<a class="headerlink" href="#argo-workflows" title="Permanent link">&para;</a></h1>
+<p>Argo Workflows is an open source container-native workflow engine for orchestrating parallel jobs on Kubernetes. Argo
+Workflows is implemented as a Kubernetes CRD (Custom Resource Definition).</p>
 <ul>
 <li>Define workflows where each step in the workflow is a container.</li>
-<li>Model multi-step workflows as a sequence of tasks or capture the dependencies between tasks using a directed acyclic graph (DAG).</li>
-<li>Easily run compute intensive jobs for machine learning or data processing in a fraction of the time using Argo Workflows on Kubernetes.</li>
+<li>Model multi-step workflows as a sequence of tasks or capture the dependencies between tasks using a directed acyclic
+  graph (DAG).</li>
+<li>Easily run compute intensive jobs for machine learning or data processing in a fraction of the time using Argo
+  Workflows on Kubernetes.</li>
 <li>Run CI/CD pipelines natively on Kubernetes without configuring complex software development products.</li>
 </ul>
-<p>Argo is a <a href="https://cncf.io/">Cloud Native Computing Foundation (CNCF)</a> hosted project.</p>
 <p><a href="https://www.youtube.com/watch?v=TZgLkCFQ2tk"><img alt="Argo Workflows in 5 minutes" src="https://img.youtube.com/vi/TZgLkCFQ2tk/0.jpg" /></a></p>
-<h2 id="why-argo-workflows">Why Argo Workflows?<a class="headerlink" href="#why-argo-workflows" title="Permanent link">&para;</a></h2>
-<ul>
-<li>Designed from the ground up for containers without the overhead and limitations of legacy VM and server-based environments.</li>
-<li>Cloud agnostic and can run on any Kubernetes cluster.</li>
-<li>Easily orchestrate highly parallel jobs on Kubernetes.</li>
-<li>Argo Workflows puts a cloud-scale supercomputer at your fingertips!</li>
-</ul>
-<h1 id="argo-documentation">Argo Documentation<a class="headerlink" href="#argo-documentation" title="Permanent link">&para;</a></h1>
-<h3 id="getting-started">Getting Started<a class="headerlink" href="#getting-started" title="Permanent link">&para;</a></h3>
-<p>For set-up information and running your first Workflows, please see our <a href="quick-start/">Getting Started</a> guide.</p>
-<h3 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h3>
-<p>For detailed examples about what Argo can do, please see our <a href="https://github.com/argoproj/argo-workflows/blob/master/examples/README.md">documentation by example</a> page.</p>
-<h3 id="fields">Fields<a class="headerlink" href="#fields" title="Permanent link">&para;</a></h3>
-<p>For a full list of all the fields available in for use in Argo, and a link to examples where each is used, please see <a href="fields/">Argo Fields</a>.</p>
+<h2 id="getting-started">Getting Started<a class="headerlink" href="#getting-started" title="Permanent link">&para;</a></h2>
+<p>For set-up information and running your first Workflows, please see our <a href="quick-start/">getting started guide</a>.</p>
 
               
             </article>
           </div>
         </div>
+        
+          <a href="#" class="md-top md-icon" data-md-component="top" data-md-state="hidden">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"/></svg>
+            Back to top
+          </a>
         
       </main>
       
@@ -2922,13 +3745,13 @@
       
       
         
-        <a href="core-concepts/" class="md-footer__link md-footer__link--next" aria-label="Next: Core Concepts" rel="next">
+        <a href="quick-start/" class="md-footer__link md-footer__link--next" aria-label="Next: Quick Start" rel="next">
           <div class="md-footer__title">
             <div class="md-ellipsis">
               <span class="md-footer__direction">
                 Next
               </span>
-              Core Concepts
+              Quick Start
             </div>
           </div>
           <div class="md-footer__button md-icon">
@@ -2958,7 +3781,7 @@
     <div class="md-dialog" data-md-component="dialog">
       <div class="md-dialog__inner md-typeset"></div>
     </div>
-    <script id="__config" type="application/json">{"base": ".", "features": [], "translations": {"clipboard.copy": "Copy to clipboard", "clipboard.copied": "Copied to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.placeholder": "Type to start searching", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.term.missing": "Missing", "select.version.title": "Select version"}, "search": "assets/javascripts/workers/search.22074ed6.min.js"}</script>
+    <script id="__config" type="application/json">{"base": ".", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.top"], "translations": {"clipboard.copy": "Copy to clipboard", "clipboard.copied": "Copied to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.placeholder": "Type to start searching", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.term.missing": "Missing", "select.version.title": "Select version"}, "search": "assets/javascripts/workers/search.22074ed6.min.js"}</script>
     
     
       <script src="assets/javascripts/bundle.960e086b.min.js"></script>

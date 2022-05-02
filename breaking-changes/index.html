@@ -1,0 +1,4435 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.2.4, mkdocs-material-8.1.9">
+    
+    
+      
+        <title>Breaking Changes - Argo Workflows - The workflow engine for Kubernetes</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.2b4465f4.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.e6a45f82.min.css">
+        
+      
+    
+    
+    
+      
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,400i,700%7CRoboto+Mono&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+  
+
+
+  
+  
+
+
+  <script>window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)},ga.l=+new Date,ga("create","UA-105170809-7","auto"),ga("set","anonymizeIp",!0),ga("send","pageview"),document.addEventListener("DOMContentLoaded",function(){document.forms.search&&document.forms.search.query.addEventListener("blur",function(){var e;this.value&&(e=document.location.pathname,ga("send","pageview",e+"?q="+this.value))}),"undefined"!=typeof location$&&location$.subscribe(function(e){ga("send","pageview",e.pathname)})})</script>
+  <script async src="https://www.google-analytics.com/analytics.js"></script>
+
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="">
+  
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&"object"==typeof palette.color)for(var key of Object.keys(palette.color))document.body.setAttribute("data-md-color-"+key,palette.color[key])</script>
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#breaking-changes" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Argo Workflows - The workflow engine for Kubernetes" class="md-header__button md-logo" aria-label="Argo Workflows - The workflow engine for Kubernetes" data-md-component="logo">
+      
+  <img src="../assets/logo.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Argo Workflows - The workflow engine for Kubernetes
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Breaking Changes
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      <form class="md-header__option" data-md-component="palette">
+        
+          
+          
+          <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent=""  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_1">
+          
+            <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_2" hidden>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 6H7c-3.31 0-6 2.69-6 6s2.69 6 6 6h10c3.31 0 6-2.69 6-6s-2.69-6-6-6zm0 10H7c-2.21 0-4-1.79-4-4s1.79-4 4-4h10c2.21 0 4 1.79 4 4s-1.79 4-4 4zM7 9c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
+            </label>
+          
+        
+          
+          
+          <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="" data-md-color-accent=""  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_2">
+          
+            <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_1" hidden>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 7H7a5 5 0 0 0-5 5 5 5 0 0 0 5 5h10a5 5 0 0 0 5-5 5 5 0 0 0-5-5m0 8a3 3 0 0 1-3-3 3 3 0 0 1 3-3 3 3 0 0 1 3 3 3 3 0 0 1-3 3z"/></svg>
+            </label>
+          
+        
+      </form>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5z"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" aria-label="Clear" tabindex="-1">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/argoproj/argo-workflows/" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-tabs__inner md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+
+
+  <li class="md-tabs__item">
+    <a href=".." class="md-tabs__link">
+      Home
+    </a>
+  </li>
+
+      
+        
+  
+  
+
+
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../quick-start/" class="md-tabs__link">
+        Getting Started
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+
+
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../workflow-concepts/" class="md-tabs__link">
+        User Guide
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+    
+  
+
+
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../installation/" class="md-tabs__link md-tabs__link--active">
+        Operator Manual
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+
+
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../CONTRIBUTING/" class="md-tabs__link">
+        Developer Guide
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+
+
+  <li class="md-tabs__item">
+    <a href="../roadmap/" class="md-tabs__link">
+      Roadmap
+    </a>
+  </li>
+
+      
+        
+  
+  
+
+
+  <li class="md-tabs__item">
+    <a href="https://blog.argoproj.io/" class="md-tabs__link">
+      Blog
+    </a>
+  </li>
+
+      
+        
+  
+  
+
+
+  <li class="md-tabs__item">
+    <a href="https://argoproj.github.io/community/join-slack" class="md-tabs__link">
+      Slack
+    </a>
+  </li>
+
+      
+        
+  
+  
+
+
+  <li class="md-tabs__item">
+    <a href="https://twitter.com/argoproj" class="md-tabs__link">
+      Twitter
+    </a>
+  </li>
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Argo Workflows - The workflow engine for Kubernetes" class="md-nav__button md-logo" aria-label="Argo Workflows - The workflow engine for Kubernetes" data-md-component="logo">
+      
+  <img src="../assets/logo.png" alt="logo">
+
+    </a>
+    Argo Workflows - The workflow engine for Kubernetes
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/argoproj/argo-workflows/" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        Home
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_2" type="checkbox" id="__nav_2" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_2">
+          Getting Started
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Getting Started" data-md-level="1">
+        <label class="md-nav__title" for="__nav_2">
+          <span class="md-nav__icon md-icon"></span>
+          Getting Started
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../quick-start/" class="md-nav__link">
+        Quick Start
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../training/" class="md-nav__link">
+        Training
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_2_3" type="checkbox" id="__nav_2_3" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_2_3">
+          Walk Through
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Walk Through" data-md-level="2">
+        <label class="md-nav__title" for="__nav_2_3">
+          <span class="md-nav__icon md-icon"></span>
+          Walk Through
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../walk-through/" class="md-nav__link">
+        About
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../walk-through/argo-cli/" class="md-nav__link">
+        Argo CLI
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../walk-through/hello-world/" class="md-nav__link">
+        Hello World
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../walk-through/parameters/" class="md-nav__link">
+        Parameters
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../walk-through/steps/" class="md-nav__link">
+        Steps
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../walk-through/dag/" class="md-nav__link">
+        DAG
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../walk-through/artifacts/" class="md-nav__link">
+        Artifacts
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../walk-through/the-structure-of-workflow-specs/" class="md-nav__link">
+        The Structure of Workflow Specs
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../walk-through/secrets/" class="md-nav__link">
+        Secrets
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../walk-through/scripts-and-results/" class="md-nav__link">
+        Scripts And Results
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../walk-through/output-parameters/" class="md-nav__link">
+        Output Parameters
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../walk-through/loops/" class="md-nav__link">
+        Loops
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../walk-through/conditionals/" class="md-nav__link">
+        Conditionals
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../walk-through/retrying-failed-or-errored-steps/" class="md-nav__link">
+        Retrying Failed or Errored Steps
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../walk-through/recursion/" class="md-nav__link">
+        Recursion
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../walk-through/exit-handlers/" class="md-nav__link">
+        Exit handlers
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../walk-through/timeouts/" class="md-nav__link">
+        Timeouts
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../walk-through/volumes/" class="md-nav__link">
+        Volumes
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../walk-through/suspending/" class="md-nav__link">
+        Suspending
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../walk-through/daemon-containers/" class="md-nav__link">
+        Daemon Containers
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../walk-through/sidecars/" class="md-nav__link">
+        Sidecars
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../walk-through/hardwired-artifacts/" class="md-nav__link">
+        Hardwired Artifacts
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../walk-through/kubernetes-resources/" class="md-nav__link">
+        Kubernetes Resources
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../walk-through/docker-in-docker-using-sidecars/" class="md-nav__link">
+        Docker-in-Docker Using Sidecars
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../walk-through/custom-template-variable-reference/" class="md-nav__link">
+        Custom Template Variable Reference
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../walk-through/continuous-integration-example/" class="md-nav__link">
+        Continuous Integration Example
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3" type="checkbox" id="__nav_3" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_3">
+          User Guide
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="User Guide" data-md-level="1">
+        <label class="md-nav__title" for="__nav_3">
+          <span class="md-nav__icon md-icon"></span>
+          User Guide
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../workflow-concepts/" class="md-nav__link">
+        Core Concepts
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3_2" type="checkbox" id="__nav_3_2" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_3_2">
+          Custom Resource Kinds
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Custom Resource Kinds" data-md-level="2">
+        <label class="md-nav__title" for="__nav_3_2">
+          <span class="md-nav__icon md-icon"></span>
+          Custom Resource Kinds
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../workflow-templates/" class="md-nav__link">
+        Workflow Templates
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cluster-workflow-templates/" class="md-nav__link">
+        Cluster Workflow Templates
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cron-workflows/" class="md-nav__link">
+        Cron Workflows
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3_3" type="checkbox" id="__nav_3_3" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_3_3">
+          Template Types
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Template Types" data-md-level="2">
+        <label class="md-nav__title" for="__nav_3_3">
+          <span class="md-nav__icon md-icon"></span>
+          Template Types
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../http-template/" class="md-nav__link">
+        HTTP Template
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../container-set-template/" class="md-nav__link">
+        Container Set Template
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../data-sourcing-and-transformation/" class="md-nav__link">
+        Data Sourcing and Transformations
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../inline-templates/" class="md-nav__link">
+        Inline Templates
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3_4" type="checkbox" id="__nav_3_4" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_3_4">
+          Artifacts
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Artifacts" data-md-level="2">
+        <label class="md-nav__title" for="__nav_3_4">
+          <span class="md-nav__icon md-icon"></span>
+          Artifacts
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../workflow-inputs/" class="md-nav__link">
+        Workflow Inputs
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../key-only-artifacts/" class="md-nav__link">
+        Key-Only Artifacts
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../artifact-repository-ref/" class="md-nav__link">
+        Artifact Repository Ref
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../conditional-artifacts-parameters/" class="md-nav__link">
+        Conditional Artifacts and Parameters
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3_5" type="checkbox" id="__nav_3_5" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_3_5">
+          Access Control
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Access Control" data-md-level="2">
+        <label class="md-nav__title" for="__nav_3_5">
+          <span class="md-nav__icon md-icon"></span>
+          Access Control
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../service-accounts/" class="md-nav__link">
+        Service Accounts
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../workflow-rbac/" class="md-nav__link">
+        Workflow RBAC
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3_6" type="checkbox" id="__nav_3_6" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_3_6">
+          Features
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Features" data-md-level="2">
+        <label class="md-nav__title" for="__nav_3_6">
+          <span class="md-nav__icon md-icon"></span>
+          Features
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../variables/" class="md-nav__link">
+        Workflow Variables
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../retries/" class="md-nav__link">
+        Retries
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../lifecyclehook/" class="md-nav__link">
+        Lifecycle-Hook
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../synchronization/" class="md-nav__link">
+        Synchronization
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../memoization/" class="md-nav__link">
+        Step Level Memoization
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../template-defaults/" class="md-nav__link">
+        Template Defaults
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../enhanced-depends-logic/" class="md-nav__link">
+        Enhanced Depends Logic
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../node-field-selector/" class="md-nav__link">
+        Node Field Selectors
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3_7" type="checkbox" id="__nav_3_7" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_3_7">
+          Status
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Status" data-md-level="2">
+        <label class="md-nav__title" for="__nav_3_7">
+          <span class="md-nav__icon md-icon"></span>
+          Status
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../resource-duration/" class="md-nav__link">
+        Resource Duration
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../estimated-duration/" class="md-nav__link">
+        Estimated Duration
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../progress/" class="md-nav__link">
+        Workflow Progress
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../workflow-creator/" class="md-nav__link">
+        Workflow Creator
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3_8" type="checkbox" id="__nav_3_8" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_3_8">
+          Patterns
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Patterns" data-md-level="2">
+        <label class="md-nav__title" for="__nav_3_8">
+          <span class="md-nav__icon md-icon"></span>
+          Patterns
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../empty-dir/" class="md-nav__link">
+        Empty Dir
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cron-backfill/" class="md-nav__link">
+        Cron Backfill
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../workflow-of-workflows/" class="md-nav__link">
+        Workflow of Workflows
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../workflow-notifications/" class="md-nav__link">
+        Workflow Notifications
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3_9" type="checkbox" id="__nav_3_9" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_3_9">
+          UI Features
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="UI Features" data-md-level="2">
+        <label class="md-nav__title" for="__nav_3_9">
+          <span class="md-nav__icon md-icon"></span>
+          UI Features
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../widgets/" class="md-nav__link">
+        Widgets
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../intermediate-inputs/" class="md-nav__link">
+        Intermediate Parameters
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3_10" type="checkbox" id="__nav_3_10" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_3_10">
+          Debugging Tools
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Debugging Tools" data-md-level="2">
+        <label class="md-nav__title" for="__nav_3_10">
+          <span class="md-nav__icon md-icon"></span>
+          Debugging Tools
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../workflow-events/" class="md-nav__link">
+        Workflow Events
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../debug-pause/" class="md-nav__link">
+        Debug Pause
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3_11" type="checkbox" id="__nav_3_11" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_3_11">
+          API
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="API" data-md-level="2">
+        <label class="md-nav__title" for="__nav_3_11">
+          <span class="md-nav__icon md-icon"></span>
+          API
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rest-api/" class="md-nav__link">
+        REST API
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../access-token/" class="md-nav__link">
+        Access Token
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rest-examples/" class="md-nav__link">
+        API Examples
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../events/" class="md-nav__link">
+        Events
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../webhooks/" class="md-nav__link">
+        Webhooks
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../workflow-submitting-workflow/" class="md-nav__link">
+        One Workflow Submitting Another
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../async-pattern/" class="md-nav__link">
+        Asynchronous Job Pattern
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../client-libraries/" class="md-nav__link">
+        Client Libraries
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../swagger/" class="md-nav__link">
+        API Reference
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3_12" type="checkbox" id="__nav_3_12" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_3_12">
+          Plugins
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Plugins" data-md-level="2">
+        <label class="md-nav__title" for="__nav_3_12">
+          <span class="md-nav__icon md-icon"></span>
+          Plugins
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../plugins/" class="md-nav__link">
+        Plugins
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../executor_plugins/" class="md-nav__link">
+        Executor Plugins
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../executor_swagger/" class="md-nav__link">
+        The API for an executor plugin.
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../plugin-directory/" class="md-nav__link">
+        Plugin Directory
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3_13" type="checkbox" id="__nav_3_13" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_3_13">
+          Best Practices
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Best Practices" data-md-level="2">
+        <label class="md-nav__title" for="__nav_3_13">
+          <span class="md-nav__icon md-icon"></span>
+          Best Practices
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../workflow-pod-security-context/" class="md-nav__link">
+        Workflow Pod Security Context
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tolerating-pod-deletion/" class="md-nav__link">
+        Tolerating Pod Deletion
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../running-at-massive-scale/" class="md-nav__link">
+        Running At Massive Scale
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3_14" type="checkbox" id="__nav_3_14" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_3_14">
+          Use Cases
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Use Cases" data-md-level="2">
+        <label class="md-nav__title" for="__nav_3_14">
+          <span class="md-nav__icon md-icon"></span>
+          Use Cases
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../use-cases/ci-cd/" class="md-nav__link">
+        CI/CD
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../use-cases/data-processing/" class="md-nav__link">
+        Data Processing
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../use-cases/infrastructure-automation/" class="md-nav__link">
+        Infrastructure Automation
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../use-cases/machine-learning/" class="md-nav__link">
+        Machine Learning
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../use-cases/other/" class="md-nav__link">
+        Other
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../use-cases/stream-processing/" class="md-nav__link">
+        Stream Processing
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../faq/" class="md-nav__link">
+        FAQ
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../kubectl/" class="md-nav__link">
+        `kubectl`
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ide-setup/" class="md-nav__link">
+        IDE Set-Up
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../fields/" class="md-nav__link">
+        Field Reference
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3_19" type="checkbox" id="__nav_3_19" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_3_19">
+          CLI Reference
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="CLI Reference" data-md-level="2">
+        <label class="md-nav__title" for="__nav_3_19">
+          <span class="md-nav__icon md-icon"></span>
+          CLI Reference
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/argo/" class="md-nav__link">
+        argo
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/argo_archive/" class="md-nav__link">
+        argo archive
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/argo_archive_delete/" class="md-nav__link">
+        argo archive delete
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/argo_archive_get/" class="md-nav__link">
+        argo archive get
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/argo_archive_list/" class="md-nav__link">
+        argo archive list
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/argo_archive_list-label-keys/" class="md-nav__link">
+        argo archive list-label-keys
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/argo_archive_list-label-values/" class="md-nav__link">
+        argo archive list-label-values
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/argo_archive_resubmit/" class="md-nav__link">
+        argo archive resubmit
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/argo_archive_retry/" class="md-nav__link">
+        argo archive retry
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/argo_auth/" class="md-nav__link">
+        argo auth
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/argo_auth_token/" class="md-nav__link">
+        argo auth token
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/argo_cluster-template/" class="md-nav__link">
+        argo cluster-template
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/argo_cluster-template_create/" class="md-nav__link">
+        argo cluster-template create
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/argo_cluster-template_delete/" class="md-nav__link">
+        argo cluster-template delete
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/argo_cluster-template_get/" class="md-nav__link">
+        argo cluster-template get
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/argo_cluster-template_lint/" class="md-nav__link">
+        argo cluster-template lint
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/argo_cluster-template_list/" class="md-nav__link">
+        argo cluster-template list
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/argo_completion/" class="md-nav__link">
+        argo completion
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/argo_cron/" class="md-nav__link">
+        argo cron
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/argo_cron_create/" class="md-nav__link">
+        argo cron create
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/argo_cron_delete/" class="md-nav__link">
+        argo cron delete
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/argo_cron_get/" class="md-nav__link">
+        argo cron get
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/argo_cron_lint/" class="md-nav__link">
+        argo cron lint
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/argo_cron_list/" class="md-nav__link">
+        argo cron list
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/argo_cron_resume/" class="md-nav__link">
+        argo cron resume
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/argo_cron_suspend/" class="md-nav__link">
+        argo cron suspend
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/argo_delete/" class="md-nav__link">
+        argo delete
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/argo_executor-plugin/" class="md-nav__link">
+        argo executor-plugin
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/argo_executor-plugin_build/" class="md-nav__link">
+        argo executor-plugin build
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/argo_get/" class="md-nav__link">
+        argo get
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/argo_lint/" class="md-nav__link">
+        argo lint
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/argo_list/" class="md-nav__link">
+        argo list
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/argo_logs/" class="md-nav__link">
+        argo logs
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/argo_node/" class="md-nav__link">
+        argo node
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/argo_resubmit/" class="md-nav__link">
+        argo resubmit
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/argo_resume/" class="md-nav__link">
+        argo resume
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/argo_retry/" class="md-nav__link">
+        argo retry
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/argo_server/" class="md-nav__link">
+        argo server
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/argo_stop/" class="md-nav__link">
+        argo stop
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/argo_submit/" class="md-nav__link">
+        argo submit
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/argo_suspend/" class="md-nav__link">
+        argo suspend
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/argo_template/" class="md-nav__link">
+        argo template
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/argo_template_create/" class="md-nav__link">
+        argo template create
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/argo_template_delete/" class="md-nav__link">
+        argo template delete
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/argo_template_get/" class="md-nav__link">
+        argo template get
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/argo_template_lint/" class="md-nav__link">
+        argo template lint
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/argo_template_list/" class="md-nav__link">
+        argo template list
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/argo_terminate/" class="md-nav__link">
+        argo terminate
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/argo_version/" class="md-nav__link">
+        argo version
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/argo_wait/" class="md-nav__link">
+        argo wait
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/argo_watch/" class="md-nav__link">
+        argo watch
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+    
+  
+  
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_4" type="checkbox" id="__nav_4" checked>
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_4">
+          Operator Manual
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Operator Manual" data-md-level="1">
+        <label class="md-nav__title" for="__nav_4">
+          <span class="md-nav__icon md-icon"></span>
+          Operator Manual
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../installation/" class="md-nav__link">
+        Installation
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../releases/" class="md-nav__link">
+        Releases
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+    
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          Breaking Changes
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        Breaking Changes
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#upgrading-to-v34" class="md-nav__link">
+    Upgrading to v3.4
+  </a>
+  
+    <nav class="md-nav" aria-label="Upgrading to v3.4">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#feat-add-entrypoint-lookup-fixes-8344" class="md-nav__link">
+    feat!: Add entrypoint lookup. Fixes #8344
+  </a>
+  
+    <nav class="md-nav" aria-label="feat!: Add entrypoint lookup. Fixes #8344">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#actions" class="md-nav__link">
+    Actions
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#feat-fail-on-invalid-config-8295" class="md-nav__link">
+    feat: Fail on invalid config. (#8295)
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#upgrading-to-v33" class="md-nav__link">
+    Upgrading to v3.3
+  </a>
+  
+    <nav class="md-nav" aria-label="Upgrading to v3.3">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#662a7295b-feat-replace-patch-pod-with-create-workflowtaskresult-fixes-3961-8000" class="md-nav__link">
+    662a7295b feat: Replace patch pod with create workflowtaskresult. Fixes #3961 (#8000)
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#06d4bf76f-fix-reduce-agent-permissions-fixes-7986-7987" class="md-nav__link">
+    06d4bf76f fix: Reduce agent permissions. Fixes #7986 (#7987)
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#feat-remove-deprecated-config-flags" class="md-nav__link">
+    feat!: Remove deprecated config flags
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fce82d572-feat-remove-pod-workers-7837" class="md-nav__link">
+    fce82d572 feat: Remove pod workers (#7837)
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#93c11a24ff-feat-add-tls-to-metrics-and-telemetry-servers-7041" class="md-nav__link">
+    93c11a24ff feat: Add TLS to Metrics and Telemetry servers (#7041)
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#0758eab11-featserver-sync-dispatch-of-webhook-events-by-default" class="md-nav__link">
+    0758eab11 feat(server)!: Sync dispatch of webhook events by default
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#bd49c6303-fixartifact-default-https-to-any-url-missing-a-scheme-fixes-6973" class="md-nav__link">
+    bd49c6303 fix(artifact)!: default https to any URL missing a scheme. Fixes #6973
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#chore-remove-the-hidden-flag-verify-from-argo-submit" class="md-nav__link">
+    chore!: Remove the hidden flag --verify from argo submit
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#upgrading-to-v32" class="md-nav__link">
+    Upgrading to v3.2
+  </a>
+  
+    <nav class="md-nav" aria-label="Upgrading to v3.2">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#e5b131a33-feat-add-template-node-to-pod-name-fixes-1319-6712" class="md-nav__link">
+    e5b131a33 feat: Add template node to pod name. Fixes #1319 (#6712)
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#be63efe89-featexecutor-change-argoexec-base-image-to-alpine-closes-5720-6006" class="md-nav__link">
+    be63efe89 feat(executor)!: Change argoexec base image to alpine. Closes #5720 (#6006)
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#48d7ad3-chore-remove-onexit-naming-transition-scaffolding-code-6297" class="md-nav__link">
+    48d7ad3 chore: Remove onExit naming transition scaffolding code (#6297)
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#upgrading-to-v31" class="md-nav__link">
+    Upgrading to v3.1
+  </a>
+  
+    <nav class="md-nav" aria-label="Upgrading to v3.1">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#3fff791e4-build-automatically-add-manifests-to-v-tags-5880" class="md-nav__link">
+    3fff791e4 build!: Automatically add manifests to v* tags (#5880)
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ab361667a-featcontroller-emissary-executor-4925" class="md-nav__link">
+    ab361667a feat(controller) Emissary executor.  (#4925)
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#be63efe89-featcontroller-expression-template-tags-resolves-4548-1293-5115" class="md-nav__link">
+    be63efe89 feat(controller): Expression template tags. Resolves #4548 &amp; #1293 (#5115)
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#upgrading-to-v30" class="md-nav__link">
+    Upgrading to v3.0
+  </a>
+  
+    <nav class="md-nav" aria-label="Upgrading to v3.0">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#defbd600e-fix-default-argo_securetrue-fixes-5607-5626" class="md-nav__link">
+    defbd600e fix: Default ARGO_SECURE=true. Fixes #5607 (#5626)
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#01d310235-choreserver-required-authentication-by-default-resolves-5206-5211" class="md-nav__link">
+    01d310235 chore(server)!: Required authentication by default. Resolves #5206 (#5211)
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#f31e0c6f9-chore-remove-deprecated-fields-5035" class="md-nav__link">
+    f31e0c6f9 chore!: Remove deprecated fields (#5035)
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#c8215f972-featcontroller-key-only-artifacts-fixes-3184-4618" class="md-nav__link">
+    c8215f972 feat(controller)!: Key-only artifacts. Fixes #3184 (#4618)
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../security/" class="md-nav__link">
+        Security
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_4_5" type="checkbox" id="__nav_4_5" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_4_5">
+          Configuration
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Configuration" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_5">
+          <span class="md-nav__icon md-icon"></span>
+          Configuration
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../managed-namespace/" class="md-nav__link">
+        Managed Namespace
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../workflow-controller-configmap/" class="md-nav__link">
+        Workflow Controller Config Map
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../configure-artifact-repository/" class="md-nav__link">
+        Configuring Your Artifact Repository
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../configure-archive-logs/" class="md-nav__link">
+        Configuring Archive Logs
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../links/" class="md-nav__link">
+        Links
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../environment-variables/" class="md-nav__link">
+        Environment Variables
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../default-workflow-specs/" class="md-nav__link">
+        Default Workflow Spec
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../offloading-large-workflows/" class="md-nav__link">
+        Offloading Large Workflows
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../workflow-archive/" class="md-nav__link">
+        Workflow Archive
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../metrics/" class="md-nav__link">
+        Prometheus Metrics
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../workflow-executors/" class="md-nav__link">
+        Workflow Executors
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../workflow-restrictions/" class="md-nav__link">
+        Workflow Restrictions
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sidecar-injection/" class="md-nav__link">
+        Sidecar Injection
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_4_6" type="checkbox" id="__nav_4_6" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_4_6">
+          Argo Server
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Argo Server" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_6">
+          <span class="md-nav__icon md-icon"></span>
+          Argo Server
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../argo-server/" class="md-nav__link">
+        Argo Server
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../argo-server-auth-mode/" class="md-nav__link">
+        Argo Server Auth Mode
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tls/" class="md-nav__link">
+        Transport Layer Security
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../argo-server-sso/" class="md-nav__link">
+        Argo Server SSO
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../argo-server-sso-argocd/" class="md-nav__link">
+        Use Argo CD Dex for authentication
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_4_7" type="checkbox" id="__nav_4_7" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_4_7">
+          Best Practices
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Best Practices" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_7">
+          <span class="md-nav__icon md-icon"></span>
+          Best Practices
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../high-availability/" class="md-nav__link">
+        High-Availability (HA)
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../disaster-recovery/" class="md-nav__link">
+        Disaster Recovery (DR)
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../scaling/" class="md-nav__link">
+        Scaling
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cost-optimisation/" class="md-nav__link">
+        Cost Optimization
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../windows/" class="md-nav__link">
+        Windows Container Support
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_5" type="checkbox" id="__nav_5" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_5">
+          Developer Guide
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Developer Guide" data-md-level="1">
+        <label class="md-nav__title" for="__nav_5">
+          <span class="md-nav__icon md-icon"></span>
+          Developer Guide
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../CONTRIBUTING/" class="md-nav__link">
+        Contributing
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../architecture/" class="md-nav__link">
+        Architecture
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../running-locally/" class="md-nav__link">
+        Running Locally
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../mentoring/" class="md-nav__link">
+        Mentoring
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../public-api/" class="md-nav__link">
+        Public API
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../static-code-analysis/" class="md-nav__link">
+        Static Code Analysis
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../stress-testing/" class="md-nav__link">
+        Stress Testing
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../releasing/" class="md-nav__link">
+        Release Instructions
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../survey-data-privacy/" class="md-nav__link">
+        Survey Data Privacy
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../roadmap/" class="md-nav__link">
+        Roadmap
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://blog.argoproj.io/" class="md-nav__link">
+        Blog
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://argoproj.github.io/community/join-slack" class="md-nav__link">
+        Slack
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://twitter.com/argoproj" class="md-nav__link">
+        Twitter
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#upgrading-to-v34" class="md-nav__link">
+    Upgrading to v3.4
+  </a>
+  
+    <nav class="md-nav" aria-label="Upgrading to v3.4">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#feat-add-entrypoint-lookup-fixes-8344" class="md-nav__link">
+    feat!: Add entrypoint lookup. Fixes #8344
+  </a>
+  
+    <nav class="md-nav" aria-label="feat!: Add entrypoint lookup. Fixes #8344">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#actions" class="md-nav__link">
+    Actions
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#feat-fail-on-invalid-config-8295" class="md-nav__link">
+    feat: Fail on invalid config. (#8295)
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#upgrading-to-v33" class="md-nav__link">
+    Upgrading to v3.3
+  </a>
+  
+    <nav class="md-nav" aria-label="Upgrading to v3.3">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#662a7295b-feat-replace-patch-pod-with-create-workflowtaskresult-fixes-3961-8000" class="md-nav__link">
+    662a7295b feat: Replace patch pod with create workflowtaskresult. Fixes #3961 (#8000)
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#06d4bf76f-fix-reduce-agent-permissions-fixes-7986-7987" class="md-nav__link">
+    06d4bf76f fix: Reduce agent permissions. Fixes #7986 (#7987)
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#feat-remove-deprecated-config-flags" class="md-nav__link">
+    feat!: Remove deprecated config flags
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fce82d572-feat-remove-pod-workers-7837" class="md-nav__link">
+    fce82d572 feat: Remove pod workers (#7837)
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#93c11a24ff-feat-add-tls-to-metrics-and-telemetry-servers-7041" class="md-nav__link">
+    93c11a24ff feat: Add TLS to Metrics and Telemetry servers (#7041)
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#0758eab11-featserver-sync-dispatch-of-webhook-events-by-default" class="md-nav__link">
+    0758eab11 feat(server)!: Sync dispatch of webhook events by default
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#bd49c6303-fixartifact-default-https-to-any-url-missing-a-scheme-fixes-6973" class="md-nav__link">
+    bd49c6303 fix(artifact)!: default https to any URL missing a scheme. Fixes #6973
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#chore-remove-the-hidden-flag-verify-from-argo-submit" class="md-nav__link">
+    chore!: Remove the hidden flag --verify from argo submit
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#upgrading-to-v32" class="md-nav__link">
+    Upgrading to v3.2
+  </a>
+  
+    <nav class="md-nav" aria-label="Upgrading to v3.2">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#e5b131a33-feat-add-template-node-to-pod-name-fixes-1319-6712" class="md-nav__link">
+    e5b131a33 feat: Add template node to pod name. Fixes #1319 (#6712)
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#be63efe89-featexecutor-change-argoexec-base-image-to-alpine-closes-5720-6006" class="md-nav__link">
+    be63efe89 feat(executor)!: Change argoexec base image to alpine. Closes #5720 (#6006)
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#48d7ad3-chore-remove-onexit-naming-transition-scaffolding-code-6297" class="md-nav__link">
+    48d7ad3 chore: Remove onExit naming transition scaffolding code (#6297)
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#upgrading-to-v31" class="md-nav__link">
+    Upgrading to v3.1
+  </a>
+  
+    <nav class="md-nav" aria-label="Upgrading to v3.1">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#3fff791e4-build-automatically-add-manifests-to-v-tags-5880" class="md-nav__link">
+    3fff791e4 build!: Automatically add manifests to v* tags (#5880)
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ab361667a-featcontroller-emissary-executor-4925" class="md-nav__link">
+    ab361667a feat(controller) Emissary executor.  (#4925)
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#be63efe89-featcontroller-expression-template-tags-resolves-4548-1293-5115" class="md-nav__link">
+    be63efe89 feat(controller): Expression template tags. Resolves #4548 &amp; #1293 (#5115)
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#upgrading-to-v30" class="md-nav__link">
+    Upgrading to v3.0
+  </a>
+  
+    <nav class="md-nav" aria-label="Upgrading to v3.0">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#defbd600e-fix-default-argo_securetrue-fixes-5607-5626" class="md-nav__link">
+    defbd600e fix: Default ARGO_SECURE=true. Fixes #5607 (#5626)
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#01d310235-choreserver-required-authentication-by-default-resolves-5206-5211" class="md-nav__link">
+    01d310235 chore(server)!: Required authentication by default. Resolves #5206 (#5211)
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#f31e0c6f9-chore-remove-deprecated-fields-5035" class="md-nav__link">
+    f31e0c6f9 chore!: Remove deprecated fields (#5035)
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#c8215f972-featcontroller-key-only-artifacts-fixes-3184-4618" class="md-nav__link">
+    c8215f972 feat(controller)!: Key-only artifacts. Fixes #3184 (#4618)
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          <div class="md-content" data-md-component="content">
+            <article class="md-content__inner md-typeset">
+              
+                
+<a href="https://github.com/argoproj/argo-workflows/edit/master/docs/breaking-changes.md" title="Edit this page" class="md-content__button md-icon">
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25z"/></svg>
+</a>
+
+
+<h1 id="breaking-changes">Breaking Changes<a class="headerlink" href="#breaking-changes" title="Permanent link">&para;</a></h1>
+<p>Breaking changes  typically (sometimes we don't realise they are breaking) have "!" in the commit message, as per
+the <a href="https://www.conventionalcommits.org/en/v1.0.0/#summary">conventional commits</a>.</p>
+<h2 id="upgrading-to-v34">Upgrading to v3.4<a class="headerlink" href="#upgrading-to-v34" title="Permanent link">&para;</a></h2>
+<h3 id="feat-add-entrypoint-lookup-fixes-8344">feat!: Add entrypoint lookup. Fixes #8344<a class="headerlink" href="#feat-add-entrypoint-lookup-fixes-8344" title="Permanent link">&para;</a></h3>
+<p>Affected if:</p>
+<ul>
+<li>Using the Emissary executor.</li>
+<li>Used the <code>args</code> field for any entry in <code>images</code>.</li>
+</ul>
+<p>This PR automatically looks up the command and entrypoint. The implementation for config look-up was incorrect (it
+allowed you to specify <code>args</code> but not <code>entrypoint</code>). <code>args</code> has been removed to correct the behaviour.</p>
+<p>If you are incorrectly configured, the workflow controller will error on start-up.</p>
+<h4 id="actions">Actions<a class="headerlink" href="#actions" title="Permanent link">&para;</a></h4>
+<p>You don't need to configure images that use v2 manifests anymore. You can just remove them (e.g. argoproj/argosay:v2):</p>
+<div class="highlight"><pre><span></span><code>% docker manifest inspect argoproj/argosay:v2
+...
+<span class="s2">&quot;schemaVersion&quot;</span>: <span class="m">2</span>,
+...
+</code></pre></div>
+<p>For v1 manifests (e.g. docker/whalesay:latest):</p>
+<div class="highlight"><pre><span></span><code>% docker image inspect -f <span class="s1">&#39;{{.Config.Entrypoint}} {{.Config.Cmd}}&#39;</span> docker/whalesay:latest
+<span class="o">[]</span> <span class="o">[</span>/bin/bash<span class="o">]</span>
+<span class="sb">````</span>
+
+<span class="sb">```</span>yaml
+images:
+  docker/whalesay:latest:
+    cmd: <span class="o">[</span>/bin/bash<span class="o">]</span>
+</code></pre></div>
+<h2 id="feat-fail-on-invalid-config-8295">feat: Fail on invalid config. (#8295)<a class="headerlink" href="#feat-fail-on-invalid-config-8295" title="Permanent link">&para;</a></h2>
+<p>The workflow controller will error on start-up if incorrectly configured, rather than silently ignoring
+mis-configuration.</p>
+<div class="highlight"><pre><span></span><code>Failed to register watch for controller config map: error unmarshaling JSON: while decoding JSON: json: unknown field \&quot;args\&quot;
+</code></pre></div>
+<h2 id="upgrading-to-v33">Upgrading to v3.3<a class="headerlink" href="#upgrading-to-v33" title="Permanent link">&para;</a></h2>
+<h3 id="662a7295b-feat-replace-patch-pod-with-create-workflowtaskresult-fixes-3961-8000"><a href="https://github.com/argoproj/argo-workflows/commit/662a7295b">662a7295b</a> feat: Replace <code>patch pod</code> with <code>create workflowtaskresult</code>. Fixes #3961 (#8000)<a class="headerlink" href="#662a7295b-feat-replace-patch-pod-with-create-workflowtaskresult-fixes-3961-8000" title="Permanent link">&para;</a></h3>
+<p>The PR changes the permissions that can be used by a workflow to remove the <code>pod patch</code> permission.</p>
+<p>See <a href="../workflow-rbac/">workflow RBAC</a> and <a href="https://github.com/argoproj/argo-workflows/issues/3961">#8013</a>.</p>
+<h3 id="06d4bf76f-fix-reduce-agent-permissions-fixes-7986-7987"><a href="https://github.com/argoproj/argo-workflows/commit/06d4bf76f">06d4bf76f</a> fix: Reduce agent permissions. Fixes #7986 (#7987)<a class="headerlink" href="#06d4bf76f-fix-reduce-agent-permissions-fixes-7986-7987" title="Permanent link">&para;</a></h3>
+<p>The PR changes the permissions used by the agent to report back the outcome of HTTP template requests. The permission <code>patch workflowtasksets/status</code> replaces <code>patch workflowtasksets</code>, for example:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">rbac.authorization.k8s.io/v1</span><span class="w"></span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Role</span><span class="w"></span>
+<span class="nt">metadata</span><span class="p">:</span><span class="w"></span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">agent</span><span class="w"></span>
+<span class="nt">rules</span><span class="p">:</span><span class="w"></span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">apiGroups</span><span class="p">:</span><span class="w"></span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">argoproj.io</span><span class="w"></span>
+<span class="w">    </span><span class="nt">resources</span><span class="p">:</span><span class="w"></span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">workflowtasksets/status</span><span class="w"></span>
+<span class="w">    </span><span class="nt">verbs</span><span class="p">:</span><span class="w"></span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">patch</span><span class="w"></span>
+</code></pre></div>
+<p>Workflows running during any upgrade should be give both permissions.</p>
+<p>See <a href="https://github.com/argoproj/argo-workflows/issues/8013">#8013</a>.</p>
+<h3 id="feat-remove-deprecated-config-flags">feat!: Remove deprecated config flags<a class="headerlink" href="#feat-remove-deprecated-config-flags" title="Permanent link">&para;</a></h3>
+<p>This PR removes the following configmap items -</p>
+<ul>
+<li>executorImage (use executor.image in configmap instead)
+  e.g.
+  Workflow controller configmap similar to the following one given below won't be valid anymore:</li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1</span><span class="w"></span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ConfigMap</span><span class="w"></span>
+<span class="nt">metadata</span><span class="p">:</span><span class="w"></span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">workflow-controller-configmap</span><span class="w"></span>
+<span class="nt">data</span><span class="p">:</span><span class="w"></span>
+<span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">...</span><span class="w"></span>
+<span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">executorImage</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">argoproj/argocli:latest</span><span class="w"></span>
+<span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">...</span><span class="w"></span>
+</code></pre></div>
+<p>From now and onwards, only provide the executor image in workflow controller as a command argument as shown below:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1</span><span class="w"></span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ConfigMap</span><span class="w"></span>
+<span class="nt">metadata</span><span class="p">:</span><span class="w"></span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">workflow-controller-configmap</span><span class="w"></span>
+<span class="nt">data</span><span class="p">:</span><span class="w"></span>
+<span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">...</span><span class="w"></span>
+<span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">executor</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="p p-Indicator">|</span><span class="w"></span>
+<span class="w">    </span><span class="no">image: argoproj/argocli:latest</span><span class="w"></span>
+<span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">...</span><span class="w"></span>
+</code></pre></div>
+<ul>
+<li>executorImagePullPolicy (use executor.imagePullPolicy in configmap instead)
+  e.g.
+  Workflow controller configmap similar to the following one given below won't be valid anymore:</li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="nt">data</span><span class="p">:</span><span class="w"></span>
+<span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">...</span><span class="w"></span>
+<span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">executorImagePullPolicy</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">IfNotPresent</span><span class="w"></span>
+<span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">...</span><span class="w"></span>
+</code></pre></div>
+<p>Change it as shown below:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">data</span><span class="p">:</span><span class="w"></span>
+<span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">...</span><span class="w"></span>
+<span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">executor</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="p p-Indicator">|</span><span class="w"></span>
+<span class="w">    </span><span class="no">imagePullPolicy: IfNotPresent</span><span class="w"></span>
+<span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">...</span><span class="w"></span>
+</code></pre></div>
+<ul>
+<li>executorResources (use executor.resources in configmap instead)
+  e.g.
+  Workflow controller configmap similar to the following one given below won't be valid anymore:</li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="nt">data</span><span class="p">:</span><span class="w"></span>
+<span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">...</span><span class="w"></span>
+<span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">executorResources</span><span class="p p-Indicator">:</span><span class="w"></span>
+<span class="w">    </span><span class="nt">requests</span><span class="p">:</span><span class="w"></span>
+<span class="w">      </span><span class="nt">cpu</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.1</span><span class="w"></span>
+<span class="w">      </span><span class="nt">memory</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">64Mi</span><span class="w"></span>
+<span class="w">    </span><span class="nt">limits</span><span class="p">:</span><span class="w"></span>
+<span class="w">      </span><span class="nt">cpu</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.5</span><span class="w"></span>
+<span class="w">      </span><span class="nt">memory</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">512Mi</span><span class="w"></span>
+<span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">...</span><span class="w"></span>
+</code></pre></div>
+<p>Change it as shown below:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">data</span><span class="p">:</span><span class="w"></span>
+<span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">...</span><span class="w"></span>
+<span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">executor</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="p p-Indicator">|</span><span class="w"></span>
+<span class="w">    </span><span class="no">resources:</span><span class="w"></span>
+<span class="w">      </span><span class="no">requests:</span><span class="w"></span>
+<span class="w">        </span><span class="no">cpu: 0.1</span><span class="w"></span>
+<span class="w">        </span><span class="no">memory: 64Mi</span><span class="w"></span>
+<span class="w">      </span><span class="no">limits:</span><span class="w"></span>
+<span class="w">        </span><span class="no">cpu: 0.5</span><span class="w"></span>
+<span class="w">        </span><span class="no">memory: 512Mi</span><span class="w"></span>
+<span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">...</span><span class="w"></span>
+</code></pre></div>
+<h3 id="fce82d572-feat-remove-pod-workers-7837"><a href="https://github.com/argoproj/argo-workflows/commit/fce82d5727b89cfe49e8e3568fff40725bd43734">fce82d572</a> feat: Remove pod workers (#7837)<a class="headerlink" href="#fce82d572-feat-remove-pod-workers-7837" title="Permanent link">&para;</a></h3>
+<p>This PR removes pod workers from the code, the pod informer directly writes into the workflow queue. As a result the <code>--pod-workers</code> flag has been removed.</p>
+<h3 id="93c11a24ff-feat-add-tls-to-metrics-and-telemetry-servers-7041"><a href="https://github.com/argoproj/argo-workflows/commit/93c11a24ff06049c2197149acd787f702e5c1f9b">93c11a24ff</a> feat: Add TLS to Metrics and Telemetry servers (#7041)<a class="headerlink" href="#93c11a24ff-feat-add-tls-to-metrics-and-telemetry-servers-7041" title="Permanent link">&para;</a></h3>
+<p>This PR adds the ability to send metrics over TLS with a self-signed certificate. In v3.5 this will be enabled by default, so it is recommended that users enable this functionality now.</p>
+<h3 id="0758eab11-featserver-sync-dispatch-of-webhook-events-by-default"><a href="https://github.com/argoproj/argo-workflows/commit/0758eab11decb8a1e741abef3e0ec08c48a69ab8">0758eab11</a> feat(server)!: Sync dispatch of webhook events by default<a class="headerlink" href="#0758eab11-featserver-sync-dispatch-of-webhook-events-by-default" title="Permanent link">&para;</a></h3>
+<p>This is not expected to impact users.</p>
+<p>Events dispatch in the Argo Server has been change from async to sync by default. This is so that errors are surfaced to
+the client, rather than only appearing as logs or Kubernetes events. It is possible that response times under load are
+too long for your client and you may prefer to revert this behaviour.</p>
+<p>To revert this behaviour, restart Argo Server with <code>ARGO_EVENT_ASYNC_DISPATCH=true</code>. Make sure that <code>asyncDispatch=true</code>
+is logged.</p>
+<h3 id="bd49c6303-fixartifact-default-https-to-any-url-missing-a-scheme-fixes-6973"><a href="https://github.com/argoproj/argo-workflows/commit/bd49c630328d30206a5c5b78cbc9a00700a28e7d">bd49c6303</a> fix(artifact)!: default https to any URL missing a scheme. Fixes #6973<a class="headerlink" href="#bd49c6303-fixartifact-default-https-to-any-url-missing-a-scheme-fixes-6973" title="Permanent link">&para;</a></h3>
+<p>HTTPArtifact without a scheme will now defaults to https instead of http</p>
+<p>user need to explicitly include a http prefix if they want to retrieve HTTPArtifact through http</p>
+<h3 id="chore-remove-the-hidden-flag-verify-from-argo-submit">chore!: Remove the hidden flag <code>--verify</code> from <code>argo submit</code><a class="headerlink" href="#chore-remove-the-hidden-flag-verify-from-argo-submit" title="Permanent link">&para;</a></h3>
+<p>The hidden flag <code>--verify</code> has been removed from <code>argo submit</code>. This is a internal testing flag we don't need anymore.</p>
+<h2 id="upgrading-to-v32">Upgrading to v3.2<a class="headerlink" href="#upgrading-to-v32" title="Permanent link">&para;</a></h2>
+<h3 id="e5b131a33-feat-add-template-node-to-pod-name-fixes-1319-6712"><a href="https://github.com/argoproj/argo-workflows/commit/e5b131a33">e5b131a33</a> feat: Add template node to pod name. Fixes #1319 (#6712)<a class="headerlink" href="#e5b131a33-feat-add-template-node-to-pod-name-fixes-1319-6712" title="Permanent link">&para;</a></h3>
+<p>This add the template name to the pod name, to make it easier to understand which pod ran which step. This behaviour can be reverted by setting <code>POD_NAMES=v1</code> on the workflow controller.</p>
+<h3 id="be63efe89-featexecutor-change-argoexec-base-image-to-alpine-closes-5720-6006"><a href="https://github.com/argoproj/argo-workflows/commit/be63efe89">be63efe89</a> feat(executor)!: Change <code>argoexec</code> base image to alpine. Closes #5720 (#6006)<a class="headerlink" href="#be63efe89-featexecutor-change-argoexec-base-image-to-alpine-closes-5720-6006" title="Permanent link">&para;</a></h3>
+<p>Changing from Debian to Alpine reduces the size of the <code>argoexec</code> image, resulting is faster starting workflow pods, and it also reduce the risk of security issues. There is not such thing as a free lunch. There maybe other behaviour changes we don't know of yet.</p>
+<p>Some users found this change prevented workflow with very large parameters from running. See <a href="https://github.com/argoproj/argo-workflows/issues/7586">#7586</a></p>
+<h3 id="48d7ad3-chore-remove-onexit-naming-transition-scaffolding-code-6297"><a href="https://github.com/argoproj/argo-workflows/commit/48d7ad36c14e4a50c50332d6decd543a1b732b69">48d7ad3</a> chore: Remove onExit naming transition scaffolding code (#6297)<a class="headerlink" href="#48d7ad3-chore-remove-onexit-naming-transition-scaffolding-code-6297" title="Permanent link">&para;</a></h3>
+<p>When upgrading from <code>&lt;v2.12</code> to <code>&gt;v3.2</code> workflows that are running at the time of the upgrade and have <code>onExit</code> steps <em>may</em> experience the <code>onExit</code> step running twice. This is only applicable for workflows that began running before a <code>workflow-controller</code> upgrade and are still running after the upgrade is complete. This is only applicable for upgrading from <code>v2.12</code> or earlier directly to <code>v3.2</code> or later. Even under these conditions, duplicate work may not be experienced.</p>
+<h2 id="upgrading-to-v31">Upgrading to v3.1<a class="headerlink" href="#upgrading-to-v31" title="Permanent link">&para;</a></h2>
+<h3 id="3fff791e4-build-automatically-add-manifests-to-v-tags-5880"><a href="https://github.com/argoproj/argo-workflows/commit/3fff791e4ef5b7e1de82ccb36cae327e8eb726f6">3fff791e4</a> build!: Automatically add manifests to <code>v*</code> tags (#5880)<a class="headerlink" href="#3fff791e4-build-automatically-add-manifests-to-v-tags-5880" title="Permanent link">&para;</a></h3>
+<p>The manifests in the repository on the tag will no longer contain the image tag, instead they will contain <code>:latest</code>.</p>
+<ul>
+<li>You must not get your manifests from the Git repository, you must get them from the release notes.</li>
+<li>You must not use the <code>stable</code> tag. This is defunct, and will be removed in v3.1.</li>
+</ul>
+<h3 id="ab361667a-featcontroller-emissary-executor-4925"><a href="https://github.com/argoproj/argo-workflows/commit/ab361667a">ab361667a</a> feat(controller) Emissary executor.  (#4925)<a class="headerlink" href="#ab361667a-featcontroller-emissary-executor-4925" title="Permanent link">&para;</a></h3>
+<p>The Emissary executor is not a breaking change per-se, but it is brand new so we would not recommend you use it by default yet. Instead, we recommend you test it out on some workflows using <a href="https://github.com/argoproj/argo-workflows/blob/master/docs/workflow-controller-configmap.yaml#L125">config map configuration</a>.</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># Specifies the executor to use.</span><span class="w"></span>
+<span class="c1">#</span><span class="w"></span>
+<span class="c1"># You can use this to:</span><span class="w"></span>
+<span class="c1"># * Tailor your executor based on your preference for security or performance.</span><span class="w"></span>
+<span class="c1"># * Test out an executor without committing yourself to use it for every workflow.</span><span class="w"></span>
+<span class="c1">#</span><span class="w"></span>
+<span class="c1"># To find out which executor was actually use, see the `wait` container logs.</span><span class="w"></span>
+<span class="c1">#</span><span class="w"></span>
+<span class="c1"># The list is in order of precedence; the first matching executor is used.</span><span class="w"></span>
+<span class="c1"># This has precedence over `containerRuntimeExecutor`.</span><span class="w"></span>
+<span class="nt">containerRuntimeExecutors</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span><span class="w"></span>
+<span class="w">  </span><span class="no">- name: emissary</span><span class="w"></span>
+<span class="w">    </span><span class="no">selector:</span><span class="w"></span>
+<span class="w">      </span><span class="no">matchLabels:</span><span class="w"></span>
+<span class="w">        </span><span class="no">workflows.argoproj.io/container-runtime-executor: emissary</span><span class="w"></span>
+</code></pre></div>
+<h3 id="be63efe89-featcontroller-expression-template-tags-resolves-4548-1293-5115"><a href="https://github.com/argoproj/argo-workflows/commit/e6fa41a">be63efe89</a> feat(controller): Expression template tags. Resolves #4548 &amp; #1293 (#5115)<a class="headerlink" href="#be63efe89-featcontroller-expression-template-tags-resolves-4548-1293-5115" title="Permanent link">&para;</a></h3>
+<p>This PR introduced a new expression syntax know as "expression tag template". A user has reported that this does not
+always play nicely with the <code>when</code> condition syntax (Goevaluate).</p>
+<p>This can be resolved using a single quote in your when expression:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">when</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;&#39;{{inputs.parameters.should-print}}&#39;</span><span class="nv"> </span><span class="s">!=</span><span class="nv"> </span><span class="s">&#39;2021-01-01&#39;&quot;</span><span class="w"></span>
+</code></pre></div>
+<p><a href="https://github.com/argoproj/argo-workflows/issues/6314">Learn more</a></p>
+<h2 id="upgrading-to-v30">Upgrading to v3.0<a class="headerlink" href="#upgrading-to-v30" title="Permanent link">&para;</a></h2>
+<h3 id="defbd600e-fix-default-argo_securetrue-fixes-5607-5626"><a href="https://github.com/argoproj/argo-workflows/commit/defbd600e37258c8cdf30f64d4da9f4563eb7901">defbd600e</a> fix: Default ARGO_SECURE=true. Fixes #5607 (#5626)<a class="headerlink" href="#defbd600e-fix-default-argo_securetrue-fixes-5607-5626" title="Permanent link">&para;</a></h3>
+<p>The server now starts with TLS enabled by default if a key is available. The original behaviour can be configured with <code>--secure=false</code>.</p>
+<p>If you have an ingress, you may need to add the appropriate annotations:(varies by ingress):</p>
+<div class="highlight"><pre><span></span><code><span class="nt">alb.ingress.kubernetes.io/backend-protocol</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">HTTPS</span><span class="w"></span>
+<span class="nt">nginx.ingress.kubernetes.io/backend-protocol</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">HTTPS</span><span class="w"></span>
+</code></pre></div>
+<h3 id="01d310235-choreserver-required-authentication-by-default-resolves-5206-5211"><a href="https://github.com/argoproj/argo-workflows/commit/01d310235a9349e6d552c758964cc2250a9e9616">01d310235</a> chore(server)!: Required authentication by default. Resolves #5206 (#5211)<a class="headerlink" href="#01d310235-choreserver-required-authentication-by-default-resolves-5206-5211" title="Permanent link">&para;</a></h3>
+<p>To login to the user interface, you must provide a login token. The original behaviour can be configured with <code>--auth-mode=server</code>.</p>
+<h3 id="f31e0c6f9-chore-remove-deprecated-fields-5035"><a href="https://github.com/argoproj/argo-workflows/commit/f31e0c6f92ec5e383d2f32f57a822a518cbbef86">f31e0c6f9</a> chore!: Remove deprecated fields (#5035)<a class="headerlink" href="#f31e0c6f9-chore-remove-deprecated-fields-5035" title="Permanent link">&para;</a></h3>
+<p>Some fields that were deprecated in early 2020 have been removed.  </p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Action</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>template.template and template.templateRef</td>
+<td>The workflow spec must be changed to use steps or DAG, otherwise the workflow will error.</td>
+</tr>
+<tr>
+<td>spec.ttlSecondsAfterFinished</td>
+<td>change to <code>spec.ttlStrategy.secondsAfterCompletion</code>, otherwise the workflow will not be garbage collected as expected.</td>
+</tr>
+</tbody>
+</table>
+<p>To find impacted workflows:</p>
+<div class="highlight"><pre><span></span><code>kubectl get wf --all-namespaces -o yaml <span class="p">|</span> grep templateRef
+kubectl get wf --all-namespaces -o yaml <span class="p">|</span> grep ttlSecondsAfterFinished
+</code></pre></div>
+<h3 id="c8215f972-featcontroller-key-only-artifacts-fixes-3184-4618"><a href="https://github.com/argoproj/argo-workflows/commit/c8215f972502435e6bc5b232823ecb6df919f952">c8215f972</a> feat(controller)!: Key-only artifacts. Fixes #3184 (#4618)<a class="headerlink" href="#c8215f972-featcontroller-key-only-artifacts-fixes-3184-4618" title="Permanent link">&para;</a></h3>
+<p>This change is not breaking per-se, but many users do not appear to aware of <a href="../artifact-repository-ref/">artifact repository ref</a>, so check your usage of that feature if you have problems.</p>
+
+              
+            </article>
+          </div>
+        </div>
+        
+          <a href="#" class="md-top md-icon" data-md-component="top" data-md-state="hidden">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"/></svg>
+            Back to top
+          </a>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    <nav class="md-footer__inner md-grid" aria-label="Footer">
+      
+        
+        <a href="../releases/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Releases" rel="prev">
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12z"/></svg>
+          </div>
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              Releases
+            </div>
+          </div>
+        </a>
+      
+      
+        
+        <a href="../security/" class="md-footer__link md-footer__link--next" aria-label="Next: Security" rel="next">
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              Security
+            </div>
+          </div>
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11H4z"/></svg>
+          </div>
+        </a>
+      
+    </nav>
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    <script id="__config" type="application/json">{"base": "..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.top"], "translations": {"clipboard.copy": "Copy to clipboard", "clipboard.copied": "Copied to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.placeholder": "Type to start searching", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.term.missing": "Missing", "select.version.title": "Select version"}, "search": "../assets/javascripts/workers/search.22074ed6.min.js"}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.960e086b.min.js"></script>
+      
+    
+  </body>
+</html>
