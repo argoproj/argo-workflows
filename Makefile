@@ -614,7 +614,7 @@ docs-spellcheck: /usr/local/bin/mdspell
 	npm i -g markdown-link-check
 
 .PHONY: docs-linkcheck
-docs-linkcheck:
+docs-linkcheck: /usr/local/bin/markdown-link-check
 	# check docs for broken links
 	markdown-link-check -q -c .mlc_config.json $(shell find docs -name '*.md' -not -name fields.md -not -name executor_swagger.md)
 
