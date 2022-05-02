@@ -5,14 +5,14 @@
 * [Go 1.18](https://golang.org/dl/)
 * [Yarn](https://classic.yarnpkg.com/en/docs/install/#mac-stable)
 * [Docker](https://docs.docker.com/get-docker/)
-* [protoc](http://google.github.io/proto-lens/installing-protoc.html)
-* [jq](https://stedolan.github.io/jq/download/)
+* [`protoc`](http://google.github.io/proto-lens/installing-protoc.html)
+* [`jq`](https://stedolan.github.io/jq/download/)
 * A local Kubernetes cluster (`k3d`, `kind`, or `minikube`)
 
 We recommend using [K3D](https://k3d.io/) to set up the local Kubernetes cluster since this will allow you to test RBAC
 set-up and is fast. You can set-up K3D to be part of your default kube config as follows:
 
-```shell
+```bash
 k3d cluster start --wait
 ```
 
@@ -30,7 +30,7 @@ generation does not work.
 
 Add the following to your `/etc/hosts`:
 
-```
+```text
 127.0.0.1 dex
 127.0.0.1 minio
 127.0.0.1 postgres
@@ -40,11 +40,11 @@ Add the following to your `/etc/hosts`:
 To start:
 
 * The controller, so you can run workflows.
-* MinIO (http://localhost:9000, use admin/password) so you can use artifacts:
+* MinIO (<http://localhost:9000>, use admin/password) so you can use artifacts:
 
 Run:
 
-```shell
+```bash
 make start 
 ```
 
@@ -52,49 +52,49 @@ Make sure you don't see any errors in your terminal.
 
 You can submit a workflow for testing using `kubectl`:
 
-```shell
+```bash
 kubectl create -f examples/hello-world.yaml 
 ```
 
 If you made changes to the executor, you need to build the image:
 
-```shell
+```bash
 make argoexec-image
 ```
 
-To also start the API on https://localhost:2746:
+To also start the API on <https://localhost:2746>:
 
-```shell
+```bash
 make start API=true
 ```
 
-To also start the UI on http://localhost:8080 (`UI=true` implies `API=true`):
+To also start the UI on <http://localhost:8080> (`UI=true` implies `API=true`):
 
-```shell
+```bash
 make start UI=true
 ```
 
 If you are making change to the CLI, you can build it:
 
-```shell
+```bash
 make cli 
 ./dist/argo submit examples/hello-world.yaml ;# new CLI is created as `./dist/argo` 
 ```
 
 To test the workflow archive, use `PROFILE=mysql` or `PROFILE=postgres`:
 
-```shell
+```bash
 make start PROFILE=mysql
 ```
 
 You'll have, either:
 
-* Postgres on http://localhost:5432, run `make postgres-cli` to access.
-* MySQL on http://localhost:3306, run `make mysql-cli` to access.
+* Postgres on <http://localhost:5432>, run `make postgres-cli` to access.
+* MySQL on <http://localhost:3306>, run `make mysql-cli` to access.
 
 To test SSO integration, use `PROFILE=sso`:
 
-```shell
+```bash
 make start UI=true PROFILE=sso
 ```
 
@@ -102,7 +102,7 @@ make start UI=true PROFILE=sso
 
 Start up the Argo Workflows using the following:
 
-```shell
+```bash
 make start PROFILE=mysql AUTH_MODE=client STATIC_FILES=false API=true 
 ```
 
@@ -113,7 +113,7 @@ Our CI will run those concurrently when you create a PR, which will give you fee
 
 Find the test that you want to run in `test/e2e`
 
-```shell
+```bash
 make TestArtifactServer'  
 ```
 
@@ -121,13 +121,13 @@ make TestArtifactServer'
 
 You can find the build tag at the top of the test file.
 
-  ```go
+```go
 //go:build api
 ```
 
 You need to run `make test-{buildTag}`, so for `api` that would be:
 
-```shell
+```bash
 make test-api
 ```
 
@@ -147,7 +147,7 @@ If tests run slowly or time out, factory reset your Kubernetes cluster.
 
 Before you commit code and raise a PR, always run:
 
-```shell
+```bash
 make pre-commit -B
 ```
 
@@ -159,11 +159,11 @@ Please do the following when creating your PR:
 
 Examples:
 
-```shell
+```bash
 git commit --signoff -m 'fix: Fixed broken thing. Fixes #1234'
 ```
 
-```shell
+```bash
 git commit --signoff -m 'feat: Added a new feature. Fixes #1234'
 ```
 
@@ -183,6 +183,6 @@ think takes too long to start-up).
 
 As a convenience, `CTRL=false` implies `UI=true`, so just run:
 
-```shell
+```bash
 make start CTRL=false
 ```

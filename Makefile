@@ -140,12 +140,6 @@ define protoc
 
 endef
 
-.PHONY: build
-build: clis images
-
-.PHONY: images
-images: argocli-image argoexec-image workflow-controller-image
-
 # cli
 
 .PHONY: cli
@@ -241,7 +235,8 @@ argoexec-image:
 	if [ $(DOCKER_PUSH) = true ] && [ $(IMAGE_NAMESPACE) != argoproj ] ; then docker push $(IMAGE_NAMESPACE)/$*:$(VERSION) ; fi
 
 .PHONY: codegen
-codegen: types swagger docs manifests
+codegen: types swagger manifests $(GOPATH)/bin/mockery docs/fields.md docs/cli/argo.md
+	go generate ./...
 	make --directory sdks/java generate
 	make --directory sdks/python generate
 
@@ -272,16 +267,6 @@ swagger: \
 	api/openapi-spec/swagger.json \
 	api/jsonschema/schema.json
 
-.PHONY: docs
-docs: \
-	docs/fields.md \
-	docs/cli/argo.md \
-	$(GOPATH)/bin/mockery
-	rm -Rf vendor v3
-	go mod tidy
-	# `go generate ./...` takes around 10s, so we only run on specific packages.
-	go generate ./persist/sqldb ./pkg/plugins ./pkg/apiclient/workflow ./server/auth ./server/auth/sso ./workflow/executor
-	./hack/check-env-doc.sh
 
 $(GOPATH)/bin/mockery:
 	go install github.com/vektra/mockery/v2@v2.10.0
@@ -425,6 +410,8 @@ lint: server/static/files.go $(GOPATH)/bin/golangci-lint
 test: server/static/files.go dist/argosay
 	go build ./...
 	env KUBECONFIG=/dev/null $(GOTEST) ./...
+	# marker file, based on it's modification time, we know how long ago this target was run
+	touch dist/test
 
 .PHONY: install
 install: githooks
@@ -453,15 +440,6 @@ endif
 dist/argosay:
 	mkdir -p dist
 	cp test/e2e/images/argosay/v2/argosay dist/
-
-.PHONY: pull-images
-pull-images:
-	docker pull golang:1.18
-	docker pull debian:10.7-slim
-	docker pull mysql:8
-	docker pull argoproj/argosay:v1
-	docker pull argoproj/argosay:v2
-	docker pull python:alpine3.6
 
 $(GOPATH)/bin/goreman:
 	go install github.com/mattn/goreman@v0.3.11
@@ -622,23 +600,72 @@ docs/fields.md: api/openapi-spec/swagger.json $(shell find examples -type f) hac
 docs/cli/argo.md: $(CLI_PKGS) go.sum server/static/files.go hack/cli/main.go
 	go run ./hack/cli
 
-# pre-push
+# docs
 
-.git/hooks/commit-msg: hack/git/hooks/commit-msg
-	cp -v hack/git/hooks/commit-msg .git/hooks/commit-msg
+/usr/local/bin/mdspell:
+	npm i -g markdown-spellcheck
+
+.PHONY: docs-spellcheck
+docs-spellcheck: /usr/local/bin/mdspell
+	# check docs for spelling mistakes
+	mdspell --ignore-numbers --ignore-acronyms --en-us --no-suggestions --report $(shell find docs -name '*.md' -not -name breaking-changes.md -not -name fields.md -not -name breaking-changes.md -not -name executor_swagger.md -not -path '*/cli/*')
+
+/usr/local/bin/markdown-link-check:
+	npm i -g markdown-link-check
+
+.PHONY: docs-linkcheck
+docs-linkcheck: /usr/local/bin/markdown-link-check
+	# check docs for broken links
+	markdown-link-check -q -c .mlc_config.json $(shell find docs -name '*.md' -not -name fields.md -not -name executor_swagger.md)
+
+/usr/local/bin/markdownlint:
+	npm i -g  markdownlint-cli
+
+.PHONY: docs-lint
+docs-lint: /usr/local/bin/markdownlint
+	# lint docs
+	markdownlint docs --fix --ignore docs/fields.md --ignore docs/executor_swagger.md --ignore docs/cli
+
+/usr/local/bin/mkdocs:
+	pip install mkdocs==1.2.4 mkdocs_material==8.1.9  mkdocs-spellcheck==0.2.1
+
+.PHONY: docs
+docs: /usr/local/bin/mkdocs \
+	docs-spellcheck \
+	docs-lint \
+	docs-linkcheck
+	# check environment-variables.md contains all variables mentioned in the code
+	./hack/check-env-doc.sh
+	# check all docs are listed in mkdocs.yml
+	./hack/check-mkdocs.sh
+	# build the docs
+	mkdocs build
+	# fix the fields.md document
+	go run -tags fields ./hack parseexamples
+	# tell the user the fastest way to edit docs
+	@echo "ℹ️ If you want to preview you docs, open site/index.html. If you want to edit them with hot-reload, run 'make docs-serve' to start mkdocs on port 8000"
+
+.PHONY: docs-serve
+docs-serve: docs
+	mkdocs serve
+
+# pre-commit checks
+
+.git/hooks/%: hack/git/hooks/%
+	cp hack/git/hooks/$* .git/hooks/$*
 
 .PHONY: githooks
-githooks: .git/hooks/commit-msg
+githooks: .git/hooks/pre-commit .git/hooks/commit-msg
 
 .PHONY: pre-commit
-pre-commit: githooks codegen lint
+pre-commit: codegen lint docs
+	# marker file, based on it's modification time, we know how long ago this target was run
+	touch dist/pre-commit
+
+# release
 
 release-notes: /dev/null
 	version=$(VERSION) envsubst < hack/release-notes.md > release-notes
-
-.PHONY: parse-examples
-parse-examples:
-	go run -tags fields ./hack parseexamples
 
 .PHONY: checksums
 checksums:

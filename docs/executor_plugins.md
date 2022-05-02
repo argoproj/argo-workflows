@@ -48,7 +48,7 @@ We need the following:
 
 A template executor plugin services HTTP POST requests on `/api/v1/template.execute`:
 
-```shell
+```bash
 curl http://localhost:4355/api/v1/template.execute -d \
 '{
   "workflow": {
@@ -174,14 +174,14 @@ spec:
 
 Build and install as follows:
 
-```shell
+```bash
 argo executor-plugin build .
 kubectl -n argo apply -f hello-executor-plugin-configmap.yaml
 ```
 
 Check your controller logs:
 
-```
+```text
 level=info msg="Executor plugin added" name=hello-controller-plugin
 ```
 
@@ -264,10 +264,10 @@ Transient errors are retried, all other errors are considered fatal.
 
 Fatal errors will result in failed steps.
 
-### Requeue
+### Re-Queue
 
 It might be the case that the plugin can't finish straight away. E.g. it starts a long running task. When that happens,
-you return "Pending" or "Running" a and a requeue time:
+you return "Pending" or "Running" a and a re-queue time:
 
 ```json
 {
@@ -285,7 +285,7 @@ In this example, the task will be re-queued and `template.execute` will be calle
 
 You can find the plugin's log in the agent pod's sidecar, e.g.:
 
-```shell
+```bash
 kubectl -n argo logs ${agentPodName} -c hello-executor-plugin
 ```
 
@@ -293,7 +293,7 @@ kubectl -n argo logs ${agentPodName} -c hello-executor-plugin
 
 Because plugins are just config maps, you can list them using `kubectl`:
 
-```shell
+```bash
 kubectl get cm -l workflows.argoproj.io/configmap-type=ExecutorPlugin
 ```
 
