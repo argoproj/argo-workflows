@@ -7,16 +7,14 @@ import (
 	"io"
 	"mime"
 	"net/http"
-	"os"
 	"path"
 	"strings"
-
-	apierr "k8s.io/apimachinery/pkg/api/errors"
 
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
+	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/argoproj/argo-workflows/v3/persist/sqldb"
@@ -30,20 +28,6 @@ import (
 	"github.com/argoproj/argo-workflows/v3/workflow/hydrator"
 )
 
-const (
-	// EnvArgoArtifactContentSecurityPolicy is the env variable to override the default security policy -
-	//   Content-Security-Policy HTTP header
-	EnvArgoArtifactContentSecurityPolicy = "ARGO_ARTIFACT_CONTENT_SECURITY_POLICY"
-	// 	EnvArgoArtifactXFrameOptions is the env variable to set the server X-Frame-Options header
-	EnvArgoArtifactXFrameOptions = "ARGO_ARTIFACT_X_FRAME_OPTIONS"
-	// DefaultContentSecurityPolicy is the default policy added to the Content-Security-Policy HTTP header
-	//   if no environment override has been added
-	// Validte using https://csp-evaluator.withgoogle.com
-	DefaultContentSecurityPolicy = "sandbox; base-uri 'none'; default-src 'none'; img-src 'self'; style-src 'self'"
-	// DefaultXFrameOptions is the default value for the X-Frame-Options header
-	DefaultXFrameOptions = "SAMEORIGIN"
-)
-
 type ArtifactServer struct {
 	gatekeeper           auth.Gatekeeper
 	hydrator             hydrator.Interface
@@ -51,7 +35,6 @@ type ArtifactServer struct {
 	instanceIDService    instanceid.Service
 	artDriverFactory     artifact.NewDriverFunc
 	artifactRepositories artifactrepositories.Interface
-	httpHeaderConfig     map[string]string
 }
 
 func NewArtifactServer(authN auth.Gatekeeper, hydrator hydrator.Interface, wfArchive sqldb.WorkflowArchive, instanceIDService instanceid.Service, artifactRepositories artifactrepositories.Interface) *ArtifactServer {
@@ -59,23 +42,7 @@ func NewArtifactServer(authN auth.Gatekeeper, hydrator hydrator.Interface, wfArc
 }
 
 func newArtifactServer(authN auth.Gatekeeper, hydrator hydrator.Interface, wfArchive sqldb.WorkflowArchive, instanceIDService instanceid.Service, artDriverFactory artifact.NewDriverFunc, artifactRepositories artifactrepositories.Interface) *ArtifactServer {
-	httpHeaderConfig := map[string]string{}
-
-	env, defined := os.LookupEnv(EnvArgoArtifactContentSecurityPolicy)
-	if defined {
-		httpHeaderConfig["Content-Security-Policy"] = env
-	} else {
-		httpHeaderConfig["Content-Security-Policy"] = DefaultContentSecurityPolicy
-	}
-
-	env, defined = os.LookupEnv(EnvArgoArtifactXFrameOptions)
-	if defined {
-		httpHeaderConfig["X-Frame-Options"] = env
-	} else {
-		httpHeaderConfig["X-Frame-Options"] = DefaultXFrameOptions
-	}
-
-	return &ArtifactServer{authN, hydrator, wfArchive, instanceIDService, artDriverFactory, artifactRepositories, httpHeaderConfig}
+	return &ArtifactServer{authN, hydrator, wfArchive, instanceIDService, artDriverFactory, artifactRepositories}
 }
 
 func (a *ArtifactServer) GetOutputArtifact(w http.ResponseWriter, r *http.Request) {
@@ -204,11 +171,6 @@ func (a *ArtifactServer) GetArtifactFile(w http.ResponseWriter, r *http.Request)
 			return
 		}
 		log.Debugf("this is a directory, artifact: %+v; files: %v", artifact, objects)
-
-		// set headers
-		for name, value := range a.httpHeaderConfig {
-			w.Header().Add(name, value)
-		}
 
 		key, _ := artifact.GetKey()
 		for _, object := range objects {
@@ -447,11 +409,6 @@ func (a *ArtifactServer) returnArtifact(w http.ResponseWriter, art *wfv1.Artifac
 	key, _ := art.GetKey()
 	w.Header().Add("Content-Disposition", fmt.Sprintf(`filename="%s"`, path.Base(key)))
 	w.Header().Add("Content-Type", mime.TypeByExtension(path.Ext(key)))
-
-	// Iterate and set the rest of the headers
-	for name, value := range a.httpHeaderConfig {
-		w.Header().Add(name, value)
-	}
 
 	_, err = io.Copy(w, stream)
 	if err != nil {
