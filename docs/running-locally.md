@@ -56,7 +56,7 @@ You can submit a workflow for testing using `kubectl`:
 kubectl create -f examples/hello-world.yaml 
 ```
 
-If you made changes to how the executor, you need to build the image:
+If you made changes to the executor, you need to build the image:
 
 ```shell
 make argoexec-image
