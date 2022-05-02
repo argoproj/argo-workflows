@@ -726,9 +726,6 @@ type Template struct {
 	// Timeout allows to set the total node execution timeout duration counting from the node's start time.
 	// This duration also includes time in which the node spends in Pending state. This duration may not be applied to Step or DAG templates.
 	Timeout string `json:"timeout,omitempty" protobuf:"bytes,38,opt,name=timeout"`
-
-	// ArtifactGC describes the strategy to use when to deleting artifacts from executed templates
-	ArtifactGC *ArtifactGC `json:"artifactGC,omitempty" protobuf:"bytes,44,opt,name=artifactGC"`
 }
 
 // SetType will set the template object based on template type.
@@ -759,14 +756,6 @@ func (tmpl *Template) setTemplateObjs(steps []ParallelSteps, dag *DAGTemplate, c
 	tmpl.Resource = resource
 	tmpl.Data = data
 	tmpl.Suspend = suspend
-}
-
-func (tmpl *Template) GetOutputs() *Outputs {
-	return &tmpl.Outputs
-}
-
-func (tmpl *Template) GetArtifactGC() *ArtifactGC {
-	return tmpl.ArtifactGC
 }
 
 // GetBaseTemplate returns a base template content.
@@ -940,6 +929,18 @@ type Artifact struct {
 
 	// FromExpression, if defined, is evaluated to specify the value for the artifact
 	FromExpression string `json:"fromExpression,omitempty" protobuf:"bytes,11,opt,name=fromExpression"`
+
+	// ArtifactGC describes the strategy to use when to deleting an artifact from completed or deleted workflows
+	ArtifactGC *ArtifactGC `json:"artifactGC,omitempty" protobuf:"bytes,12,opt,name=artifactGC"`
+}
+
+// ArtifactGC returns the ArtifactGC that was defined by the artifact.  If none was provided, a default value is returned.
+func (a *Artifact) GetArtifactGC() *ArtifactGC {
+	if a.ArtifactGC == nil {
+		return &ArtifactGC{Strategy: ArtifactGCNever}
+	}
+
+	return a.ArtifactGC
 }
 
 // CleanPath validates and cleans the artifact path.
@@ -1284,15 +1285,14 @@ func (w *Workflow) SearchArtifacts(q *ArtifactSearchQuery) ArtifactSearchResults
 	var results ArtifactSearchResults
 
 	for _, n := range w.Status.Nodes {
-		t := w.GetTemplateByName(n.TemplateName)
 		for _, a := range n.GetOutputs().GetArtifacts() {
 			match := true
 			if q.anyArtifactGCStrategy() {
-				templateStrategy := t.GetArtifactGC().GetStrategy()
+				artifactStrategy := a.GetArtifactGC().GetStrategy()
 				wfStrategy := w.Spec.GetArtifactGC().GetStrategy()
 				strategy := wfStrategy
-				if templateStrategy != ArtifactGCNever {
-					strategy = templateStrategy
+				if artifactStrategy != ArtifactGCNever {
+					strategy = artifactStrategy
 				}
 				if !q.ArtifactGCStrategies[strategy] {
 					match = false
@@ -1335,6 +1335,9 @@ type Outputs struct {
 }
 
 func (o *Outputs) GetArtifacts() Artifacts {
+	if o == nil {
+		return nil
+	}
 	return o.Artifacts
 }
 
@@ -2112,6 +2115,9 @@ func (n *NodeStatus) GetTemplateRef() *TemplateRef {
 }
 
 func (n *NodeStatus) GetOutputs() *Outputs {
+	if n == nil {
+		return nil
+	}
 	return n.Outputs
 }
 
