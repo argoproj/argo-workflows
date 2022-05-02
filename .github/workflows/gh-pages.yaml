@@ -4,13 +4,9 @@ on:
   push:
     branches:
       - master
-    paths:
-      - 'docs/**'
   pull_request:
     branches:
       - master
-    paths:
-      - 'docs/**'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
