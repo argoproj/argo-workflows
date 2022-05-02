@@ -4096,6 +4096,13 @@ ZipStrategy will unzip zipped input artifacts
 
 _No description available_
 
+<details>
+<summary>Examples with this field (click to open)</summary>
+<br>
+
+- [`webhdfs-input-output-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/webhdfs-input-output-artifacts.yaml)
+</details>
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|

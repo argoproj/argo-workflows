@@ -956,6 +956,46 @@ func (s *FunctionalSuite) TestPauseAfterAndBefore() {
 		WaitForWorkflow(fixtures.ToBeSucceeded)
 }
 
+func (s *FunctionalSuite) TestInputArtifactHttp() {
+	s.Given().
+		Workflow("@testdata/input-artifact-http.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeSucceeded)
+}
+
+func (s *FunctionalSuite) TestOutputArtifactHttp() {
+	s.Given().
+		Workflow("@testdata/output-artifact-http.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeSucceeded)
+}
+
+func (s *FunctionalSuite) TestBasicAuthArtifactHttp() {
+	s.Given().
+		Workflow("@testdata/basic-auth-artifact-http.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeSucceeded)
+}
+
+func (s *FunctionalSuite) TestOAuthArtifactHttp() {
+	s.Given().
+		Workflow("@testdata/oauth-artifact-http.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeSucceeded)
+}
+
+func (s *FunctionalSuite) TestClientCertAuthArtifactHttp() {
+	s.Given().
+		Workflow("@testdata/clientcert-auth-artifact-http.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeSucceeded)
+}
+
 func TestFunctionalSuite(t *testing.T) {
 	suite.Run(t, new(FunctionalSuite))
 }
