@@ -1257,6 +1257,13 @@ type ArtifactSearchQuery struct {
 	NodeId               string                      `json:"nodeId,omitempty" protobuf:"bytes,4,rep,name=nodeId"`
 }
 
+type ArtifactSearchResult struct {
+	Artifact `protobuf:"bytes,1,opt,name=artifact"`
+	NodeID   string `protobuf:"bytes,2,opt,name=nodeID"`
+}
+
+type ArtifactSearchResults []ArtifactSearchResult
+
 func NewArtifactSearchQuery() *ArtifactSearchQuery {
 	var q ArtifactSearchQuery
 	q.ArtifactGCStrategies = make(map[ArtifactGCStrategy]bool)
@@ -1272,9 +1279,9 @@ func (q *ArtifactSearchQuery) anyArtifactGCStrategy() bool {
 	return false
 }
 
-func (w *Workflow) SearchArtifacts(q *ArtifactSearchQuery) Artifacts {
+func (w *Workflow) SearchArtifacts(q *ArtifactSearchQuery) ArtifactSearchResults {
 
-	var artifacts Artifacts
+	var results ArtifactSearchResults
 
 	for _, n := range w.Status.Nodes {
 		t := w.GetTemplateByName(n.TemplateName)
@@ -1301,11 +1308,11 @@ func (w *Workflow) SearchArtifacts(q *ArtifactSearchQuery) Artifacts {
 				match = false
 			}
 			if match == true {
-				artifacts = append(artifacts, a)
+				results = append(results, ArtifactSearchResult{Artifact: a, NodeID: n.ID})
 			}
 		}
 	}
-	return artifacts
+	return results
 }
 
 // Outputs hold parameters, artifacts, and results from a step
