@@ -1,7 +1,6 @@
 # Quick Start
 
-!!! TIP
-    If you want to try out Argo Workflows and don't want to set-up Kubernetes cluster, try the [Katacoda course](training.md#hands-on).
+💡 If you want to try out Argo Workflows and don't want to set-up Kubernetes cluster, try the [Katacoda course](training.md#hands-on).
 
 To see how Argo Workflows work, you can install it and run examples of simple workflows and workflows that use artifacts.
 

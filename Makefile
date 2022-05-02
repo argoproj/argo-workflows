@@ -410,6 +410,7 @@ lint: server/static/files.go $(GOPATH)/bin/golangci-lint
 test: server/static/files.go dist/argosay
 	go build ./...
 	env KUBECONFIG=/dev/null $(GOTEST) ./...
+	# marker file so we can see how old it is the know how long ago the target was run
 	touch dist/test
 
 .PHONY: install
@@ -619,7 +620,7 @@ docs-linkcheck:
 	npm i -g  markdownlint-cli
 
 .PHONY: docs-lint
-docs-lint:
+docs-lint: /usr/local/bin/markdownlint
 	markdownlint docs --fix --ignore docs/fields.md --ignore docs/executor_swagger.md --ignore docs/cli
 
 /usr/local/bin/mkdocs:
@@ -650,6 +651,7 @@ githooks: .git/hooks/pre-commit .git/hooks/commit-msg
 
 .PHONY: pre-commit
 pre-commit: codegen lint docs
+	# marker file so we can see how old it is the know how long ago this target was run
 	touch dist/pre-commit
 
 # release
