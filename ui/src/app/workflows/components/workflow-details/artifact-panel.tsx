@@ -22,7 +22,8 @@ export const ArtifactPanel = ({
     archived?: boolean;
     artifactRepository: ArtifactRepository;
 }) => {
-    const downloadUrl = services.workflows.getArtifactDownloadUrl(workflow, artifact.nodeId, artifact.name, archived, artifact.artifactNameDiscriminator === 'input');
+    const input = artifact.artifactNameDiscriminator === 'input';
+    const downloadUrl = services.workflows.getArtifactDownloadUrl(workflow, artifact.nodeId, artifact.name, archived, input);
 
     const urn = artifactURN(artifact, artifactRepository);
     const key = artifactKey(artifact);
@@ -34,7 +35,7 @@ export const ArtifactPanel = ({
     const [error, setError] = useState<Error>();
     const [object, setObject] = useState<any>();
 
-    const tgz = !artifact.archive?.none; // the key can be wrong about the file type
+    const tgz = !input && !artifact.archive?.none; // the key can be wrong about the file type
     const supported = !tgz && (isDir || ['gif', 'jpg', 'jpeg', 'json', 'html', 'png', 'txt'].includes(ext));
     useEffect(() => setShow(supported), [downloadUrl, ext]);
 
@@ -43,7 +44,7 @@ export const ArtifactPanel = ({
         setError(null);
         if (ext === 'json') {
             requests
-                .get(downloadUrl)
+                .get(services.workflows.artifactPath(workflow, artifact.nodeId, artifact.name, archived, input))
                 .then(r => r.text)
                 .then(setObject)
                 .catch(setError);

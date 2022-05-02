@@ -67,12 +67,6 @@ spec:
               key: styles.css
             archive:
               none: { }
-          - name: html
-            path: /out/index.html
-            s3:
-              key: index.html
-            archive:
-              none: { }
           # this artifact tries to run javascript, in the UI this is prevented by our CSP sandbox
           - name: xss
             path: /out/xss.html
