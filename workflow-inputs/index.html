@@ -3761,7 +3761,7 @@
 <p><code>Workflows</code> and <code>template</code>s operate on a set of defined parameters and arguments that are supplied to the running container. The precise details of how to manage the inputs can be confusing; this article attempts to clarify concepts and provide simple working examples to illustrate the various configuration options.</p>
 <p>The examples below are limited to <code>DAGTemplate</code>s and mainly focused on <code>parameters</code>, but similar reasoning applies to the other types of <code>template</code>s.</p>
 <h3 id="parameter-inputs">Parameter Inputs<a class="headerlink" href="#parameter-inputs" title="Permanent link">&para;</a></h3>
-<p>First, some clarification of terms is needed. For a glossary reference, see <a href="https://argoproj.github.io/argo-workflows/core-concepts/">Argo Core Concepts</a>.</p>
+<p>First, some clarification of terms is needed. For a glossary reference, see <a href="../workflow-concepts/">Argo Core Concepts</a>.</p>
 <p>A <code>workflow</code> provides <code>arguments</code>, which are passed in to the entry point template. A <code>template</code> defines <code>inputs</code> which are then provided by template callers (such as <code>steps</code>, <code>dag</code>, or even a <code>workflow</code>). The structure of both is identical.</p>
 <p>For example, in a <code>Workflow</code>, one parameter would look like this:</p>
 <div class="highlight"><pre><span></span><code><span class="nt">arguments</span><span class="p">:</span><span class="w"></span>
