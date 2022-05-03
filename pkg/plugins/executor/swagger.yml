@@ -3854,8 +3854,6 @@ definitions:
         $ref: '#/definitions/Affinity'
       archiveLocation:
         $ref: '#/definitions/ArtifactLocation'
-      artifactGC:
-        $ref: '#/definitions/ArtifactGC'
       automountServiceAccountToken:
         description: |-
           AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods.
