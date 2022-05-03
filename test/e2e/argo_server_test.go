@@ -1096,6 +1096,7 @@ func (s *ArgoServerSuite) TestArtifactServer() {
 
 		resp.Body().
 			Contains("<a href=\"subdirectory/\">subdirectory/</a>")
+
 	})
 
 	// In this case, the filename specified in the request is actually a directory
@@ -1107,6 +1108,7 @@ func (s *ArgoServerSuite) TestArtifactServer() {
 		resp.Body().
 			Contains("<a href=\"sub-file-1\">sub-file-1</a>").
 			Contains("<a href=\"sub-file-2\">sub-file-2</a>")
+
 	})
 
 	// In this case, the filename specified in the request is a subdirectory file
