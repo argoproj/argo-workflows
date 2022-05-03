@@ -7,15 +7,19 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 	v1 "k8s.io/client-go/listers/core/v1"
 )
 
+type Cache interface {
+	Get(key string) (any, bool)
+	Add(key string, value any)
+}
+
 type ResourceCache struct {
 	ctx    context.Context
-	cache  *lruTtlCache
+	cache  Cache
 	client kubernetes.Interface
 	v1.ServiceAccountLister
 }
@@ -41,7 +45,6 @@ func (c *ResourceCache) GetSecret(namespace string, secretName string) (*corev1.
 	cacheKey := c.getSecretCacheKey(namespace, secretName)
 	if secret, ok := c.cache.Get(cacheKey); ok {
 		if secret, ok := secret.(*corev1.Secret); ok {
-			log.Infof("Get secret %s from cache", cacheKey)
 			return secret, nil
 		}
 	}
@@ -51,7 +54,6 @@ func (c *ResourceCache) GetSecret(namespace string, secretName string) (*corev1.
 		return nil, err
 	}
 
-	log.Infof("Get secret %s from server", cacheKey)
 	c.cache.Add(cacheKey, secret)
 	return secret, nil
 }
