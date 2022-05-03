@@ -19,7 +19,7 @@ Cherry-pick a the first commit. Run `make test` locally before pushing. If the b
 
 Don't cherry-pick a second commit until the CI passes. It is much harder to know the cause if you do many issues at once.
 
-Cherry-picking and then waiting for CI will be slow. 
+Cherry-picking and then waiting for CI will be slow.
 
 Run `make test` locally before pushing each cherry-picked commit.
 
