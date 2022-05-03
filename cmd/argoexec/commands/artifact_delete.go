@@ -24,7 +24,7 @@ func NewArtifactDeleteCommand() *cobra.Command {
 				return fmt.Errorf("failed to unmarshal artifact: %w", err)
 			}
 
-			drv, err := artifacts.NewDriver(cmd.Context(), a, &x{})
+			drv, err := artifacts.NewDriver(cmd.Context(), a, &resources{})
 			if err != nil {
 				return fmt.Errorf("failed to create driver: %w", err)
 			}
@@ -37,14 +37,14 @@ func NewArtifactDeleteCommand() *cobra.Command {
 	}
 }
 
-type x struct{}
+type resources struct{}
 
-func (x x) GetSecret(ctx context.Context, name, key string) (string, error) {
+func (r resources) GetSecret(ctx context.Context, name, key string) (string, error) {
 	file, err := os.ReadFile(filepath.Join(common.SecretVolMountPath, name, key))
 	return string(file), err
 
 }
 
-func (x x) GetConfigMapKey(ctx context.Context, name, key string) (string, error) {
-	panic("implement me")
+func (r resources) GetConfigMapKey(ctx context.Context, name, key string) (string, error) {
+	return "", fmt.Errorf("not supported")
 }

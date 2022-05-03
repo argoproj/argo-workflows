@@ -5,7 +5,7 @@
 Artifact GC allow you to specify a workflow whose output artifacts are deleted from their artifact repository (e.g. S3
 bucket) on either completion or deletion of the workflow.
 
-[Example](../examples/artifact-gc-workflow.yaml)
+[Example](https://github.com/alexec/argo-workflows/blob/art-gc-poc/examples/artifact-gc-workflow.yaml)
 
 A strategy specified on the artifact take precedence over the strategy specified on the workflow spec. This allows you
 to set a default policy for a workflow (e.g. all artifacts are deleted when the workflow completes), and override for
@@ -41,4 +41,4 @@ If the artifact will never be deleted, because of some problem, remove the final
 By default, we have assumed you do not want or need to run many garbage collection pods at once. That, unlike workflows,
 you're happy for artifact GC to take a bit of time, with the benefit of preventing a stamped of pods being created,
 potentially overloading your Kubernetes cluster. By default, the maximum concurrency (set
-by `ARGO_ARTIFACT_MAX_CONCURRENT_PODS`) is `8`. 
+by `ARGO_ARTIFACT_MAX_CONCURRENT_PODS`) is `8`.

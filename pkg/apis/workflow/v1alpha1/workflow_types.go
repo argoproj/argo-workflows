@@ -948,13 +948,6 @@ func (a *Artifact) GetArtifactGC() *ArtifactGC {
 	return a.ArtifactGC
 }
 
-func (a *Artifact) GetArchive() *ArchiveStrategy {
-	if a == nil || a.Archive == nil {
-		return &ArchiveStrategy{}
-	}
-	return a.Archive
-}
-
 // CleanPath validates and cleans the artifact path.
 func (a *Artifact) CleanPath() error {
 	if a.Path == "" {
@@ -2952,6 +2945,13 @@ func (args *Arguments) GetParameterByName(name string) *Parameter {
 		}
 	}
 	return nil
+}
+
+func (a *Artifact) GetArchive() *ArchiveStrategy {
+	if a == nil || a.Archive == nil {
+		return &ArchiveStrategy{}
+	}
+	return a.Archive
 }
 
 func (w *Workflow) GetTemplates() []Template {
