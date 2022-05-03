@@ -10,12 +10,12 @@ import (
 func TestNewTimedCache(t *testing.T) {
 
 	t.Run("NewTimedCache should return a new instance", func(t *testing.T) {
-		cache := NewTimedCache[string, string](time.Second, 1)
+		cache := NewTimedCache(time.Second, 1)
 		assert.NotNil(t, cache)
 	})
 
 	t.Run("TimedCache should cache based on LRU size", func(t *testing.T) {
-		cache := NewTimedCache[string, string](time.Second*10, 2)
+		cache := NewTimedCache(time.Second*10, 2)
 		cache.Add("one", "one")
 		cache.Add("two", "two")
 
@@ -37,7 +37,7 @@ func TestNewTimedCache(t *testing.T) {
 	})
 
 	t.Run("TimedCache should cache based on timeout", func(t *testing.T) {
-		cache := NewTimedCache[string, string](time.Millisecond*5, 2)
+		cache := NewTimedCache(time.Millisecond*5, 2)
 		cache.Add("one", "one")
 
 		_, ok := cache.Get("one")

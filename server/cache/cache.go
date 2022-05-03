@@ -14,7 +14,7 @@ import (
 
 type ResourceCache struct {
 	ctx         context.Context
-	secretCache *timedCache[string, *corev1.Secret]
+	secretCache *timedCache
 	client      kubernetes.Interface
 	v1.ServiceAccountLister
 }
@@ -23,7 +23,7 @@ func NewResourceCacheWithTimeout(client kubernetes.Interface, ctx context.Contex
 	informerFactory := informers.NewSharedInformerFactoryWithOptions(client, timeout, informers.WithNamespace(namespace))
 	cache := &ResourceCache{
 		ctx:                  ctx,
-		secretCache:          NewTimedCache[string, *corev1.Secret](timeout, 2000),
+		secretCache:          NewTimedCache(timeout, 2000),
 		client:               client,
 		ServiceAccountLister: informerFactory.Core().V1().ServiceAccounts().Lister(),
 	}
@@ -39,7 +39,9 @@ func NewResourceCache(client kubernetes.Interface, ctx context.Context, namespac
 func (c *ResourceCache) GetSecret(namespace string, secretName string) (*corev1.Secret, error) {
 	cacheKey := c.getSecretCacheKey(namespace, secretName)
 	if secret, ok := c.secretCache.Get(cacheKey); ok {
-		return secret, nil
+		if secret, ok := secret.(*corev1.Secret); ok {
+			return secret, nil
+		}
 	}
 
 	secret, err := c.getSecretFromServer(namespace, secretName)

@@ -6,44 +6,42 @@ import (
 	"k8s.io/utils/lru"
 )
 
-type timedCache[Key comparable, Value any] struct {
+type timedCache struct {
 	timeout time.Duration
 	cache   *lru.Cache
 }
 
 type timeValueHolder struct {
 	createTime time.Time
-	value      interface{}
+	value      any
 }
 
-func NewTimedCache[key comparable, value any](timeout time.Duration, size int) *timedCache[key, value] {
-	return &timedCache[key, value]{
+func NewTimedCache(timeout time.Duration, size int) *timedCache {
+	return &timedCache{
 		timeout: timeout,
 		cache:   lru.New(size),
 	}
 }
 
-func (c *timedCache[Key, Value]) Get(key Key) (Value, bool) {
+func (c *timedCache) Get(key string) (any, bool) {
 	if data, ok := c.cache.Get(key); ok {
 		holder := data.(*timeValueHolder)
 		deadline := holder.createTime.Add(c.timeout)
-		if c.getCurrentTime().Before(deadline) {
-			if value, ok := holder.value.(Value); ok {
-				return value, true
-			}
+		if getCurrentTime().Before(deadline) {
+			return holder.value, true
 		}
 		c.cache.Remove(key)
 	}
-	return *new(Value), false
+	return nil, false
 }
 
-func (c *timedCache[Key, Value]) Add(key Key, value Value) {
+func (c *timedCache) Add(key string, value any) {
 	c.cache.Add(key, &timeValueHolder{
-		createTime: c.getCurrentTime(),
+		createTime: getCurrentTime(),
 		value:      value,
 	})
 }
 
-func (c *timedCache[Key, Value]) getCurrentTime() time.Time {
+func getCurrentTime() time.Time {
 	return time.Now().UTC()
 }
