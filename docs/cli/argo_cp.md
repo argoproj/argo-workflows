@@ -3,7 +3,7 @@
 copy artifacts from workflow
 
 ```
-argo cp outputDir ... [flags]
+argo cp my-wf output-directory ... [flags]
 ```
 
 ### Examples
@@ -11,11 +11,11 @@ argo cp outputDir ... [flags]
 ```
 # Copy a workflow's artifacts to a local output directory:
 
-  argo cp output-directory --workflow-name=my-wf
+  argo cp my-wf output-directory
 
 # Copy artifacts from a specific node in a workflow to a local output directory:
 
-  argo cp output-directory --workflow-name=my-wf --node-id=my-wf-node-id-123
+  argo cp my-wf output-directory --node-id=my-wf-node-id-123
 
 ```
 
@@ -26,7 +26,6 @@ argo cp outputDir ... [flags]
   -h, --help                   help for cp
       --node-id string         id of node in workflow
       --template-name string   name of template in workflow
-      --workflow-name string   name of workflow
 ```
 
 ### Options inherited from parent commands

@@ -1339,7 +1339,7 @@ func (s *CLISuite) TestWorkflowCopyArtifact() {
 		SubmitWorkflow().
 		WaitForWorkflow().
 		Given().
-		RunCli([]string{"cp", "outputDir", "--workflow-name", "@latest"}, func(t *testing.T, output string, err error) {
+		RunCli([]string{"cp", "@latest", "outputDir"}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {
 				assert.Contains(t, output, fmt.Sprintf("Stored artifact main.log"))
 				assert.Contains(t, output, fmt.Sprintf("Stored artifact hello_world.tgz"))
@@ -1353,7 +1353,7 @@ func (s *CLISuite) TestWorkflowCopyArtifact() {
 		SubmitWorkflow().
 		WaitForWorkflow().
 		Given().
-		RunCli([]string{"cp", "outputDir", "--workflow-name", "@latest", "--template-name", "bye"}, func(t *testing.T, output string, err error) {
+		RunCli([]string{"cp", "@latest", "outputDir", "--template-name", "bye"}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {
 				assert.Contains(t, output, fmt.Sprintf("Stored artifact main.log"))
 				assert.Contains(t, output, fmt.Sprintf("Stored artifact bye_world.tgz"))
@@ -1367,7 +1367,7 @@ func (s *CLISuite) TestWorkflowCopyArtifact() {
 		SubmitWorkflow().
 		WaitForWorkflow().
 		Given().
-		RunCli([]string{"cp", "outputDir", "--workflow-name", "@latest", "--artifact-name", "hello_world"}, func(t *testing.T, output string, err error) {
+		RunCli([]string{"cp", "@latest", "outputDir", "--artifact-name", "hello_world"}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {
 				assert.NotContains(t, output, fmt.Sprintf("Stored artifact main.log"))
 				assert.NotContains(t, output, fmt.Sprintf("Stored artifact bye_world.tgz"))
