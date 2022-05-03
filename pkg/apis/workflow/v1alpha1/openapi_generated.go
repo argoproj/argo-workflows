@@ -287,13 +287,6 @@ func schema_pkg_apis_workflow_v1alpha1_Artifact(ref common.ReferenceCallback) co
 							Format:      "",
 						},
 					},
-					"deleted": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Deleted if this is been deleted.",
-							Type:        []string{"boolean"},
-							Format:      "",
-						},
-					},
 					"s3": {
 						SchemaProps: spec.SchemaProps{
 							Description: "S3 contains S3 artifact location details",
@@ -385,7 +378,7 @@ func schema_pkg_apis_workflow_v1alpha1_Artifact(ref common.ReferenceCallback) co
 					},
 					"artifactGC": {
 						SchemaProps: spec.SchemaProps{
-							Description: "ArtifactGC describes when to delete the artifact",
+							Description: "ArtifactGC describes the strategy to use when to deleting an artifact from completed or deleted workflows",
 							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactGC"),
 						},
 					},
@@ -428,13 +421,6 @@ func schema_pkg_apis_workflow_v1alpha1_ArtifactLocation(ref common.ReferenceCall
 					"archiveLogs": {
 						SchemaProps: spec.SchemaProps{
 							Description: "ArchiveLogs indicates if the container logs should be archived",
-							Type:        []string{"boolean"},
-							Format:      "",
-						},
-					},
-					"deleted": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Deleted if this is been deleted.",
 							Type:        []string{"boolean"},
 							Format:      "",
 						},
@@ -538,13 +524,6 @@ func schema_pkg_apis_workflow_v1alpha1_ArtifactPaths(ref common.ReferenceCallbac
 							Format:      "",
 						},
 					},
-					"deleted": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Deleted if this is been deleted.",
-							Type:        []string{"boolean"},
-							Format:      "",
-						},
-					},
 					"s3": {
 						SchemaProps: spec.SchemaProps{
 							Description: "S3 contains S3 artifact location details",
@@ -636,7 +615,7 @@ func schema_pkg_apis_workflow_v1alpha1_ArtifactPaths(ref common.ReferenceCallbac
 					},
 					"artifactGC": {
 						SchemaProps: spec.SchemaProps{
-							Description: "ArtifactGC describes when to delete the artifact",
+							Description: "ArtifactGC describes the strategy to use when to deleting an artifact from completed or deleted workflows",
 							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactGC"),
 						},
 					},
@@ -811,12 +790,6 @@ func schema_pkg_apis_workflow_v1alpha1_ArtifactSearchQuery(ref common.ReferenceC
 					"nodeId": {
 						SchemaProps: spec.SchemaProps{
 							Type:   []string{"string"},
-							Format: "",
-						},
-					},
-					"deleted": {
-						SchemaProps: spec.SchemaProps{
-							Type:   []string{"boolean"},
 							Format: "",
 						},
 					},

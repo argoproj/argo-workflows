@@ -7,17 +7,16 @@ import (
 	"io"
 	"mime"
 	"net/http"
-	"os"
 	"path"
 	"strings"
-
-	apierr "k8s.io/apimachinery/pkg/api/errors"
 
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
+	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/utils/env"
 
 	"github.com/argoproj/argo-workflows/v3/persist/sqldb"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
@@ -26,20 +25,8 @@ import (
 	"github.com/argoproj/argo-workflows/v3/util/instanceid"
 	"github.com/argoproj/argo-workflows/v3/workflow/artifactrepositories"
 	artifact "github.com/argoproj/argo-workflows/v3/workflow/artifacts"
+	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/hydrator"
-)
-
-const (
-	// EnvArgoArtifactContentSecurityPolicy is the env variable to override the default security policy -
-	//   Content-Security-Policy HTTP header
-	EnvArgoArtifactContentSecurityPolicy = "ARGO_ARTIFACT_CONTENT_SECURITY_POLICY"
-	// 	EnvArgoArtifactXFrameOptions is the env variable to set the server X-Frame-Options header
-	EnvArgoArtifactXFrameOptions = "ARGO_ARTIFACT_X_FRAME_OPTIONS"
-	// DefaultContentSecurityPolicy is the default policy added to the Content-Security-Policy HTTP header
-	//   if no environment override has been added
-	DefaultContentSecurityPolicy = "sandbox; base-uri 'none'; default-src 'none'; img-src 'self'; style-src 'self'"
-	// DefaultXFrameOptions is the default value for the X-Frame-Options header
-	DefaultXFrameOptions = "SAMEORIGIN"
 )
 
 type ArtifactServer struct {
@@ -49,7 +36,6 @@ type ArtifactServer struct {
 	instanceIDService    instanceid.Service
 	artDriverFactory     artifact.NewDriverFunc
 	artifactRepositories artifactrepositories.Interface
-	httpHeaderConfig     map[string]string
 }
 
 func NewArtifactServer(authN auth.Gatekeeper, hydrator hydrator.Interface, wfArchive sqldb.WorkflowArchive, instanceIDService instanceid.Service, artifactRepositories artifactrepositories.Interface) *ArtifactServer {
@@ -57,23 +43,7 @@ func NewArtifactServer(authN auth.Gatekeeper, hydrator hydrator.Interface, wfArc
 }
 
 func newArtifactServer(authN auth.Gatekeeper, hydrator hydrator.Interface, wfArchive sqldb.WorkflowArchive, instanceIDService instanceid.Service, artDriverFactory artifact.NewDriverFunc, artifactRepositories artifactrepositories.Interface) *ArtifactServer {
-	httpHeaderConfig := map[string]string{}
-
-	env, defined := os.LookupEnv(EnvArgoArtifactContentSecurityPolicy)
-	if defined {
-		httpHeaderConfig["Content-Security-Policy"] = env
-	} else {
-		httpHeaderConfig["Content-Security-Policy"] = DefaultContentSecurityPolicy
-	}
-
-	env, defined = os.LookupEnv(EnvArgoArtifactXFrameOptions)
-	if defined {
-		httpHeaderConfig["X-Frame-Options"] = env
-	} else {
-		httpHeaderConfig["X-Frame-Options"] = DefaultXFrameOptions
-	}
-
-	return &ArtifactServer{authN, hydrator, wfArchive, instanceIDService, artDriverFactory, artifactRepositories, httpHeaderConfig}
+	return &ArtifactServer{authN, hydrator, wfArchive, instanceIDService, artDriverFactory, artifactRepositories}
 }
 
 func (a *ArtifactServer) GetOutputArtifact(w http.ResponseWriter, r *http.Request) {
@@ -84,10 +54,180 @@ func (a *ArtifactServer) GetInputArtifact(w http.ResponseWriter, r *http.Request
 	a.getArtifact(w, r, true)
 }
 
+// single endpoint to be able to handle serving directories as well as files, both those that have been archived and those that haven't
+// Valid requests:
+//  /artifact-files/{namespace}/[archived-workflows|workflows]/{id}/{nodeId}/outputs/{artifactName}
+//  /artifact-files/{namespace}/[archived-workflows|workflows]/{id}/{nodeId}/outputs/{artifactName}/{fileName}
+//  /artifact-files/{namespace}/[archived-workflows|workflows]/{id}/{nodeId}/outputs/{artifactName}/{fileDir}/.../{fileName}
+// 'id' field represents 'uid' for archived workflows and 'name' for non-archived
+func (a *ArtifactServer) GetArtifactFile(w http.ResponseWriter, r *http.Request) {
+
+	const (
+		namespaceIndex      = 2
+		archiveDiscrimIndex = 3
+		idIndex             = 4
+		nodeIdIndex         = 5
+		directionIndex      = 6
+		artifactNameIndex   = 7
+		fileNameFirstIndex  = 8
+	)
+
+	var fileName *string
+	requestPath := strings.Split(r.URL.Path, "/")
+	if len(requestPath) >= fileNameFirstIndex+1 { // they included a file path in the URL (not just artifact name)
+		joined := strings.Join(requestPath[fileNameFirstIndex:], "/")
+		// sanitize file name
+		cleanedPath := path.Clean(joined)
+		fileName = &cleanedPath
+	} else if len(requestPath) < artifactNameIndex+1 {
+		a.httpBadRequestError(w)
+		return
+	}
+
+	namespace := requestPath[namespaceIndex]
+	archiveDiscriminator := requestPath[archiveDiscrimIndex]
+	id := requestPath[idIndex] // if archiveDiscriminator == "archived-workflows", this represents workflow UID; if archiveDiscriminator == "workflows", this represents workflow name
+	nodeId := requestPath[nodeIdIndex]
+	direction := requestPath[directionIndex]
+	artifactName := requestPath[artifactNameIndex]
+
+	if direction != "outputs" { // for now we just handle output artifacts
+		a.httpBadRequestError(w)
+		return
+	}
+
+	// verify user is authorized
+	ctx, err := a.gateKeeping(r, types.NamespaceHolder(namespace))
+	if err != nil {
+		a.unauthorizedError(w)
+		return
+	}
+
+	var wf *wfv1.Workflow
+
+	// retrieve the Workflow
+	switch archiveDiscriminator {
+	case "workflows":
+		workflowName := id
+		log.WithFields(log.Fields{"namespace": namespace, "workflowName": workflowName, "nodeId": nodeId, "artifactName": artifactName}).Info("Get artifact file")
+
+		wf, err = a.getWorkflowAndValidate(ctx, namespace, workflowName)
+		if err != nil {
+			a.serverInternalError(err, w)
+			return
+		}
+	case "archived-workflows":
+		uid := id
+		log.WithFields(log.Fields{"namespace": namespace, "uid": uid, "nodeId": nodeId, "artifactName": artifactName}).Info("Get artifact file")
+
+		wf, err = a.wfArchive.GetWorkflow(uid)
+		if err != nil {
+			a.serverInternalError(err, w)
+			return
+		}
+
+		// check that the namespace passed in matches this workflow's namespace
+		if wf.GetNamespace() != namespace {
+			a.httpBadRequestError(w)
+			return
+		}
+
+		// return 401 if the client does not have permission to get wf
+		err = a.validateAccess(ctx, wf)
+		if err != nil {
+			a.unauthorizedError(w)
+			return
+		}
+	default:
+		a.httpBadRequestError(w)
+		return
+	}
+
+	artifact, driver, err := a.getArtifactAndDriver(ctx, nodeId, artifactName, false, wf, fileName)
+	if err != nil {
+		a.serverInternalError(err, w)
+		return
+	}
+
+	isDir := strings.HasSuffix(r.URL.Path, "/")
+
+	if !isDir {
+		isDir, err := driver.IsDirectory(artifact)
+		if err != nil {
+			a.serverInternalError(err, w)
+			return
+		}
+		if isDir {
+			http.Redirect(w, r, r.URL.String()+"/", http.StatusTemporaryRedirect)
+			return
+		}
+	}
+
+	if isDir {
+		// return an html page to the user
+
+		objects, err := driver.ListObjects(artifact)
+		if err != nil {
+			a.serverInternalError(err, w)
+			return
+		}
+		log.Debugf("this is a directory, artifact: %+v; files: %v", artifact, objects)
+
+		key, _ := artifact.GetKey()
+		for _, object := range objects {
+
+			// object is prefixed the key, we must trim it
+			dir, file := path.Split(strings.TrimPrefix(object, key+"/"))
+
+			// if dir is empty string, we are in the root dir
+			// we found in index.html, abort and redirect there
+			if dir == "" && file == "index.html" {
+				w.Header().Set("Location", r.URL.String()+"index.html")
+				w.WriteHeader(http.StatusTemporaryRedirect)
+				return
+			}
+		}
+
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("<html><body><ul>\n"))
+
+		dirs := map[string]bool{} // to de-dupe sub-dirs
+
+		_, _ = w.Write([]byte(fmt.Sprintf("<li><a href=\"%s\">%s</a></li>\n", "..", "..")))
+
+		for _, object := range objects {
+
+			// object is prefixed the key, we must trim it
+			dir, file := path.Split(strings.TrimPrefix(object, key+"/"))
+
+			// if dir is empty string, we are in the root dir
+			if dir == "" {
+				_, _ = w.Write([]byte(fmt.Sprintf("<li><a href=\"%s\">%s</a></li>\n", file, file)))
+			} else if dirs[dir] {
+				continue
+			} else {
+				_, _ = w.Write([]byte(fmt.Sprintf("<li><a href=\"%s\">%s</a></li>\n", dir, dir)))
+				dirs[dir] = true
+			}
+		}
+		_, _ = w.Write([]byte("</ul></body></html>"))
+
+	} else { // stream the file itself
+		log.Debugf("not a directory, artifact: %+v", artifact)
+		err = a.returnArtifact(w, artifact, driver)
+
+		if err != nil {
+			a.serverInternalError(err, w)
+			return
+		}
+	}
+
+}
+
 func (a *ArtifactServer) getArtifact(w http.ResponseWriter, r *http.Request, isInput bool) {
 	requestPath := strings.SplitN(r.URL.Path, "/", 6)
 	if len(requestPath) != 6 {
-		a.httpBadRequestError("request path is not valid", w)
+		a.httpBadRequestError(w)
 		return
 	}
 	namespace := requestPath[2]
@@ -105,14 +245,19 @@ func (a *ArtifactServer) getArtifact(w http.ResponseWriter, r *http.Request, isI
 
 	wf, err := a.getWorkflowAndValidate(ctx, namespace, workflowName)
 	if err != nil {
-		a.httpFromError(err, "Artifact Server returned error", w)
+		a.httpFromError(err, w)
+		return
+	}
+	art, driver, err := a.getArtifactAndDriver(ctx, nodeId, artifactName, isInput, wf, nil)
+	if err != nil {
+		a.serverInternalError(err, w)
 		return
 	}
 
-	err = a.returnArtifact(ctx, w, r, wf, nodeId, artifactName, isInput)
+	err = a.returnArtifact(w, art, driver)
 
 	if err != nil {
-		a.httpFromError(err, "Artifact Server returned error", w)
+		a.httpFromError(err, w)
 		return
 	}
 }
@@ -128,7 +273,7 @@ func (a *ArtifactServer) GetInputArtifactByUID(w http.ResponseWriter, r *http.Re
 func (a *ArtifactServer) getArtifactByUID(w http.ResponseWriter, r *http.Request, isInput bool) {
 	requestPath := strings.SplitN(r.URL.Path, "/", 5)
 	if len(requestPath) != 5 {
-		a.httpBadRequestError("request path is not valid", w)
+		a.httpBadRequestError(w)
 		return
 	}
 	uid := requestPath[2]
@@ -138,7 +283,7 @@ func (a *ArtifactServer) getArtifactByUID(w http.ResponseWriter, r *http.Request
 	// We need to know the namespace before we can do gate keeping
 	wf, err := a.wfArchive.GetWorkflow(uid)
 	if err != nil {
-		a.httpFromError(err, "Artifact Server returned error", w)
+		a.httpFromError(err, w)
 		return
 	}
 
@@ -154,12 +299,17 @@ func (a *ArtifactServer) getArtifactByUID(w http.ResponseWriter, r *http.Request
 		a.unauthorizedError(w)
 		return
 	}
+	art, driver, err := a.getArtifactAndDriver(ctx, nodeId, artifactName, isInput, wf, nil)
+	if err != nil {
+		a.serverInternalError(err, w)
+		return
+	}
 
 	log.WithFields(log.Fields{"uid": uid, "nodeId": nodeId, "artifactName": artifactName, "isInput": isInput}).Info("Download artifact")
-	err = a.returnArtifact(ctx, w, r, wf, nodeId, artifactName, isInput)
+	err = a.returnArtifact(w, art, driver)
 
 	if err != nil {
-		a.httpFromError(err, "Artifact Server returned error", w)
+		a.httpFromError(err, w)
 		return
 	}
 }
@@ -189,39 +339,24 @@ func (a *ArtifactServer) serverInternalError(err error, w http.ResponseWriter) {
 	log.WithError(err).Error("Artifact Server returned internal error")
 }
 
-func (a *ArtifactServer) httpError(statusCode int, logText string, w http.ResponseWriter) {
-	statusText := http.StatusText(statusCode)
-	http.Error(w, statusText, statusCode)
-	log.WithFields(log.Fields{
-		"statusCode": statusCode,
-		"statusText": statusText,
-	}).Error(logText)
+func (a *ArtifactServer) httpBadRequestError(w http.ResponseWriter) {
+	http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 }
 
-func (a *ArtifactServer) httpBadRequestError(logText string, w http.ResponseWriter) {
-	a.httpError(http.StatusBadRequest, logText, w)
-}
-
-func (a *ArtifactServer) httpFromError(err error, logText string, w http.ResponseWriter) {
+func (a *ArtifactServer) httpFromError(err error, w http.ResponseWriter) {
 	e := &apierr.StatusError{}
 	if errors.As(err, &e) {
 		// There is a http error code somewhere in the error stack
 		statusCode := int(e.Status().Code)
-		statusText := http.StatusText(statusCode)
-		http.Error(w, statusText, statusCode)
-
-		log.WithError(err).
-			WithFields(log.Fields{
-				"statusCode": statusCode,
-				"statusText": statusText,
-			}).Error(logText)
+		http.Error(w, http.StatusText(statusCode), statusCode)
 	} else {
 		// Unknown error - return internal error
 		a.serverInternalError(err, w)
 	}
 }
 
-func (a *ArtifactServer) returnArtifact(ctx context.Context, w http.ResponseWriter, r *http.Request, wf *wfv1.Workflow, nodeId, artifactName string, isInput bool) error {
+func (a *ArtifactServer) getArtifactAndDriver(ctx context.Context, nodeId, artifactName string, isInput bool, wf *wfv1.Workflow, fileName *string) (*wfv1.Artifact, common.ArtifactDriver, error) {
+
 	kubeClient := auth.GetKubeClient(ctx)
 
 	var art *wfv1.Artifact
@@ -231,24 +366,36 @@ func (a *ArtifactServer) returnArtifact(ctx context.Context, w http.ResponseWrit
 		art = wf.Status.Nodes[nodeId].Outputs.GetArtifactByName(artifactName)
 	}
 	if art == nil {
-		return fmt.Errorf("artifact not found")
+		return nil, nil, fmt.Errorf("artifact not found: %s", artifactName)
 	}
 
 	ar, err := a.artifactRepositories.Get(ctx, wf.Status.ArtifactRepositoryRef)
 	if err != nil {
-		return err
+		return art, nil, err
 	}
 	l := ar.ToArtifactLocation()
 	err = art.Relocate(l)
 	if err != nil {
-		return err
+		return art, nil, err
+	}
+	if fileName != nil {
+		err = art.AppendToKey(*fileName)
+		if err != nil {
+			return art, nil, fmt.Errorf("error appending filename %s to key of artifact %+v: err: %v", *fileName, art, err)
+		}
+		log.Debugf("appended key %s to artifact %+v", *fileName, art)
 	}
 
 	driver, err := a.artDriverFactory(ctx, art, resources{kubeClient, wf.Namespace})
 	if err != nil {
-		return err
+		return art, nil, err
 	}
+	log.Debugf("successfully located driver associated with artifact %+v", art)
 
+	return art, driver, nil
+}
+
+func (a *ArtifactServer) returnArtifact(w http.ResponseWriter, art *wfv1.Artifact, driver common.ArtifactDriver) error {
 	stream, err := driver.OpenStream(art)
 	if err != nil {
 		return err
@@ -263,11 +410,8 @@ func (a *ArtifactServer) returnArtifact(ctx context.Context, w http.ResponseWrit
 	key, _ := art.GetKey()
 	w.Header().Add("Content-Disposition", fmt.Sprintf(`filename="%s"`, path.Base(key)))
 	w.Header().Add("Content-Type", mime.TypeByExtension(path.Ext(key)))
-
-	// Iterate and set the rest of the headers
-	for name, value := range a.httpHeaderConfig {
-		w.Header().Add(name, value)
-	}
+	w.Header().Add("Content-Security-Policy", env.GetString("ARGO_ARTIFACT_CONTENT_SECURITY_POLICY", "sandbox; base-uri 'none'; default-src 'none'; img-src 'self'; style-src 'self'"))
+	w.Header().Add("X-Frame-Options", env.GetString("ARGO_ARTIFACT_X_FRAME_OPTIONS", "SAMEORIGIN"))
 
 	_, err = io.Copy(w, stream)
 	if err != nil {

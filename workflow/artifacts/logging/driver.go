@@ -66,3 +66,15 @@ func (d driver) ListObjects(a *wfv1.Artifact) ([]string, error) {
 		Info("List objects")
 	return list, err
 }
+
+func (d driver) IsDirectory(a *wfv1.Artifact) (bool, error) {
+	t := time.Now()
+	key, _ := a.GetKey()
+	isDir, err := d.ArtifactDriver.IsDirectory(a)
+	log.WithField("artifactName", a.Name).
+		WithField("key", key).
+		WithField("duration", time.Since(t)).
+		WithError(err).
+		Info("Check if directory")
+	return isDir, err
+}

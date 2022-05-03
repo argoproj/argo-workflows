@@ -220,12 +220,18 @@ export class WorkflowsService {
     }
 
     public getArtifactDownloadUrl(workflow: Workflow, nodeId: string, artifactName: string, archived: boolean, isInput: boolean) {
-        if (archived) {
-            const endpoint = isInput ? 'input-artifacts-by-uid' : 'artifacts-by-uid';
-            return uiUrl(`${endpoint}/${workflow.metadata.uid}/${nodeId}/${encodeURIComponent(artifactName)}`);
+        return uiUrl(this.artifactPath(workflow, nodeId, artifactName, archived, isInput));
+    }
+
+    public artifactPath(workflow: Workflow, nodeId: string, artifactName: string, archived: boolean, isInput: boolean) {
+        if (!isInput) {
+            return `artifact-files/${workflow.metadata.namespace}/${archived ? 'archived-workflows' : 'workflows'}/${
+                archived ? workflow.metadata.uid : workflow.metadata.name
+            }/${nodeId}/outputs/${artifactName}`;
+        } else if (archived) {
+            return `input-artifacts-by-uid/${workflow.metadata.uid}/${nodeId}/${encodeURIComponent(artifactName)}`;
         } else {
-            const endpoint = isInput ? 'input-artifacts' : 'artifacts';
-            return uiUrl(`${endpoint}/${workflow.metadata.namespace}/${workflow.metadata.name}/${nodeId}/${encodeURIComponent(artifactName)}`);
+            return `input-artifacts/${workflow.metadata.namespace}/${workflow.metadata.name}/${nodeId}/${encodeURIComponent(artifactName)}`;
         }
     }
 

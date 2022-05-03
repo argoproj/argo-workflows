@@ -2,73 +2,93 @@
 
 > since v3.4
 
+Artifacts can be viewed in the UI.
+
 Use cases:
 
-* Comparing ML pipeline runs from generated charts
-* Visualizing end results of ML pipeline runs
-* Debugging workflows where visual artifacts are the most helpful
+* Comparing ML pipeline runs from generated charts.
+* Visualizing end results of ML pipeline runs.
+* Debugging workflows where visual artifacts are the most helpful.
 
 [![Demo](https://img.youtube.com/vi/whoRfYY9Fhk/0.jpg)](https://youtu.be/whoRfYY9Fhk)
 
 * Artifacts now appear as elements in the workflow DAG that you can click on.
 * When you click on the artifact, a panel appears.
-* This first time this opens, it shows explanatory text that helps you understand if you might need to change their
+* The first time this appears explanatory text is shown to help you understand if you might need to change your
   workflows to use this new feature.
-* Known file types such as images, text or HTML are displayed in an iframe.
-* Artifacts are sandboxed using a Content-Security-Policy that prevents Javascript execution.
-* JSON, being popular, is displayed in an special viewer.
+* Known file types such as images, text or HTML are shown in an inline-frame (`iframe`).
+* Artifacts are sandboxed using a Content-Security-Policy that prevents JavaScript execution.
+* JSON is shown with syntax highlighting.
 
-To start, you should take a look at
+To start, take a look at
 a [fully formed example](https://github.com/argoproj/argo-workflows/blob/master/examples/artifacts-workflowtemplate.yaml)
 .
 
-## Compressed Artifacts
+## Artifact Types
 
-By default artifacts are compressed as a `.tgz`. Viewing of `.tgz` is not supported in the user interface. Only files
-that were stored uncompressed are supported. Set `archive` to `none` to prevent compression.
+An artifact maybe a `.tgz`, file or directory.
+
+### `.tgz`
+
+Viewing of `.tgz` is not supported in the UI. By default artifacts are compressed as a `.tgz`. Only artifacts that were
+not compressed can be viewed.
+
+To prevent compression, set `archive` to `none` to prevent compression:
 
 ```yaml
-- name: html
+- name: artifact
   # ...
   archive:
     none: { }
 ```
 
-## File Type
+### File
 
-File type is determine by the file extension of artifact's key. Not from the artifact name and not from the path. Make
-sure the key has the correct extension:
+Files maybe shown in the UI. To determine if a file can be shown, the UI checks if the artifact's file extension is
+supported. The extension is found in the artifact's key.
+
+To view a file, add the extension to the key:
 
 ```yaml
-- name: html
+- name: single-file
   s3:
-    key: index.html
+    key: visualization.png
 ```
 
-## HTML
+### Directory
 
-You can create reports using HTML artifacts, which include charts and graphs produced by your workflow.
+Directories are shown in the UI. The UI considers any key with a trailing-slash to be a directory.
+
+To view a directory, add a trailing-slash:
+
+```yaml
+- name: reports
+  s3:
+    key: reports/
+```
+
+If the directory contains `index.html`, then that will be shown, otherwise a directory listing is displayed.
+
+⚠️ HTML files may contain CSS and images served from the same origin. Scripts are not allowed. Nothing may be remotely
+loaded.
 
 ## Security
 
-### Malicious Artifacts
+### Content Security Policy
 
-A **malicious artifact** is a HTML artifact that attempts to use Javascript to perform UI actions, such as creating or
-deleting workflows.
+We assume that artifacts are not trusted, so by default, artifacts are served with a `Content-Security-Policy` that
+disables JavaScript and remote files.
 
-We assume that artifacts are untrusted, so by default, artifacts are served with a `Content-Security-Policy` that
-disables Javascript.
-
-This is similar to what happens when you include third-party scripts, such as analytics tracking, in your website.
-However, those tracking codes are normally served from a different domain to your main website. Artifacts are server
+This is similar to what happens when you include third-party scripts, such as analytic tracking, in your website.
+However, those tracking codes are normally served from a different domain to your main website. Artifacts are served
 from the same origin, so normal browser controls are not secure enough.
 
 ### Sub-Path Access
 
 Previously, users can access the artifacts of any workflows they can access. To allow HTML files to link to other files
-within their tree, you can now access any sub-paths of the artifact.
+within their tree, you can now access any sub-paths of the artifact's key.
 
 Example:
 
-The artifact produces a folder is an S3 bucket named `my-bucket`, with a key `my-key`. You can also access anything
-matching `my-key/*` too.
+The artifact produces a folder in an S3 bucket named `my-bucket`, with a key `report/`. You can also access anything
+matching `report/*`.

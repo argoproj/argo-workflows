@@ -4178,6 +4178,81 @@
         }
       }
     },
+    "/artifact-files/{namespace}/{idDiscriminator}/{id}/{nodeId}/{artifactDiscriminator}/{artifactName}": {
+      "get": {
+        "tags": [
+          "ArtifactService"
+        ],
+        "summary": "Get an artifact.",
+        "operationId": "ArtifactService_GetArtifactFile",
+        "parameters": [
+          {
+            "type": "string",
+            "name": "namespace",
+            "in": "path",
+            "required": true
+          },
+          {
+            "enum": [
+              "workflow",
+              "archived-workflows "
+            ],
+            "type": "string",
+            "name": "idDiscriminator",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "string",
+            "name": "id",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "string",
+            "name": "nodeId",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "string",
+            "name": "artifactName",
+            "in": "path",
+            "required": true
+          },
+          {
+            "enum": [
+              "outputs"
+            ],
+            "type": "string",
+            "name": "artifactDiscriminator",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "string",
+            "name": "artifactName",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "An artifact file.",
+            "schema": {
+              "type": "string",
+              "format": "binary"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
+          }
+        }
+      }
+    },
     "/artifacts-by-uid/{uid}/{nodeId}/{artifactName}": {
       "get": {
         "tags": [
@@ -8865,16 +8940,12 @@
           "type": "boolean"
         },
         "artifactGC": {
-          "description": "ArtifactGC describes when to delete the artifact",
+          "description": "ArtifactGC describes the strategy to use when to deleting an artifact from completed or deleted workflows",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactGC"
         },
         "artifactory": {
           "description": "Artifactory contains artifactory artifact location details",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactoryArtifact"
-        },
-        "deleted": {
-          "description": "Deleted if this is been deleted.",
-          "type": "boolean"
         },
         "from": {
           "description": "From allows an artifact to reference an artifact from a previous step",
@@ -8964,10 +9035,6 @@
           "description": "Artifactory contains artifactory artifact location details",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactoryArtifact"
         },
-        "deleted": {
-          "description": "Deleted if this is been deleted.",
-          "type": "boolean"
-        },
         "gcs": {
           "description": "GCS contains GCS artifact location details",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.GCSArtifact"
@@ -9014,16 +9081,12 @@
           "type": "boolean"
         },
         "artifactGC": {
-          "description": "ArtifactGC describes when to delete the artifact",
+          "description": "ArtifactGC describes the strategy to use when to deleting an artifact from completed or deleted workflows",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactGC"
         },
         "artifactory": {
           "description": "Artifactory contains artifactory artifact location details",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactoryArtifact"
-        },
-        "deleted": {
-          "description": "Deleted if this is been deleted.",
-          "type": "boolean"
         },
         "from": {
           "description": "From allows an artifact to reference an artifact from a previous step",

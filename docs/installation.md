@@ -12,7 +12,7 @@ Determine your base installation option.
 * A **namespace install** only executes workflows in the namespace it is installed in (typically `argo`).
 * A **managed namespace install**: only executes workflows in a specific namespace ([learn more](managed-namespace.md)).
 
-⚠️ `latest` is tip, not stable. Never run it. Make sure you're using the manifests attached to each Github release. See [this link](https://github.com/argoproj/argo-workflows/releases/latest) for the most recent manifests. 
+⚠️ `latest` is tip, not stable. Never run it. Make sure you're using the manifests attached to each Github release. See [this link](https://github.com/argoproj/argo-workflows/releases/latest) for the most recent manifests.
 
 ⚠️ Double-check you have the right version of your executor configured, it's easy to miss.
 
@@ -20,11 +20,9 @@ Determine your base installation option.
 
 Review the following:
 
- * [Security](security.md).
- * [Scaling](scaling.md) and [running at massive scale](running-at-massive-scale.md).
- * [High-availability](high-availability.md)
- * [Disaster recovery](disaster-recovery.md)
+* [Security](security.md).
+* [Scaling](scaling.md) and [running at massive scale](running-at-massive-scale.md).
+* [High-availability](high-availability.md)
+* [Disaster recovery](disaster-recovery.md)
 
-Read the [upgrading guide](upgrading.md) before any major upgrade to be aware of breaking changes.
-
-
+Read the [release guide](releases.md) before any major upgrade to be aware of breaking changes.

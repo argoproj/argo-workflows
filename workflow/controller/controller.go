@@ -16,6 +16,7 @@ import (
 	"golang.org/x/time/rate"
 	apiv1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
@@ -1028,7 +1029,10 @@ func (wfc *WorkflowController) newConfigMapInformer() cache.SharedIndexInformer 
 	if wfc.executorPlugins != nil {
 		indexInformer.AddEventHandler(cache.FilteringResourceEventHandler{
 			FilterFunc: func(obj interface{}) bool {
-				cm := obj.(metav1.Object)
+				cm, err := meta.Accessor(obj)
+				if err != nil {
+					return false
+				}
 				return cm.GetLabels()[common.LabelKeyConfigMapType] == common.LabelValueTypeConfigMapExecutorPlugin
 			},
 			Handler: cache.ResourceEventHandlerFuncs{

@@ -1,7 +1,10 @@
-name: Deploy
+name: Docs
 
 on:
   push:
+    branches:
+      - master
+  pull_request:
     branches:
       - master
 
@@ -10,8 +13,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  deploy:
-    if: github.repository == 'argoproj/argo-workflows'
+  docs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -21,10 +23,21 @@ jobs:
       - uses: actions/setup-go@v3
         with:
           go-version: '1.18'
-      - run: pip install mkdocs==1.2.4 mkdocs_material==8.1.9
-      - run: mkdocs build
-      - run: make parse-examples
+      - uses: actions/setup-node@v3
+        with:
+          node-version: "16"
+      # Use the same make target both locally and on CI to make it easier to debug failures.
+      - run: make docs
+      # If markdownlint fixes issues, files will be changed. If so, fail the build.
+      - run: git diff --exit-code
+      # Upload the site so reviewers see it.
+      - uses: actions/upload-artifact@v3
+        with:
+          name: docs
+          path: site
+          if-no-files-found: error
       - uses: peaceiris/actions-gh-pages@v2.9.0
+        if: github.repository == 'argoproj/argo-workflows' && github.ref == 'refs/heads/master'
         env:
           PERSONAL_TOKEN: ${{ secrets.PERSONAL_TOKEN }}
           PUBLISH_BRANCH: gh-pages
