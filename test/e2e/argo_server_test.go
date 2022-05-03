@@ -1065,6 +1065,11 @@ func (s *ArgoServerSuite) TestArtifactServer() {
 		resp.Body().
 			Contains(":) Hello Argo!")
 
+		resp.Header("Content-Security-Policy").
+			Equal("sandbox; base-uri 'none'; default-src 'none'; img-src 'self'; style-src 'self'") // MSB
+
+		resp.Header("X-Frame-Options").
+			Equal("SAMEORIGIN")
 	})
 
 	// In this case, the artifact name is a file
@@ -1076,6 +1081,11 @@ func (s *ArgoServerSuite) TestArtifactServer() {
 		resp.Body().
 			Contains(":) Hello Argo!")
 
+		resp.Header("Content-Security-Policy").
+			Equal("sandbox; base-uri 'none'; default-src 'none'; img-src 'self'; style-src 'self'") // MSB
+
+		resp.Header("X-Frame-Options").
+			Equal("SAMEORIGIN")
 	})
 
 	// In this case, the artifact name is a directory
@@ -1087,6 +1097,11 @@ func (s *ArgoServerSuite) TestArtifactServer() {
 		resp.Body().
 			Contains("<a href=\"subdirectory/\">subdirectory/</a>")
 
+		resp.Header("Content-Security-Policy").
+			Equal("sandbox; base-uri 'none'; default-src 'none'; img-src 'self'; style-src 'self'") // MSB
+
+		resp.Header("X-Frame-Options").
+			Equal("SAMEORIGIN")
 	})
 
 	// In this case, the filename specified in the request is actually a directory
@@ -1099,6 +1114,11 @@ func (s *ArgoServerSuite) TestArtifactServer() {
 			Contains("<a href=\"sub-file-1\">sub-file-1</a>").
 			Contains("<a href=\"sub-file-2\">sub-file-2</a>")
 
+		resp.Header("Content-Security-Policy").
+			Equal("sandbox; base-uri 'none'; default-src 'none'; img-src 'self'; style-src 'self'") // MSB
+
+		resp.Header("X-Frame-Options").
+			Equal("SAMEORIGIN")
 	})
 
 	// In this case, the filename specified in the request is a subdirectory file
@@ -1110,6 +1130,11 @@ func (s *ArgoServerSuite) TestArtifactServer() {
 		resp.Body().
 			Contains(":) Hello Argo!")
 
+		resp.Header("Content-Security-Policy").
+			Equal("sandbox; base-uri 'none'; default-src 'none'; img-src 'self'; style-src 'self'") // MSB
+
+		resp.Header("X-Frame-Options").
+			Equal("SAMEORIGIN")
 	})
 
 	// In this case, the artifact name is a file
