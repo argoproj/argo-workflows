@@ -11,7 +11,6 @@ import (
 	"strings"
 
 	"k8s.io/utils/env"
-
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
@@ -44,7 +43,6 @@ func NewArtifactServer(authN auth.Gatekeeper, hydrator hydrator.Interface, wfArc
 }
 
 func newArtifactServer(authN auth.Gatekeeper, hydrator hydrator.Interface, wfArchive sqldb.WorkflowArchive, instanceIDService instanceid.Service, artDriverFactory artifact.NewDriverFunc, artifactRepositories artifactrepositories.Interface) *ArtifactServer {
-
 	return &ArtifactServer{authN, hydrator, wfArchive, instanceIDService, artDriverFactory, artifactRepositories}
 }
 
