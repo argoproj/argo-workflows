@@ -400,19 +400,10 @@ func TestArtifactServer_GetArtifactByUIDInvalidRequestPath(t *testing.T) {
 	assert.Contains(t, w.Output, "Bad Request")
 }
 
-func TestArtifactServer_httpError(t *testing.T) {
-	s := newServer()
-	w := &testhttp.TestResponseWriter{}
-	s.httpError(http.StatusBadRequest, "Client error", w)
-
-	assert.Equal(t, http.StatusBadRequest, w.StatusCode)
-	assert.Contains(t, w.Output, "Bad Request")
-}
-
 func TestArtifactServer_httpBadRequestError(t *testing.T) {
 	s := newServer()
 	w := &testhttp.TestResponseWriter{}
-	s.httpBadRequestError("Client error", w)
+	s.httpBadRequestError(w)
 
 	assert.Equal(t, http.StatusBadRequest, w.StatusCode)
 	assert.Contains(t, w.Output, "Bad Request")
@@ -423,15 +414,15 @@ func TestArtifactServer_httpFromError(t *testing.T) {
 	w := &testhttp.TestResponseWriter{}
 	err := errors.New("math: square root of negative number")
 
-	s.httpFromError(err, "Server error", w)
+	s.httpFromError(err, w)
 
 	assert.Equal(t, http.StatusInternalServerError, w.StatusCode)
-	assert.Empty(t, w.Output)
+	assert.Equal(t, "Internal Server Error\n", w.Output)
 
 	w = &testhttp.TestResponseWriter{}
 	err = apierr.NewUnauthorized("")
 
-	s.httpFromError(err, "Unauthorized", w)
+	s.httpFromError(err, w)
 
 	assert.Equal(t, http.StatusUnauthorized, w.StatusCode)
 	assert.Contains(t, w.Output, "Unauthorized")
