@@ -203,6 +203,7 @@ It will marshall back to string - marshalling is not symmetric. |  |
 | archiveLogs | boolean| `bool` |  | | ArchiveLogs indicates if the container logs should be archived |  |
 | artifactGC | [ArtifactGC](#artifact-g-c)| `ArtifactGC` |  | |  |  |
 | artifactory | [ArtifactoryArtifact](#artifactory-artifact)| `ArtifactoryArtifact` |  | |  |  |
+| deleted | boolean| `bool` |  | | Deleted if this is been deleted. |  |
 | from | string| `string` |  | | From allows an artifact to reference an artifact from a previous step |  |
 | fromExpression | string| `string` |  | | FromExpression, if defined, is evaluated to specify the value for the artifact |  |
 | gcs | [GCSArtifact](#g-c-s-artifact)| `GCSArtifact` |  | |  |  |
@@ -271,6 +272,7 @@ of a single workflow step, which the executor will use as a default location to 
 |------|------|---------|:--------:| ------- |-------------|---------|
 | archiveLogs | boolean| `bool` |  | | ArchiveLogs indicates if the container logs should be archived |  |
 | artifactory | [ArtifactoryArtifact](#artifactory-artifact)| `ArtifactoryArtifact` |  | |  |  |
+| deleted | boolean| `bool` |  | | Deleted if this is been deleted. |  |
 | gcs | [GCSArtifact](#g-c-s-artifact)| `GCSArtifact` |  | |  |  |
 | git | [GitArtifact](#git-artifact)| `GitArtifact` |  | |  |  |
 | hdfs | [HDFSArtifact](#h-d-f-s-artifact)| `HDFSArtifact` |  | |  |  |
@@ -299,6 +301,7 @@ of a single workflow step, which the executor will use as a default location to 
 | archiveLogs | boolean| `bool` |  | | ArchiveLogs indicates if the container logs should be archived |  |
 | artifactGC | [ArtifactGC](#artifact-g-c)| `ArtifactGC` |  | |  |  |
 | artifactory | [ArtifactoryArtifact](#artifactory-artifact)| `ArtifactoryArtifact` |  | |  |  |
+| deleted | boolean| `bool` |  | | Deleted if this is been deleted. |  |
 | from | string| `string` |  | | From allows an artifact to reference an artifact from a previous step |  |
 | fromExpression | string| `string` |  | | FromExpression, if defined, is evaluated to specify the value for the artifact |  |
 | gcs | [GCSArtifact](#g-c-s-artifact)| `GCSArtifact` |  | |  |  |

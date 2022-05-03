@@ -99,6 +99,9 @@ message ArtifactLocation {
   // ArchiveLogs indicates if the container logs should be archived
   optional bool archiveLogs = 1;
 
+  // Deleted if this is been deleted.
+  optional bool deleted = 10;
+
   // S3 contains S3 artifact location details
   optional S3Artifact s3 = 2;
 
@@ -182,6 +185,8 @@ message ArtifactSearchQuery {
   optional string templateName = 3;
 
   optional string nodeId = 4;
+
+  optional bool deleted = 5;
 }
 
 message ArtifactSearchResult {

@@ -287,6 +287,13 @@ func schema_pkg_apis_workflow_v1alpha1_Artifact(ref common.ReferenceCallback) co
 							Format:      "",
 						},
 					},
+					"deleted": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Deleted if this is been deleted.",
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
 					"s3": {
 						SchemaProps: spec.SchemaProps{
 							Description: "S3 contains S3 artifact location details",
@@ -425,6 +432,13 @@ func schema_pkg_apis_workflow_v1alpha1_ArtifactLocation(ref common.ReferenceCall
 							Format:      "",
 						},
 					},
+					"deleted": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Deleted if this is been deleted.",
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
 					"s3": {
 						SchemaProps: spec.SchemaProps{
 							Description: "S3 contains S3 artifact location details",
@@ -520,6 +534,13 @@ func schema_pkg_apis_workflow_v1alpha1_ArtifactPaths(ref common.ReferenceCallbac
 					"archiveLogs": {
 						SchemaProps: spec.SchemaProps{
 							Description: "ArchiveLogs indicates if the container logs should be archived",
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
+					"deleted": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Deleted if this is been deleted.",
 							Type:        []string{"boolean"},
 							Format:      "",
 						},
@@ -790,6 +811,12 @@ func schema_pkg_apis_workflow_v1alpha1_ArtifactSearchQuery(ref common.ReferenceC
 					"nodeId": {
 						SchemaProps: spec.SchemaProps{
 							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"deleted": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"boolean"},
 							Format: "",
 						},
 					},

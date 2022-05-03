@@ -948,6 +948,13 @@ func (a *Artifact) GetArtifactGC() *ArtifactGC {
 	return a.ArtifactGC
 }
 
+func (a *Artifact) GetArchive() *ArchiveStrategy {
+	if a == nil || a.Archive == nil {
+		return &ArchiveStrategy{}
+	}
+	return a.Archive
+}
+
 // CleanPath validates and cleans the artifact path.
 func (a *Artifact) CleanPath() error {
 	if a.Path == "" {
@@ -2735,6 +2742,13 @@ func (t *Template) HasOutputs() bool {
 	return t != nil && t.Outputs.HasOutputs()
 }
 
+func (tmpl *Template) GetOutputs() *Outputs {
+	if tmpl != nil {
+		return &tmpl.Outputs
+	}
+	return nil
+}
+
 // DAGTemplate is a template subtype for directed acyclic graph templates
 type DAGTemplate struct {
 	// Target are one or more names of targets to execute in a DAG
@@ -2938,20 +2952,6 @@ func (args *Arguments) GetParameterByName(name string) *Parameter {
 		}
 	}
 	return nil
-}
-
-func (a *Artifact) GetArchive() *ArchiveStrategy {
-	if a == nil || a.Archive == nil {
-		return &ArchiveStrategy{}
-	}
-	return a.Archive
-}
-
-func (a *Artifact) GetArtifactGC() *ArtifactGC {
-	if a == nil || a.ArtifactGC == nil {
-		return &ArtifactGC{Strategy: ArtifactGCNever}
-	}
-	return a.ArtifactGC
 }
 
 func (w *Workflow) GetTemplates() []Template {
