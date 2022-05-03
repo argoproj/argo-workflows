@@ -42,15 +42,22 @@ func NewCpCommand() *cobra.Command {
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if len(args) != 2 {
-				return fmt.Errorf("not correct number of arguments")
+				cmd.HelpFunc()(cmd, args)
+				return fmt.Errorf("incorrect number of arguments")
 			}
 			workflowName := args[0]
 			outputDir := args[1]
 
+			argoServerUrl, err := cmd.Parent().Flags().GetString("argo-server")
+			argoBasePath, err := cmd.Parent().Flags().GetString("argo-base-href")
+			insecureSkipVerify, err := cmd.Parent().Flags().GetBool("insecure-skip-verify")
+			if err != nil {
+				return fmt.Errorf("not able to read flags correctly %w", err)
+			}
 			argoServerOpts := apiclient.ArgoServerOpts{
-				URL:                os.Getenv("ARGO_SERVER"),
-				Path:               os.Getenv("ARGO_BASE_HREF"),
-				InsecureSkipVerify: os.Getenv("ARGO_INSECURE_SKIP_VERIFY") == "true",
+				URL:                argoServerUrl,
+				Path:               argoBasePath,
+				InsecureSkipVerify: insecureSkipVerify,
 			}
 
 			ctx, apiClient := client.NewAPIClient(cmd.Context())
