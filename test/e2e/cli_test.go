@@ -1332,6 +1332,50 @@ func (s *CLISuite) TestWorkflowTemplateRefSubmit() {
 	})
 }
 
+func (s *CLISuite) TestWorkflowCopyArtifact() {
+	s.Given().
+		Workflow("@testdata/basic-artifact-workflow.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow().
+		Given().
+		RunCli([]string{"cp", "outputDir", "--workflow-name", "@latest"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.Contains(t, output, fmt.Sprintf("Stored artifact main.log"))
+				assert.Contains(t, output, fmt.Sprintf("Stored artifact hello_world.tgz"))
+				assert.Contains(t, output, fmt.Sprintf("Stored artifact bye_world.tgz"))
+			}
+		})
+
+	s.Given().
+		Workflow("@testdata/basic-artifact-workflow.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow().
+		Given().
+		RunCli([]string{"cp", "outputDir", "--workflow-name", "@latest", "--template-name", "bye"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.Contains(t, output, fmt.Sprintf("Stored artifact main.log"))
+				assert.Contains(t, output, fmt.Sprintf("Stored artifact bye_world.tgz"))
+				assert.NotContains(t, output, fmt.Sprintf("Stored artifact hello_world.tgz"))
+			}
+		})
+
+	s.Given().
+		Workflow("@testdata/basic-artifact-workflow.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow().
+		Given().
+		RunCli([]string{"cp", "outputDir", "--workflow-name", "@latest", "--artifact-name", "hello_world"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.NotContains(t, output, fmt.Sprintf("Stored artifact main.log"))
+				assert.NotContains(t, output, fmt.Sprintf("Stored artifact bye_world.tgz"))
+				assert.Contains(t, output, fmt.Sprintf("Stored artifact hello_world.tgz"))
+			}
+		})
+}
+
 func (s *CLISuite) TestRetryOmit() {
 	s.Given().
 		Workflow("@testdata/retry-omit.yaml").

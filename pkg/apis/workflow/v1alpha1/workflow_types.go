@@ -1285,6 +1285,9 @@ func (w *Workflow) SearchArtifacts(q *ArtifactSearchQuery) ArtifactSearchResults
 
 	for _, n := range w.Status.Nodes {
 		t := w.GetTemplateByName(n.TemplateName)
+		if n.GetOutputs() == nil {
+			continue
+		}
 		for _, a := range n.GetOutputs().GetArtifacts() {
 			match := true
 			if q.anyArtifactGCStrategy() {
