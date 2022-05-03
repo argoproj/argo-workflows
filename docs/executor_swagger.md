@@ -4297,6 +4297,7 @@ Defaults to gzip.DefaultCompression. |  |
 | activeDeadlineSeconds | [IntOrString](#int-or-string)| `IntOrString` |  | |  |  |
 | affinity | [Affinity](#affinity)| `Affinity` |  | |  |  |
 | archiveLocation | [ArtifactLocation](#artifact-location)| `ArtifactLocation` |  | |  |  |
+| artifactGC | [ArtifactGC](#artifact-g-c)| `ArtifactGC` |  | |  |  |
 | automountServiceAccountToken | boolean| `bool` |  | | AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods.
 ServiceAccountName of ExecutorConfig must be specified if this value is false. |  |
 | container | [Container](#container)| `Container` |  | |  |  |
