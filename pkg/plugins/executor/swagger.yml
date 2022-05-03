@@ -94,6 +94,8 @@ definitions:
       archiveLogs:
         description: ArchiveLogs indicates if the container logs should be archived
         type: boolean
+      artifactGC:
+        $ref: '#/definitions/ArtifactGC'
       artifactory:
         $ref: '#/definitions/ArtifactoryArtifact'
       from:
@@ -191,6 +193,8 @@ definitions:
       archiveLogs:
         description: ArchiveLogs indicates if the container logs should be archived
         type: boolean
+      artifactGC:
+        $ref: '#/definitions/ArtifactGC'
       artifactory:
         $ref: '#/definitions/ArtifactoryArtifact'
       from:
@@ -3850,8 +3854,6 @@ definitions:
         $ref: '#/definitions/Affinity'
       archiveLocation:
         $ref: '#/definitions/ArtifactLocation'
-      artifactGC:
-        $ref: '#/definitions/ArtifactGC'
       automountServiceAccountToken:
         description: |-
           AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods.
