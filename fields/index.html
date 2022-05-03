@@ -9608,11 +9608,6 @@
 <td>Location in which all files related to the step will be stored (logs, artifacts, etc...). Can be overridden by individual items in Outputs. If omitted, will use the default artifact repository location configured in the controller, appended with the <workflowname>/<nodename> in the key.</td>
 </tr>
 <tr>
-<td align="center"><code>artifactGC</code></td>
-<td align="center"><a href="#artifactgc"><code>ArtifactGC</code></a></td>
-<td>ArtifactGC describes the strategy to use when to deleting artifacts from executed templates</td>
-</tr>
-<tr>
 <td align="center"><code>automountServiceAccountToken</code></td>
 <td align="center"><code>boolean</code></td>
 <td>AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods. ServiceAccountName of ExecutorConfig must be specified if this value is false.</td>
@@ -10385,6 +10380,11 @@
 <td align="center"><code>archiveLogs</code></td>
 <td align="center"><code>boolean</code></td>
 <td>ArchiveLogs indicates if the container logs should be archived</td>
+</tr>
+<tr>
+<td align="center"><code>artifactGC</code></td>
+<td align="center"><a href="#artifactgc"><code>ArtifactGC</code></a></td>
+<td>ArtifactGC describes the strategy to use when to deleting an artifact from completed or deleted workflows</td>
 </tr>
 <tr>
 <td align="center"><code>artifactory</code></td>
@@ -14348,6 +14348,11 @@
 <td align="center"><code>archiveLogs</code></td>
 <td align="center"><code>boolean</code></td>
 <td>ArchiveLogs indicates if the container logs should be archived</td>
+</tr>
+<tr>
+<td align="center"><code>artifactGC</code></td>
+<td align="center"><a href="#artifactgc"><code>ArtifactGC</code></a></td>
+<td>ArtifactGC describes the strategy to use when to deleting an artifact from completed or deleted workflows</td>
 </tr>
 <tr>
 <td align="center"><code>artifactory</code></td>
