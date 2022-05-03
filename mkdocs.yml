@@ -105,6 +105,7 @@ nav:
           - workflow-of-workflows.md
           - workflow-notifications.md
       - UI Features:
+          - artifact-visualization.md
           - widgets.md
           - intermediate-inputs.md
       - Debugging Tools:
