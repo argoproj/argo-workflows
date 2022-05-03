@@ -6,7 +6,7 @@ import (
 	"k8s.io/utils/lru"
 )
 
-type timedCache struct {
+type lruTtlCache struct {
 	timeout time.Duration
 	cache   *lru.Cache
 }
@@ -16,14 +16,14 @@ type timeValueHolder struct {
 	value      any
 }
 
-func NewTimedCache(timeout time.Duration, size int) *timedCache {
-	return &timedCache{
+func NewLruTtlCache(timeout time.Duration, size int) *lruTtlCache {
+	return &lruTtlCache{
 		timeout: timeout,
 		cache:   lru.New(size),
 	}
 }
 
-func (c *timedCache) Get(key string) (any, bool) {
+func (c *lruTtlCache) Get(key string) (any, bool) {
 	if data, ok := c.cache.Get(key); ok {
 		holder := data.(*timeValueHolder)
 		deadline := holder.createTime.Add(c.timeout)
@@ -35,7 +35,7 @@ func (c *timedCache) Get(key string) (any, bool) {
 	return nil, false
 }
 
-func (c *timedCache) Add(key string, value any) {
+func (c *lruTtlCache) Add(key string, value any) {
 	c.cache.Add(key, &timeValueHolder{
 		createTime: getCurrentTime(),
 		value:      value,

@@ -7,15 +7,16 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 	v1 "k8s.io/client-go/listers/core/v1"
 )
 
 type ResourceCache struct {
-	ctx         context.Context
-	secretCache *timedCache
-	client      kubernetes.Interface
+	ctx    context.Context
+	cache  *lruTtlCache
+	client kubernetes.Interface
 	v1.ServiceAccountLister
 }
 
@@ -23,7 +24,7 @@ func NewResourceCacheWithTimeout(client kubernetes.Interface, ctx context.Contex
 	informerFactory := informers.NewSharedInformerFactoryWithOptions(client, timeout, informers.WithNamespace(namespace))
 	cache := &ResourceCache{
 		ctx:                  ctx,
-		secretCache:          NewTimedCache(timeout, 2000),
+		cache:                NewLruTtlCache(timeout, 2000),
 		client:               client,
 		ServiceAccountLister: informerFactory.Core().V1().ServiceAccounts().Lister(),
 	}
@@ -33,13 +34,14 @@ func NewResourceCacheWithTimeout(client kubernetes.Interface, ctx context.Contex
 }
 
 func NewResourceCache(client kubernetes.Interface, ctx context.Context, namespace string) *ResourceCache {
-	return NewResourceCacheWithTimeout(client, ctx, namespace, time.Minute*20)
+	return NewResourceCacheWithTimeout(client, ctx, namespace, time.Minute*1)
 }
 
 func (c *ResourceCache) GetSecret(namespace string, secretName string) (*corev1.Secret, error) {
 	cacheKey := c.getSecretCacheKey(namespace, secretName)
-	if secret, ok := c.secretCache.Get(cacheKey); ok {
+	if secret, ok := c.cache.Get(cacheKey); ok {
 		if secret, ok := secret.(*corev1.Secret); ok {
+			log.Infof("Get secret %s from cache", cacheKey)
 			return secret, nil
 		}
 	}
@@ -49,7 +51,8 @@ func (c *ResourceCache) GetSecret(namespace string, secretName string) (*corev1.
 		return nil, err
 	}
 
-	c.secretCache.Add(cacheKey, secret)
+	log.Infof("Get secret %s from server", cacheKey)
+	c.cache.Add(cacheKey, secret)
 	return secret, nil
 }
 
