@@ -41,11 +41,10 @@ jobs:
     name: argoexec-image
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    # needs: [ lint ]
     steps:
       - uses: actions/checkout@v3
       - uses: docker/setup-buildx-action@v1
-        with:
-          install: true
       - name: Cache Docker layers
         uses: actions/cache@v3
         with:
@@ -53,7 +52,15 @@ jobs:
           key: ${{ runner.os }}-single-buildx-${{ github.sha }}
           restore-keys: |
             ${{ runner.os }}-single-buildx
-      - run: make argoexec-image STATIC_FILES=false
+      - name: build argoexec-image
+        run: |
+          docker buildx build \
+          	-t quay.io/argoproj/argoexec:latest \
+          	--target argoexec \
+          	--cache-from "type=local,src=/tmp/.buildx-cache" \
+          	--cache-to "type=local,dest=/tmp/.buildx-cache-new" \
+            --output=type=docker \
+            .
       - run: docker save quay.io/argoproj/argoexec:latest > /tmp/argoexec_image.tar
       - uses: actions/upload-artifact@v3
         with:
