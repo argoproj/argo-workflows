@@ -25,7 +25,6 @@ import (
 
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/server/artifacts"
 	"github.com/argoproj/argo-workflows/v3/test/e2e/fixtures"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
@@ -1066,11 +1065,6 @@ func (s *ArgoServerSuite) TestArtifactServer() {
 		resp.Body().
 			Contains(":) Hello Argo!")
 
-		resp.Header("Content-Security-Policy").
-			Equal(artifacts.DefaultContentSecurityPolicy) // MSB
-
-		resp.Header("X-Frame-Options").
-			Equal(artifacts.DefaultXFrameOptions)
 	})
 
 	// In this case, the artifact name is a file
@@ -1082,11 +1076,6 @@ func (s *ArgoServerSuite) TestArtifactServer() {
 		resp.Body().
 			Contains(":) Hello Argo!")
 
-		resp.Header("Content-Security-Policy").
-			Equal(artifacts.DefaultContentSecurityPolicy) // MSB
-
-		resp.Header("X-Frame-Options").
-			Equal(artifacts.DefaultXFrameOptions)
 	})
 
 	// In this case, the artifact name is a directory
@@ -1098,11 +1087,6 @@ func (s *ArgoServerSuite) TestArtifactServer() {
 		resp.Body().
 			Contains("<a href=\"subdirectory/\">subdirectory/</a>")
 
-		resp.Header("Content-Security-Policy").
-			Equal(artifacts.DefaultContentSecurityPolicy) // MSB
-
-		resp.Header("X-Frame-Options").
-			Equal(artifacts.DefaultXFrameOptions)
 	})
 
 	// In this case, the filename specified in the request is actually a directory
@@ -1115,11 +1099,6 @@ func (s *ArgoServerSuite) TestArtifactServer() {
 			Contains("<a href=\"sub-file-1\">sub-file-1</a>").
 			Contains("<a href=\"sub-file-2\">sub-file-2</a>")
 
-		resp.Header("Content-Security-Policy").
-			Equal(artifacts.DefaultContentSecurityPolicy) // MSB
-
-		resp.Header("X-Frame-Options").
-			Equal(artifacts.DefaultXFrameOptions)
 	})
 
 	// In this case, the filename specified in the request is a subdirectory file
@@ -1131,11 +1110,6 @@ func (s *ArgoServerSuite) TestArtifactServer() {
 		resp.Body().
 			Contains(":) Hello Argo!")
 
-		resp.Header("Content-Security-Policy").
-			Equal(artifacts.DefaultContentSecurityPolicy) // MSB
-
-		resp.Header("X-Frame-Options").
-			Equal(artifacts.DefaultXFrameOptions)
 	})
 
 	// In this case, the artifact name is a file
