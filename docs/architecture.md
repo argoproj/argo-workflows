@@ -11,4 +11,3 @@
 ## Workflow controller architecture
 
 ![diagram](assets/architecture.jpeg)
-

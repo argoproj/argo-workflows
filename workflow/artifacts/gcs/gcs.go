@@ -330,3 +330,7 @@ func (g *ArtifactDriver) ListObjects(artifact *wfv1.Artifact) ([]string, error) 
 		})
 	return files, err
 }
+
+func (g *ArtifactDriver) IsDirectory(artifact *wfv1.Artifact) (bool, error) {
+	return false, errors.New(errors.CodeNotImplemented, "IsDirectory currently unimplemented for GCS")
+}

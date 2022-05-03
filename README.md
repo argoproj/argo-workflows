@@ -43,30 +43,24 @@ Argo is a [Cloud Native Computing Foundation (CNCF)](https://cncf.io/) hosted pr
 
 ![Screenshot](docs/assets/screenshot.png)
 
+## Documentation
+
+[View the docs](https://argoproj.github.io/argo-workflows/)
+
 ## Ecosystem
 
-![Ecosystem](docs/assets/ecosystem.png)
+Just some of the projects that use or rely on Argo Workflows:
 
-[Argo Events](https://github.com/argoproj/argo-events)
-|
-[Argo Workflows Catalog](https://argoproj-labs.github.io/argo-workflows-catalog/)
-|
-[Couler](https://github.com/couler-proj/couler)
-|
-[Katib](https://github.com/kubeflow/katib)
-|
-[Kedro](https://kedro.readthedocs.io/en/stable/)
-|
-[Kubeflow Pipelines](https://github.com/kubeflow/pipelines)
-|
-[Onepanel](https://www.onepanel.ai/)
-|
-[Ploomber](https://github.com/ploomber/ploomber)
-|
-[Seldon](https://github.com/SeldonIO/seldon-core)
-|
-[SQLFlow](https://github.com/sql-machine-learning/sqlflow)
-
+* [Argo Events](https://github.com/argoproj/argo-events)
+* [Couler](https://github.com/couler-proj/couler)
+* [Katib](https://github.com/kubeflow/katib)
+* [Kedro](https://kedro.readthedocs.io/en/stable/)
+* [Kubeflow Pipelines](https://github.com/kubeflow/pipelines)
+* [Netflix Metaflow](https://metaflow.org)
+* [Onepanel](https://www.onepanel.ai/)
+* [Ploomber](https://github.com/ploomber/ploomber)
+* [Seldon](https://github.com/SeldonIO/seldon-core)
+* [SQLFlow](https://github.com/sql-machine-learning/sqlflow)
 
 ## Client Libraries
 
