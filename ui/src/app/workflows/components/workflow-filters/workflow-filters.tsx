@@ -1,4 +1,5 @@
 import * as React from 'react';
+import DatePicker from 'react-datepicker';
 import * as models from '../../../../models';
 import {WorkflowPhase} from '../../../../models';
 import {CheckboxFilter} from '../../../shared/components/checkbox-filter/checkbox-filter';
@@ -15,7 +16,9 @@ interface WorkflowFilterProps {
     phaseItems: WorkflowPhase[];
     selectedPhases: WorkflowPhase[];
     selectedLabels: string[];
-    onChange: (namespace: string, selectedPhases: WorkflowPhase[], labels: string[]) => void;
+    minStartedAt?: Date;
+    maxStartedAt?: Date;
+    onChange: (namespace: string, selectedPhases: WorkflowPhase[], labels: string[], minStartedAt: Date, maxStartedAt: Date) => void;
 }
 
 export class WorkflowFilters extends React.Component<WorkflowFilterProps, {}> {
@@ -40,7 +43,7 @@ export class WorkflowFilters extends React.Component<WorkflowFilterProps, {}> {
                         <NamespaceFilter
                             value={this.props.namespace}
                             onChange={ns => {
-                                this.props.onChange(ns, this.props.selectedPhases, this.props.selectedLabels);
+                                this.props.onChange(ns, this.props.selectedPhases, this.props.selectedLabels, this.props.minStartedAt, this.props.maxStartedAt);
                             }}
                         />
                     </div>
@@ -51,7 +54,7 @@ export class WorkflowFilters extends React.Component<WorkflowFilterProps, {}> {
                             autocomplete={this.labelSuggestion}
                             tags={this.props.selectedLabels}
                             onChange={tags => {
-                                this.props.onChange(this.props.namespace, this.props.selectedPhases, tags);
+                                this.props.onChange(this.props.namespace, this.props.selectedPhases, tags, this.props.minStartedAt, this.props.maxStartedAt);
                             }}
                         />
                     </div>
@@ -82,11 +85,36 @@ export class WorkflowFilters extends React.Component<WorkflowFilterProps, {}> {
                                 this.props.onChange(
                                     this.props.namespace,
                                     selected.map(x => x as WorkflowPhase),
-                                    this.props.selectedLabels
+                                    this.props.selectedLabels,
+                                    this.props.minStartedAt,
+                                    this.props.maxStartedAt
                                 );
                             }}
                             items={this.getPhaseItems(this.props.workflows)}
                             type='phase'
+                        />
+                    </div>
+                    <div className='columns small-5 xlarge-12'>
+                        <p className='wf-filters-container__title'>Started Time</p>
+                        <DatePicker
+                            selected={this.props.minStartedAt}
+                            onChange={date => {
+                                this.props.onChange(this.props.namespace, this.props.selectedPhases, this.props.selectedLabels, date, this.props.maxStartedAt);
+                            }}
+                            placeholderText='From'
+                            dateFormat='dd MMM yyyy'
+                            todayButton='Today'
+                            className='argo-field argo-textarea'
+                        />
+                        <DatePicker
+                            selected={this.props.maxStartedAt}
+                            onChange={date => {
+                                this.props.onChange(this.props.namespace, this.props.selectedPhases, this.props.selectedLabels, this.props.minStartedAt, date);
+                            }}
+                            placeholderText='To'
+                            dateFormat='dd MMM yyyy'
+                            todayButton='Today'
+                            className='argo-field argo-textarea'
                         />
                     </div>
                 </div>
@@ -95,7 +123,7 @@ export class WorkflowFilters extends React.Component<WorkflowFilterProps, {}> {
     }
 
     private setLabel(name: string, value: string) {
-        this.props.onChange(this.props.namespace, this.props.selectedPhases, [name.concat('=' + value)]);
+        this.props.onChange(this.props.namespace, this.props.selectedPhases, [name.concat('=' + value)], this.props.minStartedAt, this.props.maxStartedAt);
     }
 
     private getPhaseItems(workflows: models.Workflow[]) {
