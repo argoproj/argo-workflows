@@ -1040,11 +1040,18 @@ func (s *ArgoServerSuite) TestArtifactServer() {
 		})
 
 	s.Run("GetArtifact", func() {
-		s.e().GET("/artifacts/argo/" + name + "/" + name + "/main-file").
+		resp := s.e().GET("/artifacts/argo/" + name + "/" + name + "/main-file").
 			Expect().
-			Status(200).
-			Body().
+			Status(200)
+
+		resp.Body().
 			Contains(":) Hello Argo!")
+
+		resp.Header("Content-Security-Policy").
+			Equal("sandbox; base-uri 'none'; default-src 'none'; img-src 'self'; style-src 'self'") // MSB
+
+		resp.Header("X-Frame-Options").
+			Equal("SAMEORIGIN")
 	})
 	s.Run("GetArtifactByUID", func() {
 		s.e().DELETE("/api/v1/workflows/argo/" + name).
