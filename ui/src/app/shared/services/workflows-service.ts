@@ -3,6 +3,7 @@ import {catchError, filter, map, mergeMap, switchMap} from 'rxjs/operators';
 import * as models from '../../../models';
 import {Event, LogEntry, NodeStatus, Workflow, WorkflowList, WorkflowPhase} from '../../../models';
 import {SubmitOpts} from '../../../models/submit-opts';
+import {uiUrl} from '../base';
 import {Pagination} from '../pagination';
 import {Utils} from '../utils';
 import requests from './requests';
@@ -106,6 +107,13 @@ export class WorkflowsService {
 
     public suspend(name: string, namespace: string) {
         return requests.put(`api/v1/workflows/${namespace}/${name}/suspend`).then(res => res.body as Workflow);
+    }
+
+    public set(name: string, namespace: string, nodeFieldSelector: string, outputParameters: string) {
+        return requests
+            .put(`api/v1/workflows/${namespace}/${name}/set`)
+            .send({nodeFieldSelector, outputParameters})
+            .then(res => res.body as Workflow);
     }
 
     public resume(name: string, namespace: string, nodeFieldSelector: string) {
@@ -212,12 +220,18 @@ export class WorkflowsService {
     }
 
     public getArtifactDownloadUrl(workflow: Workflow, nodeId: string, artifactName: string, archived: boolean, isInput: boolean) {
-        if (archived) {
-            const endpoint = isInput ? 'input-artifacts-by-uid' : 'artifacts-by-uid';
-            return `${endpoint}/${workflow.metadata.uid}/${nodeId}/${encodeURIComponent(artifactName)}`;
+        return uiUrl(this.artifactPath(workflow, nodeId, artifactName, archived, isInput));
+    }
+
+    public artifactPath(workflow: Workflow, nodeId: string, artifactName: string, archived: boolean, isInput: boolean) {
+        if (!isInput) {
+            return `artifact-files/${workflow.metadata.namespace}/${archived ? 'archived-workflows' : 'workflows'}/${
+                archived ? workflow.metadata.uid : workflow.metadata.name
+            }/${nodeId}/outputs/${artifactName}`;
+        } else if (archived) {
+            return `input-artifacts-by-uid/${workflow.metadata.uid}/${nodeId}/${encodeURIComponent(artifactName)}`;
         } else {
-            const endpoint = isInput ? 'input-artifacts' : 'artifacts';
-            return `${endpoint}/${workflow.metadata.namespace}/${workflow.metadata.name}/${nodeId}/${encodeURIComponent(artifactName)}`;
+            return `input-artifacts/${workflow.metadata.namespace}/${workflow.metadata.name}/${nodeId}/${encodeURIComponent(artifactName)}`;
         }
     }
 

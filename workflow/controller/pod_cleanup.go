@@ -18,7 +18,7 @@ func (woc *wfOperationCtx) queuePodsForCleanup() {
 	for _, obj := range objs {
 		pod := obj.(*apiv1.Pod)
 		nodeID := woc.nodeID(pod)
-		if !woc.execWf.Status.Nodes[nodeID].Phase.Fulfilled() {
+		if !woc.wf.Status.Nodes[nodeID].Phase.Fulfilled() {
 			continue
 		}
 		switch determinePodCleanupAction(selector, pod.Labels, strategy, workflowPhase, pod.Status.Phase) {

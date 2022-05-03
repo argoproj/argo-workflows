@@ -71,6 +71,11 @@ func (h *ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) error {
 	return err
 }
 
+func (h *ArtifactDriver) OpenStream(a *wfv1.Artifact) (io.ReadCloser, error) {
+	// todo: this is a temporary implementation which loads file to disk first
+	return common.LoadToStream(a, h)
+}
+
 // Save writes the artifact to the URL
 func (h *ArtifactDriver) Save(path string, outputArtifact *wfv1.Artifact) error {
 	f, err := os.Open(filepath.Clean(path))
@@ -112,6 +117,15 @@ func (h *ArtifactDriver) Save(path string, outputArtifact *wfv1.Artifact) error 
 	return nil
 }
 
+// Delete is unsupported for the http artifacts
+func (h *ArtifactDriver) Delete(s *wfv1.Artifact) error {
+	return common.ErrDeleteNotSupported
+}
+
 func (h *ArtifactDriver) ListObjects(artifact *wfv1.Artifact) ([]string, error) {
 	return nil, fmt.Errorf("ListObjects is currently not supported for this artifact type, but it will be in a future version")
+}
+
+func (g *ArtifactDriver) IsDirectory(artifact *wfv1.Artifact) (bool, error) {
+	return false, errors.New(errors.CodeNotImplemented, "IsDirectory currently unimplemented for http")
 }

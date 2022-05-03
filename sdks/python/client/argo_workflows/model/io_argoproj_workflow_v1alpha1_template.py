@@ -33,6 +33,7 @@ def lazy_import():
     from argo_workflows.model.affinity import Affinity
     from argo_workflows.model.container import Container
     from argo_workflows.model.host_alias import HostAlias
+    from argo_workflows.model.io_argoproj_workflow_v1alpha1_artifact_gc import IoArgoprojWorkflowV1alpha1ArtifactGC
     from argo_workflows.model.io_argoproj_workflow_v1alpha1_artifact_location import IoArgoprojWorkflowV1alpha1ArtifactLocation
     from argo_workflows.model.io_argoproj_workflow_v1alpha1_container_set_template import IoArgoprojWorkflowV1alpha1ContainerSetTemplate
     from argo_workflows.model.io_argoproj_workflow_v1alpha1_dag_template import IoArgoprojWorkflowV1alpha1DAGTemplate
@@ -57,6 +58,7 @@ def lazy_import():
     globals()['Affinity'] = Affinity
     globals()['Container'] = Container
     globals()['HostAlias'] = HostAlias
+    globals()['IoArgoprojWorkflowV1alpha1ArtifactGC'] = IoArgoprojWorkflowV1alpha1ArtifactGC
     globals()['IoArgoprojWorkflowV1alpha1ArtifactLocation'] = IoArgoprojWorkflowV1alpha1ArtifactLocation
     globals()['IoArgoprojWorkflowV1alpha1ContainerSetTemplate'] = IoArgoprojWorkflowV1alpha1ContainerSetTemplate
     globals()['IoArgoprojWorkflowV1alpha1DAGTemplate'] = IoArgoprojWorkflowV1alpha1DAGTemplate
@@ -136,6 +138,7 @@ class IoArgoprojWorkflowV1alpha1Template(ModelNormal):
             'active_deadline_seconds': (str,),  # noqa: E501
             'affinity': (Affinity,),  # noqa: E501
             'archive_location': (IoArgoprojWorkflowV1alpha1ArtifactLocation,),  # noqa: E501
+            'artifact_gc': (IoArgoprojWorkflowV1alpha1ArtifactGC,),  # noqa: E501
             'automount_service_account_token': (bool,),  # noqa: E501
             'container': (Container,),  # noqa: E501
             'container_set': (IoArgoprojWorkflowV1alpha1ContainerSetTemplate,),  # noqa: E501
@@ -183,6 +186,7 @@ class IoArgoprojWorkflowV1alpha1Template(ModelNormal):
         'active_deadline_seconds': 'activeDeadlineSeconds',  # noqa: E501
         'affinity': 'affinity',  # noqa: E501
         'archive_location': 'archiveLocation',  # noqa: E501
+        'artifact_gc': 'artifactGC',  # noqa: E501
         'automount_service_account_token': 'automountServiceAccountToken',  # noqa: E501
         'container': 'container',  # noqa: E501
         'container_set': 'containerSet',  # noqa: E501
@@ -265,6 +269,7 @@ class IoArgoprojWorkflowV1alpha1Template(ModelNormal):
             active_deadline_seconds (str): [optional]  # noqa: E501
             affinity (Affinity): [optional]  # noqa: E501
             archive_location (IoArgoprojWorkflowV1alpha1ArtifactLocation): [optional]  # noqa: E501
+            artifact_gc (IoArgoprojWorkflowV1alpha1ArtifactGC): [optional]  # noqa: E501
             automount_service_account_token (bool): AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods. ServiceAccountName of ExecutorConfig must be specified if this value is false.. [optional]  # noqa: E501
             container (Container): [optional]  # noqa: E501
             container_set (IoArgoprojWorkflowV1alpha1ContainerSetTemplate): [optional]  # noqa: E501
@@ -385,6 +390,7 @@ class IoArgoprojWorkflowV1alpha1Template(ModelNormal):
             active_deadline_seconds (str): [optional]  # noqa: E501
             affinity (Affinity): [optional]  # noqa: E501
             archive_location (IoArgoprojWorkflowV1alpha1ArtifactLocation): [optional]  # noqa: E501
+            artifact_gc (IoArgoprojWorkflowV1alpha1ArtifactGC): [optional]  # noqa: E501
             automount_service_account_token (bool): AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods. ServiceAccountName of ExecutorConfig must be specified if this value is false.. [optional]  # noqa: E501
             container (Container): [optional]  # noqa: E501
             container_set (IoArgoprojWorkflowV1alpha1ContainerSetTemplate): [optional]  # noqa: E501

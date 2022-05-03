@@ -34,6 +34,7 @@ func (s *ProgressSuite) TestDefaultProgress() {
 }
 
 func (s *ProgressSuite) TestLoggedProgress() {
+	s.T().SkipNow()
 	toHaveProgress := func(p wfv1.Progress) fixtures.Condition {
 		return func(wf *wfv1.Workflow) (bool, string) {
 			return wf.Status.Nodes[wf.Name].Progress == p &&

@@ -351,6 +351,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 ),
                             ),
                             git=IoArgoprojWorkflowV1alpha1GitArtifact(
+                                branch="branch_example",
                                 depth=1,
                                 disable_submodules=True,
                                 fetch=[
@@ -364,6 +365,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 ),
                                 repo="repo_example",
                                 revision="revision_example",
+                                single_branch=True,
                                 ssh_private_key_secret=SecretKeySelector(
                                     key="key_example",
                                     name="name_example",
@@ -513,6 +515,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         ),
                     ],
                 ),
+                artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                    strategy="strategy_example",
+                ),
                 artifact_repository_ref=IoArgoprojWorkflowV1alpha1ArtifactRepositoryRef(
                     config_map="config_map_example",
                     key="key_example",
@@ -575,6 +580,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ),
                                     ),
                                     git=IoArgoprojWorkflowV1alpha1GitArtifact(
+                                        branch="branch_example",
                                         depth=1,
                                         disable_submodules=True,
                                         fetch=[
@@ -588,6 +594,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ),
                                         repo="repo_example",
                                         revision="revision_example",
+                                        single_branch=True,
                                         ssh_private_key_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
@@ -1135,6 +1142,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             ),
                         ),
                         git=IoArgoprojWorkflowV1alpha1GitArtifact(
+                            branch="branch_example",
                             depth=1,
                             disable_submodules=True,
                             fetch=[
@@ -1148,6 +1156,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             ),
                             repo="repo_example",
                             revision="revision_example",
+                            single_branch=True,
                             ssh_private_key_secret=SecretKeySelector(
                                 key="key_example",
                                 name="name_example",
@@ -1260,6 +1269,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             ),
                             use_sdk_creds=True,
                         ),
+                    ),
+                    artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                        strategy="strategy_example",
                     ),
                     automount_service_account_token=True,
                     container=Container(
@@ -1865,6 +1877,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 ),
                                             ),
                                             git=IoArgoprojWorkflowV1alpha1GitArtifact(
+                                                branch="branch_example",
                                                 depth=1,
                                                 disable_submodules=True,
                                                 fetch=[
@@ -1878,6 +1891,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 ),
                                                 repo="repo_example",
                                                 revision="revision_example",
+                                                single_branch=True,
                                                 ssh_private_key_secret=SecretKeySelector(
                                                     key="key_example",
                                                     name="name_example",
@@ -2073,6 +2087,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         ),
                                                     ),
                                                     git=IoArgoprojWorkflowV1alpha1GitArtifact(
+                                                        branch="branch_example",
                                                         depth=1,
                                                         disable_submodules=True,
                                                         fetch=[
@@ -2086,6 +2101,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         ),
                                                         repo="repo_example",
                                                         revision="revision_example",
+                                                        single_branch=True,
                                                         ssh_private_key_secret=SecretKeySelector(
                                                             key="key_example",
                                                             name="name_example",
@@ -2303,6 +2319,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     ),
                                 ),
                                 git=IoArgoprojWorkflowV1alpha1GitArtifact(
+                                    branch="branch_example",
                                     depth=1,
                                     disable_submodules=True,
                                     fetch=[
@@ -2316,6 +2333,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     ),
                                     repo="repo_example",
                                     revision="revision_example",
+                                    single_branch=True,
                                     ssh_private_key_secret=SecretKeySelector(
                                         key="key_example",
                                         name="name_example",
@@ -2785,6 +2803,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     ),
                                 ),
                                 git=IoArgoprojWorkflowV1alpha1GitArtifact(
+                                    branch="branch_example",
                                     depth=1,
                                     disable_submodules=True,
                                     fetch=[
@@ -2798,6 +2817,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     ),
                                     repo="repo_example",
                                     revision="revision_example",
+                                    single_branch=True,
                                     ssh_private_key_secret=SecretKeySelector(
                                         key="key_example",
                                         name="name_example",
@@ -3034,6 +3054,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     ),
                                 ),
                                 git=IoArgoprojWorkflowV1alpha1GitArtifact(
+                                    branch="branch_example",
                                     depth=1,
                                     disable_submodules=True,
                                     fetch=[
@@ -3047,6 +3068,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     ),
                                     repo="repo_example",
                                     revision="revision_example",
+                                    single_branch=True,
                                     ssh_private_key_secret=SecretKeySelector(
                                         key="key_example",
                                         name="name_example",
@@ -3844,6 +3866,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 ),
                                             ),
                                             git=IoArgoprojWorkflowV1alpha1GitArtifact(
+                                                branch="branch_example",
                                                 depth=1,
                                                 disable_submodules=True,
                                                 fetch=[
@@ -3857,6 +3880,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 ),
                                                 repo="repo_example",
                                                 revision="revision_example",
+                                                single_branch=True,
                                                 ssh_private_key_secret=SecretKeySelector(
                                                     key="key_example",
                                                     name="name_example",
@@ -4048,6 +4072,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         ),
                                                     ),
                                                     git=IoArgoprojWorkflowV1alpha1GitArtifact(
+                                                        branch="branch_example",
                                                         depth=1,
                                                         disable_submodules=True,
                                                         fetch=[
@@ -4061,6 +4086,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         ),
                                                         repo="repo_example",
                                                         revision="revision_example",
+                                                        single_branch=True,
                                                         ssh_private_key_secret=SecretKeySelector(
                                                             key="key_example",
                                                             name="name_example",
@@ -4874,6 +4900,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 ),
                             ),
                             git=IoArgoprojWorkflowV1alpha1GitArtifact(
+                                branch="branch_example",
                                 depth=1,
                                 disable_submodules=True,
                                 fetch=[
@@ -4887,6 +4914,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 ),
                                 repo="repo_example",
                                 revision="revision_example",
+                                single_branch=True,
                                 ssh_private_key_secret=SecretKeySelector(
                                     key="key_example",
                                     name="name_example",
@@ -4999,6 +5027,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 ),
                                 use_sdk_creds=True,
                             ),
+                        ),
+                        artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                            strategy="strategy_example",
                         ),
                         automount_service_account_token=True,
                         container=Container(
@@ -5604,6 +5635,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                     ),
                                                 ),
                                                 git=IoArgoprojWorkflowV1alpha1GitArtifact(
+                                                    branch="branch_example",
                                                     depth=1,
                                                     disable_submodules=True,
                                                     fetch=[
@@ -5617,6 +5649,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                     ),
                                                     repo="repo_example",
                                                     revision="revision_example",
+                                                    single_branch=True,
                                                     ssh_private_key_secret=SecretKeySelector(
                                                         key="key_example",
                                                         name="name_example",
@@ -5812,6 +5845,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             ),
                                                         ),
                                                         git=IoArgoprojWorkflowV1alpha1GitArtifact(
+                                                            branch="branch_example",
                                                             depth=1,
                                                             disable_submodules=True,
                                                             fetch=[
@@ -5825,6 +5859,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             ),
                                                             repo="repo_example",
                                                             revision="revision_example",
+                                                            single_branch=True,
                                                             ssh_private_key_secret=SecretKeySelector(
                                                                 key="key_example",
                                                                 name="name_example",
@@ -6042,6 +6077,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ),
                                     ),
                                     git=IoArgoprojWorkflowV1alpha1GitArtifact(
+                                        branch="branch_example",
                                         depth=1,
                                         disable_submodules=True,
                                         fetch=[
@@ -6055,6 +6091,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ),
                                         repo="repo_example",
                                         revision="revision_example",
+                                        single_branch=True,
                                         ssh_private_key_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
@@ -6524,6 +6561,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ),
                                     ),
                                     git=IoArgoprojWorkflowV1alpha1GitArtifact(
+                                        branch="branch_example",
                                         depth=1,
                                         disable_submodules=True,
                                         fetch=[
@@ -6537,6 +6575,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ),
                                         repo="repo_example",
                                         revision="revision_example",
+                                        single_branch=True,
                                         ssh_private_key_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
@@ -6773,6 +6812,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ),
                                     ),
                                     git=IoArgoprojWorkflowV1alpha1GitArtifact(
+                                        branch="branch_example",
                                         depth=1,
                                         disable_submodules=True,
                                         fetch=[
@@ -6786,6 +6826,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ),
                                         repo="repo_example",
                                         revision="revision_example",
+                                        single_branch=True,
                                         ssh_private_key_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
@@ -7583,6 +7624,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                     ),
                                                 ),
                                                 git=IoArgoprojWorkflowV1alpha1GitArtifact(
+                                                    branch="branch_example",
                                                     depth=1,
                                                     disable_submodules=True,
                                                     fetch=[
@@ -7596,6 +7638,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                     ),
                                                     repo="repo_example",
                                                     revision="revision_example",
+                                                    single_branch=True,
                                                     ssh_private_key_secret=SecretKeySelector(
                                                         key="key_example",
                                                         name="name_example",
@@ -7787,6 +7830,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             ),
                                                         ),
                                                         git=IoArgoprojWorkflowV1alpha1GitArtifact(
+                                                            branch="branch_example",
                                                             depth=1,
                                                             disable_submodules=True,
                                                             fetch=[
@@ -7800,6 +7844,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             ),
                                                             repo="repo_example",
                                                             revision="revision_example",
+                                                            single_branch=True,
                                                             ssh_private_key_secret=SecretKeySelector(
                                                                 key="key_example",
                                                                 name="name_example",
@@ -9462,6 +9507,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 ),
                             ),
                             git=IoArgoprojWorkflowV1alpha1GitArtifact(
+                                branch="branch_example",
                                 depth=1,
                                 disable_submodules=True,
                                 fetch=[
@@ -9475,6 +9521,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 ),
                                 repo="repo_example",
                                 revision="revision_example",
+                                single_branch=True,
                                 ssh_private_key_secret=SecretKeySelector(
                                     key="key_example",
                                     name="name_example",
@@ -9624,6 +9671,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         ),
                     ],
                 ),
+                artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                    strategy="strategy_example",
+                ),
                 artifact_repository_ref=IoArgoprojWorkflowV1alpha1ArtifactRepositoryRef(
                     config_map="config_map_example",
                     key="key_example",
@@ -9686,6 +9736,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ),
                                     ),
                                     git=IoArgoprojWorkflowV1alpha1GitArtifact(
+                                        branch="branch_example",
                                         depth=1,
                                         disable_submodules=True,
                                         fetch=[
@@ -9699,6 +9750,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ),
                                         repo="repo_example",
                                         revision="revision_example",
+                                        single_branch=True,
                                         ssh_private_key_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
@@ -10246,6 +10298,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             ),
                         ),
                         git=IoArgoprojWorkflowV1alpha1GitArtifact(
+                            branch="branch_example",
                             depth=1,
                             disable_submodules=True,
                             fetch=[
@@ -10259,6 +10312,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             ),
                             repo="repo_example",
                             revision="revision_example",
+                            single_branch=True,
                             ssh_private_key_secret=SecretKeySelector(
                                 key="key_example",
                                 name="name_example",
@@ -10371,6 +10425,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             ),
                             use_sdk_creds=True,
                         ),
+                    ),
+                    artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                        strategy="strategy_example",
                     ),
                     automount_service_account_token=True,
                     container=Container(
@@ -10976,6 +11033,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 ),
                                             ),
                                             git=IoArgoprojWorkflowV1alpha1GitArtifact(
+                                                branch="branch_example",
                                                 depth=1,
                                                 disable_submodules=True,
                                                 fetch=[
@@ -10989,6 +11047,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 ),
                                                 repo="repo_example",
                                                 revision="revision_example",
+                                                single_branch=True,
                                                 ssh_private_key_secret=SecretKeySelector(
                                                     key="key_example",
                                                     name="name_example",
@@ -11184,6 +11243,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         ),
                                                     ),
                                                     git=IoArgoprojWorkflowV1alpha1GitArtifact(
+                                                        branch="branch_example",
                                                         depth=1,
                                                         disable_submodules=True,
                                                         fetch=[
@@ -11197,6 +11257,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         ),
                                                         repo="repo_example",
                                                         revision="revision_example",
+                                                        single_branch=True,
                                                         ssh_private_key_secret=SecretKeySelector(
                                                             key="key_example",
                                                             name="name_example",
@@ -11414,6 +11475,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     ),
                                 ),
                                 git=IoArgoprojWorkflowV1alpha1GitArtifact(
+                                    branch="branch_example",
                                     depth=1,
                                     disable_submodules=True,
                                     fetch=[
@@ -11427,6 +11489,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     ),
                                     repo="repo_example",
                                     revision="revision_example",
+                                    single_branch=True,
                                     ssh_private_key_secret=SecretKeySelector(
                                         key="key_example",
                                         name="name_example",
@@ -11896,6 +11959,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     ),
                                 ),
                                 git=IoArgoprojWorkflowV1alpha1GitArtifact(
+                                    branch="branch_example",
                                     depth=1,
                                     disable_submodules=True,
                                     fetch=[
@@ -11909,6 +11973,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     ),
                                     repo="repo_example",
                                     revision="revision_example",
+                                    single_branch=True,
                                     ssh_private_key_secret=SecretKeySelector(
                                         key="key_example",
                                         name="name_example",
@@ -12145,6 +12210,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     ),
                                 ),
                                 git=IoArgoprojWorkflowV1alpha1GitArtifact(
+                                    branch="branch_example",
                                     depth=1,
                                     disable_submodules=True,
                                     fetch=[
@@ -12158,6 +12224,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     ),
                                     repo="repo_example",
                                     revision="revision_example",
+                                    single_branch=True,
                                     ssh_private_key_secret=SecretKeySelector(
                                         key="key_example",
                                         name="name_example",
@@ -12955,6 +13022,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 ),
                                             ),
                                             git=IoArgoprojWorkflowV1alpha1GitArtifact(
+                                                branch="branch_example",
                                                 depth=1,
                                                 disable_submodules=True,
                                                 fetch=[
@@ -12968,6 +13036,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 ),
                                                 repo="repo_example",
                                                 revision="revision_example",
+                                                single_branch=True,
                                                 ssh_private_key_secret=SecretKeySelector(
                                                     key="key_example",
                                                     name="name_example",
@@ -13159,6 +13228,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         ),
                                                     ),
                                                     git=IoArgoprojWorkflowV1alpha1GitArtifact(
+                                                        branch="branch_example",
                                                         depth=1,
                                                         disable_submodules=True,
                                                         fetch=[
@@ -13172,6 +13242,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         ),
                                                         repo="repo_example",
                                                         revision="revision_example",
+                                                        single_branch=True,
                                                         ssh_private_key_secret=SecretKeySelector(
                                                             key="key_example",
                                                             name="name_example",
@@ -13985,6 +14056,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 ),
                             ),
                             git=IoArgoprojWorkflowV1alpha1GitArtifact(
+                                branch="branch_example",
                                 depth=1,
                                 disable_submodules=True,
                                 fetch=[
@@ -13998,6 +14070,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 ),
                                 repo="repo_example",
                                 revision="revision_example",
+                                single_branch=True,
                                 ssh_private_key_secret=SecretKeySelector(
                                     key="key_example",
                                     name="name_example",
@@ -14110,6 +14183,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 ),
                                 use_sdk_creds=True,
                             ),
+                        ),
+                        artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                            strategy="strategy_example",
                         ),
                         automount_service_account_token=True,
                         container=Container(
@@ -14715,6 +14791,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                     ),
                                                 ),
                                                 git=IoArgoprojWorkflowV1alpha1GitArtifact(
+                                                    branch="branch_example",
                                                     depth=1,
                                                     disable_submodules=True,
                                                     fetch=[
@@ -14728,6 +14805,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                     ),
                                                     repo="repo_example",
                                                     revision="revision_example",
+                                                    single_branch=True,
                                                     ssh_private_key_secret=SecretKeySelector(
                                                         key="key_example",
                                                         name="name_example",
@@ -14923,6 +15001,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             ),
                                                         ),
                                                         git=IoArgoprojWorkflowV1alpha1GitArtifact(
+                                                            branch="branch_example",
                                                             depth=1,
                                                             disable_submodules=True,
                                                             fetch=[
@@ -14936,6 +15015,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             ),
                                                             repo="repo_example",
                                                             revision="revision_example",
+                                                            single_branch=True,
                                                             ssh_private_key_secret=SecretKeySelector(
                                                                 key="key_example",
                                                                 name="name_example",
@@ -15153,6 +15233,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ),
                                     ),
                                     git=IoArgoprojWorkflowV1alpha1GitArtifact(
+                                        branch="branch_example",
                                         depth=1,
                                         disable_submodules=True,
                                         fetch=[
@@ -15166,6 +15247,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ),
                                         repo="repo_example",
                                         revision="revision_example",
+                                        single_branch=True,
                                         ssh_private_key_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
@@ -15635,6 +15717,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ),
                                     ),
                                     git=IoArgoprojWorkflowV1alpha1GitArtifact(
+                                        branch="branch_example",
                                         depth=1,
                                         disable_submodules=True,
                                         fetch=[
@@ -15648,6 +15731,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ),
                                         repo="repo_example",
                                         revision="revision_example",
+                                        single_branch=True,
                                         ssh_private_key_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
@@ -15884,6 +15968,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ),
                                     ),
                                     git=IoArgoprojWorkflowV1alpha1GitArtifact(
+                                        branch="branch_example",
                                         depth=1,
                                         disable_submodules=True,
                                         fetch=[
@@ -15897,6 +15982,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ),
                                         repo="repo_example",
                                         revision="revision_example",
+                                        single_branch=True,
                                         ssh_private_key_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
@@ -16694,6 +16780,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                     ),
                                                 ),
                                                 git=IoArgoprojWorkflowV1alpha1GitArtifact(
+                                                    branch="branch_example",
                                                     depth=1,
                                                     disable_submodules=True,
                                                     fetch=[
@@ -16707,6 +16794,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                     ),
                                                     repo="repo_example",
                                                     revision="revision_example",
+                                                    single_branch=True,
                                                     ssh_private_key_secret=SecretKeySelector(
                                                         key="key_example",
                                                         name="name_example",
@@ -16898,6 +16986,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             ),
                                                         ),
                                                         git=IoArgoprojWorkflowV1alpha1GitArtifact(
+                                                            branch="branch_example",
                                                             depth=1,
                                                             disable_submodules=True,
                                                             fetch=[
@@ -16911,6 +17000,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             ),
                                                             repo="repo_example",
                                                             revision="revision_example",
+                                                            single_branch=True,
                                                             ssh_private_key_secret=SecretKeySelector(
                                                                 key="key_example",
                                                                 name="name_example",
@@ -18484,6 +18574,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 ),
                             ),
                             git=IoArgoprojWorkflowV1alpha1GitArtifact(
+                                branch="branch_example",
                                 depth=1,
                                 disable_submodules=True,
                                 fetch=[
@@ -18497,6 +18588,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 ),
                                 repo="repo_example",
                                 revision="revision_example",
+                                single_branch=True,
                                 ssh_private_key_secret=SecretKeySelector(
                                     key="key_example",
                                     name="name_example",
@@ -18646,6 +18738,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         ),
                     ],
                 ),
+                artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                    strategy="strategy_example",
+                ),
                 artifact_repository_ref=IoArgoprojWorkflowV1alpha1ArtifactRepositoryRef(
                     config_map="config_map_example",
                     key="key_example",
@@ -18708,6 +18803,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ),
                                     ),
                                     git=IoArgoprojWorkflowV1alpha1GitArtifact(
+                                        branch="branch_example",
                                         depth=1,
                                         disable_submodules=True,
                                         fetch=[
@@ -18721,6 +18817,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ),
                                         repo="repo_example",
                                         revision="revision_example",
+                                        single_branch=True,
                                         ssh_private_key_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
@@ -19268,6 +19365,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             ),
                         ),
                         git=IoArgoprojWorkflowV1alpha1GitArtifact(
+                            branch="branch_example",
                             depth=1,
                             disable_submodules=True,
                             fetch=[
@@ -19281,6 +19379,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             ),
                             repo="repo_example",
                             revision="revision_example",
+                            single_branch=True,
                             ssh_private_key_secret=SecretKeySelector(
                                 key="key_example",
                                 name="name_example",
@@ -19393,6 +19492,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             ),
                             use_sdk_creds=True,
                         ),
+                    ),
+                    artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                        strategy="strategy_example",
                     ),
                     automount_service_account_token=True,
                     container=Container(
@@ -19998,6 +20100,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 ),
                                             ),
                                             git=IoArgoprojWorkflowV1alpha1GitArtifact(
+                                                branch="branch_example",
                                                 depth=1,
                                                 disable_submodules=True,
                                                 fetch=[
@@ -20011,6 +20114,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 ),
                                                 repo="repo_example",
                                                 revision="revision_example",
+                                                single_branch=True,
                                                 ssh_private_key_secret=SecretKeySelector(
                                                     key="key_example",
                                                     name="name_example",
@@ -20206,6 +20310,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         ),
                                                     ),
                                                     git=IoArgoprojWorkflowV1alpha1GitArtifact(
+                                                        branch="branch_example",
                                                         depth=1,
                                                         disable_submodules=True,
                                                         fetch=[
@@ -20219,6 +20324,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         ),
                                                         repo="repo_example",
                                                         revision="revision_example",
+                                                        single_branch=True,
                                                         ssh_private_key_secret=SecretKeySelector(
                                                             key="key_example",
                                                             name="name_example",
@@ -20436,6 +20542,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     ),
                                 ),
                                 git=IoArgoprojWorkflowV1alpha1GitArtifact(
+                                    branch="branch_example",
                                     depth=1,
                                     disable_submodules=True,
                                     fetch=[
@@ -20449,6 +20556,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     ),
                                     repo="repo_example",
                                     revision="revision_example",
+                                    single_branch=True,
                                     ssh_private_key_secret=SecretKeySelector(
                                         key="key_example",
                                         name="name_example",
@@ -20918,6 +21026,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     ),
                                 ),
                                 git=IoArgoprojWorkflowV1alpha1GitArtifact(
+                                    branch="branch_example",
                                     depth=1,
                                     disable_submodules=True,
                                     fetch=[
@@ -20931,6 +21040,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     ),
                                     repo="repo_example",
                                     revision="revision_example",
+                                    single_branch=True,
                                     ssh_private_key_secret=SecretKeySelector(
                                         key="key_example",
                                         name="name_example",
@@ -21167,6 +21277,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     ),
                                 ),
                                 git=IoArgoprojWorkflowV1alpha1GitArtifact(
+                                    branch="branch_example",
                                     depth=1,
                                     disable_submodules=True,
                                     fetch=[
@@ -21180,6 +21291,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     ),
                                     repo="repo_example",
                                     revision="revision_example",
+                                    single_branch=True,
                                     ssh_private_key_secret=SecretKeySelector(
                                         key="key_example",
                                         name="name_example",
@@ -21977,6 +22089,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 ),
                                             ),
                                             git=IoArgoprojWorkflowV1alpha1GitArtifact(
+                                                branch="branch_example",
                                                 depth=1,
                                                 disable_submodules=True,
                                                 fetch=[
@@ -21990,6 +22103,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 ),
                                                 repo="repo_example",
                                                 revision="revision_example",
+                                                single_branch=True,
                                                 ssh_private_key_secret=SecretKeySelector(
                                                     key="key_example",
                                                     name="name_example",
@@ -22181,6 +22295,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         ),
                                                     ),
                                                     git=IoArgoprojWorkflowV1alpha1GitArtifact(
+                                                        branch="branch_example",
                                                         depth=1,
                                                         disable_submodules=True,
                                                         fetch=[
@@ -22194,6 +22309,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         ),
                                                         repo="repo_example",
                                                         revision="revision_example",
+                                                        single_branch=True,
                                                         ssh_private_key_secret=SecretKeySelector(
                                                             key="key_example",
                                                             name="name_example",
@@ -23007,6 +23123,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 ),
                             ),
                             git=IoArgoprojWorkflowV1alpha1GitArtifact(
+                                branch="branch_example",
                                 depth=1,
                                 disable_submodules=True,
                                 fetch=[
@@ -23020,6 +23137,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 ),
                                 repo="repo_example",
                                 revision="revision_example",
+                                single_branch=True,
                                 ssh_private_key_secret=SecretKeySelector(
                                     key="key_example",
                                     name="name_example",
@@ -23132,6 +23250,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 ),
                                 use_sdk_creds=True,
                             ),
+                        ),
+                        artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                            strategy="strategy_example",
                         ),
                         automount_service_account_token=True,
                         container=Container(
@@ -23737,6 +23858,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                     ),
                                                 ),
                                                 git=IoArgoprojWorkflowV1alpha1GitArtifact(
+                                                    branch="branch_example",
                                                     depth=1,
                                                     disable_submodules=True,
                                                     fetch=[
@@ -23750,6 +23872,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                     ),
                                                     repo="repo_example",
                                                     revision="revision_example",
+                                                    single_branch=True,
                                                     ssh_private_key_secret=SecretKeySelector(
                                                         key="key_example",
                                                         name="name_example",
@@ -23945,6 +24068,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             ),
                                                         ),
                                                         git=IoArgoprojWorkflowV1alpha1GitArtifact(
+                                                            branch="branch_example",
                                                             depth=1,
                                                             disable_submodules=True,
                                                             fetch=[
@@ -23958,6 +24082,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             ),
                                                             repo="repo_example",
                                                             revision="revision_example",
+                                                            single_branch=True,
                                                             ssh_private_key_secret=SecretKeySelector(
                                                                 key="key_example",
                                                                 name="name_example",
@@ -24175,6 +24300,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ),
                                     ),
                                     git=IoArgoprojWorkflowV1alpha1GitArtifact(
+                                        branch="branch_example",
                                         depth=1,
                                         disable_submodules=True,
                                         fetch=[
@@ -24188,6 +24314,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ),
                                         repo="repo_example",
                                         revision="revision_example",
+                                        single_branch=True,
                                         ssh_private_key_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
@@ -24657,6 +24784,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ),
                                     ),
                                     git=IoArgoprojWorkflowV1alpha1GitArtifact(
+                                        branch="branch_example",
                                         depth=1,
                                         disable_submodules=True,
                                         fetch=[
@@ -24670,6 +24798,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ),
                                         repo="repo_example",
                                         revision="revision_example",
+                                        single_branch=True,
                                         ssh_private_key_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
@@ -24906,6 +25035,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ),
                                     ),
                                     git=IoArgoprojWorkflowV1alpha1GitArtifact(
+                                        branch="branch_example",
                                         depth=1,
                                         disable_submodules=True,
                                         fetch=[
@@ -24919,6 +25049,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ),
                                         repo="repo_example",
                                         revision="revision_example",
+                                        single_branch=True,
                                         ssh_private_key_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
@@ -25716,6 +25847,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                     ),
                                                 ),
                                                 git=IoArgoprojWorkflowV1alpha1GitArtifact(
+                                                    branch="branch_example",
                                                     depth=1,
                                                     disable_submodules=True,
                                                     fetch=[
@@ -25729,6 +25861,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                     ),
                                                     repo="repo_example",
                                                     revision="revision_example",
+                                                    single_branch=True,
                                                     ssh_private_key_secret=SecretKeySelector(
                                                         key="key_example",
                                                         name="name_example",
@@ -25920,6 +26053,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             ),
                                                         ),
                                                         git=IoArgoprojWorkflowV1alpha1GitArtifact(
+                                                            branch="branch_example",
                                                             depth=1,
                                                             disable_submodules=True,
                                                             fetch=[
@@ -25933,6 +26067,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             ),
                                                             repo="repo_example",
                                                             revision="revision_example",
+                                                            single_branch=True,
                                                             ssh_private_key_secret=SecretKeySelector(
                                                                 key="key_example",
                                                                 name="name_example",

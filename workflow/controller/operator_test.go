@@ -1957,6 +1957,49 @@ func TestSuspendWithDeadline(t *testing.T) {
 	assert.True(t, found)
 }
 
+var suspendTemplateInputResolution = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: suspend-template
+spec:
+  entrypoint: suspend
+  templates:
+  - name: suspend
+    inputs:
+        parameters:
+            - name: param1
+              value: "{\"enum\": [\"one\", \"two\", \"three\"]}"
+            - name: param2
+              value: "value2"
+    suspend: {}
+`
+
+func TestSuspendInputsResolution(t *testing.T) {
+	cancel, controller := newController()
+	defer cancel()
+
+	ctx := context.Background()
+	wf := wfv1.MustUnmarshalWorkflow(suspendTemplateInputResolution)
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate(ctx)
+
+	node := woc.wf.Status.Nodes.FindByDisplayName("suspend-template")
+
+	assert.Equal(t, node.Type, wfv1.NodeTypeSuspend)
+	assert.Equal(t, node.Phase, wfv1.NodeRunning)
+
+	assert.Equal(t, node.Inputs.Parameters[0].Name, "param1")
+	assert.Equal(t, node.Inputs.Parameters[0].Value.String(), "{\"enum\": [\"one\", \"two\", \"three\"]}")
+	assert.Equal(t, len(node.Inputs.Parameters[0].Enum), 3)
+	assert.Equal(t, node.Inputs.Parameters[0].Enum[0].String(), "one")
+	assert.Equal(t, node.Inputs.Parameters[0].Enum[1].String(), "two")
+	assert.Equal(t, node.Inputs.Parameters[0].Enum[2].String(), "three")
+
+	assert.Equal(t, node.Inputs.Parameters[1].Name, "param2")
+	assert.Equal(t, node.Inputs.Parameters[1].Value.String(), "value2")
+}
+
 var sequence = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -3733,6 +3776,37 @@ func TestNestedOptionalOutputArtifacts(t *testing.T) {
 	woc.operate(ctx)
 
 	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
+}
+
+var artifactGCOnWorkflowCompletion = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: artifact-passing-
+spec:
+  entrypoint: whalesay
+  artifactGC:
+    strategy: OnWorkflowCompletion
+  templates:
+  - name: whalesay
+    container:
+      image: docker/whalesay:latest
+      command: [sh, -c]
+      args: ["sleep 1; cowsay hello world | tee /tmp/hello_world.txt"]
+`
+
+func TestArtifactGCOnWorkflowCompletion(t *testing.T) {
+	cancel, controller := newController()
+	defer cancel()
+	ctx := context.Background()
+
+	wf := wfv1.MustUnmarshalWorkflow(artifactGCOnWorkflowCompletion)
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate(ctx)
+
+	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
+	assert.Equal(t, 1, len(woc.wf.GetFinalizers()))
+	assert.Equal(t, "workflows.argoproj.io/artifact-gc", woc.wf.GetFinalizers()[0])
 }
 
 //  TestPodSpecLogForFailedPods tests PodSpec logging configuration
@@ -6320,7 +6394,7 @@ func TestPodHasContainerNeedingTermination(t *testing.T) {
 					State: apiv1.ContainerState{Terminated: &apiv1.ContainerStateTerminated{ExitCode: 1}},
 				},
 			}}}
-	assert.False(t, podHasContainerNeedingTermination(&pod, tmpl))
+	assert.True(t, podHasContainerNeedingTermination(&pod, tmpl))
 
 	pod = apiv1.Pod{
 		Status: apiv1.PodStatus{

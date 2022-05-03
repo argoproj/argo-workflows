@@ -1261,6 +1261,15 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, old *wfv1.NodeStatus
 		new.Outputs.ExitCode = pointer.StringPtr(fmt.Sprint(*exitCode))
 	}
 
+	// We cannot fail the node until the wait container is finished because it may be busy saving outputs, and these
+	// would not get captured successfully.
+	for _, c := range pod.Status.ContainerStatuses {
+		if c.Name == common.WaitContainerName && c.State.Terminated == nil && new.Phase.Completed() {
+			woc.log.WithField("new.phase", new.Phase).Info("leaving phase un-changed: wait container is not yet terminated ")
+			new.Phase = old.Phase
+		}
+	}
+
 	// if we are transitioning from Pending to a different state, clear out unchanged message
 	if old.Phase == wfv1.NodePending && new.Phase != wfv1.NodePending && old.Message == new.Message {
 		new.Message = ""
@@ -1272,7 +1281,7 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, old *wfv1.NodeStatus
 	}
 
 	if !reflect.DeepEqual(old, new) {
-		log.WithField("nodeID", old.ID).
+		woc.log.WithField("nodeID", old.ID).
 			WithField("old.phase", old.Phase).
 			WithField("new.phase", new.Phase).
 			WithField("old.message", old.Message).
@@ -1282,7 +1291,7 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, old *wfv1.NodeStatus
 			Info("node changed")
 		return new
 	}
-	log.WithField("nodeID", old.ID).
+	woc.log.WithField("nodeID", old.ID).
 		Info("node unchanged")
 	return nil
 }
@@ -1298,11 +1307,9 @@ func getExitCode(pod *apiv1.Pod) *int32 {
 
 func podHasContainerNeedingTermination(pod *apiv1.Pod, tmpl wfv1.Template) bool {
 	for _, c := range pod.Status.ContainerStatuses {
-		// Only clean up pod when both the wait and the main containers are terminated
-		if c.Name == common.WaitContainerName || tmpl.IsMainContainerName(c.Name) {
-			if c.State.Terminated == nil {
-				return false
-			}
+		// Only clean up pod when all main containers are terminated
+		if tmpl.IsMainContainerName(c.Name) && c.State.Terminated == nil {
+			return false
 		}
 	}
 	return true
@@ -2937,6 +2944,7 @@ func (woc *wfOperationCtx) executeSuspend(nodeName string, templateScope string,
 	node := woc.wf.GetNodeByName(nodeName)
 	if node == nil {
 		node = woc.initializeExecutableNode(nodeName, wfv1.NodeTypeSuspend, templateScope, tmpl, orgTmpl, opts.boundaryID, wfv1.NodePending)
+		woc.resolveInputFieldsForSuspendNode(node)
 	}
 	woc.log.Infof("node %s suspended", nodeName)
 
@@ -2975,6 +2983,33 @@ func (woc *wfOperationCtx) executeSuspend(nodeName string, templateScope string,
 
 	_ = woc.markNodePhase(nodeName, wfv1.NodeRunning)
 	return node, nil
+}
+
+func (woc *wfOperationCtx) resolveInputFieldsForSuspendNode(node *wfv1.NodeStatus) {
+	if node.Inputs == nil {
+		return
+	}
+	parameters := node.Inputs.Parameters
+	for i, parameter := range parameters {
+		if parameter.Value != nil {
+
+			value := parameter.Value.String()
+			tempParameter := wfv1.Parameter{}
+
+			if err := json.Unmarshal([]byte(value), &tempParameter); err != nil {
+				woc.log.Debugf("Unable to parse input string %s to Parameter %s, %v", value, parameter.Name, err)
+				continue
+			}
+
+			enum := tempParameter.Enum
+			if len(enum) > 0 {
+				parameters[i].Enum = enum
+				if parameters[i].Default == nil {
+					parameters[i].Default = wfv1.AnyStringPtr(enum[0])
+				}
+			}
+		}
+	}
 }
 
 func addRawOutputFields(node *wfv1.NodeStatus, tmpl *wfv1.Template) *wfv1.NodeStatus {
@@ -3384,21 +3419,21 @@ func (woc *wfOperationCtx) includeScriptOutput(nodeName, boundaryID string) (boo
 }
 
 func (woc *wfOperationCtx) fetchWorkflowSpec() (wfv1.WorkflowSpecHolder, error) {
-	if woc.wf.Spec.WorkflowTemplateRef == nil {
+	if woc.wf.Spec.WorkflowTemplateRef == nil { // not-woc-misuse
 		return nil, fmt.Errorf("cannot fetch workflow spec without workflowTemplateRef")
 	}
 
 	var specHolder wfv1.WorkflowSpecHolder
 	var err error
 	// Logic for workflow refers Workflow template
-	if woc.wf.Spec.WorkflowTemplateRef.ClusterScope {
+	if woc.wf.Spec.WorkflowTemplateRef.ClusterScope { // not-woc-misuse
 		if woc.controller.cwftmplInformer == nil {
 			woc.log.WithError(err).Error("clusterWorkflowTemplate RBAC is missing")
 			return nil, fmt.Errorf("cannot get resource clusterWorkflowTemplate at cluster scope")
 		}
-		specHolder, err = woc.controller.cwftmplInformer.Lister().Get(woc.wf.Spec.WorkflowTemplateRef.Name)
+		specHolder, err = woc.controller.cwftmplInformer.Lister().Get(woc.wf.Spec.WorkflowTemplateRef.Name) // not-woc-misuse
 	} else {
-		specHolder, err = woc.controller.wftmplInformer.Lister().WorkflowTemplates(woc.wf.Namespace).Get(woc.wf.Spec.WorkflowTemplateRef.Name)
+		specHolder, err = woc.controller.wftmplInformer.Lister().WorkflowTemplates(woc.wf.Namespace).Get(woc.wf.Spec.WorkflowTemplateRef.Name) // not-woc-misuse
 	}
 	if err != nil {
 		return nil, err
@@ -3414,7 +3449,7 @@ func (woc *wfOperationCtx) retryStrategy(tmpl *wfv1.Template) *wfv1.RetryStrateg
 }
 
 func (woc *wfOperationCtx) setExecWorkflow(ctx context.Context) error {
-	if woc.wf.Spec.WorkflowTemplateRef != nil {
+	if woc.wf.Spec.WorkflowTemplateRef != nil { // not-woc-misuse
 		err := woc.setStoredWfSpec()
 		if err != nil {
 			woc.markWorkflowError(ctx, err)
@@ -3432,11 +3467,12 @@ func (woc *wfOperationCtx) setExecWorkflow(ctx context.Context) error {
 			woc.markWorkflowError(ctx, err)
 			return err
 		}
-		woc.volumes = woc.wf.Spec.DeepCopy().Volumes
+		woc.volumes = woc.wf.Spec.DeepCopy().Volumes // not-woc-misuse
 	}
 
 	// Perform one-time workflow validation
 	if woc.wf.Status.Phase == wfv1.WorkflowUnknown {
+		woc.addFinalizers()
 		validateOpts := validate.ValidateOpts{}
 		wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTemplates(woc.wf.Namespace))
 		cwftmplGetter := templateresolution.WrapClusterWorkflowTemplateInterface(woc.controller.wfclientset.ArgoprojV1alpha1().ClusterWorkflowTemplates())
@@ -3476,6 +3512,17 @@ func (woc *wfOperationCtx) setExecWorkflow(ctx context.Context) error {
 	return nil
 }
 
+func (woc *wfOperationCtx) addFinalizers() {
+	woc.addArtifactGCFinalizer()
+}
+
+func (woc *wfOperationCtx) addArtifactGCFinalizer() {
+	if woc.execWf.Spec.ArtifactGC != nil && woc.execWf.Spec.ArtifactGC.Strategy != wfv1.ArtifactGCNever {
+		finalizers := append(woc.wf.GetFinalizers(), common.FinalizerArtifactGC)
+		woc.wf.SetFinalizers(finalizers)
+	}
+}
+
 func (woc *wfOperationCtx) GetShutdownStrategy() wfv1.ShutdownStrategy {
 	return woc.execWf.Spec.Shutdown
 }
@@ -3488,9 +3535,9 @@ func (woc *wfOperationCtx) needsStoredWfSpecUpdate() bool {
 	// woc.wf.Status.StoredWorkflowSpec.Entrypoint == "" check is mainly to support  backward compatible with 2.11.x workflow to 2.12.x
 	// Need to recalculate StoredWorkflowSpec in 2.12.x format.
 	// This check can be removed once all user migrated from 2.11.x to 2.12.x
-	return woc.wf.Status.StoredWorkflowSpec == nil || (woc.wf.Spec.Entrypoint != "" && woc.wf.Status.StoredWorkflowSpec.Entrypoint == "") ||
-		(woc.wf.Spec.Suspend != woc.wf.Status.StoredWorkflowSpec.Suspend) ||
-		(woc.wf.Spec.Shutdown != woc.wf.Status.StoredWorkflowSpec.Shutdown)
+	return woc.wf.Status.StoredWorkflowSpec == nil || (woc.wf.Spec.Entrypoint != "" && woc.wf.Status.StoredWorkflowSpec.Entrypoint == "") || // not-woc-misuse
+		(woc.wf.Spec.Suspend != woc.wf.Status.StoredWorkflowSpec.Suspend) || // not-woc-misuse
+		(woc.wf.Spec.Shutdown != woc.wf.Status.StoredWorkflowSpec.Shutdown) // not-woc-misuse
 }
 
 func (woc *wfOperationCtx) setStoredWfSpec() error {
@@ -3514,7 +3561,7 @@ func (woc *wfOperationCtx) setStoredWfSpec() error {
 	// Update the Entrypoint, ShutdownStrategy and Suspend
 	if woc.needsStoredWfSpecUpdate() {
 		// Join workflow, workflow template, and workflow default metadata to workflow spec.
-		mergedWf, err := wfutil.JoinWorkflowSpec(&woc.wf.Spec, workflowTemplateSpec, &wfDefault.Spec)
+		mergedWf, err := wfutil.JoinWorkflowSpec(&woc.wf.Spec, workflowTemplateSpec, &wfDefault.Spec) // not-woc-misuse
 		if err != nil {
 			return err
 		}
@@ -3525,7 +3572,7 @@ func (woc *wfOperationCtx) setStoredWfSpec() error {
 		if err != nil {
 			return err
 		}
-		mergedWf, err := wfutil.JoinWorkflowSpec(&woc.wf.Spec, wftHolder.GetWorkflowSpec(), &wfDefault.Spec)
+		mergedWf, err := wfutil.JoinWorkflowSpec(&woc.wf.Spec, wftHolder.GetWorkflowSpec(), &wfDefault.Spec) // not-woc-misuse
 		if err != nil {
 			return err
 		}

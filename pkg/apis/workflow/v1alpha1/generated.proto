@@ -81,6 +81,13 @@ message Artifact {
   optional string fromExpression = 11;
 }
 
+// ArtifactGC describes how to delete artifacts from completed Workflows
+message ArtifactGC {
+  // Strategy is the strategy to use. One of "OnWorkflowCompletion", "OnWorkflowDeletion"
+  // +kubebuilder:validation:Enum="";OnWorkflowCompletion;OnWorkflowDeletion
+  optional string strategy = 1;
+}
+
 // ArtifactLocation describes a location for a single or multiple artifacts.
 // It is used as single artifact in the context of inputs/outputs (e.g. outputs.artifacts.artname).
 // It is also used to describe the location of multiple artifacts such as the archive location
@@ -162,6 +169,22 @@ message ArtifactRepositoryRefStatus {
 
   // The repository the workflow will use. This maybe empty before v3.1.
   optional ArtifactRepository artifactRepository = 4;
+}
+
+message ArtifactSearchQuery {
+  map<string, bool> artifactGCStrategies = 1;
+
+  optional string artifactName = 2;
+
+  optional string templateName = 3;
+
+  optional string nodeId = 4;
+}
+
+message ArtifactSearchResult {
+  optional Artifact artifact = 1;
+
+  optional string nodeID = 2;
 }
 
 // ArtifactoryArtifact is the location of an artifactory artifact
@@ -517,6 +540,12 @@ message GitArtifact {
 
   // DisableSubmodules disables submodules during git clone
   optional bool disableSubmodules = 9;
+
+  // SingleBranch enables single branch clone, using the `branch` parameter
+  optional bool singleBranch = 10;
+
+  // Branch is the branch to fetch when `SingleBranch` is enabled
+  optional string branch = 11;
 }
 
 // HDFSArtifact is the location of an HDFS artifact
@@ -1466,6 +1495,9 @@ message Template {
   // Timeout allows to set the total node execution timeout duration counting from the node's start time.
   // This duration also includes time in which the node spends in Pending state. This duration may not be applied to Step or DAG templates.
   optional string timeout = 38;
+
+  // ArtifactGC describes the strategy to use when to deleting artifacts from executed templates
+  optional ArtifactGC artifactGC = 44;
 }
 
 // TemplateRef is a reference of template resource.
@@ -1780,6 +1812,9 @@ message WorkflowSpec {
 
   // WorkflowMetadata contains some metadata of the workflow to be refer
   optional WorkflowMetadata workflowMetadata = 42;
+
+  // ArtifactGC describes the strategy to use when to deleting artifacts from completed or deleted workflows
+  optional ArtifactGC artifactGC = 43;
 }
 
 // WorkflowStatus contains overall status information about a workflow

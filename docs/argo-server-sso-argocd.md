@@ -1,9 +1,10 @@
-# Use ArgoCD Dex for authentication
+# Use Argo CD Dex for authentication
 
 It is possible to have the Argo Workflows Server use the Argo CD Dex instance for authentication, for instance if you use Okta with SAML which cannot integrate with Argo Workflows directly. In order to make this happen, you will need the following:
 
-- You must be using at least Dex [v2.23.0](https://github.com/dexidp/dex/releases/tag/v2.23.0), because that's when `staticClients[].secretEnv` was added. That means ArgoCD 1.7.12 and above.
-- A secret containing two keys, `client-id` and `client-secret` to be used by both Dex and Argo Workflows Server. `client-id` is `argo-workflows-sso` in this example, `client-secret` can be any random string. If ArgoCD and ArgoWorkflows are installed in different namespaces the secret must be present in both of them. Example:
+- You must be using at least Dex [v2.23.0](https://github.com/dexidp/dex/releases/tag/v2.23.0), because that's when `staticClients[].secretEnv` was added. That means Argo CD 1.7.12 and above.
+- A secret containing two keys, `client-id` and `client-secret` to be used by both Dex and Argo Workflows Server. `client-id` is `argo-workflows-sso` in this example, `client-secret` can be any random string. If Argo CD and Argo Workflows are installed in different namespaces the secret must be present in both of them. Example:
+
   ```yaml
   apiVersion: v1
   kind: Secret
@@ -15,13 +16,15 @@ It is possible to have the Argo Workflows Server use the Argo CD Dex instance fo
     # client-secret is 'MY-SECRET-STRING-CAN-BE-UUID'
     client-secret: TVktU0VDUkVULVNUUklORy1DQU4tQkUtVVVJRA==
   ```
+
 - `--auth-mode=sso` server argument added
 - A Dex `staticClients` configured for `argo-workflows-sso`
 - The `sso` configuration filled out in Argo Workflows Server to match
 
-## Example manifests for authenticating against ArgoCD's Dex (Kustomize)
+## Example manifests for authenticating against Argo CD's Dex (Kustomize)
 
-In ArgoCD, add an environment variable to Dex deployment and configuration:
+In Argo CD, add an environment variable to Dex deployment and configuration:
+
 ```yaml
 ---
 apiVersion: apps/v1
@@ -49,7 +52,7 @@ data:
   # Dex settings, but instead it will replace the entire configuration with the settings below,
   # so add these to the existing config instead of setting them in a separate file
   dex.config: |
-    # Setting staticClients allows ArgoWorkflows to use ArgoCD's Dex installation for authentication
+    # Setting staticClients allows Argo Workflows to use Argo CD's Dex installation for authentication
     staticClients:
       - id: argo-workflows-sso
         name: Argo Workflow
@@ -59,6 +62,7 @@ data:
 ```
 
 In Argo Workflows add `--auth-mode=sso` argument to argo-server deployment.
+
 ```yaml
 ---
 apiVersion: apps/v1
@@ -101,9 +105,10 @@ data:
     redirectUrl: https://argo-workflows.mydomain.com/oauth2/callback
 ```
 
-## Example Helm chart configuration for authenticating against ArgoCD's Dex
+## Example Helm chart configuration for authenticating against Argo CD's Dex
 
 `argo-cd/values.yaml`:
+
 ```yaml
      dex:
        image:
@@ -126,6 +131,7 @@ data:
 ```
 
 `argo/values.yaml`:
+
 ```yaml
      server:
        extraArgs:

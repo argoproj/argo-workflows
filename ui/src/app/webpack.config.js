@@ -90,6 +90,10 @@ const config = {
         "target": isProd ? "" : "http://localhost:2746",
         "secure": false
       },
+      "/artifact-files": {
+        "target": isProd ? "" : "http://localhost:2746",
+        "secure": false
+      },
       "/artifacts": {
         "target": isProd ? "" : "http://localhost:2746",
         "secure": false

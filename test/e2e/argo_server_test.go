@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -51,7 +52,7 @@ func (s *ArgoServerSuite) e() *httpexpect.Expect {
 			BaseURL:  baseUrl,
 			Reporter: httpexpect.NewRequireReporter(s.T()),
 			Printers: []httpexpect.Printer{
-				httpexpect.NewDebugPrinter(&httpLogger{}, true),
+				httpexpect.NewDebugPrinter(s.T(), true),
 			},
 			Client: httpClient,
 		}).
@@ -105,21 +106,26 @@ func (s *ArgoServerSuite) TestMetricsForbidden() {
 }
 
 func (s *ArgoServerSuite) TestMetricsOK() {
-	s.e().
+	body := s.e().
 		GET("/metrics").
 		Expect().
 		Status(200).
-		Body().
+		Body()
+	body.
 		// https://blog.netsil.com/the-4-golden-signals-of-api-health-and-performance-in-cloud-native-applications-a6e87526e74
 		// Latency: The time it takes to service a request, with a focus on distinguishing between the latency of successful requests and the latency of failed requests
 		Contains(`grpc_server_handling_seconds_bucket`).
 		// Traffic: A measure of how much demand is being placed on the service. This is measured using a high-level service-specific metric, like HTTP requests per second in the case of an HTTP REST API.
 		Contains(`promhttp_metric_handler_requests_in_flight`).
 		// Errors: The rate of requests that fail. The failures can be explicit (e.g., HTTP 500 errors) or implicit (e.g., an HTTP 200 OK response with a response body having too few items).
-		Contains(`promhttp_metric_handler_requests_total{code="500"}`).
-		// Saturation: How “full” is the service. This is a measure of the system utilization, emphasizing the resources that are most constrained (e.g., memory, I/O or CPU). Services degrade in performance as they approach high saturation.
-		Contains(`process_cpu_seconds_total`).
-		Contains(`process_resident_memory_bytes`)
+		Contains(`promhttp_metric_handler_requests_total{code="500"}`)
+
+	if os.Getenv("CI") == "true" {
+		body.
+			// Saturation: How “full” is the service. This is a measure of the system utilization, emphasizing the resources that are most constrained (e.g., memory, I/O or CPU). Services degrade in performance as they approach high saturation.
+			Contains(`process_cpu_seconds_total`).
+			Contains(`process_resident_memory_bytes`)
+	}
 }
 
 func (s *ArgoServerSuite) TestSubmitWorkflowTemplateFromGithubWebhook() {
@@ -1052,12 +1058,67 @@ func (s *ArgoServerSuite) TestArtifactServer() {
 		})
 
 	s.Run("GetArtifact", func() {
-		s.e().GET("/artifacts/argo/" + name + "/" + name + "/main-file").
+		resp := s.e().GET("/artifacts/argo/" + name + "/" + name + "/main-file").
 			Expect().
-			Status(200).
-			Body().
+			Status(200)
+
+		resp.Body().
 			Contains(":) Hello Argo!")
+
 	})
+
+	// In this case, the artifact name is a file
+	s.Run("GetArtifactFile", func() {
+		resp := s.e().GET("/artifact-files/argo/workflows/" + name + "/" + name + "/outputs/main-file").
+			Expect().
+			Status(200)
+
+		resp.Body().
+			Contains(":) Hello Argo!")
+
+	})
+
+	// In this case, the artifact name is a directory
+	s.Run("GetArtifactFileDirectory", func() {
+		resp := s.e().GET("/artifact-files/argo/workflows/" + name + "/" + name + "/outputs/out/").
+			Expect().
+			Status(200)
+
+		resp.Body().
+			Contains("<a href=\"subdirectory/\">subdirectory/</a>")
+
+	})
+
+	// In this case, the filename specified in the request is actually a directory
+	s.Run("GetArtifactFileSubdirectory", func() {
+		resp := s.e().GET("/artifact-files/argo/workflows/" + name + "/" + name + "/outputs/out/subdirectory/").
+			Expect().
+			Status(200)
+
+		resp.Body().
+			Contains("<a href=\"sub-file-1\">sub-file-1</a>").
+			Contains("<a href=\"sub-file-2\">sub-file-2</a>")
+
+	})
+
+	// In this case, the filename specified in the request is a subdirectory file
+	s.Run("GetArtifactSubfile", func() {
+		resp := s.e().GET("/artifact-files/argo/workflows/" + name + "/" + name + "/outputs/out/subdirectory/sub-file-1").
+			Expect().
+			Status(200)
+
+		resp.Body().
+			Contains(":) Hello Argo!")
+
+	})
+
+	// In this case, the artifact name is a file
+	s.Run("GetArtifactBadFile", func() {
+		_ = s.e().GET("/artifact-files/argo/workflows/" + name + "/" + name + "/outputs/not-a-file").
+			Expect().
+			Status(500)
+	})
+
 	s.Run("GetArtifactByUID", func() {
 		s.e().DELETE("/api/v1/workflows/argo/" + name).
 			Expect().
@@ -1079,6 +1140,14 @@ func (s *ArgoServerSuite) TestArtifactServer() {
 			WithHeader("Cookie", "authorization=Bearer "+token).
 			Expect().
 			Status(200)
+	})
+
+	s.Run("GetArtifactFileByUID", func() {
+		s.e().GET("/artifact-files/argo/archived-workflows/{uid}/{name}/outputs/main-file", uid, name).
+			Expect().
+			Status(200).
+			Body().
+			Contains(":) Hello Argo!")
 	})
 }
 

@@ -96,7 +96,7 @@ const (
 	ExecutorStagingEmptyDir = "/argo/staging"
 	// ExecutorScriptSourcePath is the path which init will write the script source file to for script templates
 	ExecutorScriptSourcePath = "/argo/staging/script"
-	// ExecutorResourceManifestPath is the path which init will write the a manifest file to for resource templates
+	// ExecutorResourceManifestPath is the path which init will write the manifest file to for resource templates
 	ExecutorResourceManifestPath = "/tmp/manifest.yaml"
 
 	// Various environment variables containing pod information exposed to the executor container(s)
@@ -141,6 +141,9 @@ const (
 	EnvAgentTaskWorkers = "ARGO_AGENT_TASK_WORKERS"
 	// EnvAgentPatchRate is the rate that the Argo Agent will patch the Workflow TaskSet
 	EnvAgentPatchRate = "ARGO_AGENT_PATCH_RATE"
+
+	// Finalizer to block deletion of the workflow if deletion of artifacts fail for some reason.
+	FinalizerArtifactGC = workflow.WorkflowFullName + "/artifact-gc"
 
 	// Variables that are added to the scope during template execution and can be referenced using {{}} syntax
 
