@@ -98,7 +98,7 @@ COPY --from=argoexec-build /usr/local/bin/kubectl /bin/
 COPY --from=argoexec-build /usr/local/bin/jq /bin/
 COPY --from=argoexec-build /go/src/github.com/argoproj/argo-workflows/dist/argoexec /bin/
 COPY --from=argoexec-build /etc/mime.types /etc/mime.types
-COPY --from=argocli-build /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+COPY --from=argoexec-build /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 COPY hack/ssh_known_hosts /etc/ssh/
 COPY hack/nsswitch.conf /etc/
 

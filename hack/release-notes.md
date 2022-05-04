@@ -6,7 +6,7 @@ Find out on [our blog](https://blog.argoproj.io) and [changelog](https://github.
 
 ## Breaking Changes and Known Issues
 
-See [upgrading](https://github.com/argoproj/argo-workflows/blob/master/docs/upgrading.md).
+Can be found in the [installation guide](https://argoproj.github.io/argo-workflows/installation/).
 
 ## Installation
 
