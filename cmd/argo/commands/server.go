@@ -49,7 +49,6 @@ func NewServerCommand() *cobra.Command {
 		htst                     bool
 		namespaced               bool   // --namespaced
 		managedNamespace         string // --managed-namespace
-		ssoNamespace             string
 		enableOpenBrowser        bool
 		eventOperationQueueSize  int
 		eventWorkerCount         int
@@ -143,29 +142,12 @@ See %s`, help.ArgoServer),
 				log.Warn("You are running without client authentication. Learn how to enable client authentication: https://argoproj.github.io/argo-workflows/argo-server-auth-mode/")
 			}
 
-			if namespaced {
-				// Case 1: If ssoNamespace is not specified, default it to installation namespace
-				if ssoNamespace == "" {
-					ssoNamespace = namespace
-				}
-				// Case 2: If ssoNamespace is not equal to installation or managed namespace, default it to installation namespace
-				if ssoNamespace != namespace && ssoNamespace != managedNamespace {
-					log.Warn("--sso-namespace should be equal to --managed-namespace or the installation namespace")
-					ssoNamespace = namespace
-				}
-			} else {
-				if ssoNamespace != "" {
-					log.Warn("ignoring --sso-namespace because --namespaced is false")
-				}
-				ssoNamespace = namespace
-			}
 			opts := apiserver.ArgoServerOpts{
 				BaseHRef:                 baseHRef,
 				TLSConfig:                tlsConfig,
 				HSTS:                     htst,
 				Namespaced:               namespaced,
 				Namespace:                namespace,
-				SSONameSpace:             ssoNamespace,
 				Clients:                  clients,
 				RestConfig:               config,
 				AuthModes:                modes,
@@ -224,7 +206,6 @@ See %s`, help.ArgoServer),
 	command.Flags().StringVar(&configMap, "configmap", common.ConfigMapName, "Name of K8s configmap to retrieve workflow controller configuration")
 	command.Flags().BoolVar(&namespaced, "namespaced", false, "run as namespaced mode")
 	command.Flags().StringVar(&managedNamespace, "managed-namespace", "", "namespace that watches, default to the installation namespace")
-	command.Flags().StringVar(&ssoNamespace, "sso-namespace", "", "namespace that will be used for SSO RBAC. Defaults to installation namespace. Used only in namespaced mode")
 	command.Flags().BoolVarP(&enableOpenBrowser, "browser", "b", false, "enable automatic launching of the browser [local mode]")
 	command.Flags().IntVar(&eventOperationQueueSize, "event-operation-queue-size", 16, "how many events operations that can be queued at once")
 	command.Flags().IntVar(&eventWorkerCount, "event-worker-count", 4, "how many event workers to run")

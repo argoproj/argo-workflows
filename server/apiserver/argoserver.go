@@ -99,7 +99,6 @@ type ArgoServerOpts struct {
 	// config map name
 	ConfigName               string
 	ManagedNamespace         string
-	SSONameSpace             string
 	HSTS                     bool
 	EventOperationQueueSize  int
 	EventWorkerCount         int
@@ -116,9 +115,12 @@ func init() {
 	}
 }
 
-func getResourceCacheNamespace(opts ArgoServerOpts) string {
+func getSSONamespace(opts ArgoServerOpts) string {
 	if opts.Namespaced {
-		return opts.SSONameSpace
+		if opts.ManagedNamespace != "" {
+			return opts.ManagedNamespace
+		}
+		return opts.Namespace
 	}
 	return v1.NamespaceAll
 }
@@ -136,12 +138,12 @@ func NewArgoServer(ctx context.Context, opts ArgoServerOpts) (*argoServer, error
 		if err != nil {
 			return nil, err
 		}
-		resourceCache = cache.NewResourceCache(opts.Clients.Kubernetes, ctx, getResourceCacheNamespace(opts))
+		resourceCache = cache.NewResourceCache(opts.Clients.Kubernetes, ctx, getSSONamespace(opts))
 		log.Info("SSO enabled")
 	} else {
 		log.Info("SSO disabled")
 	}
-	gatekeeper, err := auth.NewGatekeeper(opts.AuthModes, opts.Clients, opts.RestConfig, ssoIf, auth.DefaultClientForAuthorization, opts.Namespace, opts.SSONameSpace, opts.Namespaced, resourceCache)
+	gatekeeper, err := auth.NewGatekeeper(opts.AuthModes, opts.Clients, opts.RestConfig, ssoIf, auth.DefaultClientForAuthorization, opts.Namespace, getSSONamespace(opts), opts.Namespaced, resourceCache)
 	if err != nil {
 		return nil, err
 	}
