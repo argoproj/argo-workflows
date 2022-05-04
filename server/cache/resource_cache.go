@@ -20,7 +20,7 @@ type ResourceCache struct {
 }
 
 func NewResourceCacheWithTimeout(client kubernetes.Interface, ctx context.Context, namespace string, timeout time.Duration) *ResourceCache {
-	informerFactory := informers.NewSharedInformerFactoryWithOptions(client, timeout, informers.WithNamespace(namespace))
+	informerFactory := informers.NewSharedInformerFactoryWithOptions(client, time.Minute*20, informers.WithNamespace(namespace))
 	cache := &ResourceCache{
 		ctx:                  ctx,
 		cache:                NewLruTtlCache(timeout, 2000),
