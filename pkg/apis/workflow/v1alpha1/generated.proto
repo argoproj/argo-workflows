@@ -79,6 +79,9 @@ message Artifact {
 
   // FromExpression, if defined, is evaluated to specify the value for the artifact
   optional string fromExpression = 11;
+
+  // ArtifactGC describes the strategy to use when to deleting an artifact from completed or deleted workflows
+  optional ArtifactGC artifactGC = 12;
 }
 
 // ArtifactGC describes how to delete artifacts from completed Workflows
@@ -1495,9 +1498,6 @@ message Template {
   // Timeout allows to set the total node execution timeout duration counting from the node's start time.
   // This duration also includes time in which the node spends in Pending state. This duration may not be applied to Step or DAG templates.
   optional string timeout = 38;
-
-  // ArtifactGC describes the strategy to use when to deleting artifacts from executed templates
-  optional ArtifactGC artifactGC = 44;
 }
 
 // TemplateRef is a reference of template resource.

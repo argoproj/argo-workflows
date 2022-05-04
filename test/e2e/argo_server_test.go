@@ -25,7 +25,6 @@ import (
 
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/server/artifacts"
 	"github.com/argoproj/argo-workflows/v3/test/e2e/fixtures"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
@@ -1067,11 +1066,74 @@ func (s *ArgoServerSuite) TestArtifactServer() {
 			Contains(":) Hello Argo!")
 
 		resp.Header("Content-Security-Policy").
-			Equal(artifacts.DefaultContentSecurityPolicy) // MSB
+			Equal("sandbox; base-uri 'none'; default-src 'none'; img-src 'self'; style-src 'self'") // MSB
 
 		resp.Header("X-Frame-Options").
-			Equal(artifacts.DefaultXFrameOptions)
+			Equal("SAMEORIGIN")
 	})
+
+	// In this case, the artifact name is a file
+	s.Run("GetArtifactFile", func() {
+		resp := s.e().GET("/artifact-files/argo/workflows/" + name + "/" + name + "/outputs/main-file").
+			Expect().
+			Status(200)
+
+		resp.Body().
+			Contains(":) Hello Argo!")
+
+		resp.Header("Content-Security-Policy").
+			Equal("sandbox; base-uri 'none'; default-src 'none'; img-src 'self'; style-src 'self'") // MSB
+
+		resp.Header("X-Frame-Options").
+			Equal("SAMEORIGIN")
+	})
+
+	// In this case, the artifact name is a directory
+	s.Run("GetArtifactFileDirectory", func() {
+		resp := s.e().GET("/artifact-files/argo/workflows/" + name + "/" + name + "/outputs/out/").
+			Expect().
+			Status(200)
+
+		resp.Body().
+			Contains("<a href=\"subdirectory/\">subdirectory/</a>")
+
+	})
+
+	// In this case, the filename specified in the request is actually a directory
+	s.Run("GetArtifactFileSubdirectory", func() {
+		resp := s.e().GET("/artifact-files/argo/workflows/" + name + "/" + name + "/outputs/out/subdirectory/").
+			Expect().
+			Status(200)
+
+		resp.Body().
+			Contains("<a href=\"sub-file-1\">sub-file-1</a>").
+			Contains("<a href=\"sub-file-2\">sub-file-2</a>")
+
+	})
+
+	// In this case, the filename specified in the request is a subdirectory file
+	s.Run("GetArtifactSubfile", func() {
+		resp := s.e().GET("/artifact-files/argo/workflows/" + name + "/" + name + "/outputs/out/subdirectory/sub-file-1").
+			Expect().
+			Status(200)
+
+		resp.Body().
+			Contains(":) Hello Argo!")
+
+		resp.Header("Content-Security-Policy").
+			Equal("sandbox; base-uri 'none'; default-src 'none'; img-src 'self'; style-src 'self'") // MSB
+
+		resp.Header("X-Frame-Options").
+			Equal("SAMEORIGIN")
+	})
+
+	// In this case, the artifact name is a file
+	s.Run("GetArtifactBadFile", func() {
+		_ = s.e().GET("/artifact-files/argo/workflows/" + name + "/" + name + "/outputs/not-a-file").
+			Expect().
+			Status(500)
+	})
+
 	s.Run("GetArtifactByUID", func() {
 		s.e().DELETE("/api/v1/workflows/argo/" + name).
 			Expect().
@@ -1093,6 +1155,14 @@ func (s *ArgoServerSuite) TestArtifactServer() {
 			WithHeader("Cookie", "authorization=Bearer "+token).
 			Expect().
 			Status(200)
+	})
+
+	s.Run("GetArtifactFileByUID", func() {
+		s.e().GET("/artifact-files/argo/archived-workflows/{uid}/{name}/outputs/main-file", uid, name).
+			Expect().
+			Status(200).
+			Body().
+			Contains(":) Hello Argo!")
 	})
 }
 

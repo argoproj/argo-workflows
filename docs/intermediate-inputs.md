@@ -2,16 +2,17 @@
 
 > v3.4 and after
 
-Traditionally, Argo workflows has supported input parameters from UI only when the workflow starts, 
-and after that, it's pretty much on autopilot. But, there are a lot of use cases where human interaction is required. 
+Traditionally, Argo workflows has supported input parameters from UI only when the workflow starts,
+and after that, it's pretty much on autopilot. But, there are a lot of use cases where human interaction is required.
 
 This interaction is in the form of providing input text in the middle of the workflow, choosing from a dropdown of the options which a workflow step itself is intelligently generating.
 
 A similar feature which you can see in jenkins is [pipeline-input-step](https://www.jenkins.io/doc/pipeline/steps/pipeline-input-step/)
 
 Example use cases include:
+
 - A human approval before doing something in production environment.
-- Programmatic generation of a list of inputs from which the user chooses. 
+- Programmatic generation of a list of inputs from which the user chooses.
 Choosing from a list of available databases which the workflow itself is generating.
 
 This feature is achieved via `suspend template`.
@@ -63,6 +64,7 @@ templates:
 ```
 
 ## Intermediate Parameters DB Schema Update Example
+
 - The below example shows programmatic generation of `enum` values.
 - The `generate-db-list` template generates an output called `db_list`.
 - This output is of type `json`.
@@ -130,6 +132,7 @@ templates:
 ```
 
 ### Some Important Details
+
 - The suspended node should have the **SAME** parameters defined in `inputs.parameters` and `outputs.parameters`.
-- All the output parameters in the suspended node should have `valueFrom.supplied: {}` 
+- All the output parameters in the suspended node should have `valueFrom.supplied: {}`
 - The selected values will be available at `<SUSPENDED_NODE>.outputs.parameters.<PARAMETER_NAME>`
