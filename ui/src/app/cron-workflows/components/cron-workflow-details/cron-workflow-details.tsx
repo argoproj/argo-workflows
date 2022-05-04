@@ -6,6 +6,7 @@ import {CronWorkflow, Link} from '../../../../models';
 import {uiUrl} from '../../../shared/base';
 import {ErrorNotice} from '../../../shared/components/error-notice';
 import {Loading} from '../../../shared/components/loading';
+import {useCollectEvent} from '../../../shared/components/use-collect-event';
 import {Context} from '../../../shared/context';
 import {historyUrl} from '../../../shared/history';
 import {services} from '../../../shared/services';
@@ -61,9 +62,7 @@ export const CronWorkflowDetails = ({match, location, history}: RouteComponentPr
 
     useEffect(() => setEdited(true), [cronWorkflow]);
 
-    useEffect(() => {
-        services.info.collectEvent('openedCronWorkflowDetails').then();
-    }, []);
+    useCollectEvent('openedCronWorkflowDetails');
 
     const suspendButton =
         cronWorkflow && !cronWorkflow.spec.suspend

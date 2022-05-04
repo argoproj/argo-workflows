@@ -1,8 +1,7 @@
 import {Page} from 'argo-ui';
 import * as React from 'react';
-import {useEffect} from 'react';
 import {uiUrl, uiUrlWithParams} from '../../shared/base';
-import {services} from '../../shared/services';
+import {useCollectEvent} from '../../shared/components/use-collect-event';
 
 require('./login.scss');
 
@@ -23,9 +22,7 @@ const getRedirect = (): string => {
     return 'redirect=' + window.location.origin + '/workflows';
 };
 export const Login = () => {
-    useEffect(() => {
-        services.info.collectEvent('openedLogin').then();
-    }, []);
+    useCollectEvent('openedLogin');
     return (
         <Page title='Login' toolbar={{breadcrumbs: [{title: 'Login'}]}}>
             <div className='argo-container'>
