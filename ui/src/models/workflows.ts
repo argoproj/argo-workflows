@@ -22,6 +22,61 @@ export interface Arguments {
     parameters?: Parameter[];
 }
 
+export interface GCSArtifactRepository {
+    endpoint: string;
+    bucket: string;
+}
+export interface S3ArtifactRepository {
+    endpoint: string;
+    bucket: string;
+}
+
+export interface OSSArtifactRepository {
+    endpoint: string;
+    bucket: string;
+}
+
+export interface ArtifactRepository {
+    gcs?: GCSArtifactRepository;
+    s3?: S3ArtifactRepository;
+    oss?: OSSArtifactRepository;
+}
+
+export interface ArtifactRepositoryRefStatus {
+    artifactRepository: ArtifactRepository;
+}
+
+export interface GCSArtifact {
+    endpoint?: string;
+    bucket?: string;
+    key: string;
+}
+
+export interface GitArtifact {
+    repo: string;
+    revision?: string;
+}
+
+export interface HTTPArtifact {
+    url: string;
+}
+
+export interface OSSArtifact {
+    endpoint?: string;
+    bucket?: string;
+    key: string;
+}
+
+export interface RawArtifact {
+    data: string;
+}
+
+export interface S3Artifact {
+    endpoint?: string;
+    bucket?: string;
+    key: string;
+}
+
 /**
  * Artifact indicates an artifact to place at a specified path
  */
@@ -42,6 +97,15 @@ export interface Artifact {
      * Path is the container path to the artifact
      */
     path?: string;
+    gcs?: GCSArtifact;
+    git?: GitArtifact;
+    http?: HTTPArtifact;
+    oss?: OSSArtifact;
+    raw?: RawArtifact;
+    s3?: S3Artifact;
+    archive?: {
+        none?: {};
+    };
 }
 
 /**
@@ -637,6 +701,8 @@ export interface WorkflowStatus {
      * StoredWorkflowTemplateSpec is a Workflow Spec of top level WorkflowTemplate.
      */
     storedWorkflowTemplateSpec?: WorkflowSpec;
+
+    artifactRepositoryRef?: ArtifactRepositoryRefStatus;
 }
 
 export interface Condition {

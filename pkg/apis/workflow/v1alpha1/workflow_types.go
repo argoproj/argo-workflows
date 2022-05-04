@@ -89,7 +89,7 @@ type ArtifactGCStrategy string
 // ArtifactGCStrategy
 const (
 	ArtifactGCOnWorkflowCompletion ArtifactGCStrategy = "OnWorkflowCompletion"
-	ArtfactGCOnWorkflowDeletion    ArtifactGCStrategy = "OnWorkflowDeletion"
+	ArtifactGCOnWorkflowDeletion   ArtifactGCStrategy = "OnWorkflowDeletion"
 	ArtifactGCNever                ArtifactGCStrategy = ""
 )
 
@@ -447,6 +447,15 @@ func (wfs WorkflowSpec) GetVolumeClaimGC() *VolumeClaimGC {
 	return wfs.VolumeClaimGC
 }
 
+// ArtifactGC returns the ArtifactGC that was defined in the workflow spec.  If none was provided, a default value is returned.
+func (wfs WorkflowSpec) GetArtifactGC() *ArtifactGC {
+	if wfs.ArtifactGC == nil {
+		return &ArtifactGC{Strategy: ArtifactGCNever}
+	}
+
+	return wfs.ArtifactGC
+}
+
 func (wfs WorkflowSpec) GetTTLStrategy() *TTLStrategy {
 	return wfs.TTLStrategy
 }
@@ -717,9 +726,6 @@ type Template struct {
 	// Timeout allows to set the total node execution timeout duration counting from the node's start time.
 	// This duration also includes time in which the node spends in Pending state. This duration may not be applied to Step or DAG templates.
 	Timeout string `json:"timeout,omitempty" protobuf:"bytes,38,opt,name=timeout"`
-
-	// ArtifactGC describes the strategy to use when to deleting artifacts from executed templates
-	ArtifactGC *ArtifactGC `json:"artifactGC,omitempty" protobuf:"bytes,44,opt,name=artifactGC"`
 }
 
 // SetType will set the template object based on template type.
@@ -923,6 +929,18 @@ type Artifact struct {
 
 	// FromExpression, if defined, is evaluated to specify the value for the artifact
 	FromExpression string `json:"fromExpression,omitempty" protobuf:"bytes,11,opt,name=fromExpression"`
+
+	// ArtifactGC describes the strategy to use when to deleting an artifact from completed or deleted workflows
+	ArtifactGC *ArtifactGC `json:"artifactGC,omitempty" protobuf:"bytes,12,opt,name=artifactGC"`
+}
+
+// ArtifactGC returns the ArtifactGC that was defined by the artifact.  If none was provided, a default value is returned.
+func (a *Artifact) GetArtifactGC() *ArtifactGC {
+	if a.ArtifactGC == nil {
+		return &ArtifactGC{Strategy: ArtifactGCNever}
+	}
+
+	return a.ArtifactGC
 }
 
 // CleanPath validates and cleans the artifact path.
@@ -1233,6 +1251,70 @@ func (r *ArtifactRepositoryRefStatus) String() string {
 	return fmt.Sprintf("%s/%s", r.Namespace, r.ArtifactRepositoryRef.String())
 }
 
+type ArtifactSearchQuery struct {
+	ArtifactGCStrategies map[ArtifactGCStrategy]bool `json:"artifactGCStrategies,omitempty" protobuf:"bytes,1,rep,name=artifactGCStrategies,castkey=ArtifactGCStrategy"`
+	ArtifactName         string                      `json:"artifactName,omitempty" protobuf:"bytes,2,rep,name=artifactName"`
+	TemplateName         string                      `json:"templateName,omitempty" protobuf:"bytes,3,rep,name=templateName"`
+	NodeId               string                      `json:"nodeId,omitempty" protobuf:"bytes,4,rep,name=nodeId"`
+}
+
+type ArtifactSearchResult struct {
+	Artifact `protobuf:"bytes,1,opt,name=artifact"`
+	NodeID   string `protobuf:"bytes,2,opt,name=nodeID"`
+}
+
+type ArtifactSearchResults []ArtifactSearchResult
+
+func NewArtifactSearchQuery() *ArtifactSearchQuery {
+	var q ArtifactSearchQuery
+	q.ArtifactGCStrategies = make(map[ArtifactGCStrategy]bool)
+	return &q
+}
+
+func (q *ArtifactSearchQuery) anyArtifactGCStrategy() bool {
+	for _, val := range q.ArtifactGCStrategies {
+		if val == true {
+			return val
+		}
+	}
+	return false
+}
+
+func (w *Workflow) SearchArtifacts(q *ArtifactSearchQuery) ArtifactSearchResults {
+
+	var results ArtifactSearchResults
+
+	for _, n := range w.Status.Nodes {
+		for _, a := range n.GetOutputs().GetArtifacts() {
+			match := true
+			if q.anyArtifactGCStrategy() {
+				artifactStrategy := a.GetArtifactGC().GetStrategy()
+				wfStrategy := w.Spec.GetArtifactGC().GetStrategy()
+				strategy := wfStrategy
+				if artifactStrategy != ArtifactGCNever {
+					strategy = artifactStrategy
+				}
+				if !q.ArtifactGCStrategies[strategy] {
+					match = false
+				}
+			}
+			if q.ArtifactName != "" && a.Name != q.ArtifactName {
+				match = false
+			}
+			if q.TemplateName != "" && n.TemplateName != q.TemplateName {
+				match = false
+			}
+			if q.NodeId != "" && n.ID != q.NodeId {
+				match = false
+			}
+			if match == true {
+				results = append(results, ArtifactSearchResult{Artifact: a, NodeID: n.ID})
+			}
+		}
+	}
+	return results
+}
+
 // Outputs hold parameters, artifacts, and results from a step
 type Outputs struct {
 	// Parameters holds the list of output parameters produced by a step
@@ -1250,6 +1332,13 @@ type Outputs struct {
 
 	// ExitCode holds the exit code of a script template
 	ExitCode *string `json:"exitCode,omitempty" protobuf:"bytes,4,opt,name=exitCode"`
+}
+
+func (o *Outputs) GetArtifacts() Artifacts {
+	if o == nil {
+		return nil
+	}
+	return o.Artifacts
 }
 
 // WorkflowStep is a reference to a template to execute in a series of step
@@ -2025,6 +2114,13 @@ func (n *NodeStatus) GetTemplateRef() *TemplateRef {
 	return n.TemplateRef
 }
 
+func (n *NodeStatus) GetOutputs() *Outputs {
+	if n == nil {
+		return nil
+	}
+	return n.Outputs
+}
+
 // IsActiveSuspendNode returns whether this node is an active suspend node
 func (n *NodeStatus) IsActiveSuspendNode() bool {
 	return n.Type == NodeTypeSuspend && n.Phase == NodeRunning
@@ -2599,7 +2695,7 @@ func (t *Template) IsDaemon() bool {
 
 // if logs should be saved as an artifact
 func (tmpl *Template) SaveLogsAsArtifact() bool {
-	return tmpl != nil && tmpl.ArchiveLocation.IsArchiveLogs() && (tmpl.ContainerSet == nil || tmpl.ContainerSet.HasContainerNamed("main"))
+	return tmpl != nil && tmpl.ArchiveLocation.IsArchiveLogs()
 }
 
 func (t *Template) GetRetryStrategy() (wait.Backoff, error) {
@@ -2786,14 +2882,14 @@ func (out *Outputs) HasParameters() bool {
 	return out != nil && len(out.Parameters) > 0
 }
 
-const MainLogsArtifactName = "main-logs"
+const LogsSuffix = "-logs"
 
 func (out *Outputs) HasLogs() bool {
 	if out == nil {
 		return false
 	}
 	for _, a := range out.Artifacts {
-		if a.Name == MainLogsArtifactName {
+		if strings.HasSuffix(a.Name, LogsSuffix) {
 			return true
 		}
 	}

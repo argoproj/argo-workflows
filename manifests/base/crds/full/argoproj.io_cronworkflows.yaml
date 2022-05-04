@@ -427,6 +427,15 @@ spec:
                               type: object
                             archiveLogs:
                               type: boolean
+                            artifactGC:
+                              properties:
+                                strategy:
+                                  enum:
+                                  - ""
+                                  - OnWorkflowCompletion
+                                  - OnWorkflowDeletion
+                                  type: string
+                              type: object
                             artifactory:
                               properties:
                                 passwordSecret:
@@ -890,6 +899,15 @@ spec:
                                     type: object
                                   archiveLogs:
                                     type: boolean
+                                  artifactGC:
+                                    properties:
+                                      strategy:
+                                        enum:
+                                        - ""
+                                        - OnWorkflowCompletion
+                                        - OnWorkflowDeletion
+                                        type: string
+                                    type: object
                                   artifactory:
                                     properties:
                                       passwordSecret:
@@ -2281,15 +2299,6 @@ spec:
                                 type: boolean
                             type: object
                         type: object
-                      artifactGC:
-                        properties:
-                          strategy:
-                            enum:
-                            - ""
-                            - OnWorkflowCompletion
-                            - OnWorkflowDeletion
-                            type: string
-                        type: object
                       automountServiceAccountToken:
                         type: boolean
                       container:
@@ -3536,6 +3545,15 @@ spec:
                                             type: object
                                           archiveLogs:
                                             type: boolean
+                                          artifactGC:
+                                            properties:
+                                              strategy:
+                                                enum:
+                                                - ""
+                                                - OnWorkflowCompletion
+                                                - OnWorkflowDeletion
+                                                type: string
+                                            type: object
                                           artifactory:
                                             properties:
                                               passwordSecret:
@@ -3965,6 +3983,15 @@ spec:
                                                   type: object
                                                 archiveLogs:
                                                   type: boolean
+                                                artifactGC:
+                                                  properties:
+                                                    strategy:
+                                                      enum:
+                                                      - ""
+                                                      - OnWorkflowCompletion
+                                                      - OnWorkflowDeletion
+                                                      type: string
+                                                  type: object
                                                 artifactory:
                                                   properties:
                                                     passwordSecret:
@@ -4447,6 +4474,15 @@ spec:
                                     type: object
                                   archiveLogs:
                                     type: boolean
+                                  artifactGC:
+                                    properties:
+                                      strategy:
+                                        enum:
+                                        - ""
+                                        - OnWorkflowCompletion
+                                        - OnWorkflowDeletion
+                                        type: string
+                                    type: object
                                   artifactory:
                                     properties:
                                       passwordSecret:
@@ -5471,6 +5507,15 @@ spec:
                                   type: object
                                 archiveLogs:
                                   type: boolean
+                                artifactGC:
+                                  properties:
+                                    strategy:
+                                      enum:
+                                      - ""
+                                      - OnWorkflowCompletion
+                                      - OnWorkflowDeletion
+                                      type: string
+                                  type: object
                                 artifactory:
                                   properties:
                                     passwordSecret:
@@ -5988,6 +6033,15 @@ spec:
                                   type: object
                                 archiveLogs:
                                   type: boolean
+                                artifactGC:
+                                  properties:
+                                    strategy:
+                                      enum:
+                                      - ""
+                                      - OnWorkflowCompletion
+                                      - OnWorkflowDeletion
+                                      type: string
+                                  type: object
                                 artifactory:
                                   properties:
                                     passwordSecret:
@@ -9107,15 +9161,6 @@ spec:
                                   type: boolean
                               type: object
                           type: object
-                        artifactGC:
-                          properties:
-                            strategy:
-                              enum:
-                              - ""
-                              - OnWorkflowCompletion
-                              - OnWorkflowDeletion
-                              type: string
-                          type: object
                         automountServiceAccountToken:
                           type: boolean
                         container:
@@ -10362,6 +10407,15 @@ spec:
                                               type: object
                                             archiveLogs:
                                               type: boolean
+                                            artifactGC:
+                                              properties:
+                                                strategy:
+                                                  enum:
+                                                  - ""
+                                                  - OnWorkflowCompletion
+                                                  - OnWorkflowDeletion
+                                                  type: string
+                                              type: object
                                             artifactory:
                                               properties:
                                                 passwordSecret:
@@ -10791,6 +10845,15 @@ spec:
                                                     type: object
                                                   archiveLogs:
                                                     type: boolean
+                                                  artifactGC:
+                                                    properties:
+                                                      strategy:
+                                                        enum:
+                                                        - ""
+                                                        - OnWorkflowCompletion
+                                                        - OnWorkflowDeletion
+                                                        type: string
+                                                    type: object
                                                   artifactory:
                                                     properties:
                                                       passwordSecret:
@@ -11273,6 +11336,15 @@ spec:
                                       type: object
                                     archiveLogs:
                                       type: boolean
+                                    artifactGC:
+                                      properties:
+                                        strategy:
+                                          enum:
+                                          - ""
+                                          - OnWorkflowCompletion
+                                          - OnWorkflowDeletion
+                                          type: string
+                                      type: object
                                     artifactory:
                                       properties:
                                         passwordSecret:
@@ -12297,6 +12369,15 @@ spec:
                                     type: object
                                   archiveLogs:
                                     type: boolean
+                                  artifactGC:
+                                    properties:
+                                      strategy:
+                                        enum:
+                                        - ""
+                                        - OnWorkflowCompletion
+                                        - OnWorkflowDeletion
+                                        type: string
+                                    type: object
                                   artifactory:
                                     properties:
                                       passwordSecret:
@@ -12814,6 +12895,15 @@ spec:
                                     type: object
                                   archiveLogs:
                                     type: boolean
+                                  artifactGC:
+                                    properties:
+                                      strategy:
+                                        enum:
+                                        - ""
+                                        - OnWorkflowCompletion
+                                        - OnWorkflowDeletion
+                                        type: string
+                                    type: object
                                   artifactory:
                                     properties:
                                       passwordSecret:

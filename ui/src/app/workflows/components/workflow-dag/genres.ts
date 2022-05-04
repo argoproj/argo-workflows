@@ -1,4 +1,5 @@
 export const genres = {
+    Artifact: true,
     Collapsed: true,
     Container: true,
     DAG: true,

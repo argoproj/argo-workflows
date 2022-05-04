@@ -94,6 +94,8 @@ definitions:
       archiveLogs:
         description: ArchiveLogs indicates if the container logs should be archived
         type: boolean
+      artifactGC:
+        $ref: '#/definitions/ArtifactGC'
       artifactory:
         $ref: '#/definitions/ArtifactoryArtifact'
       from:
@@ -147,6 +149,15 @@ definitions:
           the specified source
         type: string
     type: object
+  ArtifactGC:
+    description: ArtifactGC describes how to delete artifacts from completed Workflows
+    properties:
+      strategy:
+        $ref: '#/definitions/ArtifactGCStrategy'
+    type: object
+  ArtifactGCStrategy:
+    title: ArtifactGCStrategy is the strategy when to delete artifacts for GC.
+    type: string
   ArtifactLocation:
     description: |-
       It is used as single artifact in the context of inputs/outputs (e.g. outputs.artifacts.artname).
@@ -182,6 +193,8 @@ definitions:
       archiveLogs:
         description: ArchiveLogs indicates if the container logs should be archived
         type: boolean
+      artifactGC:
+        $ref: '#/definitions/ArtifactGC'
       artifactory:
         $ref: '#/definitions/ArtifactoryArtifact'
       from:
@@ -251,8 +264,10 @@ definitions:
       $ref: '#/definitions/Artifact'
     type: array
   AzureDataDiskCachingMode:
+    description: +enum
     type: string
   AzureDataDiskKind:
+    description: +enum
     type: string
   AzureDiskVolumeSource:
     properties:
@@ -465,6 +480,7 @@ definitions:
       variables with.
     type: object
   ConfigMapKeySelector:
+    description: +structType=atomic
     properties:
       key:
         description: The key to select.
@@ -571,10 +587,10 @@ definitions:
           Arguments to the entrypoint.
           The docker image's CMD is used if this is not provided.
           Variable references $(VAR_NAME) are expanded using the container's environment. If a variable
-          cannot be resolved, the reference in the input string will be unchanged. The $(VAR_NAME) syntax
-          can be escaped with a double $$, ie: $$(VAR_NAME). Escaped references will never be expanded,
-          regardless of whether the variable exists or not.
-          Cannot be updated.
+          cannot be resolved, the reference in the input string will be unchanged. Double $$ are reduced
+          to a single $, which allows for escaping the $(VAR_NAME) syntax: i.e. "$$(VAR_NAME)" will
+          produce the string literal "$(VAR_NAME)". Escaped references will never be expanded, regardless
+          of whether the variable exists or not. Cannot be updated.
           More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell
           +optional
         items:
@@ -585,10 +601,10 @@ definitions:
           Entrypoint array. Not executed within a shell.
           The docker image's ENTRYPOINT is used if this is not provided.
           Variable references $(VAR_NAME) are expanded using the container's environment. If a variable
-          cannot be resolved, the reference in the input string will be unchanged. The $(VAR_NAME) syntax
-          can be escaped with a double $$, ie: $$(VAR_NAME). Escaped references will never be expanded,
-          regardless of whether the variable exists or not.
-          Cannot be updated.
+          cannot be resolved, the reference in the input string will be unchanged. Double $$ are reduced
+          to a single $, which allows for escaping the $(VAR_NAME) syntax: i.e. "$$(VAR_NAME)" will
+          produce the string literal "$(VAR_NAME)". Escaped references will never be expanded, regardless
+          of whether the variable exists or not. Cannot be updated.
           More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell
           +optional
         items:
@@ -735,10 +751,10 @@ definitions:
           Arguments to the entrypoint.
           The docker image's CMD is used if this is not provided.
           Variable references $(VAR_NAME) are expanded using the container's environment. If a variable
-          cannot be resolved, the reference in the input string will be unchanged. The $(VAR_NAME) syntax
-          can be escaped with a double $$, ie: $$(VAR_NAME). Escaped references will never be expanded,
-          regardless of whether the variable exists or not.
-          Cannot be updated.
+          cannot be resolved, the reference in the input string will be unchanged. Double $$ are reduced
+          to a single $, which allows for escaping the $(VAR_NAME) syntax: i.e. "$$(VAR_NAME)" will
+          produce the string literal "$(VAR_NAME)". Escaped references will never be expanded, regardless
+          of whether the variable exists or not. Cannot be updated.
           More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell
           +optional
         items:
@@ -749,10 +765,10 @@ definitions:
           Entrypoint array. Not executed within a shell.
           The docker image's ENTRYPOINT is used if this is not provided.
           Variable references $(VAR_NAME) are expanded using the container's environment. If a variable
-          cannot be resolved, the reference in the input string will be unchanged. The $(VAR_NAME) syntax
-          can be escaped with a double $$, ie: $$(VAR_NAME). Escaped references will never be expanded,
-          regardless of whether the variable exists or not.
-          Cannot be updated.
+          cannot be resolved, the reference in the input string will be unchanged. Double $$ are reduced
+          to a single $, which allows for escaping the $(VAR_NAME) syntax: i.e. "$$(VAR_NAME)" will
+          produce the string literal "$(VAR_NAME)". Escaped references will never be expanded, regardless
+          of whether the variable exists or not. Cannot be updated.
           More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell
           +optional
         items:
@@ -928,12 +944,24 @@ definitions:
         $ref: '#/definitions/Protocol'
     title: ContainerPort represents a network port in a single container.
     type: object
+  ContainerSetRetryStrategy:
+    properties:
+      duration:
+        description: |-
+          Duration is the time between each retry, examples values are "300ms", "1s" or "5m".
+          Valid time units are "ns", "us" (or "µs"), "ms", "s", "m", "h".
+        type: string
+      retries:
+        $ref: '#/definitions/IntOrString'
+    type: object
   ContainerSetTemplate:
     properties:
       containers:
         items:
           $ref: '#/definitions/ContainerNode'
         type: array
+      retryStrategy:
+        $ref: '#/definitions/ContainerSetRetryStrategy'
       volumeMounts:
         items:
           $ref: '#/definitions/VolumeMount'
@@ -1158,11 +1186,12 @@ definitions:
       value:
         description: |-
           Variable references $(VAR_NAME) are expanded
-          using the previous defined environment variables in the container and
+          using the previously defined environment variables in the container and
           any service environment variables. If a variable cannot be resolved,
-          the reference in the input string will be unchanged. The $(VAR_NAME)
-          syntax can be escaped with a double $$, ie: $$(VAR_NAME). Escaped
-          references will never be expanded, regardless of whether the variable
+          the reference in the input string will be unchanged. Double $$ are reduced
+          to a single $, which allows for escaping the $(VAR_NAME) syntax: i.e.
+          "$$(VAR_NAME)" will produce the string literal "$(VAR_NAME)".
+          Escaped references will never be expanded, regardless of whether the variable
           exists or not.
           Defaults to "".
           +optional
@@ -1387,6 +1416,23 @@ definitions:
       serviceAccountKeySecret:
         $ref: '#/definitions/SecretKeySelector'
     type: object
+  GRPCAction:
+    properties:
+      port:
+        description: Port number of the gRPC service. Number must be in the range
+          1 to 65535.
+        format: int32
+        type: integer
+      service:
+        description: |-
+          Service is the name of the service to place in the gRPC HealthCheckRequest
+          (see https://github.com/grpc/grpc/blob/master/doc/health-checking.md).
+
+          If this is not specified, the default behavior is defined by gRPC.
+          +optional
+          +default=""
+        type: string
+    type: object
   Gauge:
     description: Gauge is a Gauge prometheus metric
     properties:
@@ -1400,6 +1446,9 @@ definitions:
   GitArtifact:
     description: GitArtifact is the location of an git artifact
     properties:
+      branch:
+        description: Branch is the branch to fetch when `SingleBranch` is enabled
+        type: string
       depth:
         description: |-
           Depth specifies clones/fetches should be shallow and include the given
@@ -1427,6 +1476,10 @@ definitions:
       revision:
         description: Revision is the git commit, tag, branch to checkout
         type: string
+      singleBranch:
+        description: SingleBranch enables single branch clone, using the `branch`
+          parameter
+        type: boolean
       sshPrivateKeySecret:
         $ref: '#/definitions/SecretKeySelector'
       usernameSecret:
@@ -1529,12 +1582,17 @@ definitions:
         description: Body is content of the HTTP Request
         type: string
       headers:
-        description: Headers are an optional list of headers to send with HTTP requests
-        items:
-          $ref: '#/definitions/HTTPHeader'
-        type: array
+        $ref: '#/definitions/HTTPHeaders'
+      insecureSkipVerify:
+        description: insecureSkipVerify is a bool when if set to true will skip TLS
+          verification for the HTTP client
+        type: boolean
       method:
         description: Method is HTTP methods for HTTP Request
+        type: string
+      successCondition:
+        description: SuccessCondition is an expression if evaluated to true is considered
+          successful
         type: string
       timeoutSeconds:
         description: TimeoutSeconds is request timeout for HTTP Request. Default is
@@ -1546,7 +1604,7 @@ definitions:
         type: string
     type: object
   HTTPArtifact:
-    description: HTTPArtifact allows an file served on HTTP to be placed as an input
+    description: HTTPArtifact allows a file served on HTTP to be placed as an input
       artifact in a container
     properties:
       headers:
@@ -1555,9 +1613,13 @@ definitions:
         items:
           $ref: '#/definitions/Header'
         type: array
+      passwordSecret:
+        $ref: '#/definitions/SecretKeySelector'
       url:
         description: URL of the artifact
         type: string
+      usernameSecret:
+        $ref: '#/definitions/SecretKeySelector'
     type: object
   HTTPGetAction:
     properties:
@@ -1599,18 +1661,10 @@ definitions:
       secretKeyRef:
         $ref: '#/definitions/SecretKeySelector'
     type: object
-  Handler:
-    description: |-
-      Handler defines a specific action that should be taken
-      TODO: pass structured data to these actions, and document that data here.
-    properties:
-      exec:
-        $ref: '#/definitions/ExecAction'
-      httpGet:
-        $ref: '#/definitions/HTTPGetAction'
-      tcpSocket:
-        $ref: '#/definitions/TCPSocketAction'
-    type: object
+  HTTPHeaders:
+    items:
+      $ref: '#/definitions/HTTPHeader'
+    type: array
   Header:
     description: Header indicate a key-value request header to be used when fetching
       artifacts over HTTP
@@ -1649,6 +1703,7 @@ definitions:
         type: string
     type: object
   HostPathType:
+    description: +enum
     type: string
   HostPathVolumeSource:
     description: Host path volumes do not support ownership management or SELinux
@@ -1858,16 +1913,36 @@ definitions:
       until the action is complete, unless the container process fails, in which case the handler is aborted.
     properties:
       postStart:
-        $ref: '#/definitions/Handler'
+        $ref: '#/definitions/LifecycleHandler'
       preStop:
-        $ref: '#/definitions/Handler'
+        $ref: '#/definitions/LifecycleHandler'
+    type: object
+  LifecycleHandler:
+    description: |-
+      LifecycleHandler defines a specific action that should be taken in a lifecycle
+      hook. One and only one of the fields, except TCPSocket must be specified.
+    properties:
+      exec:
+        $ref: '#/definitions/ExecAction'
+      httpGet:
+        $ref: '#/definitions/HTTPGetAction'
+      tcpSocket:
+        $ref: '#/definitions/TCPSocketAction'
     type: object
   LifecycleHook:
     properties:
       arguments:
         $ref: '#/definitions/Arguments'
-      template:
+      expression:
+        description: |-
+          Expression is a condition expression for when a node will be retried. If it evaluates to false, the node will not
+          be retried and the retry strategy will be ignored
         type: string
+      template:
+        description: Template is the name of the template to execute by the hook
+        type: string
+      templateRef:
+        $ref: '#/definitions/TemplateRef'
     type: object
   LifecycleHooks:
     additionalProperties:
@@ -1877,6 +1952,7 @@ definitions:
     description: |-
       LocalObjectReference contains enough information to let you locate the
       referenced object inside the same namespace.
+      +structType=atomic
     properties:
       name:
         description: |-
@@ -1910,6 +1986,16 @@ definitions:
         type: string
       operation:
         $ref: '#/definitions/ManagedFieldsOperationType'
+      subresource:
+        description: |-
+          Subresource is the name of the subresource used to update that object, or
+          empty string if the object was updated through the main resource. The
+          value of this field is used to distinguish between managers, even if they
+          share the same name. For example, a status update will be distinct from a
+          regular update using the same manager name.
+          Note that the APIVersion field is not related to the Subresource field and
+          it always corresponds to the version of the main resource.
+        type: string
       time:
         $ref: '#/definitions/Time'
     type: object
@@ -1961,6 +2047,7 @@ definitions:
         type: array
     type: object
   MountPropagationMode:
+    description: +enum
     title: MountPropagationMode describes mount propagation.
     type: string
   Mutex:
@@ -2025,12 +2112,15 @@ definitions:
         $ref: '#/definitions/Outputs'
       phase:
         $ref: '#/definitions/NodePhase'
+      progress:
+        $ref: '#/definitions/Progress'
     type: object
   NodeSelector:
     description: |-
       A node selector represents the union of the results of one or more label queries
       over a set of nodes; that is, it represents the OR of the selectors represented
       by the node selector terms.
+      +structType=atomic
     properties:
       nodeSelectorTerms:
         description: Required. A list of node selector terms. The terms are ORed.
@@ -2042,6 +2132,7 @@ definitions:
     description: |-
       A node selector operator is the set of operators that can be used in
       a node selector requirement.
+      +enum
     type: string
   NodeSelectorRequirement:
     description: |-
@@ -2070,6 +2161,7 @@ definitions:
       A null or empty node selector term matches no objects. The requirements of
       them are ANDed.
       The TopologySelectorTerm type implements a subset of the NodeSelectorTerm.
+      +structType=atomic
     properties:
       matchExpressions:
         description: |-
@@ -2133,10 +2225,8 @@ definitions:
         format: int32
         type: integer
     type: object
-  Object:
-    description: +kubebuilder:validation:Type=object
-    type: object
   ObjectFieldSelector:
+    description: +structType=atomic
     properties:
       apiVersion:
         description: |-
@@ -2178,6 +2268,7 @@ definitions:
       OwnerReference contains enough information to let you identify an owning
       object. An owning object must be in the same namespace as the dependent, or
       be cluster-scoped, so there is no namespace field.
+      +structType=atomic
     properties:
       apiVersion:
         description: API version of the referent.
@@ -2219,6 +2310,8 @@ definitions:
     properties:
       default:
         $ref: '#/definitions/AnyString'
+      description:
+        $ref: '#/definitions/AnyString'
       enum:
         description: Enum holds a list of string values to choose from, for the actual
           value of the parameter
@@ -2239,6 +2332,7 @@ definitions:
         $ref: '#/definitions/ValueFrom'
     type: object
   PersistentVolumeAccessMode:
+    description: +enum
     type: string
   PersistentVolumeClaimSpec:
     description: |-
@@ -2254,6 +2348,8 @@ definitions:
           $ref: '#/definitions/PersistentVolumeAccessMode'
         type: array
       dataSource:
+        $ref: '#/definitions/TypedLocalObjectReference'
+      dataSourceRef:
         $ref: '#/definitions/TypedLocalObjectReference'
       resources:
         $ref: '#/definitions/ResourceRequirements'
@@ -2463,6 +2559,7 @@ definitions:
       namespace.
     type: object
   PersistentVolumeMode:
+    description: +enum
     title: PersistentVolumeMode describes how a volume is intended to be consumed,
       either Block or Filesystem.
     type: string
@@ -2478,6 +2575,9 @@ definitions:
         description: ID that identifies Photon Controller persistent disk
         type: string
     title: Represents a Photon Controller persistent disk resource.
+    type: object
+  Plugin:
+    description: Plugin is an Object with exactly one key
     type: object
   PodAffinity:
     properties:
@@ -2579,6 +2679,7 @@ definitions:
     description: |-
       PodFSGroupChangePolicy holds policies that will be used for applying fsGroup to a volume
       when volume is mounted.
+      +enum
     type: string
   PodSecurityContext:
     description: |-
@@ -2596,6 +2697,7 @@ definitions:
           3. The permission bits are OR'd with rw-rw----
 
           If unset, the Kubelet will not modify the ownership and permissions of any volume.
+          Note that this field cannot be set when spec.os.name is windows.
           +optional
         format: int64
         type: integer
@@ -2608,6 +2710,7 @@ definitions:
           May also be set in SecurityContext.  If set in both SecurityContext and
           PodSecurityContext, the value specified in SecurityContext takes precedence
           for that container.
+          Note that this field cannot be set when spec.os.name is windows.
           +optional
         format: int64
         type: integer
@@ -2628,6 +2731,7 @@ definitions:
           May also be set in SecurityContext.  If set in both SecurityContext and
           PodSecurityContext, the value specified in SecurityContext takes precedence
           for that container.
+          Note that this field cannot be set when spec.os.name is windows.
           +optional
         format: int64
         type: integer
@@ -2640,6 +2744,7 @@ definitions:
           A list of groups applied to the first process run in each container, in addition
           to the container's primary GID.  If unspecified, no groups will be added to
           any container.
+          Note that this field cannot be set when spec.os.name is windows.
           +optional
         items:
           format: int64
@@ -2649,6 +2754,7 @@ definitions:
         description: |-
           Sysctls hold a list of namespaced sysctls used for the pod. Pods with unsupported
           sysctls (by the container runtime) might fail to launch.
+          Note that this field cannot be set when spec.os.name is windows.
           +optional
         items:
           $ref: '#/definitions/Sysctl'
@@ -2704,6 +2810,8 @@ definitions:
           +optional
         format: int32
         type: integer
+      grpc:
+        $ref: '#/definitions/GRPCAction'
       httpGet:
         $ref: '#/definitions/HTTPGetAction'
       initialDelaySeconds:
@@ -2739,7 +2847,8 @@ definitions:
           value overrides the value provided by the pod spec.
           Value must be non-negative integer. The value zero indicates stop immediately via
           the kill signal (no opportunity to shut down).
-          This is an alpha field and requires enabling ProbeTerminationGracePeriod feature gate.
+          This is a beta field and requires enabling ProbeTerminationGracePeriod feature gate.
+          Minimum value is 1. spec.terminationGracePeriodSeconds is used if unset.
           +optional
         format: int64
         type: integer
@@ -2753,6 +2862,10 @@ definitions:
         type: integer
     type: object
   ProcMountType:
+    description: +enum
+    type: string
+  Progress:
+    title: Progress in N/M format. N is number of task complete. M is number of tasks.
     type: string
   ProjectedVolumeSource:
     description: Represents a projected volume source
@@ -2802,11 +2915,14 @@ definitions:
         type: string
     type: object
   Protocol:
+    description: +enum
     title: Protocol defines network protocols supported for things like container
       ports.
     type: string
   PullPolicy:
-    description: PullPolicy describes a policy for if/when to pull a container image
+    description: |-
+      PullPolicy describes a policy for if/when to pull a container image
+      +enum
     type: string
   Quantity:
     description: |-
@@ -2973,8 +3089,9 @@ definitions:
         type: string
     type: object
   ResourceFieldSelector:
-    description: ResourceFieldSelector represents container resources (cpu, memory)
-      and their output format
+    description: |-
+      ResourceFieldSelector represents container resources (cpu, memory) and their output format
+      +structType=atomic
     properties:
       containerName:
         description: |-
@@ -3211,10 +3328,10 @@ definitions:
           Arguments to the entrypoint.
           The docker image's CMD is used if this is not provided.
           Variable references $(VAR_NAME) are expanded using the container's environment. If a variable
-          cannot be resolved, the reference in the input string will be unchanged. The $(VAR_NAME) syntax
-          can be escaped with a double $$, ie: $$(VAR_NAME). Escaped references will never be expanded,
-          regardless of whether the variable exists or not.
-          Cannot be updated.
+          cannot be resolved, the reference in the input string will be unchanged. Double $$ are reduced
+          to a single $, which allows for escaping the $(VAR_NAME) syntax: i.e. "$$(VAR_NAME)" will
+          produce the string literal "$(VAR_NAME)". Escaped references will never be expanded, regardless
+          of whether the variable exists or not. Cannot be updated.
           More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell
           +optional
         items:
@@ -3225,10 +3342,10 @@ definitions:
           Entrypoint array. Not executed within a shell.
           The docker image's ENTRYPOINT is used if this is not provided.
           Variable references $(VAR_NAME) are expanded using the container's environment. If a variable
-          cannot be resolved, the reference in the input string will be unchanged. The $(VAR_NAME) syntax
-          can be escaped with a double $$, ie: $$(VAR_NAME). Escaped references will never be expanded,
-          regardless of whether the variable exists or not.
-          Cannot be updated.
+          cannot be resolved, the reference in the input string will be unchanged. Double $$ are reduced
+          to a single $, which allows for escaping the $(VAR_NAME) syntax: i.e. "$$(VAR_NAME)" will
+          produce the string literal "$(VAR_NAME)". Escaped references will never be expanded, regardless
+          of whether the variable exists or not. Cannot be updated.
           More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell
           +optional
         items:
@@ -3388,6 +3505,7 @@ definitions:
     title: SeccompProfile defines a pod/container's seccomp profile settings.
     type: object
   SeccompProfileType:
+    description: +enum
     title: SeccompProfileType defines the supported seccomp profile types.
     type: string
   SecretEnvSource:
@@ -3412,6 +3530,7 @@ definitions:
       variables with.
     type: object
   SecretKeySelector:
+    description: +structType=atomic
     properties:
       key:
         description: The key of the secret to select from.  Must be a valid secret
@@ -3522,6 +3641,7 @@ definitions:
           AllowPrivilegeEscalation is true always when the container is:
           1) run as Privileged
           2) has CAP_SYS_ADMIN
+          Note that this field cannot be set when spec.os.name is windows.
           +optional
         type: boolean
       capabilities:
@@ -3531,6 +3651,7 @@ definitions:
           Run container in privileged mode.
           Processes in privileged containers are essentially equivalent to root on the host.
           Defaults to false.
+          Note that this field cannot be set when spec.os.name is windows.
           +optional
         type: boolean
       procMount:
@@ -3539,6 +3660,7 @@ definitions:
         description: |-
           Whether this container has a read-only root filesystem.
           Default is false.
+          Note that this field cannot be set when spec.os.name is windows.
           +optional
         type: boolean
       runAsGroup:
@@ -3547,6 +3669,7 @@ definitions:
           Uses runtime default if unset.
           May also be set in PodSecurityContext.  If set in both SecurityContext and
           PodSecurityContext, the value specified in SecurityContext takes precedence.
+          Note that this field cannot be set when spec.os.name is windows.
           +optional
         format: int64
         type: integer
@@ -3566,6 +3689,7 @@ definitions:
           Defaults to user specified in image metadata if unspecified.
           May also be set in PodSecurityContext.  If set in both SecurityContext and
           PodSecurityContext, the value specified in SecurityContext takes precedence.
+          Note that this field cannot be set when spec.os.name is windows.
           +optional
         format: int64
         type: integer
@@ -3709,6 +3833,7 @@ definitions:
         $ref: '#/definitions/IntOrString'
     type: object
   TaintEffect:
+    description: +enum
     type: string
   TarStrategy:
     description: TarStrategy will tar and gzip the file or directory when saving
@@ -3799,7 +3924,7 @@ definitions:
         format: int64
         type: integer
       plugin:
-        $ref: '#/definitions/Object'
+        $ref: '#/definitions/Plugin'
       podSpecPatch:
         description: |-
           PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of
@@ -3850,7 +3975,7 @@ definitions:
         $ref: '#/definitions/Synchronization'
       timeout:
         description: |-
-          Timout allows to set the total node execution timeout duration counting from the node's start time.
+          Timeout allows to set the total node execution timeout duration counting from the node's start time.
           This duration also includes time in which the node spends in Pending state. This duration may not be applied to Step or DAG templates.
         type: string
       tolerations:
@@ -3885,6 +4010,7 @@ definitions:
     title: TemplateRef is a reference of template resource.
     type: object
   TerminationMessagePolicy:
+    description: +enum
     title: TerminationMessagePolicy describes how termination messages are retrieved
       from a container.
     type: string
@@ -3930,6 +4056,7 @@ definitions:
         type: string
     type: object
   TolerationOperator:
+    description: +enum
     title: A toleration operator is the set of operators that can be used in a toleration.
     type: string
   Transformation:
@@ -3950,6 +4077,7 @@ definitions:
     description: |-
       TypedLocalObjectReference contains enough information to let you locate the
       typed referenced object inside the same namespace.
+      +structType=atomic
     properties:
       apiGroup:
         description: |-
@@ -3972,8 +4100,9 @@ definitions:
       intent and helps make sure that UIDs and names do not get conflated.
     type: string
   URIScheme:
-    description: URIScheme identifies the scheme used for connection to a host for
-      Get actions
+    description: |-
+      URIScheme identifies the scheme used for connection to a host for Get actions
+      +enum
     type: string
   UserContainer:
     properties:
@@ -3982,10 +4111,10 @@ definitions:
           Arguments to the entrypoint.
           The docker image's CMD is used if this is not provided.
           Variable references $(VAR_NAME) are expanded using the container's environment. If a variable
-          cannot be resolved, the reference in the input string will be unchanged. The $(VAR_NAME) syntax
-          can be escaped with a double $$, ie: $$(VAR_NAME). Escaped references will never be expanded,
-          regardless of whether the variable exists or not.
-          Cannot be updated.
+          cannot be resolved, the reference in the input string will be unchanged. Double $$ are reduced
+          to a single $, which allows for escaping the $(VAR_NAME) syntax: i.e. "$$(VAR_NAME)" will
+          produce the string literal "$(VAR_NAME)". Escaped references will never be expanded, regardless
+          of whether the variable exists or not. Cannot be updated.
           More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell
           +optional
         items:
@@ -3996,10 +4125,10 @@ definitions:
           Entrypoint array. Not executed within a shell.
           The docker image's ENTRYPOINT is used if this is not provided.
           Variable references $(VAR_NAME) are expanded using the container's environment. If a variable
-          cannot be resolved, the reference in the input string will be unchanged. The $(VAR_NAME) syntax
-          can be escaped with a double $$, ie: $$(VAR_NAME). Escaped references will never be expanded,
-          regardless of whether the variable exists or not.
-          Cannot be updated.
+          cannot be resolved, the reference in the input string will be unchanged. Double $$ are reduced
+          to a single $, which allows for escaping the $(VAR_NAME) syntax: i.e. "$$(VAR_NAME)" will
+          produce the string literal "$(VAR_NAME)". Escaped references will never be expanded, regardless
+          of whether the variable exists or not. Cannot be updated.
           More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell
           +optional
         items:
@@ -4359,6 +4488,17 @@ definitions:
           GMSACredentialSpecName is the name of the GMSA credential spec to use.
           +optional
         type: string
+      hostProcess:
+        description: |-
+          HostProcess determines if a container should be run as a 'Host Process' container.
+          This field is alpha-level and will only be honored by components that enable the
+          WindowsHostProcessContainers feature flag. Setting this field without the feature
+          flag will result in errors when validating the Pod. All of a Pod's containers must
+          have the same effective HostProcess value (it is not allowed to have a mix of HostProcess
+          containers and non-HostProcess containers).  In addition, if HostProcess is true
+          then HostNetwork must also be set to true.
+          +optional
+        type: boolean
       runAsUserName:
         description: |-
           The UserName in Windows to run the entrypoint of the container process.

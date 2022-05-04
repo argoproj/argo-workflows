@@ -3,9 +3,10 @@
 The Argo server and the workflow controller currently only run on Linux. The workflow executor however also runs on Windows nodes, meaning you can use Windows containers inside your workflows! Here are the steps to get started.
 
 ## Requirements
+
 * Kubernetes 1.14 or later, supporting Windows nodes
 * Hybrid cluster containing Linux and Windows nodes like described in the [Kubernetes docs](https://kubernetes.io/docs/setup/production-environment/windows/user-guide-windows-containers/)
-* Argo configured and running like described [here](quick-start.md) 
+* Argo configured and running like described [here](quick-start.md)
 
 ## Schedule workflows with Windows containers
 
@@ -29,7 +30,8 @@ spec:
 ```
 
 You can run this example and get the logs:
-```
+
+```bash
 $ argo submit --watch https://raw.githubusercontent.com/argoproj/argo-workflows/master/examples/hello-windows.yaml
 $ argo logs hello-windows-s9kk5
 hello-windows-s9kk5: "Hello from Windows Container!"
@@ -37,9 +39,10 @@ hello-windows-s9kk5: "Hello from Windows Container!"
 
 ## Schedule hybrid workflows
 
-You can also run different steps on different host OSs. This can for example be very helpful when you need to compile your application on Windows and Linux.
+You can also run different steps on different host operating systems. This can for example be very helpful when you need to compile your application on Windows and Linux.
 
 An example workflow can look like the following:
+
 ```yaml
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -69,11 +72,11 @@ spec:
         image: alpine
         command: [echo]
         args: ["Hello from Linux Container!"]
-
 ```
 
 Again, you can run this example and get the logs:
-```
+
+```bash
 $ argo submit --watch https://raw.githubusercontent.com/argoproj/argo-workflows/master/examples/hello-hybrid.yaml
 $ argo logs hello-hybrid-plqpp
 hello-hybrid-plqpp-1977432187: "Hello from Windows Container!"
@@ -105,16 +108,16 @@ Remember that [volume mounts on Windows can only target a directory](https://kub
 
 ## Limitations
 
-- Sharing process namespaces [doesn't work on Windows](https://kubernetes.io/docs/setup/production-environment/windows/intro-windows-in-kubernetes/#v1-pod) so you can't use the Process Namespace Sharing (pns) workflow executor.
-- The argoexec Windows container is built using [nanoserver:1809](https://github.com/argoproj/argo-workflows/blob/b18b9920f678f420552864eccf3d4b98f3604cfa/Dockerfile.windows#L28) as the base image. Running a newer windows version (e.g. 1909) is currently [not confirmed to be working](https://github.com/argoproj/argo-workflows/issues/5376). If this is required, you need to build the argoexec container yourself by first adjusting the base image.
+* Sharing process namespaces [doesn't work on Windows](https://kubernetes.io/docs/setup/production-environment/windows/intro-windows-in-kubernetes/#v1-pod) so you can't use the Process Namespace Sharing (PNS) workflow executor.
+* The executor Windows container is built using [Nano Server](https://github.com/argoproj/argo-workflows/blob/b18b9920f678f420552864eccf3d4b98f3604cfa/Dockerfile.windows#L28) as the base image. Running a newer windows version (e.g. 1909) is currently [not confirmed to be working](https://github.com/argoproj/argo-workflows/issues/5376). If this is required, you need to build the executor container yourself by first adjusting the base image.
 
 ## Building the workflow executor image for Windows
 
 To build the workflow executor image for Windows you need a Windows machine running Windows Server 2019 with Docker installed like described [in the docs](https://docs.docker.com/ee/docker-ee/windows/docker-ee/#install-docker-engine---enterprise).
 
-You then clone the project and run the Docker build with the Dockerfile for Windows and `argoexec` as a target:
+You then clone the project and run the Docker build with the `Dockerfile` for Windows and `argoexec` as a target:
 
-```
+```bash
 git clone https://github.com/argoproj/argo-workflows.git
 cd argo
 docker build -t myargoexec -f .\Dockerfile.windows --target argoexec .
