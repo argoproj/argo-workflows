@@ -11,6 +11,8 @@ import (
 	"github.com/stretchr/testify/suite"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/minio/minio-go/v7"
+
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/test/e2e/fixtures"
 )
@@ -136,11 +138,8 @@ func (s *ArtifactsSuite) TestMainLog() {
 			SubmitWorkflow().
 			WaitForWorkflow(fixtures.ToBeSucceeded).
 			Then().
-			ExpectWorkflow(func(t *testing.T, m *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-				n := status.Nodes[m.Name]
-				if assert.NotNil(t, n) {
-					assert.Len(t, n.Outputs.Artifacts, 1)
-				}
+			ExpectArtifact("-", "main-logs", func(t *testing.T, object *minio.Object, err error) {
+				assert.NoError(t, err)
 			})
 	})
 	s.Run("ActiveDeadlineSeconds", func() {
@@ -150,11 +149,8 @@ func (s *ArtifactsSuite) TestMainLog() {
 			SubmitWorkflow().
 			WaitForWorkflow(fixtures.ToBeFailed).
 			Then().
-			ExpectWorkflow(func(t *testing.T, m *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-				n := status.Nodes[m.Name]
-				if assert.NotNil(t, n.Outputs) {
-					assert.Len(t, n.Outputs.Artifacts, 1)
-				}
+			ExpectArtifact("-", "main-logs", func(t *testing.T, object *minio.Object, err error) {
+				assert.NoError(t, err)
 			})
 	})
 }
