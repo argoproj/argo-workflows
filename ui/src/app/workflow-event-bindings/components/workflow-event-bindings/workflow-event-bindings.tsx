@@ -11,6 +11,7 @@ import {Graph} from '../../../shared/components/graph/types';
 import {Loading} from '../../../shared/components/loading';
 import {NamespaceFilter} from '../../../shared/components/namespace-filter';
 import {ResourceEditor} from '../../../shared/components/resource-editor/resource-editor';
+import {useCollectEvent} from '../../../shared/components/use-collect-event';
 import {ZeroState} from '../../../shared/components/zero-state';
 import {Context} from '../../../shared/context';
 import {Footnote} from '../../../shared/footnote';
@@ -85,9 +86,7 @@ export const WorkflowEventBindings = ({match, location, history}: RouteComponent
             .catch(setError);
     }, [namespace]);
 
-    useEffect(() => {
-        services.info.collectEvent('openedWorkflowEventBindings').then();
-    }, []);
+    useCollectEvent('openedWorkflowEventBindings');
 
     return (
         <Page

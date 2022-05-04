@@ -1,15 +1,11 @@
 import {Page} from 'argo-ui';
 import * as React from 'react';
-import {useEffect} from 'react';
 import {uiUrl} from '../../shared/base';
-import {services} from '../../shared/services';
-
+import {useCollectEvent} from '../../shared/components/use-collect-event';
 require('./help.scss');
 
 export const Help = () => {
-    useEffect(() => {
-        services.info.collectEvent('openedHelp').then();
-    }, []);
+    useCollectEvent('openedHelp');
     return (
         <Page title='Help'>
             <div className='row'>

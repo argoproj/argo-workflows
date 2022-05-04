@@ -3,9 +3,9 @@ import * as React from 'react';
 import {useEffect, useState} from 'react';
 import {RouteComponentProps} from 'react-router-dom';
 import {uiUrl} from '../../../shared/base';
+import {useCollectEvent} from '../../../shared/components/use-collect-event';
 import {ZeroState} from '../../../shared/components/zero-state';
 import {historyUrl} from '../../../shared/history';
-import {services} from '../../../shared/services';
 import {Utils} from '../../../shared/utils';
 
 export const PluginList = ({match, history}: RouteComponentProps<any>) => {
@@ -20,9 +20,7 @@ export const PluginList = ({match, history}: RouteComponentProps<any>) => {
             ),
         [namespace]
     );
-    useEffect(() => {
-        services.info.collectEvent('openedPlugins').then();
-    }, []);
+    useCollectEvent('openedPlugins');
 
     return (
         <Page

@@ -9,6 +9,7 @@ import {ExampleManifests} from '../../../shared/components/example-manifests';
 import {InfoIcon} from '../../../shared/components/fa-icons';
 import {Loading} from '../../../shared/components/loading';
 import {Timestamp} from '../../../shared/components/timestamp';
+import {useCollectEvent} from '../../../shared/components/use-collect-event';
 import {ZeroState} from '../../../shared/components/zero-state';
 import {Context} from '../../../shared/context';
 import {getNextScheduledTime} from '../../../shared/cron';
@@ -76,9 +77,7 @@ export const CronWorkflowList = ({match, location, history}: RouteComponentProps
             .catch(setError);
     }, [namespace, labels, states]);
 
-    useEffect(() => {
-        services.info.collectEvent('openedCronWorkflowList').then();
-    }, []);
+    useCollectEvent('openedCronWorkflowList');
 
     return (
         <Page
