@@ -1,4 +1,4 @@
-import {Autocomplete, NotificationType, Page, SlidingPanel} from 'argo-ui';
+import {Autocomplete, Page, SlidingPanel} from 'argo-ui';
 import * as React from 'react';
 import {RouteComponentProps} from 'react-router-dom';
 import * as models from '../../../../models';
@@ -223,12 +223,6 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
         return dt;
     }
 
-    private parseTime(dateStr: string) {
-        if (dateStr != null) {
-            return new Date(dateStr);
-        }
-    }
-
     private fetchWorkflows(namespace: string, selectedPhases: WorkflowPhase[], selectedLabels: string[], minStartedAt: Date, maxStartedAt: Date, pagination: Pagination): void {
         if (this.listWatch) {
             this.listWatch.stop();
@@ -236,12 +230,6 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
         this.listWatch = new ListWatch(
             () =>
                 services.workflows.list(namespace, selectedPhases, selectedLabels, pagination).then(x => {
-                    if (x.items && x.items.length > 20) {
-                        this.appContext.apis.notifications.show({
-                            content: `Date range filter takes time in proportion to the number of workflows`,
-                            type: NotificationType.Warning
-                        });
-                    }
                     x.items = x.items && x.items.filter(w => new Date(w.status.startedAt) > minStartedAt && new Date(w.status.startedAt) < maxStartedAt);
                     return x;
                 }),
