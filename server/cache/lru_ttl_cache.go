@@ -16,7 +16,7 @@ type timeValueHolder struct {
 	value      any
 }
 
-func NewLruTtlCache(timeout time.Duration, size int) *lruTtlCache {
+func NewLRUTtlCache(timeout time.Duration, size int) *lruTtlCache {
 	return &lruTtlCache{
 		timeout: timeout,
 		cache:   lru.New(size),

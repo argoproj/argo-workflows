@@ -23,7 +23,7 @@ func NewResourceCacheWithTimeout(client kubernetes.Interface, ctx context.Contex
 	informerFactory := informers.NewSharedInformerFactoryWithOptions(client, time.Minute*20, informers.WithNamespace(namespace))
 	cache := &ResourceCache{
 		ctx:                  ctx,
-		cache:                NewLruTtlCache(timeout, 2000),
+		cache:                NewLRUTtlCache(timeout, 2000),
 		client:               client,
 		ServiceAccountLister: informerFactory.Core().V1().ServiceAccounts().Lister(),
 	}
