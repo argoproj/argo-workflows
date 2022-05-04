@@ -1,10 +1,8 @@
 # HTTP Template
- 
-> v3.2 and after 
+
+> v3.2 and after
 
 `HTTP Template` is a type of template which can execute the HTTP Requests.
-
-### HTTP Template
 
 ```yaml
 apiVersion: argoproj.io/v1alpha1
@@ -44,7 +42,8 @@ spec:
         body: "test body" # Change request body
 ```
 
-### Argo Agent
+## Argo Agent
+
 HTTP Templates use the Argo Agent, which executes the requests independently of the controller. The Agent and the Workflow
 Controller communicate through the `WorkflowTaskSet` CRD, which is created for each running `Workflow` that requires the use
 of the `Agent`.

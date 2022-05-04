@@ -40,11 +40,7 @@ func waitContainer(ctx context.Context) error {
 	if err != nil {
 		wfExecutor.AddError(err)
 	}
-	// Saving logs
-	logArt, err := wfExecutor.SaveLogs(ctx)
-	if err != nil {
-		wfExecutor.AddError(err)
-	}
+
 	// Saving output parameters
 	err = wfExecutor.SaveParameters(ctx)
 	if err != nil {
@@ -55,11 +51,7 @@ func waitContainer(ctx context.Context) error {
 	if err != nil {
 		wfExecutor.AddError(err)
 	}
-	// Annotating pod with output
-	err = wfExecutor.ReportOutputs(ctx, logArt)
-	if err != nil {
-		wfExecutor.AddError(err)
-	}
 
+	wfExecutor.SaveLogs(ctx)
 	return wfExecutor.HasError()
 }

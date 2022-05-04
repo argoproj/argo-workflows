@@ -317,6 +317,6 @@ func (we *WorkflowExecutor) SaveResourceParameters(ctx context.Context, resource
 		we.Template.Outputs.Parameters[i].Value = wfv1.AnyStringPtr(output)
 		log.Infof("Saved output parameter: %s, value: %s", param.Name, output)
 	}
-	err := we.ReportOutputs(ctx, nil)
+	err := we.reportOutputs(ctx, nil)
 	return err
 }

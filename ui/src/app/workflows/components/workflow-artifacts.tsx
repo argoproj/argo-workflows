@@ -19,7 +19,7 @@ export const WorkflowArtifacts = (props: Props) => {
                 const items = nodeOutputs.artifacts || [];
                 return items.map(item =>
                     Object.assign({}, item, {
-                        downloadUrl: '/' + services.workflows.getArtifactDownloadUrl(props.workflow, node.id, item.name, props.archived, false),
+                        downloadUrl: services.workflows.getArtifactDownloadUrl(props.workflow, node.id, item.name, props.archived, false),
                         stepName: node.name,
                         dateCreated: node.finishedAt,
                         nodeName
@@ -45,7 +45,7 @@ export const WorkflowArtifacts = (props: Props) => {
                             <span>
                                 <a href={artifact.downloadUrl}>
                                     {' '}
-                                    <i className='icon argo-icon-artifact' />
+                                    <i className='fa fa-download' />
                                 </a>{' '}
                                 {artifact.name}
                             </span>

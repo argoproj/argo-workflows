@@ -428,7 +428,7 @@ const WorkflowNodeArtifacts = (props: {workflow: Workflow; node: NodeStatus; arc
                     <div className='columns small-1'>
                         <a href={artifact.downloadUrl}>
                             {' '}
-                            <i className='icon argo-icon-artifact' />
+                            <i className='fa fa-download' />
                         </a>
                     </div>
                     <div className='columns small-11'>

@@ -4,11 +4,92 @@ All URIs are relative to *http://localhost:2746*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------
+[**artifactServiceGetArtifactFile**](ArtifactServiceApi.md#artifactServiceGetArtifactFile) | **GET** /artifact-files/{namespace}/{idDiscriminator}/{id}/{nodeId}/{artifactDiscriminator}/{artifactName} | Get an artifact.
 [**artifactServiceGetInputArtifact**](ArtifactServiceApi.md#artifactServiceGetInputArtifact) | **GET** /input-artifacts/{namespace}/{name}/{nodeId}/{artifactName} | Get an input artifact.
 [**artifactServiceGetInputArtifactByUID**](ArtifactServiceApi.md#artifactServiceGetInputArtifactByUID) | **GET** /input-artifacts-by-uid/{uid}/{nodeId}/{artifactName} | Get an input artifact by UID.
 [**artifactServiceGetOutputArtifact**](ArtifactServiceApi.md#artifactServiceGetOutputArtifact) | **GET** /artifacts/{namespace}/{name}/{nodeId}/{artifactName} | Get an output artifact.
 [**artifactServiceGetOutputArtifactByUID**](ArtifactServiceApi.md#artifactServiceGetOutputArtifactByUID) | **GET** /artifacts-by-uid/{uid}/{nodeId}/{artifactName} | Get an output artifact by UID.
 
+
+<a name="artifactServiceGetArtifactFile"></a>
+# **artifactServiceGetArtifactFile**
+> File artifactServiceGetArtifactFile(namespace, idDiscriminator, id, nodeId, artifactName, artifactDiscriminator, artifactName2)
+
+Get an artifact.
+
+### Example
+```java
+// Import classes:
+import io.argoproj.workflow.ApiClient;
+import io.argoproj.workflow.ApiException;
+import io.argoproj.workflow.Configuration;
+import io.argoproj.workflow.auth.*;
+import io.argoproj.workflow.models.*;
+import io.argoproj.workflow.apis.ArtifactServiceApi;
+
+public class Example {
+  public static void main(String[] args) {
+    ApiClient defaultClient = Configuration.getDefaultApiClient();
+    defaultClient.setBasePath("http://localhost:2746");
+    
+    // Configure API key authorization: BearerToken
+    ApiKeyAuth BearerToken = (ApiKeyAuth) defaultClient.getAuthentication("BearerToken");
+    BearerToken.setApiKey("YOUR API KEY");
+    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
+    //BearerToken.setApiKeyPrefix("Token");
+
+    ArtifactServiceApi apiInstance = new ArtifactServiceApi(defaultClient);
+    String namespace = "namespace_example"; // String | 
+    String idDiscriminator = "idDiscriminator_example"; // String | 
+    String id = "id_example"; // String | 
+    String nodeId = "nodeId_example"; // String | 
+    String artifactName = "artifactName_example"; // String | 
+    String artifactDiscriminator = "artifactDiscriminator_example"; // String | 
+    String artifactName2 = "artifactName_example"; // String | 
+    try {
+      File result = apiInstance.artifactServiceGetArtifactFile(namespace, idDiscriminator, id, nodeId, artifactName, artifactDiscriminator, artifactName2);
+      System.out.println(result);
+    } catch (ApiException e) {
+      System.err.println("Exception when calling ArtifactServiceApi#artifactServiceGetArtifactFile");
+      System.err.println("Status code: " + e.getCode());
+      System.err.println("Reason: " + e.getResponseBody());
+      System.err.println("Response headers: " + e.getResponseHeaders());
+      e.printStackTrace();
+    }
+  }
+}
+```
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **namespace** | **String**|  |
+ **idDiscriminator** | **String**|  | [enum: workflow, archived-workflows ]
+ **id** | **String**|  |
+ **nodeId** | **String**|  |
+ **artifactName** | **String**|  |
+ **artifactDiscriminator** | **String**|  | [enum: outputs]
+ **artifactName2** | **String**|  |
+
+### Return type
+
+[**File**](File.md)
+
+### Authorization
+
+[BearerToken](../README.md#BearerToken)
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/json
+
+### HTTP response details
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+**200** | An artifact file. |  -  |
+**0** | An unexpected error response. |  -  |
 
 <a name="artifactServiceGetInputArtifact"></a>
 # **artifactServiceGetInputArtifact**
