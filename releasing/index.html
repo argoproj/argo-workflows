@@ -3597,36 +3597,16 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#release" class="md-nav__link">
-    Release
-  </a>
-  
-    <nav class="md-nav" aria-label="Release">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#cherry-pick-issue" class="md-nav__link">
-    Cherry-pick Issue
+  <a href="#cherry-picking-fixes" class="md-nav__link">
+    Cherry-Picking Fixes
   </a>
   
 </li>
-        
-          <li class="md-nav__item">
-  <a href="#cherry-pick-to-release-branch" class="md-nav__link">
-    Cherry-pick to Release Branch
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
+      
+        <li class="md-nav__item">
   <a href="#publish-release" class="md-nav__link">
     Publish Release
   </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
@@ -3746,36 +3726,16 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#release" class="md-nav__link">
-    Release
-  </a>
-  
-    <nav class="md-nav" aria-label="Release">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#cherry-pick-issue" class="md-nav__link">
-    Cherry-pick Issue
+  <a href="#cherry-picking-fixes" class="md-nav__link">
+    Cherry-Picking Fixes
   </a>
   
 </li>
-        
-          <li class="md-nav__item">
-  <a href="#cherry-pick-to-release-branch" class="md-nav__link">
-    Cherry-pick to Release Branch
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
+      
+        <li class="md-nav__item">
   <a href="#publish-release" class="md-nav__link">
     Publish Release
   </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
@@ -3798,46 +3758,30 @@
 
 
 <h1 id="release-instructions">Release Instructions<a class="headerlink" href="#release-instructions" title="Permanent link">&para;</a></h1>
-<h2 id="release">Release<a class="headerlink" href="#release" title="Permanent link">&para;</a></h2>
-<h3 id="cherry-pick-issue">Cherry-pick Issue<a class="headerlink" href="#cherry-pick-issue" title="Permanent link">&para;</a></h3>
-<p>Create a cherry-pick issue to allow the team and community to comment on the release contents.</p>
-<ol>
-<li>Locate the previous cherry-pick issue</li>
-<li>Get the hash of the most recent commit still available on the previous issue</li>
-<li>
-<p>Generate new issue contents:</p>
-<div class="highlight"><pre><span></span><code>git checkout master <span class="c1"># Ensure we are on master</span>
-git log --pretty<span class="o">=</span>format:<span class="s2">&quot;%an: %s %h&quot;</span>  <span class="o">[</span>COMMIT_HASH<span class="o">]</span>..HEAD
+<h2 id="cherry-picking-fixes">Cherry-Picking Fixes<a class="headerlink" href="#cherry-picking-fixes" title="Permanent link">&para;</a></h2>
+<p>✋ Before you start, make sure the release branch is passing CI.</p>
+<p>Get a list of commits you may want to cherry-pick:</p>
+<div class="highlight"><pre><span></span><code>./hack/what-to-cherry-pick.sh release-3.3
 </code></pre></div>
-</li>
-<li>
-<p>Create a new issue on GitHub with the title <code>[VERSION] cherry-pick</code> (e.g. <code>v3.0.2 cherry-pick</code>) and the generated commits
-as content.</p>
-</li>
-</ol>
-<h3 id="cherry-pick-to-release-branch">Cherry-pick to Release Branch<a class="headerlink" href="#cherry-pick-to-release-branch" title="Permanent link">&para;</a></h3>
-<p>Once the team and community is satisfied with the commits to be cherry-picked, cherry-pick them into the appropriate
-release branch. There should be a single release branch per minor release (e.g. <code>release-3.0</code>, <code>release-3.1</code>, etc.)</p>
-<ol>
-<li>
-<p>Checkout the release branch and cherry-pick commits</p>
-<div class="highlight"><pre><span></span><code>git checkout release-3.0
-git cherry-pick <span class="o">[</span>COMMIT_IDS...<span class="o">]</span>
+<p>Ignore:</p>
+<ul>
+<li>Fixes for features only on master.</li>
+<li>Dependency upgrades, unless it fixes a known security issue.</li>
+</ul>
+<p>Cherry-pick a the first commit. Run <code>make test</code> locally before pushing. If the build timeouts the build caches may have
+gone, try re-running.</p>
+<p>Don't cherry-pick another commit until the CI passes. It is harder to find the cause of a new failed build if the last
+build failed too.</p>
+<p>Cherry-picking commits one-by-one and then waiting for the CI will take a long time. Instead, cherry-pick each commit then
+run <code>make test</code> locally before pushing.</p>
+<h2 id="publish-release">Publish Release<a class="headerlink" href="#publish-release" title="Permanent link">&para;</a></h2>
+<p>✋ Before you start, make sure the branch is passing CI.</p>
+<p>Push a new tag to the release branch. E.g.:</p>
+<div class="highlight"><pre><span></span><code>git tag v3.3.4
+git push upstream v3.3.4 <span class="p">;</span><span class="c1"># or origin if you do not use upstream</span>
 </code></pre></div>
-</li>
-<li>
-<p>Hope for few merge conflicts!</p>
-<p>A merge conflict during cherry-picking usually means the commit is based on another commit that should be
-cherry-picked first. In case of a merge conflict, you can undo the cherry-picking by <code>git cherry-pick --abort</code> and
-revisit the list of commits to make sure the prior commits are cherry-picked as well.</p>
-</li>
-<li>
-<p>Once done cherry-picking, push the release branch to ensure the branch can build and all tests pass.</p>
-</li>
-</ol>
-<h3 id="publish-release">Publish Release<a class="headerlink" href="#publish-release" title="Permanent link">&para;</a></h3>
-<p>Push a new tag to the release branch. Github Actions will automatically build and publish your release. This takes about
-1h. Make sure you check this was successful.</p>
+<p>Github Actions will automatically build and publish your release. This takes about 1h. Set your self a reminder to check
+this was successful.</p>
 
               
 
