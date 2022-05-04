@@ -116,11 +116,15 @@ func init() {
 }
 
 func getSSONamespace(opts ArgoServerOpts) string {
-	if opts.Namespaced {
-		if opts.ManagedNamespace != "" {
-			return opts.ManagedNamespace
-		}
-		return opts.Namespace
+	if opts.ManagedNamespace != "" {
+		return opts.ManagedNamespace
+	}
+	return opts.Namespace
+}
+
+func getResourceCacheNamespace(opts ArgoServerOpts) string {
+	if opts.ManagedNamespace != "" {
+		return opts.ManagedNamespace
 	}
 	return v1.NamespaceAll
 }
@@ -138,7 +142,7 @@ func NewArgoServer(ctx context.Context, opts ArgoServerOpts) (*argoServer, error
 		if err != nil {
 			return nil, err
 		}
-		resourceCache = cache.NewResourceCache(opts.Clients.Kubernetes, ctx, getSSONamespace(opts))
+		resourceCache = cache.NewResourceCache(opts.Clients.Kubernetes, ctx, getResourceCacheNamespace(opts))
 		log.Info("SSO enabled")
 	} else {
 		log.Info("SSO disabled")
