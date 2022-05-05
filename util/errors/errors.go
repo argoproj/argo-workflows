@@ -16,6 +16,13 @@ import (
 	argoerrs "github.com/argoproj/argo-workflows/v3/errors"
 )
 
+func IgnoreContainerNotFoundErr(err error) error {
+	if err != nil && strings.Contains(err.Error(), "container not found") {
+		return nil
+	}
+	return err
+}
+
 func IsTransientErr(err error) bool {
 	if err == nil {
 		return false
