@@ -1384,6 +1384,13 @@ type WorkflowStep struct {
 	// Hooks holds the lifecycle hook which is invoked at lifecycle of
 	// step, irrespective of the success, failure, or error status of the primary step
 	Hooks LifecycleHooks `json:"hooks,omitempty" protobuf:"bytes,12,opt,name=hooks"`
+
+	// Priority is used if controller is configured to process limited number of workflows in parallel. Steps with higher priority are processed first.
+	Priority *int32 `json:"priority,omitempty" protobuf:"bytes,13,opt,name=priority"`
+}
+
+func (wfs *WorkflowStep) GetPriority() *int32 {
+	return wfs.Priority
 }
 
 type LifecycleEvent string
@@ -2774,6 +2781,9 @@ type DAGTask struct {
 	// Hooks hold the lifecycle hook which is invoked at lifecycle of
 	// task, irrespective of the success, failure, or error status of the primary task
 	Hooks LifecycleHooks `json:"hooks,omitempty" protobuf:"bytes,13,opt,name=hooks"`
+
+	// Priority is used if controller is configured to process limited number of workflows in parallel. Tasks with higher priority are processed first.
+	Priority *int32 `json:"priority,omitempty" protobuf:"bytes,14,opt,name=priority"`
 }
 
 var _ TemplateReferenceHolder = &DAGTask{}
@@ -2806,6 +2816,10 @@ func (t *DAGTask) GetTemplateRef() *TemplateRef {
 
 func (t *DAGTask) ShouldExpand() bool {
 	return len(t.WithItems) != 0 || t.WithParam != "" || t.WithSequence != nil
+}
+
+func (t *DAGTask) GetPriority() *int32 {
+	return t.Priority
 }
 
 // SuspendTemplate is a template subtype to suspend a workflow at a predetermined point in time
