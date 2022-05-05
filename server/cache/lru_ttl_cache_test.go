@@ -37,18 +37,28 @@ func TestNewTimedCache(t *testing.T) {
 	})
 
 	t.Run("TimedCache should cache based on timeout", func(t *testing.T) {
-		cache := NewLRUTtlCache(time.Millisecond*5, 2)
+		tempCurrentTime := currentTime
+
+		cache := NewLRUTtlCache(time.Minute*1, 2)
+
+		currentTime = getTimeFunc(0, 0)
 		cache.Add("one", "one")
 
+		currentTime = getTimeFunc(0, 30)
 		_, ok := cache.Get("one")
 		assert.True(t, ok)
 
-		time.Sleep(time.Millisecond * 10)
-
-		// "one" should not be available since timeout is 5 ms
+		currentTime = getTimeFunc(1, 30)
+		// "one" should not be available since timeout is 1 min
 		_, ok = cache.Get("one")
 		assert.False(t, ok)
-
+		currentTime = tempCurrentTime
 	})
 
+}
+
+func getTimeFunc(min int, sec int) func() time.Time {
+	return func() time.Time {
+		return time.Date(0, 0, 0, 0, min, sec, 0, time.UTC)
+	}
 }

@@ -6,6 +6,8 @@ import (
 	"k8s.io/utils/lru"
 )
 
+var currentTime = time.Now
+
 type lruTtlCache struct {
 	timeout time.Duration
 	cache   *lru.Cache
@@ -26,7 +28,7 @@ func NewLRUTtlCache(timeout time.Duration, size int) *lruTtlCache {
 func (c *lruTtlCache) Get(key string) (any, bool) {
 	if data, ok := c.cache.Get(key); ok {
 		item := data.(*item)
-		if getCurrentTime().Before(item.expiryTime) {
+		if currentTime().Before(item.expiryTime) {
 			return item.value, true
 		}
 		c.cache.Remove(key)
@@ -36,11 +38,7 @@ func (c *lruTtlCache) Get(key string) (any, bool) {
 
 func (c *lruTtlCache) Add(key string, value any) {
 	c.cache.Add(key, &item{
-		expiryTime: getCurrentTime().Add(c.timeout),
+		expiryTime: currentTime().Add(c.timeout),
 		value:      value,
 	})
-}
-
-func getCurrentTime() time.Time {
-	return time.Now().UTC()
 }
