@@ -1,6 +1,6 @@
 package cache
 
-type Cache interface {
+type Interface interface {
 	Get(key string) (any, bool)
 	Add(key string, value any)
 }

@@ -11,8 +11,8 @@ type lruTtlCache struct {
 	cache   *lru.Cache
 }
 
-type timeValueHolder struct {
-	createTime time.Time
+type item struct {
+	expiryTime time.Time
 	value      any
 }
 
@@ -25,10 +25,9 @@ func NewLRUTtlCache(timeout time.Duration, size int) *lruTtlCache {
 
 func (c *lruTtlCache) Get(key string) (any, bool) {
 	if data, ok := c.cache.Get(key); ok {
-		holder := data.(*timeValueHolder)
-		deadline := holder.createTime.Add(c.timeout)
-		if getCurrentTime().Before(deadline) {
-			return holder.value, true
+		item := data.(*item)
+		if getCurrentTime().Before(item.expiryTime) {
+			return item.value, true
 		}
 		c.cache.Remove(key)
 	}
@@ -36,8 +35,8 @@ func (c *lruTtlCache) Get(key string) (any, bool) {
 }
 
 func (c *lruTtlCache) Add(key string, value any) {
-	c.cache.Add(key, &timeValueHolder{
-		createTime: getCurrentTime(),
+	c.cache.Add(key, &item{
+		expiryTime: getCurrentTime().Add(c.timeout),
 		value:      value,
 	})
 }

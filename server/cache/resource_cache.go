@@ -14,7 +14,7 @@ import (
 
 type ResourceCache struct {
 	ctx    context.Context
-	cache  Cache
+	cache  Interface
 	client kubernetes.Interface
 	v1.ServiceAccountLister
 }
