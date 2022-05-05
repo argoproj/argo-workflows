@@ -99,6 +99,7 @@ type ArgoServerOpts struct {
 	// config map name
 	ConfigName               string
 	ManagedNamespace         string
+	SSONamespace             string
 	HSTS                     bool
 	EventOperationQueueSize  int
 	EventWorkerCount         int
@@ -113,13 +114,6 @@ func init() {
 	if err != nil {
 		log.Fatalf("GRPC_MESSAGE_SIZE environment variable must be set as an integer: %v", err)
 	}
-}
-
-func getSSONamespace(opts ArgoServerOpts) string {
-	if opts.ManagedNamespace != "" {
-		return opts.ManagedNamespace
-	}
-	return opts.Namespace
 }
 
 func getResourceCacheNamespace(opts ArgoServerOpts) string {
@@ -148,7 +142,7 @@ func NewArgoServer(ctx context.Context, opts ArgoServerOpts) (*argoServer, error
 	} else {
 		log.Info("SSO disabled")
 	}
-	gatekeeper, err := auth.NewGatekeeper(opts.AuthModes, opts.Clients, opts.RestConfig, ssoIf, auth.DefaultClientForAuthorization, opts.Namespace, getSSONamespace(opts), opts.Namespaced, resourceCache)
+	gatekeeper, err := auth.NewGatekeeper(opts.AuthModes, opts.Clients, opts.RestConfig, ssoIf, auth.DefaultClientForAuthorization, opts.Namespace, opts.SSONamespace, opts.Namespaced, resourceCache)
 	if err != nil {
 		return nil, err
 	}

@@ -97,10 +97,16 @@ See %s`, help.ArgoServer),
 				managedNamespace = namespace
 			}
 
+			ssoNamespace := namespace
+			if managedNamespace != "" {
+				ssoNamespace = managedNamespace
+			}
+
 			log.WithFields(log.Fields{
 				"authModes":        authModes,
 				"namespace":        namespace,
 				"managedNamespace": managedNamespace,
+				"ssoNamespace":     ssoNamespace,
 				"baseHRef":         baseHRef,
 				"secure":           secure,
 			}).Info()
@@ -152,6 +158,7 @@ See %s`, help.ArgoServer),
 				RestConfig:               config,
 				AuthModes:                modes,
 				ManagedNamespace:         managedNamespace,
+				SSONamespace:             ssoNamespace,
 				ConfigName:               configMap,
 				EventOperationQueueSize:  eventOperationQueueSize,
 				EventWorkerCount:         eventWorkerCount,
