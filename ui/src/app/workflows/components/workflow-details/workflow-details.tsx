@@ -5,6 +5,7 @@ import {useContext, useEffect, useState} from 'react';
 import {RouteComponentProps} from 'react-router';
 import {execSpec, Link, NodeStatus, Parameter, Workflow} from '../../../../models';
 import {ANNOTATION_KEY_POD_NAME_VERSION} from '../../../shared/annotations';
+import {findArtifact} from '../../../shared/artifacts';
 import {uiUrl} from '../../../shared/base';
 import {CostOptimisationNudge} from '../../../shared/components/cost-optimisation-nudge';
 import {ErrorNotice} from '../../../shared/components/error-notice';
@@ -30,6 +31,7 @@ import {WorkflowParametersPanel} from '../workflow-parameters-panel';
 import {WorkflowSummaryPanel} from '../workflow-summary-panel';
 import {WorkflowTimeline} from '../workflow-timeline/workflow-timeline';
 import {WorkflowYamlViewer} from '../workflow-yaml-viewer/workflow-yaml-viewer';
+import {ArtifactPanel} from './artifact-panel';
 import {SuspendInputs} from './suspend-inputs';
 import {WorkflowResourcePanel} from './workflow-resource-panel';
 
@@ -147,6 +149,25 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
                         action: () => openLink(link)
                     });
                 });
+        }
+
+        // we only want one link, and we have a preference
+        for (const k of [
+            'workflows.argoproj.io/workflow-template',
+            'workflows.argoproj.io/cluster-workflow-template',
+            'workflows.argoproj.io/cron-workflow',
+            'workflows.argoproj.io/workflow-event-binding',
+            'workflows.argoproj.io/resubmitted-from-workflow'
+        ]) {
+            const v = workflow?.metadata.labels[k];
+            if (v) {
+                items.push({
+                    title: 'Previous Runs',
+                    iconClassName: 'fa fa-search',
+                    action: () => navigation.goto(uiUrl(`workflows/${workflow.metadata.namespace}?label=${k}=${v}`))
+                });
+                break; // only add one item
+            }
         }
 
         if (workflow?.spec?.workflowTemplateRef) {
@@ -327,6 +348,8 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
     const selectedNode = workflow && workflow.status && workflow.status.nodes && workflow.status.nodes[nodeId];
     const podName = ensurePodName(workflow, selectedNode, nodeId);
 
+    const selectedArtifact = workflow && workflow.status && findArtifact(workflow.status, nodeId);
+
     return (
         <Page
             title={'Workflow Details'}
@@ -357,7 +380,7 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
                     </div>
                 )
             }}>
-            <div className={classNames('workflow-details', {'workflow-details--step-node-expanded': !!selectedNode})}>
+            <div className={classNames('workflow-details', {'workflow-details--step-node-expanded': selectedArtifact || selectedNode})}>
                 <ErrorNotice error={error} />
                 {(tab === 'summary' && renderSummaryTab()) ||
                     (workflow && (
@@ -387,6 +410,9 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
                                         archived={false}
                                         onResume={() => renderResumePopup()}
                                     />
+                                )}
+                                {selectedArtifact && (
+                                    <ArtifactPanel workflow={workflow} artifact={selectedArtifact} artifactRepository={workflow.status.artifactRepositoryRef.artifactRepository} />
                                 )}
                             </div>
                         </div>

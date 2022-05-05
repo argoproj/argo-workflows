@@ -43,6 +43,7 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [Cisco](https://www.cisco.com/)
 1. [CloudSeeds](https://www.cloudseeds.de/)
 1. [Codec](https://www.codec.ai/)
+1. [Codefresh](https://www.codefresh.io/)
 1. [Commodus Tech](https://www.commodus.tech)
 1. [Concierge Render](https://www.conciergerender.com)
 1. [Cookpad](https://cookpad.com/)

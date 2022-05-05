@@ -26,6 +26,8 @@ type ArtifactDriver interface {
 	Delete(artifact *v1alpha1.Artifact) error
 
 	ListObjects(artifact *v1alpha1.Artifact) ([]string, error)
+
+	IsDirectory(artifact *v1alpha1.Artifact) (bool, error)
 }
 
 // ErrDeleteNotSupported Sentinel error definition for artifact deletion

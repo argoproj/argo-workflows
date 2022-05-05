@@ -8,7 +8,6 @@ Name | Type | Description | Notes
 **active_deadline_seconds** | **str** |  | [optional] 
 **affinity** | [**Affinity**](Affinity.md) |  | [optional] 
 **archive_location** | [**IoArgoprojWorkflowV1alpha1ArtifactLocation**](IoArgoprojWorkflowV1alpha1ArtifactLocation.md) |  | [optional] 
-**artifact_gc** | [**IoArgoprojWorkflowV1alpha1ArtifactGC**](IoArgoprojWorkflowV1alpha1ArtifactGC.md) |  | [optional] 
 **automount_service_account_token** | **bool** | AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods. ServiceAccountName of ExecutorConfig must be specified if this value is false. | [optional] 
 **container** | [**Container**](Container.md) |  | [optional] 
 **container_set** | [**IoArgoprojWorkflowV1alpha1ContainerSetTemplate**](IoArgoprojWorkflowV1alpha1ContainerSetTemplate.md) |  | [optional] 
