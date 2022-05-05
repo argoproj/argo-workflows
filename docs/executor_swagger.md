@@ -201,6 +201,7 @@ It will marshall back to string - marshalling is not symmetric. |  |
 |------|------|---------|:--------:| ------- |-------------|---------|
 | archive | [ArchiveStrategy](#archive-strategy)| `ArchiveStrategy` |  | |  |  |
 | archiveLogs | boolean| `bool` |  | | ArchiveLogs indicates if the container logs should be archived |  |
+| artifactGC | [ArtifactGC](#artifact-g-c)| `ArtifactGC` |  | |  |  |
 | artifactory | [ArtifactoryArtifact](#artifactory-artifact)| `ArtifactoryArtifact` |  | |  |  |
 | from | string| `string` |  | | From allows an artifact to reference an artifact from a previous step |  |
 | fromExpression | string| `string` |  | | FromExpression, if defined, is evaluated to specify the value for the artifact |  |
@@ -220,6 +221,35 @@ set when loading input artifacts. |  |
 | recurseMode | boolean| `bool` |  | | If mode is set, apply the permission recursively into the artifact if it is a folder |  |
 | s3 | [S3Artifact](#s3-artifact)| `S3Artifact` |  | |  |  |
 | subPath | string| `string` |  | | SubPath allows an artifact to be sourced from a subpath within the specified source |  |
+
+
+
+### <span id="artifact-g-c"></span> ArtifactGC
+
+
+> ArtifactGC describes how to delete artifacts from completed Workflows
+  
+
+
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| strategy | [ArtifactGCStrategy](#artifact-g-c-strategy)| `ArtifactGCStrategy` |  | |  |  |
+
+
+
+### <span id="artifact-g-c-strategy"></span> ArtifactGCStrategy
+
+
+  
+
+| Name | Type | Go type | Default | Description | Example |
+|------|------|---------| ------- |-------------|---------|
+| ArtifactGCStrategy | string| string | |  |  |
 
 
 
@@ -267,6 +297,7 @@ of a single workflow step, which the executor will use as a default location to 
 |------|------|---------|:--------:| ------- |-------------|---------|
 | archive | [ArchiveStrategy](#archive-strategy)| `ArchiveStrategy` |  | |  |  |
 | archiveLogs | boolean| `bool` |  | | ArchiveLogs indicates if the container logs should be archived |  |
+| artifactGC | [ArtifactGC](#artifact-g-c)| `ArtifactGC` |  | |  |  |
 | artifactory | [ArtifactoryArtifact](#artifactory-artifact)| `ArtifactoryArtifact` |  | |  |  |
 | from | string| `string` |  | | From allows an artifact to reference an artifact from a previous step |  |
 | fromExpression | string| `string` |  | | FromExpression, if defined, is evaluated to specify the value for the artifact |  |
@@ -319,22 +350,28 @@ set when loading input artifacts. |  |
 ### <span id="azure-data-disk-caching-mode"></span> AzureDataDiskCachingMode
 
 
+> +enum
   
+
+
 
 | Name | Type | Go type | Default | Description | Example |
 |------|------|---------| ------- |-------------|---------|
-| AzureDataDiskCachingMode | string| string | |  |  |
+| AzureDataDiskCachingMode | string| string | | +enum |  |
 
 
 
 ### <span id="azure-data-disk-kind"></span> AzureDataDiskKind
 
 
+> +enum
   
+
+
 
 | Name | Type | Go type | Default | Description | Example |
 |------|------|---------| ------- |-------------|---------|
-| AzureDataDiskKind | string| string | |  |  |
+| AzureDataDiskKind | string| string | | +enum |  |
 
 
 
@@ -573,7 +610,10 @@ TODO: Add other useful fields. apiVersion, kind, uid?
 ### <span id="config-map-key-selector"></span> ConfigMapKeySelector
 
 
+> +structType=atomic
   
+
+
 
 
 
@@ -682,19 +722,19 @@ TODO: Add other useful fields. apiVersion, kind, uid?
 | args | []string| `[]string` |  | | Arguments to the entrypoint.
 The docker image's CMD is used if this is not provided.
 Variable references $(VAR_NAME) are expanded using the container's environment. If a variable
-cannot be resolved, the reference in the input string will be unchanged. The $(VAR_NAME) syntax
-can be escaped with a double $$, ie: $$(VAR_NAME). Escaped references will never be expanded,
-regardless of whether the variable exists or not.
-Cannot be updated.
+cannot be resolved, the reference in the input string will be unchanged. Double $$ are reduced
+to a single $, which allows for escaping the $(VAR_NAME) syntax: i.e. "$$(VAR_NAME)" will
+produce the string literal "$(VAR_NAME)". Escaped references will never be expanded, regardless
+of whether the variable exists or not. Cannot be updated.
 More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell
 +optional |  |
 | command | []string| `[]string` |  | | Entrypoint array. Not executed within a shell.
 The docker image's ENTRYPOINT is used if this is not provided.
 Variable references $(VAR_NAME) are expanded using the container's environment. If a variable
-cannot be resolved, the reference in the input string will be unchanged. The $(VAR_NAME) syntax
-can be escaped with a double $$, ie: $$(VAR_NAME). Escaped references will never be expanded,
-regardless of whether the variable exists or not.
-Cannot be updated.
+cannot be resolved, the reference in the input string will be unchanged. Double $$ are reduced
+to a single $, which allows for escaping the $(VAR_NAME) syntax: i.e. "$$(VAR_NAME)" will
+produce the string literal "$(VAR_NAME)". Escaped references will never be expanded, regardless
+of whether the variable exists or not. Cannot be updated.
 More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell
 +optional |  |
 | env | [][EnvVar](#env-var)| `[]*EnvVar` |  | | List of environment variables to set in the container.
@@ -792,19 +832,19 @@ Cannot be updated.
 | args | []string| `[]string` |  | | Arguments to the entrypoint.
 The docker image's CMD is used if this is not provided.
 Variable references $(VAR_NAME) are expanded using the container's environment. If a variable
-cannot be resolved, the reference in the input string will be unchanged. The $(VAR_NAME) syntax
-can be escaped with a double $$, ie: $$(VAR_NAME). Escaped references will never be expanded,
-regardless of whether the variable exists or not.
-Cannot be updated.
+cannot be resolved, the reference in the input string will be unchanged. Double $$ are reduced
+to a single $, which allows for escaping the $(VAR_NAME) syntax: i.e. "$$(VAR_NAME)" will
+produce the string literal "$(VAR_NAME)". Escaped references will never be expanded, regardless
+of whether the variable exists or not. Cannot be updated.
 More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell
 +optional |  |
 | command | []string| `[]string` |  | | Entrypoint array. Not executed within a shell.
 The docker image's ENTRYPOINT is used if this is not provided.
 Variable references $(VAR_NAME) are expanded using the container's environment. If a variable
-cannot be resolved, the reference in the input string will be unchanged. The $(VAR_NAME) syntax
-can be escaped with a double $$, ie: $$(VAR_NAME). Escaped references will never be expanded,
-regardless of whether the variable exists or not.
-Cannot be updated.
+cannot be resolved, the reference in the input string will be unchanged. Double $$ are reduced
+to a single $, which allows for escaping the $(VAR_NAME) syntax: i.e. "$$(VAR_NAME)" will
+produce the string literal "$(VAR_NAME)". Escaped references will never be expanded, regardless
+of whether the variable exists or not. Cannot be updated.
 More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell
 +optional |  |
 | dependencies | []string| `[]string` |  | |  |  |
@@ -917,6 +957,23 @@ referred to by services.
 
 
 
+### <span id="container-set-retry-strategy"></span> ContainerSetRetryStrategy
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| duration | string| `string` |  | | Duration is the time between each retry, examples values are "300ms", "1s" or "5m".
+Valid time units are "ns", "us" (or "µs"), "ms", "s", "m", "h". |  |
+| retries | [IntOrString](#int-or-string)| `IntOrString` |  | |  |  |
+
+
+
 ### <span id="container-set-template"></span> ContainerSetTemplate
 
 
@@ -929,6 +986,7 @@ referred to by services.
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
 | containers | [][ContainerNode](#container-node)| `[]*ContainerNode` |  | |  |  |
+| retryStrategy | [ContainerSetRetryStrategy](#container-set-retry-strategy)| `ContainerSetRetryStrategy` |  | |  |  |
 | volumeMounts | [][VolumeMount](#volume-mount)| `[]*VolumeMount` |  | |  |  |
 
 
@@ -1227,11 +1285,12 @@ can be used as map keys in json.
 |------|------|---------|:--------:| ------- |-------------|---------|
 | name | string| `string` |  | | Name of the environment variable. Must be a C_IDENTIFIER. |  |
 | value | string| `string` |  | | Variable references $(VAR_NAME) are expanded
-using the previous defined environment variables in the container and
+using the previously defined environment variables in the container and
 any service environment variables. If a variable cannot be resolved,
-the reference in the input string will be unchanged. The $(VAR_NAME)
-syntax can be escaped with a double $$, ie: $$(VAR_NAME). Escaped
-references will never be expanded, regardless of whether the variable
+the reference in the input string will be unchanged. Double $$ are reduced
+to a single $, which allows for escaping the $(VAR_NAME) syntax: i.e.
+"$$(VAR_NAME)" will produce the string literal "$(VAR_NAME)".
+Escaped references will never be expanded, regardless of whether the variable
 exists or not.
 Defaults to "".
 +optional |  |
@@ -1501,6 +1560,27 @@ More info: https://kubernetes.io/docs/concepts/storage/volumes#gcepersistentdisk
 
 
 
+### <span id="g-rpc-action"></span> GRPCAction
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| port | int32 (formatted integer)| `int32` |  | | Port number of the gRPC service. Number must be in the range 1 to 65535. |  |
+| service | string| `string` |  | | Service is the name of the service to place in the gRPC HealthCheckRequest
+(see https://github.com/grpc/grpc/blob/master/doc/health-checking.md).
+
+If this is not specified, the default behavior is defined by gRPC.
++optional
++default="" |  |
+
+
+
 ### <span id="gauge"></span> Gauge
 
 
@@ -1534,6 +1614,7 @@ More info: https://kubernetes.io/docs/concepts/storage/volumes#gcepersistentdisk
 
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
+| branch | string| `string` |  | | Branch is the branch to fetch when `SingleBranch` is enabled |  |
 | depth | uint64 (formatted integer)| `uint64` |  | | Depth specifies clones/fetches should be shallow and include the given
 number of commits from the branch tip |  |
 | disableSubmodules | boolean| `bool` |  | | DisableSubmodules disables submodules during git clone |  |
@@ -1542,6 +1623,7 @@ number of commits from the branch tip |  |
 | passwordSecret | [SecretKeySelector](#secret-key-selector)| `SecretKeySelector` |  | |  |  |
 | repo | string| `string` |  | | Repo is the git repository |  |
 | revision | string| `string` |  | | Revision is the git commit, tag, branch to checkout |  |
+| singleBranch | boolean| `bool` |  | | SingleBranch enables single branch clone, using the `branch` parameter |  |
 | sshPrivateKeySecret | [SecretKeySelector](#secret-key-selector)| `SecretKeySelector` |  | |  |  |
 | usernameSecret | [SecretKeySelector](#secret-key-selector)| `SecretKeySelector` |  | |  |  |
 
@@ -1642,8 +1724,10 @@ It must be set if keytab is used. |  |
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
 | body | string| `string` |  | | Body is content of the HTTP Request |  |
-| headers | [][HTTPHeader](#http-header)| `[]*HTTPHeader` |  | | Headers are an optional list of headers to send with HTTP requests |  |
+| headers | [HTTPHeaders](#http-headers)| `HTTPHeaders` |  | |  |  |
+| insecureSkipVerify | boolean| `bool` |  | | insecureSkipVerify is a bool when if set to true will skip TLS verification for the HTTP client |  |
 | method | string| `string` |  | | Method is HTTP methods for HTTP Request |  |
+| successCondition | string| `string` |  | | SuccessCondition is an expression if evaluated to true is considered successful |  |
 | timeoutSeconds | int64 (formatted integer)| `int64` |  | | TimeoutSeconds is request timeout for HTTP Request. Default is 30 seconds |  |
 | url | string| `string` |  | | URL of the HTTP Request |  |
 
@@ -1652,7 +1736,7 @@ It must be set if keytab is used. |  |
 ### <span id="http-artifact"></span> HTTPArtifact
 
 
-> HTTPArtifact allows an file served on HTTP to be placed as an input artifact in a container
+> HTTPArtifact allows a file served on HTTP to be placed as an input artifact in a container
   
 
 
@@ -1664,7 +1748,9 @@ It must be set if keytab is used. |  |
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
 | headers | [][Header](#header)| `[]*Header` |  | | Headers are an optional list of headers to send with HTTP requests for artifacts |  |
+| passwordSecret | [SecretKeySelector](#secret-key-selector)| `SecretKeySelector` |  | |  |  |
 | url | string| `string` |  | | URL of the artifact |  |
+| usernameSecret | [SecretKeySelector](#secret-key-selector)| `SecretKeySelector` |  | |  |  |
 
 
 
@@ -1723,26 +1809,12 @@ It must be set if keytab is used. |  |
 
 
 
-### <span id="handler"></span> Handler
+### <span id="http-headers"></span> HTTPHeaders
 
 
-> Handler defines a specific action that should be taken
-TODO: pass structured data to these actions, and document that data here.
   
 
-
-
-
-
-**Properties**
-
-| Name | Type | Go type | Required | Default | Description | Example |
-|------|------|---------|:--------:| ------- |-------------|---------|
-| exec | [ExecAction](#exec-action)| `ExecAction` |  | |  |  |
-| httpGet | [HTTPGetAction](#http-get-action)| `HTTPGetAction` |  | |  |  |
-| tcpSocket | [TCPSocketAction](#tcp-socket-action)| `TCPSocketAction` |  | |  |  |
-
-
+[][HTTPHeader](#http-header)
 
 ### <span id="header"></span> Header
 
@@ -1805,11 +1877,14 @@ pod's hosts file.
 ### <span id="host-path-type"></span> HostPathType
 
 
+> +enum
   
+
+
 
 | Name | Type | Go type | Default | Description | Example |
 |------|------|---------| ------- |-------------|---------|
-| HostPathType | string| string | |  |  |
+| HostPathType | string| string | | +enum |  |
 
 
 
@@ -2040,8 +2115,29 @@ until the action is complete, unless the container process fails, in which case 
 
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
-| postStart | [Handler](#handler)| `Handler` |  | |  |  |
-| preStop | [Handler](#handler)| `Handler` |  | |  |  |
+| postStart | [LifecycleHandler](#lifecycle-handler)| `LifecycleHandler` |  | |  |  |
+| preStop | [LifecycleHandler](#lifecycle-handler)| `LifecycleHandler` |  | |  |  |
+
+
+
+### <span id="lifecycle-handler"></span> LifecycleHandler
+
+
+> LifecycleHandler defines a specific action that should be taken in a lifecycle
+hook. One and only one of the fields, except TCPSocket must be specified.
+  
+
+
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| exec | [ExecAction](#exec-action)| `ExecAction` |  | |  |  |
+| httpGet | [HTTPGetAction](#http-get-action)| `HTTPGetAction` |  | |  |  |
+| tcpSocket | [TCPSocketAction](#tcp-socket-action)| `TCPSocketAction` |  | |  |  |
 
 
 
@@ -2057,7 +2153,10 @@ until the action is complete, unless the container process fails, in which case 
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
 | arguments | [Arguments](#arguments)| `Arguments` |  | |  |  |
-| template | string| `string` |  | |  |  |
+| expression | string| `string` |  | | Expression is a condition expression for when a node will be retried. If it evaluates to false, the node will not
+be retried and the retry strategy will be ignored |  |
+| template | string| `string` |  | | Template is the name of the template to execute by the hook |  |
+| templateRef | [TemplateRef](#template-ref)| `TemplateRef` |  | |  |  |
 
 
 
@@ -2073,6 +2172,7 @@ until the action is complete, unless the container process fails, in which case 
 
 > LocalObjectReference contains enough information to let you locate the
 referenced object inside the same namespace.
++structType=atomic
   
 
 
@@ -2114,6 +2214,13 @@ There is currently only one possible value: "FieldsV1" |  |
 | fieldsV1 | [FieldsV1](#fields-v1)| `FieldsV1` |  | |  |  |
 | manager | string| `string` |  | | Manager is an identifier of the workflow managing these fields. |  |
 | operation | [ManagedFieldsOperationType](#managed-fields-operation-type)| `ManagedFieldsOperationType` |  | |  |  |
+| subresource | string| `string` |  | | Subresource is the name of the subresource used to update that object, or
+empty string if the object was updated through the main resource. The
+value of this field is used to distinguish between managers, even if they
+share the same name. For example, a status update will be distinct from a
+regular update using the same manager name.
+Note that the APIVersion field is not related to the Subresource field and
+it always corresponds to the version of the main resource. |  |
 | time | [Time](#time)| `Time` |  | |  |  |
 
 
@@ -2209,11 +2316,14 @@ than the MaxAge, it will be ignored. |  |
 ### <span id="mount-propagation-mode"></span> MountPropagationMode
 
 
+> +enum
   
+
+
 
 | Name | Type | Go type | Default | Description | Example |
 |------|------|---------| ------- |-------------|---------|
-| MountPropagationMode | string| string | |  |  |
+| MountPropagationMode | string| string | | +enum |  |
 
 
 
@@ -2311,6 +2421,7 @@ node(s) with the highest sum are the most preferred.
 | message | string| `string` |  | |  |  |
 | outputs | [Outputs](#outputs)| `Outputs` |  | |  |  |
 | phase | [NodePhase](#node-phase)| `NodePhase` |  | |  |  |
+| progress | [Progress](#progress)| `Progress` |  | |  |  |
 
 
 
@@ -2320,6 +2431,7 @@ node(s) with the highest sum are the most preferred.
 > A node selector represents the union of the results of one or more label queries
 over a set of nodes; that is, it represents the OR of the selectors represented
 by the node selector terms.
++structType=atomic
   
 
 
@@ -2339,6 +2451,7 @@ by the node selector terms.
 
 > A node selector operator is the set of operators that can be used in
 a node selector requirement.
++enum
   
 
 
@@ -2346,7 +2459,8 @@ a node selector requirement.
 | Name | Type | Go type | Default | Description | Example |
 |------|------|---------| ------- |-------------|---------|
 | NodeSelectorOperator | string| string | | A node selector operator is the set of operators that can be used in
-a node selector requirement. |  |
+a node selector requirement.
++enum |  |
 
 
 
@@ -2382,6 +2496,7 @@ This array is replaced during a strategic merge patch.
 > A null or empty node selector term matches no objects. The requirements of
 them are ANDed.
 The TopologySelectorTerm type implements a subset of the NodeSelectorTerm.
++structType=atomic
   
 
 
@@ -2455,20 +2570,13 @@ save/load the directory appropriately.
 
 
 
-### <span id="object"></span> Object
-
-
-> +kubebuilder:validation:Type=object
-  
-
-
-
-[interface{}](#interface)
-
 ### <span id="object-field-selector"></span> ObjectFieldSelector
 
 
+> +structType=atomic
   
+
+
 
 
 
@@ -2526,6 +2634,7 @@ save/load the directory appropriately.
 > OwnerReference contains enough information to let you identify an owning
 object. An owning object must be in the same namespace as the dependent, or
 be cluster-scoped, so there is no namespace field.
++structType=atomic
   
 
 
@@ -2579,6 +2688,7 @@ More info: http://kubernetes.io/docs/user-guide/identifiers#names |  |
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
 | default | [AnyString](#any-string)| `AnyString` |  | |  |  |
+| description | [AnyString](#any-string)| `AnyString` |  | |  |  |
 | enum | [][AnyString](#any-string)| `[]AnyString` |  | | Enum holds a list of string values to choose from, for the actual value of the parameter |  |
 | globalName | string| `string` |  | | GlobalName exports an output parameter to the global scope, making it available as
 '{{workflow.outputs.parameters.XXXX}} and in workflow.status.outputs.parameters |  |
@@ -2591,11 +2701,14 @@ More info: http://kubernetes.io/docs/user-guide/identifiers#names |  |
 ### <span id="persistent-volume-access-mode"></span> PersistentVolumeAccessMode
 
 
+> +enum
   
+
+
 
 | Name | Type | Go type | Default | Description | Example |
 |------|------|---------| ------- |-------------|---------|
-| PersistentVolumeAccessMode | string| string | |  |  |
+| PersistentVolumeAccessMode | string| string | | +enum |  |
 
 
 
@@ -2618,6 +2731,7 @@ and allows a Source for provider-specific attributes
 More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#access-modes-1
 +optional |  |
 | dataSource | [TypedLocalObjectReference](#typed-local-object-reference)| `TypedLocalObjectReference` |  | |  |  |
+| dataSourceRef | [TypedLocalObjectReference](#typed-local-object-reference)| `TypedLocalObjectReference` |  | |  |  |
 | resources | [ResourceRequirements](#resource-requirements)| `ResourceRequirements` |  | |  |  |
 | selector | [LabelSelector](#label-selector)| `LabelSelector` |  | |  |  |
 | storageClassName | string| `string` |  | | Name of the StorageClass required by the claim.
@@ -2782,11 +2896,14 @@ Default false.
 ### <span id="persistent-volume-mode"></span> PersistentVolumeMode
 
 
+> +enum
   
+
+
 
 | Name | Type | Go type | Default | Description | Example |
 |------|------|---------| ------- |-------------|---------|
-| PersistentVolumeMode | string| string | |  |  |
+| PersistentVolumeMode | string| string | | +enum |  |
 
 
 
@@ -2807,6 +2924,16 @@ Ex. "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified. |  |
 | pdID | string| `string` |  | | ID that identifies Photon Controller persistent disk |  |
 
 
+
+### <span id="plugin"></span> Plugin
+
+
+> Plugin is an Object with exactly one key
+  
+
+
+
+[interface{}](#interface)
 
 ### <span id="pod-affinity"></span> PodAffinity
 
@@ -2911,6 +3038,7 @@ podAffinityTerm are intersected, i.e. all terms must be satisfied.
 
 > PodFSGroupChangePolicy holds policies that will be used for applying fsGroup to a volume
 when volume is mounted.
++enum
   
 
 
@@ -2918,7 +3046,8 @@ when volume is mounted.
 | Name | Type | Go type | Default | Description | Example |
 |------|------|---------| ------- |-------------|---------|
 | PodFSGroupChangePolicy | string| string | | PodFSGroupChangePolicy holds policies that will be used for applying fsGroup to a volume
-when volume is mounted. |  |
+when volume is mounted.
++enum |  |
 
 
 
@@ -2946,6 +3075,7 @@ to be owned by the pod:
 3. The permission bits are OR'd with rw-rw----
 
 If unset, the Kubelet will not modify the ownership and permissions of any volume.
+Note that this field cannot be set when spec.os.name is windows.
 +optional |  |
 | fsGroupChangePolicy | [PodFSGroupChangePolicy](#pod-f-s-group-change-policy)| `PodFSGroupChangePolicy` |  | |  |  |
 | runAsGroup | int64 (formatted integer)| `int64` |  | | The GID to run the entrypoint of the container process.
@@ -2953,6 +3083,7 @@ Uses runtime default if unset.
 May also be set in SecurityContext.  If set in both SecurityContext and
 PodSecurityContext, the value specified in SecurityContext takes precedence
 for that container.
+Note that this field cannot be set when spec.os.name is windows.
 +optional |  |
 | runAsNonRoot | boolean| `bool` |  | | Indicates that the container must run as a non-root user.
 If true, the Kubelet will validate the image at runtime to ensure that it
@@ -2966,15 +3097,18 @@ Defaults to user specified in image metadata if unspecified.
 May also be set in SecurityContext.  If set in both SecurityContext and
 PodSecurityContext, the value specified in SecurityContext takes precedence
 for that container.
+Note that this field cannot be set when spec.os.name is windows.
 +optional |  |
 | seLinuxOptions | [SELinuxOptions](#s-e-linux-options)| `SELinuxOptions` |  | |  |  |
 | seccompProfile | [SeccompProfile](#seccomp-profile)| `SeccompProfile` |  | |  |  |
 | supplementalGroups | []int64 (formatted integer)| `[]int64` |  | | A list of groups applied to the first process run in each container, in addition
 to the container's primary GID.  If unspecified, no groups will be added to
 any container.
+Note that this field cannot be set when spec.os.name is windows.
 +optional |  |
 | sysctls | [][Sysctl](#sysctl)| `[]*Sysctl` |  | | Sysctls hold a list of namespaced sysctls used for the pod. Pods with unsupported
 sysctls (by the container runtime) might fail to launch.
+Note that this field cannot be set when spec.os.name is windows.
 +optional |  |
 | windowsOptions | [WindowsSecurityContextOptions](#windows-security-context-options)| `WindowsSecurityContextOptions` |  | |  |  |
 
@@ -3040,6 +3174,7 @@ alive or ready to receive traffic.
 | failureThreshold | int32 (formatted integer)| `int32` |  | | Minimum consecutive failures for the probe to be considered failed after having succeeded.
 Defaults to 3. Minimum value is 1.
 +optional |  |
+| grpc | [GRPCAction](#g-rpc-action)| `GRPCAction` |  | |  |  |
 | httpGet | [HTTPGetAction](#http-get-action)| `HTTPGetAction` |  | |  |  |
 | initialDelaySeconds | int32 (formatted integer)| `int32` |  | | Number of seconds after the container has started before liveness probes are initiated.
 More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes
@@ -3059,7 +3194,8 @@ If this value is nil, the pod's terminationGracePeriodSeconds will be used. Othe
 value overrides the value provided by the pod spec.
 Value must be non-negative integer. The value zero indicates stop immediately via
 the kill signal (no opportunity to shut down).
-This is an alpha field and requires enabling ProbeTerminationGracePeriod feature gate.
+This is a beta field and requires enabling ProbeTerminationGracePeriod feature gate.
+Minimum value is 1. spec.terminationGracePeriodSeconds is used if unset.
 +optional |  |
 | timeoutSeconds | int32 (formatted integer)| `int32` |  | | Number of seconds after which the probe times out.
 Defaults to 1 second. Minimum value is 1.
@@ -3071,11 +3207,25 @@ More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#cont
 ### <span id="proc-mount-type"></span> ProcMountType
 
 
+> +enum
+  
+
+
+
+| Name | Type | Go type | Default | Description | Example |
+|------|------|---------| ------- |-------------|---------|
+| ProcMountType | string| string | | +enum |  |
+
+
+
+### <span id="progress"></span> Progress
+
+
   
 
 | Name | Type | Go type | Default | Description | Example |
 |------|------|---------| ------- |-------------|---------|
-| ProcMountType | string| string | |  |  |
+| Progress | string| string | |  |  |
 
 
 
@@ -3132,11 +3282,14 @@ mode, like fsGroup, and the result can be other mode bits set.
 ### <span id="protocol"></span> Protocol
 
 
+> +enum
   
+
+
 
 | Name | Type | Go type | Default | Description | Example |
 |------|------|---------| ------- |-------------|---------|
-| Protocol | string| string | |  |  |
+| Protocol | string| string | | +enum |  |
 
 
 
@@ -3144,13 +3297,15 @@ mode, like fsGroup, and the result can be other mode bits set.
 
 
 > PullPolicy describes a policy for if/when to pull a container image
++enum
   
 
 
 
 | Name | Type | Go type | Default | Description | Example |
 |------|------|---------| ------- |-------------|---------|
-| PullPolicy | string| string | | PullPolicy describes a policy for if/when to pull a container image |  |
+| PullPolicy | string| string | | PullPolicy describes a policy for if/when to pull a container image
++enum |  |
 
 
 
@@ -3316,6 +3471,7 @@ More info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it
 
 
 > ResourceFieldSelector represents container resources (cpu, memory) and their output format
++structType=atomic
   
 
 
@@ -3577,19 +3733,19 @@ that is associated with this volume source. |  |
 | args | []string| `[]string` |  | | Arguments to the entrypoint.
 The docker image's CMD is used if this is not provided.
 Variable references $(VAR_NAME) are expanded using the container's environment. If a variable
-cannot be resolved, the reference in the input string will be unchanged. The $(VAR_NAME) syntax
-can be escaped with a double $$, ie: $$(VAR_NAME). Escaped references will never be expanded,
-regardless of whether the variable exists or not.
-Cannot be updated.
+cannot be resolved, the reference in the input string will be unchanged. Double $$ are reduced
+to a single $, which allows for escaping the $(VAR_NAME) syntax: i.e. "$$(VAR_NAME)" will
+produce the string literal "$(VAR_NAME)". Escaped references will never be expanded, regardless
+of whether the variable exists or not. Cannot be updated.
 More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell
 +optional |  |
 | command | []string| `[]string` |  | | Entrypoint array. Not executed within a shell.
 The docker image's ENTRYPOINT is used if this is not provided.
 Variable references $(VAR_NAME) are expanded using the container's environment. If a variable
-cannot be resolved, the reference in the input string will be unchanged. The $(VAR_NAME) syntax
-can be escaped with a double $$, ie: $$(VAR_NAME). Escaped references will never be expanded,
-regardless of whether the variable exists or not.
-Cannot be updated.
+cannot be resolved, the reference in the input string will be unchanged. Double $$ are reduced
+to a single $, which allows for escaping the $(VAR_NAME) syntax: i.e. "$$(VAR_NAME)" will
+produce the string literal "$(VAR_NAME)". Escaped references will never be expanded, regardless
+of whether the variable exists or not. Cannot be updated.
 More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell
 +optional |  |
 | env | [][EnvVar](#env-var)| `[]*EnvVar` |  | | List of environment variables to set in the container.
@@ -3701,11 +3857,14 @@ Must only be set if type is "Localhost".
 ### <span id="seccomp-profile-type"></span> SeccompProfileType
 
 
+> +enum
   
+
+
 
 | Name | Type | Go type | Default | Description | Example |
 |------|------|---------| ------- |-------------|---------|
-| SeccompProfileType | string| string | |  |  |
+| SeccompProfileType | string| string | | +enum |  |
 
 
 
@@ -3736,7 +3895,10 @@ TODO: Add other useful fields. apiVersion, kind, uid?
 ### <span id="secret-key-selector"></span> SecretKeySelector
 
 
+> +structType=atomic
   
+
+
 
 
 
@@ -3849,20 +4011,24 @@ the no_new_privs flag will be set on the container process.
 AllowPrivilegeEscalation is true always when the container is:
 1) run as Privileged
 2) has CAP_SYS_ADMIN
+Note that this field cannot be set when spec.os.name is windows.
 +optional |  |
 | capabilities | [Capabilities](#capabilities)| `Capabilities` |  | |  |  |
 | privileged | boolean| `bool` |  | | Run container in privileged mode.
 Processes in privileged containers are essentially equivalent to root on the host.
 Defaults to false.
+Note that this field cannot be set when spec.os.name is windows.
 +optional |  |
 | procMount | [ProcMountType](#proc-mount-type)| `ProcMountType` |  | |  |  |
 | readOnlyRootFilesystem | boolean| `bool` |  | | Whether this container has a read-only root filesystem.
 Default is false.
+Note that this field cannot be set when spec.os.name is windows.
 +optional |  |
 | runAsGroup | int64 (formatted integer)| `int64` |  | | The GID to run the entrypoint of the container process.
 Uses runtime default if unset.
 May also be set in PodSecurityContext.  If set in both SecurityContext and
 PodSecurityContext, the value specified in SecurityContext takes precedence.
+Note that this field cannot be set when spec.os.name is windows.
 +optional |  |
 | runAsNonRoot | boolean| `bool` |  | | Indicates that the container must run as a non-root user.
 If true, the Kubelet will validate the image at runtime to ensure that it
@@ -3875,6 +4041,7 @@ PodSecurityContext, the value specified in SecurityContext takes precedence.
 Defaults to user specified in image metadata if unspecified.
 May also be set in PodSecurityContext.  If set in both SecurityContext and
 PodSecurityContext, the value specified in SecurityContext takes precedence.
+Note that this field cannot be set when spec.os.name is windows.
 +optional |  |
 | seLinuxOptions | [SELinuxOptions](#s-e-linux-options)| `SELinuxOptions` |  | |  |  |
 | seccompProfile | [SeccompProfile](#seccomp-profile)| `SeccompProfile` |  | |  |  |
@@ -4083,11 +4250,14 @@ Namespaces that do not pre-exist within StorageOS will be created.
 ### <span id="taint-effect"></span> TaintEffect
 
 
+> +enum
   
+
+
 
 | Name | Type | Go type | Default | Description | Example |
 |------|------|---------| ------- |-------------|---------|
-| TaintEffect | string| string | |  |  |
+| TaintEffect | string| string | | +enum |  |
 
 
 
@@ -4155,7 +4325,7 @@ run on the selected node(s). Overrides the selector set at the workflow level. |
 | parallelism | int64 (formatted integer)| `int64` |  | | Parallelism limits the max total parallel pods that can execute at the same time within the
 boundaries of this template invocation. If additional steps/dag templates are invoked, the
 pods created by those templates will not be counted towards this total. |  |
-| plugin | [Object](#object)| `Object` |  | |  |  |
+| plugin | [Plugin](#plugin)| `Plugin` |  | |  |  |
 | podSpecPatch | string| `string` |  | | PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of
 container fields which are not strings (e.g. resource limits). |  |
 | priority | int32 (formatted integer)| `int32` |  | | Priority to apply to workflow pods. |  |
@@ -4176,7 +4346,7 @@ Sidecars are automatically killed when the main container completes
 | steps | [][ParallelSteps](#parallel-steps)| `[]ParallelSteps` |  | | Steps define a series of sequential/parallel workflow steps |  |
 | suspend | [SuspendTemplate](#suspend-template)| `SuspendTemplate` |  | |  |  |
 | synchronization | [Synchronization](#synchronization)| `Synchronization` |  | |  |  |
-| timeout | string| `string` |  | | Timout allows to set the total node execution timeout duration counting from the node's start time.
+| timeout | string| `string` |  | | Timeout allows to set the total node execution timeout duration counting from the node's start time.
 This duration also includes time in which the node spends in Pending state. This duration may not be applied to Step or DAG templates. |  |
 | tolerations | [][Toleration](#toleration)| `[]*Toleration` |  | | Tolerations to apply to workflow pods.
 +patchStrategy=merge
@@ -4207,11 +4377,14 @@ This duration also includes time in which the node spends in Pending state. This
 ### <span id="termination-message-policy"></span> TerminationMessagePolicy
 
 
+> +enum
   
+
+
 
 | Name | Type | Go type | Default | Description | Example |
 |------|------|---------| ------- |-------------|---------|
-| TerminationMessagePolicy | string| string | |  |  |
+| TerminationMessagePolicy | string| string | | +enum |  |
 
 
 
@@ -4261,11 +4434,14 @@ If the operator is Exists, the value should be empty, otherwise just a regular s
 ### <span id="toleration-operator"></span> TolerationOperator
 
 
+> +enum
   
+
+
 
 | Name | Type | Go type | Default | Description | Example |
 |------|------|---------| ------- |-------------|---------|
-| TolerationOperator | string| string | |  |  |
+| TolerationOperator | string| string | | +enum |  |
 
 
 
@@ -4307,6 +4483,7 @@ If the operator is Exists, the value should be empty, otherwise just a regular s
 
 > TypedLocalObjectReference contains enough information to let you locate the
 typed referenced object inside the same namespace.
++structType=atomic
   
 
 
@@ -4348,13 +4525,15 @@ intent and helps make sure that UIDs and names do not get conflated. |  |
 
 
 > URIScheme identifies the scheme used for connection to a host for Get actions
++enum
   
 
 
 
 | Name | Type | Go type | Default | Description | Example |
 |------|------|---------| ------- |-------------|---------|
-| URIScheme | string| string | | URIScheme identifies the scheme used for connection to a host for Get actions |  |
+| URIScheme | string| string | | URIScheme identifies the scheme used for connection to a host for Get actions
++enum |  |
 
 
 
@@ -4372,19 +4551,19 @@ intent and helps make sure that UIDs and names do not get conflated. |  |
 | args | []string| `[]string` |  | | Arguments to the entrypoint.
 The docker image's CMD is used if this is not provided.
 Variable references $(VAR_NAME) are expanded using the container's environment. If a variable
-cannot be resolved, the reference in the input string will be unchanged. The $(VAR_NAME) syntax
-can be escaped with a double $$, ie: $$(VAR_NAME). Escaped references will never be expanded,
-regardless of whether the variable exists or not.
-Cannot be updated.
+cannot be resolved, the reference in the input string will be unchanged. Double $$ are reduced
+to a single $, which allows for escaping the $(VAR_NAME) syntax: i.e. "$$(VAR_NAME)" will
+produce the string literal "$(VAR_NAME)". Escaped references will never be expanded, regardless
+of whether the variable exists or not. Cannot be updated.
 More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell
 +optional |  |
 | command | []string| `[]string` |  | | Entrypoint array. Not executed within a shell.
 The docker image's ENTRYPOINT is used if this is not provided.
 Variable references $(VAR_NAME) are expanded using the container's environment. If a variable
-cannot be resolved, the reference in the input string will be unchanged. The $(VAR_NAME) syntax
-can be escaped with a double $$, ie: $$(VAR_NAME). Escaped references will never be expanded,
-regardless of whether the variable exists or not.
-Cannot be updated.
+cannot be resolved, the reference in the input string will be unchanged. Double $$ are reduced
+to a single $, which allows for escaping the $(VAR_NAME) syntax: i.e. "$$(VAR_NAME)" will
+produce the string literal "$(VAR_NAME)". Escaped references will never be expanded, regardless
+of whether the variable exists or not. Cannot be updated.
 More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell
 +optional |  |
 | env | [][EnvVar](#env-var)| `[]*EnvVar` |  | | List of environment variables to set in the container.
@@ -4670,6 +4849,14 @@ in the range 1-100. |  |
 GMSA credential spec named by the GMSACredentialSpecName field.
 +optional |  |
 | gmsaCredentialSpecName | string| `string` |  | | GMSACredentialSpecName is the name of the GMSA credential spec to use.
++optional |  |
+| hostProcess | boolean| `bool` |  | | HostProcess determines if a container should be run as a 'Host Process' container.
+This field is alpha-level and will only be honored by components that enable the
+WindowsHostProcessContainers feature flag. Setting this field without the feature
+flag will result in errors when validating the Pod. All of a Pod's containers must
+have the same effective HostProcess value (it is not allowed to have a mix of HostProcess
+containers and non-HostProcess containers).  In addition, if HostProcess is true
+then HostNetwork must also be set to true.
 +optional |  |
 | runAsUserName | string| `string` |  | | The UserName in Windows to run the entrypoint of the container process.
 Defaults to the user specified in image metadata if unspecified.

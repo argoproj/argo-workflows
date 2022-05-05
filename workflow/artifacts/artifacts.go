@@ -87,17 +87,20 @@ func newDriver(ctx context.Context, art *wfv1.Artifact, ri resource.Interface) (
 		return &driver, nil
 	}
 	if art.HTTP != nil {
-		usernameBytes, err := ri.GetSecret(ctx, art.HTTP.UsernameSecret.Name, art.HTTP.UsernameSecret.Key)
-		if err != nil {
-			return nil, err
+		driver := http.ArtifactDriver{}
+		if art.HTTP.UsernameSecret != nil {
+			usernameBytes, err := ri.GetSecret(ctx, art.HTTP.UsernameSecret.Name, art.HTTP.UsernameSecret.Key)
+			if err != nil {
+				return nil, err
+			}
+			driver.Username = usernameBytes
 		}
-		passwordBytes, err := ri.GetSecret(ctx, art.HTTP.PasswordSecret.Name, art.HTTP.PasswordSecret.Key)
-		if err != nil {
-			return nil, err
-		}
-		driver := http.ArtifactDriver{
-			Username: usernameBytes,
-			Password: passwordBytes,
+		if art.HTTP.PasswordSecret != nil {
+			passwordBytes, err := ri.GetSecret(ctx, art.HTTP.PasswordSecret.Name, art.HTTP.PasswordSecret.Key)
+			if err != nil {
+				return nil, err
+			}
+			driver.Password = passwordBytes
 		}
 		return &driver, nil
 	}

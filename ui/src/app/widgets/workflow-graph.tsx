@@ -1,7 +1,7 @@
 import * as React from 'react';
 import {useEffect, useState} from 'react';
 import {RouteComponentProps} from 'react-router';
-import {NodeStatus} from '../../models';
+import {ArtifactRepositoryRefStatus, NodeStatus} from '../../models';
 import {uiUrl} from '../shared/base';
 import {ErrorNotice} from '../shared/components/error-notice';
 import {historyUrl} from '../shared/history';
@@ -34,6 +34,7 @@ export const WorkflowGraph = ({history, match}: RouteComponentProps<any>) => {
     const [displayName, setDisplayName] = useState<string>();
     const [creationTimestamp, setCreationTimestamp] = useState<Date>(); // used to make sure we only display the most recent one
     const [nodes, setNodes] = useState<{[nodeId: string]: NodeStatus}>();
+    const [artifactRepositoryRef, setArtifactRepositoryRef] = useState<ArtifactRepositoryRefStatus>();
     const [error, setError] = useState<Error>();
 
     useEffect(() => {
@@ -49,6 +50,7 @@ export const WorkflowGraph = ({history, match}: RouteComponentProps<any>) => {
                 setDisplayName(wf.metadata.name);
                 setNodes(wf.status.nodes);
                 setCreationTimestamp(t);
+                setArtifactRepositoryRef(wf.status.artifactRepositoryRef);
             },
             setError
         );
@@ -62,6 +64,7 @@ export const WorkflowGraph = ({history, match}: RouteComponentProps<any>) => {
             <WorkflowDag
                 nodeClicked={nodeId => window.open(uiUrl(`workflows/${namespace}/${displayName}?nodeId=${nodeId}`), target)}
                 workflowName={displayName}
+                artifactRepositoryRef={artifactRepositoryRef}
                 nodes={nodes || {}}
                 hideOptions={!showOptions}
                 nodeSize={nodeSize}

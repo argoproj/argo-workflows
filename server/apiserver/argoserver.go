@@ -341,10 +341,15 @@ func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServe
 		r.Header.Del("Connection")
 		webhookInterceptor(w, r, gwmux)
 	})
-	mux.HandleFunc("/artifacts/", artifactServer.GetOutputArtifact)
-	mux.HandleFunc("/input-artifacts/", artifactServer.GetInputArtifact)
-	mux.HandleFunc("/artifacts-by-uid/", artifactServer.GetOutputArtifactByUID)
-	mux.HandleFunc("/input-artifacts-by-uid/", artifactServer.GetInputArtifactByUID)
+
+	// emergency environment variable that allows you to disable the artifact service in case of problems
+	if os.Getenv("ARGO_ARTIFACT_SERVER") != "false" {
+		mux.HandleFunc("/artifacts/", artifactServer.GetOutputArtifact)
+		mux.HandleFunc("/input-artifacts/", artifactServer.GetInputArtifact)
+		mux.HandleFunc("/artifacts-by-uid/", artifactServer.GetOutputArtifactByUID)
+		mux.HandleFunc("/input-artifacts-by-uid/", artifactServer.GetInputArtifactByUID)
+		mux.HandleFunc("/artifact-files/", artifactServer.GetArtifactFile)
+	}
 	mux.Handle("/oauth2/redirect", handlers.ProxyHeaders(http.HandlerFunc(as.oAuth2Service.HandleRedirect)))
 	mux.Handle("/oauth2/callback", handlers.ProxyHeaders(http.HandlerFunc(as.oAuth2Service.HandleCallback)))
 	mux.HandleFunc("/metrics", func(w http.ResponseWriter, r *http.Request) {

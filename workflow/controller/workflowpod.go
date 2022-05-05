@@ -37,6 +37,12 @@ var (
 		Name:      volumeVarArgo.Name,
 		MountPath: common.VarRunArgoPath,
 	}
+	volumeTmpDir = apiv1.Volume{
+		Name: "tmp-dir-argo",
+		VolumeSource: apiv1.VolumeSource{
+			EmptyDir: &apiv1.EmptyDirVolumeSource{},
+		},
+	}
 )
 
 func (woc *wfOperationCtx) hasPodSpecPatch(tmpl *wfv1.Template) bool {
@@ -373,7 +379,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 			// https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#notes
 			if len(c.Command) == 0 {
 				x, err := woc.controller.entrypoint.Lookup(ctx, c.Image, entrypoint.Options{
-					Namespace: woc.wf.Namespace, ServiceAccountName: woc.wf.Spec.ServiceAccountName, ImagePullSecrets: woc.wf.Spec.ImagePullSecrets,
+					Namespace: woc.wf.Namespace, ServiceAccountName: woc.execWf.Spec.ServiceAccountName, ImagePullSecrets: woc.execWf.Spec.ImagePullSecrets,
 				})
 				if err != nil {
 					return nil, fmt.Errorf("failed to look-up entrypoint/cmd for image %q, you must either explicitly specify the command, or list the image's command in the index: https://argoproj.github.io/argo-workflows/workflow-executors/#emissary-emissary: %w", c.Image, err)
@@ -384,6 +390,14 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 				}
 			}
 			c.Command = append([]string{common.VarRunArgoPath + "/argoexec", "emissary", "--"}, c.Command...)
+		}
+		if c.Image == woc.controller.executorImage() {
+			// mount tmp dir to wait container
+			c.VolumeMounts = append(c.VolumeMounts, apiv1.VolumeMount{
+				Name:      volumeTmpDir.Name,
+				MountPath: "/tmp",
+				SubPath:   strconv.Itoa(i),
+			})
 		}
 		c.VolumeMounts = append(c.VolumeMounts, volumeMountVarArgo)
 		if x := pod.Spec.TerminationGracePeriodSeconds; x != nil && c.Name == common.WaitContainerName {
@@ -571,7 +585,7 @@ func (woc *wfOperationCtx) createVolumes(tmpl *wfv1.Template) []apiv1.Volume {
 		})
 	}
 
-	volumes = append(volumes, volumeVarArgo)
+	volumes = append(volumes, volumeVarArgo, volumeTmpDir)
 	volumes = append(volumes, tmpl.Volumes...)
 	return volumes
 }

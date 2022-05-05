@@ -4496,6 +4496,10 @@
           "description": "ArchiveLogs indicates if the container logs should be archived",
           "type": "boolean"
         },
+        "artifactGC": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactGC",
+          "description": "ArtifactGC describes the strategy to use when to deleting an artifact from completed or deleted workflows"
+        },
         "artifactory": {
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactoryArtifact",
           "description": "Artifactory contains artifactory artifact location details"
@@ -4570,6 +4574,16 @@
       ],
       "type": "object"
     },
+    "io.argoproj.workflow.v1alpha1.ArtifactGC": {
+      "description": "ArtifactGC describes how to delete artifacts from completed Workflows",
+      "properties": {
+        "strategy": {
+          "description": "Strategy is the strategy to use. One of \"OnWorkflowCompletion\", \"OnWorkflowDeletion\"",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
     "io.argoproj.workflow.v1alpha1.ArtifactLocation": {
       "description": "ArtifactLocation describes a location for a single or multiple artifacts. It is used as single artifact in the context of inputs/outputs (e.g. outputs.artifacts.artname). It is also used to describe the location of multiple artifacts such as the archive location of a single workflow step, which the executor will use as a default location to store its files.",
       "properties": {
@@ -4622,6 +4636,10 @@
         "archiveLogs": {
           "description": "ArchiveLogs indicates if the container logs should be archived",
           "type": "boolean"
+        },
+        "artifactGC": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactGC",
+          "description": "ArtifactGC describes the strategy to use when to deleting an artifact from completed or deleted workflows"
         },
         "artifactory": {
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactoryArtifact",
@@ -5579,6 +5597,10 @@
     "io.argoproj.workflow.v1alpha1.GitArtifact": {
       "description": "GitArtifact is the location of an git artifact",
       "properties": {
+        "branch": {
+          "description": "Branch is the branch to fetch when `SingleBranch` is enabled",
+          "type": "string"
+        },
         "depth": {
           "description": "Depth specifies clones/fetches should be shallow and include the given number of commits from the branch tip",
           "type": "integer"
@@ -5609,6 +5631,10 @@
         "revision": {
           "description": "Revision is the git commit, tag, branch to checkout",
           "type": "string"
+        },
+        "singleBranch": {
+          "description": "SingleBranch enables single branch clone, using the `branch` parameter",
+          "type": "boolean"
         },
         "sshPrivateKeySecret": {
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
@@ -7884,6 +7910,10 @@
         "arguments": {
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Arguments",
           "description": "Arguments contain the parameters and artifacts sent to the workflow entrypoint Parameters are referencable globally using the 'workflow' variable prefix. e.g. {{io.argoproj.workflow.v1alpha1.parameters.myparam}}"
+        },
+        "artifactGC": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactGC",
+          "description": "ArtifactGC describes the strategy to use when to deleting artifacts from completed or deleted workflows"
         },
         "artifactRepositoryRef": {
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactRepositoryRef",

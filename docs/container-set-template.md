@@ -1,7 +1,5 @@
 # Container Set Template
 
-![GA](assets/ga.svg)
-
 > v3.1 and after
 
 A container set templates is similar to a normal container or script template, but allows you to specify multiple
@@ -40,7 +38,7 @@ spec:
         parameters:
           - name: message
             valueFrom:
-              path: /workpsace/message
+              path: /workspace/message
 ```
 
 There are a couple of caveats:
@@ -68,7 +66,7 @@ Instead, have a workspace volume and make sure all artifacts paths are on that v
 
 ## ⚠️ Resource Requests
 
-A container set actually starts all containers, and the Emmissary only starts the main container process when the containers it depends on have completed. This mean that even though the container is doing no useful work, it is still consume resources and you're still getting billed for them.
+A container set actually starts all containers, and the Emissary only starts the main container process when the containers it depends on have completed. This mean that even though the container is doing no useful work, it is still consume resources and you're still getting billed for them.
 
 If your requests are small, this won't be a problem.
 
@@ -112,4 +110,3 @@ Example B: Lopsided requests, e.g. `a -> b` where `a` is cheap and `b` is expens
 Can you see the problem here? `a` only wont small requests, but the container set will use the  total of all requests. So it's as if you're using all that GPU for 10h. This will be expensive.
 
 Solution: do not use container set when you have lopsided requests.
-

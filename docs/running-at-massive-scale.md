@@ -34,5 +34,3 @@ Where Argo has a lot of work to do, the Kubernetes API can be overwhelmed. There
 If you're running workflows with many nodes, you'll probably be offloading data to a database. Offloaded data is kept
 for 5m. You can reduce the number of records create by setting `DEFAULT_REQUEUE_TIME=1m`. This will slow reconciliation,
 but will suit workflows where nodes run for over 1m.
-
-

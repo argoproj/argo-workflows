@@ -1,0 +1,103 @@
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: artifacts
+  annotations:
+    workflows.argoproj.io/description: |
+      This example shows how to produce different types of artifact.
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      inputs:
+        artifacts:
+          - name: argo-logo
+            path: /out/assets/argo.png
+            http:
+              url: https://raw.githubusercontent.com/argoproj/argo-workflows/master/docs/assets/argo.png
+      container:
+        image: argoproj/argosay:v2
+        command:
+          - sh
+          - -c
+        args:
+          - |
+            mkdir /out
+            cowsay "hello world" > /out/hello.txt
+            cat > /out/hello.json <<EOF
+            {"hello": {"world": true}} 
+            EOF
+            echo '* {font-family: sans-serif}' > /out/assets/styles.css
+            cat > /out/index.html <<EOF
+            <html>
+              <head>
+                <link rel='stylesheet' href='assets/styles.css' type='text/css'/>
+              </head>
+              <body>
+                <h1>Hello World</h1>
+                <img src='assets/argo.png'/>
+              </body>
+            </html>
+            EOF
+            cat > /out/malicious.html <<EOF
+            <html>
+              <body>
+                <script>alert(1)</script>
+                <p>This page attempts to run a script that shows an alert, but the Argo Server UI Content-Security-Policy will prevent that.</p>
+                <p>To check, open your Web Console and see that "Blocked script execution ... because the document's frame is sandboxed." (or similar) is printed.</p>
+              </body>
+            </html>
+            EOF
+      outputs:
+        artifacts:
+          # saving single files
+          - name: text-file
+            path: /out/hello.txt
+            s3:
+              key: hello.txt
+            archive:
+              none: { }
+          - name: image-file
+            path: /out/assets/argo.png
+            s3:
+              key: argo.png
+            archive:
+              none: { }
+          # JSON files are shown with syntax highlighting.
+          - name: json-file
+            path: /out/hello.json
+            s3:
+              key: hello.json
+            archive:
+              none: { }
+          # CSS in not considered a known file type
+          - name: css-file
+            path: /out/assets/styles.css
+            s3:
+              key: styles.css
+            archive:
+              none: { }
+          # this artifact tries to run JavaScript
+          - name: malicious-file
+            path: /out/malicious.html
+            s3:
+              key: malicious.html
+            archive:
+              none: { }
+          # save a whole directory
+          - name: report
+            path: /out
+            s3:
+              key: report/
+            archive:
+              none: { }
+          # this will be a tgz with a single file
+          - name: tgz-file
+            path: /out/hello.txt
+            s3:
+              key: file.tgz
+          # this will be a tgz with two entries, one dir and one file
+          - name: tgz-dir
+            path: /out
+            s3:
+              key: dir.tgz

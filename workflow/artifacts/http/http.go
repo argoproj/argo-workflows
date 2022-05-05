@@ -47,7 +47,9 @@ func (h *ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) error {
 		for _, h := range inputArtifact.HTTP.Headers {
 			req.Header.Add(h.Name, h.Value)
 		}
-		req.SetBasicAuth(h.Username, h.Password)
+		if h.Username != "" && h.Password != "" {
+			req.SetBasicAuth(h.Username, h.Password)
+		}
 	}
 
 	res, err := (&http.Client{}).Do(req)
@@ -67,6 +69,11 @@ func (h *ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) error {
 	_, err = io.Copy(lf, res.Body)
 
 	return err
+}
+
+func (h *ArtifactDriver) OpenStream(a *wfv1.Artifact) (io.ReadCloser, error) {
+	// todo: this is a temporary implementation which loads file to disk first
+	return common.LoadToStream(a, h)
 }
 
 // Save writes the artifact to the URL
@@ -93,7 +100,9 @@ func (h *ArtifactDriver) Save(path string, outputArtifact *wfv1.Artifact) error 
 		for _, h := range outputArtifact.HTTP.Headers {
 			req.Header.Add(h.Name, h.Value)
 		}
-		req.SetBasicAuth(h.Username, h.Password)
+		if h.Username != "" && h.Password != "" {
+			req.SetBasicAuth(h.Username, h.Password)
+		}
 	}
 	res, err := (&http.Client{}).Do(req)
 	if err != nil {
@@ -108,6 +117,15 @@ func (h *ArtifactDriver) Save(path string, outputArtifact *wfv1.Artifact) error 
 	return nil
 }
 
+// Delete is unsupported for the http artifacts
+func (h *ArtifactDriver) Delete(s *wfv1.Artifact) error {
+	return common.ErrDeleteNotSupported
+}
+
 func (h *ArtifactDriver) ListObjects(artifact *wfv1.Artifact) ([]string, error) {
 	return nil, fmt.Errorf("ListObjects is currently not supported for this artifact type, but it will be in a future version")
+}
+
+func (g *ArtifactDriver) IsDirectory(artifact *wfv1.Artifact) (bool, error) {
+	return false, errors.New(errors.CodeNotImplemented, "IsDirectory currently unimplemented for http")
 }

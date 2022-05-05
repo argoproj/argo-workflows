@@ -19,7 +19,7 @@ RUN iex ((new-object net.webclient).DownloadString('https://chocolatey.org/insta
 
 # install golang, dep and other tools
 RUN choco install golang --version=$env:GOLANG_VERSION ; \
-    choco install make dep docker-cli git.portable 7zip.portable
+    choco install make dep git.portable 7zip.portable
 
 ####################################################################################################
 # argoexec-base
@@ -36,13 +36,11 @@ RUN mkdir C:\app && \
     curl -L -o C:\app\kubectl.exe "https://storage.googleapis.com/kubernetes-release/release/v%KUBECTL_VERSION%/bin/windows/amd64/kubectl.exe" && \
     curl -L -o C:\app\jq.exe "https://github.com/stedolan/jq/releases/download/jq-%JQ_VERSION%/jq-win64.exe"
 
-COPY --from=builder C:/ProgramData/chocolatey/lib/docker-cli/tools/docker/docker.exe C:/app/docker.exe
-COPY --from=builder C:/tools/git C:/app/git
 COPY --from=builder C:/ProgramData/chocolatey/lib/7zip.portable/tools/7z-extra/x64/7za.exe C:/app/7za.exe
 
 # add binaries to path
 USER Administrator
-RUN SETX /m path C:\app;C:\app\git\bin;%path%
+RUN SETX /m path C:\app;%path%
 
 ####################################################################################################
 # Argo Build stage which performs the actual build of Argo binaries
