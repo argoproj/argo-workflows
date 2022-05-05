@@ -143,6 +143,7 @@ func NewArgoServer(ctx context.Context, opts ArgoServerOpts) (*argoServer, error
 			return nil, err
 		}
 		resourceCache = cache.NewResourceCache(opts.Clients.Kubernetes, ctx, getResourceCacheNamespace(opts))
+		resourceCache.Run()
 		log.Info("SSO enabled")
 	} else {
 		log.Info("SSO disabled")

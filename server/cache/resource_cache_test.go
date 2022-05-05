@@ -76,6 +76,7 @@ func TestServer_K8sUtilsCache(t *testing.T) {
 			},
 		})
 	cache := NewResourceCache(kubeClient, context.TODO(), v1.NamespaceAll)
+	cache.Run()
 
 	t.Run("List Service Accounts in different namespaces", func(t *testing.T) {
 		sa, _ := cache.ServiceAccountLister.ServiceAccounts("ns1").List(labels.Everything())

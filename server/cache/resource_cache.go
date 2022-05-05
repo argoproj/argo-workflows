@@ -17,6 +17,7 @@ type ResourceCache struct {
 	cache  Interface
 	client kubernetes.Interface
 	v1.ServiceAccountLister
+	informerFactory informers.SharedInformerFactory
 }
 
 func NewResourceCacheWithTimeout(client kubernetes.Interface, ctx context.Context, namespace string, timeout time.Duration) *ResourceCache {
@@ -26,14 +27,18 @@ func NewResourceCacheWithTimeout(client kubernetes.Interface, ctx context.Contex
 		cache:                NewLRUTtlCache(timeout, 2000),
 		client:               client,
 		ServiceAccountLister: informerFactory.Core().V1().ServiceAccounts().Lister(),
+		informerFactory:      informerFactory,
 	}
-	informerFactory.Start(ctx.Done())
-	informerFactory.WaitForCacheSync(ctx.Done())
 	return cache
 }
 
 func NewResourceCache(client kubernetes.Interface, ctx context.Context, namespace string) *ResourceCache {
 	return NewResourceCacheWithTimeout(client, ctx, namespace, time.Minute*1)
+}
+
+func (c *ResourceCache) Run() {
+	c.informerFactory.Start(c.ctx.Done())
+	c.informerFactory.WaitForCacheSync(c.ctx.Done())
 }
 
 func (c *ResourceCache) GetSecret(namespace string, secretName string) (*corev1.Secret, error) {
