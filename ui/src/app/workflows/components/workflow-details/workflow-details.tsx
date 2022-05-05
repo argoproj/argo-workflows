@@ -91,6 +91,7 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
             .getInfo()
             .then(info => setLinks(info.links))
             .catch(setError);
+        services.info.collectEvent('openedWorkflowDetails').then();
     }, []);
 
     useEffect(() => {
