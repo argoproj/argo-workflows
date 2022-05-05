@@ -483,7 +483,7 @@ ifeq ($(RUN_MODE),local)
 endif
 
 $(GOPATH)/bin/stern:
-	./hack/recurl.sh $(GOPATH)/bin/stern https://github.com/wercker/stern/releases/download/1.11.0/stern_`uname -s|tr '[:upper:]' '[:lower:]'`_amd64
+	go install github.com/stern/stern@latest
 
 .PHONY: logs
 logs: $(GOPATH)/bin/stern
