@@ -19,17 +19,14 @@ import (
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
 
-type copyArtifactOpts struct {
-	namespace    string // --namespace
-	nodeId       string // --node-id
-	templateName string // --template-name
-	artifactName string // --artifact-name
-	path         string // --path
-}
-
 func NewCpCommand() *cobra.Command {
-	var cpArtifactOpts copyArtifactOpts
-
+	var (
+		namespace    string // --namespace
+		nodeId       string // --node-id
+		templateName string // --template-name
+		artifactName string // --artifact-name
+		customPath   string // --path
+	)
 	command := &cobra.Command{
 		Use:   "cp my-wf output-directory ...",
 		Short: "copy artifacts from workflow",
@@ -52,9 +49,8 @@ func NewCpCommand() *cobra.Command {
 
 			ctx, apiClient := client.NewAPIClient(cmd.Context())
 			serviceClient := apiClient.NewWorkflowServiceClient()
-			namespace := client.Namespace()
-			if len(cpArtifactOpts.namespace) > 0 {
-				namespace = cpArtifactOpts.namespace
+			if len(namespace) == 0 {
+				namespace = client.Namespace()
 			}
 			workflow, err := serviceClient.GetWorkflow(ctx, &workflowpkg.WorkflowGetRequest{
 				Name:      workflowName,
@@ -66,9 +62,9 @@ func NewCpCommand() *cobra.Command {
 
 			workflowName = workflow.Name
 			artifactSearchQuery := v1alpha1.ArtifactSearchQuery{
-				ArtifactName: cpArtifactOpts.artifactName,
-				TemplateName: cpArtifactOpts.templateName,
-				NodeId:       cpArtifactOpts.nodeId,
+				ArtifactName: artifactName,
+				TemplateName: templateName,
+				NodeId:       nodeId,
 			}
 			artifactSearchResults := workflow.SearchArtifacts(&artifactSearchQuery)
 
@@ -81,11 +77,12 @@ func NewCpCommand() *cobra.Command {
 			}
 
 			for _, artifact := range artifactSearchResults {
-				customPath := filepath.Join(outputDir, cpArtifactOpts.path)
+				customPath := filepath.Join(outputDir, customPath)
 				nodeInfo := workflow.Status.Nodes.Find(func(n v1alpha1.NodeStatus) bool { return n.ID == artifact.NodeID })
-				if nodeInfo != nil {
-					customPath = strings.Replace(customPath, "{templateName}", nodeInfo.TemplateName, 1)
+				if nodeInfo == nil {
+					return fmt.Errorf("could not get node status for node ID %s", artifact.NodeID)
 				}
+				customPath = strings.Replace(customPath, "{templateName}", nodeInfo.TemplateName, 1)
 				customPath = strings.Replace(customPath, "{namespace}", namespace, 1)
 				customPath = strings.Replace(customPath, "{workflowName}", workflowName, 1)
 				customPath = strings.Replace(customPath, "{nodeId}", artifact.NodeID, 1)
@@ -106,11 +103,11 @@ func NewCpCommand() *cobra.Command {
 			return nil
 		},
 	}
-	command.Flags().StringVarP(&cpArtifactOpts.namespace, "namespace", "n", "", "namespace of workflow")
-	command.Flags().StringVar(&cpArtifactOpts.nodeId, "node-id", "", "id of node in workflow")
-	command.Flags().StringVar(&cpArtifactOpts.templateName, "template-name", "", "name of template in workflow")
-	command.Flags().StringVar(&cpArtifactOpts.artifactName, "artifact-name", "", "name of output artifact in workflow")
-	command.Flags().StringVar(&cpArtifactOpts.path, "path", "{namespace}/{workflowName}/{nodeId}/outputs/{artifactName}", "use variables {workflowName}, {nodeId}, {templateName}, {artifactName}, and {namespace} to create a customized path to store the artifacts; example: {workflowName}/{templateName}/{artifactName}")
+	command.Flags().StringVarP(&namespace, "namespace", "n", "", "namespace of workflow")
+	command.Flags().StringVar(&nodeId, "node-id", "", "id of node in workflow")
+	command.Flags().StringVar(&templateName, "template-name", "", "name of template in workflow")
+	command.Flags().StringVar(&artifactName, "artifact-name", "", "name of output artifact in workflow")
+	command.Flags().StringVar(&customPath, "path", "{namespace}/{workflowName}/{nodeId}/outputs/{artifactName}", "use variables {workflowName}, {nodeId}, {templateName}, {artifactName}, and {namespace} to create a customized path to store the artifacts; example: {workflowName}/{templateName}/{artifactName}")
 	return command
 }
 
@@ -138,6 +135,6 @@ func getAndStoreArtifactData(namespace string, workflowName string, nodeId strin
 	if err != nil {
 		return fmt.Errorf("copying file contents failed: %w", err)
 	}
-	log.Printf("Stored artifact %s", fileName)
+	log.Printf("Created %q", fileName)
 	return nil
 }
