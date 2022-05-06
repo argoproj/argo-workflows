@@ -24,6 +24,7 @@ available task results is as follows:
 | `.Failed` | Task Failed | Task exited with a non-0 exit code |
 | `.Errored` | Task Errored | Task had an error other than a non-0 exit code |
 | `.Skipped` | Task Skipped | Task was skipped |
+| `.Omitted` | Task Omitted | Task was omitted |
 | `.Daemoned` | Task is Daemoned and is not Pending | |
 
 For convenience, if an omitted task result is equivalent to `(task.Succeeded || task.Skipped || task.Daemoned)`.
