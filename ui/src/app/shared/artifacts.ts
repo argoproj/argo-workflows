@@ -26,7 +26,7 @@ export const artifactURN = <A extends Artifact>(a: A, ar: ArtifactRepository) =>
     if (a.gcs) {
         return 'artifact:gcs:' + (a.gcs.endpoint || ar?.gcs?.endpoint) + ':' + (a.gcs.bucket || ar?.gcs?.bucket) + ':' + a.gcs.key;
     } else if (a.git) {
-        return 'artifact:git:' + a.git.repo + ':' + (a.git.revision || 'HEAD');
+        return 'artifact:git:' + a.git.repo + ':' + (a.git.revision || a.git.branch || 'HEAD');
     } else if (a.http) {
         return 'artifact:http::' + a.http.url;
     } else if (a.s3) {

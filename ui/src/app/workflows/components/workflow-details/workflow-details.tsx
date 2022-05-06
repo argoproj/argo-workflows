@@ -381,7 +381,7 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
                     </div>
                 )
             }}>
-            <div className={classNames('workflow-details', {'workflow-details--step-node-expanded': selectedArtifact || selectedNode})}>
+            <div className={classNames('workflow-details', {'workflow-details--step-node-expanded': selectedNode, 'workflow-details--artifact-expanded': selectedArtifact})}>
                 <ErrorNotice error={error} />
                 {(tab === 'summary' && renderSummaryTab()) ||
                     (workflow && (
