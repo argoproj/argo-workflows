@@ -9,45 +9,83 @@ spec:
   entrypoint: main
   templates:
     - name: main
+      volumes:
+        - name: in
+          emptyDir: { }
+        - name: out
+          emptyDir: { }
       inputs:
         artifacts:
-          - name: argo-logo
-            path: /out/assets/argo.png
+          - name: temps
+            path: /in/annual.csv
             http:
-              url: https://raw.githubusercontent.com/argoproj/argo-workflows/master/docs/assets/argo.png
-      container:
-        image: argoproj/argosay:v2
-        command:
-          - sh
-          - -c
-        args:
-          - |
-            mkdir /out
-            cowsay "hello world" > /out/hello.txt
-            cat > /out/hello.json <<EOF
-            {"hello": {"world": true}} 
-            EOF
-            echo '* {font-family: sans-serif}' > /out/assets/styles.css
-            cat > /out/index.html <<EOF
-            <html>
-              <head>
-                <link rel='stylesheet' href='assets/styles.css' type='text/css'/>
-              </head>
-              <body>
-                <h1>Hello World</h1>
-                <img src='assets/argo.png'/>
-              </body>
-            </html>
-            EOF
-            cat > /out/malicious.html <<EOF
-            <html>
-              <body>
-                <script>alert(1)</script>
-                <p>This page attempts to run a script that shows an alert, but the Argo Server UI Content-Security-Policy will prevent that.</p>
-                <p>To check, open your Web Console and see that "Blocked script execution ... because the document's frame is sandboxed." (or similar) is printed.</p>
-              </body>
-            </html>
-            EOF
+              url: https://datahub.io/core/global-temp/r/annual.csv
+      containerSet:
+        volumeMounts:
+          - mountPath: /in
+            name: in
+          - mountPath: /out
+            name: out
+        containers:
+          - name: setup
+            image: argoproj/argosay:v2
+            command:
+              - sh
+              - -c
+            args:
+              - |
+                mkdir -p /out/assets
+          - name: gnuplot
+            image: remuslazar/gnuplot
+            dependencies:
+              - setup
+            args:
+              - -e
+              - |
+                set xlabel 'Year'; set ylabel 'Mean';
+                set grid;
+                set datafile separator ',';
+                set term png size 600,400;
+                set output '/out/assets/global-temp.png';
+                plot '/in/annual.csv' every 2::0 skip 1 using 2:3 title 'Global Temperature' with lines linewidth 2;
+          - name: main
+            image: argoproj/argosay:v2
+            dependencies:
+              - setup
+            command:
+              - sh
+              - -c
+            args:
+              - |
+                cowsay "hello world" > /out/hello.txt
+
+                cat > /out/hello.json <<EOF
+                {"hello": {"world": true}} 
+                EOF
+                
+                echo '* {font-family: sans-serif}' > /out/assets/styles.css
+                
+                cat > /out/index.html <<EOF
+                <html>
+                  <head>
+                    <link rel='stylesheet' href='assets/styles.css' type='text/css'/>
+                  </head>
+                  <body>
+                    <h1>Global Temperature</h1>
+                    <img src='assets/global-temp.png'/>
+                  </body>
+                </html>
+                EOF
+                
+                cat > /out/malicious.html <<EOF
+                <html>
+                  <body>
+                    <script>alert(1)</script>
+                    <p>This page attempts to run a script that shows an alert, but the Argo Server UI Content-Security-Policy will prevent that.</p>
+                    <p>To check, open your Web Console and see that "Blocked script execution ... because the document's frame is sandboxed." (or similar) is printed.</p>
+                  </body>
+                </html>
+                EOF
       outputs:
         artifacts:
           # saving single files
@@ -55,12 +93,6 @@ spec:
             path: /out/hello.txt
             s3:
               key: hello.txt
-            archive:
-              none: { }
-          - name: image-file
-            path: /out/assets/argo.png
-            s3:
-              key: argo.png
             archive:
               none: { }
           # JSON files are shown with syntax highlighting.

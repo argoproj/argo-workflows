@@ -85,12 +85,16 @@ export const WorkflowLogsViewer = ({workflow, nodeId, initialPodName, container,
     const node = workflow.status.nodes[nodeId];
     const templates = execSpec(workflow).templates.filter(t => !node || t.name === node.templateName);
 
-    const containers = ['init', 'wait'].concat(
-        templates
-            .map(t => ((t.containerSet && t.containerSet.containers) || [{name: 'main'}]).concat(t.sidecars || []).concat(t.initContainers || []))
-            .reduce((a, v) => a.concat(v), [])
-            .map(c => c.name)
-    );
+    const containers = [
+        ...new Set(
+            ['init', 'wait'].concat(
+                templates
+                    .map(t => ((t.containerSet && t.containerSet.containers) || [{name: 'main'}]).concat(t.sidecars || []).concat(t.initContainers || []))
+                    .reduce((a, v) => a.concat(v), [])
+                    .map(c => c.name)
+            )
+        )
+    ];
 
     return (
         <div className='workflow-logs-viewer'>
@@ -100,7 +104,7 @@ export const WorkflowLogsViewer = ({workflow, nodeId, initialPodName, container,
                     <i className='fa fa-exclamation-triangle' /> Logs for archived workflows may be overwritten by a more recent workflow with the same name.
                 </p>
             )}
-            <div>
+            <div style={{marginBottom: 10}}>
                 <i className='fa fa-box' />{' '}
                 <Autocomplete items={podNames} value={(podNames.find(x => x.value === podName) || {label: ''}).label} onSelect={(_, item) => setPodName(item.value)} /> /{' '}
                 <Autocomplete items={containers} value={selectedContainer} onSelect={setContainer} />
@@ -109,17 +113,6 @@ export const WorkflowLogsViewer = ({workflow, nodeId, initialPodName, container,
                 </span>
             </div>
             <ErrorNotice error={error} />
-            {selectedContainer === 'init' && (
-                <p>
-                    <InfoIcon /> Init containers logs are usually only useful when debugging input artifact problems. The init container is only run if there were input artifacts.
-                </p>
-            )}
-            {selectedContainer === 'wait' && (
-                <p>
-                    <InfoIcon /> Wait containers logs are usually only useful when debugging output artifact problems. The wait container is only run if there were output artifacts
-                    (including archived logs).
-                </p>
-            )}
             {!loaded ? (
                 <p className='white-box'>
                     <i className='fa fa-circle-notch fa-spin' /> Waiting for data...
@@ -134,20 +127,29 @@ export const WorkflowLogsViewer = ({workflow, nodeId, initialPodName, container,
                 />
             )}
             <p>
+                {selectedContainer === 'init' && (
+                    <>
+                        <InfoIcon /> Init containers logs are useful when debugging input artifact problems.
+                    </>
+                )}
+                {selectedContainer === 'wait' && (
+                    <>
+                        {' '}
+                        <InfoIcon /> Wait containers logs are useful when debugging output artifact problems.
+                    </>
+                )}
                 {podName && (
                     <>
                         Still waiting for data or an error? Try getting{' '}
                         <a href={services.workflows.getArtifactLogsUrl(workflow, podName, selectedContainer, archived)}>logs from the artifacts</a>.
                     </>
                 )}
-            </p>
-            <p>
                 {execSpec(workflow).podGC && (
                     <>
                         <WarningIcon /> Your pod GC settings will delete pods and their logs immediately on completion.
                     </>
                 )}{' '}
-                Logs do not appear for pods that are deleted.{' '}
+                Logs may not appear for pods that are deleted.{' '}
                 {podName ? (
                     <Links
                         object={{

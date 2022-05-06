@@ -145,7 +145,9 @@ export class WorkflowsService {
     public getContainerLogsFromCluster(workflow: Workflow, podName: string, container: string, grep: string): Observable<LogEntry> {
         const namespace = workflow.metadata.namespace;
         const name = workflow.metadata.name;
-        const podLogsURL = `api/v1/workflows/${namespace}/${name}/log?logOptions.container=${container}&grep=${grep}&logOptions.follow=true${podName ? `&podName=${podName}` : ''}`;
+        const podLogsURL = uiUrl(
+            `api/v1/workflows/${namespace}/${name}/log?logOptions.container=${container}&grep=${grep}&logOptions.follow=true${podName ? `&podName=${podName}` : ''}`
+        );
         return requests.loadEventSource(podLogsURL).pipe(
             filter(line => !!line),
             map(line => JSON.parse(line).result as LogEntry),
@@ -205,18 +207,11 @@ export class WorkflowsService {
             return getLogsFromArtifact();
         }
         // return archived log if main container is finished and has artifact
-        return from(this.isWorkflowNodePendingOrRunning(workflow, nodeId)).pipe(
-            switchMap(isPendingOrRunning => {
-                if (!isPendingOrRunning && this.hasArtifactLogs(workflow, nodeId, container) && container === 'main') {
-                    return getLogsFromArtifact();
-                }
-                return this.getContainerLogsFromCluster(workflow, podName, container, grep).pipe(catchError(getLogsFromArtifact));
-            })
-        );
+        return this.getContainerLogsFromCluster(workflow, podName, container, grep).pipe(catchError(getLogsFromArtifact));
     }
 
     public getArtifactLogsUrl(workflow: Workflow, nodeId: string, container: string, archived: boolean) {
-        return this.getArtifactDownloadUrl(workflow, nodeId, container + '-logs', archived, false);
+        return this.artifactPath(workflow, nodeId, container + '-logs', archived, false);
     }
 
     public getArtifactDownloadUrl(workflow: Workflow, nodeId: string, artifactName: string, archived: boolean, isInput: boolean) {
