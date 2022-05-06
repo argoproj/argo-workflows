@@ -472,7 +472,7 @@ func TestVolumeGCStrategy(t *testing.T) {
 		name:                     "failed/OnWorkflowCompletion",
 		strategy:                 wfv1.VolumeClaimGCOnCompletion,
 		phase:                    wfv1.NodeFailed,
-		expectedVolumesRemaining: 0,
+		expectedVolumesRemaining: 1,
 	}, {
 		name:                     "failed/OnWorkflowSuccess",
 		strategy:                 wfv1.VolumeClaimGCOnSuccess,
@@ -482,12 +482,12 @@ func TestVolumeGCStrategy(t *testing.T) {
 		name:                     "succeeded/OnWorkflowSuccess",
 		strategy:                 wfv1.VolumeClaimGCOnSuccess,
 		phase:                    wfv1.NodeSucceeded,
-		expectedVolumesRemaining: 0,
+		expectedVolumesRemaining: 1,
 	}, {
 		name:                     "succeeded/OnWorkflowCompletion",
 		strategy:                 wfv1.VolumeClaimGCOnCompletion,
 		phase:                    wfv1.NodeSucceeded,
-		expectedVolumesRemaining: 0,
+		expectedVolumesRemaining: 1,
 	}}
 
 	for _, tt := range tests {
