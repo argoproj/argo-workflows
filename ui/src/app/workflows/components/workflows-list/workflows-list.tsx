@@ -165,7 +165,6 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                         />
                         <div className='row'>
                             <div className='columns small-12 xlarge-2'>
-                                {this.renderQuery(ctx)}
                                 <div>
                                     <WorkflowFilters
                                         workflows={this.state.workflows || []}
