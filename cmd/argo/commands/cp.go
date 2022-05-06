@@ -9,6 +9,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strings"
 
 	"github.com/spf13/cobra"
 
@@ -23,10 +24,11 @@ type copyArtifactOpts struct {
 	nodeId       string // --node-id
 	templateName string // --template-name
 	artifactName string // --artifact-name
+	path         string // --path
 }
 
 func NewCpCommand() *cobra.Command {
-	var copyArtifactArgs copyArtifactOpts
+	var cpArtifactOpts copyArtifactOpts
 
 	command := &cobra.Command{
 		Use:   "cp my-wf output-directory ...",
@@ -48,23 +50,11 @@ func NewCpCommand() *cobra.Command {
 			workflowName := args[0]
 			outputDir := args[1]
 
-			argoServerUrl, err := cmd.Parent().Flags().GetString("argo-server")
-			argoBasePath, err := cmd.Parent().Flags().GetString("argo-base-href")
-			insecureSkipVerify, err := cmd.Parent().Flags().GetBool("insecure-skip-verify")
-			if err != nil {
-				return fmt.Errorf("not able to read flags correctly %w", err)
-			}
-			argoServerOpts := apiclient.ArgoServerOpts{
-				URL:                argoServerUrl,
-				Path:               argoBasePath,
-				InsecureSkipVerify: insecureSkipVerify,
-			}
-
 			ctx, apiClient := client.NewAPIClient(cmd.Context())
 			serviceClient := apiClient.NewWorkflowServiceClient()
 			namespace := client.Namespace()
-			if len(copyArtifactArgs.namespace) > 0 {
-				namespace = copyArtifactArgs.namespace
+			if len(cpArtifactOpts.namespace) > 0 {
+				namespace = cpArtifactOpts.namespace
 			}
 			workflow, err := serviceClient.GetWorkflow(ctx, &workflowpkg.WorkflowGetRequest{
 				Name:      workflowName,
@@ -76,32 +66,39 @@ func NewCpCommand() *cobra.Command {
 
 			workflowName = workflow.Name
 			artifactSearchQuery := v1alpha1.ArtifactSearchQuery{
-				ArtifactName: copyArtifactArgs.artifactName,
-				TemplateName: copyArtifactArgs.templateName,
-				NodeId:       copyArtifactArgs.nodeId,
+				ArtifactName: cpArtifactOpts.artifactName,
+				TemplateName: cpArtifactOpts.templateName,
+				NodeId:       cpArtifactOpts.nodeId,
 			}
 			artifactSearchResults := workflow.SearchArtifacts(&artifactSearchQuery)
 
 			c := &http.Client{
 				Transport: &http.Transport{
 					TLSClientConfig: &tls.Config{
-						InsecureSkipVerify: argoServerOpts.InsecureSkipVerify,
+						InsecureSkipVerify: client.ArgoServerOpts.InsecureSkipVerify,
 					},
 				},
 			}
 
-			basePath := filepath.Join(outputDir, namespace, workflowName)
 			for _, artifact := range artifactSearchResults {
-				nodeIdFolder := filepath.Join(basePath, artifact.NodeID, "outputs")
-				err = os.MkdirAll(nodeIdFolder, os.ModePerm)
+				customPath := filepath.Join(outputDir, cpArtifactOpts.path)
+				nodeInfo := workflow.Status.Nodes.Find(func(n v1alpha1.NodeStatus) bool { return n.ID == artifact.NodeID })
+				if nodeInfo != nil {
+					customPath = strings.Replace(customPath, "{templateName}", nodeInfo.TemplateName, 1)
+				}
+				customPath = strings.Replace(customPath, "{namespace}", namespace, 1)
+				customPath = strings.Replace(customPath, "{workflowName}", workflowName, 1)
+				customPath = strings.Replace(customPath, "{nodeId}", artifact.NodeID, 1)
+				customPath = strings.Replace(customPath, "{artifactName}", artifact.Name, 1)
+				err = os.MkdirAll(customPath, os.ModePerm)
 				if err != nil {
-					return fmt.Errorf("failed to create nodeId folder: %w", err)
+					return fmt.Errorf("failed to create folder path: %w", err)
 				}
 				key, err := artifact.GetKey()
 				if err != nil {
 					return fmt.Errorf("error getting key for artifact: %w", err)
 				}
-				err = getAndStoreArtifactData(namespace, workflowName, artifact.NodeID, artifact.Name, path.Base(key), nodeIdFolder, c, argoServerOpts)
+				err = getAndStoreArtifactData(namespace, workflowName, artifact.NodeID, artifact.Name, path.Base(key), customPath, c, client.ArgoServerOpts)
 				if err != nil {
 					return fmt.Errorf("failed to get and store artifact data: %w", err)
 				}
@@ -109,15 +106,16 @@ func NewCpCommand() *cobra.Command {
 			return nil
 		},
 	}
-	command.Flags().StringVarP(&copyArtifactArgs.namespace, "namespace", "n", "", "namespace of workflow")
-	command.Flags().StringVar(&copyArtifactArgs.nodeId, "node-id", "", "id of node in workflow")
-	command.Flags().StringVar(&copyArtifactArgs.templateName, "template-name", "", "name of template in workflow")
-	command.Flags().StringVar(&copyArtifactArgs.artifactName, "artifact-name", "", "name of output artifact in workflow")
+	command.Flags().StringVarP(&cpArtifactOpts.namespace, "namespace", "n", "", "namespace of workflow")
+	command.Flags().StringVar(&cpArtifactOpts.nodeId, "node-id", "", "id of node in workflow")
+	command.Flags().StringVar(&cpArtifactOpts.templateName, "template-name", "", "name of template in workflow")
+	command.Flags().StringVar(&cpArtifactOpts.artifactName, "artifact-name", "", "name of output artifact in workflow")
+	command.Flags().StringVar(&cpArtifactOpts.path, "path", "{namespace}/{workflowName}/{nodeId}/outputs/{artifactName}", "use variables {workflowName}, {nodeId}, {templateName}, {artifactName}, and {namespace} to create a customized path to store the artifacts; example: {workflowName}/{templateName}/{artifactName}")
 	return command
 }
 
-func getAndStoreArtifactData(namespace string, workflowName string, nodeId string, artifactName string, fileName string, nodeIdFolder string, c *http.Client, argoServerArgs apiclient.ArgoServerOpts) error {
-	request, err := http.NewRequest("GET", fmt.Sprintf("%s/artifacts/%s/%s/%s/%s", argoServerArgs.GetURL(), namespace, workflowName, nodeId, artifactName), nil)
+func getAndStoreArtifactData(namespace string, workflowName string, nodeId string, artifactName string, fileName string, customPath string, c *http.Client, argoServerOpts apiclient.ArgoServerOpts) error {
+	request, err := http.NewRequest("GET", fmt.Sprintf("%s/artifacts/%s/%s/%s/%s", argoServerOpts.GetURL(), namespace, workflowName, nodeId, artifactName), nil)
 	if err != nil {
 		return fmt.Errorf("failed to create request: %w", err)
 	}
@@ -130,7 +128,7 @@ func getAndStoreArtifactData(namespace string, workflowName string, nodeId strin
 	if resp.StatusCode != 200 {
 		return fmt.Errorf("request failed %s", resp.Status)
 	}
-	artifactFilePath := filepath.Join(nodeIdFolder, fileName)
+	artifactFilePath := filepath.Join(customPath, fileName)
 	fileWriter, err := os.Create(artifactFilePath)
 	if err != nil {
 		return fmt.Errorf("creating file failed: %w", err)

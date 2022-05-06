@@ -25,6 +25,7 @@ argo cp my-wf output-directory ... [flags]
       --artifact-name string   name of output artifact in workflow
   -h, --help                   help for cp
       --node-id string         id of node in workflow
+      --path string            use variables {workflowName}, {nodeId}, {templateName}, {artifactName}, and {namespace} to create a customized path to store the artifacts; example: {workflowName}/{templateName}/{artifactName} (default "{namespace}/{workflowName}/{nodeId}/outputs/{artifactName}")
       --template-name string   name of template in workflow
 ```
 

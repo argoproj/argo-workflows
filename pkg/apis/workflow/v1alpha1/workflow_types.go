@@ -1336,7 +1336,7 @@ type Outputs struct {
 
 func (o *Outputs) GetArtifacts() Artifacts {
 	if o == nil {
-		return []Artifact{}
+		return nil
 	}
 	return o.Artifacts
 }
