@@ -9821,6 +9821,10 @@
           "description": "OnExit is a template reference which is invoked at the end of the template, irrespective of the success, failure, or error of the primary template. DEPRECATED: Use Hooks[exit].Template instead.",
           "type": "string"
         },
+        "priority": {
+          "description": "Priority is used if controller is configured to process limited number of workflows in parallel. Tasks with higher priority are processed first.",
+          "type": "integer"
+        },
         "template": {
           "description": "Name of template to execute",
           "type": "string"
@@ -12624,6 +12628,10 @@
         "onExit": {
           "description": "OnExit is a template reference which is invoked at the end of the template, irrespective of the success, failure, or error of the primary template. DEPRECATED: Use Hooks[exit].Template instead.",
           "type": "string"
+        },
+        "priority": {
+          "description": "Priority is used if controller is configured to process limited number of workflows in parallel. Steps with higher priority are processed first.",
+          "type": "integer"
         },
         "template": {
           "description": "Template is the name of the template to execute as the step",

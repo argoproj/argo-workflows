@@ -103,6 +103,7 @@ class IoArgoprojWorkflowV1alpha1WorkflowStep(ModelNormal):
             'inline': (IoArgoprojWorkflowV1alpha1Template,),  # noqa: E501
             'name': (str,),  # noqa: E501
             'on_exit': (str,),  # noqa: E501
+            'priority': (int,),  # noqa: E501
             'template': (str,),  # noqa: E501
             'template_ref': (IoArgoprojWorkflowV1alpha1TemplateRef,),  # noqa: E501
             'when': (str,),  # noqa: E501
@@ -123,6 +124,7 @@ class IoArgoprojWorkflowV1alpha1WorkflowStep(ModelNormal):
         'inline': 'inline',  # noqa: E501
         'name': 'name',  # noqa: E501
         'on_exit': 'onExit',  # noqa: E501
+        'priority': 'priority',  # noqa: E501
         'template': 'template',  # noqa: E501
         'template_ref': 'templateRef',  # noqa: E501
         'when': 'when',  # noqa: E501
@@ -178,6 +180,7 @@ class IoArgoprojWorkflowV1alpha1WorkflowStep(ModelNormal):
             inline (IoArgoprojWorkflowV1alpha1Template): [optional]  # noqa: E501
             name (str): Name of the step. [optional]  # noqa: E501
             on_exit (str): OnExit is a template reference which is invoked at the end of the template, irrespective of the success, failure, or error of the primary template. DEPRECATED: Use Hooks[exit].Template instead.. [optional]  # noqa: E501
+            priority (int): Priority is used if controller is configured to process limited number of workflows in parallel. Steps with higher priority are processed first.. [optional]  # noqa: E501
             template (str): Template is the name of the template to execute as the step. [optional]  # noqa: E501
             template_ref (IoArgoprojWorkflowV1alpha1TemplateRef): [optional]  # noqa: E501
             when (str): When is an expression in which the step should conditionally execute. [optional]  # noqa: E501
@@ -271,6 +274,7 @@ class IoArgoprojWorkflowV1alpha1WorkflowStep(ModelNormal):
             inline (IoArgoprojWorkflowV1alpha1Template): [optional]  # noqa: E501
             name (str): Name of the step. [optional]  # noqa: E501
             on_exit (str): OnExit is a template reference which is invoked at the end of the template, irrespective of the success, failure, or error of the primary template. DEPRECATED: Use Hooks[exit].Template instead.. [optional]  # noqa: E501
+            priority (int): Priority is used if controller is configured to process limited number of workflows in parallel. Steps with higher priority are processed first.. [optional]  # noqa: E501
             template (str): Template is the name of the template to execute as the step. [optional]  # noqa: E501
             template_ref (IoArgoprojWorkflowV1alpha1TemplateRef): [optional]  # noqa: E501
             when (str): When is an expression in which the step should conditionally execute. [optional]  # noqa: E501

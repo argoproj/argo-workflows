@@ -2819,6 +2819,9 @@ spec:
                                 type: string
                               onExit:
                                 type: string
+                              priority:
+                                format: int32
+                                type: integer
                               template:
                                 type: string
                               templateRef:

@@ -1386,7 +1386,7 @@ type WorkflowStep struct {
 	Hooks LifecycleHooks `json:"hooks,omitempty" protobuf:"bytes,12,opt,name=hooks"`
 
 	// Priority is used if controller is configured to process limited number of workflows in parallel. Steps with higher priority are processed first.
-	Priority *int32 `json:"priority,omitempty" protobuf:"bytes,13,opt,name=priority"`
+	Priority *int32 `json:"priority,omitempty" protobuf:"bytes,14,opt,name=priority"`
 }
 
 func (wfs *WorkflowStep) GetPriority() *int32 {
@@ -2783,7 +2783,7 @@ type DAGTask struct {
 	Hooks LifecycleHooks `json:"hooks,omitempty" protobuf:"bytes,13,opt,name=hooks"`
 
 	// Priority is used if controller is configured to process limited number of workflows in parallel. Tasks with higher priority are processed first.
-	Priority *int32 `json:"priority,omitempty" protobuf:"bytes,14,opt,name=priority"`
+	Priority *int32 `json:"priority,omitempty" protobuf:"bytes,15,opt,name=priority"`
 }
 
 var _ TemplateReferenceHolder = &DAGTask{}

@@ -2270,6 +2270,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 inline=IoArgoprojWorkflowV1alpha1Template(),
                                 name="name_example",
                                 on_exit="on_exit_example",
+                                priority=1,
                                 template="template_example",
                                 template_ref=IoArgoprojWorkflowV1alpha1TemplateRef(
                                     cluster_scope=True,
@@ -4270,6 +4271,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 inline=IoArgoprojWorkflowV1alpha1Template(),
                                 name="name_example",
                                 on_exit="on_exit_example",
+                                priority=1,
                                 template="template_example",
                                 template_ref=IoArgoprojWorkflowV1alpha1TemplateRef(
                                     cluster_scope=True,
@@ -6046,6 +6048,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     inline=IoArgoprojWorkflowV1alpha1Template(),
                                     name="name_example",
                                     on_exit="on_exit_example",
+                                    priority=1,
                                     template="template_example",
                                     template_ref=IoArgoprojWorkflowV1alpha1TemplateRef(
                                         cluster_scope=True,
@@ -8046,6 +8049,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     inline=IoArgoprojWorkflowV1alpha1Template(),
                                     name="name_example",
                                     on_exit="on_exit_example",
+                                    priority=1,
                                     template="template_example",
                                     template_ref=IoArgoprojWorkflowV1alpha1TemplateRef(
                                         cluster_scope=True,
@@ -11461,6 +11465,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 inline=IoArgoprojWorkflowV1alpha1Template(),
                                 name="name_example",
                                 on_exit="on_exit_example",
+                                priority=1,
                                 template="template_example",
                                 template_ref=IoArgoprojWorkflowV1alpha1TemplateRef(
                                     cluster_scope=True,
@@ -13461,6 +13466,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 inline=IoArgoprojWorkflowV1alpha1Template(),
                                 name="name_example",
                                 on_exit="on_exit_example",
+                                priority=1,
                                 template="template_example",
                                 template_ref=IoArgoprojWorkflowV1alpha1TemplateRef(
                                     cluster_scope=True,
@@ -15237,6 +15243,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     inline=IoArgoprojWorkflowV1alpha1Template(),
                                     name="name_example",
                                     on_exit="on_exit_example",
+                                    priority=1,
                                     template="template_example",
                                     template_ref=IoArgoprojWorkflowV1alpha1TemplateRef(
                                         cluster_scope=True,
@@ -17237,6 +17244,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     inline=IoArgoprojWorkflowV1alpha1Template(),
                                     name="name_example",
                                     on_exit="on_exit_example",
+                                    priority=1,
                                     template="template_example",
                                     template_ref=IoArgoprojWorkflowV1alpha1TemplateRef(
                                         cluster_scope=True,
@@ -20558,6 +20566,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 inline=IoArgoprojWorkflowV1alpha1Template(),
                                 name="name_example",
                                 on_exit="on_exit_example",
+                                priority=1,
                                 template="template_example",
                                 template_ref=IoArgoprojWorkflowV1alpha1TemplateRef(
                                     cluster_scope=True,
@@ -22558,6 +22567,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 inline=IoArgoprojWorkflowV1alpha1Template(),
                                 name="name_example",
                                 on_exit="on_exit_example",
+                                priority=1,
                                 template="template_example",
                                 template_ref=IoArgoprojWorkflowV1alpha1TemplateRef(
                                     cluster_scope=True,
@@ -24334,6 +24344,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     inline=IoArgoprojWorkflowV1alpha1Template(),
                                     name="name_example",
                                     on_exit="on_exit_example",
+                                    priority=1,
                                     template="template_example",
                                     template_ref=IoArgoprojWorkflowV1alpha1TemplateRef(
                                         cluster_scope=True,
@@ -26334,6 +26345,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     inline=IoArgoprojWorkflowV1alpha1Template(),
                                     name="name_example",
                                     on_exit="on_exit_example",
+                                    priority=1,
                                     template="template_example",
                                     template_ref=IoArgoprojWorkflowV1alpha1TemplateRef(
                                         cluster_scope=True,

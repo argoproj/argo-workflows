@@ -433,6 +433,9 @@ message DAGTask {
   // Hooks hold the lifecycle hook which is invoked at lifecycle of
   // task, irrespective of the success, failure, or error status of the primary task
   map<string, LifecycleHook> hooks = 13;
+
+  // Priority is used if controller is configured to process limited number of workflows in parallel. Tasks with higher priority are processed first.
+  optional int32 priority = 15;
 }
 
 // DAGTemplate is a template subtype for directed acyclic graph templates
@@ -1916,6 +1919,9 @@ message WorkflowStep {
   // Hooks holds the lifecycle hook which is invoked at lifecycle of
   // step, irrespective of the success, failure, or error status of the primary step
   map<string, LifecycleHook> hooks = 12;
+
+  // Priority is used if controller is configured to process limited number of workflows in parallel. Steps with higher priority are processed first.
+  optional int32 priority = 14;
 }
 
 // WorkflowTaskResult is a used to communicate a result back to the controller. Unlike WorkflowTaskSet, it has
