@@ -190,7 +190,7 @@ export class WorkflowsService {
                     throw new Error('no artifact logs are available');
                 }
 
-                return from(requests.get(this.getArtifactLogsUrl(workflow, nodeId, container, archived)));
+                return from(requests.get(this.getArtifactLogsPath(workflow, nodeId, container, archived)));
             }),
             mergeMap(r => r.text.split('\n')),
             map(content => ({content} as LogEntry)),
@@ -210,7 +210,7 @@ export class WorkflowsService {
         return this.getContainerLogsFromCluster(workflow, podName, container, grep).pipe(catchError(getLogsFromArtifact));
     }
 
-    public getArtifactLogsUrl(workflow: Workflow, nodeId: string, container: string, archived: boolean) {
+    public getArtifactLogsPath(workflow: Workflow, nodeId: string, container: string, archived: boolean) {
         return this.artifactPath(workflow, nodeId, container + '-logs', archived, false);
     }
 

@@ -141,7 +141,7 @@ export const WorkflowLogsViewer = ({workflow, nodeId, initialPodName, container,
                 {podName && (
                     <>
                         Still waiting for data or an error? Try getting{' '}
-                        <a href={services.workflows.getArtifactLogsUrl(workflow, podName, selectedContainer, archived)}>logs from the artifacts</a>.
+                        <a href={services.workflows.getArtifactLogsPath(workflow, podName, selectedContainer, archived)}>logs from the artifacts</a>.
                     </>
                 )}
                 {execSpec(workflow).podGC && (
