@@ -3848,7 +3848,7 @@ most users. Environment variables may be removed at any time.</p>
 <tr>
 <td><code>ARGO_REMOVE_PVC_PROTECTION_FINALIZER</code></td>
 <td><code>bool</code></td>
-<td><code>false</code></td>
+<td><code>true</code></td>
 <td>Remove the <code>kubernetes.io/pvc-protection</code> finalizer from persistent volume claims (PVC) after marking PVCs created for the workflow for deletion, so deleted is not blocked until the pods are deleted.  <a href="https://github.com/argoproj/argo-workflows/issues/6629">#6629</a></td>
 </tr>
 <tr>
