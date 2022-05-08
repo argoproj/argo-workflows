@@ -11,6 +11,9 @@
         "lint": "tslint --fix -p ./src/app",
         "test": "jest"
     },
+    "engines" : { 
+        "node" : ">=16"
+    },
     "dependencies": {
         "argo-ui": "https://github.com/argoproj/argo-ui.git#v2.5.0",
         "chart.js": "^2.9.4",
