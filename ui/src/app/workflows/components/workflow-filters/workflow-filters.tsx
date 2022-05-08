@@ -96,26 +96,42 @@ export class WorkflowFilters extends React.Component<WorkflowFilterProps, {}> {
                     </div>
                     <div className='columns small-5 xlarge-12'>
                         <p className='wf-filters-container__title'>Started Time</p>
-                        <DatePicker
-                            selected={this.props.minStartedAt}
-                            onChange={date => {
-                                this.props.onChange(this.props.namespace, this.props.selectedPhases, this.props.selectedLabels, date, this.props.maxStartedAt);
-                            }}
-                            placeholderText='From'
-                            dateFormat='dd MMM yyyy'
-                            todayButton='Today'
-                            className='argo-field argo-textarea'
-                        />
-                        <DatePicker
-                            selected={this.props.maxStartedAt}
-                            onChange={date => {
-                                this.props.onChange(this.props.namespace, this.props.selectedPhases, this.props.selectedLabels, this.props.minStartedAt, date);
-                            }}
-                            placeholderText='To'
-                            dateFormat='dd MMM yyyy'
-                            todayButton='Today'
-                            className='argo-field argo-textarea'
-                        />
+                        <div>
+                            <DatePicker
+                                selected={this.props.minStartedAt}
+                                onChange={date => {
+                                    this.props.onChange(this.props.namespace, this.props.selectedPhases, this.props.selectedLabels, date, this.props.maxStartedAt);
+                                }}
+                                placeholderText='From'
+                                dateFormat='dd MMM yyyy'
+                                todayButton='Today'
+                                className='argo-field argo-textarea'
+                            />
+                            <a
+                                onClick={() => {
+                                    this.props.onChange(this.props.namespace, this.props.selectedPhases, this.props.selectedLabels, undefined, this.props.maxStartedAt);
+                                }}>
+                                <i className='fa fa-times-circle' />
+                            </a>
+                        </div>
+                        <div>
+                            <DatePicker
+                                selected={this.props.maxStartedAt}
+                                onChange={date => {
+                                    this.props.onChange(this.props.namespace, this.props.selectedPhases, this.props.selectedLabels, this.props.minStartedAt, date);
+                                }}
+                                placeholderText='To'
+                                dateFormat='dd MMM yyyy'
+                                todayButton='Today'
+                                className='argo-field argo-textarea'
+                            />
+                            <a
+                                onClick={() => {
+                                    this.props.onChange(this.props.namespace, this.props.selectedPhases, this.props.selectedLabels, this.props.minStartedAt, undefined);
+                                }}>
+                                <i className='fa fa-times-circle' />
+                            </a>
+                        </div>
                     </div>
                 </div>
             </div>
