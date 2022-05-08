@@ -1,5 +1,35 @@
 # Running Locally
 
+You have the option to use development container or install requirements by yourself
+
+## Git clone
+
+Close the Git repo into: `$(GOPATH)/src/github.com/argoproj/argo-workflows`. Any other path will mean the code
+generation does not work.
+
+## Development container
+
+A development container is a running Docker container with a well-defined tool/runtime stack and its prerequisites.
+[The Visual Studio Code Remote - Containers](https://code.visualstudio.com/docs/remote/containers)  extension lets you use a Docker container as a full-featured development environment.
+
+System requirements can be found [here](https://code.visualstudio.com/docs/remote/containers#_system-requirements)
+
+note:
+
+* to use development container, we assume the `GOPATH` to be `/go`, please make sure the repository is cloned to the right place.
+* for **Apple Silicone**
+  * user need to change `VARIANT` from `buster` to `bullseye` in both `./devcontainer/devcontainer.json` and `./devcontainer/Dockerfile` before building the development container
+  * user need to configure Docker Desktop with the following for Docker Engine before building the development container
+
+    ```json
+    "features": {
+      "buildkit": false
+    },
+    ```
+
+* For **Windows WSL2**
+  * it is recommended to configure [`.wslconfig`](https://docs.microsoft.com/en-us/windows/wsl/wsl-config#configuration-setting-for-wslconfig) to limit your ram usage by the WSL2. This prevents WSL2 use up all of the memory and causing VSCode to OOM.
+
 ## Requirements
 
 * [Go 1.18](https://golang.org/dl/)
@@ -20,13 +50,10 @@ Alternatively, you can use [Minikube](https://github.com/kubernetes/minikube) to
 Once a local Kubernetes cluster has started via `minikube start`, your kube config will use Minikube's context
 automatically.
 
-⚠️ Do not use Docker for Desktop, it does not support Kubernetes RBAC (i.e. `kubectl auth can-i` always
+⚠️ Do not use Docker for Desktop with its embedded Kubernetes, it does not support Kubernetes RBAC (i.e. `kubectl auth can-i` always
 returns `allowed`).
 
 ## Developing locally
-
-Close the Git repo into: `$(GOPATH)/src/github.com/argoproj/argo-workflows`. Any other path will mean the code
-generation does not work.
 
 Add the following to your `/etc/hosts`:
 
