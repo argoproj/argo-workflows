@@ -536,7 +536,12 @@ func (wfc *WorkflowController) signalContainers(namespace string, podName string
 			continue
 		}
 		if err := signal.SignalContainer(wfc.restConfig, pod, c.Name, sig); errorsutil.IgnoreContainerNotFoundErr(err) != nil {
-			return 0, err
+			log.WithError(err).
+				WithField("namespace", namespace).
+				WithField("podName", pod.Name).
+				WithField("container", c.Name).
+				WithField("sig", sig).
+				Warn("failed to signal container")
 		}
 	}
 	if pod.Spec.TerminationGracePeriodSeconds == nil {

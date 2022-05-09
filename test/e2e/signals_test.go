@@ -4,6 +4,7 @@
 package e2e
 
 import (
+	"k8s.io/api/core/v1"
 	"testing"
 	"time"
 
@@ -119,13 +120,23 @@ func (s *SignalsSuite) TestSidecars() {
 		WaitForWorkflow(fixtures.ToBeSucceeded, kill2xDuration)
 }
 
+var sidecarError = func(t *testing.T, pods []v1.Pod) {
+	for _, c := range pods[0].Status.ContainerStatuses {
+		if c.Name == "sidecar" {
+			assert.Equal(t, int32(137), c.State.Terminated.ExitCode)
+		}
+	}
+}
+
 // make sure Istio/Anthos and other sidecar injectors will work
 func (s *SignalsSuite) TestInjectedSidecar() {
 	s.Given().
 		Workflow("@testdata/sidecar-injected-workflow.yaml").
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(fixtures.ToBeSucceeded, kill2xDuration)
+		WaitForWorkflow(fixtures.ToBeSucceeded, kill2xDuration).
+		Then().
+		ExpectPods(sidecarError)
 }
 
 func (s *SignalsSuite) TestInjectedSidecarKillAnnotation() {
@@ -133,7 +144,9 @@ func (s *SignalsSuite) TestInjectedSidecarKillAnnotation() {
 		Workflow("@testdata/sidecar-injected-kill-annotation-workflow.yaml").
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(fixtures.ToBeSucceeded, kill2xDuration)
+		WaitForWorkflow(fixtures.ToBeSucceeded, kill2xDuration).
+		Then().
+		ExpectPods(sidecarError)
 }
 
 func TestSignalsSuite(t *testing.T) {

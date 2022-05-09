@@ -413,6 +413,7 @@ test: server/static/files.go dist/argosay
 	# marker file, based on it's modification time, we know how long ago this target was run
 	touch dist/test
 
+
 .PHONY: install
 install: githooks
 	kubectl get ns $(KUBE_NAMESPACE) || kubectl create ns $(KUBE_NAMESPACE)
@@ -440,6 +441,14 @@ endif
 dist/argosay:
 	mkdir -p dist
 	cp test/e2e/images/argosay/v2/argosay dist/
+
+
+.PHONY: noshell
+noshell:
+	docker build test/e2e/images/noshell -t noshell
+ifeq ($(K3D), true)
+	k3d image import noshell
+endif
 
 $(GOPATH)/bin/goreman:
 	go install github.com/mattn/goreman@v0.3.11
@@ -510,6 +519,8 @@ test-cli: ./dist/argo
 
 test-%:
 	go test -failfast -v -timeout 15m -count 1 --tags $* -parallel 10 ./test/e2e
+
+test-executor: noshell
 
 .PHONY: test-examples
 test-examples:
