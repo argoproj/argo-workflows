@@ -30,7 +30,7 @@ spec:
 
 ## Referencing other `ClusterWorkflowTemplates`
 
-You can reference `templates` from another `ClusterWorkflowTemplates` using a `templateRef` field with `clusterScope: true` .
+You can reference `templates` from other `ClusterWorkflowTemplates` using a `templateRef` field with `clusterScope: true` .
 Just as how you reference other `templates` within the same `Workflow`, you should do so from a `steps` or `dag` template.
 
 Here is an example:
