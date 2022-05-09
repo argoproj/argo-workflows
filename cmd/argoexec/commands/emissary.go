@@ -60,18 +60,6 @@ func NewEmissaryCommand() *cobra.Command {
 
 			name, args := args[0], args[1:]
 
-			signals := make(chan os.Signal, 1)
-			defer close(signals)
-			signal.Notify(signals)
-			defer signal.Reset()
-			go func() {
-				for s := range signals {
-					if !osspecific.IsSIGCHLD(s) {
-						_ = osspecific.Kill(-os.Getpid(), s.(syscall.Signal))
-					}
-				}
-			}()
-
 			data, err := ioutil.ReadFile(varRunArgo + "/template")
 			if err != nil {
 				return fmt.Errorf("failed to read template: %w", err)
@@ -141,6 +129,18 @@ func NewEmissaryCommand() *cobra.Command {
 				if err != nil {
 					return fmt.Errorf("failed to create command: %w", err)
 				}
+
+				signals := make(chan os.Signal, 1)
+				defer close(signals)
+				signal.Notify(signals)
+				defer signal.Reset()
+				go func() {
+					for s := range signals {
+						if !osspecific.IsSIGCHLD(s) {
+							_ = osspecific.Kill(-command.Process.Pid, s.(syscall.Signal))
+						}
+					}
+				}()
 
 				if err := command.Start(); err != nil {
 					return err
