@@ -1865,7 +1865,9 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 		}
 	}
 
-	// where to check priority of step vs template
+	if orgTmpl.GetPriority() != nil && processedTmpl.Priority == nil {
+		processedTmpl.Priority = orgTmpl.GetPriority()
+	}
 
 	switch processedTmpl.GetType() {
 	case wfv1.TemplateTypeContainer:

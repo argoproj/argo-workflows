@@ -1389,10 +1389,6 @@ type WorkflowStep struct {
 	Priority *int32 `json:"priority,omitempty" protobuf:"bytes,14,opt,name=priority"`
 }
 
-func (wfs *WorkflowStep) GetPriority() *int32 {
-	return wfs.Priority
-}
-
 type LifecycleEvent string
 
 const (
@@ -1459,6 +1455,10 @@ func (step *WorkflowStep) GetTemplateName() string {
 
 func (step *WorkflowStep) GetTemplateRef() *TemplateRef {
 	return step.TemplateRef
+}
+
+func (step *WorkflowStep) GetPriority() *int32 {
+	return step.Priority
 }
 
 func (step *WorkflowStep) ShouldExpand() bool {
@@ -2126,6 +2126,10 @@ func (n *NodeStatus) GetOutputs() *Outputs {
 		return nil
 	}
 	return n.Outputs
+}
+
+func (n *NodeStatus) GetPriority() *int32 {
+	return nil
 }
 
 // IsActiveSuspendNode returns whether this node is an active suspend node
