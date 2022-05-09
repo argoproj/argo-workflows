@@ -21,7 +21,7 @@ func SignalContainer(restConfig *rest.Config, pod *corev1.Pod, container string,
 		if c.Name == container {
 			for _, m := range c.VolumeMounts {
 				if m.MountPath == common.VarRunArgoPath {
-					command = []string{filepath.Join(common.VarRunArgoPath, "argoexec"), "kill"}
+					command = []string{filepath.Join(common.VarRunArgoPath, "argoexec"), "kill", "%d", "1"}
 				}
 			}
 		}

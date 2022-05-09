@@ -127,21 +127,13 @@ func NewEmissaryCommand() *cobra.Command {
 				return fmt.Errorf("failed to get retry strategy: %w", err)
 			}
 
-			var command *exec.Cmd
-			var stdout *os.File
-			var combined *os.File
 			cmdErr := retry.OnError(backoff, func(error) bool { return true }, func() error {
-				if stdout != nil {
-					stdout.Close()
-				}
-				if combined != nil {
-					combined.Close()
-				}
-				command, stdout, combined, err = createCommand(name, args, template)
+				command, stdout, combined, err := createCommand(name, args, template)
 				if err != nil {
 					return fmt.Errorf("failed to create command: %w", err)
 				}
-
+				defer stdout.Close()
+				defer combined.Close()
 				if err := command.Start(); err != nil {
 					return err
 				}
@@ -166,8 +158,6 @@ func NewEmissaryCommand() *cobra.Command {
 				}()
 				return command.Wait()
 			})
-			defer stdout.Close()
-			defer combined.Close()
 
 			if _, ok := os.LookupEnv("ARGO_DEBUG_PAUSE_AFTER"); ok {
 				for {

@@ -6,9 +6,7 @@ FROM golang:1.18 as builder
 ADD *.c /
 
 RUN cc -static /sleep.c -o /sleep
-RUN cc -static /kill.c -o /kill
 
 FROM scratch
 
 COPY --from=builder /sleep /sleep
-COPY --from=builder /kill /kill

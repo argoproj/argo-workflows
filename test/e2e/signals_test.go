@@ -138,17 +138,6 @@ func (s *SignalsSuite) TestInjectedSidecar() {
 		Then().
 		ExpectPods(sidecarError)
 }
-
-func (s *SignalsSuite) TestInjectedSidecarKillAnnotation() {
-	s.Given().
-		Workflow("@testdata/sidecar-injected-kill-annotation-workflow.yaml").
-		When().
-		SubmitWorkflow().
-		WaitForWorkflow(fixtures.ToBeSucceeded, kill2xDuration).
-		Then().
-		ExpectPods(sidecarError)
-}
-
 func TestSignalsSuite(t *testing.T) {
 	suite.Run(t, new(SignalsSuite))
 }
