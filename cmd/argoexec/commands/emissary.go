@@ -41,6 +41,7 @@ func NewEmissaryCommand() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			exitCode := 64
 
+			defer waitForZombies()
 			defer func() {
 				err := ioutil.WriteFile(varRunArgo+"/ctr/"+containerName+"/exitcode", []byte(strconv.Itoa(exitCode)), 0o644)
 				if err != nil {
@@ -59,6 +60,18 @@ func NewEmissaryCommand() *cobra.Command {
 			}
 
 			name, args := args[0], args[1:]
+
+			signals := make(chan os.Signal, 1)
+			defer close(signals)
+			signal.Notify(signals)
+			defer signal.Reset()
+			go func() {
+				for s := range signals {
+					if !osspecific.IsSIGCHLD(s) {
+						_ = osspecific.Kill(-os.Getpid(), s.(syscall.Signal))
+					}
+				}
+			}()
 
 			data, err := ioutil.ReadFile(varRunArgo + "/template")
 			if err != nil {
@@ -129,18 +142,6 @@ func NewEmissaryCommand() *cobra.Command {
 				if err != nil {
 					return fmt.Errorf("failed to create command: %w", err)
 				}
-
-				signals := make(chan os.Signal, 1)
-				defer close(signals)
-				signal.Notify(signals)
-				defer signal.Reset()
-				go func() {
-					for s := range signals {
-						if !osspecific.IsSIGCHLD(s) {
-							_ = osspecific.Kill(-command.Process.Pid, s.(syscall.Signal))
-						}
-					}
-				}()
 
 				if err := command.Start(); err != nil {
 					return err
@@ -305,4 +306,17 @@ func saveParameter(srcPath string) error {
 		return fmt.Errorf("failed to close %s: %w", dstPath, err)
 	}
 	return nil
+}
+
+func waitForZombies() {
+	for {
+		var status syscall.WaitStatus
+		pid, _ := syscall.Wait4(-1, &status, syscall.WNOHANG, nil)
+
+		log.WithField("pid", pid).Info("waited for zombie process")
+
+		if pid <= 0 {
+			return
+		}
+	}
 }
