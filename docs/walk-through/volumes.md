@@ -106,7 +106,7 @@ spec:
 ```
 
 It's also possible to declare existing volumes at the template level, instead of the workflow level.
-This can be useful workflows that generate volumes using a `resource` step.
+This can be useful for workflows that generate volumes using a `resource` step.
 
 ```yaml
 apiVersion: argoproj.io/v1alpha1
