@@ -17,6 +17,7 @@ import (
 func SignalContainer(restConfig *rest.Config, pod *corev1.Pod, container string, s syscall.Signal) error {
 	command := []string{"/bin/sh", "-c", "kill -%d 1"}
 
+	// If the container has the /var/run/argo volume mounted, this it will have access to `argoexec`.
 	for _, c := range pod.Spec.Containers {
 		if c.Name == container {
 			for _, m := range c.VolumeMounts {

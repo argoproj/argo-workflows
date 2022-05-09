@@ -413,7 +413,6 @@ test: server/static/files.go dist/argosay
 	# marker file, based on it's modification time, we know how long ago this target was run
 	touch dist/test
 
-
 .PHONY: install
 install: githooks
 	kubectl get ns $(KUBE_NAMESPACE) || kubectl create ns $(KUBE_NAMESPACE)

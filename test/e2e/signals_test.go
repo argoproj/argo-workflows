@@ -4,9 +4,10 @@
 package e2e
 
 import (
-	"k8s.io/api/core/v1"
 	"testing"
 	"time"
+
+	v1 "k8s.io/api/core/v1"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
@@ -120,14 +121,6 @@ func (s *SignalsSuite) TestSidecars() {
 		WaitForWorkflow(fixtures.ToBeSucceeded, kill2xDuration)
 }
 
-var sidecarError = func(t *testing.T, pods []v1.Pod) {
-	for _, c := range pods[0].Status.ContainerStatuses {
-		if c.Name == "sidecar" {
-			assert.Equal(t, int32(137), c.State.Terminated.ExitCode)
-		}
-	}
-}
-
 // make sure Istio/Anthos and other sidecar injectors will work
 func (s *SignalsSuite) TestInjectedSidecar() {
 	s.Given().
@@ -136,8 +129,15 @@ func (s *SignalsSuite) TestInjectedSidecar() {
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeSucceeded, kill2xDuration).
 		Then().
-		ExpectPods(sidecarError)
+		ExpectPods(func(t *testing.T, pods []v1.Pod) {
+			for _, c := range pods[0].Status.ContainerStatuses {
+				if c.Name == "sidecar" {
+					assert.Equal(t, int32(137), c.State.Terminated.ExitCode)
+				}
+			}
+		})
 }
+
 func TestSignalsSuite(t *testing.T) {
 	suite.Run(t, new(SignalsSuite))
 }
