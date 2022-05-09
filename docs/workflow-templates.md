@@ -166,7 +166,7 @@ spec:
               template: hello-world
 ```
 
-1. When working with local parameters, the values of local parameters must be supplied at the template definition inside
+2. When working with local parameters, the values of local parameters must be supplied at the template definition inside
 the `WorkflowTemplate`. Below is a working example:
 
 ```yaml
