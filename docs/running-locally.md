@@ -114,7 +114,7 @@ Our CI will run those concurrently when you create a PR, which will give you fee
 Find the test that you want to run in `test/e2e`
 
 ```bash
-make TestArtifactServer'  
+make TestArtifactServer  
 ```
 
 #### Running A Set Of Tests
