@@ -198,8 +198,8 @@ github.com/argoproj-labs/go-git/v5 v5.4.4 h1:xXa015ZCEElgNMxaevPsK68oAsbjpmNGo9W
 github.com/argoproj-labs/go-git/v5 v5.4.4/go.mod h1:Lv1K45bcCda9jDMEZCGCVuXSGdBaSGAXUvptnVtaEsA=
 github.com/argoproj/argo-events v0.17.1-0.20220223155401-ddda8800f9f8 h1:LqF/eUExbdTg7MEHUJt4DfZIg5hJN5lneybM7u7MbWI=
 github.com/argoproj/argo-events v0.17.1-0.20220223155401-ddda8800f9f8/go.mod h1:AhwDnZwUrrwPgN0CYFMfZQ7liL+G+iL4ujNiLMv2l58=
-github.com/argoproj/pkg v0.12.0 h1:+OiRa3ESCUXlqQSLPsn25AfX2yNrLutBXBDWOe8b2J4=
-github.com/argoproj/pkg v0.12.0/go.mod h1:lwgMq6Nz3Bt7BmvtdpSWTMdp/A9AYqhpuQyQddp689c=
+github.com/argoproj/pkg v0.13.2 h1:kY6a08XMtm73j118X+9rcGK5ZLtTx0gVMFNZFIE97uM=
+github.com/argoproj/pkg v0.13.2/go.mod h1:p2jmlDPSM9rrAvZBKYrK1ZoSQjOzYsSrmnGd63WR2sk=
 github.com/armon/circbuf v0.0.0-20150827004946-bbbad097214e/go.mod h1:3U/XgcO3hCbHZ8TKRvWD2dDTCfh9M9ya+I9JpbB7O8o=
 github.com/armon/consul-api v0.0.0-20180202201655-eb2c6b5be1b6/go.mod h1:grANhF5doyWs3UAsr3K4I6qtAmlQcZDesFNEHPZAzj8=
 github.com/armon/go-metrics v0.0.0-20180917152333-f0300d1749da/go.mod h1:Q73ZrmVTwzkszR9V5SSuryQ31EELlFMUz1kKyl939pY=
@@ -217,8 +217,8 @@ github.com/aws/aws-sdk-go v1.15.11/go.mod h1:mFuSZ37Z9YOHbQEwBWztmVzqXrEkub65tZo
 github.com/aws/aws-sdk-go v1.23.20/go.mod h1:KmX6BPdI08NWTb3/sm4ZGu5ShLoqVDhKgpiN924inxo=
 github.com/aws/aws-sdk-go v1.25.37/go.mod h1:KmX6BPdI08NWTb3/sm4ZGu5ShLoqVDhKgpiN924inxo=
 github.com/aws/aws-sdk-go v1.36.30/go.mod h1:hcU610XS61/+aQV88ixoOzUoG7v3b31pl2zKMmprdro=
-github.com/aws/aws-sdk-go v1.43.41 h1:HaazVplP8/t6SOfybQlNUmjAxLWDKdLdX8BSEHFlJdY=
-github.com/aws/aws-sdk-go v1.43.41/go.mod h1:y4AeaBuwd2Lk+GepC1E9v0qOiTws0MIWAX4oIKwKHZo=
+github.com/aws/aws-sdk-go v1.44.3 h1:GA9bJsWeJdwPtcKK9Uq3jfMaPko0ROWzVuqwFM7BBP0=
+github.com/aws/aws-sdk-go v1.44.3/go.mod h1:y4AeaBuwd2Lk+GepC1E9v0qOiTws0MIWAX4oIKwKHZo=
 github.com/aws/aws-sdk-go-v2 v1.7.1/go.mod h1:L5LuPC1ZgDr2xQS7AmIec/Jlc7O/Y1u2KxJyNVab250=
 github.com/aws/aws-sdk-go-v2 v1.14.0/go.mod h1:ZA3Y8V0LrlWj63MQAnRHgKf/5QB//LSZCPNWlWrNGLU=
 github.com/aws/aws-sdk-go-v2 v1.16.2 h1:fqlCk6Iy3bnCumtrLz9r3mJ/2gUT0pJ0wLFVIdWh+JA=
