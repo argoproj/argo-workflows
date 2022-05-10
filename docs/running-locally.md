@@ -1,7 +1,8 @@
 # Running Locally
 
 You have two options:
-1. If you're using VSCode, you use the Dev Container. This takes about TODO minutes. Pre-commit checks take about TODO minutes to run.
+
+1. If you're using VSCode, you use the Dev-Container. This takes about TODO minutes. Pre-commit checks take about TODO minutes to run.
 1. Install the requirements on your computer manually. This takes about TODO minutes. Pre-commit checks take about TODO minutes to run.
 
 ## Git Clone
@@ -21,6 +22,7 @@ Note:
 * `GOPATH` must be `/go`.
 * for **Apple Silicone**
   * Configure Docker Desktop to use BuildKit:
+
     ```json
     "features": {
       "buildkit": false

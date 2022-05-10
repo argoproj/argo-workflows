@@ -110,10 +110,12 @@ backend
 blkperl
 boolean
 booleans
+buildkit
 config
 cpu
 cron
 daemoned
+dev-container
 dinever
 dropdown
 e.g.
@@ -147,6 +149,7 @@ namespaces
 natively
 p.m.
 params
+pre-commit
 rc2
 repo
 roadmap
