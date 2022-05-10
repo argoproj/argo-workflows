@@ -1,0 +1,20 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: oom-
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      script:
+        image: noshell
+        imagePullPolicy: Never
+        command:
+          - bash
+          - --login
+        source: |
+          set -e
+           /oom
+        resources:
+          limits:
+            memory: 64Mi
