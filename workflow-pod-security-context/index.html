@@ -3714,7 +3714,7 @@
 
 
 <h1 id="workflow-pod-security-context">Workflow Pod Security Context<a class="headerlink" href="#workflow-pod-security-context" title="Permanent link">&para;</a></h1>
-<p>By default, a workflow pods run as root. The Docker executor even requires <code>privileged: true</code>.</p>
+<p>By default, all workflow pods run as root. The Docker executor even requires <code>privileged: true</code>.</p>
 <p>For other <a href="../workflow-executors/">workflow executors</a>, you can run your workflow pods more securely by configuring the <a href="https://kubernetes.io/docs/tasks/configure-pod-container/security-context/">security context</a> for your workflow pod.</p>
 <p>This is likely to be necessary if you have a <a href="https://kubernetes.io/docs/concepts/policy/pod-security-policy/">pod security policy</a>. You probably can't use the Docker executor if you have a pod security policy.</p>
 <div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span><span class="w"></span>

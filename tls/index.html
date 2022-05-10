@@ -3842,7 +3842,7 @@ running <a href="../argo-server/#auth-mode">authentication</a>):</p>
 <p>v3.0 and after</p>
 </blockquote>
 <p>Defaults to <a href="#encrypted">Encrypted</a> if cert is available</p>
-<p>Argo image/deployment defaults to <a href="#encrypted">Encrypted</a> with a self-signed certificate expires after 365 days.</p>
+<p>Argo image/deployment defaults to <a href="#encrypted">Encrypted</a> with a self-signed certificate which expires after 365 days.</p>
 <h2 id="plain-text">Plain Text<a class="headerlink" href="#plain-text" title="Permanent link">&para;</a></h2>
 <p>Recommended for: development.</p>
 <p>Everything is sent in plain text.</p>
@@ -3873,8 +3873,8 @@ Deployment's <code>readinessProbe</code> spec:</p>
 </code></pre></div>
 <h3 id="encrypted-and-verified">Encrypted and Verified<a class="headerlink" href="#encrypted-and-verified" title="Permanent link">&para;</a></h3>
 <p>Recommended for: production environments.</p>
-<p>Run your HTTPS proxy in front of the Argo Server. You'll need to set-up your certificates and this out of scope of this
-documentation.</p>
+<p>Run your HTTPS proxy in front of the Argo Server. You'll need to set-up your certificates (this is out of scope of this
+documentation).</p>
 <p>Start Argo Server with the <code>--secure</code> flag, e.g.:</p>
 <div class="highlight"><pre><span></span><code>argo server --secure
 </code></pre></div>

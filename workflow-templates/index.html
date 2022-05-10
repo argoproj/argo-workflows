@@ -4075,10 +4075,10 @@ and <code>WorkflowTemplates</code> on your cluster. To see how, please see <a hr
 </code></pre></div>
 <h3 id="working-with-parameters">Working with parameters<a class="headerlink" href="#working-with-parameters" title="Permanent link">&para;</a></h3>
 <p>When working with parameters in a <code>WorkflowTemplate</code>, please note the following:</p>
-<ol>
+<ul>
 <li>When working with global parameters, you can instantiate your global variables in your <code>Workflow</code>
 and then directly reference them in your <code>WorkflowTemplate</code>. Below is a working example:</li>
-</ol>
+</ul>
 <div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span><span class="w"></span>
 <span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">WorkflowTemplate</span><span class="w"></span>
 <span class="nt">metadata</span><span class="p">:</span><span class="w"></span>
@@ -4111,10 +4111,10 @@ and then directly reference them in your <code>WorkflowTemplate</code>. Below is
 <span class="w">              </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">hello-world-template-global-arg</span><span class="w"></span>
 <span class="w">              </span><span class="nt">template</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">hello-world</span><span class="w"></span>
 </code></pre></div>
-<ol>
+<ul>
 <li>When working with local parameters, the values of local parameters must be supplied at the template definition inside
 the <code>WorkflowTemplate</code>. Below is a working example:</li>
-</ol>
+</ul>
 <div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span><span class="w"></span>
 <span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">WorkflowTemplate</span><span class="w"></span>
 <span class="nt">metadata</span><span class="p">:</span><span class="w"></span>

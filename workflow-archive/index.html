@@ -3793,7 +3793,7 @@
 <p>To enable this feature, configure a Postgres or MySQL (&gt;= 5.7.8) database under <code>persistence</code> in <a href="../workflow-controller-configmap.yaml">your configuration</a> and set <code>archive: true</code>.</p>
 <p>Be aware that this feature will only archive the statuses of the workflows (which pods have been executed, what was the result, ...)</p>
 <p>However, the logs of each pod will NOT be archived. If you need to access the logs of the pods, you need to setup <a href="../artifact-repository-ref/">an artifact repository</a> thanks to <a href="../configure-artifact-repository/">this doc</a>.</p>
-<p>In addition the table specified in the config map above, the following tables are created when enabling archiving:</p>
+<p>In addition to the table specified in the config map above, the following tables are created when enabling archiving:</p>
 <ul>
 <li><code>argo_archived_workflows</code></li>
 <li><code>argo_archived_workflows_labels</code></li>

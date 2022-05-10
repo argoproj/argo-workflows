@@ -3829,9 +3829,9 @@ named <code>main</code>.</p>
 <p>That is may not be practical.</p>
 <p>Instead, have a workspace volume and make sure all artifacts paths are on that volume.</p>
 <h2 id="resource-requests">⚠️ Resource Requests<a class="headerlink" href="#resource-requests" title="Permanent link">&para;</a></h2>
-<p>A container set actually starts all containers, and the Emissary only starts the main container process when the containers it depends on have completed. This mean that even though the container is doing no useful work, it is still consume resources and you're still getting billed for them.</p>
+<p>A container set actually starts all containers, and the Emissary only starts the main container process when the containers it depends on have completed. This mean that even though the container is doing no useful work, it is still consuming resources and you're still getting billed for them.</p>
 <p>If your requests are small, this won't be a problem.</p>
-<p>If your request are large, set the resource requests so the sum total is the most you'll need at once.</p>
+<p>If your requests are large, set the resource requests so the sum total is the most you'll need at once.</p>
 <p>Example A: a simple sequence e.g. <code>a -&gt; b -&gt; c</code></p>
 <ul>
 <li><code>a</code> needs 1Gi memory</li>
@@ -3865,7 +3865,7 @@ named <code>main</code>.</p>
 <li><code>a</code> needs 100 cpu, 1Mi memory, runs for 10h</li>
 <li><code>b</code> needs 8Ki GPU, 100 Gi memory, 200 Ki GPU, runs for 5m</li>
 </ul>
-<p>Can you see the problem here? <code>a</code> only wont small requests, but the container set will use the  total of all requests. So it's as if you're using all that GPU for 10h. This will be expensive.</p>
+<p>Can you see the problem here? <code>a</code> only has small requests, but the container set will use the  total of all requests. So it's as if you're using all that GPU for 10h. This will be expensive.</p>
 <p>Solution: do not use container set when you have lopsided requests.</p>
 
               

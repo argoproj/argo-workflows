@@ -3958,14 +3958,14 @@ generation does not work.</p>
 <div class="highlight"><pre><span></span><code>make start <span class="nv">UI</span><span class="o">=</span><span class="nb">true</span> <span class="nv">PROFILE</span><span class="o">=</span>sso
 </code></pre></div>
 <h3 id="running-e2e-tests-locally">Running E2E tests locally<a class="headerlink" href="#running-e2e-tests-locally" title="Permanent link">&para;</a></h3>
-<p>Start up the Argo Workflows using the following:</p>
+<p>Start up Argo Workflows using the following:</p>
 <div class="highlight"><pre><span></span><code>make start <span class="nv">PROFILE</span><span class="o">=</span>mysql <span class="nv">AUTH_MODE</span><span class="o">=</span>client <span class="nv">STATIC_FILES</span><span class="o">=</span><span class="nb">false</span> <span class="nv">API</span><span class="o">=</span><span class="nb">true</span> 
 </code></pre></div>
 <h4 id="running-one-test">Running One Test<a class="headerlink" href="#running-one-test" title="Permanent link">&para;</a></h4>
 <p>In most cases, you want to run the test that relates to your changes locally. You should not run all the tests suites.
 Our CI will run those concurrently when you create a PR, which will give you feedback much faster.</p>
 <p>Find the test that you want to run in <code>test/e2e</code></p>
-<div class="highlight"><pre><span></span><code>make TestArtifactServer<span class="err">&#39;</span>  
+<div class="highlight"><pre><span></span><code>make TestArtifactServer  
 </code></pre></div>
 <h4 id="running-a-set-of-tests">Running A Set Of Tests<a class="headerlink" href="#running-a-set-of-tests" title="Permanent link">&para;</a></h4>
 <p>You can find the build tag at the top of the test file.</p>
@@ -3975,7 +3975,7 @@ Our CI will run those concurrently when you create a PR, which will give you fee
 <div class="highlight"><pre><span></span><code>make test-api
 </code></pre></div>
 <h4 id="diagnosing-test-failure">Diagnosing Test Failure<a class="headerlink" href="#diagnosing-test-failure" title="Permanent link">&para;</a></h4>
-<p>Tests often fail, that's good. To diagnose failure:</p>
+<p>Tests often fail: that's good. To diagnose failure:</p>
 <ul>
 <li>Run <code>kubectl get pods</code>, are pods in the state you expect?</li>
 <li>Run <code>kubectl get wf</code>, is your workflow in the state you expect?</li>

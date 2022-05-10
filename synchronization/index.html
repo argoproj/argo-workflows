@@ -3831,11 +3831,11 @@ workflows using the same mutex.</p>
 <span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-config</span><span class="w"></span>
 <span class="nt">data</span><span class="p">:</span><span class="w"></span>
 <span class="w">  </span><span class="nt">workflow</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;1&quot;</span><span class="w">  </span><span class="c1"># Only one workflow can run at given time in particular namespace</span><span class="w"></span>
-<span class="w">  </span><span class="nt">template</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;2&quot;</span><span class="w">  </span><span class="c1"># Two instance of template can run at a given time in particular namespace</span><span class="w"></span>
+<span class="w">  </span><span class="nt">template</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;2&quot;</span><span class="w">  </span><span class="c1"># Two instances of template can run at a given time in particular namespace</span><span class="w"></span>
 </code></pre></div>
 <h3 id="workflow-level-synchronization">Workflow-level Synchronization<a class="headerlink" href="#workflow-level-synchronization" title="Permanent link">&para;</a></h3>
-<p>Workflow-level synchronization limits parallel execution of the workflow if workflow have same synchronization reference.
-In this example, Workflow refers <code>workflow</code> synchronization key which is configured as rate limit 1,
+<p>Workflow-level synchronization limits parallel execution of the workflow if workflows have the same synchronization reference.
+In this example, Workflow refers to <code>workflow</code> synchronization key which is configured as rate limit 1,
 so only one workflow instance will be executed at given time even multiple workflows created.</p>
 <p>Using a semaphore configured by a <code>ConfigMap</code>:</p>
 <div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span><span class="w"></span>
@@ -3874,9 +3874,9 @@ so only one workflow instance will be executed at given time even multiple workf
 <span class="w">      </span><span class="nt">args</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;hello</span><span class="nv"> </span><span class="s">world&quot;</span><span class="p p-Indicator">]</span><span class="w"></span>
 </code></pre></div>
 <h3 id="template-level-synchronization">Template-level Synchronization<a class="headerlink" href="#template-level-synchronization" title="Permanent link">&para;</a></h3>
-<p>Template-level synchronization limits parallel execution of the template across workflows, if template have same synchronization reference.
+<p>Template-level synchronization limits parallel execution of the template across workflows, if templates have the same synchronization reference.
 In this example, <code>acquire-lock</code> template has synchronization reference of <code>template</code> key which is configured as rate limit 2,
-so, two instance of templates will be executed at given time even multiple step/task with in workflow or different workflow refers same template.</p>
+so two instances of templates will be executed at a given time: even multiple steps/tasks within workflow or different workflows referring to the same template.</p>
 <p>Using a semaphore configured by a <code>ConfigMap</code>:</p>
 <div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span><span class="w"></span>
 <span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Workflow</span><span class="w"></span>

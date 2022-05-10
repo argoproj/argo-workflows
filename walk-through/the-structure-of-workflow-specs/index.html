@@ -3714,22 +3714,26 @@
 
 
 <h1 id="the-structure-of-workflow-specs">The Structure of Workflow Specs<a class="headerlink" href="#the-structure-of-workflow-specs" title="Permanent link">&para;</a></h1>
-<p>We now know enough about the basic components of a workflow spec to review its basic structure:</p>
+<p>We now know enough about the basic components of a workflow spec. To review its basic structure:</p>
 <ul>
 <li>Kubernetes header including meta-data</li>
-<li>Spec body</li>
-<li>Entrypoint invocation with optionally arguments</li>
 <li>
-<p>List of template definitions</p>
+<p>Spec body</p>
+<ul>
+<li>Entrypoint invocation with optional arguments</li>
+<li>List of template definitions</li>
+</ul>
 </li>
 <li>
 <p>For each template definition</p>
-</li>
+<ul>
 <li>Name of the template</li>
 <li>Optionally a list of inputs</li>
 <li>Optionally a list of outputs</li>
 <li>Container invocation (leaf template) or a list of steps<ul>
 <li>For each step, a template invocation</li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>

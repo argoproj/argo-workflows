@@ -3887,7 +3887,7 @@
 </blockquote>
 <h2 id="introduction">Introduction<a class="headerlink" href="#introduction" title="Permanent link">&para;</a></h2>
 <p><code>ClusterWorkflowTemplates</code> are cluster scoped <code>WorkflowTemplates</code>. <code>ClusterWorkflowTemplate</code>
-can be created cluster scoped like <code>ClusterRole</code> and can be accessed all namespaces in the cluster.</p>
+can be created cluster scoped like <code>ClusterRole</code> and can be accessed across all namespaces in the cluster.</p>
 <p><code>WorkflowTemplates</code> documentation <a href="../workflow-templates/">link</a></p>
 <h2 id="defining-clusterworkflowtemplate">Defining <code>ClusterWorkflowTemplate</code><a class="headerlink" href="#defining-clusterworkflowtemplate" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span><span class="w"></span>
@@ -3906,7 +3906,7 @@ can be created cluster scoped like <code>ClusterRole</code> and can be accessed 
 <span class="w">      </span><span class="nt">args</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;{{inputs.parameters.message}}&quot;</span><span class="p p-Indicator">]</span><span class="w"></span>
 </code></pre></div>
 <h2 id="referencing-other-clusterworkflowtemplates">Referencing other <code>ClusterWorkflowTemplates</code><a class="headerlink" href="#referencing-other-clusterworkflowtemplates" title="Permanent link">&para;</a></h2>
-<p>You can reference <code>templates</code> from another <code>ClusterWorkflowTemplates</code> using a <code>templateRef</code> field with <code>clusterScope: true</code> .
+<p>You can reference <code>templates</code> from other <code>ClusterWorkflowTemplates</code> using a <code>templateRef</code> field with <code>clusterScope: true</code> .
 Just as how you reference other <code>templates</code> within the same <code>Workflow</code>, you should do so from a <code>steps</code> or <code>dag</code> template.</p>
 <p>Here is an example:</p>
 <div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span><span class="w"></span>
