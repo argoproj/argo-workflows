@@ -7,7 +7,7 @@ Document contains couple of examples of workflow JSON's to submit via argo-serve
 Assuming
 
 * the namespace of argo-server is argo
-* authentication is turned off (otherwise provide Authentication header)
+* authentication is turned off (otherwise provide Authorization header)
 * argo-server is available on localhost:2746
 
 ## Submitting workflow

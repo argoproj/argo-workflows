@@ -4,7 +4,7 @@
 
 > v2.5 and after
 
-Argo Workflows ships with a server that provide more features and security than before.
+Argo Workflows ships with a server that provides more features and security than before.
 
 The server can be configured with or without client auth (`server --auth-mode client`). When it is disabled, then clients must pass their KUBECONFIG base 64 encoded in the HTTP `Authorization` header:
 

@@ -16,7 +16,7 @@ Determine your base installation option.
 
 ⚠️ Double-check you have the right version of your executor configured, it's easy to miss.
 
-⚠️ If you are using GitOps. Never use Kustomize remote base, this is dangerous. Instead, copy the manifests into your Git repo.
+⚠️ If you are using GitOps, never use Kustomize remote base: this is dangerous. Instead, copy the manifests into your Git repo.
 
 Review the following:
 

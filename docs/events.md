@@ -4,7 +4,7 @@
 
 ## Overview
 
-To support external webhooks, we have this endpoint `/api/v1/events/{namespace}/{discriminator}`. Events can be sent to that can be any JSON data.
+To support external webhooks, we have this endpoint `/api/v1/events/{namespace}/{discriminator}`. Events sent to that can be any JSON data.
 
 These events can submit *workflow templates* or *cluster workflow templates*.
 
