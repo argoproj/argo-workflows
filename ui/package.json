@@ -11,6 +11,9 @@
         "lint": "tslint --fix -p ./src/app",
         "test": "jest"
     },
+    "engines" : { 
+        "node" : ">=16"
+    },
     "dependencies": {
         "argo-ui": "https://github.com/argoproj/argo-ui.git#v2.5.0",
         "chart.js": "^2.9.4",
@@ -22,7 +25,7 @@
         "history": "^4.10.1",
         "js-yaml": "^3.14.1",
         "json-merge-patch": "^0.2.3",
-        "moment": "^2.29.2",
+        "moment": "^2.29.3",
         "monaco-editor": "0.20.0",
         "prop-types": "^15.8.1",
         "react": "^16.14.0",

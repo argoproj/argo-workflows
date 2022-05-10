@@ -1273,7 +1273,7 @@ func NewArtifactSearchQuery() *ArtifactSearchQuery {
 
 func (q *ArtifactSearchQuery) anyArtifactGCStrategy() bool {
 	for _, val := range q.ArtifactGCStrategies {
-		if val == true {
+		if val {
 			return val
 		}
 	}
@@ -1307,7 +1307,7 @@ func (w *Workflow) SearchArtifacts(q *ArtifactSearchQuery) ArtifactSearchResults
 			if q.NodeId != "" && n.ID != q.NodeId {
 				match = false
 			}
-			if match == true {
+			if match {
 				results = append(results, ArtifactSearchResult{Artifact: a, NodeID: n.ID})
 			}
 		}
