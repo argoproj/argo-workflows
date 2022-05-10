@@ -224,6 +224,8 @@ Workflow is the definition of a workflow resource
 
 - [`node-selector.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/node-selector.yaml)
 
+- [`oom-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/oom-workflow.yaml)
+
 - [`output-artifact-gcs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/output-artifact-gcs.yaml)
 
 - [`output-artifact-s3.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/output-artifact-s3.yaml)
@@ -640,6 +642,8 @@ WorkflowSpec is the specification of a Workflow.
 - [`nested-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/nested-workflow.yaml)
 
 - [`node-selector.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/node-selector.yaml)
+
+- [`oom-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/oom-workflow.yaml)
 
 - [`output-artifact-gcs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/output-artifact-gcs.yaml)
 
@@ -1064,6 +1068,8 @@ CronWorkflowSpec is the specification of a CronWorkflow
 - [`nested-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/nested-workflow.yaml)
 
 - [`node-selector.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/node-selector.yaml)
+
+- [`oom-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/oom-workflow.yaml)
 
 - [`output-artifact-gcs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/output-artifact-gcs.yaml)
 
@@ -2819,6 +2825,8 @@ ScriptTemplate is a template subtype to enable scripting through code steps
 
 - [`map-reduce.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/map-reduce.yaml)
 
+- [`oom-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/oom-workflow.yaml)
+
 - [`parameter-aggregation-script.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/parameter-aggregation-script.yaml)
 
 - [`parameter-aggregation.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/parameter-aggregation.yaml)
@@ -3810,6 +3818,8 @@ DataSource sources external data into a data template
 
 - [`map-reduce.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/map-reduce.yaml)
 
+- [`oom-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/oom-workflow.yaml)
+
 - [`parameter-aggregation-script.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/parameter-aggregation-script.yaml)
 
 - [`parameter-aggregation.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/parameter-aggregation.yaml)
@@ -4515,6 +4525,8 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 - [`nested-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/nested-workflow.yaml)
 
 - [`node-selector.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/node-selector.yaml)
+
+- [`oom-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/oom-workflow.yaml)
 
 - [`output-artifact-gcs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/output-artifact-gcs.yaml)
 
@@ -5402,6 +5414,8 @@ ResourceRequirements describes the compute resource requirements.
 
 - [`influxdb-ci.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/influxdb-ci.yaml)
 
+- [`oom-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/oom-workflow.yaml)
+
 - [`pod-spec-patch-wf-tmpl.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/pod-spec-patch-wf-tmpl.yaml)
 
 - [`pod-spec-yaml-patch.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/pod-spec-yaml-patch.yaml)
@@ -5820,6 +5834,8 @@ PersistentVolumeClaimSpec describes the common attributes of storage devices and
 - [`nested-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/nested-workflow.yaml)
 
 - [`node-selector.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/node-selector.yaml)
+
+- [`oom-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/oom-workflow.yaml)
 
 - [`output-artifact-gcs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/output-artifact-gcs.yaml)
 
@@ -6526,6 +6542,8 @@ Quantity is a fixed-point representation of a number. It provides convenient mar
 <br>
 
 - [`dns-config.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dns-config.yaml)
+
+- [`oom-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/oom-workflow.yaml)
 
 - [`pod-spec-patch-wf-tmpl.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/pod-spec-patch-wf-tmpl.yaml)
 
