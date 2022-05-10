@@ -13,3 +13,5 @@ then
 else
     k3d cluster create
 fi
+
+until k3d cluster start --wait ; do sleep 5 ; done
