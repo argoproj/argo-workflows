@@ -52,8 +52,8 @@ require (
 	golang.org/x/oauth2 v0.0.0-20220411215720-9780585627b5
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 	golang.org/x/time v0.0.0-20220224211638-0e9765cccd65
-	google.golang.org/api v0.78.0
-	google.golang.org/genproto v0.0.0-20220429170224-98d788798c3e
+	google.golang.org/api v0.79.0
+	google.golang.org/genproto v0.0.0-20220505152158-f39f71e6c8f3
 	google.golang.org/grpc v1.46.0
 	gopkg.in/go-playground/webhooks.v5 v5.17.0
 	gopkg.in/jcmturner/gokrb5.v5 v5.3.0
@@ -191,7 +191,7 @@ require (
 	github.com/yudai/gojsondiff v1.0.0 // indirect
 	github.com/yudai/golcs v0.0.0-20170316035057-ecda9a501e82 // indirect
 	go.opencensus.io v0.23.0 // indirect
-	golang.org/x/sys v0.0.0-20220502124256-b6088ccd6cba // indirect
+	golang.org/x/sys v0.0.0-20220503163025-988cb79eb6c6 // indirect
 	golang.org/x/term v0.0.0-20210927222741-03fcf44c2211 // indirect
 	golang.org/x/text v0.3.7 // indirect
 	golang.org/x/xerrors v0.0.0-20220411194840-2f41105eb62f // indirect
