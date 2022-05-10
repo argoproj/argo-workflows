@@ -30,13 +30,7 @@ var (
 	containerName       = os.Getenv(common.EnvVarContainerName)
 	includeScriptOutput = os.Getenv(common.EnvVarIncludeScriptOutput) == "true" // capture stdout/combined
 	template            = &wfv1.Template{}
-	out, _              = os.Create(filepath.Join(common.VarRunArgoPath, "emissary.log"))
-	logger              = &log.Logger{
-		Out:       out,
-		Formatter: new(log.TextFormatter),
-		Hooks:     make(log.LevelHooks),
-		Level:     log.InfoLevel,
-	}
+	logger              = log.New()
 )
 
 func NewEmissaryCommand() *cobra.Command {
@@ -136,7 +130,6 @@ func NewEmissaryCommand() *cobra.Command {
 				}
 				go func() {
 					for s := range signals {
-						logger.WithField("s", s).Info("forwarding signal")
 						if !osspecific.IsSIGCHLD(s) {
 							_ = osspecific.Kill(command.Process.Pid, s.(syscall.Signal))
 						}

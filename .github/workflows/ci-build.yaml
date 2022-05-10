@@ -158,7 +158,7 @@ jobs:
       - if: ${{ failure() }}
         run: kubectl describe pods
       - if: ${{ failure() }}
-        run: kubectl logs -l workflows.argoproj.io
+        run: kubectl logs -l workflows.argoproj.io/workflow --all-containers
 
   codegen:
     name: Codegen
