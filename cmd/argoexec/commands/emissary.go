@@ -121,21 +121,21 @@ func NewEmissaryCommand() *cobra.Command {
 				}
 				defer stdout.Close()
 				defer combined.Close()
-
 				signals := make(chan os.Signal, 1)
 				defer close(signals)
 				signal.Notify(signals)
 				defer signal.Reset()
+				if err := command.Start(); err != nil {
+					return err
+				}
 				go func() {
 					for s := range signals {
+						log.WithField("s", s).Info("forwarding signal")
 						if !osspecific.IsSIGCHLD(s) {
 							_ = osspecific.Kill(command.Process.Pid, s.(syscall.Signal))
 						}
 					}
 				}()
-				if err := command.Start(); err != nil {
-					return err
-				}
 				return command.Wait()
 			})
 
