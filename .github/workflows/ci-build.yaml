@@ -155,6 +155,10 @@ jobs:
       - if: ${{ failure() }}
         run: |
           [ -e /tmp/argo.log ] && cat /tmp/argo.log
+      - if: ${{ failure() }}
+        run: kubectl describe pods
+      - if: ${{ failure() }}
+        run: kubectl logs -l workflows.argoproj.io
 
   codegen:
     name: Codegen
