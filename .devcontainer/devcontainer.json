@@ -4,9 +4,7 @@
 	"name": "Debian",
 	"build": {
 		"dockerfile": "Dockerfile",
-		// Update 'VARIANT' to pick an Debian version: bullseye, buster
-		// Use bullseye on local arm64/Apple Silicon.
-		"args": { "VARIANT": "buster" }
+		"args": { "VARIANT": "bullseye" }
 	},
 
 	"settings": {},
@@ -20,8 +18,6 @@
 	"remoteUser": "vscode",
 	"features": {
 		"docker-in-docker": "20.10",
-		"kubectl-helm-minikube": "1.23",
-		"git": "latest",
 		"node": "16",
 		"golang": "1.18",
 		"python": "3.9"
