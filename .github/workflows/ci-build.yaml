@@ -137,7 +137,7 @@ jobs:
         with:
           name: argoexec
           path: /tmp
-      - run: k3s ctr images import /tmp/argoexec_image.tar
+      - run: sudo k3s ctr images import /tmp/argoexec_image.tar
       - name: Set-up /etc/hosts
         run: |
           echo '127.0.0.1 dex'      | sudo tee -a /etc/hosts
