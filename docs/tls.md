@@ -15,7 +15,7 @@ Defaults to [Plain Text](#plain-text)
 
 Defaults to [Encrypted](#encrypted) if cert is available
 
-Argo image/deployment defaults to [Encrypted](#encrypted) with a self-signed certificate expires after 365 days.
+Argo image/deployment defaults to [Encrypted](#encrypted) with a self-signed certificate which expires after 365 days.
 
 ## Plain Text
 
@@ -71,8 +71,8 @@ readinessProbe:
 
 Recommended for: production environments.
 
-Run your HTTPS proxy in front of the Argo Server. You'll need to set-up your certificates and this out of scope of this
-documentation.
+Run your HTTPS proxy in front of the Argo Server. You'll need to set-up your certificates (this is out of scope of this
+documentation).
 
 Start Argo Server with the `--secure` flag, e.g.:
 

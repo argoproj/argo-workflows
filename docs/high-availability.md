@@ -6,7 +6,7 @@ Only one controller can run at once. If it crashes, Kubernetes will start anothe
 
 > v3.0
 
-For many users, a short loss of workflow service maybe acceptable - the new controller will just continue running
+For many users, a short loss of workflow service may be acceptable - the new controller will just continue running
 workflows if it restarts.  However, with high service guarantees, new pods may take too long to start running workflows.
 You should run two replicas, and one of which will be kept on hot-standby.
 

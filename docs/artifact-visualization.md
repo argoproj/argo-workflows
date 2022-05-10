@@ -88,7 +88,7 @@ from the same origin, so normal browser controls are not secure enough.
 
 ### Sub-Path Access
 
-Previously, users can access the artifacts of any workflows they can access. To allow HTML files to link to other files
+Previously, users could access the artifacts of any workflows they could access. To allow HTML files to link to other files
 within their tree, you can now access any sub-paths of the artifact's key.
 
 Example:

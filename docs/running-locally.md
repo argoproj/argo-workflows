@@ -100,7 +100,7 @@ make start UI=true PROFILE=sso
 
 ### Running E2E tests locally
 
-Start up the Argo Workflows using the following:
+Start up Argo Workflows using the following:
 
 ```bash
 make start PROFILE=mysql AUTH_MODE=client STATIC_FILES=false API=true 
@@ -114,7 +114,7 @@ Our CI will run those concurrently when you create a PR, which will give you fee
 Find the test that you want to run in `test/e2e`
 
 ```bash
-make TestArtifactServer'  
+make TestArtifactServer  
 ```
 
 #### Running A Set Of Tests
@@ -133,7 +133,7 @@ make test-api
 
 #### Diagnosing Test Failure
 
-Tests often fail, that's good. To diagnose failure:
+Tests often fail: that's good. To diagnose failure:
 
 * Run `kubectl get pods`, are pods in the state you expect?
 * Run `kubectl get wf`, is your workflow in the state you expect?
