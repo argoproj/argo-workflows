@@ -45,8 +45,8 @@ func TestOpenStream(t *testing.T) {
 	}
 	driver := &raw.ArtifactDriver{}
 	rc, err := driver.OpenStream(art)
-	defer rc.Close()
 	assert.NoError(t, err)
+	defer rc.Close()
 
 	dat, err := io.ReadAll(rc)
 	assert.NoError(t, err)
