@@ -1,26 +1,26 @@
 # Running Locally
 
-You have the option to use development container or install requirements by yourself
+You have two options:
+1. If you're using VSCode, you use the Dev Container. This takes about TODO minutes. Pre-commit checks take about TODO minutes to run.
+1. Install the requirements on your computer manually. This takes about TODO minutes. Pre-commit checks take about TODO minutes to run.
 
-## Git clone
+## Git Clone
 
 Close the Git repo into: `$(GOPATH)/src/github.com/argoproj/argo-workflows`. Any other path will mean the code
 generation does not work.
 
-## Development container
+## Development Container
 
 A development container is a running Docker container with a well-defined tool/runtime stack and its prerequisites.
 [The Visual Studio Code Remote - Containers](https://code.visualstudio.com/docs/remote/containers)  extension lets you use a Docker container as a full-featured development environment.
 
 System requirements can be found [here](https://code.visualstudio.com/docs/remote/containers#_system-requirements)
 
-note:
+Note:
 
-* to use development container, we assume the `GOPATH` to be `/go`, please make sure the repository is cloned to the right place.
+* `GOPATH` must be `/go`.
 * for **Apple Silicone**
-  * user need to change `VARIANT` from `buster` to `bullseye` in both `./devcontainer/devcontainer.json` and `./devcontainer/Dockerfile` before building the development container
-  * user need to configure Docker Desktop with the following for Docker Engine before building the development container
-
+  * Configure Docker Desktop to use BuildKit:
     ```json
     "features": {
       "buildkit": false
@@ -28,7 +28,7 @@ note:
     ```
 
 * For **Windows WSL2**
-  * it is recommended to configure [`.wslconfig`](https://docs.microsoft.com/en-us/windows/wsl/wsl-config#configuration-setting-for-wslconfig) to limit your ram usage by the WSL2. This prevents WSL2 use up all of the memory and causing VSCode to OOM.
+  * Configure [`.wslconfig`](https://docs.microsoft.com/en-us/windows/wsl/wsl-config#configuration-setting-for-wslconfig) to limit memory usage by the WSL2 to prevent VSCode OOM.
 
 ## Requirements
 
