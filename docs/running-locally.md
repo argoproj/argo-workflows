@@ -19,8 +19,8 @@ System requirements can be found [here](https://code.visualstudio.com/docs/remot
 
 Note:
 
-* `GOPATH` must be `/go`.
-* for **Apple Silicone**
+* `GOPATH` must be `$HOME/go`.
+* for **Apple Silicon**
   * Configure Docker Desktop to use BuildKit:
 
     ```json
