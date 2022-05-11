@@ -10206,9 +10206,6 @@
     },
     "io.argoproj.workflow.v1alpha1.LifecycleHook": {
       "type": "object",
-      "required": [
-        "template"
-      ],
       "properties": {
         "arguments": {
           "description": "Arguments hold arguments to the template",

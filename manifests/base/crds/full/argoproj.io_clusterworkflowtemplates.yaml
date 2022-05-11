@@ -1214,8 +1214,6 @@ spec:
                         template:
                           type: string
                       type: object
-                  required:
-                  - template
                   type: object
                 type: object
               hostAliases:
@@ -4202,8 +4200,6 @@ spec:
                                       template:
                                         type: string
                                     type: object
-                                required:
-                                - template
                                 type: object
                               type: object
                             inline: {}
@@ -10863,8 +10859,6 @@ spec:
                                         template:
                                           type: string
                                       type: object
-                                  required:
-                                  - template
                                   type: object
                                 type: object
                               inline: {}

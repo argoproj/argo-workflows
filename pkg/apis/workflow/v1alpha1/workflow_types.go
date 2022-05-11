@@ -1287,7 +1287,7 @@ func (lchs LifecycleHooks) HasExitHook() bool {
 
 type LifecycleHook struct {
 	// Template is the name of the template to execute by the hook
-	Template string `json:"template," protobuf:"bytes,1,opt,name=template"`
+	Template string `json:"template,omitempty" protobuf:"bytes,1,opt,name=template"`
 	// Arguments hold arguments to the template
 	Arguments Arguments `json:"arguments,omitempty" protobuf:"bytes,2,opt,name=arguments"`
 	// TemplateRef is the reference to the template resource to execute by the hook
