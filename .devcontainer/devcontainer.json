@@ -4,18 +4,23 @@
 	"name": "Debian",
 	"build": {
 		"dockerfile": "Dockerfile",
-		"args": { "VARIANT": "bullseye" }
+		"args": { 
+			"VARIANT": "bullseye",
+			"NEW_USERNAME": "${localEnv:USER}"
+		}
 	},
 
 	"settings": {},
 
 	"extensions": [],
 
+	"containerEnv": { "GOPOATH": "${localEnv:HOME}/go" },
+
 	"mounts": [ "source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind" ],
 
 	"runArgs": [ "--cap-add=SYS_PTRACE", "--security-opt", "seccomp=unconfined" ],
 
-	"remoteUser": "vscode",
+	"remoteUser": "${localEnv:USER}",
 	"features": {
 		"docker-in-docker": "20.10",
 		"node": "16",
@@ -23,8 +28,8 @@
 		"python": "3.9"
 	},
 
-	"workspaceMount": "source=${localWorkspaceFolder},target=/go/src/github.com/argoproj/argo-workflows,type=bind",
-	"workspaceFolder": "/go/src/github.com/argoproj/argo-workflows",
+	"workspaceMount": "source=${localWorkspaceFolder},target=${localEnv:HOME}/go/src/github.com/argoproj/argo-workflows,type=bind",
+	"workspaceFolder": "${localEnv:HOME}/go/src/github.com/argoproj/argo-workflows",
 
 	"postCreateCommand": "bash -i .devcontainer/startup.sh"
 }

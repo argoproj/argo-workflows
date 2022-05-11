@@ -3,9 +3,16 @@
 ARG VARIANT="bullseye"
 FROM --platform=linux/amd64 mcr.microsoft.com/vscode/devcontainers/base:0-${VARIANT}
 
+ARG NEW_USERNAME=""
+ARG OLD_USERNAME="vscode"
+
 ARG PROTOC_ZIP="protoc-3.14.0-linux-x86_64.zip"
 RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
-    && apt-get install -y apt-transport-https ca-certificates git \
+    && apt-get install -y apt-transport-https ca-certificates git sudo \
+    && usermod -l $NEW_USERNAME -d /home/$NEW_USERNAME -m $OLD_USERNAME \
+    && groupmod -n $NEW_USERNAME $OLD_USERNAME \
+    && echo $NEW_USERNAME ALL=\(root\) NOPASSWD:ALL > /etc/sudoers.d/$NEW_USERNAME \
+    && chmod 0440 /etc/sudoers.d/$NEW_USERNAME \
     && curl -fsSLo /usr/share/keyrings/kubernetes-archive-keyring.gpg https://packages.cloud.google.com/apt/doc/apt-key.gpg \
     && echo "deb [signed-by=/usr/share/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-xenial main" | sudo tee /etc/apt/sources.list.d/kubernetes.list \
     && apt-get update \
