@@ -77,7 +77,7 @@
         "style-loader": "^0.20.1",
         "ts-jest": "^26.4.4",
         "ts-loader": "^7.0.4",
-        "ts-node": "^4.1.0",
+        "ts-node": "^9.1.1",
         "tslint": "^5.9.1",
         "tslint-config-prettier": "^1.18.0",
         "tslint-plugin-prettier": "^2.3.0",
