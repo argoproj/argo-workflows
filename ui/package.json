@@ -72,7 +72,7 @@
         "raw-loader": "^0.5.1",
         "react-hot-loader": "^4.13.0",
         "sass": "^1.30.0",
-        "sass-loader": "^10.1.0",
+        "sass-loader": "^12.6.0",
         "source-map-loader": "^0.2.4",
         "style-loader": "^0.20.1",
         "ts-jest": "^26.4.4",
