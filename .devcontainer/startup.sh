@@ -15,3 +15,4 @@ else
 fi
 
 until k3d cluster start --wait ; do sleep 5 ; done
+k3d kubeconfig merge k3s-default --kubeconfig-merge-default --kubeconfig-switch-context
