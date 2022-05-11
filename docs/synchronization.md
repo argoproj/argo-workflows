@@ -27,7 +27,7 @@ data:
 ### Workflow-level Synchronization
 
 Workflow-level synchronization limits parallel execution of the workflow if workflows have the same synchronization reference.
-In this example, Workflow refers to `workflow` synchronization key which is configured as rate limit 1,
+In this example, Workflow refers to `workflow` synchronization key which is configured as limit 1,
 so only one workflow instance will be executed at given time even multiple workflows created.
 
 Using a semaphore configured by a `ConfigMap`:
@@ -75,7 +75,7 @@ spec:
 ### Template-level Synchronization
 
 Template-level synchronization limits parallel execution of the template across workflows, if templates have the same synchronization reference.
-In this example, `acquire-lock` template has synchronization reference of `template` key which is configured as rate limit 2,
+In this example, `acquire-lock` template has synchronization reference of `template` key which is configured as limit 2,
 so two instances of templates will be executed at a given time: even multiple steps/tasks within workflow or different workflows referring to the same template.
 
 Using a semaphore configured by a `ConfigMap`:

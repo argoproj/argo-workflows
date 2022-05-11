@@ -2,7 +2,7 @@
 
 ## Workflow Controller
 
-Only one controller can run at once. If it crashes, Kubernetes will start another pod.
+Before v3.0, only one controller could run at once. (If it crashed, Kubernetes would start another pod.)
 
 > v3.0
 
