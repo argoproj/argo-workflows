@@ -2,8 +2,8 @@
 set -e
 
 sudo apt update
-sudo chown root:docker /var/run/docker.sock
-sudo chown -R $USER:golang ~/go
+sudo chown $USER:docker /var/run/docker.sock
+sudo chown -R $USER:golang $GOPATH
 
 echo '127.0.0.1 dex\n127.0.0.1 minio\n127.0.0.1 postgres\n127.0.0.1 mysql' | sudo tee -a /etc/hosts
 
