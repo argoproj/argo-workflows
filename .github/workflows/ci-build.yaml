@@ -158,10 +158,16 @@ jobs:
         timeout-minutes: 4
       - run: make ${{matrix.test}} E2E_TIMEOUT=1m STATIC_FILES=false
       - name: Test report
-        if: ${{ always() }}
+        if: always()
         run: |
           make test-report.md
           cat test-report.md >> $GITHUB_STEP_SUMMARY
+       - uses: dorny/test-reporter@v1
+        if: always()
+        with:
+          name: JEST Tests            # Name of the check run which will be created
+          path: junit.xml    # Path to test results
+          reporter: java-junit        # Format of test results
       - if: ${{ failure() }}
         run: |
           [ -e /tmp/argo.log ] && cat /tmp/argo.log
