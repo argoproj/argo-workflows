@@ -3,6 +3,7 @@ package controller
 import (
 	"context"
 	"fmt"
+	"github.com/argoproj/argo-workflows/v3/workflow/util"
 	"sync"
 	"time"
 
@@ -97,7 +98,8 @@ func (woc *wfOperationCtx) killDaemonedChildren(nodeID string) {
 		if !childNode.IsDaemoned() {
 			continue
 		}
-		woc.controller.queuePodForCleanup(woc.wf.Namespace, childNode.ID, terminateContainers)
+		podName := util.PodName(woc.wf.Name, childNode.Name, childNode.TemplateName, childNode.ID, util.GetWorkflowPodNameVersion(woc.wf))
+		woc.controller.queuePodForCleanup(woc.wf.Namespace, podName, terminateContainers)
 		childNode.Phase = wfv1.NodeSucceeded
 		childNode.Daemoned = nil
 		woc.wf.Status.Nodes[childNode.ID] = childNode

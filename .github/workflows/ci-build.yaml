@@ -33,12 +33,7 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-go-
       - run: make test STATIC_FILES=false GOTEST='go test -covermode=atomic -coverprofile=coverage.out'
-      - name: Test report
-        if: failure()
-        run: |
-          make test-report.md
-          cat test-report.md >> $GITHUB_STEP_SUMMARY
-        # engineers just ignore this in PRs, so lets not even run it
+      # engineers just ignore this in PRs, so lets not even run it
       - run: bash <(curl -s https://codecov.io/bash)
         if: github.ref == 'refs/heads/master'
 
@@ -131,7 +126,7 @@ jobs:
             ${{ runner.os }}-go-
       - name: Install and start K3S
         run: |
-          curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC=--docker K3S_KUBECONFIG_MODE=644 sh -
+          curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION=v1.21.2+k3s1 INSTALL_K3S_CHANNEL=stable INSTALL_K3S_EXEC=--docker K3S_KUBECONFIG_MODE=644 sh -
           until kubectl --kubeconfig=/etc/rancher/k3s/k3s.yaml cluster-info ; do sleep 10s ; done
           cp /etc/rancher/k3s/k3s.yaml /home/runner/.kubeconfig
           echo "- name: fake_token_user" >> $KUBECONFIG
@@ -157,20 +152,9 @@ jobs:
       - run: make wait
         timeout-minutes: 4
       - run: make ${{matrix.test}} E2E_TIMEOUT=1m STATIC_FILES=false
-      - name: Test report
-        if: failure()
-        run: |
-          if [ -e test.out ]; then 
-            make test-report.md
-            cat test-report.md >> $GITHUB_STEP_SUMMARY
-          fi
       - if: ${{ failure() }}
         run: |
           [ -e /tmp/argo.log ] && cat /tmp/argo.log
-      - if: ${{ failure() }}
-        run: kubectl describe pods
-      - if: ${{ failure() }}
-        run: kubectl logs -l workflows.argoproj.io/workflow --all-containers
 
   codegen:
     name: Codegen

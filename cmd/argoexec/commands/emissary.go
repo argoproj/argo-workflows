@@ -2,6 +2,7 @@ package commands
 
 import (
 	"compress/gzip"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -132,6 +133,24 @@ func NewEmissaryCommand() *cobra.Command {
 					for s := range signals {
 						if !osspecific.IsSIGCHLD(s) {
 							_ = osspecific.Kill(command.Process.Pid, s.(syscall.Signal))
+						}
+					}
+				}()
+				ctx, cancel := context.WithCancel(context.Background())
+				defer cancel()
+				go func() {
+					for {
+						select {
+						case <-ctx.Done():
+							return
+						default:
+							data, _ := ioutil.ReadFile(filepath.Clean(varRunArgo + "/ctr/" + containerName + "/signal"))
+							_ = os.Remove(varRunArgo + "/ctr/" + containerName + "/signal")
+							s, _ := strconv.Atoi(string(data))
+							if s > 0 {
+								_ = osspecific.Kill(command.Process.Pid, syscall.Signal(s))
+							}
+							time.Sleep(2 * time.Second)
 						}
 					}
 				}()

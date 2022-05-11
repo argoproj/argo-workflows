@@ -10,9 +10,12 @@ spec:
       - name: wait
       - name: main
       - name: sidecar
-        image: noshell
-        imagePullPolicy: Never
-        command: [ /sleep ]
+        image: argoproj/argosay:v1
+        command:
+         - sh
+         - -c
+        args:
+          - "sleep 999"
   templates:
     - name: main
       container:

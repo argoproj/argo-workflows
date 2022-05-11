@@ -32,7 +32,7 @@ func waitContainer(ctx context.Context) error {
 	defer stats.LogStats()
 	stats.StartStatsTicker(5 * time.Minute)
 
-	// for scope of ctx to just Wait
+	// use a block to constrain the scope of ctx
 	{
 		// this allows us to gracefully shutdown, capturing artifacts
 		ctx, cancel := signal.NotifyContext(ctx, syscall.SIGTERM)

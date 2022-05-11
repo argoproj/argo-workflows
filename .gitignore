@@ -15,9 +15,6 @@ debug.test
 git-ask-pass.sh
 *.iml
 /coverage.out
-/test.out
-/junit.xml
-/test-report.md
 .envrc
 /.vendor-new
 /kustomize
