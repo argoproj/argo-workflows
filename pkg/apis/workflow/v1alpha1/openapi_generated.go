@@ -2974,7 +2974,6 @@ func schema_pkg_apis_workflow_v1alpha1_LifecycleHook(ref common.ReferenceCallbac
 					"template": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Template is the name of the template to execute by the hook",
-							Default:     "",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -3000,7 +2999,6 @@ func schema_pkg_apis_workflow_v1alpha1_LifecycleHook(ref common.ReferenceCallbac
 						},
 					},
 				},
-				Required: []string{"template"},
 			},
 		},
 		Dependencies: []string{
