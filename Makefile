@@ -409,7 +409,7 @@ lint: server/static/files.go $(GOPATH)/bin/golangci-lint
 .PHONY: test
 test: server/static/files.go dist/argosay
 	go build ./...
-	env KUBECONFIG=/dev/null $(GOTEST) ./...
+	env KUBECONFIG=/dev/null $(GOTEST) ./... 2>&1 | tee test.out
 	# marker file, based on it's modification time, we know how long ago this target was run
 	touch dist/test
 
@@ -517,7 +517,19 @@ mysql-cli:
 test-cli: ./dist/argo
 
 test-%:
-	go test -failfast -v -timeout 15m -count 1 --tags $* -parallel 10 ./test/e2e
+	go test -failfast -v -timeout 15m -count 1 --tags $* -parallel 10 ./test/e2e 2>&1 | tee test.out
+
+$(GOPATH)/bin/go-junit-report:
+	go install github.com/jstemmer/go-junit-report@latest
+
+junit.xml: $(GOPATH)/bin/go-junit-report test.out
+	go-junit-report < test.out > junit.xml
+
+$(GOPATH)/bin/junit2md:
+	go install github.com/alexec/junit2md@latest
+
+test-report.md: $(GOPATH)/bin/junit2md junit.xml
+	junit2md < junit.xml > test-report.md
 
 test-executor: noshell
 

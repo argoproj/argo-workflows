@@ -33,7 +33,12 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-go-
       - run: make test STATIC_FILES=false GOTEST='go test -covermode=atomic -coverprofile=coverage.out'
-      # engineers just ignore this in PRs, so lets not even run it
+      - name: Test report
+        if: ${{ always() }}
+        run: |
+          make test-report.md
+          cat test-report.md >> $GITHUB_STEP_SUMMARY
+        # engineers just ignore this in PRs, so lets not even run it
       - run: bash <(curl -s https://codecov.io/bash)
         if: github.ref == 'refs/heads/master'
 
@@ -152,6 +157,11 @@ jobs:
       - run: make wait
         timeout-minutes: 4
       - run: make ${{matrix.test}} E2E_TIMEOUT=1m STATIC_FILES=false
+      - name: Test report
+        if: ${{ always() }}
+        run: |
+          make test-report.md
+          cat test-report.md >> $GITHUB_STEP_SUMMARY
       - if: ${{ failure() }}
         run: |
           [ -e /tmp/argo.log ] && cat /tmp/argo.log

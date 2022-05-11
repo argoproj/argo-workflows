@@ -30,7 +30,7 @@ var (
 	containerName       = os.Getenv(common.EnvVarContainerName)
 	includeScriptOutput = os.Getenv(common.EnvVarIncludeScriptOutput) == "true" // capture stdout/combined
 	template            = &wfv1.Template{}
-	logger              = log.New()
+	logger              = log.WithField("argo", true)
 )
 
 func NewEmissaryCommand() *cobra.Command {
