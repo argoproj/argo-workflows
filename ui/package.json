@@ -80,7 +80,7 @@
         "ts-node": "^4.1.0",
         "tslint": "^5.9.1",
         "tslint-config-prettier": "^1.18.0",
-        "tslint-plugin-prettier": "^2.1.0",
+        "tslint-plugin-prettier": "^2.3.0",
         "tslint-react": "^3.4.0",
         "typescript": "^3.9.2",
         "webfonts-generator": "^0.4.0",
