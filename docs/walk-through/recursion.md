@@ -20,7 +20,7 @@ spec:
         template: heads                 # call heads template if "heads"
         when: "{{steps.flip-coin.outputs.result}} == heads"
       - name: tails                     # keep flipping coins if "tails"
-        template: flip-coin
+        template: coinflip
         when: "{{steps.flip-coin.outputs.result}} == tails"
 
   - name: flip-coin
