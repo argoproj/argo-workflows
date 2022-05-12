@@ -73,8 +73,8 @@ func TestPrintNode(t *testing.T) {
 	node.HostNodeName = kubernetesNodeName
 	// derive expected pod name:
 	h := fnv.New32a()
-	//_, _ = h.Write([]byte(fmt.Sprintf("Running %s", nodeName)))
-	_, _ = h.Write([]byte("Running " + nodeName))
+	_, _ = h.Write([]byte(fmt.Sprintf("%s %s", JobStatusIconMap[wfv1.NodeRunning], nodeName)))
+	//_, _ = h.Write([]byte("Running " + nodeName))
 	expectedPodName := fmt.Sprintf("%s-%s-%v", workflowName, node.TemplateName, h.Sum32())
 	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t%s\t%s\t%s\t%s\t%s\n", JobStatusIconMap[wfv1.NodeRunning], nodeName, "", expectedPodName, "0s", nodeMessage, ""), node, getArgs)
 
