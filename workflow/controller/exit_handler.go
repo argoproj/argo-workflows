@@ -20,9 +20,13 @@ func (woc *wfOperationCtx) runOnExitNode(ctx context.Context, exitHook *wfv1.Lif
 		outputs = lastChildNode.Outputs
 	}
 	if exitHook != nil && woc.GetShutdownStrategy().ShouldExecute(true) {
-		execute, err := argoexpr.EvalBool(exitHook.Expression, env.GetFuncMap(template.EnvMap(woc.globalParams)))
-		if err != nil {
-			return true, nil, err
+		execute := true
+		var err error
+		if exitHook.Expression != "" {
+			execute, err = argoexpr.EvalBool(exitHook.Expression, env.GetFuncMap(template.EnvMap(woc.globalParams)))
+			if err != nil {
+				return true, nil, err
+			}
 		}
 		if execute {
 			woc.log.WithField("lifeCycleHook", exitHook).Infof("Running OnExit handler")

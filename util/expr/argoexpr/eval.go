@@ -7,9 +7,6 @@ import (
 )
 
 func EvalBool(input string, env interface{}) (bool, error) {
-	if input == "" {
-		return true, nil
-	}
 	result, err := expr.Eval(input, env)
 	if err != nil {
 		return false, fmt.Errorf("unable to evaluate expression '%s': %s", input, err)
