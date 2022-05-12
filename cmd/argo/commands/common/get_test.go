@@ -20,6 +20,20 @@ var (
 	workflowName string = "testWF"
 )
 
+func init() {
+	JobStatusIconMap = map[wfv1.NodePhase]string{
+		wfv1.NodePending:   ansiFormat("Pending", FgYellow),
+		wfv1.NodeRunning:   ansiFormat("Running", FgCyan),
+		wfv1.NodeSucceeded: ansiFormat("Succeeded", FgGreen),
+		wfv1.NodeSkipped:   ansiFormat("Skipped", FgDefault),
+		wfv1.NodeFailed:    ansiFormat("Failed", FgRed),
+		wfv1.NodeError:     ansiFormat("Error", FgRed),
+	}
+	NodeTypeIconMap = map[wfv1.NodeType]string{
+		wfv1.NodeTypeSuspend: ansiFormat("Suspend", FgCyan),
+	}
+}
+
 func testPrintNodeImpl(t *testing.T, expected string, node wfv1.NodeStatus, getArgs GetFlags) {
 	var result bytes.Buffer
 	w := tabwriter.NewWriter(&result, 0, 8, 1, '\t', 0)
@@ -56,18 +70,6 @@ func TestPrintNode(t *testing.T) {
 		StartedAt:   timestamp,
 		FinishedAt:  timestamp,
 		Message:     nodeMessage,
-	}
-
-	JobStatusIconMap = map[wfv1.NodePhase]string{
-		wfv1.NodePending:   ansiFormat("Pending", FgYellow),
-		wfv1.NodeRunning:   ansiFormat("Running", FgCyan),
-		wfv1.NodeSucceeded: ansiFormat("Succeeded", FgGreen),
-		wfv1.NodeSkipped:   ansiFormat("Skipped", FgDefault),
-		wfv1.NodeFailed:    ansiFormat("Failed", FgRed),
-		wfv1.NodeError:     ansiFormat("Error", FgRed),
-	}
-	NodeTypeIconMap = map[wfv1.NodeType]string{
-		wfv1.NodeTypeSuspend: ansiFormat("Suspend", FgCyan),
 	}
 
 	node.HostNodeName = kubernetesNodeName
@@ -422,10 +424,7 @@ status:
 		_, _ = h.Write([]byte(fmt.Sprintf("%s %s", JobStatusIconMap[wfv1.NodeSucceeded], "sleep(11:eleven)")))
 		expectedPodName = fmt.Sprintf("many-items-z26lj-sleep-%v", h.Sum32())
 		assert.Contains(t, output, fmt.Sprintf("sleep(11:eleven)  sleep           %s   22s", expectedPodName))
-		// ├─ sleep(9:nine)     sleep           many-items-z26lj-2619926859  19s
-		// ├─ sleep(10:ten)     sleep           many-items-z26lj-1052882686  23s
-		// ├─ sleep(11:eleven)  sleep           many-items-z26lj-3011405271  22s`)
-		fmt.Printf("expectedPodName: %s\n", expectedPodName)
+
 		assert.Contains(t, output, "This workflow does not have security context set. "+
 			"You can run your workflow pods more securely by setting it.\n"+
 			"Learn more at https://argoproj.github.io/argo-workflows/workflow-pod-security-context/\n")
