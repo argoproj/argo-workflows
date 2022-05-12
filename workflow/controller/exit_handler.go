@@ -6,6 +6,8 @@ import (
 	"fmt"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/util/expr/argoexpr"
+	"github.com/argoproj/argo-workflows/v3/util/expr/env"
 	"github.com/argoproj/argo-workflows/v3/util/template"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/templateresolution"
@@ -17,27 +19,31 @@ func (woc *wfOperationCtx) runOnExitNode(ctx context.Context, exitHook *wfv1.Lif
 		lastChildNode := getChildNodeIndex(parentNode, woc.wf.Status.Nodes, -1)
 		outputs = lastChildNode.Outputs
 	}
-
 	if exitHook != nil && woc.GetShutdownStrategy().ShouldExecute(true) {
-		woc.log.WithField("lifeCycleHook", exitHook).Infof("Running OnExit handler")
-
-		onExitNodeName := common.GenerateOnExitNodeName(parentNode.Name)
-		resolvedArgs := exitHook.Arguments
-		var err error
-		if !resolvedArgs.IsEmpty() && outputs != nil {
-			resolvedArgs, err = woc.resolveExitTmplArgument(exitHook.Arguments, prefix, outputs)
-			if err != nil {
-				return true, nil, err
-			}
-
+		execute, err := argoexpr.EvalBool(exitHook.Expression, env.GetFuncMap(template.EnvMap(woc.globalParams)))
+		if err != nil {
+			return true, nil, err
 		}
-		onExitNode, err := woc.executeTemplate(ctx, onExitNodeName, &wfv1.WorkflowStep{Template: exitHook.Template, TemplateRef: exitHook.TemplateRef}, tmplCtx, resolvedArgs, &executeTemplateOpts{
+		if execute {
+			woc.log.WithField("lifeCycleHook", exitHook).Infof("Running OnExit handler")
 
-			boundaryID:     boundaryID,
-			onExitTemplate: true,
-		})
-		woc.addChildNode(parentNode.Name, onExitNodeName)
-		return true, onExitNode, err
+			onExitNodeName := common.GenerateOnExitNodeName(parentNode.Name)
+			resolvedArgs := exitHook.Arguments
+			if !resolvedArgs.IsEmpty() && outputs != nil {
+				resolvedArgs, err = woc.resolveExitTmplArgument(exitHook.Arguments, prefix, outputs)
+				if err != nil {
+					return true, nil, err
+				}
+
+			}
+			onExitNode, err := woc.executeTemplate(ctx, onExitNodeName, &wfv1.WorkflowStep{Template: exitHook.Template, TemplateRef: exitHook.TemplateRef}, tmplCtx, resolvedArgs, &executeTemplateOpts{
+
+				boundaryID:     boundaryID,
+				onExitTemplate: true,
+			})
+			woc.addChildNode(parentNode.Name, onExitNodeName)
+			return true, onExitNode, err
+		}
 	}
 	return false, nil, nil
 }
