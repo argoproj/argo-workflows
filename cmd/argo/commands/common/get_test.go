@@ -253,6 +253,7 @@ status:
       finishedAt: "2020-06-02T16:04:42Z"
       id: many-items-z26lj-753834747
       name: many-items-z26lj[0].sleep(8:eight)
+      phase: Succeeded
       startedAt: "2020-06-02T16:04:21Z"
       templateName: sleep
       type: Pod
@@ -262,6 +263,7 @@ status:
       finishedAt: "2020-06-02T16:04:45Z"
       id: many-items-z26lj-1052882686
       name: many-items-z26lj[0].sleep(10:ten)
+      phase: Succeeded
       startedAt: "2020-06-02T16:04:22Z"
       templateName: sleep
       type: Pod
@@ -295,6 +297,7 @@ status:
       finishedAt: "2020-06-02T16:04:54Z"
       id: many-items-z26lj-1774150289
       name: many-items-z26lj[0].sleep(3:three)
+      phase: Succeeded
       startedAt: "2020-06-02T16:04:21Z"
       templateName: sleep
       type: Pod
@@ -304,6 +307,7 @@ status:
       finishedAt: "2020-06-02T16:04:48Z"
       id: many-items-z26lj-1939921510
       name: many-items-z26lj[0].sleep(0:zero)
+      phase: Succeeded
       startedAt: "2020-06-02T16:04:21Z"
       templateName: sleep
       type: Pod
@@ -323,6 +327,7 @@ status:
       finishedAt: "2020-06-02T16:04:53Z"
       id: many-items-z26lj-2156977535
       name: many-items-z26lj[0].sleep(1:one)
+      phase: Succeeded
       startedAt: "2020-06-02T16:04:21Z"
       templateName: sleep
       type: Pod
@@ -332,6 +337,7 @@ status:
       finishedAt: "2020-06-02T16:04:40Z"
       id: many-items-z26lj-2619926859
       name: many-items-z26lj[0].sleep(9:nine)
+      phase: Succeeded
       startedAt: "2020-06-02T16:04:21Z"
       templateName: sleep
       type: Pod
@@ -341,6 +347,7 @@ status:
       finishedAt: "2020-06-02T16:04:44Z"
       id: many-items-z26lj-3011405271
       name: many-items-z26lj[0].sleep(11:eleven)
+      phase: Succeeded
       startedAt: "2020-06-02T16:04:22Z"
       templateName: sleep
       type: Pod
@@ -350,6 +357,7 @@ status:
       finishedAt: "2020-06-02T16:04:57Z"
       id: many-items-z26lj-3031375822
       name: many-items-z26lj[0].sleep(7:seven)
+      phase: Succeeded
       startedAt: "2020-06-02T16:04:21Z"
       templateName: sleep
       type: Pod
@@ -359,6 +367,7 @@ status:
       finishedAt: "2020-06-02T16:04:59Z"
       id: many-items-z26lj-3126938806
       name: many-items-z26lj[0].sleep(12:twelve)
+      phase: Succeeded
       startedAt: "2020-06-02T16:04:22Z"
       templateName: sleep
       type: Pod
@@ -368,6 +377,7 @@ status:
       finishedAt: "2020-06-02T16:04:56Z"
       id: many-items-z26lj-3178865096
       name: many-items-z26lj[0].sleep(6:six)
+      phase: Succeeded
       startedAt: "2020-06-02T16:04:21Z"
       templateName: sleep
       type: Pod
@@ -377,6 +387,7 @@ status:
       finishedAt: "2020-06-02T16:04:51Z"
       id: many-items-z26lj-3409403178
       name: many-items-z26lj[0].sleep(2:two)
+      phase: Succeeded
       startedAt: "2020-06-02T16:04:21Z"
       templateName: sleep
       type: Pod
@@ -393,11 +404,28 @@ status:
   phase: Succeeded
   startedAt: "2020-06-02T16:04:21Z"
 `, &wf)
+
 		output := PrintWorkflowHelper(&wf, GetFlags{})
-		assert.Contains(t, output, `         
-   ├─ sleep(9:nine)     sleep           many-items-z26lj-2619926859  19s         
-   ├─ sleep(10:ten)     sleep           many-items-z26lj-1052882686  23s         
-   ├─ sleep(11:eleven)  sleep           many-items-z26lj-3011405271  22s`)
+
+		// derive expected pod name:
+		h := fnv.New32a()
+		_, _ = h.Write([]byte(fmt.Sprintf("%s %s", JobStatusIconMap[wfv1.NodeSucceeded], "sleep(9:nine)")))
+		expectedPodName := fmt.Sprintf("many-items-z26lj-sleep-%v", h.Sum32())
+		assert.Contains(t, output, fmt.Sprintf("sleep(9:nine)     sleep           %s   19s", expectedPodName))
+
+		h.Reset()
+		_, _ = h.Write([]byte(fmt.Sprintf("%s %s", JobStatusIconMap[wfv1.NodeSucceeded], "sleep(10:ten)")))
+		expectedPodName = fmt.Sprintf("many-items-z26lj-sleep-%v", h.Sum32())
+		assert.Contains(t, output, fmt.Sprintf("sleep(10:ten)     sleep           %s  23s", expectedPodName))
+
+		h.Reset()
+		_, _ = h.Write([]byte(fmt.Sprintf("%s %s", JobStatusIconMap[wfv1.NodeSucceeded], "sleep(11:eleven)")))
+		expectedPodName = fmt.Sprintf("many-items-z26lj-sleep-%v", h.Sum32())
+		assert.Contains(t, output, fmt.Sprintf("sleep(11:eleven)  sleep           %s   22s", expectedPodName))
+		// ├─ sleep(9:nine)     sleep           many-items-z26lj-2619926859  19s
+		// ├─ sleep(10:ten)     sleep           many-items-z26lj-1052882686  23s
+		// ├─ sleep(11:eleven)  sleep           many-items-z26lj-3011405271  22s`)
+		fmt.Printf("expectedPodName: %s\n", expectedPodName)
 		assert.Contains(t, output, "This workflow does not have security context set. "+
 			"You can run your workflow pods more securely by setting it.\n"+
 			"Learn more at https://argoproj.github.io/argo-workflows/workflow-pod-security-context/\n")
