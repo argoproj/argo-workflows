@@ -1,5 +1,5 @@
 import {NotificationType, Page, SlidingPanel} from 'argo-ui';
-import * as classNames from 'classnames';
+import {default as classNames} from 'classnames';
 import * as React from 'react';
 import {RouteComponentProps} from 'react-router';
 import {execSpec, Link, NodePhase, Workflow} from '../../../../models';

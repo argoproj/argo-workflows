@@ -1,5 +1,5 @@
 import {Checkbox} from 'argo-ui';
-import * as classNames from 'classnames';
+import {default as classNames} from 'classnames';
 import * as React from 'react';
 import {DropDown} from './dropdown/dropdown';
 

@@ -1,4 +1,4 @@
-import * as classNames from 'classnames';
+import {default as classNames} from 'classnames';
 import * as moment from 'moment';
 import * as React from 'react';
 import {fromEvent, interval, Subscription} from 'rxjs';
