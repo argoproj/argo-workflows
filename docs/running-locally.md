@@ -21,6 +21,7 @@ Note:
 
 * `GOPATH` must be `$HOME/go`.
 * for **Apple Silicon**
+  * This platform can spend 3 times the indicated time
   * Configure Docker Desktop to use BuildKit:
 
     ```json
@@ -31,6 +32,9 @@ Note:
 
 * For **Windows WSL2**
   * Configure [`.wslconfig`](https://docs.microsoft.com/en-us/windows/wsl/wsl-config#configuration-setting-for-wslconfig) to limit memory usage by the WSL2 to prevent VSCode OOM.
+
+* For **Linux**
+  * Use [Docker Desktop](https://docs.docker.com/desktop/linux/install/) instead of [Docker Engine](https://docs.docker.com/engine/install/) to prevent incorrect network configuration by k3d
 
 ## Requirements
 

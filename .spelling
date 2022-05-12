@@ -133,6 +133,7 @@ i.e.
 instantiator
 instantiators
 jenkins
+k3d
 k8s-jobs
 kube
 kubelet
