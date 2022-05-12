@@ -466,10 +466,8 @@ func renderChild(w *tabwriter.Writer, wf *wfv1.Workflow, nInfo renderNode, depth
 // Main method to print information of node in get
 func printNode(w *tabwriter.Writer, node wfv1.NodeStatus, wfName, nodePrefix string, getArgs GetFlags, podNameVersion util.PodNameVersion) {
 	nodeName := fmt.Sprintf("%s %s", JobStatusIconMap[node.Phase], node.DisplayName)
-	fmt.Printf("nodeName=%s, JobStatusIconMap[node.Phase]=%s\n", nodeName, JobStatusIconMap[node.Phase])
 	if node.IsActiveSuspendNode() {
 		nodeName = fmt.Sprintf("%s %s", NodeTypeIconMap[node.Type], node.DisplayName)
-		fmt.Printf("nodeName=%s, NodeTypeIconMap[node.Type]=%s\n", nodeName, NodeTypeIconMap[node.Type])
 	}
 	templateName := ""
 	if node.TemplateRef != nil {
