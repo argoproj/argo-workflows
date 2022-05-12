@@ -45,9 +45,9 @@ func TestPodName(t *testing.T) {
 	// POD_NAMES v2:
 	///////////////////////////////////////////////////////////////////////////////////////////
 	h := fnv.New32a()
-	_, _ = h.Write([]byte(fmt.Sprintf("  %s", nodeName)))
+	_, _ = h.Write([]byte(nodeName))
 	expectedPodName := fmt.Sprintf("wfname-templatename-%v", h.Sum32())
-	name = PodName(shortWfName, nodeName, shortTemplateName, expectedPodName, PodNameV1)
+	name = PodName(shortWfName, nodeName, shortTemplateName, expectedPodName, PodNameV2)
 	assert.Equal(t, expectedPodName, name)
 
 }
