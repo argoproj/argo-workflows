@@ -1,0 +1,36 @@
+Arguments: 
+  /usr/local/Cellar/node/18.0.0/bin/node /usr/local/Cellar/yarn/1.22.17_2/libexec/bin/yarn.js add v1.22.17
+
+PATH: 
+  /usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/MacGPG2/bin:/Users/jvogelman/.nvm/versions/node/v14.19.0/bin:./:/Users/jvogelman/Downloads/apache-maven-3.8.4/bin:/Users/jvogelman/GOPATH/bin
+
+Yarn version: 
+  1.22.17
+
+Node version: 
+  18.0.0
+
+Platform: 
+  darwin x64
+
+Trace: 
+  Error: https://registry.npmjs.intuit.com/v1.22.17: Request "https://registry.npmjs.intuit.com/v1.22.17" returned a 403
+      at params.callback [as _callback] (/usr/local/Cellar/yarn/1.22.17_2/libexec/lib/cli.js:67038:18)
+      at self.callback (/usr/local/Cellar/yarn/1.22.17_2/libexec/lib/cli.js:140883:22)
+      at Request.emit (node:events:527:28)
+      at Request.<anonymous> (/usr/local/Cellar/yarn/1.22.17_2/libexec/lib/cli.js:141855:10)
+      at Request.emit (node:events:527:28)
+      at IncomingMessage.<anonymous> (/usr/local/Cellar/yarn/1.22.17_2/libexec/lib/cli.js:141777:12)
+      at Object.onceWrapper (node:events:641:28)
+      at IncomingMessage.emit (node:events:539:35)
+      at endReadableNT (node:internal/streams/readable:1344:12)
+      at process.processTicksAndRejections (node:internal/process/task_queues:82:21)
+
+npm manifest: 
+  No manifest
+
+yarn manifest: 
+  No manifest
+
+Lockfile: 
+  No lockfile

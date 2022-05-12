@@ -76,35 +76,28 @@ func TestPrintNode(t *testing.T) {
 	// derive expected pod name:
 	h := fnv.New32a()
 	_, _ = h.Write([]byte(fmt.Sprintf("%s %s", JobStatusIconMap[wfv1.NodeRunning], nodeName)))
-	//_, _ = h.Write([]byte("Running " + nodeName))
 	expectedPodName := fmt.Sprintf("%s-%s-%v", workflowName, node.TemplateName, h.Sum32())
 	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t%s\t%s\t%s\t%s\t%s\n", JobStatusIconMap[wfv1.NodeRunning], nodeName, "", expectedPodName, "0s", nodeMessage, ""), node, getArgs)
 
 	// Compatibility test
-	fmt.Println("test 2")
 	getArgs.Status = "Running"
 	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t\t%s\t%s\t%s\t\n", JobStatusIconMap[wfv1.NodeRunning], nodeName, expectedPodName, "0s", nodeMessage), node, getArgs)
 
-	fmt.Println("test 3")
 	getArgs.Status = ""
 	getArgs.NodeFieldSelectorString = "phase=Running"
 	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t\t%s\t%s\t%s\t\n", JobStatusIconMap[wfv1.NodeRunning], nodeName, expectedPodName, "0s", nodeMessage), node, getArgs)
 
-	fmt.Println("test 4")
 	getArgs.NodeFieldSelectorString = "phase!=foobar"
 	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t\t%s\t%s\t%s\t\n", JobStatusIconMap[wfv1.NodeRunning], nodeName, expectedPodName, "0s", nodeMessage), node, getArgs)
 
-	fmt.Println("test 5")
 	getArgs.NodeFieldSelectorString = "phase!=Running"
 	testPrintNodeImpl(t, "", node, getArgs)
 
 	// Compatibility test
-	fmt.Println("test 6")
 	getArgs.NodeFieldSelectorString = ""
 	getArgs.Status = "foobar"
 	testPrintNodeImpl(t, "", node, getArgs)
 
-	fmt.Println("test 7")
 	getArgs.Status = ""
 	getArgs.NodeFieldSelectorString = "phase=foobar"
 	testPrintNodeImpl(t, "", node, getArgs)
@@ -113,12 +106,10 @@ func TestPrintNode(t *testing.T) {
 		Output: "",
 	}
 
-	fmt.Println("test 8")
 	node.TemplateName = nodeTemplateName
 	expectedPodName = fmt.Sprintf("%s-%s-%v", workflowName, node.TemplateName, h.Sum32())
 	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t%s\t%s\t%s\t%s\t%s\n", JobStatusIconMap[wfv1.NodeRunning], nodeName, nodeTemplateName, expectedPodName, "0s", nodeMessage, ""), node, getArgs)
 
-	fmt.Println("test 9")
 	node.Type = wfv1.NodeTypeSuspend
 	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t%s\t%s\t%s\t%s\t%s\n", NodeTypeIconMap[wfv1.NodeTypeSuspend], nodeName, nodeTemplateName, "", "", nodeMessage, ""), node, getArgs)
 
@@ -128,23 +119,18 @@ func TestPrintNode(t *testing.T) {
 	}
 	templateName := fmt.Sprintf("%s/%s", node.TemplateRef.Name, node.TemplateRef.Template)
 	expectedPodName = fmt.Sprintf("%s-%s-%v", workflowName, templateName, h.Sum32())
-	fmt.Println("test 10")
 	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t%s/%s\t%s\t%s\t%s\t%s\n", NodeTypeIconMap[wfv1.NodeTypeSuspend], nodeName, nodeTemplateRefName, nodeTemplateRefName, "", "", nodeMessage, ""), node, getArgs)
 
 	getArgs.Output = "wide"
-	fmt.Println("test 11")
 	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t%s/%s\t%s\t%s\t%s\t%s\t%s\t\n", NodeTypeIconMap[wfv1.NodeTypeSuspend], nodeName, nodeTemplateRefName, nodeTemplateRefName, "", "", getArtifactsString(node), nodeMessage, ""), node, getArgs)
 
 	node.Type = wfv1.NodeTypePod
-	fmt.Println("test 12")
 	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t%s/%s\t%s\t%s\t%s\t%s\t%s\t%s\n", JobStatusIconMap[wfv1.NodeRunning], nodeName, nodeTemplateRefName, nodeTemplateRefName, expectedPodName, "0s", getArtifactsString(node), nodeMessage, "", kubernetesNodeName), node, getArgs)
 
 	getArgs.Output = "short"
-	fmt.Println("test 13")
 	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t%s/%s\t%s\t%s\t%s\t%s\n", JobStatusIconMap[wfv1.NodeRunning], nodeName, nodeTemplateRefName, nodeTemplateRefName, expectedPodName, "0s", nodeMessage, kubernetesNodeName), node, getArgs)
 
 	getArgs.Status = "foobar"
-	fmt.Println("test 14")
 	testPrintNodeImpl(t, "", node, getArgs)
 }
 
