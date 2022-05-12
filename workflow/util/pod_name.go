@@ -36,21 +36,26 @@ func (v PodNameVersion) String() string {
 func GetPodNameVersion() PodNameVersion {
 	switch os.Getenv("POD_NAMES") {
 	case "v2":
+		fmt.Println("GetPodNameVersion: v2 is set")
 		return PodNameV2
 	case "v1":
+		fmt.Println("GetPodNameVersion: v1 is set")
 		return PodNameV1
 	default:
-		return PodNameV1
+		fmt.Println("default PodNameVersion is v2")
+		return PodNameV2
 	}
 }
 
 // PodName return a deterministic pod name
 func PodName(workflowName, nodeName, templateName, nodeID string, version PodNameVersion) string {
 	if version == PodNameV1 {
+		fmt.Printf("pod name set to v1: %s\n", nodeID)
 		return nodeID
 	}
 
 	if workflowName == nodeName {
+		fmt.Printf("workflowName == nodeName, so using %s\n", workflowName)
 		return workflowName
 	}
 
@@ -58,8 +63,11 @@ func PodName(workflowName, nodeName, templateName, nodeID string, version PodNam
 	prefix = ensurePodNamePrefixLength(prefix)
 
 	h := fnv.New32a()
-	_, _ = h.Write([]byte(nodeName))
+	_, _ = h.Write([]byte("Running testNode")) //nodeName))
+
+	fmt.Printf("pod name set to v2: %s, nodename='%s', sum32=%v\n", fmt.Sprintf("%s-%v", prefix, h.Sum32()), nodeName, h.Sum32())
 	return fmt.Sprintf("%s-%v", prefix, h.Sum32())
+
 }
 
 func ensurePodNamePrefixLength(prefix string) string {

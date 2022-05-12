@@ -3,6 +3,7 @@ package common
 import (
 	"bytes"
 	"fmt"
+	"hash/fnv"
 	"testing"
 	"text/tabwriter"
 	"time"
@@ -15,15 +16,20 @@ import (
 	"github.com/argoproj/argo-workflows/v3/workflow/util"
 )
 
+var (
+	workflowName string = "testWF"
+)
+
 func testPrintNodeImpl(t *testing.T, expected string, node wfv1.NodeStatus, getArgs GetFlags) {
 	var result bytes.Buffer
 	w := tabwriter.NewWriter(&result, 0, 8, 1, '\t', 0)
 	filtered, _ := filterNode(node, getArgs)
 	if !filtered {
-		printNode(w, node, "testWf", "", getArgs, util.GetPodNameVersion())
+		printNode(w, node, workflowName, "", getArgs, util.GetPodNameVersion())
 	}
 	err := w.Flush()
 	assert.NoError(t, err)
+	fmt.Printf("expected = %s, actual = %s\n", expected, result.String())
 	assert.Equal(t, expected, result.String())
 }
 
@@ -51,28 +57,49 @@ func TestPrintNode(t *testing.T) {
 		FinishedAt:  timestamp,
 		Message:     nodeMessage,
 	}
+
+	JobStatusIconMap = map[wfv1.NodePhase]string{
+		wfv1.NodePending:   ansiFormat("Pending", FgYellow),
+		wfv1.NodeRunning:   ansiFormat("Running", FgCyan),
+		wfv1.NodeSucceeded: ansiFormat("Succeeded", FgGreen),
+		wfv1.NodeSkipped:   ansiFormat("Skipped", FgDefault),
+		wfv1.NodeFailed:    ansiFormat("Failed", FgRed),
+		wfv1.NodeError:     ansiFormat("Error", FgRed),
+	}
+
 	node.HostNodeName = kubernetesNodeName
-	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t%s\t%s\t%s\t%s\t%s\n", JobStatusIconMap[wfv1.NodeRunning], nodeName, "", nodeID, "0s", nodeMessage, ""), node, getArgs)
+	// derive expected pod name:
+	h := fnv.New32a()
+	//_, _ = h.Write([]byte(fmt.Sprintf("Running %s", nodeName)))
+	_, _ = h.Write([]byte("Running " + nodeName))
+	expectedPodName := fmt.Sprintf("%s-%s-%v", workflowName, node.TemplateName, h.Sum32())
+	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t%s\t%s\t%s\t%s\t%s\n", JobStatusIconMap[wfv1.NodeRunning], nodeName, "", expectedPodName, "0s", nodeMessage, ""), node, getArgs)
 
 	// Compatibility test
+	fmt.Println("test 2")
 	getArgs.Status = "Running"
-	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t\t%s\t%s\t%s\t\n", JobStatusIconMap[wfv1.NodeRunning], nodeName, nodeID, "0s", nodeMessage), node, getArgs)
+	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t\t%s\t%s\t%s\t\n", JobStatusIconMap[wfv1.NodeRunning], nodeName, expectedPodName, "0s", nodeMessage), node, getArgs)
 
+	fmt.Println("test 3")
 	getArgs.Status = ""
 	getArgs.NodeFieldSelectorString = "phase=Running"
-	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t\t%s\t%s\t%s\t\n", JobStatusIconMap[wfv1.NodeRunning], nodeName, nodeID, "0s", nodeMessage), node, getArgs)
+	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t\t%s\t%s\t%s\t\n", JobStatusIconMap[wfv1.NodeRunning], nodeName, expectedPodName, "0s", nodeMessage), node, getArgs)
 
+	fmt.Println("test 4")
 	getArgs.NodeFieldSelectorString = "phase!=foobar"
-	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t\t%s\t%s\t%s\t\n", JobStatusIconMap[wfv1.NodeRunning], nodeName, nodeID, "0s", nodeMessage), node, getArgs)
+	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t\t%s\t%s\t%s\t\n", JobStatusIconMap[wfv1.NodeRunning], nodeName, expectedPodName, "0s", nodeMessage), node, getArgs)
 
+	fmt.Println("test 5")
 	getArgs.NodeFieldSelectorString = "phase!=Running"
 	testPrintNodeImpl(t, "", node, getArgs)
 
 	// Compatibility test
+	fmt.Println("test 6")
 	getArgs.NodeFieldSelectorString = ""
 	getArgs.Status = "foobar"
 	testPrintNodeImpl(t, "", node, getArgs)
 
+	fmt.Println("test 7")
 	getArgs.Status = ""
 	getArgs.NodeFieldSelectorString = "phase=foobar"
 	testPrintNodeImpl(t, "", node, getArgs)
@@ -81,9 +108,12 @@ func TestPrintNode(t *testing.T) {
 		Output: "",
 	}
 
+	fmt.Println("test 8")
 	node.TemplateName = nodeTemplateName
-	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t%s\t%s\t%s\t%s\t%s\n", JobStatusIconMap[wfv1.NodeRunning], nodeName, nodeTemplateName, nodeID, "0s", nodeMessage, ""), node, getArgs)
+	expectedPodName = fmt.Sprintf("%s-%s-%v", workflowName, node.TemplateName, h.Sum32())
+	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t%s\t%s\t%s\t%s\t%s\n", JobStatusIconMap[wfv1.NodeRunning], nodeName, nodeTemplateName, expectedPodName, "0s", nodeMessage, ""), node, getArgs)
 
+	fmt.Println("test 9")
 	node.Type = wfv1.NodeTypeSuspend
 	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t%s\t%s\t%s\t%s\t%s\n", NodeTypeIconMap[wfv1.NodeTypeSuspend], nodeName, nodeTemplateName, "", "", nodeMessage, ""), node, getArgs)
 
@@ -91,18 +121,25 @@ func TestPrintNode(t *testing.T) {
 		Name:     nodeTemplateRefName,
 		Template: nodeTemplateRefName,
 	}
+	templateName := fmt.Sprintf("%s/%s", node.TemplateRef.Name, node.TemplateRef.Template)
+	expectedPodName = fmt.Sprintf("%s-%s-%v", workflowName, templateName, h.Sum32())
+	fmt.Println("test 10")
 	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t%s/%s\t%s\t%s\t%s\t%s\n", NodeTypeIconMap[wfv1.NodeTypeSuspend], nodeName, nodeTemplateRefName, nodeTemplateRefName, "", "", nodeMessage, ""), node, getArgs)
 
 	getArgs.Output = "wide"
+	fmt.Println("test 11")
 	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t%s/%s\t%s\t%s\t%s\t%s\t%s\t\n", NodeTypeIconMap[wfv1.NodeTypeSuspend], nodeName, nodeTemplateRefName, nodeTemplateRefName, "", "", getArtifactsString(node), nodeMessage, ""), node, getArgs)
 
 	node.Type = wfv1.NodeTypePod
-	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t%s/%s\t%s\t%s\t%s\t%s\t%s\t%s\n", JobStatusIconMap[wfv1.NodeRunning], nodeName, nodeTemplateRefName, nodeTemplateRefName, nodeID, "0s", getArtifactsString(node), nodeMessage, "", kubernetesNodeName), node, getArgs)
+	fmt.Println("test 12")
+	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t%s/%s\t%s\t%s\t%s\t%s\t%s\t%s\n", JobStatusIconMap[wfv1.NodeRunning], nodeName, nodeTemplateRefName, nodeTemplateRefName, expectedPodName, "0s", getArtifactsString(node), nodeMessage, "", kubernetesNodeName), node, getArgs)
 
 	getArgs.Output = "short"
-	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t%s/%s\t%s\t%s\t%s\t%s\n", NodeTypeIconMap[wfv1.NodeTypeSuspend], nodeName, nodeTemplateRefName, nodeTemplateRefName, nodeID, "0s", nodeMessage, kubernetesNodeName), node, getArgs)
+	fmt.Println("test 13")
+	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t%s/%s\t%s\t%s\t%s\t%s\n", NodeTypeIconMap[wfv1.NodeTypeSuspend], nodeName, nodeTemplateRefName, nodeTemplateRefName, expectedPodName, "0s", nodeMessage, kubernetesNodeName), node, getArgs)
 
 	getArgs.Status = "foobar"
+	fmt.Println("test 14")
 	testPrintNodeImpl(t, "", node, getArgs)
 }
 
