@@ -66,6 +66,9 @@ func TestPrintNode(t *testing.T) {
 		wfv1.NodeFailed:    ansiFormat("Failed", FgRed),
 		wfv1.NodeError:     ansiFormat("Error", FgRed),
 	}
+	NodeTypeIconMap = map[wfv1.NodeType]string{
+		wfv1.NodeTypeSuspend: ansiFormat("Suspend", FgCyan),
+	}
 
 	node.HostNodeName = kubernetesNodeName
 	// derive expected pod name:
@@ -136,7 +139,7 @@ func TestPrintNode(t *testing.T) {
 
 	getArgs.Output = "short"
 	fmt.Println("test 13")
-	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t%s/%s\t%s\t%s\t%s\t%s\n", NodeTypeIconMap[wfv1.NodeTypeSuspend], nodeName, nodeTemplateRefName, nodeTemplateRefName, expectedPodName, "0s", nodeMessage, kubernetesNodeName), node, getArgs)
+	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t%s/%s\t%s\t%s\t%s\t%s\n", JobStatusIconMap[wfv1.NodeRunning], nodeName, nodeTemplateRefName, nodeTemplateRefName, expectedPodName, "0s", nodeMessage, kubernetesNodeName), node, getArgs)
 
 	getArgs.Status = "foobar"
 	fmt.Println("test 14")
