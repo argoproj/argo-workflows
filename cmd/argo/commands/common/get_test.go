@@ -21,6 +21,8 @@ var (
 )
 
 func init() {
+	// these values get used as part of determining node name and would normally be set as part of
+	// running the application
 	JobStatusIconMap = map[wfv1.NodePhase]string{
 		wfv1.NodePending:   ansiFormat("Pending", FgYellow),
 		wfv1.NodeRunning:   ansiFormat("Running", FgCyan),
@@ -43,7 +45,6 @@ func testPrintNodeImpl(t *testing.T, expected string, node wfv1.NodeStatus, getA
 	}
 	err := w.Flush()
 	assert.NoError(t, err)
-	fmt.Printf("expected = %s, actual = %s\n", expected, result.String())
 	assert.Equal(t, expected, result.String())
 }
 
