@@ -3937,10 +3937,12 @@ generation does not work.</p>
 <p>Note:</p>
 <ul>
 <li><code>GOPATH</code> must be <code>$HOME/go</code>.</li>
-<li>for <strong>Apple Silicon</strong></li>
-<li>This platform can spend 3 times the indicated time</li>
 <li>
-<p>Configure Docker Desktop to use BuildKit:</p>
+<p>for <strong>Apple Silicon</strong></p>
+<ul>
+<li>This platform can spend 3 times the indicated time</li>
+<li>Configure Docker Desktop to use BuildKit:</li>
+</ul>
 <div class="highlight"><pre><span></span><code><span class="nt">&quot;features&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
 <span class="w">  </span><span class="nt">&quot;buildkit&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="w"></span>
 <span class="p">},</span><span class="w"></span>
@@ -3948,14 +3950,16 @@ generation does not work.</p>
 </li>
 <li>
 <p>For <strong>Windows WSL2</strong></p>
-</li>
-<li>
-<p>Configure <a href="https://docs.microsoft.com/en-us/windows/wsl/wsl-config#configuration-setting-for-wslconfig"><code>.wslconfig</code></a> to limit memory usage by the WSL2 to prevent VSCode OOM.</p>
+<ul>
+<li>Configure <a href="https://docs.microsoft.com/en-us/windows/wsl/wsl-config#configuration-setting-for-wslconfig"><code>.wslconfig</code></a> to limit memory usage by the WSL2 to prevent VSCode OOM.</li>
+</ul>
 </li>
 <li>
 <p>For <strong>Linux</strong></p>
-</li>
+<ul>
 <li>Use <a href="https://docs.docker.com/desktop/linux/install/">Docker Desktop</a> instead of <a href="https://docs.docker.com/engine/install/">Docker Engine</a> to prevent incorrect network configuration by k3d</li>
+</ul>
+</li>
 </ul>
 <h2 id="requirements">Requirements<a class="headerlink" href="#requirements" title="Permanent link">&para;</a></h2>
 <ul>

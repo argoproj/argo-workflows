@@ -3865,20 +3865,30 @@
 <p>Default in &gt;= v3.3.</p>
 <p>This is the most fully featured executor.</p>
 <ul>
-<li>Reliability:</li>
+<li>Reliability:<ul>
 <li>Works on GKE Autopilot</li>
 <li>Does not require <code>init</code> process to kill sub-processes.</li>
-<li>More secure:</li>
+</ul>
+</li>
+<li>More secure:<ul>
 <li>No <code>privileged</code> access</li>
 <li>Cannot escape the privileges of the pod's service account</li>
 <li>Can <a href="../workflow-pod-security-context/"><code>runAsNonRoot</code></a>.</li>
-<li>Scalable:</li>
+</ul>
+</li>
+<li>Scalable:<ul>
 <li>It reads and writes to and from the container's disk and typically does not use any network APIs unless resource
-    type template is used.</li>
-<li>Artifacts:</li>
+type template is used.</li>
+</ul>
+</li>
+<li>Artifacts:<ul>
 <li>Output artifacts can be located on the base layer (e.g. <code>/tmp</code>).</li>
-<li>Configuration:</li>
+</ul>
+</li>
+<li>Configuration:<ul>
 <li><code>command</code> must be specified for containers.</li>
+</ul>
+</li>
 </ul>
 <p>You can determine values as follows:</p>
 <div class="highlight"><pre><span></span><code>docker image inspect -f <span class="s1">&#39;{{.Config.Entrypoint}} {{.Config.Cmd}}&#39;</span> argoproj/argosay:v2
@@ -3894,69 +3904,107 @@ a <a href="../workflow-controller-configmap.yaml">configuration item</a>.</p>
 <p>⚠️Deprecated. Removed in v3.4.</p>
 <p>Default in &lt;= v3.2.</p>
 <ul>
-<li>Least secure:</li>
+<li>Least secure:<ul>
 <li>It requires <code>privileged</code> access to <code>docker.sock</code> of the host to be mounted which. Often rejected by Open Policy Agent (OPA) or your Pod Security Policy (PSP).</li>
 <li>It can escape the privileges of the pod's service account</li>
 <li>It cannot <a href="../workflow-pod-security-context/"><code>runAsNonRoot</code></a>.</li>
-<li>Equal most scalable:</li>
+</ul>
+</li>
+<li>Equal most scalable:<ul>
 <li>It communicates directly with the local Docker daemon.</li>
-<li>Artifacts:</li>
+</ul>
+</li>
+<li>Artifacts:<ul>
 <li>Output artifacts can be located on the base layer (e.g. <code>/tmp</code>).</li>
-<li>Configuration:</li>
+</ul>
+</li>
+<li>Configuration:<ul>
 <li>No additional configuration needed.</li>
+</ul>
+</li>
 </ul>
 <p><strong>Note</strong>: when using docker as workflow executors, messages printed in both <code>stdout</code> and <code>stderr</code> are captured in the <a href="../variables/#scripttemplate">Argo variable</a> <code>.outputs.result</code>.</p>
 <h2 id="kubelet-kubelet">Kubelet (kubelet)<a class="headerlink" href="#kubelet-kubelet" title="Permanent link">&para;</a></h2>
 <p>⚠️Deprecated. Removed in v3.4.</p>
 <ul>
-<li>Secure</li>
+<li>Secure<ul>
 <li>No <code>privileged</code> access</li>
 <li>Cannot escape the privileges of the pod's service account</li>
 <li><a href="../workflow-pod-security-context/"><code>runAsNonRoot</code></a> - TBD, see <a href="https://github.com/argoproj/argo-workflows/issues/4186">#4186</a></li>
-<li>Scalable:</li>
+</ul>
+</li>
+<li>Scalable:<ul>
 <li>Operations performed against the local Kubelet</li>
-<li>Artifacts:</li>
+</ul>
+</li>
+<li>Artifacts:<ul>
 <li>Output artifacts must be saved on volumes (e.g. <a href="../empty-dir/">empty-dir</a>) and not the base image layer (e.g. <code>/tmp</code>)</li>
-<li>Step/Task result:</li>
+</ul>
+</li>
+<li>Step/Task result:<ul>
 <li>Warnings that normally goes to stderr will get captured in a step or a dag task's <code>outputs.result</code>. May require changes if your pipeline is conditioned on <code>steps/tasks.name.outputs.result</code></li>
-<li>Configuration:</li>
+</ul>
+</li>
+<li>Configuration:<ul>
 <li>Additional Kubelet configuration maybe needed</li>
+</ul>
+</li>
 </ul>
 <h2 id="kubernetes-api-k8sapi">Kubernetes API (<code>k8sapi</code>)<a class="headerlink" href="#kubernetes-api-k8sapi" title="Permanent link">&para;</a></h2>
 <p>⚠️Deprecated. Removed in v3.4.</p>
 <ul>
-<li>Reliability:</li>
+<li>Reliability:<ul>
 <li>Works on GKE Autopilot</li>
-<li>Most secure:</li>
+</ul>
+</li>
+<li>Most secure:<ul>
 <li>No <code>privileged</code> access</li>
 <li>Cannot escape the privileges of the pod's service account</li>
 <li>Can <a href="../workflow-pod-security-context/"><code>runAsNonRoot</code></a></li>
-<li>Least scalable:</li>
+</ul>
+</li>
+<li>Least scalable:<ul>
 <li>Log retrieval and container operations performed against the remote Kubernetes API</li>
-<li>Artifacts:</li>
+</ul>
+</li>
+<li>Artifacts:<ul>
 <li>Output artifacts must be saved on volumes (e.g. <a href="../empty-dir/">empty-dir</a>) and not the base image layer (e.g. <code>/tmp</code>)</li>
-<li>Step/Task result:</li>
+</ul>
+</li>
+<li>Step/Task result:<ul>
 <li>Warnings that normally goes to stderr will get captured in a step or a dag task's <code>outputs.result</code>. May require changes if your pipeline is conditioned on <code>steps/tasks.name.outputs.result</code></li>
-<li>Configuration:</li>
+</ul>
+</li>
+<li>Configuration:<ul>
 <li>No additional configuration needed.</li>
+</ul>
+</li>
 </ul>
 <h2 id="process-namespace-sharing-pns">Process Namespace Sharing (<code>pns</code>)<a class="headerlink" href="#process-namespace-sharing-pns" title="Permanent link">&para;</a></h2>
 <p>⚠️Deprecated. Removed in v3.4.</p>
 <ul>
-<li>More secure:</li>
+<li>More secure:<ul>
 <li>No <code>privileged</code> access</li>
 <li>cannot escape the privileges of the pod's service account</li>
 <li>Can <a href="../workflow-pod-security-context/"><code>runAsNonRoot</code></a>, if you use volumes (e.g. <a href="../empty-dir/">empty-dir</a>) for your output artifacts</li>
 <li>Processes are visible to other containers in the pod. This includes all information visible in /proc, such as passwords that were passed as arguments or environment variables. These are protected only by regular Unix permissions.</li>
-<li>Scalable:</li>
+</ul>
+</li>
+<li>Scalable:<ul>
 <li>Most operations use local <code>procfs</code>.</li>
 <li>Log retrieval uses the remote Kubernetes API</li>
-<li>Artifacts:</li>
+</ul>
+</li>
+<li>Artifacts:<ul>
 <li>Output artifacts can be located on the base layer (e.g. <code>/tmp</code>)</li>
 <li>Cannot capture artifacts from a base layer which has a volume mounted under it</li>
 <li>Cannot capture artifacts from base layer if the container is short-lived.</li>
-<li>Configuration:</li>
+</ul>
+</li>
+<li>Configuration:<ul>
 <li>No additional configuration needed.</li>
+</ul>
+</li>
 <li>Process will no longer run with PID 1</li>
 <li><a href="https://kubernetes.io/docs/setup/production-environment/windows/intro-windows-in-kubernetes/#v1-pod">Doesn't work for Windows containers</a>.</li>
 </ul>
