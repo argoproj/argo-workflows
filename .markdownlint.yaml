@@ -1,6 +1,5 @@
-{
-  # not fix for this rule
-  "MD013": false,
-  # mkdocs uses 4 spaces indent
-  "MD007": { "indent": 4 }
-}
+# not fix for line length
+MD013: false
+# mkdocs uses 4 spaces indent
+MD007:
+  indent: 4
