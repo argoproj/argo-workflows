@@ -862,8 +862,6 @@ rules:
   verbs:
   - get
   - create
-  - list
-  - watch
 - apiGroups:
   - ""
   resources:

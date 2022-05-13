@@ -12,17 +12,20 @@ Use cases:
 
 [![Demo](https://img.youtube.com/vi/whoRfYY9Fhk/0.jpg)](https://youtu.be/whoRfYY9Fhk)
 
-* Artifacts now appear as elements in the workflow DAG that you can click on.
+* Artifacts appear as elements in the workflow DAG that you can click on.
 * When you click on the artifact, a panel appears.
 * The first time this appears explanatory text is shown to help you understand if you might need to change your
-  workflows to use this new feature.
+  workflows to use this feature.
 * Known file types such as images, text or HTML are shown in an inline-frame (`iframe`).
 * Artifacts are sandboxed using a Content-Security-Policy that prevents JavaScript execution.
 * JSON is shown with syntax highlighting.
 
 To start, take a look at
-a [fully formed example](https://github.com/argoproj/argo-workflows/blob/master/examples/artifacts-workflowtemplate.yaml)
+the [example](https://github.com/argoproj/argo-workflows/blob/master/examples/artifacts-workflowtemplate.yaml)
 .
+
+![Graph Report](assets/graph-report.png)
+![Test Report](assets/test-report.png)
 
 ## Artifact Types
 
@@ -85,7 +88,7 @@ from the same origin, so normal browser controls are not secure enough.
 
 ### Sub-Path Access
 
-Previously, users can access the artifacts of any workflows they can access. To allow HTML files to link to other files
+Previously, users could access the artifacts of any workflows they could access. To allow HTML files to link to other files
 within their tree, you can now access any sub-paths of the artifact's key.
 
 Example:

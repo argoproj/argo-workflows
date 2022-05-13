@@ -75,7 +75,9 @@ func TestServer_K8sUtilsCache(t *testing.T) {
 				"token": {},
 			},
 		})
-	cache := NewResourceCache(kubeClient, context.TODO(), v1.NamespaceAll)
+	cache := NewResourceCache(kubeClient, v1.NamespaceAll)
+	ctx := context.TODO()
+	cache.Run(ctx.Done())
 
 	t.Run("List Service Accounts in different namespaces", func(t *testing.T) {
 		sa, _ := cache.ServiceAccountLister.ServiceAccounts("ns1").List(labels.Everything())
@@ -87,7 +89,7 @@ func TestServer_K8sUtilsCache(t *testing.T) {
 		assert.Equal(t, 1, len(sa))
 		assert.True(t, checkServiceAccountExists(sa, "sa3"))
 
-		secrets, _ := cache.SecretLister.Secrets("ns1").List(labels.Everything())
-		assert.Equal(t, 1, len(secrets))
+		secret, _ := cache.GetSecret(ctx, "ns1", "s1")
+		assert.NotNil(t, secret)
 	})
 }

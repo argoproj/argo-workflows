@@ -148,12 +148,16 @@ func (g *ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) error {
 	}
 
 	if a.Revision != "" {
-		refspecs := []config.RefSpec{"refs/heads/*:refs/heads/*"}
+		refSpecs := []config.RefSpec{"refs/heads/*:refs/heads/*"}
 		if a.SingleBranch {
-			refspecs = []config.RefSpec{config.RefSpec(fmt.Sprintf("refs/heads/%s:refs/heads/%s", a.Branch, a.Branch))}
+			refSpecs = []config.RefSpec{config.RefSpec(fmt.Sprintf("refs/heads/%s:refs/heads/%s", a.Branch, a.Branch))}
 		}
-		if err := r.Fetch(&git.FetchOptions{RefSpecs: refspecs}); isFetchErr(err) {
-			return fmt.Errorf("failed to fatch refs: %w", err)
+		opts := &git.FetchOptions{Auth: auth, RefSpecs: refSpecs}
+		if err := opts.Validate(); err != nil {
+			return fmt.Errorf("failed to validate fetch %v: %w", refSpecs, err)
+		}
+		if err := r.Fetch(opts); isFetchErr(err) {
+			return fmt.Errorf("failed to fetch %v: %w", refSpecs, err)
 		}
 		h, err := r.ResolveRevision(plumbing.Revision(a.Revision))
 		if err != nil {

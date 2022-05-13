@@ -123,6 +123,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
         this.setState({selectedWorkflows: new Map<string, models.Workflow>()}, () => {
             this.fetchWorkflows(this.state.namespace, this.state.selectedPhases, this.state.selectedLabels, this.state.pagination);
         });
+        services.info.collectEvent('openedWorkflowList').then();
     }
 
     public componentWillUnmount(): void {
