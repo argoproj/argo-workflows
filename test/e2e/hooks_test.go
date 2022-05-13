@@ -120,6 +120,7 @@ spec:
 		}).ExpectWorkflowNode(func(status v1alpha1.NodeStatus) bool {
 		return strings.Contains(status.Name, "hook")
 	}, func(t *testing.T, status *v1alpha1.NodeStatus, pod *apiv1.Pod) {
+		t.Skip("https://github.com/argoproj/argo-workflows/issues/8757")
 		assert.Equal(t, v1alpha1.NodeSucceeded, status.Phase)
 	})
 }
