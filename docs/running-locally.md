@@ -1,5 +1,41 @@
 # Running Locally
 
+You have two options:
+
+1. If you're using VSCode, you use the Dev-Container. This takes about 7 minutes. Pre-commit checks take about 4 minutes to run.
+1. Install the requirements on your computer manually. This takes about 1 hour. Pre-commit checks take about 3 minutes to run.
+
+## Git Clone
+
+Close the Git repo into: `$(GOPATH)/src/github.com/argoproj/argo-workflows`. Any other path will mean the code
+generation does not work.
+
+## Development Container
+
+A development container is a running Docker container with a well-defined tool/runtime stack and its prerequisites.
+[The Visual Studio Code Remote - Containers](https://code.visualstudio.com/docs/remote/containers)  extension lets you use a Docker container as a full-featured development environment.
+
+System requirements can be found [here](https://code.visualstudio.com/docs/remote/containers#_system-requirements)
+
+Note:
+
+* `GOPATH` must be `$HOME/go`.
+* for **Apple Silicon**
+    * This platform can spend 3 times the indicated time
+    * Configure Docker Desktop to use BuildKit:
+
+    ```json
+    "features": {
+      "buildkit": false
+    },
+    ```
+
+* For **Windows WSL2**
+    * Configure [`.wslconfig`](https://docs.microsoft.com/en-us/windows/wsl/wsl-config#configuration-setting-for-wslconfig) to limit memory usage by the WSL2 to prevent VSCode OOM.
+
+* For **Linux**
+    * Use [Docker Desktop](https://docs.docker.com/desktop/linux/install/) instead of [Docker Engine](https://docs.docker.com/engine/install/) to prevent incorrect network configuration by k3d
+
 ## Requirements
 
 * [Go 1.18](https://golang.org/dl/)
@@ -20,13 +56,10 @@ Alternatively, you can use [Minikube](https://github.com/kubernetes/minikube) to
 Once a local Kubernetes cluster has started via `minikube start`, your kube config will use Minikube's context
 automatically.
 
-⚠️ Do not use Docker for Desktop, it does not support Kubernetes RBAC (i.e. `kubectl auth can-i` always
+⚠️ Do not use Docker for Desktop with its embedded Kubernetes, it does not support Kubernetes RBAC (i.e. `kubectl auth can-i` always
 returns `allowed`).
 
 ## Developing locally
-
-Close the Git repo into: `$(GOPATH)/src/github.com/argoproj/argo-workflows`. Any other path will mean the code
-generation does not work.
 
 Add the following to your `/etc/hosts`:
 

@@ -37,15 +37,14 @@ func (woc *wfOperationCtx) executeWfLifeCycleHook(ctx context.Context, tmplCtx *
 
 func (woc *wfOperationCtx) executeTmplLifeCycleHook(ctx context.Context, envMap map[string]string, lifeCycleHooks wfv1.LifecycleHooks, parentNode *wfv1.NodeStatus, boundaryID string, tmplCtx *templateresolution.Context, prefix string) (bool, error) {
 	var hookNodes []*wfv1.NodeStatus
-	completed := false
 	for hookName, hook := range lifeCycleHooks {
-		//exit hook will be execute in runOnExitNode
+		//exit hook will be executed in runOnExitNode
 		if hookName == wfv1.ExitLifecycleEvent {
 			continue
 		}
 		execute, err := argoexpr.EvalBool(hook.Expression, env.GetFuncMap(template.EnvMap(envMap)))
 		if err != nil {
-			return completed, err
+			return false, err
 		}
 		if execute {
 			outputs := parentNode.Outputs
@@ -60,30 +59,27 @@ func (woc *wfOperationCtx) executeTmplLifeCycleHook(ctx context.Context, envMap 
 			if !resolvedArgs.IsEmpty() && outputs != nil {
 				resolvedArgs, err = woc.resolveExitTmplArgument(hook.Arguments, prefix, outputs)
 				if err != nil {
-					return completed, err
+					return false, err
 				}
 			}
 			hookNode, err := woc.executeTemplate(ctx, hookNodeName, &wfv1.WorkflowStep{Template: hook.Template, TemplateRef: hook.TemplateRef}, tmplCtx, resolvedArgs, &executeTemplateOpts{
 				boundaryID: boundaryID,
 			})
 			if err != nil {
-				return completed, err
+				return false, err
 			}
 			woc.addChildNode(parentNode.Name, hookNodeName)
 			hookNodes = append(hookNodes, hookNode)
-
 		}
 	}
-	completed = true
 
-	// All hook nodes are completed
+	// Check if all hook nodes are completed
 	for _, hookNode := range hookNodes {
 		if !hookNode.Fulfilled() {
-			completed = false
-			break
+			return false, nil
 		}
 	}
-	return completed, nil
+	return true, nil
 }
 
 func generateLifeHookNodeName(parentNodeName string, hookName string) string {
