@@ -105,7 +105,7 @@ spec:
         - - name: step-1
             hooks:
               exit:
-                expression: steps["step-1"].status == "Succeeded"
+                expression: steps["step-1"].status == "Running"
                 template: http
             template: http
     - name: http
@@ -116,9 +116,9 @@ spec:
 		WaitForWorkflow(fixtures.ToBeSucceeded).
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *v1.ObjectMeta, status *v1alpha1.WorkflowStatus) {
-			assert.Equal(t, v1alpha1.WorkflowSucceeded, status.Phase)
+			assert.Equal(t, v1alpha1.WorkflowRunning, status.Phase)
 		}).ExpectWorkflowNode(func(status v1alpha1.NodeStatus) bool {
-		return strings.Contains(status.Name, "onExit")
+		return strings.Contains(status.Name, "hook")
 	}, func(t *testing.T, status *v1alpha1.NodeStatus, pod *apiv1.Pod) {
 		assert.Equal(t, v1alpha1.NodeSucceeded, status.Phase)
 	})
