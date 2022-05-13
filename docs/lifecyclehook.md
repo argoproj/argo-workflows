@@ -1,4 +1,4 @@
-# LifecycleHook
+# Lifecycle-Hook
 
 > v3.3 and after
 
@@ -9,16 +9,18 @@ A [`LifecycleHook`](https://argoproj.github.io/argo-workflows/fields/#lifecycleh
 In other words, a `LifecycleHook` functions like an [exit handler](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handlers.yaml) with a conditional expression.
 
 **Workflow-level `LifecycleHook`**: Executes the workflow when a configured expression is met.
-- [Workflow-level LifecycleHook example](https://github.com/argoproj/argo-workflows/blob/45730a9cdeb588d0e52b1ac87b6e0ca391a95a81/examples/life-cycle-hooks-wf-level.yaml)
 
-**Template-level LifecycleHook**: Executes the template when a configured expression is met.
-- [Template-level LifecycleHook example](https://github.com/argoproj/argo-workflows/blob/45730a9cdeb588d0e52b1ac87b6e0ca391a95a81/examples/life-cycle-hooks-tmpl-level.yaml)
+- [Workflow-level Lifecycle-Hook example](https://github.com/argoproj/argo-workflows/blob/45730a9cdeb588d0e52b1ac87b6e0ca391a95a81/examples/life-cycle-hooks-wf-level.yaml)
+
+**Template-level Lifecycle-Hook**: Executes the template when a configured expression is met.
+
+- [Template-level Lifecycle-Hook example](https://github.com/argoproj/argo-workflows/blob/45730a9cdeb588d0e52b1ac87b6e0ca391a95a81/examples/life-cycle-hooks-tmpl-level.yaml)
 
 ## Supported conditions
 
 - [Exit handler variables](https://github.com/argoproj/argo-workflows/blob/ebd3677c7a9c973b22fa81ef3b409404a38ec331/docs/variables.md#exit-handler): `workflow.status` and `workflow.failures`
 - [`template`](https://argoproj.github.io/argo-workflows/fields/#template)
--  [`templateRef`](https://argoproj.github.io/argo-workflows/fields/#templateref)
+- [`templateRef`](https://argoproj.github.io/argo-workflows/fields/#templateref)
 - [`arguments`](https://github.com/argoproj/argo-workflows/blob/master/examples/conditionals.yaml)
 
 ## Unsupported conditions

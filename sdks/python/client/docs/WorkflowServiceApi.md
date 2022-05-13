@@ -339,6 +339,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 zip={},
                             ),
                             archive_logs=True,
+                            artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                strategy="strategy_example",
+                            ),
                             artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                 password_secret=SecretKeySelector(
                                     key="key_example",
@@ -568,6 +571,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         zip={},
                                     ),
                                     archive_logs=True,
+                                    artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                        strategy="strategy_example",
+                                    ),
                                     artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                         password_secret=SecretKeySelector(
                                             key="key_example",
@@ -1283,9 +1289,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             use_sdk_creds=True,
                         ),
                     ),
-                    artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
-                        strategy="strategy_example",
-                    ),
                     automount_service_account_token=True,
                     container=Container(
                         args=[
@@ -1865,6 +1868,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 zip={},
                                             ),
                                             archive_logs=True,
+                                            artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                                strategy="strategy_example",
+                                            ),
                                             artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                                 password_secret=SecretKeySelector(
                                                     key="key_example",
@@ -2075,6 +2081,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         zip={},
                                                     ),
                                                     archive_logs=True,
+                                                    artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                                        strategy="strategy_example",
+                                                    ),
                                                     artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                                         password_secret=SecretKeySelector(
                                                             key="key_example",
@@ -2307,6 +2316,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     zip={},
                                 ),
                                 archive_logs=True,
+                                artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                    strategy="strategy_example",
+                                ),
                                 artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                     password_secret=SecretKeySelector(
                                         key="key_example",
@@ -2791,6 +2803,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     zip={},
                                 ),
                                 archive_logs=True,
+                                artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                    strategy="strategy_example",
+                                ),
                                 artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                     password_secret=SecretKeySelector(
                                         key="key_example",
@@ -3042,6 +3057,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     zip={},
                                 ),
                                 archive_logs=True,
+                                artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                    strategy="strategy_example",
+                                ),
                                 artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                     password_secret=SecretKeySelector(
                                         key="key_example",
@@ -3854,6 +3872,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 zip={},
                                             ),
                                             archive_logs=True,
+                                            artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                                strategy="strategy_example",
+                                            ),
                                             artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                                 password_secret=SecretKeySelector(
                                                     key="key_example",
@@ -4060,6 +4081,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         zip={},
                                                     ),
                                                     archive_logs=True,
+                                                    artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                                        strategy="strategy_example",
+                                                    ),
                                                     artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                                         password_secret=SecretKeySelector(
                                                             key="key_example",
@@ -5041,9 +5065,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 use_sdk_creds=True,
                             ),
                         ),
-                        artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
-                            strategy="strategy_example",
-                        ),
                         automount_service_account_token=True,
                         container=Container(
                             args=[
@@ -5623,6 +5644,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                     zip={},
                                                 ),
                                                 archive_logs=True,
+                                                artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                                    strategy="strategy_example",
+                                                ),
                                                 artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                                     password_secret=SecretKeySelector(
                                                         key="key_example",
@@ -5833,6 +5857,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             zip={},
                                                         ),
                                                         archive_logs=True,
+                                                        artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                                            strategy="strategy_example",
+                                                        ),
                                                         artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                                             password_secret=SecretKeySelector(
                                                                 key="key_example",
@@ -6065,6 +6092,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         zip={},
                                     ),
                                     archive_logs=True,
+                                    artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                        strategy="strategy_example",
+                                    ),
                                     artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                         password_secret=SecretKeySelector(
                                             key="key_example",
@@ -6549,6 +6579,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         zip={},
                                     ),
                                     archive_logs=True,
+                                    artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                        strategy="strategy_example",
+                                    ),
                                     artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                         password_secret=SecretKeySelector(
                                             key="key_example",
@@ -6800,6 +6833,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         zip={},
                                     ),
                                     archive_logs=True,
+                                    artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                        strategy="strategy_example",
+                                    ),
                                     artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                         password_secret=SecretKeySelector(
                                             key="key_example",
@@ -7612,6 +7648,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                     zip={},
                                                 ),
                                                 archive_logs=True,
+                                                artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                                    strategy="strategy_example",
+                                                ),
                                                 artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                                     password_secret=SecretKeySelector(
                                                         key="key_example",
@@ -7818,6 +7857,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             zip={},
                                                         ),
                                                         archive_logs=True,
+                                                        artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                                            strategy="strategy_example",
+                                                        ),
                                                         artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                                             password_secret=SecretKeySelector(
                                                                 key="key_example",
@@ -9101,6 +9143,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         zip={},
                                     ),
                                     archive_logs=True,
+                                    artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                        strategy="strategy_example",
+                                    ),
                                     artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                         password_secret=SecretKeySelector(
                                             key="key_example",
@@ -9311,6 +9356,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         zip={},
                                     ),
                                     archive_logs=True,
+                                    artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                        strategy="strategy_example",
+                                    ),
                                     artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                         password_secret=SecretKeySelector(
                                             key="key_example",
@@ -9534,6 +9582,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 zip={},
                             ),
                             archive_logs=True,
+                            artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                strategy="strategy_example",
+                            ),
                             artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                 password_secret=SecretKeySelector(
                                     key="key_example",
@@ -10465,9 +10516,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 use_sdk_creds=True,
                             ),
                         ),
-                        artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
-                            strategy="strategy_example",
-                        ),
                         automount_service_account_token=True,
                         container=Container(
                             args=[
@@ -11047,6 +11095,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                     zip={},
                                                 ),
                                                 archive_logs=True,
+                                                artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                                    strategy="strategy_example",
+                                                ),
                                                 artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                                     password_secret=SecretKeySelector(
                                                         key="key_example",
@@ -11257,6 +11308,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             zip={},
                                                         ),
                                                         archive_logs=True,
+                                                        artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                                            strategy="strategy_example",
+                                                        ),
                                                         artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                                             password_secret=SecretKeySelector(
                                                                 key="key_example",
@@ -11489,6 +11543,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         zip={},
                                     ),
                                     archive_logs=True,
+                                    artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                        strategy="strategy_example",
+                                    ),
                                     artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                         password_secret=SecretKeySelector(
                                             key="key_example",
@@ -11973,6 +12030,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         zip={},
                                     ),
                                     archive_logs=True,
+                                    artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                        strategy="strategy_example",
+                                    ),
                                     artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                         password_secret=SecretKeySelector(
                                             key="key_example",
@@ -12224,6 +12284,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         zip={},
                                     ),
                                     archive_logs=True,
+                                    artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                        strategy="strategy_example",
+                                    ),
                                     artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                         password_secret=SecretKeySelector(
                                             key="key_example",
@@ -13036,6 +13099,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                     zip={},
                                                 ),
                                                 archive_logs=True,
+                                                artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                                    strategy="strategy_example",
+                                                ),
                                                 artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                                     password_secret=SecretKeySelector(
                                                         key="key_example",
@@ -13242,6 +13308,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             zip={},
                                                         ),
                                                         archive_logs=True,
+                                                        artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                                            strategy="strategy_example",
+                                                        ),
                                                         artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                                             password_secret=SecretKeySelector(
                                                                 key="key_example",
@@ -14082,6 +14151,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     zip={},
                                 ),
                                 archive_logs=True,
+                                artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                    strategy="strategy_example",
+                                ),
                                 artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                     password_secret=SecretKeySelector(
                                         key="key_example",
@@ -14311,6 +14383,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             zip={},
                                         ),
                                         archive_logs=True,
+                                        artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                            strategy="strategy_example",
+                                        ),
                                         artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                             password_secret=SecretKeySelector(
                                                 key="key_example",
@@ -15026,9 +15101,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 use_sdk_creds=True,
                             ),
                         ),
-                        artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
-                            strategy="strategy_example",
-                        ),
                         automount_service_account_token=True,
                         container=Container(
                             args=[
@@ -15608,6 +15680,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                     zip={},
                                                 ),
                                                 archive_logs=True,
+                                                artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                                    strategy="strategy_example",
+                                                ),
                                                 artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                                     password_secret=SecretKeySelector(
                                                         key="key_example",
@@ -15818,6 +15893,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             zip={},
                                                         ),
                                                         archive_logs=True,
+                                                        artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                                            strategy="strategy_example",
+                                                        ),
                                                         artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                                             password_secret=SecretKeySelector(
                                                                 key="key_example",
@@ -16050,6 +16128,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         zip={},
                                     ),
                                     archive_logs=True,
+                                    artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                        strategy="strategy_example",
+                                    ),
                                     artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                         password_secret=SecretKeySelector(
                                             key="key_example",
@@ -16534,6 +16615,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         zip={},
                                     ),
                                     archive_logs=True,
+                                    artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                        strategy="strategy_example",
+                                    ),
                                     artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                         password_secret=SecretKeySelector(
                                             key="key_example",
@@ -16785,6 +16869,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         zip={},
                                     ),
                                     archive_logs=True,
+                                    artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                        strategy="strategy_example",
+                                    ),
                                     artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                         password_secret=SecretKeySelector(
                                             key="key_example",
@@ -17597,6 +17684,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                     zip={},
                                                 ),
                                                 archive_logs=True,
+                                                artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                                    strategy="strategy_example",
+                                                ),
                                                 artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                                     password_secret=SecretKeySelector(
                                                         key="key_example",
@@ -17803,6 +17893,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             zip={},
                                                         ),
                                                         archive_logs=True,
+                                                        artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                                            strategy="strategy_example",
+                                                        ),
                                                         artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                                             password_secret=SecretKeySelector(
                                                                 key="key_example",
@@ -18784,9 +18877,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     use_sdk_creds=True,
                                 ),
                             ),
-                            artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
-                                strategy="strategy_example",
-                            ),
                             automount_service_account_token=True,
                             container=Container(
                                 args=[
@@ -19366,6 +19456,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         zip={},
                                                     ),
                                                     archive_logs=True,
+                                                    artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                                        strategy="strategy_example",
+                                                    ),
                                                     artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                                         password_secret=SecretKeySelector(
                                                             key="key_example",
@@ -19576,6 +19669,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                                 zip={},
                                                             ),
                                                             archive_logs=True,
+                                                            artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                                                strategy="strategy_example",
+                                                            ),
                                                             artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                                                 password_secret=SecretKeySelector(
                                                                     key="key_example",
@@ -19808,6 +19904,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             zip={},
                                         ),
                                         archive_logs=True,
+                                        artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                            strategy="strategy_example",
+                                        ),
                                         artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                             password_secret=SecretKeySelector(
                                                 key="key_example",
@@ -20292,6 +20391,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             zip={},
                                         ),
                                         archive_logs=True,
+                                        artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                            strategy="strategy_example",
+                                        ),
                                         artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                             password_secret=SecretKeySelector(
                                                 key="key_example",
@@ -20543,6 +20645,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             zip={},
                                         ),
                                         archive_logs=True,
+                                        artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                            strategy="strategy_example",
+                                        ),
                                         artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                             password_secret=SecretKeySelector(
                                                 key="key_example",
@@ -21355,6 +21460,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         zip={},
                                                     ),
                                                     archive_logs=True,
+                                                    artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                                        strategy="strategy_example",
+                                                    ),
                                                     artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                                         password_secret=SecretKeySelector(
                                                             key="key_example",
@@ -21561,6 +21669,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                                 zip={},
                                                             ),
                                                             archive_logs=True,
+                                                            artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                                                strategy="strategy_example",
+                                                            ),
                                                             artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                                                 password_secret=SecretKeySelector(
                                                                     key="key_example",
@@ -23268,6 +23379,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 zip={},
                             ),
                             archive_logs=True,
+                            artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                strategy="strategy_example",
+                            ),
                             artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                 password_secret=SecretKeySelector(
                                     key="key_example",
@@ -23497,6 +23611,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         zip={},
                                     ),
                                     archive_logs=True,
+                                    artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                        strategy="strategy_example",
+                                    ),
                                     artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                         password_secret=SecretKeySelector(
                                             key="key_example",
@@ -24212,9 +24329,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             use_sdk_creds=True,
                         ),
                     ),
-                    artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
-                        strategy="strategy_example",
-                    ),
                     automount_service_account_token=True,
                     container=Container(
                         args=[
@@ -24794,6 +24908,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 zip={},
                                             ),
                                             archive_logs=True,
+                                            artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                                strategy="strategy_example",
+                                            ),
                                             artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                                 password_secret=SecretKeySelector(
                                                     key="key_example",
@@ -25004,6 +25121,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         zip={},
                                                     ),
                                                     archive_logs=True,
+                                                    artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                                        strategy="strategy_example",
+                                                    ),
                                                     artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                                         password_secret=SecretKeySelector(
                                                             key="key_example",
@@ -25236,6 +25356,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     zip={},
                                 ),
                                 archive_logs=True,
+                                artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                    strategy="strategy_example",
+                                ),
                                 artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                     password_secret=SecretKeySelector(
                                         key="key_example",
@@ -25720,6 +25843,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     zip={},
                                 ),
                                 archive_logs=True,
+                                artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                    strategy="strategy_example",
+                                ),
                                 artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                     password_secret=SecretKeySelector(
                                         key="key_example",
@@ -25971,6 +26097,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     zip={},
                                 ),
                                 archive_logs=True,
+                                artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                    strategy="strategy_example",
+                                ),
                                 artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                     password_secret=SecretKeySelector(
                                         key="key_example",
@@ -26783,6 +26912,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 zip={},
                                             ),
                                             archive_logs=True,
+                                            artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                                strategy="strategy_example",
+                                            ),
                                             artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                                 password_secret=SecretKeySelector(
                                                     key="key_example",
@@ -26989,6 +27121,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         zip={},
                                                     ),
                                                     archive_logs=True,
+                                                    artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                                        strategy="strategy_example",
+                                                    ),
                                                     artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                                         password_secret=SecretKeySelector(
                                                             key="key_example",
@@ -27970,9 +28105,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 use_sdk_creds=True,
                             ),
                         ),
-                        artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
-                            strategy="strategy_example",
-                        ),
                         automount_service_account_token=True,
                         container=Container(
                             args=[
@@ -28552,6 +28684,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                     zip={},
                                                 ),
                                                 archive_logs=True,
+                                                artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                                    strategy="strategy_example",
+                                                ),
                                                 artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                                     password_secret=SecretKeySelector(
                                                         key="key_example",
@@ -28762,6 +28897,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             zip={},
                                                         ),
                                                         archive_logs=True,
+                                                        artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                                            strategy="strategy_example",
+                                                        ),
                                                         artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                                             password_secret=SecretKeySelector(
                                                                 key="key_example",
@@ -28994,6 +29132,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         zip={},
                                     ),
                                     archive_logs=True,
+                                    artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                        strategy="strategy_example",
+                                    ),
                                     artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                         password_secret=SecretKeySelector(
                                             key="key_example",
@@ -29478,6 +29619,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         zip={},
                                     ),
                                     archive_logs=True,
+                                    artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                        strategy="strategy_example",
+                                    ),
                                     artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                         password_secret=SecretKeySelector(
                                             key="key_example",
@@ -29729,6 +29873,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         zip={},
                                     ),
                                     archive_logs=True,
+                                    artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                        strategy="strategy_example",
+                                    ),
                                     artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                         password_secret=SecretKeySelector(
                                             key="key_example",
@@ -30541,6 +30688,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                     zip={},
                                                 ),
                                                 archive_logs=True,
+                                                artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                                    strategy="strategy_example",
+                                                ),
                                                 artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                                     password_secret=SecretKeySelector(
                                                         key="key_example",
@@ -30747,6 +30897,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             zip={},
                                                         ),
                                                         archive_logs=True,
+                                                        artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                                            strategy="strategy_example",
+                                                        ),
                                                         artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                                             password_secret=SecretKeySelector(
                                                                 key="key_example",
@@ -32030,6 +32183,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         zip={},
                                     ),
                                     archive_logs=True,
+                                    artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                        strategy="strategy_example",
+                                    ),
                                     artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                         password_secret=SecretKeySelector(
                                             key="key_example",
@@ -32240,6 +32396,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         zip={},
                                     ),
                                     archive_logs=True,
+                                    artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                        strategy="strategy_example",
+                                    ),
                                     artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                         password_secret=SecretKeySelector(
                                             key="key_example",
@@ -32463,6 +32622,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 zip={},
                             ),
                             archive_logs=True,
+                            artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                strategy="strategy_example",
+                            ),
                             artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                 password_secret=SecretKeySelector(
                                     key="key_example",
@@ -33394,9 +33556,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 use_sdk_creds=True,
                             ),
                         ),
-                        artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
-                            strategy="strategy_example",
-                        ),
                         automount_service_account_token=True,
                         container=Container(
                             args=[
@@ -33976,6 +34135,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                     zip={},
                                                 ),
                                                 archive_logs=True,
+                                                artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                                    strategy="strategy_example",
+                                                ),
                                                 artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                                     password_secret=SecretKeySelector(
                                                         key="key_example",
@@ -34186,6 +34348,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             zip={},
                                                         ),
                                                         archive_logs=True,
+                                                        artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                                            strategy="strategy_example",
+                                                        ),
                                                         artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                                             password_secret=SecretKeySelector(
                                                                 key="key_example",
@@ -34418,6 +34583,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         zip={},
                                     ),
                                     archive_logs=True,
+                                    artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                        strategy="strategy_example",
+                                    ),
                                     artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                         password_secret=SecretKeySelector(
                                             key="key_example",
@@ -34902,6 +35070,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         zip={},
                                     ),
                                     archive_logs=True,
+                                    artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                        strategy="strategy_example",
+                                    ),
                                     artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                         password_secret=SecretKeySelector(
                                             key="key_example",
@@ -35153,6 +35324,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         zip={},
                                     ),
                                     archive_logs=True,
+                                    artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                        strategy="strategy_example",
+                                    ),
                                     artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                         password_secret=SecretKeySelector(
                                             key="key_example",
@@ -35965,6 +36139,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                     zip={},
                                                 ),
                                                 archive_logs=True,
+                                                artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                                    strategy="strategy_example",
+                                                ),
                                                 artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                                     password_secret=SecretKeySelector(
                                                         key="key_example",
@@ -36171,6 +36348,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             zip={},
                                                         ),
                                                         archive_logs=True,
+                                                        artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                                            strategy="strategy_example",
+                                                        ),
                                                         artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                                             password_secret=SecretKeySelector(
                                                                 key="key_example",
@@ -37011,6 +37191,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     zip={},
                                 ),
                                 archive_logs=True,
+                                artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                    strategy="strategy_example",
+                                ),
                                 artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                     password_secret=SecretKeySelector(
                                         key="key_example",
@@ -37240,6 +37423,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             zip={},
                                         ),
                                         archive_logs=True,
+                                        artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                            strategy="strategy_example",
+                                        ),
                                         artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                             password_secret=SecretKeySelector(
                                                 key="key_example",
@@ -37955,9 +38141,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 use_sdk_creds=True,
                             ),
                         ),
-                        artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
-                            strategy="strategy_example",
-                        ),
                         automount_service_account_token=True,
                         container=Container(
                             args=[
@@ -38537,6 +38720,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                     zip={},
                                                 ),
                                                 archive_logs=True,
+                                                artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                                    strategy="strategy_example",
+                                                ),
                                                 artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                                     password_secret=SecretKeySelector(
                                                         key="key_example",
@@ -38747,6 +38933,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             zip={},
                                                         ),
                                                         archive_logs=True,
+                                                        artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                                            strategy="strategy_example",
+                                                        ),
                                                         artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                                             password_secret=SecretKeySelector(
                                                                 key="key_example",
@@ -38979,6 +39168,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         zip={},
                                     ),
                                     archive_logs=True,
+                                    artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                        strategy="strategy_example",
+                                    ),
                                     artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                         password_secret=SecretKeySelector(
                                             key="key_example",
@@ -39463,6 +39655,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         zip={},
                                     ),
                                     archive_logs=True,
+                                    artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                        strategy="strategy_example",
+                                    ),
                                     artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                         password_secret=SecretKeySelector(
                                             key="key_example",
@@ -39714,6 +39909,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         zip={},
                                     ),
                                     archive_logs=True,
+                                    artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                        strategy="strategy_example",
+                                    ),
                                     artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                         password_secret=SecretKeySelector(
                                             key="key_example",
@@ -40526,6 +40724,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                     zip={},
                                                 ),
                                                 archive_logs=True,
+                                                artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                                    strategy="strategy_example",
+                                                ),
                                                 artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                                     password_secret=SecretKeySelector(
                                                         key="key_example",
@@ -40732,6 +40933,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             zip={},
                                                         ),
                                                         archive_logs=True,
+                                                        artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                                            strategy="strategy_example",
+                                                        ),
                                                         artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                                             password_secret=SecretKeySelector(
                                                                 key="key_example",
@@ -41713,9 +41917,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     use_sdk_creds=True,
                                 ),
                             ),
-                            artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
-                                strategy="strategy_example",
-                            ),
                             automount_service_account_token=True,
                             container=Container(
                                 args=[
@@ -42295,6 +42496,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         zip={},
                                                     ),
                                                     archive_logs=True,
+                                                    artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                                        strategy="strategy_example",
+                                                    ),
                                                     artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                                         password_secret=SecretKeySelector(
                                                             key="key_example",
@@ -42505,6 +42709,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                                 zip={},
                                                             ),
                                                             archive_logs=True,
+                                                            artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                                                strategy="strategy_example",
+                                                            ),
                                                             artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                                                 password_secret=SecretKeySelector(
                                                                     key="key_example",
@@ -42737,6 +42944,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             zip={},
                                         ),
                                         archive_logs=True,
+                                        artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                            strategy="strategy_example",
+                                        ),
                                         artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                             password_secret=SecretKeySelector(
                                                 key="key_example",
@@ -43221,6 +43431,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             zip={},
                                         ),
                                         archive_logs=True,
+                                        artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                            strategy="strategy_example",
+                                        ),
                                         artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                             password_secret=SecretKeySelector(
                                                 key="key_example",
@@ -43472,6 +43685,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             zip={},
                                         ),
                                         archive_logs=True,
+                                        artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                            strategy="strategy_example",
+                                        ),
                                         artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                             password_secret=SecretKeySelector(
                                                 key="key_example",
@@ -44284,6 +44500,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         zip={},
                                                     ),
                                                     archive_logs=True,
+                                                    artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                                        strategy="strategy_example",
+                                                    ),
                                                     artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                                         password_secret=SecretKeySelector(
                                                             key="key_example",
@@ -44490,6 +44709,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                                 zip={},
                                                             ),
                                                             archive_logs=True,
+                                                            artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                                                strategy="strategy_example",
+                                                            ),
                                                             artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                                                 password_secret=SecretKeySelector(
                                                                     key="key_example",

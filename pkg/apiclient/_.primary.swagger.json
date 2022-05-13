@@ -30,6 +30,81 @@
     }
   ],
   "paths": {
+    "/artifact-files/{namespace}/{idDiscriminator}/{id}/{nodeId}/{artifactDiscriminator}/{artifactName}": {
+      "get": {
+        "tags": [
+          "ArtifactService"
+        ],
+        "summary": "Get an artifact.",
+        "operationId": "ArtifactService_GetArtifactFile",
+        "parameters": [
+          {
+            "type": "string",
+            "name": "namespace",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "string",
+            "name": "idDiscriminator",
+            "in": "path",
+            "required": true,
+            "enum": [
+              "workflow",
+              "archived-workflows "
+            ]
+          },
+          {
+            "type": "string",
+            "name": "id",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "string",
+            "name": "nodeId",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "string",
+            "name": "artifactName",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "string",
+            "name": "artifactDiscriminator",
+            "in": "path",
+            "required": true,
+            "enum": [
+              "outputs"
+            ]
+          },
+          {
+            "type": "string",
+            "name": "artifactName",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "An artifact file.",
+            "schema": {
+              "type": "string",
+              "format": "binary"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
+          }
+        }
+      }
+    },
     "/artifacts/{namespace}/{name}/{nodeId}/{artifactName}": {
       "get": {
         "tags": [
