@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"sort"
 	"strings"
 	"time"
 
@@ -221,6 +222,22 @@ func (woc *wfOperationCtx) executeStepGroup(ctx context.Context, stepGroup []wfv
 
 	// The template scope of this step group.
 	stepTemplateScope := stepsCtx.tmplCtx.GetTemplateScope()
+
+	// Sort steps by priority
+	sort.SliceStable(stepGroup, func(i, j int) bool {
+		var stepOne, stepTwo int32
+		if stepGroup[i].GetPriority() == nil {
+			stepOne = 0
+		} else {
+			stepOne = *stepGroup[i].GetPriority()
+		}
+		if stepGroup[j].GetPriority() == nil {
+			stepTwo = 0
+		} else {
+			stepTwo = *stepGroup[j].GetPriority()
+		}
+		return stepOne > stepTwo
+	})
 
 	// Kick off all parallel steps in the group
 	for _, step := range stepGroup {

@@ -651,8 +651,29 @@ func (woc *wfOperationCtx) resolveDependencyReferences(dagCtx *dagContext, task 
 // findLeafTaskNames finds the names of all tasks whom no other nodes depend on.
 // This list of tasks is used as the the default list of targets when dag.targets is omitted.
 func (d *dagContext) findLeafTaskNames(tasks []wfv1.DAGTask) []string {
+
+	prioritySort := false
+
+	sort.SliceStable(tasks, func(i, j int) bool {
+		var taskOne, taskTwo int32
+		if tasks[i].GetPriority() == nil {
+			taskOne = 0
+		} else {
+			taskOne = *tasks[i].GetPriority()
+		}
+		if tasks[j].GetPriority() == nil {
+			taskTwo = 0
+		} else {
+			taskTwo = *tasks[j].GetPriority()
+		}
+		return taskOne > taskTwo
+	})
+
 	taskIsLeaf := make(map[string]bool)
 	for _, task := range tasks {
+		if !prioritySort && task.GetPriority() != nil {
+			prioritySort = true
+		}
 		if _, ok := taskIsLeaf[task.Name]; !ok {
 			taskIsLeaf[task.Name] = true
 		}
@@ -660,13 +681,17 @@ func (d *dagContext) findLeafTaskNames(tasks []wfv1.DAGTask) []string {
 			taskIsLeaf[dependency] = false
 		}
 	}
+
 	leafTaskNames := make([]string, 0)
-	for taskName, isLeaf := range taskIsLeaf {
-		if isLeaf {
-			leafTaskNames = append(leafTaskNames, taskName)
+	for _, task := range tasks {
+		if taskIsLeaf[task.Name] {
+			leafTaskNames = append(leafTaskNames, task.Name)
 		}
 	}
-	sort.Strings(leafTaskNames) // execute tasks in a predictable order
+
+	if !prioritySort {
+		sort.Strings(leafTaskNames) // execute tasks in a predictable order
+	}
 	return leafTaskNames
 }
 
