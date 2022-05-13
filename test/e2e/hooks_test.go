@@ -91,41 +91,6 @@ spec:
 	})
 }
 
-func (s *HooksSuite) TestExitHookWithExpression() {
-	s.Given().
-		Workflow(`apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: lifecycle-hook-exit-hook-
-spec:
-  entrypoint: main
-  templates:
-    - name: main
-      steps:
-        - - name: step-1
-            hooks:
-              exit:
-                expression: steps["step-1"].status == "Running"
-                template: http
-            template: http
-    - name: http
-      http:
-        url: "http://httpstat.us"
-`).When().
-		SubmitWorkflow().
-		WaitForWorkflow(fixtures.ToBeSucceeded).
-		Then().
-		ExpectWorkflow(func(t *testing.T, metadata *v1.ObjectMeta, status *v1alpha1.WorkflowStatus) {
-			t.Skip("https://github.com/argoproj/argo-workflows/issues/8757")
-			assert.Equal(t, v1alpha1.WorkflowRunning, status.Phase)
-		}).ExpectWorkflowNode(func(status v1alpha1.NodeStatus) bool {
-		return strings.Contains(status.Name, "hook")
-	}, func(t *testing.T, status *v1alpha1.NodeStatus, pod *apiv1.Pod) {
-		t.Skip("https://github.com/argoproj/argo-workflows/issues/8757")
-		assert.Equal(t, v1alpha1.NodeSucceeded, status.Phase)
-	})
-}
-
 func TestHooksSuite(t *testing.T) {
 	suite.Run(t, new(HooksSuite))
 }
