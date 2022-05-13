@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestPodName(t *testing.T) {
+func TestPodNameV1(t *testing.T) {
 	nodeName := "nodename"
 	nodeID := "1"
 
