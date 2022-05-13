@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/TwinProduction/go-color"
+	"github.com/TwiN/go-color"
 	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"

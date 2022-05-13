@@ -59,6 +59,7 @@ export const ClusterWorkflowTemplateDetails = ({history, location, match}: Route
             .then(info => setNamespace(Utils.getNamespaceWithDefault(info.managedNamespace)))
             .then(() => setError(null))
             .catch(setError);
+        services.info.collectEvent('openedClusterWorkflowTemplateDetails').then();
     }, []);
 
     return (

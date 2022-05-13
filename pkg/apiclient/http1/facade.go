@@ -118,6 +118,7 @@ func (h Facade) do(in interface{}, out interface{}, method string, path string) 
 	if err != nil {
 		return err
 	}
+	defer resp.Body.Close()
 	err = errFromResponse(resp)
 	if err != nil {
 		return err

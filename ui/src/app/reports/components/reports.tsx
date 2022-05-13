@@ -68,6 +68,7 @@ export class Reports extends BasePage<RouteComponentProps<any>, State> {
     public componentDidMount() {
         this.fetchReport(this.state.namespace, this.state.labels, this.state.archivedWorkflows);
         this.fetchWorkflowsLabels(this.state.archivedWorkflows);
+        services.info.collectEvent('openedReports').then();
     }
 
     public render() {
