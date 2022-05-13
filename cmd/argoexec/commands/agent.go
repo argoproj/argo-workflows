@@ -105,7 +105,7 @@ func initAgentExecutor() *executor.AgentExecutor {
 	}
 	workflowUid, ok := os.LookupEnv(common.EnvVarPodUID)
 	if !ok {
-		log.Fatalf("Unable to determine workflow Uid from environment variable %s", common.EnvVarPodUID)
+		log.Warn("Unable to determine workflow Uid from environment variable %s", common.EnvVarPodUID)
 	}
 
 	addresses := getPluginAddresses()
