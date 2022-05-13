@@ -61,7 +61,12 @@ spec:
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeCompleted).
 		Then().
-		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+		ExpectWorkflow(func(t *testing.T, meta *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			// Check ObjectMeta
+			assert.NotEmpty(t, meta.Name)
+			assert.NotEmpty(t, meta.Namespace)
+			assert.NotEmpty(t, meta.UID)
+
 			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
 			// Ensure that the workflow ran for less than 10 seconds
 			assert.True(t, status.FinishedAt.Sub(status.StartedAt.Time) < time.Duration(10*fixtures.EnvFactor)*time.Second)
@@ -142,7 +147,12 @@ spec:
 		SubmitWorkflow().
 		WaitForWorkflow(time.Minute).
 		Then().
-		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+		ExpectWorkflow(func(t *testing.T, meta *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			// Check ObjectMeta
+			assert.NotEmpty(t, meta.Name)
+			assert.NotEmpty(t, meta.Namespace)
+			assert.NotEmpty(t, meta.UID)
+
 			assert.Equal(t, wfv1.WorkflowFailed, status.Phase)
 
 			containsFails := status.Nodes.FindByDisplayName("http-body-contains-google-fails")
