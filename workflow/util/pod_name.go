@@ -60,6 +60,7 @@ func PodName(workflowName, nodeName, templateName, nodeID string, version PodNam
 
 	h := fnv.New32a()
 	_, _ = h.Write([]byte(nodeName))
+	fmt.Printf("nodeName: '%s', sum32: %v", nodeName, h.Sum32())
 
 	return fmt.Sprintf("%s-%v", prefix, h.Sum32())
 
@@ -79,7 +80,7 @@ func ensurePodNamePrefixLength(prefix string) string {
 // given workflow
 func GetWorkflowPodNameVersion(wf *v1alpha1.Workflow) PodNameVersion {
 	annotations := wf.GetAnnotations()
-	fmt.Printf("annotations: %v\n", annotations)
+
 	version := annotations[common.AnnotationKeyPodNameVersion]
 
 	switch version {
