@@ -242,6 +242,13 @@ message Cache {
   optional k8s.io.api.core.v1.ConfigMapKeySelector configMap = 1;
 }
 
+// ClientCertAuth holds necessary information for client authentication via certificates
+message ClientCertAuth {
+  optional k8s.io.api.core.v1.SecretKeySelector clientCertSecret = 1;
+
+  optional k8s.io.api.core.v1.SecretKeySelector clientKeySecret = 2;
+}
+
 // ClusterWorkflowTemplate is the definition of a workflow template resource in cluster scope
 // +genclient
 // +genclient:noStatus
@@ -643,7 +650,15 @@ message HTTPArtifact {
   // Headers are an optional list of headers to send with HTTP requests for artifacts
   repeated Header headers = 2;
 
-  // BasicAuth is the secret selector for basic authentication
+  // Auth contains information for client authentication
+  optional HTTPAuth auth = 3;
+}
+
+message HTTPAuth {
+  optional ClientCertAuth clientCert = 1;
+
+  optional OAuth2Auth oauth2 = 2;
+
   optional BasicAuth basicAuth = 3;
 }
 
@@ -930,6 +945,28 @@ message NodeSynchronizationStatus {
 // files. Note that if the artifact is a directory, the artifact driver must support the ability to
 // save/load the directory appropriately.
 message NoneStrategy {
+}
+
+// OAuth2Auth holds all information for client authentication via OAuth2 tokens
+message OAuth2Auth {
+  optional k8s.io.api.core.v1.SecretKeySelector clientIDSecret = 1;
+
+  optional k8s.io.api.core.v1.SecretKeySelector clientSecretSecret = 2;
+
+  optional k8s.io.api.core.v1.SecretKeySelector tokenURLSecret = 3;
+
+  repeated string scopes = 5;
+
+  repeated OAuth2EndpointParam endpointParams = 6;
+}
+
+// EndpointParam is for requesting optional fields that should be sent in the oauth request
+message OAuth2EndpointParam {
+  // Name is the header name
+  optional string key = 1;
+
+  // Value is the literal value to use for the header
+  optional string value = 2;
 }
 
 // OSSArtifact is the location of an Alibaba Cloud OSS artifact

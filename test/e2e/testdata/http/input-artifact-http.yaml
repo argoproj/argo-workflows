@@ -1,0 +1,18 @@
+# This example demonstrates bucket-creation enabled for s3 output artifacts, when the target bucket does not exist.
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: input-artifact-http-
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    inputs:
+      artifacts:
+      - name: my-art
+        path: /my-artifact
+        http:
+          url: http://httpbin:9100/get
+    container:
+      image: argoproj/argosay:v2
+      command: [cat, "/my-artifact"]

@@ -4,6 +4,7 @@ kind: Kustomization
 resources:
   - ../../namespace-install
   - minio
+  - httpbin
   - webhooks
   - argo-server-sso-secret.yaml
   - executor/emissary/executor-role.yaml

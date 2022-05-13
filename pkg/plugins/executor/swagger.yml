@@ -329,6 +329,14 @@ definitions:
           strategy
         type: string
     type: object
+  BasicAuth:
+    description: BasicAuth describes the secret selectors required for basic authentication
+    properties:
+      passwordSecret:
+        $ref: '#/definitions/SecretKeySelector'
+      usernameSecret:
+        $ref: '#/definitions/SecretKeySelector'
+    type: object
   CSIVolumeSource:
     description: Represents a source location of a volume to mount, managed by an
       external CSI driver
@@ -457,6 +465,15 @@ definitions:
           More info: https://examples.k8s.io/mysql-cinder-pd/README.md
         type: string
     title: Represents a cinder volume resource in Openstack.
+    type: object
+  ClientCertAuth:
+    description: ClientCertAuth holds necessary information for client authentication
+      via certificates
+    properties:
+      clientCertSecret:
+        $ref: '#/definitions/SecretKeySelector'
+      clientKeySecret:
+        $ref: '#/definitions/SecretKeySelector'
     type: object
   ConfigMapEnvSource:
     description: |-
@@ -1607,19 +1624,26 @@ definitions:
     description: HTTPArtifact allows a file served on HTTP to be placed as an input
       artifact in a container
     properties:
+      auth:
+        $ref: '#/definitions/HTTPAuth'
       headers:
         description: Headers are an optional list of headers to send with HTTP requests
           for artifacts
         items:
           $ref: '#/definitions/Header'
         type: array
-      passwordSecret:
-        $ref: '#/definitions/SecretKeySelector'
       url:
         description: URL of the artifact
         type: string
-      usernameSecret:
-        $ref: '#/definitions/SecretKeySelector'
+    type: object
+  HTTPAuth:
+    properties:
+      basicAuth:
+        $ref: '#/definitions/BasicAuth'
+      clientCert:
+        $ref: '#/definitions/ClientCertAuth'
+      oauth2:
+        $ref: '#/definitions/OAuth2Auth'
     type: object
   HTTPGetAction:
     properties:
@@ -2183,6 +2207,36 @@ definitions:
       NoneStrategy indicates to skip tar process and upload the files or directory tree as independent
       files. Note that if the artifact is a directory, the artifact driver must support the ability to
       save/load the directory appropriately.
+    type: object
+  OAuth2Auth:
+    description: OAuth2Auth holds all information for client authentication via OAuth2
+      tokens
+    properties:
+      clientIDSecret:
+        $ref: '#/definitions/SecretKeySelector'
+      clientSecretSecret:
+        $ref: '#/definitions/SecretKeySelector'
+      endpointParams:
+        items:
+          $ref: '#/definitions/OAuth2EndpointParam'
+        type: array
+      scopes:
+        items:
+          type: string
+        type: array
+      tokenURLSecret:
+        $ref: '#/definitions/SecretKeySelector'
+    type: object
+  OAuth2EndpointParam:
+    description: EndpointParam is for requesting optional fields that should be sent
+      in the oauth request
+    properties:
+      key:
+        description: Name is the header name
+        type: string
+      value:
+        description: Value is the literal value to use for the header
+        type: string
     type: object
   OSSArtifact:
     description: OSSArtifact is the location of an Alibaba Cloud OSS artifact
