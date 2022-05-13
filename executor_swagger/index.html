@@ -2193,6 +2193,13 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#basicauth" class="md-nav__link">
+     BasicAuth
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#csivolumesource" class="md-nav__link">
      CSIVolumeSource
   </a>
@@ -2230,6 +2237,13 @@
           <li class="md-nav__item">
   <a href="#cindervolumesource" class="md-nav__link">
      CinderVolumeSource
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#clientcertauth" class="md-nav__link">
+     ClientCertAuth
   </a>
   
 </li>
@@ -2536,6 +2550,13 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#httpauth" class="md-nav__link">
+     HTTPAuth
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#httpgetaction" class="md-nav__link">
      HTTPGetAction
   </a>
@@ -2804,6 +2825,20 @@
           <li class="md-nav__item">
   <a href="#nonestrategy" class="md-nav__link">
      NoneStrategy
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#oauth2auth" class="md-nav__link">
+     OAuth2Auth
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#oauth2endpointparam" class="md-nav__link">
+     OAuth2EndpointParam
   </a>
   
 </li>
@@ -5527,6 +5562,13 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#basicauth" class="md-nav__link">
+     BasicAuth
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#csivolumesource" class="md-nav__link">
      CSIVolumeSource
   </a>
@@ -5564,6 +5606,13 @@
           <li class="md-nav__item">
   <a href="#cindervolumesource" class="md-nav__link">
      CinderVolumeSource
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#clientcertauth" class="md-nav__link">
+     ClientCertAuth
   </a>
   
 </li>
@@ -5870,6 +5919,13 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#httpauth" class="md-nav__link">
+     HTTPAuth
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#httpgetaction" class="md-nav__link">
      HTTPGetAction
   </a>
@@ -6138,6 +6194,20 @@
           <li class="md-nav__item">
   <a href="#nonestrategy" class="md-nav__link">
      NoneStrategy
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#oauth2auth" class="md-nav__link">
+     OAuth2Auth
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#oauth2endpointparam" class="md-nav__link">
+     OAuth2EndpointParam
   </a>
   
 </li>
@@ -8156,6 +8226,44 @@ of a single workflow step, which the executor will use as a default location to 
 </tr>
 </tbody>
 </table>
+<h3 id="basicauth"><span id="basic-auth"></span> BasicAuth<a class="headerlink" href="#basicauth" title="Permanent link">&para;</a></h3>
+<blockquote>
+<p>BasicAuth describes the secret selectors required for basic authentication</p>
+</blockquote>
+<p><strong>Properties</strong></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Go type</th>
+<th align="center">Required</th>
+<th>Default</th>
+<th>Description</th>
+<th>Example</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>passwordSecret</td>
+<td><a href="#secret-key-selector">SecretKeySelector</a></td>
+<td><code>SecretKeySelector</code></td>
+<td align="center"></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>usernameSecret</td>
+<td><a href="#secret-key-selector">SecretKeySelector</a></td>
+<td><code>SecretKeySelector</code></td>
+<td align="center"></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
 <h3 id="csivolumesource"><span id="c-s-i-volume-source"></span> CSIVolumeSource<a class="headerlink" href="#csivolumesource" title="Permanent link">&para;</a></h3>
 <blockquote>
 <p>Represents a source location of a volume to mount, managed by an external CSI driver</p>
@@ -8680,6 +8788,44 @@ Cinder volumes support ownership management and SELinux relabeling.</p>
 <td>More info: https://examples.k8s.io/mysql-cinder-pd/README.md</td>
 <td></td>
 <td></td>
+<td align="center"></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h3 id="clientcertauth"><span id="client-cert-auth"></span> ClientCertAuth<a class="headerlink" href="#clientcertauth" title="Permanent link">&para;</a></h3>
+<blockquote>
+<p>ClientCertAuth holds necessary information for client authentication via certificates</p>
+</blockquote>
+<p><strong>Properties</strong></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Go type</th>
+<th align="center">Required</th>
+<th>Default</th>
+<th>Description</th>
+<th>Example</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>clientCertSecret</td>
+<td><a href="#secret-key-selector">SecretKeySelector</a></td>
+<td><code>SecretKeySelector</code></td>
+<td align="center"></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>clientKeySecret</td>
+<td><a href="#secret-key-selector">SecretKeySelector</a></td>
+<td><code>SecretKeySelector</code></td>
 <td align="center"></td>
 <td></td>
 <td></td>
@@ -13644,21 +13790,21 @@ into the Pod's container.</p>
 </thead>
 <tbody>
 <tr>
+<td>auth</td>
+<td><a href="#http-auth">HTTPAuth</a></td>
+<td><code>HTTPAuth</code></td>
+<td align="center"></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
 <td>headers</td>
 <td>[]<a href="#header">Header</a></td>
 <td><code>[]*Header</code></td>
 <td align="center"></td>
 <td></td>
 <td>Headers are an optional list of headers to send with HTTP requests for artifacts</td>
-<td></td>
-</tr>
-<tr>
-<td>passwordSecret</td>
-<td><a href="#secret-key-selector">SecretKeySelector</a></td>
-<td><code>SecretKeySelector</code></td>
-<td align="center"></td>
-<td></td>
-<td></td>
 <td></td>
 </tr>
 <tr>
@@ -13670,10 +13816,45 @@ into the Pod's container.</p>
 <td>URL of the artifact</td>
 <td></td>
 </tr>
+</tbody>
+</table>
+<h3 id="httpauth"><span id="http-auth"></span> HTTPAuth<a class="headerlink" href="#httpauth" title="Permanent link">&para;</a></h3>
+<p><strong>Properties</strong></p>
+<table>
+<thead>
 <tr>
-<td>usernameSecret</td>
-<td><a href="#secret-key-selector">SecretKeySelector</a></td>
-<td><code>SecretKeySelector</code></td>
+<th>Name</th>
+<th>Type</th>
+<th>Go type</th>
+<th align="center">Required</th>
+<th>Default</th>
+<th>Description</th>
+<th>Example</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>basicAuth</td>
+<td><a href="#basic-auth">BasicAuth</a></td>
+<td><code>BasicAuth</code></td>
+<td align="center"></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>clientCert</td>
+<td><a href="#client-cert-auth">ClientCertAuth</a></td>
+<td><code>ClientCertAuth</code></td>
+<td align="center"></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>oauth2</td>
+<td><a href="#o-auth2-auth">OAuth2Auth</a></td>
+<td><code>OAuth2Auth</code></td>
 <td align="center"></td>
 <td></td>
 <td></td>
@@ -15910,6 +16091,109 @@ files. Note that if the artifact is a directory, the artifact driver must suppor
 save/load the directory appropriately.</p>
 </blockquote>
 <p><a href="#interface">interface{}</a></p>
+<h3 id="oauth2auth"><span id="o-auth2-auth"></span> OAuth2Auth<a class="headerlink" href="#oauth2auth" title="Permanent link">&para;</a></h3>
+<blockquote>
+<p>OAuth2Auth holds all information for client authentication via OAuth2 tokens</p>
+</blockquote>
+<p><strong>Properties</strong></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Go type</th>
+<th align="center">Required</th>
+<th>Default</th>
+<th>Description</th>
+<th>Example</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>clientIDSecret</td>
+<td><a href="#secret-key-selector">SecretKeySelector</a></td>
+<td><code>SecretKeySelector</code></td>
+<td align="center"></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>clientSecretSecret</td>
+<td><a href="#secret-key-selector">SecretKeySelector</a></td>
+<td><code>SecretKeySelector</code></td>
+<td align="center"></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>endpointParams</td>
+<td>[]<a href="#o-auth2-endpoint-param">OAuth2EndpointParam</a></td>
+<td><code>[]*OAuth2EndpointParam</code></td>
+<td align="center"></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>scopes</td>
+<td>[]string</td>
+<td><code>[]string</code></td>
+<td align="center"></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>tokenURLSecret</td>
+<td><a href="#secret-key-selector">SecretKeySelector</a></td>
+<td><code>SecretKeySelector</code></td>
+<td align="center"></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h3 id="oauth2endpointparam"><span id="o-auth2-endpoint-param"></span> OAuth2EndpointParam<a class="headerlink" href="#oauth2endpointparam" title="Permanent link">&para;</a></h3>
+<blockquote>
+<p>EndpointParam is for requesting optional fields that should be sent in the oauth request</p>
+</blockquote>
+<p><strong>Properties</strong></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Go type</th>
+<th align="center">Required</th>
+<th>Default</th>
+<th>Description</th>
+<th>Example</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>key</td>
+<td>string</td>
+<td><code>string</code></td>
+<td align="center"></td>
+<td></td>
+<td>Name is the header name</td>
+<td></td>
+</tr>
+<tr>
+<td>value</td>
+<td>string</td>
+<td><code>string</code></td>
+<td align="center"></td>
+<td></td>
+<td>Value is the literal value to use for the header</td>
+<td></td>
+</tr>
+</tbody>
+</table>
 <h3 id="ossartifact"><span id="o-s-s-artifact"></span> OSSArtifact<a class="headerlink" href="#ossartifact" title="Permanent link">&para;</a></h3>
 <blockquote>
 <p>OSSArtifact is the location of an Alibaba Cloud OSS artifact</p>
