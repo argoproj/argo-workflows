@@ -8,6 +8,7 @@ import {ErrorNotice} from '../../../shared/components/error-notice';
 import {FirstTimeUserPanel} from '../../../shared/components/first-time-user-panel';
 import {GiveFeedbackLink} from '../../../shared/components/give-feedback-link';
 import {LinkButton} from '../../../shared/components/link-button';
+import {useCollectEvent} from '../../../shared/components/use-collect-event';
 import {services} from '../../../shared/services';
 import requests from '../../../shared/services/requests';
 
@@ -50,6 +51,7 @@ export const ArtifactPanel = ({
                 .catch(setError);
         }
     }, [downloadUrl]);
+    useCollectEvent('openedArtifactPanel');
 
     return (
         <div style={{margin: 16, marginTop: 48}}>

@@ -10,7 +10,7 @@ Be aware that this feature will only archive the statuses of the workflows (whic
 
 However, the logs of each pod will NOT be archived. If you need to access the logs of the pods, you need to setup [an artifact repository](artifact-repository-ref.md) thanks to [this doc](configure-artifact-repository.md).
 
-In addition the table specified in the config map above, the following tables are created when enabling archiving:
+In addition to the table specified in the config map above, the following tables are created when enabling archiving:
 
 * `argo_archived_workflows`
 * `argo_archived_workflows_labels`

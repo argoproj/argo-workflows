@@ -38,6 +38,7 @@ export class ClusterWorkflowTemplateList extends BasePage<RouteComponentProps<an
 
     public componentDidMount(): void {
         this.fetchClusterWorkflowTemplates();
+        services.info.collectEvent('openedClusterWorkflowTemplateList').then();
     }
 
     public render() {

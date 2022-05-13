@@ -1332,6 +1332,76 @@ func (s *CLISuite) TestWorkflowTemplateRefSubmit() {
 	})
 }
 
+func (s *CLISuite) TestWorkflowCopyArtifact() {
+	s.Given().
+		Workflow("@testdata/basic-artifact-workflow.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow().
+		Given().
+		RunCli([]string{"cp", "@latest", "outputDir"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.Contains(t, output, "Created \"main.log\"")
+				assert.Contains(t, output, "Created \"hello_world.tgz\"")
+				assert.Contains(t, output, "Created \"bye_world.tgz\"")
+			}
+		})
+	os.RemoveAll("outputDir")
+
+	s.Given().
+		Workflow("@testdata/basic-artifact-workflow.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow().
+		Given().
+		RunCli([]string{"cp", "@latest", "outputDir", "--template-name", "bye"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.Contains(t, output, "Created \"main.log\"")
+				assert.Contains(t, output, "Created \"bye_world.tgz\"")
+				assert.NotContains(t, output, "Created \"hello_world.tgz\"")
+			}
+		})
+	os.RemoveAll("outputDir")
+
+	s.Given().
+		Workflow("@testdata/basic-artifact-workflow.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow().
+		Given().
+		RunCli([]string{"cp", "@latest", "outputDir", "--artifact-name", "hello_world"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.NotContains(t, output, "Created \"main.log\"")
+				assert.NotContains(t, output, "Created \"bye_world.tgz\"")
+				assert.Contains(t, output, "Created \"hello_world.tgz\"")
+			}
+		})
+	os.RemoveAll("outputDir")
+
+	s.Given().
+		Workflow("@testdata/basic-artifact-workflow.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow().
+		Given().
+		RunCli([]string{"cp", "@latest", ".", "--path", "/{templateName}/{artifactName}/"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				//Assert everything was stored
+				assert.Contains(t, output, "Created \"main.log\"")
+				assert.Contains(t, output, "Created \"bye_world.tgz\"")
+				assert.Contains(t, output, "Created \"hello_world.tgz\"")
+				//Assert filepaths are correct
+				statStrip := func(f os.FileInfo, err error) error {
+					return err
+				}
+				assert.NoError(t, statStrip(os.Stat("bye/bye_world/bye_world.tgz")))
+				assert.NoError(t, statStrip(os.Stat("hello/hello_world/hello_world.tgz")))
+			}
+		})
+	os.RemoveAll("bye")
+	os.RemoveAll("hello")
+}
+
 func (s *CLISuite) TestRetryOmit() {
 	s.Given().
 		Workflow("@testdata/retry-omit.yaml").

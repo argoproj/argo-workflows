@@ -54,6 +54,7 @@ export interface GCSArtifact {
 
 export interface GitArtifact {
     repo: string;
+    branch?: string;
     revision?: string;
 }
 

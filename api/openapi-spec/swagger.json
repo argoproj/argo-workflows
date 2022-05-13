@@ -2741,6 +2741,38 @@
         }
       }
     },
+    "/api/v1/tracking/event": {
+      "post": {
+        "tags": [
+          "InfoService"
+        ],
+        "operationId": "InfoService_CollectEvent",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.CollectEventRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.CollectEventResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
+          }
+        }
+      }
+    },
     "/api/v1/userinfo": {
       "get": {
         "tags": [
@@ -9406,6 +9438,17 @@
         }
       }
     },
+    "io.argoproj.workflow.v1alpha1.CollectEventRequest": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.CollectEventResponse": {
+      "type": "object"
+    },
     "io.argoproj.workflow.v1alpha1.Condition": {
       "type": "object",
       "properties": {
@@ -10427,9 +10470,6 @@
     },
     "io.argoproj.workflow.v1alpha1.LifecycleHook": {
       "type": "object",
-      "required": [
-        "template"
-      ],
       "properties": {
         "arguments": {
           "description": "Arguments hold arguments to the template",

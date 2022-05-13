@@ -1,7 +1,7 @@
 # Custom Template Variable Reference
 
 In this example, we can see how we can use the other template language variable reference (E.g: Jinja) in Argo workflow template.
-Argo will validate and resolve only the variable that starts with Argo allowed prefix
+Argo will validate and resolve only the variable that starts with an Argo allowed prefix
 {***"item", "steps", "inputs", "outputs", "workflow", "tasks"***}
 
 ```yaml

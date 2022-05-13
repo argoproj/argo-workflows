@@ -11,6 +11,7 @@ import {Node} from '../../../shared/components/graph/types';
 import {Loading} from '../../../shared/components/loading';
 import {NamespaceFilter} from '../../../shared/components/namespace-filter';
 import {Timestamp} from '../../../shared/components/timestamp';
+import {useCollectEvent} from '../../../shared/components/use-collect-event';
 import {ZeroState} from '../../../shared/components/zero-state';
 import {Context} from '../../../shared/context';
 import {Footnote} from '../../../shared/footnote';
@@ -65,6 +66,8 @@ export const SensorList = ({match, location, history}: RouteComponentProps<any>)
             .then(() => setError(null))
             .catch(setError);
     }, [namespace]);
+
+    useCollectEvent('openedSensorList');
 
     const selected = (() => {
         if (!selectedNode) {

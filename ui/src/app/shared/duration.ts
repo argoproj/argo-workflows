@@ -3,10 +3,12 @@ import * as models from '../../models';
 /**
  * Format the given number number of seconds in the form _d_h_m_s.
  * @param seconds Number of seconds to format. Will be rounded to the nearest whole number.
- * @param sigfigs Level of significant figures to show
+ * @param sigfigs Level of significant figures to show.
+ *  Here, a sigfig is one of days, hours, minutes, or seconds.
+ *  Examples: 13h has one sigfig and 13h22s has two sigfigs.
  */
 
-export function formatDuration(seconds: number, sigfigs = 1) {
+export function formatDuration(seconds: number, sigfigs = 2) {
     let remainingSeconds = Math.abs(Math.round(seconds));
     let formattedDuration = '';
     const figs = [];

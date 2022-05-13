@@ -468,24 +468,6 @@ func (wfc *WorkflowController) processNextPodCleanupItem(ctx context.Context) bo
 	err := func() error {
 		pods := wfc.kubeclientset.CoreV1().Pods(namespace)
 		switch action {
-		case shutdownPod:
-			// to shutdown a pod, we signal the wait container to terminate, the wait container in turn will
-			// kill the main container (using whatever mechanism the executor uses), and will then exit itself
-			// once the main container exited
-			pod, err := wfc.getPod(namespace, podName)
-			if pod == nil || err != nil {
-				return err
-			}
-			for _, c := range pod.Spec.Containers {
-				if c.Name == common.WaitContainerName {
-					if err := signal.SignalContainer(wfc.restConfig, pod, common.WaitContainerName, syscall.SIGTERM); err != nil {
-						return err
-					}
-					return nil // done
-				}
-			}
-			// no wait container found
-			fallthrough
 		case terminateContainers:
 			if terminationGracePeriod, err := wfc.signalContainers(namespace, podName, syscall.SIGTERM); err != nil {
 				return err

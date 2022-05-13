@@ -43,7 +43,7 @@ spec:
           parameters: [{name: message, value: D}]
 ```
 
-The dependency graph may have [multiple roots<https://github.com/argoproj/argo-workflows/tree/master/examples/dag-multiroot.yaml>). The templates called from a DAG or steps template can themselves be DAG or steps templates. This can allow for complex workflows to be split into manageable pieces.
+The dependency graph may have [multiple roots](https://github.com/argoproj/argo-workflows/tree/master/examples/dag-multiroot.yaml). The templates called from a DAG or steps template can themselves be DAG or steps templates. This can allow for complex workflows to be split into manageable pieces.
 
 The DAG logic has a built-in `fail fast` feature to stop scheduling new steps, as soon as it detects that one of the DAG nodes is failed. Then it waits until all DAG nodes are completed before failing the DAG itself.
 The [FailFast](https://github.com/argoproj/argo-workflows/tree/master/examples/dag-disable-failFast.yaml) flag default is `true`,  if set to `false`, it will allow a DAG to run all branches of the DAG to completion (either success or failure), regardless of the failed outcomes of branches in the DAG. More info and example about this feature at [here](https://github.com/argoproj/argo-workflows/issues/1442).
