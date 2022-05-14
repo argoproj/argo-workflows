@@ -20,12 +20,18 @@ func Setpgid(a *syscall.SysProcAttr) {
 	a.Setpgid = true
 }
 
-func ReapZombies() {
+func Wait(pid int) error {
 	for {
 		var s syscall.WaitStatus
-		pid, _ := syscall.Wait4(-1, &s, syscall.WNOHANG, nil)
-		if pid <= 0 {
+		p, _ := syscall.Wait4(-1, &s, syscall.WNOHANG, nil)
+		if p <= 0 {
 			time.Sleep(time.Second)
+		}
+		if pid == p {
+			if s.ExitStatus() > 0 {
+				return exitErr(s.ExitStatus())
+			}
+			return nil
 		}
 	}
 }

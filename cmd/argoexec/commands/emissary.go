@@ -157,11 +157,16 @@ func NewEmissaryCommand() *cobra.Command {
 					}
 				}()
 
+				// We must copy the behaviour of Kubernetes in how we handle sub-processes.
+				// Kubernetes only waits on PID 1, not on any forked processed that process might make itself.
+				// Therefore, we need to background the process by calling Process.Release.
+				// Because the process is now running in the background, we must wait for the process.
+				// Background processes always become zombies when they exit, so we much "reap" the zombies.
+				// Because run the process in the background, we can Process.Wait for it to get the exit code.
+				// Instead, we need to reap it and get the exit code
 				if err := command.Process.Release(); err != nil {
 					return err
 				}
-
-				go osspecific.ReapZombies()
 
 				logger.WithField("pid", pid).Info("waiting for sub-process to exit")
 				for {
@@ -178,6 +183,8 @@ func NewEmissaryCommand() *cobra.Command {
 					}
 					time.Sleep(time.Second)
 				}
+				return osspecific.Wait(pid)
+
 			})
 			logger.WithError(err).Info("sub-process exited")
 

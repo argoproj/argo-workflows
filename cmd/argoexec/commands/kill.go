@@ -22,9 +22,6 @@ func NewKillCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			if err != nil {
-				return err
-			}
 			sig := syscall.Signal(signum)
 			p, err := os.FindProcess(pid)
 			if err != nil {

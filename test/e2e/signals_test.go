@@ -110,15 +110,6 @@ func (s *SignalsSuite) TestDoNotCreatePodsUnderStopBehavior() {
 			assert.Nil(t, nodeStatus)
 		})
 }
-
-func (s *SignalsSuite) TestSubProcess() {
-	s.Given().
-		Workflow("@testdata/subprocess-workflow.yaml").
-		When().
-		SubmitWorkflow().
-		WaitForWorkflow()
-}
-
 func (s *SignalsSuite) TestSidecars() {
 	s.Given().
 		Workflow("@testdata/sidecar-workflow.yaml").
@@ -134,6 +125,14 @@ func (s *SignalsSuite) TestInjectedSidecar() {
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeSucceeded, kill2xDuration)
+}
+
+func (s *SignalsSuite) TestSubProcess() {
+	s.Given().
+		Workflow("@testdata/subprocess-workflow.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow()
 }
 
 func TestSignalsSuite(t *testing.T) {

@@ -24,5 +24,6 @@ func Setpgid(a *syscall.SysProcAttr) {
 	// this does not exist on windows
 }
 
-func ReapZombies() {
+func Wait(pid int) error {
+	return nil // TODO
 }
