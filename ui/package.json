@@ -60,7 +60,7 @@
         "@types/superagent": "^3.5.7",
         "@types/swagger-ui-react": "^3.23.2",
         "babel-jest": "^28.1.0",
-        "babel-loader": "^8.2.2",
+        "babel-loader": "^8.2.5",
         "copy-webpack-plugin": "^5.1.2",
         "copyfiles": "^1.2.0",
         "file-loader": "^6.0.0",
