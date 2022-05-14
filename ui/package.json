@@ -45,7 +45,7 @@
         "@fortawesome/fontawesome-free": "^5.15.3",
         "@types/chart.js": "^2.9.24",
         "@types/classnames": "^2.2.3",
-        "@types/dagre": "^0.7.44",
+        "@types/dagre": "^0.7.47",
         "@types/history": "^4.6.2",
         "@types/jest": "^26.0.15",
         "@types/js-yaml": "^3.12.1",
@@ -86,7 +86,7 @@
         "webfonts-generator": "^0.4.0",
         "webpack": "^4.35.0",
         "webpack-cli": "^3.3.11",
-        "webpack-dev-server": "^3.7.2"
+        "webpack-dev-server": "^3.11.3"
     },
     "resolutions": {
         "lodash": "4.17.21",
