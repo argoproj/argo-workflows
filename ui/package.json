@@ -45,7 +45,7 @@
         "@fortawesome/fontawesome-free": "^5.15.3",
         "@types/chart.js": "^2.9.24",
         "@types/classnames": "^2.2.3",
-        "@types/dagre": "^0.7.44",
+        "@types/dagre": "^0.7.47",
         "@types/history": "^4.6.2",
         "@types/jest": "^26.0.15",
         "@types/js-yaml": "^3.12.1",
