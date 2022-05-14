@@ -27,7 +27,7 @@ Start Argo Server with the --secure=false (or `ARGO_SECURE=false`) flag, e.g.:
 
 ```bash
 export ARGO_SECURE=false
-argo --secure=false
+argo server --secure=false
 ```
 
 To secure the UI you may front it with a HTTPS proxy.

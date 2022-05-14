@@ -3,6 +3,7 @@ package executor
 import (
 	"context"
 	"fmt"
+	gohttp "net/http"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/common"
@@ -87,21 +88,55 @@ func newDriver(ctx context.Context, art *wfv1.Artifact, ri resource.Interface) (
 		return &driver, nil
 	}
 	if art.HTTP != nil {
+		var client *gohttp.Client
 		driver := http.ArtifactDriver{}
-		if art.HTTP.UsernameSecret != nil {
-			usernameBytes, err := ri.GetSecret(ctx, art.HTTP.UsernameSecret.Name, art.HTTP.UsernameSecret.Key)
+		if art.HTTP.Auth != nil && art.HTTP.Auth.BasicAuth.UsernameSecret != nil {
+			usernameBytes, err := ri.GetSecret(ctx, art.HTTP.Auth.BasicAuth.UsernameSecret.Name, art.HTTP.Auth.BasicAuth.UsernameSecret.Key)
 			if err != nil {
 				return nil, err
 			}
 			driver.Username = usernameBytes
 		}
-		if art.HTTP.PasswordSecret != nil {
-			passwordBytes, err := ri.GetSecret(ctx, art.HTTP.PasswordSecret.Name, art.HTTP.PasswordSecret.Key)
+		if art.HTTP.Auth != nil && art.HTTP.Auth.BasicAuth.PasswordSecret != nil {
+			passwordBytes, err := ri.GetSecret(ctx, art.HTTP.Auth.BasicAuth.PasswordSecret.Name, art.HTTP.Auth.BasicAuth.PasswordSecret.Key)
 			if err != nil {
 				return nil, err
 			}
 			driver.Password = passwordBytes
 		}
+		if art.HTTP.Auth != nil && art.HTTP.Auth.OAuth2.ClientIDSecret != nil && art.HTTP.Auth.OAuth2.ClientSecretSecret != nil && art.HTTP.Auth.OAuth2.TokenURLSecret != nil {
+			clientId, err := ri.GetSecret(ctx, art.HTTP.Auth.OAuth2.ClientIDSecret.Name, art.HTTP.Auth.OAuth2.ClientIDSecret.Key)
+			if err != nil {
+				return nil, err
+			}
+			clientSecret, err := ri.GetSecret(ctx, art.HTTP.Auth.OAuth2.ClientSecretSecret.Name, art.HTTP.Auth.OAuth2.ClientSecretSecret.Key)
+			if err != nil {
+				return nil, err
+			}
+			tokenURL, err := ri.GetSecret(ctx, art.HTTP.Auth.OAuth2.TokenURLSecret.Name, art.HTTP.Auth.OAuth2.TokenURLSecret.Key)
+			if err != nil {
+				return nil, err
+			}
+			client = http.CreateOauth2Client(clientId, clientSecret, tokenURL, art.HTTP.Auth.OAuth2.Scopes, art.HTTP.Auth.OAuth2.EndpointParams)
+		}
+		if art.HTTP.Auth != nil && art.HTTP.Auth.ClientCert.ClientCertSecret != nil && art.HTTP.Auth.ClientCert.ClientKeySecret != nil {
+			clientCert, err := ri.GetSecret(ctx, art.HTTP.Auth.ClientCert.ClientCertSecret.Name, art.HTTP.Auth.ClientCert.ClientCertSecret.Key)
+			if err != nil {
+				return nil, err
+			}
+			clientKey, err := ri.GetSecret(ctx, art.HTTP.Auth.ClientCert.ClientKeySecret.Name, art.HTTP.Auth.ClientCert.ClientKeySecret.Key)
+			if err != nil {
+				return nil, err
+			}
+			client, err = http.CreateClientWithCertificate([]byte(clientCert), []byte(clientKey))
+			if err != nil {
+				return nil, err
+			}
+		}
+		if client == nil {
+			client = &gohttp.Client{}
+		}
+		driver.Client = client
 		return &driver, nil
 	}
 	if art.Git != nil {

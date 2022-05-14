@@ -1142,6 +1142,14 @@ func createArchiveLocationSecret(tmpl *wfv1.Template, volMap map[string]apiv1.Vo
 		createSecretVal(volMap, ossRepo.SecretKeySecret, uniqueKeyMap)
 	} else if gcsRepo := tmpl.ArchiveLocation.GCS; gcsRepo != nil {
 		createSecretVal(volMap, gcsRepo.ServiceAccountKeySecret, uniqueKeyMap)
+	} else if httpArtRepo := tmpl.ArchiveLocation.HTTP; httpArtRepo != nil && httpArtRepo.Auth != nil {
+		createSecretVal(volMap, httpArtRepo.Auth.BasicAuth.UsernameSecret, uniqueKeyMap)
+		createSecretVal(volMap, httpArtRepo.Auth.BasicAuth.PasswordSecret, uniqueKeyMap)
+		createSecretVal(volMap, httpArtRepo.Auth.ClientCert.ClientCertSecret, uniqueKeyMap)
+		createSecretVal(volMap, httpArtRepo.Auth.ClientCert.ClientKeySecret, uniqueKeyMap)
+		createSecretVal(volMap, httpArtRepo.Auth.OAuth2.ClientIDSecret, uniqueKeyMap)
+		createSecretVal(volMap, httpArtRepo.Auth.OAuth2.ClientSecretSecret, uniqueKeyMap)
+		createSecretVal(volMap, httpArtRepo.Auth.OAuth2.TokenURLSecret, uniqueKeyMap)
 	}
 }
 
@@ -1164,6 +1172,14 @@ func createSecretVolume(volMap map[string]apiv1.Volume, art wfv1.Artifact, keyMa
 		createSecretVal(volMap, art.OSS.SecretKeySecret, keyMap)
 	} else if art.GCS != nil {
 		createSecretVal(volMap, art.GCS.ServiceAccountKeySecret, keyMap)
+	} else if art.HTTP != nil && art.HTTP.Auth != nil {
+		createSecretVal(volMap, art.HTTP.Auth.BasicAuth.UsernameSecret, keyMap)
+		createSecretVal(volMap, art.HTTP.Auth.BasicAuth.PasswordSecret, keyMap)
+		createSecretVal(volMap, art.HTTP.Auth.ClientCert.ClientCertSecret, keyMap)
+		createSecretVal(volMap, art.HTTP.Auth.ClientCert.ClientKeySecret, keyMap)
+		createSecretVal(volMap, art.HTTP.Auth.OAuth2.ClientIDSecret, keyMap)
+		createSecretVal(volMap, art.HTTP.Auth.OAuth2.ClientSecretSecret, keyMap)
+		createSecretVal(volMap, art.HTTP.Auth.OAuth2.TokenURLSecret, keyMap)
 	}
 }
 
