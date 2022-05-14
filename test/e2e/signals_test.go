@@ -9,7 +9,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
-	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
@@ -112,6 +111,14 @@ func (s *SignalsSuite) TestDoNotCreatePodsUnderStopBehavior() {
 		})
 }
 
+func (s *SignalsSuite) TestSubProcess() {
+	s.Given().
+		Workflow("@testdata/subprocess-workflow.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow()
+}
+
 func (s *SignalsSuite) TestSidecars() {
 	s.Given().
 		Workflow("@testdata/sidecar-workflow.yaml").
@@ -126,15 +133,7 @@ func (s *SignalsSuite) TestInjectedSidecar() {
 		Workflow("@testdata/sidecar-injected-workflow.yaml").
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(fixtures.ToBeSucceeded, kill2xDuration).
-		Then().
-		ExpectPods(func(t *testing.T, pods []v1.Pod) {
-			for _, c := range pods[0].Status.ContainerStatuses {
-				if c.Name == "sidecar" {
-					assert.Equal(t, int32(137), c.State.Terminated.ExitCode)
-				}
-			}
-		})
+		WaitForWorkflow(fixtures.ToBeSucceeded, kill2xDuration)
 }
 
 func TestSignalsSuite(t *testing.T) {

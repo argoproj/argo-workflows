@@ -23,3 +23,6 @@ func Kill(pid int, s syscall.Signal) error {
 func Setpgid(a *syscall.SysProcAttr) {
 	// this does not exist on windows
 }
+
+func ReapZombies() {
+}

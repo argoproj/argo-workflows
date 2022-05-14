@@ -16,6 +16,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/mitchellh/go-ps"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"k8s.io/client-go/util/retry"
@@ -136,6 +137,7 @@ func NewEmissaryCommand() *cobra.Command {
 						}
 					}
 				}()
+				pid := command.Process.Pid
 				ctx, cancel := context.WithCancel(context.Background())
 				defer cancel()
 				go func() {
@@ -148,14 +150,36 @@ func NewEmissaryCommand() *cobra.Command {
 							_ = os.Remove(varRunArgo + "/ctr/" + containerName + "/signal")
 							s, _ := strconv.Atoi(string(data))
 							if s > 0 {
-								_ = osspecific.Kill(command.Process.Pid, syscall.Signal(s))
+								_ = osspecific.Kill(pid, syscall.Signal(s))
 							}
 							time.Sleep(2 * time.Second)
 						}
 					}
 				}()
-				return command.Wait()
+
+				if err := command.Process.Release(); err != nil {
+					return err
+				}
+
+				go osspecific.ReapZombies()
+
+				logger.WithField("pid", pid).Info("waiting for sub-process to exit")
+				for {
+					processes, err := ps.Processes()
+					if err != nil {
+						return err
+					}
+					found := false
+					for _, process := range processes {
+						found = found || process.Pid() == pid
+					}
+					if !found {
+						break
+					}
+					time.Sleep(time.Second)
+				}
 			})
+			logger.WithError(err).Info("sub-process exited")
 
 			if _, ok := os.LookupEnv("ARGO_DEBUG_PAUSE_AFTER"); ok {
 				for {
