@@ -177,6 +177,7 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 	if err != nil {
 		log.Fatal(err)
 	}
+	config.Sanitize()
 	log.WithFields(log.Fields{"version": argo.GetVersion().Version, "instanceID": config.InstanceID}).Info("Starting Argo Server")
 	instanceIDService := instanceid.NewService(config.InstanceID)
 	offloadRepo := sqldb.ExplosiveOffloadNodeStatusRepo
