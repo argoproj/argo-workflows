@@ -2,6 +2,9 @@ package main
 
 import (
 	"os"
+
+	"github.com/argoproj/argo-workflows/v3/util/errors"
+
 	// load authentication plugin for obtaining credentials from cloud providers.
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
@@ -9,14 +12,10 @@ import (
 	"github.com/argoproj/argo-workflows/v3/util"
 )
 
-type ExitCoder interface {
-	ExitCode() int
-}
-
 func main() {
 	err := commands.NewRootCommand().Execute()
 	if err != nil {
-		if exitError, ok := err.(ExitCoder); ok {
+		if exitError, ok := err.(errors.Exited); ok {
 			if exitError.ExitCode() >= 0 {
 				os.Exit(exitError.ExitCode())
 			} else {

@@ -16,7 +16,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/mitchellh/go-ps"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"k8s.io/client-go/util/retry"
@@ -156,36 +155,7 @@ func NewEmissaryCommand() *cobra.Command {
 						}
 					}
 				}()
-
-				// We must copy the behaviour of Kubernetes in how we handle sub-processes.
-				// Kubernetes only waits on PID 1, not on forked process that process might fork.
-				// The only way for those forked processes to run in the background is to background the
-				// sub-process by calling Process.Release.
-				// Background processes always become zombies when they exit.
-				// Because the sub-process is now running in the background it will become a zombie,
-				// so we must wait for it.
-				// Because we run the process in the background, we can Process.Wait for it to get the exit code.
-				// Instead, we need to reap it and get the exit code
-				if err := command.Process.Release(); err != nil {
-					return err
-				}
-
-				logger.WithField("pid", pid).Info("waiting for sub-process to exit")
-				for {
-					processes, err := ps.Processes()
-					if err != nil {
-						return err
-					}
-					found := false
-					for _, process := range processes {
-						found = found || process.Pid() == pid
-					}
-					if !found {
-						break
-					}
-					time.Sleep(time.Second)
-				}
-				return osspecific.Wait(pid)
+				return osspecific.Wait(command.Process)
 
 			})
 			logger.WithError(err).Info("sub-process exited")
