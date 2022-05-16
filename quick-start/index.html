@@ -3773,7 +3773,7 @@ kubectl apply -n argo -f https://raw.githubusercontent.com/argoproj/argo-workflo
 <p>This will serve the UI on <a href="https://localhost:2746">https://localhost:2746</a></p>
 <p>Next, Download the latest Argo CLI from our <a href="https://github.com/argoproj/argo-workflows/releases/latest">releases page</a>.</p>
 <p>Finally, submit an example workflow:  </p>
-<div class="highlight"><pre><span></span><code>argo submit -n argo --watch https://raw.githubusercontent.com/argoproj/argo-workflows/master/examples/hello-world.yaml<span class="sb">`</span>
+<div class="highlight"><pre><span></span><code>argo submit -n argo --watch https://raw.githubusercontent.com/argoproj/argo-workflows/master/examples/hello-world.yaml
 </code></pre></div>
 <p>The <code>--watch</code> flag used above will allow you to observe the workflow as it runs and the status of whether it succeeds.
 When the workflow completes, the watch on the workflow will stop.</p>
