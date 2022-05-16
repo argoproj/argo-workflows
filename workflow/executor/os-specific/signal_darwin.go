@@ -34,6 +34,7 @@ func Wait(process *os.Process) error {
 	// so we must wait for it.
 	// Because we run the process in the background, we can Process.Wait for it to get the exit code.
 	// Instead, we need to reap it and get the exit code
+	pid := process.Pid
 	if err := process.Release(); err != nil {
 		return err
 	}
@@ -45,7 +46,7 @@ func Wait(process *os.Process) error {
 		}
 		found := false
 		for _, p := range processes {
-			found = found || process.Pid == p.Pid()
+			found = found || pid == p.Pid()
 		}
 		if !found {
 			break
@@ -53,13 +54,11 @@ func Wait(process *os.Process) error {
 		time.Sleep(time.Second)
 	}
 	var waitStatus syscall.WaitStatus
-	_, _ = syscall.Wait4(process.Pid, &waitStatus, syscall.WNOHANG, nil)
+	_, _ = syscall.Wait4(pid, &waitStatus, syscall.WNOHANG, nil)
 	for {
 		var s syscall.WaitStatus
 		p, _ := syscall.Wait4(-1, &s, syscall.WNOHANG, nil)
 		if p <= 0 {
-			time.Sleep(time.Second)
-		} else {
 			break
 		}
 	}

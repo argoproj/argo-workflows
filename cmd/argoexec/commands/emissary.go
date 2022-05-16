@@ -16,6 +16,8 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/argoproj/argo-workflows/v3/util/errors"
+
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"k8s.io/client-go/util/retry"
@@ -175,7 +177,7 @@ func NewEmissaryCommand() *cobra.Command {
 
 			if cmdErr == nil {
 				exitCode = 0
-			} else if exitError, ok := cmdErr.(*exec.ExitError); ok {
+			} else if exitError, ok := cmdErr.(errors.Exited); ok {
 				if exitError.ExitCode() >= 0 {
 					exitCode = exitError.ExitCode()
 				} else {
