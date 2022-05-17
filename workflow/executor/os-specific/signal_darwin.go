@@ -53,14 +53,14 @@ func Wait(process *os.Process) error {
 		}
 		time.Sleep(time.Second)
 	}
-	var waitStatus syscall.WaitStatus
-	_, _ = syscall.Wait4(pid, &waitStatus, syscall.WNOHANG, nil)
 	for {
 		var s syscall.WaitStatus
-		p, _ := syscall.Wait4(-1, &s, syscall.WNOHANG, nil)
-		if p <= 0 {
-			break
+		wpid, err := syscall.Wait4(-1, &s, syscall.WNOHANG, nil)
+		if err != nil {
+			return err
+		}
+		if wpid == pid {
+			return errors.NewExitErr(s.ExitStatus())
 		}
 	}
-	return errors.NewExitErr(waitStatus.ExitStatus())
 }

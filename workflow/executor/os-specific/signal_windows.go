@@ -24,6 +24,6 @@ func Setpgid(a *syscall.SysProcAttr) {
 	// this does not exist on windows
 }
 
-func Wait(process os.Process) error {
+func Wait(process *os.Process) error {
 	return process.Wait()
 }
