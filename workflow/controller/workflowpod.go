@@ -156,9 +156,10 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 		}
 	}
 
+	fmt.Println("deletethis: construction pod")
 	pod := &apiv1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      util.PodName(woc.wf.Name, nodeName, tmpl.Name, nodeID, util.GetPodNameVersion()),
+			Name:      util.PodName(woc.wf.Name, nodeName, tmpl.Name, nodeID, util.GetWorkflowPodNameVersion(woc.wf)),
 			Namespace: woc.wf.ObjectMeta.Namespace,
 			Labels: map[string]string{
 				common.LabelKeyWorkflow:  woc.wf.ObjectMeta.Name, // Allows filtering by pods related to specific workflow

@@ -37,10 +37,13 @@ func (v PodNameVersion) String() string {
 func GetPodNameVersion() PodNameVersion {
 	switch os.Getenv("POD_NAMES") {
 	case "v2":
+		fmt.Println("deletethis: GetPodNameVersion(): environment variable is v2")
 		return PodNameV2
 	case "v1":
+		fmt.Println("deletethis: GetPodNameVersion(): environment variable is v1")
 		return PodNameV1
 	default:
+		fmt.Printf("deletethis: GetPodNameVersion(): default is %v\n", DefaultPodNameVersion)
 		return DefaultPodNameVersion
 	}
 }
