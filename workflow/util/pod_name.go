@@ -84,10 +84,13 @@ func GetWorkflowPodNameVersion(wf *v1alpha1.Workflow) PodNameVersion {
 
 	switch version {
 	case PodNameV1.String():
+		fmt.Println("deletethis: GetWorkflowPodNameVersion: version is V1 due to annotation")
 		return PodNameV1
 	case PodNameV2.String():
+		fmt.Println("deletethis: GetWorkflowPodNameVersion: version is V2 due to annotation")
 		return PodNameV2
 	default:
+		fmt.Println("deletethis: GetWorkflowPodNameVersion: version is V2 due to no annotation set")
 		return DefaultPodNameVersion
 	}
 }
