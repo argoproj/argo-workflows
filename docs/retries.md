@@ -66,6 +66,8 @@ access to the following variables:
 
 If `expression` evaluates to false, the step will not be retried.
 
+Note that when `expression` is specified, `retryPolicy` will be ignored.
+
 See [example](https://raw.githubusercontent.com/argoproj/argo-workflows/master/examples/retry-conditional.yaml) for usage.
 
 ## Back-Off
