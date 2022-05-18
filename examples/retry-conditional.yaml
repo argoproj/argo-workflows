@@ -1,4 +1,4 @@
-# Only retry if the retryStrategy.when condition is satisfied. In this example, retries will be made until a pod has
+# Only retry if the retryStrategy.expression condition is satisfied. In this example, retries will be made until a pod has
 # exit code 2 or the limit of 10 is reached, whichever happens first.
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
