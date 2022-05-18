@@ -37,13 +37,10 @@ func (v PodNameVersion) String() string {
 func GetPodNameVersion() PodNameVersion {
 	switch os.Getenv("POD_NAMES") {
 	case "v2":
-		fmt.Println("deletethis: GetPodNameVersion(): environment variable is v2")
 		return PodNameV2
 	case "v1":
-		fmt.Println("deletethis: GetPodNameVersion(): environment variable is v1")
 		return PodNameV1
 	default:
-		fmt.Printf("deletethis: GetPodNameVersion(): default is %v\n", DefaultPodNameVersion)
 		return DefaultPodNameVersion
 	}
 }
@@ -87,13 +84,10 @@ func GetWorkflowPodNameVersion(wf *v1alpha1.Workflow) PodNameVersion {
 
 	switch version {
 	case PodNameV1.String():
-		fmt.Println("deletethis: GetWorkflowPodNameVersion: version is V1 due to annotation")
 		return PodNameV1
 	case PodNameV2.String():
-		fmt.Println("deletethis: GetWorkflowPodNameVersion: version is V2 due to annotation")
 		return PodNameV2
 	default:
-		fmt.Println("deletethis: GetWorkflowPodNameVersion: version is V2 due to no annotation set")
 		return DefaultPodNameVersion
 	}
 }

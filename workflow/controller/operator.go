@@ -1642,7 +1642,6 @@ type executeTemplateOpts struct {
 func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string, orgTmpl wfv1.TemplateReferenceHolder, tmplCtx *templateresolution.Context, args wfv1.Arguments, opts *executeTemplateOpts) (*wfv1.NodeStatus, error) {
 	woc.log.Debugf("Evaluating node %s: template: %s, boundaryID: %s", nodeName, common.GetTemplateHolderString(orgTmpl), opts.boundaryID)
 
-	fmt.Println("deletethis: executeTemplate")
 	node := woc.wf.GetNodeByName(nodeName)
 
 	// Set templateScope from which the template resolution starts.
@@ -2251,7 +2250,6 @@ func (woc *wfOperationCtx) getPodByNode(node *wfv1.NodeStatus) (*apiv1.Pod, erro
 	}
 
 	podName := woc.getPodName(node.Name, node.TemplateName)
-	fmt.Println("deletethis: getPodByNode")
 	return woc.controller.getPod(woc.wf.GetNamespace(), podName)
 }
 
@@ -2272,7 +2270,6 @@ func (woc *wfOperationCtx) recordNodePhaseEvent(node *wfv1.NodeStatus) {
 	}
 	var involvedObject runtime.Object = woc.wf
 	if eventConfig.SendAsPod {
-		fmt.Println("deletethis: recordNodePhaseEvent")
 		pod, err := woc.getPodByNode(node)
 		if err != nil {
 			woc.log.WithError(err).Info("Error getting pod from workflow node")
@@ -3638,7 +3635,6 @@ func (woc *wfOperationCtx) substituteGlobalVariables() error {
 // getPodName gets the appropriate pod name for a workflow based on the
 // POD_NAMES environment variable
 func (woc *wfOperationCtx) getPodName(nodeName, templateName string) string {
-	fmt.Println("deletethis: getPodName")
 	version := wfutil.GetWorkflowPodNameVersion(woc.wf)
 	return wfutil.PodName(woc.wf.Name, nodeName, templateName, woc.wf.NodeID(nodeName), version)
 }
