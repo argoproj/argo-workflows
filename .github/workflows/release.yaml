@@ -166,8 +166,6 @@ jobs:
             image_name="quay.io/argoproj/${target}:${tag}-windows"
             docker build --target $target -t $image_name -f Dockerfile.windows .
             docker push $image_name
-
-            docker push $image_name
           done
 
   push-images:
