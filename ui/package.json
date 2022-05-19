@@ -7,8 +7,9 @@
     ],
     "scripts": {
         "build": "rm -Rf dist && NODE_ENV=production webpack -p --config ./src/app/webpack.config.js",
-        "start": "webpack-dev-server --config ./src/app/webpack.config.js",
-        "lint": "tslint --fix -p ./src/app && ./node_modules/.bin/ts-prune -p src/app/tsconfig.json -i src/models/index.ts",
+
+        "start": "NODE_OPTIONS=--no-experimental-fetch webpack-dev-server --config ./src/app/webpack.config.js",
+        "lint": "tslint --fix -p ./src/app",
         "test": "jest"
     },
     "dependencies": {
