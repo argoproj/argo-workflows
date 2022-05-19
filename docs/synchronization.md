@@ -21,13 +21,13 @@ metadata:
  name: my-config
 data:
   workflow: "1"  # Only one workflow can run at given time in particular namespace
-  template: "2"  # Two instance of template can run at a given time in particular namespace
+  template: "2"  # Two instances of template can run at a given time in particular namespace
 ```
 
 ### Workflow-level Synchronization
 
-Workflow-level synchronization limits parallel execution of the workflow if workflow have same synchronization reference.
-In this example, Workflow refers `workflow` synchronization key which is configured as rate limit 1,
+Workflow-level synchronization limits parallel execution of the workflow if workflows have the same synchronization reference.
+In this example, Workflow refers to `workflow` synchronization key which is configured as limit 1,
 so only one workflow instance will be executed at given time even multiple workflows created.
 
 Using a semaphore configured by a `ConfigMap`:
@@ -74,9 +74,9 @@ spec:
 
 ### Template-level Synchronization
 
-Template-level synchronization limits parallel execution of the template across workflows, if template have same synchronization reference.
-In this example, `acquire-lock` template has synchronization reference of `template` key which is configured as rate limit 2,
-so, two instance of templates will be executed at given time even multiple step/task with in workflow or different workflow refers same template.
+Template-level synchronization limits parallel execution of the template across workflows, if templates have the same synchronization reference.
+In this example, `acquire-lock` template has synchronization reference of `template` key which is configured as limit 2,
+so two instances of templates will be executed at a given time: even multiple steps/tasks within workflow or different workflows referring to the same template.
 
 Using a semaphore configured by a `ConfigMap`:
 

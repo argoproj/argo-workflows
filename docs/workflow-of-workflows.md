@@ -4,7 +4,7 @@
 
 ## Introduction
 
-The Workflow of Workflows pattern involves a parent workflow triggering one or more child workflows, managing them, and acting their results.
+The Workflow of Workflows pattern involves a parent workflow triggering one or more child workflows, managing them, and acting on their results.
 
 ## Examples
 
@@ -39,7 +39,7 @@ spec:
 
 ```yaml
 # This template demonstrates a workflow of workflows.
-# Workflow triggers one or more workflow and manage it.
+# Workflow triggers one or more workflows and manages them.
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:

@@ -1542,7 +1542,7 @@ func (woc *wfOperationCtx) deletePVCs(ctx context.Context) error {
 			}
 		}
 	}
-	if os.Getenv("ARGO_REMOVE_PVC_PROTECTION_FINALIZER") == "true" {
+	if os.Getenv("ARGO_REMOVE_PVC_PROTECTION_FINALIZER") != "false" {
 		for _, pvc := range woc.wf.Status.PersistentVolumeClaims {
 			woc.log.WithField("claimName", pvc.PersistentVolumeClaim.ClaimName).
 				Info("Removing PVC \"kubernetes.io/pvc-protection\" finalizer")

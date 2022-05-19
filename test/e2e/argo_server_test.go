@@ -1066,7 +1066,7 @@ func (s *ArgoServerSuite) TestArtifactServer() {
 			Contains(":) Hello Argo!")
 
 		resp.Header("Content-Security-Policy").
-			Equal("sandbox; base-uri 'none'; default-src 'none'; img-src 'self'; style-src 'self'") // MSB
+			Equal("sandbox; base-uri 'none'; default-src 'none'; img-src 'self'; style-src 'self' 'unsafe-inline'")
 
 		resp.Header("X-Frame-Options").
 			Equal("SAMEORIGIN")
@@ -1082,7 +1082,7 @@ func (s *ArgoServerSuite) TestArtifactServer() {
 			Contains(":) Hello Argo!")
 
 		resp.Header("Content-Security-Policy").
-			Equal("sandbox; base-uri 'none'; default-src 'none'; img-src 'self'; style-src 'self'") // MSB
+			Equal("sandbox; base-uri 'none'; default-src 'none'; img-src 'self'; style-src 'self' 'unsafe-inline'")
 
 		resp.Header("X-Frame-Options").
 			Equal("SAMEORIGIN")
@@ -1121,7 +1121,7 @@ func (s *ArgoServerSuite) TestArtifactServer() {
 			Contains(":) Hello Argo!")
 
 		resp.Header("Content-Security-Policy").
-			Equal("sandbox; base-uri 'none'; default-src 'none'; img-src 'self'; style-src 'self'") // MSB
+			Equal("sandbox; base-uri 'none'; default-src 'none'; img-src 'self'; style-src 'self' 'unsafe-inline'")
 
 		resp.Header("X-Frame-Options").
 			Equal("SAMEORIGIN")
