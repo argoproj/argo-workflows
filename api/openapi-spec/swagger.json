@@ -9311,6 +9311,20 @@
         }
       }
     },
+    "io.argoproj.workflow.v1alpha1.BasicAuth": {
+      "description": "BasicAuth describes the secret selectors required for basic authentication",
+      "type": "object",
+      "properties": {
+        "passwordSecret": {
+          "description": "PasswordSecret is the secret selector to the repository password",
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
+        },
+        "usernameSecret": {
+          "description": "UsernameSecret is the secret selector to the repository username",
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
+        }
+      }
+    },
     "io.argoproj.workflow.v1alpha1.Cache": {
       "description": "Cache is the configuration for the type of cache to be used",
       "type": "object",
@@ -9321,6 +9335,18 @@
         "configMap": {
           "description": "ConfigMap sets a ConfigMap-based cache",
           "$ref": "#/definitions/io.k8s.api.core.v1.ConfigMapKeySelector"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.ClientCertAuth": {
+      "description": "ClientCertAuth holds necessary information for client authentication via certificates",
+      "type": "object",
+      "properties": {
+        "clientCertSecret": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
+        },
+        "clientKeySecret": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
         }
       }
     },
@@ -10261,6 +10287,10 @@
         "url"
       ],
       "properties": {
+        "auth": {
+          "description": "Auth contains information for client authentication",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.HTTPAuth"
+        },
         "headers": {
           "description": "Headers are an optional list of headers to send with HTTP requests for artifacts",
           "type": "array",
@@ -10268,17 +10298,23 @@
             "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Header"
           }
         },
-        "passwordSecret": {
-          "description": "PasswordSecret is the secret selector to the repository password",
-          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
-        },
         "url": {
           "description": "URL of the artifact",
           "type": "string"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.HTTPAuth": {
+      "type": "object",
+      "properties": {
+        "basicAuth": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.BasicAuth"
         },
-        "usernameSecret": {
-          "description": "UsernameSecret is the secret selector to the repository username",
-          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
+        "clientCert": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ClientCertAuth"
+        },
+        "oauth2": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.OAuth2Auth"
         }
       }
     },
@@ -10789,6 +10825,50 @@
     "io.argoproj.workflow.v1alpha1.NoneStrategy": {
       "description": "NoneStrategy indicates to skip tar process and upload the files or directory tree as independent files. Note that if the artifact is a directory, the artifact driver must support the ability to save/load the directory appropriately.",
       "type": "object"
+    },
+    "io.argoproj.workflow.v1alpha1.OAuth2Auth": {
+      "description": "OAuth2Auth holds all information for client authentication via OAuth2 tokens",
+      "type": "object",
+      "properties": {
+        "clientIDSecret": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
+        },
+        "clientSecretSecret": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
+        },
+        "endpointParams": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.OAuth2EndpointParam"
+          }
+        },
+        "scopes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "tokenURLSecret": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.OAuth2EndpointParam": {
+      "description": "EndpointParam is for requesting optional fields that should be sent in the oauth request",
+      "type": "object",
+      "required": [
+        "key"
+      ],
+      "properties": {
+        "key": {
+          "description": "Name is the header name",
+          "type": "string"
+        },
+        "value": {
+          "description": "Value is the literal value to use for the header",
+          "type": "string"
+        }
+      }
     },
     "io.argoproj.workflow.v1alpha1.OSSArtifact": {
       "description": "OSSArtifact is the location of an Alibaba Cloud OSS artifact",

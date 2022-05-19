@@ -439,6 +439,25 @@ the ReadOnly setting in VolumeMounts.
 
 
 
+### <span id="basic-auth"></span> BasicAuth
+
+
+> BasicAuth describes the secret selectors required for basic authentication
+  
+
+
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| passwordSecret | [SecretKeySelector](#secret-key-selector)| `SecretKeySelector` |  | |  |  |
+| usernameSecret | [SecretKeySelector](#secret-key-selector)| `SecretKeySelector` |  | |  |  |
+
+
+
 ### <span id="c-s-i-volume-source"></span> CSIVolumeSource
 
 
@@ -580,6 +599,25 @@ More info: https://examples.k8s.io/mysql-cinder-pd/README.md
 | secretRef | [LocalObjectReference](#local-object-reference)| `LocalObjectReference` |  | |  |  |
 | volumeID | string| `string` |  | | volume id used to identify the volume in cinder.
 More info: https://examples.k8s.io/mysql-cinder-pd/README.md |  |
+
+
+
+### <span id="client-cert-auth"></span> ClientCertAuth
+
+
+> ClientCertAuth holds necessary information for client authentication via certificates
+  
+
+
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| clientCertSecret | [SecretKeySelector](#secret-key-selector)| `SecretKeySelector` |  | |  |  |
+| clientKeySecret | [SecretKeySelector](#secret-key-selector)| `SecretKeySelector` |  | |  |  |
 
 
 
@@ -1747,10 +1785,26 @@ It must be set if keytab is used. |  |
 
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
+| auth | [HTTPAuth](#http-auth)| `HTTPAuth` |  | |  |  |
 | headers | [][Header](#header)| `[]*Header` |  | | Headers are an optional list of headers to send with HTTP requests for artifacts |  |
-| passwordSecret | [SecretKeySelector](#secret-key-selector)| `SecretKeySelector` |  | |  |  |
 | url | string| `string` |  | | URL of the artifact |  |
-| usernameSecret | [SecretKeySelector](#secret-key-selector)| `SecretKeySelector` |  | |  |  |
+
+
+
+### <span id="http-auth"></span> HTTPAuth
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| basicAuth | [BasicAuth](#basic-auth)| `BasicAuth` |  | |  |  |
+| clientCert | [ClientCertAuth](#client-cert-auth)| `ClientCertAuth` |  | |  |  |
+| oauth2 | [OAuth2Auth](#o-auth2-auth)| `OAuth2Auth` |  | |  |  |
 
 
 
@@ -2525,6 +2579,47 @@ save/load the directory appropriately.
 
 
 [interface{}](#interface)
+
+### <span id="o-auth2-auth"></span> OAuth2Auth
+
+
+> OAuth2Auth holds all information for client authentication via OAuth2 tokens
+  
+
+
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| clientIDSecret | [SecretKeySelector](#secret-key-selector)| `SecretKeySelector` |  | |  |  |
+| clientSecretSecret | [SecretKeySelector](#secret-key-selector)| `SecretKeySelector` |  | |  |  |
+| endpointParams | [][OAuth2EndpointParam](#o-auth2-endpoint-param)| `[]*OAuth2EndpointParam` |  | |  |  |
+| scopes | []string| `[]string` |  | |  |  |
+| tokenURLSecret | [SecretKeySelector](#secret-key-selector)| `SecretKeySelector` |  | |  |  |
+
+
+
+### <span id="o-auth2-endpoint-param"></span> OAuth2EndpointParam
+
+
+> EndpointParam is for requesting optional fields that should be sent in the oauth request
+  
+
+
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| key | string| `string` |  | | Name is the header name |  |
+| value | string| `string` |  | | Value is the literal value to use for the header |  |
+
+
 
 ### <span id="o-s-s-artifact"></span> OSSArtifact
 

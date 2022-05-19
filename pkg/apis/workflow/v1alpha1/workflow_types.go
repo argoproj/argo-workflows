@@ -2412,16 +2412,46 @@ type BasicAuth struct {
 	PasswordSecret *apiv1.SecretKeySelector `json:"passwordSecret,omitempty" protobuf:"bytes,2,opt,name=passwordSecret"`
 }
 
+// ClientCertAuth holds necessary information for client authentication via certificates
+type ClientCertAuth struct {
+	ClientCertSecret *apiv1.SecretKeySelector `json:"clientCertSecret,omitempty" protobuf:"bytes,1,opt,name=clientCertSecret"`
+	ClientKeySecret  *apiv1.SecretKeySelector `json:"clientKeySecret,omitempty" protobuf:"bytes,2,opt,name=clientKeySecret"`
+}
+
+// OAuth2Auth holds all information for client authentication via OAuth2 tokens
+type OAuth2Auth struct {
+	ClientIDSecret     *apiv1.SecretKeySelector `json:"clientIDSecret,omitempty" protobuf:"bytes,1,opt,name=clientIDSecret"`
+	ClientSecretSecret *apiv1.SecretKeySelector `json:"clientSecretSecret,omitempty" protobuf:"bytes,2,opt,name=clientSecretSecret"`
+	TokenURLSecret     *apiv1.SecretKeySelector `json:"tokenURLSecret,omitempty" protobuf:"bytes,3,opt,name=tokenURLSecret"`
+	Scopes             []string                 `json:"scopes,omitempty" protobuf:"bytes,5,rep,name=scopes"`
+	EndpointParams     []OAuth2EndpointParam    `json:"endpointParams,omitempty" protobuf:"bytes,6,rep,name=endpointParams"`
+}
+
+// EndpointParam is for requesting optional fields that should be sent in the oauth request
+type OAuth2EndpointParam struct {
+	// Name is the header name
+	Key string `json:"key" protobuf:"bytes,1,opt,name=key"`
+
+	// Value is the literal value to use for the header
+	Value string `json:"value,omitempty" protobuf:"bytes,2,opt,name=value"`
+}
+
+type HTTPAuth struct {
+	ClientCert ClientCertAuth `json:"clientCert,omitempty" protobuf:"bytes,1,opt,name=clientCert"`
+	OAuth2     OAuth2Auth     `json:"oauth2,omitempty" protobuf:"bytes,2,opt,name=oauth2"`
+	BasicAuth  BasicAuth      `json:"basicAuth,omitempty" protobuf:"bytes,3,opt,name=basicAuth"`
+}
+
 // HTTPArtifact allows a file served on HTTP to be placed as an input artifact in a container
 type HTTPArtifact struct {
 	// URL of the artifact
 	URL string `json:"url" protobuf:"bytes,1,opt,name=url"`
 
 	// Headers are an optional list of headers to send with HTTP requests for artifacts
-	Headers []Header `json:"headers,omitempty" protobuf:"bytes,2,opt,name=headers"`
+	Headers []Header `json:"headers,omitempty" protobuf:"bytes,2,rep,name=headers"`
 
-	// BasicAuth is the secret selector for basic authentication
-	BasicAuth `json:",inline" protobuf:"bytes,3,opt,name=basicAuth"`
+	// Auth contains information for client authentication
+	Auth *HTTPAuth `json:"auth,omitempty" protobuf:"bytes,3,opt,name=auth"`
 }
 
 func (h *HTTPArtifact) GetKey() (string, error) {

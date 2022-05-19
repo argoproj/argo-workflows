@@ -30,7 +30,7 @@ Next, Download the latest Argo CLI from our [releases page](https://github.com/a
 Finally, submit an example workflow:  
 
 ```bash
-argo submit -n argo --watch https://raw.githubusercontent.com/argoproj/argo-workflows/master/examples/hello-world.yaml`
+argo submit -n argo --watch https://raw.githubusercontent.com/argoproj/argo-workflows/master/examples/hello-world.yaml
 ```
 
 The `--watch` flag used above will allow you to observe the workflow as it runs and the status of whether it succeeds.

@@ -14,7 +14,7 @@ require (
 	github.com/argoproj/pkg v0.13.2
 	github.com/blushft/go-diagrams v0.0.0-20201006005127-c78c821223d9
 	github.com/colinmarc/hdfs v1.1.4-0.20180805212432-9746310a4d31
-	github.com/coreos/go-oidc/v3 v3.1.0
+	github.com/coreos/go-oidc/v3 v3.2.0
 	github.com/doublerebel/bellows v0.0.0-20160303004610-f177d92a03d3
 	github.com/evanphx/json-patch v5.6.0+incompatible
 	github.com/gavv/httpexpect/v2 v2.3.1
@@ -33,7 +33,7 @@ require (
 	github.com/grpc-ecosystem/grpc-gateway v1.16.0
 	github.com/klauspost/pgzip v1.2.5
 	github.com/minio/minio-go/v7 v7.0.26
-	github.com/prometheus/client_golang v1.12.1
+	github.com/prometheus/client_golang v1.12.2
 	github.com/prometheus/client_model v0.2.0
 	github.com/prometheus/common v0.34.0
 	github.com/robfig/cron/v3 v3.0.1

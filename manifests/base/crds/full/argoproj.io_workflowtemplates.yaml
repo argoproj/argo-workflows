@@ -582,6 +582,110 @@ spec:
                           type: object
                         http:
                           properties:
+                            auth:
+                              properties:
+                                basicAuth:
+                                  properties:
+                                    passwordSecret:
+                                      properties:
+                                        key:
+                                          type: string
+                                        name:
+                                          type: string
+                                        optional:
+                                          type: boolean
+                                      required:
+                                      - key
+                                      type: object
+                                    usernameSecret:
+                                      properties:
+                                        key:
+                                          type: string
+                                        name:
+                                          type: string
+                                        optional:
+                                          type: boolean
+                                      required:
+                                      - key
+                                      type: object
+                                  type: object
+                                clientCert:
+                                  properties:
+                                    clientCertSecret:
+                                      properties:
+                                        key:
+                                          type: string
+                                        name:
+                                          type: string
+                                        optional:
+                                          type: boolean
+                                      required:
+                                      - key
+                                      type: object
+                                    clientKeySecret:
+                                      properties:
+                                        key:
+                                          type: string
+                                        name:
+                                          type: string
+                                        optional:
+                                          type: boolean
+                                      required:
+                                      - key
+                                      type: object
+                                  type: object
+                                oauth2:
+                                  properties:
+                                    clientIDSecret:
+                                      properties:
+                                        key:
+                                          type: string
+                                        name:
+                                          type: string
+                                        optional:
+                                          type: boolean
+                                      required:
+                                      - key
+                                      type: object
+                                    clientSecretSecret:
+                                      properties:
+                                        key:
+                                          type: string
+                                        name:
+                                          type: string
+                                        optional:
+                                          type: boolean
+                                      required:
+                                      - key
+                                      type: object
+                                    endpointParams:
+                                      items:
+                                        properties:
+                                          key:
+                                            type: string
+                                          value:
+                                            type: string
+                                        required:
+                                        - key
+                                        type: object
+                                      type: array
+                                    scopes:
+                                      items:
+                                        type: string
+                                      type: array
+                                    tokenURLSecret:
+                                      properties:
+                                        key:
+                                          type: string
+                                        name:
+                                          type: string
+                                        optional:
+                                          type: boolean
+                                      required:
+                                      - key
+                                      type: object
+                                  type: object
+                              type: object
                             headers:
                               items:
                                 properties:
@@ -594,30 +698,8 @@ spec:
                                 - value
                                 type: object
                               type: array
-                            passwordSecret:
-                              properties:
-                                key:
-                                  type: string
-                                name:
-                                  type: string
-                                optional:
-                                  type: boolean
-                              required:
-                              - key
-                              type: object
                             url:
                               type: string
-                            usernameSecret:
-                              properties:
-                                key:
-                                  type: string
-                                name:
-                                  type: string
-                                optional:
-                                  type: boolean
-                              required:
-                              - key
-                              type: object
                           required:
                           - url
                           type: object
@@ -1054,6 +1136,110 @@ spec:
                                 type: object
                               http:
                                 properties:
+                                  auth:
+                                    properties:
+                                      basicAuth:
+                                        properties:
+                                          passwordSecret:
+                                            properties:
+                                              key:
+                                                type: string
+                                              name:
+                                                type: string
+                                              optional:
+                                                type: boolean
+                                            required:
+                                            - key
+                                            type: object
+                                          usernameSecret:
+                                            properties:
+                                              key:
+                                                type: string
+                                              name:
+                                                type: string
+                                              optional:
+                                                type: boolean
+                                            required:
+                                            - key
+                                            type: object
+                                        type: object
+                                      clientCert:
+                                        properties:
+                                          clientCertSecret:
+                                            properties:
+                                              key:
+                                                type: string
+                                              name:
+                                                type: string
+                                              optional:
+                                                type: boolean
+                                            required:
+                                            - key
+                                            type: object
+                                          clientKeySecret:
+                                            properties:
+                                              key:
+                                                type: string
+                                              name:
+                                                type: string
+                                              optional:
+                                                type: boolean
+                                            required:
+                                            - key
+                                            type: object
+                                        type: object
+                                      oauth2:
+                                        properties:
+                                          clientIDSecret:
+                                            properties:
+                                              key:
+                                                type: string
+                                              name:
+                                                type: string
+                                              optional:
+                                                type: boolean
+                                            required:
+                                            - key
+                                            type: object
+                                          clientSecretSecret:
+                                            properties:
+                                              key:
+                                                type: string
+                                              name:
+                                                type: string
+                                              optional:
+                                                type: boolean
+                                            required:
+                                            - key
+                                            type: object
+                                          endpointParams:
+                                            items:
+                                              properties:
+                                                key:
+                                                  type: string
+                                                value:
+                                                  type: string
+                                              required:
+                                              - key
+                                              type: object
+                                            type: array
+                                          scopes:
+                                            items:
+                                              type: string
+                                            type: array
+                                          tokenURLSecret:
+                                            properties:
+                                              key:
+                                                type: string
+                                              name:
+                                                type: string
+                                              optional:
+                                                type: boolean
+                                            required:
+                                            - key
+                                            type: object
+                                        type: object
+                                    type: object
                                   headers:
                                     items:
                                       properties:
@@ -1066,30 +1252,8 @@ spec:
                                       - value
                                       type: object
                                     type: array
-                                  passwordSecret:
-                                    properties:
-                                      key:
-                                        type: string
-                                      name:
-                                        type: string
-                                      optional:
-                                        type: boolean
-                                    required:
-                                    - key
-                                    type: object
                                   url:
                                     type: string
-                                  usernameSecret:
-                                    properties:
-                                      key:
-                                        type: string
-                                      name:
-                                        type: string
-                                      optional:
-                                        type: boolean
-                                    required:
-                                    - key
-                                    type: object
                                 required:
                                 - url
                                 type: object
@@ -2118,6 +2282,110 @@ spec:
                         type: object
                       http:
                         properties:
+                          auth:
+                            properties:
+                              basicAuth:
+                                properties:
+                                  passwordSecret:
+                                    properties:
+                                      key:
+                                        type: string
+                                      name:
+                                        type: string
+                                      optional:
+                                        type: boolean
+                                    required:
+                                    - key
+                                    type: object
+                                  usernameSecret:
+                                    properties:
+                                      key:
+                                        type: string
+                                      name:
+                                        type: string
+                                      optional:
+                                        type: boolean
+                                    required:
+                                    - key
+                                    type: object
+                                type: object
+                              clientCert:
+                                properties:
+                                  clientCertSecret:
+                                    properties:
+                                      key:
+                                        type: string
+                                      name:
+                                        type: string
+                                      optional:
+                                        type: boolean
+                                    required:
+                                    - key
+                                    type: object
+                                  clientKeySecret:
+                                    properties:
+                                      key:
+                                        type: string
+                                      name:
+                                        type: string
+                                      optional:
+                                        type: boolean
+                                    required:
+                                    - key
+                                    type: object
+                                type: object
+                              oauth2:
+                                properties:
+                                  clientIDSecret:
+                                    properties:
+                                      key:
+                                        type: string
+                                      name:
+                                        type: string
+                                      optional:
+                                        type: boolean
+                                    required:
+                                    - key
+                                    type: object
+                                  clientSecretSecret:
+                                    properties:
+                                      key:
+                                        type: string
+                                      name:
+                                        type: string
+                                      optional:
+                                        type: boolean
+                                    required:
+                                    - key
+                                    type: object
+                                  endpointParams:
+                                    items:
+                                      properties:
+                                        key:
+                                          type: string
+                                        value:
+                                          type: string
+                                      required:
+                                      - key
+                                      type: object
+                                    type: array
+                                  scopes:
+                                    items:
+                                      type: string
+                                    type: array
+                                  tokenURLSecret:
+                                    properties:
+                                      key:
+                                        type: string
+                                      name:
+                                        type: string
+                                      optional:
+                                        type: boolean
+                                    required:
+                                    - key
+                                    type: object
+                                type: object
+                            type: object
                           headers:
                             items:
                               properties:
@@ -2130,30 +2398,8 @@ spec:
                               - value
                               type: object
                             type: array
-                          passwordSecret:
-                            properties:
-                              key:
-                                type: string
-                              name:
-                                type: string
-                              optional:
-                                type: boolean
-                            required:
-                            - key
-                            type: object
                           url:
                             type: string
-                          usernameSecret:
-                            properties:
-                              key:
-                                type: string
-                              name:
-                                type: string
-                              optional:
-                                type: boolean
-                            required:
-                            - key
-                            type: object
                         required:
                         - url
                         type: object
@@ -3698,6 +3944,110 @@ spec:
                                         type: object
                                       http:
                                         properties:
+                                          auth:
+                                            properties:
+                                              basicAuth:
+                                                properties:
+                                                  passwordSecret:
+                                                    properties:
+                                                      key:
+                                                        type: string
+                                                      name:
+                                                        type: string
+                                                      optional:
+                                                        type: boolean
+                                                    required:
+                                                    - key
+                                                    type: object
+                                                  usernameSecret:
+                                                    properties:
+                                                      key:
+                                                        type: string
+                                                      name:
+                                                        type: string
+                                                      optional:
+                                                        type: boolean
+                                                    required:
+                                                    - key
+                                                    type: object
+                                                type: object
+                                              clientCert:
+                                                properties:
+                                                  clientCertSecret:
+                                                    properties:
+                                                      key:
+                                                        type: string
+                                                      name:
+                                                        type: string
+                                                      optional:
+                                                        type: boolean
+                                                    required:
+                                                    - key
+                                                    type: object
+                                                  clientKeySecret:
+                                                    properties:
+                                                      key:
+                                                        type: string
+                                                      name:
+                                                        type: string
+                                                      optional:
+                                                        type: boolean
+                                                    required:
+                                                    - key
+                                                    type: object
+                                                type: object
+                                              oauth2:
+                                                properties:
+                                                  clientIDSecret:
+                                                    properties:
+                                                      key:
+                                                        type: string
+                                                      name:
+                                                        type: string
+                                                      optional:
+                                                        type: boolean
+                                                    required:
+                                                    - key
+                                                    type: object
+                                                  clientSecretSecret:
+                                                    properties:
+                                                      key:
+                                                        type: string
+                                                      name:
+                                                        type: string
+                                                      optional:
+                                                        type: boolean
+                                                    required:
+                                                    - key
+                                                    type: object
+                                                  endpointParams:
+                                                    items:
+                                                      properties:
+                                                        key:
+                                                          type: string
+                                                        value:
+                                                          type: string
+                                                      required:
+                                                      - key
+                                                      type: object
+                                                    type: array
+                                                  scopes:
+                                                    items:
+                                                      type: string
+                                                    type: array
+                                                  tokenURLSecret:
+                                                    properties:
+                                                      key:
+                                                        type: string
+                                                      name:
+                                                        type: string
+                                                      optional:
+                                                        type: boolean
+                                                    required:
+                                                    - key
+                                                    type: object
+                                                type: object
+                                            type: object
                                           headers:
                                             items:
                                               properties:
@@ -3710,30 +4060,8 @@ spec:
                                               - value
                                               type: object
                                             type: array
-                                          passwordSecret:
-                                            properties:
-                                              key:
-                                                type: string
-                                              name:
-                                                type: string
-                                              optional:
-                                                type: boolean
-                                            required:
-                                            - key
-                                            type: object
                                           url:
                                             type: string
-                                          usernameSecret:
-                                            properties:
-                                              key:
-                                                type: string
-                                              name:
-                                                type: string
-                                              optional:
-                                                type: boolean
-                                            required:
-                                            - key
-                                            type: object
                                         required:
                                         - url
                                         type: object
@@ -4136,6 +4464,110 @@ spec:
                                               type: object
                                             http:
                                               properties:
+                                                auth:
+                                                  properties:
+                                                    basicAuth:
+                                                      properties:
+                                                        passwordSecret:
+                                                          properties:
+                                                            key:
+                                                              type: string
+                                                            name:
+                                                              type: string
+                                                            optional:
+                                                              type: boolean
+                                                          required:
+                                                          - key
+                                                          type: object
+                                                        usernameSecret:
+                                                          properties:
+                                                            key:
+                                                              type: string
+                                                            name:
+                                                              type: string
+                                                            optional:
+                                                              type: boolean
+                                                          required:
+                                                          - key
+                                                          type: object
+                                                      type: object
+                                                    clientCert:
+                                                      properties:
+                                                        clientCertSecret:
+                                                          properties:
+                                                            key:
+                                                              type: string
+                                                            name:
+                                                              type: string
+                                                            optional:
+                                                              type: boolean
+                                                          required:
+                                                          - key
+                                                          type: object
+                                                        clientKeySecret:
+                                                          properties:
+                                                            key:
+                                                              type: string
+                                                            name:
+                                                              type: string
+                                                            optional:
+                                                              type: boolean
+                                                          required:
+                                                          - key
+                                                          type: object
+                                                      type: object
+                                                    oauth2:
+                                                      properties:
+                                                        clientIDSecret:
+                                                          properties:
+                                                            key:
+                                                              type: string
+                                                            name:
+                                                              type: string
+                                                            optional:
+                                                              type: boolean
+                                                          required:
+                                                          - key
+                                                          type: object
+                                                        clientSecretSecret:
+                                                          properties:
+                                                            key:
+                                                              type: string
+                                                            name:
+                                                              type: string
+                                                            optional:
+                                                              type: boolean
+                                                          required:
+                                                          - key
+                                                          type: object
+                                                        endpointParams:
+                                                          items:
+                                                            properties:
+                                                              key:
+                                                                type: string
+                                                              value:
+                                                                type: string
+                                                            required:
+                                                            - key
+                                                            type: object
+                                                          type: array
+                                                        scopes:
+                                                          items:
+                                                            type: string
+                                                          type: array
+                                                        tokenURLSecret:
+                                                          properties:
+                                                            key:
+                                                              type: string
+                                                            name:
+                                                              type: string
+                                                            optional:
+                                                              type: boolean
+                                                          required:
+                                                          - key
+                                                          type: object
+                                                      type: object
+                                                  type: object
                                                 headers:
                                                   items:
                                                     properties:
@@ -4148,30 +4580,8 @@ spec:
                                                     - value
                                                     type: object
                                                   type: array
-                                                passwordSecret:
-                                                  properties:
-                                                    key:
-                                                      type: string
-                                                    name:
-                                                      type: string
-                                                    optional:
-                                                      type: boolean
-                                                  required:
-                                                  - key
-                                                  type: object
                                                 url:
                                                   type: string
-                                                usernameSecret:
-                                                  properties:
-                                                    key:
-                                                      type: string
-                                                    name:
-                                                      type: string
-                                                    optional:
-                                                      type: boolean
-                                                  required:
-                                                  - key
-                                                  type: object
                                               required:
                                               - url
                                               type: object
@@ -4625,6 +5035,110 @@ spec:
                                 type: object
                               http:
                                 properties:
+                                  auth:
+                                    properties:
+                                      basicAuth:
+                                        properties:
+                                          passwordSecret:
+                                            properties:
+                                              key:
+                                                type: string
+                                              name:
+                                                type: string
+                                              optional:
+                                                type: boolean
+                                            required:
+                                            - key
+                                            type: object
+                                          usernameSecret:
+                                            properties:
+                                              key:
+                                                type: string
+                                              name:
+                                                type: string
+                                              optional:
+                                                type: boolean
+                                            required:
+                                            - key
+                                            type: object
+                                        type: object
+                                      clientCert:
+                                        properties:
+                                          clientCertSecret:
+                                            properties:
+                                              key:
+                                                type: string
+                                              name:
+                                                type: string
+                                              optional:
+                                                type: boolean
+                                            required:
+                                            - key
+                                            type: object
+                                          clientKeySecret:
+                                            properties:
+                                              key:
+                                                type: string
+                                              name:
+                                                type: string
+                                              optional:
+                                                type: boolean
+                                            required:
+                                            - key
+                                            type: object
+                                        type: object
+                                      oauth2:
+                                        properties:
+                                          clientIDSecret:
+                                            properties:
+                                              key:
+                                                type: string
+                                              name:
+                                                type: string
+                                              optional:
+                                                type: boolean
+                                            required:
+                                            - key
+                                            type: object
+                                          clientSecretSecret:
+                                            properties:
+                                              key:
+                                                type: string
+                                              name:
+                                                type: string
+                                              optional:
+                                                type: boolean
+                                            required:
+                                            - key
+                                            type: object
+                                          endpointParams:
+                                            items:
+                                              properties:
+                                                key:
+                                                  type: string
+                                                value:
+                                                  type: string
+                                              required:
+                                              - key
+                                              type: object
+                                            type: array
+                                          scopes:
+                                            items:
+                                              type: string
+                                            type: array
+                                          tokenURLSecret:
+                                            properties:
+                                              key:
+                                                type: string
+                                              name:
+                                                type: string
+                                              optional:
+                                                type: boolean
+                                            required:
+                                            - key
+                                            type: object
+                                        type: object
+                                    type: object
                                   headers:
                                     items:
                                       properties:
@@ -4637,30 +5151,8 @@ spec:
                                       - value
                                       type: object
                                     type: array
-                                  passwordSecret:
-                                    properties:
-                                      key:
-                                        type: string
-                                      name:
-                                        type: string
-                                      optional:
-                                        type: boolean
-                                    required:
-                                    - key
-                                    type: object
                                   url:
                                     type: string
-                                  usernameSecret:
-                                    properties:
-                                      key:
-                                        type: string
-                                      name:
-                                        type: string
-                                      optional:
-                                        type: boolean
-                                    required:
-                                    - key
-                                    type: object
                                 required:
                                 - url
                                 type: object
@@ -5658,6 +6150,110 @@ spec:
                               type: object
                             http:
                               properties:
+                                auth:
+                                  properties:
+                                    basicAuth:
+                                      properties:
+                                        passwordSecret:
+                                          properties:
+                                            key:
+                                              type: string
+                                            name:
+                                              type: string
+                                            optional:
+                                              type: boolean
+                                          required:
+                                          - key
+                                          type: object
+                                        usernameSecret:
+                                          properties:
+                                            key:
+                                              type: string
+                                            name:
+                                              type: string
+                                            optional:
+                                              type: boolean
+                                          required:
+                                          - key
+                                          type: object
+                                      type: object
+                                    clientCert:
+                                      properties:
+                                        clientCertSecret:
+                                          properties:
+                                            key:
+                                              type: string
+                                            name:
+                                              type: string
+                                            optional:
+                                              type: boolean
+                                          required:
+                                          - key
+                                          type: object
+                                        clientKeySecret:
+                                          properties:
+                                            key:
+                                              type: string
+                                            name:
+                                              type: string
+                                            optional:
+                                              type: boolean
+                                          required:
+                                          - key
+                                          type: object
+                                      type: object
+                                    oauth2:
+                                      properties:
+                                        clientIDSecret:
+                                          properties:
+                                            key:
+                                              type: string
+                                            name:
+                                              type: string
+                                            optional:
+                                              type: boolean
+                                          required:
+                                          - key
+                                          type: object
+                                        clientSecretSecret:
+                                          properties:
+                                            key:
+                                              type: string
+                                            name:
+                                              type: string
+                                            optional:
+                                              type: boolean
+                                          required:
+                                          - key
+                                          type: object
+                                        endpointParams:
+                                          items:
+                                            properties:
+                                              key:
+                                                type: string
+                                              value:
+                                                type: string
+                                            required:
+                                            - key
+                                            type: object
+                                          type: array
+                                        scopes:
+                                          items:
+                                            type: string
+                                          type: array
+                                        tokenURLSecret:
+                                          properties:
+                                            key:
+                                              type: string
+                                            name:
+                                              type: string
+                                            optional:
+                                              type: boolean
+                                          required:
+                                          - key
+                                          type: object
+                                      type: object
+                                  type: object
                                 headers:
                                   items:
                                     properties:
@@ -5670,30 +6266,8 @@ spec:
                                     - value
                                     type: object
                                   type: array
-                                passwordSecret:
-                                  properties:
-                                    key:
-                                      type: string
-                                    name:
-                                      type: string
-                                    optional:
-                                      type: boolean
-                                  required:
-                                  - key
-                                  type: object
                                 url:
                                   type: string
-                                usernameSecret:
-                                  properties:
-                                    key:
-                                      type: string
-                                    name:
-                                      type: string
-                                    optional:
-                                      type: boolean
-                                  required:
-                                  - key
-                                  type: object
                               required:
                               - url
                               type: object
@@ -6184,6 +6758,110 @@ spec:
                               type: object
                             http:
                               properties:
+                                auth:
+                                  properties:
+                                    basicAuth:
+                                      properties:
+                                        passwordSecret:
+                                          properties:
+                                            key:
+                                              type: string
+                                            name:
+                                              type: string
+                                            optional:
+                                              type: boolean
+                                          required:
+                                          - key
+                                          type: object
+                                        usernameSecret:
+                                          properties:
+                                            key:
+                                              type: string
+                                            name:
+                                              type: string
+                                            optional:
+                                              type: boolean
+                                          required:
+                                          - key
+                                          type: object
+                                      type: object
+                                    clientCert:
+                                      properties:
+                                        clientCertSecret:
+                                          properties:
+                                            key:
+                                              type: string
+                                            name:
+                                              type: string
+                                            optional:
+                                              type: boolean
+                                          required:
+                                          - key
+                                          type: object
+                                        clientKeySecret:
+                                          properties:
+                                            key:
+                                              type: string
+                                            name:
+                                              type: string
+                                            optional:
+                                              type: boolean
+                                          required:
+                                          - key
+                                          type: object
+                                      type: object
+                                    oauth2:
+                                      properties:
+                                        clientIDSecret:
+                                          properties:
+                                            key:
+                                              type: string
+                                            name:
+                                              type: string
+                                            optional:
+                                              type: boolean
+                                          required:
+                                          - key
+                                          type: object
+                                        clientSecretSecret:
+                                          properties:
+                                            key:
+                                              type: string
+                                            name:
+                                              type: string
+                                            optional:
+                                              type: boolean
+                                          required:
+                                          - key
+                                          type: object
+                                        endpointParams:
+                                          items:
+                                            properties:
+                                              key:
+                                                type: string
+                                              value:
+                                                type: string
+                                            required:
+                                            - key
+                                            type: object
+                                          type: array
+                                        scopes:
+                                          items:
+                                            type: string
+                                          type: array
+                                        tokenURLSecret:
+                                          properties:
+                                            key:
+                                              type: string
+                                            name:
+                                              type: string
+                                            optional:
+                                              type: boolean
+                                          required:
+                                          - key
+                                          type: object
+                                      type: object
+                                  type: object
                                 headers:
                                   items:
                                     properties:
@@ -6196,30 +6874,8 @@ spec:
                                     - value
                                     type: object
                                   type: array
-                                passwordSecret:
-                                  properties:
-                                    key:
-                                      type: string
-                                    name:
-                                      type: string
-                                    optional:
-                                      type: boolean
-                                  required:
-                                  - key
-                                  type: object
                                 url:
                                   type: string
-                                usernameSecret:
-                                  properties:
-                                    key:
-                                      type: string
-                                    name:
-                                      type: string
-                                    optional:
-                                      type: boolean
-                                  required:
-                                  - key
-                                  type: object
                               required:
                               - url
                               type: object
@@ -8978,6 +9634,110 @@ spec:
                           type: object
                         http:
                           properties:
+                            auth:
+                              properties:
+                                basicAuth:
+                                  properties:
+                                    passwordSecret:
+                                      properties:
+                                        key:
+                                          type: string
+                                        name:
+                                          type: string
+                                        optional:
+                                          type: boolean
+                                      required:
+                                      - key
+                                      type: object
+                                    usernameSecret:
+                                      properties:
+                                        key:
+                                          type: string
+                                        name:
+                                          type: string
+                                        optional:
+                                          type: boolean
+                                      required:
+                                      - key
+                                      type: object
+                                  type: object
+                                clientCert:
+                                  properties:
+                                    clientCertSecret:
+                                      properties:
+                                        key:
+                                          type: string
+                                        name:
+                                          type: string
+                                        optional:
+                                          type: boolean
+                                      required:
+                                      - key
+                                      type: object
+                                    clientKeySecret:
+                                      properties:
+                                        key:
+                                          type: string
+                                        name:
+                                          type: string
+                                        optional:
+                                          type: boolean
+                                      required:
+                                      - key
+                                      type: object
+                                  type: object
+                                oauth2:
+                                  properties:
+                                    clientIDSecret:
+                                      properties:
+                                        key:
+                                          type: string
+                                        name:
+                                          type: string
+                                        optional:
+                                          type: boolean
+                                      required:
+                                      - key
+                                      type: object
+                                    clientSecretSecret:
+                                      properties:
+                                        key:
+                                          type: string
+                                        name:
+                                          type: string
+                                        optional:
+                                          type: boolean
+                                      required:
+                                      - key
+                                      type: object
+                                    endpointParams:
+                                      items:
+                                        properties:
+                                          key:
+                                            type: string
+                                          value:
+                                            type: string
+                                        required:
+                                        - key
+                                        type: object
+                                      type: array
+                                    scopes:
+                                      items:
+                                        type: string
+                                      type: array
+                                    tokenURLSecret:
+                                      properties:
+                                        key:
+                                          type: string
+                                        name:
+                                          type: string
+                                        optional:
+                                          type: boolean
+                                      required:
+                                      - key
+                                      type: object
+                                  type: object
+                              type: object
                             headers:
                               items:
                                 properties:
@@ -8990,30 +9750,8 @@ spec:
                                 - value
                                 type: object
                               type: array
-                            passwordSecret:
-                              properties:
-                                key:
-                                  type: string
-                                name:
-                                  type: string
-                                optional:
-                                  type: boolean
-                              required:
-                              - key
-                              type: object
                             url:
                               type: string
-                            usernameSecret:
-                              properties:
-                                key:
-                                  type: string
-                                name:
-                                  type: string
-                                optional:
-                                  type: boolean
-                              required:
-                              - key
-                              type: object
                           required:
                           - url
                           type: object
@@ -10558,6 +11296,110 @@ spec:
                                           type: object
                                         http:
                                           properties:
+                                            auth:
+                                              properties:
+                                                basicAuth:
+                                                  properties:
+                                                    passwordSecret:
+                                                      properties:
+                                                        key:
+                                                          type: string
+                                                        name:
+                                                          type: string
+                                                        optional:
+                                                          type: boolean
+                                                      required:
+                                                      - key
+                                                      type: object
+                                                    usernameSecret:
+                                                      properties:
+                                                        key:
+                                                          type: string
+                                                        name:
+                                                          type: string
+                                                        optional:
+                                                          type: boolean
+                                                      required:
+                                                      - key
+                                                      type: object
+                                                  type: object
+                                                clientCert:
+                                                  properties:
+                                                    clientCertSecret:
+                                                      properties:
+                                                        key:
+                                                          type: string
+                                                        name:
+                                                          type: string
+                                                        optional:
+                                                          type: boolean
+                                                      required:
+                                                      - key
+                                                      type: object
+                                                    clientKeySecret:
+                                                      properties:
+                                                        key:
+                                                          type: string
+                                                        name:
+                                                          type: string
+                                                        optional:
+                                                          type: boolean
+                                                      required:
+                                                      - key
+                                                      type: object
+                                                  type: object
+                                                oauth2:
+                                                  properties:
+                                                    clientIDSecret:
+                                                      properties:
+                                                        key:
+                                                          type: string
+                                                        name:
+                                                          type: string
+                                                        optional:
+                                                          type: boolean
+                                                      required:
+                                                      - key
+                                                      type: object
+                                                    clientSecretSecret:
+                                                      properties:
+                                                        key:
+                                                          type: string
+                                                        name:
+                                                          type: string
+                                                        optional:
+                                                          type: boolean
+                                                      required:
+                                                      - key
+                                                      type: object
+                                                    endpointParams:
+                                                      items:
+                                                        properties:
+                                                          key:
+                                                            type: string
+                                                          value:
+                                                            type: string
+                                                        required:
+                                                        - key
+                                                        type: object
+                                                      type: array
+                                                    scopes:
+                                                      items:
+                                                        type: string
+                                                      type: array
+                                                    tokenURLSecret:
+                                                      properties:
+                                                        key:
+                                                          type: string
+                                                        name:
+                                                          type: string
+                                                        optional:
+                                                          type: boolean
+                                                      required:
+                                                      - key
+                                                      type: object
+                                                  type: object
+                                              type: object
                                             headers:
                                               items:
                                                 properties:
@@ -10570,30 +11412,8 @@ spec:
                                                 - value
                                                 type: object
                                               type: array
-                                            passwordSecret:
-                                              properties:
-                                                key:
-                                                  type: string
-                                                name:
-                                                  type: string
-                                                optional:
-                                                  type: boolean
-                                              required:
-                                              - key
-                                              type: object
                                             url:
                                               type: string
-                                            usernameSecret:
-                                              properties:
-                                                key:
-                                                  type: string
-                                                name:
-                                                  type: string
-                                                optional:
-                                                  type: boolean
-                                              required:
-                                              - key
-                                              type: object
                                           required:
                                           - url
                                           type: object
@@ -10996,6 +11816,110 @@ spec:
                                                 type: object
                                               http:
                                                 properties:
+                                                  auth:
+                                                    properties:
+                                                      basicAuth:
+                                                        properties:
+                                                          passwordSecret:
+                                                            properties:
+                                                              key:
+                                                                type: string
+                                                              name:
+                                                                type: string
+                                                              optional:
+                                                                type: boolean
+                                                            required:
+                                                            - key
+                                                            type: object
+                                                          usernameSecret:
+                                                            properties:
+                                                              key:
+                                                                type: string
+                                                              name:
+                                                                type: string
+                                                              optional:
+                                                                type: boolean
+                                                            required:
+                                                            - key
+                                                            type: object
+                                                        type: object
+                                                      clientCert:
+                                                        properties:
+                                                          clientCertSecret:
+                                                            properties:
+                                                              key:
+                                                                type: string
+                                                              name:
+                                                                type: string
+                                                              optional:
+                                                                type: boolean
+                                                            required:
+                                                            - key
+                                                            type: object
+                                                          clientKeySecret:
+                                                            properties:
+                                                              key:
+                                                                type: string
+                                                              name:
+                                                                type: string
+                                                              optional:
+                                                                type: boolean
+                                                            required:
+                                                            - key
+                                                            type: object
+                                                        type: object
+                                                      oauth2:
+                                                        properties:
+                                                          clientIDSecret:
+                                                            properties:
+                                                              key:
+                                                                type: string
+                                                              name:
+                                                                type: string
+                                                              optional:
+                                                                type: boolean
+                                                            required:
+                                                            - key
+                                                            type: object
+                                                          clientSecretSecret:
+                                                            properties:
+                                                              key:
+                                                                type: string
+                                                              name:
+                                                                type: string
+                                                              optional:
+                                                                type: boolean
+                                                            required:
+                                                            - key
+                                                            type: object
+                                                          endpointParams:
+                                                            items:
+                                                              properties:
+                                                                key:
+                                                                  type: string
+                                                                value:
+                                                                  type: string
+                                                              required:
+                                                              - key
+                                                              type: object
+                                                            type: array
+                                                          scopes:
+                                                            items:
+                                                              type: string
+                                                            type: array
+                                                          tokenURLSecret:
+                                                            properties:
+                                                              key:
+                                                                type: string
+                                                              name:
+                                                                type: string
+                                                              optional:
+                                                                type: boolean
+                                                            required:
+                                                            - key
+                                                            type: object
+                                                        type: object
+                                                    type: object
                                                   headers:
                                                     items:
                                                       properties:
@@ -11008,30 +11932,8 @@ spec:
                                                       - value
                                                       type: object
                                                     type: array
-                                                  passwordSecret:
-                                                    properties:
-                                                      key:
-                                                        type: string
-                                                      name:
-                                                        type: string
-                                                      optional:
-                                                        type: boolean
-                                                    required:
-                                                    - key
-                                                    type: object
                                                   url:
                                                     type: string
-                                                  usernameSecret:
-                                                    properties:
-                                                      key:
-                                                        type: string
-                                                      name:
-                                                        type: string
-                                                      optional:
-                                                        type: boolean
-                                                    required:
-                                                    - key
-                                                    type: object
                                                 required:
                                                 - url
                                                 type: object
@@ -11485,6 +12387,110 @@ spec:
                                   type: object
                                 http:
                                   properties:
+                                    auth:
+                                      properties:
+                                        basicAuth:
+                                          properties:
+                                            passwordSecret:
+                                              properties:
+                                                key:
+                                                  type: string
+                                                name:
+                                                  type: string
+                                                optional:
+                                                  type: boolean
+                                              required:
+                                              - key
+                                              type: object
+                                            usernameSecret:
+                                              properties:
+                                                key:
+                                                  type: string
+                                                name:
+                                                  type: string
+                                                optional:
+                                                  type: boolean
+                                              required:
+                                              - key
+                                              type: object
+                                          type: object
+                                        clientCert:
+                                          properties:
+                                            clientCertSecret:
+                                              properties:
+                                                key:
+                                                  type: string
+                                                name:
+                                                  type: string
+                                                optional:
+                                                  type: boolean
+                                              required:
+                                              - key
+                                              type: object
+                                            clientKeySecret:
+                                              properties:
+                                                key:
+                                                  type: string
+                                                name:
+                                                  type: string
+                                                optional:
+                                                  type: boolean
+                                              required:
+                                              - key
+                                              type: object
+                                          type: object
+                                        oauth2:
+                                          properties:
+                                            clientIDSecret:
+                                              properties:
+                                                key:
+                                                  type: string
+                                                name:
+                                                  type: string
+                                                optional:
+                                                  type: boolean
+                                              required:
+                                              - key
+                                              type: object
+                                            clientSecretSecret:
+                                              properties:
+                                                key:
+                                                  type: string
+                                                name:
+                                                  type: string
+                                                optional:
+                                                  type: boolean
+                                              required:
+                                              - key
+                                              type: object
+                                            endpointParams:
+                                              items:
+                                                properties:
+                                                  key:
+                                                    type: string
+                                                  value:
+                                                    type: string
+                                                required:
+                                                - key
+                                                type: object
+                                              type: array
+                                            scopes:
+                                              items:
+                                                type: string
+                                              type: array
+                                            tokenURLSecret:
+                                              properties:
+                                                key:
+                                                  type: string
+                                                name:
+                                                  type: string
+                                                optional:
+                                                  type: boolean
+                                              required:
+                                              - key
+                                              type: object
+                                          type: object
+                                      type: object
                                     headers:
                                       items:
                                         properties:
@@ -11497,30 +12503,8 @@ spec:
                                         - value
                                         type: object
                                       type: array
-                                    passwordSecret:
-                                      properties:
-                                        key:
-                                          type: string
-                                        name:
-                                          type: string
-                                        optional:
-                                          type: boolean
-                                      required:
-                                      - key
-                                      type: object
                                     url:
                                       type: string
-                                    usernameSecret:
-                                      properties:
-                                        key:
-                                          type: string
-                                        name:
-                                          type: string
-                                        optional:
-                                          type: boolean
-                                      required:
-                                      - key
-                                      type: object
                                   required:
                                   - url
                                   type: object
@@ -12518,6 +13502,110 @@ spec:
                                 type: object
                               http:
                                 properties:
+                                  auth:
+                                    properties:
+                                      basicAuth:
+                                        properties:
+                                          passwordSecret:
+                                            properties:
+                                              key:
+                                                type: string
+                                              name:
+                                                type: string
+                                              optional:
+                                                type: boolean
+                                            required:
+                                            - key
+                                            type: object
+                                          usernameSecret:
+                                            properties:
+                                              key:
+                                                type: string
+                                              name:
+                                                type: string
+                                              optional:
+                                                type: boolean
+                                            required:
+                                            - key
+                                            type: object
+                                        type: object
+                                      clientCert:
+                                        properties:
+                                          clientCertSecret:
+                                            properties:
+                                              key:
+                                                type: string
+                                              name:
+                                                type: string
+                                              optional:
+                                                type: boolean
+                                            required:
+                                            - key
+                                            type: object
+                                          clientKeySecret:
+                                            properties:
+                                              key:
+                                                type: string
+                                              name:
+                                                type: string
+                                              optional:
+                                                type: boolean
+                                            required:
+                                            - key
+                                            type: object
+                                        type: object
+                                      oauth2:
+                                        properties:
+                                          clientIDSecret:
+                                            properties:
+                                              key:
+                                                type: string
+                                              name:
+                                                type: string
+                                              optional:
+                                                type: boolean
+                                            required:
+                                            - key
+                                            type: object
+                                          clientSecretSecret:
+                                            properties:
+                                              key:
+                                                type: string
+                                              name:
+                                                type: string
+                                              optional:
+                                                type: boolean
+                                            required:
+                                            - key
+                                            type: object
+                                          endpointParams:
+                                            items:
+                                              properties:
+                                                key:
+                                                  type: string
+                                                value:
+                                                  type: string
+                                              required:
+                                              - key
+                                              type: object
+                                            type: array
+                                          scopes:
+                                            items:
+                                              type: string
+                                            type: array
+                                          tokenURLSecret:
+                                            properties:
+                                              key:
+                                                type: string
+                                              name:
+                                                type: string
+                                              optional:
+                                                type: boolean
+                                            required:
+                                            - key
+                                            type: object
+                                        type: object
+                                    type: object
                                   headers:
                                     items:
                                       properties:
@@ -12530,30 +13618,8 @@ spec:
                                       - value
                                       type: object
                                     type: array
-                                  passwordSecret:
-                                    properties:
-                                      key:
-                                        type: string
-                                      name:
-                                        type: string
-                                      optional:
-                                        type: boolean
-                                    required:
-                                    - key
-                                    type: object
                                   url:
                                     type: string
-                                  usernameSecret:
-                                    properties:
-                                      key:
-                                        type: string
-                                      name:
-                                        type: string
-                                      optional:
-                                        type: boolean
-                                    required:
-                                    - key
-                                    type: object
                                 required:
                                 - url
                                 type: object
@@ -13044,6 +14110,110 @@ spec:
                                 type: object
                               http:
                                 properties:
+                                  auth:
+                                    properties:
+                                      basicAuth:
+                                        properties:
+                                          passwordSecret:
+                                            properties:
+                                              key:
+                                                type: string
+                                              name:
+                                                type: string
+                                              optional:
+                                                type: boolean
+                                            required:
+                                            - key
+                                            type: object
+                                          usernameSecret:
+                                            properties:
+                                              key:
+                                                type: string
+                                              name:
+                                                type: string
+                                              optional:
+                                                type: boolean
+                                            required:
+                                            - key
+                                            type: object
+                                        type: object
+                                      clientCert:
+                                        properties:
+                                          clientCertSecret:
+                                            properties:
+                                              key:
+                                                type: string
+                                              name:
+                                                type: string
+                                              optional:
+                                                type: boolean
+                                            required:
+                                            - key
+                                            type: object
+                                          clientKeySecret:
+                                            properties:
+                                              key:
+                                                type: string
+                                              name:
+                                                type: string
+                                              optional:
+                                                type: boolean
+                                            required:
+                                            - key
+                                            type: object
+                                        type: object
+                                      oauth2:
+                                        properties:
+                                          clientIDSecret:
+                                            properties:
+                                              key:
+                                                type: string
+                                              name:
+                                                type: string
+                                              optional:
+                                                type: boolean
+                                            required:
+                                            - key
+                                            type: object
+                                          clientSecretSecret:
+                                            properties:
+                                              key:
+                                                type: string
+                                              name:
+                                                type: string
+                                              optional:
+                                                type: boolean
+                                            required:
+                                            - key
+                                            type: object
+                                          endpointParams:
+                                            items:
+                                              properties:
+                                                key:
+                                                  type: string
+                                                value:
+                                                  type: string
+                                              required:
+                                              - key
+                                              type: object
+                                            type: array
+                                          scopes:
+                                            items:
+                                              type: string
+                                            type: array
+                                          tokenURLSecret:
+                                            properties:
+                                              key:
+                                                type: string
+                                              name:
+                                                type: string
+                                              optional:
+                                                type: boolean
+                                            required:
+                                            - key
+                                            type: object
+                                        type: object
+                                    type: object
                                   headers:
                                     items:
                                       properties:
@@ -13056,30 +14226,8 @@ spec:
                                       - value
                                       type: object
                                     type: array
-                                  passwordSecret:
-                                    properties:
-                                      key:
-                                        type: string
-                                      name:
-                                        type: string
-                                      optional:
-                                        type: boolean
-                                    required:
-                                    - key
-                                    type: object
                                   url:
                                     type: string
-                                  usernameSecret:
-                                    properties:
-                                      key:
-                                        type: string
-                                      name:
-                                        type: string
-                                      optional:
-                                        type: boolean
-                                    required:
-                                    - key
-                                    type: object
                                 required:
                                 - url
                                 type: object
