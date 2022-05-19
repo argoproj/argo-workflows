@@ -5980,6 +5980,42 @@
     "io.argoproj.workflow.v1alpha1.Item": {
       "description": "Item expands a single workflow step into multiple parallel steps The value of Item can be a map, string, bool, or number"
     },
+    "io.argoproj.workflow.v1alpha1.Job": {
+      "properties": {
+        "image": {
+          "type": "string"
+        },
+        "steps": {
+          "items": {
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.JobStep"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "image",
+        "steps"
+      ],
+      "type": "object"
+    },
+    "io.argoproj.workflow.v1alpha1.JobStep": {
+      "properties": {
+        "if": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "run": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "run"
+      ],
+      "type": "object"
+    },
     "io.argoproj.workflow.v1alpha1.LabelKeys": {
       "description": "LabelKeys is list of keys",
       "properties": {
@@ -7323,6 +7359,9 @@
         "inputs": {
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Inputs",
           "description": "Inputs describe what inputs parameters and artifacts are supplied to this template"
+        },
+        "job": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Job"
         },
         "memoize": {
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Memoize",

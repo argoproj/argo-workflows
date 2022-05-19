@@ -52,7 +52,7 @@ func UpdateProgress(wf *wfv1.Workflow) {
 // It maybe that this type of node never gets progress.
 func executable(nodeType wfv1.NodeType) bool {
 	switch nodeType {
-	case wfv1.NodeTypePod, wfv1.NodeTypeHTTP, wfv1.NodeTypePlugin, wfv1.NodeTypeContainer, wfv1.NodeTypeSuspend:
+	case wfv1.NodeTypePod, wfv1.NodeTypeHTTP, wfv1.NodeTypePlugin, wfv1.NodeTypeContainer, wfv1.NodeTypeSuspend, wfv1.NodeTypeJobStep:
 		return true
 	default:
 		return false

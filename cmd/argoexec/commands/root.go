@@ -60,6 +60,7 @@ func NewRootCommand() *cobra.Command {
 	command.AddCommand(NewAgentCommand())
 	command.AddCommand(NewEmissaryCommand())
 	command.AddCommand(NewInitCommand())
+	command.AddCommand(NewJobCommand())
 	command.AddCommand(NewResourceCommand())
 	command.AddCommand(NewWaitCommand())
 	command.AddCommand(NewDataCommand())

@@ -41,6 +41,7 @@ const (
 	TemplateTypeData         TemplateType = "Data"
 	TemplateTypeHTTP         TemplateType = "HTTP"
 	TemplateTypePlugin       TemplateType = "Plugin"
+	TemplateTypeJob          TemplateType = "Job"
 	TemplateTypeUnknown      TemplateType = "Unknown"
 )
 
@@ -81,6 +82,7 @@ const (
 	NodeTypeSuspend   NodeType = "Suspend"
 	NodeTypeHTTP      NodeType = "HTTP"
 	NodeTypePlugin    NodeType = "Plugin"
+	NodeTypeJobStep   NodeType = "JobStep"
 )
 
 // ArtifactGCStrategy is the strategy when to delete artifacts for GC.
@@ -633,6 +635,8 @@ type Template struct {
 
 	// Plugin is a plugin template
 	Plugin *Plugin `json:"plugin,omitempty" protobuf:"bytes,43,opt,name=plugin"`
+
+	Job *Job `json:"job,omitempty" protobuf:"bytes,44,opt,name=job"`
 
 	// Volumes is a list of volumes that can be mounted by containers in a template.
 	// +patchStrategy=merge
@@ -2638,6 +2642,9 @@ func (tmpl *Template) GetType() TemplateType {
 	if tmpl.Plugin != nil {
 		return TemplateTypePlugin
 	}
+	if tmpl.Job != nil {
+		return TemplateTypeJob
+	}
 	return TemplateTypeUnknown
 }
 
@@ -2646,7 +2653,7 @@ func (tmpl *Template) GetNodeType() NodeType {
 		return NodeTypeRetry
 	}
 	switch tmpl.GetType() {
-	case TemplateTypeContainer, TemplateTypeContainerSet, TemplateTypeScript, TemplateTypeResource, TemplateTypeData:
+	case TemplateTypeContainer, TemplateTypeContainerSet, TemplateTypeScript, TemplateTypeResource, TemplateTypeData, TemplateTypeJob:
 		return NodeTypePod
 	case TemplateTypeDAG:
 		return NodeTypeDAG
@@ -2663,7 +2670,7 @@ func (tmpl *Template) GetNodeType() NodeType {
 // IsPodType returns whether or not the template is a pod type
 func (tmpl *Template) IsPodType() bool {
 	switch tmpl.GetType() {
-	case TemplateTypeContainer, TemplateTypeContainerSet, TemplateTypeScript, TemplateTypeResource, TemplateTypeData:
+	case TemplateTypeContainer, TemplateTypeContainerSet, TemplateTypeScript, TemplateTypeResource, TemplateTypeData, TemplateTypeJob:
 		return true
 	}
 	return false
@@ -2672,7 +2679,7 @@ func (tmpl *Template) IsPodType() bool {
 // IsLeaf returns whether or not the template is a leaf
 func (tmpl *Template) IsLeaf() bool {
 	switch tmpl.GetType() {
-	case TemplateTypeContainer, TemplateTypeContainerSet, TemplateTypeScript, TemplateTypeResource, TemplateTypeData, TemplateTypeHTTP, TemplateTypePlugin:
+	case TemplateTypeContainer, TemplateTypeContainerSet, TemplateTypeScript, TemplateTypeResource, TemplateTypeData, TemplateTypeHTTP, TemplateTypePlugin, TemplateTypeJob:
 		return true
 	}
 	return false

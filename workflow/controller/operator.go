@@ -1886,6 +1886,8 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 		node = woc.executeHTTPTemplate(nodeName, templateScope, processedTmpl, orgTmpl, opts)
 	case wfv1.TemplateTypePlugin:
 		node = woc.executePluginTemplate(nodeName, templateScope, processedTmpl, orgTmpl, opts)
+	case wfv1.TemplateTypeJob:
+		node, err = woc.executeJobTemplate(ctx, nodeName, templateScope, processedTmpl, orgTmpl, opts)
 	default:
 		err = errors.Errorf(errors.CodeBadRequest, "Template '%s' missing specification", processedTmpl.Name)
 		return woc.initializeNode(nodeName, wfv1.NodeTypeSkipped, templateScope, orgTmpl, opts.boundaryID, wfv1.NodeError, err.Error()), err
@@ -2465,7 +2467,7 @@ func (woc *wfOperationCtx) getOutboundNodes(nodeID string) []string {
 
 		// If this pod comes from a container set, it should be treated as a container or task group
 		fallthrough
-	case wfv1.NodeTypeContainer, wfv1.NodeTypeTaskGroup:
+	case wfv1.NodeTypeContainer, wfv1.NodeTypeJobStep, wfv1.NodeTypeTaskGroup:
 		if len(node.Children) == 0 {
 			return []string{node.ID}
 		}

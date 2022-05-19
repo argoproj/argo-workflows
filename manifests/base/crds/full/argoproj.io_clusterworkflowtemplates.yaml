@@ -6458,6 +6458,30 @@ spec:
                           type: object
                         type: array
                     type: object
+                  job:
+                    properties:
+                      image:
+                        type: string
+                      steps:
+                        items:
+                          properties:
+                            if:
+                              type: string
+                            name:
+                              type: string
+                            run:
+                              type: string
+                          required:
+                          - name
+                          - run
+                          type: object
+                        type: array
+                      workingDir:
+                        type: string
+                    required:
+                    - image
+                    - steps
+                    type: object
                   memoize:
                     properties:
                       cache:
@@ -13809,6 +13833,30 @@ spec:
                             - name
                             type: object
                           type: array
+                      type: object
+                    job:
+                      properties:
+                        image:
+                          type: string
+                        steps:
+                          items:
+                            properties:
+                              if:
+                                type: string
+                              name:
+                                type: string
+                              run:
+                                type: string
+                            required:
+                            - name
+                            - run
+                            type: object
+                          type: array
+                        workingDir:
+                          type: string
+                      required:
+                      - image
+                      - steps
                       type: object
                     memoize:
                       properties:

@@ -39,6 +39,7 @@ func Test_executes(t *testing.T) {
 	assert.False(t, executable(""))
 	assert.True(t, executable(wfv1.NodeTypePod))
 	assert.True(t, executable(wfv1.NodeTypeContainer))
+	assert.True(t, executable(wfv1.NodeTypeJobStep))
 	assert.False(t, executable(wfv1.NodeTypeSteps))
 	assert.False(t, executable(wfv1.NodeTypeStepGroup))
 	assert.False(t, executable(wfv1.NodeTypeDAG))

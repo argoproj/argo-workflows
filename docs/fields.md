@@ -396,6 +396,8 @@ WorkflowTemplate is the definition of a workflow template resource
 
 - [`buildkit-template.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/buildkit-template.yaml)
 
+- [`ci-v2-workflowtemplate.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/ci-v2-workflowtemplate.yaml)
+
 - [`ci-workflowtemplate.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/ci-workflowtemplate.yaml)
 
 - [`cron-backfill.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/cron-backfill.yaml)
@@ -448,6 +450,8 @@ WorkflowSpec is the specification of a Workflow.
 - [`buildkit-template.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/buildkit-template.yaml)
 
 - [`ci-output-artifact.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/ci-output-artifact.yaml)
+
+- [`ci-v2-workflowtemplate.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/ci-v2-workflowtemplate.yaml)
 
 - [`ci-workflowtemplate.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/ci-workflowtemplate.yaml)
 
@@ -875,6 +879,8 @@ CronWorkflowSpec is the specification of a CronWorkflow
 
 - [`ci-output-artifact.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/ci-output-artifact.yaml)
 
+- [`ci-v2-workflowtemplate.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/ci-v2-workflowtemplate.yaml)
+
 - [`ci-workflowtemplate.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/ci-workflowtemplate.yaml)
 
 - [`ci.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/ci.yaml)
@@ -1245,6 +1251,8 @@ Arguments to a template
 - [`buildkit-template.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/buildkit-template.yaml)
 
 - [`ci-output-artifact.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/ci-output-artifact.yaml)
+
+- [`ci-v2-workflowtemplate.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/ci-v2-workflowtemplate.yaml)
 
 - [`ci-workflowtemplate.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/ci-workflowtemplate.yaml)
 
@@ -1628,6 +1636,7 @@ Template is a reusable and composable unit of execution in a workflow
 |`http`|[`HTTP`](#http)|HTTP makes a HTTP request|
 |`initContainers`|`Array<`[`UserContainer`](#usercontainer)`>`|InitContainers is a list of containers which run before the main container.|
 |`inputs`|[`Inputs`](#inputs)|Inputs describe what inputs parameters and artifacts are supplied to this template|
+|`job`|[`Job`](#job)|_No description available_|
 |`memoize`|[`Memoize`](#memoize)|Memoize allows templates to use outputs generated from already executed templates|
 |`metadata`|[`Metadata`](#metadata)|Metdata sets the pods's metadata, i.e. annotations and labels|
 |`metrics`|[`Metrics`](#metrics)|Metrics are a list of metrics emitted from this template|
@@ -1814,6 +1823,8 @@ Outputs hold parameters, artifacts, and results from a step
 
 - [`ci-output-artifact.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/ci-output-artifact.yaml)
 
+- [`ci-v2-workflowtemplate.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/ci-v2-workflowtemplate.yaml)
+
 - [`ci-workflowtemplate.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/ci-workflowtemplate.yaml)
 
 - [`conditional-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/conditional-artifacts.yaml)
@@ -1928,6 +1939,8 @@ Artifact indicates an artifact to place at a specified path
 
 - [`ci-output-artifact.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/ci-output-artifact.yaml)
 
+- [`ci-v2-workflowtemplate.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/ci-v2-workflowtemplate.yaml)
+
 - [`ci-workflowtemplate.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/ci-workflowtemplate.yaml)
 
 - [`ci.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/ci.yaml)
@@ -2020,6 +2033,8 @@ Parameter indicate a passed string parameter to a service template with an optio
 - [`buildkit-template.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/buildkit-template.yaml)
 
 - [`ci-output-artifact.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/ci-output-artifact.yaml)
+
+- [`ci-v2-workflowtemplate.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/ci-v2-workflowtemplate.yaml)
 
 - [`ci-workflowtemplate.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/ci-workflowtemplate.yaml)
 
@@ -2582,6 +2597,8 @@ Inputs are the mechanism for passing parameters, artifacts, volumes from one tem
 
 - [`ci-output-artifact.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/ci-output-artifact.yaml)
 
+- [`ci-v2-workflowtemplate.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/ci-v2-workflowtemplate.yaml)
+
 - [`ci-workflowtemplate.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/ci-workflowtemplate.yaml)
 
 - [`ci.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/ci.yaml)
@@ -2734,6 +2751,23 @@ Inputs are the mechanism for passing parameters, artifacts, volumes from one tem
 |:----------:|:----------:|---------------|
 |`artifacts`|`Array<`[`Artifact`](#artifact)`>`|Artifact are a list of artifacts passed as inputs|
 |`parameters`|`Array<`[`Parameter`](#parameter)`>`|Parameters are a list of parameters passed as inputs|
+
+## Job
+
+_No description available_
+
+<details>
+<summary>Examples with this field (click to open)</summary>
+<br>
+
+- [`ci-v2-workflowtemplate.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/ci-v2-workflowtemplate.yaml)
+</details>
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`image`|`string`|_No description available_|
+|`steps`|`Array<`[`JobStep`](#jobstep)`>`|_No description available_|
 
 ## Memoize
 
@@ -2898,6 +2932,8 @@ WorkflowStep is a reference to a template to execute in a series of step
 - [`artifactory-artifact.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/artifactory-artifact.yaml)
 
 - [`ci-output-artifact.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/ci-output-artifact.yaml)
+
+- [`ci-v2-workflowtemplate.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/ci-v2-workflowtemplate.yaml)
 
 - [`ci.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/ci.yaml)
 
@@ -3885,6 +3921,188 @@ _No description available_
 |`value`|`string`|_No description available_|
 |`valueFrom`|[`HTTPHeaderSource`](#httpheadersource)|_No description available_|
 
+## JobStep
+
+_No description available_
+
+<details>
+<summary>Examples with this field (click to open)</summary>
+<br>
+
+- [`artifact-disable-archive.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/artifact-disable-archive.yaml)
+
+- [`artifact-passing-subpath.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/artifact-passing-subpath.yaml)
+
+- [`artifact-passing.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/artifact-passing.yaml)
+
+- [`artifactory-artifact.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/artifactory-artifact.yaml)
+
+- [`ci-output-artifact.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/ci-output-artifact.yaml)
+
+- [`ci-v2-workflowtemplate.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/ci-v2-workflowtemplate.yaml)
+
+- [`ci.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/ci.yaml)
+
+- [`clustertemplates.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/cluster-workflow-template/clustertemplates.yaml)
+
+- [`mixed-cluster-namespaced-wftmpl-steps.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/cluster-workflow-template/mixed-cluster-namespaced-wftmpl-steps.yaml)
+
+- [`coinflip-recursive.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/coinflip-recursive.yaml)
+
+- [`coinflip.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/coinflip.yaml)
+
+- [`conditional-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/conditional-artifacts.yaml)
+
+- [`conditional-parameters.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/conditional-parameters.yaml)
+
+- [`conditionals-complex.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/conditionals-complex.yaml)
+
+- [`conditionals.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/conditionals.yaml)
+
+- [`continue-on-fail.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/continue-on-fail.yaml)
+
+- [`cron-backfill.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/cron-backfill.yaml)
+
+- [`custom-metrics.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/custom-metrics.yaml)
+
+- [`daemon-nginx.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/daemon-nginx.yaml)
+
+- [`daemon-step.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/daemon-step.yaml)
+
+- [`dag-coinflip.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-coinflip.yaml)
+
+- [`dag-diamond-steps.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-diamond-steps.yaml)
+
+- [`data-transformations.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/data-transformations.yaml)
+
+- [`exit-code-output-variable.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-code-output-variable.yaml)
+
+- [`exit-handler-step-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handler-step-level.yaml)
+
+- [`exit-handler-with-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handler-with-artifacts.yaml)
+
+- [`exit-handler-with-param.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handler-with-param.yaml)
+
+- [`exit-handlers.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handlers.yaml)
+
+- [`fibonacci-seq-conditional-param.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/fibonacci-seq-conditional-param.yaml)
+
+- [`fun-with-gifs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/fun-with-gifs.yaml)
+
+- [`global-outputs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/global-outputs.yaml)
+
+- [`handle-large-output-results.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/handle-large-output-results.yaml)
+
+- [`hdfs-artifact.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/hdfs-artifact.yaml)
+
+- [`hello-hybrid.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/hello-hybrid.yaml)
+
+- [`http-hello-world.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/http-hello-world.yaml)
+
+- [`http-success-condition.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/http-success-condition.yaml)
+
+- [`influxdb-ci.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/influxdb-ci.yaml)
+
+- [`k8s-wait-wf.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-wait-wf.yaml)
+
+- [`life-cycle-hooks-tmpl-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/life-cycle-hooks-tmpl-level.yaml)
+
+- [`life-cycle-hooks-wf-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/life-cycle-hooks-wf-level.yaml)
+
+- [`loops-maps.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/loops-maps.yaml)
+
+- [`loops-param-argument.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/loops-param-argument.yaml)
+
+- [`loops-param-result.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/loops-param-result.yaml)
+
+- [`loops-sequence.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/loops-sequence.yaml)
+
+- [`loops.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/loops.yaml)
+
+- [`nested-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/nested-workflow.yaml)
+
+- [`output-parameter.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/output-parameter.yaml)
+
+- [`parallelism-limit.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/parallelism-limit.yaml)
+
+- [`parallelism-nested-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/parallelism-nested-workflow.yaml)
+
+- [`parallelism-nested.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/parallelism-nested.yaml)
+
+- [`parallelism-template-limit.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/parallelism-template-limit.yaml)
+
+- [`parameter-aggregation-script.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/parameter-aggregation-script.yaml)
+
+- [`parameter-aggregation.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/parameter-aggregation.yaml)
+
+- [`pod-gc-strategy-with-label-selector.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/pod-gc-strategy-with-label-selector.yaml)
+
+- [`pod-gc-strategy.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/pod-gc-strategy.yaml)
+
+- [`pod-metadata-wf-field.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/pod-metadata-wf-field.yaml)
+
+- [`pod-metadata.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/pod-metadata.yaml)
+
+- [`recursive-for-loop.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/recursive-for-loop.yaml)
+
+- [`resubmit.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/resubmit.yaml)
+
+- [`retry-conditional.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/retry-conditional.yaml)
+
+- [`retry-with-steps.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/retry-with-steps.yaml)
+
+- [`scripts-bash.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/scripts-bash.yaml)
+
+- [`scripts-javascript.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/scripts-javascript.yaml)
+
+- [`scripts-python.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/scripts-python.yaml)
+
+- [`status-reference.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/status-reference.yaml)
+
+- [`step-level-timeout.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/step-level-timeout.yaml)
+
+- [`steps-inline-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/steps-inline-workflow.yaml)
+
+- [`steps.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/steps.yaml)
+
+- [`suspend-template-outputs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/suspend-template-outputs.yaml)
+
+- [`suspend-template.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/suspend-template.yaml)
+
+- [`synchronization-mutex-tmpl-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/synchronization-mutex-tmpl-level.yaml)
+
+- [`template-defaults.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/template-defaults.yaml)
+
+- [`template-on-exit.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/template-on-exit.yaml)
+
+- [`timeouts-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/timeouts-workflow.yaml)
+
+- [`volumes-existing.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/volumes-existing.yaml)
+
+- [`volumes-pvc.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/volumes-pvc.yaml)
+
+- [`work-avoidance.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/work-avoidance.yaml)
+
+- [`event-consumer-workflowtemplate.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-event-binding/event-consumer-workflowtemplate.yaml)
+
+- [`workflow-of-workflows.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-of-workflows.yaml)
+
+- [`hello-world.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-template/hello-world.yaml)
+
+- [`retry-with-steps.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-template/retry-with-steps.yaml)
+
+- [`steps.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-template/steps.yaml)
+
+- [`templates.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/workflow-template/templates.yaml)
+</details>
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`if`|`string`|_No description available_|
+|`name`|`string`|_No description available_|
+|`run`|`string`|_No description available_|
+
 ## Cache
 
 Cache is the configuration for the type of cache to be used
@@ -4425,6 +4643,8 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 - [`buildkit-template.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/buildkit-template.yaml)
 
 - [`ci-output-artifact.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/ci-output-artifact.yaml)
+
+- [`ci-v2-workflowtemplate.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/ci-v2-workflowtemplate.yaml)
 
 - [`ci-workflowtemplate.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/ci-workflowtemplate.yaml)
 
@@ -5734,6 +5954,8 @@ PersistentVolumeClaimSpec describes the common attributes of storage devices and
 - [`buildkit-template.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/buildkit-template.yaml)
 
 - [`ci-output-artifact.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/ci-output-artifact.yaml)
+
+- [`ci-v2-workflowtemplate.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/ci-v2-workflowtemplate.yaml)
 
 - [`ci-workflowtemplate.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/ci-workflowtemplate.yaml)
 

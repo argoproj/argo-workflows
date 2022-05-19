@@ -15,8 +15,20 @@ const (
 	ProgressDefault   = Progress("0/1")
 )
 
-func NewProgress(n, m int64) (Progress, bool) {
-	return ParseProgress(fmt.Sprintf("%v/%v", n, m))
+var progressRune = map[NodePhase]rune{
+	NodePending:   'P',
+	NodeRunning:   'R',
+	NodeSucceeded: 'S',
+	NodeFailed:    'F',
+	NodeSkipped:   'K',
+}
+
+var progressPhase = map[rune]NodePhase{
+	'P': NodePending,
+	'R': NodeRunning,
+	'S': NodeSucceeded,
+	'F': NodeFailed,
+	'K': NodeSkipped,
 }
 
 func ParseProgress(s string) (Progress, bool) {
@@ -24,16 +36,34 @@ func ParseProgress(s string) (Progress, bool) {
 	return v, v.IsValid()
 }
 
+func PendingProgress(len int) Progress {
+	return Progress(strings.Repeat("P", len))
+}
+
 func (in Progress) parts() []string {
 	return strings.SplitN(string(in), "/", 2)
 }
 
-func (in Progress) N() int64 {
-	return parseInt64(in.parts()[0])
+func (in Progress) N() int {
+	if strings.ContainsRune(string(in), '/') {
+		v, _ := strconv.Atoi(in.parts()[0])
+		return v
+	}
+	n := 0
+	for _, x := range strings.Split(string(in), "") {
+		if x != "P" {
+			n++
+		}
+	}
+	return n
 }
 
-func (in Progress) M() int64 {
-	return parseInt64(in.parts()[1])
+func (in Progress) M() int {
+	if strings.ContainsRune(string(in), '/') {
+		v, _ := strconv.Atoi(in.parts()[1])
+		return v
+	}
+	return len(string(in))
 }
 
 func (in Progress) Add(x Progress) Progress {
@@ -48,7 +78,19 @@ func (in Progress) IsValid() bool {
 	return in != "" && in.N() >= 0 && in.N() <= in.M() && in.M() > 0
 }
 
-func parseInt64(s string) int64 {
-	v, _ := strconv.ParseInt(s, 10, 64)
-	return v
+func (in Progress) Failure() bool {
+	return strings.ContainsRune(string(in), progressRune[NodeFailed])
+}
+
+func (in Progress) WithStatus(i int, x NodePhase) Progress {
+	out := []rune(in)
+	out[i] = progressRune[x]
+	return Progress(out)
+}
+
+func (in Progress) Status(i int) NodePhase {
+	if i >= len(in) {
+		return NodePending
+	}
+	return progressPhase[([]rune(in))[i]]
 }

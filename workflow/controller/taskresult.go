@@ -2,6 +2,7 @@ package controller
 
 import (
 	"reflect"
+	"strings"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -61,5 +62,18 @@ func (woc *wfOperationCtx) taskResultReconciliation() {
 			woc.wf.Status.Nodes[nodeID] = *new
 			woc.updated = true
 		}
+	}
+	for _, step := range woc.wf.Status.Nodes.Filter(func(n wfv1.NodeStatus) bool {
+		return n.Type == wfv1.NodeTypeJobStep
+	}) {
+		parts := strings.Split(step.Name, ".")
+		jobName := parts[0]
+		stepName := parts[1]
+		id := woc.wf.NodeID(jobName)
+		jobNode := woc.wf.Status.Nodes[id]
+		p := jobNode.Progress
+		tmpl := woc.execWf.GetTemplateByName(jobNode.TemplateName)
+		i := tmpl.Job.StepIndex(stepName)
+		woc.markNodePhase(step.Name, p.Status(i))
 	}
 }

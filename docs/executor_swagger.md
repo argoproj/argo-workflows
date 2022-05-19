@@ -2063,6 +2063,40 @@ is other than default (typically TCP ports 860 and 3260). |  |
 
 [interface{}](#interface)
 
+### <span id="job"></span> Job
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| image | string| `string` |  | |  |  |
+| steps | [][JobStep](#job-step)| `[]*JobStep` |  | |  |  |
+| workingDir | string| `string` |  | |  |  |
+
+
+
+### <span id="job-step"></span> JobStep
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| if | string| `string` |  | |  |  |
+| name | string| `string` |  | |  |  |
+| run | string| `string` |  | |  |  |
+
+
+
 ### <span id="key-to-path"></span> KeyToPath
 
 
@@ -4410,6 +4444,7 @@ template is expanded with `withItems`, etc. |  |
 +patchStrategy=merge
 +patchMergeKey=name |  |
 | inputs | [Inputs](#inputs)| `Inputs` |  | |  |  |
+| job | [Job](#job)| `Job` |  | |  |  |
 | memoize | [Memoize](#memoize)| `Memoize` |  | |  |  |
 | metadata | [Metadata](#metadata)| `Metadata` |  | |  |  |
 | metrics | [Metrics](#metrics)| `Metrics` |  | |  |  |

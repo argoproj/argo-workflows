@@ -1853,6 +1853,26 @@ definitions:
       Item expands a single workflow step into multiple parallel steps
       The value of Item can be a map, string, bool, or number
     type: object
+  Job:
+    properties:
+      image:
+        type: string
+      steps:
+        items:
+          $ref: '#/definitions/JobStep'
+        type: array
+      workingDir:
+        type: string
+    type: object
+  JobStep:
+    properties:
+      if:
+        type: string
+      name:
+        type: string
+      run:
+        type: string
+    type: object
   KeyToPath:
     properties:
       key:
@@ -3952,6 +3972,8 @@ definitions:
         type: array
       inputs:
         $ref: '#/definitions/Inputs'
+      job:
+        $ref: '#/definitions/Job'
       memoize:
         $ref: '#/definitions/Memoize'
       metadata:

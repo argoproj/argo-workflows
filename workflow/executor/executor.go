@@ -1014,6 +1014,10 @@ func chmod(artPath string, mode int32, recurse bool) error {
 // Also monitors for updates in the pod annotations which may change (e.g. terminate)
 // Upon completion, kills any sidecars after it finishes.
 func (we *WorkflowExecutor) Wait(ctx context.Context) error {
+	// this allows us to gracefully shutdown, capturing artifacts
+	ctx, cancel := signal.NotifyContext(ctx, syscall.SIGTERM)
+	defer cancel()
+
 	containerNames := we.Template.GetMainContainerNames()
 	// only monitor progress if both tick durations are >0
 	if we.annotationPatchTickDuration != 0 && we.readProgressFileTickDuration != 0 {
@@ -1021,10 +1025,6 @@ func (we *WorkflowExecutor) Wait(ctx context.Context) error {
 	} else {
 		log.WithField("annotationPatchTickDuration", we.annotationPatchTickDuration).WithField("readProgressFileTickDuration", we.readProgressFileTickDuration).Info("monitoring progress disabled")
 	}
-
-	// this allows us to gracefully shutdown, capturing artifacts
-	ctx, cancel := signal.NotifyContext(ctx, syscall.SIGTERM)
-	defer cancel()
 
 	go we.monitorDeadline(ctx, containerNames)
 
@@ -1055,17 +1055,22 @@ func (we *WorkflowExecutor) monitorProgress(ctx context.Context, progressFile st
 	lastLine := ""
 	progressFile = filepath.Clean(progressFile)
 
+	reportProgress := func() {
+		if err := we.reportResult(ctx, wfv1.NodeResult{Progress: we.progress}); err != nil {
+			log.WithError(err).Info("failed to report progress")
+		} else {
+			we.progress = ""
+		}
+	}
+
 	for {
 		select {
 		case <-ctx.Done():
 			log.WithError(ctx.Err()).Info("stopping progress monitor (context done)")
+			reportProgress()
 			return
 		case <-annotationPatchTicker.C:
-			if err := we.reportResult(ctx, wfv1.NodeResult{Progress: we.progress}); err != nil {
-				log.WithError(err).Info("failed to report progress")
-			} else {
-				we.progress = ""
-			}
+			reportProgress()
 		case <-fileTicker.C:
 			data, err := ioutil.ReadFile(progressFile)
 			if err != nil {

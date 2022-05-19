@@ -40,6 +40,7 @@ def lazy_import():
     from argo_workflows.model.io_argoproj_workflow_v1alpha1_executor_config import IoArgoprojWorkflowV1alpha1ExecutorConfig
     from argo_workflows.model.io_argoproj_workflow_v1alpha1_http import IoArgoprojWorkflowV1alpha1HTTP
     from argo_workflows.model.io_argoproj_workflow_v1alpha1_inputs import IoArgoprojWorkflowV1alpha1Inputs
+    from argo_workflows.model.io_argoproj_workflow_v1alpha1_job import IoArgoprojWorkflowV1alpha1Job
     from argo_workflows.model.io_argoproj_workflow_v1alpha1_memoize import IoArgoprojWorkflowV1alpha1Memoize
     from argo_workflows.model.io_argoproj_workflow_v1alpha1_metadata import IoArgoprojWorkflowV1alpha1Metadata
     from argo_workflows.model.io_argoproj_workflow_v1alpha1_metrics import IoArgoprojWorkflowV1alpha1Metrics
@@ -64,6 +65,7 @@ def lazy_import():
     globals()['IoArgoprojWorkflowV1alpha1ExecutorConfig'] = IoArgoprojWorkflowV1alpha1ExecutorConfig
     globals()['IoArgoprojWorkflowV1alpha1HTTP'] = IoArgoprojWorkflowV1alpha1HTTP
     globals()['IoArgoprojWorkflowV1alpha1Inputs'] = IoArgoprojWorkflowV1alpha1Inputs
+    globals()['IoArgoprojWorkflowV1alpha1Job'] = IoArgoprojWorkflowV1alpha1Job
     globals()['IoArgoprojWorkflowV1alpha1Memoize'] = IoArgoprojWorkflowV1alpha1Memoize
     globals()['IoArgoprojWorkflowV1alpha1Metadata'] = IoArgoprojWorkflowV1alpha1Metadata
     globals()['IoArgoprojWorkflowV1alpha1Metrics'] = IoArgoprojWorkflowV1alpha1Metrics
@@ -148,6 +150,7 @@ class IoArgoprojWorkflowV1alpha1Template(ModelNormal):
             'http': (IoArgoprojWorkflowV1alpha1HTTP,),  # noqa: E501
             'init_containers': ([IoArgoprojWorkflowV1alpha1UserContainer],),  # noqa: E501
             'inputs': (IoArgoprojWorkflowV1alpha1Inputs,),  # noqa: E501
+            'job': (IoArgoprojWorkflowV1alpha1Job,),  # noqa: E501
             'memoize': (IoArgoprojWorkflowV1alpha1Memoize,),  # noqa: E501
             'metadata': (IoArgoprojWorkflowV1alpha1Metadata,),  # noqa: E501
             'metrics': (IoArgoprojWorkflowV1alpha1Metrics,),  # noqa: E501
@@ -195,6 +198,7 @@ class IoArgoprojWorkflowV1alpha1Template(ModelNormal):
         'http': 'http',  # noqa: E501
         'init_containers': 'initContainers',  # noqa: E501
         'inputs': 'inputs',  # noqa: E501
+        'job': 'job',  # noqa: E501
         'memoize': 'memoize',  # noqa: E501
         'metadata': 'metadata',  # noqa: E501
         'metrics': 'metrics',  # noqa: E501
@@ -277,6 +281,7 @@ class IoArgoprojWorkflowV1alpha1Template(ModelNormal):
             http (IoArgoprojWorkflowV1alpha1HTTP): [optional]  # noqa: E501
             init_containers ([IoArgoprojWorkflowV1alpha1UserContainer]): InitContainers is a list of containers which run before the main container.. [optional]  # noqa: E501
             inputs (IoArgoprojWorkflowV1alpha1Inputs): [optional]  # noqa: E501
+            job (IoArgoprojWorkflowV1alpha1Job): [optional]  # noqa: E501
             memoize (IoArgoprojWorkflowV1alpha1Memoize): [optional]  # noqa: E501
             metadata (IoArgoprojWorkflowV1alpha1Metadata): [optional]  # noqa: E501
             metrics (IoArgoprojWorkflowV1alpha1Metrics): [optional]  # noqa: E501
@@ -397,6 +402,7 @@ class IoArgoprojWorkflowV1alpha1Template(ModelNormal):
             http (IoArgoprojWorkflowV1alpha1HTTP): [optional]  # noqa: E501
             init_containers ([IoArgoprojWorkflowV1alpha1UserContainer]): InitContainers is a list of containers which run before the main container.. [optional]  # noqa: E501
             inputs (IoArgoprojWorkflowV1alpha1Inputs): [optional]  # noqa: E501
+            job (IoArgoprojWorkflowV1alpha1Job): [optional]  # noqa: E501
             memoize (IoArgoprojWorkflowV1alpha1Memoize): [optional]  # noqa: E501
             metadata (IoArgoprojWorkflowV1alpha1Metadata): [optional]  # noqa: E501
             metrics (IoArgoprojWorkflowV1alpha1Metrics): [optional]  # noqa: E501

@@ -3289,6 +3289,16 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             ),
                         ],
                     ),
+                    job=IoArgoprojWorkflowV1alpha1Job(
+                        image="image_example",
+                        steps=[
+                            IoArgoprojWorkflowV1alpha1JobStep(
+                                _if="_if_example",
+                                name="name_example",
+                                run="run_example",
+                            ),
+                        ],
+                    ),
                     memoize=IoArgoprojWorkflowV1alpha1Memoize(
                         cache=IoArgoprojWorkflowV1alpha1Cache(
                             config_map=ConfigMapKeySelector(
@@ -7398,6 +7408,16 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         path="path_example",
                                         supplied={},
                                     ),
+                                ),
+                            ],
+                        ),
+                        job=IoArgoprojWorkflowV1alpha1Job(
+                            image="image_example",
+                            steps=[
+                                IoArgoprojWorkflowV1alpha1JobStep(
+                                    _if="_if_example",
+                                    name="name_example",
+                                    run="run_example",
                                 ),
                             ],
                         ),
@@ -13314,6 +13334,16 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 ),
                             ],
                         ),
+                        job=IoArgoprojWorkflowV1alpha1Job(
+                            image="image_example",
+                            steps=[
+                                IoArgoprojWorkflowV1alpha1JobStep(
+                                    _if="_if_example",
+                                    name="name_example",
+                                    run="run_example",
+                                ),
+                            ],
+                        ),
                         memoize=IoArgoprojWorkflowV1alpha1Memoize(
                             cache=IoArgoprojWorkflowV1alpha1Cache(
                                 config_map=ConfigMapKeySelector(
@@ -18319,6 +18349,16 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 ),
                             ],
                         ),
+                        job=IoArgoprojWorkflowV1alpha1Job(
+                            image="image_example",
+                            steps=[
+                                IoArgoprojWorkflowV1alpha1JobStep(
+                                    _if="_if_example",
+                                    name="name_example",
+                                    run="run_example",
+                                ),
+                            ],
+                        ),
                         memoize=IoArgoprojWorkflowV1alpha1Memoize(
                             cache=IoArgoprojWorkflowV1alpha1Cache(
                                 config_map=ConfigMapKeySelector(
@@ -22428,6 +22468,16 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             path="path_example",
                                             supplied={},
                                         ),
+                                    ),
+                                ],
+                            ),
+                            job=IoArgoprojWorkflowV1alpha1Job(
+                                image="image_example",
+                                steps=[
+                                    IoArgoprojWorkflowV1alpha1JobStep(
+                                        _if="_if_example",
+                                        name="name_example",
+                                        run="run_example",
                                     ),
                                 ],
                             ),
@@ -28303,6 +28353,16 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             ),
                         ],
                     ),
+                    job=IoArgoprojWorkflowV1alpha1Job(
+                        image="image_example",
+                        steps=[
+                            IoArgoprojWorkflowV1alpha1JobStep(
+                                _if="_if_example",
+                                name="name_example",
+                                run="run_example",
+                            ),
+                        ],
+                    ),
                     memoize=IoArgoprojWorkflowV1alpha1Memoize(
                         cache=IoArgoprojWorkflowV1alpha1Cache(
                             config_map=ConfigMapKeySelector(
@@ -32412,6 +32472,16 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         path="path_example",
                                         supplied={},
                                     ),
+                                ),
+                            ],
+                        ),
+                        job=IoArgoprojWorkflowV1alpha1Job(
+                            image="image_example",
+                            steps=[
+                                IoArgoprojWorkflowV1alpha1JobStep(
+                                    _if="_if_example",
+                                    name="name_example",
+                                    run="run_example",
                                 ),
                             ],
                         ),
@@ -38328,6 +38398,16 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 ),
                             ],
                         ),
+                        job=IoArgoprojWorkflowV1alpha1Job(
+                            image="image_example",
+                            steps=[
+                                IoArgoprojWorkflowV1alpha1JobStep(
+                                    _if="_if_example",
+                                    name="name_example",
+                                    run="run_example",
+                                ),
+                            ],
+                        ),
                         memoize=IoArgoprojWorkflowV1alpha1Memoize(
                             cache=IoArgoprojWorkflowV1alpha1Cache(
                                 config_map=ConfigMapKeySelector(
@@ -43333,6 +43413,16 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 ),
                             ],
                         ),
+                        job=IoArgoprojWorkflowV1alpha1Job(
+                            image="image_example",
+                            steps=[
+                                IoArgoprojWorkflowV1alpha1JobStep(
+                                    _if="_if_example",
+                                    name="name_example",
+                                    run="run_example",
+                                ),
+                            ],
+                        ),
                         memoize=IoArgoprojWorkflowV1alpha1Memoize(
                             cache=IoArgoprojWorkflowV1alpha1Cache(
                                 config_map=ConfigMapKeySelector(
@@ -47442,6 +47532,16 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             path="path_example",
                                             supplied={},
                                         ),
+                                    ),
+                                ],
+                            ),
+                            job=IoArgoprojWorkflowV1alpha1Job(
+                                image="image_example",
+                                steps=[
+                                    IoArgoprojWorkflowV1alpha1JobStep(
+                                        _if="_if_example",
+                                        name="name_example",
+                                        run="run_example",
                                     ),
                                 ],
                             ),

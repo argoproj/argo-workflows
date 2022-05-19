@@ -714,6 +714,22 @@ message Item {
   optional bytes value = 1;
 }
 
+message Job {
+  optional string image = 1;
+
+  optional string workingDir = 2;
+
+  repeated JobStep steps = 3;
+}
+
+message JobStep {
+  optional string name = 1;
+
+  optional string run = 2;
+
+  optional string if = 3;
+}
+
 // LabelKeys is list of keys
 message LabelKeys {
   repeated string items = 1;
@@ -1442,6 +1458,8 @@ message Template {
 
   // Plugin is a plugin template
   optional Plugin plugin = 43;
+
+  optional Job job = 44;
 
   // Volumes is a list of volumes that can be mounted by containers in a template.
   // +patchStrategy=merge
