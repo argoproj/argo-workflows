@@ -1,0 +1,8 @@
+apiVersion: v1
+data:
+  clientID: YXJnby1zZXJ2ZXI=
+  clientSecret: WlhoaGJYQnNaUzFoY0hBdGMyVmpjbVYw
+kind: Secret
+metadata:
+  name: argo-server-sso
+type: Opaque
