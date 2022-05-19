@@ -314,3 +314,47 @@ func TestOptionalArgumentAndParameter(t *testing.T) {
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
 }
+
+var stepsWithPriority = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: steps-with-priority-
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    parallelism: 1
+    steps:
+    - - name: succeed
+        template: succeed
+        priority: 25
+      - name: fail
+        template: fail
+        priority: 100
+        
+  - name: succeed
+    container:
+      image: alpine:3.7
+      command: [sh, -c, "exit 0"]
+     
+  - name: fail
+    container:
+      image: alpine:3.7
+      command: [sh, -c, "exit 1"]
+`
+
+func TestStepsWithPriority(t *testing.T) {
+	cancel, controller := newController()
+	defer cancel()
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+
+	ctx := context.Background()
+	wf := wfv1.MustUnmarshalWorkflow(stepsWithPriority)
+	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
+	assert.NoError(t, err)
+	woc := newWorkflowOperationCtx(wf, controller)
+
+	woc.operate(ctx)
+	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
+}
