@@ -167,8 +167,7 @@ jobs:
             docker build --target $target -t $image_name -f Dockerfile.windows .
             docker push $image_name
 
-            docker tag $image_name quay.io/$image_name
-            docker push quay.io/$image_name
+            docker push $image_name
           done
 
   push-images:
