@@ -7545,7 +7545,7 @@ status:
   startedAt: "2021-06-10T22:28:49Z"
 `
 
-// TestOperatorRetryExpression tests that retryStrategy.when works correctly. In this test, the latest child node has
+// TestOperatorRetryExpression tests that retryStrategy.expression works correctly. In this test, the latest child node has
 // just failed with exit code 2. The retryStrategy's when condition specifies that retries must only be done when the
 // last exit code is NOT 2. We expect the retryStrategy to fail (even though it has 8 tries remainng).
 func TestOperatorRetryExpression(t *testing.T) {
