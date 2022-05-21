@@ -25,5 +25,6 @@ func Setpgid(a *syscall.SysProcAttr) {
 }
 
 func Wait(process *os.Process) error {
-	return process.Wait()
+	_, err := process.Wait()
+	return err
 }
