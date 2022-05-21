@@ -1628,10 +1628,10 @@
   dependencies:
     "@types/react" "*"
 
-"@types/react-form@^2.16.1":
-  version "2.16.8"
-  resolved "https://registry.yarnpkg.com/@types/react-form/-/react-form-2.16.8.tgz#4624567c4988c5d472e9d08e3670a623b2c1c2c1"
-  integrity sha512-+e8OEJ8iKNy+zYxzycCZIqwbmav7WBgIsiYRLjDhUl+DtGZ77YEv86u927b9TLu00oHZTG0U3LjWUbdDwQU63A==
+"@types/react-form@^4.0.2":
+  version "4.0.2"
+  resolved "https://registry.yarnpkg.com/@types/react-form/-/react-form-4.0.2.tgz#80111ad1dc7f5501fc646affbf659972c8a0c3da"
+  integrity sha512-NEE2Zn9t5StOBsYTe8I9eu9ys61g1GdfudI4ZAPwoyAEOg6OWukhrh/ZPuz50dadFaQG+9c3p9yq7abRRqZP9g==
   dependencies:
     "@types/react" "*"
 

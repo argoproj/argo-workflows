@@ -54,7 +54,7 @@
         "@types/react-autocomplete": "^1.8.5",
         "@types/react-datepicker": "^2.11.0",
         "@types/react-dom": "^16.8.2",
-        "@types/react-form": "^2.16.1",
+        "@types/react-form": "^4.0.2",
         "@types/react-helmet": "^6.1.0",
         "@types/react-router-dom": "^4.2.3",
         "@types/superagent": "^3.5.7",
