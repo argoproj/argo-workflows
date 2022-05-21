@@ -81,7 +81,7 @@
         "tslint": "^5.20.1",
         "tslint-config-prettier": "^1.18.0",
         "tslint-plugin-prettier": "^2.3.0",
-        "tslint-react": "^3.4.0",
+        "tslint-react": "^4.1.0",
         "typescript": "^4.6.4",
         "webfonts-generator": "^0.4.0",
         "webpack": "^4.46.0",
