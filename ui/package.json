@@ -86,7 +86,7 @@
         "webfonts-generator": "^0.4.0",
         "webpack": "^4.46.0",
         "webpack-cli": "^3.3.11",
-        "webpack-dev-server": "^3.11.3"
+        "webpack-dev-server": "^4.9.0"
     },
     "resolutions": {
         "lodash": "4.17.21",
