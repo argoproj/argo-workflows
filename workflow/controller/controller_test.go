@@ -5,9 +5,6 @@ import (
 	"testing"
 	"time"
 
-	"k8s.io/client-go/util/workqueue"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllertest"
-
 	"github.com/argoproj/pkg/sync"
 	"github.com/stretchr/testify/assert"
 	authorizationv1 "k8s.io/api/authorization/v1"
@@ -22,6 +19,7 @@ import (
 	k8stesting "k8s.io/client-go/testing"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
+	"k8s.io/client-go/util/workqueue"
 	"k8s.io/utils/pointer"
 
 	"github.com/argoproj/argo-workflows/v3/config"
@@ -214,9 +212,9 @@ func newController(options ...interface{}) (context.CancelFunc, *WorkflowControl
 	{
 		wfc.metrics = metrics.New(metrics.ServerConfig{}, metrics.ServerConfig{})
 		wfc.entrypoint = entrypoint.New(kube, wfc.Config.Images)
-		wfc.wfQueue = controllertest.Queue{Interface: workqueue.New()}
+		wfc.wfQueue = workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter())
 		wfc.throttler = wfc.newThrottler()
-		wfc.podCleanupQueue = controllertest.Queue{Interface: workqueue.New()}
+		wfc.podCleanupQueue = workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter())
 		wfc.rateLimiter = wfc.newRateLimiter()
 	}
 
@@ -499,9 +497,7 @@ func TestNamespacedController(t *testing.T) {
 	defer cancel()
 	controller.kubeclientset = kubernetes.Interface(&kubeClient)
 	controller.cwftmplInformer = nil
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	controller.createClusterWorkflowTemplateInformer(ctx)
+	controller.createClusterWorkflowTemplateInformer(context.TODO())
 	assert.Nil(t, controller.cwftmplInformer)
 }
 
@@ -518,9 +514,7 @@ func TestClusterController(t *testing.T) {
 	defer cancel()
 	controller.kubeclientset = kubernetes.Interface(&kubeClient)
 	controller.cwftmplInformer = nil
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	controller.createClusterWorkflowTemplateInformer(ctx)
+	controller.createClusterWorkflowTemplateInformer(context.TODO())
 	assert.NotNil(t, controller.cwftmplInformer)
 }
 
