@@ -3,7 +3,6 @@ package commands
 import (
 	"io/ioutil"
 	"os"
-	"path/filepath"
 	"strconv"
 	"sync"
 	"syscall"
@@ -20,16 +19,11 @@ func TestEmissary(t *testing.T) {
 	varRunArgo = tmp
 	includeScriptOutput = true
 
-	wd, err := os.Getwd()
-	assert.NoError(t, err)
-
-	x := filepath.Join(wd, "../../../dist/argosay")
-
-	err = ioutil.WriteFile(varRunArgo+"/template", []byte(`{}`), 0o600)
+	err := ioutil.WriteFile(varRunArgo+"/template", []byte(`{}`), 0o600)
 	assert.NoError(t, err)
 
 	t.Run("Exit0", func(t *testing.T) {
-		err := run(x, []string{"exit"})
+		err := run("exit")
 		assert.NoError(t, err)
 		data, err := ioutil.ReadFile(varRunArgo + "/ctr/main/exitcode")
 		assert.NoError(t, err)
@@ -37,21 +31,21 @@ func TestEmissary(t *testing.T) {
 	})
 
 	t.Run("Exit1", func(t *testing.T) {
-		err := run(x, []string{"exit", "1"})
+		err := run("exit 1")
 		assert.Equal(t, 1, err.(errors.Exited).ExitCode())
 		data, err := ioutil.ReadFile(varRunArgo + "/ctr/main/exitcode")
 		assert.NoError(t, err)
 		assert.Equal(t, "1", string(data))
 	})
 	t.Run("Stdout", func(t *testing.T) {
-		err := run(x, []string{"echo", "hello", "/dev/stdout"})
+		err := run("echo hello")
 		assert.NoError(t, err)
 		data, err := ioutil.ReadFile(varRunArgo + "/ctr/main/stdout")
 		assert.NoError(t, err)
 		assert.Contains(t, string(data), "hello")
 	})
 	t.Run("Comined", func(t *testing.T) {
-		err := run(x, []string{"echo", "hello", "/dev/stderr"})
+		err := run("echo hello > /dev/stderr")
 		assert.NoError(t, err)
 		data, err := ioutil.ReadFile(varRunArgo + "/ctr/main/combined")
 		assert.NoError(t, err)
@@ -68,7 +62,7 @@ func TestEmissary(t *testing.T) {
 			wg.Add(1)
 			go func() {
 				defer wg.Done()
-				err := run(x, []string{"sleep", "5"})
+				err := run("sleep 3")
 				assert.NoError(t, err)
 			}()
 			wg.Wait()
@@ -85,7 +79,7 @@ func TestEmissary(t *testing.T) {
 }
 `), 0o600)
 		assert.NoError(t, err)
-		err := run(x, []string{"echo", "hello", "/tmp/artifact"})
+		err := run("echo hello > /tmp/artifact")
 		assert.NoError(t, err)
 		data, err := ioutil.ReadFile(varRunArgo + "/outputs/artifacts/tmp/artifact.tgz")
 		assert.NoError(t, err)
@@ -102,7 +96,7 @@ func TestEmissary(t *testing.T) {
 }
 `), 0o600)
 		assert.NoError(t, err)
-		err := run(x, []string{"echo", "hello", "/tmp/artifact"})
+		err := run("echo hello > /tmp/artifact")
 		assert.NoError(t, err)
 		data, err := ioutil.ReadFile(varRunArgo + "/outputs/artifacts/tmp/artifact.tgz")
 		assert.NoError(t, err)
@@ -121,7 +115,7 @@ func TestEmissary(t *testing.T) {
 }
 `), 0o600)
 		assert.NoError(t, err)
-		err := run(x, []string{"echo", "hello", "/tmp/parameter"})
+		err := run("echo hello > /tmp/parameter")
 		assert.NoError(t, err)
 		data, err := ioutil.ReadFile(varRunArgo + "/outputs/parameters/tmp/parameter")
 		assert.NoError(t, err)
@@ -151,7 +145,7 @@ func TestEmissary(t *testing.T) {
 `), 0o600)
 		assert.NoError(t, err)
 		_ = os.Remove("test.txt")
-		err = run(x, []string{"sh", "./test/containerSetRetryTest.sh", "/tmp/artifact"})
+		err = run("sh ./test/containerSetRetryTest.sh /tmp/artifact")
 		assert.Error(t, err)
 		data, err := ioutil.ReadFile(varRunArgo + "/outputs/artifacts/tmp/artifact.tgz")
 		assert.NoError(t, err)
@@ -181,7 +175,7 @@ func TestEmissary(t *testing.T) {
 `), 0o600)
 		assert.NoError(t, err)
 		_ = os.Remove("test.txt")
-		err = run(x, []string{"sh", "./test/containerSetRetryTest.sh", "/tmp/artifact"})
+		err = run("sh ./test/containerSetRetryTest.sh /tmp/artifact")
 		assert.NoError(t, err)
 		data, err := ioutil.ReadFile(varRunArgo + "/outputs/artifacts/tmp/artifact.tgz")
 		assert.NoError(t, err)
@@ -189,8 +183,8 @@ func TestEmissary(t *testing.T) {
 	})
 }
 
-func run(name string, args []string) error {
+func run(script string) error {
 	cmd := NewEmissaryCommand()
 	containerName = "main"
-	return cmd.RunE(cmd, append([]string{name}, args...))
+	return cmd.RunE(cmd, append([]string{"sh", "-c"}, script))
 }

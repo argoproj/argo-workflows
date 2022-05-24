@@ -407,7 +407,7 @@ lint: server/static/files.go $(GOPATH)/bin/golangci-lint
 
 # for local we have a faster target that prints to stdout, does not use json, and can cache because it has no coverage
 .PHONY: test
-test: server/static/files.go dist/argosay
+test: server/static/files.go
 	go build ./...
 	env KUBECONFIG=/dev/null $(GOTEST) ./...
 	# marker file, based on it's modification time, we know how long ago this target was run

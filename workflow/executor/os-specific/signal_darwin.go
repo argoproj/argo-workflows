@@ -5,8 +5,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/mitchellh/go-ps"
-
 	"github.com/argoproj/argo-workflows/v3/util/errors"
 )
 
@@ -40,20 +38,6 @@ func Wait(process *os.Process) error {
 	}
 
 	for {
-		processes, err := ps.Processes()
-		if err != nil {
-			return err
-		}
-		found := false
-		for _, p := range processes {
-			found = found || pid == p.Pid()
-		}
-		if !found {
-			break
-		}
-		time.Sleep(time.Second)
-	}
-	for {
 		var s syscall.WaitStatus
 		wpid, err := syscall.Wait4(-1, &s, syscall.WNOHANG, nil)
 		if err != nil {
@@ -62,5 +46,6 @@ func Wait(process *os.Process) error {
 		if wpid == pid {
 			return errors.NewExitErr(s.ExitStatus())
 		}
+		time.Sleep(time.Second)
 	}
 }
