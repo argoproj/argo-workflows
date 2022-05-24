@@ -3,13 +3,13 @@ package commands
 import (
 	"io/ioutil"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strconv"
 	"sync"
 	"syscall"
 	"testing"
-	"time"
+
+	"github.com/argoproj/argo-workflows/v3/util/errors"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -38,7 +38,7 @@ func TestEmissary(t *testing.T) {
 
 	t.Run("Exit1", func(t *testing.T) {
 		err := run(x, []string{"exit", "1"})
-		assert.Equal(t, 1, err.(*exec.ExitError).ExitCode())
+		assert.Equal(t, 1, err.(errors.Exited).ExitCode())
 		data, err := ioutil.ReadFile(varRunArgo + "/ctr/main/exitcode")
 		assert.NoError(t, err)
 		assert.Equal(t, "1", string(data))
@@ -58,7 +58,7 @@ func TestEmissary(t *testing.T) {
 		assert.Contains(t, string(data), "hello")
 	})
 	t.Run("Signal", func(t *testing.T) {
-		for signal, message := range map[syscall.Signal]string{
+		for signal := range map[syscall.Signal]string{
 			syscall.SIGTERM: "terminated",
 			syscall.SIGKILL: "killed",
 		} {
@@ -68,10 +68,10 @@ func TestEmissary(t *testing.T) {
 			wg.Add(1)
 			go func() {
 				defer wg.Done()
-				err := run(x, []string{"sleep", "5s"})
-				assert.EqualError(t, err, "signal: "+message)
+				err := run(x, []string{"sleep", "5"})
+				assert.NoError(t, err)
 			}()
-			time.Sleep(time.Second)
+			wg.Wait()
 		}
 	})
 	t.Run("Artifact", func(t *testing.T) {
