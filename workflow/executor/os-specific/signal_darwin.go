@@ -1,10 +1,11 @@
 package os_specific
 
 import (
-	"github.com/mitchellh/go-ps"
 	"os"
 	"syscall"
 	"time"
+
+	"github.com/mitchellh/go-ps"
 
 	"github.com/argoproj/argo-workflows/v3/util/errors"
 )
