@@ -411,6 +411,7 @@ test: server/static/files.go
 	go build ./...
 	env KUBECONFIG=/dev/null $(GOTEST) ./...
 	# marker file, based on it's modification time, we know how long ago this target was run
+	@mkdir -p dist
 	touch dist/test
 
 .PHONY: install
