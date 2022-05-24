@@ -13,13 +13,11 @@ import (
 	"io/fs"
 	"io/ioutil"
 	"os"
-	"os/signal"
 	"path"
 	"path/filepath"
 	"runtime/debug"
 	"strconv"
 	"strings"
-	"syscall"
 	"time"
 
 	"github.com/argoproj/argo-workflows/v3/util/file"
@@ -1021,10 +1019,6 @@ func (we *WorkflowExecutor) Wait(ctx context.Context) error {
 	} else {
 		log.WithField("annotationPatchTickDuration", we.annotationPatchTickDuration).WithField("readProgressFileTickDuration", we.readProgressFileTickDuration).Info("monitoring progress disabled")
 	}
-
-	// this allows us to gracefully shutdown, capturing artifacts
-	ctx, cancel := signal.NotifyContext(ctx, syscall.SIGTERM)
-	defer cancel()
 
 	go we.monitorDeadline(ctx, containerNames)
 
