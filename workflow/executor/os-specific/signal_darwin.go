@@ -1,7 +1,7 @@
 package os_specific
 
 import (
-	"fmt"
+	"github.com/mitchellh/go-ps"
 	"os"
 	"syscall"
 	"time"
@@ -39,9 +39,15 @@ func Wait(process *os.Process) error {
 	}
 
 	for {
-		// only works on linux, not darwin
-		_, err := os.Stat(fmt.Sprintf("/proc/%d/stat", pid))
-		if os.IsNotExist(err) {
+		processes, err := ps.Processes()
+		if err != nil {
+			return err
+		}
+		found := false
+		for _, p := range processes {
+			found = found || pid == p.Pid()
+		}
+		if !found {
 			break
 		}
 		time.Sleep(time.Second)
