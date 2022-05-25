@@ -342,7 +342,7 @@ type WorkflowSpec struct {
 	// +optional
 	SchedulerName string `json:"schedulerName,omitempty" protobuf:"bytes,21,opt,name=schedulerName"`
 
-	// PodGC describes the strategy to use when to deleting completed pods
+	// PodGC describes the strategy to use when deleting completed pods
 	PodGC *PodGC `json:"podGC,omitempty" protobuf:"bytes,22,opt,name=podGC"`
 
 	// PriorityClassName to apply to workflow pods.
@@ -382,7 +382,7 @@ type WorkflowSpec struct {
 	// Synchronization holds synchronization lock configuration for this Workflow
 	Synchronization *Synchronization `json:"synchronization,omitempty" protobuf:"bytes,35,opt,name=synchronization,casttype=Synchronization"`
 
-	// VolumeClaimGC describes the strategy to use when to deleting volumes from completed workflows
+	// VolumeClaimGC describes the strategy to use when deleting volumes from completed workflows
 	VolumeClaimGC *VolumeClaimGC `json:"volumeClaimGC,omitempty" protobuf:"bytes,36,opt,name=volumeClaimGC,casttype=VolumeClaimGC"`
 
 	// RetryStrategy for all templates in the workflow.
@@ -404,7 +404,7 @@ type WorkflowSpec struct {
 	// WorkflowMetadata contains some metadata of the workflow to be refer
 	WorkflowMetadata *WorkflowMetadata `json:"workflowMetadata,omitempty" protobuf:"bytes,42,opt,name=workflowMetadata"`
 
-	// ArtifactGC describes the strategy to use when to deleting artifacts from completed or deleted workflows (applies to all output Artifacts
+	// ArtifactGC describes the strategy to use when deleting artifacts from completed or deleted workflows (applies to all output Artifacts
 	// unless Artifact.ArtifactGC is specified, which overrides this)
 	ArtifactGC *ArtifactGC `json:"artifactGC,omitempty" protobuf:"bytes,43,opt,name=artifactGC"`
 }
