@@ -3778,35 +3778,134 @@ func TestNestedOptionalOutputArtifacts(t *testing.T) {
 	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
 }
 
-var artifactGCOnWorkflowCompletion = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: artifact-passing-
-spec:
-  entrypoint: whalesay
-  artifactGC:
-    strategy: OnWorkflowCompletion
-  templates:
-  - name: whalesay
-    container:
-      image: docker/whalesay:latest
-      command: [sh, -c]
-      args: ["sleep 1; cowsay hello world | tee /tmp/hello_world.txt"]
-`
-
-func TestArtifactGCOnWorkflowCompletion(t *testing.T) {
+func TestArtifactGC_WorkflowStrategyCompletion(t *testing.T) {
 	cancel, controller := newController()
 	defer cancel()
 	ctx := context.Background()
 
-	wf := wfv1.MustUnmarshalWorkflow(artifactGCOnWorkflowCompletion)
+	wf := wfv1.MustUnmarshalWorkflow(`
+  apiVersion: argoproj.io/v1alpha1
+  kind: Workflow
+  metadata:
+    generateName: artifact-passing-
+  spec:
+    entrypoint: whalesay
+    artifactGC:
+      strategy: OnWorkflowCompletion
+    templates:
+    - name: whalesay
+      container:
+        image: docker/whalesay:latest
+        command: [sh, -c]
+        args: ["sleep 1; cowsay hello world | tee /tmp/hello_world.txt"]
+  `)
 	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate(ctx)
 
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
 	assert.Equal(t, 1, len(woc.wf.GetFinalizers()))
 	assert.Equal(t, "workflows.argoproj.io/artifact-gc", woc.wf.GetFinalizers()[0])
+}
+
+// verify Finalizer gets added when the artifact strategy indicates GC for Artifacts
+func TestArtifactGC_ArtifactStrategy(t *testing.T) {
+	cancel, controller := newController()
+	defer cancel()
+	ctx := context.Background()
+
+	wf := wfv1.MustUnmarshalWorkflow(`
+  apiVersion: argoproj.io/v1alpha1
+  kind: Workflow
+  metadata:
+    name: hello-world
+  spec:
+    entrypoint: whalesay
+    templates:
+    - name: whalesay
+      container:
+        image: docker/whalesay:latest
+        command: [cowsay]
+        args: ["hello world"]
+      outputs:
+        artifacts:
+          - name: out
+            path: /out
+            s3:
+              key: out
+            artifactGC:
+              strategy: OnWorkflowDeletion
+  `)
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate(ctx)
+
+	assert.Equal(t, 1, len(woc.wf.GetFinalizers()))
+	assert.Equal(t, "workflows.argoproj.io/artifact-gc", woc.wf.GetFinalizers()[0])
+}
+
+// verify Finalizer isn't added if no GC is specified
+func TestArtifactGC_NoStrategy(t *testing.T) {
+	cancel, controller := newController()
+	defer cancel()
+	ctx := context.Background()
+
+	wf := wfv1.MustUnmarshalWorkflow(`
+  apiVersion: argoproj.io/v1alpha1
+  kind: Workflow
+  metadata:
+    name: hello-world
+  spec:
+    entrypoint: whalesay
+    templates:
+    - name: whalesay
+      container:
+        image: docker/whalesay:latest
+        command: [cowsay]
+        args: ["hello world"]
+      outputs:
+        artifacts:
+          - name: out
+            path: /out
+            s3:
+              key: out
+  `)
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate(ctx)
+
+	assert.Equal(t, 0, len(woc.wf.GetFinalizers()))
+}
+
+// verify Finalizer isn't added if GC is set to none
+func TestArtifactGC_GCNNone(t *testing.T) {
+	cancel, controller := newController()
+	defer cancel()
+	ctx := context.Background()
+
+	wf := wfv1.MustUnmarshalWorkflow(`
+  apiVersion: argoproj.io/v1alpha1
+  kind: Workflow
+  metadata:
+    name: hello-world
+  spec:
+    entrypoint: whalesay
+    artifactGC:
+      strategy: ""
+    templates:
+    - name: whalesay
+      container:
+        image: docker/whalesay:latest
+        command: [cowsay]
+        args: ["hello world"]
+      outputs:
+        artifacts:
+          - name: out
+            path: /out
+            s3:
+              key: out
+  `)
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate(ctx)
+
+	assert.Equal(t, 0, len(woc.wf.GetFinalizers()))
 }
 
 //  TestPodSpecLogForFailedPods tests PodSpec logging configuration
@@ -8422,167 +8521,4 @@ func TestFailSuspendedAndPendingNodesAfterDeadlineOrShutdown(t *testing.T) {
 		assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Nodes[step1NodeName].Phase)
 		assert.Equal(t, wfv1.NodeFailed, woc.wf.Status.Nodes[step2NodeName].Phase)
 	})
-}
-
-// verify Finalizer gets added when the Workflow strategy indicates GC for Artifacts
-func TestAddArtifactGCFinalizerAdded_WorkflowStrategy(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(`
-  apiVersion: argoproj.io/v1alpha1
-  kind: Workflow
-  metadata:
-    name: hello-world
-  spec:
-    entrypoint: whalesay
-    artifactGC:
-      strategy: OnWorkflowDeletion
-    templates:
-    - name: whalesay
-      container:
-        image: docker/whalesay:latest
-        command: [cowsay]
-        args: ["hello world"]
-      outputs:
-        artifacts:
-          - name: out
-            path: /out
-            s3:
-              key: out
-
-  `)
-	cancel, controller := newController(wf)
-	defer cancel()
-
-	woc := newWorkflowOperationCtx(wf, controller)
-
-	woc.addArtifactGCFinalizer()
-
-	// verify the finalizer is in there
-	found := false
-	for _, finalizer := range woc.wf.GetFinalizers() {
-		if finalizer == common.FinalizerArtifactGC {
-			found = true
-		}
-	}
-	assert.Equal(t, found, true)
-}
-
-// verify Finalizer gets added when the artifact strategy indicates GC for Artifacts
-func TestAddArtifactGCFinalizerAdded_ArtifactStrategy(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(`
-  apiVersion: argoproj.io/v1alpha1
-  kind: Workflow
-  metadata:
-    name: hello-world
-  spec:
-    entrypoint: whalesay
-    templates:
-    - name: whalesay
-      container:
-        image: docker/whalesay:latest
-        command: [cowsay]
-        args: ["hello world"]
-      outputs:
-        artifacts:
-          - name: out
-            path: /out
-            s3:
-              key: out
-            artifactGC:
-              strategy: OnWorkflowDeletion
-  `)
-	cancel, controller := newController(wf)
-	defer cancel()
-
-	woc := newWorkflowOperationCtx(wf, controller)
-
-	woc.addArtifactGCFinalizer()
-
-	// verify the finalizer is in there
-	found := false
-	for _, finalizer := range woc.wf.GetFinalizers() {
-		if finalizer == common.FinalizerArtifactGC {
-			found = true
-		}
-	}
-	assert.Equal(t, found, true)
-}
-
-// verify Finalizer isn't added if no GC is specified
-func TestAddArtifactGCFinalizerAdded_NoStrategy(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(`
-  apiVersion: argoproj.io/v1alpha1
-  kind: Workflow
-  metadata:
-    name: hello-world
-  spec:
-    entrypoint: whalesay
-    templates:
-    - name: whalesay
-      container:
-        image: docker/whalesay:latest
-        command: [cowsay]
-        args: ["hello world"]
-      outputs:
-        artifacts:
-          - name: out
-            path: /out
-            s3:
-              key: out
-  `)
-	cancel, controller := newController(wf)
-	defer cancel()
-
-	woc := newWorkflowOperationCtx(wf, controller)
-
-	woc.addArtifactGCFinalizer()
-
-	// verify the finalizer is in there
-	found := false
-	for _, finalizer := range woc.wf.GetFinalizers() {
-		if finalizer == common.FinalizerArtifactGC {
-			found = true
-		}
-	}
-	assert.Equal(t, found, false)
-}
-
-// verify Finalizer isn't added if GC is set to none
-func TestAddArtifactGCFinalizerAdded_GCNNone(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(`
-  apiVersion: argoproj.io/v1alpha1
-  kind: Workflow
-  metadata:
-    name: hello-world
-  spec:
-    entrypoint: whalesay
-    artifactGC:
-      strategy: ""
-    templates:
-    - name: whalesay
-      container:
-        image: docker/whalesay:latest
-        command: [cowsay]
-        args: ["hello world"]
-      outputs:
-        artifacts:
-          - name: out
-            path: /out
-            s3:
-              key: out
-  `)
-	cancel, controller := newController(wf)
-	defer cancel()
-
-	woc := newWorkflowOperationCtx(wf, controller)
-
-	woc.addArtifactGCFinalizer()
-
-	// verify the finalizer is in there
-	found := false
-	for _, finalizer := range woc.wf.GetFinalizers() {
-		if finalizer == common.FinalizerArtifactGC {
-			found = true
-		}
-	}
-	assert.Equal(t, found, false)
 }
