@@ -74,7 +74,7 @@
         "sass": "^1.52.1",
         "sass-loader": "^10.1.0",
         "source-map-loader": "^0.2.4",
-        "style-loader": "^2.0.0",
+        "style-loader": "^0.20.1",
         "ts-jest": "^26.4.4",
         "ts-loader": "^7.0.4",
         "ts-node": "^9.1.1",
