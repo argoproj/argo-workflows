@@ -61,7 +61,7 @@
         "@types/swagger-ui-react": "^3.23.2",
         "babel-jest": "^28.1.0",
         "babel-loader": "^8.2.5",
-        "copy-webpack-plugin": "^5.1.2",
+        "copy-webpack-plugin": "^6.4.1",
         "copyfiles": "^2.4.1",
         "file-loader": "^6.2.0",
         "glob": "^8.0.3",
