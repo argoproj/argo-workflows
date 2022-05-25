@@ -34,7 +34,7 @@
         "react-dom": "^16.14.0",
         "react-moment": "^1.1.1",
         "react-monaco-editor": "^0.48.0",
-        "react-router-dom": "^4.2.2",
+        "react-router-dom": "^6.3.0",
         "superagent": "^7.1.3",
         "superagent-promise": "^1.1.0",
         "swagger-ui-react": "^4.7.0"
