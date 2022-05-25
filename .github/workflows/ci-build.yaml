@@ -239,5 +239,5 @@ jobs:
       - run: git diff --exit-code
       # check to see if it'll start (but not if it'll render)
       - run: yarn --cwd ui start &
-      - run: until curl :8080 > /dev/null ; do sleep 10s ; done
+      - run: until curl http://localhost:8080 > /dev/null ; do sleep 10s ; done
         timeout-minutes: 1
