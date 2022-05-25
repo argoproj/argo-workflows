@@ -3517,22 +3517,20 @@ func (woc *wfOperationCtx) addFinalizers() {
 }
 
 func (woc *wfOperationCtx) addArtifactGCFinalizer() {
-	if woc.execWf.Spec.ArtifactGC != nil && woc.execWf.Spec.ArtifactGC.Strategy != wfv1.ArtifactGCNever {
-		// verify that the output Artifacts aren't all set to ArtifactGCNever (undefined is okay)
-		garbageCollect := false
-		for _, template := range woc.execWf.Spec.Templates {
-			for _, artifact := range template.Outputs.Artifacts {
-				if artifact.ArtifactGC == nil || artifact.ArtifactGC.Strategy != wfv1.ArtifactGCNever {
-					garbageCollect = true
-					break
-				}
+
+	artifactDefinedGC := false
+	for _, template := range woc.execWf.Spec.Templates {
+		for _, artifact := range template.Outputs.Artifacts {
+			if artifact.ArtifactGC != nil && artifact.ArtifactGC.Strategy != wfv1.ArtifactGCNever {
+				artifactDefinedGC = true
+				break
 			}
 		}
+	}
 
-		if garbageCollect {
-			finalizers := append(woc.wf.GetFinalizers(), common.FinalizerArtifactGC)
-			woc.wf.SetFinalizers(finalizers)
-		}
+	if (woc.execWf.Spec.ArtifactGC != nil && woc.execWf.Spec.ArtifactGC.Strategy != wfv1.ArtifactGCNever) || artifactDefinedGC {
+		finalizers := append(woc.wf.GetFinalizers(), common.FinalizerArtifactGC)
+		woc.wf.SetFinalizers(finalizers)
 	}
 }
 

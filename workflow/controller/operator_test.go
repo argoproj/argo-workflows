@@ -8423,3 +8423,166 @@ func TestFailSuspendedAndPendingNodesAfterDeadlineOrShutdown(t *testing.T) {
 		assert.Equal(t, wfv1.NodeFailed, woc.wf.Status.Nodes[step2NodeName].Phase)
 	})
 }
+
+// verify Finalizer gets added when the Workflow strategy indicates GC for Artifacts
+func TestAddArtifactGCFinalizerAdded_WorkflowStrategy(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(`
+  apiVersion: argoproj.io/v1alpha1
+  kind: Workflow
+  metadata:
+    name: hello-world
+  spec:
+    entrypoint: whalesay
+    artifactGC:
+      strategy: OnWorkflowDeletion
+    templates:
+    - name: whalesay
+      container:
+        image: docker/whalesay:latest
+        command: [cowsay]
+        args: ["hello world"]
+      outputs:
+        artifacts:
+          - name: out
+            path: /out
+            s3:
+              key: out
+
+  `)
+	cancel, controller := newController(wf)
+	defer cancel()
+
+	woc := newWorkflowOperationCtx(wf, controller)
+
+	woc.addArtifactGCFinalizer()
+
+	// verify the finalizer is in there
+	found := false
+	for _, finalizer := range woc.wf.GetFinalizers() {
+		if finalizer == common.FinalizerArtifactGC {
+			found = true
+		}
+	}
+	assert.Equal(t, found, true)
+}
+
+// verify Finalizer gets added when the artifact strategy indicates GC for Artifacts
+func TestAddArtifactGCFinalizerAdded_ArtifactStrategy(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(`
+  apiVersion: argoproj.io/v1alpha1
+  kind: Workflow
+  metadata:
+    name: hello-world
+  spec:
+    entrypoint: whalesay
+    templates:
+    - name: whalesay
+      container:
+        image: docker/whalesay:latest
+        command: [cowsay]
+        args: ["hello world"]
+      outputs:
+        artifacts:
+          - name: out
+            path: /out
+            s3:
+              key: out
+            artifactGC:
+              strategy: OnWorkflowDeletion
+  `)
+	cancel, controller := newController(wf)
+	defer cancel()
+
+	woc := newWorkflowOperationCtx(wf, controller)
+
+	woc.addArtifactGCFinalizer()
+
+	// verify the finalizer is in there
+	found := false
+	for _, finalizer := range woc.wf.GetFinalizers() {
+		if finalizer == common.FinalizerArtifactGC {
+			found = true
+		}
+	}
+	assert.Equal(t, found, true)
+}
+
+// verify Finalizer isn't added if no GC is specified
+func TestAddArtifactGCFinalizerAdded_NoStrategy(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(`
+  apiVersion: argoproj.io/v1alpha1
+  kind: Workflow
+  metadata:
+    name: hello-world
+  spec:
+    entrypoint: whalesay
+    templates:
+    - name: whalesay
+      container:
+        image: docker/whalesay:latest
+        command: [cowsay]
+        args: ["hello world"]
+      outputs:
+        artifacts:
+          - name: out
+            path: /out
+            s3:
+              key: out
+  `)
+	cancel, controller := newController(wf)
+	defer cancel()
+
+	woc := newWorkflowOperationCtx(wf, controller)
+
+	woc.addArtifactGCFinalizer()
+
+	// verify the finalizer is in there
+	found := false
+	for _, finalizer := range woc.wf.GetFinalizers() {
+		if finalizer == common.FinalizerArtifactGC {
+			found = true
+		}
+	}
+	assert.Equal(t, found, false)
+}
+
+// verify Finalizer isn't added if GC is set to none
+func TestAddArtifactGCFinalizerAdded_GCNNone(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(`
+  apiVersion: argoproj.io/v1alpha1
+  kind: Workflow
+  metadata:
+    name: hello-world
+  spec:
+    entrypoint: whalesay
+    artifactGC:
+      strategy: ""
+    templates:
+    - name: whalesay
+      container:
+        image: docker/whalesay:latest
+        command: [cowsay]
+        args: ["hello world"]
+      outputs:
+        artifacts:
+          - name: out
+            path: /out
+            s3:
+              key: out
+  `)
+	cancel, controller := newController(wf)
+	defer cancel()
+
+	woc := newWorkflowOperationCtx(wf, controller)
+
+	woc.addArtifactGCFinalizer()
+
+	// verify the finalizer is in there
+	found := false
+	for _, finalizer := range woc.wf.GetFinalizers() {
+		if finalizer == common.FinalizerArtifactGC {
+			found = true
+		}
+	}
+	assert.Equal(t, found, false)
+}
