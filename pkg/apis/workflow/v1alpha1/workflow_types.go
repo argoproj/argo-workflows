@@ -404,7 +404,8 @@ type WorkflowSpec struct {
 	// WorkflowMetadata contains some metadata of the workflow to be refer
 	WorkflowMetadata *WorkflowMetadata `json:"workflowMetadata,omitempty" protobuf:"bytes,42,opt,name=workflowMetadata"`
 
-	// ArtifactGC describes the strategy to use when to deleting artifacts from completed or deleted workflows
+	// ArtifactGC describes the strategy to use when to deleting artifacts from completed or deleted workflows (applies to all output Artifacts
+	// unless Artifact.ArtifactGC is specified, which overrides this)
 	ArtifactGC *ArtifactGC `json:"artifactGC,omitempty" protobuf:"bytes,43,opt,name=artifactGC"`
 }
 
