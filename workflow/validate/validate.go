@@ -1373,7 +1373,7 @@ func sortDAGTasks(tmpl *wfv1.Template, ctx *dagValidationContext) error {
 
 var (
 	// paramRegex matches a parameter. e.g. {{inputs.parameters.blah}}
-	paramRegex               = regexp.MustCompile(`{{[-a-zA-Z0-9]+(\.[-a-zA-Z0-9_]+)*}}`)
+	paramRegex               = regexp.MustCompile(`{{\s?[-a-zA-Z0-9]+(\.[-a-zA-Z0-9_]+)*\s?}}`)
 	paramOrArtifactNameRegex = regexp.MustCompile(`^[-a-zA-Z0-9_]+[-a-zA-Z0-9_]*$`)
 	workflowFieldNameRegex   = regexp.MustCompile("^" + workflowFieldNameFmt + "$")
 )
