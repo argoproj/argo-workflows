@@ -2,16 +2,19 @@ package util
 
 import (
 	"fmt"
+	"hash/fnv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
-func TestPodName(t *testing.T) {
+func TestPodNameV2(t *testing.T) {
 	nodeName := "nodename"
 	nodeID := "1"
 
+	///////////////////////////////////////////////////////////////////////////////////////////
 	// short case
+	///////////////////////////////////////////////////////////////////////////////////////////
 	shortWfName := "wfname"
 	shortTemplateName := "templatename"
 
@@ -19,10 +22,17 @@ func TestPodName(t *testing.T) {
 	actual := ensurePodNamePrefixLength(expected)
 	assert.Equal(t, expected, actual)
 
-	name := PodName(shortWfName, nodeName, shortTemplateName, nodeID, GetPodNameVersion())
-	assert.Equal(t, nodeID, name)
+	// derive the expected pod name
+	h := fnv.New32a()
+	_, _ = h.Write([]byte(nodeName))
+	expectedPodName := fmt.Sprintf("wfname-templatename-%v", h.Sum32())
 
+	name := PodName(shortWfName, nodeName, shortTemplateName, nodeID, PodNameV2)
+	assert.Equal(t, expectedPodName, name)
+
+	///////////////////////////////////////////////////////////////////////////////////////////
 	// long case
+	///////////////////////////////////////////////////////////////////////////////////////////
 	longWfName := "alongworkflownamethatincludeslotsofdetailsandisessentiallyalargerunonsentencewithpoorstyleandnopunctuationtobehadwhatsoever"
 	longTemplateName := "alongtemplatenamethatincludessliightlymoredetailsandiscertainlyalargerunonstnencewithevenworsestylisticconcernsandpreposterouslyeliminatespunctuation"
 
@@ -34,6 +44,10 @@ func TestPodName(t *testing.T) {
 
 	assert.Equal(t, maxK8sResourceNameLength-k8sNamingHashLength-1, len(actual))
 
-	name = PodName(longWfName, nodeName, longTemplateName, nodeID, GetPodNameVersion())
-	assert.Equal(t, nodeID, name)
+	longPrefix := fmt.Sprintf("%s-%s", longWfName, longTemplateName)
+	expectedPodName = fmt.Sprintf("%s-%v", longPrefix[0:maxK8sResourceNameLength-k8sNamingHashLength-1], h.Sum32())
+
+	name = PodName(longWfName, nodeName, longTemplateName, nodeID, PodNameV2)
+	assert.Equal(t, expectedPodName, name)
+
 }
