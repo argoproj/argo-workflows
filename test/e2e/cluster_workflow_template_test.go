@@ -41,7 +41,7 @@ spec:
             value: hello from nested
 `).When().
 		SubmitWorkflow().
-		WaitForWorkflow(fixtures.ToBeCompleted)
+		WaitForWorkflow(fixtures.ToBeSucceeded)
 }
 
 func TestClusterWorkflowTemplateSuite(t *testing.T) {

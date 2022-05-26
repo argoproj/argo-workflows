@@ -13,7 +13,7 @@ spec:
           kind: ConfigMap
           metadata:
             name: test
-            namespace: default
+            namespace: argo
           data:
             keys: >
               gEPqig/hsFDwFO/Xg/ibItxzl5dDsbITZ172yn5eDJO2KR4NOV3Pc0jaDr+9WScAVp/nGdGTR6Si
