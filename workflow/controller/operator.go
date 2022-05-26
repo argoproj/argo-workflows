@@ -3517,18 +3517,7 @@ func (woc *wfOperationCtx) addFinalizers() {
 }
 
 func (woc *wfOperationCtx) addArtifactGCFinalizer() {
-
-	artifactDefinedGC := false
-	for _, template := range woc.execWf.Spec.Templates {
-		for _, artifact := range template.Outputs.Artifacts {
-			if artifact.ArtifactGC != nil && artifact.ArtifactGC.Strategy != wfv1.ArtifactGCNever {
-				artifactDefinedGC = true
-				break
-			}
-		}
-	}
-
-	if (woc.execWf.Spec.ArtifactGC != nil && woc.execWf.Spec.ArtifactGC.Strategy != wfv1.ArtifactGCNever) || artifactDefinedGC {
+	if woc.execWf.HasArtifactGC() {
 		finalizers := append(woc.wf.GetFinalizers(), common.FinalizerArtifactGC)
 		woc.wf.SetFinalizers(finalizers)
 	}

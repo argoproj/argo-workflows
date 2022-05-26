@@ -196,6 +196,20 @@ func (w *Workflow) GetExecSpec() *WorkflowSpec {
 	return &w.Spec
 }
 
+func (w *Workflow) HasArtifactGC() bool {
+	artifactDefinedGC := false
+	for _, template := range w.Spec.Templates {
+		for _, artifact := range template.Outputs.Artifacts {
+			if artifact.GetArtifactGC().Strategy != ArtifactGCNever {
+				artifactDefinedGC = true
+				break
+			}
+		}
+	}
+
+	return (w.Spec.ArtifactGC != nil && w.Spec.ArtifactGC.Strategy != ArtifactGCNever) || artifactDefinedGC
+}
+
 var (
 	WorkflowCreatedAfter = func(t time.Time) WorkflowPredicate {
 		return func(wf Workflow) bool {
