@@ -127,9 +127,8 @@ func TestWorkflowHasArtifactGC(t *testing.T) {
 		{
 			name: "WorkflowSpecGC_Completion",
 			workflowArtGCStrategySpec: `
-      artifactGC:
-        strategy: OnWorkflowCompletion
-      `,
+              artifactGC:
+                strategy: OnWorkflowCompletion`,
 			artifactGCStrategySpec: "",
 			expectedResult:         true,
 		},
@@ -137,17 +136,15 @@ func TestWorkflowHasArtifactGC(t *testing.T) {
 			name:                      "ArtifactSpecGC_Completion",
 			workflowArtGCStrategySpec: "",
 			artifactGCStrategySpec: `
-      artifactGC:
-        strategy: OnWorkflowCompletion
-      `,
+                      artifactGC:
+                        strategy: OnWorkflowCompletion`,
 			expectedResult: true,
 		},
 		{
 			name: "WorkflowSpecGC_Deletion",
 			workflowArtGCStrategySpec: `
-      artifactGC:
-        strategy: OnWorkflowDeletion
-	`,
+              artifactGC:
+                strategy: OnWorkflowDeletion`,
 			artifactGCStrategySpec: "",
 			expectedResult:         true,
 		},
@@ -155,9 +152,8 @@ func TestWorkflowHasArtifactGC(t *testing.T) {
 			name:                      "ArtifactSpecGC_Deletion",
 			workflowArtGCStrategySpec: "",
 			artifactGCStrategySpec: `
-      artifactGC:
-        strategy: OnWorkflowDeletion
-	`,
+                      artifactGC:
+                        strategy: OnWorkflowDeletion`,
 			expectedResult: true,
 		},
 		{
@@ -169,9 +165,8 @@ func TestWorkflowHasArtifactGC(t *testing.T) {
 		{
 			name: "WorkflowSpecGCNone",
 			workflowArtGCStrategySpec: `
-      artifactGC:
-        strategy: ""
-      `,
+              artifactGC:
+                strategy: ""`,
 			artifactGCStrategySpec: "",
 			expectedResult:         false,
 		},
@@ -181,27 +176,27 @@ func TestWorkflowHasArtifactGC(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 
 			workflowSpec := fmt.Sprintf(`
-			apiVersion: argoproj.io/v1alpha1
-			kind: Workflow
-			metadata:
-			  generateName: artifact-passing-
-			spec:
-			  entrypoint: whalesay
-			  %s
-			  templates:
-			  - name: whalesay
-				container:
-				  image: docker/whalesay:latest
-				  command: [sh, -c]
-				  args: ["sleep 1; cowsay hello world | tee /tmp/hello_world.txt"]
-				outputs:
-				  artifacts:
-					- name: out
-					  path: /out
-					  s3:
-						key: out
-					  %s
-			`, tt.workflowArtGCStrategySpec, tt.artifactGCStrategySpec)
+            apiVersion: argoproj.io/v1alpha1
+            kind: Workflow
+            metadata:
+              generateName: artifact-passing-
+            spec:
+              entrypoint: whalesay
+              %s
+              templates:
+              - name: whalesay
+                container:
+                  image: docker/whalesay:latest
+                  command: [sh, -c]
+                  args: ["sleep 1; cowsay hello world | tee /tmp/hello_world.txt"]
+                outputs:
+                  artifacts:
+                    - name: out
+                      path: /out
+                      s3:
+                        key: out
+                        %s`, tt.workflowArtGCStrategySpec, tt.artifactGCStrategySpec)
+
 			wf := MustUnmarshalWorkflow(workflowSpec)
 
 			hasArtifact := wf.HasArtifactGC()
