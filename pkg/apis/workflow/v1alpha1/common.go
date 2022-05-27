@@ -37,7 +37,7 @@ type TemplateReferenceHolder interface {
 	// GetTemplateName returns the template name. This maybe empty. This is last precedence.
 	GetTemplateName() string
 	// GetPriority returns the priority of the step or task.
-	GetPriority() *int32
+	GetPriority() int32
 }
 
 // SubmitOpts are workflow submission options

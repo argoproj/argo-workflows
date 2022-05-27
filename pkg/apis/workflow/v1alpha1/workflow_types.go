@@ -1386,7 +1386,7 @@ type WorkflowStep struct {
 	Hooks LifecycleHooks `json:"hooks,omitempty" protobuf:"bytes,12,opt,name=hooks"`
 
 	// Priority is used if controller is configured to process limited number of workflows in parallel. Steps with higher priority are processed first.
-	Priority *int32 `json:"priority,omitempty" protobuf:"bytes,14,opt,name=priority"`
+	Priority int32 `json:"priority,omitempty" protobuf:"bytes,14,opt,name=priority"`
 }
 
 type LifecycleEvent string
@@ -1457,7 +1457,7 @@ func (step *WorkflowStep) GetTemplateRef() *TemplateRef {
 	return step.TemplateRef
 }
 
-func (step *WorkflowStep) GetPriority() *int32 {
+func (step *WorkflowStep) GetPriority() int32 {
 	return step.Priority
 }
 
@@ -2128,8 +2128,8 @@ func (n *NodeStatus) GetOutputs() *Outputs {
 	return n.Outputs
 }
 
-func (n *NodeStatus) GetPriority() *int32 {
-	return nil
+func (n *NodeStatus) GetPriority() int32 {
+	return 0
 }
 
 // IsActiveSuspendNode returns whether this node is an active suspend node
@@ -2817,7 +2817,7 @@ type DAGTask struct {
 	Hooks LifecycleHooks `json:"hooks,omitempty" protobuf:"bytes,13,opt,name=hooks"`
 
 	// Priority is used if controller is configured to process limited number of workflows in parallel. Tasks with higher priority are processed first.
-	Priority *int32 `json:"priority,omitempty" protobuf:"bytes,15,opt,name=priority"`
+	Priority int32 `json:"priority,omitempty" protobuf:"bytes,15,opt,name=priority"`
 }
 
 var _ TemplateReferenceHolder = &DAGTask{}
@@ -2852,7 +2852,7 @@ func (t *DAGTask) ShouldExpand() bool {
 	return len(t.WithItems) != 0 || t.WithParam != "" || t.WithSequence != nil
 }
 
-func (t *DAGTask) GetPriority() *int32 {
+func (t *DAGTask) GetPriority() int32 {
 	return t.Priority
 }
 
