@@ -123,6 +123,7 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [PDOK](https://www.pdok.nl/)
 1. [Peak AI](https://www.peak.ai/)
 1. [Pipekit](https://pipeit.io)
+1. [Pismo](https://pismo.io/)
 1. [Polarpoint.io](https://polarpoint.io)
 1. [Pollination](https://pollination.cloud)
 1. [Preferred Networks](https://www.preferred-networks.jp/en/)
@@ -171,7 +172,6 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [Xueqiu](https://www.xueqiu.com/)
 1. [Yubo](https://www.yubo.live/)
 1. [Zhihu](https://www.zhihu.com/)
-1. [Pismo](https://pismo.io/)
 
 ### Projects Using Argo
 
