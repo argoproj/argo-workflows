@@ -202,7 +202,6 @@ func TestWorkflowHasArtifactGC(t *testing.T) {
 			hasArtifact := wf.HasArtifactGC()
 
 			assert.Equal(t, hasArtifact, tt.expectedResult)
-
 		})
 	}
 
