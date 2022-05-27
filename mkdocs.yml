@@ -197,7 +197,7 @@ nav:
   - Operator Manual:
       - installation.md
       - releases.md
-      - breaking-changes.md
+      - upgrading.md
       - security.md
       - Configuration:
           - managed-namespace.md
