@@ -11,7 +11,7 @@
         "lint": "tslint --fix -p ./src/app",
         "test": "jest"
     },
-    "engines" : { 
+    "engines" : {
         "node" : ">=16"
     },
     "dependencies": {
@@ -90,7 +90,7 @@
     },
     "resolutions": {
         "lodash": "4.17.21",
-        "prismjs": "1.26.0",
+        "prismjs": "1.27.0",
         "@types/react": "16.8.5"
     }
 }
