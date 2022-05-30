@@ -70,6 +70,7 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
             this.state.maxStartedAt,
             this.state.pagination
         );
+        services.info.collectEvent('openedArchivedWorkflowList').then();
     }
 
     public render() {

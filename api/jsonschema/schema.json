@@ -4496,6 +4496,10 @@
           "description": "ArchiveLogs indicates if the container logs should be archived",
           "type": "boolean"
         },
+        "artifactGC": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactGC",
+          "description": "ArtifactGC describes the strategy to use when to deleting an artifact from completed or deleted workflows"
+        },
         "artifactory": {
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactoryArtifact",
           "description": "Artifactory contains artifactory artifact location details"
@@ -4632,6 +4636,10 @@
         "archiveLogs": {
           "description": "ArchiveLogs indicates if the container logs should be archived",
           "type": "boolean"
+        },
+        "artifactGC": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactGC",
+          "description": "ArtifactGC describes the strategy to use when to deleting an artifact from completed or deleted workflows"
         },
         "artifactory": {
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactoryArtifact",
@@ -4832,6 +4840,20 @@
       },
       "type": "object"
     },
+    "io.argoproj.workflow.v1alpha1.BasicAuth": {
+      "description": "BasicAuth describes the secret selectors required for basic authentication",
+      "properties": {
+        "passwordSecret": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
+          "description": "PasswordSecret is the secret selector to the repository password"
+        },
+        "usernameSecret": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
+          "description": "UsernameSecret is the secret selector to the repository username"
+        }
+      },
+      "type": "object"
+    },
     "io.argoproj.workflow.v1alpha1.Cache": {
       "description": "Cache is the configuration for the type of cache to be used",
       "properties": {
@@ -4843,6 +4865,18 @@
       "required": [
         "configMap"
       ],
+      "type": "object"
+    },
+    "io.argoproj.workflow.v1alpha1.ClientCertAuth": {
+      "description": "ClientCertAuth holds necessary information for client authentication via certificates",
+      "properties": {
+        "clientCertSecret": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
+        },
+        "clientKeySecret": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
+        }
+      },
       "type": "object"
     },
     "io.argoproj.workflow.v1alpha1.ClusterWorkflowTemplate": {
@@ -4940,6 +4974,17 @@
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ClusterWorkflowTemplate"
         }
       },
+      "type": "object"
+    },
+    "io.argoproj.workflow.v1alpha1.CollectEventRequest": {
+      "properties": {
+        "name": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "io.argoproj.workflow.v1alpha1.CollectEventResponse": {
       "type": "object"
     },
     "io.argoproj.workflow.v1alpha1.Condition": {
@@ -5785,6 +5830,10 @@
     "io.argoproj.workflow.v1alpha1.HTTPArtifact": {
       "description": "HTTPArtifact allows a file served on HTTP to be placed as an input artifact in a container",
       "properties": {
+        "auth": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.HTTPAuth",
+          "description": "Auth contains information for client authentication"
+        },
         "headers": {
           "description": "Headers are an optional list of headers to send with HTTP requests for artifacts",
           "items": {
@@ -5792,22 +5841,28 @@
           },
           "type": "array"
         },
-        "passwordSecret": {
-          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
-          "description": "PasswordSecret is the secret selector to the repository password"
-        },
         "url": {
           "description": "URL of the artifact",
           "type": "string"
-        },
-        "usernameSecret": {
-          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
-          "description": "UsernameSecret is the secret selector to the repository username"
         }
       },
       "required": [
         "url"
       ],
+      "type": "object"
+    },
+    "io.argoproj.workflow.v1alpha1.HTTPAuth": {
+      "properties": {
+        "basicAuth": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.BasicAuth"
+        },
+        "clientCert": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ClientCertAuth"
+        },
+        "oauth2": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.OAuth2Auth"
+        }
+      },
       "type": "object"
     },
     "io.argoproj.workflow.v1alpha1.HTTPHeader": {
@@ -5979,9 +6034,6 @@
           "description": "TemplateRef is the reference to the template resource to execute by the hook"
         }
       },
-      "required": [
-        "template"
-      ],
       "type": "object"
     },
     "io.argoproj.workflow.v1alpha1.Link": {
@@ -6319,6 +6371,50 @@
     },
     "io.argoproj.workflow.v1alpha1.NoneStrategy": {
       "description": "NoneStrategy indicates to skip tar process and upload the files or directory tree as independent files. Note that if the artifact is a directory, the artifact driver must support the ability to save/load the directory appropriately.",
+      "type": "object"
+    },
+    "io.argoproj.workflow.v1alpha1.OAuth2Auth": {
+      "description": "OAuth2Auth holds all information for client authentication via OAuth2 tokens",
+      "properties": {
+        "clientIDSecret": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
+        },
+        "clientSecretSecret": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
+        },
+        "endpointParams": {
+          "items": {
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.OAuth2EndpointParam"
+          },
+          "type": "array"
+        },
+        "scopes": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "tokenURLSecret": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
+        }
+      },
+      "type": "object"
+    },
+    "io.argoproj.workflow.v1alpha1.OAuth2EndpointParam": {
+      "description": "EndpointParam is for requesting optional fields that should be sent in the oauth request",
+      "properties": {
+        "key": {
+          "description": "Name is the header name",
+          "type": "string"
+        },
+        "value": {
+          "description": "Value is the literal value to use for the header",
+          "type": "string"
+        }
+      },
+      "required": [
+        "key"
+      ],
       "type": "object"
     },
     "io.argoproj.workflow.v1alpha1.OSSArtifact": {
@@ -7169,10 +7265,6 @@
         "archiveLocation": {
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactLocation",
           "description": "Location in which all files related to the step will be stored (logs, artifacts, etc...). Can be overridden by individual items in Outputs. If omitted, will use the default artifact repository location configured in the controller, appended with the \u003cworkflowname\u003e/\u003cnodename\u003e in the key."
-        },
-        "artifactGC": {
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactGC",
-          "description": "ArtifactGC describes the strategy to use when to deleting artifacts from executed templates"
         },
         "automountServiceAccountToken": {
           "description": "AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods. ServiceAccountName of ExecutorConfig must be specified if this value is false.",

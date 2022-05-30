@@ -724,6 +724,7 @@ type TaskResults struct {
 	Failed       bool `json:"Failed"`
 	Errored      bool `json:"Errored"`
 	Skipped      bool `json:"Skipped"`
+	Omitted      bool `json:"Omitted"`
 	Daemoned     bool `json:"Daemoned"`
 	AnySucceeded bool `json:"AnySucceeded"`
 	AllFailed    bool `json:"AllFailed"`
@@ -778,6 +779,7 @@ func (d *dagContext) evaluateDependsLogic(taskName string) (bool, bool, error) {
 			Failed:       depNode.Phase == wfv1.NodeFailed,
 			Errored:      depNode.Phase == wfv1.NodeError,
 			Skipped:      depNode.Phase == wfv1.NodeSkipped,
+			Omitted:      depNode.Phase == wfv1.NodeOmitted,
 			Daemoned:     depNode.IsDaemoned() && depNode.Phase != wfv1.NodePending,
 			AnySucceeded: anySucceeded,
 			AllFailed:    allFailed,

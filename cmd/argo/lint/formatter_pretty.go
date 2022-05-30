@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/TwinProduction/go-color"
+	"github.com/TwiN/go-color"
 )
 
 const (

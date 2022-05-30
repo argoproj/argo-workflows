@@ -101,6 +101,18 @@
     right: 1em;
   }
 
+  &--artifact-expanded &__graph-container {
+    width: calc(50%);
+  }
+
+  &--artifact-expanded &__step-info {
+    width: 50%;
+  }
+
+  &--artifact-expanded &__step-info-close {
+    right: 1em;
+  }
+
 }
 
 .badge {

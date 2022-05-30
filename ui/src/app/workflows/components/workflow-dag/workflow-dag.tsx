@@ -252,6 +252,8 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
                 .forEach(node => {
                     nodeArtifacts(node, this.artifactRepository)
                         .filter(({name}) => !name.endsWith('-logs'))
+                        // only show files or directories
+                        .filter(({filename, key}) => filename.includes('.') || key.endsWith('/'))
                         .forEach(a => {
                             nodes.set(a.urn, {
                                 genre: 'Artifact',

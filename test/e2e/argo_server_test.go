@@ -1065,6 +1065,11 @@ func (s *ArgoServerSuite) TestArtifactServer() {
 		resp.Body().
 			Contains(":) Hello Argo!")
 
+		resp.Header("Content-Security-Policy").
+			Equal("sandbox; base-uri 'none'; default-src 'none'; img-src 'self'; style-src 'self' 'unsafe-inline'")
+
+		resp.Header("X-Frame-Options").
+			Equal("SAMEORIGIN")
 	})
 
 	// In this case, the artifact name is a file
@@ -1076,6 +1081,11 @@ func (s *ArgoServerSuite) TestArtifactServer() {
 		resp.Body().
 			Contains(":) Hello Argo!")
 
+		resp.Header("Content-Security-Policy").
+			Equal("sandbox; base-uri 'none'; default-src 'none'; img-src 'self'; style-src 'self' 'unsafe-inline'")
+
+		resp.Header("X-Frame-Options").
+			Equal("SAMEORIGIN")
 	})
 
 	// In this case, the artifact name is a directory
@@ -1110,6 +1120,11 @@ func (s *ArgoServerSuite) TestArtifactServer() {
 		resp.Body().
 			Contains(":) Hello Argo!")
 
+		resp.Header("Content-Security-Policy").
+			Equal("sandbox; base-uri 'none'; default-src 'none'; img-src 'self'; style-src 'self' 'unsafe-inline'")
+
+		resp.Header("X-Frame-Options").
+			Equal("SAMEORIGIN")
 	})
 
 	// In this case, the artifact name is a file

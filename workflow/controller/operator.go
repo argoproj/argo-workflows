@@ -1542,7 +1542,7 @@ func (woc *wfOperationCtx) deletePVCs(ctx context.Context) error {
 			}
 		}
 	}
-	if os.Getenv("ARGO_REMOVE_PVC_PROTECTION_FINALIZER") == "true" {
+	if os.Getenv("ARGO_REMOVE_PVC_PROTECTION_FINALIZER") != "false" {
 		for _, pvc := range woc.wf.Status.PersistentVolumeClaims {
 			woc.log.WithField("claimName", pvc.PersistentVolumeClaim.ClaimName).
 				Info("Removing PVC \"kubernetes.io/pvc-protection\" finalizer")
@@ -3635,7 +3635,8 @@ func (woc *wfOperationCtx) substituteGlobalVariables() error {
 // getPodName gets the appropriate pod name for a workflow based on the
 // POD_NAMES environment variable
 func (woc *wfOperationCtx) getPodName(nodeName, templateName string) string {
-	return wfutil.PodName(woc.wf.Name, nodeName, templateName, woc.wf.NodeID(nodeName), wfutil.GetPodNameVersion())
+	version := wfutil.GetWorkflowPodNameVersion(woc.wf)
+	return wfutil.PodName(woc.wf.Name, nodeName, templateName, woc.wf.NodeID(nodeName), version)
 }
 
 func (woc *wfOperationCtx) getServiceAccountTokenName(ctx context.Context, name string) (string, error) {

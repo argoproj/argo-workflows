@@ -726,9 +726,6 @@ type Template struct {
 	// Timeout allows to set the total node execution timeout duration counting from the node's start time.
 	// This duration also includes time in which the node spends in Pending state. This duration may not be applied to Step or DAG templates.
 	Timeout string `json:"timeout,omitempty" protobuf:"bytes,38,opt,name=timeout"`
-
-	// ArtifactGC describes the strategy to use when to deleting artifacts from executed templates
-	ArtifactGC *ArtifactGC `json:"artifactGC,omitempty" protobuf:"bytes,44,opt,name=artifactGC"`
 }
 
 // SetType will set the template object based on template type.
@@ -759,14 +756,6 @@ func (tmpl *Template) setTemplateObjs(steps []ParallelSteps, dag *DAGTemplate, c
 	tmpl.Resource = resource
 	tmpl.Data = data
 	tmpl.Suspend = suspend
-}
-
-func (tmpl *Template) GetOutputs() *Outputs {
-	return &tmpl.Outputs
-}
-
-func (tmpl *Template) GetArtifactGC() *ArtifactGC {
-	return tmpl.ArtifactGC
 }
 
 // GetBaseTemplate returns a base template content.
@@ -940,6 +929,18 @@ type Artifact struct {
 
 	// FromExpression, if defined, is evaluated to specify the value for the artifact
 	FromExpression string `json:"fromExpression,omitempty" protobuf:"bytes,11,opt,name=fromExpression"`
+
+	// ArtifactGC describes the strategy to use when to deleting an artifact from completed or deleted workflows
+	ArtifactGC *ArtifactGC `json:"artifactGC,omitempty" protobuf:"bytes,12,opt,name=artifactGC"`
+}
+
+// ArtifactGC returns the ArtifactGC that was defined by the artifact.  If none was provided, a default value is returned.
+func (a *Artifact) GetArtifactGC() *ArtifactGC {
+	if a.ArtifactGC == nil {
+		return &ArtifactGC{Strategy: ArtifactGCNever}
+	}
+
+	return a.ArtifactGC
 }
 
 // CleanPath validates and cleans the artifact path.
@@ -1272,7 +1273,7 @@ func NewArtifactSearchQuery() *ArtifactSearchQuery {
 
 func (q *ArtifactSearchQuery) anyArtifactGCStrategy() bool {
 	for _, val := range q.ArtifactGCStrategies {
-		if val == true {
+		if val {
 			return val
 		}
 	}
@@ -1284,15 +1285,14 @@ func (w *Workflow) SearchArtifacts(q *ArtifactSearchQuery) ArtifactSearchResults
 	var results ArtifactSearchResults
 
 	for _, n := range w.Status.Nodes {
-		t := w.GetTemplateByName(n.TemplateName)
 		for _, a := range n.GetOutputs().GetArtifacts() {
 			match := true
 			if q.anyArtifactGCStrategy() {
-				templateStrategy := t.GetArtifactGC().GetStrategy()
+				artifactStrategy := a.GetArtifactGC().GetStrategy()
 				wfStrategy := w.Spec.GetArtifactGC().GetStrategy()
 				strategy := wfStrategy
-				if templateStrategy != ArtifactGCNever {
-					strategy = templateStrategy
+				if artifactStrategy != ArtifactGCNever {
+					strategy = artifactStrategy
 				}
 				if !q.ArtifactGCStrategies[strategy] {
 					match = false
@@ -1307,7 +1307,7 @@ func (w *Workflow) SearchArtifacts(q *ArtifactSearchQuery) ArtifactSearchResults
 			if q.NodeId != "" && n.ID != q.NodeId {
 				match = false
 			}
-			if match == true {
+			if match {
 				results = append(results, ArtifactSearchResult{Artifact: a, NodeID: n.ID})
 			}
 		}
@@ -1335,6 +1335,9 @@ type Outputs struct {
 }
 
 func (o *Outputs) GetArtifacts() Artifacts {
+	if o == nil {
+		return nil
+	}
 	return o.Artifacts
 }
 
@@ -1405,7 +1408,7 @@ func (lchs LifecycleHooks) HasExitHook() bool {
 
 type LifecycleHook struct {
 	// Template is the name of the template to execute by the hook
-	Template string `json:"template," protobuf:"bytes,1,opt,name=template"`
+	Template string `json:"template,omitempty" protobuf:"bytes,1,opt,name=template"`
 	// Arguments hold arguments to the template
 	Arguments Arguments `json:"arguments,omitempty" protobuf:"bytes,2,opt,name=arguments"`
 	// TemplateRef is the reference to the template resource to execute by the hook
@@ -2112,6 +2115,9 @@ func (n *NodeStatus) GetTemplateRef() *TemplateRef {
 }
 
 func (n *NodeStatus) GetOutputs() *Outputs {
+	if n == nil {
+		return nil
+	}
 	return n.Outputs
 }
 
@@ -2406,16 +2412,46 @@ type BasicAuth struct {
 	PasswordSecret *apiv1.SecretKeySelector `json:"passwordSecret,omitempty" protobuf:"bytes,2,opt,name=passwordSecret"`
 }
 
+// ClientCertAuth holds necessary information for client authentication via certificates
+type ClientCertAuth struct {
+	ClientCertSecret *apiv1.SecretKeySelector `json:"clientCertSecret,omitempty" protobuf:"bytes,1,opt,name=clientCertSecret"`
+	ClientKeySecret  *apiv1.SecretKeySelector `json:"clientKeySecret,omitempty" protobuf:"bytes,2,opt,name=clientKeySecret"`
+}
+
+// OAuth2Auth holds all information for client authentication via OAuth2 tokens
+type OAuth2Auth struct {
+	ClientIDSecret     *apiv1.SecretKeySelector `json:"clientIDSecret,omitempty" protobuf:"bytes,1,opt,name=clientIDSecret"`
+	ClientSecretSecret *apiv1.SecretKeySelector `json:"clientSecretSecret,omitempty" protobuf:"bytes,2,opt,name=clientSecretSecret"`
+	TokenURLSecret     *apiv1.SecretKeySelector `json:"tokenURLSecret,omitempty" protobuf:"bytes,3,opt,name=tokenURLSecret"`
+	Scopes             []string                 `json:"scopes,omitempty" protobuf:"bytes,5,rep,name=scopes"`
+	EndpointParams     []OAuth2EndpointParam    `json:"endpointParams,omitempty" protobuf:"bytes,6,rep,name=endpointParams"`
+}
+
+// EndpointParam is for requesting optional fields that should be sent in the oauth request
+type OAuth2EndpointParam struct {
+	// Name is the header name
+	Key string `json:"key" protobuf:"bytes,1,opt,name=key"`
+
+	// Value is the literal value to use for the header
+	Value string `json:"value,omitempty" protobuf:"bytes,2,opt,name=value"`
+}
+
+type HTTPAuth struct {
+	ClientCert ClientCertAuth `json:"clientCert,omitempty" protobuf:"bytes,1,opt,name=clientCert"`
+	OAuth2     OAuth2Auth     `json:"oauth2,omitempty" protobuf:"bytes,2,opt,name=oauth2"`
+	BasicAuth  BasicAuth      `json:"basicAuth,omitempty" protobuf:"bytes,3,opt,name=basicAuth"`
+}
+
 // HTTPArtifact allows a file served on HTTP to be placed as an input artifact in a container
 type HTTPArtifact struct {
 	// URL of the artifact
 	URL string `json:"url" protobuf:"bytes,1,opt,name=url"`
 
 	// Headers are an optional list of headers to send with HTTP requests for artifacts
-	Headers []Header `json:"headers,omitempty" protobuf:"bytes,2,opt,name=headers"`
+	Headers []Header `json:"headers,omitempty" protobuf:"bytes,2,rep,name=headers"`
 
-	// BasicAuth is the secret selector for basic authentication
-	BasicAuth `json:",inline" protobuf:"bytes,3,opt,name=basicAuth"`
+	// Auth contains information for client authentication
+	Auth *HTTPAuth `json:"auth,omitempty" protobuf:"bytes,3,opt,name=auth"`
 }
 
 func (h *HTTPArtifact) GetKey() (string, error) {

@@ -483,7 +483,7 @@ ifeq ($(RUN_MODE),local)
 endif
 
 $(GOPATH)/bin/stern:
-	./hack/recurl.sh $(GOPATH)/bin/stern https://github.com/wercker/stern/releases/download/1.11.0/stern_`uname -s|tr '[:upper:]' '[:lower:]'`_amd64
+	go install github.com/stern/stern@latest
 
 .PHONY: logs
 logs: $(GOPATH)/bin/stern
@@ -608,7 +608,7 @@ docs/cli/argo.md: $(CLI_PKGS) go.sum server/static/files.go hack/cli/main.go
 .PHONY: docs-spellcheck
 docs-spellcheck: /usr/local/bin/mdspell
 	# check docs for spelling mistakes
-	mdspell --ignore-numbers --ignore-acronyms --en-us --no-suggestions --report $(shell find docs -name '*.md' -not -name breaking-changes.md -not -name fields.md -not -name breaking-changes.md -not -name executor_swagger.md -not -path '*/cli/*')
+	mdspell --ignore-numbers --ignore-acronyms --en-us --no-suggestions --report $(shell find docs -name '*.md' -not -name upgrading.md -not -name fields.md -not -name upgrading.md -not -name executor_swagger.md -not -path '*/cli/*')
 
 /usr/local/bin/markdown-link-check:
 	npm i -g markdown-link-check
@@ -624,7 +624,7 @@ docs-linkcheck: /usr/local/bin/markdown-link-check
 .PHONY: docs-lint
 docs-lint: /usr/local/bin/markdownlint
 	# lint docs
-	markdownlint docs --fix --ignore docs/fields.md --ignore docs/executor_swagger.md --ignore docs/cli
+	markdownlint docs --fix --ignore docs/fields.md --ignore docs/executor_swagger.md --ignore docs/cli --ignore docs/walk-through/the-structure-of-workflow-specs.md
 
 /usr/local/bin/mkdocs:
 	pip install mkdocs==1.2.4 mkdocs_material==8.1.9  mkdocs-spellcheck==0.2.1

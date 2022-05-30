@@ -16,6 +16,7 @@ import (
 	"google.golang.org/grpc/status"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/utils/env"
 
 	"github.com/argoproj/argo-workflows/v3/persist/sqldb"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
@@ -409,6 +410,8 @@ func (a *ArtifactServer) returnArtifact(w http.ResponseWriter, art *wfv1.Artifac
 	key, _ := art.GetKey()
 	w.Header().Add("Content-Disposition", fmt.Sprintf(`filename="%s"`, path.Base(key)))
 	w.Header().Add("Content-Type", mime.TypeByExtension(path.Ext(key)))
+	w.Header().Add("Content-Security-Policy", env.GetString("ARGO_ARTIFACT_CONTENT_SECURITY_POLICY", "sandbox; base-uri 'none'; default-src 'none'; img-src 'self'; style-src 'self' 'unsafe-inline'"))
+	w.Header().Add("X-Frame-Options", env.GetString("ARGO_ARTIFACT_X_FRAME_OPTIONS", "SAMEORIGIN"))
 
 	_, err = io.Copy(w, stream)
 	if err != nil {

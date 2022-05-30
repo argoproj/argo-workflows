@@ -44,7 +44,7 @@ jobs:
     # needs: [ lint ]
     steps:
       - uses: actions/checkout@v3
-      - uses: docker/setup-buildx-action@v1
+      - uses: docker/setup-buildx-action@v2
       - name: Cache Docker layers
         uses: actions/cache@v3
         with:
@@ -84,15 +84,10 @@ jobs:
       KUBECONFIG: /home/runner/.kubeconfig
     strategy:
       fail-fast: false
-      max-parallel: 4
       matrix:
         include:
-          - test: test-java-sdk
+          - test: test-executor
             profile: minimal
-          - test: test-python-sdk
-            profile: minimal
-          - test: test-plugins
-            profile: plugins
           - test: test-functional
             profile: minimal
           - test: test-api
@@ -103,7 +98,11 @@ jobs:
             profile: minimal
           - test: test-examples
             profile: minimal
-          - test: test-executor
+          - test: test-plugins
+            profile: plugins
+          - test: test-java-sdk
+            profile: minimal
+          - test: test-python-sdk
             profile: minimal
     steps:
       - uses: actions/checkout@v3
@@ -238,3 +237,7 @@ jobs:
       - run: yarn --cwd ui test
       - run: yarn --cwd ui lint
       - run: git diff --exit-code
+      # check to see if it'll start (but not if it'll render)
+      - run: yarn --cwd ui start &
+      - run: until curl http://localhost:8080 > /dev/null ; do sleep 10s ; done
+        timeout-minutes: 1

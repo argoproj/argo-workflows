@@ -14,6 +14,7 @@ import (
 	"golang.org/x/time/rate"
 	apiv1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
@@ -467,24 +468,6 @@ func (wfc *WorkflowController) processNextPodCleanupItem(ctx context.Context) bo
 	err := func() error {
 		pods := wfc.kubeclientset.CoreV1().Pods(namespace)
 		switch action {
-		case shutdownPod:
-			// to shutdown a pod, we signal the wait container to terminate, the wait container in turn will
-			// kill the main container (using whatever mechanism the executor uses), and will then exit itself
-			// once the main container exited
-			pod, err := wfc.getPod(namespace, podName)
-			if pod == nil || err != nil {
-				return err
-			}
-			for _, c := range pod.Spec.Containers {
-				if c.Name == common.WaitContainerName {
-					if err := signal.SignalContainer(wfc.restConfig, pod, common.WaitContainerName, syscall.SIGTERM); err != nil {
-						return err
-					}
-					return nil // done
-				}
-			}
-			// no wait container found
-			fallthrough
 		case terminateContainers:
 			if terminationGracePeriod, err := wfc.signalContainers(namespace, podName, syscall.SIGTERM); err != nil {
 				return err
@@ -1020,7 +1003,10 @@ func (wfc *WorkflowController) newConfigMapInformer() cache.SharedIndexInformer 
 	if wfc.executorPlugins != nil {
 		indexInformer.AddEventHandler(cache.FilteringResourceEventHandler{
 			FilterFunc: func(obj interface{}) bool {
-				cm := obj.(metav1.Object)
+				cm, err := meta.Accessor(obj)
+				if err != nil {
+					return false
+				}
 				return cm.GetLabels()[common.LabelKeyConfigMapType] == common.LabelValueTypeConfigMapExecutorPlugin
 			},
 			Handler: cache.ResourceEventHandlerFuncs{

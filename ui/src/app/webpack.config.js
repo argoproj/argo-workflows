@@ -16,7 +16,7 @@ const config = {
     main: "./src/app/index.tsx"
   },
   output: {
-    filename: "[name].[chunkhash].js",
+    filename: "[name].[hash].js",
     path: __dirname + "/../../dist/app"
   },
 
@@ -76,11 +76,10 @@ const config = {
     new MonacoWebpackPlugin({"languages":["json","yaml"]})
   ],
   devServer: {
+    // this needs to be disable to allow EventSource to work
+    compress: false,
     historyApiFallback: {
       disableDotRule: true
-    },
-    watchOptions: {
-      ignored: [/dist/, /node_modules/]
     },
     headers: {
       'X-Frame-Options': 'SAMEORIGIN'

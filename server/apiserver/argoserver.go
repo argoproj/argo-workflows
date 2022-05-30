@@ -99,7 +99,7 @@ type ArgoServerOpts struct {
 	// config map name
 	ConfigName               string
 	ManagedNamespace         string
-	SSONameSpace             string
+	SSONamespace             string
 	HSTS                     bool
 	EventOperationQueueSize  int
 	EventWorkerCount         int
@@ -117,8 +117,8 @@ func init() {
 }
 
 func getResourceCacheNamespace(opts ArgoServerOpts) string {
-	if opts.Namespaced {
-		return opts.SSONameSpace
+	if opts.ManagedNamespace != "" {
+		return opts.ManagedNamespace
 	}
 	return v1.NamespaceAll
 }
@@ -136,12 +136,13 @@ func NewArgoServer(ctx context.Context, opts ArgoServerOpts) (*argoServer, error
 		if err != nil {
 			return nil, err
 		}
-		resourceCache = cache.NewResourceCache(opts.Clients.Kubernetes, ctx, getResourceCacheNamespace(opts))
+		resourceCache = cache.NewResourceCache(opts.Clients.Kubernetes, getResourceCacheNamespace(opts))
+		resourceCache.Run(ctx.Done())
 		log.Info("SSO enabled")
 	} else {
 		log.Info("SSO disabled")
 	}
-	gatekeeper, err := auth.NewGatekeeper(opts.AuthModes, opts.Clients, opts.RestConfig, ssoIf, auth.DefaultClientForAuthorization, opts.Namespace, opts.SSONameSpace, opts.Namespaced, resourceCache)
+	gatekeeper, err := auth.NewGatekeeper(opts.AuthModes, opts.Clients, opts.RestConfig, ssoIf, auth.DefaultClientForAuthorization, opts.Namespace, opts.SSONamespace, opts.Namespaced, resourceCache)
 	if err != nil {
 		return nil, err
 	}
@@ -341,11 +342,15 @@ func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServe
 		r.Header.Del("Connection")
 		webhookInterceptor(w, r, gwmux)
 	})
-	mux.HandleFunc("/artifacts/", artifactServer.GetOutputArtifact)
-	mux.HandleFunc("/input-artifacts/", artifactServer.GetInputArtifact)
-	mux.HandleFunc("/artifacts-by-uid/", artifactServer.GetOutputArtifactByUID)
-	mux.HandleFunc("/input-artifacts-by-uid/", artifactServer.GetInputArtifactByUID)
-	mux.HandleFunc("/artifact-files/", artifactServer.GetArtifactFile)
+
+	// emergency environment variable that allows you to disable the artifact service in case of problems
+	if os.Getenv("ARGO_ARTIFACT_SERVER") != "false" {
+		mux.HandleFunc("/artifacts/", artifactServer.GetOutputArtifact)
+		mux.HandleFunc("/input-artifacts/", artifactServer.GetInputArtifact)
+		mux.HandleFunc("/artifacts-by-uid/", artifactServer.GetOutputArtifactByUID)
+		mux.HandleFunc("/input-artifacts-by-uid/", artifactServer.GetInputArtifactByUID)
+		mux.HandleFunc("/artifact-files/", artifactServer.GetArtifactFile)
+	}
 	mux.Handle("/oauth2/redirect", handlers.ProxyHeaders(http.HandlerFunc(as.oAuth2Service.HandleRedirect)))
 	mux.Handle("/oauth2/callback", handlers.ProxyHeaders(http.HandlerFunc(as.oAuth2Service.HandleCallback)))
 	mux.HandleFunc("/metrics", func(w http.ResponseWriter, r *http.Request) {
