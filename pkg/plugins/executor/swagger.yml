@@ -98,6 +98,9 @@ definitions:
         $ref: '#/definitions/ArtifactGC'
       artifactory:
         $ref: '#/definitions/ArtifactoryArtifact'
+      deleted:
+        description: Has this been deleted?
+        type: boolean
       from:
         description: From allows an artifact to reference an artifact from a previous
           step
@@ -197,6 +200,9 @@ definitions:
         $ref: '#/definitions/ArtifactGC'
       artifactory:
         $ref: '#/definitions/ArtifactoryArtifact'
+      deleted:
+        description: Has this been deleted?
+        type: boolean
       from:
         description: From allows an artifact to reference an artifact from a previous
           step

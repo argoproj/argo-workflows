@@ -82,6 +82,9 @@ message Artifact {
 
   // ArtifactGC describes the strategy to use when to deleting an artifact from completed or deleted workflows
   optional ArtifactGC artifactGC = 12;
+
+  // Has this been deleted?
+  optional bool deleted = 13;
 }
 
 // ArtifactGC describes how to delete artifacts from completed Workflows

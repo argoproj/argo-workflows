@@ -946,6 +946,9 @@ type Artifact struct {
 
 	// ArtifactGC describes the strategy to use when to deleting an artifact from completed or deleted workflows
 	ArtifactGC *ArtifactGC `json:"artifactGC,omitempty" protobuf:"bytes,12,opt,name=artifactGC"`
+
+	// Has this been deleted?
+	Deleted bool `json:"deleted,omitempty" protobuf:"varint,13,opt,name=deleted"`
 }
 
 // ArtifactGC returns the ArtifactGC that was defined by the artifact.  If none was provided, a default value is returned.
