@@ -3635,7 +3635,8 @@ func (woc *wfOperationCtx) substituteGlobalVariables() error {
 // getPodName gets the appropriate pod name for a workflow based on the
 // POD_NAMES environment variable
 func (woc *wfOperationCtx) getPodName(nodeName, templateName string) string {
-	return wfutil.PodName(woc.wf.Name, nodeName, templateName, woc.wf.NodeID(nodeName), wfutil.GetPodNameVersion())
+	version := wfutil.GetWorkflowPodNameVersion(woc.wf)
+	return wfutil.PodName(woc.wf.Name, nodeName, templateName, woc.wf.NodeID(nodeName), version)
 }
 
 func (woc *wfOperationCtx) getServiceAccountTokenName(ctx context.Context, name string) (string, error) {

@@ -158,7 +158,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 
 	pod := &apiv1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      util.PodName(woc.wf.Name, nodeName, tmpl.Name, nodeID, util.GetPodNameVersion()),
+			Name:      util.PodName(woc.wf.Name, nodeName, tmpl.Name, nodeID, util.GetWorkflowPodNameVersion(woc.wf)),
 			Namespace: woc.wf.ObjectMeta.Namespace,
 			Labels: map[string]string{
 				common.LabelKeyWorkflow:  woc.wf.ObjectMeta.Name, // Allows filtering by pods related to specific workflow
@@ -266,11 +266,6 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 	}
 
 	envVarTemplateValue := wfv1.MustMarshallJSON(tmpl)
-	templateSize := len(envVarTemplateValue)
-	if templateSize > 128000 {
-		err = fmt.Errorf("workflow templates are limited to 128KB, this workflow is %d bytes", templateSize)
-		return nil, err
-	}
 
 	// Add standard environment variables, making pod spec larger
 	envVars := []apiv1.EnvVar{
