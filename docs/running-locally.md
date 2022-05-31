@@ -102,11 +102,15 @@ To also start the API on <https://localhost:2746>:
 make start API=true
 ```
 
+![diagram](assets/make-start-API-true.png)
+
 To also start the UI on <http://localhost:8080> (`UI=true` implies `API=true`):
 
 ```bash
 make start UI=true
 ```
+
+![diagram](assets/make-start-UI-true.png)
 
 If you are making change to the CLI, you can build it:
 
