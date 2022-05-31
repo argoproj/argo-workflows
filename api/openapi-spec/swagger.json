@@ -12436,7 +12436,7 @@
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Arguments"
         },
         "artifactGC": {
-          "description": "ArtifactGC describes the strategy to use when to deleting artifacts from completed or deleted workflows",
+          "description": "ArtifactGC describes the strategy to use when deleting artifacts from completed or deleted workflows (applies to all output Artifacts unless Artifact.ArtifactGC is specified, which overrides this)",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactGC"
         },
         "artifactRepositoryRef": {
@@ -12515,7 +12515,7 @@
           "$ref": "#/definitions/io.k8s.api.policy.v1beta1.PodDisruptionBudgetSpec"
         },
         "podGC": {
-          "description": "PodGC describes the strategy to use when to deleting completed pods",
+          "description": "PodGC describes the strategy to use when deleting completed pods",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.PodGC"
         },
         "podMetadata": {
@@ -12593,7 +12593,7 @@
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.TTLStrategy"
         },
         "volumeClaimGC": {
-          "description": "VolumeClaimGC describes the strategy to use when to deleting volumes from completed workflows",
+          "description": "VolumeClaimGC describes the strategy to use when deleting volumes from completed workflows",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.VolumeClaimGC"
         },
         "volumeClaimTemplates": {
