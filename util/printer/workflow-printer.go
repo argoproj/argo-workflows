@@ -113,15 +113,6 @@ func printCostOptimizationNudges(wfList []wfv1.Workflow, out io.Writer) {
 	}
 }
 
-// PrintSecurityNudges prints security nudges for single workflow
-func PrintSecurityNudges(wf wfv1.Workflow, out io.Writer) {
-	if wf.GetExecSpec().SecurityContext == nil {
-		_, _ = fmt.Fprintln(out, "\nThis workflow does not have security context set. "+
-			"You can run your workflow pods more securely by setting it.")
-		_, _ = fmt.Fprintln(out, "Learn more at https://argoproj.github.io/argo-workflows/workflow-pod-security-context/")
-	}
-}
-
 // countCompletedWorkflows returns the number of completed and incomplete workflows
 func countCompletedWorkflows(wfList []wfv1.Workflow) (int, int) {
 	completed := 0

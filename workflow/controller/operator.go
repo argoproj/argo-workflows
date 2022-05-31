@@ -3517,7 +3517,7 @@ func (woc *wfOperationCtx) addFinalizers() {
 }
 
 func (woc *wfOperationCtx) addArtifactGCFinalizer() {
-	if woc.execWf.Spec.ArtifactGC != nil && woc.execWf.Spec.ArtifactGC.Strategy != wfv1.ArtifactGCNever {
+	if woc.execWf.HasArtifactGC() {
 		finalizers := append(woc.wf.GetFinalizers(), common.FinalizerArtifactGC)
 		woc.wf.SetFinalizers(finalizers)
 	}
@@ -3635,7 +3635,8 @@ func (woc *wfOperationCtx) substituteGlobalVariables() error {
 // getPodName gets the appropriate pod name for a workflow based on the
 // POD_NAMES environment variable
 func (woc *wfOperationCtx) getPodName(nodeName, templateName string) string {
-	return wfutil.PodName(woc.wf.Name, nodeName, templateName, woc.wf.NodeID(nodeName), wfutil.GetPodNameVersion())
+	version := wfutil.GetWorkflowPodNameVersion(woc.wf)
+	return wfutil.PodName(woc.wf.Name, nodeName, templateName, woc.wf.NodeID(nodeName), version)
 }
 
 func (woc *wfOperationCtx) getServiceAccountTokenName(ctx context.Context, name string) (string, error) {
