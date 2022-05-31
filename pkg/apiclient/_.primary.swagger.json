@@ -80,12 +80,6 @@
             "enum": [
               "outputs"
             ]
-          },
-          {
-            "type": "string",
-            "name": "artifactName",
-            "in": "path",
-            "required": true
           }
         ],
         "responses": {
@@ -261,12 +255,6 @@
         "summary": "Get an input artifact by UID.",
         "operationId": "ArtifactService_GetInputArtifactByUID",
         "parameters": [
-          {
-            "type": "string",
-            "name": "namespace",
-            "in": "path",
-            "required": true
-          },
           {
             "type": "string",
             "name": "uid",
