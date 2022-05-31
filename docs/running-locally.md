@@ -96,13 +96,11 @@ If you made changes to the executor, you need to build the image:
 make argoexec-image
 ```
 
-To also start the API on <https://localhost:2746>:
+To also start the API on <http://localhost:2746>:
 
 ```bash
 make start API=true
 ```
-
-![diagram](assets/make-start-API-true.png)
 
 To also start the UI on <http://localhost:8080> (`UI=true` implies `API=true`):
 
