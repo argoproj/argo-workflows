@@ -28,6 +28,9 @@ K3D_CLUSTER_NAME      ?= k3s-default
 KUBE_NAMESPACE        ?= argo
 MANAGED_NAMESPACE     ?= $(KUBE_NAMESPACE)
 
+E2E_TIMEOUT           ?= 15m
+E2E_PARALLEL          ?= 10
+
 VERSION               := latest
 DOCKER_PUSH           := false
 
@@ -509,7 +512,7 @@ mysql-cli:
 test-cli: ./dist/argo
 
 test-%:
-	go test -failfast -v -timeout 15m -count 1 --tags $* -parallel 10 ./test/e2e
+	go test -failfast -v -timeout $(E2E_TIMEOUT) -count 1 --tags $* -parallel $(E2E_PARALLEL) ./test/e2e
 
 .PHONY: test-examples
 test-examples:
@@ -520,7 +523,7 @@ test-%-sdk:
 	make --directory sdks/$* install test -B
 
 Test%:
-	go test -failfast -v -timeout 15m -count 1 --tags api,cli,cron,executor,examples,functional,plugins -parallel 10 ./test/e2e  -run='.*/$*'
+	go test -failfast -v -timeout $(E2E_TIMEOUT) -count 1 --tags api,cli,cron,executor,examples,functional,plugins -parallel $(E2E_PARALLEL) ./test/e2e  -run='.*/$*'
 
 # clean
 
