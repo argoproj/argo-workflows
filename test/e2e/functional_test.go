@@ -680,7 +680,7 @@ spec:
 		ExpectWorkflow(func(t *testing.T, md *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.WorkflowFailed, status.Phase)
 			if node := status.Nodes.FindByDisplayName(md.Name); assert.NotNil(t, node) {
-				assert.Contains(t, node.Message, "Pod was active on the node longer than the specified deadline")
+				assert.Contains(t, node.Message, "Step exceeded its deadline")
 			}
 		})
 }
