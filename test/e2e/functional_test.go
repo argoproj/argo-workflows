@@ -675,7 +675,7 @@ spec:
 `).
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(fixtures.ToBeCompleted).
+		WaitForWorkflow().
 		Then().
 		ExpectWorkflow(func(t *testing.T, md *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.WorkflowFailed, status.Phase)
@@ -711,7 +711,7 @@ spec:
 `).
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(fixtures.ToBeCompleted).
+		WaitForWorkflow().
 		Then().
 		ExpectWorkflow(func(t *testing.T, md *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.WorkflowFailed, status.Phase)
