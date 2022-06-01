@@ -1986,6 +1986,7 @@ Artifact indicates an artifact to place at a specified path
 |`archiveLogs`|`boolean`|ArchiveLogs indicates if the container logs should be archived|
 |`artifactGC`|[`ArtifactGC`](#artifactgc)|ArtifactGC describes the strategy to use when to deleting an artifact from completed or deleted workflows|
 |`artifactory`|[`ArtifactoryArtifact`](#artifactoryartifact)|Artifactory contains artifactory artifact location details|
+|`deleted`|`boolean`|Has this been deleted?|
 |`from`|`string`|From allows an artifact to reference an artifact from a previous step|
 |`fromExpression`|`string`|FromExpression, if defined, is evaluated to specify the value for the artifact|
 |`gcs`|[`GCSArtifact`](#gcsartifact)|GCS contains GCS artifact location details|
@@ -4259,6 +4260,7 @@ ArtifactPaths expands a step from a collection of artifacts
 |`archiveLogs`|`boolean`|ArchiveLogs indicates if the container logs should be archived|
 |`artifactGC`|[`ArtifactGC`](#artifactgc)|ArtifactGC describes the strategy to use when to deleting an artifact from completed or deleted workflows|
 |`artifactory`|[`ArtifactoryArtifact`](#artifactoryartifact)|Artifactory contains artifactory artifact location details|
+|`deleted`|`boolean`|Has this been deleted?|
 |`from`|`string`|From allows an artifact to reference an artifact from a previous step|
 |`fromExpression`|`string`|FromExpression, if defined, is evaluated to specify the value for the artifact|
 |`gcs`|[`GCSArtifact`](#gcsartifact)|GCS contains GCS artifact location details|

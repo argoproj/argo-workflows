@@ -386,6 +386,13 @@ func schema_pkg_apis_workflow_v1alpha1_Artifact(ref common.ReferenceCallback) co
 							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactGC"),
 						},
 					},
+					"deleted": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Has this been deleted?",
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
 				},
 				Required: []string{"name"},
 			},
@@ -621,6 +628,13 @@ func schema_pkg_apis_workflow_v1alpha1_ArtifactPaths(ref common.ReferenceCallbac
 						SchemaProps: spec.SchemaProps{
 							Description: "ArtifactGC describes the strategy to use when to deleting an artifact from completed or deleted workflows",
 							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactGC"),
+						},
+					},
+					"deleted": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Has this been deleted?",
+							Type:        []string{"boolean"},
+							Format:      "",
 						},
 					},
 				},
