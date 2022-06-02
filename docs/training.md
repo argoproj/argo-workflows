@@ -14,7 +14,7 @@ The course takes around 2 hours to complete and is the fastest way to learn Argo
 
 ![Katacoda Screenshot](assets/katacoda.png)
 
-We expect the new course to be live by Q3 '22. Please upvote or comment on [this issue](https://github.com/argoproj/argo-workflows/issues/8899) with your support and feedback for the hands-on course.
+Please upvote or comment on [this issue](https://github.com/argoproj/argo-workflows/issues/8899) with your support and feedback for the hands-on course.
 
 ## Additional resources
 
