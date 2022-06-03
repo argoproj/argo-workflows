@@ -16,6 +16,7 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 
 	"github.com/argoproj/argo-workflows/v3"
+	"github.com/argoproj/argo-workflows/v3/cmd/argoexec/commands/artifact"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo-workflows/v3/util"
@@ -64,6 +65,7 @@ func NewRootCommand() *cobra.Command {
 	command.AddCommand(NewWaitCommand())
 	command.AddCommand(NewDataCommand())
 	command.AddCommand(cmd.NewVersionCmd(CLIName))
+	command.AddCommand(artifact.NewArtifactCommand())
 
 	clientConfig = kubecli.AddKubectlFlagsToCmd(&command)
 	command.PersistentFlags().StringVar(&logLevel, "loglevel", "info", "Set the logging level. One of: debug|info|warn|error")
