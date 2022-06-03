@@ -4002,12 +4002,13 @@ returns <code>allowed</code>).</p>
 <p>If you made changes to the executor, you need to build the image:</p>
 <div class="highlight"><pre><span></span><code>make argoexec-image
 </code></pre></div>
-<p>To also start the API on <a href="https://localhost:2746">https://localhost:2746</a>:</p>
+<p>To also start the API on <a href="http://localhost:2746">http://localhost:2746</a>:</p>
 <div class="highlight"><pre><span></span><code>make start <span class="nv">API</span><span class="o">=</span><span class="nb">true</span>
 </code></pre></div>
 <p>To also start the UI on <a href="http://localhost:8080">http://localhost:8080</a> (<code>UI=true</code> implies <code>API=true</code>):</p>
 <div class="highlight"><pre><span></span><code>make start <span class="nv">UI</span><span class="o">=</span><span class="nb">true</span>
 </code></pre></div>
+<p><img alt="diagram" src="../assets/make-start-UI-true.png" /></p>
 <p>If you are making change to the CLI, you can build it:</p>
 <div class="highlight"><pre><span></span><code>make cli 
 ./dist/argo submit examples/hello-world.yaml <span class="p">;</span><span class="c1"># new CLI is created as `./dist/argo` </span>
