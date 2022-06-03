@@ -9,6 +9,8 @@ import (
 	"strings"
 	"time"
 
+	"golang.org/x/exp/maps"
+
 	"github.com/robfig/cron/v3"
 	"github.com/sirupsen/logrus"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -172,12 +174,25 @@ func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 		}
 	}
 
-	for k := range wf.ObjectMeta.Annotations {
+	annotationSources := [][]string{maps.Keys(wf.ObjectMeta.Annotations)}
+	labelSources := [][]string{maps.Keys(wf.ObjectMeta.Labels)}
+	if wf.Spec.WorkflowMetadata != nil {
+		annotationSources = append(annotationSources, maps.Keys(wf.Spec.WorkflowMetadata.Annotations))
+		labelSources = append(labelSources, maps.Keys(wf.Spec.WorkflowMetadata.Labels), maps.Keys(wf.Spec.WorkflowMetadata.LabelsFrom))
+	}
+	if hasWorkflowTemplateRef && wfSpecHolder.GetWorkflowSpec() != nil {
+		annotationSources = append(annotationSources, maps.Keys(wfSpecHolder.GetWorkflowSpec().WorkflowMetadata.Annotations))
+		labelSources = append(labelSources, maps.Keys(wfSpecHolder.GetWorkflowSpec().WorkflowMetadata.Labels), maps.Keys(wfSpecHolder.GetWorkflowSpec().WorkflowMetadata.LabelsFrom))
+	}
+	mergedAnnotations := getUniqueKeys(annotationSources...)
+	mergedLabels := getUniqueKeys(labelSources...)
+
+	for k := range mergedAnnotations {
 		ctx.globalParams["workflow.annotations."+k] = placeholderGenerator.NextPlaceholder()
 	}
 	ctx.globalParams[common.GlobalVarWorkflowAnnotations] = placeholderGenerator.NextPlaceholder()
 
-	for k := range wf.ObjectMeta.Labels {
+	for k := range mergedLabels {
 		ctx.globalParams["workflow.labels."+k] = placeholderGenerator.NextPlaceholder()
 	}
 	ctx.globalParams[common.GlobalVarWorkflowLabels] = placeholderGenerator.NextPlaceholder()
@@ -229,6 +244,17 @@ func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 		}
 	}
 	return wfConditions, nil
+}
+
+// construct a Set of unique keys
+func getUniqueKeys(labelSources ...[]string) map[string]struct{} {
+	uniqueKeys := make(map[string]struct{})
+	for _, labelSource := range labelSources {
+		for _, label := range labelSource {
+			uniqueKeys[label] = struct{}{} // dummy value
+		}
+	}
+	return uniqueKeys
 }
 
 func ValidateWorkflowTemplateRefFields(wfSpec wfv1.WorkflowSpec) error {
