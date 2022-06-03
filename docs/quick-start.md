@@ -60,4 +60,4 @@ argo logs -n argo @latest
 ```
 
 💡 If you want to try out Argo Workflows and don't want to set up a Kubernetes cluster, the community is working on a replacement for the old Katacoda course since
-Katacoda was shut down. Please upvote or comment on [this issue](https://github.com/argoproj/argo-workflows/issues/8899) with your support and feedback.
+Katacoda was shut down. Please give a thumbs up or comment on [this issue](https://github.com/argoproj/argo-workflows/issues/8899) with your support and feedback.
