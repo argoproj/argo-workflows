@@ -180,7 +180,7 @@ func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 		annotationSources = append(annotationSources, maps.Keys(wf.Spec.WorkflowMetadata.Annotations))
 		labelSources = append(labelSources, maps.Keys(wf.Spec.WorkflowMetadata.Labels), maps.Keys(wf.Spec.WorkflowMetadata.LabelsFrom))
 	}
-	if hasWorkflowTemplateRef && wfSpecHolder.GetWorkflowSpec() != nil {
+	if wf.Spec.WorkflowTemplateRef != nil && wfSpecHolder.GetWorkflowSpec().WorkflowMetadata != nil {
 		annotationSources = append(annotationSources, maps.Keys(wfSpecHolder.GetWorkflowSpec().WorkflowMetadata.Annotations))
 		labelSources = append(labelSources, maps.Keys(wfSpecHolder.GetWorkflowSpec().WorkflowMetadata.Labels), maps.Keys(wfSpecHolder.GetWorkflowSpec().WorkflowMetadata.LabelsFrom))
 	}
