@@ -481,9 +481,15 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 
 func (woc *wfOperationCtx) updateWorkflowMetadata() error {
 	if md := woc.execWf.Spec.WorkflowMetadata; md != nil {
+		if woc.wf.ObjectMeta.Labels == nil {
+			woc.wf.ObjectMeta.Labels = make(map[string]string)
+		}
 		for n, v := range md.Labels {
 			woc.wf.Labels[n] = v
 			woc.globalParams["workflow.labels."+n] = v
+		}
+		if woc.wf.ObjectMeta.Annotations == nil {
+			woc.wf.ObjectMeta.Annotations = make(map[string]string)
 		}
 		for n, v := range md.Annotations {
 			woc.wf.Annotations[n] = v
