@@ -813,7 +813,7 @@ WorkflowSpec is the specification of a Workflow.
 |`volumeClaimGC`|[`VolumeClaimGC`](#volumeclaimgc)|VolumeClaimGC describes the strategy to use when deleting volumes from completed workflows|
 |`volumeClaimTemplates`|`Array<`[`PersistentVolumeClaim`](#persistentvolumeclaim)`>`|VolumeClaimTemplates is a list of claims that containers are allowed to reference. The Workflow controller will create the claims at the beginning of the workflow and delete the claims upon completion of the workflow|
 |`volumes`|`Array<`[`Volume`](#volume)`>`|Volumes is a list of volumes that can be mounted by containers in a io.argoproj.workflow.v1alpha1.|
-|`workflowMetadata`|[`WorkflowMetadata`](#workflowmetadata)|WorkflowMetadata contains some metadata of the workflow to refer to|
+|`workflowMetadata`|[`WorkflowMetadata`](#workflowmetadata)|WorkflowMetadata contains some metadata of the workflow to be refer|
 |`workflowTemplateRef`|[`WorkflowTemplateRef`](#workflowtemplateref)|WorkflowTemplateRef holds a reference to a WorkflowTemplate for execution|
 
 ## WorkflowStatus

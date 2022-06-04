@@ -6872,7 +6872,7 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowSpec(ref common.ReferenceCallback
 					},
 					"workflowMetadata": {
 						SchemaProps: spec.SchemaProps{
-							Description: "WorkflowMetadata contains some metadata of the workflow to refer to",
+							Description: "WorkflowMetadata contains some metadata of the workflow to be refer",
 							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowMetadata"),
 						},
 					},
