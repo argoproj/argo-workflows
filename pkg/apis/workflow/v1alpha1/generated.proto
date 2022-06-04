@@ -1850,7 +1850,7 @@ message WorkflowSpec {
   // step, irrespective of the success, failure, or error status of the primary step
   map<string, LifecycleHook> hooks = 41;
 
-  // WorkflowMetadata contains some metadata of the workflow to be refer
+  // WorkflowMetadata contains some metadata of the workflow to refer to
   optional WorkflowMetadata workflowMetadata = 42;
 
   // ArtifactGC describes the strategy to use when deleting artifacts from completed or deleted workflows (applies to all output Artifacts
