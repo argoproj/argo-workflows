@@ -386,6 +386,13 @@ func schema_pkg_apis_workflow_v1alpha1_Artifact(ref common.ReferenceCallback) co
 							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactGC"),
 						},
 					},
+					"deleted": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Has this been deleted?",
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
 				},
 				Required: []string{"name"},
 			},
@@ -621,6 +628,13 @@ func schema_pkg_apis_workflow_v1alpha1_ArtifactPaths(ref common.ReferenceCallbac
 						SchemaProps: spec.SchemaProps{
 							Description: "ArtifactGC describes the strategy to use when to deleting an artifact from completed or deleted workflows",
 							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactGC"),
+						},
+					},
+					"deleted": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Has this been deleted?",
+							Type:        []string{"boolean"},
+							Format:      "",
 						},
 					},
 				},
@@ -6729,7 +6743,7 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowSpec(ref common.ReferenceCallback
 					},
 					"podGC": {
 						SchemaProps: spec.SchemaProps{
-							Description: "PodGC describes the strategy to use when to deleting completed pods",
+							Description: "PodGC describes the strategy to use when deleting completed pods",
 							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.PodGC"),
 						},
 					},
@@ -6812,7 +6826,7 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowSpec(ref common.ReferenceCallback
 					},
 					"volumeClaimGC": {
 						SchemaProps: spec.SchemaProps{
-							Description: "VolumeClaimGC describes the strategy to use when to deleting volumes from completed workflows",
+							Description: "VolumeClaimGC describes the strategy to use when deleting volumes from completed workflows",
 							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.VolumeClaimGC"),
 						},
 					},
@@ -6864,7 +6878,7 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowSpec(ref common.ReferenceCallback
 					},
 					"artifactGC": {
 						SchemaProps: spec.SchemaProps{
-							Description: "ArtifactGC describes the strategy to use when to deleting artifacts from completed or deleted workflows",
+							Description: "ArtifactGC describes the strategy to use when deleting artifacts from completed or deleted workflows (applies to all output Artifacts unless Artifact.ArtifactGC is specified, which overrides this)",
 							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactGC"),
 						},
 					},

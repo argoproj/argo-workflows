@@ -355,6 +355,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     optional=True,
                                 ),
                             ),
+                            deleted=True,
                             _from="_from_example",
                             from_expression="from_expression_example",
                             gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
@@ -629,6 +630,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             optional=True,
                                         ),
                                     ),
+                                    deleted=True,
                                     _from="_from_example",
                                     from_expression="from_expression_example",
                                     gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
@@ -2010,6 +2012,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                     optional=True,
                                                 ),
                                             ),
+                                            deleted=True,
                                             _from="_from_example",
                                             from_expression="from_expression_example",
                                             gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
@@ -2265,6 +2268,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             optional=True,
                                                         ),
                                                     ),
+                                                    deleted=True,
                                                     _from="_from_example",
                                                     from_expression="from_expression_example",
                                                     gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
@@ -2542,6 +2546,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         optional=True,
                                     ),
                                 ),
+                                deleted=True,
                                 _from="_from_example",
                                 from_expression="from_expression_example",
                                 gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
@@ -3071,6 +3076,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         optional=True,
                                     ),
                                 ),
+                                deleted=True,
                                 _from="_from_example",
                                 from_expression="from_expression_example",
                                 gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
@@ -3367,6 +3373,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         optional=True,
                                     ),
                                 ),
+                                deleted=True,
                                 _from="_from_example",
                                 from_expression="from_expression_example",
                                 gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
@@ -4224,6 +4231,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                     optional=True,
                                                 ),
                                             ),
+                                            deleted=True,
                                             _from="_from_example",
                                             from_expression="from_expression_example",
                                             gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
@@ -4475,6 +4483,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             optional=True,
                                                         ),
                                                     ),
+                                                    deleted=True,
                                                     _from="_from_example",
                                                     from_expression="from_expression_example",
                                                     gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
@@ -6122,6 +6131,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         optional=True,
                                                     ),
                                                 ),
+                                                deleted=True,
                                                 _from="_from_example",
                                                 from_expression="from_expression_example",
                                                 gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
@@ -6377,6 +6387,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                                 optional=True,
                                                             ),
                                                         ),
+                                                        deleted=True,
                                                         _from="_from_example",
                                                         from_expression="from_expression_example",
                                                         gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
@@ -6654,6 +6665,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             optional=True,
                                         ),
                                     ),
+                                    deleted=True,
                                     _from="_from_example",
                                     from_expression="from_expression_example",
                                     gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
@@ -7183,6 +7195,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             optional=True,
                                         ),
                                     ),
+                                    deleted=True,
                                     _from="_from_example",
                                     from_expression="from_expression_example",
                                     gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
@@ -7479,6 +7492,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             optional=True,
                                         ),
                                     ),
+                                    deleted=True,
                                     _from="_from_example",
                                     from_expression="from_expression_example",
                                     gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
@@ -8336,6 +8350,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         optional=True,
                                                     ),
                                                 ),
+                                                deleted=True,
                                                 _from="_from_example",
                                                 from_expression="from_expression_example",
                                                 gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
@@ -8587,6 +8602,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                                 optional=True,
                                                             ),
                                                         ),
+                                                        deleted=True,
                                                         _from="_from_example",
                                                         from_expression="from_expression_example",
                                                         gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
@@ -9915,6 +9931,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             optional=True,
                                         ),
                                     ),
+                                    deleted=True,
                                     _from="_from_example",
                                     from_expression="from_expression_example",
                                     gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
@@ -10170,6 +10187,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             optional=True,
                                         ),
                                     ),
+                                    deleted=True,
                                     _from="_from_example",
                                     from_expression="from_expression_example",
                                     gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
@@ -10438,6 +10456,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     optional=True,
                                 ),
                             ),
+                            deleted=True,
                             _from="_from_example",
                             from_expression="from_expression_example",
                             gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
@@ -12035,6 +12054,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         optional=True,
                                                     ),
                                                 ),
+                                                deleted=True,
                                                 _from="_from_example",
                                                 from_expression="from_expression_example",
                                                 gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
@@ -12290,6 +12310,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                                 optional=True,
                                                             ),
                                                         ),
+                                                        deleted=True,
                                                         _from="_from_example",
                                                         from_expression="from_expression_example",
                                                         gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
@@ -12567,6 +12588,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             optional=True,
                                         ),
                                     ),
+                                    deleted=True,
                                     _from="_from_example",
                                     from_expression="from_expression_example",
                                     gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
@@ -13096,6 +13118,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             optional=True,
                                         ),
                                     ),
+                                    deleted=True,
                                     _from="_from_example",
                                     from_expression="from_expression_example",
                                     gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
@@ -13392,6 +13415,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             optional=True,
                                         ),
                                     ),
+                                    deleted=True,
                                     _from="_from_example",
                                     from_expression="from_expression_example",
                                     gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
@@ -14249,6 +14273,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         optional=True,
                                                     ),
                                                 ),
+                                                deleted=True,
                                                 _from="_from_example",
                                                 from_expression="from_expression_example",
                                                 gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
@@ -14500,6 +14525,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                                 optional=True,
                                                             ),
                                                         ),
+                                                        deleted=True,
                                                         _from="_from_example",
                                                         from_expression="from_expression_example",
                                                         gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
@@ -15385,6 +15411,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         optional=True,
                                     ),
                                 ),
+                                deleted=True,
                                 _from="_from_example",
                                 from_expression="from_expression_example",
                                 gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
@@ -15659,6 +15686,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 optional=True,
                                             ),
                                         ),
+                                        deleted=True,
                                         _from="_from_example",
                                         from_expression="from_expression_example",
                                         gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
@@ -17040,6 +17068,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         optional=True,
                                                     ),
                                                 ),
+                                                deleted=True,
                                                 _from="_from_example",
                                                 from_expression="from_expression_example",
                                                 gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
@@ -17295,6 +17324,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                                 optional=True,
                                                             ),
                                                         ),
+                                                        deleted=True,
                                                         _from="_from_example",
                                                         from_expression="from_expression_example",
                                                         gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
@@ -17572,6 +17602,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             optional=True,
                                         ),
                                     ),
+                                    deleted=True,
                                     _from="_from_example",
                                     from_expression="from_expression_example",
                                     gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
@@ -18101,6 +18132,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             optional=True,
                                         ),
                                     ),
+                                    deleted=True,
                                     _from="_from_example",
                                     from_expression="from_expression_example",
                                     gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
@@ -18397,6 +18429,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             optional=True,
                                         ),
                                     ),
+                                    deleted=True,
                                     _from="_from_example",
                                     from_expression="from_expression_example",
                                     gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
@@ -19254,6 +19287,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         optional=True,
                                                     ),
                                                 ),
+                                                deleted=True,
                                                 _from="_from_example",
                                                 from_expression="from_expression_example",
                                                 gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
@@ -19505,6 +19539,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                                 optional=True,
                                                             ),
                                                         ),
+                                                        deleted=True,
                                                         _from="_from_example",
                                                         from_expression="from_expression_example",
                                                         gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
@@ -21152,6 +21187,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             optional=True,
                                                         ),
                                                     ),
+                                                    deleted=True,
                                                     _from="_from_example",
                                                     from_expression="from_expression_example",
                                                     gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
@@ -21407,6 +21443,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                                     optional=True,
                                                                 ),
                                                             ),
+                                                            deleted=True,
                                                             _from="_from_example",
                                                             from_expression="from_expression_example",
                                                             gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
@@ -21684,6 +21721,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 optional=True,
                                             ),
                                         ),
+                                        deleted=True,
                                         _from="_from_example",
                                         from_expression="from_expression_example",
                                         gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
@@ -22213,6 +22251,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 optional=True,
                                             ),
                                         ),
+                                        deleted=True,
                                         _from="_from_example",
                                         from_expression="from_expression_example",
                                         gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
@@ -22509,6 +22548,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 optional=True,
                                             ),
                                         ),
+                                        deleted=True,
                                         _from="_from_example",
                                         from_expression="from_expression_example",
                                         gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
@@ -23366,6 +23406,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             optional=True,
                                                         ),
                                                     ),
+                                                    deleted=True,
                                                     _from="_from_example",
                                                     from_expression="from_expression_example",
                                                     gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
@@ -23617,6 +23658,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                                     optional=True,
                                                                 ),
                                                             ),
+                                                            deleted=True,
                                                             _from="_from_example",
                                                             from_expression="from_expression_example",
                                                             gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
@@ -25369,6 +25411,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     optional=True,
                                 ),
                             ),
+                            deleted=True,
                             _from="_from_example",
                             from_expression="from_expression_example",
                             gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
@@ -25643,6 +25686,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             optional=True,
                                         ),
                                     ),
+                                    deleted=True,
                                     _from="_from_example",
                                     from_expression="from_expression_example",
                                     gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
@@ -27024,6 +27068,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                     optional=True,
                                                 ),
                                             ),
+                                            deleted=True,
                                             _from="_from_example",
                                             from_expression="from_expression_example",
                                             gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
@@ -27279,6 +27324,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             optional=True,
                                                         ),
                                                     ),
+                                                    deleted=True,
                                                     _from="_from_example",
                                                     from_expression="from_expression_example",
                                                     gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
@@ -27556,6 +27602,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         optional=True,
                                     ),
                                 ),
+                                deleted=True,
                                 _from="_from_example",
                                 from_expression="from_expression_example",
                                 gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
@@ -28085,6 +28132,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         optional=True,
                                     ),
                                 ),
+                                deleted=True,
                                 _from="_from_example",
                                 from_expression="from_expression_example",
                                 gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
@@ -28381,6 +28429,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         optional=True,
                                     ),
                                 ),
+                                deleted=True,
                                 _from="_from_example",
                                 from_expression="from_expression_example",
                                 gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
@@ -29238,6 +29287,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                     optional=True,
                                                 ),
                                             ),
+                                            deleted=True,
                                             _from="_from_example",
                                             from_expression="from_expression_example",
                                             gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
@@ -29489,6 +29539,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             optional=True,
                                                         ),
                                                     ),
+                                                    deleted=True,
                                                     _from="_from_example",
                                                     from_expression="from_expression_example",
                                                     gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
@@ -31136,6 +31187,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         optional=True,
                                                     ),
                                                 ),
+                                                deleted=True,
                                                 _from="_from_example",
                                                 from_expression="from_expression_example",
                                                 gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
@@ -31391,6 +31443,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                                 optional=True,
                                                             ),
                                                         ),
+                                                        deleted=True,
                                                         _from="_from_example",
                                                         from_expression="from_expression_example",
                                                         gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
@@ -31668,6 +31721,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             optional=True,
                                         ),
                                     ),
+                                    deleted=True,
                                     _from="_from_example",
                                     from_expression="from_expression_example",
                                     gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
@@ -32197,6 +32251,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             optional=True,
                                         ),
                                     ),
+                                    deleted=True,
                                     _from="_from_example",
                                     from_expression="from_expression_example",
                                     gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
@@ -32493,6 +32548,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             optional=True,
                                         ),
                                     ),
+                                    deleted=True,
                                     _from="_from_example",
                                     from_expression="from_expression_example",
                                     gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
@@ -33350,6 +33406,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         optional=True,
                                                     ),
                                                 ),
+                                                deleted=True,
                                                 _from="_from_example",
                                                 from_expression="from_expression_example",
                                                 gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
@@ -33601,6 +33658,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                                 optional=True,
                                                             ),
                                                         ),
+                                                        deleted=True,
                                                         _from="_from_example",
                                                         from_expression="from_expression_example",
                                                         gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
@@ -34929,6 +34987,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             optional=True,
                                         ),
                                     ),
+                                    deleted=True,
                                     _from="_from_example",
                                     from_expression="from_expression_example",
                                     gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
@@ -35184,6 +35243,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             optional=True,
                                         ),
                                     ),
+                                    deleted=True,
                                     _from="_from_example",
                                     from_expression="from_expression_example",
                                     gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
@@ -35452,6 +35512,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     optional=True,
                                 ),
                             ),
+                            deleted=True,
                             _from="_from_example",
                             from_expression="from_expression_example",
                             gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
@@ -37049,6 +37110,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         optional=True,
                                                     ),
                                                 ),
+                                                deleted=True,
                                                 _from="_from_example",
                                                 from_expression="from_expression_example",
                                                 gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
@@ -37304,6 +37366,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                                 optional=True,
                                                             ),
                                                         ),
+                                                        deleted=True,
                                                         _from="_from_example",
                                                         from_expression="from_expression_example",
                                                         gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
@@ -37581,6 +37644,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             optional=True,
                                         ),
                                     ),
+                                    deleted=True,
                                     _from="_from_example",
                                     from_expression="from_expression_example",
                                     gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
@@ -38110,6 +38174,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             optional=True,
                                         ),
                                     ),
+                                    deleted=True,
                                     _from="_from_example",
                                     from_expression="from_expression_example",
                                     gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
@@ -38406,6 +38471,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             optional=True,
                                         ),
                                     ),
+                                    deleted=True,
                                     _from="_from_example",
                                     from_expression="from_expression_example",
                                     gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
@@ -39263,6 +39329,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         optional=True,
                                                     ),
                                                 ),
+                                                deleted=True,
                                                 _from="_from_example",
                                                 from_expression="from_expression_example",
                                                 gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
@@ -39514,6 +39581,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                                 optional=True,
                                                             ),
                                                         ),
+                                                        deleted=True,
                                                         _from="_from_example",
                                                         from_expression="from_expression_example",
                                                         gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
@@ -40399,6 +40467,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         optional=True,
                                     ),
                                 ),
+                                deleted=True,
                                 _from="_from_example",
                                 from_expression="from_expression_example",
                                 gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
@@ -40673,6 +40742,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 optional=True,
                                             ),
                                         ),
+                                        deleted=True,
                                         _from="_from_example",
                                         from_expression="from_expression_example",
                                         gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
@@ -42054,6 +42124,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         optional=True,
                                                     ),
                                                 ),
+                                                deleted=True,
                                                 _from="_from_example",
                                                 from_expression="from_expression_example",
                                                 gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
@@ -42309,6 +42380,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                                 optional=True,
                                                             ),
                                                         ),
+                                                        deleted=True,
                                                         _from="_from_example",
                                                         from_expression="from_expression_example",
                                                         gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
@@ -42586,6 +42658,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             optional=True,
                                         ),
                                     ),
+                                    deleted=True,
                                     _from="_from_example",
                                     from_expression="from_expression_example",
                                     gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
@@ -43115,6 +43188,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             optional=True,
                                         ),
                                     ),
+                                    deleted=True,
                                     _from="_from_example",
                                     from_expression="from_expression_example",
                                     gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
@@ -43411,6 +43485,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             optional=True,
                                         ),
                                     ),
+                                    deleted=True,
                                     _from="_from_example",
                                     from_expression="from_expression_example",
                                     gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
@@ -44268,6 +44343,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         optional=True,
                                                     ),
                                                 ),
+                                                deleted=True,
                                                 _from="_from_example",
                                                 from_expression="from_expression_example",
                                                 gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
@@ -44519,6 +44595,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                                 optional=True,
                                                             ),
                                                         ),
+                                                        deleted=True,
                                                         _from="_from_example",
                                                         from_expression="from_expression_example",
                                                         gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
@@ -46166,6 +46243,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             optional=True,
                                                         ),
                                                     ),
+                                                    deleted=True,
                                                     _from="_from_example",
                                                     from_expression="from_expression_example",
                                                     gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
@@ -46421,6 +46499,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                                     optional=True,
                                                                 ),
                                                             ),
+                                                            deleted=True,
                                                             _from="_from_example",
                                                             from_expression="from_expression_example",
                                                             gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
@@ -46698,6 +46777,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 optional=True,
                                             ),
                                         ),
+                                        deleted=True,
                                         _from="_from_example",
                                         from_expression="from_expression_example",
                                         gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
@@ -47227,6 +47307,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 optional=True,
                                             ),
                                         ),
+                                        deleted=True,
                                         _from="_from_example",
                                         from_expression="from_expression_example",
                                         gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
@@ -47523,6 +47604,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 optional=True,
                                             ),
                                         ),
+                                        deleted=True,
                                         _from="_from_example",
                                         from_expression="from_expression_example",
                                         gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
@@ -48380,6 +48462,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             optional=True,
                                                         ),
                                                     ),
+                                                    deleted=True,
                                                     _from="_from_example",
                                                     from_expression="from_expression_example",
                                                     gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
@@ -48631,6 +48714,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                                     optional=True,
                                                                 ),
                                                             ),
+                                                            deleted=True,
                                                             _from="_from_example",
                                                             from_expression="from_expression_example",
                                                             gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
