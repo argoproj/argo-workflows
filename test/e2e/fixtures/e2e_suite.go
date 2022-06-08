@@ -37,6 +37,7 @@ const (
 )
 
 var defaultTimeout = env.LookupEnvDurationOr("E2E_TIMEOUT", 30*time.Second)
+var envFactor = env.LookupEnvDurationOr("E2E_ENV_FACTOR", 1)
 
 type E2ESuite struct {
 	suite.Suite
