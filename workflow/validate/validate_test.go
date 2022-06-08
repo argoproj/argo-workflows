@@ -3018,6 +3018,7 @@ func TestSubstituteGlobalVariablesLabelsAnnotations(t *testing.T) {
 			} else {
 				assert.Error(t, err)
 			}
+
 			_ = deleteWorkflowTemplate(wftmpl.Name)
 		})
 	}
