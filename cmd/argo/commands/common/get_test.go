@@ -411,10 +411,6 @@ status:
 		_, _ = h.Write([]byte(fmt.Sprintf("%s %s", JobStatusIconMap[wfv1.NodeSucceeded], "sleep(11:eleven)")))
 		expectedPodName = fmt.Sprintf("many-items-z26lj-sleep-%v", h.Sum32())
 		assert.Contains(t, output, fmt.Sprintf("sleep(11:eleven)  sleep           %s   22s", expectedPodName))
-
-		assert.Contains(t, output, "This workflow does not have security context set. "+
-			"You can run your workflow pods more securely by setting it.\n"+
-			"Learn more at https://argoproj.github.io/argo-workflows/workflow-pod-security-context/\n")
 	})
 }
 
@@ -436,9 +432,5 @@ func Test_printWorkflowHelperNudges(t *testing.T) {
 	t.Run("SecuredWorkflow", func(t *testing.T) {
 		output := PrintWorkflowHelper(&securedWf, GetFlags{})
 		assert.NotContains(t, output, securityNudges)
-	})
-	t.Run("InsecureWorkflow", func(t *testing.T) {
-		output := PrintWorkflowHelper(&insecureWf, GetFlags{})
-		assert.Contains(t, output, securityNudges)
 	})
 }

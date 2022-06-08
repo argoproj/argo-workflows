@@ -10,6 +10,3 @@ contact_links:
   - name: Chat on Slack
     url: https://argoproj.github.io/community/join-slack
     about: Maybe chatting with the community can help
-  - name: 30m to talk anything Argo
-    url: https://bit.ly/book-30m-with-argo-team
-    about: Sign-up for 30m with the core Argo engineers

@@ -82,6 +82,9 @@ message Artifact {
 
   // ArtifactGC describes the strategy to use when to deleting an artifact from completed or deleted workflows
   optional ArtifactGC artifactGC = 12;
+
+  // Has this been deleted?
+  optional bool deleted = 13;
 }
 
 // ArtifactGC describes how to delete artifacts from completed Workflows
@@ -1788,7 +1791,7 @@ message WorkflowSpec {
   // +optional
   optional string schedulerName = 21;
 
-  // PodGC describes the strategy to use when to deleting completed pods
+  // PodGC describes the strategy to use when deleting completed pods
   optional PodGC podGC = 22;
 
   // PriorityClassName to apply to workflow pods.
@@ -1828,7 +1831,7 @@ message WorkflowSpec {
   // Synchronization holds synchronization lock configuration for this Workflow
   optional Synchronization synchronization = 35;
 
-  // VolumeClaimGC describes the strategy to use when to deleting volumes from completed workflows
+  // VolumeClaimGC describes the strategy to use when deleting volumes from completed workflows
   optional VolumeClaimGC volumeClaimGC = 36;
 
   // RetryStrategy for all templates in the workflow.
@@ -1850,7 +1853,8 @@ message WorkflowSpec {
   // WorkflowMetadata contains some metadata of the workflow to be refer
   optional WorkflowMetadata workflowMetadata = 42;
 
-  // ArtifactGC describes the strategy to use when to deleting artifacts from completed or deleted workflows
+  // ArtifactGC describes the strategy to use when deleting artifacts from completed or deleted workflows (applies to all output Artifacts
+  // unless Artifact.ArtifactGC is specified, which overrides this)
   optional ArtifactGC artifactGC = 43;
 }
 

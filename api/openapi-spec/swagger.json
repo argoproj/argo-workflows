@@ -4260,12 +4260,6 @@
             "name": "artifactDiscriminator",
             "in": "path",
             "required": true
-          },
-          {
-            "type": "string",
-            "name": "artifactName",
-            "in": "path",
-            "required": true
           }
         ],
         "responses": {
@@ -4383,12 +4377,6 @@
         "summary": "Get an input artifact by UID.",
         "operationId": "ArtifactService_GetInputArtifactByUID",
         "parameters": [
-          {
-            "type": "string",
-            "name": "namespace",
-            "in": "path",
-            "required": true
-          },
           {
             "type": "string",
             "name": "uid",
@@ -8979,6 +8967,10 @@
           "description": "Artifactory contains artifactory artifact location details",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactoryArtifact"
         },
+        "deleted": {
+          "description": "Has this been deleted?",
+          "type": "boolean"
+        },
         "from": {
           "description": "From allows an artifact to reference an artifact from a previous step",
           "type": "string"
@@ -9119,6 +9111,10 @@
         "artifactory": {
           "description": "Artifactory contains artifactory artifact location details",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactoryArtifact"
+        },
+        "deleted": {
+          "description": "Has this been deleted?",
+          "type": "boolean"
         },
         "from": {
           "description": "From allows an artifact to reference an artifact from a previous step",
@@ -12436,7 +12432,7 @@
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Arguments"
         },
         "artifactGC": {
-          "description": "ArtifactGC describes the strategy to use when to deleting artifacts from completed or deleted workflows",
+          "description": "ArtifactGC describes the strategy to use when deleting artifacts from completed or deleted workflows (applies to all output Artifacts unless Artifact.ArtifactGC is specified, which overrides this)",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactGC"
         },
         "artifactRepositoryRef": {
@@ -12515,7 +12511,7 @@
           "$ref": "#/definitions/io.k8s.api.policy.v1beta1.PodDisruptionBudgetSpec"
         },
         "podGC": {
-          "description": "PodGC describes the strategy to use when to deleting completed pods",
+          "description": "PodGC describes the strategy to use when deleting completed pods",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.PodGC"
         },
         "podMetadata": {
@@ -12593,7 +12589,7 @@
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.TTLStrategy"
         },
         "volumeClaimGC": {
-          "description": "VolumeClaimGC describes the strategy to use when to deleting volumes from completed workflows",
+          "description": "VolumeClaimGC describes the strategy to use when deleting volumes from completed workflows",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.VolumeClaimGC"
         },
         "volumeClaimTemplates": {

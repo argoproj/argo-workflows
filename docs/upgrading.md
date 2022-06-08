@@ -1,4 +1,4 @@
-# Breaking Changes
+# Upgrading Guide
 
 Breaking changes  typically (sometimes we don't realise they are breaking) have "!" in the commit message, as per
 the [conventional commits](https://www.conventionalcommits.org/en/v1.0.0/#summary).
