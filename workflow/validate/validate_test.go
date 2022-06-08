@@ -37,7 +37,7 @@ func createWorkflowTemplate(wftmpl *wfv1.WorkflowTemplate) error {
 
 func deleteWorkflowTemplate(name string) error {
 	ctx := context.Background()
-	return wfClientset.ArgoprojV1alpha1().WorkflowTemplates(metav1.NamespaceDefault).Delete(ctx, name, *&metav1.DeleteOptions{})
+	return wfClientset.ArgoprojV1alpha1().WorkflowTemplates(metav1.NamespaceDefault).Delete(ctx, name, metav1.DeleteOptions{})
 }
 
 // validate is a test helper to accept Workflow YAML as a string and return
@@ -3018,7 +3018,7 @@ func TestSubstituteGlobalVariablesLabelsAnnotations(t *testing.T) {
 			} else {
 				assert.Error(t, err)
 			}
-			deleteWorkflowTemplate(wftmpl.Name)
+			_ = deleteWorkflowTemplate(wftmpl.Name)
 		})
 	}
 }
