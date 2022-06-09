@@ -12611,7 +12611,7 @@
           "x-kubernetes-patch-strategy": "merge"
         },
         "workflowMetadata": {
-          "description": "WorkflowMetadata contains some metadata of the workflow to be refer",
+          "description": "WorkflowMetadata contains some metadata of the workflow to refer to",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowMetadata"
         },
         "workflowTemplateRef": {

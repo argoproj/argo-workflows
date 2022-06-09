@@ -21,14 +21,23 @@ var (
 	cwftmplGetter = templateresolution.WrapClusterWorkflowTemplateInterface(wfClientset.ArgoprojV1alpha1().ClusterWorkflowTemplates())
 )
 
-func createWorkflowTemplate(yamlStr string) error {
-	ctx := context.Background()
+func createWorkflowTemplateFromSpec(yamlStr string) error {
 	wftmpl := unmarshalWftmpl(yamlStr)
+	return createWorkflowTemplate((wftmpl))
+}
+
+func createWorkflowTemplate(wftmpl *wfv1.WorkflowTemplate) error {
+	ctx := context.Background()
 	_, err := wfClientset.ArgoprojV1alpha1().WorkflowTemplates(metav1.NamespaceDefault).Create(ctx, wftmpl, metav1.CreateOptions{})
 	if err != nil && apierr.IsAlreadyExists(err) {
 		return nil
 	}
 	return err
+}
+
+func deleteWorkflowTemplate(name string) error {
+	ctx := context.Background()
+	return wfClientset.ArgoprojV1alpha1().WorkflowTemplates(metav1.NamespaceDefault).Delete(ctx, name, metav1.DeleteOptions{})
 }
 
 // validate is a test helper to accept Workflow YAML as a string and return
@@ -1541,9 +1550,9 @@ spec:
 `
 
 func TestNestedTemplateRef(t *testing.T) {
-	err := createWorkflowTemplate(templateRefTarget)
+	err := createWorkflowTemplateFromSpec(templateRefTarget)
 	assert.NoError(t, err)
-	err = createWorkflowTemplate(templateRefNestedTarget)
+	err = createWorkflowTemplateFromSpec(templateRefNestedTarget)
 	assert.NoError(t, err)
 	wfConditions, err := validate(nestedTemplateRef)
 	assert.NoError(t, err)
@@ -2152,7 +2161,7 @@ spec:
 `
 
 func TestWorkflowWithWFTRefWithEntrypoint(t *testing.T) {
-	err := createWorkflowTemplate(templateWithEntrypoint)
+	err := createWorkflowTemplateFromSpec(templateWithEntrypoint)
 	assert.NoError(t, err)
 	_, err = validate(wfWithWFTRefNoEntrypoint)
 	assert.NoError(t, err)
@@ -2183,7 +2192,7 @@ spec:
 `
 
 func TestWorkflowWithWFTRef(t *testing.T) {
-	err := createWorkflowTemplate(templateRefTarget)
+	err := createWorkflowTemplateFromSpec(templateRefTarget)
 	assert.NoError(t, err)
 	_, err = validate(wfWithWFTRef)
 	assert.NoError(t, err)
@@ -2210,7 +2219,7 @@ spec:
 `
 
 func TestValidateFieldsWithWFTRef(t *testing.T) {
-	err := createWorkflowTemplate(templateRefTarget)
+	err := createWorkflowTemplateFromSpec(templateRefTarget)
 	assert.NoError(t, err)
 	_, err = validate(invalidWFWithWFTRef)
 	assert.Error(t, err)
@@ -2289,7 +2298,7 @@ spec:
 `
 
 func TestWorkflowWithWFTRefWithOverrideParam(t *testing.T) {
-	err := createWorkflowTemplate(templateRefWithParam)
+	err := createWorkflowTemplateFromSpec(templateRefWithParam)
 	assert.NoError(t, err)
 	_, err = validate(wfWithWFTRefOverrideParam)
 	assert.NoError(t, err)
@@ -2361,7 +2370,7 @@ spec:
 `
 
 func TestWorkflowWithWFTRefWithOutOwnArtifactArgument(t *testing.T) {
-	err := createWorkflowTemplate(templateRefWithArtifactArgument)
+	err := createWorkflowTemplateFromSpec(templateRefWithArtifactArgument)
 	assert.NoError(t, err)
 	_, err = validate(wfWithWFTRefAndNoOwnArtifact)
 	assert.NoError(t, err)
@@ -2384,7 +2393,7 @@ spec:
 `
 
 func TestWorkflowWithWFTRefWithArtifactArgument(t *testing.T) {
-	err := createWorkflowTemplate(templateRefWithArtifactArgument)
+	err := createWorkflowTemplateFromSpec(templateRefWithArtifactArgument)
 	assert.NoError(t, err)
 	_, err = validate(wfWithWFTRefAndOwnArtifactArgument)
 	assert.NoError(t, err)
@@ -2950,4 +2959,67 @@ spec:
 func TestInitContainerHasName(t *testing.T) {
 	_, err := validate(testInitContainerHasName)
 	assert.EqualError(t, err, "templates.main.tasks.spurious initContainers must all have container name")
+}
+
+func TestSubstituteGlobalVariablesLabelsAnnotations(t *testing.T) {
+	tests := []struct {
+		name             string
+		workflow         string
+		workflowTemplate string
+		expectedSuccess  bool
+	}{
+		{
+			// entire template referenced; value not contained in WorkflowTemplate or Workflow
+			workflow:         "@testdata/workflow-sub-test-1.yaml",
+			workflowTemplate: "@testdata/workflow-template-sub-test-1.yaml",
+			expectedSuccess:  false,
+		},
+		{
+			// entire template referenced; value is in Workflow.Labels
+			workflow:         "@testdata/workflow-sub-test-2.yaml",
+			workflowTemplate: "@testdata/workflow-template-sub-test-1.yaml",
+			expectedSuccess:  true,
+		},
+		{
+			// entire template referenced; value is in WorkflowTemplate.workflowMetadata
+			workflow:         "@testdata/workflow-sub-test-1.yaml",
+			workflowTemplate: "@testdata/workflow-template-sub-test-2.yaml",
+			expectedSuccess:  true,
+		},
+
+		{
+			// entire template referenced; value is in Workflow.workflowMetadata
+			workflow:         "@testdata/workflow-sub-test-3.yaml",
+			workflowTemplate: "@testdata/workflow-template-sub-test-3.yaml",
+			expectedSuccess:  true,
+		},
+		{
+			// just a single template from the WorkflowTemplate is referenced:
+			// shouldn't have access to the global scope of the WorkflowTemplate
+			workflow:         "@testdata/workflow-sub-test-4.yaml",
+			workflowTemplate: "@testdata/workflow-template-sub-test-2.yaml",
+			expectedSuccess:  false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			wf := wfv1.MustUnmarshalWorkflow(tt.workflow)
+			wftmpl := wfv1.MustUnmarshalWorkflowTemplate(tt.workflowTemplate)
+			err := createWorkflowTemplate(wftmpl)
+			if err != nil {
+				assert.NoError(t, err)
+			}
+
+			_, err = ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{})
+			if tt.expectedSuccess {
+				assert.NoError(t, err)
+			} else {
+				assert.Error(t, err)
+			}
+
+			_ = deleteWorkflowTemplate(wftmpl.Name)
+		})
+	}
 }
