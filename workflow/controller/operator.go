@@ -534,7 +534,7 @@ func (woc *wfOperationCtx) setGlobalParameters(executionParameters wfv1.Argument
 			woc.globalParams[common.GlobalVarWorkflowCronScheduleTime] = val
 		}
 	}
-	woc.globalParams[common.GlobalVarWorkflowStatus] = string(woc.wf.Status.Phase)
+
 	if woc.execWf.Spec.Priority != nil {
 		woc.globalParams[common.GlobalVarWorkflowPriority] = strconv.Itoa(int(*woc.execWf.Spec.Priority))
 	}
@@ -3509,7 +3509,15 @@ func (woc *wfOperationCtx) setExecWorkflow(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+
+	// runtime value will be set after the substitution, otherwise will not be reflected from stored wf spec
+	woc.setGlobalRuntimeParameters()
+
 	return nil
+}
+
+func (woc *wfOperationCtx) setGlobalRuntimeParameters() {
+	woc.globalParams[common.GlobalVarWorkflowStatus] = string(woc.wf.Status.Phase)
 }
 
 func (woc *wfOperationCtx) addFinalizers() {
@@ -3621,6 +3629,7 @@ func (woc *wfOperationCtx) substituteGlobalVariables() error {
 	if err != nil {
 		return err
 	}
+
 	resolveSpec, err := template.Replace(string(wfSpec), woc.globalParams, true)
 	if err != nil {
 		return err
@@ -3629,6 +3638,7 @@ func (woc *wfOperationCtx) substituteGlobalVariables() error {
 	if err != nil {
 		return err
 	}
+
 	return nil
 }
 
