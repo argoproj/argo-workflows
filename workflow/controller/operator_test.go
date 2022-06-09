@@ -7041,8 +7041,8 @@ func TestSubstituteGlobalVariablesLabelsAnnotations(t *testing.T) {
 
 			assert.Nil(t, err)
 			assert.NotNil(t, woc.execWf)
-			assert.Equal(t, woc.execWf.Spec.Synchronization.Mutex.Name, tt.expectedMutexName)
-			assert.Equal(t, woc.execWf.Spec.SchedulerName, tt.expectedSchedulerName)
+			assert.Equal(t, tt.expectedMutexName, woc.execWf.Spec.Synchronization.Mutex.Name)
+			assert.Equal(t, tt.expectedSchedulerName, woc.execWf.Spec.SchedulerName)
 		})
 	}
 }
