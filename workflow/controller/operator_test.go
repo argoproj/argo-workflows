@@ -7018,11 +7018,18 @@ func TestSubstituteGlobalVariablesLabelsAnnotations(t *testing.T) {
 			expectedMutexName:     "wfMetadataMutex",
 			expectedSchedulerName: "wfMetadataScheduler",
 		},
+		// test using LabelsFrom
+		{
+			workflow:              "@testdata/workflow-sub-test-4.yaml",
+			workflowTemplate:      "@testdata/workflow-template-sub-test-3.yaml",
+			expectedMutexName:     "wfMetadataTemplateMutex",
+			expectedSchedulerName: "wfMetadataScheduler",
+		},
 		{
 			// just a single template from the WorkflowTemplate is referenced:
 			// shouldn't have access to the global scope of the WorkflowTemplate
-			workflow:              "@testdata/workflow-sub-test-4.yaml",
-			workflowTemplate:      "@testdata/workflow-template-sub-test-3.yaml",
+			workflow:              "@testdata/workflow-sub-test-5.yaml",
+			workflowTemplate:      "@testdata/workflow-template-sub-test-4.yaml",
 			expectedMutexName:     "myMutex",
 			expectedSchedulerName: "myScheduler",
 		},

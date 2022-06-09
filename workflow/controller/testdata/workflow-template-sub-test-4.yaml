@@ -8,11 +8,6 @@ metadata:
   annotations:
     scheduler-name: myScheduler
 spec:
-  arguments:
-    parameters:
-      - name: mutex
-        value: wfMetadataTemplateMutex
-  entrypoint: whalesay-template
   templates:
     - name: whalesay-template
       container:
@@ -20,8 +15,7 @@ spec:
         command: [cowsay]
         args: ['hello']
   workflowMetadata:
-    labelsFrom:
-      mutex-name:
-        expression: workflow.parameters.mutex
+    labels:
+      mutex-name: wfMetadataTemplateMutex
     annotations:
       scheduler-name: wfMetadataTemplateScheduler

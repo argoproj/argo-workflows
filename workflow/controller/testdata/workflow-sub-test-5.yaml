@@ -8,12 +8,15 @@ metadata:
   annotations:
     scheduler-name: myScheduler
 spec:
-  workflowTemplateRef:
-    name: workflow-template-submittable
+  entrypoint: myTemplate
+  templates:
+    - name: myTemplate
+      steps:
+        - - name: whalesay
+            templateRef:
+              name: workflow-template-submittable
+              template: whalesay-template
   synchronization:
     mutex:
       name:  "{{workflow.labels.mutex-name}}"
   schedulerName:  "{{workflow.annotations.scheduler-name}}"
-  workflowMetadata:
-    annotations:
-      scheduler-name: wfMetadataScheduler
