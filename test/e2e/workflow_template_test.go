@@ -64,6 +64,19 @@ func (s *WorkflowTemplateSuite) TestSubmitWorkflowTemplateWithEnum() {
 		})
 }
 
+func (s *WorkflowTemplateSuite) TestSubmitWorkflowTemplateWorkflowMetadataSubstitution() {
+	s.Given().
+		WorkflowTemplate("@testdata/workflow-template-sub-test.yaml").
+		When().
+		CreateWorkflowTemplates().
+		SubmitWorkflowsFromWorkflowTemplates().
+		WaitForWorkflow().
+		Then().
+		ExpectWorkflow(func(t *testing.T, metadata *v1.ObjectMeta, status *v1alpha1.WorkflowStatus) {
+			assert.Equal(t, status.Phase, v1alpha1.WorkflowSucceeded)
+		})
+}
+
 func TestWorkflowTemplateSuite(t *testing.T) {
 	suite.Run(t, new(WorkflowTemplateSuite))
 }
