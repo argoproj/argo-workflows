@@ -783,3 +783,137 @@ func TestControllerRestartWithRunningWorkflow(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Contains(t, metricString, `model_a`)
 }
+
+var runtimeWfMetrics = `apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: dag-task-jntfw
+spec:
+  activeDeadlineSeconds: 300
+  arguments: {}
+  entrypoint: dag-task
+  metrics:
+    prometheus:
+    - counter:
+        value: "1"
+      help: Count of workflow execution by result status  - workflow level
+      labels:
+      - key: playground_id_workflow_counter
+        value: test
+      - key: status
+        value: Succeeded
+      name: playground_workflow_new
+  podSpecPatch: |
+    terminationGracePeriodSeconds: 3
+  templates:
+  - dag:
+      tasks:
+      - arguments: {}
+        name: TEST-ONE
+        template: echo
+    inputs: {}
+    metadata: {}
+    name: dag-task
+    outputs: {}
+  - container:
+      command:
+      - echo
+      - hello
+      image: alpine:3.7
+      name: ""
+      resources: {}
+    inputs: {}
+    metadata: {}
+    name: echo
+    outputs: {}
+status:
+  artifactRepositoryRef:
+    artifactRepository:
+      archiveLogs: true
+      s3:
+        accessKeySecret:
+          key: accesskey
+          name: my-minio-cred
+        bucket: my-bucket
+        endpoint: minio:9000
+        insecure: true
+        secretKeySecret:
+          key: secretkey
+          name: my-minio-cred
+    configMap: artifact-repositories
+    key: default-v1
+    namespace: argo
+  conditions:
+  - status: "False"
+    type: PodRunning
+  - status: "True"
+    type: Completed
+  finishedAt: "2022-06-10T20:30:02Z"
+  nodes:
+    dag-task-jntfw:
+      children:
+      - dag-task-jntfw-911916320
+      displayName: dag-task-jntfw
+      finishedAt: "2022-06-10T20:30:02Z"
+      id: dag-task-jntfw
+      name: dag-task-jntfw
+      outboundNodes:
+      - dag-task-jntfw-911916320
+      phase: Succeeded
+      progress: 1/1
+      resourcesDuration:
+        cpu: 10
+        memory: 6
+      startedAt: "2022-06-10T20:29:42Z"
+      templateName: dag-task
+      templateScope: local/dag-task-jntfw
+      type: DAG
+    dag-task-jntfw-911916320:
+      boundaryID: dag-task-jntfw
+      displayName: TEST-ONE
+      finishedAt: "2022-06-10T20:30:01Z"
+      hostNodeName: k3d-k3s-default-server-0
+      id: dag-task-jntfw-911916320
+      name: dag-task-jntfw.TEST-ONE
+      outputs:
+        artifacts:
+        - name: main-logs
+          s3:
+            key: dag-task-jntfw/dag-task-jntfw-echo-911916320/main.log
+        exitCode: "0"
+      phase: Succeeded
+      progress: 1/1
+      resourcesDuration:
+        cpu: 10
+        memory: 6
+      startedAt: "2022-06-10T20:29:42Z"
+      templateName: echo
+      templateScope: local/dag-task-jntfw
+      type: Pod
+  phase: Succeeded
+  progress: 1/1
+  resourcesDuration:
+    cpu: 10
+    memory: 6
+  startedAt: "2022-06-10T20:29:42Z"
+`
+
+func TestRuntimeMetrics(t *testing.T) {
+	cancel, controller := newController()
+	defer cancel()
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+	wf := v1alpha1.MustUnmarshalWorkflow(runtimeWfMetrics)
+	ctx := context.Background()
+	_, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
+	assert.NoError(t, err)
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate(ctx)
+
+	metricDesc := wf.Spec.Metrics.Prometheus[0].GetDesc()
+	metric := controller.metrics.GetCustomMetric(metricDesc)
+	assert.NotNil(t, metric)
+	metricString, err := getMetricStringValue(metric)
+	fmt.Println(metricString)
+	assert.NoError(t, err)
+	assert.Contains(t, metricString, `Succeeded`)
+}
