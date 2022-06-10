@@ -53,21 +53,20 @@ export const ArtifactPanel = ({
                 .then(setObject)
                 .catch(setError);
         } else {
+            // even though we're going to include this in an iframe below, make the request here to determine if the Artifact has
+            // been deleted, in which case we won't show it in the iframe
             requests
                 .get(services.workflows.artifactPath(workflow, artifact.nodeId, artifact.name, archived, input))
                 .then(function onResult(res) {
-                    console.log(res);
                     setHTTPStatus(res.status);
                   }, function onError(err) {
-                      console.log(err.response);
                       setHTTPStatus(err.response.status);
                       setShowDownloadLink(false);
+                      setShow(false);
                   });
         }
     }, [downloadUrl]);
     useCollectEvent('openedArtifactPanel');
-
-    //const internalServerError =  (errorRenamed.status == 500);
 
     return (
         <div style={{margin: 16, marginTop: 48}}>
@@ -84,9 +83,7 @@ export const ArtifactPanel = ({
                             <small>{urn}</small>
                         </p>
                         {errorRenamed && <ErrorNotice error={errorRenamed} />}
-                        { (httpStatus == 500) ? ( //todo: change to 404
-                            <p>Artifact has been deleted.</p>
-                        ) :  show ? (
+                        { show ? (
                             <ViewBox>
                                 {object ? (
                                     <MonacoEditor
@@ -103,6 +100,8 @@ export const ArtifactPanel = ({
                                     <iframe src={downloadUrl} style={{width: '100%', height: '500px', border: 'none'}} />
                                 )}
                             </ViewBox>
+                        ) : (httpStatus == 404) ? ( 
+                            <p>Artifact has been deleted.</p>
                         ) : tgz ? (
                             <p>Artifact cannot be shown because it is a tgz.</p>
                         ) : (
