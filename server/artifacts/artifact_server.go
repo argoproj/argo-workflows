@@ -214,6 +214,10 @@ func (a *ArtifactServer) GetArtifactFile(w http.ResponseWriter, r *http.Request)
 
 	} else { // stream the file itself
 		log.Debugf("not a directory, artifact: %+v", artifact)
+		if artifact.Deleted {
+			a.notFoundError(w)
+			return
+		}
 		err = a.returnArtifact(w, artifact, driver)
 
 		if err != nil {
@@ -251,6 +255,11 @@ func (a *ArtifactServer) getArtifact(w http.ResponseWriter, r *http.Request, isI
 	art, driver, err := a.getArtifactAndDriver(ctx, nodeId, artifactName, isInput, wf, nil)
 	if err != nil {
 		a.serverInternalError(err, w)
+		return
+	}
+
+	if art.Deleted {
+		a.notFoundError(w)
 		return
 	}
 
@@ -306,6 +315,11 @@ func (a *ArtifactServer) getArtifactByUID(w http.ResponseWriter, r *http.Request
 	}
 
 	log.WithFields(log.Fields{"uid": uid, "nodeId": nodeId, "artifactName": artifactName, "isInput": isInput}).Info("Download artifact")
+
+	if art.Deleted {
+		a.notFoundError(w)
+		return
+	}
 	err = a.returnArtifact(w, art, driver)
 
 	if err != nil {
@@ -341,6 +355,10 @@ func (a *ArtifactServer) serverInternalError(err error, w http.ResponseWriter) {
 
 func (a *ArtifactServer) httpBadRequestError(w http.ResponseWriter) {
 	http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+}
+
+func (a *ArtifactServer) notFoundError(w http.ResponseWriter) {
+	http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 }
 
 func (a *ArtifactServer) httpFromError(err error, w http.ResponseWriter) {

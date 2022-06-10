@@ -33,8 +33,9 @@ export const ArtifactPanel = ({
     const ext = filename.split('.').pop();
 
     const [show, setShow] = useState(false);
-    const [error, setError] = useState<Error>();
+    const [errorRenamed, setError] = useState<Error>();
     const [object, setObject] = useState<any>();
+    const [httpStatus, setHTTPStatus] = useState(200);
 
     const tgz = !input && !artifact.archive?.none; // the key can be wrong about the file type
     const supported = !tgz && (isDir || ['gif', 'jpg', 'jpeg', 'json', 'html', 'png', 'txt'].includes(ext));
@@ -49,9 +50,28 @@ export const ArtifactPanel = ({
                 .then(r => r.text)
                 .then(setObject)
                 .catch(setError);
+        } else {
+            requests
+                .get(services.workflows.artifactPath(workflow, artifact.nodeId, artifact.name, archived, input))
+                .then(function onResult(res) {
+                    // do stuff
+                    console.log(res);
+                    setHTTPStatus(res.status);
+                  }, function onError(err) {
+                      console.log(err.response);
+                      setHTTPStatus(err.response.status);
+                    //err.response has the response from the server
+                  });
+                //.on('error', (err) => {
+                //    setHTTPStatus(err.status);
+                //  })
+                //.then(r => r.status)
+                //.then(setHTTPStatus);
         }
     }, [downloadUrl]);
     useCollectEvent('openedArtifactPanel');
+
+    //const internalServerError =  (errorRenamed.status == 500);
 
     return (
         <div style={{margin: 16, marginTop: 48}}>
@@ -67,8 +87,10 @@ export const ArtifactPanel = ({
                         <p>
                             <small>{urn}</small>
                         </p>
-                        {error && <ErrorNotice error={error} />}
-                        {show ? (
+                        {errorRenamed && <ErrorNotice error={errorRenamed} />}
+                        { (httpStatus == 500) ? (
+                            <p>Artifact has been deleted.</p>
+                        ) :  show ? (
                             <ViewBox>
                                 {object ? (
                                     <MonacoEditor
