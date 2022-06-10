@@ -36,6 +36,7 @@ export const ArtifactPanel = ({
     const [errorRenamed, setError] = useState<Error>();
     const [object, setObject] = useState<any>();
     const [httpStatus, setHTTPStatus] = useState(200);
+    const [showDownloadLink, setShowDownloadLink] = useState(true);
 
     const tgz = !input && !artifact.archive?.none; // the key can be wrong about the file type
     const supported = !tgz && (isDir || ['gif', 'jpg', 'jpeg', 'json', 'html', 'png', 'txt'].includes(ext));
@@ -44,6 +45,7 @@ export const ArtifactPanel = ({
     useEffect(() => {
         setObject(null);
         setError(null);
+        setShowDownloadLink(true);
         if (ext === 'json') {
             requests
                 .get(services.workflows.artifactPath(workflow, artifact.nodeId, artifact.name, archived, input))
@@ -54,19 +56,13 @@ export const ArtifactPanel = ({
             requests
                 .get(services.workflows.artifactPath(workflow, artifact.nodeId, artifact.name, archived, input))
                 .then(function onResult(res) {
-                    // do stuff
                     console.log(res);
                     setHTTPStatus(res.status);
                   }, function onError(err) {
                       console.log(err.response);
                       setHTTPStatus(err.response.status);
-                    //err.response has the response from the server
+                      setShowDownloadLink(false);
                   });
-                //.on('error', (err) => {
-                //    setHTTPStatus(err.status);
-                //  })
-                //.then(r => r.status)
-                //.then(setHTTPStatus);
         }
     }, [downloadUrl]);
     useCollectEvent('openedArtifactPanel');
@@ -88,7 +84,7 @@ export const ArtifactPanel = ({
                             <small>{urn}</small>
                         </p>
                         {errorRenamed && <ErrorNotice error={errorRenamed} />}
-                        { (httpStatus == 500) ? (
+                        { (httpStatus == 500) ? ( //todo: change to 404
                             <p>Artifact has been deleted.</p>
                         ) :  show ? (
                             <ViewBox>
@@ -114,11 +110,14 @@ export const ArtifactPanel = ({
                                 Unknown extension "{ext}", <a onClick={() => setShow(true)}>show anyway</a>.
                             </p>
                         )}
-                        <p style={{marginTop: 10}}>
-                            <LinkButton to={downloadUrl}>
-                                <i className='fa fa-download' /> {filename || 'Download'}
-                            </LinkButton>
-                        </p>
+                        
+                        {showDownloadLink && (
+                            <p style={{marginTop: 10}}>
+                                <LinkButton to={downloadUrl}>
+                                    <i className='fa fa-download' /> {filename || 'Download'}
+                                </LinkButton>
+                            </p>
+                        )}
                         <GiveFeedbackLink href='https://github.com/argoproj/argo-workflows/issues/7743' />
                     </div>
                 </ErrorBoundary>
