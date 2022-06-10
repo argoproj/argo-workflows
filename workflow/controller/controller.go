@@ -532,12 +532,11 @@ func (wfc *WorkflowController) signalContainers(namespace string, podName string
 	}
 
 	for _, c := range pod.Status.ContainerStatuses {
-		if c.State.Terminated != nil {
+		if c.State.Running == nil {
 			continue
 		}
-		if err := signal.SignalContainer(wfc.restConfig, pod, c.Name, sig); errorsutil.IgnoreContainerNotFoundErr(err) != nil {
-			return 0, err
-		}
+		// problems are already logged at info level, so we just ignore errors here
+		_ = signal.SignalContainer(wfc.restConfig, pod, c.Name, sig)
 	}
 	if pod.Spec.TerminationGracePeriodSeconds == nil {
 		return 30 * time.Second, nil

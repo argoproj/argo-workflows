@@ -8188,7 +8188,7 @@
         },
         "workflowMetadata": {
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowMetadata",
-          "description": "WorkflowMetadata contains some metadata of the workflow to be refer"
+          "description": "WorkflowMetadata contains some metadata of the workflow to refer to"
         },
         "workflowTemplateRef": {
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowTemplateRef",

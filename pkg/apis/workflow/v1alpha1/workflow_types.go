@@ -414,7 +414,7 @@ type WorkflowSpec struct {
 	// step, irrespective of the success, failure, or error status of the primary step
 	Hooks LifecycleHooks `json:"hooks,omitempty" protobuf:"bytes,41,opt,name=hooks"`
 
-	// WorkflowMetadata contains some metadata of the workflow to be refer
+	// WorkflowMetadata contains some metadata of the workflow to refer to
 	WorkflowMetadata *WorkflowMetadata `json:"workflowMetadata,omitempty" protobuf:"bytes,42,opt,name=workflowMetadata"`
 
 	// ArtifactGC describes the strategy to use when deleting artifacts from completed or deleted workflows (applies to all output Artifacts

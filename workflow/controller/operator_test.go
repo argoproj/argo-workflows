@@ -6976,6 +6976,84 @@ func TestSubstituteGlobalVariables(t *testing.T) {
 	assert.Contains(t, string(tempStr), "{{workflow.parameters.message}}")
 }
 
+// test that Labels and Annotations are correctly substituted in the case of
+// a Workflow referencing a WorkflowTemplate, where Labels and Annotations can come from:
+// - Workflow metadata
+// - Workflow spec.workflowMetadata
+// - WorkflowTemplate spec.workflowMetadata
+func TestSubstituteGlobalVariablesLabelsAnnotations(t *testing.T) {
+
+	tests := []struct {
+		name                  string
+		workflow              string
+		workflowTemplate      string
+		expectedMutexName     string
+		expectedSchedulerName string
+	}{
+		{
+			// entire template referenced; value not contained in WorkflowTemplate or Workflow
+			workflow:              "@testdata/workflow-sub-test-1.yaml",
+			workflowTemplate:      "@testdata/workflow-template-sub-test-1.yaml",
+			expectedMutexName:     "{{workflow.labels.mutex-name}}",
+			expectedSchedulerName: "{{workflow.annotations.scheduler-name}}",
+		},
+		{
+			// entire template referenced; value is in Workflow.Labels
+			workflow:              "@testdata/workflow-sub-test-2.yaml",
+			workflowTemplate:      "@testdata/workflow-template-sub-test-1.yaml",
+			expectedMutexName:     "myMutex",
+			expectedSchedulerName: "myScheduler",
+		},
+		{
+			// entire template referenced; value is in WorkflowTemplate.workflowMetadata
+			workflow:              "@testdata/workflow-sub-test-2.yaml",
+			workflowTemplate:      "@testdata/workflow-template-sub-test-2.yaml",
+			expectedMutexName:     "wfMetadataTemplateMutex",
+			expectedSchedulerName: "wfMetadataTemplateScheduler",
+		},
+		{
+			// entire template referenced; value is in Workflow.workflowMetadata
+			workflow:              "@testdata/workflow-sub-test-3.yaml",
+			workflowTemplate:      "@testdata/workflow-template-sub-test-2.yaml",
+			expectedMutexName:     "wfMetadataMutex",
+			expectedSchedulerName: "wfMetadataScheduler",
+		},
+		// test using LabelsFrom
+		{
+			workflow:              "@testdata/workflow-sub-test-4.yaml",
+			workflowTemplate:      "@testdata/workflow-template-sub-test-3.yaml",
+			expectedMutexName:     "wfMetadataTemplateMutex",
+			expectedSchedulerName: "wfMetadataScheduler",
+		},
+		{
+			// just a single template from the WorkflowTemplate is referenced:
+			// shouldn't have access to the global scope of the WorkflowTemplate
+			workflow:              "@testdata/workflow-sub-test-5.yaml",
+			workflowTemplate:      "@testdata/workflow-template-sub-test-4.yaml",
+			expectedMutexName:     "myMutex",
+			expectedSchedulerName: "myScheduler",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			wf := wfv1.MustUnmarshalWorkflow(tt.workflow)
+			wftmpl := wfv1.MustUnmarshalWorkflowTemplate(tt.workflowTemplate)
+			cancel, controller := newController(wf, wftmpl)
+			defer cancel()
+
+			woc := newWorkflowOperationCtx(wf, controller)
+			err := woc.setExecWorkflow(context.Background())
+
+			assert.Nil(t, err)
+			assert.NotNil(t, woc.execWf)
+			assert.Equal(t, tt.expectedMutexName, woc.execWf.Spec.Synchronization.Mutex.Name)
+			assert.Equal(t, tt.expectedSchedulerName, woc.execWf.Spec.SchedulerName)
+		})
+	}
+}
+
 var wfPending = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
