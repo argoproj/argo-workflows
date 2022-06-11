@@ -317,6 +317,18 @@
   </li>
 
       
+        
+  
+  
+
+
+  <li class="md-tabs__item">
+    <a href="https://www.linkedin.com/company/argoproj/" class="md-tabs__link">
+      LinkedIn
+    </a>
+  </li>
+
+      
     </ul>
   </div>
 </nav>
@@ -3056,6 +3068,13 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#feat-add-indexes-for-improve-archived-workflow-performance-8860" class="md-nav__link">
+    feat: add indexes for improve archived workflow performance. (#8860)
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#upgrading-to-v33" class="md-nav__link">
     Upgrading to v3.3
   </a>
@@ -3917,6 +3936,21 @@
   
 
     
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://www.linkedin.com/company/argoproj/" class="md-nav__link">
+        LinkedIn
+      </a>
+    </li>
+  
+
+    
   </ul>
 </nav>
                   </div>
@@ -3979,6 +4013,13 @@
         <li class="md-nav__item">
   <a href="#feat-fail-on-invalid-config-8295" class="md-nav__link">
     feat: Fail on invalid config. (#8295)
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#feat-add-indexes-for-improve-archived-workflow-performance-8860" class="md-nav__link">
+    feat: add indexes for improve archived workflow performance. (#8860)
   </a>
   
 </li>
@@ -4214,6 +4255,8 @@ images:
 mis-configuration.</p>
 <div class="highlight"><pre><span></span><code>Failed to register watch for controller config map: error unmarshaling JSON: while decoding JSON: json: unknown field \&quot;args\&quot;
 </code></pre></div>
+<h2 id="feat-add-indexes-for-improve-archived-workflow-performance-8860">feat: add indexes for improve archived workflow performance. (#8860)<a class="headerlink" href="#feat-add-indexes-for-improve-archived-workflow-performance-8860" title="Permanent link">&para;</a></h2>
+<p>This PR adds indexes to archived workflow tables. This change may cause a long time to upgrade if the user has a large table.</p>
 <h2 id="upgrading-to-v33">Upgrading to v3.3<a class="headerlink" href="#upgrading-to-v33" title="Permanent link">&para;</a></h2>
 <h3 id="662a7295b-feat-replace-patch-pod-with-create-workflowtaskresult-fixes-3961-8000"><a href="https://github.com/argoproj/argo-workflows/commit/662a7295b">662a7295b</a> feat: Replace <code>patch pod</code> with <code>create workflowtaskresult</code>. Fixes #3961 (#8000)<a class="headerlink" href="#662a7295b-feat-replace-patch-pod-with-create-workflowtaskresult-fixes-3961-8000" title="Permanent link">&para;</a></h3>
 <p>The PR changes the permissions that can be used by a workflow to remove the <code>pod patch</code> permission.</p>
