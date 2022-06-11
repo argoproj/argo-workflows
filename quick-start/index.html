@@ -3758,11 +3758,10 @@
 
 
 <h1 id="quick-start">Quick Start<a class="headerlink" href="#quick-start" title="Permanent link">&para;</a></h1>
-<p>💡 If you want to try out Argo Workflows and don't want to set-up Kubernetes cluster, try the <a href="../training/#hands-on">Katacoda course</a>.</p>
 <p>To see how Argo Workflows work, you can install it and run examples of simple workflows and workflows that use artifacts.</p>
 <p>Before you start you need a Kubernetes cluster and <code>kubectl</code> set-up</p>
 <h2 id="install-argo-workflows">Install Argo Workflows<a class="headerlink" href="#install-argo-workflows" title="Permanent link">&para;</a></h2>
-<p>To get started quickly, you can use the quick start manifest which will install Argo Workflow as well as some commonly used components:</p>
+<p>To get started quickly, you can use the quick start manifest which will install Argo Workflows as well as some commonly used components:</p>
 <p>⚠️ These manifests are intended to help you get started quickly. They are not suitable in production. They contain hard-coded passwords that are publicly available.</p>
 <div class="highlight"><pre><span></span><code>kubectl create ns argo
 kubectl apply -n argo -f https://raw.githubusercontent.com/argoproj/argo-workflows/master/manifests/quick-start-postgres.yaml
@@ -3791,6 +3790,8 @@ be the same as the information shown as when you submitted the Workflow:</p>
 <p>You can also observe the logs of the Workflow run by running the following:</p>
 <div class="highlight"><pre><span></span><code>argo logs -n argo @latest
 </code></pre></div>
+<p>💡 If you want to try out Argo Workflows and don't want to set up a Kubernetes cluster, the community is working on a replacement for the old Katacoda course since
+Katacoda was shut down. Please give a thumbs up or comment on <a href="https://github.com/argoproj/argo-workflows/issues/8899">this issue</a> with your support and feedback.</p>
 
               
 
