@@ -5802,6 +5802,10 @@
           "description": "Body is content of the HTTP Request",
           "type": "string"
         },
+        "bodyFrom": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.HTTPBodySource",
+          "description": "BodyFrom is  content of the HTTP Request as Bytes"
+        },
         "headers": {
           "description": "Headers are an optional list of headers to send with HTTP requests",
           "items": {
@@ -5810,7 +5814,7 @@
           "type": "array"
         },
         "insecureSkipVerify": {
-          "description": "insecureSkipVerify is a bool when if set to true will skip TLS verification for the HTTP client",
+          "description": "InsecureSkipVerify is a bool when if set to true will skip TLS verification for the HTTP client",
           "type": "boolean"
         },
         "method": {
@@ -5869,6 +5873,16 @@
         },
         "oauth2": {
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.OAuth2Auth"
+        }
+      },
+      "type": "object"
+    },
+    "io.argoproj.workflow.v1alpha1.HTTPBodySource": {
+      "description": "HTTPBodySource contains the source of the HTTP body.",
+      "properties": {
+        "bytes": {
+          "format": "byte",
+          "type": "string"
         }
       },
       "type": "object"

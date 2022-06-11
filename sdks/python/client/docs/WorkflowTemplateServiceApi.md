@@ -2744,6 +2744,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                     ],
                     http=IoArgoprojWorkflowV1alpha1HTTP(
                         body="body_example",
+                        body_from=IoArgoprojWorkflowV1alpha1HTTPBodySource(
+                            bytes='YQ==',
+                        ),
                         headers=[
                             IoArgoprojWorkflowV1alpha1HTTPHeader(
                                 name="name_example",
@@ -7080,6 +7083,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         ],
                         http=IoArgoprojWorkflowV1alpha1HTTP(
                             body="body_example",
+                            body_from=IoArgoprojWorkflowV1alpha1HTTPBodySource(
+                                bytes='YQ==',
+                            ),
                             headers=[
                                 IoArgoprojWorkflowV1alpha1HTTPHeader(
                                     name="name_example",
@@ -13148,6 +13154,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                     ],
                     http=IoArgoprojWorkflowV1alpha1HTTP(
                         body="body_example",
+                        body_from=IoArgoprojWorkflowV1alpha1HTTPBodySource(
+                            bytes='YQ==',
+                        ),
                         headers=[
                             IoArgoprojWorkflowV1alpha1HTTPHeader(
                                 name="name_example",
@@ -17484,6 +17493,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         ],
                         http=IoArgoprojWorkflowV1alpha1HTTP(
                             body="body_example",
+                            body_from=IoArgoprojWorkflowV1alpha1HTTPBodySource(
+                                bytes='YQ==',
+                            ),
                             headers=[
                                 IoArgoprojWorkflowV1alpha1HTTPHeader(
                                     name="name_example",
@@ -23463,6 +23475,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                     ],
                     http=IoArgoprojWorkflowV1alpha1HTTP(
                         body="body_example",
+                        body_from=IoArgoprojWorkflowV1alpha1HTTPBodySource(
+                            bytes='YQ==',
+                        ),
                         headers=[
                             IoArgoprojWorkflowV1alpha1HTTPHeader(
                                 name="name_example",
@@ -27799,6 +27814,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         ],
                         http=IoArgoprojWorkflowV1alpha1HTTP(
                             body="body_example",
+                            body_from=IoArgoprojWorkflowV1alpha1HTTPBodySource(
+                                bytes='YQ==',
+                            ),
                             headers=[
                                 IoArgoprojWorkflowV1alpha1HTTPHeader(
                                     name="name_example",

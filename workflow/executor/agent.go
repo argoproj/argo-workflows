@@ -267,10 +267,11 @@ func (ae *AgentExecutor) executeHTTPTemplate(ctx context.Context, tmpl wfv1.Temp
 	} else {
 		evalScope := map[string]interface{}{
 			"request": map[string]interface{}{
-				"method":  tmpl.HTTP.Method,
-				"url":     tmpl.HTTP.URL,
-				"body":    tmpl.HTTP.Body,
-				"headers": tmpl.HTTP.Headers.ToHeader(),
+				"method":    tmpl.HTTP.Method,
+				"url":       tmpl.HTTP.URL,
+				"body":      tmpl.HTTP.Body,
+				"bodyBytes": tmpl.HTTP.BodyFrom.Bytes,
+				"headers":   tmpl.HTTP.Headers.ToHeader(),
 			},
 			"response": map[string]interface{}{
 				"statusCode": response.StatusCode,
