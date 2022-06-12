@@ -21,8 +21,8 @@ Note:
 
 * `GOPATH` must be `$HOME/go`.
 * for **Apple Silicon**
-  * This platform can spend 3 times the indicated time
-  * Configure Docker Desktop to use BuildKit:
+    * This platform can spend 3 times the indicated time
+    * Configure Docker Desktop to use BuildKit:
 
     ```json
     "features": {
@@ -31,10 +31,10 @@ Note:
     ```
 
 * For **Windows WSL2**
-  * Configure [`.wslconfig`](https://docs.microsoft.com/en-us/windows/wsl/wsl-config#configuration-setting-for-wslconfig) to limit memory usage by the WSL2 to prevent VSCode OOM.
+    * Configure [`.wslconfig`](https://docs.microsoft.com/en-us/windows/wsl/wsl-config#configuration-setting-for-wslconfig) to limit memory usage by the WSL2 to prevent VSCode OOM.
 
 * For **Linux**
-  * Use [Docker Desktop](https://docs.docker.com/desktop/linux/install/) instead of [Docker Engine](https://docs.docker.com/engine/install/) to prevent incorrect network configuration by k3d
+    * Use [Docker Desktop](https://docs.docker.com/desktop/linux/install/) instead of [Docker Engine](https://docs.docker.com/engine/install/) to prevent incorrect network configuration by k3d
 
 ## Requirements
 
@@ -43,6 +43,7 @@ Note:
 * [Docker](https://docs.docker.com/get-docker/)
 * [`protoc`](http://google.github.io/proto-lens/installing-protoc.html)
 * [`jq`](https://stedolan.github.io/jq/download/)
+* [`node` >= 16](https://nodejs.org/download/release/latest-v16.x/) for running the UI
 * A local Kubernetes cluster ([`k3d`](https://k3d.io/), [`kind`](https://kind.sigs.k8s.io/docs/user/quick-start/#installation), or [`minikube`](https://minikube.sigs.k8s.io/docs/start/))
 
 We recommend using [K3D](https://k3d.io/) to set up the local Kubernetes cluster since this will allow you to test RBAC
@@ -95,7 +96,7 @@ If you made changes to the executor, you need to build the image:
 make argoexec-image
 ```
 
-To also start the API on <https://localhost:2746>:
+To also start the API on <http://localhost:2746>:
 
 ```bash
 make start API=true
@@ -106,6 +107,8 @@ To also start the UI on <http://localhost:8080> (`UI=true` implies `API=true`):
 ```bash
 make start UI=true
 ```
+
+![diagram](assets/make-start-UI-true.png)
 
 If you are making change to the CLI, you can build it:
 

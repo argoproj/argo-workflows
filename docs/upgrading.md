@@ -1,4 +1,4 @@
-# Breaking Changes
+# Upgrading Guide
 
 Breaking changes  typically (sometimes we don't realise they are breaking) have "!" in the commit message, as per
 the [conventional commits](https://www.conventionalcommits.org/en/v1.0.0/#summary).
@@ -49,6 +49,10 @@ mis-configuration.
 ```text
 Failed to register watch for controller config map: error unmarshaling JSON: while decoding JSON: json: unknown field \"args\"
 ```
+
+## feat: add indexes for improve archived workflow performance. (#8860)
+
+This PR adds indexes to archived workflow tables. This change may cause a long time to upgrade if the user has a large table.
 
 ## Upgrading to v3.3
 

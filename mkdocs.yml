@@ -197,7 +197,7 @@ nav:
   - Operator Manual:
       - installation.md
       - releases.md
-      - breaking-changes.md
+      - upgrading.md
       - security.md
       - Configuration:
           - managed-namespace.md
@@ -240,3 +240,4 @@ nav:
   - Blog: https://blog.argoproj.io/
   - Slack: https://argoproj.github.io/community/join-slack
   - Twitter: https://twitter.com/argoproj
+  - LinkedIn: https://www.linkedin.com/company/argoproj/

@@ -82,6 +82,9 @@ message Artifact {
 
   // ArtifactGC describes the strategy to use when to deleting an artifact from completed or deleted workflows
   optional ArtifactGC artifactGC = 12;
+
+  // Has this been deleted?
+  optional bool deleted = 13;
 }
 
 // ArtifactGC describes how to delete artifacts from completed Workflows
@@ -240,6 +243,13 @@ message BasicAuth {
 message Cache {
   // ConfigMap sets a ConfigMap-based cache
   optional k8s.io.api.core.v1.ConfigMapKeySelector configMap = 1;
+}
+
+// ClientCertAuth holds necessary information for client authentication via certificates
+message ClientCertAuth {
+  optional k8s.io.api.core.v1.SecretKeySelector clientCertSecret = 1;
+
+  optional k8s.io.api.core.v1.SecretKeySelector clientKeySecret = 2;
 }
 
 // ClusterWorkflowTemplate is the definition of a workflow template resource in cluster scope
@@ -643,7 +653,15 @@ message HTTPArtifact {
   // Headers are an optional list of headers to send with HTTP requests for artifacts
   repeated Header headers = 2;
 
-  // BasicAuth is the secret selector for basic authentication
+  // Auth contains information for client authentication
+  optional HTTPAuth auth = 3;
+}
+
+message HTTPAuth {
+  optional ClientCertAuth clientCert = 1;
+
+  optional OAuth2Auth oauth2 = 2;
+
   optional BasicAuth basicAuth = 3;
 }
 
@@ -930,6 +948,28 @@ message NodeSynchronizationStatus {
 // files. Note that if the artifact is a directory, the artifact driver must support the ability to
 // save/load the directory appropriately.
 message NoneStrategy {
+}
+
+// OAuth2Auth holds all information for client authentication via OAuth2 tokens
+message OAuth2Auth {
+  optional k8s.io.api.core.v1.SecretKeySelector clientIDSecret = 1;
+
+  optional k8s.io.api.core.v1.SecretKeySelector clientSecretSecret = 2;
+
+  optional k8s.io.api.core.v1.SecretKeySelector tokenURLSecret = 3;
+
+  repeated string scopes = 5;
+
+  repeated OAuth2EndpointParam endpointParams = 6;
+}
+
+// EndpointParam is for requesting optional fields that should be sent in the oauth request
+message OAuth2EndpointParam {
+  // Name is the header name
+  optional string key = 1;
+
+  // Value is the literal value to use for the header
+  optional string value = 2;
 }
 
 // OSSArtifact is the location of an Alibaba Cloud OSS artifact
@@ -1751,7 +1791,7 @@ message WorkflowSpec {
   // +optional
   optional string schedulerName = 21;
 
-  // PodGC describes the strategy to use when to deleting completed pods
+  // PodGC describes the strategy to use when deleting completed pods
   optional PodGC podGC = 22;
 
   // PriorityClassName to apply to workflow pods.
@@ -1791,7 +1831,7 @@ message WorkflowSpec {
   // Synchronization holds synchronization lock configuration for this Workflow
   optional Synchronization synchronization = 35;
 
-  // VolumeClaimGC describes the strategy to use when to deleting volumes from completed workflows
+  // VolumeClaimGC describes the strategy to use when deleting volumes from completed workflows
   optional VolumeClaimGC volumeClaimGC = 36;
 
   // RetryStrategy for all templates in the workflow.
@@ -1810,10 +1850,11 @@ message WorkflowSpec {
   // step, irrespective of the success, failure, or error status of the primary step
   map<string, LifecycleHook> hooks = 41;
 
-  // WorkflowMetadata contains some metadata of the workflow to be refer
+  // WorkflowMetadata contains some metadata of the workflow to refer to
   optional WorkflowMetadata workflowMetadata = 42;
 
-  // ArtifactGC describes the strategy to use when to deleting artifacts from completed or deleted workflows
+  // ArtifactGC describes the strategy to use when deleting artifacts from completed or deleted workflows (applies to all output Artifacts
+  // unless Artifact.ArtifactGC is specified, which overrides this)
   optional ArtifactGC artifactGC = 43;
 }
 
