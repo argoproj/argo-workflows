@@ -26,7 +26,7 @@ func TestGitArtifactDriver_Load(t *testing.T) {
 	})
 	t.Run("PrivateRepo", func(t *testing.T) {
 		t.Run("SSH", func(t *testing.T) {
-			if os.Getenv("CI") == "true" {
+			if os.Getenv("CI") != "true" {
 				t.SkipNow()
 			}
 			privateKey, err := os.ReadFile(homedir.HomeDir() + "/.ssh/id_rsa")
