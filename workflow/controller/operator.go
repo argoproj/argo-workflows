@@ -1151,8 +1151,8 @@ func printPodSpecLog(pod *apiv1.Pod, wfName string) {
 // and returns the new node status if something changed
 func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, old *wfv1.NodeStatus) *wfv1.NodeStatus {
 	new := old.DeepCopy()
-	tmpl := woc.GetNodeTemplate(old)
-	if tmpl == nil {
+	tmpl, err := woc.GetNodeTemplate(old)
+	if err != nil {
 		return nil
 	}
 	switch pod.Status.Phase {
@@ -2086,20 +2086,21 @@ func (woc *wfOperationCtx) hasDaemonNodes() bool {
 	return false
 }
 
-func (woc *wfOperationCtx) GetNodeTemplate(node *wfv1.NodeStatus) *wfv1.Template {
+func (woc *wfOperationCtx) GetNodeTemplate(node *wfv1.NodeStatus) (*wfv1.Template, error) {
 	if node.TemplateRef != nil {
 		tmplCtx, err := woc.createTemplateContext(node.GetTemplateScope())
 		if err != nil {
 			woc.markNodeError(node.Name, err)
-			return nil
+			return nil, err
 		}
 		tmpl, err := tmplCtx.GetTemplateFromRef(node.TemplateRef)
 		if err != nil {
 			woc.markNodeError(node.Name, err)
+			return tmpl, err
 		}
-		return tmpl
+		return tmpl, nil
 	}
-	return woc.wf.GetTemplateByName(node.TemplateName)
+	return woc.wf.GetTemplateByName(node.TemplateName), nil
 }
 
 func (woc *wfOperationCtx) markWorkflowRunning(ctx context.Context) {
