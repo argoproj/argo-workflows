@@ -1,0 +1,24 @@
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: workflow-template-submittable
+spec:
+  entrypoint: whalesay-template
+  arguments:
+    parameters:
+      - name: arg
+        value: myLabelFromArg
+  templates:
+    - name: whalesay-template
+      container:
+        image: docker/whalesay
+        command: [cowsay]
+        args: ['{{workflow.labels.arg-name}}', '{{workflow.annotations.arg-name}}', '{{workflow.labels.arg-name-2}}']
+  workflowMetadata:
+    labels:
+      arg-name: myLabelArg
+    labelsFrom:
+      arg-name-2:
+        expression: workflow.parameters.arg
+    annotations:
+      arg-name: myAnnotationArg

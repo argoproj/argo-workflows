@@ -163,7 +163,7 @@ export class SubmitWorkflowPanel extends React.Component<Props, State> {
                         <label>{parameter.name}</label>
                         {parameter.description && (
                             <Tooltip content={parameter.description}>
-                                <i className='fa fa-question-circle' />
+                                <i className='fa fa-question-circle' style={{marginLeft: 4}} />
                             </Tooltip>
                         )}
                         {(parameter.enum && this.displaySelectFieldForEnumValues(parameter, parameterStateName)) ||

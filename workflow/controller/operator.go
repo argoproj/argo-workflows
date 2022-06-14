@@ -265,11 +265,6 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 			return
 		}
 
-		if err := woc.updateWorkflowMetadata(); err != nil {
-			woc.markWorkflowError(ctx, err)
-			return
-		}
-
 		woc.workflowDeadline = woc.getWorkflowDeadline()
 
 		// Workflow will not be requeued if workflow steps are in pending state.
@@ -479,11 +474,19 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 
 func (woc *wfOperationCtx) updateWorkflowMetadata() error {
 	if md := woc.execWf.Spec.WorkflowMetadata; md != nil {
+		if woc.wf.ObjectMeta.Labels == nil {
+			woc.wf.ObjectMeta.Labels = make(map[string]string)
+		}
 		for n, v := range md.Labels {
 			woc.wf.Labels[n] = v
+			woc.globalParams["workflow.labels."+n] = v
+		}
+		if woc.wf.ObjectMeta.Annotations == nil {
+			woc.wf.ObjectMeta.Annotations = make(map[string]string)
 		}
 		for n, v := range md.Annotations {
 			woc.wf.Annotations[n] = v
+			woc.globalParams["workflow.annotations."+n] = v
 		}
 		env := env.GetFuncMap(template.EnvMap(woc.globalParams))
 		for n, f := range md.LabelsFrom {
@@ -496,6 +499,7 @@ func (woc *wfOperationCtx) updateWorkflowMetadata() error {
 				return fmt.Errorf("failed to evaluate label %q expression %q evaluted to %T but must be a string", n, f.Expression, r)
 			}
 			woc.wf.Labels[n] = v
+			woc.globalParams["workflow.labels."+n] = v
 		}
 		woc.updated = true
 	}
@@ -3497,6 +3501,12 @@ func (woc *wfOperationCtx) setExecWorkflow(ctx context.Context) error {
 	if err != nil {
 		woc.markWorkflowFailed(ctx, fmt.Sprintf("failed to set global parameters: %s", err.Error()))
 		return err
+	}
+	if woc.wf.Status.Phase == wfv1.WorkflowUnknown {
+		if err := woc.updateWorkflowMetadata(); err != nil {
+			woc.markWorkflowError(ctx, err)
+			return err
+		}
 	}
 	err = woc.substituteGlobalVariables()
 	if err != nil {
