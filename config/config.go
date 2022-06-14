@@ -133,28 +133,30 @@ func (c Config) GetPodGCDeleteDelayDuration() time.Duration {
 	return c.PodGCDeleteDelayDuration.Duration
 }
 
-func (c Config) Validate(input_url string) error {
-	u, err := url.Parse(input_url)
+func (c Config) ValidateProtocol(inputURL string, allowedProtocol []string) error {
+	u, err := url.Parse(inputURL)
 	if err != nil {
 		return err
 	}
-	if u.Scheme == "javascript" {
-		return fmt.Errorf("detect javascript link: %s", input_url)
+	for _, protocol := range allowedProtocol {
+		if u.Scheme == protocol {
+			return nil
+		}
 	}
-	return nil
+	return fmt.Errorf("detect javascript link: %s", inputURL)
 }
 
 func (c Config) HTMLEscape(unescaped string) string {
 	return html.EscapeString(unescaped)
 }
 
-func (c *Config) Sanitize() {
+func (c *Config) Sanitize(allowedProtocol []string) {
 	links := c.Links
 
 	for _, link := range links {
-		err := c.Validate(link.URL)
+		err := c.ValidateProtocol(link.URL, allowedProtocol)
 		if err != nil {
-			log.Error(err)
+			log.Fatal(err)
 			link.URL = ""
 		} else {
 			link.URL = c.HTMLEscape(link.URL)

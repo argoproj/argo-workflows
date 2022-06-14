@@ -85,6 +85,7 @@ type argoServer struct {
 	eventAsyncDispatch       bool
 	xframeOptions            string
 	accessControlAllowOrigin string
+	allowedLinkProtocol      []string
 	cache                    *cache.ResourceCache
 }
 
@@ -106,6 +107,7 @@ type ArgoServerOpts struct {
 	EventAsyncDispatch       bool
 	XFrameOptions            string
 	AccessControlAllowOrigin string
+	AllowedLinkProtocol      []string
 }
 
 func init() {
@@ -162,6 +164,7 @@ func NewArgoServer(ctx context.Context, opts ArgoServerOpts) (*argoServer, error
 		eventAsyncDispatch:       opts.EventAsyncDispatch,
 		xframeOptions:            opts.XFrameOptions,
 		accessControlAllowOrigin: opts.AccessControlAllowOrigin,
+		allowedLinkProtocol:      opts.AllowedLinkProtocol,
 		cache:                    resourceCache,
 	}, nil
 }
@@ -178,7 +181,7 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 	if err != nil {
 		log.Fatal(err)
 	}
-	config.Sanitize()
+	config.Sanitize(as.allowedLinkProtocol)
 	log.WithFields(log.Fields{"version": argo.GetVersion().Version, "instanceID": config.InstanceID}).Info("Starting Argo Server")
 	instanceIDService := instanceid.NewService(config.InstanceID)
 	offloadRepo := sqldb.ExplosiveOffloadNodeStatusRepo

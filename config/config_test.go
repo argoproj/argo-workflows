@@ -21,7 +21,7 @@ func TestSanitize(t *testing.T) {
 			{URL: "http://foo.bar/?foo=<script>abc</script>bar"},
 		},
 	}
-	c.Sanitize()
+	c.Sanitize([]string{"http", "https"})
 	assert.Equal(t, "", c.Links[0].URL)
 	assert.Equal(t, "", c.Links[1].URL)
 	assert.Equal(t, "http://foo.bar/?foo=&lt;script&gt;abc&lt;/script&gt;bar", c.Links[2].URL)
