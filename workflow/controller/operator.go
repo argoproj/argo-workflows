@@ -1160,6 +1160,9 @@ func printPodSpecLog(pod *apiv1.Pod, wfName string) {
 func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, old *wfv1.NodeStatus) *wfv1.NodeStatus {
 	new := old.DeepCopy()
 	tmpl := woc.GetNodeTemplate(old)
+	if tmpl == nil {
+		return nil
+	}
 	switch pod.Status.Phase {
 	case apiv1.PodPending:
 		new.Phase = wfv1.NodePending
@@ -2089,6 +2092,7 @@ func (woc *wfOperationCtx) GetNodeTemplate(node *wfv1.NodeStatus) *wfv1.Template
 		tmplCtx, err := woc.createTemplateContext(node.GetTemplateScope())
 		if err != nil {
 			woc.markNodeError(node.Name, err)
+			return nil
 		}
 		tmpl, err := tmplCtx.GetTemplateFromRef(node.TemplateRef)
 		if err != nil {
