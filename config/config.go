@@ -7,7 +7,6 @@ import (
 	"net/url"
 	"time"
 
-	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -150,18 +149,18 @@ func (c Config) HTMLEscape(unescaped string) string {
 	return html.EscapeString(unescaped)
 }
 
-func (c *Config) Sanitize(allowedProtocol []string) {
+func (c *Config) Sanitize(allowedProtocol []string) error {
 	links := c.Links
 
 	for _, link := range links {
 		err := c.ValidateProtocol(link.URL, allowedProtocol)
 		if err != nil {
-			log.Fatal(err)
-			link.URL = ""
+			return err
 		} else {
 			link.URL = c.HTMLEscape(link.URL)
 		}
 	}
+	return nil
 }
 
 // PodSpecLogStrategy contains the configuration for logging the pod spec in controller log for debugging purpose

@@ -14,15 +14,20 @@ func TestDatabaseConfig(t *testing.T) {
 }
 
 func TestSanitize(t *testing.T) {
-	c := Config{
-		Links: []*wfv1.Link{
-			{URL: "javascript:foo"},
-			{URL: "javASCRipt: //foo"},
-			{URL: "http://foo.bar/?foo=<script>abc</script>bar"},
-		},
+	tests := []struct {
+		c   Config
+		err string
+	}{
+		{Config{Links: []*wfv1.Link{{URL: "javascript:foo"}}}, "detect javascript link: javascript:foo"},
+		{Config{Links: []*wfv1.Link{{URL: "javASCRipt: //foo"}}}, "detect javascript link: javASCRipt: //foo"},
+		{Config{Links: []*wfv1.Link{{URL: "http://foo.bar/?foo=<script>abc</script>bar"}}}, ""},
 	}
-	c.Sanitize([]string{"http", "https"})
-	assert.Equal(t, "", c.Links[0].URL)
-	assert.Equal(t, "", c.Links[1].URL)
-	assert.Equal(t, "http://foo.bar/?foo=&lt;script&gt;abc&lt;/script&gt;bar", c.Links[2].URL)
+	for _, tt := range tests {
+		err := tt.c.Sanitize([]string{"http", "https"})
+		if tt.err != "" {
+			assert.Equal(t, err.Error(), tt.err)
+		} else {
+			assert.Nil(t, err)
+		}
+	}
 }
