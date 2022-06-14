@@ -244,13 +244,6 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 		}
 	}
 
-	// Update workflow duration variable
-	if woc.wf.Status.StartedAt.IsZero() {
-		woc.globalParams[common.GlobalVarWorkflowDuration] = fmt.Sprintf("%f", time.Duration(0).Seconds())
-	} else {
-		woc.globalParams[common.GlobalVarWorkflowDuration] = fmt.Sprintf("%f", time.Since(woc.wf.Status.StartedAt.Time).Seconds())
-	}
-
 	// Populate the phase of all the nodes prior to execution
 	for _, node := range woc.wf.Status.Nodes {
 		woc.preExecutionNodePhases[node.ID] = node.Phase
@@ -3518,6 +3511,13 @@ func (woc *wfOperationCtx) setExecWorkflow(ctx context.Context) error {
 
 func (woc *wfOperationCtx) setGlobalRuntimeParameters() {
 	woc.globalParams[common.GlobalVarWorkflowStatus] = string(woc.wf.Status.Phase)
+
+	// Update workflow duration variable
+	if woc.wf.Status.StartedAt.IsZero() {
+		woc.globalParams[common.GlobalVarWorkflowDuration] = fmt.Sprintf("%f", time.Duration(0).Seconds())
+	} else {
+		woc.globalParams[common.GlobalVarWorkflowDuration] = fmt.Sprintf("%f", time.Since(woc.wf.Status.StartedAt.Time).Seconds())
+	}
 }
 
 func (woc *wfOperationCtx) addFinalizers() {
