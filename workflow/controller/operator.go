@@ -1153,6 +1153,7 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, old *wfv1.NodeStatus
 	new := old.DeepCopy()
 	tmpl, err := woc.GetNodeTemplate(old)
 	if err != nil {
+		woc.log.Error(err)
 		return nil
 	}
 	switch pod.Status.Phase {
