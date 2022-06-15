@@ -33,7 +33,7 @@ export const ArtifactPanel = ({
     const ext = filename.split('.').pop();
 
     const [show, setShow] = useState(false);
-    const [errorRenamed, setError] = useState<Error>();
+    const [error, setError] = useState<Error>();
     const [object, setObject] = useState<any>();
     const [httpStatus, setHTTPStatus] = useState(200);
     const [showDownloadLink, setShowDownloadLink] = useState(true);
@@ -82,7 +82,7 @@ export const ArtifactPanel = ({
                         <p>
                             <small>{urn}</small>
                         </p>
-                        {errorRenamed && <ErrorNotice error={errorRenamed} />}
+                        {error && <ErrorNotice error={error} />}
                         { show ? (
                             <ViewBox>
                                 {object ? (
