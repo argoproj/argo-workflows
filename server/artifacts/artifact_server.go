@@ -18,6 +18,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/env"
 
+	argoerrors "github.com/argoproj/argo-workflows/v3/errors"
 	"github.com/argoproj/argo-workflows/v3/persist/sqldb"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/server/auth"
@@ -214,16 +215,10 @@ func (a *ArtifactServer) GetArtifactFile(w http.ResponseWriter, r *http.Request)
 
 	} else { // stream the file itself
 		log.Debugf("not a directory, artifact: %+v", artifact)
-		if artifact.Deleted {
-			a.notFoundError(w)
-			return
-		}
 		err = a.returnArtifact(w, artifact, driver)
 
-		if err != nil {
-			a.serverInternalError(err, w)
-			return
-		}
+		a.httpFromError(err, w)
+		return
 	}
 
 }
@@ -255,11 +250,6 @@ func (a *ArtifactServer) getArtifact(w http.ResponseWriter, r *http.Request, isI
 	art, driver, err := a.getArtifactAndDriver(ctx, nodeId, artifactName, isInput, wf, nil)
 	if err != nil {
 		a.serverInternalError(err, w)
-		return
-	}
-
-	if art.Deleted {
-		a.notFoundError(w)
 		return
 	}
 
@@ -316,10 +306,6 @@ func (a *ArtifactServer) getArtifactByUID(w http.ResponseWriter, r *http.Request
 
 	log.WithFields(log.Fields{"uid": uid, "nodeId": nodeId, "artifactName": artifactName, "isInput": isInput}).Info("Download artifact")
 
-	if art.Deleted {
-		a.notFoundError(w)
-		return
-	}
 	err = a.returnArtifact(w, art, driver)
 
 	if err != nil {
@@ -357,10 +343,6 @@ func (a *ArtifactServer) httpBadRequestError(w http.ResponseWriter) {
 	http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 }
 
-func (a *ArtifactServer) notFoundError(w http.ResponseWriter) {
-	http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
-}
-
 func (a *ArtifactServer) httpFromError(err error, w http.ResponseWriter) {
 	e := &apierr.StatusError{}
 	if errors.As(err, &e) {
@@ -368,8 +350,30 @@ func (a *ArtifactServer) httpFromError(err error, w http.ResponseWriter) {
 		statusCode := int(e.Status().Code)
 		http.Error(w, http.StatusText(statusCode), statusCode)
 	} else {
-		// Unknown error - return internal error
-		a.serverInternalError(err, w)
+		statusCode := http.StatusInternalServerError
+		switch resolvedError := err.(type) {
+		case argoerrors.ArgoError:
+			switch resolvedError.Error() {
+			case argoerrors.CodeUnauthorized:
+				statusCode = http.StatusUnauthorized
+			case argoerrors.CodeForbidden:
+				statusCode = http.StatusForbidden
+			case argoerrors.CodeNotFound:
+				statusCode = http.StatusNotFound
+			case argoerrors.CodeBadRequest:
+				statusCode = http.StatusBadRequest
+			case argoerrors.CodeNotImplemented:
+				statusCode = http.StatusNotImplemented
+			case argoerrors.CodeTimeout, argoerrors.CodeInternal:
+				statusCode = http.StatusInternalServerError
+			default:
+				statusCode = http.StatusInternalServerError
+			}
+
+		default:
+			statusCode = http.StatusInternalServerError
+		}
+		http.Error(w, http.StatusText(statusCode), statusCode)
 	}
 }
 
