@@ -344,10 +344,11 @@ func (a *ArtifactServer) httpBadRequestError(w http.ResponseWriter) {
 }
 
 func (a *ArtifactServer) httpFromError(err error, w http.ResponseWriter) {
+	statusCode := http.StatusInternalServerError
 	e := &apierr.StatusError{}
 	if errors.As(err, &e) {
 		// There is a http error code somewhere in the error stack
-		statusCode := int(e.Status().Code)
+		statusCode = int(e.Status().Code)
 		http.Error(w, http.StatusText(statusCode), statusCode)
 	} else {
 		statusCode := http.StatusInternalServerError
@@ -374,6 +375,10 @@ func (a *ArtifactServer) httpFromError(err error, w http.ResponseWriter) {
 			statusCode = http.StatusInternalServerError
 		}
 		http.Error(w, http.StatusText(statusCode), statusCode)
+	}
+
+	if statusCode == http.StatusInternalServerError {
+		log.WithError(err).Error("Artifact Server returned internal error")
 	}
 }
 
