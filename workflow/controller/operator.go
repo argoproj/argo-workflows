@@ -2100,7 +2100,6 @@ func (woc *wfOperationCtx) GetNodeTemplate(node *wfv1.NodeStatus) (*wfv1.Templat
 		}
 		return tmpl, nil
 	}
-
 	return woc.wf.GetTemplateByName(node.TemplateName), nil
 }
 
