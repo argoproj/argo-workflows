@@ -49,7 +49,7 @@ export const ArtifactPanel = ({
         if (ext === 'json') {
             requests
                 .get(services.workflows.artifactPath(workflow, artifact.nodeId, artifact.name, archived, input))
-                .then(r => r.text)
+                .then(r => { setHTTPStatus(r.status); r.text} )
                 .then(setObject)
                 .catch(setError);
         } else {
