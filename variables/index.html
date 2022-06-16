@@ -4082,7 +4082,7 @@
 <span class="w">      </span><span class="nt">container</span><span class="p">:</span><span class="w"></span>
 <span class="w">        </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">docker/whalesay</span><span class="w"></span>
 <span class="w">        </span><span class="nt">command</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="w"> </span><span class="nv">cowsay</span><span class="w"> </span><span class="p p-Indicator">]</span><span class="w"></span>
-<span class="w">        </span><span class="nt">args</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="w"> </span><span class="s">&quot;{{inputs.parameters.message}}&quot;</span><span class="w"> </span><span class="p p-Indicator">]</span><span class="w"> </span>
+<span class="w">        </span><span class="nt">args</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="w"> </span><span class="s">&quot;{{inputs.parameters.message}}&quot;</span><span class="w"> </span><span class="p p-Indicator">]</span><span class="w"></span>
 </code></pre></div>
 <p>The following variables are made available to reference various meta-data of a workflow:</p>
 <h2 id="template-tag-kinds">Template Tag Kinds<a class="headerlink" href="#template-tag-kinds" title="Permanent link">&para;</a></h2>
@@ -4093,7 +4093,7 @@
 </ul>
 <h3 id="simple">Simple<a class="headerlink" href="#simple" title="Permanent link">&para;</a></h3>
 <p>The tag is substituted with the variable that has a name the same as the tag.</p>
-<p>Simple tags <strong>may</strong> have white-space between the brackets and variable.</p>
+<p>Simple tags <strong>may</strong> have white-space between the brackets and variable as seen below. However, there is a known issue where variables may fail to interpolate with white-space, so it is recommended to avoid using white-space until this issue is resolved. <a href="https://github.com/argoproj/argo-workflows/issues/8960">Please report</a> unexpected behavior with reproducible examples.</p>
 <div class="highlight"><pre><span></span><code><span class="nt">args</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">inputs.parameters.message</span><span class="nv"> </span><span class="s">}}&quot;</span><span class="w"> </span><span class="p p-Indicator">]</span><span class="w">  </span>
 </code></pre></div>
 <h3 id="expression">Expression<a class="headerlink" href="#expression" title="Permanent link">&para;</a></h3>
