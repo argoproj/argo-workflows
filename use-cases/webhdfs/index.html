@@ -13,7 +13,7 @@
     
     
       
-        <title>argo cron create - Argo Workflows - The workflow engine for Kubernetes</title>
+        <title>Using webHDFS protocol via HTTP artifacts - Argo Workflows - The workflow engine for Kubernetes</title>
       
     
     
@@ -72,7 +72,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#argo-cron-create" class="md-skip">
+        <a href="#using-webhdfs-protocol-via-http-artifacts" class="md-skip">
           Skip to content
         </a>
       
@@ -106,7 +106,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              argo cron create
+              Using webHDFS protocol via HTTP artifacts
             
           </span>
         </div>
@@ -1996,12 +1996,14 @@
               
   
   
+    
+  
   
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
       
-        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3_14" type="checkbox" id="__nav_3_14" >
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3_14" type="checkbox" id="__nav_3_14" checked>
       
       
       
@@ -2024,7 +2026,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../use-cases/ci-cd/" class="md-nav__link">
+      <a href="../ci-cd/" class="md-nav__link">
         CI/CD
       </a>
     </li>
@@ -2038,7 +2040,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../use-cases/data-processing/" class="md-nav__link">
+      <a href="../data-processing/" class="md-nav__link">
         Data Processing
       </a>
     </li>
@@ -2052,7 +2054,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../use-cases/infrastructure-automation/" class="md-nav__link">
+      <a href="../infrastructure-automation/" class="md-nav__link">
         Infrastructure Automation
       </a>
     </li>
@@ -2066,7 +2068,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../use-cases/machine-learning/" class="md-nav__link">
+      <a href="../machine-learning/" class="md-nav__link">
         Machine Learning
       </a>
     </li>
@@ -2080,7 +2082,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../use-cases/other/" class="md-nav__link">
+      <a href="../other/" class="md-nav__link">
         Other
       </a>
     </li>
@@ -2094,7 +2096,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../use-cases/stream-processing/" class="md-nav__link">
+      <a href="../stream-processing/" class="md-nav__link">
         Stream Processing
       </a>
     </li>
@@ -2106,11 +2108,66 @@
               
   
   
+    
   
-    <li class="md-nav__item">
-      <a href="../../use-cases/webhdfs/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          Using webHDFS protocol via HTTP artifacts
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         Using webHDFS protocol via HTTP artifacts
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#input-artifacts" class="md-nav__link">
+    Input Artifacts
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#output-artifacts" class="md-nav__link">
+    Output Artifacts
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#authentication" class="md-nav__link">
+    Authentication
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -2183,14 +2240,12 @@
               
   
   
-    
-  
   
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
       
-        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3_19" type="checkbox" id="__nav_3_19" checked>
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3_19" type="checkbox" id="__nav_3_19" >
       
       
       
@@ -2213,7 +2268,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../argo/" class="md-nav__link">
+      <a href="../../cli/argo/" class="md-nav__link">
         argo
       </a>
     </li>
@@ -2227,7 +2282,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../argo_archive/" class="md-nav__link">
+      <a href="../../cli/argo_archive/" class="md-nav__link">
         argo archive
       </a>
     </li>
@@ -2241,7 +2296,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../argo_archive_delete/" class="md-nav__link">
+      <a href="../../cli/argo_archive_delete/" class="md-nav__link">
         argo archive delete
       </a>
     </li>
@@ -2255,7 +2310,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../argo_archive_get/" class="md-nav__link">
+      <a href="../../cli/argo_archive_get/" class="md-nav__link">
         argo archive get
       </a>
     </li>
@@ -2269,7 +2324,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../argo_archive_list/" class="md-nav__link">
+      <a href="../../cli/argo_archive_list/" class="md-nav__link">
         argo archive list
       </a>
     </li>
@@ -2283,7 +2338,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../argo_archive_list-label-keys/" class="md-nav__link">
+      <a href="../../cli/argo_archive_list-label-keys/" class="md-nav__link">
         argo archive list-label-keys
       </a>
     </li>
@@ -2297,7 +2352,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../argo_archive_list-label-values/" class="md-nav__link">
+      <a href="../../cli/argo_archive_list-label-values/" class="md-nav__link">
         argo archive list-label-values
       </a>
     </li>
@@ -2311,7 +2366,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../argo_archive_resubmit/" class="md-nav__link">
+      <a href="../../cli/argo_archive_resubmit/" class="md-nav__link">
         argo archive resubmit
       </a>
     </li>
@@ -2325,7 +2380,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../argo_archive_retry/" class="md-nav__link">
+      <a href="../../cli/argo_archive_retry/" class="md-nav__link">
         argo archive retry
       </a>
     </li>
@@ -2339,7 +2394,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../argo_auth/" class="md-nav__link">
+      <a href="../../cli/argo_auth/" class="md-nav__link">
         argo auth
       </a>
     </li>
@@ -2353,7 +2408,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../argo_auth_token/" class="md-nav__link">
+      <a href="../../cli/argo_auth_token/" class="md-nav__link">
         argo auth token
       </a>
     </li>
@@ -2367,7 +2422,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../argo_cluster-template/" class="md-nav__link">
+      <a href="../../cli/argo_cluster-template/" class="md-nav__link">
         argo cluster-template
       </a>
     </li>
@@ -2381,7 +2436,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../argo_cluster-template_create/" class="md-nav__link">
+      <a href="../../cli/argo_cluster-template_create/" class="md-nav__link">
         argo cluster-template create
       </a>
     </li>
@@ -2395,7 +2450,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../argo_cluster-template_delete/" class="md-nav__link">
+      <a href="../../cli/argo_cluster-template_delete/" class="md-nav__link">
         argo cluster-template delete
       </a>
     </li>
@@ -2409,7 +2464,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../argo_cluster-template_get/" class="md-nav__link">
+      <a href="../../cli/argo_cluster-template_get/" class="md-nav__link">
         argo cluster-template get
       </a>
     </li>
@@ -2423,7 +2478,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../argo_cluster-template_lint/" class="md-nav__link">
+      <a href="../../cli/argo_cluster-template_lint/" class="md-nav__link">
         argo cluster-template lint
       </a>
     </li>
@@ -2437,7 +2492,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../argo_cluster-template_list/" class="md-nav__link">
+      <a href="../../cli/argo_cluster-template_list/" class="md-nav__link">
         argo cluster-template list
       </a>
     </li>
@@ -2451,7 +2506,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../argo_completion/" class="md-nav__link">
+      <a href="../../cli/argo_completion/" class="md-nav__link">
         argo completion
       </a>
     </li>
@@ -2465,7 +2520,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../argo_cp/" class="md-nav__link">
+      <a href="../../cli/argo_cp/" class="md-nav__link">
         argo cp
       </a>
     </li>
@@ -2479,7 +2534,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../argo_cron/" class="md-nav__link">
+      <a href="../../cli/argo_cron/" class="md-nav__link">
         argo cron
       </a>
     </li>
@@ -2491,75 +2546,11 @@
               
   
   
-    
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
-      
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          argo cron create
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../../cli/argo_cron_create/" class="md-nav__link">
         argo cron create
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#argo-cron-create" class="md-nav__link">
-    argo cron create
-  </a>
-  
-    <nav class="md-nav" aria-label="argo cron create">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#options" class="md-nav__link">
-    Options
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#options-inherited-from-parent-commands" class="md-nav__link">
-    Options inherited from parent commands
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#see-also" class="md-nav__link">
-    SEE ALSO
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -2571,7 +2562,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../argo_cron_delete/" class="md-nav__link">
+      <a href="../../cli/argo_cron_delete/" class="md-nav__link">
         argo cron delete
       </a>
     </li>
@@ -2585,7 +2576,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../argo_cron_get/" class="md-nav__link">
+      <a href="../../cli/argo_cron_get/" class="md-nav__link">
         argo cron get
       </a>
     </li>
@@ -2599,7 +2590,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../argo_cron_lint/" class="md-nav__link">
+      <a href="../../cli/argo_cron_lint/" class="md-nav__link">
         argo cron lint
       </a>
     </li>
@@ -2613,7 +2604,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../argo_cron_list/" class="md-nav__link">
+      <a href="../../cli/argo_cron_list/" class="md-nav__link">
         argo cron list
       </a>
     </li>
@@ -2627,7 +2618,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../argo_cron_resume/" class="md-nav__link">
+      <a href="../../cli/argo_cron_resume/" class="md-nav__link">
         argo cron resume
       </a>
     </li>
@@ -2641,7 +2632,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../argo_cron_suspend/" class="md-nav__link">
+      <a href="../../cli/argo_cron_suspend/" class="md-nav__link">
         argo cron suspend
       </a>
     </li>
@@ -2655,7 +2646,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../argo_delete/" class="md-nav__link">
+      <a href="../../cli/argo_delete/" class="md-nav__link">
         argo delete
       </a>
     </li>
@@ -2669,7 +2660,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../argo_executor-plugin/" class="md-nav__link">
+      <a href="../../cli/argo_executor-plugin/" class="md-nav__link">
         argo executor-plugin
       </a>
     </li>
@@ -2683,7 +2674,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../argo_executor-plugin_build/" class="md-nav__link">
+      <a href="../../cli/argo_executor-plugin_build/" class="md-nav__link">
         argo executor-plugin build
       </a>
     </li>
@@ -2697,7 +2688,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../argo_get/" class="md-nav__link">
+      <a href="../../cli/argo_get/" class="md-nav__link">
         argo get
       </a>
     </li>
@@ -2711,7 +2702,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../argo_lint/" class="md-nav__link">
+      <a href="../../cli/argo_lint/" class="md-nav__link">
         argo lint
       </a>
     </li>
@@ -2725,7 +2716,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../argo_list/" class="md-nav__link">
+      <a href="../../cli/argo_list/" class="md-nav__link">
         argo list
       </a>
     </li>
@@ -2739,7 +2730,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../argo_logs/" class="md-nav__link">
+      <a href="../../cli/argo_logs/" class="md-nav__link">
         argo logs
       </a>
     </li>
@@ -2753,7 +2744,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../argo_node/" class="md-nav__link">
+      <a href="../../cli/argo_node/" class="md-nav__link">
         argo node
       </a>
     </li>
@@ -2767,7 +2758,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../argo_resubmit/" class="md-nav__link">
+      <a href="../../cli/argo_resubmit/" class="md-nav__link">
         argo resubmit
       </a>
     </li>
@@ -2781,7 +2772,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../argo_resume/" class="md-nav__link">
+      <a href="../../cli/argo_resume/" class="md-nav__link">
         argo resume
       </a>
     </li>
@@ -2795,7 +2786,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../argo_retry/" class="md-nav__link">
+      <a href="../../cli/argo_retry/" class="md-nav__link">
         argo retry
       </a>
     </li>
@@ -2809,7 +2800,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../argo_server/" class="md-nav__link">
+      <a href="../../cli/argo_server/" class="md-nav__link">
         argo server
       </a>
     </li>
@@ -2823,7 +2814,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../argo_stop/" class="md-nav__link">
+      <a href="../../cli/argo_stop/" class="md-nav__link">
         argo stop
       </a>
     </li>
@@ -2837,7 +2828,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../argo_submit/" class="md-nav__link">
+      <a href="../../cli/argo_submit/" class="md-nav__link">
         argo submit
       </a>
     </li>
@@ -2851,7 +2842,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../argo_suspend/" class="md-nav__link">
+      <a href="../../cli/argo_suspend/" class="md-nav__link">
         argo suspend
       </a>
     </li>
@@ -2865,7 +2856,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../argo_template/" class="md-nav__link">
+      <a href="../../cli/argo_template/" class="md-nav__link">
         argo template
       </a>
     </li>
@@ -2879,7 +2870,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../argo_template_create/" class="md-nav__link">
+      <a href="../../cli/argo_template_create/" class="md-nav__link">
         argo template create
       </a>
     </li>
@@ -2893,7 +2884,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../argo_template_delete/" class="md-nav__link">
+      <a href="../../cli/argo_template_delete/" class="md-nav__link">
         argo template delete
       </a>
     </li>
@@ -2907,7 +2898,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../argo_template_get/" class="md-nav__link">
+      <a href="../../cli/argo_template_get/" class="md-nav__link">
         argo template get
       </a>
     </li>
@@ -2921,7 +2912,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../argo_template_lint/" class="md-nav__link">
+      <a href="../../cli/argo_template_lint/" class="md-nav__link">
         argo template lint
       </a>
     </li>
@@ -2935,7 +2926,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../argo_template_list/" class="md-nav__link">
+      <a href="../../cli/argo_template_list/" class="md-nav__link">
         argo template list
       </a>
     </li>
@@ -2949,7 +2940,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../argo_terminate/" class="md-nav__link">
+      <a href="../../cli/argo_terminate/" class="md-nav__link">
         argo terminate
       </a>
     </li>
@@ -2963,7 +2954,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../argo_version/" class="md-nav__link">
+      <a href="../../cli/argo_version/" class="md-nav__link">
         argo version
       </a>
     </li>
@@ -2977,7 +2968,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../argo_wait/" class="md-nav__link">
+      <a href="../../cli/argo_wait/" class="md-nav__link">
         argo wait
       </a>
     </li>
@@ -2991,7 +2982,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../argo_watch/" class="md-nav__link">
+      <a href="../../cli/argo_watch/" class="md-nav__link">
         argo watch
       </a>
     </li>
@@ -3789,6 +3780,8 @@
   
   
   
+    
+  
   
     <label class="md-nav__title" for="__toc">
       <span class="md-nav__icon md-icon"></span>
@@ -3797,36 +3790,23 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#argo-cron-create" class="md-nav__link">
-    argo cron create
-  </a>
-  
-    <nav class="md-nav" aria-label="argo cron create">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#options" class="md-nav__link">
-    Options
+  <a href="#input-artifacts" class="md-nav__link">
+    Input Artifacts
   </a>
   
 </li>
-        
-          <li class="md-nav__item">
-  <a href="#options-inherited-from-parent-commands" class="md-nav__link">
-    Options inherited from parent commands
+      
+        <li class="md-nav__item">
+  <a href="#output-artifacts" class="md-nav__link">
+    Output Artifacts
   </a>
   
 </li>
-        
-          <li class="md-nav__item">
-  <a href="#see-also" class="md-nav__link">
-    SEE ALSO
+      
+        <li class="md-nav__item">
+  <a href="#authentication" class="md-nav__link">
+    Authentication
   </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
@@ -3843,64 +3823,44 @@
               
 
                 
-<a href="https://github.com/argoproj/argo-workflows/edit/master/docs/cli/argo_cron_create.md" title="Edit this page" class="md-content__button md-icon">
+<a href="https://github.com/argoproj/argo-workflows/edit/master/docs/use-cases/webhdfs.md" title="Edit this page" class="md-content__button md-icon">
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25z"/></svg>
 </a>
 
 
-  <h1>argo cron create</h1>
-
-<h2 id="argo-cron-create">argo cron create<a class="headerlink" href="#argo-cron-create" title="Permanent link">&para;</a></h2>
-<p>create a cron workflow</p>
-<div class="highlight"><pre><span></span><code>argo cron create FILE1 FILE2... [flags]
+<h1 id="using-webhdfs-protocol-via-http-artifacts">Using webHDFS protocol via HTTP artifacts<a class="headerlink" href="#using-webhdfs-protocol-via-http-artifacts" title="Permanent link">&para;</a></h1>
+<p>webHDFS is a protocol allowing to access Hadoop or similar a data storage via a unified REST API (<a href="https://hadoop.apache.org/docs/current/hadoop-project-dist/hadoop-hdfs/WebHDFS.html">https://hadoop.apache.org/docs/current/hadoop-project-dist/hadoop-hdfs/WebHDFS.html</a>).</p>
+<h2 id="input-artifacts">Input Artifacts<a class="headerlink" href="#input-artifacts" title="Permanent link">&para;</a></h2>
+<p>In order to use the webHDFS protocol we will make use of HTTP artifacts, where the URL will be set to the webHDFS endpoint including the file path and all its query parameters. Suppose, our webHDFS endpoint is available under <code>https://mywebhdfsprovider.com/webhdfs/v1/</code> and we have a file <code>my-art.txt</code> located in a <code>data</code> folder, which we want to use as an input artifact. To construct the HTTP URL we need to append the file path to the base webHDFS endpoint and set the <a href="https://hadoop.apache.org/docs/current/hadoop-project-dist/hadoop-hdfs/WebHDFS.html#Open_and_Read_a_File">OPEN operation</a> in the HTTP URL parameter. This results in the following URL: <code>https://mywebhdfsprovider.com/webhdfs/v1/data/my-art.txt?op=OPEN</code>. This is all you need for webHDFS input artifacts to work! Now, when run, the workflow will download the specified webHDFS artifact into the given <code>path</code>. There are some additional fields that can be set for HTTP artifacts (e.g. HTTP headers), which you can find in the <a href="https://github.com/argoproj/argo-workflows/blob/master/examples/webhdfs-input-output-artifacts.yaml">full webHDFS example</a>.</p>
+<div class="highlight"><pre><span></span><code><span class="nt">spec</span><span class="p">:</span><span class="w"></span>
+<span class="w">  </span><span class="p p-Indicator">[</span><span class="nv">...</span><span class="p p-Indicator">]</span><span class="w"></span>
+<span class="w">  </span><span class="nt">inputs</span><span class="p">:</span><span class="w"></span>
+<span class="w">    </span><span class="nt">artifacts</span><span class="p">:</span><span class="w"></span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-art</span><span class="w"></span>
+<span class="w">    </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/my-artifact</span><span class="w"></span>
+<span class="w">    </span><span class="nt">http</span><span class="p">:</span><span class="w"></span>
+<span class="w">      </span><span class="nt">url</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;https://mywebhdfsprovider.com/webhdfs/v1/file.txt?op=OPEN&quot;</span><span class="w"></span>
 </code></pre></div>
-<h3 id="options">Options<a class="headerlink" href="#options" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code>      --entrypoint string       override entrypoint
-      --generate-name string    override metadata.generateName
-  -h, --help                    help for create
-  -l, --labels string           Comma separated labels to apply to the workflow. Will override previous values.
-      --name string             override metadata.name
-  -o, --output string           Output format. One of: name|json|yaml|wide
-  -p, --parameter stringArray   pass an input parameter
-  -f, --parameter-file string   pass a file containing all input parameters
-      --schedule string         override cron workflow schedule
-      --serviceaccount string   run all pods in the workflow using specified serviceaccount
-      --strict                  perform strict workflow validation (default true)
+<h2 id="output-artifacts">Output Artifacts<a class="headerlink" href="#output-artifacts" title="Permanent link">&para;</a></h2>
+<p>In order to declare a webHDFS output artifact, little change is necessary: We only need to change the webHDFS operation to the <a href="https://hadoop.apache.org/docs/current/hadoop-project-dist/hadoop-hdfs/WebHDFS.html#Create_and_Write_to_a_File">CREATE operation</a> and set the file path to where we want the output artifact to be stored. In this example we want to store the artifact under <code>outputs/newfile.txt</code>. We also supply the optional overwrite parameter <code>overwrite=true</code> to allow overwriting existing files in the webHDFS provider's data storage. If the <code>overwrite</code> flag is unset, the default behavior is used, which depends on the particular webHDFS provider. Below shows the example output artifact:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">spec</span><span class="p">:</span><span class="w"></span>
+<span class="w">  </span><span class="p p-Indicator">[</span><span class="nv">...</span><span class="p p-Indicator">]</span><span class="w"></span>
+<span class="w">  </span><span class="nt">outputs</span><span class="p">:</span><span class="w"></span>
+<span class="w">    </span><span class="nt">artifacts</span><span class="p">:</span><span class="w"></span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-art</span><span class="w"></span>
+<span class="w">    </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/my-artifact</span><span class="w"></span>
+<span class="w">    </span><span class="nt">http</span><span class="p">:</span><span class="w"></span>
+<span class="w">      </span><span class="nt">url</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;https://mywebhdfsprovider.com/webhdfs/v1/outputs/newfile.txt?op=CREATE&amp;overwrite=true&quot;</span><span class="w"></span>
 </code></pre></div>
-<h3 id="options-inherited-from-parent-commands">Options inherited from parent commands<a class="headerlink" href="#options-inherited-from-parent-commands" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code>      --argo-base-href string          An path to use with HTTP client (e.g. due to BASE_HREF). Defaults to the ARGO_BASE_HREF environment variable.
-      --argo-http1                     If true, use the HTTP client. Defaults to the ARGO_HTTP1 environment variable.
-  -s, --argo-server host:port          API server host:port. e.g. localhost:2746. Defaults to the ARGO_SERVER environment variable.
-      --as string                      Username to impersonate for the operation
-      --as-group stringArray           Group to impersonate for the operation, this flag can be repeated to specify multiple groups.
-      --as-uid string                  UID to impersonate for the operation
-      --certificate-authority string   Path to a cert file for the certificate authority
-      --client-certificate string      Path to a client certificate file for TLS
-      --client-key string              Path to a client key file for TLS
-      --cluster string                 The name of the kubeconfig cluster to use
-      --context string                 The name of the kubeconfig context to use
-      --gloglevel int                  Set the glog logging level
-  -H, --header strings                 Sets additional header to all requests made by Argo CLI. (Can be repeated multiple times to add multiple headers, also supports comma separated headers) Used only when either ARGO_HTTP1 or --argo-http1 is set to true.
-      --insecure-skip-tls-verify       If true, the server&#39;s certificate will not be checked for validity. This will make your HTTPS connections insecure
-  -k, --insecure-skip-verify           If true, the Argo Server&#39;s certificate will not be checked for validity. This will make your HTTPS connections insecure. Defaults to the ARGO_INSECURE_SKIP_VERIFY environment variable.
-      --instanceid string              submit with a specific controller&#39;s instance id label. Default to the ARGO_INSTANCEID environment variable.
-      --kubeconfig string              Path to a kube config. Only required if out-of-cluster
-      --loglevel string                Set the logging level. One of: debug|info|warn|error (default &quot;info&quot;)
-  -n, --namespace string               If present, the namespace scope for this CLI request
-      --password string                Password for basic authentication to the API server
-      --request-timeout string         The length of time to wait before giving up on a single server request. Non-zero values should contain a corresponding time unit (e.g. 1s, 2m, 3h). A value of zero means don&#39;t timeout requests. (default &quot;0&quot;)
-  -e, --secure                         Whether or not the server is using TLS with the Argo Server. Defaults to the ARGO_SECURE environment variable. (default true)
-      --server string                  The address and port of the Kubernetes API server
-      --tls-server-name string         If provided, this name will be used to validate server certificate. If this is not provided, hostname used to contact the server is used.
-      --token string                   Bearer token for authentication to the API server
-      --user string                    The name of the kubeconfig user to use
-      --username string                Username for basic authentication to the API server
-  -v, --verbose                        Enabled verbose logging, i.e. --loglevel debug
-</code></pre></div>
-<h3 id="see-also">SEE ALSO<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h3>
+<h2 id="authentication">Authentication<a class="headerlink" href="#authentication" title="Permanent link">&para;</a></h2>
+<p>Above example showed a minimal use case without any authentication. However, in a real-world scenario, you may want to provide some authentication option. Currently, Argo Workflows' HTTP artifacts support the following authentication mechanisms:</p>
 <ul>
-<li><a href="../argo_cron/">argo cron</a>  - manage cron workflows</li>
+<li>HTTP Basic Auth</li>
+<li>OAuth2</li>
+<li>Client Certificates</li>
 </ul>
+<p>Hence, the authentication mechanism that can be used for webHDFS artifacts are limited to those supported by HTTP artifacts. Examples for the latter two authentication mechanisms can be found in the <a href="https://github.com/argoproj/argo-workflows/blob/master/examples/webhdfs-input-output-artifacts.yaml">webHDFS example file</a>.</p>
+<p><strong>Limitation</strong>: Apache Hadoop itself only supports authentication via Kerberos SPNEGO and Hadoop delegation token (see <a href="https://hadoop.apache.org/docs/current/hadoop-project-dist/hadoop-hdfs/WebHDFS.html#Authentication">https://hadoop.apache.org/docs/current/hadoop-project-dist/hadoop-hdfs/WebHDFS.html#Authentication</a>). While the former one is currently not supported for HTTP artifacts a usage of delegation tokens can be realized by supplying the authentication token in the HTTP URL of the respective input or output artifact.</p>
 
               
 
@@ -3940,7 +3900,7 @@
     <nav class="md-footer__inner md-grid" aria-label="Footer">
       
         
-        <a href="../argo_cron/" class="md-footer__link md-footer__link--prev" aria-label="Previous: argo cron" rel="prev">
+        <a href="../stream-processing/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Stream Processing" rel="prev">
           <div class="md-footer__button md-icon">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12z"/></svg>
           </div>
@@ -3949,20 +3909,20 @@
               <span class="md-footer__direction">
                 Previous
               </span>
-              argo cron
+              Stream Processing
             </div>
           </div>
         </a>
       
       
         
-        <a href="../argo_cron_delete/" class="md-footer__link md-footer__link--next" aria-label="Next: argo cron delete" rel="next">
+        <a href="../../faq/" class="md-footer__link md-footer__link--next" aria-label="Next: FAQ" rel="next">
           <div class="md-footer__title">
             <div class="md-ellipsis">
               <span class="md-footer__direction">
                 Next
               </span>
-              argo cron delete
+              FAQ
             </div>
           </div>
           <div class="md-footer__button md-icon">
