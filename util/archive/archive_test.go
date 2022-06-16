@@ -163,7 +163,7 @@ func TestZipDirectory(t *testing.T) {
 			f, err := tempFile(os.TempDir()+"/argo-test", "dir-"+tt.name+"-", ".tgz")
 			assert.NoError(t, err)
 
-			log.Infof("Taring to %s", f.Name())
+			log.Infof("Zipping to %s", f.Name())
 
 			err = ZipToWriter(tt.src, zip.NewWriter(f))
 			if tt.wantErr {
@@ -190,8 +190,8 @@ func TestZipFile(t *testing.T) {
 		err = data.Close()
 		assert.NoError(t, err)
 
-		dataTarPath := data.Name() + ".zip"
-		f, err := os.Create(dataTarPath)
+		dataZipPath := data.Name() + ".zip"
+		f, err := os.Create(dataZipPath)
 		assert.NoError(t, err)
 
 		err = ZipToWriter(data.Name(), zip.NewWriter(f))

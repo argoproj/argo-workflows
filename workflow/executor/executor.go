@@ -490,7 +490,7 @@ func (we *WorkflowExecutor) stageArchiveFile(containerName string, art *wfv1.Art
 		if err != nil {
 			return "", "", err
 		}
-		log.Infof("Successfully zipped %s from mirrored volume mount %s", art.Path, unarchivedArtPath)
+		log.Infof("Successfully zipped %s to %s", unarchivedArtPath, localArtPath)
 		return fileName, localArtPath, nil
 	}
 	return fileName, localArtPath, nil

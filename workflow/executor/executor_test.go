@@ -382,13 +382,6 @@ func TestSaveArtifacts(t *testing.T) {
 	we.Template.Outputs.Artifacts[0].Optional = false
 	err = we.SaveArtifacts(ctx)
 	assert.Error(t, err)
-
-	we.Template.Outputs.Artifacts[0].Optional = true
-	we.Template.Outputs.Artifacts[0].Archive = &wfv1.ArchiveStrategy{
-		Zip: &wfv1.ZipStrategy{},
-	}
-	err = we.SaveArtifacts(ctx)
-	assert.NoError(t, err)
 }
 
 func TestMonitorProgress(t *testing.T) {
