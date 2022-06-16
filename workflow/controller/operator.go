@@ -1159,7 +1159,11 @@ func printPodSpecLog(pod *apiv1.Pod, wfName string) {
 // and returns the new node status if something changed
 func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, old *wfv1.NodeStatus) *wfv1.NodeStatus {
 	new := old.DeepCopy()
-	tmpl := woc.GetNodeTemplate(old)
+	tmpl, err := woc.GetNodeTemplate(old)
+	if err != nil {
+		woc.log.Error(err)
+		return nil
+	}
 	switch pod.Status.Phase {
 	case apiv1.PodPending:
 		new.Phase = wfv1.NodePending
@@ -1170,7 +1174,7 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, old *wfv1.NodeStatus
 		new.Daemoned = nil
 	case apiv1.PodFailed:
 		// ignore pod failure for daemoned steps
-		if tmpl.IsDaemon() {
+		if tmpl != nil && tmpl.IsDaemon() {
 			new.Phase = wfv1.NodeSucceeded
 		} else {
 			new.Phase, new.Message = woc.inferFailedReason(pod, tmpl)
@@ -1180,7 +1184,7 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, old *wfv1.NodeStatus
 		// Daemons are a special case we need to understand the rules:
 		// A node transitions into "daemoned" only if it's a daemon template and it becomes running AND ready.
 		// A node will be unmarked "daemoned" when its boundary node completes, anywhere killDaemonedChildren is called.
-		if tmpl.IsDaemon() {
+		if tmpl != nil && tmpl.IsDaemon() {
 			if !old.Fulfilled() {
 				// pod is running and template is marked daemon. check if everything is ready
 				for _, ctrStatus := range pod.Status.ContainerStatuses {
@@ -2084,19 +2088,21 @@ func (woc *wfOperationCtx) hasDaemonNodes() bool {
 	return false
 }
 
-func (woc *wfOperationCtx) GetNodeTemplate(node *wfv1.NodeStatus) *wfv1.Template {
+func (woc *wfOperationCtx) GetNodeTemplate(node *wfv1.NodeStatus) (*wfv1.Template, error) {
 	if node.TemplateRef != nil {
 		tmplCtx, err := woc.createTemplateContext(node.GetTemplateScope())
 		if err != nil {
 			woc.markNodeError(node.Name, err)
+			return nil, err
 		}
 		tmpl, err := tmplCtx.GetTemplateFromRef(node.TemplateRef)
 		if err != nil {
 			woc.markNodeError(node.Name, err)
+			return tmpl, err
 		}
-		return tmpl
+		return tmpl, nil
 	}
-	return woc.wf.GetTemplateByName(node.TemplateName)
+	return woc.wf.GetTemplateByName(node.TemplateName), nil
 }
 
 func (woc *wfOperationCtx) markWorkflowRunning(ctx context.Context) {
