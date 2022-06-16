@@ -35,8 +35,6 @@ export const ArtifactPanel = ({
     const [show, setShow] = useState(false);
     const [error, setError] = useState<Error>();
     const [object, setObject] = useState<any>();
-    const [httpStatus, setHTTPStatus] = useState(200);
-    const [showDownloadLink, setShowDownloadLink] = useState(true);
 
     const tgz = !input && !artifact.archive?.none; // the key can be wrong about the file type
     const supported = !tgz && (isDir || ['gif', 'jpg', 'jpeg', 'json', 'html', 'png', 'txt'].includes(ext));
@@ -45,25 +43,12 @@ export const ArtifactPanel = ({
     useEffect(() => {
         setObject(null);
         setError(null);
-        setShowDownloadLink(true);
         if (ext === 'json') {
             requests
                 .get(services.workflows.artifactPath(workflow, artifact.nodeId, artifact.name, archived, input))
-                .then(r => { setHTTPStatus(r.status); r.text} )
+                .then(r => r.text)
                 .then(setObject)
                 .catch(setError);
-        } else {
-            // even though we're going to include this in an iframe below, make the request here to determine if the Artifact has
-            // been deleted, in which case we won't show it in the iframe
-            requests
-                .get(services.workflows.artifactPath(workflow, artifact.nodeId, artifact.name, archived, input))
-                .then(function onResult(res) {
-                    setHTTPStatus(res.status);
-                  }, function onError(err) {
-                      setHTTPStatus(err.response.status);
-                      setShowDownloadLink(false);
-                      setShow(false);
-                  });
         }
     }, [downloadUrl]);
     useCollectEvent('openedArtifactPanel');
@@ -83,7 +68,7 @@ export const ArtifactPanel = ({
                             <small>{urn}</small>
                         </p>
                         {error && <ErrorNotice error={error} />}
-                        { show ? (
+                        {show ? (
                             <ViewBox>
                                 {object ? (
                                     <MonacoEditor
@@ -100,8 +85,6 @@ export const ArtifactPanel = ({
                                     <iframe src={downloadUrl} style={{width: '100%', height: '500px', border: 'none'}} />
                                 )}
                             </ViewBox>
-                        ) : (httpStatus == 404) ? ( 
-                            <p>Artifact has been deleted.</p>
                         ) : tgz ? (
                             <p>Artifact cannot be shown because it is a tgz.</p>
                         ) : (
@@ -109,14 +92,11 @@ export const ArtifactPanel = ({
                                 Unknown extension "{ext}", <a onClick={() => setShow(true)}>show anyway</a>.
                             </p>
                         )}
-                        
-                        {showDownloadLink && (
-                            <p style={{marginTop: 10}}>
-                                <LinkButton to={downloadUrl}>
-                                    <i className='fa fa-download' /> {filename || 'Download'}
-                                </LinkButton>
-                            </p>
-                        )}
+                        <p style={{marginTop: 10}}>
+                            <LinkButton to={downloadUrl}>
+                                <i className='fa fa-download' /> {filename || 'Download'}
+                            </LinkButton>
+                        </p>
                         <GiveFeedbackLink href='https://github.com/argoproj/argo-workflows/issues/7743' />
                     </div>
                 </ErrorBoundary>

@@ -344,17 +344,18 @@ func (a *ArtifactServer) httpBadRequestError(w http.ResponseWriter) {
 }
 
 func (a *ArtifactServer) httpFromError(err error, w http.ResponseWriter) {
+	if err == nil {
+		return
+	}
 	statusCode := http.StatusInternalServerError
 	e := &apierr.StatusError{}
 	if errors.As(err, &e) {
 		// There is a http error code somewhere in the error stack
 		statusCode = int(e.Status().Code)
-		http.Error(w, http.StatusText(statusCode), statusCode)
 	} else {
-		statusCode := http.StatusInternalServerError
 		switch resolvedError := err.(type) {
 		case argoerrors.ArgoError:
-			switch resolvedError.Error() {
+			switch resolvedError.Code() {
 			case argoerrors.CodeUnauthorized:
 				statusCode = http.StatusUnauthorized
 			case argoerrors.CodeForbidden:
@@ -374,9 +375,9 @@ func (a *ArtifactServer) httpFromError(err error, w http.ResponseWriter) {
 		default:
 			statusCode = http.StatusInternalServerError
 		}
-		http.Error(w, http.StatusText(statusCode), statusCode)
 	}
 
+	http.Error(w, http.StatusText(statusCode), statusCode)
 	if statusCode == http.StatusInternalServerError {
 		log.WithError(err).Error("Artifact Server returned internal error")
 	}
@@ -442,7 +443,9 @@ func (a *ArtifactServer) returnArtifact(w http.ResponseWriter, art *wfv1.Artifac
 
 	_, err = io.Copy(w, stream)
 	if err != nil {
+		errStr := fmt.Sprintf("failed to stream artifact: %v", err)
 		http.Error(w, fmt.Sprintf("failed to stream artifact: %v", err), http.StatusInternalServerError)
+		return errors.New(errStr)
 	} else {
 		w.WriteHeader(http.StatusOK)
 	}
