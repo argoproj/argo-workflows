@@ -1156,10 +1156,6 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, old *wfv1.NodeStatus
 		woc.log.Error(err)
 		return nil
 	}
-	if tmpl == nil {
-		woc.log.Errorf("failed to get old node template corresponding to node status: %v, yet err=nil???", old)
-		return nil
-	}
 	switch pod.Status.Phase {
 	case apiv1.PodPending:
 		new.Phase = wfv1.NodePending
