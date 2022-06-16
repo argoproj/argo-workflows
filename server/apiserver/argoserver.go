@@ -6,7 +6,6 @@ import (
 	"net"
 	"net/http"
 	"os"
-	"sync"
 	"time"
 
 	"github.com/gorilla/handlers"
@@ -18,7 +17,6 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/soheilhy/cmux"
 	"golang.org/x/net/context"
-	"golang.org/x/time/rate"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
@@ -60,6 +58,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/server/workflow"
 	"github.com/argoproj/argo-workflows/v3/server/workflowarchive"
 	"github.com/argoproj/argo-workflows/v3/server/workflowtemplate"
+	"github.com/argoproj/argo-workflows/v3/util/apiratelimiter"
 	grpcutil "github.com/argoproj/argo-workflows/v3/util/grpc"
 	"github.com/argoproj/argo-workflows/v3/util/instanceid"
 	"github.com/argoproj/argo-workflows/v3/util/json"
@@ -87,10 +86,7 @@ type argoServer struct {
 	eventAsyncDispatch       bool
 	xframeOptions            string
 	accessControlAllowOrigin string
-	apiRateLimit             int
-	apiRateBurst             int
-	visitors                 map[string]*rate.Limiter
-	mu                       *sync.Mutex
+	apiRateLimiter           apiratelimiter.ApiRateLimiter
 	cache                    *cache.ResourceCache
 }
 
@@ -154,10 +150,7 @@ func NewArgoServer(ctx context.Context, opts ArgoServerOpts) (*argoServer, error
 	if err != nil {
 		return nil, err
 	}
-
-	// Create a map to hold the rate limiters for each visitor and a mutex.
-	var visitors = make(map[string]*rate.Limiter)
-	var mu sync.Mutex
+	apiRateLimiter := apiratelimiter.NewApiRateLimiter(opts.ApiRateLimit, opts.ApiRateBurst)
 	return &argoServer{
 		baseHRef:                 opts.BaseHRef,
 		tlsConfig:                opts.TLSConfig,
@@ -174,10 +167,7 @@ func NewArgoServer(ctx context.Context, opts ArgoServerOpts) (*argoServer, error
 		eventAsyncDispatch:       opts.EventAsyncDispatch,
 		xframeOptions:            opts.XFrameOptions,
 		accessControlAllowOrigin: opts.AccessControlAllowOrigin,
-		apiRateLimit:             opts.ApiRateLimit,
-		apiRateBurst:             opts.ApiRateBurst,
-		visitors:                 visitors,
-		mu:                       &mu,
+		apiRateLimiter:           apiRateLimiter,
 		cache:                    resourceCache,
 	}, nil
 }
@@ -423,7 +413,7 @@ func (as *argoServer) httpLimit(next http.Handler) http.Handler {
 
 		// Call the getVisitor function to retrieve the rate limiter for
 		// the current user.
-		limiter := as.getVisitor(ip)
+		limiter := as.apiRateLimiter.GetVisitor(ip)
 		if !limiter.Allow() {
 			http.Error(w, http.StatusText(429), http.StatusTooManyRequests)
 			return
