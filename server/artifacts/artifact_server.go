@@ -177,7 +177,7 @@ func (a *ArtifactServer) GetArtifactFile(w http.ResponseWriter, r *http.Request)
 		key, _ := artifact.GetKey()
 		for _, object := range objects {
 
-			// object is prefixed the key, we must trim it
+			// object is prefixed by the key, we must trim it
 			dir, file := path.Split(strings.TrimPrefix(object, key+"/"))
 
 			// if dir is empty string, we are in the root dir
@@ -349,10 +349,11 @@ func (a *ArtifactServer) httpFromError(err error, w http.ResponseWriter) {
 	}
 	statusCode := http.StatusInternalServerError
 	e := &apierr.StatusError{}
-	if errors.As(err, &e) {
+	if errors.As(err, &e) { // check if it's a Kubernetes API error
 		// There is a http error code somewhere in the error stack
 		statusCode = int(e.Status().Code)
 	} else {
+		// check if it's an internal ArgoError
 		switch resolvedError := err.(type) {
 		case argoerrors.ArgoError:
 			switch resolvedError.Code() {
