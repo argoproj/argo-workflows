@@ -602,8 +602,7 @@ func (wfc *WorkflowController) deleteOffloadedNodesForWorkflow(uid string, versi
 		defer wfc.workflowKeyLock.Unlock(key)
 		// workflow might still be hydrated
 		if wfc.hydrator.IsHydrated(wf) {
-			log.WithField("uid", wf.UID).Info("Hydrated workflow encountered")
-			log.WithField("Workflow size", wf.Size()).Info("Hydrated workflow size")
+			log.WithFields(log.Fields{"uid": wf.UID, "Workflow size": wf.Size()}).Info("Hydrated workflow encountered")
 			err = wfc.hydrator.Dehydrate(wf)
 			if err != nil {
 				return err
