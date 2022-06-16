@@ -6,7 +6,6 @@ import (
 	context "context"
 
 	grpc "google.golang.org/grpc"
-	"golang.org/x/time/rate"
 	mock "github.com/stretchr/testify/mock"
 )
 
@@ -62,7 +61,7 @@ func (_m *Gatekeeper) ContextWithRequest(ctx context.Context, req interface{}) (
 }
 
 // StreamServerInterceptor provides a mock function with given fields:
-func (_m *Gatekeeper) StreamServerInterceptor(ratelimiter *rate.Limiter) grpc.StreamServerInterceptor {
+func (_m *Gatekeeper) StreamServerInterceptor() grpc.StreamServerInterceptor {
 	ret := _m.Called()
 
 	var r0 grpc.StreamServerInterceptor
@@ -78,7 +77,7 @@ func (_m *Gatekeeper) StreamServerInterceptor(ratelimiter *rate.Limiter) grpc.St
 }
 
 // UnaryServerInterceptor provides a mock function with given fields:
-func (_m *Gatekeeper) UnaryServerInterceptor(ratelimiter *rate.Limiter) grpc.UnaryServerInterceptor {
+func (_m *Gatekeeper) UnaryServerInterceptor() grpc.UnaryServerInterceptor {
 	ret := _m.Called()
 
 	var r0 grpc.UnaryServerInterceptor

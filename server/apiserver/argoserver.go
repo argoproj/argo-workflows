@@ -6,6 +6,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"sync"
 	"time"
 
 	"github.com/gorilla/handlers"
@@ -86,7 +87,10 @@ type argoServer struct {
 	eventAsyncDispatch       bool
 	xframeOptions            string
 	accessControlAllowOrigin string
-	rateLimiter              *rate.Limiter
+	apiRateLimit             int
+	apiRateBurst             int
+	visitors                 map[string]*rate.Limiter
+	mu                       *sync.Mutex
 	cache                    *cache.ResourceCache
 }
 
@@ -150,7 +154,10 @@ func NewArgoServer(ctx context.Context, opts ArgoServerOpts) (*argoServer, error
 	if err != nil {
 		return nil, err
 	}
-	rateLimiter := rate.NewLimiter(rate.Limit(opts.ApiRateLimit), opts.ApiRateBurst)
+
+	// Create a map to hold the rate limiters for each visitor and a mutex.
+	var visitors = make(map[string]*rate.Limiter)
+	var mu sync.Mutex
 	return &argoServer{
 		baseHRef:                 opts.BaseHRef,
 		tlsConfig:                opts.TLSConfig,
@@ -167,7 +174,10 @@ func NewArgoServer(ctx context.Context, opts ArgoServerOpts) (*argoServer, error
 		eventAsyncDispatch:       opts.EventAsyncDispatch,
 		xframeOptions:            opts.XFrameOptions,
 		accessControlAllowOrigin: opts.AccessControlAllowOrigin,
-		rateLimiter:              rateLimiter,
+		apiRateLimit:             opts.ApiRateLimit,
+		apiRateBurst:             opts.ApiRateBurst,
+		visitors:                 visitors,
+		mu:                       &mu,
 		cache:                    resourceCache,
 	}, nil
 }
@@ -208,8 +218,8 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 	artifactRepositories := artifactrepositories.New(as.clients.Kubernetes, as.managedNamespace, &config.ArtifactRepository)
 	artifactServer := artifacts.NewArtifactServer(as.gatekeeper, hydrator.New(offloadRepo), wfArchive, instanceIDService, artifactRepositories)
 	eventServer := event.NewController(instanceIDService, eventRecorderManager, as.eventQueueSize, as.eventWorkerCount, as.eventAsyncDispatch)
-	grpcServer := as.newGRPCServer(instanceIDService, offloadRepo, wfArchive, eventServer, config.Links, config.NavColor, as.rateLimiter)
-	httpServer := as.newHTTPServer(ctx, port, artifactServer, as.rateLimiter)
+	grpcServer := as.newGRPCServer(instanceIDService, offloadRepo, wfArchive, eventServer, config.Links, config.NavColor)
+	httpServer := as.newHTTPServer(ctx, port, artifactServer)
 
 	// Start listener
 	var conn net.Listener
@@ -254,7 +264,7 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 	<-as.stopCh
 }
 
-func (as *argoServer) newGRPCServer(instanceIDService instanceid.Service, offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo, wfArchive sqldb.WorkflowArchive, eventServer *event.Controller, links []*v1alpha1.Link, navColor string, rateLimiter *rate.Limiter) *grpc.Server {
+func (as *argoServer) newGRPCServer(instanceIDService instanceid.Service, offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo, wfArchive sqldb.WorkflowArchive, eventServer *event.Controller, links []*v1alpha1.Link, navColor string) *grpc.Server {
 	serverLog := log.NewEntry(log.StandardLogger())
 
 	// "Prometheus histograms are a great way to measure latency distributions of your RPCs. However, since it is bad practice to have metrics of high cardinality the latency monitoring metrics are disabled by default. To enable them please call the following in your server initialization code:"
@@ -272,14 +282,14 @@ func (as *argoServer) newGRPCServer(instanceIDService instanceid.Service, offloa
 			grpc_logrus.UnaryServerInterceptor(serverLog),
 			grpcutil.PanicLoggerUnaryServerInterceptor(serverLog),
 			grpcutil.ErrorTranslationUnaryServerInterceptor,
-			as.gatekeeper.UnaryServerInterceptor(as.rateLimiter),
+			as.gatekeeper.UnaryServerInterceptor(),
 		)),
 		grpc.StreamInterceptor(grpc_middleware.ChainStreamServer(
 			grpc_prometheus.StreamServerInterceptor,
 			grpc_logrus.StreamServerInterceptor(serverLog),
 			grpcutil.PanicLoggerStreamServerInterceptor(serverLog),
 			grpcutil.ErrorTranslationStreamServerInterceptor,
-			as.gatekeeper.StreamServerInterceptor(as.rateLimiter),
+			as.gatekeeper.StreamServerInterceptor(),
 		)),
 	}
 
@@ -301,13 +311,13 @@ func (as *argoServer) newGRPCServer(instanceIDService instanceid.Service, offloa
 
 // newHTTPServer returns the HTTP server to serve HTTP/HTTPS requests. This is implemented
 // using grpc-gateway as a proxy to the gRPC server.
-func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServer *artifacts.ArtifactServer, rateLimiter *rate.Limiter) *http.Server {
+func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServer *artifacts.ArtifactServer) *http.Server {
 	endpoint := fmt.Sprintf("localhost:%d", port)
 
 	mux := http.NewServeMux()
 	httpServer := http.Server{
 		Addr:      endpoint,
-		Handler:   httpLimit(accesslog.Interceptor(mux), rateLimiter),
+		Handler:   as.httpLimit(accesslog.Interceptor(mux)),
 		TLSConfig: as.tlsConfig,
 	}
 	dialOpts := []grpc.DialOption{
@@ -401,9 +411,20 @@ func (as *argoServer) checkServeErr(name string, err error) {
 	}
 }
 
-func httpLimit(next http.Handler, rateLimiter *rate.Limiter) http.Handler {
+func (as *argoServer) httpLimit(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if !rateLimiter.Allow() {
+		// Get the IP address for the current user.
+		ip, _, err := net.SplitHostPort(r.RemoteAddr)
+		if err != nil {
+			log.Print(err.Error())
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+			return
+		}
+
+		// Call the getVisitor function to retrieve the rate limiter for
+		// the current user.
+		limiter := as.getVisitor(ip)
+		if !limiter.Allow() {
 			http.Error(w, http.StatusText(429), http.StatusTooManyRequests)
 			return
 		}
