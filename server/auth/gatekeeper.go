@@ -11,6 +11,7 @@ import (
 	eventsource "github.com/argoproj/argo-events/pkg/client/eventsource/clientset/versioned"
 	sensor "github.com/argoproj/argo-events/pkg/client/sensor/clientset/versioned"
 	log "github.com/sirupsen/logrus"
+	"golang.org/x/time/rate"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
@@ -49,8 +50,8 @@ const (
 type Gatekeeper interface {
 	ContextWithRequest(ctx context.Context, req interface{}) (context.Context, error)
 	Context(ctx context.Context) (context.Context, error)
-	UnaryServerInterceptor() grpc.UnaryServerInterceptor
-	StreamServerInterceptor() grpc.StreamServerInterceptor
+	UnaryServerInterceptor(ratelimiter *rate.Limiter) grpc.UnaryServerInterceptor
+	StreamServerInterceptor(ratelimiter *rate.Limiter) grpc.StreamServerInterceptor
 }
 
 type ClientForAuthorization func(authorization string) (*rest.Config, *servertypes.Clients, error)
@@ -87,18 +88,24 @@ func NewGatekeeper(modes Modes, clients *servertypes.Clients, restConfig *rest.C
 
 }
 
-func (s *gatekeeper) UnaryServerInterceptor() grpc.UnaryServerInterceptor {
+func (s *gatekeeper) UnaryServerInterceptor(ratelimiter *rate.Limiter) grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
 		ctx, err = s.ContextWithRequest(ctx, req)
 		if err != nil {
 			return nil, err
 		}
+		if !ratelimiter.Allow() {
+			return nil, status.Errorf(codes.ResourceExhausted, "%s is rejected by grpc_ratelimit middleware, please retry later.", info.FullMethod)
+		}
 		return handler(ctx, req)
 	}
 }
 
-func (s *gatekeeper) StreamServerInterceptor() grpc.StreamServerInterceptor {
+func (s *gatekeeper) StreamServerInterceptor(ratelimiter *rate.Limiter) grpc.StreamServerInterceptor {
 	return func(srv interface{}, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
+		if !ratelimiter.Allow() {
+			return status.Errorf(codes.ResourceExhausted, "%s is rejected by grpc_ratelimit middleware, please retry later.", info.FullMethod)
+		}
 		return handler(srv, NewAuthorizingServerStream(ss, s))
 	}
 }

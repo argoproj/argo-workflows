@@ -17,6 +17,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/soheilhy/cmux"
 	"golang.org/x/net/context"
+	"golang.org/x/time/rate"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
@@ -85,6 +86,7 @@ type argoServer struct {
 	eventAsyncDispatch       bool
 	xframeOptions            string
 	accessControlAllowOrigin string
+	rateLimiter              *rate.Limiter
 	cache                    *cache.ResourceCache
 }
 
@@ -106,6 +108,8 @@ type ArgoServerOpts struct {
 	EventAsyncDispatch       bool
 	XFrameOptions            string
 	AccessControlAllowOrigin string
+	ApiRateLimit             int
+	ApiRateBurst             int
 }
 
 func init() {
@@ -146,6 +150,7 @@ func NewArgoServer(ctx context.Context, opts ArgoServerOpts) (*argoServer, error
 	if err != nil {
 		return nil, err
 	}
+	rateLimiter := rate.NewLimiter(rate.Limit(opts.ApiRateLimit), opts.ApiRateBurst)
 	return &argoServer{
 		baseHRef:                 opts.BaseHRef,
 		tlsConfig:                opts.TLSConfig,
@@ -162,6 +167,7 @@ func NewArgoServer(ctx context.Context, opts ArgoServerOpts) (*argoServer, error
 		eventAsyncDispatch:       opts.EventAsyncDispatch,
 		xframeOptions:            opts.XFrameOptions,
 		accessControlAllowOrigin: opts.AccessControlAllowOrigin,
+		rateLimiter:              rateLimiter,
 		cache:                    resourceCache,
 	}, nil
 }
@@ -202,8 +208,8 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 	artifactRepositories := artifactrepositories.New(as.clients.Kubernetes, as.managedNamespace, &config.ArtifactRepository)
 	artifactServer := artifacts.NewArtifactServer(as.gatekeeper, hydrator.New(offloadRepo), wfArchive, instanceIDService, artifactRepositories)
 	eventServer := event.NewController(instanceIDService, eventRecorderManager, as.eventQueueSize, as.eventWorkerCount, as.eventAsyncDispatch)
-	grpcServer := as.newGRPCServer(instanceIDService, offloadRepo, wfArchive, eventServer, config.Links, config.NavColor)
-	httpServer := as.newHTTPServer(ctx, port, artifactServer)
+	grpcServer := as.newGRPCServer(instanceIDService, offloadRepo, wfArchive, eventServer, config.Links, config.NavColor, as.rateLimiter)
+	httpServer := as.newHTTPServer(ctx, port, artifactServer, as.rateLimiter)
 
 	// Start listener
 	var conn net.Listener
@@ -248,7 +254,7 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 	<-as.stopCh
 }
 
-func (as *argoServer) newGRPCServer(instanceIDService instanceid.Service, offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo, wfArchive sqldb.WorkflowArchive, eventServer *event.Controller, links []*v1alpha1.Link, navColor string) *grpc.Server {
+func (as *argoServer) newGRPCServer(instanceIDService instanceid.Service, offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo, wfArchive sqldb.WorkflowArchive, eventServer *event.Controller, links []*v1alpha1.Link, navColor string, rateLimiter *rate.Limiter) *grpc.Server {
 	serverLog := log.NewEntry(log.StandardLogger())
 
 	// "Prometheus histograms are a great way to measure latency distributions of your RPCs. However, since it is bad practice to have metrics of high cardinality the latency monitoring metrics are disabled by default. To enable them please call the following in your server initialization code:"
@@ -266,14 +272,14 @@ func (as *argoServer) newGRPCServer(instanceIDService instanceid.Service, offloa
 			grpc_logrus.UnaryServerInterceptor(serverLog),
 			grpcutil.PanicLoggerUnaryServerInterceptor(serverLog),
 			grpcutil.ErrorTranslationUnaryServerInterceptor,
-			as.gatekeeper.UnaryServerInterceptor(),
+			as.gatekeeper.UnaryServerInterceptor(as.rateLimiter),
 		)),
 		grpc.StreamInterceptor(grpc_middleware.ChainStreamServer(
 			grpc_prometheus.StreamServerInterceptor,
 			grpc_logrus.StreamServerInterceptor(serverLog),
 			grpcutil.PanicLoggerStreamServerInterceptor(serverLog),
 			grpcutil.ErrorTranslationStreamServerInterceptor,
-			as.gatekeeper.StreamServerInterceptor(),
+			as.gatekeeper.StreamServerInterceptor(as.rateLimiter),
 		)),
 	}
 
@@ -295,13 +301,13 @@ func (as *argoServer) newGRPCServer(instanceIDService instanceid.Service, offloa
 
 // newHTTPServer returns the HTTP server to serve HTTP/HTTPS requests. This is implemented
 // using grpc-gateway as a proxy to the gRPC server.
-func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServer *artifacts.ArtifactServer) *http.Server {
+func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServer *artifacts.ArtifactServer, rateLimiter *rate.Limiter) *http.Server {
 	endpoint := fmt.Sprintf("localhost:%d", port)
 
 	mux := http.NewServeMux()
 	httpServer := http.Server{
 		Addr:      endpoint,
-		Handler:   accesslog.Interceptor(mux),
+		Handler:   httpLimit(accesslog.Interceptor(mux), rateLimiter),
 		TLSConfig: as.tlsConfig,
 	}
 	dialOpts := []grpc.DialOption{
@@ -393,4 +399,15 @@ func (as *argoServer) checkServeErr(name string, err error) {
 	} else {
 		log.Infof("graceful shutdown %s", name)
 	}
+}
+
+func httpLimit(next http.Handler, rateLimiter *rate.Limiter) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !rateLimiter.Allow() {
+			http.Error(w, http.StatusText(429), http.StatusTooManyRequests)
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
 }
