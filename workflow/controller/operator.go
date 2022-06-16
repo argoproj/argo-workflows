@@ -1166,7 +1166,7 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, old *wfv1.NodeStatus
 		new.Daemoned = nil
 	case apiv1.PodFailed:
 		// ignore pod failure for daemoned steps
-		if tmpl.IsDaemon() {
+		if tmpl != nil && tmpl.IsDaemon() {
 			new.Phase = wfv1.NodeSucceeded
 		} else {
 			new.Phase, new.Message = woc.inferFailedReason(pod, tmpl)
@@ -1176,7 +1176,7 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, old *wfv1.NodeStatus
 		// Daemons are a special case we need to understand the rules:
 		// A node transitions into "daemoned" only if it's a daemon template and it becomes running AND ready.
 		// A node will be unmarked "daemoned" when its boundary node completes, anywhere killDaemonedChildren is called.
-		if tmpl.IsDaemon() {
+		if tmpl != nil && tmpl.IsDaemon() {
 			if !old.Fulfilled() {
 				// pod is running and template is marked daemon. check if everything is ready
 				for _, ctrStatus := range pod.Status.ContainerStatuses {
