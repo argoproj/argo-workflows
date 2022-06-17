@@ -7,7 +7,10 @@ import (
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/peer"
 	"google.golang.org/grpc/status"
+
+	"github.com/argoproj/argo-workflows/v3/util/apiratelimiter"
 )
 
 // PanicLoggerUnaryServerInterceptor returns a new unary server interceptor for recovering from panics and returning error
@@ -45,3 +48,36 @@ var (
 		return TranslateError(handler(srv, ss))
 	}
 )
+
+// RatelimitUnaryServerInterceptor returns a new unary server interceptors that performs request rate limiting.
+func RatelimitUnaryServerInterceptor(ratelimiter apiratelimiter.ApiRateLimiter) grpc.UnaryServerInterceptor {
+	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
+		ip := getClientIP(ctx)
+		if !ratelimiter.GetVisitor(ip).Allow() {
+			return nil, status.Errorf(codes.ResourceExhausted, "%s is rejected by grpc_ratelimit middleware, please retry later.", info.FullMethod)
+		}
+		return handler(ctx, req)
+	}
+}
+
+// RatelimitStreamServerInterceptor returns a new stream server interceptor that performs rate limiting on the request.
+func RatelimitStreamServerInterceptor(ratelimiter apiratelimiter.ApiRateLimiter) grpc.StreamServerInterceptor {
+	return func(srv interface{}, stream grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
+		ctx := stream.Context()
+		ip := getClientIP(ctx)
+		if !ratelimiter.GetVisitor(ip).Allow() {
+			return status.Errorf(codes.ResourceExhausted, "%s is rejected by grpc_ratelimit middleware, please retry later.", info.FullMethod)
+		}
+		return handler(srv, stream)
+	}
+}
+
+// GetClientIP inspects the context to retrieve the ip address of the client
+func getClientIP(ctx context.Context) string {
+	p, ok := peer.FromContext(ctx)
+	if !ok {
+		log.Errorf("couldn't parse client IP address")
+		return ""
+	}
+	return p.Addr.String()
+}

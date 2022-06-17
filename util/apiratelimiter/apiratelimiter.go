@@ -17,7 +17,7 @@ type apiRateLimiter struct {
 	mu       *sync.Mutex
 }
 
-func NewApiRateLimiter(limit int, burst int) ApiRateLimiter {
+func NewApiRateLimiter(limit int, burst int) *apiRateLimiter {
 	// Create a map to hold the rate limiters for each visitor and a mutex.
 	var visitors = make(map[string]*rate.Limiter)
 	var mu sync.Mutex

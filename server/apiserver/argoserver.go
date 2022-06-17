@@ -273,6 +273,7 @@ func (as *argoServer) newGRPCServer(instanceIDService instanceid.Service, offloa
 			grpcutil.PanicLoggerUnaryServerInterceptor(serverLog),
 			grpcutil.ErrorTranslationUnaryServerInterceptor,
 			as.gatekeeper.UnaryServerInterceptor(),
+			grpcutil.RatelimitUnaryServerInterceptor(as.apiRateLimiter),
 		)),
 		grpc.StreamInterceptor(grpc_middleware.ChainStreamServer(
 			grpc_prometheus.StreamServerInterceptor,
@@ -280,6 +281,7 @@ func (as *argoServer) newGRPCServer(instanceIDService instanceid.Service, offloa
 			grpcutil.PanicLoggerStreamServerInterceptor(serverLog),
 			grpcutil.ErrorTranslationStreamServerInterceptor,
 			as.gatekeeper.StreamServerInterceptor(),
+			grpcutil.RatelimitStreamServerInterceptor(as.apiRateLimiter),
 		)),
 	}
 
@@ -406,11 +408,9 @@ func (as *argoServer) httpLimit(next http.Handler) http.Handler {
 		// Get the IP address for the current user.
 		ip, _, err := net.SplitHostPort(r.RemoteAddr)
 		if err != nil {
-			log.Print(err.Error())
 			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 			return
 		}
-
 		// Call the getVisitor function to retrieve the rate limiter for
 		// the current user.
 		limiter := as.apiRateLimiter.GetVisitor(ip)
