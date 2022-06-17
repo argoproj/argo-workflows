@@ -169,7 +169,7 @@ func (a *ArtifactServer) GetArtifactFile(w http.ResponseWriter, r *http.Request)
 
 		objects, err := driver.ListObjects(artifact)
 		if err != nil {
-			a.serverInternalError(err, w)
+			a.httpFromError(err, w)
 			return
 		}
 		log.Debugf("this is a directory, artifact: %+v; files: %v", artifact, objects)
@@ -369,12 +369,7 @@ func (a *ArtifactServer) httpFromError(err error, w http.ResponseWriter) {
 				statusCode = http.StatusNotImplemented
 			case argoerrors.CodeTimeout, argoerrors.CodeInternal:
 				statusCode = http.StatusInternalServerError
-			default:
-				statusCode = http.StatusInternalServerError
 			}
-
-		default:
-			statusCode = http.StatusInternalServerError
 		}
 	}
 
