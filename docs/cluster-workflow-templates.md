@@ -5,7 +5,7 @@
 ## Introduction
 
 `ClusterWorkflowTemplates` are cluster scoped `WorkflowTemplates`. `ClusterWorkflowTemplate`
-can be created cluster scoped like `ClusterRole` and can be accessed all namespaces in the cluster.
+can be created cluster scoped like `ClusterRole` and can be accessed across all namespaces in the cluster.
 
 `WorkflowTemplates` documentation [link](./workflow-templates.md)
 
@@ -30,7 +30,7 @@ spec:
 
 ## Referencing other `ClusterWorkflowTemplates`
 
-You can reference `templates` from another `ClusterWorkflowTemplates` using a `templateRef` field with `clusterScope: true` .
+You can reference `templates` from other `ClusterWorkflowTemplates` using a `templateRef` field with `clusterScope: true` .
 Just as how you reference other `templates` within the same `Workflow`, you should do so from a `steps` or `dag` template.
 
 Here is an example:

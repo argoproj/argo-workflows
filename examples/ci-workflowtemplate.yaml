@@ -4,10 +4,10 @@ metadata:
   name: ci
   annotations:
     workflows.argoproj.io/description: |
-      This workflows builds and tests Argo Workflows. 
-      
-      It demostrates:
-      
+      This workflows builds and tests Argo Workflows.
+
+      It demonstrates:
+
       * Cache restore and store.
       * Publishing test reports.
 spec:
@@ -181,9 +181,9 @@ spec:
           - |
             go install github.com/jstemmer/go-junit-report@latest
             go install github.com/alexec/junit2html@v0.0.2
-            
+
             trap 'cat test.out | go-junit-report | junit2html > test-report.html' EXIT
-            
+
             go test -v ./... 2>&1 > test.out
       outputs:
         artifacts:

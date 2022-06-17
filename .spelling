@@ -49,6 +49,7 @@ Github
 Golang
 Grafana
 Grammarly
+Hadoop
 Heptio
 Homebrew
 InsideBoard
@@ -59,6 +60,7 @@ Jemison
 JetBrains
 KNative
 Katacoda
+Kerberos
 KubectlExec
 Kubeflow
 Kustomize
@@ -110,10 +112,12 @@ backend
 blkperl
 boolean
 booleans
+buildkit
 config
 cpu
 cron
 daemoned
+dev-container
 dinever
 dropdown
 e.g.
@@ -131,6 +135,7 @@ i.e.
 instantiator
 instantiators
 jenkins
+k3d
 k8s-jobs
 kube
 kubelet
@@ -147,6 +152,7 @@ namespaces
 natively
 p.m.
 params
+pre-commit
 rc2
 repo
 roadmap
@@ -191,6 +197,7 @@ v3.4
 v3.4.
 validator
 versioning
+webHDFS
 webhook
 webhooks
 workflow-controller-configmap

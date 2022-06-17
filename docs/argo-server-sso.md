@@ -53,7 +53,7 @@ To allow service accounts to manage resources in other namespaces create a role 
 
 RBAC config is installation-level, so any changes will need to be made by the team that installed Argo. Many complex rules will be burdensome on that team.
 
-Firstly, enable the `rbac:` setting in [workflow-controller-configmap.yaml](workflow-controller-configmap.yaml). You almost certainly want to be able configure RBAC using groups, so add `scopes:` to the SSO settings:
+Firstly, enable the `rbac:` setting in [workflow-controller-configmap.yaml](workflow-controller-configmap.yaml). You almost certainly want to be able to configure RBAC using groups, so add `scopes:` to the SSO settings:
 
 ```yaml
 sso:
@@ -113,7 +113,7 @@ The precedence must be the lowest of all your service accounts.
 > v3.3 and after
 
 You can optionally configure RBAC SSO per namespace.
-Typically, on organization has a Kubernetes cluster and a central team manages the cluster who is the owner of the cluster. Along with this, there are multiple namespaces which are owned by individual team. This feature would help namespace owners to define RBAC for their own namespace.
+Typically, on organization has a Kubernetes cluster and a central team (the owner of the cluster) manages the cluster. Along with this, there are multiple namespaces which are owned by individual teams. This feature would help namespace owners to define RBAC for their own namespace.
 
 The feature is currently in beta.
 To enable the feature, set env variable `SSO_DELEGATE_RBAC_TO_NAMESPACE=true` in your argo-server deployment.

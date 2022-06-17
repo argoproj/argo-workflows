@@ -88,6 +88,10 @@ func TestValidateTaskResults(t *testing.T) {
 	err = ValidateTaskResults(task)
 	assert.NoError(t, err)
 
+	task = &wfv1.DAGTask{Depends: "((task-1.Succeeded || task-1.Omitted) || task-2.Succeeded) && !task-3.Skipped && task-2.Failed || task-6.Succeeded"}
+	err = ValidateTaskResults(task)
+	assert.NoError(t, err)
+
 	task = &wfv1.DAGTask{Depends: "(task-1.DoeNotExist || task-2.Succeeded)"}
 	err = ValidateTaskResults(task)
 	assert.Error(t, err, "task result 'DoeNotExist' for task 'task-1' is invalid")

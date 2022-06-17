@@ -7,7 +7,7 @@ require('./login.scss');
 
 const logout = () => {
     document.cookie = 'authorization=;Max-Age=0';
-    document.location.reload(true);
+    document.location.reload();
 };
 const user = (token: string) => {
     const path = uiUrl('');

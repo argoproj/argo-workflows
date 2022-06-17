@@ -4260,12 +4260,6 @@
             "name": "artifactDiscriminator",
             "in": "path",
             "required": true
-          },
-          {
-            "type": "string",
-            "name": "artifactName",
-            "in": "path",
-            "required": true
           }
         ],
         "responses": {
@@ -4383,12 +4377,6 @@
         "summary": "Get an input artifact by UID.",
         "operationId": "ArtifactService_GetInputArtifactByUID",
         "parameters": [
-          {
-            "type": "string",
-            "name": "namespace",
-            "in": "path",
-            "required": true
-          },
           {
             "type": "string",
             "name": "uid",
@@ -8979,6 +8967,10 @@
           "description": "Artifactory contains artifactory artifact location details",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactoryArtifact"
         },
+        "deleted": {
+          "description": "Has this been deleted?",
+          "type": "boolean"
+        },
         "from": {
           "description": "From allows an artifact to reference an artifact from a previous step",
           "type": "string"
@@ -9119,6 +9111,10 @@
         "artifactory": {
           "description": "Artifactory contains artifactory artifact location details",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactoryArtifact"
+        },
+        "deleted": {
+          "description": "Has this been deleted?",
+          "type": "boolean"
         },
         "from": {
           "description": "From allows an artifact to reference an artifact from a previous step",
@@ -9311,6 +9307,20 @@
         }
       }
     },
+    "io.argoproj.workflow.v1alpha1.BasicAuth": {
+      "description": "BasicAuth describes the secret selectors required for basic authentication",
+      "type": "object",
+      "properties": {
+        "passwordSecret": {
+          "description": "PasswordSecret is the secret selector to the repository password",
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
+        },
+        "usernameSecret": {
+          "description": "UsernameSecret is the secret selector to the repository username",
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
+        }
+      }
+    },
     "io.argoproj.workflow.v1alpha1.Cache": {
       "description": "Cache is the configuration for the type of cache to be used",
       "type": "object",
@@ -9321,6 +9331,18 @@
         "configMap": {
           "description": "ConfigMap sets a ConfigMap-based cache",
           "$ref": "#/definitions/io.k8s.api.core.v1.ConfigMapKeySelector"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.ClientCertAuth": {
+      "description": "ClientCertAuth holds necessary information for client authentication via certificates",
+      "type": "object",
+      "properties": {
+        "clientCertSecret": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
+        },
+        "clientKeySecret": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
         }
       }
     },
@@ -10261,6 +10283,10 @@
         "url"
       ],
       "properties": {
+        "auth": {
+          "description": "Auth contains information for client authentication",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.HTTPAuth"
+        },
         "headers": {
           "description": "Headers are an optional list of headers to send with HTTP requests for artifacts",
           "type": "array",
@@ -10268,17 +10294,23 @@
             "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Header"
           }
         },
-        "passwordSecret": {
-          "description": "PasswordSecret is the secret selector to the repository password",
-          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
-        },
         "url": {
           "description": "URL of the artifact",
           "type": "string"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.HTTPAuth": {
+      "type": "object",
+      "properties": {
+        "basicAuth": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.BasicAuth"
         },
-        "usernameSecret": {
-          "description": "UsernameSecret is the secret selector to the repository username",
-          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
+        "clientCert": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ClientCertAuth"
+        },
+        "oauth2": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.OAuth2Auth"
         }
       }
     },
@@ -10434,9 +10466,6 @@
     },
     "io.argoproj.workflow.v1alpha1.LifecycleHook": {
       "type": "object",
-      "required": [
-        "template"
-      ],
       "properties": {
         "arguments": {
           "description": "Arguments hold arguments to the template",
@@ -10500,6 +10529,18 @@
         },
         "podName": {
           "type": "string"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.ManifestFrom": {
+      "type": "object",
+      "required": [
+        "artifact"
+      ],
+      "properties": {
+        "artifact": {
+          "description": "Artifact contains the artifact to use",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Artifact"
         }
       }
     },
@@ -10793,6 +10834,50 @@
       "description": "NoneStrategy indicates to skip tar process and upload the files or directory tree as independent files. Note that if the artifact is a directory, the artifact driver must support the ability to save/load the directory appropriately.",
       "type": "object"
     },
+    "io.argoproj.workflow.v1alpha1.OAuth2Auth": {
+      "description": "OAuth2Auth holds all information for client authentication via OAuth2 tokens",
+      "type": "object",
+      "properties": {
+        "clientIDSecret": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
+        },
+        "clientSecretSecret": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
+        },
+        "endpointParams": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.OAuth2EndpointParam"
+          }
+        },
+        "scopes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "tokenURLSecret": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.OAuth2EndpointParam": {
+      "description": "EndpointParam is for requesting optional fields that should be sent in the oauth request",
+      "type": "object",
+      "required": [
+        "key"
+      ],
+      "properties": {
+        "key": {
+          "description": "Name is the header name",
+          "type": "string"
+        },
+        "value": {
+          "description": "Value is the literal value to use for the header",
+          "type": "string"
+        }
+      }
+    },
     "io.argoproj.workflow.v1alpha1.OSSArtifact": {
       "description": "OSSArtifact is the location of an Alibaba Cloud OSS artifact",
       "type": "object",
@@ -11061,6 +11146,10 @@
         "manifest": {
           "description": "Manifest contains the kubernetes manifest",
           "type": "string"
+        },
+        "manifestFrom": {
+          "description": "ManifestFrom is the source for a single kubernetes manifest",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ManifestFrom"
         },
         "mergeStrategy": {
           "description": "MergeStrategy is the strategy used to merge a patch. It defaults to \"strategic\" Must be one of: strategic, merge, json",
@@ -12359,7 +12448,7 @@
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Arguments"
         },
         "artifactGC": {
-          "description": "ArtifactGC describes the strategy to use when to deleting artifacts from completed or deleted workflows",
+          "description": "ArtifactGC describes the strategy to use when deleting artifacts from completed or deleted workflows (applies to all output Artifacts unless Artifact.ArtifactGC is specified, which overrides this)",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactGC"
         },
         "artifactRepositoryRef": {
@@ -12438,7 +12527,7 @@
           "$ref": "#/definitions/io.k8s.api.policy.v1beta1.PodDisruptionBudgetSpec"
         },
         "podGC": {
-          "description": "PodGC describes the strategy to use when to deleting completed pods",
+          "description": "PodGC describes the strategy to use when deleting completed pods",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.PodGC"
         },
         "podMetadata": {
@@ -12516,7 +12605,7 @@
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.TTLStrategy"
         },
         "volumeClaimGC": {
-          "description": "VolumeClaimGC describes the strategy to use when to deleting volumes from completed workflows",
+          "description": "VolumeClaimGC describes the strategy to use when deleting volumes from completed workflows",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.VolumeClaimGC"
         },
         "volumeClaimTemplates": {
@@ -12538,7 +12627,7 @@
           "x-kubernetes-patch-strategy": "merge"
         },
         "workflowMetadata": {
-          "description": "WorkflowMetadata contains some metadata of the workflow to be refer",
+          "description": "WorkflowMetadata contains some metadata of the workflow to refer to",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowMetadata"
         },
         "workflowTemplateRef": {

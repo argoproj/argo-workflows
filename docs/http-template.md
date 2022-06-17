@@ -2,7 +2,7 @@
 
 > v3.2 and after
 
-`HTTP Template` is a type of template which can execute the HTTP Requests.
+`HTTP Template` is a type of template which can execute HTTP Requests.
 
 ```yaml
 apiVersion: argoproj.io/v1alpha1

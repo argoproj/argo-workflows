@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/TwinProduction/go-color"
+	"github.com/TwiN/go-color"
 	"github.com/stretchr/testify/suite"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"

@@ -140,27 +140,3 @@ func TestPrintWorkflowCostOptimizationNudges(t *testing.T) {
 			"\nLearn more at https://argoproj.github.io/argo-workflows/cost-optimisation/\n")
 	})
 }
-
-func TestPrintWorkflowSecurityNudges(t *testing.T) {
-	secureWorkflow := wfv1.Workflow{
-		Spec: wfv1.WorkflowSpec{
-			SecurityContext: &corev1.PodSecurityContext{},
-		},
-	}
-	insecureWorkflow := wfv1.Workflow{
-		Spec: wfv1.WorkflowSpec{},
-	}
-
-	t.Run("SecurityNudgesForSingleInsecureWorkflow", func(t *testing.T) {
-		var b bytes.Buffer
-		PrintSecurityNudges(insecureWorkflow, &b)
-		assert.Contains(t, b.String(), "\nThis workflow does not have security context set. "+
-			"You can run your workflow pods more securely by setting it.\n"+
-			"Learn more at https://argoproj.github.io/argo-workflows/workflow-pod-security-context/\n")
-	})
-	t.Run("NoSecurityNudgesForSecureWorkflow", func(t *testing.T) {
-		var b bytes.Buffer
-		PrintSecurityNudges(secureWorkflow, &b)
-		assert.NotContains(t, b.String(), "security context")
-	})
-}

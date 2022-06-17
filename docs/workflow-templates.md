@@ -129,7 +129,7 @@ spec:
 
 When working with parameters in a `WorkflowTemplate`, please note the following:
 
-1. When working with global parameters, you can instantiate your global variables in your `Workflow`
+- When working with global parameters, you can instantiate your global variables in your `Workflow`
 and then directly reference them in your `WorkflowTemplate`. Below is a working example:
 
 ```yaml
@@ -166,7 +166,7 @@ spec:
               template: hello-world
 ```
 
-1. When working with local parameters, the values of local parameters must be supplied at the template definition inside
+- When working with local parameters, the values of local parameters must be supplied at the template definition inside
 the `WorkflowTemplate`. Below is a working example:
 
 ```yaml
