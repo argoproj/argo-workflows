@@ -487,7 +487,7 @@ func TestRealtimeWorkflowMetric(t *testing.T) {
 	metricErrorDesc := woc.wf.Spec.Metrics.Prometheus[0].GetDesc()
 	assert.NotNil(t, controller.metrics.GetCustomMetric(metricErrorDesc))
 	value, err := getMetricGaugeValue(controller.metrics.GetCustomMetric(metricErrorDesc))
-
+	assert.NoError(t, err)
 	metricErrorCounter := controller.metrics.GetCustomMetric(metricErrorDesc)
 	metricErrorCounterString, err := getMetricStringValue(metricErrorCounter)
 	assert.NoError(t, err)
