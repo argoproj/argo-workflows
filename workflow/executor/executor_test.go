@@ -367,21 +367,92 @@ func TestSaveArtifacts(t *testing.T) {
 			},
 		},
 	}
-	we := WorkflowExecutor{
-		PodName:         fakePodName,
-		Template:        templateWithOutParam,
-		ClientSet:       fakeClientset,
-		Namespace:       fakeNamespace,
-		RuntimeExecutor: &mockRuntimeExecutor,
+	templateOptionFalse := wfv1.Template{
+		Inputs: wfv1.Inputs{
+			Artifacts: []wfv1.Artifact{
+				{
+					Name: "samedir",
+					Path: "/samedir",
+				},
+			},
+		},
+		Outputs: wfv1.Outputs{
+			Artifacts: []wfv1.Artifact{
+				{
+					Name:     "samedir",
+					Path:     "/samedir",
+					Optional: false,
+				},
+			},
+		},
+	}
+	templateZipArchive := wfv1.Template{
+		Inputs: wfv1.Inputs{
+			Artifacts: []wfv1.Artifact{
+				{
+					Name: "samedir",
+					Path: "/samedir",
+				},
+			},
+		},
+		Outputs: wfv1.Outputs{
+			Artifacts: []wfv1.Artifact{
+				{
+					Name:     "samedir",
+					Path:     "/samedir",
+					Optional: true,
+					Archive: &wfv1.ArchiveStrategy{
+						Zip: &wfv1.ZipStrategy{},
+					},
+				},
+			},
+		},
+	}
+	tests := []struct {
+		workflowExecutor WorkflowExecutor
+		expectError      bool
+	}{
+		{
+			workflowExecutor: WorkflowExecutor{
+				PodName:         fakePodName,
+				Template:        templateWithOutParam,
+				ClientSet:       fakeClientset,
+				Namespace:       fakeNamespace,
+				RuntimeExecutor: &mockRuntimeExecutor,
+			},
+			expectError: false,
+		},
+		{
+			workflowExecutor: WorkflowExecutor{
+				PodName:         fakePodName,
+				Template:        templateOptionFalse,
+				ClientSet:       fakeClientset,
+				Namespace:       fakeNamespace,
+				RuntimeExecutor: &mockRuntimeExecutor,
+			},
+			expectError: true,
+		},
+		{
+			workflowExecutor: WorkflowExecutor{
+				PodName:         fakePodName,
+				Template:        templateZipArchive,
+				ClientSet:       fakeClientset,
+				Namespace:       fakeNamespace,
+				RuntimeExecutor: &mockRuntimeExecutor,
+			},
+			expectError: false,
+		},
 	}
 
-	ctx := context.Background()
-	err := we.SaveArtifacts(ctx)
-	assert.NoError(t, err)
-
-	we.Template.Outputs.Artifacts[0].Optional = false
-	err = we.SaveArtifacts(ctx)
-	assert.Error(t, err)
+	for _, tt := range tests {
+		ctx := context.Background()
+		err := tt.workflowExecutor.SaveArtifacts(ctx)
+		if err != nil {
+			assert.Equal(t, tt.expectError, true)
+			continue
+		}
+		assert.Equal(t, tt.expectError, false)
+	}
 }
 
 func TestMonitorProgress(t *testing.T) {
