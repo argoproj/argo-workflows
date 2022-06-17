@@ -222,6 +222,16 @@ func (s3Driver *ArtifactDriver) ListObjects(artifact *wfv1.Artifact) ([]string, 
 				return !isTransientS3Err(err), fmt.Errorf("failed to list directory: %v", err)
 			}
 			log.Debugf("successfully listing S3 directory associated with bucket: %s and key %s: %v", artifact.S3.Bucket, artifact.S3.Key, files)
+
+			if len(files) == 0 {
+				directoryExists, err := s3cli.KeyExists(artifact.S3.Bucket, artifact.S3.Key)
+				if err != nil {
+					return !isTransientS3Err(err), fmt.Errorf("failed to check if key %s exists from bucket %s: %v", artifact.S3.Key, artifact.S3.Bucket, err)
+				}
+				if !directoryExists && err == nil {
+					return true, errors.New(errors.CodeNotFound, fmt.Sprintf("no key found of name %s", artifact.S3.Key))
+				}
+			}
 			return true, nil
 		})
 
