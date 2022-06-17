@@ -223,8 +223,8 @@ See %s`, help.ArgoServer),
 	command.Flags().BoolVar(&eventAsyncDispatch, "event-async-dispatch", false, "dispatch event async")
 	command.Flags().StringVar(&frameOptions, "x-frame-options", "DENY", "Set X-Frame-Options header in HTTP responses.")
 	command.Flags().StringVar(&accessControlAllowOrigin, "access-control-allow-origin", "", "Set Access-Control-Allow-Origin header in HTTP responses.")
-	command.Flags().IntVar(&apiRateLimit, "api-rate-limit", 100000, "Set limit for api ratelimiter")
-	command.Flags().IntVar(&apiRateBurst, "api-rate-burst", 1000, "Set burst for api ratelimiter")
+	command.Flags().IntVar(&apiRateLimit, "api-rate-limit", 1000, "Set limit for api ratelimiter")
+	command.Flags().IntVar(&apiRateBurst, "api-rate-burst", 100, "Set burst for api ratelimiter")
 	command.Flags().StringVar(&logFormat, "log-format", "text", "The formatter to use for logs. One of: text|json")
 
 	viper.AutomaticEnv()
