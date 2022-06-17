@@ -486,21 +486,24 @@ func TestRealtimeWorkflowMetric(t *testing.T) {
 
 	metricErrorDesc := woc.wf.Spec.Metrics.Prometheus[0].GetDesc()
 	assert.NotNil(t, controller.metrics.GetCustomMetric(metricErrorDesc))
-	value, err :=   getMetricGaugeValue(controller.metrics.GetCustomMetric(metricErrorDesc))
+	value, err := getMetricGaugeValue(controller.metrics.GetCustomMetric(metricErrorDesc))
 
 	metricErrorCounter := controller.metrics.GetCustomMetric(metricErrorDesc)
 	metricErrorCounterString, err := getMetricStringValue(metricErrorCounter)
 	assert.NoError(t, err)
 	assert.Contains(t, metricErrorCounterString, `label:<name:"workflowName" value:"test-foobar" > gauge:<value:`)
 
-	value1, err :=   getMetricGaugeValue(controller.metrics.GetCustomMetric(metricErrorDesc))
+	value1, err := getMetricGaugeValue(controller.metrics.GetCustomMetric(metricErrorDesc))
+	assert.NoError(t, err)
 	assert.Greater(t, *value1, *value)
 	woc.markWorkflowSuccess(ctx)
 	controller.metrics.GetCustomMetric(metricErrorDesc)
-	value2, err :=   getMetricGaugeValue(controller.metrics.GetCustomMetric(metricErrorDesc))
+	value2, err := getMetricGaugeValue(controller.metrics.GetCustomMetric(metricErrorDesc))
+	assert.NoError(t, err)
 	time.Sleep(10 * time.Millisecond)
 	controller.metrics.GetCustomMetric(metricErrorDesc)
-	value3, err :=   getMetricGaugeValue(controller.metrics.GetCustomMetric(metricErrorDesc))
+	value3, err := getMetricGaugeValue(controller.metrics.GetCustomMetric(metricErrorDesc))
+	assert.NoError(t, err)
 	// Duration should be same after workflow complete
 	assert.Equal(t, *value2, *value3)
 }
