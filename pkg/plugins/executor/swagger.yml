@@ -2033,6 +2033,11 @@ definitions:
     title: ManagedFieldsOperationType is the type of operation which lead to a ManagedFieldsEntry
       being created.
     type: string
+  ManifestFrom:
+    properties:
+      artifact:
+        $ref: '#/definitions/Artifact'
+    type: object
   Memoize:
     description: Memoization enables caching for the Outputs of the template
     properties:
@@ -3203,6 +3208,8 @@ definitions:
       manifest:
         description: Manifest contains the kubernetes manifest
         type: string
+      manifestFrom:
+        $ref: '#/definitions/ManifestFrom'
       mergeStrategy:
         description: |-
           MergeStrategy is the strategy used to merge a patch. It defaults to "strategic"

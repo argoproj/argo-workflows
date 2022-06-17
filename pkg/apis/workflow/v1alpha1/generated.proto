@@ -760,6 +760,11 @@ message Link {
   optional string url = 3;
 }
 
+message ManifestFrom {
+  // Artifact contains the artifact to use
+  optional Artifact artifact = 1;
+}
+
 // MemoizationStatus is the status of this memoized node
 message MemoizationStatus {
   // Hit indicates whether this node was created from a cache entry
@@ -1131,6 +1136,9 @@ message ResourceTemplate {
 
   // Manifest contains the kubernetes manifest
   optional string manifest = 3;
+
+  // ManifestFrom is the source for a single kubernetes manifest
+  optional ManifestFrom manifestFrom = 8;
 
   // SetOwnerReference sets the reference to the workflow on the OwnerReference of generated resource.
   optional bool setOwnerReference = 4;
