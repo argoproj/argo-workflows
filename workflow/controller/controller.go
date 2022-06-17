@@ -602,7 +602,7 @@ func (wfc *WorkflowController) deleteOffloadedNodesForWorkflow(uid string, versi
 		defer wfc.workflowKeyLock.Unlock(key)
 		// workflow might still be hydrated
 		if wfc.hydrator.IsHydrated(wf) {
-			log.WithFields(log.Fields{"uid": wf.UID, "Workflow size": wf.Size()}).Info("Hydrated workflow encountered")
+			log.WithField("uid", wf.UID).Info("Hydrated workflow encountered")
 			err = wfc.hydrator.Dehydrate(wf)
 			if err != nil {
 				return err
@@ -887,7 +887,6 @@ func (wfc *WorkflowController) archiveWorkflowAux(ctx context.Context, obj inter
 	if err != nil {
 		return fmt.Errorf("failed to convert to workflow from unstructured: %w", err)
 	}
-	log.WithField("Workflow size", wf.Size()).Info("Workflow to archive size")
 	err = wfc.hydrator.Hydrate(wf)
 	if err != nil {
 		return fmt.Errorf("failed to hydrate workflow: %w", err)
