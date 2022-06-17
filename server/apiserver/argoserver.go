@@ -151,6 +151,7 @@ func NewArgoServer(ctx context.Context, opts ArgoServerOpts) (*argoServer, error
 		return nil, err
 	}
 	apiRateLimiter := apiratelimiter.NewApiRateLimiter(opts.ApiRateLimit, opts.ApiRateBurst)
+	go apiRateLimiter.CleanupVisitors()
 	return &argoServer{
 		baseHRef:                 opts.BaseHRef,
 		tlsConfig:                opts.TLSConfig,
