@@ -84,8 +84,9 @@ func (h hydrator) Hydrate(wf *wfv1.Workflow) error {
 			return err
 		}
 		h.HydrateWithNodes(wf, offloadedNodes)
+		log.WithField("Workflow Size", wf.Size()).Info("Workflow hydrated")
 	}
-	log.WithField("Workflow Size", wf.Size()).Info("Workflow hydrated")
+
 	return nil
 }
 
