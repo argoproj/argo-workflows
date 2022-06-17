@@ -3,6 +3,8 @@ package grpc
 import (
 	"runtime/debug"
 
+	"strings"
+
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
@@ -79,5 +81,7 @@ func getClientIP(ctx context.Context) string {
 		log.Errorf("couldn't parse client IP address")
 		return ""
 	}
-	return p.Addr.String()
+	address := p.Addr.String()
+	ip := strings.Split(address, ":")[0]
+	return ip
 }
