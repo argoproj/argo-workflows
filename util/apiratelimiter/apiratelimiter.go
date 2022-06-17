@@ -56,14 +56,14 @@ func (r *apiRateLimiter) GetVisitor(ip string) *rate.Limiter {
 }
 
 // Every minute check the map for visitors that haven't been seen for
-// more than 5 minutes and delete the entries.
-func (r *apiRateLimiter) CleanupVisitors() {
+// a duration and delete the entries.
+func (r *apiRateLimiter) CleanupVisitors(freq time.Duration, duration time.Duration) {
 	for {
-		time.Sleep(time.Minute)
+		time.Sleep(freq)
 
 		r.mu.Lock()
 		for ip, v := range r.visitors {
-			if time.Since(v.lastSeen) > 5*time.Minute {
+			if time.Since(v.lastSeen) > duration {
 				delete(r.visitors, ip)
 			}
 		}
