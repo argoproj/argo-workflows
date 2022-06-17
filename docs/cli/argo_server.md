@@ -17,7 +17,7 @@ See https://argoproj.github.io/argo-workflows/argo-server/
 
 ```
       --access-control-allow-origin string   Set Access-Control-Allow-Origin header in HTTP responses.
-      --api-rate-burst int                   Set burst per IP for api ratelimiter (default 100)
+      --api-rate-burst int                   Set burst per IP for api ratelimiter (default 1000)
       --api-rate-limit int                   Set limit per IP for api ratelimiter (default 1000)
       --auth-mode stringArray                API server authentication mode. Any 1 or more length permutation of: client,server,sso (default [client])
       --basehref string                      Value for base href in index.html. Used if the server is running behind reverse proxy under subpath different from /. Defaults to the environment variable BASE_HREF. (default "/")
