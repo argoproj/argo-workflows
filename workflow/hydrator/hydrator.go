@@ -84,7 +84,9 @@ func (h hydrator) Hydrate(wf *wfv1.Workflow) error {
 			return err
 		}
 		h.HydrateWithNodes(wf, offloadedNodes)
+		log.WithField("Workflow Size", wf.Size()).Info("Workflow hydrated")
 	}
+
 	return nil
 }
 
@@ -93,6 +95,7 @@ func (h hydrator) Dehydrate(wf *wfv1.Workflow) error {
 		return nil
 	}
 	var err error
+	log.WithField("Workflow Size", wf.Size()).Info("Workflow to be dehydrated")
 	if !alwaysOffloadNodeStatus {
 		err = packer.CompressWorkflowIfNeeded(wf)
 		if err == nil {
