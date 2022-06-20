@@ -1953,7 +1953,6 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 	// Swap the node back to retry node
 	if retryNodeName != "" {
 		retryNode := woc.wf.GetNodeByName(retryNodeName)
-
 		if retryNode == nil {
 			err := fmt.Errorf("no Retry Node found by the name of %s;  wf.Status.Nodes=%+v", retryNodeName, woc.wf.Status.Nodes)
 			woc.log.Error(err)
