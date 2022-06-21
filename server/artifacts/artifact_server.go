@@ -217,8 +217,9 @@ func (a *ArtifactServer) GetArtifactFile(w http.ResponseWriter, r *http.Request)
 		log.Debugf("not a directory, artifact: %+v", artifact)
 		err = a.returnArtifact(w, artifact, driver)
 
-		a.httpFromError(err, w)
-		return
+		if err != nil {
+			a.httpFromError(err, w)
+		}
 	}
 
 }
