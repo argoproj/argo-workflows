@@ -64,6 +64,18 @@ func (s *mockS3Client) OpenFile(bucket, key string) (io.ReadCloser, error) {
 	return nil, err
 }
 
+func (s *mockS3Client) KeyExists(bucket, key string) (bool, error) {
+	err := s.getMockedErr("KeyExists")
+	if files, ok := s.files[bucket]; ok {
+		for _, file := range files {
+			if strings.HasPrefix(file, key+"/") || file == key { // either it's a prefixing directory or the key itself
+				return true, err
+			}
+		}
+	}
+	return false, err
+}
+
 // GetDirectory downloads a directory to a local file path
 func (s *mockS3Client) GetDirectory(bucket, key, path string) error {
 	return s.getMockedErr("GetDirectory")
