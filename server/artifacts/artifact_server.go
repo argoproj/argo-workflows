@@ -441,7 +441,7 @@ func (a *ArtifactServer) returnArtifact(w http.ResponseWriter, art *wfv1.Artifac
 	_, err = io.Copy(w, stream)
 	if err != nil {
 		errStr := fmt.Sprintf("failed to stream artifact: %v", err)
-		http.Error(w, fmt.Sprintf("failed to stream artifact: %v", err), http.StatusInternalServerError)
+		http.Error(w, errStr, http.StatusInternalServerError)
 		return errors.New(errStr)
 	} else {
 		w.WriteHeader(http.StatusOK)
