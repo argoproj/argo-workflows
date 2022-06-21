@@ -45,20 +45,21 @@ export const ArtifactPanel = ({
         setObject(null);
         setError(null);
         if (ext === 'json') {
+            // show the object below
             requests
                 .get(services.workflows.artifactPath(workflow, artifact.nodeId, artifact.name, archived, input))
-                .then(r => {setHTTPStatus(r.status); console.log(httpStatus); r.text})
+                .then(r => {setHTTPStatus(r.status); r.text})
                 .then(setObject)
-                .catch(e => {setError(e); setHTTPStatus(e.response.status); console.log(httpStatus); });
-        } else if (ext != 'tgz') {
+                .catch(e => {setError(e); setHTTPStatus(e.response.status) });
+        } else if (ext == 'tgz') {
+            setHTTPStatus(200); // since we're not downloading the file yet, reset httpStatus back to success 
+        } else {
+            // even though we include the file in an iframe, if we download it first here we can prevent showing the download button if the status is failed
             requests
                 .get(services.workflows.artifactPath(workflow, artifact.nodeId, artifact.name, archived, input))
-                .then(r => {setHTTPStatus(r.status); console.log(httpStatus)})
-                .catch(e => {setHTTPStatus(e.response.status); console.log(httpStatus)})
-        } else {
-            setHTTPStatus(200); // reset back to success if we haven't downloaded the file yet
-            console.log("reset back to 200")
-        }
+                .then(r => {setHTTPStatus(r.status)})
+                .catch(e => {setHTTPStatus(e.response.status)})
+        } 
     }, [downloadUrl]);
     useCollectEvent('openedArtifactPanel');
 
