@@ -48,18 +48,27 @@ export const ArtifactPanel = ({
             // show the object below
             requests
                 .get(services.workflows.artifactPath(workflow, artifact.nodeId, artifact.name, archived, input))
-                .then(r => {setHTTPStatus(r.status); r.text})
-                .then(setObject)
-                .catch(e => {setError(e); setHTTPStatus(e.response.status) });
-        } else if (ext == 'tgz') {
-            setHTTPStatus(200); // since we're not downloading the file yet, reset httpStatus back to success 
+                .then(r => {
+                    setHTTPStatus(r.status);
+                    setObject(r.text);
+                })
+                .catch(e => {
+                    setError(e);
+                    setHTTPStatus(e.response.status);
+                });
+        } else if (ext === 'tgz') {
+            setHTTPStatus(200); // since we're not downloading the file yet, reset httpStatus back to success
         } else {
             // even though we include the file in an iframe, if we download it first here we can prevent showing the download button if the status is failed
             requests
                 .get(services.workflows.artifactPath(workflow, artifact.nodeId, artifact.name, archived, input))
-                .then(r => {setHTTPStatus(r.status)})
-                .catch(e => {setHTTPStatus(e.response.status)})
-        } 
+                .then(r => {
+                    setHTTPStatus(r.status);
+                })
+                .catch(e => {
+                    setHTTPStatus(e.response.status);
+                });
+        }
     }, [downloadUrl]);
     useCollectEvent('openedArtifactPanel');
 
@@ -78,7 +87,7 @@ export const ArtifactPanel = ({
                             <small>{urn}</small>
                         </p>
                         {error && <ErrorNotice error={error} />}
-                        {(httpStatus >= 400 && httpStatus < 500) ? (
+                        {httpStatus >= 400 && httpStatus < 500 ? (
                             <p>File not found</p>
                         ) : showExtension ? (
                             <ViewBox>
@@ -105,7 +114,7 @@ export const ArtifactPanel = ({
                             </p>
                         )}
 
-                        {(httpStatus >= 200 && httpStatus < 300) && (
+                        {httpStatus >= 200 && httpStatus < 300 && (
                             <p style={{marginTop: 10}}>
                                 <LinkButton to={downloadUrl}>
                                     <i className='fa fa-download' /> {filename || 'Download'}
