@@ -32,42 +32,23 @@ export const ArtifactPanel = ({
     const filename = key.split('/').pop();
     const ext = filename.split('.').pop();
 
-    const [showExtension, setShowExtension] = useState(false);
+    const [show, setShow] = useState(false);
     const [error, setError] = useState<Error>();
     const [object, setObject] = useState<any>();
-    const [httpStatus, setHTTPStatus] = useState(200);
 
     const tgz = !input && !artifact.archive?.none; // the key can be wrong about the file type
     const supported = !tgz && (isDir || ['gif', 'jpg', 'jpeg', 'json', 'html', 'png', 'txt'].includes(ext));
-    useEffect(() => setShowExtension(supported), [downloadUrl, ext]);
+    useEffect(() => setShow(supported), [downloadUrl, ext]);
 
     useEffect(() => {
         setObject(null);
         setError(null);
         if (ext === 'json') {
-            // show the object below
             requests
                 .get(services.workflows.artifactPath(workflow, artifact.nodeId, artifact.name, archived, input))
-                .then(r => {
-                    setHTTPStatus(r.status);
-                    setObject(r.text);
-                })
-                .catch(e => {
-                    setError(e);
-                    setHTTPStatus(e.response.status);
-                });
-        } else if (ext === 'tgz') {
-            setHTTPStatus(200); // since we're not downloading the file yet, reset httpStatus back to success
-        } else {
-            // even though we include the file in an iframe, if we download it first here we can prevent showing the download button if the status is failed
-            requests
-                .get(services.workflows.artifactPath(workflow, artifact.nodeId, artifact.name, archived, input))
-                .then(r => {
-                    setHTTPStatus(r.status);
-                })
-                .catch(e => {
-                    setHTTPStatus(e.response.status);
-                });
+                .then(r => r.text)
+                .then(setObject)
+                .catch(setError);
         }
     }, [downloadUrl]);
     useCollectEvent('openedArtifactPanel');
@@ -87,9 +68,7 @@ export const ArtifactPanel = ({
                             <small>{urn}</small>
                         </p>
                         {error && <ErrorNotice error={error} />}
-                        {httpStatus >= 400 && httpStatus < 500 ? (
-                            <p>File not found</p>
-                        ) : showExtension ? (
+                        {show ? (
                             <ViewBox>
                                 {object ? (
                                     <MonacoEditor
@@ -110,17 +89,14 @@ export const ArtifactPanel = ({
                             <p>Artifact cannot be shown because it is a tgz.</p>
                         ) : (
                             <p>
-                                Unknown extension "{ext}", <a onClick={() => setShowExtension(true)}>show anyway</a>.
+                                Unknown extension "{ext}", <a onClick={() => setShow(true)}>show anyway</a>.
                             </p>
                         )}
-
-                        {httpStatus >= 200 && httpStatus < 300 && (
-                            <p style={{marginTop: 10}}>
-                                <LinkButton to={downloadUrl}>
-                                    <i className='fa fa-download' /> {filename || 'Download'}
-                                </LinkButton>
-                            </p>
-                        )}
+                        <p style={{marginTop: 10}}>
+                            <LinkButton to={downloadUrl}>
+                                <i className='fa fa-download' /> {filename || 'Download'}
+                            </LinkButton>
+                        </p>
                         <GiveFeedbackLink href='https://github.com/argoproj/argo-workflows/issues/7743' />
                     </div>
                 </ErrorBoundary>
