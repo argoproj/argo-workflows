@@ -80,6 +80,9 @@ func isTransientNetworkErr(err error) bool {
 	} else if strings.Contains(errorString, "connection timed out") {
 		// If err is a net.Dial timeout, retry.
 		return true
+	} else if strings.Contains(errorString, "connection reset by peer") {
+		// If err is a ECONNRESET, retry.
+		return true
 	}
 
 	return false
