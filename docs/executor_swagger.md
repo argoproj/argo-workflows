@@ -2292,6 +2292,21 @@ it always corresponds to the version of the main resource. |  |
 
 
 
+### <span id="manifest-from"></span> ManifestFrom
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| artifact | [Artifact](#artifact)| `Artifact` |  | |  |  |
+
+
+
 ### <span id="memoize"></span> Memoize
 
 
@@ -3633,6 +3648,7 @@ flags: [
 "--validate=false"  # disable resource validation
 ] |  |
 | manifest | string| `string` |  | | Manifest contains the kubernetes manifest |  |
+| manifestFrom | [ManifestFrom](#manifest-from)| `ManifestFrom` |  | |  |  |
 | mergeStrategy | string| `string` |  | | MergeStrategy is the strategy used to merge a patch. It defaults to "strategic"
 Must be one of: strategic, merge, json |  |
 | setOwnerReference | boolean| `bool` |  | | SetOwnerReference sets the reference to the workflow on the OwnerReference of generated resource. |  |

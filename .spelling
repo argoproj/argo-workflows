@@ -49,6 +49,7 @@ Github
 Golang
 Grafana
 Grammarly
+Hadoop
 Heptio
 Homebrew
 InsideBoard
@@ -59,6 +60,7 @@ Jemison
 JetBrains
 KNative
 Katacoda
+Kerberos
 KubectlExec
 Kubeflow
 Kustomize
@@ -195,6 +197,7 @@ v3.4
 v3.4.
 validator
 versioning
+webHDFS
 webhook
 webhooks
 workflow-controller-configmap
