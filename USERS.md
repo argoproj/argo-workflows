@@ -1,6 +1,6 @@
 ## Argo Workflows User Community Surveys & Feedback
 
-Please find [here](https://github.com/argoproj/argoproj/blob/master/community/user_surveys/ArgoWorkflows2020SurveySummary.pdf) Argo Workflows user community 2020 survey results.
+Please find [here](https://github.com/argoproj/argoproj/blob/master/community/user_surveys/ArgoWorkflows2020SurveySummary.pdf) Argo Workflows user community 2020 survey results and the 2021 results [here](https://blog.argoproj.io/argo-workflows-2021-survey-results-d6fa890030ee?gi=857daaa1faa9).
 
 ## Who uses Argo Workflows?
 
@@ -122,6 +122,7 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [Oracle](https://www.oracle.com/)
 1. [Orchest](https://www.orchest.io/)
 1. [OVH](https://www.ovh.com/)
+1. [PathAI](https://www.pathai.com)
 1. [PDOK](https://www.pdok.nl/)
 1. [Peak AI](https://www.peak.ai/)
 1. [Pipekit](https://pipeit.io)

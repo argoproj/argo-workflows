@@ -813,7 +813,7 @@ WorkflowSpec is the specification of a Workflow.
 |`volumeClaimGC`|[`VolumeClaimGC`](#volumeclaimgc)|VolumeClaimGC describes the strategy to use when deleting volumes from completed workflows|
 |`volumeClaimTemplates`|`Array<`[`PersistentVolumeClaim`](#persistentvolumeclaim)`>`|VolumeClaimTemplates is a list of claims that containers are allowed to reference. The Workflow controller will create the claims at the beginning of the workflow and delete the claims upon completion of the workflow|
 |`volumes`|`Array<`[`Volume`](#volume)`>`|Volumes is a list of volumes that can be mounted by containers in a io.argoproj.workflow.v1alpha1.|
-|`workflowMetadata`|[`WorkflowMetadata`](#workflowmetadata)|WorkflowMetadata contains some metadata of the workflow to be refer|
+|`workflowMetadata`|[`WorkflowMetadata`](#workflowmetadata)|WorkflowMetadata contains some metadata of the workflow to refer to|
 |`workflowTemplateRef`|[`WorkflowTemplateRef`](#workflowtemplateref)|WorkflowTemplateRef holds a reference to a WorkflowTemplate for execution|
 
 ## WorkflowStatus
@@ -1986,6 +1986,7 @@ Artifact indicates an artifact to place at a specified path
 |`archiveLogs`|`boolean`|ArchiveLogs indicates if the container logs should be archived|
 |`artifactGC`|[`ArtifactGC`](#artifactgc)|ArtifactGC describes the strategy to use when to deleting an artifact from completed or deleted workflows|
 |`artifactory`|[`ArtifactoryArtifact`](#artifactoryartifact)|Artifactory contains artifactory artifact location details|
+|`deleted`|`boolean`|Has this been deleted?|
 |`from`|`string`|From allows an artifact to reference an artifact from a previous step|
 |`fromExpression`|`string`|FromExpression, if defined, is evaluated to specify the value for the artifact|
 |`gcs`|[`GCSArtifact`](#gcsartifact)|GCS contains GCS artifact location details|
@@ -2785,6 +2786,7 @@ ResourceTemplate is a template subtype to manipulate kubernetes resources
 |`failureCondition`|`string`|FailureCondition is a label selector expression which describes the conditions of the k8s resource in which the step was considered failed|
 |`flags`|`Array< string >`|Flags is a set of additional options passed to kubectl before submitting a resource I.e. to disable resource validation: flags: [	"--validate=false"  # disable resource validation]|
 |`manifest`|`string`|Manifest contains the kubernetes manifest|
+|`manifestFrom`|[`ManifestFrom`](#manifestfrom)|ManifestFrom is the source for a single kubernetes manifest|
 |`mergeStrategy`|`string`|MergeStrategy is the strategy used to merge a patch. It defaults to "strategic" Must be one of: strategic, merge, json|
 |`setOwnerReference`|`boolean`|SetOwnerReference sets the reference to the workflow on the OwnerReference of generated resource.|
 |`successCondition`|`string`|SuccessCondition is a label selector expression which describes the conditions of the k8s resource in which it is acceptable to proceed to the following step|
@@ -3901,6 +3903,15 @@ Cache is the configuration for the type of cache to be used
 |:----------:|:----------:|---------------|
 |`configMap`|[`ConfigMapKeySelector`](#configmapkeyselector)|ConfigMap sets a ConfigMap-based cache|
 
+## ManifestFrom
+
+_No description available_
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`artifact`|[`Artifact`](#artifact)|Artifact contains the artifact to use|
+
 ## ContinueOn
 
 ContinueOn defines if a workflow should continue even if a task or step fails/errors. It can be specified if the workflow should continue when the pod errors, fails or both.
@@ -4259,6 +4270,7 @@ ArtifactPaths expands a step from a collection of artifacts
 |`archiveLogs`|`boolean`|ArchiveLogs indicates if the container logs should be archived|
 |`artifactGC`|[`ArtifactGC`](#artifactgc)|ArtifactGC describes the strategy to use when to deleting an artifact from completed or deleted workflows|
 |`artifactory`|[`ArtifactoryArtifact`](#artifactoryartifact)|Artifactory contains artifactory artifact location details|
+|`deleted`|`boolean`|Has this been deleted?|
 |`from`|`string`|From allows an artifact to reference an artifact from a previous step|
 |`fromExpression`|`string`|FromExpression, if defined, is evaluated to specify the value for the artifact|
 |`gcs`|[`GCSArtifact`](#gcsartifact)|GCS contains GCS artifact location details|

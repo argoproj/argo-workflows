@@ -98,6 +98,9 @@ definitions:
         $ref: '#/definitions/ArtifactGC'
       artifactory:
         $ref: '#/definitions/ArtifactoryArtifact'
+      deleted:
+        description: Has this been deleted?
+        type: boolean
       from:
         description: From allows an artifact to reference an artifact from a previous
           step
@@ -197,6 +200,9 @@ definitions:
         $ref: '#/definitions/ArtifactGC'
       artifactory:
         $ref: '#/definitions/ArtifactoryArtifact'
+      deleted:
+        description: Has this been deleted?
+        type: boolean
       from:
         description: From allows an artifact to reference an artifact from a previous
           step
@@ -2027,6 +2033,11 @@ definitions:
     title: ManagedFieldsOperationType is the type of operation which lead to a ManagedFieldsEntry
       being created.
     type: string
+  ManifestFrom:
+    properties:
+      artifact:
+        $ref: '#/definitions/Artifact'
+    type: object
   Memoize:
     description: Memoization enables caching for the Outputs of the template
     properties:
@@ -3197,6 +3208,8 @@ definitions:
       manifest:
         description: Manifest contains the kubernetes manifest
         type: string
+      manifestFrom:
+        $ref: '#/definitions/ManifestFrom'
       mergeStrategy:
         description: |-
           MergeStrategy is the strategy used to merge a patch. It defaults to "strategic"

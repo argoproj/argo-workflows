@@ -4260,12 +4260,6 @@
             "name": "artifactDiscriminator",
             "in": "path",
             "required": true
-          },
-          {
-            "type": "string",
-            "name": "artifactName",
-            "in": "path",
-            "required": true
           }
         ],
         "responses": {
@@ -4383,12 +4377,6 @@
         "summary": "Get an input artifact by UID.",
         "operationId": "ArtifactService_GetInputArtifactByUID",
         "parameters": [
-          {
-            "type": "string",
-            "name": "namespace",
-            "in": "path",
-            "required": true
-          },
           {
             "type": "string",
             "name": "uid",
@@ -8979,6 +8967,10 @@
           "description": "Artifactory contains artifactory artifact location details",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactoryArtifact"
         },
+        "deleted": {
+          "description": "Has this been deleted?",
+          "type": "boolean"
+        },
         "from": {
           "description": "From allows an artifact to reference an artifact from a previous step",
           "type": "string"
@@ -9119,6 +9111,10 @@
         "artifactory": {
           "description": "Artifactory contains artifactory artifact location details",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactoryArtifact"
+        },
+        "deleted": {
+          "description": "Has this been deleted?",
+          "type": "boolean"
         },
         "from": {
           "description": "From allows an artifact to reference an artifact from a previous step",
@@ -10536,6 +10532,18 @@
         }
       }
     },
+    "io.argoproj.workflow.v1alpha1.ManifestFrom": {
+      "type": "object",
+      "required": [
+        "artifact"
+      ],
+      "properties": {
+        "artifact": {
+          "description": "Artifact contains the artifact to use",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Artifact"
+        }
+      }
+    },
     "io.argoproj.workflow.v1alpha1.MemoizationStatus": {
       "description": "MemoizationStatus is the status of this memoized node",
       "type": "object",
@@ -11138,6 +11146,10 @@
         "manifest": {
           "description": "Manifest contains the kubernetes manifest",
           "type": "string"
+        },
+        "manifestFrom": {
+          "description": "ManifestFrom is the source for a single kubernetes manifest",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ManifestFrom"
         },
         "mergeStrategy": {
           "description": "MergeStrategy is the strategy used to merge a patch. It defaults to \"strategic\" Must be one of: strategic, merge, json",
@@ -12615,7 +12627,7 @@
           "x-kubernetes-patch-strategy": "merge"
         },
         "workflowMetadata": {
-          "description": "WorkflowMetadata contains some metadata of the workflow to be refer",
+          "description": "WorkflowMetadata contains some metadata of the workflow to refer to",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowMetadata"
         },
         "workflowTemplateRef": {

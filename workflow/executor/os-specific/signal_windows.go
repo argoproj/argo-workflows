@@ -23,3 +23,8 @@ func Kill(pid int, s syscall.Signal) error {
 func Setpgid(a *syscall.SysProcAttr) {
 	// this does not exist on windows
 }
+
+func Wait(process *os.Process) error {
+	_, err := process.Wait()
+	return err
+}

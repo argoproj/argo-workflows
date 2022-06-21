@@ -203,6 +203,7 @@ It will marshall back to string - marshalling is not symmetric. |  |
 | archiveLogs | boolean| `bool` |  | | ArchiveLogs indicates if the container logs should be archived |  |
 | artifactGC | [ArtifactGC](#artifact-g-c)| `ArtifactGC` |  | |  |  |
 | artifactory | [ArtifactoryArtifact](#artifactory-artifact)| `ArtifactoryArtifact` |  | |  |  |
+| deleted | boolean| `bool` |  | | Has this been deleted? |  |
 | from | string| `string` |  | | From allows an artifact to reference an artifact from a previous step |  |
 | fromExpression | string| `string` |  | | FromExpression, if defined, is evaluated to specify the value for the artifact |  |
 | gcs | [GCSArtifact](#g-c-s-artifact)| `GCSArtifact` |  | |  |  |
@@ -299,6 +300,7 @@ of a single workflow step, which the executor will use as a default location to 
 | archiveLogs | boolean| `bool` |  | | ArchiveLogs indicates if the container logs should be archived |  |
 | artifactGC | [ArtifactGC](#artifact-g-c)| `ArtifactGC` |  | |  |  |
 | artifactory | [ArtifactoryArtifact](#artifactory-artifact)| `ArtifactoryArtifact` |  | |  |  |
+| deleted | boolean| `bool` |  | | Has this been deleted? |  |
 | from | string| `string` |  | | From allows an artifact to reference an artifact from a previous step |  |
 | fromExpression | string| `string` |  | | FromExpression, if defined, is evaluated to specify the value for the artifact |  |
 | gcs | [GCSArtifact](#g-c-s-artifact)| `GCSArtifact` |  | |  |  |
@@ -2290,6 +2292,21 @@ it always corresponds to the version of the main resource. |  |
 
 
 
+### <span id="manifest-from"></span> ManifestFrom
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| artifact | [Artifact](#artifact)| `Artifact` |  | |  |  |
+
+
+
 ### <span id="memoize"></span> Memoize
 
 
@@ -3631,6 +3648,7 @@ flags: [
 "--validate=false"  # disable resource validation
 ] |  |
 | manifest | string| `string` |  | | Manifest contains the kubernetes manifest |  |
+| manifestFrom | [ManifestFrom](#manifest-from)| `ManifestFrom` |  | |  |  |
 | mergeStrategy | string| `string` |  | | MergeStrategy is the strategy used to merge a patch. It defaults to "strategic"
 Must be one of: strategic, merge, json |  |
 | setOwnerReference | boolean| `bool` |  | | SetOwnerReference sets the reference to the workflow on the OwnerReference of generated resource. |  |

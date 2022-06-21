@@ -75,6 +75,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.LabelValues":                   schema_pkg_apis_workflow_v1alpha1_LabelValues(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.LifecycleHook":                 schema_pkg_apis_workflow_v1alpha1_LifecycleHook(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Link":                          schema_pkg_apis_workflow_v1alpha1_Link(ref),
+		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ManifestFrom":                  schema_pkg_apis_workflow_v1alpha1_ManifestFrom(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.MemoizationStatus":             schema_pkg_apis_workflow_v1alpha1_MemoizationStatus(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Memoize":                       schema_pkg_apis_workflow_v1alpha1_Memoize(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Metadata":                      schema_pkg_apis_workflow_v1alpha1_Metadata(ref),
@@ -386,6 +387,13 @@ func schema_pkg_apis_workflow_v1alpha1_Artifact(ref common.ReferenceCallback) co
 							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactGC"),
 						},
 					},
+					"deleted": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Has this been deleted?",
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
 				},
 				Required: []string{"name"},
 			},
@@ -621,6 +629,13 @@ func schema_pkg_apis_workflow_v1alpha1_ArtifactPaths(ref common.ReferenceCallbac
 						SchemaProps: spec.SchemaProps{
 							Description: "ArtifactGC describes the strategy to use when to deleting an artifact from completed or deleted workflows",
 							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactGC"),
+						},
+					},
+					"deleted": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Has this been deleted?",
+							Type:        []string{"boolean"},
+							Format:      "",
 						},
 					},
 				},
@@ -3105,6 +3120,27 @@ func schema_pkg_apis_workflow_v1alpha1_Link(ref common.ReferenceCallback) common
 	}
 }
 
+func schema_pkg_apis_workflow_v1alpha1_ManifestFrom(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"artifact": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Artifact contains the artifact to use",
+							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Artifact"),
+						},
+					},
+				},
+				Required: []string{"artifact"},
+			},
+		},
+		Dependencies: []string{
+			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Artifact"},
+	}
+}
+
 func schema_pkg_apis_workflow_v1alpha1_MemoizationStatus(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
@@ -4292,6 +4328,12 @@ func schema_pkg_apis_workflow_v1alpha1_ResourceTemplate(ref common.ReferenceCall
 							Format:      "",
 						},
 					},
+					"manifestFrom": {
+						SchemaProps: spec.SchemaProps{
+							Description: "ManifestFrom is the source for a single kubernetes manifest",
+							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ManifestFrom"),
+						},
+					},
 					"setOwnerReference": {
 						SchemaProps: spec.SchemaProps{
 							Description: "SetOwnerReference sets the reference to the workflow on the OwnerReference of generated resource.",
@@ -4332,6 +4374,8 @@ func schema_pkg_apis_workflow_v1alpha1_ResourceTemplate(ref common.ReferenceCall
 				Required: []string{"action"},
 			},
 		},
+		Dependencies: []string{
+			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ManifestFrom"},
 	}
 }
 
@@ -6858,7 +6902,7 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowSpec(ref common.ReferenceCallback
 					},
 					"workflowMetadata": {
 						SchemaProps: spec.SchemaProps{
-							Description: "WorkflowMetadata contains some metadata of the workflow to be refer",
+							Description: "WorkflowMetadata contains some metadata of the workflow to refer to",
 							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowMetadata"),
 						},
 					},

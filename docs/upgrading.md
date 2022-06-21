@@ -50,6 +50,10 @@ mis-configuration.
 Failed to register watch for controller config map: error unmarshaling JSON: while decoding JSON: json: unknown field \"args\"
 ```
 
+## feat: add indexes for improve archived workflow performance. (#8860)
+
+This PR adds indexes to archived workflow tables. This change may cause a long time to upgrade if the user has a large table.
+
 ## Upgrading to v3.3
 
 ### [662a7295b](https://github.com/argoproj/argo-workflows/commit/662a7295b) feat: Replace `patch pod` with `create workflowtaskresult`. Fixes #3961 (#8000)

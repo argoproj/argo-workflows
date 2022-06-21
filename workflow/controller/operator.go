@@ -272,11 +272,6 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 			return
 		}
 
-		if err := woc.updateWorkflowMetadata(); err != nil {
-			woc.markWorkflowError(ctx, err)
-			return
-		}
-
 		woc.workflowDeadline = woc.getWorkflowDeadline()
 
 		// Workflow will not be requeued if workflow steps are in pending state.
@@ -486,11 +481,19 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 
 func (woc *wfOperationCtx) updateWorkflowMetadata() error {
 	if md := woc.execWf.Spec.WorkflowMetadata; md != nil {
+		if woc.wf.ObjectMeta.Labels == nil {
+			woc.wf.ObjectMeta.Labels = make(map[string]string)
+		}
 		for n, v := range md.Labels {
 			woc.wf.Labels[n] = v
+			woc.globalParams["workflow.labels."+n] = v
+		}
+		if woc.wf.ObjectMeta.Annotations == nil {
+			woc.wf.ObjectMeta.Annotations = make(map[string]string)
 		}
 		for n, v := range md.Annotations {
 			woc.wf.Annotations[n] = v
+			woc.globalParams["workflow.annotations."+n] = v
 		}
 		env := env.GetFuncMap(template.EnvMap(woc.globalParams))
 		for n, f := range md.LabelsFrom {
@@ -503,6 +506,7 @@ func (woc *wfOperationCtx) updateWorkflowMetadata() error {
 				return fmt.Errorf("failed to evaluate label %q expression %q evaluted to %T but must be a string", n, f.Expression, r)
 			}
 			woc.wf.Labels[n] = v
+			woc.globalParams["workflow.labels."+n] = v
 		}
 		woc.updated = true
 	}
@@ -901,7 +905,7 @@ func (woc *wfOperationCtx) processNodeRetries(node *wfv1.NodeStatus, retryStrate
 		}
 
 		// See if we have waited past the deadline
-		if time.Now().Before(waitingDeadline) && int32(len(node.Children)) <= retryStrategy.Limit.IntVal {
+		if time.Now().Before(waitingDeadline) && retryStrategy.Limit != nil && int32(len(node.Children)) <= retryStrategy.Limit.IntVal {
 			woc.requeueAfter(timeToWait)
 			retryMessage := fmt.Sprintf("Backoff for %s", humanize.Duration(timeToWait))
 			return woc.markNodePhase(node.Name, node.Phase, retryMessage), false, nil
@@ -1147,7 +1151,11 @@ func printPodSpecLog(pod *apiv1.Pod, wfName string) {
 // and returns the new node status if something changed
 func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, old *wfv1.NodeStatus) *wfv1.NodeStatus {
 	new := old.DeepCopy()
-	tmpl := woc.GetNodeTemplate(old)
+	tmpl, err := woc.GetNodeTemplate(old)
+	if err != nil {
+		woc.log.Error(err)
+		return nil
+	}
 	switch pod.Status.Phase {
 	case apiv1.PodPending:
 		new.Phase = wfv1.NodePending
@@ -1158,7 +1166,7 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, old *wfv1.NodeStatus
 		new.Daemoned = nil
 	case apiv1.PodFailed:
 		// ignore pod failure for daemoned steps
-		if tmpl.IsDaemon() {
+		if tmpl != nil && tmpl.IsDaemon() {
 			new.Phase = wfv1.NodeSucceeded
 		} else {
 			new.Phase, new.Message = woc.inferFailedReason(pod, tmpl)
@@ -1168,7 +1176,7 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, old *wfv1.NodeStatus
 		// Daemons are a special case we need to understand the rules:
 		// A node transitions into "daemoned" only if it's a daemon template and it becomes running AND ready.
 		// A node will be unmarked "daemoned" when its boundary node completes, anywhere killDaemonedChildren is called.
-		if tmpl.IsDaemon() {
+		if tmpl != nil && tmpl.IsDaemon() {
 			if !old.Fulfilled() {
 				// pod is running and template is marked daemon. check if everything is ready
 				for _, ctrStatus := range pod.Status.ContainerStatuses {
@@ -2079,19 +2087,21 @@ func (woc *wfOperationCtx) hasDaemonNodes() bool {
 	return false
 }
 
-func (woc *wfOperationCtx) GetNodeTemplate(node *wfv1.NodeStatus) *wfv1.Template {
+func (woc *wfOperationCtx) GetNodeTemplate(node *wfv1.NodeStatus) (*wfv1.Template, error) {
 	if node.TemplateRef != nil {
 		tmplCtx, err := woc.createTemplateContext(node.GetTemplateScope())
 		if err != nil {
 			woc.markNodeError(node.Name, err)
+			return nil, err
 		}
 		tmpl, err := tmplCtx.GetTemplateFromRef(node.TemplateRef)
 		if err != nil {
 			woc.markNodeError(node.Name, err)
+			return tmpl, err
 		}
-		return tmpl
+		return tmpl, nil
 	}
-	return woc.wf.GetTemplateByName(node.TemplateName)
+	return woc.wf.GetTemplateByName(node.TemplateName), nil
 }
 
 func (woc *wfOperationCtx) markWorkflowRunning(ctx context.Context) {
@@ -3504,6 +3514,12 @@ func (woc *wfOperationCtx) setExecWorkflow(ctx context.Context) error {
 	if err != nil {
 		woc.markWorkflowFailed(ctx, fmt.Sprintf("failed to set global parameters: %s", err.Error()))
 		return err
+	}
+	if woc.wf.Status.Phase == wfv1.WorkflowUnknown {
+		if err := woc.updateWorkflowMetadata(); err != nil {
+			woc.markWorkflowError(ctx, err)
+			return err
+		}
 	}
 	err = woc.substituteGlobalVariables()
 	if err != nil {

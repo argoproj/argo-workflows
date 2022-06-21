@@ -1,14 +1,12 @@
 # Quick Start
 
-💡 If you want to try out Argo Workflows and don't want to set-up Kubernetes cluster, try the [Katacoda course](training.md#hands-on).
-
 To see how Argo Workflows work, you can install it and run examples of simple workflows and workflows that use artifacts.
 
 Before you start you need a Kubernetes cluster and `kubectl` set-up
 
 ## Install Argo Workflows
 
-To get started quickly, you can use the quick start manifest which will install Argo Workflow as well as some commonly used components:
+To get started quickly, you can use the quick start manifest which will install Argo Workflows as well as some commonly used components:
 
 ⚠️ These manifests are intended to help you get started quickly. They are not suitable in production. They contain hard-coded passwords that are publicly available.
 
@@ -60,3 +58,6 @@ You can also observe the logs of the Workflow run by running the following:
 ```bash
 argo logs -n argo @latest
 ```
+
+💡 If you want to try out Argo Workflows and don't want to set up a Kubernetes cluster, the community is working on a replacement for the old Katacoda course since
+Katacoda was shut down. Please give a thumbs up or comment on [this issue](https://github.com/argoproj/argo-workflows/issues/8899) with your support and feedback.

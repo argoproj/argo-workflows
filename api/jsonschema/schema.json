@@ -4504,6 +4504,10 @@
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactoryArtifact",
           "description": "Artifactory contains artifactory artifact location details"
         },
+        "deleted": {
+          "description": "Has this been deleted?",
+          "type": "boolean"
+        },
         "from": {
           "description": "From allows an artifact to reference an artifact from a previous step",
           "type": "string"
@@ -4644,6 +4648,10 @@
         "artifactory": {
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactoryArtifact",
           "description": "Artifactory contains artifactory artifact location details"
+        },
+        "deleted": {
+          "description": "Has this been deleted?",
+          "type": "boolean"
         },
         "from": {
           "description": "From allows an artifact to reference an artifact from a previous step",
@@ -6083,6 +6091,18 @@
       },
       "type": "object"
     },
+    "io.argoproj.workflow.v1alpha1.ManifestFrom": {
+      "properties": {
+        "artifact": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Artifact",
+          "description": "Artifact contains the artifact to use"
+        }
+      },
+      "required": [
+        "artifact"
+      ],
+      "type": "object"
+    },
     "io.argoproj.workflow.v1alpha1.MemoizationStatus": {
       "description": "MemoizationStatus is the status of this memoized node",
       "properties": {
@@ -6681,6 +6701,10 @@
         "manifest": {
           "description": "Manifest contains the kubernetes manifest",
           "type": "string"
+        },
+        "manifestFrom": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ManifestFrom",
+          "description": "ManifestFrom is the source for a single kubernetes manifest"
         },
         "mergeStrategy": {
           "description": "MergeStrategy is the strategy used to merge a patch. It defaults to \"strategic\" Must be one of: strategic, merge, json",
@@ -8180,7 +8204,7 @@
         },
         "workflowMetadata": {
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowMetadata",
-          "description": "WorkflowMetadata contains some metadata of the workflow to be refer"
+          "description": "WorkflowMetadata contains some metadata of the workflow to refer to"
         },
         "workflowTemplateRef": {
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowTemplateRef",
