@@ -13,8 +13,9 @@ import (
 	"strings"
 	"testing"
 
-	argoerrors "github.com/argoproj/argo-workflows/v3/errors"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
+
+	argoerrors "github.com/argoproj/argo-workflows/v3/errors"
 
 	"github.com/stretchr/testify/assert"
 	testhttp "github.com/stretchr/testify/http"
