@@ -654,6 +654,7 @@ docs-serve: docs
 # pre-commit checks
 
 .git/hooks/%: hack/git/hooks/%
+	@mkdir -p .git/hooks
 	cp hack/git/hooks/$* .git/hooks/$*
 
 .PHONY: githooks
