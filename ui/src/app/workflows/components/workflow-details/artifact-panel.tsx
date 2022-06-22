@@ -67,12 +67,16 @@ export const ArtifactPanel = ({
                 }>
                 <ErrorBoundary>
                     <div className='white-box'>
-                        <h3>{artifact.name}</h3>
+                        <h3>
+                            <i className='fa fa-file-alt' /> {artifact.name}
+                        </h3>
                         <p>
                             <small>{urn}</small>
                         </p>
                         {error && <ErrorNotice error={error} />}
-                        {show ? (
+                        {artifact.deleted ? (
+                            <p>Artifact has been deleted.</p>
+                        ) : show ? (
                             <ViewBox>
                                 {object ? (
                                     <MonacoEditor
@@ -99,11 +103,13 @@ export const ArtifactPanel = ({
                         {artifactGCStrategy && !artifact.deleted && (
                             <p>Artifact will be automatically deleted shortly after the workflow {artifactGCStrategy === 'OnWorkflowCompletion' ? 'completes' : 'is deleted'}.</p>
                         )}
-                        <p style={{marginTop: 10}}>
-                            <LinkButton to={downloadUrl}>
-                                <i className='fa fa-download' /> {filename || 'Download'}
-                            </LinkButton>
-                        </p>
+                        {!artifact.deleted && (
+                            <p style={{marginTop: 10}}>
+                                <LinkButton to={downloadUrl}>
+                                    <i className='fa fa-download' /> {filename || 'Download'}
+                                </LinkButton>
+                            </p>
+                        )}
                         <GiveFeedbackLink href='https://github.com/argoproj/argo-workflows/issues/7743' />
                     </div>
                 </ErrorBoundary>
