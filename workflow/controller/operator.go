@@ -1943,10 +1943,24 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 	}
 
 	node = woc.wf.GetNodeByName(node.Name)
+	if node == nil {
+		err := fmt.Errorf("no Node found by the name of %s;  wf.Status.Nodes=%+v", node.Name, woc.wf.Status.Nodes)
+		woc.log.Error(err)
+		woc.markWorkflowError(ctx, err)
+		return node, err
+	}
 
 	// Swap the node back to retry node
 	if retryNodeName != "" {
 		retryNode := woc.wf.GetNodeByName(retryNodeName)
+
+		if retryNode == nil {
+			err := fmt.Errorf("no Retry Node found by the name of %s;  wf.Status.Nodes=%+v", retryNodeName, woc.wf.Status.Nodes)
+			woc.log.Error(err)
+			woc.markWorkflowError(ctx, err)
+			return node, err
+		}
+
 		if !retryNode.Fulfilled() && node.Fulfilled() { // if the retry child has completed we need to update outself
 			retryNode, err = woc.executeTemplate(ctx, retryNodeName, orgTmpl, tmplCtx, args, opts)
 			if err != nil {
