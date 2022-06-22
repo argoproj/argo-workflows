@@ -224,19 +224,16 @@ func (woc *wfOperationCtx) executeStepGroup(ctx context.Context, stepGroup []wfv
 	stepTemplateScope := stepsCtx.tmplCtx.GetTemplateScope()
 
 	// Sort steps by priority
-	sort.SliceStable(stepGroup, func(i, j int) bool {
-		var stepOne, stepTwo int32
-		if stepGroup[i].GetPriority() == nil {
-			stepOne = 0
-		} else {
-			stepOne = *stepGroup[i].GetPriority()
+	sort.Slice(stepGroup, func(i, j int) bool {
+
+		a := stepGroup[i].GetPriority()
+		b := stepGroup[j].GetPriority()
+
+		if a > b {
+			return true
 		}
-		if stepGroup[j].GetPriority() == nil {
-			stepTwo = 0
-		} else {
-			stepTwo = *stepGroup[j].GetPriority()
-		}
-		return stepOne > stepTwo
+
+		return strings.Compare(stepGroup[i].Name, stepGroup[j].Name) > 0
 	})
 
 	// Kick off all parallel steps in the group
