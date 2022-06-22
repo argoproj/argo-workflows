@@ -11,6 +11,7 @@ import (
 	"github.com/argoproj/pkg/errors"
 	syncpkg "github.com/argoproj/pkg/sync"
 	log "github.com/sirupsen/logrus"
+	"golang.org/x/exp/slices"
 	"golang.org/x/time/rate"
 	apiv1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
@@ -508,7 +509,7 @@ func (wfc *WorkflowController) processNextPodCleanupItem(ctx context.Context) bo
 		}
 		return nil
 	}()
-	if err != nil {
+	if err != nil && !apierr.IsNotFound(err) { //todo: understand motivation for this - maybe has something to do with deletion of GC pod
 		logCtx.WithError(err).Warn("failed to clean-up pod")
 		if errorsutil.IsTransientErr(err) {
 			wfc.podCleanupQueue.AddRateLimited(key)
@@ -695,6 +696,13 @@ func (wfc *WorkflowController) processNextItem(ctx context.Context) bool {
 		return true
 	}
 
+	if !reconciliationNeeded(un) { //todo: understand motivation for this
+		println("deletethis: processing not needed")
+		// can get here if we already added the completed=true label,
+		// but we are still draining the controller's workflow workqueue
+		return true
+	}
+
 	wf, err := util.FromUnstructured(un)
 	if err != nil {
 		log.WithFields(log.Fields{"key": key, "error": err}).Warn("Failed to unmarshal key to workflow object")
@@ -704,11 +712,6 @@ func (wfc *WorkflowController) processNextItem(ctx context.Context) bool {
 		return true
 	}
 
-	if wf.Labels[common.LabelKeyCompleted] == "true" {
-		// can get here if we already added the completed=true label,
-		// but we are still draining the controller's workflow workqueue
-		return true
-	}
 	// this will ensure we process every incomplete workflow once every 20m
 	wfc.wfQueue.AddAfter(key, workflowResyncPeriod)
 
@@ -726,7 +729,7 @@ func (wfc *WorkflowController) processNextItem(ctx context.Context) bool {
 	// make sure this is removed from the throttler is complete
 	defer func() {
 		// must be done with woc
-		if woc.wf.Labels[common.LabelKeyCompleted] == "true" {
+		if !reconciliationNeeded(woc.wf) {
 			wfc.throttler.Remove(key.(string))
 		}
 	}()
@@ -753,6 +756,10 @@ func (wfc *WorkflowController) processNextItem(ctx context.Context) bool {
 	// See: https://github.com/kubernetes/client-go/blob/master/examples/workqueue/main.go
 	// c.handleErr(err, key)
 	return true
+}
+
+func reconciliationNeeded(wf metav1.Object) bool {
+	return wf.GetLabels()[common.LabelKeyCompleted] != "true" || slices.Contains(wf.GetFinalizers(), common.FinalizerArtifactGC)
 }
 
 // enqueueWfFromPodLabel will extract the workflow name from pod label and
@@ -800,7 +807,7 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers(ctx context.Context) 
 	wfc.wfInformer.AddEventHandler(
 		cache.FilteringResourceEventHandler{
 			FilterFunc: func(obj interface{}) bool {
-				return !common.UnstructuredHasCompletedLabel(obj)
+				return reconciliationNeeded(obj.(*unstructured.Unstructured))
 			},
 			Handler: cache.ResourceEventHandlerFuncs{
 				AddFunc: func(obj interface{}) {

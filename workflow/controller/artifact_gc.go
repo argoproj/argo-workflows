@@ -56,6 +56,7 @@ func (woc *wfOperationCtx) garbageCollectArtifacts(ctx context.Context) error {
 	}
 
 	// go through any GC pods that are already running and may have completed
+	// todo: break this out into its own method?
 	podCount := 0
 	for _, obj := range pods {
 		pod := obj.(*corev1.Pod)
@@ -122,17 +123,6 @@ func (woc *wfOperationCtx) garbageCollectArtifacts(ctx context.Context) error {
 	}
 	return nil
 }
-
-/*
-func (woc *wfOperationCtx) addArtifactGCFinalizer() {
-	if !artifactGCEnabled {
-		return
-	}
-	if woc.execWf.AnyArtifactGC() {
-		woc.log.Info("adding artifact GC finalizer")
-		woc.wf.Finalizers = append(woc.wf.Finalizers, common.FinalizerArtifactGC)
-	}
-}*/
 
 func (woc *wfOperationCtx) createPodsToDeleteArtifacts(ctx context.Context, artifacts wfv1.ArtifactSearchResults) error {
 	for _, a := range artifacts {

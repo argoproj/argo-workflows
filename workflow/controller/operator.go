@@ -199,6 +199,16 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 
 	woc.log.Info("Processing workflow")
 
+	if err := woc.garbageCollectArtifacts(ctx); err != nil {
+		woc.log.WithError(err).Error("failed to GC artifacts")
+		return
+	}
+
+	// todo: understand motivation to add this here
+	if woc.wf.Labels[common.LabelKeyCompleted] == "true" { // abort now, we do not want to preform any more processing on a complete workflow because we could corrupt it
+		return
+	}
+
 	// Set the Execute workflow spec for execution
 	// ExecWF is a runtime execution spec which merged from Wf, WFT and Wfdefault
 	err := woc.setExecWorkflow(ctx)
