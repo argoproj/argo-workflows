@@ -1,6 +1,5 @@
 import {Page} from 'argo-ui';
 import * as React from 'react';
-import {StaticContext} from 'react-router';
 import {Link, RouteComponentProps} from 'react-router-dom';
 import * as models from '../../../../models';
 import {Workflow} from '../../../../models';
@@ -57,7 +56,7 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
             selectedLabels: labelQueryParam.length > 0 ? labelQueryParam : savedOptions.selectedLabels,
             minStartedAt: this.parseTime(this.queryParam('minStartedAt')) || this.lastMonth(),
             maxStartedAt: this.parseTime(this.queryParam('maxStartedAt')) || this.nextDay(),
-            deep: this.parseBool(this.queryParam('deep'))
+            deep: this.queryParam('deep') === "true"
         };
     }
 
@@ -75,10 +74,10 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
         services.info.collectEvent('openedArchivedWorkflowList').then();
     }
 
-    public componentDidUpdate(prevProps: Readonly<RouteComponentProps<any, StaticContext>>, prevState: Readonly<State>, snapshot?: any): void {
+    public componentDidUpdate(): void {
         if (this.state.deep === true && this.state.workflows && this.state.workflows.length === 1) {
             const workflow = this.state.workflows[0];
-            const url = '/archived-workflows/' + (workflow.metadata.namespace || 'argo') + '/' + (workflow.metadata.uid || '');
+            const url = '/archived-workflows/' + workflow.metadata.namespace + '/' + (workflow.metadata.uid || '');
             this.props.history.push(url);
         }
     }
@@ -138,13 +137,6 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
         if (dateStr != null) {
             return new Date(dateStr);
         }
-    }
-
-    private parseBool(bool: string) {
-        if (bool === 'true') {
-            return true;
-        }
-        return false;
     }
 
     private changeFilters(
