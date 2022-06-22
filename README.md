@@ -84,7 +84,7 @@ kubectl apply -n argo -f https://raw.githubusercontent.com/argoproj/argo-workflo
 ## Features
 
 * UI to visualize and manage Workflows
-* Artifact support (S3, Artifactory, Alibaba Cloud OSS, HTTP, Git, GCS, raw)
+* Artifact support (S3, Artifactory, Alibaba Cloud OSS, Azure Blob Storage, HTTP, Git, GCS, raw)
 * Workflow templating to store commonly used Workflows in the cluster
 * Archiving Workflows after executing for later access
 * Scheduled workflows using cron

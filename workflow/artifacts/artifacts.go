@@ -6,6 +6,7 @@ import (
 	gohttp "net/http"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/azureblob"
 	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/gcs"
 	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/git"
@@ -228,6 +229,25 @@ func newDriver(ctx context.Context, art *wfv1.Artifact, ri resource.Interface) (
 			driver.ServiceAccountKey = serviceAccountKey
 		}
 		// key is not set, assume it is using Workload Idendity
+		return &driver, nil
+	}
+
+	if art.AzureBlob != nil {
+		var accountKey string
+
+		if !art.AzureBlob.UseSDKCreds && art.AzureBlob.AccountKeySecret != nil && art.AzureBlob.AccountKeySecret.Name != "" {
+			accountKeyBytes, err := ri.GetSecret(ctx, art.AzureBlob.AccountKeySecret.Name, art.AzureBlob.AccountKeySecret.Key)
+			if err != nil {
+				return nil, err
+			}
+			accountKey = accountKeyBytes
+		}
+		driver := azureblob.ArtifactDriver{
+			AccountKey:  accountKey,
+			Container:   art.AzureBlob.Container,
+			Endpoint:    art.AzureBlob.Endpoint,
+			UseSDKCreds: art.AzureBlob.UseSDKCreds,
+		}
 		return &driver, nil
 	}
 

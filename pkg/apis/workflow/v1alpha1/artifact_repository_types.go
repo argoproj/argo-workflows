@@ -24,6 +24,8 @@ type ArtifactRepository struct {
 	OSS *OSSArtifactRepository `json:"oss,omitempty" protobuf:"bytes,5,opt,name=oss"`
 	// GCS stores artifact in a GCS object store
 	GCS *GCSArtifactRepository `json:"gcs,omitempty" protobuf:"bytes,6,opt,name=gcs"`
+	// AzureBlob stores artifact in an Azure Blob Storage account
+	AzureBlob *AzureBlobArtifactRepository `json:"azureBlob,omitempty" protobuf:"bytes,7,opt,name=azureBlob"`
 }
 
 func (a *ArtifactRepository) IsArchiveLogs() bool {
@@ -39,6 +41,8 @@ func (a *ArtifactRepository) Get() ArtifactRepositoryType {
 		return nil
 	} else if a.Artifactory != nil {
 		return a.Artifactory
+	} else if a.AzureBlob != nil {
+		return a.AzureBlob
 	} else if a.GCS != nil {
 		return a.GCS
 	} else if a.HDFS != nil {
@@ -131,6 +135,22 @@ func (r *ArtifactoryArtifactRepository) IntoArtifactLocation(l *ArtifactLocation
 	}
 	u = fmt.Sprintf("%s%s", u, DefaultArchivePattern)
 	l.Artifactory = &ArtifactoryArtifact{ArtifactoryAuth: r.ArtifactoryAuth, URL: u}
+}
+
+// AzureBlobArtifactRepository defines the controller configuration for an artifactory artifact repository
+type AzureBlobArtifactRepository struct {
+	AzureBlobContainer `json:",inline" protobuf:"bytes,1,opt,name=blobContainer"`
+
+	// BlobNameFormat is defines the format of how to store blob names. Can reference workflow variables
+	BlobNameFormat string `json:"blobNameFormat,omitempty" protobuf:"bytes,2,opt,name=blobNameFormat"`
+}
+
+func (r *AzureBlobArtifactRepository) IntoArtifactLocation(l *ArtifactLocation) {
+	k := r.BlobNameFormat
+	if k == "" {
+		k = DefaultArchivePattern
+	}
+	l.AzureBlob = &AzureBlobArtifact{AzureBlobContainer: r.AzureBlobContainer, Blob: k}
 }
 
 // HDFSArtifactRepository defines the controller configuration for an HDFS artifact repository

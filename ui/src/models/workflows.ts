@@ -22,6 +22,10 @@ export interface Arguments {
     parameters?: Parameter[];
 }
 
+export interface AzureBlobArtifactRepository {
+    endpoint: string;
+    container: string;
+}
 export interface GCSArtifactRepository {
     endpoint: string;
     bucket: string;
@@ -40,10 +44,16 @@ export interface ArtifactRepository {
     gcs?: GCSArtifactRepository;
     s3?: S3ArtifactRepository;
     oss?: OSSArtifactRepository;
+    azureBlob?: AzureBlobArtifactRepository;
 }
-
 export interface ArtifactRepositoryRefStatus {
     artifactRepository: ArtifactRepository;
+}
+
+export interface AzureBlobArtifact {
+    endpoint?: string;
+    container?: string;
+    blob?: string;
 }
 
 export interface GCSArtifact {
@@ -104,6 +114,7 @@ export interface Artifact {
     oss?: OSSArtifact;
     raw?: RawArtifact;
     s3?: S3Artifact;
+    azureBlob?: AzureBlobArtifact;
     archive?: {
         none?: {};
     };

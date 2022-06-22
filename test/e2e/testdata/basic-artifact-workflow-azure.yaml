@@ -1,0 +1,41 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: basic-artifact-azure-
+spec:
+  entrypoint: main
+  artifactRepositoryRef:
+    configMap: azure-artifact-repositories
+    key: azure-v1
+  templates:
+    - name: main
+      dag:
+        tasks:
+          - name: hello
+            template: hello
+          - name: bye
+            template: bye
+            dependencies:
+              - hello
+    - name: hello
+      container:
+        image: argoproj/argosay:v2
+        args:
+          - echo
+          - hello world
+          - /tmp/hello_world.txt
+      outputs:
+        artifacts:
+          - name: hello_world
+            path: /tmp/hello_world.txt
+    - name: bye
+      container:
+        image: argoproj/argosay:v2
+        args:
+          - echo
+          - bye world
+          - /tmp/bye_world.txt
+      outputs:
+        artifacts:
+          - name: bye_world
+            path: /tmp/bye_world.txt

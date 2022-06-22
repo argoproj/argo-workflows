@@ -1,0 +1,40 @@
+# This example demonstrates the loading of a hard-wired input artifact from an S3 compliant
+# store. This can be AWS S3, Google Cloud Storage (GCS) with interoperability enabled,
+# or a self-hosted minio service. S3 guards access to buckets using an access key and
+# secret key, which will be stored as regular Kubernetes secrets, and referenced in the
+# workflow using secret selectors. To create the secret required for this example, first
+# run the following command:
+# $ kubectl create secret generic my-s3-credentials --from-literal=accessKey=<YOUR-ACCESS-KEY> --from-literal=secretKey=<YOUR-SECRET-KEY>
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: input-artifact-s3-
+spec:
+  entrypoint: input-artifact-s3-example
+  templates:
+  - name: input-artifact-s3-example
+    inputs:
+      artifacts:
+      - name: my-art
+        path: /my-artifact
+        azureBlob:
+          # For most people, the endpoint is in the form https://<account-name>.blob.core.windows.net.
+          # In sovereign clouds, or Azure Stack clouds, the endpoint may be different.
+          endpoint: https://myazurestorageaccountname.blob.core.windows.net
+          # The name of the container within the storage account.
+          container: my-container
+          # The path (within the container) to the artifact
+          blob: path/in/container
+          # accountKeySecret is a secret selector. It references the k8s secret named
+          # 'my-azureBlob-credentials'. This secret is expected to have the key
+          # 'accountKey', containing the Azure Blob Storage account name and access key.
+          accountKeySecret:
+            name: my-azureBlob-credentials
+            key: accountKey
+          # Optional: set UseSDKCreds to true and skip setting accountKeySecret if
+          # you are using environment variables to configure, or a Managed Identity.
+          # useSDKCreds: true
+    container:
+      image: debian:latest
+      command: [sh, -c]
+      args: ["ls -l /my-artifact"]
