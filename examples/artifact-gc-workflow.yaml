@@ -1,0 +1,30 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: artifact-gc-
+spec:
+  entrypoint: main
+  artifactGC:
+    strategy: OnWorkflowDeletion
+  templates:
+    - name: main
+      container:
+        image: argoproj/argosay:v2
+        command:
+          - sh
+          - -c
+        args:
+          - |
+            echo "hello world" > /tmp/message
+      outputs:
+        artifacts:
+          - name: on-completion
+            path: /tmp/message
+            s3:
+              key: on-completion
+            artifactGC:
+              strategy: OnWorkflowCompletion
+          - name: on-deletion
+            path: /tmp/message
+            s3:
+              key: on-deletion 

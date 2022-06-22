@@ -93,6 +93,11 @@ const (
 	ArtifactGCNever                ArtifactGCStrategy = ""
 )
 
+var AnyArtifactGCStrategy = map[ArtifactGCStrategy]bool{
+	ArtifactGCOnWorkflowCompletion: true,
+	ArtifactGCOnWorkflowDeletion:   true,
+}
+
 // PodGCStrategy is the strategy when to delete completed pods for GC.
 type PodGCStrategy string
 
@@ -799,6 +804,13 @@ func (tmpl *Template) HasParallelism() bool {
 	return tmpl.Parallelism != nil && *tmpl.Parallelism > 0
 }
 
+func (tmpl *Template) GetOutputs() *Outputs {
+	if tmpl != nil {
+		return &tmpl.Outputs
+	}
+	return nil
+}
+
 type Artifacts []Artifact
 
 func (a Artifacts) GetArtifactByName(name string) *Artifact {
@@ -1273,6 +1285,7 @@ type ArtifactSearchQuery struct {
 	ArtifactName         string                      `json:"artifactName,omitempty" protobuf:"bytes,2,rep,name=artifactName"`
 	TemplateName         string                      `json:"templateName,omitempty" protobuf:"bytes,3,rep,name=templateName"`
 	NodeId               string                      `json:"nodeId,omitempty" protobuf:"bytes,4,rep,name=nodeId"`
+	Deleted              *bool                       `json:"deleted,omitempty" protobuf:"varint,5,opt,name=deleted"`
 }
 
 type ArtifactSearchResult struct {
@@ -1322,6 +1335,9 @@ func (w *Workflow) SearchArtifacts(q *ArtifactSearchQuery) ArtifactSearchResults
 				match = false
 			}
 			if q.NodeId != "" && n.ID != q.NodeId {
+				match = false
+			}
+			if q.Deleted != nil && a.Deleted != *q.Deleted {
 				match = false
 			}
 			if match {
@@ -1725,6 +1741,14 @@ func (ws *WorkflowStatus) GetOffloadNodeStatusVersion() string {
 	return ws.OffloadNodeStatusVersion
 }
 
+func (ws *WorkflowStatus) GetStoredTemplates() []Template {
+	var out []Template
+	for _, t := range ws.StoredTemplates {
+		out = append(out, t)
+	}
+	return out
+}
+
 func (wf *Workflow) GetOffloadNodeStatusVersion() string {
 	return wf.Status.GetOffloadNodeStatusVersion()
 }
@@ -1898,6 +1922,8 @@ const (
 	ConditionTypeSpecError ConditionType = "SpecError"
 	// ConditionTypeMetricsError is an error during metric emission
 	ConditionTypeMetricsError ConditionType = "MetricsError"
+	// ConditionTypeArtifactGCError is an error during artifact GC
+	ConditionTypeArtifactGCError ConditionType = "ArtifactGCError"
 )
 
 type Condition struct {
@@ -2995,6 +3021,13 @@ func (wf *Workflow) GetTemplateByName(name string) *Template {
 	return nil
 }
 
+func (w *Workflow) GetTemplates() []Template {
+	return append(
+		w.GetExecSpec().Templates,
+		w.Status.GetStoredTemplates()...,
+	)
+}
+
 func (wf *Workflow) GetNodeByName(nodeName string) *NodeStatus {
 	nodeID := wf.NodeID(nodeName)
 	node, ok := wf.Status.Nodes[nodeID]
@@ -3053,6 +3086,19 @@ func (wf *Workflow) SetStoredTemplate(scope ResourceScope, resourceName string, 
 	}
 	return false, nil
 }
+
+// return true either if an individual artifact has an ArtifactGC strategy or the Workflow as a whole does
+// now we have Workflow.HasArtifactGC() so maybe don't need this
+/*func (w *Workflow) AnyArtifactGC() bool {
+	for _, t := range w.GetTemplates() {
+		for _, a := range t.GetOutputs().GetArtifacts() {
+			if a.GetArtifactGC().Strategy != ArtifactGCNever {
+				return true
+			}
+		}
+	}
+	return w.Spec.GetArtifactGC().GetStrategy() != ArtifactGCNever
+}*/
 
 // resolveTemplateReference resolves the stored template name of a given template holder on the template scope and determines
 // if it should be stored
