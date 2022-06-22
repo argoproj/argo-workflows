@@ -3533,7 +3533,11 @@ func (woc *wfOperationCtx) addFinalizers() {
 }
 
 func (woc *wfOperationCtx) addArtifactGCFinalizer() {
+	if !artifactGCEnabled {
+		return
+	}
 	if woc.execWf.HasArtifactGC() {
+		woc.log.Info("adding artifact GC finalizer")
 		finalizers := append(woc.wf.GetFinalizers(), common.FinalizerArtifactGC)
 		woc.wf.SetFinalizers(finalizers)
 	}
