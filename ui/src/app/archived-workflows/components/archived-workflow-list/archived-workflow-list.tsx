@@ -56,7 +56,7 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
             selectedLabels: labelQueryParam.length > 0 ? labelQueryParam : savedOptions.selectedLabels,
             minStartedAt: this.parseTime(this.queryParam('minStartedAt')) || this.lastMonth(),
             maxStartedAt: this.parseTime(this.queryParam('maxStartedAt')) || this.nextDay(),
-            deep: this.queryParam('deep') === "true"
+            deep: this.queryParam('deep') === 'true'
         };
     }
 
