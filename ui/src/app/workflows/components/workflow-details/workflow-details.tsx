@@ -1,7 +1,7 @@
 import {Page, SlidingPanel} from 'argo-ui';
 import * as classNames from 'classnames';
 import * as React from 'react';
-import {useContext, useEffect, useRef, useState} from 'react';
+import {useContext, useEffect, useState} from 'react';
 import {RouteComponentProps} from 'react-router';
 import {execSpec, Link, NodeStatus, Parameter, Workflow} from '../../../../models';
 import {ANNOTATION_KEY_POD_NAME_VERSION} from '../../../shared/annotations';
@@ -54,8 +54,6 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
     const [nodePanelView, setNodePanelView] = useState(queryParams.get('nodePanelView'));
     const [sidePanel, setSidePanel] = useState(queryParams.get('sidePanel'));
     const [parameters, setParameters] = useState<Parameter[]>([]);
-
-    const isRunningRedirectHandler = useRef(false);
 
     useEffect(
         useQueryParams(history, p => {
@@ -262,24 +260,15 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
                 }
             },
             err => {
-                // handle race condition case where new workflow added
-                if (!isRunningRedirectHandler.current) {
-                    // manually check if this name exists or not
-                    // this successfully resolving (aka .then being called) implies that setWorkflow has been called
-                    services.workflows
-                        .get(namespace, name)
-                        .then(() => {
-                            isRunningRedirectHandler.current = false;
-                        })
-                        .catch(e => {
-                            isRunningRedirectHandler.current = false;
+                services.workflows
+                    .get(namespace, name)
+                    .then()
+                    .catch(e => {
+                        if (e.status === 404) {
+                            navigation.goto(historyUrl('archived-workflows', {namespace, name, deep: true}));
+                        }
+                    });
 
-                            if (e.status === 404) {
-                                isRunningRedirectHandler.current = true;
-                                navigation.goto(historyUrl('archived-workflows', {namespace, name, deep: true}));
-                            }
-                        });
-                }
                 setError(err);
             }
         );
