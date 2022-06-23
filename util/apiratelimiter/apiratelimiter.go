@@ -41,9 +41,9 @@ func NewApiRateLimiter(limit int, burst int) *apiRateLimiter {
 func (r *apiRateLimiter) GetVisitor(ip string) *rate.Limiter {
 	r.mu.RLock()
 	v, exists := r.visitors[ip]
-	r.mu.RUnlock()
 
 	if !exists {
+		r.mu.RUnlock()
 		limiter := rate.NewLimiter(rate.Limit(r.limit), r.burst)
 		// Include the current time when creating a new visitor.
 		r.mu.Lock()
@@ -54,7 +54,6 @@ func (r *apiRateLimiter) GetVisitor(ip string) *rate.Limiter {
 
 	// Update the last seen time for the visitor
 	now := time.Now()
-	r.mu.RLock()
 	shouldUpdate := v.lastSeen.Before(now.Add(time.Duration(-1) * time.Minute))
 	r.mu.RUnlock()
 	if shouldUpdate {
