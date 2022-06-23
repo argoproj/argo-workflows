@@ -51,7 +51,7 @@ var (
 	}
 )
 
-// RatelimitUnaryServerInterceptor returns a new unary server interceptors that performs request rate limiting.
+// RatelimitUnaryServerInterceptor returns a new unary server interceptor that performs request rate limiting.
 func RatelimitUnaryServerInterceptor(ratelimiter apiratelimiter.ApiRateLimiter) grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
 		ip := getClientIP(ctx)
