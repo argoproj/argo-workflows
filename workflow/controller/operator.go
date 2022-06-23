@@ -244,13 +244,6 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 		}
 	}
 
-	// Update workflow duration variable
-	if woc.wf.Status.StartedAt.IsZero() {
-		woc.globalParams[common.GlobalVarWorkflowDuration] = fmt.Sprintf("%f", time.Duration(0).Seconds())
-	} else {
-		woc.globalParams[common.GlobalVarWorkflowDuration] = fmt.Sprintf("%f", time.Since(woc.wf.Status.StartedAt.Time).Seconds())
-	}
-
 	// Populate the phase of all the nodes prior to execution
 	for _, node := range woc.wf.Status.Nodes {
 		woc.preExecutionNodePhases[node.ID] = node.Phase
@@ -538,7 +531,7 @@ func (woc *wfOperationCtx) setGlobalParameters(executionParameters wfv1.Argument
 			woc.globalParams[common.GlobalVarWorkflowCronScheduleTime] = val
 		}
 	}
-	woc.globalParams[common.GlobalVarWorkflowStatus] = string(woc.wf.Status.Phase)
+
 	if woc.execWf.Spec.Priority != nil {
 		woc.globalParams[common.GlobalVarWorkflowPriority] = strconv.Itoa(int(*woc.execWf.Spec.Priority))
 	}
@@ -905,7 +898,7 @@ func (woc *wfOperationCtx) processNodeRetries(node *wfv1.NodeStatus, retryStrate
 		}
 
 		// See if we have waited past the deadline
-		if time.Now().Before(waitingDeadline) && int32(len(node.Children)) <= retryStrategy.Limit.IntVal {
+		if time.Now().Before(waitingDeadline) && retryStrategy.Limit != nil && int32(len(node.Children)) <= retryStrategy.Limit.IntVal {
 			woc.requeueAfter(timeToWait)
 			retryMessage := fmt.Sprintf("Backoff for %s", humanize.Duration(timeToWait))
 			return woc.markNodePhase(node.Name, node.Phase, retryMessage), false, nil
@@ -1943,10 +1936,24 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 	}
 
 	node = woc.wf.GetNodeByName(node.Name)
+	if node == nil {
+		err := fmt.Errorf("no Node found by the name of %s;  wf.Status.Nodes=%+v", node.Name, woc.wf.Status.Nodes)
+		woc.log.Error(err)
+		woc.markWorkflowError(ctx, err)
+		return node, err
+	}
 
 	// Swap the node back to retry node
 	if retryNodeName != "" {
 		retryNode := woc.wf.GetNodeByName(retryNodeName)
+
+		if retryNode == nil {
+			err := fmt.Errorf("no Retry Node found by the name of %s;  wf.Status.Nodes=%+v", retryNodeName, woc.wf.Status.Nodes)
+			woc.log.Error(err)
+			woc.markWorkflowError(ctx, err)
+			return node, err
+		}
+
 		if !retryNode.Fulfilled() && node.Fulfilled() { // if the retry child has completed we need to update outself
 			retryNode, err = woc.executeTemplate(ctx, retryNodeName, orgTmpl, tmplCtx, args, opts)
 			if err != nil {
@@ -3525,7 +3532,22 @@ func (woc *wfOperationCtx) setExecWorkflow(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+
+	// runtime value will be set after the substitution, otherwise will not be reflected from stored wf spec
+	woc.setGlobalRuntimeParameters()
+
 	return nil
+}
+
+func (woc *wfOperationCtx) setGlobalRuntimeParameters() {
+	woc.globalParams[common.GlobalVarWorkflowStatus] = string(woc.wf.Status.Phase)
+
+	// Update workflow duration variable
+	if woc.wf.Status.StartedAt.IsZero() {
+		woc.globalParams[common.GlobalVarWorkflowDuration] = fmt.Sprintf("%f", time.Duration(0).Seconds())
+	} else {
+		woc.globalParams[common.GlobalVarWorkflowDuration] = fmt.Sprintf("%f", time.Since(woc.wf.Status.StartedAt.Time).Seconds())
+	}
 }
 
 func (woc *wfOperationCtx) addFinalizers() {
@@ -3637,6 +3659,7 @@ func (woc *wfOperationCtx) substituteGlobalVariables() error {
 	if err != nil {
 		return err
 	}
+
 	resolveSpec, err := template.Replace(string(wfSpec), woc.globalParams, true)
 	if err != nil {
 		return err
@@ -3645,6 +3668,7 @@ func (woc *wfOperationCtx) substituteGlobalVariables() error {
 	if err != nil {
 		return err
 	}
+
 	return nil
 }
 
