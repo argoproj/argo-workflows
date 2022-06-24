@@ -52,7 +52,7 @@ func TarGzToWriter(sourcePath string, level int, w io.Writer) error {
 	return tarFile(sourcePath, tw)
 }
 
-// ZipToWriter zip's the source path to the supplied writer
+// ZipToWriter zip the source path to the supplied writer
 func ZipToWriter(sourcePath string, zw *zip.Writer) error {
 	sourcePath, err := filepath.Abs(sourcePath)
 	if err != nil {
