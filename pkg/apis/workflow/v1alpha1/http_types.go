@@ -53,3 +53,10 @@ type HTTP struct {
 	// InsecureSkipVerify is a bool when if set to true will skip TLS verification for the HTTP client
 	InsecureSkipVerify bool `json:"insecureSkipVerify,omitempty" protobuf:"bytes,7,opt,name=insecureSkipVerify"`
 }
+
+func (h *HTTP) GetBodyBytes() []byte {
+	if h.BodyFrom != nil {
+		return h.BodyFrom.Bytes
+	}
+	return nil
+}

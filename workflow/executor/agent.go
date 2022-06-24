@@ -265,25 +265,14 @@ func (ae *AgentExecutor) executeHTTPTemplate(ctx context.Context, tmpl wfv1.Temp
 			message = fmt.Sprintf("received non-2xx response code: %d", response.StatusCode)
 		}
 	} else {
-		var request map[string]interface{}
-		if tmpl.HTTP.BodyFrom != nil && tmpl.HTTP.BodyFrom.Bytes != nil {
-			request = map[string]interface{}{
+		evalScope := map[string]interface{}{
+			"request": map[string]interface{}{
 				"method":    tmpl.HTTP.Method,
 				"url":       tmpl.HTTP.URL,
 				"body":      tmpl.HTTP.Body,
-				"bodyBytes": tmpl.HTTP.BodyFrom.Bytes,
+				"bodyBytes": tmpl.HTTP.GetBodyBytes(),
 				"headers":   tmpl.HTTP.Headers.ToHeader(),
-			}
-		} else {
-			request = map[string]interface{}{
-				"method":  tmpl.HTTP.Method,
-				"url":     tmpl.HTTP.URL,
-				"body":    tmpl.HTTP.Body,
-				"headers": tmpl.HTTP.Headers.ToHeader(),
-			}
-		}
-		evalScope := map[string]interface{}{
-			"request": request,
+			},
 			"response": map[string]interface{}{
 				"statusCode": response.StatusCode,
 				"body":       string(bodyBytes),
