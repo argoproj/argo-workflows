@@ -204,8 +204,8 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 		return
 	}
 
-	// todo: understand motivation to add this here
-	if woc.wf.Labels[common.LabelKeyCompleted] == "true" { // abort now, we do not want to preform any more processing on a complete workflow because we could corrupt it
+	// todo: understand motivation to add this here; also, is it redundant with the check that was added in the Controller?
+	if woc.wf.Labels[common.LabelKeyCompleted] == "true" { // abort now, we do not want to perform any more processing on a complete workflow because we could corrupt it
 		return
 	}
 
