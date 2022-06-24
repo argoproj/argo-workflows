@@ -54,9 +54,12 @@ export const ArtifactPanel = ({
     useCollectEvent('openedArtifactPanel');
 
     const spec = execSpec(workflow);
-    const artifactGCStrategy =
-        spec.templates.find(t => t.name === workflow.status.nodes[artifact.nodeId].templateName)?.outputs?.artifacts.find(a => a.name === artifact.name).artifactGC?.strategy ||
-        spec.artifactGC?.strategy;
+    let artifacts = spec.templates.find(t => t.name === workflow.status.nodes[artifact.nodeId].templateName)?.outputs?.artifacts
+    let artifactGCStrategy = ""
+    if (artifacts !== undefined) {
+        artifactGCStrategy = artifacts.find(a => a.name === artifact.name).artifactGC?.strategy || spec.artifactGC?.strategy;
+    }
+
     return (
         <div style={{margin: 16, marginTop: 48}}>
             <FirstTimeUserPanel
