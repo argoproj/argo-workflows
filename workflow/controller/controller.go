@@ -519,15 +519,26 @@ func (wfc *WorkflowController) processNextPodCleanupItem(ctx context.Context) bo
 				ctx,
 				podName,
 				types.MergePatchType,
-				[]byte(`{"metadata": {"labels": {"workflows.argoproj.io/completed": "true"}}}`),
+				[]byte(`{"metadata": {"labels": {"workflows.argoproj.io/completed": "true"}, "finalizers": []}}`),
 				metav1.PatchOptions{},
 			)
 			if err != nil {
 				return err
 			}
 		case deletePod:
+			// remove the finalizer to allow the pod to be deleted
+			_, err := pods.Patch(
+				ctx,
+				podName,
+				types.MergePatchType,
+				[]byte(`{"metadata": {"finalizers": []}}`),
+				metav1.PatchOptions{},
+			)
+			if err != nil {
+				return err
+			}
 			propagation := metav1.DeletePropagationBackground
-			err := pods.Delete(ctx, podName, metav1.DeleteOptions{
+			err = pods.Delete(ctx, podName, metav1.DeleteOptions{
 				PropagationPolicy:  &propagation,
 				GracePeriodSeconds: wfc.Config.PodGCGracePeriodSeconds,
 			})
