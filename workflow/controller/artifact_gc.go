@@ -107,6 +107,7 @@ func (woc *wfOperationCtx) garbageCollectArtifacts(ctx context.Context) error {
 
 	// search for the Artifacts that are currently deletable
 	artifacts := woc.execWf.SearchArtifacts(&wfv1.ArtifactSearchQuery{ArtifactGCStrategies: strategies, Deleted: pointer.BoolPtr(false)})
+	fmt.Printf("deletethis: SearchArtifacts for what's deletable returned: %+v\n", artifacts)
 
 	// create pods for deleting those artifacts, if they don't already exist
 	if err := woc.createPodsToDeleteArtifacts(ctx, artifacts); err != nil {
@@ -115,6 +116,7 @@ func (woc *wfOperationCtx) garbageCollectArtifacts(ctx context.Context) error {
 
 	// check to see if everything's been deleted
 	remaining := woc.execWf.SearchArtifacts(&wfv1.ArtifactSearchQuery{ArtifactGCStrategies: wfv1.AnyArtifactGCStrategy, Deleted: pointer.BoolPtr(false)})
+	fmt.Printf("deletethis: SearchArtifacts for remaining returned: %+v\n", remaining)
 
 	if len(remaining) == 0 {
 		woc.log.Info("no remaining artifacts to GC, removing artifact GC finalizer")
@@ -149,6 +151,7 @@ func (woc *wfOperationCtx) createArtifactGCPod(ctx context.Context, a *wfv1.Arti
 	if err != nil {
 		return fmt.Errorf("failed to get pod by key: %w", err)
 	}
+	fmt.Printf("deletethis: checking if GC pod of name %s exists: %t\n", podName, exists)
 	if exists { // todo: verify it's not possible to create this pod twice (like it was deleted and then we re-created it) - I believe it will just be deleted with the Workflow
 		return nil
 	}
@@ -245,6 +248,7 @@ func (woc *wfOperationCtx) createArtifactGCPod(ctx context.Context, a *wfv1.Arti
 	woc.addMetadata(pod, tmpl)
 
 	_, err = woc.controller.kubeclientset.CoreV1().Pods(woc.wf.Namespace).Create(ctx, pod, metav1.CreateOptions{})
+	fmt.Printf("deletethis: attempted to create GC pod of name %s: err=%v\n ", pod.Name, err)
 
 	if err != nil && !apierr.IsAlreadyExists(err) {
 		return fmt.Errorf("failed to create pod: %w", err)
