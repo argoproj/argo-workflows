@@ -106,8 +106,7 @@ func (args *FakeArguments) GetArtifactByName(name string) *wfv1.Artifact {
 var _ wfv1.ArgumentsProvider = &FakeArguments{}
 
 // ValidateWorkflow accepts a workflow and performs validation against it.
-func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespacedGetter, cwftmplGetter templateresolution.ClusterWorkflowTemplateGetter, wf *wfv1.Workflow, opts ValidateOpts) (*wfv1.Conditions, error) {
-	wfConditions := &wfv1.Conditions{}
+func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespacedGetter, cwftmplGetter templateresolution.ClusterWorkflowTemplateGetter, wf *wfv1.Workflow, opts ValidateOpts) error {
 	ctx := newTemplateValidationCtx(wf, opts)
 	tmplCtx := templateresolution.NewContext(wftmplGetter, cwftmplGetter, wf, wf)
 	var wfSpecHolder wfv1.WorkflowSpecHolder
@@ -115,7 +114,7 @@ func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 	var err error
 
 	if len(wf.Name) > maxCharsInObjectName {
-		return nil, fmt.Errorf("workflow name %q must not be more than 63 characters long (currently %d)", wf.Name, len(wf.Name))
+		return fmt.Errorf("workflow name %q must not be more than 63 characters long (currently %d)", wf.Name, len(wf.Name))
 	}
 
 	entrypoint := wf.Spec.Entrypoint
@@ -125,7 +124,7 @@ func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 	if hasWorkflowTemplateRef {
 		err := ValidateWorkflowTemplateRefFields(wf.Spec)
 		if err != nil {
-			return nil, err
+			return err
 		}
 		if wf.Spec.WorkflowTemplateRef.ClusterScope {
 			wfSpecHolder, err = cwftmplGetter.Get(wf.Spec.WorkflowTemplateRef.Name)
@@ -133,7 +132,7 @@ func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 			wfSpecHolder, err = wftmplGetter.Get(wf.Spec.WorkflowTemplateRef.Name)
 		}
 		if err != nil {
-			return nil, err
+			return err
 		}
 		if entrypoint == "" {
 			entrypoint = wfSpecHolder.GetWorkflowSpec().Entrypoint
@@ -149,7 +148,7 @@ func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 		wfArgs.Artifacts = util.MergeArtifacts(wfArgs.Artifacts, wfSpecHolder.GetWorkflowSpec().Arguments.Artifacts)
 	}
 	if err != nil {
-		return nil, errors.Errorf(errors.CodeBadRequest, "spec.templates%s", err.Error())
+		return errors.Errorf(errors.CodeBadRequest, "spec.templates%s", err.Error())
 	}
 
 	// if we are linting, we don't care if spec.arguments.parameters.XXX doesn't have an
@@ -158,7 +157,7 @@ func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 	allowEmptyValues := ctx.Lint || (ctx.WorkflowTemplateValidation && !ctx.Submit)
 	err = validateArguments("spec.arguments.", wfArgs, allowEmptyValues)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	if len(wfArgs.Parameters) > 0 {
 		ctx.globalParams[common.GlobalVarWorkflowParameters] = placeholderGenerator.NextPlaceholder()
@@ -203,7 +202,7 @@ func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 	ctx.globalParams[common.GlobalVarWorkflowStatus] = placeholderGenerator.NextPlaceholder()
 
 	if !opts.IgnoreEntrypoint && entrypoint == "" {
-		return nil, errors.New(errors.CodeBadRequest, "spec.entrypoint is required")
+		return errors.New(errors.CodeBadRequest, "spec.entrypoint is required")
 	}
 
 	if !opts.IgnoreEntrypoint {
@@ -218,32 +217,32 @@ func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 		}
 		_, err = ctx.validateTemplateHolder(tmpl, tmplCtx, args)
 		if err != nil {
-			return nil, err
+			return err
 		}
 	}
 	if wf.Spec.OnExit != "" {
 		ctx.globalParams[common.GlobalVarWorkflowFailures] = placeholderGenerator.NextPlaceholder()
 		_, err = ctx.validateTemplateHolder(&wfv1.WorkflowStep{Template: wf.Spec.OnExit}, tmplCtx, &wf.Spec.Arguments)
 		if err != nil {
-			return nil, err
+			return err
 		}
 	}
 
 	if !wf.Spec.PodGC.GetStrategy().IsValid() {
-		return nil, errors.Errorf(errors.CodeBadRequest, "podGC.strategy unknown strategy '%s'", wf.Spec.PodGC.Strategy)
+		return errors.Errorf(errors.CodeBadRequest, "podGC.strategy unknown strategy '%s'", wf.Spec.PodGC.Strategy)
 	}
 	if _, err := wf.Spec.PodGC.GetLabelSelector(); err != nil {
-		return nil, errors.Errorf(errors.CodeBadRequest, "podGC.labelSelector invalid: %v", err)
+		return errors.Errorf(errors.CodeBadRequest, "podGC.labelSelector invalid: %v", err)
 	}
 
 	// Check if all templates can be resolved.
 	for _, template := range wf.Spec.Templates {
 		_, err := ctx.validateTemplateHolder(&wfv1.WorkflowStep{Template: template.Name}, tmplCtx, &FakeArguments{})
 		if err != nil {
-			return nil, errors.Errorf(errors.CodeBadRequest, "templates.%s %s", template.Name, err.Error())
+			return errors.Errorf(errors.CodeBadRequest, "templates.%s %s", template.Name, err.Error())
 		}
 	}
-	return wfConditions, nil
+	return nil
 }
 
 // construct a Set of unique keys
@@ -265,9 +264,9 @@ func ValidateWorkflowTemplateRefFields(wfSpec wfv1.WorkflowSpec) error {
 }
 
 // ValidateWorkflowTemplate accepts a workflow template and performs validation against it.
-func ValidateWorkflowTemplate(wftmplGetter templateresolution.WorkflowTemplateNamespacedGetter, cwftmplGetter templateresolution.ClusterWorkflowTemplateGetter, wftmpl *wfv1.WorkflowTemplate, opts ValidateOpts) (*wfv1.Conditions, error) {
+func ValidateWorkflowTemplate(wftmplGetter templateresolution.WorkflowTemplateNamespacedGetter, cwftmplGetter templateresolution.ClusterWorkflowTemplateGetter, wftmpl *wfv1.WorkflowTemplate, opts ValidateOpts) error {
 	if len(wftmpl.Name) > maxCharsInObjectName {
-		return nil, fmt.Errorf("workflow template name %q must not be more than 63 characters long (currently %d)", wftmpl.Name, len(wftmpl.Name))
+		return fmt.Errorf("workflow template name %q must not be more than 63 characters long (currently %d)", wftmpl.Name, len(wftmpl.Name))
 	}
 
 	wf := &wfv1.Workflow{
@@ -283,9 +282,9 @@ func ValidateWorkflowTemplate(wftmplGetter templateresolution.WorkflowTemplateNa
 }
 
 // ValidateClusterWorkflowTemplate accepts a cluster workflow template and performs validation against it.
-func ValidateClusterWorkflowTemplate(wftmplGetter templateresolution.WorkflowTemplateNamespacedGetter, cwftmplGetter templateresolution.ClusterWorkflowTemplateGetter, cwftmpl *wfv1.ClusterWorkflowTemplate, opts ValidateOpts) (*wfv1.Conditions, error) {
+func ValidateClusterWorkflowTemplate(wftmplGetter templateresolution.WorkflowTemplateNamespacedGetter, cwftmplGetter templateresolution.ClusterWorkflowTemplateGetter, cwftmpl *wfv1.ClusterWorkflowTemplate, opts ValidateOpts) error {
 	if len(cwftmpl.Name) > maxCharsInObjectName {
-		return nil, fmt.Errorf("cluster workflow template name %q must not be more than 63 characters long (currently %d)", cwftmpl.Name, len(cwftmpl.Name))
+		return fmt.Errorf("cluster workflow template name %q must not be more than 63 characters long (currently %d)", cwftmpl.Name, len(cwftmpl.Name))
 	}
 
 	wf := &wfv1.Workflow{
@@ -326,7 +325,7 @@ func ValidateCronWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamesp
 
 	wf := common.ConvertCronWorkflowToWorkflow(cronWf)
 
-	_, err := ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{})
+	err := ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{})
 	if err != nil {
 		return errors.Errorf(errors.CodeBadRequest, "cannot validate Workflow: %s", err)
 	}
