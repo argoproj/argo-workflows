@@ -152,7 +152,7 @@ func (woc *wfOperationCtx) createArtifactGCPod(ctx context.Context, a *wfv1.Arti
 		return fmt.Errorf("failed to get pod by key: %w", err)
 	}
 	fmt.Printf("deletethis: checking if GC pod of name %s exists: %t\n", podName, exists)
-	if exists { // todo: verify it's not possible to create this pod twice (like it was deleted and then we re-created it) - I believe it will just be deleted with the Workflow
+	if exists {
 		return nil
 	}
 	ar, err := woc.controller.artifactRepositories.Get(ctx, woc.wf.Status.ArtifactRepositoryRef)

@@ -1318,6 +1318,8 @@ func (w *Workflow) SearchArtifacts(q *ArtifactSearchQuery) ArtifactSearchResults
 		for _, a := range n.GetOutputs().GetArtifacts() {
 			match := true
 			if q.anyArtifactGCStrategy() {
+				// artifact strategy is either based on overall Workflow ArtifactGC Strategy, or
+				// if it's specified on the individual artifact level that takes priority
 				artifactStrategy := a.GetArtifactGC().GetStrategy()
 				wfStrategy := w.Spec.GetArtifactGC().GetStrategy()
 				strategy := wfStrategy

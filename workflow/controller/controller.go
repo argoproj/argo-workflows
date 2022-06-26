@@ -509,7 +509,7 @@ func (wfc *WorkflowController) processNextPodCleanupItem(ctx context.Context) bo
 		}
 		return nil
 	}()
-	if err != nil && !apierr.IsNotFound(err) { //todo: understand motivation for this - maybe has something to do with deletion of GC pod
+	if err != nil /*&& !apierr.IsNotFound(err)*/ { //todo: understand motivation for this - seems unreachable in the case of deletepod
 		logCtx.WithError(err).Warn("failed to clean-up pod")
 		if errorsutil.IsTransientErr(err) {
 			wfc.podCleanupQueue.AddRateLimited(key)
@@ -696,10 +696,8 @@ func (wfc *WorkflowController) processNextItem(ctx context.Context) bool {
 		return true
 	}
 
-	if !reconciliationNeeded(un) { //todo: understand motivation for this
-		println("deletethis: processing not needed")
-		// can get here if we already added the completed=true label,
-		// but we are still draining the controller's workflow workqueue
+	if !reconciliationNeeded(un) {
+		log.WithFields(log.Fields{"key": key}).Debug("Won't process Workflow since it's completed")
 		return true
 	}
 

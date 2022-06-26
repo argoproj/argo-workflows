@@ -199,12 +199,12 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 
 	woc.log.Info("Processing workflow")
 
+	// check to see if we can do garbage collection of Artifacts; this is the only functionality in this method which can be called for 'Completed' Workflows,
+	// so we can check for Completed Workflows after and return
 	if err := woc.garbageCollectArtifacts(ctx); err != nil {
 		woc.log.WithError(err).Error("failed to GC artifacts")
 		return
 	}
-
-	// todo: understand motivation to add this here; also, is it redundant with the check that was added in the Controller?
 	if woc.wf.Labels[common.LabelKeyCompleted] == "true" { // abort now, we do not want to perform any more processing on a complete workflow because we could corrupt it
 		return
 	}
