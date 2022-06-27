@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"hash/fnv"
 
 	log "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
@@ -36,13 +35,13 @@ func (woc *wfOperationCtx) garbageCollectArtifacts(ctx context.Context) error {
 		return nil
 	}
 
-	strategies := map[wfv1.ArtifactGCStrategy]bool{}
+	strategies := make(map[wfv1.ArtifactGCStrategy]struct{})
 
-	if woc.wf.Labels[common.LabelKeyCompleted] == "true" || woc.wf.DeletionTimestamp != nil {
-		strategies[wfv1.ArtifactGCOnWorkflowCompletion] = true
+	if woc.wf.Labels[common.LabelKeyCompleted] == "true" /*|| woc.wf.DeletionTimestamp != nil*/ { //todo: is there a critical reason why the second half of the if is in there?
+		strategies[wfv1.ArtifactGCOnWorkflowCompletion] = struct{}{}
 	}
 	if woc.wf.DeletionTimestamp != nil {
-		strategies[wfv1.ArtifactGCOnWorkflowDeletion] = true
+		strategies[wfv1.ArtifactGCOnWorkflowDeletion] = struct{}{}
 	}
 
 	if len(strategies) == 0 {
@@ -106,12 +105,14 @@ func (woc *wfOperationCtx) garbageCollectArtifacts(ctx context.Context) error {
 	}
 
 	// search for the Artifacts that are currently deletable
-	artifacts := woc.execWf.SearchArtifacts(&wfv1.ArtifactSearchQuery{ArtifactGCStrategies: strategies, Deleted: pointer.BoolPtr(false)})
-	fmt.Printf("deletethis: SearchArtifacts for what's deletable returned: %+v\n", artifacts)
-
-	// create pods for deleting those artifacts, if they don't already exist
-	if err := woc.createPodsToDeleteArtifacts(ctx, artifacts); err != nil {
-		return fmt.Errorf("failed to create pods to delete artifacts: %w", err)
+	for strategy := range strategies {
+		strategyMap := map[wfv1.ArtifactGCStrategy]bool{strategy: true} //todo: consider changing our ArtifactSearchQuery so it only takes one
+		artifacts := woc.execWf.SearchArtifacts(&wfv1.ArtifactSearchQuery{ArtifactGCStrategies: strategyMap, Deleted: pointer.BoolPtr(false)})
+		fmt.Printf("deletethis: SearchArtifacts for what's deletable according to strategy %s returned: %+v\n", strategy, artifacts)
+		// create pod for deleting those artifacts, if it doesn't already exist
+		if err := woc.createPodsToDeleteArtifacts(ctx, artifacts, strategy); err != nil {
+			return fmt.Errorf("failed to create pods to delete artifacts: %w", err)
+		}
 	}
 
 	// check to see if everything's been deleted
@@ -126,17 +127,22 @@ func (woc *wfOperationCtx) garbageCollectArtifacts(ctx context.Context) error {
 	return nil
 }
 
-func (woc *wfOperationCtx) createPodsToDeleteArtifacts(ctx context.Context, artifacts wfv1.ArtifactSearchResults) error {
-	for _, a := range artifacts {
-		if err := woc.createArtifactGCPod(ctx, &a); err != nil {
-			return fmt.Errorf("failed to delete artifact %q: %w", a.Name, err)
-		}
-	}
-	return nil
+func (woc *wfOperationCtx) getArtifactGCPodName(strategy wfv1.ArtifactGCStrategy) string {
+	return fmt.Sprintf("%s-agc-%s", woc.wf.Name, strategy)
 }
 
-func (woc *wfOperationCtx) createArtifactGCPod(ctx context.Context, a *wfv1.ArtifactSearchResult) error {
-	h := fnv.New32()
+func (woc *wfOperationCtx) createPodsToDeleteArtifacts(ctx context.Context, artifacts wfv1.ArtifactSearchResults, strategy wfv1.ArtifactGCStrategy) error {
+	/*for _, a := range artifacts {
+			if err := woc.createArtifactGCPod(ctx, &a); err != nil {
+				return fmt.Errorf("failed to delete artifact %q: %w", a.Name, err)
+			}
+		}
+		return nil
+	}
+
+	func (woc *wfOperationCtx) createArtifactGCPod(ctx context.Context, a *wfv1.ArtifactSearchResult) error {*/
+
+	/*h := fnv.New32()
 	if _, err := h.Write([]byte(a.NodeID)); err != nil {
 		return fmt.Errorf("failed to update hash with node ID: %w", err)
 	}
@@ -144,7 +150,8 @@ func (woc *wfOperationCtx) createArtifactGCPod(ctx context.Context, a *wfv1.Arti
 		return fmt.Errorf("failed to update hash with artifact name: %w", err)
 	}
 
-	podName := fmt.Sprintf("%s-agc-%x", woc.wf.Name, h.Sum32())
+	podName := fmt.Sprintf("%s-agc-%x", woc.wf.Name, h.Sum32())*/
+	podName := woc.getArtifactGCPodName(strategy)
 
 	// first make sure it doesn't already exist
 	_, exists, err := woc.controller.podInformer.GetIndexer().GetByKey(woc.wf.Namespace + "/" + podName)
@@ -159,21 +166,28 @@ func (woc *wfOperationCtx) createArtifactGCPod(ctx context.Context, a *wfv1.Arti
 	if err != nil {
 		return fmt.Errorf("failed to get artifact repository: %w", err)
 	}
-	if err := a.Relocate(ar.ToArtifactLocation()); err != nil {
-		return fmt.Errorf("failed to relocate artifact: %w", err)
+	for _, a := range artifacts {
+		if err := a.Relocate(ar.ToArtifactLocation()); err != nil { //todo: get a better handle on what this is doing
+			return fmt.Errorf("failed to relocate artifact: %w", err)
+		}
 	}
 
 	woc.log.
-		WithField("nodeID", a.NodeID).
-		WithField("artifactName", a.Name).
-		Info("create pod to delete artifact")
+		//WithField("nodeID", a.NodeID).
+		//WithField("artifactName", a.Name).
+		WithField("ArtifactGCStrategy", strategy).
+		Info("create pod to delete artifacts")
 
-	data, err := json.Marshal(a)
+	data, err := json.Marshal(artifacts)
 	if err != nil {
 		return fmt.Errorf("failed to marshall artifact: %w", err)
 	}
 
-	volumes, volumeMounts := createSecretVolumes(&wfv1.Template{Outputs: wfv1.Outputs{Artifacts: []wfv1.Artifact{a.Artifact}}})
+	artifactSlice := make([]wfv1.Artifact, len(artifacts))
+	for i, a := range artifacts {
+		artifactSlice[i] = a.Artifact
+	}
+	volumes, volumeMounts := createSecretVolumes(&wfv1.Template{Outputs: wfv1.Outputs{Artifacts: artifactSlice}})
 
 	pod := &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
@@ -184,8 +198,8 @@ func (woc *wfOperationCtx) createArtifactGCPod(ctx context.Context, a *wfv1.Arti
 				common.LabelKeyCompleted: "false",
 			},
 			Annotations: map[string]string{
-				common.AnnotationKeyNodeID:    a.NodeID,
-				common.AnnotationArtifactName: a.Name,
+				//common.AnnotationKeyNodeID:    a.NodeID,
+				common.AnnotationArtifactNames: data,
 			},
 			OwnerReferences: []metav1.OwnerReference{ // make sure we get deleted with the workflow
 				*metav1.NewControllerRef(woc.wf, wfv1.SchemeGroupVersion.WithKind(workflow.WorkflowKind)),

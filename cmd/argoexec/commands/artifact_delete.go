@@ -19,18 +19,20 @@ func NewArtifactDeleteCommand() *cobra.Command {
 		Use:          "delete",
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			a := &wfv1.Artifact{}
-			if err := json.Unmarshal([]byte(os.Getenv(common.EnvVarArtifact)), a); err != nil {
+			artifacts := []wfv1.Artifact{}
+			if err := json.Unmarshal([]byte(os.Getenv(common.EnvVarArtifact)), &artifacts); err != nil {
 				return fmt.Errorf("failed to unmarshal artifact: %w", err)
 			}
 
-			drv, err := wfartifacts.NewDriver(cmd.Context(), a, &resources{})
-			if err != nil {
-				return fmt.Errorf("failed to create driver: %w", err)
-			}
+			for _, a := range artifacts {
+				drv, err := wfartifacts.NewDriver(cmd.Context(), &a, &resources{})
+				if err != nil {
+					return fmt.Errorf("failed to create driver: %w", err)
+				}
 
-			if err := drv.Delete(a); err != nil {
-				return fmt.Errorf("failed to delete artifact: %w", err)
+				if err := drv.Delete(&a); err != nil {
+					return fmt.Errorf("failed to delete artifact: %w", err)
+				}
 			}
 			return nil
 		},
