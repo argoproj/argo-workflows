@@ -34,3 +34,4 @@ The Job can be uniquely named by the Workflow and the GC strategy, so we can eas
 
 The Job can run argoexec, which can handle a new command for artifact deletion.
 
+![Artifact GC Flow Chart](../assets/artifact-gc-proposal-flow-chart.png)
