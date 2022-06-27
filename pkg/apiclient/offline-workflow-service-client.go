@@ -82,7 +82,7 @@ func (o offlineClusterWorkflowTemplateNamespacedGetter) Get(name string) (*wfv1.
 }
 
 func (o OfflineWorkflowServiceClient) LintWorkflow(_ context.Context, req *workflowpkg.WorkflowLintRequest, _ ...grpc.CallOption) (*wfv1.Workflow, error) {
-	_, err := validate.ValidateWorkflow(&offlineWorkflowTemplateNamespacedGetter{}, &offlineClusterWorkflowTemplateNamespacedGetter{}, req.Workflow, validate.ValidateOpts{Lint: true})
+	err := validate.ValidateWorkflow(&offlineWorkflowTemplateNamespacedGetter{}, &offlineClusterWorkflowTemplateNamespacedGetter{}, req.Workflow, validate.ValidateOpts{Lint: true})
 	if err != nil {
 		return nil, err
 	}
