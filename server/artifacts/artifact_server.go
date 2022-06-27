@@ -356,22 +356,9 @@ func (a *ArtifactServer) httpFromError(err error, w http.ResponseWriter) {
 		statusCode = int(e.Status().Code)
 	} else {
 		// check if it's an internal ArgoError
-		switch resolvedError := err.(type) {
-		case argoerrors.ArgoError:
-			switch resolvedError.Code() {
-			case argoerrors.CodeUnauthorized:
-				statusCode = http.StatusUnauthorized
-			case argoerrors.CodeForbidden:
-				statusCode = http.StatusForbidden
-			case argoerrors.CodeNotFound:
-				statusCode = http.StatusNotFound
-			case argoerrors.CodeBadRequest:
-				statusCode = http.StatusBadRequest
-			case argoerrors.CodeNotImplemented:
-				statusCode = http.StatusNotImplemented
-			case argoerrors.CodeTimeout, argoerrors.CodeInternal:
-				statusCode = http.StatusInternalServerError
-			}
+		argoerr, typeOkay := err.(argoerrors.ArgoError)
+		if typeOkay {
+			statusCode = argoerr.HTTPCode()
 		}
 	}
 
