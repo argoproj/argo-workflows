@@ -85,6 +85,7 @@ type argoServer struct {
 	eventAsyncDispatch       bool
 	xframeOptions            string
 	accessControlAllowOrigin string
+	allowedLinkProtocol      []string
 	cache                    *cache.ResourceCache
 }
 
@@ -106,6 +107,7 @@ type ArgoServerOpts struct {
 	EventAsyncDispatch       bool
 	XFrameOptions            string
 	AccessControlAllowOrigin string
+	AllowedLinkProtocol      []string
 }
 
 func init() {
@@ -162,6 +164,7 @@ func NewArgoServer(ctx context.Context, opts ArgoServerOpts) (*argoServer, error
 		eventAsyncDispatch:       opts.EventAsyncDispatch,
 		xframeOptions:            opts.XFrameOptions,
 		accessControlAllowOrigin: opts.AccessControlAllowOrigin,
+		allowedLinkProtocol:      opts.AllowedLinkProtocol,
 		cache:                    resourceCache,
 	}, nil
 }
@@ -175,6 +178,10 @@ var backoff = wait.Backoff{
 
 func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(string)) {
 	config, err := as.configController.Get(ctx)
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = config.Sanitize(as.allowedLinkProtocol)
 	if err != nil {
 		log.Fatal(err)
 	}
