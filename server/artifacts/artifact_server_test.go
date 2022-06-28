@@ -15,6 +15,8 @@ import (
 
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 
+	argoerrors "github.com/argoproj/argo-workflows/v3/errors"
+
 	"github.com/stretchr/testify/assert"
 	testhttp "github.com/stretchr/testify/http"
 	"github.com/stretchr/testify/mock"
@@ -56,8 +58,10 @@ func (a *fakeArtifactDriver) OpenStream(artifact *wfv1.Artifact) (io.ReadCloser,
 	if err != nil {
 		return nil, err
 	}
-	if strings.HasSuffix(key, "notafile.txt") {
-		return nil, errors.New("not a valid file")
+	if strings.HasSuffix(key, "deletedFile.txt") {
+		return nil, argoerrors.New(argoerrors.CodeNotFound, "file deleted")
+	} else if strings.HasSuffix(key, "somethingElseWentWrong.txt") {
+		return nil, errors.New("whatever")
 	}
 	return io.NopCloser(bytes.NewReader(a.data)), nil
 }
@@ -203,25 +207,26 @@ func TestArtifactServer_GetArtifactFile(t *testing.T) {
 	tests := []struct {
 		path string
 		// expected results:
-		redirect       bool
-		location       string
-		success        bool
+		statusCode int
+		//redirect       bool
+		location string
+		//success        bool
 		isDirectory    bool
 		directoryFiles []string // verify these files are in there, if this is a directory
 	}{
 		{
-			path:     "/artifact-files/my-ns/workflows/my-wf/my-node/outputs/my-s3-artifact-directory",
-			redirect: true,
-			location: "/artifact-files/my-ns/workflows/my-wf/my-node/outputs/my-s3-artifact-directory/",
+			path:       "/artifact-files/my-ns/workflows/my-wf/my-node/outputs/my-s3-artifact-directory",
+			statusCode: 307, // redirect
+			location:   "/artifact-files/my-ns/workflows/my-wf/my-node/outputs/my-s3-artifact-directory/",
 		},
 		{
-			path:     "/artifact-files/my-ns/workflows/my-wf/my-node/outputs/my-s3-artifact-directory/",
-			redirect: true,
-			location: "/artifact-files/my-ns/workflows/my-wf/my-node/outputs/my-s3-artifact-directory/index.html",
+			path:       "/artifact-files/my-ns/workflows/my-wf/my-node/outputs/my-s3-artifact-directory/",
+			statusCode: 307, // redirect
+			location:   "/artifact-files/my-ns/workflows/my-wf/my-node/outputs/my-s3-artifact-directory/index.html",
 		},
 		{
 			path:        "/artifact-files/my-ns/workflows/my-wf/my-node/outputs/my-s3-artifact-directory/subdirectory/",
-			success:     true,
+			statusCode:  200,
 			isDirectory: true,
 			directoryFiles: []string{
 				"..",
@@ -231,17 +236,22 @@ func TestArtifactServer_GetArtifactFile(t *testing.T) {
 		},
 		{
 			path:        "/artifact-files/my-ns/workflows/my-wf/my-node/outputs/my-s3-artifact-directory/a.txt",
-			success:     true,
+			statusCode:  200,
 			isDirectory: false,
 		},
 		{
 			path:        "/artifact-files/my-ns/workflows/my-wf/my-node/outputs/my-s3-artifact-directory/subdirectory/b.txt",
-			success:     true,
+			statusCode:  200,
 			isDirectory: false,
 		},
 		{
-			path:        "/artifact-files/my-ns/workflows/my-wf/my-node/outputs/my-s3-artifact-directory/notafile.txt",
-			success:     false,
+			path:        "/artifact-files/my-ns/workflows/my-wf/my-node/outputs/my-s3-artifact-directory/deletedFile.txt",
+			statusCode:  404,
+			isDirectory: false,
+		},
+		{
+			path:        "/artifact-files/my-ns/workflows/my-wf/my-node/outputs/my-s3-artifact-directory/somethingElseWentWrong.txt",
+			statusCode:  500,
 			isDirectory: false,
 		},
 	}
@@ -253,28 +263,25 @@ func TestArtifactServer_GetArtifactFile(t *testing.T) {
 			recorder := httptest.NewRecorder()
 
 			s.GetArtifactFile(recorder, r)
-			if tt.redirect {
-				assert.Equal(t, 307, recorder.Result().StatusCode)
+			assert.Equal(t, tt.statusCode, recorder.Result().StatusCode)
+			if tt.statusCode >= 300 && tt.statusCode <= 399 { // redirect
 				assert.Equal(t, tt.location, recorder.Header().Get("Location"))
-			} else if tt.success {
-				if assert.Equal(t, 200, recorder.Result().StatusCode) {
-					all, err := io.ReadAll(recorder.Result().Body)
-					if err != nil {
-						panic(fmt.Sprintf("failed to read http body: %v", err))
-					}
-					if tt.isDirectory {
-						fmt.Printf("got directory listing:\n%s\n", all)
-						// verify that the files are contained in the listing we got back
-						assert.Equal(t, len(tt.directoryFiles), strings.Count(string(all), "<li>"))
-						for _, file := range tt.directoryFiles {
-							assert.True(t, strings.Contains(string(all), file))
-						}
-					} else {
-						assert.Equal(t, "my-data", string(all))
-					}
+			} else if tt.statusCode >= 200 && tt.statusCode <= 299 { // success
+				all, err := io.ReadAll(recorder.Result().Body)
+				if err != nil {
+					panic(fmt.Sprintf("failed to read http body: %v", err))
 				}
-			} else {
-				assert.NotEqual(t, 200, recorder.Result().StatusCode)
+				if tt.isDirectory {
+					fmt.Printf("got directory listing:\n%s\n", all)
+					// verify that the files are contained in the listing we got back
+					assert.Equal(t, len(tt.directoryFiles), strings.Count(string(all), "<li>"))
+					for _, file := range tt.directoryFiles {
+						assert.True(t, strings.Contains(string(all), file))
+					}
+				} else {
+					assert.Equal(t, "my-data", string(all))
+				}
+
 			}
 		})
 	}
@@ -426,4 +433,10 @@ func TestArtifactServer_httpFromError(t *testing.T) {
 
 	assert.Equal(t, http.StatusUnauthorized, w.StatusCode)
 	assert.Contains(t, w.Output, "Unauthorized")
+
+	w = &testhttp.TestResponseWriter{}
+	err = argoerrors.New(argoerrors.CodeNotFound, "not found")
+
+	s.httpFromError(err, w)
+	assert.Equal(t, http.StatusNotFound, w.StatusCode)
 }
