@@ -30,6 +30,8 @@ Issues:
 #### Proposal Option 2:
 To address these two issues, instead of having a single Pod for the <Workflow+GC Strategy>, we could have a single Pod per artifact being deleted. This is simpler and probably doesn't require a ConfigMap because a single Artifact spec is small and can go inside an Environment Variable. Also, the exit code of the Pod alone could be used to determine success vs failure. So, the Pod doesn't really need to "report" back anything.
 
+![Artifact GC Flow Chart](../assets/art-gc-flow-chart-option-2.png)
+
 The only issue is that there could potentially be a very large number of Pods (thousands if there are thousands of Artifacts) that need to be run.
 
 In Kubernetes there is a capability to limit the number of total pods that can run in a namespace concurrently (["pod quota"](https://kubernetes.io/docs/tasks/administer-cluster/manage-resources/quota-pod-namespace/)). In addition, the GC Pods could have a lower priority than our other Pods.
