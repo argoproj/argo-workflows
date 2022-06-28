@@ -2569,6 +2569,13 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#httpbodysource" class="md-nav__link">
+     HTTPBodySource
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#httpgetaction" class="md-nav__link">
      HTTPGetAction
   </a>
@@ -5969,6 +5976,13 @@
           <li class="md-nav__item">
   <a href="#httpauth" class="md-nav__link">
      HTTPAuth
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#httpbodysource" class="md-nav__link">
+     HTTPBodySource
   </a>
   
 </li>
@@ -13789,6 +13803,15 @@ into the Pod's container.</p>
 <td></td>
 </tr>
 <tr>
+<td>bodyFrom</td>
+<td><a href="#http-body-source">HTTPBodySource</a></td>
+<td><code>HTTPBodySource</code></td>
+<td align="center"></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
 <td>headers</td>
 <td><a href="#http-headers">HTTPHeaders</a></td>
 <td><code>HTTPHeaders</code></td>
@@ -13803,7 +13826,7 @@ into the Pod's container.</p>
 <td><code>bool</code></td>
 <td align="center"></td>
 <td></td>
-<td>insecureSkipVerify is a bool when if set to true will skip TLS verification for the HTTP client</td>
+<td>InsecureSkipVerify is a bool when if set to true will skip TLS verification for the HTTP client</td>
 <td></td>
 </tr>
 <tr>
@@ -13928,6 +13951,32 @@ into the Pod's container.</p>
 <td>oauth2</td>
 <td><a href="#o-auth2-auth">OAuth2Auth</a></td>
 <td><code>OAuth2Auth</code></td>
+<td align="center"></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h3 id="httpbodysource"><span id="http-body-source"></span> HTTPBodySource<a class="headerlink" href="#httpbodysource" title="Permanent link">&para;</a></h3>
+<p><strong>Properties</strong></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Go type</th>
+<th align="center">Required</th>
+<th>Default</th>
+<th>Description</th>
+<th>Example</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>bytes</td>
+<td>[]uint8 (formatted integer)</td>
+<td><code>[]uint8</code></td>
 <td align="center"></td>
 <td></td>
 <td></td>
