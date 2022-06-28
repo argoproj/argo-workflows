@@ -22,4 +22,5 @@ export interface GetUserInfoResponse {
     email?: string;
     emailVerified?: boolean;
     serviceAccountName?: string;
+    serviceAccountNamespace?: string;
 }

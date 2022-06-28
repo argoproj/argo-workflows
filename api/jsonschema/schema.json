@@ -5633,6 +5633,9 @@
         "serviceAccountName": {
           "type": "string"
         },
+        "serviceAccountNamespace": {
+          "type": "string"
+        },
         "subject": {
           "type": "string"
         }

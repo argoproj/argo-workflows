@@ -178,15 +178,17 @@ func TestServer_GetWFClient(t *testing.T) {
 			if assert.NoError(t, err) {
 				assert.NotEqual(t, clients, GetWfClient(ctx))
 				assert.NotEqual(t, kubeClient, GetKubeClient(ctx))
-				if assert.NotNil(t, GetClaims(ctx)) {
-					assert.Equal(t, []string{"my-group", "other-group"}, GetClaims(ctx).Groups)
-					assert.Equal(t, "my-sa", GetClaims(ctx).ServiceAccountName)
+				claims := GetClaims(ctx)
+				if assert.NotNil(t, claims) {
+					assert.Equal(t, []string{"my-group", "other-group"}, claims.Groups)
+					assert.Equal(t, "my-sa", claims.ServiceAccountName)
+					assert.Equal(t, "my-ns", claims.ServiceAccountNamespace)
 				}
 				assert.Equal(t, "my-sa", hook.LastEntry().Data["serviceAccount"])
 			}
 		}
 	})
-	t.Run("SSO+RBAC, Namespace delegation ON, precedence=2, Delagated", func(t *testing.T) {
+	t.Run("SSO+RBAC, Namespace delegation ON, precedence=2, Delegated", func(t *testing.T) {
 		os.Setenv("SSO_DELEGATE_RBAC_TO_NAMESPACE", "true")
 		ssoIf := &ssomocks.Interface{}
 		ssoIf.On("Authorize", mock.Anything, mock.Anything).Return(&types.Claims{Groups: []string{"my-group", "other-group"}}, nil)
@@ -197,9 +199,11 @@ func TestServer_GetWFClient(t *testing.T) {
 			if assert.NoError(t, err) {
 				assert.NotEqual(t, clients, GetWfClient(ctx))
 				assert.NotEqual(t, kubeClient, GetKubeClient(ctx))
-				if assert.NotNil(t, GetClaims(ctx)) {
-					assert.Equal(t, []string{"my-group", "other-group"}, GetClaims(ctx).Groups)
-					assert.Equal(t, "user1-sa", GetClaims(ctx).ServiceAccountName)
+				claims := GetClaims(ctx)
+				if assert.NotNil(t, claims) {
+					assert.Equal(t, []string{"my-group", "other-group"}, claims.Groups)
+					assert.Equal(t, "user1-sa", claims.ServiceAccountName)
+					assert.Equal(t, "user1-ns", claims.ServiceAccountNamespace)
 				}
 				assert.Equal(t, "user1-sa", hook.LastEntry().Data["serviceAccount"])
 			}
@@ -216,9 +220,11 @@ func TestServer_GetWFClient(t *testing.T) {
 			if assert.NoError(t, err) {
 				assert.NotEqual(t, clients, GetWfClient(ctx))
 				assert.NotEqual(t, kubeClient, GetKubeClient(ctx))
-				if assert.NotNil(t, GetClaims(ctx)) {
-					assert.Equal(t, []string{"my-group", "other-group"}, GetClaims(ctx).Groups)
-					assert.Equal(t, "my-sa", GetClaims(ctx).ServiceAccountName)
+				claims := GetClaims(ctx)
+				if assert.NotNil(t, claims) {
+					assert.Equal(t, []string{"my-group", "other-group"}, claims.Groups)
+					assert.Equal(t, "my-sa", claims.ServiceAccountName)
+					assert.Equal(t, "my-ns", claims.ServiceAccountNamespace)
 				}
 				assert.Equal(t, "my-sa", hook.LastEntry().Data["serviceAccount"])
 			}
@@ -235,9 +241,11 @@ func TestServer_GetWFClient(t *testing.T) {
 			if assert.NoError(t, err) {
 				assert.NotEqual(t, clients, GetWfClient(ctx))
 				assert.NotEqual(t, kubeClient, GetKubeClient(ctx))
-				if assert.NotNil(t, GetClaims(ctx)) {
-					assert.Equal(t, []string{"my-group", "other-group"}, GetClaims(ctx).Groups)
-					assert.Equal(t, "my-sa", GetClaims(ctx).ServiceAccountName)
+				claims := GetClaims(ctx)
+				if assert.NotNil(t, claims) {
+					assert.Equal(t, []string{"my-group", "other-group"}, claims.Groups)
+					assert.Equal(t, "my-sa", claims.ServiceAccountName)
+					assert.Equal(t, "my-ns", claims.ServiceAccountNamespace)
 				}
 				assert.Equal(t, "my-sa", hook.LastEntry().Data["serviceAccount"])
 			}
@@ -255,9 +263,11 @@ func TestServer_GetWFClient(t *testing.T) {
 			if assert.NoError(t, err) {
 				assert.NotEqual(t, clients, GetWfClient(ctx))
 				assert.NotEqual(t, kubeClient, GetKubeClient(ctx))
-				if assert.NotNil(t, GetClaims(ctx)) {
-					assert.Equal(t, []string{"my-group", "other-group"}, GetClaims(ctx).Groups)
-					assert.Equal(t, "my-sa", GetClaims(ctx).ServiceAccountName)
+				claims := GetClaims(ctx)
+				if assert.NotNil(t, claims) {
+					assert.Equal(t, []string{"my-group", "other-group"}, claims.Groups)
+					assert.Equal(t, "my-sa", claims.ServiceAccountName)
+					assert.Equal(t, "my-ns", claims.ServiceAccountNamespace)
 				}
 				assert.Equal(t, "my-sa", hook.LastEntry().Data["serviceAccount"])
 			}

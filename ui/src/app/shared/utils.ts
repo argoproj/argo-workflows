@@ -3,6 +3,7 @@ import {NODE_PHASE} from '../../models';
 import {Pagination} from './pagination';
 
 const managedNamespaceKey = 'managedNamespace';
+const userNamespaceKey = 'userNamespace';
 const currentNamespaceKey = 'current_namespace';
 
 export const Utils = {
@@ -57,6 +58,18 @@ export const Utils = {
         return wf.status.phase === 'Running';
     },
 
+    set userNamespace(value: string) {
+        if (value) {
+            localStorage.setItem(userNamespaceKey, value);
+        } else {
+            localStorage.removeItem(userNamespaceKey);
+        }
+    },
+
+    get userNamespace() {
+        return this.fixLocalStorageString(localStorage.getItem(userNamespaceKey));
+    },
+
     set managedNamespace(value: string) {
         if (value) {
             localStorage.setItem(managedNamespaceKey, value);
@@ -91,7 +104,7 @@ export const Utils = {
 
     get currentNamespace() {
         // we always prefer the managed namespace
-        return this.managedNamespace || this.fixLocalStorageString(localStorage.getItem(currentNamespaceKey));
+        return this.userNamespace || this.managedNamespace || this.fixLocalStorageString(localStorage.getItem(currentNamespaceKey));
     },
 
     // return a namespace, favoring managed namespace when set
@@ -101,7 +114,7 @@ export const Utils = {
 
     // return a namespace, never return null/undefined, defaults to "default"
     getNamespaceWithDefault(namespace: string) {
-        return this.managedNamespace || namespace || this.currentNamespace || 'default';
+        return this.userNamespace || this.managedNamespace || namespace || this.currentNamespace || 'default';
     },
 
     queryParams(filter: {
