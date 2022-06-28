@@ -3495,11 +3495,9 @@ func (woc *wfOperationCtx) setExecWorkflow(ctx context.Context) error {
 		cwftmplGetter := templateresolution.WrapClusterWorkflowTemplateInterface(woc.controller.wfclientset.ArgoprojV1alpha1().ClusterWorkflowTemplates())
 
 		// Validate the execution wfSpec
-		var wfConditions *wfv1.Conditions
 		err := waitutil.Backoff(retry.DefaultRetry,
 			func() (bool, error) {
-				var validationErr error
-				wfConditions, validationErr = validate.ValidateWorkflow(wftmplGetter, cwftmplGetter, woc.wf, validateOpts)
+				validationErr := validate.ValidateWorkflow(wftmplGetter, cwftmplGetter, woc.wf, validateOpts)
 				if validationErr != nil {
 					return !errorsutil.IsTransientErr(validationErr), validationErr
 				}
@@ -3509,12 +3507,6 @@ func (woc *wfOperationCtx) setExecWorkflow(ctx context.Context) error {
 			msg := fmt.Sprintf("invalid spec: %s", err.Error())
 			woc.markWorkflowFailed(ctx, msg)
 			return err
-		}
-
-		// If we received conditions during validation (such as SpecWarnings), add them to the Workflow object
-		if len(*wfConditions) > 0 {
-			woc.wf.Status.Conditions.JoinConditions(wfConditions)
-			woc.updated = true
 		}
 	}
 	err := woc.setGlobalParameters(woc.execWf.Spec.Arguments)

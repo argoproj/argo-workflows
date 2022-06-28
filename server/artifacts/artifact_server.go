@@ -18,6 +18,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/env"
 
+	argoerrors "github.com/argoproj/argo-workflows/v3/errors"
 	"github.com/argoproj/argo-workflows/v3/persist/sqldb"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/server/auth"
@@ -168,7 +169,7 @@ func (a *ArtifactServer) GetArtifactFile(w http.ResponseWriter, r *http.Request)
 
 		objects, err := driver.ListObjects(artifact)
 		if err != nil {
-			a.serverInternalError(err, w)
+			a.httpFromError(err, w)
 			return
 		}
 		log.Debugf("this is a directory, artifact: %+v; files: %v", artifact, objects)
@@ -176,7 +177,7 @@ func (a *ArtifactServer) GetArtifactFile(w http.ResponseWriter, r *http.Request)
 		key, _ := artifact.GetKey()
 		for _, object := range objects {
 
-			// object is prefixed the key, we must trim it
+			// object is prefixed by the key, we must trim it
 			dir, file := path.Split(strings.TrimPrefix(object, key+"/"))
 
 			// if dir is empty string, we are in the root dir
@@ -214,11 +215,11 @@ func (a *ArtifactServer) GetArtifactFile(w http.ResponseWriter, r *http.Request)
 
 	} else { // stream the file itself
 		log.Debugf("not a directory, artifact: %+v", artifact)
+
 		err = a.returnArtifact(w, artifact, driver)
 
 		if err != nil {
-			a.serverInternalError(err, w)
-			return
+			a.httpFromError(err, w)
 		}
 	}
 
@@ -306,6 +307,7 @@ func (a *ArtifactServer) getArtifactByUID(w http.ResponseWriter, r *http.Request
 	}
 
 	log.WithFields(log.Fields{"uid": uid, "nodeId": nodeId, "artifactName": artifactName, "isInput": isInput}).Info("Download artifact")
+
 	err = a.returnArtifact(w, art, driver)
 
 	if err != nil {
@@ -344,14 +346,25 @@ func (a *ArtifactServer) httpBadRequestError(w http.ResponseWriter) {
 }
 
 func (a *ArtifactServer) httpFromError(err error, w http.ResponseWriter) {
+	if err == nil {
+		return
+	}
+	statusCode := http.StatusInternalServerError
 	e := &apierr.StatusError{}
-	if errors.As(err, &e) {
+	if errors.As(err, &e) { // check if it's a Kubernetes API error
 		// There is a http error code somewhere in the error stack
-		statusCode := int(e.Status().Code)
-		http.Error(w, http.StatusText(statusCode), statusCode)
+		statusCode = int(e.Status().Code)
 	} else {
-		// Unknown error - return internal error
-		a.serverInternalError(err, w)
+		// check if it's an internal ArgoError
+		argoerr, typeOkay := err.(argoerrors.ArgoError)
+		if typeOkay {
+			statusCode = argoerr.HTTPCode()
+		}
+	}
+
+	http.Error(w, http.StatusText(statusCode), statusCode)
+	if statusCode == http.StatusInternalServerError {
+		log.WithError(err).Error("Artifact Server returned internal error")
 	}
 }
 
@@ -415,7 +428,9 @@ func (a *ArtifactServer) returnArtifact(w http.ResponseWriter, art *wfv1.Artifac
 
 	_, err = io.Copy(w, stream)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("failed to stream artifact: %v", err), http.StatusInternalServerError)
+		errStr := fmt.Sprintf("failed to stream artifact: %v", err)
+		http.Error(w, errStr, http.StatusInternalServerError)
+		return errors.New(errStr)
 	} else {
 		w.WriteHeader(http.StatusOK)
 	}

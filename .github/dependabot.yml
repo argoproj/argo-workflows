@@ -23,5 +23,6 @@ updates:
       interval: "weekly"
       day: "saturday"
     ignore:
+      - dependency-name: raw-loader
       - dependency-name: style-loader
     open-pull-requests-limit: 10

@@ -21,7 +21,7 @@ rules:
   - apiGroups:
       - argoproj.io
     resources:
-      - workflowtaskresult
+      - workflowtaskresults
     verbs:
       - create
       - patch
