@@ -24,3 +24,4 @@ The Job can run argoexec, which can handle a new command for artifact deletion.
 ### Considerations
 1. Passing the artifact spec to the GC Pod: we could JSON-serialize the spec for the artifacts, or if we want to reduce the byte count we could base64 encode it. We could pass it as an environment variable or volume mount a ConfigMap. Is there potential to reach the maximum size of environment variable or ConfigMap if the Workflow has thousands or tens of thousands of artifacts? Could look into having multiple environment variables or ConfigMaps...
 2. How do we want to handle the Job failing? Could be a transient error. Allow some number of retries?
+3. Should we use a Job or a standard Pod? (I guess if a node fails, Kubernetes will reschedule a Job, but not a Pod.)
