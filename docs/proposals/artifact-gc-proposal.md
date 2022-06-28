@@ -40,3 +40,4 @@ In Kubernetes there is a capability to limit the number of total pods that can r
 #### Considerations
 1. How do we want to handle the Pod failing? Could be a transient error. Allow some number of retries?
 2. Should we use a Job or a standard Pod? I guess if a node fails, Kubernetes will reschedule a Job, but not a Pod. But if we use a Job, we need to add new permissions related to Jobs, and also add a Job informer which requires some additional memory.
+3. Users should be recommended to uniquely name artifact keys such as through parameterization like so: 'key: "{{workflow.uid}}/hello.txt'. Otherwise, they could get into a scenario in which running a Workflow produces an artifact which is being GC'ed while an artifact of the same name is being created. 
