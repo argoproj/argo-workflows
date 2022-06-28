@@ -23,14 +23,18 @@ The Pod can run argoexec, which can handle a new command for artifact deletion.
 
 Passing the artifact spec to the GC Pod: we could JSON-serialize the spec for the artifacts, or if we want to reduce the byte count we could base64 encode it. We could volume mount it as a ConfigMap. 
 
-Issue: what if we reach the maximum size of a ConfigMap? We could introduce an additional ConfigMap once we reach capacity. 
+Issues: 
+1. what if we reach the maximum size of a ConfigMap? We could introduce an additional ConfigMap once we reach capacity. 
+2. How would the GC Pod report back the failure of individual deletions? Would it do it in the ConfigMaps? (if so, it would need to have write access to them)
 
 #### Proposal Option 2:
-Instead of having a single Pod for the <Workflow+GC Strategy>, we could have a single Pod per artifact being deleted. This is simpler and probably doesn't require a ConfigMap because a single Artifact spec is small and can go inside an Environment Variable. The only issue is that there could potentially be a very large number of Pods (thousands if there are thousands of Artifacts) that need to be run.
+To address these two issues, instead of having a single Pod for the <Workflow+GC Strategy>, we could have a single Pod per artifact being deleted. This is simpler and probably doesn't require a ConfigMap because a single Artifact spec is small and can go inside an Environment Variable. Also, the exit code of the Pod alone could be used to determine success vs failure. So, the Pod doesn't really need to "report" back anything.
+
+The only issue is that there could potentially be a very large number of Pods (thousands if there are thousands of Artifacts) that need to be run.
 
 In Kubernetes there is a capability to limit the number of total pods that can run in a namespace concurrently (["pod quota"](https://kubernetes.io/docs/tasks/administer-cluster/manage-resources/quota-pod-namespace/)). In addition, the GC Pods could have a lower priority than our other Pods.
 
 
-### Considerations
+#### Considerations
 1. How do we want to handle the Pod failing? Could be a transient error. Allow some number of retries?
 2. Should we use a Job or a standard Pod? I guess if a node fails, Kubernetes will reschedule a Job, but not a Pod. But if we use a Job, we need to add new permissions related to Jobs, and also add a Job informer which requires some additional memory.
