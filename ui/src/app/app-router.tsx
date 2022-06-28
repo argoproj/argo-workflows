@@ -14,7 +14,6 @@ import eventSources from './event-sources';
 import help from './help';
 import login from './login';
 import {ModalSwitch} from './modals/modal-switch';
-import pipelines from './pipelines';
 import plugins from './plugins';
 import reports from './reports';
 import sensors from './sensors';
@@ -31,7 +30,6 @@ import workflows from './workflows';
 
 const eventFlowUrl = uiUrl('event-flow');
 const sensorUrl = uiUrl('sensors');
-const pipelinesUrl = uiUrl('pipelines');
 const workflowsUrl = uiUrl('workflows');
 const workflowsEventBindingsUrl = uiUrl('workflow-event-bindings');
 const workflowTemplatesUrl = uiUrl('workflow-templates');
@@ -109,11 +107,6 @@ export const AppRouter = ({popupManager, history, notificationsManager}: {popupM
                                 iconClassName: 'fa fa-clock'
                             },
                             {
-                                title: 'Pipelines',
-                                path: pipelinesUrl + '/' + namespace,
-                                iconClassName: 'fa fa-wind'
-                            },
-                            {
                                 title: 'Event Flow',
                                 path: eventFlowUrl + namespaceSuffix,
                                 iconClassName: 'fa fa-broadcast-tower'
@@ -172,7 +165,6 @@ export const AppRouter = ({popupManager, history, notificationsManager}: {popupM
                                     <Redirect to={workflowsUrl} />
                                 </Route>
                                 <Route path={eventFlowUrl} component={eventflow.component} />
-                                <Route path={pipelinesUrl} component={pipelines.component} />
                                 <Route path={sensorUrl} component={sensors.component} />
                                 <Route path={eventSourceUrl} component={eventSources.component} />
                                 <Route path={workflowsUrl} component={workflows.component} />
