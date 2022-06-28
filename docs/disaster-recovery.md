@@ -11,7 +11,7 @@ kubectl get wf,cwf,cwft,wftmpl -A -o yaml > backup.yaml
 Importing example:
 
 ```bash
-kubectl apply -f backup.yaml
+kubectl apply -f backup.yaml 
 ```
 
 You should also back-up any SQL persistence you use regularly with whatever tool is provided with it.
