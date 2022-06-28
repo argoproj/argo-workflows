@@ -5,6 +5,11 @@ the [conventional commits](https://www.conventionalcommits.org/en/v1.0.0/#summar
 
 ## Upgrading to v3.4
 
+### chore!: Remove dataflow pipelines from codebase. (#9071)
+
+You are affected if you are using [dataflow pipelines](https://github.com/argoproj-labs/argo-dataflow) in the UI or via the `/pipelines` endpoint.
+We no longer support dataflow pipelines and all relevant code has been removed.
+
 ### feat!: Add entrypoint lookup. Fixes #8344
 
 Affected if:
