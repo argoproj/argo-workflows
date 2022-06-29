@@ -3757,7 +3757,11 @@
         ],
         "responses": {
           "200": {
-            "description": "An artifact file."
+            "description": "An artifact file.",
+            "schema": {
+              "type": "string",
+              "format": "binary"
+            }
           },
           "default": {
             "description": "An unexpected error response.",
@@ -3897,7 +3901,11 @@
         ],
         "responses": {
           "200": {
-            "description": "An artifact file."
+            "description": "An artifact file.",
+            "schema": {
+              "type": "string",
+              "format": "binary"
+            }
           },
           "default": {
             "description": "An unexpected error response.",
