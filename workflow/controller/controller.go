@@ -685,8 +685,13 @@ func (wfc *WorkflowController) processNextItem(ctx context.Context) bool {
 		return true
 	}
 
+	log.Infof("deletethis: processNextItem: key=%s", key)
+
 	wfc.workflowKeyLock.Lock(key.(string))
+	defer log.Infof("deletethis: unlocking key=%s", key)
 	defer wfc.workflowKeyLock.Unlock(key.(string))
+
+	log.Infof("deletethis: processNextItem - got past lock: key=%s", key)
 
 	// The workflow informer receives unstructured objects to deal with the possibility of invalid
 	// workflow manifests that are unable to unmarshal to workflow objects

@@ -107,7 +107,7 @@ func (woc *wfOperationCtx) garbageCollectArtifacts(ctx context.Context) error {
 
 	// search for the Artifacts that are currently deletable
 	artifacts := woc.execWf.SearchArtifacts(&wfv1.ArtifactSearchQuery{ArtifactGCStrategies: strategies, Deleted: pointer.BoolPtr(false)})
-	fmt.Printf("deletethis: SearchArtifacts for what's deletable returned: %+v\n", artifacts)
+	fmt.Printf("deletethis: SearchArtifacts for what's deletable returned: %+v - strategies:%v\n", artifacts, strategies)
 
 	// create pods for deleting those artifacts, if they don't already exist
 	if err := woc.createPodsToDeleteArtifacts(ctx, artifacts); err != nil {
@@ -151,7 +151,7 @@ func (woc *wfOperationCtx) createArtifactGCPod(ctx context.Context, a *wfv1.Arti
 	if err != nil {
 		return fmt.Errorf("failed to get pod by key: %w", err)
 	}
-	fmt.Printf("deletethis: checking if GC pod of name %s exists: %t\n", podName, exists)
+	fmt.Printf("deletethis: checking if GC pod of name %s (for artifact %s) exists: %t\n", podName, a.Name, exists)
 	if exists {
 		return nil
 	}
