@@ -1,7 +1,7 @@
 import * as React from 'react';
 import {useEffect, useState} from 'react';
 import MonacoEditor from 'react-monaco-editor';
-import {Artifact, ArtifactRepository, Workflow} from '../../../../models';
+import {Artifact, ArtifactRepository, execSpec, Workflow} from '../../../../models';
 import {artifactKey, artifactURN} from '../../../shared/artifacts';
 import ErrorBoundary from '../../../shared/components/error-boundary';
 import {ErrorNotice} from '../../../shared/components/error-notice';
@@ -53,6 +53,13 @@ export const ArtifactPanel = ({
     }, [downloadUrl]);
     useCollectEvent('openedArtifactPanel');
 
+    const spec = execSpec(workflow);
+    const artifacts = spec.templates.find(t => t.name === workflow.status.nodes[artifact.nodeId].templateName)?.outputs?.artifacts;
+    let artifactGCStrategy = '';
+    if (artifacts !== undefined) {
+        artifactGCStrategy = artifacts.find(a => a.name === artifact.name).artifactGC?.strategy || spec.artifactGC?.strategy;
+    }
+
     return (
         <div style={{margin: 16, marginTop: 48}}>
             <FirstTimeUserPanel
@@ -63,12 +70,16 @@ export const ArtifactPanel = ({
                 }>
                 <ErrorBoundary>
                     <div className='white-box'>
-                        <h3>{artifact.name}</h3>
+                        <h3>
+                            <i className='fa fa-file-alt' /> {artifact.name}
+                        </h3>
                         <p>
                             <small>{urn}</small>
                         </p>
                         {error && <ErrorNotice error={error} />}
-                        {show ? (
+                        {artifact.deleted ? (
+                            <p>Artifact has been deleted.</p>
+                        ) : show ? (
                             <ViewBox>
                                 {object ? (
                                     <MonacoEditor
@@ -92,11 +103,16 @@ export const ArtifactPanel = ({
                                 Unknown extension "{ext}", <a onClick={() => setShow(true)}>show anyway</a>.
                             </p>
                         )}
-                        <p style={{marginTop: 10}}>
-                            <LinkButton to={downloadUrl}>
-                                <i className='fa fa-download' /> {filename || 'Download'}
-                            </LinkButton>
-                        </p>
+                        {artifactGCStrategy && !artifact.deleted && (
+                            <p>Artifact will be automatically deleted shortly after the workflow {artifactGCStrategy === 'OnWorkflowCompletion' ? 'completes' : 'is deleted'}.</p>
+                        )}
+                        {!artifact.deleted && (
+                            <p style={{marginTop: 10}}>
+                                <LinkButton to={downloadUrl}>
+                                    <i className='fa fa-download' /> {filename || 'Download'}
+                                </LinkButton>
+                            </p>
+                        )}
                         <GiveFeedbackLink href='https://github.com/argoproj/argo-workflows/issues/7743' />
                     </div>
                 </ErrorBoundary>
