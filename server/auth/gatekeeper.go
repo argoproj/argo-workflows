@@ -7,6 +7,7 @@ import (
 	"os"
 	"sort"
 	"strconv"
+	"strings"
 
 	eventsource "github.com/argoproj/argo-events/pkg/client/eventsource/clientset/versioned"
 	sensor "github.com/argoproj/argo-events/pkg/client/sensor/clientset/versioned"
@@ -61,6 +62,7 @@ type gatekeeper struct {
 	clients                *servertypes.Clients
 	restConfig             *rest.Config
 	ssoIf                  sso.Interface
+	tokenSecret            string
 	clientForAuthorization ClientForAuthorization
 	// The namespace the server is installed in.
 	namespace    string
@@ -69,7 +71,7 @@ type gatekeeper struct {
 	cache        *cache.ResourceCache
 }
 
-func NewGatekeeper(modes Modes, clients *servertypes.Clients, restConfig *rest.Config, ssoIf sso.Interface, clientForAuthorization ClientForAuthorization, namespace string, ssoNamespace string, namespaced bool, cache *cache.ResourceCache) (Gatekeeper, error) {
+func NewGatekeeper(modes Modes, clients *servertypes.Clients, restConfig *rest.Config, ssoIf sso.Interface, tokenSecret string, clientForAuthorization ClientForAuthorization, namespace string, ssoNamespace string, namespaced bool, cache *cache.ResourceCache) (Gatekeeper, error) {
 	if len(modes) == 0 {
 		return nil, fmt.Errorf("must specify at least one auth mode")
 	}
@@ -78,6 +80,7 @@ func NewGatekeeper(modes Modes, clients *servertypes.Clients, restConfig *rest.C
 		clients,
 		restConfig,
 		ssoIf,
+		tokenSecret,
 		clientForAuthorization,
 		namespace,
 		ssoNamespace,
@@ -198,6 +201,13 @@ func (s gatekeeper) getClients(ctx context.Context, req interface{}) (*servertyp
 		}
 		claims, _ := serviceaccount.ClaimSetFor(restConfig)
 		return clients, claims, nil
+	case Token:
+		err := s.checkToken(ctx, authorization)
+		if err != nil {
+			return nil, nil, status.Error(codes.Unauthenticated, err.Error())
+		}
+		claims, _ := serviceaccount.ClaimSetFor(s.restConfig)
+		return s.clients, claims, nil
 	case Server:
 		claims, _ := serviceaccount.ClaimSetFor(s.restConfig)
 		return s.clients, claims, nil
@@ -323,6 +333,23 @@ func (s *gatekeeper) authorizationForServiceAccount(ctx context.Context, service
 		return "", fmt.Errorf("failed to get service account secret: %w", err)
 	}
 	return "Bearer " + string(secret.Data["token"]), nil
+}
+
+func (s *gatekeeper) checkToken(ctx context.Context, authorization string) (error) {
+	restConfig := s.restConfig
+	token := strings.TrimSpace(strings.TrimPrefix(authorization, "Bearer"))
+	restConfig.BearerToken = token
+	// Check token itself
+	secret, err := s.cache.GetSecret(ctx, s.namespace, s.tokenSecret)
+	if err != nil {
+		return fmt.Errorf("Failed to get secret: %w", err)
+	}
+	for _, secretToken := range secret.Data {
+		if string(secretToken) == token {
+			return nil
+		}
+	}
+	return fmt.Errorf("Failed to authenticate with secret")
 }
 
 func addClaimsLogFields(claims *types.Claims, fields log.Fields) log.Fields {

@@ -105,6 +105,9 @@ type Config struct {
 
 	// SSO in settings for single-sign on
 	SSO SSOConfig `json:"sso,omitempty"`
+
+	// Secret name for token auth mode
+	TokenSecretName string `json:"tokenSecretName,omitempty"`
 }
 
 func (c Config) GetExecutor() *apiv1.Container {

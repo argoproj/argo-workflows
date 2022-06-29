@@ -71,7 +71,7 @@ func newArgoKubeClient(ctx context.Context, clientConfig clientcmd.ClientConfig,
 		Sensor:      sensorInterface,
 		Workflow:    wfClient,
 	}
-	gatekeeper, err := auth.NewGatekeeper(auth.Modes{auth.Server: true}, clients, restConfig, nil, auth.DefaultClientForAuthorization, "unused", "unused", false, nil)
+	gatekeeper, err := auth.NewGatekeeper(auth.Modes{auth.Server: true}, clients, restConfig, nil, "", auth.DefaultClientForAuthorization, "unused", "unused", false, nil)
 	if err != nil {
 		return nil, nil, err
 	}

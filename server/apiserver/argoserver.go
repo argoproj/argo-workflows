@@ -129,22 +129,28 @@ func NewArgoServer(ctx context.Context, opts ArgoServerOpts) (*argoServer, error
 	configController := config.NewController(opts.Namespace, opts.ConfigName, opts.Clients.Kubernetes)
 	var resourceCache *cache.ResourceCache = nil
 	ssoIf := sso.NullSSO
-	if opts.AuthModes[auth.SSO] {
+	tokenSecret := ""
+	if opts.AuthModes[auth.SSO] || opts.AuthModes[auth.Token] {
 		c, err := configController.Get(ctx)
 		if err != nil {
 			return nil, err
 		}
-		ssoIf, err = sso.New(c.SSO, opts.Clients.Kubernetes.CoreV1().Secrets(opts.Namespace), opts.BaseHRef, opts.TLSConfig != nil)
-		if err != nil {
-			return nil, err
+		if opts.AuthModes[auth.SSO] {
+			ssoIf, err = sso.New(c.SSO, opts.Clients.Kubernetes.CoreV1().Secrets(opts.Namespace), opts.BaseHRef, opts.TLSConfig != nil)
+			if err != nil {
+				return nil, err
+			}
+			log.Info("SSO enabled")
+		} else {
+			tokenSecret = c.TokenSecretName
+			log.Info("Token authentication enabled, using secret %w", tokenSecret)
 		}
 		resourceCache = cache.NewResourceCache(opts.Clients.Kubernetes, getResourceCacheNamespace(opts))
 		resourceCache.Run(ctx.Done())
-		log.Info("SSO enabled")
 	} else {
 		log.Info("SSO disabled")
 	}
-	gatekeeper, err := auth.NewGatekeeper(opts.AuthModes, opts.Clients, opts.RestConfig, ssoIf, auth.DefaultClientForAuthorization, opts.Namespace, opts.SSONamespace, opts.Namespaced, resourceCache)
+	gatekeeper, err := auth.NewGatekeeper(opts.AuthModes, opts.Clients, opts.RestConfig, ssoIf, tokenSecret, auth.DefaultClientForAuthorization, opts.Namespace, opts.SSONamespace, opts.Namespaced, resourceCache)
 	if err != nil {
 		return nil, err
 	}
