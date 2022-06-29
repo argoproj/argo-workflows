@@ -5,9 +5,12 @@ metadata:
 spec:
   entrypoint: main
   artifactGC:
-    strategy: OnWorkflowDeletion
+    strategy: OnWorkflowDeletion # the overall strategy, which can be overridden
   templates:
     - name: main
+      archiveLocation:
+        s3:
+          key: on-deletion # default archive location for any artifacts that don't define it themselves
       container:
         image: argoproj/argosay:v2
         command:
@@ -26,5 +29,3 @@ spec:
               strategy: OnWorkflowCompletion
           - name: on-deletion
             path: /tmp/message
-            s3:
-              key: on-deletion 
