@@ -9,17 +9,13 @@ spec:
       dag:
         tasks:
           - name: dag1-step1
-            template: gen-random-int-javascript
+            template: node-to-succeed
           - name: dag1-step2
             dependencies: [dag1-step1]
             template: middle-dag
           - name: dag1-step3-tofail
             dependencies: [dag1-step2]
             template: node-to-fail
-            container:
-              image: alpine:latest
-              command: [sh, -c]
-              args: ["exit 1"]
 
     - name: middle-dag
       dag:
@@ -31,24 +27,22 @@ spec:
       dag:
         tasks:
           - name: dag3-step1
-            template: gen-random-int-javascript
+            template: node-to-succeed
           - name: dag3-step2
             dependencies: [dag3-step1]
-            template: gen-random-int-javascript
+            template: node-to-succeed
           - name: dag3-step3
             dependencies: [dag3-step2]
-            template: gen-random-int-javascript
+            template: node-to-succeed
 
-    - name: gen-random-int-javascript
-      script:
-        image: node:9.1-alpine
-        command: [node]
-        source: |
-          var rand = Math.floor(Math.random() * 100);
-          console.log(rand);
+    - name: node-to-succeed
+      container:
+        image: argoproj/argosay:v2
+        command: [ sh, -c ]
+        args: [ "exit 0" ]
 
     - name: node-to-fail
       container:
-        image: alpine:latest
+        image: argoproj/argosay:v2
         command: [sh, -c]
         args: ["exit 1"]
