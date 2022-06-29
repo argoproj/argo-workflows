@@ -1895,8 +1895,6 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 	if err != nil {
 		node = woc.markNodeError(nodeName, err)
 
-		woc.controller.syncManager.Release(woc.wf, node.ID, processedTmpl.Synchronization)
-
 		// If retry policy is not set, or if it is not set to Always or OnError, we won't attempt to retry an errored container
 		// and we return instead.
 		retryStrategy := woc.retryStrategy(processedTmpl)
@@ -1904,6 +1902,7 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 			(retryStrategy.RetryPolicy != wfv1.RetryPolicyAlways &&
 				retryStrategy.RetryPolicy != wfv1.RetryPolicyOnError &&
 				retryStrategy.RetryPolicy != wfv1.RetryPolicyOnTransientError) {
+			woc.controller.syncManager.Release(woc.wf, node.ID, processedTmpl.Synchronization)
 			return node, err
 		}
 	}
