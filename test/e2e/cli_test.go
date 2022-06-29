@@ -874,9 +874,6 @@ func (s *CLISuite) TestWorkflowRetryNestedDag() {
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeFailed).
 		Then().
-		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.NodeFailed, status.Nodes.FindByDisplayName("retry-nested-dag.dag1-step3-tofail").Phase)
-		}).
 		RunCli([]string{"retry", "retry-nested-dag", "--restart-successful", "--node-field-selector", "name=retry-nested-dag.dag1-step2.dag2-step1.dag3-step1"}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err, output) {
 				assert.Contains(t, output, "Name:")
