@@ -25,7 +25,7 @@ Passing the artifact spec to the GC Pod: we could JSON-serialize the spec for th
 
 Issues: 
 1. what if we reach the maximum size of a ConfigMap? We could introduce an additional ConfigMap once we reach capacity. 
-2. How would the GC Pod report back the failure of individual deletions? Would it do it in the ConfigMaps? (if so, it would need to have write access to them)
+2. How would the GC Pod report back the failure of individual deletions? Would it do it in the ConfigMaps? (if so, it would need to have write access to them) Or would we create some new CRD type that it can write to and the Controller can read from?
 
 #### Proposal Option 2:
 To address these two issues, instead of having a single Pod for the <Workflow+GC Strategy>, we could have a single Pod per artifact being deleted. This is simpler and probably doesn't require a ConfigMap because a single Artifact spec is small and can go inside an Environment Variable. Also, the exit code of the Pod alone could be used to determine success vs failure. So, the Pod doesn't really need to "report" back anything.
