@@ -868,8 +868,6 @@ func (s *CLISuite) TestWorkflowRetry() {
 }
 
 func (s *CLISuite) TestWorkflowRetryNestedDag() {
-	var retryTime metav1.Time
-
 	s.Given().
 		Workflow("@testdata/retry-nested-dag-test.yaml").
 		When().
@@ -879,7 +877,6 @@ func (s *CLISuite) TestWorkflowRetryNestedDag() {
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.NodeFailed, status.Nodes.FindByDisplayName("retry-nested-dag.dag1-step3-tofail").Phase)
 		}).
-		Wait(3*time.Second).
 		RunCli([]string{"retry", "@latest", "--restart-successful", "--node-field-selector", "name=retry-nested-dag.dag1-step2.dag2-step1.dag3-step1"}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err, output) {
 				assert.Contains(t, output, "Name:")
@@ -889,9 +886,9 @@ func (s *CLISuite) TestWorkflowRetryNestedDag() {
 		WaitForWorkflow(fixtures.ToBeFailed).
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.NodeSucceeded, status.Nodes.FindByDisplayName("fail-nested-dag.dag1-step2.dag2-step1.dag3-step3").Phase)
-			assert.Equal(t, wfv1.NodeSucceeded, status.Nodes.FindByDisplayName("fail-nested-dag.dag1-step2.dag2-step1.dag3-step2").Phase)
-			assert.Equal(t, wfv1.NodeSucceeded, status.Nodes.FindByDisplayName("fail-nested-dag.dag1-step2.dag2-step1.dag3-step1").Phase)
+			assert.Equal(t, wfv1.NodeSucceeded, status.Nodes.FindByDisplayName("retry-nested-dag.dag1-step2.dag2-step1.dag3-step3").Phase)
+			assert.Equal(t, wfv1.NodeSucceeded, status.Nodes.FindByDisplayName("retry-nested-dag.dag1-step2.dag2-step1.dag3-step2").Phase)
+			assert.Equal(t, wfv1.NodeSucceeded, status.Nodes.FindByDisplayName("retry-nested-dag.dag1-step2.dag2-step1.dag3-step1").Phase)
 		})
 }
 
