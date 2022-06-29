@@ -884,9 +884,9 @@ func (s *CLISuite) TestWorkflowRetryNestedDag() {
 		WaitForWorkflow(fixtures.ToBeFailed).
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.NodeSucceeded, status.Nodes.FindByDisplayName("retry-nested-dag.dag1-step2.dag2-step1.dag3-step3").Phase)
-			assert.Equal(t, wfv1.NodeSucceeded, status.Nodes.FindByDisplayName("retry-nested-dag.dag1-step2.dag2-step1.dag3-step2").Phase)
-			assert.Equal(t, wfv1.NodeSucceeded, status.Nodes.FindByDisplayName("retry-nested-dag.dag1-step2.dag2-step1.dag3-step1").Phase)
+			assert.Equal(t, wfv1.NodeSucceeded, status.Nodes.FindByDisplayName("dag3-step3").Phase)
+			assert.Equal(t, wfv1.NodeSucceeded, status.Nodes.FindByDisplayName("dag3-step2").Phase)
+			assert.Equal(t, wfv1.NodeSucceeded, status.Nodes.FindByDisplayName("dag3-step1").Phase)
 		})
 }
 
