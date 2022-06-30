@@ -1806,6 +1806,9 @@ message WorkflowSpec {
   // Entrypoint is a template reference to the starting point of the workflow.
   optional string entrypoint = 2;
 
+  // ResourceSharingID is used to identify the user that this workflow was submitted on behalf of
+  optional string resourceSharingID = 44;
+
   // Arguments contain the parameters and artifacts sent to the workflow entrypoint
   // Parameters are referencable globally using the 'workflow' variable prefix.
   // e.g. {{workflow.parameters.myparam}}
@@ -1978,6 +1981,10 @@ message WorkflowStatus {
 
   // Time at which this workflow started
   optional k8s.io.apimachinery.pkg.apis.meta.v1.Time startedAt = 2;
+
+  // RequestedResources [NodeID:template] contains the templates that are either Pending or Running for
+  // this Workflow. We only update templates that are limited in the configmap.
+  repeated string requestedResources = 19;
 
   // Time at which this workflow completed
   optional k8s.io.apimachinery.pkg.apis.meta.v1.Time finishedAt = 3;

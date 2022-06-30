@@ -7160,6 +7160,10 @@
           "description": "Priority is used if controller is configured to process limited number of workflows in parallel. Workflows with higher priority are processed first.",
           "type": "integer"
         },
+        "resourceSharingID": {
+          "description": "ResourceSharingID is used to identify the user that this workflow was submitted on behalf of",
+          "type": "string"
+        },
         "retryStrategy": {
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.RetryStrategy",
           "description": "RetryStrategy for all templates in the io.argoproj.workflow.v1alpha1."
@@ -7306,6 +7310,13 @@
         "progress": {
           "description": "Progress to completion",
           "type": "string"
+        },
+        "resourceSharingRequests": {
+          "description": "ResourceSharingRequests is of the format [\u003cStepGroupID\u003e:\u003ctemplateName\u003e]; it defines which resources are needed in terms of template name Note We don't want to define resources at the child level because that'll be really wasteful. We also don't want to list at the Workflow level because multiple StepGroups would create race conditions (last sg encountered could delete earlier sg's request)",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
         },
         "resourcesDuration": {
           "additionalProperties": {

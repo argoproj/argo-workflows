@@ -1,0 +1,48 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: pipe1-
+spec:
+  entrypoint: simple-pipeline
+  resourceSharingID: user-000000
+  podGC:
+    strategy: OnPodSuccess
+  templates:
+  - name: simple-pipeline
+    steps:
+    - - name: run-sg-step-group
+        template: run-sg
+        arguments:
+          parameters:
+          - name: taskid
+            value: "{{item}}"
+        withItems:
+        - 1
+        - 2
+        - 3
+        - 4
+    - - name: run-render-step-group
+        template: run-render
+        arguments:
+          parameters:
+          - name: taskid
+            value: "{{item}}"          
+
+
+  - name: run-sg
+    inputs:
+      parameters:
+      - name: taskid
+    container:
+      image: alpine:latest
+      command: [sh, -c]
+      args: ["sleep 20"]
+
+  - name: run-render
+    inputs:
+      parameters:
+      - name: taskid
+    container:
+      image: alpine:latest
+      command: [sh, -c]
+      args: ["sleep 20"]      

@@ -190,6 +190,7 @@ func newController(options ...interface{}) (context.CancelFunc, *WorkflowControl
 		dynamicInterface:          dynamicClient,
 		wfclientset:               wfclientset,
 		workflowKeyLock:           sync.NewKeyLock(),
+		resourceAllowances:        map[string]*int{},
 		wfArchive:                 sqldb.NullWorkflowArchive,
 		hydrator:                  hydratorfake.Noop,
 		estimatorFactory:          estimation.DummyEstimatorFactory,

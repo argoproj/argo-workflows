@@ -257,6 +257,9 @@ type WorkflowSpec struct {
 	// Entrypoint is a template reference to the starting point of the workflow.
 	Entrypoint string `json:"entrypoint,omitempty" protobuf:"bytes,2,opt,name=entrypoint"`
 
+	// ResourceSharingID is used to identify the user that this workflow was submitted on behalf of
+	ResourceSharingID string `json:"resourceSharingID,omitempty" protobuf:"bytes,44,opt,name=resourceSharingID"`
+
 	// Arguments contain the parameters and artifacts sent to the workflow entrypoint
 	// Parameters are referencable globally using the 'workflow' variable prefix.
 	// e.g. {{workflow.parameters.myparam}}
@@ -1675,6 +1678,10 @@ type WorkflowStatus struct {
 
 	// Time at which this workflow started
 	StartedAt metav1.Time `json:"startedAt,omitempty" protobuf:"bytes,2,opt,name=startedAt"`
+
+	// RequestedResources [NodeID:template] contains the templates that are either Pending or Running for
+	// this Workflow. We only update templates that are limited in the configmap.
+	RequestedResources []string `json:"requestedResources,omitempty" protobuf:"bytes,19,rep,name=requestedResources"`
 
 	// Time at which this workflow completed
 	FinishedAt metav1.Time `json:"finishedAt,omitempty" protobuf:"bytes,3,opt,name=finishedAt"`

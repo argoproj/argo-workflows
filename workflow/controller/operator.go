@@ -207,6 +207,10 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 		return
 	}
 
+	// update resource limits for this particular user before processing their workflow
+	resourceSharingID := woc.execWf.Spec.ResourceSharingID
+	woc.controller.updateResourceAllowances(resourceSharingID)
+
 	if woc.wf.Status.ArtifactRepositoryRef == nil {
 		ref, err := woc.controller.artifactRepositories.Resolve(ctx, woc.execWf.Spec.ArtifactRepositoryRef, woc.wf.Namespace)
 		if err != nil {
@@ -1634,6 +1638,9 @@ type executeTemplateOpts struct {
 	onExitTemplate bool
 	// activeDeadlineSeconds is a deadline to set to any pods executed. This is necessary for pods to inherit backoff.maxDuration
 	executionDeadline time.Time
+	// remianing resource allowance tells us, for this resourceSharingID, how many more of this template we can
+	// execute at this time.
+	remainingResourceAllowance *int
 }
 
 // executeTemplate executes the template with the given arguments and returns the created NodeStatus
@@ -1764,7 +1771,7 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 	}
 
 	// Check if we exceeded template or workflow parallelism and immediately return if we did
-	if err := woc.checkParallelism(processedTmpl, node, opts.boundaryID); err != nil {
+	if err := woc.checkParallelism(processedTmpl, node, opts.boundaryID, opts.remainingResourceAllowance); err != nil {
 		return node, err
 	}
 
@@ -1986,6 +1993,36 @@ func (woc *wfOperationCtx) checkTemplateTimeout(tmpl *wfv1.Template, node *wfv1.
 	}
 
 	return nil, nil
+}
+
+// markWorkflowResourceRequestsForNodeID first runs a diff to see if an update is needed. If any resources have
+// been added or removed, we make the change and persist it.
+func (woc *wfOperationCtx) markWorkflowResourceRequestsForNodeID(nodeID string, templateNames []string) {
+	persistedKeys := make([]string, 0)
+	for _, t := range templateNames {
+		persistedKeys = append(persistedKeys, fmt.Sprintf("%s:%s", nodeID, t))
+	}
+
+	// add some logic to _not_ persist if there haven't been any changes.
+
+	// remove any items that have this nodeID..we'll re-add after.
+	final := make([]string, 0)
+	for _, r := range woc.wf.Status.RequestedResources {
+		pieces := strings.Split(r, ":")
+		iterNodeID := pieces[0]
+		if nodeID != iterNodeID {
+			final = append(final, r)
+		}
+	}
+
+	// add they keys, for this node, that are still correct.
+	for _, k := range persistedKeys {
+		final = append(final, k)
+	}
+
+	woc.wf.Status.RequestedResources = final
+	woc.updated = true
+	woc.updated = true
 }
 
 // markWorkflowPhase is a convenience method to set the phase of the workflow with optional message
@@ -2375,7 +2412,7 @@ func (woc *wfOperationCtx) markNodeWaitingForLock(nodeName string, lockName stri
 }
 
 // checkParallelism checks if the given template is able to be executed, considering the current active pods and workflow/template parallelism
-func (woc *wfOperationCtx) checkParallelism(tmpl *wfv1.Template, node *wfv1.NodeStatus, boundaryID string) error {
+func (woc *wfOperationCtx) checkParallelism(tmpl *wfv1.Template, node *wfv1.NodeStatus, boundaryID string, remainingResourceAllowance *int) error {
 	if woc.execWf.Spec.Parallelism != nil && woc.activePods >= *woc.execWf.Spec.Parallelism {
 		woc.log.Infof("workflow active pod spec parallelism reached %d/%d", woc.activePods, *woc.execWf.Spec.Parallelism)
 		return ErrParallelismReached
@@ -2425,6 +2462,13 @@ func (woc *wfOperationCtx) checkParallelism(tmpl *wfv1.Template, node *wfv1.Node
 		if boundaryTemplate.HasParallelism() && woc.getActiveChildren(boundaryID) >= *boundaryTemplate.Parallelism {
 			woc.log.Infof("template (node %s) active children parallelism exceeded %d", boundaryID, *boundaryTemplate.Parallelism)
 			return ErrParallelismReached
+		}
+
+		if remainingResourceAllowance != nil {
+			if *remainingResourceAllowance <= 0 {
+				return ErrParallelismReached
+			}
+			(*remainingResourceAllowance) -= 1
 		}
 	}
 	return nil

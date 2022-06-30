@@ -222,6 +222,13 @@ func (woc *wfOperationCtx) executeStepGroup(ctx context.Context, stepGroup []wfv
 	// The template scope of this step group.
 	stepTemplateScope := stepsCtx.tmplCtx.GetTemplateScope()
 
+	// for throttling requeues
+	wasRequeued := false
+
+	// for tracking steps that are either Pending, Running, or have not been initialized because we've
+	// reached parallelism limit.
+	requiredResourcesMap := map[string]bool{}
+
 	// Kick off all parallel steps in the group
 	for _, step := range stepGroup {
 		childNodeName := fmt.Sprintf("%s.%s", sgNodeName, step.Name)
@@ -244,12 +251,20 @@ func (woc *wfOperationCtx) executeStepGroup(ctx context.Context, stepGroup []wfv
 			continue
 		}
 
-		childNode, err := woc.executeTemplate(ctx, childNodeName, &step, stepsCtx.tmplCtx, step.Arguments, &executeTemplateOpts{boundaryID: stepsCtx.boundaryID, onExitTemplate: stepsCtx.onExitTemplate})
+		// call to this function should return either nil (if sharing ID doesn't exist or template has no limits) or pointer to a global allowance counter
+		allowance := woc.controller.getResourceAllowance(woc.execWf.Spec.ResourceSharingID, step.Template)
+
+		childNode, err := woc.executeTemplate(ctx, childNodeName, &step, stepsCtx.tmplCtx, step.Arguments, &executeTemplateOpts{boundaryID: stepsCtx.boundaryID, onExitTemplate: stepsCtx.onExitTemplate, remainingResourceAllowance: allowance})
 		if err != nil {
 			switch err {
 			case ErrDeadlineExceeded:
 				return node
 			case ErrParallelismReached:
+				if !wasRequeued {
+					requiredResourcesMap[step.Template] = true
+					woc.requeueAfter(time.Second)
+					wasRequeued = true
+				}
 			case ErrTimeout:
 				return woc.markNodePhase(node.Name, wfv1.NodeFailed, fmt.Sprintf("child '%s' timedout", childNodeName))
 			default:
@@ -260,7 +275,22 @@ func (woc *wfOperationCtx) executeStepGroup(ctx context.Context, stepGroup []wfv
 		if childNode != nil {
 			nodeSteps[childNodeName] = step
 			woc.addChildNode(sgNodeName, childNodeName)
+			// completed() as opposed to fulfilled() because we skipped phases won't require any resources.
+			if !childNode.Phase.Completed() {
+				requiredResourcesMap[step.Template] = true
+			}
 		}
+	}
+
+	// turn the map into a list
+	requiredResources := make([]string, 0)
+	for r := range requiredResourcesMap {
+		requiredResources = append(requiredResources, r)
+	}
+
+	woc.markWorkflowResourceRequestsForNodeID(node.ID, requiredResources)
+	if wasRequeued {
+		return node
 	}
 
 	node = woc.wf.GetNodeByName(sgNodeName)

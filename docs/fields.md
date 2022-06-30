@@ -272,6 +272,8 @@ Workflow is the definition of a workflow resource
 
 - [`resource-flags.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/resource-flags.yaml)
 
+- [`resource-sharing.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/resource-sharing.yaml)
+
 - [`resubmit.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/resubmit.yaml)
 
 - [`retry-backoff.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/retry-backoff.yaml)
@@ -691,6 +693,8 @@ WorkflowSpec is the specification of a Workflow.
 
 - [`recursive-for-loop.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/recursive-for-loop.yaml)
 
+- [`resource-sharing.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/resource-sharing.yaml)
+
 - [`resubmit.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/resubmit.yaml)
 
 - [`retry-backoff.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/retry-backoff.yaml)
@@ -807,6 +811,7 @@ WorkflowSpec is the specification of a Workflow.
 |`podPriorityClassName`|`string`|PriorityClassName to apply to workflow pods.|
 |`podSpecPatch`|`string`|PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of container fields which are not strings (e.g. resource limits).|
 |`priority`|`integer`|Priority is used if controller is configured to process limited number of workflows in parallel. Workflows with higher priority are processed first.|
+|`resourceSharingID`|`string`|ResourceSharingID is used to identify the user that this workflow was submitted on behalf of|
 |`retryStrategy`|[`RetryStrategy`](#retrystrategy)|RetryStrategy for all templates in the io.argoproj.workflow.v1alpha1.|
 |`schedulerName`|`string`|Set scheduler name for all pods. Will be overridden if container/script template's scheduler name is set. Default scheduler will be used if neither specified.|
 |`securityContext`|[`PodSecurityContext`](#podsecuritycontext)|SecurityContext holds pod-level security attributes and common container settings. Optional: Defaults to empty.  See type description for default values of each field.|
@@ -843,6 +848,7 @@ WorkflowStatus contains overall status information about a workflow
 |`persistentVolumeClaims`|`Array<`[`Volume`](#volume)`>`|PersistentVolumeClaims tracks all PVCs that were created as part of the io.argoproj.workflow.v1alpha1. The contents of this list are drained at the end of the workflow.|
 |`phase`|`string`|Phase a simple, high-level summary of where the workflow is in its lifecycle.|
 |`progress`|`string`|Progress to completion|
+|`resourceSharingRequests`|`Array< string >`|ResourceSharingRequests is of the format [<StepGroupID>:<templateName>]; it defines which resources are needed in terms of template name Note We don't want to define resources at the child level because that'll be really wasteful. We also don't want to list at the Workflow level because multiple StepGroups would create race conditions (last sg encountered could delete earlier sg's request)|
 |`resourcesDuration`|`Map< integer , int64 >`|ResourcesDuration is the total for the workflow|
 |`startedAt`|[`Time`](#time)|Time at which this workflow started|
 |`storedTemplates`|[`Template`](#template)|StoredTemplates is a mapping between a template ref and the node's status.|
@@ -1121,6 +1127,8 @@ CronWorkflowSpec is the specification of a CronWorkflow
 
 - [`recursive-for-loop.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/recursive-for-loop.yaml)
 
+- [`resource-sharing.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/resource-sharing.yaml)
+
 - [`resubmit.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/resubmit.yaml)
 
 - [`retry-backoff.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/retry-backoff.yaml)
@@ -1384,6 +1392,8 @@ Arguments to a template
 
 - [`recursive-for-loop.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/recursive-for-loop.yaml)
 
+- [`resource-sharing.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/resource-sharing.yaml)
+
 - [`retry-conditional.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/retry-conditional.yaml)
 
 - [`scripts-bash.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/scripts-bash.yaml)
@@ -1527,6 +1537,8 @@ PodGC describes how to delete completed pods as they complete
 - [`pod-gc-strategy-with-label-selector.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/pod-gc-strategy-with-label-selector.yaml)
 
 - [`pod-gc-strategy.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/pod-gc-strategy.yaml)
+
+- [`resource-sharing.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/resource-sharing.yaml)
 </details>
 
 ### Fields
@@ -2171,6 +2183,8 @@ Parameter indicate a passed string parameter to a service template with an optio
 
 - [`recursive-for-loop.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/recursive-for-loop.yaml)
 
+- [`resource-sharing.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/resource-sharing.yaml)
+
 - [`retry-conditional.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/retry-conditional.yaml)
 
 - [`scripts-bash.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/scripts-bash.yaml)
@@ -2728,6 +2742,8 @@ Inputs are the mechanism for passing parameters, artifacts, volumes from one tem
 
 - [`recursive-for-loop.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/recursive-for-loop.yaml)
 
+- [`resource-sharing.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/resource-sharing.yaml)
+
 - [`retry-conditional.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/retry-conditional.yaml)
 
 - [`scripts-bash.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/scripts-bash.yaml)
@@ -3027,6 +3043,8 @@ WorkflowStep is a reference to a template to execute in a series of step
 - [`pod-metadata.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/pod-metadata.yaml)
 
 - [`recursive-for-loop.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/recursive-for-loop.yaml)
+
+- [`resource-sharing.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/resource-sharing.yaml)
 
 - [`resubmit.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/resubmit.yaml)
 
@@ -4024,6 +4042,8 @@ Item expands a single workflow step into multiple parallel steps The value of It
 
 - [`parameter-aggregation.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/parameter-aggregation.yaml)
 
+- [`resource-sharing.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/resource-sharing.yaml)
+
 - [`timeouts-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/timeouts-workflow.yaml)
 </details>
 
@@ -4754,6 +4774,8 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 
 - [`recursive-for-loop.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/recursive-for-loop.yaml)
 
+- [`resource-sharing.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/resource-sharing.yaml)
+
 - [`resubmit.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/resubmit.yaml)
 
 - [`retry-backoff.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/retry-backoff.yaml)
@@ -5343,6 +5365,8 @@ A single application container that you want to run within a pod.
 - [`pod-spec-patch.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/pod-spec-patch.yaml)
 
 - [`pod-spec-yaml-patch.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/pod-spec-yaml-patch.yaml)
+
+- [`resource-sharing.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/resource-sharing.yaml)
 
 - [`resubmit.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/resubmit.yaml)
 
@@ -6070,6 +6094,8 @@ PersistentVolumeClaimSpec describes the common attributes of storage devices and
 - [`pod-spec-yaml-patch.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/pod-spec-yaml-patch.yaml)
 
 - [`recursive-for-loop.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/recursive-for-loop.yaml)
+
+- [`resource-sharing.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/resource-sharing.yaml)
 
 - [`resubmit.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/resubmit.yaml)
 

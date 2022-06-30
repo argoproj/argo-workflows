@@ -1688,6 +1688,8 @@ spec:
               priority:
                 format: int32
                 type: integer
+              resourceSharingID:
+                type: string
               retryStrategy:
                 properties:
                   affinity:

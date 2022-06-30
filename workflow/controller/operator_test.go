@@ -1589,6 +1589,55 @@ func TestWorkflowStepRetry(t *testing.T) {
 	}
 }
 
+func launchWorkflowForResourceSharing(ctx context.Context, c *WorkflowController, wfName, resourceSharingID string) *wfOperationCtx {
+	var wfTemplate = fmt.Sprintf(`
+  apiVersion: argoproj.io/v1alpha1
+  kind: Workflow
+  metadata:
+    name: %s
+  spec:
+    entrypoint: step-with-resource-sharing
+    resourceSharingID: %s
+    templates:
+    - name: step-with-resource-sharing
+      steps:
+        - - name: run-sleep10
+            template: sleep10
+    - name: sleep10
+      container:
+        image: alpine:latest
+        command: [sh, -c, sleep 10]
+ `, wfName, resourceSharingID)
+	wf := wfv1.MustUnmarshalWorkflow(wfTemplate)
+	woc := newWorkflowOperationCtx(wf, c)
+	woc.operate(ctx)
+	makePodsPhase(ctx, woc, apiv1.PodRunning)
+	return woc
+}
+
+// TestResourceSharingInSteps verifies that a resource's limits are honored in Steps
+func TestResourceSharingInSteps(t *testing.T) {
+	ctx := context.Background()
+
+	cancel, controller := newController()
+	controller.Config.ResourcesAvailable = map[string]string{
+		"sleep10": "4",
+	}
+	defer cancel()
+
+	woc := launchWorkflowForResourceSharing(ctx, controller, "001-job1", "001")
+	launchWorkflowForResourceSharing(ctx, controller, "002-job1", "002")
+	launchWorkflowForResourceSharing(ctx, controller, "001-job2", "001")
+	launchWorkflowForResourceSharing(ctx, controller, "001-job3", "001")
+
+	pods, err := controller.kubeclientset.CoreV1().Pods(woc.wf.Namespace).List(context.Background(), metav1.ListOptions{})
+	assert.NoError(t, err)
+	assert.Equal(t, 3, len(pods.Items))
+
+	// there are only 3 pods running because user 00001 has 2 slots, but is not using
+	// one of them. Discuss this with team as it seems weird.
+}
+
 var workflowParallelismLimit = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
