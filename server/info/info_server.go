@@ -22,12 +22,13 @@ func (i *infoServer) GetUserInfo(ctx context.Context, _ *infopkg.GetUserInfoRequ
 	claims := auth.GetClaims(ctx)
 	if claims != nil {
 		return &infopkg.GetUserInfoResponse{
-			Subject:            claims.Subject,
-			Issuer:             claims.Issuer,
-			Groups:             claims.Groups,
-			Email:              claims.Email,
-			EmailVerified:      claims.EmailVerified,
-			ServiceAccountName: claims.ServiceAccountName,
+			Subject:                 claims.Subject,
+			Issuer:                  claims.Issuer,
+			Groups:                  claims.Groups,
+			Email:                   claims.Email,
+			EmailVerified:           claims.EmailVerified,
+			ServiceAccountName:      claims.ServiceAccountName,
+			ServiceAccountNamespace: claims.ServiceAccountNamespace,
 		}, nil
 	}
 	return &infopkg.GetUserInfoResponse{}, nil

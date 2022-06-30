@@ -1826,20 +1826,6 @@ func (s *ArgoServerSuite) TestEventSourcesService() {
 	})
 }
 
-func (s *ArgoServerSuite) TestPipelineService() {
-	s.T().SkipNow()
-	s.Run("GetPipeline", func() {
-		s.e().GET("/api/v1/pipelines/argo/not-exists").
-			Expect().
-			Status(404)
-	})
-	s.Run("ListPipelines", func() {
-		s.e().GET("/api/v1/pipelines/argo").
-			Expect().
-			Status(200)
-	})
-}
-
 func (s *ArgoServerSuite) TestSensorService() {
 	s.Run("CreateSensor", func() {
 		s.e().POST("/api/v1/sensors/argo").

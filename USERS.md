@@ -83,6 +83,7 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [H2O.ai](https://h2o.ai/)
 1. [Habx](https://www.habx.com/)
 1. [Helio](https://helio.exchange)
+1. [Hemisphere Digital](https://hemisphere.digital)
 1. [HOVER](https://hover.to)
 1. [HSBC](https://hsbc.com)
 1. [IBM](https://ibm.com)
