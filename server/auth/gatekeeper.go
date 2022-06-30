@@ -335,7 +335,7 @@ func (s *gatekeeper) authorizationForServiceAccount(ctx context.Context, service
 	return "Bearer " + string(secret.Data["token"]), nil
 }
 
-func (s *gatekeeper) checkToken(ctx context.Context, authorization string) (error) {
+func (s *gatekeeper) checkToken(ctx context.Context, authorization string) error {
 	restConfig := s.restConfig
 	token := strings.TrimSpace(strings.TrimPrefix(authorization, "Bearer"))
 	restConfig.BearerToken = token
