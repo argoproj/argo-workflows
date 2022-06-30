@@ -1709,6 +1709,9 @@ message WorkflowSpec {
   // Entrypoint is a template reference to the starting point of the workflow.
   optional string entrypoint = 2;
 
+  // ResourceSharingID is used to identify the user that this workflow was submitted on behalf of
+  optional string resourceSharingID = 44;
+
   // Arguments contain the parameters and artifacts sent to the workflow entrypoint
   // Parameters are referencable globally using the 'workflow' variable prefix.
   // e.g. {{workflow.parameters.myparam}}
@@ -1878,6 +1881,11 @@ message WorkflowSpec {
 message WorkflowStatus {
   // Phase a simple, high-level summary of where the workflow is in its lifecycle.
   optional string phase = 1;
+
+  // ResourceSharingRequests is of the format [<StepGroupID>:<templateName>]; it defines which resources are needed in terms of template name
+  // Note We don't want to define resources at the child level because that'll be really wasteful. We also don't want to list at the
+  // Workflow level because multiple StepGroups would create race conditions (last sg encountered could delete earlier sg's request)
+  repeated string resourceSharingRequests = 19;
 
   // Time at which this workflow started
   optional k8s.io.apimachinery.pkg.apis.meta.v1.Time startedAt = 2;

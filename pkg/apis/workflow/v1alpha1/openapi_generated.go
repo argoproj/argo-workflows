@@ -6594,6 +6594,13 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowSpec(ref common.ReferenceCallback
 							Format:      "",
 						},
 					},
+					"resourceSharingID": {
+						SchemaProps: spec.SchemaProps{
+							Description: "ResourceSharingID is used to identify the user that this workflow was submitted on behalf of",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
 					"arguments": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Arguments contain the parameters and artifacts sent to the workflow entrypoint Parameters are referencable globally using the 'workflow' variable prefix. e.g. {{workflow.parameters.myparam}}",
@@ -6958,6 +6965,21 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowStatus(ref common.ReferenceCallba
 							Description: "Phase a simple, high-level summary of where the workflow is in its lifecycle.",
 							Type:        []string{"string"},
 							Format:      "",
+						},
+					},
+					"resourceSharingRequests": {
+						SchemaProps: spec.SchemaProps{
+							Description: "ResourceSharingRequests is of the format [<StepGroupID>:<templateName>]; it defines which resources are needed in terms of template name Note We don't want to define resources at the child level because that'll be really wasteful. We also don't want to list at the Workflow level because multiple StepGroups would create race conditions (last sg encountered could delete earlier sg's request)",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: "",
+										Type:    []string{"string"},
+										Format:  "",
+									},
+								},
+							},
 						},
 					},
 					"startedAt": {

@@ -60,6 +60,9 @@ type Config struct {
 	// Parallelism limits the max total parallel workflows that can execute at the same time
 	Parallelism int `json:"parallelism,omitempty"`
 
+	// ResourcesAvailable describes total number of resources are available for each type.
+	ResourcesAvailable map[string]string `json:"resourcesAvailable,omitempty"`
+
 	// NamespaceParallelism limits the max workflows that can execute at the same time in a namespace
 	NamespaceParallelism int `json:"namespaceParallelism,omitempty"`
 

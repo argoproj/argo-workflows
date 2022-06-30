@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math"
 	"strconv"
 	"syscall"
 	"time"
@@ -70,6 +71,8 @@ type WorkflowController struct {
 	// namespace of the workflow controller
 	namespace        string
 	managedNamespace string
+
+	resourceAllowances map[string]*int
 
 	configController config.Controller
 	// Config is the workflow controller's configuration
@@ -156,6 +159,7 @@ func NewWorkflowController(ctx context.Context, restConfig *rest.Config, kubecli
 		wfclientset:                wfclientset,
 		namespace:                  namespace,
 		managedNamespace:           managedNamespace,
+		resourceAllowances:         map[string]*int{},
 		cliExecutorImage:           executorImage,
 		cliExecutorImagePullPolicy: executorImagePullPolicy,
 		containerRuntimeExecutor:   containerRuntimeExecutor,
@@ -182,6 +186,72 @@ func NewWorkflowController(ctx context.Context, restConfig *rest.Config, kubecli
 	wfc.podCleanupQueue = wfc.metrics.RateLimiterWithBusyWorkers(workqueue.DefaultControllerRateLimiter(), "pod_cleanup_queue")
 
 	return &wfc, nil
+}
+
+// helper function to contruct key for workflow / resourceSharingID
+func resourceAllowanceKey(resourceSharingID, template string) string {
+	return fmt.Sprintf("%s:%s", resourceSharingID, template)
+}
+
+func (wfc *WorkflowController) getResourceAllowance(resourceSharingID, template string) *int {
+	return wfc.resourceAllowances[resourceAllowanceKey(resourceSharingID, template)]
+}
+
+// either Pending or Running
+func (wfc *WorkflowController) numActivePodsForTemplate(template string) (int, error) {
+	podIndexer := wfc.podInformer.GetIndexer()
+
+	indexResults := make([]interface{}, 0)
+	for _, phase := range []apiv1.PodPhase{apiv1.PodRunning, apiv1.PodPending} {
+		objs, err := podIndexer.ByIndex(indexes.PodPhaseIndex, string(phase))
+		if err != nil {
+			log.WithError(err).Error("failed to list active pods")
+			return -1, err
+		}
+		indexResults = append(indexResults, objs...)
+	}
+	return len(indexResults), nil
+}
+
+// iterate through all of the resources that we're limiting, check their current usage, and
+// update the resourceAllowances to reflect slots available for a given resourceSharingID
+func (wfc *WorkflowController) updateResourceAllowances(resourceSharingID string) error {
+	wfIndexer := wfc.wfInformer.GetIndexer()
+
+	for tmpl, totalAvailable := range wfc.Config.ResourcesAvailable {
+		totalPossible, err := strconv.Atoi(totalAvailable)
+		if err != nil {
+			return err
+		}
+
+		// note elsewhere in the code others are using pod/wf phases interchangeably?
+		indexResults, err := wfIndexer.ByIndex(indexes.WorkflowPhaseIndex, "Running")
+		if err != nil {
+			log.WithError(err).Error("failed to list active workflows")
+			return err
+		}
+		idMap := map[string]bool{}
+		idMap[resourceSharingID] = true
+		for _, obj := range indexResults {
+			un, _ := obj.(*unstructured.Unstructured)
+			wf, err := util.FromUnstructured(un)
+			if err != nil {
+				return err
+			}
+			idMap[wf.Spec.ResourceSharingID] = true
+		}
+
+		totalActive, err := wfc.numActivePodsForTemplate(tmpl)
+		if err != nil {
+			return err
+		}
+		userLimit := math.Ceil(float64(totalPossible) / float64(len(idMap)))
+		allowance := int(math.Min(float64(totalPossible)-float64(totalActive), userLimit))
+
+		wfc.resourceAllowances[resourceAllowanceKey(resourceSharingID, tmpl)] = &allowance
+	}
+
+	return nil
 }
 
 func (wfc *WorkflowController) newThrottler() sync.Throttler {
@@ -703,6 +773,10 @@ func (wfc *WorkflowController) processNextItem(ctx context.Context) bool {
 		woc.persistUpdates(ctx)
 		return true
 	}
+
+	// update resource limits for this particular user before processing their workflow
+	resourceSharingID := wf.Spec.ResourceSharingID
+	wfc.updateResourceAllowances(resourceSharingID)
 
 	if wf.Labels[common.LabelKeyCompleted] == "true" {
 		// can get here if we already added the completed=true label,

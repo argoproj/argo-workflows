@@ -222,6 +222,9 @@ func (woc *wfOperationCtx) executeStepGroup(ctx context.Context, stepGroup []wfv
 	// The template scope of this step group.
 	stepTemplateScope := stepsCtx.tmplCtx.GetTemplateScope()
 
+	// for throttling requeues
+	wasRequeued := false
+
 	// Kick off all parallel steps in the group
 	for _, step := range stepGroup {
 		childNodeName := fmt.Sprintf("%s.%s", sgNodeName, step.Name)
@@ -244,12 +247,19 @@ func (woc *wfOperationCtx) executeStepGroup(ctx context.Context, stepGroup []wfv
 			continue
 		}
 
-		childNode, err := woc.executeTemplate(ctx, childNodeName, &step, stepsCtx.tmplCtx, step.Arguments, &executeTemplateOpts{boundaryID: stepsCtx.boundaryID, onExitTemplate: stepsCtx.onExitTemplate})
+		// call to this function should return either nil (if sharing ID doesn't exist or template has no limits) or pointer to a global allowance counter
+		allowance := woc.controller.getResourceAllowance(woc.execWf.Spec.ResourceSharingID, step.Template)
+
+		childNode, err := woc.executeTemplate(ctx, childNodeName, &step, stepsCtx.tmplCtx, step.Arguments, &executeTemplateOpts{boundaryID: stepsCtx.boundaryID, onExitTemplate: stepsCtx.onExitTemplate, remainingResourceAllowance: allowance})
 		if err != nil {
 			switch err {
 			case ErrDeadlineExceeded:
 				return node
 			case ErrParallelismReached:
+				if !wasRequeued {
+					woc.requeueAfter(time.Second)
+					wasRequeued = true
+				}
 			case ErrTimeout:
 				return woc.markNodePhase(node.Name, wfv1.NodeFailed, fmt.Sprintf("child '%s' timedout", childNodeName))
 			default:
@@ -263,12 +273,22 @@ func (woc *wfOperationCtx) executeStepGroup(ctx context.Context, stepGroup []wfv
 		}
 	}
 
+	requiredResources := map[string]bool{}
+
+	if wasRequeued {
+		return node
+	}
+
 	node = woc.wf.GetNodeByName(sgNodeName)
 	// Return if not all children completed
 	completed := true
 	for _, childNodeID := range node.Children {
 		childNode := woc.wf.Status.Nodes[childNodeID]
 		step := nodeSteps[childNode.Name]
+		// If this step is not yet fulfilled, then we need the resource still
+		if !childNode.Phase.Fulfilled() {
+			requiredResources[step.Template] = true
+		}
 		stepsCtx.scope.addParamToScope(fmt.Sprintf("steps.%s.status", childNode.DisplayName), string(childNode.Phase))
 		hookCompleted, err := woc.executeTmplLifeCycleHook(ctx, woc.globalParams.Merge(stepsCtx.scope.getParameters()), step.Hooks, &childNode, stepsCtx.boundaryID, stepsCtx.tmplCtx, "steps."+step.Name)
 		if err != nil {
@@ -289,6 +309,7 @@ func (woc *wfOperationCtx) executeStepGroup(ctx context.Context, stepGroup []wfv
 			}
 		}
 	}
+	woc.setRequiredResourcesForStepGroup(node.ID, requiredResources)
 	if !completed {
 		return node
 	}

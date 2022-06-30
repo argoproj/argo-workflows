@@ -1651,6 +1651,8 @@ spec:
               priority:
                 format: int32
                 type: integer
+              resourceSharingID:
+                type: string
               retryStrategy:
                 properties:
                   affinity:
@@ -20840,6 +20842,10 @@ spec:
                 type: string
               progress:
                 type: string
+              resourceSharingRequests:
+                items:
+                  type: string
+                type: array
               resourcesDuration:
                 additionalProperties:
                   format: int64
@@ -30284,6 +30290,8 @@ spec:
                   priority:
                     format: int32
                     type: integer
+                  resourceSharingID:
+                    type: string
                   retryStrategy:
                     properties:
                       affinity:

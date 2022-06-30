@@ -257,6 +257,9 @@ type WorkflowSpec struct {
 	// Entrypoint is a template reference to the starting point of the workflow.
 	Entrypoint string `json:"entrypoint,omitempty" protobuf:"bytes,2,opt,name=entrypoint"`
 
+	// ResourceSharingID is used to identify the user that this workflow was submitted on behalf of
+	ResourceSharingID string `json:"resourceSharingID,omitempty" protobuf:"bytes,44,opt,name=resourceSharingID"`
+
 	// Arguments contain the parameters and artifacts sent to the workflow entrypoint
 	// Parameters are referencable globally using the 'workflow' variable prefix.
 	// e.g. {{workflow.parameters.myparam}}
@@ -1665,6 +1668,11 @@ type UserContainer struct {
 type WorkflowStatus struct {
 	// Phase a simple, high-level summary of where the workflow is in its lifecycle.
 	Phase WorkflowPhase `json:"phase,omitempty" protobuf:"bytes,1,opt,name=phase,casttype=WorkflowPhase"`
+
+	// ResourceSharingRequests is of the format [<StepGroupID>:<templateName>]; it defines which resources are needed in terms of template name
+	// Note We don't want to define resources at the child level because that'll be really wasteful. We also don't want to list at the
+	// Workflow level because multiple StepGroups would create race conditions (last sg encountered could delete earlier sg's request)
+	ResourceSharingRequests []string `json:"resourceSharingRequests,omitempty" protobuf:"bytes,19,rep,name=resourceSharingRequests"`
 
 	// Time at which this workflow started
 	StartedAt metav1.Time `json:"startedAt,omitempty" protobuf:"bytes,2,opt,name=startedAt"`

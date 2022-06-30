@@ -78,7 +78,7 @@ RUN_MODE              := local
 KUBECTX               := $(shell [[ "`which kubectl`" != '' ]] && kubectl config current-context || echo none)
 DOCKER_DESKTOP        := $(shell [[ "$(KUBECTX)" == "docker-desktop" ]] && echo true || echo false)
 K3D                   := $(shell [[ "$(KUBECTX)" == "k3d-"* ]] && echo true || echo false)
-LOG_LEVEL             := debug
+LOG_LEVEL             := error
 UPPERIO_DB_DEBUG      := 0
 NAMESPACED            := true
 ifeq ($(PROFILE),prometheus)
