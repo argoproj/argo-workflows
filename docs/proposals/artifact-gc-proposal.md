@@ -25,7 +25,7 @@ Passing the artifact spec to the GC Pod: we could JSON-serialize the spec for th
 
 Issues: 
 1. what if we reach the maximum size of a ConfigMap? We could introduce an additional ConfigMap once we reach capacity. 
-2. How would the GC Pod report back the failure of individual deletions? Would it do it in the ConfigMaps? (if so, it would need to have write access to them) Or would we create some new CRD type that it can write to and the Controller can read from?
+2. How would the GC Pod report back the failure of individual deletions? Would it do it in the ConfigMaps? (if so, it would need to have write access to them - i.e. it wouldn't be volume mounted) Or would we create some new CRD type that it can write to and the Controller can read from?
 
 #### Proposal Option 2:
 To address these two issues, instead of having a single Pod for the <Workflow+GC Strategy>, we could have a single Pod per artifact being deleted. This is simpler and probably doesn't require a ConfigMap because a single Artifact spec is small and can go inside an Environment Variable. Also, the exit code of the Pod alone could be used to determine success vs failure. So, the Pod doesn't really need to "report" back anything.
@@ -34,10 +34,10 @@ To address these two issues, instead of having a single Pod for the <Workflow+GC
 
 The only issue is that there could potentially be a very large number of Pods (thousands if there are thousands of Artifacts) that need to be run.
 
-In Kubernetes there is a capability to limit the number of total pods that can run in a namespace concurrently (["pod quota"](https://kubernetes.io/docs/tasks/administer-cluster/manage-resources/quota-pod-namespace/)). In addition, the GC Pods could have a lower priority than our other Pods.
+In Kubernetes there is a capability to limit the number of total pods that can run in a namespace concurrently (["pod quota"](https://kubernetes.io/docs/tasks/administer-cluster/manage-resources/quota-pod-namespace/)). In addition, the GC Pods could have a lower priority than our other Pods. They can also set CPU and memory requests/limits low.
 
 
 #### Considerations
-1. How do we want to handle the Pod failing? Could be a transient error. Allow some number of retries?
+1. How do we want to handle the Pod failing? Could be a transient error. Allow some number of retries? Should the Pod do the retries itself, or should the Controller start up new Pods later?
 2. Should we use a Job or a standard Pod? I guess if a node fails, Kubernetes will reschedule a Job, but not a Pod. But if we use a Job, we need to add new permissions related to Jobs, and also add a Job informer which requires some additional memory.
 3. Users should be recommended to uniquely name artifact keys such as through parameterization like so: 'key: "{{workflow.uid}}/hello.txt'. Otherwise, they could get into a scenario in which running a Workflow produces an artifact which is being GC'ed while an artifact of the same name is being created. 
