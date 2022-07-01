@@ -1043,8 +1043,7 @@ definitions:
         type: string
       priority:
         description: Priority is used if controller is configured to process limited
-          number of workflows in parallel. Tasks with higher priority are processed
-          first.
+          number of tasks in parallel. Tasks with higher priority are processed first.
         format: int32
         type: integer
       template:

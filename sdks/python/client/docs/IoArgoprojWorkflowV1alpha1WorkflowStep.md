@@ -11,7 +11,7 @@ Name | Type | Description | Notes
 **inline** | [**IoArgoprojWorkflowV1alpha1Template**](IoArgoprojWorkflowV1alpha1Template.md) |  | [optional] 
 **name** | **str** | Name of the step | [optional] 
 **on_exit** | **str** | OnExit is a template reference which is invoked at the end of the template, irrespective of the success, failure, or error of the primary template. DEPRECATED: Use Hooks[exit].Template instead. | [optional] 
-**priority** | **int** | Priority is used if controller is configured to process limited number of workflows in parallel. Steps with higher priority are processed first. | [optional] 
+**priority** | **int** | Priority is used if controller is configured to process limited number of steps in parallel. Steps with higher priority are processed first. | [optional] 
 **template** | **str** | Template is the name of the template to execute as the step | [optional] 
 **template_ref** | [**IoArgoprojWorkflowV1alpha1TemplateRef**](IoArgoprojWorkflowV1alpha1TemplateRef.md) |  | [optional] 
 **when** | **str** | When is an expression in which the step should conditionally execute | [optional] 

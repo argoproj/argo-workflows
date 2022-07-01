@@ -226,10 +226,7 @@ func (woc *wfOperationCtx) executeStepGroup(ctx context.Context, stepGroup []wfv
 	// Sort steps by priority
 	sort.Slice(stepGroup, func(i, j int) bool {
 
-		a := stepGroup[i].GetPriority()
-		b := stepGroup[j].GetPriority()
-
-		if a > b {
+		if stepGroup[i].GetPriority() > stepGroup[j].GetPriority() {
 			return true
 		}
 

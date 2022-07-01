@@ -955,11 +955,6 @@ func (in *DAGTask) DeepCopyInto(out *DAGTask) {
 			(*out)[key] = *val.DeepCopy()
 		}
 	}
-	if in.Priority != nil {
-		in, out := &in.Priority, &out.Priority
-		*out = new(int32)
-		**out = **in
-	}
 	return
 }
 
@@ -3605,11 +3600,6 @@ func (in *WorkflowStep) DeepCopyInto(out *WorkflowStep) {
 		for key, val := range *in {
 			(*out)[key] = *val.DeepCopy()
 		}
-	}
-	if in.Priority != nil {
-		in, out := &in.Priority, &out.Priority
-		*out = new(int32)
-		**out = **in
 	}
 	return
 }

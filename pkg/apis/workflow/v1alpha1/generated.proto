@@ -441,7 +441,7 @@ message DAGTask {
   // task, irrespective of the success, failure, or error status of the primary task
   map<string, LifecycleHook> hooks = 13;
 
-  // Priority is used if controller is configured to process limited number of workflows in parallel. Tasks with higher priority are processed first.
+  // Priority is used if controller is configured to process limited number of tasks in parallel. Tasks with higher priority are processed first.
   optional int32 priority = 15;
 }
 
@@ -1957,7 +1957,7 @@ message WorkflowStep {
   // step, irrespective of the success, failure, or error status of the primary step
   map<string, LifecycleHook> hooks = 12;
 
-  // Priority is used if controller is configured to process limited number of workflows in parallel. Steps with higher priority are processed first.
+  // Priority is used if controller is configured to process limited number of steps in parallel. Steps with higher priority are processed first.
   optional int32 priority = 14;
 }
 

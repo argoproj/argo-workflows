@@ -3063,7 +3063,7 @@ WorkflowStep is a reference to a template to execute in a series of step
 |`inline`|[`Template`](#template)|Inline is the template. Template must be empty if this is declared (and vice-versa).|
 |`name`|`string`|Name of the step|
 |~`onExit`~|~`string`~|~OnExit is a template reference which is invoked at the end of the template, irrespective of the success, failure, or error of the primary template.~ DEPRECATED: Use Hooks[exit].Template instead.|
-|`priority`|`integer`|Priority is used if controller is configured to process limited number of workflows in parallel. Steps with higher priority are processed first.|
+|`priority`|`integer`|Priority is used if controller is configured to process limited number of steps in parallel. Steps with higher priority are processed first.|
 |`template`|`string`|Template is the name of the template to execute as the step|
 |`templateRef`|[`TemplateRef`](#templateref)|TemplateRef is the reference to the template resource to execute as the step.|
 |`when`|`string`|When is an expression in which the step should conditionally execute|
@@ -3773,7 +3773,7 @@ DAGTask represents a node in the graph during DAG execution
 |`inline`|[`Template`](#template)|Inline is the template. Template must be empty if this is declared (and vice-versa).|
 |`name`|`string`|Name is the name of the target|
 |~`onExit`~|~`string`~|~OnExit is a template reference which is invoked at the end of the template, irrespective of the success, failure, or error of the primary template.~ DEPRECATED: Use Hooks[exit].Template instead.|
-|`priority`|`integer`|Priority is used if controller is configured to process limited number of workflows in parallel. Tasks with higher priority are processed first.|
+|`priority`|`integer`|Priority is used if controller is configured to process limited number of tasks in parallel. Tasks with higher priority are processed first.|
 |`template`|`string`|Name of template to execute|
 |`templateRef`|[`TemplateRef`](#templateref)|TemplateRef is the reference to the template resource to execute.|
 |`when`|`string`|When is an expression in which the task should conditionally execute|

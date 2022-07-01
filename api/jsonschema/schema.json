@@ -5434,7 +5434,7 @@
           "type": "string"
         },
         "priority": {
-          "description": "Priority is used if controller is configured to process limited number of workflows in parallel. Tasks with higher priority are processed first.",
+          "description": "Priority is used if controller is configured to process limited number of tasks in parallel. Tasks with higher priority are processed first.",
           "type": "integer"
         },
         "template": {
@@ -8314,7 +8314,7 @@
           "type": "string"
         },
         "priority": {
-          "description": "Priority is used if controller is configured to process limited number of workflows in parallel. Steps with higher priority are processed first.",
+          "description": "Priority is used if controller is configured to process limited number of steps in parallel. Steps with higher priority are processed first.",
           "type": "integer"
         },
         "template": {
