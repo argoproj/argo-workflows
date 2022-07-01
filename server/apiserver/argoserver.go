@@ -146,7 +146,7 @@ func NewArgoServer(ctx context.Context, opts ArgoServerOpts) (*argoServer, error
 		}
 		if opts.AuthModes[auth.Token] {
 			tokenSecret = c.TokenSecretName
-			log.Info("Token authentication enabled, using secret %w", tokenSecret)
+			log.Info("Token authentication enabled, using secret ", tokenSecret)
 		}
 		resourceCache = cache.NewResourceCache(opts.Clients.Kubernetes, getResourceCacheNamespace(opts))
 		resourceCache.Run(ctx.Done())
