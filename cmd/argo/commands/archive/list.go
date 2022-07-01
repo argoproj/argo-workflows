@@ -55,6 +55,10 @@ func listArchivedWorkflows(ctx context.Context, serviceClient workflowarchivepkg
 		if err != nil {
 			return nil, err
 		}
+<<<<<<< Updated upstream
+=======
+
+>>>>>>> Stashed changes
 		workflows = append(workflows, resp.Items...)
 		if resp.Continue == "" {
 			break
