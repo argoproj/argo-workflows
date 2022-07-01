@@ -2528,8 +2528,9 @@ _No description available_
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
 |`body`|`string`|Body is content of the HTTP Request|
+|`bodyFrom`|[`HTTPBodySource`](#httpbodysource)|BodyFrom is  content of the HTTP Request as Bytes|
 |`headers`|`Array<`[`HTTPHeader`](#httpheader)`>`|Headers are an optional list of headers to send with HTTP requests|
-|`insecureSkipVerify`|`boolean`|insecureSkipVerify is a bool when if set to true will skip TLS verification for the HTTP client|
+|`insecureSkipVerify`|`boolean`|InsecureSkipVerify is a bool when if set to true will skip TLS verification for the HTTP client|
 |`method`|`string`|Method is HTTP methods for HTTP Request|
 |`successCondition`|`string`|SuccessCondition is an expression if evaluated to true is considered successful|
 |`timeoutSeconds`|`integer`|TimeoutSeconds is request timeout for HTTP Request. Default is 30 seconds|
@@ -3913,6 +3914,15 @@ _No description available_
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
 |`expression`|`string`|Expression defines an expr expression to apply|
+
+## HTTPBodySource
+
+HTTPBodySource contains the source of the HTTP body.
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`bytes`|`byte`|_No description available_|
 
 ## HTTPHeader
 

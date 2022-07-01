@@ -118,6 +118,10 @@ export interface Artifact {
     archive?: {
         none?: {};
     };
+    artifactGC?: {
+        strategy?: 'OnWorkflowCompletion' | 'OnWorkflowDeletion';
+    };
+    deleted?: boolean;
 }
 
 /**
@@ -754,6 +758,11 @@ export interface WorkflowSpec {
      * terminate a Running workflow
      */
     activeDeadlineSeconds?: number;
+
+    artifactGC?: {
+        strategy?: 'OnWorkflowCompletion' | 'OnWorkflowDeletion';
+    };
+
     /**
      * TTLStrategy limits the lifetime of a Workflow that has finished execution depending on if it
      * Succeeded or Failed. If this struct is set, once the Workflow finishes, it will be

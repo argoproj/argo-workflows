@@ -678,7 +678,10 @@ message HTTP {
   // Body is content of the HTTP Request
   optional string body = 5;
 
-  // insecureSkipVerify is a bool when if set to true will skip TLS verification for the HTTP client
+  // BodyFrom is  content of the HTTP Request as Bytes
+  optional HTTPBodySource bodyFrom = 8;
+
+  // InsecureSkipVerify is a bool when if set to true will skip TLS verification for the HTTP client
   optional bool insecureSkipVerify = 7;
 }
 
@@ -700,6 +703,11 @@ message HTTPAuth {
   optional OAuth2Auth oauth2 = 2;
 
   optional BasicAuth basicAuth = 3;
+}
+
+// HTTPBodySource contains the source of the HTTP body.
+message HTTPBodySource {
+  optional bytes bytes = 1;
 }
 
 message HTTPHeader {

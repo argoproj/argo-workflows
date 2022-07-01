@@ -61,6 +61,10 @@ export class UserInfo extends BasePage<RouteComponentProps<any>, State> {
                                 <dt>Service Account:</dt>
                                 <dd>{this.state.userInfo.serviceAccountName || '-'}</dd>
                             </dl>
+                            <dl>
+                                <dt>Service Account Namespace:</dt>
+                                <dd>{this.state.userInfo.serviceAccountNamespace || '-'}</dd>
+                            </dl>
                         </>
                     )}
                     <a className='argo-button argo-button--base-o' href={uiUrl('login')}>

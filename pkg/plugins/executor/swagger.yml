@@ -1631,10 +1631,12 @@ definitions:
       body:
         description: Body is content of the HTTP Request
         type: string
+      bodyFrom:
+        $ref: '#/definitions/HTTPBodySource'
       headers:
         $ref: '#/definitions/HTTPHeaders'
       insecureSkipVerify:
-        description: insecureSkipVerify is a bool when if set to true will skip TLS
+        description: InsecureSkipVerify is a bool when if set to true will skip TLS
           verification for the HTTP client
         type: boolean
       method:
@@ -1677,6 +1679,15 @@ definitions:
         $ref: '#/definitions/ClientCertAuth'
       oauth2:
         $ref: '#/definitions/OAuth2Auth'
+    type: object
+  HTTPBodySource:
+    properties:
+      bytes:
+        items:
+          format: uint8
+          type: integer
+        type: array
+    title: HTTPBodySource contains the source of the HTTP body.
     type: object
   HTTPGetAction:
     properties:

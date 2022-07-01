@@ -82,7 +82,7 @@ func (s *ArgoServerSuite) TestInfo() {
 			Equal("workflow")
 		json.
 			Path("$.links[0].url").
-			Equal("http://logging-facility?namespace=${metadata.namespace}&workflowName=${metadata.name}&startedAt=${status.startedAt}&finishedAt=${status.finishedAt}")
+			Equal("http://logging-facility?namespace=${metadata.namespace}&amp;workflowName=${metadata.name}&amp;startedAt=${status.startedAt}&amp;finishedAt=${status.finishedAt}")
 	})
 }
 
@@ -1845,20 +1845,6 @@ func (s *ArgoServerSuite) TestEventSourcesService() {
 	})
 	s.Run("DeleteEventSource", func() {
 		s.e().DELETE("/api/v1/event-sources/argo/test-event-source").
-			Expect().
-			Status(200)
-	})
-}
-
-func (s *ArgoServerSuite) TestPipelineService() {
-	s.T().SkipNow()
-	s.Run("GetPipeline", func() {
-		s.e().GET("/api/v1/pipelines/argo/not-exists").
-			Expect().
-			Status(404)
-	})
-	s.Run("ListPipelines", func() {
-		s.e().GET("/api/v1/pipelines/argo").
 			Expect().
 			Status(200)
 	})

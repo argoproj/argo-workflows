@@ -897,13 +897,6 @@ rules:
   - list
   - watch
 - apiGroups:
-  - ""
-  resources:
-  - serviceaccounts
-  verbs:
-  - get
-  - list
-- apiGroups:
   - argoproj.io
   resources:
   - workflowtaskresults
