@@ -339,29 +339,6 @@ func (s *FunctionalSuite) TestEventOnWorkflowSuccess() {
 		)
 }
 
-func (s *FunctionalSuite) TestLargeWorkflowFailure() {
-	var uid types.UID
-	s.Given().
-		Workflow("@expectedfailures/large-workflow.yaml").
-		When().
-		SubmitWorkflow().
-		WaitForWorkflow(120*time.Second).
-		Then().
-		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			uid = metadata.UID
-		}).
-		ExpectAuditEvents(
-			fixtures.HasInvolvedObject(workflow.WorkflowKind, uid),
-			2,
-			func(t *testing.T, e []apiv1.Event) {
-				assert.Equal(t, "WorkflowRunning", e[0].Reason)
-
-				assert.Equal(t, "WorkflowFailed", e[1].Reason)
-				assert.Contains(t, e[1].Message, "workflow templates are limited to 128KB, this workflow is 128001 bytes")
-			},
-		)
-}
-
 func (s *FunctionalSuite) TestEventOnPVCFail() {
 	//  Test whether an WorkflowFailed event (with appropriate message) is emitted in case of error in creating the PVC
 	var uid types.UID

@@ -58,6 +58,7 @@ Just some of the projects that use or rely on Argo Workflows:
 * [Ploomber](https://github.com/ploomber/ploomber)
 * [Seldon](https://github.com/SeldonIO/seldon-core)
 * [SQLFlow](https://github.com/sql-machine-learning/sqlflow)
+* [Orchest](https://github.com/orchest/orchest/)
 
 ## Client Libraries
 

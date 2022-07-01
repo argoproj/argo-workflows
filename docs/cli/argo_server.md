@@ -17,6 +17,7 @@ See https://argoproj.github.io/argo-workflows/argo-server/
 
 ```
       --access-control-allow-origin string   Set Access-Control-Allow-Origin header in HTTP responses.
+      --allowed-link-protocol stringArray    Allowed link protocol in configMap. Used if the allowed configMap links protocol are different from http,https. Defaults to the environment variable ALLOWED_LINK_PROTOCOL (default [http,https])
       --auth-mode stringArray                API server authentication mode. Any 1 or more length permutation of: client,server,sso (default [client])
       --basehref string                      Value for base href in index.html. Used if the server is running behind reverse proxy under subpath different from /. Defaults to the environment variable BASE_HREF. (default "/")
   -b, --browser                              enable automatic launching of the browser [local mode]

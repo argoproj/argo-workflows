@@ -1,6 +1,7 @@
 package v1alpha1
 
 import (
+	"fmt"
 	"sort"
 	"testing"
 	"time"
@@ -114,6 +115,96 @@ func TestWorkflowHappenedBetween(t *testing.T) {
 		ObjectMeta: metav1.ObjectMeta{CreationTimestamp: metav1.Time{Time: t1}},
 		Status:     WorkflowStatus{FinishedAt: metav1.Time{Time: t2}},
 	}))
+}
+
+func TestWorkflowHasArtifactGC(t *testing.T) {
+	tests := []struct {
+		name                      string
+		workflowArtGCStrategySpec string
+		artifactGCStrategySpec    string
+		expectedResult            bool
+	}{
+		{
+			name: "WorkflowSpecGC_Completion",
+			workflowArtGCStrategySpec: `
+              artifactGC:
+                strategy: OnWorkflowCompletion`,
+			artifactGCStrategySpec: "",
+			expectedResult:         true,
+		},
+		{
+			name:                      "ArtifactSpecGC_Completion",
+			workflowArtGCStrategySpec: "",
+			artifactGCStrategySpec: `
+                      artifactGC:
+                        strategy: OnWorkflowCompletion`,
+			expectedResult: true,
+		},
+		{
+			name: "WorkflowSpecGC_Deletion",
+			workflowArtGCStrategySpec: `
+              artifactGC:
+                strategy: OnWorkflowDeletion`,
+			artifactGCStrategySpec: "",
+			expectedResult:         true,
+		},
+		{
+			name:                      "ArtifactSpecGC_Deletion",
+			workflowArtGCStrategySpec: "",
+			artifactGCStrategySpec: `
+                      artifactGC:
+                        strategy: OnWorkflowDeletion`,
+			expectedResult: true,
+		},
+		{
+			name:                      "NoGC",
+			workflowArtGCStrategySpec: "",
+			artifactGCStrategySpec:    "",
+			expectedResult:            false,
+		},
+		{
+			name: "WorkflowSpecGCNone",
+			workflowArtGCStrategySpec: `
+              artifactGC:
+                strategy: ""`,
+			artifactGCStrategySpec: "",
+			expectedResult:         false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			workflowSpec := fmt.Sprintf(`
+            apiVersion: argoproj.io/v1alpha1
+            kind: Workflow
+            metadata:
+              generateName: artifact-passing-
+            spec:
+              entrypoint: whalesay
+              %s
+              templates:
+              - name: whalesay
+                container:
+                  image: docker/whalesay:latest
+                  command: [sh, -c]
+                  args: ["sleep 1; cowsay hello world | tee /tmp/hello_world.txt"]
+                outputs:
+                  artifacts:
+                    - name: out
+                      path: /out
+                      s3:
+                        key: out
+                        %s`, tt.workflowArtGCStrategySpec, tt.artifactGCStrategySpec)
+
+			wf := MustUnmarshalWorkflow(workflowSpec)
+
+			hasArtifact := wf.HasArtifactGC()
+
+			assert.Equal(t, hasArtifact, tt.expectedResult)
+		})
+	}
+
 }
 
 func TestArtifact_ValidatePath(t *testing.T) {

@@ -196,6 +196,19 @@ func (w *Workflow) GetExecSpec() *WorkflowSpec {
 	return &w.Spec
 }
 
+func (w *Workflow) HasArtifactGC() bool {
+	// either it's defined by an Output Artifact or by the WorkflowSpec itself, or both
+	for _, template := range w.Spec.Templates {
+		for _, artifact := range template.Outputs.Artifacts {
+			if artifact.GetArtifactGC().Strategy != ArtifactGCNever {
+				return true
+			}
+		}
+	}
+
+	return (w.Spec.ArtifactGC != nil && w.Spec.ArtifactGC.Strategy != ArtifactGCNever)
+}
+
 var (
 	WorkflowCreatedAfter = func(t time.Time) WorkflowPredicate {
 		return func(wf Workflow) bool {
@@ -342,7 +355,7 @@ type WorkflowSpec struct {
 	// +optional
 	SchedulerName string `json:"schedulerName,omitempty" protobuf:"bytes,21,opt,name=schedulerName"`
 
-	// PodGC describes the strategy to use when to deleting completed pods
+	// PodGC describes the strategy to use when deleting completed pods
 	PodGC *PodGC `json:"podGC,omitempty" protobuf:"bytes,22,opt,name=podGC"`
 
 	// PriorityClassName to apply to workflow pods.
@@ -382,7 +395,7 @@ type WorkflowSpec struct {
 	// Synchronization holds synchronization lock configuration for this Workflow
 	Synchronization *Synchronization `json:"synchronization,omitempty" protobuf:"bytes,35,opt,name=synchronization,casttype=Synchronization"`
 
-	// VolumeClaimGC describes the strategy to use when to deleting volumes from completed workflows
+	// VolumeClaimGC describes the strategy to use when deleting volumes from completed workflows
 	VolumeClaimGC *VolumeClaimGC `json:"volumeClaimGC,omitempty" protobuf:"bytes,36,opt,name=volumeClaimGC,casttype=VolumeClaimGC"`
 
 	// RetryStrategy for all templates in the workflow.
@@ -401,10 +414,11 @@ type WorkflowSpec struct {
 	// step, irrespective of the success, failure, or error status of the primary step
 	Hooks LifecycleHooks `json:"hooks,omitempty" protobuf:"bytes,41,opt,name=hooks"`
 
-	// WorkflowMetadata contains some metadata of the workflow to be refer
+	// WorkflowMetadata contains some metadata of the workflow to refer to
 	WorkflowMetadata *WorkflowMetadata `json:"workflowMetadata,omitempty" protobuf:"bytes,42,opt,name=workflowMetadata"`
 
-	// ArtifactGC describes the strategy to use when to deleting artifacts from completed or deleted workflows
+	// ArtifactGC describes the strategy to use when deleting artifacts from completed or deleted workflows (applies to all output Artifacts
+	// unless Artifact.ArtifactGC is specified, which overrides this)
 	ArtifactGC *ArtifactGC `json:"artifactGC,omitempty" protobuf:"bytes,43,opt,name=artifactGC"`
 }
 
@@ -932,6 +946,9 @@ type Artifact struct {
 
 	// ArtifactGC describes the strategy to use when to deleting an artifact from completed or deleted workflows
 	ArtifactGC *ArtifactGC `json:"artifactGC,omitempty" protobuf:"bytes,12,opt,name=artifactGC"`
+
+	// Has this been deleted?
+	Deleted bool `json:"deleted,omitempty" protobuf:"varint,13,opt,name=deleted"`
 }
 
 // ArtifactGC returns the ArtifactGC that was defined by the artifact.  If none was provided, a default value is returned.
@@ -2299,9 +2316,9 @@ type ArtifactoryArtifact struct {
 	ArtifactoryAuth `json:",inline" protobuf:"bytes,2,opt,name=artifactoryAuth"`
 }
 
-//func (a *ArtifactoryArtifact) String() string {
+// func (a *ArtifactoryArtifact) String() string {
 //	return a.URL
-//}
+// }
 func (a *ArtifactoryArtifact) GetKey() (string, error) {
 	u, err := url.Parse(a.URL)
 	if err != nil {
@@ -2598,6 +2615,9 @@ type ResourceTemplate struct {
 	// Manifest contains the kubernetes manifest
 	Manifest string `json:"manifest,omitempty" protobuf:"bytes,3,opt,name=manifest"`
 
+	// ManifestFrom is the source for a single kubernetes manifest
+	ManifestFrom *ManifestFrom `json:"manifestFrom,omitempty" protobuf:"bytes,8,opt,name=manifestFrom"`
+
 	// SetOwnerReference sets the reference to the workflow on the OwnerReference of generated resource.
 	SetOwnerReference bool `json:"setOwnerReference,omitempty" protobuf:"varint,4,opt,name=setOwnerReference"`
 
@@ -2615,6 +2635,11 @@ type ResourceTemplate struct {
 	// 	"--validate=false"  # disable resource validation
 	// ]
 	Flags []string `json:"flags,omitempty" protobuf:"varint,7,opt,name=flags"`
+}
+
+type ManifestFrom struct {
+	// Artifact contains the artifact to use
+	Artifact *Artifact `json:"artifact" protobuf:"bytes,1,opt,name=artifact"`
 }
 
 // GetType returns the type of this template

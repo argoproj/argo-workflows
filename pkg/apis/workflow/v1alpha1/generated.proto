@@ -82,6 +82,9 @@ message Artifact {
 
   // ArtifactGC describes the strategy to use when to deleting an artifact from completed or deleted workflows
   optional ArtifactGC artifactGC = 12;
+
+  // Has this been deleted?
+  optional bool deleted = 13;
 }
 
 // ArtifactGC describes how to delete artifacts from completed Workflows
@@ -641,7 +644,10 @@ message HTTP {
   // Body is content of the HTTP Request
   optional string body = 5;
 
-  // insecureSkipVerify is a bool when if set to true will skip TLS verification for the HTTP client
+  // BodyFrom is  content of the HTTP Request as Bytes
+  optional HTTPBodySource bodyFrom = 8;
+
+  // InsecureSkipVerify is a bool when if set to true will skip TLS verification for the HTTP client
   optional bool insecureSkipVerify = 7;
 }
 
@@ -663,6 +669,11 @@ message HTTPAuth {
   optional OAuth2Auth oauth2 = 2;
 
   optional BasicAuth basicAuth = 3;
+}
+
+// HTTPBodySource contains the source of the HTTP body.
+message HTTPBodySource {
+  optional bytes bytes = 1;
 }
 
 message HTTPHeader {
@@ -758,6 +769,11 @@ message Link {
 
   // The URL. Can contain "${metadata.namespace}", "${metadata.name}", "${status.startedAt}", "${status.finishedAt}" or any other element in workflow yaml, e.g. "${workflow.metadata.annotations.userDefinedKey}"
   optional string url = 3;
+}
+
+message ManifestFrom {
+  // Artifact contains the artifact to use
+  optional Artifact artifact = 1;
 }
 
 // MemoizationStatus is the status of this memoized node
@@ -1131,6 +1147,9 @@ message ResourceTemplate {
 
   // Manifest contains the kubernetes manifest
   optional string manifest = 3;
+
+  // ManifestFrom is the source for a single kubernetes manifest
+  optional ManifestFrom manifestFrom = 8;
 
   // SetOwnerReference sets the reference to the workflow on the OwnerReference of generated resource.
   optional bool setOwnerReference = 4;
@@ -1791,7 +1810,7 @@ message WorkflowSpec {
   // +optional
   optional string schedulerName = 21;
 
-  // PodGC describes the strategy to use when to deleting completed pods
+  // PodGC describes the strategy to use when deleting completed pods
   optional PodGC podGC = 22;
 
   // PriorityClassName to apply to workflow pods.
@@ -1831,7 +1850,7 @@ message WorkflowSpec {
   // Synchronization holds synchronization lock configuration for this Workflow
   optional Synchronization synchronization = 35;
 
-  // VolumeClaimGC describes the strategy to use when to deleting volumes from completed workflows
+  // VolumeClaimGC describes the strategy to use when deleting volumes from completed workflows
   optional VolumeClaimGC volumeClaimGC = 36;
 
   // RetryStrategy for all templates in the workflow.
@@ -1850,10 +1869,11 @@ message WorkflowSpec {
   // step, irrespective of the success, failure, or error status of the primary step
   map<string, LifecycleHook> hooks = 41;
 
-  // WorkflowMetadata contains some metadata of the workflow to be refer
+  // WorkflowMetadata contains some metadata of the workflow to refer to
   optional WorkflowMetadata workflowMetadata = 42;
 
-  // ArtifactGC describes the strategy to use when to deleting artifacts from completed or deleted workflows
+  // ArtifactGC describes the strategy to use when deleting artifacts from completed or deleted workflows (applies to all output Artifacts
+  // unless Artifact.ArtifactGC is specified, which overrides this)
   optional ArtifactGC artifactGC = 43;
 }
 

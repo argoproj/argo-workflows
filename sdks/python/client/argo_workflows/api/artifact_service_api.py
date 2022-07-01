@@ -43,7 +43,6 @@ class ArtifactServiceApi(object):
             id,
             node_id,
             artifact_name,
-            artifact_name2,
             artifact_discriminator="outputs",
             **kwargs
         ):
@@ -52,7 +51,7 @@ class ArtifactServiceApi(object):
             This method makes a synchronous HTTP request by default. To make an
             asynchronous HTTP request, please pass async_req=True
 
-            >>> thread = api.get_artifact_file(namespace, id_discriminator, id, node_id, artifact_name, artifact_name2, artifact_discriminator="outputs", async_req=True)
+            >>> thread = api.get_artifact_file(namespace, id_discriminator, id, node_id, artifact_name, artifact_discriminator="outputs", async_req=True)
             >>> result = thread.get()
 
             Args:
@@ -61,7 +60,6 @@ class ArtifactServiceApi(object):
                 id (str):
                 node_id (str):
                 artifact_name (str):
-                artifact_name2 (str):
                 artifact_discriminator (str): defaults to "outputs", must be one of ["outputs"]
 
             Keyword Args:
@@ -121,8 +119,6 @@ class ArtifactServiceApi(object):
                 artifact_name
             kwargs['artifact_discriminator'] = \
                 artifact_discriminator
-            kwargs['artifact_name2'] = \
-                artifact_name2
             return self.call_with_http_info(**kwargs)
 
         self.get_artifact_file = _Endpoint(
@@ -144,7 +140,6 @@ class ArtifactServiceApi(object):
                     'node_id',
                     'artifact_name',
                     'artifact_discriminator',
-                    'artifact_name2',
                 ],
                 'required': [
                     'namespace',
@@ -153,7 +148,6 @@ class ArtifactServiceApi(object):
                     'node_id',
                     'artifact_name',
                     'artifact_discriminator',
-                    'artifact_name2',
                 ],
                 'nullable': [
                 ],
@@ -191,8 +185,6 @@ class ArtifactServiceApi(object):
                         (str,),
                     'artifact_discriminator':
                         (str,),
-                    'artifact_name2':
-                        (str,),
                 },
                 'attribute_map': {
                     'namespace': 'namespace',
@@ -201,7 +193,6 @@ class ArtifactServiceApi(object):
                     'node_id': 'nodeId',
                     'artifact_name': 'artifactName',
                     'artifact_discriminator': 'artifactDiscriminator',
-                    'artifact_name2': 'artifactName',
                 },
                 'location_map': {
                     'namespace': 'path',
@@ -210,7 +201,6 @@ class ArtifactServiceApi(object):
                     'node_id': 'path',
                     'artifact_name': 'path',
                     'artifact_discriminator': 'path',
-                    'artifact_name2': 'path',
                 },
                 'collection_format_map': {
                 }
@@ -375,7 +365,6 @@ class ArtifactServiceApi(object):
 
         def __get_input_artifact_by_uid(
             self,
-            namespace,
             uid,
             node_id,
             artifact_name,
@@ -386,11 +375,10 @@ class ArtifactServiceApi(object):
             This method makes a synchronous HTTP request by default. To make an
             asynchronous HTTP request, please pass async_req=True
 
-            >>> thread = api.get_input_artifact_by_uid(namespace, uid, node_id, artifact_name, async_req=True)
+            >>> thread = api.get_input_artifact_by_uid(uid, node_id, artifact_name, async_req=True)
             >>> result = thread.get()
 
             Args:
-                namespace (str):
                 uid (str):
                 node_id (str):
                 artifact_name (str):
@@ -440,8 +428,6 @@ class ArtifactServiceApi(object):
                 '_check_return_type', True
             )
             kwargs['_host_index'] = kwargs.get('_host_index')
-            kwargs['namespace'] = \
-                namespace
             kwargs['uid'] = \
                 uid
             kwargs['node_id'] = \
@@ -463,13 +449,11 @@ class ArtifactServiceApi(object):
             },
             params_map={
                 'all': [
-                    'namespace',
                     'uid',
                     'node_id',
                     'artifact_name',
                 ],
                 'required': [
-                    'namespace',
                     'uid',
                     'node_id',
                     'artifact_name',
@@ -487,8 +471,6 @@ class ArtifactServiceApi(object):
                 'allowed_values': {
                 },
                 'openapi_types': {
-                    'namespace':
-                        (str,),
                     'uid':
                         (str,),
                     'node_id':
@@ -497,13 +479,11 @@ class ArtifactServiceApi(object):
                         (str,),
                 },
                 'attribute_map': {
-                    'namespace': 'namespace',
                     'uid': 'uid',
                     'node_id': 'nodeId',
                     'artifact_name': 'artifactName',
                 },
                 'location_map': {
-                    'namespace': 'path',
                     'uid': 'path',
                     'node_id': 'path',
                     'artifact_name': 'path',

@@ -98,6 +98,9 @@ definitions:
         $ref: '#/definitions/ArtifactGC'
       artifactory:
         $ref: '#/definitions/ArtifactoryArtifact'
+      deleted:
+        description: Has this been deleted?
+        type: boolean
       from:
         description: From allows an artifact to reference an artifact from a previous
           step
@@ -197,6 +200,9 @@ definitions:
         $ref: '#/definitions/ArtifactGC'
       artifactory:
         $ref: '#/definitions/ArtifactoryArtifact'
+      deleted:
+        description: Has this been deleted?
+        type: boolean
       from:
         description: From allows an artifact to reference an artifact from a previous
           step
@@ -1603,10 +1609,12 @@ definitions:
       body:
         description: Body is content of the HTTP Request
         type: string
+      bodyFrom:
+        $ref: '#/definitions/HTTPBodySource'
       headers:
         $ref: '#/definitions/HTTPHeaders'
       insecureSkipVerify:
-        description: insecureSkipVerify is a bool when if set to true will skip TLS
+        description: InsecureSkipVerify is a bool when if set to true will skip TLS
           verification for the HTTP client
         type: boolean
       method:
@@ -1649,6 +1657,15 @@ definitions:
         $ref: '#/definitions/ClientCertAuth'
       oauth2:
         $ref: '#/definitions/OAuth2Auth'
+    type: object
+  HTTPBodySource:
+    properties:
+      bytes:
+        items:
+          format: uint8
+          type: integer
+        type: array
+    title: HTTPBodySource contains the source of the HTTP body.
     type: object
   HTTPGetAction:
     properties:
@@ -2032,6 +2049,11 @@ definitions:
     title: ManagedFieldsOperationType is the type of operation which lead to a ManagedFieldsEntry
       being created.
     type: string
+  ManifestFrom:
+    properties:
+      artifact:
+        $ref: '#/definitions/Artifact'
+    type: object
   Memoize:
     description: Memoization enables caching for the Outputs of the template
     properties:
@@ -3202,6 +3224,8 @@ definitions:
       manifest:
         description: Manifest contains the kubernetes manifest
         type: string
+      manifestFrom:
+        $ref: '#/definitions/ManifestFrom'
       mergeStrategy:
         description: |-
           MergeStrategy is the strategy used to merge a patch. It defaults to "strategic"

@@ -113,7 +113,7 @@ jobs:
         with:
           java-version: '8'
           distribution: adopt
-      - uses: actions/setup-python@v3
+      - uses: actions/setup-python@v4
         with:
           python-version: '3.x'
       - uses: actions/cache@v3
@@ -237,3 +237,7 @@ jobs:
       - run: yarn --cwd ui test
       - run: yarn --cwd ui lint
       - run: git diff --exit-code
+      # check to see if it'll start (but not if it'll render)
+      - run: yarn --cwd ui start &
+      - run: until curl http://localhost:8080 > /dev/null ; do sleep 10s ; done
+        timeout-minutes: 1

@@ -34,7 +34,6 @@ import (
 	eventpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/event"
 	eventsourcepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/eventsource"
 	infopkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/info"
-	pipelinepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/pipeline"
 	sensorpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/sensor"
 	workflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflow"
 	workflowarchivepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowarchive"
@@ -51,7 +50,6 @@ import (
 	"github.com/argoproj/argo-workflows/v3/server/event"
 	"github.com/argoproj/argo-workflows/v3/server/eventsource"
 	"github.com/argoproj/argo-workflows/v3/server/info"
-	pipeline "github.com/argoproj/argo-workflows/v3/server/pipeline"
 	"github.com/argoproj/argo-workflows/v3/server/sensor"
 	"github.com/argoproj/argo-workflows/v3/server/static"
 	"github.com/argoproj/argo-workflows/v3/server/types"
@@ -85,6 +83,7 @@ type argoServer struct {
 	eventAsyncDispatch       bool
 	xframeOptions            string
 	accessControlAllowOrigin string
+	allowedLinkProtocol      []string
 	cache                    *cache.ResourceCache
 }
 
@@ -106,6 +105,7 @@ type ArgoServerOpts struct {
 	EventAsyncDispatch       bool
 	XFrameOptions            string
 	AccessControlAllowOrigin string
+	AllowedLinkProtocol      []string
 }
 
 func init() {
@@ -162,6 +162,7 @@ func NewArgoServer(ctx context.Context, opts ArgoServerOpts) (*argoServer, error
 		eventAsyncDispatch:       opts.EventAsyncDispatch,
 		xframeOptions:            opts.XFrameOptions,
 		accessControlAllowOrigin: opts.AccessControlAllowOrigin,
+		allowedLinkProtocol:      opts.AllowedLinkProtocol,
 		cache:                    resourceCache,
 	}, nil
 }
@@ -175,6 +176,10 @@ var backoff = wait.Backoff{
 
 func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(string)) {
 	config, err := as.configController.Get(ctx)
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = config.Sanitize(as.allowedLinkProtocol)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -282,7 +287,6 @@ func (as *argoServer) newGRPCServer(instanceIDService instanceid.Service, offloa
 	infopkg.RegisterInfoServiceServer(grpcServer, info.NewInfoServer(as.managedNamespace, links, navColor))
 	eventpkg.RegisterEventServiceServer(grpcServer, eventServer)
 	eventsourcepkg.RegisterEventSourceServiceServer(grpcServer, eventsource.NewEventSourceServer())
-	pipelinepkg.RegisterPipelineServiceServer(grpcServer, pipeline.NewPipelineServer())
 	sensorpkg.RegisterSensorServiceServer(grpcServer, sensor.NewSensorServer())
 	workflowpkg.RegisterWorkflowServiceServer(grpcServer, workflow.NewWorkflowServer(instanceIDService, offloadNodeStatusRepo))
 	workflowtemplatepkg.RegisterWorkflowTemplateServiceServer(grpcServer, workflowtemplate.NewWorkflowTemplateServer(instanceIDService))
@@ -330,7 +334,6 @@ func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServe
 	mustRegisterGWHandler(eventpkg.RegisterEventServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
 	mustRegisterGWHandler(eventsourcepkg.RegisterEventSourceServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
 	mustRegisterGWHandler(sensorpkg.RegisterSensorServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
-	mustRegisterGWHandler(pipelinepkg.RegisterPipelineServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
 	mustRegisterGWHandler(workflowpkg.RegisterWorkflowServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
 	mustRegisterGWHandler(workflowtemplatepkg.RegisterWorkflowTemplateServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
 	mustRegisterGWHandler(cronworkflowpkg.RegisterCronWorkflowServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)

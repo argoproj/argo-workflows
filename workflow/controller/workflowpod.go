@@ -13,6 +13,7 @@ import (
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/strategicpatch"
+	"k8s.io/utils/pointer"
 
 	"github.com/argoproj/argo-workflows/v3/errors"
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
@@ -158,7 +159,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 
 	pod := &apiv1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      util.PodName(woc.wf.Name, nodeName, tmpl.Name, nodeID, util.GetPodNameVersion()),
+			Name:      util.PodName(woc.wf.Name, nodeName, tmpl.Name, nodeID, util.GetWorkflowPodNameVersion(woc.wf)),
 			Namespace: woc.wf.ObjectMeta.Namespace,
 			Labels: map[string]string{
 				common.LabelKeyWorkflow:  woc.wf.ObjectMeta.Name, // Allows filtering by pods related to specific workflow
@@ -266,11 +267,6 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 	}
 
 	envVarTemplateValue := wfv1.MustMarshallJSON(tmpl)
-	templateSize := len(envVarTemplateValue)
-	if templateSize > 128000 {
-		err = fmt.Errorf("workflow templates are limited to 128KB, this workflow is %d bytes", templateSize)
-		return nil, err
-	}
 
 	// Add standard environment variables, making pod spec larger
 	envVars := []apiv1.EnvVar{
@@ -599,6 +595,20 @@ func (woc *wfOperationCtx) newExecContainer(name string, tmpl *wfv1.Template) *a
 		Resources:       woc.controller.Config.GetExecutor().Resources,
 		SecurityContext: woc.controller.Config.GetExecutor().SecurityContext,
 	}
+	// lock down resource pods by default
+	if tmpl.GetType() == wfv1.TemplateTypeResource && exec.SecurityContext == nil {
+		exec.SecurityContext = &apiv1.SecurityContext{
+			Capabilities: &apiv1.Capabilities{
+				Drop: []apiv1.Capability{"ALL"},
+			},
+			RunAsNonRoot:             pointer.BoolPtr(true),
+			RunAsUser:                pointer.Int64Ptr(8737),
+			AllowPrivilegeEscalation: pointer.BoolPtr(false),
+		}
+		if exec.Name != common.InitContainerName && exec.Name != common.WaitContainerName {
+			exec.SecurityContext.ReadOnlyRootFilesystem = pointer.BoolPtr(true)
+		}
+	}
 	if woc.controller.Config.KubeConfig != nil {
 		path := woc.controller.Config.KubeConfig.MountPath
 		if path == "" {
@@ -709,7 +719,7 @@ func addSchedulingConstraints(pod *apiv1.Pod, wfSpec *wfv1.WorkflowSpec, tmpl *w
 // These are either specified in the workflow.spec.volumes or the workflow.spec.volumeClaimTemplate section
 func addVolumeReferences(pod *apiv1.Pod, vols []apiv1.Volume, tmpl *wfv1.Template, pvcs []apiv1.Volume) error {
 	switch tmpl.GetType() {
-	case wfv1.TemplateTypeContainer, wfv1.TemplateTypeContainerSet, wfv1.TemplateTypeScript, wfv1.TemplateTypeData:
+	case wfv1.TemplateTypeContainer, wfv1.TemplateTypeContainerSet, wfv1.TemplateTypeScript, wfv1.TemplateTypeResource, wfv1.TemplateTypeData:
 	default:
 		return nil
 	}

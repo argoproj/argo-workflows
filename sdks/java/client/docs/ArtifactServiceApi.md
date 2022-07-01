@@ -13,7 +13,7 @@ Method | HTTP request | Description
 
 <a name="artifactServiceGetArtifactFile"></a>
 # **artifactServiceGetArtifactFile**
-> File artifactServiceGetArtifactFile(namespace, idDiscriminator, id, nodeId, artifactName, artifactDiscriminator, artifactName2)
+> File artifactServiceGetArtifactFile(namespace, idDiscriminator, id, nodeId, artifactName, artifactDiscriminator)
 
 Get an artifact.
 
@@ -45,9 +45,8 @@ public class Example {
     String nodeId = "nodeId_example"; // String | 
     String artifactName = "artifactName_example"; // String | 
     String artifactDiscriminator = "artifactDiscriminator_example"; // String | 
-    String artifactName2 = "artifactName_example"; // String | 
     try {
-      File result = apiInstance.artifactServiceGetArtifactFile(namespace, idDiscriminator, id, nodeId, artifactName, artifactDiscriminator, artifactName2);
+      File result = apiInstance.artifactServiceGetArtifactFile(namespace, idDiscriminator, id, nodeId, artifactName, artifactDiscriminator);
       System.out.println(result);
     } catch (ApiException e) {
       System.err.println("Exception when calling ArtifactServiceApi#artifactServiceGetArtifactFile");
@@ -70,7 +69,6 @@ Name | Type | Description  | Notes
  **nodeId** | **String**|  |
  **artifactName** | **String**|  |
  **artifactDiscriminator** | **String**|  | [enum: outputs]
- **artifactName2** | **String**|  |
 
 ### Return type
 
@@ -166,7 +164,7 @@ null (empty response body)
 
 <a name="artifactServiceGetInputArtifactByUID"></a>
 # **artifactServiceGetInputArtifactByUID**
-> File artifactServiceGetInputArtifactByUID(namespace, uid, nodeId, artifactName)
+> File artifactServiceGetInputArtifactByUID(uid, nodeId, artifactName)
 
 Get an input artifact by UID.
 
@@ -192,12 +190,11 @@ public class Example {
     //BearerToken.setApiKeyPrefix("Token");
 
     ArtifactServiceApi apiInstance = new ArtifactServiceApi(defaultClient);
-    String namespace = "namespace_example"; // String | 
     String uid = "uid_example"; // String | 
     String nodeId = "nodeId_example"; // String | 
     String artifactName = "artifactName_example"; // String | 
     try {
-      File result = apiInstance.artifactServiceGetInputArtifactByUID(namespace, uid, nodeId, artifactName);
+      File result = apiInstance.artifactServiceGetInputArtifactByUID(uid, nodeId, artifactName);
       System.out.println(result);
     } catch (ApiException e) {
       System.err.println("Exception when calling ArtifactServiceApi#artifactServiceGetInputArtifactByUID");
@@ -214,7 +211,6 @@ public class Example {
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **namespace** | **String**|  |
  **uid** | **String**|  |
  **nodeId** | **String**|  |
  **artifactName** | **String**|  |
