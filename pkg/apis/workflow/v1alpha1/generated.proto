@@ -232,7 +232,7 @@ message AzureBlobArtifact {
   optional string blob = 2;
 }
 
-// AzureBlobArtifactRepository defines the controller configuration for an artifactory artifact repository
+// AzureBlobArtifactRepository defines the controller configuration for an Azure Blob Storage artifact repository
 message AzureBlobArtifactRepository {
   optional AzureBlobContainer blobContainer = 1;
 

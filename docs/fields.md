@@ -4062,7 +4062,7 @@ ArtifactoryArtifactRepository defines the controller configuration for an artifa
 
 ## AzureBlobArtifactRepository
 
-AzureBlobArtifactRepository defines the controller configuration for an artifactory artifact repository
+AzureBlobArtifactRepository defines the controller configuration for an Azure Blob Storage artifact repository
 
 <details>
 <summary>Examples with this field (click to open)</summary>

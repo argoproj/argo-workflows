@@ -137,7 +137,7 @@ func (r *ArtifactoryArtifactRepository) IntoArtifactLocation(l *ArtifactLocation
 	l.Artifactory = &ArtifactoryArtifact{ArtifactoryAuth: r.ArtifactoryAuth, URL: u}
 }
 
-// AzureBlobArtifactRepository defines the controller configuration for an artifactory artifact repository
+// AzureBlobArtifactRepository defines the controller configuration for an Azure Blob Storage artifact repository
 type AzureBlobArtifactRepository struct {
 	AzureBlobContainer `json:",inline" protobuf:"bytes,1,opt,name=blobContainer"`
 

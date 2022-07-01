@@ -1027,7 +1027,7 @@ func schema_pkg_apis_workflow_v1alpha1_AzureBlobArtifactRepository(ref common.Re
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "AzureBlobArtifactRepository defines the controller configuration for an artifactory artifact repository",
+				Description: "AzureBlobArtifactRepository defines the controller configuration for an Azure Blob Storage artifact repository",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"endpoint": {

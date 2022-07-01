@@ -9337,7 +9337,7 @@
       }
     },
     "io.argoproj.workflow.v1alpha1.AzureBlobArtifactRepository": {
-      "description": "AzureBlobArtifactRepository defines the controller configuration for an artifactory artifact repository",
+      "description": "AzureBlobArtifactRepository defines the controller configuration for an Azure Blob Storage artifact repository",
       "type": "object",
       "required": [
         "endpoint",
