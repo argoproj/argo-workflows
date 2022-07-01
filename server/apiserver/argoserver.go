@@ -144,7 +144,7 @@ func NewArgoServer(ctx context.Context, opts ArgoServerOpts) (*argoServer, error
 		} else {
 			log.Info("SSO disabled")
 		}
-                if opts.AuthModes[auth.Token] {
+		if opts.AuthModes[auth.Token] {
 			tokenSecret = c.TokenSecretName
 			log.Info("Token authentication enabled, using secret %w", tokenSecret)
 		}
