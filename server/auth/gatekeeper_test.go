@@ -87,6 +87,12 @@ func TestServer_GetWFClient(t *testing.T) {
 			},
 		},
 		&corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{Name: "my-token-secret", Namespace: "my-ns"},
+			Data: map[string][]byte{
+				"token": []byte("my-token"),
+			},
+		},
+		&corev1.Secret{
 			ObjectMeta: metav1.ObjectMeta{Name: "user-secret", Namespace: "user1-ns"},
 			Data: map[string][]byte{
 				"token": {},
@@ -150,14 +156,16 @@ func TestServer_GetWFClient(t *testing.T) {
 		}
 	})
 	t.Run("Token", func(t *testing.T) {
-		g, err := NewGatekeeper(Modes{Token: true}, clients, &rest.Config{Username: "my-username"}, nil, "my-secret", clientForAuthorization, "my-ns", "", true, resourceCache)
+		g, err := NewGatekeeper(Modes{Token: true}, clients, &rest.Config{Username: "my-username"}, nil, "my-token-secret", clientForAuthorization, "my-ns", "", true, resourceCache)
 		assert.NoError(t, err)
-		ctx, err := g.Context(x("Bearer "))
-		if assert.NoError(t, err) {
-			assert.Equal(t, wfClient, GetWfClient(ctx))
-			assert.Equal(t, kubeClient, GetKubeClient(ctx))
-			assert.NotNil(t, GetClaims(ctx))
+		success_ctx, success_err := g.Context(x("Bearer my-token"))
+		if assert.NoError(t, success_err) {
+			assert.Equal(t, wfClient, GetWfClient(success_ctx))
+			assert.Equal(t, kubeClient, GetKubeClient(success_ctx))
+			assert.NotNil(t, GetClaims(success_ctx))
 		}
+		_, fail_err := g.Context(x("Bearer not-my-token"))
+		assert.Error(t, fail_err)
 	})
 	t.Run("SSO", func(t *testing.T) {
 		ssoIf := &ssomocks.Interface{}
@@ -172,6 +180,29 @@ func TestServer_GetWFClient(t *testing.T) {
 				if assert.NotNil(t, GetClaims(ctx)) {
 					assert.Equal(t, "my-sub", GetClaims(ctx).Subject)
 				}
+			}
+		}
+	})
+	t.Run("SSO+Token", func(t *testing.T) {
+		ssoIf := &ssomocks.Interface{}
+		ssoIf.On("Authorize", mock.Anything, mock.Anything).Return(&types.Claims{Claims: jwt.Claims{Subject: "my-sub"}}, nil)
+		ssoIf.On("IsRBACEnabled").Return(false)
+		g, err := NewGatekeeper(Modes{SSO: true, Token: true}, clients, &rest.Config{Username: "my-username"}, ssoIf, "my-token-secret", clientForAuthorization, "my-ns", "my-ns", true, resourceCache)
+		assert.NoError(t, err)
+		token_ctx, token_err := g.Context(x("Bearer my-token"))
+		if assert.NoError(t, token_err) {
+			assert.Equal(t, wfClient, GetWfClient(token_ctx))
+			assert.Equal(t, kubeClient, GetKubeClient(token_ctx))
+			if assert.NotNil(t, GetClaims(token_ctx)) {
+				assert.Equal(t, "my-username", GetClaims(token_ctx).Subject)
+			}
+		}
+		sso_ctx, sso_err := g.Context(x("Bearer v2:whatever"))
+		if assert.NoError(t, sso_err) {
+			assert.Equal(t, wfClient, GetWfClient(sso_ctx))
+			assert.Equal(t, kubeClient, GetKubeClient(sso_ctx))
+			if assert.NotNil(t, GetClaims(sso_ctx)) {
+				assert.Equal(t, "my-sub", GetClaims(sso_ctx).Subject)
 			}
 		}
 	})
