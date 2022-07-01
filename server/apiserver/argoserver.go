@@ -142,13 +142,14 @@ func NewArgoServer(ctx context.Context, opts ArgoServerOpts) (*argoServer, error
 			}
 			log.Info("SSO enabled")
 		} else {
+			log.Info("SSO disabled")
+		}
+                if opts.AuthModes[auth.Token] {
 			tokenSecret = c.TokenSecretName
 			log.Info("Token authentication enabled, using secret %w", tokenSecret)
 		}
 		resourceCache = cache.NewResourceCache(opts.Clients.Kubernetes, getResourceCacheNamespace(opts))
 		resourceCache.Run(ctx.Done())
-	} else {
-		log.Info("SSO disabled")
 	}
 	gatekeeper, err := auth.NewGatekeeper(opts.AuthModes, opts.Clients, opts.RestConfig, ssoIf, tokenSecret, auth.DefaultClientForAuthorization, opts.Namespace, opts.SSONamespace, opts.Namespaced, resourceCache)
 	if err != nil {
