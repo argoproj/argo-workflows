@@ -65,6 +65,7 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [DLR](https://www.dlr.de/eoc/)
 1. [Dyno Therapeutics](https://dynotx.com)
 1. [EBSCO Information Services](https://www.ebsco.com/)
+1. [Enso Finance](https://enso.finance/)
 1. [Equinor](https://www.equinor.com/)
 1. [Fairwinds](https://fairwinds.com/)
 1. [FOLIO](http://corp.folio-sec.com/)
