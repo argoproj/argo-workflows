@@ -339,10 +339,13 @@ func (we *WorkflowExecutor) saveArtifactFromFile(ctx context.Context, art *wfv1.
 			return err
 		}
 	}
+	log.Infof("Saving artifact %+v", art)
 	driverArt, err := we.newDriverArt(art)
 	if err != nil {
 		return err
 	}
+	log.Infof("Set location for artifact, now: %+v", driverArt)
+
 	artDriver, err := we.InitDriver(ctx, driverArt)
 	if err != nil {
 		return err
@@ -352,6 +355,7 @@ func (we *WorkflowExecutor) saveArtifactFromFile(ctx context.Context, art *wfv1.
 		return err
 	}
 	we.maybeDeleteLocalArtPath(localArtPath)
+	*art = *driverArt
 	log.Infof("Successfully saved file: %s", localArtPath)
 	return nil
 }
