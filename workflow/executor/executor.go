@@ -339,15 +339,15 @@ func (we *WorkflowExecutor) saveArtifactFromFile(ctx context.Context, art *wfv1.
 			return err
 		}
 	}
-	driverArt, err := we.newDriverArt(art)
+	err := art.Relocate(we.Template.ArchiveLocation)
 	if err != nil {
 		return err
 	}
-	artDriver, err := we.InitDriver(ctx, driverArt)
+	artDriver, err := we.InitDriver(ctx, art)
 	if err != nil {
 		return err
 	}
-	err = artDriver.Save(localArtPath, driverArt)
+	err = artDriver.Save(localArtPath, art)
 	if err != nil {
 		return err
 	}
