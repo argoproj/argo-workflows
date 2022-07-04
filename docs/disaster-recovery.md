@@ -5,7 +5,7 @@ We only store data in your Kubernetes cluster. You should consider backing this 
 Exporting example:
 
 ```bash
-kubectl get wf,cwf,cwft,wftmpl -o yaml > backup.yaml
+kubectl get wf,cwf,cwft,wftmpl -A -o yaml > backup.yaml
 ```
 
 Importing example:
