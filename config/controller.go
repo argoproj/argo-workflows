@@ -47,7 +47,8 @@ func parseConfigMap(cm *apiv1.ConfigMap, config *Config) error {
 			}
 		}
 	}
-	err := yaml.UnmarshalStrict([]byte(rawConfig), config)
+	// err := yaml.UnmarshalStrict([]byte(rawConfig), config)
+	err := yaml.Unmarshal([]byte(rawConfig), config)
 	return err
 }
 
