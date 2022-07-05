@@ -180,28 +180,14 @@ spec:
 			Then().
 			ExpectWorkflow(func(t *testing.T, m *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 				n := status.Nodes[m.Name]
-				expectedOutputs := &wfv1.Outputs{
-					Artifacts: wfv1.Artifacts{
-						{
-							Name: "a-logs",
-							ArtifactLocation: wfv1.ArtifactLocation{
-								S3: &wfv1.S3Artifact{
-									Key: fmt.Sprintf("%s/%s/a.log", m.Name, m.Name),
-								},
-							},
-						},
-						{
-							Name: "b-logs",
-							ArtifactLocation: wfv1.ArtifactLocation{
-								S3: &wfv1.S3Artifact{
-									Key: fmt.Sprintf("%s/%s/b.log", m.Name, m.Name),
-								},
-							},
-						},
-					},
-				}
+				expectedOutputs := map[string]string{"a-logs": fmt.Sprintf("%s/%s/a.log", m.Name, m.Name), "b-logs": fmt.Sprintf("%s/%s/b.log", m.Name, m.Name)}
 				if assert.NotNil(t, n) {
-					assert.Equal(t, n.Outputs, expectedOutputs)
+					assert.Equal(t, len(expectedOutputs), len(n.Outputs.Artifacts))
+					for _, artifact := range n.Outputs.Artifacts {
+						expectedS3Key, found := expectedOutputs[artifact.Name]
+						assert.True(t, found)
+						assert.Equal(t, expectedS3Key, artifact.S3.Key)
+					}
 				}
 			})
 	})
