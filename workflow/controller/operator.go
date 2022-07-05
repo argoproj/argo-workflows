@@ -360,6 +360,28 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 
 	woc.globalParams[common.GlobalVarWorkflowStatus] = string(workflowStatus)
 
+	var failures []failedNodeStatus
+	for _, node := range woc.wf.Status.Nodes {
+		if node.Phase == wfv1.NodeFailed || node.Phase == wfv1.NodeError {
+			failures = append(failures,
+				failedNodeStatus{
+					DisplayName:  node.DisplayName,
+					Message:      node.Message,
+					TemplateName: node.TemplateName,
+					Phase:        string(node.Phase),
+					PodName:      node.ID,
+					FinishedAt:   node.FinishedAt,
+				})
+		}
+	}
+	failedNodeBytes, err := json.Marshal(failures)
+	if err != nil {
+		woc.log.Errorf("Error marshalling failed nodes list: %+v", err)
+		// No need to return here
+	}
+	// This strconv.Quote is necessary so that the escaped quotes are not removed during parameter substitution
+	woc.globalParams[common.GlobalVarWorkflowFailures] = strconv.Quote(string(failedNodeBytes))
+
 	err = woc.executeWfLifeCycleHook(ctx, tmplCtx)
 	if err != nil {
 		woc.markNodeError(node.Name, err)
@@ -374,28 +396,6 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 
 	var onExitNode *wfv1.NodeStatus
 	if woc.execWf.Spec.HasExitHook() && woc.GetShutdownStrategy().ShouldExecute(true) {
-		var failures []failedNodeStatus
-		for _, node := range woc.wf.Status.Nodes {
-			if node.Phase == wfv1.NodeFailed || node.Phase == wfv1.NodeError {
-				failures = append(failures,
-					failedNodeStatus{
-						DisplayName:  node.DisplayName,
-						Message:      node.Message,
-						TemplateName: node.TemplateName,
-						Phase:        string(node.Phase),
-						PodName:      node.ID,
-						FinishedAt:   node.FinishedAt,
-					})
-			}
-		}
-		failedNodeBytes, err := json.Marshal(failures)
-		if err != nil {
-			woc.log.Errorf("Error marshalling failed nodes list: %+v", err)
-			// No need to return here
-		}
-		// This strconv.Quote is necessary so that the escaped quotes are not removed during parameter substitution
-		woc.globalParams[common.GlobalVarWorkflowFailures] = strconv.Quote(string(failedNodeBytes))
-
 		woc.log.Infof("Running OnExit handler: %s", woc.execWf.Spec.OnExit)
 		onExitNodeName := common.GenerateOnExitNodeName(woc.wf.ObjectMeta.Name)
 		exitHook := woc.execWf.Spec.GetExitHook(woc.execWf.Spec.Arguments)
