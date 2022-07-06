@@ -98,6 +98,19 @@ var AnyArtifactGCStrategy = map[ArtifactGCStrategy]bool{
 	ArtifactGCOnWorkflowDeletion:   true,
 }
 
+func (s ArtifactGCStrategy) AbbreviatedName() string {
+	switch s {
+	case ArtifactGCOnWorkflowCompletion:
+		return "wfComp"
+	case ArtifactGCOnWorkflowDeletion:
+		return "wfDel"
+	case ArtifactGCNever:
+		return "never"
+	default:
+		return "unknown"
+	}
+}
+
 // PodGCStrategy is the strategy when to delete completed pods for GC.
 type PodGCStrategy string
 
