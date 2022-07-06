@@ -118,6 +118,26 @@ func (_m *WorkflowArchive) ListWorkflows(namespace string, name string, namePref
 	return r0, r1
 }
 
+func (_m *WorkflowArchive) CountWorkflows(namespace string, name string, namePrefix string, minStartAt, maxStartAt time.Time, labelRequirements labels.Requirements) (int64, error) {
+	ret := _m.Called(namespace, name, namePrefix, minStartAt, maxStartAt, labelRequirements)
+
+	var r0 int64
+	if rf, ok := ret.Get(0).(func() int64); ok {
+		r0 = rf()
+	} else {
+		r0 = ret.Get(0).(int64)
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(string, string, string, time.Time, time.Time, labels.Requirements) error); ok {
+		r1 = rf(namespace, name, namePrefix, minStartAt, maxStartAt, labelRequirements)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // ListWorkflowsLabelKeys provides a mock function with given fields:
 func (_m *WorkflowArchive) ListWorkflowsLabelKeys() (*v1alpha1.LabelKeys, error) {
 	ret := _m.Called()
