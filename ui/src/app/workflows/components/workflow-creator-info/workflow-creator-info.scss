@@ -1,0 +1,44 @@
+@import 'node_modules/argo-ui/src/styles/config';
+
+.wf-row-creator-labels {
+  display: flex; 
+  flex-wrap: wrap;
+  align-items: center;
+  height: 100%;
+  $gutter: 0.5em;
+  border-radius: 0 0 3px 3px;
+
+  .tag {
+    line-height: normal;
+    background-color: $argo-color-gray-3;
+    border-radius: 3px;
+    height: auto;
+    margin: $gutter 0;
+    margin-right: 10px;
+    display: flex;
+    overflow: hidden;
+    cursor: pointer;
+
+    &:hover {
+      .key {
+        color: $argo-color-teal-5;
+      }
+      .value {
+        color: $argo-color-gray-3;
+      }
+    }
+
+    .key, .value {
+      padding: 0.5em 8px;
+    }
+
+    .key {
+      color: $argo-color-gray-6;
+    }
+
+    .value {
+      color: white;
+      background-color: $argo-color-teal-5;
+    }
+  }
+}
