@@ -118,6 +118,9 @@ func (woc *wfOperationCtx) garbageCollectArtifacts(ctx context.Context) error {
 	templatesByServiceAcct := make(map[string][]*wfv1.Template)
 	for _, template := range woc.execWf.GetTemplates() {
 		sa := template.ServiceAccountName
+		if sa == "" {
+			sa = woc.wf.Spec.ServiceAccountName
+		}
 		_, found := templatesByServiceAcct[sa]
 		if !found {
 			templatesByServiceAcct[sa] = make([]*wfv1.Template, 0)
@@ -271,7 +274,8 @@ func (woc *wfOperationCtx) createArtifactGCPod(ctx context.Context, strategy wfv
 		return nil
 	}
 
-	err = woc.createArtifactGCTaskSet(ctx, templates, podName)
+	taskSetName := podName
+	err = woc.createArtifactGCTaskSet(ctx, templates, taskSetName)
 	if err != nil {
 		return err
 	}
@@ -292,8 +296,9 @@ func (woc *wfOperationCtx) createArtifactGCPod(ctx context.Context, strategy wfv
 	if err != nil {
 		return fmt.Errorf("failed to marshall artifact: %w", err)
 	}*/
+	volumes, volumeMounts := createSecretVolumes(templates, false, true)
 
-	volumes, volumeMounts := createSecretVolumes(&wfv1.Template{Outputs: wfv1.Outputs{Artifacts: []wfv1.Artifact{a.Artifact}}})
+	//volumes, volumeMounts := createSecretVolumes(&wfv1.Template{Outputs: wfv1.Outputs{Artifacts: []wfv1.Artifact{a.Artifact}}})
 
 	pod := &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
@@ -303,10 +308,10 @@ func (woc *wfOperationCtx) createArtifactGCPod(ctx context.Context, strategy wfv
 				common.LabelKeyComponent: artifactGCComponent,
 				common.LabelKeyCompleted: "false",
 			},
-			Annotations: map[string]string{
+			/*Annotations: map[string]string{
 				common.AnnotationKeyNodeID:    a.NodeID,
 				common.AnnotationArtifactName: a.Name,
-			},
+			},*/
 			OwnerReferences: []metav1.OwnerReference{ // make sure we get deleted with the workflow
 				*metav1.NewControllerRef(woc.wf, wfv1.SchemeGroupVersion.WithKind(workflow.WorkflowKind)),
 			},
@@ -320,7 +325,8 @@ func (woc *wfOperationCtx) createArtifactGCPod(ctx context.Context, strategy wfv
 					ImagePullPolicy: woc.controller.executorImagePullPolicy(),
 					Args:            []string{"artifact", "delete", "--loglevel", getExecutorLogLevel()},
 					Env: []corev1.EnvVar{
-						{Name: common.EnvVarArtifact, Value: string(data)},
+						{Name: common.EnvVarArtifactGCStrategy, Value: string(strategy)},
+						{Name: common.EnvVarArtifactGCTaskSet, Value: taskSetName},
 					},
 					// if this pod is breached by an attacker we:
 					// * prevent installation of any new packages
@@ -350,7 +356,7 @@ func (woc *wfOperationCtx) createArtifactGCPod(ctx context.Context, strategy wfv
 			// if this pod is breached by an attacker this prevents them making Kubernetes API requests
 			AutomountServiceAccountToken: pointer.Bool(false),
 			RestartPolicy:                corev1.RestartPolicyOnFailure,
-			ServiceAccountName:           woc.execWf.Spec.ServiceAccountName,
+			ServiceAccountName:           serviceAcct,
 		},
 	}
 

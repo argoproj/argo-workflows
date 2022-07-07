@@ -1097,24 +1097,30 @@ func verifyResolvedVariables(obj interface{}) error {
 }
 
 // createSecretVolumes will retrieve and create Volumes and Volumemount object for Pod
-func createSecretVolumes(tmpl *wfv1.Template) ([]apiv1.Volume, []apiv1.VolumeMount) {
+func createSecretVolumes(templates []*wfv1.Template, inputs bool, outputs bool) ([]apiv1.Volume, []apiv1.VolumeMount) {
 	allVolumesMap := make(map[string]apiv1.Volume)
 	uniqueKeyMap := make(map[string]bool)
 	var secretVolumes []apiv1.Volume
 	var secretVolMounts []apiv1.VolumeMount
 
-	createArchiveLocationSecret(tmpl, allVolumesMap, uniqueKeyMap)
+	for _, tmpl := range templates {
+		if outputs {
+			createArchiveLocationSecret(tmpl, allVolumesMap, uniqueKeyMap)
 
-	for _, art := range tmpl.Outputs.Artifacts {
-		createSecretVolume(allVolumesMap, art, uniqueKeyMap)
-	}
-	for _, art := range tmpl.Inputs.Artifacts {
-		createSecretVolume(allVolumesMap, art, uniqueKeyMap)
-	}
+			for _, art := range tmpl.Outputs.Artifacts {
+				createSecretVolume(allVolumesMap, art, uniqueKeyMap)
+			}
+		}
+		if inputs {
+			for _, art := range tmpl.Inputs.Artifacts {
+				createSecretVolume(allVolumesMap, art, uniqueKeyMap)
+			}
 
-	if tmpl.Data != nil {
-		if art, needed := tmpl.Data.Source.GetArtifactIfNeeded(); needed {
-			createSecretVolume(allVolumesMap, *art, uniqueKeyMap)
+			if tmpl.Data != nil {
+				if art, needed := tmpl.Data.Source.GetArtifactIfNeeded(); needed {
+					createSecretVolume(allVolumesMap, *art, uniqueKeyMap)
+				}
+			}
 		}
 	}
 
