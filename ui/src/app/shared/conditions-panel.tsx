@@ -10,7 +10,6 @@ const WarningConditions: ConditionType[] = ['SpecWarning'];
 const ErrorConditions: ConditionType[] = ['MetricsError', 'SubmissionError', 'SpecError', 'ArtifactGCError'];
 
 export function hasWarningConditionBadge(conditions: Condition[]): boolean {
-
     for (const condition of conditions) {
         if (WarningConditions.includes(condition.type)) {
             return true;
@@ -24,7 +23,6 @@ export function hasWarningConditionBadge(conditions: Condition[]): boolean {
 }
 
 export function hasArtifactGCError(conditions: Condition[]): boolean {
-
     for (const condition of conditions) {
         if (condition.type === 'ArtifactGCError') {
             return true;
