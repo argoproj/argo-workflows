@@ -279,7 +279,18 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
                     setWorkflow(e.object);
                 }
             },
-            setError
+            err => {
+                services.workflows
+                    .get(namespace, name)
+                    .then()
+                    .catch(e => {
+                        if (e.status === 404) {
+                            navigation.goto(historyUrl('archived-workflows', {namespace, name, deep: true}));
+                        }
+                    });
+
+                setError(err);
+            }
         );
         retryWatch.start();
         return () => retryWatch.stop();
