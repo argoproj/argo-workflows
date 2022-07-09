@@ -1676,10 +1676,10 @@
     "@types/cookiejar" "*"
     "@types/node" "*"
 
-"@types/swagger-ui-react@^3.23.2":
-  version "3.23.2"
-  resolved "https://registry.yarnpkg.com/@types/swagger-ui-react/-/swagger-ui-react-3.23.2.tgz#153eb466785763b514459a300772a43257a3c16b"
-  integrity sha512-EMD/EHdGQ6rBjfKE05x2syyw4kMZiA0qRIlv0q9EpQWYWWBhHwffSR0ljSHCy+pbX8zdOct08w8hVA0V0SAo0Q==
+"@types/swagger-ui-react@^4.11.0":
+  version "4.11.0"
+  resolved "https://registry.yarnpkg.com/@types/swagger-ui-react/-/swagger-ui-react-4.11.0.tgz#3ac84bc8e2f6e57b9ff4533ec31934f697e1a2c4"
+  integrity sha512-WPMR+GWbLd7zvY/uOTGzGzP44zK2rIZSnU00+pDR2YANnEV6/qj0kqYfdSY1Vk6qdvI7dR0Tx8JEMgUUrUQDjw==
   dependencies:
     "@types/react" "*"
 
