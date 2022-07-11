@@ -29,7 +29,9 @@ K3D_CLUSTER_NAME      ?= k3s-default
 KUBE_NAMESPACE        ?= argo
 MANAGED_NAMESPACE     ?= $(KUBE_NAMESPACE)
 
-E2E_TIMEOUT           ?= 1m
+# Timeout for wait conditions
+E2E_WAIT_TIMEOUT      ?= 1m
+
 E2E_PARALLEL          ?= 10
 E2E_SUITE_TIMEOUT     ?= 15m
 
