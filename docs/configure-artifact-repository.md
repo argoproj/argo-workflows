@@ -231,13 +231,13 @@ ways to accomplish this, including the [Azure Portal](https://portal.azure.com) 
      --from-literal "account-access-key=$(az storage account keys list -n mystorageaccountname --query '[0].value' -otsv)"
    ```
 
-4. Configure `azureBlob` artifact as following in the yaml.
+4. Configure `azure` artifact as following in the yaml.
 
 ```yaml
 artifacts:
   - name: message
     path: /tmp/message
-    azureBlob:
+    azure:
       endpoint: https://mystorageaccountname.blob.core.windows.net
       container: my-container-name
       blob: path/in/container

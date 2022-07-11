@@ -10,7 +10,7 @@ Name | Type | Description | Notes
 **archive_logs** | **bool** | ArchiveLogs indicates if the container logs should be archived | [optional] 
 **artifact_gc** | [**IoArgoprojWorkflowV1alpha1ArtifactGC**](IoArgoprojWorkflowV1alpha1ArtifactGC.md) |  | [optional] 
 **artifactory** | [**IoArgoprojWorkflowV1alpha1ArtifactoryArtifact**](IoArgoprojWorkflowV1alpha1ArtifactoryArtifact.md) |  | [optional] 
-**azure_blob** | [**IoArgoprojWorkflowV1alpha1AzureBlobArtifact**](IoArgoprojWorkflowV1alpha1AzureBlobArtifact.md) |  | [optional] 
+**azure** | [**IoArgoprojWorkflowV1alpha1AzureArtifact**](IoArgoprojWorkflowV1alpha1AzureArtifact.md) |  | [optional] 
 **deleted** | **bool** | Has this been deleted? | [optional] 
 **_from** | **str** | From allows an artifact to reference an artifact from a previous step | [optional] 
 **from_expression** | **str** | FromExpression, if defined, is evaluated to specify the value for the artifact | [optional] 

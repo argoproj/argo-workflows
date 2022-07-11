@@ -98,8 +98,8 @@ definitions:
         $ref: '#/definitions/ArtifactGC'
       artifactory:
         $ref: '#/definitions/ArtifactoryArtifact'
-      azureBlob:
-        $ref: '#/definitions/AzureBlobArtifact'
+      azure:
+        $ref: '#/definitions/AzureArtifact'
       deleted:
         description: Has this been deleted?
         type: boolean
@@ -174,8 +174,8 @@ definitions:
         type: boolean
       artifactory:
         $ref: '#/definitions/ArtifactoryArtifact'
-      azureBlob:
-        $ref: '#/definitions/AzureBlobArtifact'
+      azure:
+        $ref: '#/definitions/AzureArtifact'
       gcs:
         $ref: '#/definitions/GCSArtifact'
       git:
@@ -204,8 +204,8 @@ definitions:
         $ref: '#/definitions/ArtifactGC'
       artifactory:
         $ref: '#/definitions/ArtifactoryArtifact'
-      azureBlob:
-        $ref: '#/definitions/AzureBlobArtifact'
+      azure:
+        $ref: '#/definitions/AzureArtifact'
       deleted:
         description: Has this been deleted?
         type: boolean
@@ -275,8 +275,8 @@ definitions:
     items:
       $ref: '#/definitions/Artifact'
     type: array
-  AzureBlobArtifact:
-    description: AzureBlobArtifact is the location of a an Azure Blob Storage artifact
+  AzureArtifact:
+    description: AzureArtifact is the location of a an Azure Storage artifact
     properties:
       accountKeySecret:
         $ref: '#/definitions/SecretKeySelector'

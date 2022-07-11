@@ -1,6 +1,6 @@
-# IoArgoprojWorkflowV1alpha1AzureBlobArtifactRepository
+# IoArgoprojWorkflowV1alpha1AzureArtifactRepository
 
-AzureBlobArtifactRepository defines the controller configuration for an Azure Blob Storage artifact repository
+AzureArtifactRepository defines the controller configuration for an Azure Blob Storage artifact repository
 
 ## Properties
 Name | Type | Description | Notes

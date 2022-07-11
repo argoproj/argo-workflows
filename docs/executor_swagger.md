@@ -203,7 +203,7 @@ It will marshall back to string - marshalling is not symmetric. |  |
 | archiveLogs | boolean| `bool` |  | | ArchiveLogs indicates if the container logs should be archived |  |
 | artifactGC | [ArtifactGC](#artifact-g-c)| `ArtifactGC` |  | |  |  |
 | artifactory | [ArtifactoryArtifact](#artifactory-artifact)| `ArtifactoryArtifact` |  | |  |  |
-| azureBlob | [AzureBlobArtifact](#azure-blob-artifact)| `AzureBlobArtifact` |  | |  |  |
+| azure | [AzureArtifact](#azure-artifact)| `AzureArtifact` |  | |  |  |
 | deleted | boolean| `bool` |  | | Has this been deleted? |  |
 | from | string| `string` |  | | From allows an artifact to reference an artifact from a previous step |  |
 | fromExpression | string| `string` |  | | FromExpression, if defined, is evaluated to specify the value for the artifact |  |
@@ -273,7 +273,7 @@ of a single workflow step, which the executor will use as a default location to 
 |------|------|---------|:--------:| ------- |-------------|---------|
 | archiveLogs | boolean| `bool` |  | | ArchiveLogs indicates if the container logs should be archived |  |
 | artifactory | [ArtifactoryArtifact](#artifactory-artifact)| `ArtifactoryArtifact` |  | |  |  |
-| azureBlob | [AzureBlobArtifact](#azure-blob-artifact)| `AzureBlobArtifact` |  | |  |  |
+| azure | [AzureArtifact](#azure-artifact)| `AzureArtifact` |  | |  |  |
 | gcs | [GCSArtifact](#g-c-s-artifact)| `GCSArtifact` |  | |  |  |
 | git | [GitArtifact](#git-artifact)| `GitArtifact` |  | |  |  |
 | hdfs | [HDFSArtifact](#h-d-f-s-artifact)| `HDFSArtifact` |  | |  |  |
@@ -302,7 +302,7 @@ of a single workflow step, which the executor will use as a default location to 
 | archiveLogs | boolean| `bool` |  | | ArchiveLogs indicates if the container logs should be archived |  |
 | artifactGC | [ArtifactGC](#artifact-g-c)| `ArtifactGC` |  | |  |  |
 | artifactory | [ArtifactoryArtifact](#artifactory-artifact)| `ArtifactoryArtifact` |  | |  |  |
-| azureBlob | [AzureBlobArtifact](#azure-blob-artifact)| `AzureBlobArtifact` |  | |  |  |
+| azure | [AzureArtifact](#azure-artifact)| `AzureArtifact` |  | |  |  |
 | deleted | boolean| `bool` |  | | Has this been deleted? |  |
 | from | string| `string` |  | | From allows an artifact to reference an artifact from a previous step |  |
 | fromExpression | string| `string` |  | | FromExpression, if defined, is evaluated to specify the value for the artifact |  |
@@ -352,10 +352,10 @@ set when loading input artifacts. |  |
 
 [][Artifact](#artifact)
 
-### <span id="azure-blob-artifact"></span> AzureBlobArtifact
+### <span id="azure-artifact"></span> AzureArtifact
 
 
-> AzureBlobArtifact is the location of a an Azure Blob Storage artifact
+> AzureArtifact is the location of a an Azure Storage artifact
   
 
 

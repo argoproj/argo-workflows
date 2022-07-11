@@ -458,7 +458,7 @@ spec:
                           required:
                           - url
                           type: object
-                        azureBlob:
+                        azure:
                           properties:
                             accountKeySecret:
                               properties:
@@ -1040,7 +1040,7 @@ spec:
                                 required:
                                 - url
                                 type: object
-                              azureBlob:
+                              azure:
                                 properties:
                                   accountKeySecret:
                                     properties:
@@ -2220,7 +2220,7 @@ spec:
                         required:
                         - url
                         type: object
-                      azureBlob:
+                      azure:
                         properties:
                           accountKeySecret:
                             properties:
@@ -3902,7 +3902,7 @@ spec:
                                         required:
                                         - url
                                         type: object
-                                      azureBlob:
+                                      azure:
                                         properties:
                                           accountKeySecret:
                                             properties:
@@ -4450,7 +4450,7 @@ spec:
                                               required:
                                               - url
                                               type: object
-                                            azureBlob:
+                                            azure:
                                               properties:
                                                 accountKeySecret:
                                                   properties:
@@ -5049,7 +5049,7 @@ spec:
                                 required:
                                 - url
                                 type: object
-                              azureBlob:
+                              azure:
                                 properties:
                                   accountKeySecret:
                                     properties:
@@ -6198,7 +6198,7 @@ spec:
                               required:
                               - url
                               type: object
-                            azureBlob:
+                            azure:
                               properties:
                                 accountKeySecret:
                                   properties:
@@ -6834,7 +6834,7 @@ spec:
                               required:
                               - url
                               type: object
-                            azureBlob:
+                            azure:
                               properties:
                                 accountKeySecret:
                                   properties:
@@ -7393,7 +7393,7 @@ spec:
                                 required:
                                 - url
                                 type: object
-                              azureBlob:
+                              azure:
                                 properties:
                                   accountKeySecret:
                                     properties:
@@ -10225,7 +10225,7 @@ spec:
                           required:
                           - url
                           type: object
-                        azureBlob:
+                        azure:
                           properties:
                             accountKeySecret:
                               properties:
@@ -11907,7 +11907,7 @@ spec:
                                           required:
                                           - url
                                           type: object
-                                        azureBlob:
+                                        azure:
                                           properties:
                                             accountKeySecret:
                                               properties:
@@ -12455,7 +12455,7 @@ spec:
                                                 required:
                                                 - url
                                                 type: object
-                                              azureBlob:
+                                              azure:
                                                 properties:
                                                   accountKeySecret:
                                                     properties:
@@ -13054,7 +13054,7 @@ spec:
                                   required:
                                   - url
                                   type: object
-                                azureBlob:
+                                azure:
                                   properties:
                                     accountKeySecret:
                                       properties:
@@ -14203,7 +14203,7 @@ spec:
                                 required:
                                 - url
                                 type: object
-                              azureBlob:
+                              azure:
                                 properties:
                                   accountKeySecret:
                                     properties:
@@ -14839,7 +14839,7 @@ spec:
                                 required:
                                 - url
                                 type: object
-                              azureBlob:
+                              azure:
                                 properties:
                                   accountKeySecret:
                                     properties:
@@ -15398,7 +15398,7 @@ spec:
                                   required:
                                   - url
                                   type: object
-                                azureBlob:
+                                azure:
                                   properties:
                                     accountKeySecret:
                                       properties:
@@ -18751,7 +18751,7 @@ spec:
                             - key
                             type: object
                         type: object
-                      azureBlob:
+                      azure:
                         properties:
                           accountKeySecret:
                             properties:
@@ -19066,7 +19066,7 @@ spec:
                                 required:
                                 - url
                                 type: object
-                              azureBlob:
+                              azure:
                                 properties:
                                   accountKeySecret:
                                     properties:
@@ -19619,7 +19619,7 @@ spec:
                                 required:
                                 - url
                                 type: object
-                              azureBlob:
+                              azure:
                                 properties:
                                   accountKeySecret:
                                     properties:
@@ -20197,7 +20197,7 @@ spec:
                           required:
                           - url
                           type: object
-                        azureBlob:
+                        azure:
                           properties:
                             accountKeySecret:
                               properties:
@@ -21762,7 +21762,7 @@ spec:
                           required:
                           - url
                           type: object
-                        azureBlob:
+                        azure:
                           properties:
                             accountKeySecret:
                               properties:
@@ -23444,7 +23444,7 @@ spec:
                                           required:
                                           - url
                                           type: object
-                                        azureBlob:
+                                        azure:
                                           properties:
                                             accountKeySecret:
                                               properties:
@@ -23992,7 +23992,7 @@ spec:
                                                 required:
                                                 - url
                                                 type: object
-                                              azureBlob:
+                                              azure:
                                                 properties:
                                                   accountKeySecret:
                                                     properties:
@@ -24591,7 +24591,7 @@ spec:
                                   required:
                                   - url
                                   type: object
-                                azureBlob:
+                                azure:
                                   properties:
                                     accountKeySecret:
                                       properties:
@@ -25740,7 +25740,7 @@ spec:
                                 required:
                                 - url
                                 type: object
-                              azureBlob:
+                              azure:
                                 properties:
                                   accountKeySecret:
                                     properties:
@@ -26376,7 +26376,7 @@ spec:
                                 required:
                                 - url
                                 type: object
-                              azureBlob:
+                              azure:
                                 properties:
                                   accountKeySecret:
                                     properties:
@@ -26935,7 +26935,7 @@ spec:
                                   required:
                                   - url
                                   type: object
-                                azureBlob:
+                                azure:
                                   properties:
                                     accountKeySecret:
                                       properties:
@@ -29792,7 +29792,7 @@ spec:
                               required:
                               - url
                               type: object
-                            azureBlob:
+                            azure:
                               properties:
                                 accountKeySecret:
                                   properties:
@@ -30374,7 +30374,7 @@ spec:
                                     required:
                                     - url
                                     type: object
-                                  azureBlob:
+                                  azure:
                                     properties:
                                       accountKeySecret:
                                         properties:
@@ -31554,7 +31554,7 @@ spec:
                             required:
                             - url
                             type: object
-                          azureBlob:
+                          azure:
                             properties:
                               accountKeySecret:
                                 properties:
@@ -33236,7 +33236,7 @@ spec:
                                             required:
                                             - url
                                             type: object
-                                          azureBlob:
+                                          azure:
                                             properties:
                                               accountKeySecret:
                                                 properties:
@@ -33784,7 +33784,7 @@ spec:
                                                   required:
                                                   - url
                                                   type: object
-                                                azureBlob:
+                                                azure:
                                                   properties:
                                                     accountKeySecret:
                                                       properties:
@@ -34383,7 +34383,7 @@ spec:
                                     required:
                                     - url
                                     type: object
-                                  azureBlob:
+                                  azure:
                                     properties:
                                       accountKeySecret:
                                         properties:
@@ -35532,7 +35532,7 @@ spec:
                                   required:
                                   - url
                                   type: object
-                                azureBlob:
+                                azure:
                                   properties:
                                     accountKeySecret:
                                       properties:
@@ -36168,7 +36168,7 @@ spec:
                                   required:
                                   - url
                                   type: object
-                                azureBlob:
+                                azure:
                                   properties:
                                     accountKeySecret:
                                       properties:
@@ -36727,7 +36727,7 @@ spec:
                                     required:
                                     - url
                                     type: object
-                                  azureBlob:
+                                  azure:
                                     properties:
                                       accountKeySecret:
                                         properties:
@@ -39559,7 +39559,7 @@ spec:
                               required:
                               - url
                               type: object
-                            azureBlob:
+                            azure:
                               properties:
                                 accountKeySecret:
                                   properties:
@@ -41241,7 +41241,7 @@ spec:
                                               required:
                                               - url
                                               type: object
-                                            azureBlob:
+                                            azure:
                                               properties:
                                                 accountKeySecret:
                                                   properties:
@@ -41789,7 +41789,7 @@ spec:
                                                     required:
                                                     - url
                                                     type: object
-                                                  azureBlob:
+                                                  azure:
                                                     properties:
                                                       accountKeySecret:
                                                         properties:
@@ -42388,7 +42388,7 @@ spec:
                                       required:
                                       - url
                                       type: object
-                                    azureBlob:
+                                    azure:
                                       properties:
                                         accountKeySecret:
                                           properties:
@@ -43537,7 +43537,7 @@ spec:
                                     required:
                                     - url
                                     type: object
-                                  azureBlob:
+                                  azure:
                                     properties:
                                       accountKeySecret:
                                         properties:
@@ -44173,7 +44173,7 @@ spec:
                                     required:
                                     - url
                                     type: object
-                                  azureBlob:
+                                  azure:
                                     properties:
                                       accountKeySecret:
                                         properties:
@@ -44732,7 +44732,7 @@ spec:
                                       required:
                                       - url
                                       type: object
-                                    azureBlob:
+                                    azure:
                                       properties:
                                         accountKeySecret:
                                           properties:

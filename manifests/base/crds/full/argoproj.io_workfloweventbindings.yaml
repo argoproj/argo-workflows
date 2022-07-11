@@ -93,7 +93,7 @@ spec:
                               required:
                               - url
                               type: object
-                            azureBlob:
+                            azure:
                               properties:
                                 accountKeySecret:
                                   properties:

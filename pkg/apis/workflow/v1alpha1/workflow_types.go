@@ -1107,8 +1107,8 @@ type ArtifactLocation struct {
 	// GCS contains GCS artifact location details
 	GCS *GCSArtifact `json:"gcs,omitempty" protobuf:"bytes,9,opt,name=gcs"`
 
-	// AzureBlob contains Azure Blob Storage artifact location details
-	AzureBlob *AzureBlobArtifact `json:"azureBlob,omitempty" protobuf:"bytes,10,opt,name=azureBlob"`
+	// Azure contains Azure Storage artifact location details
+	Azure *AzureArtifact `json:"azure,omitempty" protobuf:"bytes,10,opt,name=azure"`
 }
 
 func (a *ArtifactLocation) Get() (ArtifactLocationType, error) {
@@ -1116,8 +1116,8 @@ func (a *ArtifactLocation) Get() (ArtifactLocationType, error) {
 		return nil, fmt.Errorf("key unsupported: cannot get key for artifact location, because it is invalid")
 	} else if a.Artifactory != nil {
 		return a.Artifactory, nil
-	} else if a.AzureBlob != nil {
-		return a.AzureBlob, nil
+	} else if a.Azure != nil {
+		return a.Azure, nil
 	} else if a.Git != nil {
 		return a.Git, nil
 	} else if a.GCS != nil {
@@ -1142,8 +1142,8 @@ func (a *ArtifactLocation) SetType(x ArtifactLocationType) error {
 	switch v := x.(type) {
 	case *ArtifactoryArtifact:
 		a.Artifactory = &ArtifactoryArtifact{}
-	case *AzureBlobArtifact:
-		a.AzureBlob = &AzureBlobArtifact{}
+	case *AzureArtifact:
+		a.Azure = &AzureArtifact{}
 	case *GCSArtifact:
 		a.GCS = &GCSArtifact{}
 	case *HDFSArtifact:
@@ -2337,7 +2337,7 @@ func (a *ArtifactoryArtifact) HasLocation() bool {
 	return a != nil && a.URL != "" && a.UsernameSecret != nil
 }
 
-// AzureBlob contains the access information for interfacing with an Azure Blob Storage container
+// AzureBlobContainer contains the access information for interfacing with an Azure Blob Storage container
 type AzureBlobContainer struct {
 	// Endpoint is the service url associated with an account. It is most likely "https://<ACCOUNT_NAME>.blob.core.windows.net"
 	Endpoint string `json:"endpoint" protobuf:"bytes,1,opt,name=endpoint"`
@@ -2352,24 +2352,24 @@ type AzureBlobContainer struct {
 	UseSDKCreds bool `json:"useSDKCreds,omitempty" protobuf:"varint,4,opt,name=useSDKCreds"`
 }
 
-// AzureBlobArtifact is the location of a an Azure Blob Storage artifact
-type AzureBlobArtifact struct {
+// AzureArtifact is the location of a an Azure Storage artifact
+type AzureArtifact struct {
 	AzureBlobContainer `json:",inline" protobuf:"bytes,1,opt,name=azureBlobContainer"`
 
 	// Blob is the blob name (i.e., path) in the container where the artifact resides
 	Blob string `json:"blob" protobuf:"bytes,2,opt,name=blob"`
 }
 
-func (a *AzureBlobArtifact) GetKey() (string, error) {
+func (a *AzureArtifact) GetKey() (string, error) {
 	return a.Blob, nil
 }
 
-func (a *AzureBlobArtifact) SetKey(key string) error {
+func (a *AzureArtifact) SetKey(key string) error {
 	a.Blob = key
 	return nil
 }
 
-func (a *AzureBlobArtifact) HasLocation() bool {
+func (a *AzureArtifact) HasLocation() bool {
 	return a != nil && a.Container != "" && a.Blob != ""
 }
 

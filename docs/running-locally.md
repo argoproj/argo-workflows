@@ -160,7 +160,7 @@ Find the test that you want to run in `test/e2e`
 make TestArtifactServer  
 ```
 
-If you wish to include tests against Azure Storage, define `AUZRE=true`:
+If you wish to include tests against Azure Storage, define `AZURE=true`:
 
 ```bash
 make AZURE=true TestArtifactServer

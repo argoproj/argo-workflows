@@ -27,12 +27,12 @@ func TestArtifactRepository(t *testing.T) {
 			assert.Equal(t, "http://my-repo/{{workflow.name}}/{{pod.name}}", l.Artifactory.URL)
 		}
 	})
-	t.Run("AzureBlob", func(t *testing.T) {
-		r := &ArtifactRepository{AzureBlob: &AzureBlobArtifactRepository{}}
-		assert.IsType(t, &AzureBlobArtifactRepository{}, r.Get())
+	t.Run("Azure", func(t *testing.T) {
+		r := &ArtifactRepository{Azure: &AzureArtifactRepository{}}
+		assert.IsType(t, &AzureArtifactRepository{}, r.Get())
 		l := r.ToArtifactLocation()
-		if assert.NotNil(t, l.AzureBlob) {
-			assert.Equal(t, "{{workflow.name}}/{{pod.name}}", l.AzureBlob.Blob)
+		if assert.NotNil(t, l.Azure) {
+			assert.Equal(t, "{{workflow.name}}/{{pod.name}}", l.Azure.Blob)
 		}
 	})
 	t.Run("GCS", func(t *testing.T) {

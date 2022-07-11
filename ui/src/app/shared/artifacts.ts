@@ -35,8 +35,8 @@ export const artifactURN = <A extends Artifact>(a: A, ar: ArtifactRepository) =>
         return 'artifact:oss:' + (a.oss.endpoint || ar?.oss?.endpoint) + ':' + (a.oss.bucket || ar?.oss?.bucket) + ':' + a.oss.key;
     } else if (a.raw) {
         return 'artifact:raw:' + a.raw.data;
-    } else if (a.azureBlob) {
-        return 'artifact:azureBlob:' + (a.azureBlob.endpoint || ar?.azureBlob?.endpoint) + ':' + (a.azureBlob.container || ar?.azureBlob?.container) + ':' + a.azureBlob.blob;
+    } else if (a.azure) {
+        return 'artifact:azure:' + (a.azure.endpoint || ar?.azure?.endpoint) + ':' + (a.azure.container || ar?.azure?.container) + ':' + a.azure.blob;
     }
     return 'artifact:unknown';
 };
@@ -54,8 +54,8 @@ export const artifactKey = <A extends Artifact>(a: A) => {
         return a.oss.key;
     } else if (a.raw) {
         return 'raw';
-    } else if (a.azureBlob) {
-        return a.azureBlob.blob;
+    } else if (a.azure) {
+        return a.azure.blob;
     }
     return 'unknown';
 };

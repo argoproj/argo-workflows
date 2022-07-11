@@ -7255,9 +7255,9 @@
           "description": "Artifactory contains artifactory artifact location details",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactoryArtifact"
         },
-        "azureBlob": {
-          "description": "AzureBlob contains Azure Blob Storage artifact location details",
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.AzureBlobArtifact"
+        "azure": {
+          "description": "Azure contains Azure Storage artifact location details",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.AzureArtifact"
         },
         "deleted": {
           "description": "Has this been deleted?",
@@ -7351,9 +7351,9 @@
           "description": "Artifactory contains artifactory artifact location details",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactoryArtifact"
         },
-        "azureBlob": {
-          "description": "AzureBlob contains Azure Blob Storage artifact location details",
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.AzureBlobArtifact"
+        "azure": {
+          "description": "Azure contains Azure Storage artifact location details",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.AzureArtifact"
         },
         "gcs": {
           "description": "GCS contains GCS artifact location details",
@@ -7408,9 +7408,9 @@
           "description": "Artifactory contains artifactory artifact location details",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactoryArtifact"
         },
-        "azureBlob": {
-          "description": "AzureBlob contains Azure Blob Storage artifact location details",
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.AzureBlobArtifact"
+        "azure": {
+          "description": "Azure contains Azure Storage artifact location details",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.AzureArtifact"
         },
         "deleted": {
           "description": "Has this been deleted?",
@@ -7494,9 +7494,9 @@
           "description": "Artifactory stores artifacts to JFrog Artifactory",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactoryArtifactRepository"
         },
-        "azureBlob": {
-          "description": "AzureBlob stores artifact in an Azure Blob Storage account",
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.AzureBlobArtifactRepository"
+        "azure": {
+          "description": "Azure stores artifact in an Azure Storage account",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.AzureArtifactRepository"
         },
         "gcs": {
           "description": "GCS stores artifact in a GCS object store",
@@ -7593,8 +7593,8 @@
         }
       }
     },
-    "io.argoproj.workflow.v1alpha1.AzureBlobArtifact": {
-      "description": "AzureBlobArtifact is the location of a an Azure Blob Storage artifact",
+    "io.argoproj.workflow.v1alpha1.AzureArtifact": {
+      "description": "AzureArtifact is the location of a an Azure Storage artifact",
       "type": "object",
       "required": [
         "endpoint",
@@ -7624,8 +7624,8 @@
         }
       }
     },
-    "io.argoproj.workflow.v1alpha1.AzureBlobArtifactRepository": {
-      "description": "AzureBlobArtifactRepository defines the controller configuration for an Azure Blob Storage artifact repository",
+    "io.argoproj.workflow.v1alpha1.AzureArtifactRepository": {
+      "description": "AzureArtifactRepository defines the controller configuration for an Azure Blob Storage artifact repository",
       "type": "object",
       "required": [
         "endpoint",

@@ -1,4 +1,4 @@
-package azureblob
+package azure
 
 import (
 	"net/url"

@@ -355,7 +355,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     optional=True,
                                 ),
                             ),
-                            azure_blob=IoArgoprojWorkflowV1alpha1AzureBlobArtifact(
+                            azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
                                 account_key_secret=SecretKeySelector(
                                     key="key_example",
                                     name="name_example",
@@ -641,7 +641,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             optional=True,
                                         ),
                                     ),
-                                    azure_blob=IoArgoprojWorkflowV1alpha1AzureBlobArtifact(
+                                    azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
                                         account_key_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
@@ -1259,7 +1259,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 optional=True,
                             ),
                         ),
-                        azure_blob=IoArgoprojWorkflowV1alpha1AzureBlobArtifact(
+                        azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
                             account_key_secret=SecretKeySelector(
                                 key="key_example",
                                 name="name_example",
@@ -2045,7 +2045,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                     optional=True,
                                                 ),
                                             ),
-                                            azure_blob=IoArgoprojWorkflowV1alpha1AzureBlobArtifact(
+                                            azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
                                                 account_key_secret=SecretKeySelector(
                                                     key="key_example",
                                                     name="name_example",
@@ -2312,7 +2312,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             optional=True,
                                                         ),
                                                     ),
-                                                    azure_blob=IoArgoprojWorkflowV1alpha1AzureBlobArtifact(
+                                                    azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
                                                         account_key_secret=SecretKeySelector(
                                                             key="key_example",
                                                             name="name_example",
@@ -2601,7 +2601,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         optional=True,
                                     ),
                                 ),
-                                azure_blob=IoArgoprojWorkflowV1alpha1AzureBlobArtifact(
+                                azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
                                     account_key_secret=SecretKeySelector(
                                         key="key_example",
                                         name="name_example",
@@ -3145,7 +3145,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         optional=True,
                                     ),
                                 ),
-                                azure_blob=IoArgoprojWorkflowV1alpha1AzureBlobArtifact(
+                                azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
                                     account_key_secret=SecretKeySelector(
                                         key="key_example",
                                         name="name_example",
@@ -3453,7 +3453,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         optional=True,
                                     ),
                                 ),
-                                azure_blob=IoArgoprojWorkflowV1alpha1AzureBlobArtifact(
+                                azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
                                     account_key_secret=SecretKeySelector(
                                         key="key_example",
                                         name="name_example",
@@ -3723,7 +3723,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         optional=True,
                                     ),
                                 ),
-                                azure_blob=IoArgoprojWorkflowV1alpha1AzureBlobArtifact(
+                                azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
                                     account_key_secret=SecretKeySelector(
                                         key="key_example",
                                         name="name_example",
@@ -4550,7 +4550,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                     optional=True,
                                                 ),
                                             ),
-                                            azure_blob=IoArgoprojWorkflowV1alpha1AzureBlobArtifact(
+                                            azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
                                                 account_key_secret=SecretKeySelector(
                                                     key="key_example",
                                                     name="name_example",
@@ -4813,7 +4813,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             optional=True,
                                                         ),
                                                     ),
-                                                    azure_blob=IoArgoprojWorkflowV1alpha1AzureBlobArtifact(
+                                                    azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
                                                         account_key_secret=SecretKeySelector(
                                                             key="key_example",
                                                             name="name_example",
@@ -5697,7 +5697,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     optional=True,
                                 ),
                             ),
-                            azure_blob=IoArgoprojWorkflowV1alpha1AzureBlobArtifact(
+                            azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
                                 account_key_secret=SecretKeySelector(
                                     key="key_example",
                                     name="name_example",
@@ -6483,7 +6483,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         optional=True,
                                                     ),
                                                 ),
-                                                azure_blob=IoArgoprojWorkflowV1alpha1AzureBlobArtifact(
+                                                azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
                                                     account_key_secret=SecretKeySelector(
                                                         key="key_example",
                                                         name="name_example",
@@ -6750,7 +6750,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                                 optional=True,
                                                             ),
                                                         ),
-                                                        azure_blob=IoArgoprojWorkflowV1alpha1AzureBlobArtifact(
+                                                        azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
                                                             account_key_secret=SecretKeySelector(
                                                                 key="key_example",
                                                                 name="name_example",
@@ -7039,7 +7039,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             optional=True,
                                         ),
                                     ),
-                                    azure_blob=IoArgoprojWorkflowV1alpha1AzureBlobArtifact(
+                                    azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
                                         account_key_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
@@ -7583,7 +7583,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             optional=True,
                                         ),
                                     ),
-                                    azure_blob=IoArgoprojWorkflowV1alpha1AzureBlobArtifact(
+                                    azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
                                         account_key_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
@@ -7891,7 +7891,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             optional=True,
                                         ),
                                     ),
-                                    azure_blob=IoArgoprojWorkflowV1alpha1AzureBlobArtifact(
+                                    azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
                                         account_key_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
@@ -8161,7 +8161,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             optional=True,
                                         ),
                                     ),
-                                    azure_blob=IoArgoprojWorkflowV1alpha1AzureBlobArtifact(
+                                    azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
                                         account_key_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
@@ -8988,7 +8988,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         optional=True,
                                                     ),
                                                 ),
-                                                azure_blob=IoArgoprojWorkflowV1alpha1AzureBlobArtifact(
+                                                azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
                                                     account_key_secret=SecretKeySelector(
                                                         key="key_example",
                                                         name="name_example",
@@ -9251,7 +9251,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                                 optional=True,
                                                             ),
                                                         ),
-                                                        azure_blob=IoArgoprojWorkflowV1alpha1AzureBlobArtifact(
+                                                        azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
                                                             account_key_secret=SecretKeySelector(
                                                                 key="key_example",
                                                                 name="name_example",
@@ -10446,7 +10446,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 optional=True,
                             ),
                         ),
-                        azure_blob=IoArgoprojWorkflowV1alpha1AzureBlobArtifactRepository(
+                        azure=IoArgoprojWorkflowV1alpha1AzureArtifactRepository(
                             account_key_secret=SecretKeySelector(
                                 key="key_example",
                                 name="name_example",
@@ -10602,7 +10602,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             optional=True,
                                         ),
                                     ),
-                                    azure_blob=IoArgoprojWorkflowV1alpha1AzureBlobArtifact(
+                                    azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
                                         account_key_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
@@ -10869,7 +10869,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             optional=True,
                                         ),
                                     ),
-                                    azure_blob=IoArgoprojWorkflowV1alpha1AzureBlobArtifact(
+                                    azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
                                         account_key_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
@@ -11149,7 +11149,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     optional=True,
                                 ),
                             ),
-                            azure_blob=IoArgoprojWorkflowV1alpha1AzureBlobArtifact(
+                            azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
                                 account_key_secret=SecretKeySelector(
                                     key="key_example",
                                     name="name_example",
@@ -11983,7 +11983,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     optional=True,
                                 ),
                             ),
-                            azure_blob=IoArgoprojWorkflowV1alpha1AzureBlobArtifact(
+                            azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
                                 account_key_secret=SecretKeySelector(
                                     key="key_example",
                                     name="name_example",
@@ -12769,7 +12769,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         optional=True,
                                                     ),
                                                 ),
-                                                azure_blob=IoArgoprojWorkflowV1alpha1AzureBlobArtifact(
+                                                azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
                                                     account_key_secret=SecretKeySelector(
                                                         key="key_example",
                                                         name="name_example",
@@ -13036,7 +13036,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                                 optional=True,
                                                             ),
                                                         ),
-                                                        azure_blob=IoArgoprojWorkflowV1alpha1AzureBlobArtifact(
+                                                        azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
                                                             account_key_secret=SecretKeySelector(
                                                                 key="key_example",
                                                                 name="name_example",
@@ -13325,7 +13325,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             optional=True,
                                         ),
                                     ),
-                                    azure_blob=IoArgoprojWorkflowV1alpha1AzureBlobArtifact(
+                                    azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
                                         account_key_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
@@ -13869,7 +13869,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             optional=True,
                                         ),
                                     ),
-                                    azure_blob=IoArgoprojWorkflowV1alpha1AzureBlobArtifact(
+                                    azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
                                         account_key_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
@@ -14177,7 +14177,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             optional=True,
                                         ),
                                     ),
-                                    azure_blob=IoArgoprojWorkflowV1alpha1AzureBlobArtifact(
+                                    azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
                                         account_key_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
@@ -14447,7 +14447,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             optional=True,
                                         ),
                                     ),
-                                    azure_blob=IoArgoprojWorkflowV1alpha1AzureBlobArtifact(
+                                    azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
                                         account_key_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
@@ -15274,7 +15274,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         optional=True,
                                                     ),
                                                 ),
-                                                azure_blob=IoArgoprojWorkflowV1alpha1AzureBlobArtifact(
+                                                azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
                                                     account_key_secret=SecretKeySelector(
                                                         key="key_example",
                                                         name="name_example",
@@ -15537,7 +15537,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                                 optional=True,
                                                             ),
                                                         ),
-                                                        azure_blob=IoArgoprojWorkflowV1alpha1AzureBlobArtifact(
+                                                        azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
                                                             account_key_secret=SecretKeySelector(
                                                                 key="key_example",
                                                                 name="name_example",
@@ -16434,7 +16434,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         optional=True,
                                     ),
                                 ),
-                                azure_blob=IoArgoprojWorkflowV1alpha1AzureBlobArtifact(
+                                azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
                                     account_key_secret=SecretKeySelector(
                                         key="key_example",
                                         name="name_example",
@@ -16720,7 +16720,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 optional=True,
                                             ),
                                         ),
-                                        azure_blob=IoArgoprojWorkflowV1alpha1AzureBlobArtifact(
+                                        azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
                                             account_key_secret=SecretKeySelector(
                                                 key="key_example",
                                                 name="name_example",
@@ -17338,7 +17338,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     optional=True,
                                 ),
                             ),
-                            azure_blob=IoArgoprojWorkflowV1alpha1AzureBlobArtifact(
+                            azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
                                 account_key_secret=SecretKeySelector(
                                     key="key_example",
                                     name="name_example",
@@ -18124,7 +18124,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         optional=True,
                                                     ),
                                                 ),
-                                                azure_blob=IoArgoprojWorkflowV1alpha1AzureBlobArtifact(
+                                                azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
                                                     account_key_secret=SecretKeySelector(
                                                         key="key_example",
                                                         name="name_example",
@@ -18391,7 +18391,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                                 optional=True,
                                                             ),
                                                         ),
-                                                        azure_blob=IoArgoprojWorkflowV1alpha1AzureBlobArtifact(
+                                                        azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
                                                             account_key_secret=SecretKeySelector(
                                                                 key="key_example",
                                                                 name="name_example",
@@ -18680,7 +18680,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             optional=True,
                                         ),
                                     ),
-                                    azure_blob=IoArgoprojWorkflowV1alpha1AzureBlobArtifact(
+                                    azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
                                         account_key_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
@@ -19224,7 +19224,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             optional=True,
                                         ),
                                     ),
-                                    azure_blob=IoArgoprojWorkflowV1alpha1AzureBlobArtifact(
+                                    azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
                                         account_key_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
@@ -19532,7 +19532,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             optional=True,
                                         ),
                                     ),
-                                    azure_blob=IoArgoprojWorkflowV1alpha1AzureBlobArtifact(
+                                    azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
                                         account_key_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
@@ -19802,7 +19802,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             optional=True,
                                         ),
                                     ),
-                                    azure_blob=IoArgoprojWorkflowV1alpha1AzureBlobArtifact(
+                                    azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
                                         account_key_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
@@ -20629,7 +20629,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         optional=True,
                                                     ),
                                                 ),
-                                                azure_blob=IoArgoprojWorkflowV1alpha1AzureBlobArtifact(
+                                                azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
                                                     account_key_secret=SecretKeySelector(
                                                         key="key_example",
                                                         name="name_example",
@@ -20892,7 +20892,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                                 optional=True,
                                                             ),
                                                         ),
-                                                        azure_blob=IoArgoprojWorkflowV1alpha1AzureBlobArtifact(
+                                                        azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
                                                             account_key_secret=SecretKeySelector(
                                                                 key="key_example",
                                                                 name="name_example",
@@ -21776,7 +21776,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         optional=True,
                                     ),
                                 ),
-                                azure_blob=IoArgoprojWorkflowV1alpha1AzureBlobArtifact(
+                                azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
                                     account_key_secret=SecretKeySelector(
                                         key="key_example",
                                         name="name_example",
@@ -22562,7 +22562,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             optional=True,
                                                         ),
                                                     ),
-                                                    azure_blob=IoArgoprojWorkflowV1alpha1AzureBlobArtifact(
+                                                    azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
                                                         account_key_secret=SecretKeySelector(
                                                             key="key_example",
                                                             name="name_example",
@@ -22829,7 +22829,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                                     optional=True,
                                                                 ),
                                                             ),
-                                                            azure_blob=IoArgoprojWorkflowV1alpha1AzureBlobArtifact(
+                                                            azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
                                                                 account_key_secret=SecretKeySelector(
                                                                     key="key_example",
                                                                     name="name_example",
@@ -23118,7 +23118,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 optional=True,
                                             ),
                                         ),
-                                        azure_blob=IoArgoprojWorkflowV1alpha1AzureBlobArtifact(
+                                        azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
                                             account_key_secret=SecretKeySelector(
                                                 key="key_example",
                                                 name="name_example",
@@ -23662,7 +23662,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 optional=True,
                                             ),
                                         ),
-                                        azure_blob=IoArgoprojWorkflowV1alpha1AzureBlobArtifact(
+                                        azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
                                             account_key_secret=SecretKeySelector(
                                                 key="key_example",
                                                 name="name_example",
@@ -23970,7 +23970,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 optional=True,
                                             ),
                                         ),
-                                        azure_blob=IoArgoprojWorkflowV1alpha1AzureBlobArtifact(
+                                        azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
                                             account_key_secret=SecretKeySelector(
                                                 key="key_example",
                                                 name="name_example",
@@ -24240,7 +24240,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 optional=True,
                                             ),
                                         ),
-                                        azure_blob=IoArgoprojWorkflowV1alpha1AzureBlobArtifact(
+                                        azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
                                             account_key_secret=SecretKeySelector(
                                                 key="key_example",
                                                 name="name_example",
@@ -25067,7 +25067,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             optional=True,
                                                         ),
                                                     ),
-                                                    azure_blob=IoArgoprojWorkflowV1alpha1AzureBlobArtifact(
+                                                    azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
                                                         account_key_secret=SecretKeySelector(
                                                             key="key_example",
                                                             name="name_example",
@@ -25330,7 +25330,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                                     optional=True,
                                                                 ),
                                                             ),
-                                                            azure_blob=IoArgoprojWorkflowV1alpha1AzureBlobArtifact(
+                                                            azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
                                                                 account_key_secret=SecretKeySelector(
                                                                     key="key_example",
                                                                     name="name_example",
@@ -27094,7 +27094,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     optional=True,
                                 ),
                             ),
-                            azure_blob=IoArgoprojWorkflowV1alpha1AzureBlobArtifact(
+                            azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
                                 account_key_secret=SecretKeySelector(
                                     key="key_example",
                                     name="name_example",
@@ -27380,7 +27380,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             optional=True,
                                         ),
                                     ),
-                                    azure_blob=IoArgoprojWorkflowV1alpha1AzureBlobArtifact(
+                                    azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
                                         account_key_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
@@ -27998,7 +27998,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 optional=True,
                             ),
                         ),
-                        azure_blob=IoArgoprojWorkflowV1alpha1AzureBlobArtifact(
+                        azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
                             account_key_secret=SecretKeySelector(
                                 key="key_example",
                                 name="name_example",
@@ -28784,7 +28784,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                     optional=True,
                                                 ),
                                             ),
-                                            azure_blob=IoArgoprojWorkflowV1alpha1AzureBlobArtifact(
+                                            azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
                                                 account_key_secret=SecretKeySelector(
                                                     key="key_example",
                                                     name="name_example",
@@ -29051,7 +29051,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             optional=True,
                                                         ),
                                                     ),
-                                                    azure_blob=IoArgoprojWorkflowV1alpha1AzureBlobArtifact(
+                                                    azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
                                                         account_key_secret=SecretKeySelector(
                                                             key="key_example",
                                                             name="name_example",
@@ -29340,7 +29340,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         optional=True,
                                     ),
                                 ),
-                                azure_blob=IoArgoprojWorkflowV1alpha1AzureBlobArtifact(
+                                azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
                                     account_key_secret=SecretKeySelector(
                                         key="key_example",
                                         name="name_example",
@@ -29884,7 +29884,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         optional=True,
                                     ),
                                 ),
-                                azure_blob=IoArgoprojWorkflowV1alpha1AzureBlobArtifact(
+                                azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
                                     account_key_secret=SecretKeySelector(
                                         key="key_example",
                                         name="name_example",
@@ -30192,7 +30192,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         optional=True,
                                     ),
                                 ),
-                                azure_blob=IoArgoprojWorkflowV1alpha1AzureBlobArtifact(
+                                azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
                                     account_key_secret=SecretKeySelector(
                                         key="key_example",
                                         name="name_example",
@@ -30462,7 +30462,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         optional=True,
                                     ),
                                 ),
-                                azure_blob=IoArgoprojWorkflowV1alpha1AzureBlobArtifact(
+                                azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
                                     account_key_secret=SecretKeySelector(
                                         key="key_example",
                                         name="name_example",
@@ -31289,7 +31289,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                     optional=True,
                                                 ),
                                             ),
-                                            azure_blob=IoArgoprojWorkflowV1alpha1AzureBlobArtifact(
+                                            azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
                                                 account_key_secret=SecretKeySelector(
                                                     key="key_example",
                                                     name="name_example",
@@ -31552,7 +31552,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             optional=True,
                                                         ),
                                                     ),
-                                                    azure_blob=IoArgoprojWorkflowV1alpha1AzureBlobArtifact(
+                                                    azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
                                                         account_key_secret=SecretKeySelector(
                                                             key="key_example",
                                                             name="name_example",
@@ -32436,7 +32436,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     optional=True,
                                 ),
                             ),
-                            azure_blob=IoArgoprojWorkflowV1alpha1AzureBlobArtifact(
+                            azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
                                 account_key_secret=SecretKeySelector(
                                     key="key_example",
                                     name="name_example",
@@ -33222,7 +33222,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         optional=True,
                                                     ),
                                                 ),
-                                                azure_blob=IoArgoprojWorkflowV1alpha1AzureBlobArtifact(
+                                                azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
                                                     account_key_secret=SecretKeySelector(
                                                         key="key_example",
                                                         name="name_example",
@@ -33489,7 +33489,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                                 optional=True,
                                                             ),
                                                         ),
-                                                        azure_blob=IoArgoprojWorkflowV1alpha1AzureBlobArtifact(
+                                                        azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
                                                             account_key_secret=SecretKeySelector(
                                                                 key="key_example",
                                                                 name="name_example",
@@ -33778,7 +33778,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             optional=True,
                                         ),
                                     ),
-                                    azure_blob=IoArgoprojWorkflowV1alpha1AzureBlobArtifact(
+                                    azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
                                         account_key_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
@@ -34322,7 +34322,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             optional=True,
                                         ),
                                     ),
-                                    azure_blob=IoArgoprojWorkflowV1alpha1AzureBlobArtifact(
+                                    azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
                                         account_key_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
@@ -34630,7 +34630,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             optional=True,
                                         ),
                                     ),
-                                    azure_blob=IoArgoprojWorkflowV1alpha1AzureBlobArtifact(
+                                    azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
                                         account_key_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
@@ -34900,7 +34900,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             optional=True,
                                         ),
                                     ),
-                                    azure_blob=IoArgoprojWorkflowV1alpha1AzureBlobArtifact(
+                                    azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
                                         account_key_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
@@ -35727,7 +35727,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         optional=True,
                                                     ),
                                                 ),
-                                                azure_blob=IoArgoprojWorkflowV1alpha1AzureBlobArtifact(
+                                                azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
                                                     account_key_secret=SecretKeySelector(
                                                         key="key_example",
                                                         name="name_example",
@@ -35990,7 +35990,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                                 optional=True,
                                                             ),
                                                         ),
-                                                        azure_blob=IoArgoprojWorkflowV1alpha1AzureBlobArtifact(
+                                                        azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
                                                             account_key_secret=SecretKeySelector(
                                                                 key="key_example",
                                                                 name="name_example",
@@ -37185,7 +37185,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 optional=True,
                             ),
                         ),
-                        azure_blob=IoArgoprojWorkflowV1alpha1AzureBlobArtifactRepository(
+                        azure=IoArgoprojWorkflowV1alpha1AzureArtifactRepository(
                             account_key_secret=SecretKeySelector(
                                 key="key_example",
                                 name="name_example",
@@ -37341,7 +37341,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             optional=True,
                                         ),
                                     ),
-                                    azure_blob=IoArgoprojWorkflowV1alpha1AzureBlobArtifact(
+                                    azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
                                         account_key_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
@@ -37608,7 +37608,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             optional=True,
                                         ),
                                     ),
-                                    azure_blob=IoArgoprojWorkflowV1alpha1AzureBlobArtifact(
+                                    azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
                                         account_key_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
@@ -37888,7 +37888,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     optional=True,
                                 ),
                             ),
-                            azure_blob=IoArgoprojWorkflowV1alpha1AzureBlobArtifact(
+                            azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
                                 account_key_secret=SecretKeySelector(
                                     key="key_example",
                                     name="name_example",
@@ -38722,7 +38722,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     optional=True,
                                 ),
                             ),
-                            azure_blob=IoArgoprojWorkflowV1alpha1AzureBlobArtifact(
+                            azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
                                 account_key_secret=SecretKeySelector(
                                     key="key_example",
                                     name="name_example",
@@ -39508,7 +39508,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         optional=True,
                                                     ),
                                                 ),
-                                                azure_blob=IoArgoprojWorkflowV1alpha1AzureBlobArtifact(
+                                                azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
                                                     account_key_secret=SecretKeySelector(
                                                         key="key_example",
                                                         name="name_example",
@@ -39775,7 +39775,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                                 optional=True,
                                                             ),
                                                         ),
-                                                        azure_blob=IoArgoprojWorkflowV1alpha1AzureBlobArtifact(
+                                                        azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
                                                             account_key_secret=SecretKeySelector(
                                                                 key="key_example",
                                                                 name="name_example",
@@ -40064,7 +40064,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             optional=True,
                                         ),
                                     ),
-                                    azure_blob=IoArgoprojWorkflowV1alpha1AzureBlobArtifact(
+                                    azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
                                         account_key_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
@@ -40608,7 +40608,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             optional=True,
                                         ),
                                     ),
-                                    azure_blob=IoArgoprojWorkflowV1alpha1AzureBlobArtifact(
+                                    azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
                                         account_key_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
@@ -40916,7 +40916,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             optional=True,
                                         ),
                                     ),
-                                    azure_blob=IoArgoprojWorkflowV1alpha1AzureBlobArtifact(
+                                    azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
                                         account_key_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
@@ -41186,7 +41186,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             optional=True,
                                         ),
                                     ),
-                                    azure_blob=IoArgoprojWorkflowV1alpha1AzureBlobArtifact(
+                                    azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
                                         account_key_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
@@ -42013,7 +42013,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         optional=True,
                                                     ),
                                                 ),
-                                                azure_blob=IoArgoprojWorkflowV1alpha1AzureBlobArtifact(
+                                                azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
                                                     account_key_secret=SecretKeySelector(
                                                         key="key_example",
                                                         name="name_example",
@@ -42276,7 +42276,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                                 optional=True,
                                                             ),
                                                         ),
-                                                        azure_blob=IoArgoprojWorkflowV1alpha1AzureBlobArtifact(
+                                                        azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
                                                             account_key_secret=SecretKeySelector(
                                                                 key="key_example",
                                                                 name="name_example",
@@ -43173,7 +43173,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         optional=True,
                                     ),
                                 ),
-                                azure_blob=IoArgoprojWorkflowV1alpha1AzureBlobArtifact(
+                                azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
                                     account_key_secret=SecretKeySelector(
                                         key="key_example",
                                         name="name_example",
@@ -43459,7 +43459,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 optional=True,
                                             ),
                                         ),
-                                        azure_blob=IoArgoprojWorkflowV1alpha1AzureBlobArtifact(
+                                        azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
                                             account_key_secret=SecretKeySelector(
                                                 key="key_example",
                                                 name="name_example",
@@ -44077,7 +44077,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     optional=True,
                                 ),
                             ),
-                            azure_blob=IoArgoprojWorkflowV1alpha1AzureBlobArtifact(
+                            azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
                                 account_key_secret=SecretKeySelector(
                                     key="key_example",
                                     name="name_example",
@@ -44863,7 +44863,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         optional=True,
                                                     ),
                                                 ),
-                                                azure_blob=IoArgoprojWorkflowV1alpha1AzureBlobArtifact(
+                                                azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
                                                     account_key_secret=SecretKeySelector(
                                                         key="key_example",
                                                         name="name_example",
@@ -45130,7 +45130,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                                 optional=True,
                                                             ),
                                                         ),
-                                                        azure_blob=IoArgoprojWorkflowV1alpha1AzureBlobArtifact(
+                                                        azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
                                                             account_key_secret=SecretKeySelector(
                                                                 key="key_example",
                                                                 name="name_example",
@@ -45419,7 +45419,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             optional=True,
                                         ),
                                     ),
-                                    azure_blob=IoArgoprojWorkflowV1alpha1AzureBlobArtifact(
+                                    azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
                                         account_key_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
@@ -45963,7 +45963,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             optional=True,
                                         ),
                                     ),
-                                    azure_blob=IoArgoprojWorkflowV1alpha1AzureBlobArtifact(
+                                    azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
                                         account_key_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
@@ -46271,7 +46271,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             optional=True,
                                         ),
                                     ),
-                                    azure_blob=IoArgoprojWorkflowV1alpha1AzureBlobArtifact(
+                                    azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
                                         account_key_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
@@ -46541,7 +46541,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             optional=True,
                                         ),
                                     ),
-                                    azure_blob=IoArgoprojWorkflowV1alpha1AzureBlobArtifact(
+                                    azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
                                         account_key_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
@@ -47368,7 +47368,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         optional=True,
                                                     ),
                                                 ),
-                                                azure_blob=IoArgoprojWorkflowV1alpha1AzureBlobArtifact(
+                                                azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
                                                     account_key_secret=SecretKeySelector(
                                                         key="key_example",
                                                         name="name_example",
@@ -47631,7 +47631,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                                 optional=True,
                                                             ),
                                                         ),
-                                                        azure_blob=IoArgoprojWorkflowV1alpha1AzureBlobArtifact(
+                                                        azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
                                                             account_key_secret=SecretKeySelector(
                                                                 key="key_example",
                                                                 name="name_example",
@@ -48515,7 +48515,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         optional=True,
                                     ),
                                 ),
-                                azure_blob=IoArgoprojWorkflowV1alpha1AzureBlobArtifact(
+                                azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
                                     account_key_secret=SecretKeySelector(
                                         key="key_example",
                                         name="name_example",
@@ -49301,7 +49301,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             optional=True,
                                                         ),
                                                     ),
-                                                    azure_blob=IoArgoprojWorkflowV1alpha1AzureBlobArtifact(
+                                                    azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
                                                         account_key_secret=SecretKeySelector(
                                                             key="key_example",
                                                             name="name_example",
@@ -49568,7 +49568,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                                     optional=True,
                                                                 ),
                                                             ),
-                                                            azure_blob=IoArgoprojWorkflowV1alpha1AzureBlobArtifact(
+                                                            azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
                                                                 account_key_secret=SecretKeySelector(
                                                                     key="key_example",
                                                                     name="name_example",
@@ -49857,7 +49857,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 optional=True,
                                             ),
                                         ),
-                                        azure_blob=IoArgoprojWorkflowV1alpha1AzureBlobArtifact(
+                                        azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
                                             account_key_secret=SecretKeySelector(
                                                 key="key_example",
                                                 name="name_example",
@@ -50401,7 +50401,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 optional=True,
                                             ),
                                         ),
-                                        azure_blob=IoArgoprojWorkflowV1alpha1AzureBlobArtifact(
+                                        azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
                                             account_key_secret=SecretKeySelector(
                                                 key="key_example",
                                                 name="name_example",
@@ -50709,7 +50709,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 optional=True,
                                             ),
                                         ),
-                                        azure_blob=IoArgoprojWorkflowV1alpha1AzureBlobArtifact(
+                                        azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
                                             account_key_secret=SecretKeySelector(
                                                 key="key_example",
                                                 name="name_example",
@@ -50979,7 +50979,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 optional=True,
                                             ),
                                         ),
-                                        azure_blob=IoArgoprojWorkflowV1alpha1AzureBlobArtifact(
+                                        azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
                                             account_key_secret=SecretKeySelector(
                                                 key="key_example",
                                                 name="name_example",
@@ -51806,7 +51806,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             optional=True,
                                                         ),
                                                     ),
-                                                    azure_blob=IoArgoprojWorkflowV1alpha1AzureBlobArtifact(
+                                                    azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
                                                         account_key_secret=SecretKeySelector(
                                                             key="key_example",
                                                             name="name_example",
@@ -52069,7 +52069,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                                     optional=True,
                                                                 ),
                                                             ),
-                                                            azure_blob=IoArgoprojWorkflowV1alpha1AzureBlobArtifact(
+                                                            azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
                                                                 account_key_secret=SecretKeySelector(
                                                                     key="key_example",
                                                                     name="name_example",

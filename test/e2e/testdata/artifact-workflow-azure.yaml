@@ -24,13 +24,13 @@ spec:
         artifacts:
           - name: out
             path: /out
-            azureBlob:
+            azure:
               blob: out
             archive:
               none: { }
           - name: main-file
             path: /tmp/main-file
-            azureBlob:
+            azure:
               blob: main-file
             archive:
               none: { }

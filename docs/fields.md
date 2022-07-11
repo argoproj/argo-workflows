@@ -168,7 +168,7 @@ Workflow is the definition of a workflow resource
 
 - [`init-container.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/init-container.yaml)
 
-- [`input-artifact-azureblob.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/input-artifact-azureblob.yaml)
+- [`input-artifact-azure.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/input-artifact-azure.yaml)
 
 - [`input-artifact-gcs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/input-artifact-gcs.yaml)
 
@@ -226,7 +226,7 @@ Workflow is the definition of a workflow resource
 
 - [`node-selector.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/node-selector.yaml)
 
-- [`output-artifact-azureblob.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/output-artifact-azureblob.yaml)
+- [`output-artifact-azure.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/output-artifact-azure.yaml)
 
 - [`output-artifact-gcs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/output-artifact-gcs.yaml)
 
@@ -601,7 +601,7 @@ WorkflowSpec is the specification of a Workflow.
 
 - [`init-container.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/init-container.yaml)
 
-- [`input-artifact-azureblob.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/input-artifact-azureblob.yaml)
+- [`input-artifact-azure.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/input-artifact-azure.yaml)
 
 - [`input-artifact-gcs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/input-artifact-gcs.yaml)
 
@@ -649,7 +649,7 @@ WorkflowSpec is the specification of a Workflow.
 
 - [`node-selector.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/node-selector.yaml)
 
-- [`output-artifact-azureblob.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/output-artifact-azureblob.yaml)
+- [`output-artifact-azure.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/output-artifact-azure.yaml)
 
 - [`output-artifact-gcs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/output-artifact-gcs.yaml)
 
@@ -1031,7 +1031,7 @@ CronWorkflowSpec is the specification of a CronWorkflow
 
 - [`init-container.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/init-container.yaml)
 
-- [`input-artifact-azureblob.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/input-artifact-azureblob.yaml)
+- [`input-artifact-azure.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/input-artifact-azure.yaml)
 
 - [`input-artifact-gcs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/input-artifact-gcs.yaml)
 
@@ -1079,7 +1079,7 @@ CronWorkflowSpec is the specification of a CronWorkflow
 
 - [`node-selector.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/node-selector.yaml)
 
-- [`output-artifact-azureblob.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/output-artifact-azureblob.yaml)
+- [`output-artifact-azure.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/output-artifact-azure.yaml)
 
 - [`output-artifact-gcs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/output-artifact-gcs.yaml)
 
@@ -1868,7 +1868,7 @@ Outputs hold parameters, artifacts, and results from a step
 
 - [`nested-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/nested-workflow.yaml)
 
-- [`output-artifact-azureblob.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/output-artifact-azureblob.yaml)
+- [`output-artifact-azure.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/output-artifact-azure.yaml)
 
 - [`output-artifact-gcs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/output-artifact-gcs.yaml)
 
@@ -1966,7 +1966,7 @@ Artifact indicates an artifact to place at a specified path
 
 - [`influxdb-ci.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/influxdb-ci.yaml)
 
-- [`input-artifact-azureblob.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/input-artifact-azureblob.yaml)
+- [`input-artifact-azure.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/input-artifact-azure.yaml)
 
 - [`input-artifact-gcs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/input-artifact-gcs.yaml)
 
@@ -1986,7 +1986,7 @@ Artifact indicates an artifact to place at a specified path
 
 - [`nested-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/nested-workflow.yaml)
 
-- [`output-artifact-azureblob.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/output-artifact-azureblob.yaml)
+- [`output-artifact-azure.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/output-artifact-azure.yaml)
 
 - [`output-artifact-gcs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/output-artifact-gcs.yaml)
 
@@ -2004,7 +2004,7 @@ Artifact indicates an artifact to place at a specified path
 |`archiveLogs`|`boolean`|ArchiveLogs indicates if the container logs should be archived|
 |`artifactGC`|[`ArtifactGC`](#artifactgc)|ArtifactGC describes the strategy to use when to deleting an artifact from completed or deleted workflows|
 |`artifactory`|[`ArtifactoryArtifact`](#artifactoryartifact)|Artifactory contains artifactory artifact location details|
-|`azureBlob`|[`AzureBlobArtifact`](#azureblobartifact)|AzureBlob contains Azure Blob Storage artifact location details|
+|`azure`|[`AzureArtifact`](#azureartifact)|Azure contains Azure Storage artifact location details|
 |`deleted`|`boolean`|Has this been deleted?|
 |`from`|`string`|From allows an artifact to reference an artifact from a previous step|
 |`fromExpression`|`string`|FromExpression, if defined, is evaluated to specify the value for the artifact|
@@ -2343,7 +2343,7 @@ ArtifactLocation describes a location for a single or multiple artifacts. It is 
 |:----------:|:----------:|---------------|
 |`archiveLogs`|`boolean`|ArchiveLogs indicates if the container logs should be archived|
 |`artifactory`|[`ArtifactoryArtifact`](#artifactoryartifact)|Artifactory contains artifactory artifact location details|
-|`azureBlob`|[`AzureBlobArtifact`](#azureblobartifact)|AzureBlob contains Azure Blob Storage artifact location details|
+|`azure`|[`AzureArtifact`](#azureartifact)|Azure contains Azure Storage artifact location details|
 |`gcs`|[`GCSArtifact`](#gcsartifact)|GCS contains GCS artifact location details|
 |`git`|[`GitArtifact`](#gitartifact)|Git contains git artifact location details|
 |`hdfs`|[`HDFSArtifact`](#hdfsartifact)|HDFS contains HDFS artifact location details|
@@ -2670,7 +2670,7 @@ Inputs are the mechanism for passing parameters, artifacts, volumes from one tem
 
 - [`influxdb-ci.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/influxdb-ci.yaml)
 
-- [`input-artifact-azureblob.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/input-artifact-azureblob.yaml)
+- [`input-artifact-azure.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/input-artifact-azure.yaml)
 
 - [`input-artifact-gcs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/input-artifact-gcs.yaml)
 
@@ -3140,7 +3140,7 @@ ArtifactRepository represents an artifact repository in which a controller will 
 |:----------:|:----------:|---------------|
 |`archiveLogs`|`boolean`|ArchiveLogs enables log archiving|
 |`artifactory`|[`ArtifactoryArtifactRepository`](#artifactoryartifactrepository)|Artifactory stores artifacts to JFrog Artifactory|
-|`azureBlob`|[`AzureBlobArtifactRepository`](#azureblobartifactrepository)|AzureBlob stores artifact in an Azure Blob Storage account|
+|`azure`|[`AzureArtifactRepository`](#azureartifactrepository)|Azure stores artifact in an Azure Storage account|
 |`gcs`|[`GCSArtifactRepository`](#gcsartifactrepository)|GCS stores artifact in a GCS object store|
 |`hdfs`|[`HDFSArtifactRepository`](#hdfsartifactrepository)|HDFS stores artifacts in HDFS|
 |`oss`|[`OSSArtifactRepository`](#ossartifactrepository)|OSS stores artifact in a OSS-compliant object store|
@@ -3241,17 +3241,15 @@ ArtifactoryArtifact is the location of an artifactory artifact
 |`url`|`string`|URL of the artifact|
 |`usernameSecret`|[`SecretKeySelector`](#secretkeyselector)|UsernameSecret is the secret selector to the repository username|
 
-## AzureBlobArtifact
+## AzureArtifact
 
-AzureBlobArtifact is the location of a an Azure Blob Storage artifact
+AzureArtifact is the location of a an Azure Storage artifact
 
 <details>
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`input-artifact-azureblob.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/input-artifact-azureblob.yaml)
-
-- [`output-artifact-azureblob.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/output-artifact-azureblob.yaml)
+- [`input-artifact-azure.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/input-artifact-azure.yaml)
 </details>
 
 ### Fields
@@ -4070,17 +4068,15 @@ ArtifactoryArtifactRepository defines the controller configuration for an artifa
 |`repoURL`|`string`|RepoURL is the url for artifactory repo.|
 |`usernameSecret`|[`SecretKeySelector`](#secretkeyselector)|UsernameSecret is the secret selector to the repository username|
 
-## AzureBlobArtifactRepository
+## AzureArtifactRepository
 
-AzureBlobArtifactRepository defines the controller configuration for an Azure Blob Storage artifact repository
+AzureArtifactRepository defines the controller configuration for an Azure Blob Storage artifact repository
 
 <details>
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`input-artifact-azureblob.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/input-artifact-azureblob.yaml)
-
-- [`output-artifact-azureblob.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/output-artifact-azureblob.yaml)
+- [`input-artifact-azure.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/input-artifact-azure.yaml)
 </details>
 
 ### Fields
@@ -4347,7 +4343,7 @@ ArtifactPaths expands a step from a collection of artifacts
 |`archiveLogs`|`boolean`|ArchiveLogs indicates if the container logs should be archived|
 |`artifactGC`|[`ArtifactGC`](#artifactgc)|ArtifactGC describes the strategy to use when to deleting an artifact from completed or deleted workflows|
 |`artifactory`|[`ArtifactoryArtifact`](#artifactoryartifact)|Artifactory contains artifactory artifact location details|
-|`azureBlob`|[`AzureBlobArtifact`](#azureblobartifact)|AzureBlob contains Azure Blob Storage artifact location details|
+|`azure`|[`AzureArtifact`](#azureartifact)|Azure contains Azure Storage artifact location details|
 |`deleted`|`boolean`|Has this been deleted?|
 |`from`|`string`|From allows an artifact to reference an artifact from a previous step|
 |`fromExpression`|`string`|FromExpression, if defined, is evaluated to specify the value for the artifact|
@@ -4664,7 +4660,7 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 
 - [`init-container.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/init-container.yaml)
 
-- [`input-artifact-azureblob.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/input-artifact-azureblob.yaml)
+- [`input-artifact-azure.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/input-artifact-azure.yaml)
 
 - [`input-artifact-gcs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/input-artifact-gcs.yaml)
 
@@ -4712,7 +4708,7 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 
 - [`node-selector.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/node-selector.yaml)
 
-- [`output-artifact-azureblob.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/output-artifact-azureblob.yaml)
+- [`output-artifact-azure.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/output-artifact-azure.yaml)
 
 - [`output-artifact-gcs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/output-artifact-gcs.yaml)
 
@@ -5266,7 +5262,7 @@ A single application container that you want to run within a pod.
 
 - [`init-container.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/init-container.yaml)
 
-- [`input-artifact-azureblob.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/input-artifact-azureblob.yaml)
+- [`input-artifact-azure.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/input-artifact-azure.yaml)
 
 - [`input-artifact-gcs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/input-artifact-gcs.yaml)
 
@@ -5308,7 +5304,7 @@ A single application container that you want to run within a pod.
 
 - [`node-selector.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/node-selector.yaml)
 
-- [`output-artifact-azureblob.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/output-artifact-azureblob.yaml)
+- [`output-artifact-azure.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/output-artifact-azure.yaml)
 
 - [`output-artifact-gcs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/output-artifact-gcs.yaml)
 
@@ -5981,7 +5977,7 @@ PersistentVolumeClaimSpec describes the common attributes of storage devices and
 
 - [`init-container.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/init-container.yaml)
 
-- [`input-artifact-azureblob.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/input-artifact-azureblob.yaml)
+- [`input-artifact-azure.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/input-artifact-azure.yaml)
 
 - [`input-artifact-gcs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/input-artifact-gcs.yaml)
 
@@ -6029,7 +6025,7 @@ PersistentVolumeClaimSpec describes the common attributes of storage devices and
 
 - [`node-selector.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/node-selector.yaml)
 
-- [`output-artifact-azureblob.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/output-artifact-azureblob.yaml)
+- [`output-artifact-azure.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/output-artifact-azure.yaml)
 
 - [`output-artifact-gcs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/output-artifact-gcs.yaml)
 

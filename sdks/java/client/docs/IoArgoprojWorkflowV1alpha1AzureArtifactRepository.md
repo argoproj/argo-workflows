@@ -1,15 +1,15 @@
 
 
-# IoArgoprojWorkflowV1alpha1AzureBlobArtifact
+# IoArgoprojWorkflowV1alpha1AzureArtifactRepository
 
-AzureBlobArtifact is the location of a an Azure Blob Storage artifact
+AzureArtifactRepository defines the controller configuration for an Azure Blob Storage artifact repository
 
 ## Properties
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **accountKeySecret** | [**io.kubernetes.client.openapi.models.V1SecretKeySelector**](io.kubernetes.client.openapi.models.V1SecretKeySelector.md) |  |  [optional]
-**blob** | **String** | Blob is the blob name (i.e., path) in the container where the artifact resides | 
+**blobNameFormat** | **String** | BlobNameFormat is defines the format of how to store blob names. Can reference workflow variables |  [optional]
 **container** | **String** | Container is the container where resources will be stored | 
 **endpoint** | **String** | Endpoint is the service url associated with an account. It is most likely \&quot;https://&lt;ACCOUNT_NAME&gt;.blob.core.windows.net\&quot; | 
 **useSDKCreds** | **Boolean** | UseSDKCreds tells the driver to figure out credentials based on sdk defaults. |  [optional]

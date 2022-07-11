@@ -1,6 +1,6 @@
-# IoArgoprojWorkflowV1alpha1AzureBlobArtifact
+# IoArgoprojWorkflowV1alpha1AzureArtifact
 
-AzureBlobArtifact is the location of a an Azure Blob Storage artifact
+AzureArtifact is the location of a an Azure Storage artifact
 
 ## Properties
 Name | Type | Description | Notes

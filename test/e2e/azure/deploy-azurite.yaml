@@ -15,7 +15,7 @@ metadata:
 data:
   azure-v1: |
     archiveLogs: true
-    azureBlob:
+    azure:
       endpoint: http://devstoreaccount1:10000/devstoreaccount1
       container: my-container
       accountKeySecret:

@@ -7,7 +7,7 @@ Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **archive_logs** | **bool** | ArchiveLogs enables log archiving | [optional] 
 **artifactory** | [**IoArgoprojWorkflowV1alpha1ArtifactoryArtifactRepository**](IoArgoprojWorkflowV1alpha1ArtifactoryArtifactRepository.md) |  | [optional] 
-**azure_blob** | [**IoArgoprojWorkflowV1alpha1AzureBlobArtifactRepository**](IoArgoprojWorkflowV1alpha1AzureBlobArtifactRepository.md) |  | [optional] 
+**azure** | [**IoArgoprojWorkflowV1alpha1AzureArtifactRepository**](IoArgoprojWorkflowV1alpha1AzureArtifactRepository.md) |  | [optional] 
 **gcs** | [**IoArgoprojWorkflowV1alpha1GCSArtifactRepository**](IoArgoprojWorkflowV1alpha1GCSArtifactRepository.md) |  | [optional] 
 **hdfs** | [**IoArgoprojWorkflowV1alpha1HDFSArtifactRepository**](IoArgoprojWorkflowV1alpha1HDFSArtifactRepository.md) |  | [optional] 
 **oss** | [**IoArgoprojWorkflowV1alpha1OSSArtifactRepository**](IoArgoprojWorkflowV1alpha1OSSArtifactRepository.md) |  | [optional] 
