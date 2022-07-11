@@ -772,17 +772,34 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 		switch node.Phase {
 		case wfv1.NodeSucceeded, wfv1.NodeSkipped:
 			if !strings.HasPrefix(node.Name, onExitNodeName) && !doForceResetNode {
-				newWF.Status.Nodes[node.ID] = node
+				// Reset parent node if this node is a step/task group or DAG.
+				if (node.Type == wfv1.NodeTypeDAG || node.Type == wfv1.NodeTypeTaskGroup || node.Type == wfv1.NodeTypeStepGroup) && node.BoundaryID != "" {
+					parentNodeID := node.BoundaryID
+					if parentNodeID != wf.ObjectMeta.Name { // Skip root node
+						for _, tmplNode := range wf.Status.Nodes {
+							// Reset the parent node
+							if tmplNode.ID == parentNodeID {
+								log.Debugln(fmt.Sprintf("Resetting parent node %s", parentNodeID))
+								newParentNode := tmplNode.DeepCopy()
+								newWF.Status.Nodes[tmplNode.ID] = resetNode(*newParentNode)
+							}
+							// If the node belongs to a node group that needs to be retried, reset its status
+							if tmplNode.BoundaryID == parentNodeID {
+								log.Debugln(fmt.Sprintf("Resetting child node %s since its parent node %s is being retried", tmplNode.ID, parentNodeID))
+								newChildNode := tmplNode.DeepCopy()
+								newWF.Status.Nodes[tmplNode.ID] = resetNode(*newChildNode)
+							}
+						}
+					}
+				} else {
+					newWF.Status.Nodes[node.ID] = node
+				}
 				continue
 			}
 		case wfv1.NodeError, wfv1.NodeFailed, wfv1.NodeOmitted:
 			if !strings.HasPrefix(node.Name, onExitNodeName) && (node.Type == wfv1.NodeTypeDAG || node.Type == wfv1.NodeTypeTaskGroup || node.Type == wfv1.NodeTypeStepGroup) {
 				newNode := node.DeepCopy()
-				newNode.Phase = wfv1.NodeRunning
-				newNode.Message = ""
-				newNode.StartedAt = metav1.Time{Time: time.Now().UTC()}
-				newNode.FinishedAt = metav1.Time{}
-				newWF.Status.Nodes[newNode.ID] = *newNode
+				newWF.Status.Nodes[newNode.ID] = resetNode(*newNode)
 				continue
 			} else {
 				deletedNodes[node.ID] = true
@@ -800,11 +817,7 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 			podsToDelete = append(podsToDelete, podName)
 		} else if node.Name == wf.ObjectMeta.Name {
 			newNode := node.DeepCopy()
-			newNode.Phase = wfv1.NodeRunning
-			newNode.Message = ""
-			newNode.StartedAt = metav1.Time{Time: time.Now().UTC()}
-			newNode.FinishedAt = metav1.Time{}
-			newWF.Status.Nodes[newNode.ID] = *newNode
+			newWF.Status.Nodes[newNode.ID] = resetNode(*newNode)
 			continue
 		}
 	}
@@ -837,6 +850,14 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 	}
 
 	return newWF, podsToDelete, nil
+}
+
+func resetNode(node wfv1.NodeStatus) wfv1.NodeStatus {
+	node.Phase = wfv1.NodeRunning
+	node.Message = ""
+	node.StartedAt = metav1.Time{Time: time.Now().UTC()}
+	node.FinishedAt = metav1.Time{}
+	return node
 }
 
 func getTemplateFromNode(node wfv1.NodeStatus) string {
