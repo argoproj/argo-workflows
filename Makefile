@@ -28,6 +28,12 @@ K3D_CLUSTER_NAME      ?= k3s-default
 KUBE_NAMESPACE        ?= argo
 MANAGED_NAMESPACE     ?= $(KUBE_NAMESPACE)
 
+# Timeout for wait conditions
+E2E_WAIT_TIMEOUT      ?= 1m
+
+E2E_PARALLEL          ?= 10
+E2E_SUITE_TIMEOUT     ?= 15m
+
 VERSION               := latest
 DOCKER_PUSH           := false
 
@@ -509,7 +515,7 @@ mysql-cli:
 test-cli: ./dist/argo
 
 test-%:
-	go test -v -timeout 15m -count 1 --tags $* -parallel 10 ./test/e2e
+	go test -failfast -v -timeout $(E2E_SUITE_TIMEOUT) -count 1 --tags $* -parallel $(E2E_PARALLEL) ./test/e2e
 
 .PHONY: test-examples
 test-examples:

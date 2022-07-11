@@ -46,7 +46,7 @@ func (s *FunctionalSuite) TestDeletingPendingPod() {
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToStart).
 		Exec("kubectl", []string{"-n", "argo", "delete", "pod", "-l", "workflows.argoproj.io/workflow"}, fixtures.OutputRegexp(`pod "pending-.*" deleted`)).
-		Wait(3*time.Second). // allow 3s for reconciliation, we'll create a new pod
+		Wait(time.Duration(3*fixtures.EnvFactor)*time.Second). // allow 3s for reconciliation, we'll create a new pod
 		Exec("kubectl", []string{"-n", "argo", "get", "pod", "-l", "workflows.argoproj.io/workflow"}, fixtures.OutputRegexp(`pending-.*Pending`))
 }
 
@@ -757,7 +757,7 @@ spec:
 `).
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow().
+		WaitForWorkflow(10 * time.Second).
 		Then().
 		ExpectWorkflow(func(t *testing.T, md *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.WorkflowFailed, status.Phase)
