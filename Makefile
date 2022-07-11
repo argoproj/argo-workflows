@@ -477,7 +477,7 @@ ifeq ($(AUTH_MODE),sso)
 	grep '127.0.0.1.*dex' /etc/hosts
 endif
 ifeq ($(AZURE),true)
-	grep '127.0.0.1.*devstoreaccount1' /etc/hosts
+	grep '127.0.0.1.*azurite' /etc/hosts
 endif
 	grep '127.0.0.1.*minio' /etc/hosts
 	grep '127.0.0.1.*postgres' /etc/hosts

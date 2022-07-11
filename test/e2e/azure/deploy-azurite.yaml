@@ -16,7 +16,7 @@ data:
   azure-v1: |
     archiveLogs: true
     azure:
-      endpoint: http://devstoreaccount1:10000/devstoreaccount1
+      endpoint: http://azurite:10000/azurite
       container: my-container
       accountKeySecret:
         name: azurite-credentials
@@ -47,12 +47,20 @@ spec:
         ports:
         - containerPort: 10000
           protocol: TCP
+        env:
+        - name: AZURITE_ACCOUNT_KEY
+          valueFrom:
+            secretKeyRef:
+              name: azurite-credentials
+              key: account-access-key
+        - name: AZURITE_ACCOUNTS
+          value: "azurite:$(AZURITE_ACCOUNT_KEY)"
       - name: create-storage-container
         image: mcr.microsoft.com/azure-cli
         command: [ "/bin/bash", "-c" ]
         args:
-          - until az storage container show -n my-container --blob-endpoint http://localhost:10000/devstoreaccount1 --account-key $AZURE_ACCOUNT_KEY -onone; do
-              result=$(az storage container create -n my-container --blob-endpoint http://localhost:10000/devstoreaccount1 --account-key $AZURE_ACCOUNT_KEY -otsv);
+          - until az storage container show -n my-container --blob-endpoint http://localhost:10000/azurite --account-key $AZURE_ACCOUNT_KEY -onone; do
+              result=$(az storage container create -n my-container --blob-endpoint http://localhost:10000/azurite --account-key $AZURE_ACCOUNT_KEY -otsv);
               [[ "$result" == "True" ]] && { echo "Storage container was created!"; break; };
               echo "Waiting for azurite container to start...";
               sleep 2;
@@ -68,7 +76,7 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: devstoreaccount1
+  name: azurite
 spec:
   selector:
     app: azurite

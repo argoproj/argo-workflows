@@ -61,5 +61,5 @@ fi
 azurite=$(kubectl -n argo get pod -l app=azurite -o name)
 if [[ "$azurite" != "" ]]; then
   wait-for azurite
-  pf devstoreaccount1 10000
+  pf azurite 10000
 fi
