@@ -3250,6 +3250,8 @@ AzureArtifact is the location of a an Azure Storage artifact
 <br>
 
 - [`input-artifact-azure.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/input-artifact-azure.yaml)
+
+- [`output-artifact-azure.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/output-artifact-azure.yaml)
 </details>
 
 ### Fields
@@ -4077,6 +4079,8 @@ AzureArtifactRepository defines the controller configuration for an Azure Blob S
 <br>
 
 - [`input-artifact-azure.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/input-artifact-azure.yaml)
+
+- [`output-artifact-azure.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/output-artifact-azure.yaml)
 </details>
 
 ### Fields
