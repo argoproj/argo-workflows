@@ -9490,6 +9490,12 @@
         "namespace": {
           "type": "string"
         },
+        "parameters": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
         "uid": {
           "type": "string"
         }
@@ -9515,6 +9521,12 @@
         },
         "nodeFieldSelector": {
           "type": "string"
+        },
+        "parameters": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
         },
         "restartSuccessful": {
           "type": "boolean"

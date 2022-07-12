@@ -5591,6 +5591,12 @@
         "namespace": {
           "type": "string"
         },
+        "parameters": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
         "uid": {
           "type": "string"
         }
@@ -5616,6 +5622,12 @@
         },
         "nodeFieldSelector": {
           "type": "string"
+        },
+        "parameters": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
         },
         "restartSuccessful": {
           "type": "boolean"
