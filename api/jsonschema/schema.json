@@ -6802,6 +6802,12 @@
         },
         "namespace": {
           "type": "string"
+        },
+        "parameters": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
         }
       },
       "type": "object"
@@ -6830,6 +6836,12 @@
         },
         "nodeFieldSelector": {
           "type": "string"
+        },
+        "parameters": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
         },
         "restartSuccessful": {
           "type": "boolean"
