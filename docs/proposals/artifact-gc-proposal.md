@@ -18,7 +18,7 @@ Artifacts can be specified for Garbage Collection at different stages: `OnWorkfl
 
 ### Proposal Options
 
-These [slides](../assets/artifact-gc-proposal.pptx) go over the trade offs in options that were presented to the Contributor meeting on 7/12/22.
+These [slides](../assets/artifact-gc-proposal.pptx) go over the trade offs in options that were presented to the Argo Contributor meeting on 7/12/22.
 
 ### Decision
 
@@ -63,7 +63,7 @@ We can reject the Workflow during validation if `ArtifactGC` is configured along
 ### Documentation
 
 Need to clarify certain things in our documentation:
-1. Users need to know that if they don't name their artifacts with unique keys, they risk the same key being deleted by one Workflow and created by another at the same time. One recommendation is to parameterize the key, e.g. `{{workflow.uid}}/hello.txt`.
+1. Users need to know that if they don't name their artifacts with unique keys, they risk the same key being deleted by one Workflow and created by another at the same time. One recommendation is to parametrize the key, e.g. `{{workflow.uid}}/hello.txt`.
 2. Requirement to specify Service Account or Annotation for `ArtifactGC` specifically if they are needed (we won't fall back to default Workflow SA/annotations).
 
 
