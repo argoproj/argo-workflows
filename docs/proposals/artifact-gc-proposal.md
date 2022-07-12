@@ -50,14 +50,20 @@ Slide 12 references the different options for passing Service Accounts and Annot
 
 #### MVP vs post-MVP
 
-S3....
+We will start with just S3. 
+
+We can also make other determinations if it makes sense to postpone some parts for after MVP.
+
+#### Workflow Spec Validation
+
+We can reject the Workflow during validation if ArtifactGC is configured along with a non-supported storage engine (for now probably anything besides S3).
 
 
 ### Documentation
 
 Need to clarify certain things in our documentation:
 1. Users need to know that if they don't name their artifacts with unique keys, they risk the same key being deleted by one Workflow and created by another at the same time. One recommendation is to parameterize the key, e.g. "{{workflow.uid}}/hello.txt'.
-2. 
+2. Requirement to specify ServiceAccount or Annotation for ArtifactGC specifically if they are needed (we won't fall back to default Workflow SA/annotations).
 
 
  
