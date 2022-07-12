@@ -8,9 +8,14 @@ Artifacts can be specified for GC at different stages: currently "OnWorkflowComp
 ## Proposal Specifics
 
 ### Workflow Spec changes
-1. WorkflowSpec has an ArtifactGCStrategy, which is the default for all artifacts: can be "OnWorkflowCompletion", "OnWorkflowDeletion", or "Never"
+1. WorkflowSpec has an ArtifactGCStrategy, which is the default for all artifacts: can be "OnWorkflowCompletion", "OnWorkflowDeletion", "OnWorkflowSuccess", "OnWorkflowFailure", or "Never"
 2. Artifact has an ArtifactGCStrategy (only really applies to Output Artifacts), which can override the setting for WorkflowSpec
-3. Artifact has a boolean 'Deleted' flag
+
+### Workflow Status changes
+1. Artifact has a boolean 'Deleted' flag
+2. WorkflowStatus.Conditions can be set to "ArtifactGCError"
+
+These ![slides](../assets/artifact-gc-proposal.pptx) go over the trade offs in options that were presented in the Argo Commmunity on 7/12/22.
 
 #### Proposal Option 1:
 We can have a Pod that runs in the user's namespace and deletes all artifacts for a Workflow that are set to "OnWorkflowCompletion" which runs once the Workflow completes. And we can have a separate Pod that deletes all artifacts that are set to "OnWorkflowDeletion" which runs when the Workflow is being deleted. A Finalizer will be added to the Workflow which will only be removed once the Pods are completed (todo: determine what to do if Pod completes in failure). 
