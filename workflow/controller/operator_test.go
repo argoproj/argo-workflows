@@ -5346,6 +5346,77 @@ status:
 	}
 }
 
+func TestResubmitParamsOverride(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(`apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: my-wf
+spec:
+  arguments:
+    parameters:
+    - name: message
+      value: default
+  entrypoint: main
+  templates:
+  - name: main
+    container:
+      image: busybox
+status:
+  phase: Failed
+  nodes:
+    my-wf:
+      name: my-wf
+      phase: Failed
+`)
+	wf, err := util.FormulateResubmitWorkflow(wf, true, []string{"message=modified"})
+	if assert.NoError(t, err) {
+		cancel, controller := newController(wf)
+		defer cancel()
+
+		ctx := context.Background()
+		woc := newWorkflowOperationCtx(wf, controller)
+		woc.operate(ctx)
+		assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
+		assert.Equal(t, "modified", wf.Spec.Arguments.Parameters[0].Value.String())
+	}
+}
+
+func TestRetryParamsOverride(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(`apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: my-wf
+  labels:
+    workflows.argoproj.io/completed: true
+spec:
+  arguments:
+    parameters:
+    - name: message
+      value: default
+  entrypoint: main
+  templates:
+  - name: main
+    container:
+      image: busybox
+status:
+  phase: Failed
+  nodes:
+    my-wf:
+      name: my-wf
+      phase: Failed
+`)
+	wf, _, err := util.FormulateRetryWorkflow(context.Background(), wf, false, "", []string{"message=modified"})
+	if assert.NoError(t, err) {
+		cancel, controller := newController(wf)
+		defer cancel()
+
+		ctx := context.Background()
+		woc := newWorkflowOperationCtx(wf, controller)
+		woc.operate(ctx)
+		assert.Equal(t, "modified", wf.Spec.Arguments.Parameters[0].Value.String())
+	}
+}
+
 func TestWorkflowOutputs(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(`
 metadata:

@@ -653,11 +653,11 @@ func TestFormulateResubmitWorkflow(t *testing.T) {
 		wf := &wfv1.Workflow{
 			Spec: wfv1.WorkflowSpec{Arguments: wfv1.Arguments{
 				Parameters: []wfv1.Parameter{
-					{Name: "global-message", Value: wfv1.AnyStringPtr("default")},
+					{Name: "message", Value: wfv1.AnyStringPtr("default")},
 				},
 			}},
 		}
-		wf, err := FormulateResubmitWorkflow(wf, false, []string{"global-message=modified"})
+		wf, err := FormulateResubmitWorkflow(wf, false, []string{"message=modified"})
 		if assert.NoError(t, err) {
 			assert.Equal(t, "modified", wf.Spec.Arguments.Parameters[0].Value.String())
 		}
@@ -969,7 +969,7 @@ func TestFormulateRetryWorkflow(t *testing.T) {
 			},
 			Spec: wfv1.WorkflowSpec{Arguments: wfv1.Arguments{
 				Parameters: []wfv1.Parameter{
-					{Name: "global-message", Value: wfv1.AnyStringPtr("default")},
+					{Name: "message", Value: wfv1.AnyStringPtr("default")},
 				},
 			}},
 			Status: wfv1.WorkflowStatus{
@@ -978,7 +978,7 @@ func TestFormulateRetryWorkflow(t *testing.T) {
 					"1": {ID: "1", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypeTaskGroup},
 				}},
 		}
-		wf, _, err := FormulateRetryWorkflow(context.Background(), wf, false, "", []string{"global-message=modified"})
+		wf, _, err := FormulateRetryWorkflow(context.Background(), wf, false, "", []string{"message=modified"})
 		if assert.NoError(t, err) {
 			assert.Equal(t, "modified", wf.Spec.Arguments.Parameters[0].Value.String())
 		}
