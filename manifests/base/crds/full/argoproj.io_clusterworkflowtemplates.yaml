@@ -5336,6 +5336,12 @@ spec:
                     properties:
                       body:
                         type: string
+                      bodyFrom:
+                        properties:
+                          bytes:
+                            format: byte
+                            type: string
+                        type: object
                       headers:
                         items:
                           properties:
@@ -13153,6 +13159,12 @@ spec:
                       properties:
                         body:
                           type: string
+                        bodyFrom:
+                          properties:
+                            bytes:
+                              format: byte
+                              type: string
+                          type: object
                         headers:
                           items:
                             properties:

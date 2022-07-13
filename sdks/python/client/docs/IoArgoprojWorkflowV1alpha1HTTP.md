@@ -6,8 +6,9 @@ Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **url** | **str** | URL of the HTTP Request | 
 **body** | **str** | Body is content of the HTTP Request | [optional] 
+**body_from** | [**IoArgoprojWorkflowV1alpha1HTTPBodySource**](IoArgoprojWorkflowV1alpha1HTTPBodySource.md) |  | [optional] 
 **headers** | [**[IoArgoprojWorkflowV1alpha1HTTPHeader]**](IoArgoprojWorkflowV1alpha1HTTPHeader.md) | Headers are an optional list of headers to send with HTTP requests | [optional] 
-**insecure_skip_verify** | **bool** | insecureSkipVerify is a bool when if set to true will skip TLS verification for the HTTP client | [optional] 
+**insecure_skip_verify** | **bool** | InsecureSkipVerify is a bool when if set to true will skip TLS verification for the HTTP client | [optional] 
 **method** | **str** | Method is HTTP methods for HTTP Request | [optional] 
 **success_condition** | **str** | SuccessCondition is an expression if evaluated to true is considered successful | [optional] 
 **timeout_seconds** | **int** | TimeoutSeconds is request timeout for HTTP Request. Default is 30 seconds | [optional] 

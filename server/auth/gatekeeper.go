@@ -289,6 +289,7 @@ func (s *gatekeeper) getClientsForServiceAccount(ctx context.Context, claims *ty
 		return nil, err
 	}
 	claims.ServiceAccountName = serviceAccount.Name
+	claims.ServiceAccountNamespace = serviceAccount.Namespace
 	return clients, nil
 }
 
