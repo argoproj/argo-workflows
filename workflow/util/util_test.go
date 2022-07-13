@@ -649,6 +649,19 @@ func TestFormulateResubmitWorkflow(t *testing.T) {
 			assert.Equal(t, "testObj", wf.OwnerReferences[0].Name)
 		}
 	})
+	t.Run("OverrideParams", func(t *testing.T) {
+		wf := &wfv1.Workflow{
+			Spec: wfv1.WorkflowSpec{Arguments: wfv1.Arguments{
+				Parameters: []wfv1.Parameter{
+					{Name: "global-message", Value: wfv1.AnyStringPtr("default")},
+				},
+			}},
+		}
+		wf, err := FormulateResubmitWorkflow(wf, false, []string{"global-message=modified"})
+		if assert.NoError(t, err) {
+			assert.Equal(t, "modified", wf.Spec.Arguments.Parameters[0].Value.String())
+		}
+	})
 }
 
 var deepDeleteOfNodes = `
@@ -946,6 +959,28 @@ func TestFormulateRetryWorkflow(t *testing.T) {
 				assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes["3"].Phase)
 				assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["4"].Phase)
 			}
+		}
+	})
+	t.Run("OverrideParams", func(t *testing.T) {
+		wf := &wfv1.Workflow{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:   "override-param-wf",
+				Labels: map[string]string{},
+			},
+			Spec: wfv1.WorkflowSpec{Arguments: wfv1.Arguments{
+				Parameters: []wfv1.Parameter{
+					{Name: "global-message", Value: wfv1.AnyStringPtr("default")},
+				},
+			}},
+			Status: wfv1.WorkflowStatus{
+				Phase: wfv1.WorkflowFailed,
+				Nodes: map[string]wfv1.NodeStatus{
+					"1": {ID: "1", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypeTaskGroup},
+				}},
+		}
+		wf, _, err := FormulateRetryWorkflow(context.Background(), wf, false, "", []string{"global-message=modified"})
+		if assert.NoError(t, err) {
+			assert.Equal(t, "modified", wf.Spec.Arguments.Parameters[0].Value.String())
 		}
 	})
 }
