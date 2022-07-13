@@ -23,11 +23,25 @@ Artifacts can be specified for Garbage Collection at different stages: `OnWorkfl
 
 These [slides](../assets/artifact-gc-proposal.pptx) go over the trade offs in options that were presented to the Argo Contributor meeting on 7/12/22.
 
+Option 1 is the [POC](https://github.com/argoproj/argo-workflows/pull/8530) that was done, which uses one Pod to delete each Artifact. Option 2 uses one Pod per Artifact GC Strategy for a given Workflow. 
+
+The benefits of Option 1 are:
+- simpler in that the Pod doesn't require any additional Object to report status (e.g. WorkflowTaskSet) because it simply succeeds or fails based on its exit code (whereas in Option 2 the Pod needs to report individual failure statuses for each artifact)
+- could have a very minimal ServiceAccount which provides access to just that one artifact's location
+
+The drawbacks of Option 2 are:
+- deletion is slower when performed by multiple Pods
+- a Workflow with thousands of artifacts causes thousands of Pods to get executed, which could overwhelm kube-scheduler and kube-apiserver. 
+- if we delay the Artifact GC Pods by giving them a lower priority than the Workflow Pods, users will not get their artifacts deleted when they expect and may log bugs
+
 ### Decision
 
 Following the meeting, these were the decisions:
 
-We will go with Option 2 from that presentation. We'll have one Pod that runs in the user's namespace and deletes all artifacts pertaining to an individual Garbage Collection strategy. Since `OnWorkflowSuccess` happens at the same time as `OnWorkflowCompletion` and `OnWorkflowFailure` also happens at the same time as `OnWorkflowCompletion`, we can consider consolidating these GC Strategies together.
+We will go with Option 2 from that presentation:
+![Option 2 Flow](../assets/artifact-gc-option-2-flow.jpg)
+
+We'll have one Pod that runs in the user's namespace and deletes all artifacts pertaining to an individual Garbage Collection strategy. Since `OnWorkflowSuccess` happens at the same time as `OnWorkflowCompletion` and `OnWorkflowFailure` also happens at the same time as `OnWorkflowCompletion`, we can consider consolidating these GC Strategies together.
 
 We will use one or more `WorkflowTaskSets` to specify the Templates (containing Artifacts), which the GC Pod will read and then write Status to (note individual artifacts have individual statuses). The Controller will read the Status and reflect that in the Workflow Status. The Controller will deem the `WorkflowTaskSets` ready to read once the Pod has completed (in success or failure).
 
@@ -45,11 +59,11 @@ The Failure will be reflected in both the Workflow Conditions as well as as a Ku
 
 #### Pod vs Job
 
-We'll use a Pod rather than a Job, and the Controller will be responsible for re-generating that Pod if it gets evicted or deleted.
+We'll use a Pod rather than a Job, and the Controller will be responsible for re-generating that Pod if it gets evicted or deleted. This will eliminate the need for a JobInformer.
 
 #### Service Account/IAM roles
 
-Slide 12 references the different options for passing Service Accounts and Annotations (sometimes containing IAM roles), which can provide access for deleting artifacts. We will go with Option 2 on that slide, in order to reduce the complexity of the code and reduce the potential number of Pods running. The user should set the Service Account or Annotations for Artifact GC as a whole.
+Slide 12 references the different options for passing Service Accounts and Annotations (sometimes containing IAM roles), which can provide access for deleting artifacts. We will go with Option 2 on that slide, meaning that the user will be responsible for setting a Service Account or Annotation for the GC Pod specifically, which will be used for all artifacts. The other options involve allowing multiple SAs/Annotations per template, but Option 2 is preferred in order to reduce the complexity of the code and reduce the potential number of Pods running. 
 
 #### MVP vs post-MVP
 
