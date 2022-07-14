@@ -511,7 +511,7 @@ mysql-cli:
 test-cli: ./dist/argo
 
 test-%:
-	go test -failfast -v -timeout 20m -count 1 --tags $* -parallel 10 ./test/e2e
+	go test -failfast -v -timeout 15m -count 1 --tags $* -parallel 10 ./test/e2e
 
 .PHONY: test-examples
 test-examples:
