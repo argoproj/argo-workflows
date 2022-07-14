@@ -203,3 +203,5 @@ webhooks
 workflow-controller-configmap
 yaml
 idempotence
+kube-scheduler
+kube-apiserver
