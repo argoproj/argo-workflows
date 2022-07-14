@@ -45,7 +45,7 @@ func (r *apiRateLimiter) GetVisitor(ip string) *rate.Limiter {
 		return limiter
 	}
 
-	v, _ := value.(visitor)
+	v := value.(*visitor)
 
 	// Update the last seen time for the visitor
 	now := time.Now()
@@ -66,7 +66,7 @@ func (r *apiRateLimiter) CleanupVisitors(freq time.Duration, duration time.Durat
 		time.Sleep(freq)
 
 		r.visitors.Range(func(key, value interface{}) bool {
-			v, _ := value.(visitor)
+			v := value.(*visitor)
 			if time.Since(v.lastSeen) > duration {
 				r.visitors.Delete(key)
 			}
