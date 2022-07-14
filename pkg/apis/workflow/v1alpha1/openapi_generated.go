@@ -64,6 +64,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.HTTP":                          schema_pkg_apis_workflow_v1alpha1_HTTP(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.HTTPArtifact":                  schema_pkg_apis_workflow_v1alpha1_HTTPArtifact(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.HTTPAuth":                      schema_pkg_apis_workflow_v1alpha1_HTTPAuth(ref),
+		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.HTTPBodySource":                schema_pkg_apis_workflow_v1alpha1_HTTPBodySource(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.HTTPHeader":                    schema_pkg_apis_workflow_v1alpha1_HTTPHeader(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.HTTPHeaderSource":              schema_pkg_apis_workflow_v1alpha1_HTTPHeaderSource(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Header":                        schema_pkg_apis_workflow_v1alpha1_Header(ref),
@@ -75,6 +76,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.LabelValues":                   schema_pkg_apis_workflow_v1alpha1_LabelValues(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.LifecycleHook":                 schema_pkg_apis_workflow_v1alpha1_LifecycleHook(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Link":                          schema_pkg_apis_workflow_v1alpha1_Link(ref),
+		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ManifestFrom":                  schema_pkg_apis_workflow_v1alpha1_ManifestFrom(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.MemoizationStatus":             schema_pkg_apis_workflow_v1alpha1_MemoizationStatus(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Memoize":                       schema_pkg_apis_workflow_v1alpha1_Memoize(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Metadata":                      schema_pkg_apis_workflow_v1alpha1_Metadata(ref),
@@ -2681,9 +2683,15 @@ func schema_pkg_apis_workflow_v1alpha1_HTTP(ref common.ReferenceCallback) common
 							Format:      "",
 						},
 					},
+					"bodyFrom": {
+						SchemaProps: spec.SchemaProps{
+							Description: "BodyFrom is  content of the HTTP Request as Bytes",
+							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.HTTPBodySource"),
+						},
+					},
 					"insecureSkipVerify": {
 						SchemaProps: spec.SchemaProps{
-							Description: "insecureSkipVerify is a bool when if set to true will skip TLS verification for the HTTP client",
+							Description: "InsecureSkipVerify is a bool when if set to true will skip TLS verification for the HTTP client",
 							Type:        []string{"boolean"},
 							Format:      "",
 						},
@@ -2693,7 +2701,7 @@ func schema_pkg_apis_workflow_v1alpha1_HTTP(ref common.ReferenceCallback) common
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.HTTPHeader"},
+			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.HTTPBodySource", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.HTTPHeader"},
 	}
 }
 
@@ -2770,6 +2778,25 @@ func schema_pkg_apis_workflow_v1alpha1_HTTPAuth(ref common.ReferenceCallback) co
 		},
 		Dependencies: []string{
 			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.BasicAuth", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ClientCertAuth", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.OAuth2Auth"},
+	}
+}
+
+func schema_pkg_apis_workflow_v1alpha1_HTTPBodySource(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "HTTPBodySource contains the source of the HTTP body.",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"bytes": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "byte",
+						},
+					},
+				},
+			},
+		},
 	}
 }
 
@@ -3116,6 +3143,27 @@ func schema_pkg_apis_workflow_v1alpha1_Link(ref common.ReferenceCallback) common
 				},
 			},
 		},
+	}
+}
+
+func schema_pkg_apis_workflow_v1alpha1_ManifestFrom(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"artifact": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Artifact contains the artifact to use",
+							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Artifact"),
+						},
+					},
+				},
+				Required: []string{"artifact"},
+			},
+		},
+		Dependencies: []string{
+			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Artifact"},
 	}
 }
 
@@ -4306,6 +4354,12 @@ func schema_pkg_apis_workflow_v1alpha1_ResourceTemplate(ref common.ReferenceCall
 							Format:      "",
 						},
 					},
+					"manifestFrom": {
+						SchemaProps: spec.SchemaProps{
+							Description: "ManifestFrom is the source for a single kubernetes manifest",
+							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ManifestFrom"),
+						},
+					},
 					"setOwnerReference": {
 						SchemaProps: spec.SchemaProps{
 							Description: "SetOwnerReference sets the reference to the workflow on the OwnerReference of generated resource.",
@@ -4346,6 +4400,8 @@ func schema_pkg_apis_workflow_v1alpha1_ResourceTemplate(ref common.ReferenceCall
 				Required: []string{"action"},
 			},
 		},
+		Dependencies: []string{
+			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ManifestFrom"},
 	}
 }
 

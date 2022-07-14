@@ -1764,8 +1764,9 @@ It must be set if keytab is used. |  |
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
 | body | string| `string` |  | | Body is content of the HTTP Request |  |
+| bodyFrom | [HTTPBodySource](#http-body-source)| `HTTPBodySource` |  | |  |  |
 | headers | [HTTPHeaders](#http-headers)| `HTTPHeaders` |  | |  |  |
-| insecureSkipVerify | boolean| `bool` |  | | insecureSkipVerify is a bool when if set to true will skip TLS verification for the HTTP client |  |
+| insecureSkipVerify | boolean| `bool` |  | | InsecureSkipVerify is a bool when if set to true will skip TLS verification for the HTTP client |  |
 | method | string| `string` |  | | Method is HTTP methods for HTTP Request |  |
 | successCondition | string| `string` |  | | SuccessCondition is an expression if evaluated to true is considered successful |  |
 | timeoutSeconds | int64 (formatted integer)| `int64` |  | | TimeoutSeconds is request timeout for HTTP Request. Default is 30 seconds |  |
@@ -1807,6 +1808,21 @@ It must be set if keytab is used. |  |
 | basicAuth | [BasicAuth](#basic-auth)| `BasicAuth` |  | |  |  |
 | clientCert | [ClientCertAuth](#client-cert-auth)| `ClientCertAuth` |  | |  |  |
 | oauth2 | [OAuth2Auth](#o-auth2-auth)| `OAuth2Auth` |  | |  |  |
+
+
+
+### <span id="http-body-source"></span> HTTPBodySource
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| bytes | []uint8 (formatted integer)| `[]uint8` |  | |  |  |
 
 
 
@@ -2289,6 +2305,21 @@ it always corresponds to the version of the main resource. |  |
 | Name | Type | Go type | Default | Description | Example |
 |------|------|---------| ------- |-------------|---------|
 | ManagedFieldsOperationType | string| string | |  |  |
+
+
+
+### <span id="manifest-from"></span> ManifestFrom
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| artifact | [Artifact](#artifact)| `Artifact` |  | |  |  |
 
 
 
@@ -3633,6 +3664,7 @@ flags: [
 "--validate=false"  # disable resource validation
 ] |  |
 | manifest | string| `string` |  | | Manifest contains the kubernetes manifest |  |
+| manifestFrom | [ManifestFrom](#manifest-from)| `ManifestFrom` |  | |  |  |
 | mergeStrategy | string| `string` |  | | MergeStrategy is the strategy used to merge a patch. It defaults to "strategic"
 Must be one of: strategic, merge, json |  |
 | setOwnerReference | boolean| `bool` |  | | SetOwnerReference sets the reference to the workflow on the OwnerReference of generated resource. |  |

@@ -2,7 +2,9 @@ package config
 
 import (
 	"fmt"
+	"html"
 	"math"
+	"net/url"
 	"time"
 
 	apiv1 "k8s.io/api/core/v1"
@@ -128,6 +130,37 @@ func (c Config) GetPodGCDeleteDelayDuration() time.Duration {
 	}
 
 	return c.PodGCDeleteDelayDuration.Duration
+}
+
+func (c Config) ValidateProtocol(inputURL string, allowedProtocol []string) error {
+	u, err := url.Parse(inputURL)
+	if err != nil {
+		return err
+	}
+	for _, protocol := range allowedProtocol {
+		if u.Scheme == protocol {
+			return nil
+		}
+	}
+	return fmt.Errorf("detect javascript link: %s", inputURL)
+}
+
+func (c Config) HTMLEscape(unescaped string) string {
+	return html.EscapeString(unescaped)
+}
+
+func (c *Config) Sanitize(allowedProtocol []string) error {
+	links := c.Links
+
+	for _, link := range links {
+		err := c.ValidateProtocol(link.URL, allowedProtocol)
+		if err != nil {
+			return err
+		} else {
+			link.URL = c.HTMLEscape(link.URL)
+		}
+	}
+	return nil
 }
 
 // PodSpecLogStrategy contains the configuration for logging the pod spec in controller log for debugging purpose

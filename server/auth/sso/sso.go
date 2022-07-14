@@ -276,12 +276,13 @@ func (s *sso) HandleCallback(w http.ResponseWriter, r *http.Request) {
 			Subject: c.Subject,
 			Expiry:  jwt.NewNumericDate(time.Now().Add(s.expiry)),
 		},
-		Groups:             groups,
-		RawClaim:           c.RawClaim,
-		Email:              c.Email,
-		EmailVerified:      c.EmailVerified,
-		ServiceAccountName: c.ServiceAccountName,
-		PreferredUsername:  c.PreferredUsername,
+		Groups:                  groups,
+		RawClaim:                c.RawClaim,
+		Email:                   c.Email,
+		EmailVerified:           c.EmailVerified,
+		ServiceAccountName:      c.ServiceAccountName,
+		PreferredUsername:       c.PreferredUsername,
+		ServiceAccountNamespace: c.ServiceAccountNamespace,
 	}
 
 	raw, err := jwt.Encrypted(s.encrypter).Claims(argoClaims).CompactSerialize()

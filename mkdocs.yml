@@ -137,6 +137,7 @@ nav:
           - use-cases/machine-learning.md
           - use-cases/other.md
           - use-cases/stream-processing.md
+          - use-cases/webhdfs.md
       - FAQ: faq.md
       - kubectl.md
       - ide-setup.md

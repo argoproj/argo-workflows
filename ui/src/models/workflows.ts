@@ -4,6 +4,8 @@ export const labels = {
     clusterWorkflowTemplate: 'workflows.argoproj.io/cluster-workflow-template',
     completed: 'workflows.argoproj.io/completed',
     creator: 'workflows.argoproj.io/creator',
+    creatorEmail: 'workflows.argoproj.io/creator-email',
+    creatorPreferredUsername: 'workflows.argoproj.io/creator-preferred-username',
     cronWorkflow: 'workflows.argoproj.io/cron-workflow',
     workflowTemplate: 'workflows.argoproj.io/workflow-template'
 };
@@ -107,6 +109,10 @@ export interface Artifact {
     archive?: {
         none?: {};
     };
+    artifactGC?: {
+        strategy?: 'OnWorkflowCompletion' | 'OnWorkflowDeletion';
+    };
+    deleted?: boolean;
 }
 
 /**
@@ -743,6 +749,11 @@ export interface WorkflowSpec {
      * terminate a Running workflow
      */
     activeDeadlineSeconds?: number;
+
+    artifactGC?: {
+        strategy?: 'OnWorkflowCompletion' | 'OnWorkflowDeletion';
+    };
+
     /**
      * TTLStrategy limits the lifetime of a Workflow that has finished execution depending on if it
      * Succeeded or Failed. If this struct is set, once the Workflow finishes, it will be

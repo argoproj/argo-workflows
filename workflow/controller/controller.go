@@ -263,6 +263,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 	go wfc.configMapInformer.Run(ctx.Done())
 	go wfc.wfTaskSetInformer.Informer().Run(ctx.Done())
 	go wfc.taskResultInformer.Run(ctx.Done())
+	wfc.createClusterWorkflowTemplateInformer(ctx)
 
 	// Wait for all involved caches to be synced, before processing items from the queue is started
 	if !cache.WaitForCacheSync(
@@ -276,8 +277,6 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 	) {
 		log.Fatal("Timed out waiting for caches to sync")
 	}
-
-	wfc.createClusterWorkflowTemplateInformer(ctx)
 
 	// Start the metrics server
 	go wfc.metrics.RunServer(ctx)
@@ -420,6 +419,14 @@ func (wfc *WorkflowController) createClusterWorkflowTemplateInformer(ctx context
 	if cwftGetAllowed && cwftListAllowed && cwftWatchAllowed {
 		wfc.cwftmplInformer = informer.NewTolerantClusterWorkflowTemplateInformer(wfc.dynamicInterface, clusterWorkflowTemplateResyncPeriod)
 		go wfc.cwftmplInformer.Informer().Run(ctx.Done())
+
+		// since the above call is asynchronous, make sure we populate our cache before we try to use it later
+		if !cache.WaitForCacheSync(
+			ctx.Done(),
+			wfc.cwftmplInformer.Informer().HasSynced,
+		) {
+			log.Fatal("Timed out waiting for ClusterWorkflowTemplate cache to sync")
+		}
 	} else {
 		log.Warnf("Controller doesn't have RBAC access for ClusterWorkflowTemplates")
 	}

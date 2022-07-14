@@ -43,9 +43,6 @@ func (g *Given) Workflow(text string) *Given {
 	g.t.Helper()
 	g.wf = &wfv1.Workflow{}
 	g.readResource(text, g.wf)
-	if g.wf.Name != "" {
-		g.t.Fatalf("workflow %q, but should use generate name", text)
-	}
 	g.checkImages(g.wf.Spec.Templates)
 	return g
 }

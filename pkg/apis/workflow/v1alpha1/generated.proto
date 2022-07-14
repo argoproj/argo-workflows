@@ -641,7 +641,10 @@ message HTTP {
   // Body is content of the HTTP Request
   optional string body = 5;
 
-  // insecureSkipVerify is a bool when if set to true will skip TLS verification for the HTTP client
+  // BodyFrom is  content of the HTTP Request as Bytes
+  optional HTTPBodySource bodyFrom = 8;
+
+  // InsecureSkipVerify is a bool when if set to true will skip TLS verification for the HTTP client
   optional bool insecureSkipVerify = 7;
 }
 
@@ -663,6 +666,11 @@ message HTTPAuth {
   optional OAuth2Auth oauth2 = 2;
 
   optional BasicAuth basicAuth = 3;
+}
+
+// HTTPBodySource contains the source of the HTTP body.
+message HTTPBodySource {
+  optional bytes bytes = 1;
 }
 
 message HTTPHeader {
@@ -758,6 +766,11 @@ message Link {
 
   // The URL. Can contain "${metadata.namespace}", "${metadata.name}", "${status.startedAt}", "${status.finishedAt}" or any other element in workflow yaml, e.g. "${workflow.metadata.annotations.userDefinedKey}"
   optional string url = 3;
+}
+
+message ManifestFrom {
+  // Artifact contains the artifact to use
+  optional Artifact artifact = 1;
 }
 
 // MemoizationStatus is the status of this memoized node
@@ -1131,6 +1144,9 @@ message ResourceTemplate {
 
   // Manifest contains the kubernetes manifest
   optional string manifest = 3;
+
+  // ManifestFrom is the source for a single kubernetes manifest
+  optional ManifestFrom manifestFrom = 8;
 
   // SetOwnerReference sets the reference to the workflow on the OwnerReference of generated resource.
   optional bool setOwnerReference = 4;

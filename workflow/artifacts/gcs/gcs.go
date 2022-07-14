@@ -315,7 +315,7 @@ func (g *ArtifactDriver) ListObjects(artifact *wfv1.Artifact) ([]string, error) 
 	var files []string
 	err := waitutil.Backoff(defaultRetry,
 		func() (bool, error) {
-			log.Infof("GCS List bucekt: %s, key: %s", artifact.GCS.Bucket, artifact.GCS.Key)
+			log.Infof("GCS List bucket: %s, key: %s", artifact.GCS.Bucket, artifact.GCS.Key)
 			client, err := g.newGCSClient()
 			if err != nil {
 				log.Warnf("Failed to create new GCS client: %v", err)

@@ -2508,8 +2508,9 @@ _No description available_
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
 |`body`|`string`|Body is content of the HTTP Request|
+|`bodyFrom`|[`HTTPBodySource`](#httpbodysource)|BodyFrom is  content of the HTTP Request as Bytes|
 |`headers`|`Array<`[`HTTPHeader`](#httpheader)`>`|Headers are an optional list of headers to send with HTTP requests|
-|`insecureSkipVerify`|`boolean`|insecureSkipVerify is a bool when if set to true will skip TLS verification for the HTTP client|
+|`insecureSkipVerify`|`boolean`|InsecureSkipVerify is a bool when if set to true will skip TLS verification for the HTTP client|
 |`method`|`string`|Method is HTTP methods for HTTP Request|
 |`successCondition`|`string`|SuccessCondition is an expression if evaluated to true is considered successful|
 |`timeoutSeconds`|`integer`|TimeoutSeconds is request timeout for HTTP Request. Default is 30 seconds|
@@ -2786,6 +2787,7 @@ ResourceTemplate is a template subtype to manipulate kubernetes resources
 |`failureCondition`|`string`|FailureCondition is a label selector expression which describes the conditions of the k8s resource in which the step was considered failed|
 |`flags`|`Array< string >`|Flags is a set of additional options passed to kubectl before submitting a resource I.e. to disable resource validation: flags: [	"--validate=false"  # disable resource validation]|
 |`manifest`|`string`|Manifest contains the kubernetes manifest|
+|`manifestFrom`|[`ManifestFrom`](#manifestfrom)|ManifestFrom is the source for a single kubernetes manifest|
 |`mergeStrategy`|`string`|MergeStrategy is the strategy used to merge a patch. It defaults to "strategic" Must be one of: strategic, merge, json|
 |`setOwnerReference`|`boolean`|SetOwnerReference sets the reference to the workflow on the OwnerReference of generated resource.|
 |`successCondition`|`string`|SuccessCondition is a label selector expression which describes the conditions of the k8s resource in which it is acceptable to proceed to the following step|
@@ -3868,6 +3870,15 @@ _No description available_
 |:----------:|:----------:|---------------|
 |`expression`|`string`|Expression defines an expr expression to apply|
 
+## HTTPBodySource
+
+HTTPBodySource contains the source of the HTTP body.
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`bytes`|`byte`|_No description available_|
+
 ## HTTPHeader
 
 _No description available_
@@ -3901,6 +3912,15 @@ Cache is the configuration for the type of cache to be used
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
 |`configMap`|[`ConfigMapKeySelector`](#configmapkeyselector)|ConfigMap sets a ConfigMap-based cache|
+
+## ManifestFrom
+
+_No description available_
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`artifact`|[`Artifact`](#artifact)|Artifact contains the artifact to use|
 
 ## ContinueOn
 

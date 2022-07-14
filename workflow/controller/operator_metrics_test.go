@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 	dto "github.com/prometheus/client_model/go"
@@ -144,6 +145,15 @@ func getMetricStringValue(metric prometheus.Metric) (string, error) {
 		return "", err
 	}
 	return fmt.Sprintf("%v", metricString), nil
+}
+
+func getMetricGaugeValue(metric prometheus.Metric) (*float64, error) {
+	metricString := &dto.Metric{}
+	err := metric.Write(metricString)
+	if err != nil {
+		return nil, err
+	}
+	return metricString.Gauge.Value, nil
 }
 
 var testMetricEmissionSameOperationCreationAndFailure = `
@@ -476,10 +486,26 @@ func TestRealtimeWorkflowMetric(t *testing.T) {
 
 	metricErrorDesc := woc.wf.Spec.Metrics.Prometheus[0].GetDesc()
 	assert.NotNil(t, controller.metrics.GetCustomMetric(metricErrorDesc))
+	value, err := getMetricGaugeValue(controller.metrics.GetCustomMetric(metricErrorDesc))
+	assert.NoError(t, err)
 	metricErrorCounter := controller.metrics.GetCustomMetric(metricErrorDesc)
 	metricErrorCounterString, err := getMetricStringValue(metricErrorCounter)
 	assert.NoError(t, err)
 	assert.Contains(t, metricErrorCounterString, `label:<name:"workflowName" value:"test-foobar" > gauge:<value:`)
+
+	value1, err := getMetricGaugeValue(controller.metrics.GetCustomMetric(metricErrorDesc))
+	assert.NoError(t, err)
+	assert.Greater(t, *value1, *value)
+	woc.markWorkflowSuccess(ctx)
+	controller.metrics.GetCustomMetric(metricErrorDesc)
+	value2, err := getMetricGaugeValue(controller.metrics.GetCustomMetric(metricErrorDesc))
+	assert.NoError(t, err)
+	time.Sleep(10 * time.Millisecond)
+	controller.metrics.GetCustomMetric(metricErrorDesc)
+	value3, err := getMetricGaugeValue(controller.metrics.GetCustomMetric(metricErrorDesc))
+	assert.NoError(t, err)
+	// Duration should be same after workflow complete
+	assert.Equal(t, *value2, *value3)
 }
 
 var testRealtimeWorkflowMetricWithGlobalParameters = `
@@ -782,4 +808,57 @@ func TestControllerRestartWithRunningWorkflow(t *testing.T) {
 	fmt.Println(metricString)
 	assert.NoError(t, err)
 	assert.Contains(t, metricString, `model_a`)
+}
+
+var runtimeWfMetrics = `apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: dag-task-
+spec:
+  entrypoint: dag-task
+  metrics: # Custom metric workflow level
+    prometheus:
+      - name: playground_workflow_new
+        help: "Count of workflow execution by result status  - workflow level"
+        labels:
+          - key: "playground_id_workflow_counter"
+            value: "test"
+          - key: status
+            value: "{{workflow.status}}"
+        counter:
+          value: "1"
+  templates:
+  - name: dag-task
+    dag:
+      tasks:
+      - name: TEST-ONE
+        template: echo
+
+  - name: echo
+    container:
+      image: alpine:3.7
+      command: [echo, "hello"]
+`
+
+func TestRuntimeMetrics(t *testing.T) {
+	cancel, controller := newController()
+	defer cancel()
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+	wf := v1alpha1.MustUnmarshalWorkflow(runtimeWfMetrics)
+	ctx := context.Background()
+	_, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
+	assert.NoError(t, err)
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate(ctx) // create step node
+
+	makePodsPhase(ctx, woc, apiv1.PodSucceeded) // pod is successful - manually workflow is succeeded
+	woc = newWorkflowOperationCtx(woc.wf, controller)
+	woc.operate(ctx) // node status of previous context
+
+	metricDesc := woc.wf.Spec.Metrics.Prometheus[0].GetDesc()
+	metric := controller.metrics.GetCustomMetric(metricDesc)
+	assert.NotNil(t, metric)
+	metricString, err := getMetricStringValue(metric)
+	assert.NoError(t, err)
+	assert.Contains(t, metricString, `Succeeded`)
 }
