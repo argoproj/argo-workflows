@@ -86,7 +86,7 @@ type argoServer struct {
 	eventAsyncDispatch       bool
 	xframeOptions            string
 	accessControlAllowOrigin string
-	apiRateLimiter           apiratelimiter.ApiRateLimiter
+	apiRateLimiter           apiratelimiter.APIRateLimiter 
 	cache                    *cache.ResourceCache
 }
 
@@ -150,7 +150,7 @@ func NewArgoServer(ctx context.Context, opts ArgoServerOpts) (*argoServer, error
 	if err != nil {
 		return nil, err
 	}
-	apiRateLimiter := apiratelimiter.NewApiRateLimiter(opts.ApiRateLimit, opts.ApiRateBurst)
+	apiRateLimiter := apiratelimiter.NewAPIRateLimiter (opts.ApiRateLimit, opts.ApiRateBurst)
 	go apiRateLimiter.CleanupVisitors(1*time.Minute, 5*time.Minute)
 	return &argoServer{
 		baseHRef:                 opts.BaseHRef,

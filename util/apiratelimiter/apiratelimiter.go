@@ -7,7 +7,7 @@ import (
 	"golang.org/x/time/rate"
 )
 
-type ApiRateLimiter interface {
+type APIRateLimiter  interface {
 	GetVisitor(ip string) *rate.Limiter
 }
 
@@ -23,7 +23,7 @@ type apiRateLimiter struct {
 	mu       *sync.RWMutex
 }
 
-func NewApiRateLimiter(limit int, burst int) *apiRateLimiter {
+func NewAPIRateLimiter (limit int, burst int) *apiRateLimiter {
 	// Create a map to hold the rate limiters for each visitor and a mutex.
 	var visitors = make(map[string]*visitor)
 	var mu sync.RWMutex
