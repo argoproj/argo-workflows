@@ -78,7 +78,7 @@ func RatelimitStreamServerInterceptor(ratelimiter apiratelimiter.ApiRateLimiter)
 func getClientIP(ctx context.Context) string {
 	p, ok := peer.FromContext(ctx)
 	if !ok {
-		log.Errorf("couldn't parse client IP address")
+		log.Warnf("couldn't parse client IP address")
 		return ""
 	}
 	address := p.Addr.String()
