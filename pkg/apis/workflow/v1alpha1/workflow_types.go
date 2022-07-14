@@ -90,12 +90,16 @@ type ArtifactGCStrategy string
 const (
 	ArtifactGCOnWorkflowCompletion ArtifactGCStrategy = "OnWorkflowCompletion"
 	ArtifactGCOnWorkflowDeletion   ArtifactGCStrategy = "OnWorkflowDeletion"
+	ArtifactGCOnWorkflowSuccess    ArtifactGCStrategy = "OnWorkflowSuccess"
+	ArtifactGCOnWorkflowFailure    ArtifactGCStrategy = "OnWorkflowFailure"
 	ArtifactGCNever                ArtifactGCStrategy = ""
 )
 
 var AnyArtifactGCStrategy = map[ArtifactGCStrategy]bool{
 	ArtifactGCOnWorkflowCompletion: true,
 	ArtifactGCOnWorkflowDeletion:   true,
+	ArtifactGCOnWorkflowSuccess:    true,
+	ArtifactGCOnWorkflowFailure:    true,
 }
 
 func (s ArtifactGCStrategy) AbbreviatedName() string {
@@ -104,6 +108,10 @@ func (s ArtifactGCStrategy) AbbreviatedName() string {
 		return "wfComp"
 	case ArtifactGCOnWorkflowDeletion:
 		return "wfDel"
+	case ArtifactGCOnWorkflowSuccess:
+		return "wfSuc"
+	case ArtifactGCOnWorkflowFailure:
+		return "wfFail"
 	case ArtifactGCNever:
 		return "never"
 	default:
@@ -970,7 +978,7 @@ type Artifact struct {
 	FromExpression string `json:"fromExpression,omitempty" protobuf:"bytes,11,opt,name=fromExpression"`
 
 	// ArtifactGC describes the strategy to use when to deleting an artifact from completed or deleted workflows
-	ArtifactGC *ArtifactGC `json:"artifactGC,omitempty" protobuf:"bytes,12,opt,name=artifactGC"`
+	ArtifactGCStrategy *ArtifactGCStrategy `json:"artifactGCStrategy,omitempty" protobuf:"bytes,12,opt,name=artifactGCStrategy"`
 
 	// Has this been deleted?
 	Deleted bool `json:"deleted,omitempty" protobuf:"varint,13,opt,name=deleted"`
@@ -1047,6 +1055,10 @@ type ArtifactGC struct {
 	// Strategy is the strategy to use. One of "OnWorkflowCompletion", "OnWorkflowDeletion"
 	// +kubebuilder:validation:Enum="";OnWorkflowCompletion;OnWorkflowDeletion
 	Strategy ArtifactGCStrategy `json:"strategy,omitempty" protobuf:"bytes,1,opt,name=strategy,casttype=ArtifactGCStategy"`
+
+	PodMetadata *Metadata `json:"podMetadata,omitempty" protobuf:"bytes,2,opt,name=podMetadata"`
+
+	ServiceAccountName string `json:"serviceAccountName,omitempty" protobuf:"bytes,3,opt,name=serviceAccountName"`
 }
 
 // GetStrategy returns the VolumeClaimGCStrategy to use for the workflow
@@ -1300,6 +1312,8 @@ type ArtifactSearchQuery struct {
 	NodeId               string                      `json:"nodeId,omitempty" protobuf:"bytes,4,rep,name=nodeId"`
 	Deleted              *bool                       `json:"deleted,omitempty" protobuf:"varint,5,opt,name=deleted"`
 }
+
+type ArtifactGCStatus map[ArtifactGCStrategy]NodePhase //todo: determine if we really want NodePhase - might be confusing
 
 type ArtifactSearchResult struct {
 	Artifact `protobuf:"bytes,1,opt,name=artifact"`
@@ -1746,6 +1760,9 @@ type WorkflowStatus struct {
 
 	// ArtifactRepositoryRef is used to cache the repository to use so we do not need to determine it everytime we reconcile.
 	ArtifactRepositoryRef *ArtifactRepositoryRefStatus `json:"artifactRepositoryRef,omitempty" protobuf:"bytes,18,opt,name=artifactRepositoryRef"`
+
+	// ArtifactGCStatus maintains the status of Artifact Garbage Collection per ArtifactGCStrategy
+	ArtifactGCStatus *ArtifactGCStatus `json:"artifactGCStatus,omitempty" protobuf:"bytes,19,opt,name=artifactGCStatus"`
 }
 
 func (ws *WorkflowStatus) IsOffloadNodeStatus() bool {
