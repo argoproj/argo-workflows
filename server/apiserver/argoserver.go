@@ -108,8 +108,8 @@ type ArgoServerOpts struct {
 	EventAsyncDispatch       bool
 	XFrameOptions            string
 	AccessControlAllowOrigin string
-	ApiRateLimit             int
-	ApiRateBurst             int
+	APIRateLimit             int
+	APIRateBurst             int
 }
 
 func init() {
@@ -150,7 +150,7 @@ func NewArgoServer(ctx context.Context, opts ArgoServerOpts) (*argoServer, error
 	if err != nil {
 		return nil, err
 	}
-	apiRateLimiter := apiratelimiter.NewAPIRateLimiter (opts.ApiRateLimit, opts.ApiRateBurst)
+	apiRateLimiter := apiratelimiter.NewAPIRateLimiter (opts.APIRateLimit, opts.APIRateBurst)
 	go apiRateLimiter.CleanupVisitors(1*time.Minute, 5*time.Minute)
 	return &argoServer{
 		baseHRef:                 opts.BaseHRef,

@@ -167,8 +167,8 @@ See %s`, help.ArgoServer),
 				EventAsyncDispatch:       eventAsyncDispatch,
 				XFrameOptions:            frameOptions,
 				AccessControlAllowOrigin: accessControlAllowOrigin,
-				ApiRateLimit:             apiRateLimit,
-				ApiRateBurst:             apiRateBurst,
+				APIRateLimit:             apiRateLimit,
+				APIRateBurst:             apiRateBurst,
 			}
 			browserOpenFunc := func(url string) {}
 			if enableOpenBrowser {
