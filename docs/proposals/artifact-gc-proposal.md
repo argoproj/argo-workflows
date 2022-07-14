@@ -52,8 +52,8 @@ For reference, these [slides](../assets/artifact-gc-proposal.pptx) were presente
 The [POC](https://github.com/argoproj/argo-workflows/pull/8530) that was done, which uses just one Pod to delete each Artifact, was considered as an alternative for MVP (Option 1 from the slides).
 
 This option has these benefits:
-- simpler in that the Pod doesn't require any additional Object to report status (e.g. WorkflowTaskSet) because it simply succeeds or fails based on its exit code (whereas in Option 2 the Pod needs to report individual failure statuses for each artifact)
-- could have a very minimal ServiceAccount which provides access to just that one artifact's location
+- simpler in that the Pod doesn't require any additional Object to report status (e.g. `WorkflowTaskSet`) because it simply succeeds or fails based on its exit code (whereas in Option 2 the Pod needs to report individual failure statuses for each artifact)
+- could have a very minimal Service Account which provides access to just that one artifact's location
 
 and these drawbacks:
 - deletion is slower when performed by multiple Pods
@@ -62,7 +62,7 @@ and these drawbacks:
 
 #### Service Account/IAM roles
 
-We considered some alternatives for how to specify Service Account and/or Annotations, which are applied to give the GC Pod access (slide 12). We will have them specify this information in a new part of the spec that's specific to the Artifact GC Pod (and applies to all artifacts). Other options considered involve allowing users to specify SAs/Annotations on the template level (which could provide more granular security per pod), but Option 2 is preferred in order to reduce the complexity of the code and reduce the potential number of Pods running. 
+We considered some alternatives for how to specify Service Account and/or Annotations, which are applied to give the GC Pod access (slide 12). We will have them specify this information in a new part of the spec that's specific to the Artifact GC Pod (and applies to all artifacts). Other options considered involve allowing users to specify Service Accounts/Annotations on the template level (which could provide more granular security per pod), but Option 2 is preferred in order to reduce the complexity of the code and reduce the potential number of Pods running. 
 
 
 ### MVP vs post-MVP
@@ -80,4 +80,4 @@ We can reject the Workflow during validation if `ArtifactGC` is configured along
 Need to clarify certain things in our documentation:
 
 1. Users need to know that if they don't name their artifacts with unique keys, they risk the same key being deleted by one Workflow and created by another at the same time. One recommendation is to parametrize the key, e.g. `{{workflow.uid}}/hello.txt`.
-2. Requirement to specify Service Account or Annotation for `ArtifactGC` specifically if they are needed (we won't fall back to default Workflow SA/annotations). Also, the Service Account needs to either be bound to the "agent" role or otherwise allow the same access to WorkflowTaskSets.
+2. Requirement to specify Service Account or Annotation for `ArtifactGC` specifically if they are needed (we won't fall back to default Workflow SA/annotations). Also, the Service Account needs to either be bound to the "agent" role or otherwise allow the same access to `WorkflowTaskSets`.
