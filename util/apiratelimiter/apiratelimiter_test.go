@@ -7,8 +7,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestAPIRateLimiter (t *testing.T) {
-	ratelimiter := NewAPIRateLimiter (1, 1)
+func TestAPIRateLimiter(t *testing.T) {
+	ratelimiter := NewAPIRateLimiter(1, 1)
 	visitor1 := ratelimiter.GetVisitor("123")
 	visitor2 := ratelimiter.GetVisitor("123")
 

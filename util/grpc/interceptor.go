@@ -52,7 +52,7 @@ var (
 )
 
 // RatelimitUnaryServerInterceptor returns a new unary server interceptor that performs request rate limiting.
-func RatelimitUnaryServerInterceptor(ratelimiter apiratelimiter.APIRateLimiter ) grpc.UnaryServerInterceptor {
+func RatelimitUnaryServerInterceptor(ratelimiter apiratelimiter.APIRateLimiter) grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
 		ip := getClientIP(ctx)
 		if !ratelimiter.GetVisitor(ip).Allow() {
@@ -63,7 +63,7 @@ func RatelimitUnaryServerInterceptor(ratelimiter apiratelimiter.APIRateLimiter )
 }
 
 // RatelimitStreamServerInterceptor returns a new stream server interceptor that performs rate limiting on the request.
-func RatelimitStreamServerInterceptor(ratelimiter apiratelimiter.APIRateLimiter ) grpc.StreamServerInterceptor {
+func RatelimitStreamServerInterceptor(ratelimiter apiratelimiter.APIRateLimiter) grpc.StreamServerInterceptor {
 	return func(srv interface{}, stream grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
 		ctx := stream.Context()
 		ip := getClientIP(ctx)

@@ -7,7 +7,7 @@ import (
 	"golang.org/x/time/rate"
 )
 
-type APIRateLimiter  interface {
+type APIRateLimiter interface {
 	GetVisitor(ip string) *rate.Limiter
 }
 
@@ -19,19 +19,16 @@ type visitor struct {
 type apiRateLimiter struct {
 	limit    int
 	burst    int
-	visitors map[string]*visitor
-	mu       *sync.RWMutex
+	visitors *sync.Map
 }
 
-func NewAPIRateLimiter (limit int, burst int) *apiRateLimiter {
+func NewAPIRateLimiter(limit int, burst int) *apiRateLimiter {
 	// Create a map to hold the rate limiters for each visitor and a mutex.
-	var visitors = make(map[string]*visitor)
-	var mu sync.RWMutex
+	var visitors sync.Map
 	return &apiRateLimiter{
 		limit:    limit,
 		burst:    burst,
-		visitors: visitors,
-		mu:       &mu,
+		visitors: &visitors,
 	}
 }
 
@@ -39,27 +36,24 @@ func NewAPIRateLimiter (limit int, burst int) *apiRateLimiter {
 // already exists. Otherwise create a new rate limiter and add it to
 // the visitors map, using the IP address as the key.
 func (r *apiRateLimiter) GetVisitor(ip string) *rate.Limiter {
-	r.mu.RLock()
-	v, exists := r.visitors[ip]
+	value, exists := r.visitors.Load(ip)
 
 	if !exists {
-		r.mu.RUnlock()
 		limiter := rate.NewLimiter(rate.Limit(r.limit), r.burst)
 		// Include the current time when creating a new visitor.
-		r.mu.Lock()
-		r.visitors[ip] = &visitor{limiter, time.Now()}
-		r.mu.Unlock()
+		r.visitors.Store(ip, &visitor{limiter, time.Now()})
 		return limiter
 	}
+
+	v, _ := value.(visitor)
 
 	// Update the last seen time for the visitor
 	now := time.Now()
 	shouldUpdate := v.lastSeen.Before(now.Add(time.Duration(-1) * time.Minute))
-	r.mu.RUnlock()
 	if shouldUpdate {
-		r.mu.Lock()
-		v.lastSeen = now
-		r.mu.Unlock()
+		limiter := rate.NewLimiter(rate.Limit(r.limit), r.burst)
+		r.visitors.Store(ip, &visitor{limiter, now})
+		return limiter
 	}
 
 	return v.limiter
@@ -71,12 +65,12 @@ func (r *apiRateLimiter) CleanupVisitors(freq time.Duration, duration time.Durat
 	for {
 		time.Sleep(freq)
 
-		r.mu.Lock()
-		for ip, v := range r.visitors {
+		r.visitors.Range(func(key, value interface{}) bool {
+			v, _ := value.(visitor)
 			if time.Since(v.lastSeen) > duration {
-				delete(r.visitors, ip)
+				r.visitors.Delete(key)
 			}
-		}
-		r.mu.Unlock()
+			return true
+		})
 	}
 }
