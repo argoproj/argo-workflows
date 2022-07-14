@@ -19,10 +19,9 @@ Artifacts can be specified for Garbage Collection at different stages: `OnWorkfl
 1. Artifact has a boolean `Deleted` flag
 2. `WorkflowStatus.Conditions` can be set to `ArtifactGCError`
 
-
 ### How it will work
 
-For each `ArtifactGCStrategy` the Controller will execute one Pod that runs in the user's namespace and deletes all artifacts pertaining to that strategy. 
+For each `ArtifactGCStrategy` the Controller will execute one Pod that runs in the user's namespace and deletes all artifacts pertaining to that strategy.
 
 ![Option 2 Flow](../assets/artifact-gc-option-2-flow.jpg)
 
@@ -42,7 +41,6 @@ Once it retries a few times, if it didn't succeed, it will end in a "Failed" sta
 
 The Failure will be reflected in both the Workflow Conditions as well as as a Kubernetes Event (and the Artifacts that failed will have "Deleted"=false).
 
-
 ### Alternatives Considered
 
 For reference, these [slides](../assets/artifact-gc-proposal.pptx) were presented to the Argo Contributor meeting on 7/12/22 which go through some of the alternative options that were weighed. These alternatives are explained below:
@@ -52,18 +50,19 @@ For reference, these [slides](../assets/artifact-gc-proposal.pptx) were presente
 The [POC](https://github.com/argoproj/argo-workflows/pull/8530) that was done, which uses just one Pod to delete each Artifact, was considered as an alternative for MVP (Option 1 from the slides).
 
 This option has these benefits:
+
 - simpler in that the Pod doesn't require any additional Object to report status (e.g. `WorkflowTaskSet`) because it simply succeeds or fails based on its exit code (whereas in Option 2 the Pod needs to report individual failure statuses for each artifact)
 - could have a very minimal Service Account which provides access to just that one artifact's location
 
 and these drawbacks:
+
 - deletion is slower when performed by multiple Pods
-- a Workflow with thousands of artifacts causes thousands of Pods to get executed, which could overwhelm kube-scheduler and kube-apiserver. 
+- a Workflow with thousands of artifacts causes thousands of Pods to get executed, which could overwhelm kube-scheduler and kube-apiserver.
 - if we delay the Artifact GC Pods by giving them a lower priority than the Workflow Pods, users will not get their artifacts deleted when they expect and may log bugs
 
 #### Service Account/IAM roles
 
-We considered some alternatives for how to specify Service Account and/or Annotations, which are applied to give the GC Pod access (slide 12). We will have them specify this information in a new part of the spec that's specific to the Artifact GC Pod (and applies to all artifacts). Other options considered involve allowing users to specify Service Accounts/Annotations on the template level (which could provide more granular security per pod), but Option 2 is preferred in order to reduce the complexity of the code and reduce the potential number of Pods running. 
-
+We considered some alternatives for how to specify Service Account and/or Annotations, which are applied to give the GC Pod access (slide 12). We will have them specify this information in a new part of the spec that's specific to the Artifact GC Pod (and applies to all artifacts). Other options considered involve allowing users to specify Service Accounts/Annotations on the template level (which could provide more granular security per pod), but Option 2 is preferred in order to reduce the complexity of the code and reduce the potential number of Pods running.
 
 ### MVP vs post-MVP
 
