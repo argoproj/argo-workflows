@@ -1342,6 +1342,12 @@ func (w *Workflow) SearchArtifacts(q *ArtifactSearchQuery) ArtifactSearchResults
 	var results ArtifactSearchResults
 
 	for _, n := range w.Status.Nodes {
+		if q.TemplateName != "" && n.TemplateName != q.TemplateName {
+			continue
+		}
+		if q.NodeId != "" && n.ID != q.NodeId {
+			continue
+		}
 		for _, a := range n.GetOutputs().GetArtifacts() {
 			match := true
 			if q.anyArtifactGCStrategy() {
@@ -1358,12 +1364,6 @@ func (w *Workflow) SearchArtifacts(q *ArtifactSearchQuery) ArtifactSearchResults
 				}
 			}
 			if q.ArtifactName != "" && a.Name != q.ArtifactName {
-				match = false
-			}
-			if q.TemplateName != "" && n.TemplateName != q.TemplateName {
-				match = false
-			}
-			if q.NodeId != "" && n.ID != q.NodeId {
 				match = false
 			}
 			if q.Deleted != nil && a.Deleted != *q.Deleted {
