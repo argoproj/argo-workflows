@@ -667,6 +667,9 @@ func FormulateResubmitWorkflow(wf *wfv1.Workflow, memoized bool, parameters []st
 
 	// Override parameters
 	if parameters != nil {
+		if _, ok := wf.ObjectMeta.Labels[common.LabelKeyPreviousWorkflowName]; ok || memoized {
+			log.Warnln("Overriding parameters on memoized or resubmitted workflows may have unexpected results")
+		}
 		err := overrideParameters(&newWF, parameters)
 		if err != nil {
 			return nil, err
@@ -770,6 +773,9 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 	}
 	// Override parameters
 	if parameters != nil {
+		if _, ok := wf.ObjectMeta.Labels[common.LabelKeyPreviousWorkflowName]; ok {
+			log.Warnln("Overriding parameters on resubmitted workflows may have unexpected results")
+		}
 		err := overrideParameters(newWF, parameters)
 		if err != nil {
 			return nil, nil, err
