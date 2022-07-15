@@ -55,8 +55,7 @@ func NewServerCommand() *cobra.Command {
 		eventAsyncDispatch       bool
 		frameOptions             string
 		accessControlAllowOrigin string
-		apiRateLimit             int
-		apiRateBurst             int
+		apiRateLimit             uint64
 		allowedLinkProtocol      []string
 		logFormat                string // --log-format
 	)
@@ -169,7 +168,6 @@ See %s`, help.ArgoServer),
 				XFrameOptions:            frameOptions,
 				AccessControlAllowOrigin: accessControlAllowOrigin,
 				APIRateLimit:             apiRateLimit,
-				APIRateBurst:             apiRateBurst,
 				AllowedLinkProtocol:      allowedLinkProtocol,
 			}
 			browserOpenFunc := func(url string) {}
@@ -230,8 +228,7 @@ See %s`, help.ArgoServer),
 	command.Flags().BoolVar(&eventAsyncDispatch, "event-async-dispatch", false, "dispatch event async")
 	command.Flags().StringVar(&frameOptions, "x-frame-options", "DENY", "Set X-Frame-Options header in HTTP responses.")
 	command.Flags().StringVar(&accessControlAllowOrigin, "access-control-allow-origin", "", "Set Access-Control-Allow-Origin header in HTTP responses.")
-	command.Flags().IntVar(&apiRateLimit, "api-rate-limit", 1000, "Set limit per IP for api ratelimiter")
-	command.Flags().IntVar(&apiRateBurst, "api-rate-burst", 1000, "Set burst per IP for api ratelimiter")
+	command.Flags().Uint64Var(&apiRateLimit, "api-rate-limit", 1000, "Set limit per IP for api ratelimiter")
 	command.Flags().StringArrayVar(&allowedLinkProtocol, "allowed-link-protocol", defaultAllowedLinkProtocol, "Allowed link protocol in configMap. Used if the allowed configMap links protocol are different from http,https. Defaults to the environment variable ALLOWED_LINK_PROTOCOL")
 	command.Flags().StringVar(&logFormat, "log-format", "text", "The formatter to use for logs. One of: text|json")
 

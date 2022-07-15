@@ -56,13 +56,15 @@ import (
 	"github.com/argoproj/argo-workflows/v3/server/workflow"
 	"github.com/argoproj/argo-workflows/v3/server/workflowarchive"
 	"github.com/argoproj/argo-workflows/v3/server/workflowtemplate"
-	"github.com/argoproj/argo-workflows/v3/util/apiratelimiter"
 	grpcutil "github.com/argoproj/argo-workflows/v3/util/grpc"
 	"github.com/argoproj/argo-workflows/v3/util/instanceid"
 	"github.com/argoproj/argo-workflows/v3/util/json"
 	"github.com/argoproj/argo-workflows/v3/workflow/artifactrepositories"
 	"github.com/argoproj/argo-workflows/v3/workflow/events"
 	"github.com/argoproj/argo-workflows/v3/workflow/hydrator"
+
+	limiter "github.com/sethvargo/go-limiter"
+	"github.com/sethvargo/go-limiter/memorystore"
 )
 
 var MaxGRPCMessageSize int
@@ -84,7 +86,7 @@ type argoServer struct {
 	eventAsyncDispatch       bool
 	xframeOptions            string
 	accessControlAllowOrigin string
-	apiRateLimiter           apiratelimiter.APIRateLimiter
+	apiRateLimiter           limiter.Store
 	allowedLinkProtocol      []string
 	cache                    *cache.ResourceCache
 }
@@ -107,8 +109,7 @@ type ArgoServerOpts struct {
 	EventAsyncDispatch       bool
 	XFrameOptions            string
 	AccessControlAllowOrigin string
-	APIRateLimit             int
-	APIRateBurst             int
+	APIRateLimit             uint64
 	AllowedLinkProtocol      []string
 }
 
@@ -150,8 +151,15 @@ func NewArgoServer(ctx context.Context, opts ArgoServerOpts) (*argoServer, error
 	if err != nil {
 		return nil, err
 	}
-	apiRateLimiter := apiratelimiter.NewAPIRateLimiter(opts.APIRateLimit, opts.APIRateBurst)
-	go apiRateLimiter.CleanupVisitors(1*time.Minute, 5*time.Minute)
+	store, err := memorystore.New(&memorystore.Config{
+		Tokens:   opts.APIRateLimit,
+		Interval: time.Minute,
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer store.Close(ctx)
+
 	return &argoServer{
 		baseHRef:                 opts.BaseHRef,
 		tlsConfig:                opts.TLSConfig,
@@ -168,7 +176,7 @@ func NewArgoServer(ctx context.Context, opts ArgoServerOpts) (*argoServer, error
 		eventAsyncDispatch:       opts.EventAsyncDispatch,
 		xframeOptions:            opts.XFrameOptions,
 		accessControlAllowOrigin: opts.AccessControlAllowOrigin,
-		apiRateLimiter:           apiRateLimiter,
+		apiRateLimiter:           store,
 		allowedLinkProtocol:      opts.AllowedLinkProtocol,
 		cache:                    resourceCache,
 	}, nil
@@ -415,10 +423,13 @@ func (as *argoServer) httpLimit(next http.Handler) http.Handler {
 			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 			return
 		}
-		// Call the getVisitor function to retrieve the rate limiter for
-		// the current user.
-		limiter := as.apiRateLimiter.GetVisitor(ip)
-		if !limiter.Allow() {
+		ctx := r.Context()
+		_, _, _, ok, err := as.apiRateLimiter.Take(ctx, ip)
+		if err != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+			return
+		}
+		if !ok {
 			http.Error(w, http.StatusText(429), http.StatusTooManyRequests)
 			return
 		}
