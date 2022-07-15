@@ -153,7 +153,7 @@ func NewArgoServer(ctx context.Context, opts ArgoServerOpts) (*argoServer, error
 	}
 	store, err := memorystore.New(&memorystore.Config{
 		Tokens:   opts.APIRateLimit,
-		Interval: time.Minute,
+		Interval: time.Second,
 	})
 	if err != nil {
 		log.Fatal(err)
