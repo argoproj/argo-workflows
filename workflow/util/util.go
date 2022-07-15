@@ -796,6 +796,10 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 				}
 				continue
 			}
+			if doForceResetNode {
+				newNode := node.DeepCopy()
+				newWF.Status.Nodes[newNode.ID] = resetNode(*newNode)
+			}
 		case wfv1.NodeError, wfv1.NodeFailed, wfv1.NodeOmitted:
 			if !strings.HasPrefix(node.Name, onExitNodeName) && (node.Type == wfv1.NodeTypeDAG || node.Type == wfv1.NodeTypeTaskGroup || node.Type == wfv1.NodeTypeStepGroup) {
 				newNode := node.DeepCopy()
