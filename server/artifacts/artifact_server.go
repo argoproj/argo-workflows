@@ -155,8 +155,10 @@ func (a *ArtifactServer) GetArtifactFile(w http.ResponseWriter, r *http.Request)
 	if !isDir {
 		isDir, err := driver.IsDirectory(artifact)
 		if err != nil {
-			a.serverInternalError(err, w)
-			return
+			if !argoerrors.IsCode(argoerrors.CodeNotImplemented, err) {
+				a.serverInternalError(err, w)
+				return
+			}
 		}
 		if isDir {
 			http.Redirect(w, r, r.URL.String()+"/", http.StatusTemporaryRedirect)
