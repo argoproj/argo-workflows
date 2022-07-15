@@ -119,13 +119,12 @@ func (woc *wfOperationCtx) processArtifactGCStrategy(ctx context.Context, strate
 	// If so, we don't want to run it again; however, if it's in a "Running" state we should make sure the Pod exists -
 	// it's possible if it's in this state, then it was evicted and we need to rerun it
 	if woc.wf.Status.ArtifactGCStatus == nil {
-		statusMap := make(wfv1.ArtifactGCStatus)
-		woc.wf.Status.ArtifactGCStatus = &statusMap
+		woc.wf.Status.ArtifactGCStatus = make(wfv1.ArtifactGCStatus)
 	}
 	podRan := false
-	status, exists := (*woc.wf.Status.ArtifactGCStatus)[strategy]
+	status, exists := woc.wf.Status.ArtifactGCStatus[strategy]
 	if !exists {
-		(*woc.wf.Status.ArtifactGCStatus)[strategy] = wfv1.NodePending
+		woc.wf.Status.ArtifactGCStatus[strategy] = wfv1.NodePending
 	} else {
 		podRan = (status == wfv1.NodeSucceeded || status == wfv1.NodeFailed)
 	}
