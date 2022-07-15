@@ -887,27 +887,61 @@ func TestFormulateRetryWorkflow(t *testing.T) {
 
 		}
 	})
-	t.Run("Nested DAG", func(t *testing.T) {
+	t.Run("Nested DAG with Non-group Node Selected", func(t *testing.T) {
 		wf := &wfv1.Workflow{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:   "my-nested-dag",
+				Name:   "my-nested-dag-1",
 				Labels: map[string]string{},
 			},
 			Status: wfv1.WorkflowStatus{
 				Phase: wfv1.WorkflowFailed,
 				Nodes: map[string]wfv1.NodeStatus{
-					"1": {ID: "1", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypeTaskGroup},
-					"2": {ID: "2", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypeTaskGroup, BoundaryID: "1"},
-					"3": {ID: "3", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypePod, BoundaryID: "2"},
-					"4": {ID: "4", Phase: wfv1.NodeFailed, Type: wfv1.NodeTypePod, BoundaryID: "1"}},
+					"my-nested-dag-1": {ID: "my-nested-dag-1", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypeTaskGroup},
+					"1":               {ID: "1", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypeTaskGroup, BoundaryID: "my-nested-dag-1"},
+					"2":               {ID: "2", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypeTaskGroup, BoundaryID: "1"},
+					"3":               {ID: "3", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypePod, BoundaryID: "2"},
+					"4":               {ID: "4", Phase: wfv1.NodeFailed, Type: wfv1.NodeTypePod, BoundaryID: "1"}},
 			},
 		}
 		_, err := wfClient.Create(ctx, wf, metav1.CreateOptions{})
 		assert.NoError(t, err)
-		wf, _, err = FormulateRetryWorkflow(ctx, wf, false, "")
+		wf, _, err = FormulateRetryWorkflow(ctx, wf, true, "id=3")
 		if assert.NoError(t, err) {
-			if assert.Len(t, wf.Status.Nodes, 4) {
+			if assert.Len(t, wf.Status.Nodes, 5) {
+				assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes["my-nested-dag-1"].Phase)
+				// These should all be running since the child node #3 belongs up to node #1.
 				assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["1"].Phase)
+				assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["2"].Phase)
+				assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["3"].Phase)
+				assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["4"].Phase)
+			}
+		}
+	})
+	t.Run("Nested DAG without Node Selected", func(t *testing.T) {
+		wf := &wfv1.Workflow{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:   "my-nested-dag-2",
+				Labels: map[string]string{},
+			},
+			Status: wfv1.WorkflowStatus{
+				Phase: wfv1.WorkflowFailed,
+				Nodes: map[string]wfv1.NodeStatus{
+					"my-nested-dag-2": {ID: "my-nested-dag-2", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypeTaskGroup},
+					"1":               {ID: "1", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypeTaskGroup, BoundaryID: "my-nested-dag-2"},
+					"2":               {ID: "2", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypeTaskGroup, BoundaryID: "1"},
+					"3":               {ID: "3", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypePod, BoundaryID: "2"},
+					"4":               {ID: "4", Phase: wfv1.NodeFailed, Type: wfv1.NodeTypePod, BoundaryID: "1"}},
+			},
+		}
+		_, err := wfClient.Create(ctx, wf, metav1.CreateOptions{})
+		assert.NoError(t, err)
+		wf, _, err = FormulateRetryWorkflow(ctx, wf, true, "")
+		if assert.NoError(t, err) {
+			if assert.Len(t, wf.Status.Nodes, 5) {
+				assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes["my-nested-dag-2"].Phase)
+				// This should be running since it's node #4's parent node.
+				assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["1"].Phase)
+				// This should be running since it's node #1's child node and node #1 is being retried.
 				assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["2"].Phase)
 				assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes["3"].Phase)
 				assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["4"].Phase)
