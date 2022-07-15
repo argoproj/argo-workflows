@@ -81,7 +81,7 @@ message Artifact {
   optional string fromExpression = 11;
 
   // ArtifactGC describes the strategy to use when to deleting an artifact from completed or deleted workflows
-  optional ArtifactGC artifactGC = 12;
+  optional string artifactGCStrategy = 12;
 
   // Has this been deleted?
   optional bool deleted = 13;
@@ -92,6 +92,10 @@ message ArtifactGC {
   // Strategy is the strategy to use. One of "OnWorkflowCompletion", "OnWorkflowDeletion"
   // +kubebuilder:validation:Enum="";OnWorkflowCompletion;OnWorkflowDeletion
   optional string strategy = 1;
+
+  optional Metadata podMetadata = 2;
+
+  optional string serviceAccountName = 3;
 }
 
 // ArtifactLocation describes a location for a single or multiple artifacts.
@@ -185,6 +189,8 @@ message ArtifactSearchQuery {
   optional string templateName = 3;
 
   optional string nodeId = 4;
+
+  optional bool deleted = 5;
 }
 
 message ArtifactSearchResult {
@@ -1920,6 +1926,9 @@ message WorkflowStatus {
 
   // ArtifactRepositoryRef is used to cache the repository to use so we do not need to determine it everytime we reconcile.
   optional ArtifactRepositoryRefStatus artifactRepositoryRef = 18;
+
+  // ArtifactGCStatus maintains the status of Artifact Garbage Collection per ArtifactGCStrategy
+  map<string, string> artifactGCStatus = 19;
 }
 
 // WorkflowStep is a reference to a template to execute in a series of step

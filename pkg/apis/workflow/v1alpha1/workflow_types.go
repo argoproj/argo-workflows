@@ -226,7 +226,7 @@ func (w *Workflow) HasArtifactGC() bool {
 	// either it's defined by an Output Artifact or by the WorkflowSpec itself, or both
 	for _, template := range w.Spec.Templates {
 		for _, artifact := range template.Outputs.Artifacts {
-			if artifact.GetArtifactGC().Strategy != ArtifactGCNever {
+			if artifact.GetArtifactGCStrategy() != ArtifactGCNever {
 				return true
 			}
 		}
@@ -985,12 +985,12 @@ type Artifact struct {
 }
 
 // ArtifactGC returns the ArtifactGC that was defined by the artifact.  If none was provided, a default value is returned.
-func (a *Artifact) GetArtifactGC() *ArtifactGC {
-	if a.ArtifactGC == nil {
-		return &ArtifactGC{Strategy: ArtifactGCNever}
+func (a *Artifact) GetArtifactGCStrategy() ArtifactGCStrategy {
+	if a.ArtifactGCStrategy == nil {
+		return ArtifactGCNever
 	}
 
-	return a.ArtifactGC
+	return *a.ArtifactGCStrategy
 }
 
 // CleanPath validates and cleans the artifact path.
@@ -1353,7 +1353,7 @@ func (w *Workflow) SearchArtifacts(q *ArtifactSearchQuery) ArtifactSearchResults
 			if q.anyArtifactGCStrategy() {
 				// artifact strategy is either based on overall Workflow ArtifactGC Strategy, or
 				// if it's specified on the individual artifact level that takes priority
-				artifactStrategy := a.GetArtifactGC().GetStrategy()
+				artifactStrategy := a.GetArtifactGCStrategy()
 				wfStrategy := w.Spec.GetArtifactGC().GetStrategy()
 				strategy := wfStrategy
 				if artifactStrategy != ArtifactGCNever {
@@ -1762,7 +1762,7 @@ type WorkflowStatus struct {
 	ArtifactRepositoryRef *ArtifactRepositoryRefStatus `json:"artifactRepositoryRef,omitempty" protobuf:"bytes,18,opt,name=artifactRepositoryRef"`
 
 	// ArtifactGCStatus maintains the status of Artifact Garbage Collection per ArtifactGCStrategy
-	ArtifactGCStatus *ArtifactGCStatus `json:"artifactGCStatus,omitempty" protobuf:"bytes,19,opt,name=artifactGCStatus"`
+	ArtifactGCStatus ArtifactGCStatus `json:"artifactGCStatus,omitempty" protobuf:"bytes,19,opt,name=artifactGCStatus"`
 }
 
 func (ws *WorkflowStatus) IsOffloadNodeStatus() bool {

@@ -4,9 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	corev1 "k8s.io/api/core/v1"
-	apierr "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/env"
 	"k8s.io/utils/pointer"
@@ -58,6 +55,7 @@ func (woc *wfOperationCtx) garbageCollectArtifacts(ctx context.Context) error {
 			return err
 		}
 	}
+	return nil
 }
 
 /*pods, err := woc.controller.podInformer.GetIndexer().ByIndex(indexes.WorkflowIndex, woc.wf.GetNamespace()+"/"+woc.wf.GetName())
@@ -149,7 +147,7 @@ func (woc *wfOperationCtx) processArtifactGCStrategy(ctx context.Context, strate
 					woc.createArtifactGCTaskSet(ctx, wfts)
 				}
 				// create the pod
-				woc.createArtifactGCPod(ctx)
+				//woc.createArtifactGCPod(ctx)
 			}
 		}
 	}
@@ -185,8 +183,8 @@ func (woc *wfOperationCtx) processArtifactGCStrategy(ctx context.Context, strate
 			woc.log.Info("no remaining artifacts to GC, removing artifact GC finalizer")
 			woc.wf.Finalizers = slice.RemoveString(woc.wf.Finalizers, common.FinalizerArtifactGC)
 			woc.updated = true
-		}
-		return nil*/
+		}*/
+	return nil
 }
 
 func (woc *wfOperationCtx) artGCPodName(strategy wfv1.ArtifactGCStrategy) string {
@@ -272,25 +270,7 @@ func (woc *wfOperationCtx) createArtifactGCTaskSet(ctx context.Context, taskSet 
 	return nil
 }
 
-//todo: determine if this is optimal wrt the SearchArtifacts query logic
-/*func (woc *wfOperationCtx) generateMapOfNodes(templates []*wfv1.Template) map[string]wfv1.Template {
-
-	// create map of templates by name so we can do easy look up of template names below
-	templateMap := make(map[string]*wfv1.Template)
-	for _, template := range templates {
-		templateMap[template.Name] = template
-	}
-
-	nodeMap := make(map[string]wfv1.Template)
-
-	for _, n := range woc.wf.Status.Nodes {
-		template, found := templateMap[n.TemplateName]
-		if found {
-			nodeMap[n.ID] = *template
-		}
-	}
-	return nodeMap
-}*/
+/*
 
 func (woc *wfOperationCtx) createArtifactGCPod(ctx context.Context, strategy wfv1.ArtifactGCStrategy, serviceAcct string, artifacts wfv1.ArtifactSearchResults, templates []*wfv1.Template) error {
 
@@ -332,16 +312,17 @@ func (woc *wfOperationCtx) createArtifactGCPod(ctx context.Context, strategy wfv
 	if err := a.Relocate(ar.ToArtifactLocation()); err != nil {
 		return fmt.Errorf("failed to relocate artifact: %w", err)
 	}*/
-
+/*
 	woc.log.
 		WithField("strategy", strategy).
 		WithField("serviceAcct", serviceAcct).
 		Infof("create pod to delete artifacts: %s", podName)
-
-	/*data, err := json.Marshal(a)
-	if err != nil {
-		return fmt.Errorf("failed to marshall artifact: %w", err)
-	}*/
+*/
+/*data, err := json.Marshal(a)
+if err != nil {
+	return fmt.Errorf("failed to marshall artifact: %w", err)
+}*/
+/*
 	volumes, volumeMounts := createSecretVolumes(templates, false, true)
 
 	//volumes, volumeMounts := createSecretVolumes(&wfv1.Template{Outputs: wfv1.Outputs{Artifacts: []wfv1.Artifact{a.Artifact}}})
@@ -358,6 +339,7 @@ func (woc *wfOperationCtx) createArtifactGCPod(ctx context.Context, strategy wfv
 				common.AnnotationKeyNodeID:    a.NodeID,
 				common.AnnotationArtifactName: a.Name,
 			},*/
+/*
 			OwnerReferences: []metav1.OwnerReference{ // make sure we get deleted with the workflow
 				*metav1.NewControllerRef(woc.wf, wfv1.SchemeGroupVersion.WithKind(workflow.WorkflowKind)),
 			},
@@ -427,3 +409,4 @@ func (woc *wfOperationCtx) createArtifactGCPod(ctx context.Context, strategy wfv
 	}
 	return nil
 }
+*/
