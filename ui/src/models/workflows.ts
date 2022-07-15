@@ -718,7 +718,7 @@ export interface Condition {
     message: string;
 }
 
-export type ConditionType = 'Completed' | 'SpecWarning' | 'MetricsError' | 'SubmissionError' | 'SpecError';
+export type ConditionType = 'Completed' | 'SpecWarning' | 'MetricsError' | 'SubmissionError' | 'SpecError' | 'ArtifactGCError';
 export type ConditionStatus = 'True' | 'False' | 'Unknown';
 
 /**
