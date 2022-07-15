@@ -47,6 +47,7 @@ argo archive retry [WORKFLOW...] [flags]
       --log                          log the workflow until it completes
       --node-field-selector string   selector of nodes to reset, eg: --node-field-selector inputs.paramaters.myparam.value=abc
   -o, --output string                Output format. One of: name|json|yaml|wide
+  -p, --parameter stringArray        input parameter to override on the original workflow spec
       --restart-successful           indicates to restart successful nodes matching the --node-field-selector
   -l, --selector string              Selector (label query) to filter on, not including uninitialized ones, supports '=', '==', and '!='.(e.g. -l key1=value1,key2=value2)
   -w, --wait                         wait for the workflow to complete, only works when a single workflow is retried

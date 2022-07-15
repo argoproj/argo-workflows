@@ -275,10 +275,27 @@ func ApplySubmitOpts(wf *wfv1.Workflow, opts *wfv1.SubmitOpts) error {
 		}
 	}
 	wf.SetAnnotations(wfAnnotations)
-	if len(opts.Parameters) > 0 {
+	err := overrideParameters(wf, opts.Parameters)
+	if err != nil {
+		return err
+	}
+	if opts.GenerateName != "" {
+		wf.ObjectMeta.GenerateName = opts.GenerateName
+	}
+	if opts.Name != "" {
+		wf.ObjectMeta.Name = opts.Name
+	}
+	if opts.OwnerReference != nil {
+		wf.SetOwnerReferences(append(wf.GetOwnerReferences(), *opts.OwnerReference))
+	}
+	return nil
+}
+
+func overrideParameters(wf *wfv1.Workflow, parameters []string) error {
+	if len(parameters) > 0 {
 		newParams := make([]wfv1.Parameter, 0)
 		passedParams := make(map[string]bool)
-		for _, paramStr := range opts.Parameters {
+		for _, paramStr := range parameters {
 			parts := strings.SplitN(paramStr, "=", 2)
 			if len(parts) != 2 {
 				return fmt.Errorf("expected parameter of the form: NAME=VALUE. Received: %s", paramStr)
@@ -295,15 +312,6 @@ func ApplySubmitOpts(wf *wfv1.Workflow, opts *wfv1.SubmitOpts) error {
 			newParams = append(newParams, param)
 		}
 		wf.Spec.Arguments.Parameters = newParams
-	}
-	if opts.GenerateName != "" {
-		wf.ObjectMeta.GenerateName = opts.GenerateName
-	}
-	if opts.Name != "" {
-		wf.ObjectMeta.Name = opts.Name
-	}
-	if opts.OwnerReference != nil {
-		wf.SetOwnerReferences(append(wf.GetOwnerReferences(), *opts.OwnerReference))
 	}
 	return nil
 }
@@ -600,7 +608,7 @@ func RandSuffix() string {
 }
 
 // FormulateResubmitWorkflow formulate a new workflow from a previous workflow, optionally re-using successful nodes
-func FormulateResubmitWorkflow(wf *wfv1.Workflow, memoized bool) (*wfv1.Workflow, error) {
+func FormulateResubmitWorkflow(wf *wfv1.Workflow, memoized bool, parameters []string) (*wfv1.Workflow, error) {
 	newWF := wfv1.Workflow{}
 	newWF.TypeMeta = wf.TypeMeta
 
@@ -656,6 +664,17 @@ func FormulateResubmitWorkflow(wf *wfv1.Workflow, memoized bool) (*wfv1.Workflow
 
 	// Setting OwnerReference from original Workflow
 	newWF.OwnerReferences = append(newWF.OwnerReferences, wf.OwnerReferences...)
+
+	// Override parameters
+	if parameters != nil {
+		if _, ok := wf.ObjectMeta.Labels[common.LabelKeyPreviousWorkflowName]; ok || memoized {
+			log.Warnln("Overriding parameters on memoized or resubmitted workflows may have unexpected results")
+		}
+		err := overrideParameters(&newWF, parameters)
+		if err != nil {
+			return nil, err
+		}
+	}
 
 	if !memoized {
 		return &newWF, nil
@@ -727,7 +746,7 @@ func convertNodeID(newWf *wfv1.Workflow, regex *regexp.Regexp, oldNodeID string,
 }
 
 // FormulateRetryWorkflow formulates a previous workflow to be retried, deleting all failed steps as well as the onExit node (and children)
-func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSuccessful bool, nodeFieldSelector string) (*wfv1.Workflow, []string, error) {
+func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSuccessful bool, nodeFieldSelector string, parameters []string) (*wfv1.Workflow, []string, error) {
 
 	switch wf.Status.Phase {
 	case wfv1.WorkflowFailed, wfv1.WorkflowError:
@@ -751,6 +770,16 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 	if newWF.Spec.ActiveDeadlineSeconds != nil && *newWF.Spec.ActiveDeadlineSeconds == 0 {
 		// if it was terminated, unset the deadline
 		newWF.Spec.ActiveDeadlineSeconds = nil
+	}
+	// Override parameters
+	if parameters != nil {
+		if _, ok := wf.ObjectMeta.Labels[common.LabelKeyPreviousWorkflowName]; ok {
+			log.Warnln("Overriding parameters on resubmitted workflows may have unexpected results")
+		}
+		err := overrideParameters(newWF, parameters)
+		if err != nil {
+			return nil, nil, err
+		}
 	}
 
 	onExitNodeName := wf.ObjectMeta.Name + ".onExit"
