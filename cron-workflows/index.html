@@ -4023,45 +4023,45 @@
 <table>
 <thead>
 <tr>
-<th align="center">Option Name</th>
-<th align="center">Default Value</th>
+<th style="text-align: center;">Option Name</th>
+<th style="text-align: center;">Default Value</th>
 <th>Description</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td align="center"><code>schedule</code></td>
-<td align="center">None, must be provided</td>
+<td style="text-align: center;"><code>schedule</code></td>
+<td style="text-align: center;">None, must be provided</td>
 <td>Schedule at which the <code>Workflow</code> will be run. E.g. <code>5 4 * * *</code></td>
 </tr>
 <tr>
-<td align="center"><code>timezone</code></td>
-<td align="center">Machine timezone</td>
+<td style="text-align: center;"><code>timezone</code></td>
+<td style="text-align: center;">Machine timezone</td>
 <td>Timezone during which the Workflow will be run from the IANA timezone standard, e.g. <code>America/Los_Angeles</code></td>
 </tr>
 <tr>
-<td align="center"><code>suspend</code></td>
-<td align="center"><code>false</code></td>
+<td style="text-align: center;"><code>suspend</code></td>
+<td style="text-align: center;"><code>false</code></td>
 <td>If <code>true</code> Workflow scheduling will not occur. Can be set from the CLI, GitOps, or directly</td>
 </tr>
 <tr>
-<td align="center"><code>concurrencyPolicy</code></td>
-<td align="center"><code>Allow</code></td>
+<td style="text-align: center;"><code>concurrencyPolicy</code></td>
+<td style="text-align: center;"><code>Allow</code></td>
 <td>Policy that determines what to do if multiple <code>Workflows</code> are scheduled at the same time. Available options: <code>Allow</code>: allow all, <code>Replace</code>: remove all old before scheduling a new, <code>Forbid</code>: do not allow any new while there are old</td>
 </tr>
 <tr>
-<td align="center"><code>startingDeadlineSeconds</code></td>
-<td align="center"><code>0</code></td>
+<td style="text-align: center;"><code>startingDeadlineSeconds</code></td>
+<td style="text-align: center;"><code>0</code></td>
 <td>Number of seconds after the last successful run during which a missed <code>Workflow</code> will be run</td>
 </tr>
 <tr>
-<td align="center"><code>successfulJobsHistoryLimit</code></td>
-<td align="center"><code>3</code></td>
+<td style="text-align: center;"><code>successfulJobsHistoryLimit</code></td>
+<td style="text-align: center;"><code>3</code></td>
 <td>Number of successful <code>Workflows</code> that will be persisted at a time</td>
 </tr>
 <tr>
-<td align="center"><code>failedJobsHistoryLimit</code></td>
-<td align="center"><code>1</code></td>
+<td style="text-align: center;"><code>failedJobsHistoryLimit</code></td>
+<td style="text-align: center;"><code>1</code></td>
 <td>Number of failed <code>Workflows</code> that will be persisted at a time</td>
 </tr>
 </tbody>
