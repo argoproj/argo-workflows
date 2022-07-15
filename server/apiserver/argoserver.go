@@ -158,7 +158,6 @@ func NewArgoServer(ctx context.Context, opts ArgoServerOpts) (*argoServer, error
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer store.Close(ctx)
 
 	return &argoServer{
 		baseHRef:                 opts.BaseHRef,
