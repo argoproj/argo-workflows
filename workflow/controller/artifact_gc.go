@@ -50,6 +50,7 @@ func (woc *wfOperationCtx) garbageCollectArtifacts(ctx context.Context) error {
 	}
 
 	for strategy, _ := range strategies {
+		woc.log.Debugf("processing Artifact GC Strategy %s", strategy)
 		err := woc.processArtifactGCStrategy(ctx, strategy)
 		if err != nil {
 			return err
@@ -128,6 +129,7 @@ func (woc *wfOperationCtx) processArtifactGCStrategy(ctx context.Context, strate
 	} else {
 		podRan = (status == wfv1.NodeSucceeded || status == wfv1.NodeFailed)
 	}
+	fmt.Printf("deletethis: strategy=%s, podRan=%t\n", strategy, podRan)
 
 	if !podRan {
 		podName := woc.artGCPodName(strategy)
@@ -135,7 +137,9 @@ func (woc *wfOperationCtx) processArtifactGCStrategy(ctx context.Context, strate
 		if err != nil {
 			return fmt.Errorf("failed to get pod by key: %w", err)
 		}
-		if !exists {
+		if exists {
+			woc.log.Debugf("pod %s already exists, not re-creating", podName)
+		} else {
 			workflowTaskSets := make([]*wfv1.WorkflowTaskSet, 0)
 			for _, template := range woc.wf.Spec.Templates {
 				woc.addTemplateArtifactsToWorkflowTaskSets(strategy, workflowTaskSets, &template)
