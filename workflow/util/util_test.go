@@ -67,7 +67,7 @@ func TestResubmitWorkflowWithOnExit(t *testing.T) {
 		Name:  onExitName,
 		Phase: wfv1.NodeSucceeded,
 	}
-	newWF, err := FormulateResubmitWorkflow(&wf, true)
+	newWF, err := FormulateResubmitWorkflow(&wf, true, nil)
 	assert.NoError(t, err)
 	newWFOnExitName := newWF.ObjectMeta.Name + ".onExit"
 	newWFOneExitID := newWF.NodeID(newWFOnExitName)
@@ -633,7 +633,7 @@ func TestFormulateResubmitWorkflow(t *testing.T) {
 				},
 			},
 		}
-		wf, err := FormulateResubmitWorkflow(wf, false)
+		wf, err := FormulateResubmitWorkflow(wf, false, nil)
 		if assert.NoError(t, err) {
 			assert.Contains(t, wf.GetLabels(), common.LabelKeyControllerInstanceID)
 			assert.Contains(t, wf.GetLabels(), common.LabelKeyClusterWorkflowTemplate)
@@ -647,6 +647,19 @@ func TestFormulateResubmitWorkflow(t *testing.T) {
 			assert.Equal(t, 1, len(wf.OwnerReferences))
 			assert.Equal(t, "test", wf.OwnerReferences[0].APIVersion)
 			assert.Equal(t, "testObj", wf.OwnerReferences[0].Name)
+		}
+	})
+	t.Run("OverrideParams", func(t *testing.T) {
+		wf := &wfv1.Workflow{
+			Spec: wfv1.WorkflowSpec{Arguments: wfv1.Arguments{
+				Parameters: []wfv1.Parameter{
+					{Name: "message", Value: wfv1.AnyStringPtr("default")},
+				},
+			}},
+		}
+		wf, err := FormulateResubmitWorkflow(wf, false, []string{"message=modified"})
+		if assert.NoError(t, err) {
+			assert.Equal(t, "modified", wf.Spec.Arguments.Parameters[0].Value.String())
 		}
 	})
 }
@@ -809,7 +822,7 @@ func TestDeepDeleteNodes(t *testing.T) {
 	ctx := context.Background()
 	wf, err := wfIf.Create(ctx, origWf, metav1.CreateOptions{})
 	if assert.NoError(t, err) {
-		newWf, _, err := FormulateRetryWorkflow(ctx, wf, false, "")
+		newWf, _, err := FormulateRetryWorkflow(ctx, wf, false, "", nil)
 		assert.NoError(t, err)
 		newWfBytes, err := yaml.Marshal(newWf)
 		assert.NoError(t, err)
@@ -842,7 +855,7 @@ func TestFormulateRetryWorkflow(t *testing.T) {
 		}
 		_, err := wfClient.Create(ctx, wf, metav1.CreateOptions{})
 		assert.NoError(t, err)
-		wf, _, err = FormulateRetryWorkflow(ctx, wf, false, "")
+		wf, _, err = FormulateRetryWorkflow(ctx, wf, false, "", nil)
 		if assert.NoError(t, err) {
 			assert.Equal(t, wfv1.WorkflowRunning, wf.Status.Phase)
 			assert.Equal(t, metav1.Time{}, wf.Status.FinishedAt)
@@ -879,12 +892,95 @@ func TestFormulateRetryWorkflow(t *testing.T) {
 		}
 		_, err := wfClient.Create(ctx, wf, metav1.CreateOptions{})
 		assert.NoError(t, err)
-		wf, _, err = FormulateRetryWorkflow(ctx, wf, false, "")
+		wf, _, err = FormulateRetryWorkflow(ctx, wf, false, "", nil)
 		if assert.NoError(t, err) {
 			if assert.Len(t, wf.Status.Nodes, 1) {
 				assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes[""].Phase)
 			}
 
+		}
+	})
+	t.Run("Nested DAG with Non-group Node Selected", func(t *testing.T) {
+		wf := &wfv1.Workflow{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:   "my-nested-dag-1",
+				Labels: map[string]string{},
+			},
+			Status: wfv1.WorkflowStatus{
+				Phase: wfv1.WorkflowFailed,
+				Nodes: map[string]wfv1.NodeStatus{
+					"my-nested-dag-1": {ID: "my-nested-dag-1", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypeTaskGroup},
+					"1":               {ID: "1", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypeTaskGroup, BoundaryID: "my-nested-dag-1"},
+					"2":               {ID: "2", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypeTaskGroup, BoundaryID: "1"},
+					"3":               {ID: "3", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypePod, BoundaryID: "2"},
+					"4":               {ID: "4", Phase: wfv1.NodeFailed, Type: wfv1.NodeTypePod, BoundaryID: "1"}},
+			},
+		}
+		_, err := wfClient.Create(ctx, wf, metav1.CreateOptions{})
+		assert.NoError(t, err)
+		wf, _, err = FormulateRetryWorkflow(ctx, wf, true, "id=3", nil)
+		if assert.NoError(t, err) {
+			if assert.Len(t, wf.Status.Nodes, 5) {
+				assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes["my-nested-dag-1"].Phase)
+				// These should all be running since the child node #3 belongs up to node #1.
+				assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["1"].Phase)
+				assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["2"].Phase)
+				assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["3"].Phase)
+				assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["4"].Phase)
+			}
+		}
+	})
+	t.Run("Nested DAG without Node Selected", func(t *testing.T) {
+		wf := &wfv1.Workflow{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:   "my-nested-dag-2",
+				Labels: map[string]string{},
+			},
+			Status: wfv1.WorkflowStatus{
+				Phase: wfv1.WorkflowFailed,
+				Nodes: map[string]wfv1.NodeStatus{
+					"my-nested-dag-2": {ID: "my-nested-dag-2", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypeTaskGroup},
+					"1":               {ID: "1", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypeTaskGroup, BoundaryID: "my-nested-dag-2"},
+					"2":               {ID: "2", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypeTaskGroup, BoundaryID: "1"},
+					"3":               {ID: "3", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypePod, BoundaryID: "2"},
+					"4":               {ID: "4", Phase: wfv1.NodeFailed, Type: wfv1.NodeTypePod, BoundaryID: "1"}},
+			},
+		}
+		_, err := wfClient.Create(ctx, wf, metav1.CreateOptions{})
+		assert.NoError(t, err)
+		wf, _, err = FormulateRetryWorkflow(ctx, wf, true, "", nil)
+		if assert.NoError(t, err) {
+			if assert.Len(t, wf.Status.Nodes, 5) {
+				assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes["my-nested-dag-2"].Phase)
+				// This should be running since it's node #4's parent node.
+				assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["1"].Phase)
+				// This should be running since it's node #1's child node and node #1 is being retried.
+				assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["2"].Phase)
+				assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes["3"].Phase)
+				assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["4"].Phase)
+			}
+		}
+	})
+	t.Run("OverrideParams", func(t *testing.T) {
+		wf := &wfv1.Workflow{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:   "override-param-wf",
+				Labels: map[string]string{},
+			},
+			Spec: wfv1.WorkflowSpec{Arguments: wfv1.Arguments{
+				Parameters: []wfv1.Parameter{
+					{Name: "message", Value: wfv1.AnyStringPtr("default")},
+				},
+			}},
+			Status: wfv1.WorkflowStatus{
+				Phase: wfv1.WorkflowFailed,
+				Nodes: map[string]wfv1.NodeStatus{
+					"1": {ID: "1", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypeTaskGroup},
+				}},
+		}
+		wf, _, err := FormulateRetryWorkflow(context.Background(), wf, false, "", []string{"message=modified"})
+		if assert.NoError(t, err) {
+			assert.Equal(t, "modified", wf.Spec.Arguments.Parameters[0].Value.String())
 		}
 	})
 }

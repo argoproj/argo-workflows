@@ -18,7 +18,8 @@ type CliSubmitOpts struct {
 	Strict        bool   // --strict
 	Priority      *int32 // --priority
 	GetArgs       GetFlags
-	ScheduledTime string // --scheduled-time
+	ScheduledTime string   // --scheduled-time
+	Parameters    []string // --parameter
 }
 
 func WaitWatchOrLog(ctx context.Context, serviceClient workflowpkg.WorkflowServiceClient, namespace string, workflowNames []string, cliSubmitOpts CliSubmitOpts) {

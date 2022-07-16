@@ -36,7 +36,8 @@ const (
 	Label     = workflow.WorkflowFullName + "/test" // mark this workflow as a test
 )
 
-var defaultTimeout = env.LookupEnvDurationOr("E2E_TIMEOUT", 30*time.Second)
+var defaultTimeout = env.LookupEnvDurationOr("E2E_WAIT_TIMEOUT", 60*time.Second)
+var EnvFactor = env.LookupEnvIntOr("E2E_ENV_FACTOR", 1)
 
 type E2ESuite struct {
 	suite.Suite

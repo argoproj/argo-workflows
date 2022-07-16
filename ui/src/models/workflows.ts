@@ -4,6 +4,8 @@ export const labels = {
     clusterWorkflowTemplate: 'workflows.argoproj.io/cluster-workflow-template',
     completed: 'workflows.argoproj.io/completed',
     creator: 'workflows.argoproj.io/creator',
+    creatorEmail: 'workflows.argoproj.io/creator-email',
+    creatorPreferredUsername: 'workflows.argoproj.io/creator-preferred-username',
     cronWorkflow: 'workflows.argoproj.io/cron-workflow',
     workflowTemplate: 'workflows.argoproj.io/workflow-template'
 };
@@ -716,7 +718,7 @@ export interface Condition {
     message: string;
 }
 
-export type ConditionType = 'Completed' | 'SpecWarning' | 'MetricsError' | 'SubmissionError' | 'SpecError';
+export type ConditionType = 'Completed' | 'SpecWarning' | 'MetricsError' | 'SubmissionError' | 'SpecError' | 'ArtifactGCError';
 export type ConditionStatus = 'True' | 'False' | 'Unknown';
 
 /**

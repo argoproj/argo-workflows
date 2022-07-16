@@ -30,6 +30,7 @@ message RetryArchivedWorkflowRequest {
   string namespace = 3;
   bool restartSuccessful = 4;
   string nodeFieldSelector = 5;
+  repeated string parameters = 6;
 }
 
 message ResubmitArchivedWorkflowRequest {
@@ -37,6 +38,7 @@ message ResubmitArchivedWorkflowRequest {
   string name = 2;
   string namespace = 3;
   bool memoized = 4;
+  repeated string parameters = 5;
 }
 
 service ArchivedWorkflowService {

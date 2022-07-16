@@ -84,6 +84,7 @@ class IoArgoprojWorkflowV1alpha1WorkflowResubmitRequest(ModelNormal):
             'memoized': (bool,),  # noqa: E501
             'name': (str,),  # noqa: E501
             'namespace': (str,),  # noqa: E501
+            'parameters': ([str],),  # noqa: E501
         }
 
     @cached_property
@@ -95,6 +96,7 @@ class IoArgoprojWorkflowV1alpha1WorkflowResubmitRequest(ModelNormal):
         'memoized': 'memoized',  # noqa: E501
         'name': 'name',  # noqa: E501
         'namespace': 'namespace',  # noqa: E501
+        'parameters': 'parameters',  # noqa: E501
     }
 
     read_only_vars = {
@@ -141,6 +143,7 @@ class IoArgoprojWorkflowV1alpha1WorkflowResubmitRequest(ModelNormal):
             memoized (bool): [optional]  # noqa: E501
             name (str): [optional]  # noqa: E501
             namespace (str): [optional]  # noqa: E501
+            parameters ([str]): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -225,6 +228,7 @@ class IoArgoprojWorkflowV1alpha1WorkflowResubmitRequest(ModelNormal):
             memoized (bool): [optional]  # noqa: E501
             name (str): [optional]  # noqa: E501
             namespace (str): [optional]  # noqa: E501
+            parameters ([str]): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
