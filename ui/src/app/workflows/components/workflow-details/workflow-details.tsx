@@ -12,7 +12,7 @@ import {ErrorNotice} from '../../../shared/components/error-notice';
 import {ProcessURL} from '../../../shared/components/links';
 import {Loading} from '../../../shared/components/loading';
 import {SecurityNudge} from '../../../shared/components/security-nudge';
-import {hasWarningConditionBadge} from '../../../shared/conditions-panel';
+import {hasArtifactGCError, hasWarningConditionBadge} from '../../../shared/conditions-panel';
 import {Context} from '../../../shared/context';
 import {historyUrl} from '../../../shared/history';
 import {getPodName, getTemplateNameFromNode} from '../../../shared/pod-name';
@@ -256,6 +256,9 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
                 if (e.type === 'DELETED') {
                     setError(new Error('Workflow deleted'));
                 } else {
+                    if (hasArtifactGCError(e.object.status.conditions)) {
+                        setError(new Error('Artifact garbage collection failed'));
+                    }
                     setWorkflow(e.object);
                 }
             },

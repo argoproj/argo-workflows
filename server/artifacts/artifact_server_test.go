@@ -76,6 +76,10 @@ func (a *fakeArtifactDriver) IsDirectory(artifact *wfv1.Artifact) (bool, error) 
 		return false, err
 	}
 
+	if strings.HasSuffix(key, "my-gcs-artifact.tgz") {
+		return false, argoerrors.New(argoerrors.CodeNotImplemented, "IsDirectory currently unimplemented for GCS")
+	}
+
 	return strings.HasSuffix(key, "my-s3-artifact-directory") || strings.HasSuffix(key, "my-s3-artifact-directory/"), nil
 }
 
@@ -154,6 +158,18 @@ func newServer() *ArtifactServer {
 											Bucket: "my-bucket",
 										},
 										Key: "my-wf/my-node/my-gcs-artifact",
+									},
+								},
+							},
+							{
+								Name: "my-gcs-artifact-file",
+								ArtifactLocation: wfv1.ArtifactLocation{
+									GCS: &wfv1.GCSArtifact{
+										// GCS is not a configured artifact repo, so must have bucket
+										GCSBucket: wfv1.GCSBucket{
+											Bucket: "my-bucket",
+										},
+										Key: "my-wf/my-node/my-gcs-artifact.tgz",
 									},
 								},
 							},
@@ -252,6 +268,11 @@ func TestArtifactServer_GetArtifactFile(t *testing.T) {
 		{
 			path:        "/artifact-files/my-ns/workflows/my-wf/my-node/outputs/my-s3-artifact-directory/somethingElseWentWrong.txt",
 			statusCode:  500,
+			isDirectory: false,
+		},
+		{
+			path:        "/artifact-files/my-ns/workflows/my-wf/my-node/outputs/my-gcs-artifact-file/my-gcs-artifact.tgz",
+			statusCode:  200,
 			isDirectory: false,
 		},
 	}
