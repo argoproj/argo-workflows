@@ -82,6 +82,7 @@ func NewResubmitCommand() *cobra.Command {
 		},
 	}
 
+	command.Flags().StringArrayVarP(&cliSubmitOpts.Parameters, "parameter", "p", []string{}, "input parameter to override on the original workflow spec")
 	command.Flags().Int32Var(&resubmitOpts.priority, "priority", 0, "workflow priority")
 	command.Flags().StringVarP(&cliSubmitOpts.Output, "output", "o", "", "Output format. One of: name|json|yaml|wide")
 	command.Flags().BoolVarP(&cliSubmitOpts.Wait, "wait", "w", false, "wait for the workflow to complete, only works when a single workflow is resubmitted")
@@ -127,10 +128,11 @@ func resubmitArchivedWorkflows(ctx context.Context, archiveServiceClient workflo
 		resubmittedUids[string(wf.UID)] = true
 
 		lastResubmitted, err = archiveServiceClient.ResubmitArchivedWorkflow(ctx, &workflowarchivepkg.ResubmitArchivedWorkflowRequest{
-			Uid:       string(wf.UID),
-			Namespace: wf.Namespace,
-			Name:      wf.Name,
-			Memoized:  resubmitOpts.memoized,
+			Uid:        string(wf.UID),
+			Namespace:  wf.Namespace,
+			Name:       wf.Name,
+			Memoized:   resubmitOpts.memoized,
+			Parameters: cliSubmitOpts.Parameters,
 		})
 		if err != nil {
 			return err

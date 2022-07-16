@@ -78,7 +78,7 @@ jobs:
   e2e-tests:
     name: E2E Tests
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
     needs: [ tests, argoexec-image ]
     env:
       KUBECONFIG: /home/runner/.kubeconfig
@@ -151,7 +151,7 @@ jobs:
       - run: make start PROFILE=${{matrix.profile}} AUTH_MODE=client STATIC_FILES=false LOG_LEVEL=info API=${{matrix.test == 'test-api' || matrix.test == 'test-cli' || matrix.test == 'test-java-sdk' || matrix.test == 'test-python-sdk'}} UI=false > /tmp/argo.log 2>&1 &
       - run: make wait
         timeout-minutes: 4
-      - run: make ${{matrix.test}} E2E_SUITE_TIMEOUT=15m STATIC_FILES=false
+      - run: make ${{matrix.test}} E2E_SUITE_TIMEOUT=20m STATIC_FILES=false
       - if: ${{ failure() }}
         run: |
           [ -e /tmp/argo.log ] && cat /tmp/argo.log
