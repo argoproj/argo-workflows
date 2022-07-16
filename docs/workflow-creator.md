@@ -13,6 +13,7 @@ metadata:
     workflows.argoproj.io/creator: admin
     # labels must be DNS formatted, so the "@" is replaces by '.at.'  
     workflows.argoproj.io/creator-email: admin.at.your.org
+    workflows.argoproj.io/creator-preferred-username: admin-preferred-username
 ```
 
 !!! NOTE
