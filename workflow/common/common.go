@@ -146,10 +146,8 @@ const (
 	// EnvAgentPatchRate is the rate that the Argo Agent will patch the Workflow TaskSet
 	EnvAgentPatchRate = "ARGO_AGENT_PATCH_RATE"
 	//EnvVarArtifact    = "ARGO_ARTIFACT"
-	// EnvVarArtifactGCStrategy is the ArtifactGCStrategy that should be used by the Artifact GC Pod to delete artifacts that have that strategy
-	EnvVarArtifactGCStrategy = "ARGO_ARTIFACT_GC_STRATEGY"
-	// EnvVarArtifactGCTaskSet is the name of the WorkflowTaskSet used by the Artifact GC Pod
-	EnvVarArtifactGCTaskSet = "ARGO_ARTIFACT_GC_TASK_SET"
+	// EnvVarArtifactGCPod is applied as a Label on the WorkflowTaskSets read by the Artifact GC Pod, so that the Pod can find them
+	EnvVarArtifactGCPod = "ARGO_ARTIFACT_POD_NAME"
 
 	// Finalizer to block deletion of the workflow if deletion of artifacts fail for some reason.
 	FinalizerArtifactGC = workflow.WorkflowFullName + "/artifact-gc"

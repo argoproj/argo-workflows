@@ -226,7 +226,7 @@ func (w *Workflow) HasArtifactGC() bool {
 	// either it's defined by an Output Artifact or by the WorkflowSpec itself, or both
 	for _, template := range w.Spec.Templates {
 		for _, artifact := range template.Outputs.Artifacts {
-			if artifact.GetArtifactGCStrategy() != ArtifactGCNever {
+			if artifact.GCStrategy != ArtifactGCNever {
 				return true
 			}
 		}
@@ -978,20 +978,20 @@ type Artifact struct {
 	FromExpression string `json:"fromExpression,omitempty" protobuf:"bytes,11,opt,name=fromExpression"`
 
 	// ArtifactGC describes the strategy to use when to deleting an artifact from completed or deleted workflows
-	ArtifactGCStrategy *ArtifactGCStrategy `json:"artifactGCStrategy,omitempty" protobuf:"bytes,12,opt,name=artifactGCStrategy"`
+	GCStrategy ArtifactGCStrategy `json:"gcStrategy,omitempty" protobuf:"bytes,12,opt,name=gcStrategy"` //todo: why doesn't 12 work?
 
 	// Has this been deleted?
 	Deleted bool `json:"deleted,omitempty" protobuf:"varint,13,opt,name=deleted"`
 }
 
 // ArtifactGC returns the ArtifactGC that was defined by the artifact.  If none was provided, a default value is returned.
-func (a *Artifact) GetArtifactGCStrategy() ArtifactGCStrategy {
+/*func (a *Artifact) GetArtifactGCStrategy() ArtifactGCStrategy {
 	if a.ArtifactGCStrategy == nil {
 		return ArtifactGCNever
 	}
 
 	return *a.ArtifactGCStrategy
-}
+}*/
 
 // CleanPath validates and cleans the artifact path.
 func (a *Artifact) CleanPath() error {
@@ -1353,7 +1353,7 @@ func (w *Workflow) SearchArtifacts(q *ArtifactSearchQuery) ArtifactSearchResults
 			if q.anyArtifactGCStrategy() {
 				// artifact strategy is either based on overall Workflow ArtifactGC Strategy, or
 				// if it's specified on the individual artifact level that takes priority
-				artifactStrategy := a.GetArtifactGCStrategy()
+				artifactStrategy := a.GCStrategy
 				wfStrategy := w.Spec.GetArtifactGC().GetStrategy()
 				strategy := wfStrategy
 				if artifactStrategy != ArtifactGCNever {

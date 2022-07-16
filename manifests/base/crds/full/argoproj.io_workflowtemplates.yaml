@@ -405,8 +405,6 @@ spec:
                           type: object
                         archiveLogs:
                           type: boolean
-                        artifactGCStrategy:
-                          type: string
                         artifactory:
                           properties:
                             passwordSecret:
@@ -441,6 +439,8 @@ spec:
                         from:
                           type: string
                         fromExpression:
+                          type: string
+                        gcStrategy:
                           type: string
                         gcs:
                           properties:
@@ -967,8 +967,6 @@ spec:
                                 type: object
                               archiveLogs:
                                 type: boolean
-                              artifactGCStrategy:
-                                type: string
                               artifactory:
                                 properties:
                                   passwordSecret:
@@ -1003,6 +1001,8 @@ spec:
                               from:
                                 type: string
                               fromExpression:
+                                type: string
+                              gcStrategy:
                                 type: string
                               gcs:
                                 properties:
@@ -3770,8 +3770,6 @@ spec:
                                         type: object
                                       archiveLogs:
                                         type: boolean
-                                      artifactGCStrategy:
-                                        type: string
                                       artifactory:
                                         properties:
                                           passwordSecret:
@@ -3806,6 +3804,8 @@ spec:
                                       from:
                                         type: string
                                       fromExpression:
+                                        type: string
+                                      gcStrategy:
                                         type: string
                                       gcs:
                                         properties:
@@ -4285,8 +4285,6 @@ spec:
                                               type: object
                                             archiveLogs:
                                               type: boolean
-                                            artifactGCStrategy:
-                                              type: string
                                             artifactory:
                                               properties:
                                                 passwordSecret:
@@ -4321,6 +4319,8 @@ spec:
                                             from:
                                               type: string
                                             fromExpression:
+                                              type: string
+                                            gcStrategy:
                                               type: string
                                             gcs:
                                               properties:
@@ -4851,8 +4851,6 @@ spec:
                                 type: object
                               archiveLogs:
                                 type: boolean
-                              artifactGCStrategy:
-                                type: string
                               artifactory:
                                 properties:
                                   passwordSecret:
@@ -4887,6 +4885,8 @@ spec:
                               from:
                                 type: string
                               fromExpression:
+                                type: string
+                              gcStrategy:
                                 type: string
                               gcs:
                                 properties:
@@ -5961,8 +5961,6 @@ spec:
                               type: object
                             archiveLogs:
                               type: boolean
-                            artifactGCStrategy:
-                              type: string
                             artifactory:
                               properties:
                                 passwordSecret:
@@ -5997,6 +5995,8 @@ spec:
                             from:
                               type: string
                             fromExpression:
+                              type: string
+                            gcStrategy:
                               type: string
                             gcs:
                               properties:
@@ -6564,8 +6564,6 @@ spec:
                               type: object
                             archiveLogs:
                               type: boolean
-                            artifactGCStrategy:
-                              type: string
                             artifactory:
                               properties:
                                 passwordSecret:
@@ -6600,6 +6598,8 @@ spec:
                             from:
                               type: string
                             fromExpression:
+                              type: string
+                            gcStrategy:
                               type: string
                             gcs:
                               properties:
@@ -7090,8 +7090,6 @@ spec:
                                 type: object
                               archiveLogs:
                                 type: boolean
-                              artifactGCStrategy:
-                                type: string
                               artifactory:
                                 properties:
                                   passwordSecret:
@@ -7126,6 +7124,8 @@ spec:
                               from:
                                 type: string
                               fromExpression:
+                                type: string
+                              gcStrategy:
                                 type: string
                               gcs:
                                 properties:
@@ -11545,8 +11545,6 @@ spec:
                                           type: object
                                         archiveLogs:
                                           type: boolean
-                                        artifactGCStrategy:
-                                          type: string
                                         artifactory:
                                           properties:
                                             passwordSecret:
@@ -11581,6 +11579,8 @@ spec:
                                         from:
                                           type: string
                                         fromExpression:
+                                          type: string
+                                        gcStrategy:
                                           type: string
                                         gcs:
                                           properties:
@@ -12060,8 +12060,6 @@ spec:
                                                 type: object
                                               archiveLogs:
                                                 type: boolean
-                                              artifactGCStrategy:
-                                                type: string
                                               artifactory:
                                                 properties:
                                                   passwordSecret:
@@ -12096,6 +12094,8 @@ spec:
                                               from:
                                                 type: string
                                               fromExpression:
+                                                type: string
+                                              gcStrategy:
                                                 type: string
                                               gcs:
                                                 properties:
@@ -12626,8 +12626,6 @@ spec:
                                   type: object
                                 archiveLogs:
                                   type: boolean
-                                artifactGCStrategy:
-                                  type: string
                                 artifactory:
                                   properties:
                                     passwordSecret:
@@ -12662,6 +12660,8 @@ spec:
                                 from:
                                   type: string
                                 fromExpression:
+                                  type: string
+                                gcStrategy:
                                   type: string
                                 gcs:
                                   properties:
@@ -13736,8 +13736,6 @@ spec:
                                 type: object
                               archiveLogs:
                                 type: boolean
-                              artifactGCStrategy:
-                                type: string
                               artifactory:
                                 properties:
                                   passwordSecret:
@@ -13772,6 +13770,8 @@ spec:
                               from:
                                 type: string
                               fromExpression:
+                                type: string
+                              gcStrategy:
                                 type: string
                               gcs:
                                 properties:
@@ -14339,8 +14339,6 @@ spec:
                                 type: object
                               archiveLogs:
                                 type: boolean
-                              artifactGCStrategy:
-                                type: string
                               artifactory:
                                 properties:
                                   passwordSecret:
@@ -14375,6 +14373,8 @@ spec:
                               from:
                                 type: string
                               fromExpression:
+                                type: string
+                              gcStrategy:
                                 type: string
                               gcs:
                                 properties:
@@ -14865,8 +14865,6 @@ spec:
                                   type: object
                                 archiveLogs:
                                   type: boolean
-                                artifactGCStrategy:
-                                  type: string
                                 artifactory:
                                   properties:
                                     passwordSecret:
@@ -14901,6 +14899,8 @@ spec:
                                 from:
                                   type: string
                                 fromExpression:
+                                  type: string
+                                gcStrategy:
                                   type: string
                                 gcs:
                                   properties:

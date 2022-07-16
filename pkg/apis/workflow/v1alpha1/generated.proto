@@ -81,7 +81,7 @@ message Artifact {
   optional string fromExpression = 11;
 
   // ArtifactGC describes the strategy to use when to deleting an artifact from completed or deleted workflows
-  optional string artifactGCStrategy = 12;
+  optional string gcStrategy = 12;
 
   // Has this been deleted?
   optional bool deleted = 13;

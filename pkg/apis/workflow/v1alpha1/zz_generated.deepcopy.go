@@ -106,11 +106,6 @@ func (in *Artifact) DeepCopyInto(out *Artifact) {
 		*out = new(ArchiveStrategy)
 		(*in).DeepCopyInto(*out)
 	}
-	if in.ArtifactGCStrategy != nil {
-		in, out := &in.ArtifactGCStrategy, &out.ArtifactGCStrategy
-		*out = new(ArtifactGCStrategy)
-		**out = **in
-	}
 	return
 }
 

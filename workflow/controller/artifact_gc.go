@@ -274,6 +274,91 @@ func (woc *wfOperationCtx) createArtifactGCTaskSet(ctx context.Context, taskSet 
 }
 
 /*
+func (woc *wfOperationCtx) createArtifactGCPod(ctx context.Context, strategy wfv1.ArtifactGCStrategy, taskSets []*wfv1.WorkflowTaskSet) error {
+	podName := woc.artGCPodName(strategy)
+
+	woc.log.
+		WithField("strategy", strategy).
+		Infof("create pod to delete artifacts: %s", podName)
+
+	ownerReferences := make([]metav1.OwnerReference, len(taskSets))
+	for i, taskSet := range taskSets {
+		// make sure pod gets deleted with the WorkflowTaskSets
+		ownerReferences[i] = *metav1.NewControllerRef(taskSet, wfv1.SchemeGroupVersion.WithKind(workflow.WorkflowTaskSetKind))
+	}
+
+	pod := &corev1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: podName,
+			Labels: map[string]string{
+				common.LabelKeyWorkflow:  woc.wf.Name,
+				common.LabelKeyComponent: artifactGCComponent,
+				common.LabelKeyCompleted: "false", // todo: do we need this? what is the effect?
+			},
+			/*Annotations: map[string]string{
+				common.AnnotationKeyNodeID:    a.NodeID,
+				common.AnnotationArtifactName: a.Name,
+			},*/
+/*
+			OwnerReferences: ownerReferences,
+		},
+		Spec: corev1.PodSpec{
+			Containers: []corev1.Container{
+				{
+					Name:            common.MainContainerName,
+					Image:           woc.controller.executorImage(),
+					ImagePullPolicy: woc.controller.executorImagePullPolicy(),
+					Args:            []string{"artifact", "delete", "--loglevel", getExecutorLogLevel()},
+					Env: []corev1.EnvVar{
+						{Name: common.EnvVarArtifactGCPod, Value: podName},
+					},
+					// if this pod is breached by an attacker we:
+					// * prevent installation of any new packages
+					// * modification of the file-system
+					SecurityContext: &corev1.SecurityContext{
+						Capabilities:             &corev1.Capabilities{Drop: []corev1.Capability{"ALL"}},
+						Privileged:               pointer.Bool(false),
+						RunAsNonRoot:             pointer.Bool(true),
+						RunAsUser:                pointer.Int64Ptr(8737), //todo: magic number
+						ReadOnlyRootFilesystem:   pointer.Bool(true),
+						AllowPrivilegeEscalation: pointer.Bool(false),
+					},
+					// if this pod is breached by an attacker these limits prevent excessive CPU and memory usage
+					Resources: corev1.ResourceRequirements{
+						Limits: map[corev1.ResourceName]resource.Quantity{
+							"cpu":    resource.MustParse("100m"), //todo: should these values be in the Controller config, and also maybe increased?
+							"memory": resource.MustParse("64Mi"),
+						},
+						Requests: map[corev1.ResourceName]resource.Quantity{
+							"cpu":    resource.MustParse("50m"),
+							"memory": resource.MustParse("32Mi"),
+						},
+					},
+				},
+			},
+			// if this pod is breached by an attacker this prevents them making Kubernetes API requests
+			AutomountServiceAccountToken: pointer.Bool(false),
+			RestartPolicy:                corev1.RestartPolicyOnFailure, //todo: verify
+		},
+	}
+
+	// if the Workflow has a Service Account and/or Labels and Annotations specified for Artifact GC, use them
+	if woc.wf.Spec.ArtifactGC != nil {
+		if woc.wf.Spec.ArtifactGC.ServiceAccountName != "" {
+			pod.Spec.ServiceAccountName = woc.wf.Spec.ArtifactGC.ServiceAccountName
+		}
+		if woc.wf.Spec.ArtifactGC.PodMetadata != nil {
+			for label, value := range woc.wf.Spec.ArtifactGC.PodMetadata.Labels {
+
+			}
+			for annotation, value := range woc.wf.Spec.ArtifactGC.PodMetadata.Annotations {
+
+			}
+		}
+
+}
+*/
+/*
 
 func (woc *wfOperationCtx) createArtifactGCPod(ctx context.Context, strategy wfv1.ArtifactGCStrategy, serviceAcct string, artifacts wfv1.ArtifactSearchResults, templates []*wfv1.Template) error {
 

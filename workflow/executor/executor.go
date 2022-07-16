@@ -295,11 +295,13 @@ func (we *WorkflowExecutor) SaveArtifacts(ctx context.Context) error {
 	}
 
 	for i, art := range we.Template.Outputs.Artifacts {
+		log.Infof("deletethis: saving artifact %+v", art)
 		err := we.saveArtifact(ctx, common.MainContainerName, &art)
 		if err != nil {
 			return err
 		}
 		we.Template.Outputs.Artifacts[i] = art
+		log.Infof("deletethis: saved artifact %+v to Template.Outputs", art)
 	}
 	return nil
 }
