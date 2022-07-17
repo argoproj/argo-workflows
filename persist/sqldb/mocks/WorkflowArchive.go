@@ -30,6 +30,27 @@ func (_m *WorkflowArchive) ArchiveWorkflow(wf *v1alpha1.Workflow) error {
 	return r0
 }
 
+// CountWorkflows provides a mock function with given fields: namespace, name, namePrefix, minStartAt, maxStartAt, labelRequirements
+func (_m *WorkflowArchive) CountWorkflows(namespace string, name string, namePrefix string, minStartAt time.Time, maxStartAt time.Time, labelRequirements labels.Requirements) (int64, error) {
+	ret := _m.Called(namespace, name, namePrefix, minStartAt, maxStartAt, labelRequirements)
+
+	var r0 int64
+	if rf, ok := ret.Get(0).(func(string, string, string, time.Time, time.Time, labels.Requirements) int64); ok {
+		r0 = rf(namespace, name, namePrefix, minStartAt, maxStartAt, labelRequirements)
+	} else {
+		r0 = ret.Get(0).(int64)
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(string, string, string, time.Time, time.Time, labels.Requirements) error); ok {
+		r1 = rf(namespace, name, namePrefix, minStartAt, maxStartAt, labelRequirements)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // DeleteExpiredWorkflows provides a mock function with given fields: ttl
 func (_m *WorkflowArchive) DeleteExpiredWorkflows(ttl time.Duration) error {
 	ret := _m.Called(ttl)
@@ -111,26 +132,6 @@ func (_m *WorkflowArchive) ListWorkflows(namespace string, name string, namePref
 	var r1 error
 	if rf, ok := ret.Get(1).(func(string, string, string, time.Time, time.Time, labels.Requirements, int, int) error); ok {
 		r1 = rf(namespace, name, namePrefix, minStartAt, maxStartAt, labelRequirements, limit, offset)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
-func (_m *WorkflowArchive) CountWorkflows(namespace string, name string, namePrefix string, minStartAt, maxStartAt time.Time, labelRequirements labels.Requirements) (int64, error) {
-	ret := _m.Called(namespace, name, namePrefix, minStartAt, maxStartAt, labelRequirements)
-
-	var r0 int64
-	if rf, ok := ret.Get(0).(func() int64); ok {
-		r0 = rf()
-	} else {
-		r0 = ret.Get(0).(int64)
-	}
-
-	var r1 error
-	if rf, ok := ret.Get(1).(func(string, string, string, time.Time, time.Time, labels.Requirements) error); ok {
-		r1 = rf(namespace, name, namePrefix, minStartAt, maxStartAt, labelRequirements)
 	} else {
 		r1 = ret.Error(1)
 	}
