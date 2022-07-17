@@ -105,13 +105,13 @@ var AnyArtifactGCStrategy = map[ArtifactGCStrategy]bool{
 func (s ArtifactGCStrategy) AbbreviatedName() string {
 	switch s {
 	case ArtifactGCOnWorkflowCompletion:
-		return "wfComp"
+		return "wfcomp"
 	case ArtifactGCOnWorkflowDeletion:
-		return "wfDel"
+		return "wfdel"
 	case ArtifactGCOnWorkflowSuccess:
-		return "wfSuc"
+		return "wfsuccess"
 	case ArtifactGCOnWorkflowFailure:
-		return "wfFail"
+		return "wffail"
 	case ArtifactGCNever:
 		return "never"
 	default:
