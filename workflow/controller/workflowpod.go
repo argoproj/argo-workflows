@@ -506,13 +506,13 @@ func substitutePodParams(pod *apiv1.Pod, globalParams common.Parameters, tmpl *w
 
 func (woc *wfOperationCtx) newInitContainer(tmpl *wfv1.Template) apiv1.Container {
 	ctr := woc.newExecContainer(common.InitContainerName, tmpl)
-	ctr.Command = []string{"argoexec", "init", "--loglevel", getExecutorLogLevel()}
+	ctr.Command = []string{"argoexec", "init", "--loglevel", getExecutorLogLevel(), "--log-format", woc.controller.executorLogFormat()}
 	return *ctr
 }
 
 func (woc *wfOperationCtx) newWaitContainer(tmpl *wfv1.Template) *apiv1.Container {
 	ctr := woc.newExecContainer(common.WaitContainerName, tmpl)
-	ctr.Command = []string{"argoexec", "wait", "--loglevel", getExecutorLogLevel()}
+	ctr.Command = []string{"argoexec", "wait", "--loglevel", getExecutorLogLevel(), "--log-format", woc.controller.executorLogFormat()}
 	return ctr
 }
 

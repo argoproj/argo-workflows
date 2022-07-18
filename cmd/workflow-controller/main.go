@@ -50,6 +50,7 @@ func NewRootCommand() *cobra.Command {
 		clientConfig             clientcmd.ClientConfig
 		configMap                string // --configmap
 		executorImage            string // --executor-image
+		executorLogFormat        string // --executor-log-format
 		executorImagePullPolicy  string // --executor-image-pull-policy
 		containerRuntimeExecutor string
 		logLevel                 string // --loglevel
@@ -110,7 +111,7 @@ func NewRootCommand() *cobra.Command {
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
 
-			wfController, err := controller.NewWorkflowController(ctx, config, kubeclientset, wfclientset, namespace, managedNamespace, executorImage, executorImagePullPolicy, containerRuntimeExecutor, configMap, executorPlugins)
+			wfController, err := controller.NewWorkflowController(ctx, config, kubeclientset, wfclientset, namespace, managedNamespace, executorImage, executorImagePullPolicy, executorLogFormat, containerRuntimeExecutor, configMap, executorPlugins)
 			errors.CheckError(err)
 
 			leaderElectionOff := os.Getenv("LEADER_ELECTION_DISABLE")
@@ -173,6 +174,7 @@ func NewRootCommand() *cobra.Command {
 	command.Flags().StringVar(&logLevel, "loglevel", "info", "Set the logging level. One of: debug|info|warn|error")
 	command.Flags().IntVar(&glogLevel, "gloglevel", 0, "Set the glog logging level")
 	command.Flags().StringVar(&logFormat, "log-format", "text", "The formatter to use for logs. One of: text|json")
+	command.Flags().StringVar(&executorLogFormat, "executor-log-format", "text", "The formatter to use for executor logs. One of: text|json")
 	command.Flags().IntVar(&workflowWorkers, "workflow-workers", 32, "Number of workflow workers")
 	command.Flags().IntVar(&workflowTTLWorkers, "workflow-ttl-workers", 4, "Number of workflow TTL workers")
 	command.Flags().IntVar(&podCleanupWorkers, "pod-cleanup-workers", 4, "Number of pod cleanup workers")
