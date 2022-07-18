@@ -18,24 +18,25 @@ export class WorkflowCreatorInfo extends React.Component<WorkflowCreatorInfoProp
         const w = this.props.workflow;
         const creatorLabels = [];
         if (w.metadata.labels) {
-            const creatorInfoMap = new Map<string, string>([
-                ['Name', w.metadata.labels[labels.creator]],
-                ['Email', w.metadata.labels[labels.creatorEmail]],
-                ['Preferred username', w.metadata.labels[labels.creatorPreferredUsername]]
+            const creatorInfoMap = new Map<string, [string, string]>([
+                ['Name', [labels.creator, w.metadata.labels[labels.creator]]],
+                ['Email', [labels.creatorEmail, w.metadata.labels[labels.creatorEmail]]],
+                ['Preferred username', [labels.creatorPreferredUsername, w.metadata.labels[labels.creatorPreferredUsername]]]
             ]);
-            creatorInfoMap.forEach((value: string, key: string) => {
-                if (value !== '' && value !== undefined) {
+            creatorInfoMap.forEach((value: [string, string], key: string) => {
+                const [searchKey, searchValue] = value;
+                if (searchValue !== '' && searchValue !== undefined) {
                     creatorLabels.push(
                         <div
-                            title={`List workflows created by ${key}=${value}`}
+                            title={`List workflows created by ${key}=${searchValue}`}
                             className='tag'
                             key={`${w.metadata.uid}-${key}`}
                             onClick={async e => {
                                 e.preventDefault();
-                                this.props.onChange(key, value);
+                                this.props.onChange(searchKey, searchValue);
                             }}>
                             <div className='key'>{key}</div>
-                            <div className='value'>{value}</div>
+                            <div className='value'>{searchValue}</div>
                         </div>
                     );
                 }
