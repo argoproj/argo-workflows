@@ -125,6 +125,9 @@ message ArtifactLocation {
 
   // GCS contains GCS artifact location details
   optional GCSArtifact gcs = 9;
+
+  // Azure contains Azure Storage artifact location details
+  optional AzureArtifact azure = 10;
 }
 
 // ArtifactPaths expands a step from a collection of artifacts
@@ -152,6 +155,9 @@ message ArtifactRepository {
 
   // GCS stores artifact in a GCS object store
   optional GCSArtifactRepository gcs = 6;
+
+  // Azure stores artifact in an Azure Storage account
+  optional AzureArtifactRepository azure = 7;
 }
 
 // +protobuf.options.(gogoproto.goproto_stringer)=false
@@ -216,6 +222,37 @@ message ArtifactoryAuth {
 
   // PasswordSecret is the secret selector to the repository password
   optional k8s.io.api.core.v1.SecretKeySelector passwordSecret = 2;
+}
+
+// AzureArtifact is the location of a an Azure Storage artifact
+message AzureArtifact {
+  optional AzureBlobContainer azureBlobContainer = 1;
+
+  // Blob is the blob name (i.e., path) in the container where the artifact resides
+  optional string blob = 2;
+}
+
+// AzureArtifactRepository defines the controller configuration for an Azure Blob Storage artifact repository
+message AzureArtifactRepository {
+  optional AzureBlobContainer blobContainer = 1;
+
+  // BlobNameFormat is defines the format of how to store blob names. Can reference workflow variables
+  optional string blobNameFormat = 2;
+}
+
+// AzureBlobContainer contains the access information for interfacing with an Azure Blob Storage container
+message AzureBlobContainer {
+  // Endpoint is the service url associated with an account. It is most likely "https://<ACCOUNT_NAME>.blob.core.windows.net"
+  optional string endpoint = 1;
+
+  // Container is the container where resources will be stored
+  optional string container = 2;
+
+  // AccountKeySecret is the secret selector to the Azure Blob Storage account access key
+  optional k8s.io.api.core.v1.SecretKeySelector accountKeySecret = 3;
+
+  // UseSDKCreds tells the driver to figure out credentials based on sdk defaults.
+  optional bool useSDKCreds = 4;
 }
 
 // Backoff is a backoff strategy to use within retryStrategy

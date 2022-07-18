@@ -57,3 +57,9 @@ if [[ "$(kubectl -n argo get pod -l app=prometheus -o name)" != "" ]]; then
   wait-for prometheus
   pf prometheus 9091 9090
 fi
+
+azurite=$(kubectl -n argo get pod -l app=azurite -o name)
+if [[ "$azurite" != "" ]]; then
+  wait-for azurite
+  pf azurite 10000
+fi

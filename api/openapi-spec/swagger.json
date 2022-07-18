@@ -7263,6 +7263,10 @@
           "description": "Artifactory contains artifactory artifact location details",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactoryArtifact"
         },
+        "azure": {
+          "description": "Azure contains Azure Storage artifact location details",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.AzureArtifact"
+        },
         "deleted": {
           "description": "Has this been deleted?",
           "type": "boolean"
@@ -7355,6 +7359,10 @@
           "description": "Artifactory contains artifactory artifact location details",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactoryArtifact"
         },
+        "azure": {
+          "description": "Azure contains Azure Storage artifact location details",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.AzureArtifact"
+        },
         "gcs": {
           "description": "GCS contains GCS artifact location details",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.GCSArtifact"
@@ -7407,6 +7415,10 @@
         "artifactory": {
           "description": "Artifactory contains artifactory artifact location details",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactoryArtifact"
+        },
+        "azure": {
+          "description": "Azure contains Azure Storage artifact location details",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.AzureArtifact"
         },
         "deleted": {
           "description": "Has this been deleted?",
@@ -7489,6 +7501,10 @@
         "artifactory": {
           "description": "Artifactory stores artifacts to JFrog Artifactory",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactoryArtifactRepository"
+        },
+        "azure": {
+          "description": "Azure stores artifact in an Azure Storage account",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.AzureArtifactRepository"
         },
         "gcs": {
           "description": "GCS stores artifact in a GCS object store",
@@ -7582,6 +7598,67 @@
         "usernameSecret": {
           "description": "UsernameSecret is the secret selector to the repository username",
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.AzureArtifact": {
+      "description": "AzureArtifact is the location of a an Azure Storage artifact",
+      "type": "object",
+      "required": [
+        "endpoint",
+        "container",
+        "blob"
+      ],
+      "properties": {
+        "accountKeySecret": {
+          "description": "AccountKeySecret is the secret selector to the Azure Blob Storage account access key",
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
+        },
+        "blob": {
+          "description": "Blob is the blob name (i.e., path) in the container where the artifact resides",
+          "type": "string"
+        },
+        "container": {
+          "description": "Container is the container where resources will be stored",
+          "type": "string"
+        },
+        "endpoint": {
+          "description": "Endpoint is the service url associated with an account. It is most likely \"https://\u003cACCOUNT_NAME\u003e.blob.core.windows.net\"",
+          "type": "string"
+        },
+        "useSDKCreds": {
+          "description": "UseSDKCreds tells the driver to figure out credentials based on sdk defaults.",
+          "type": "boolean"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.AzureArtifactRepository": {
+      "description": "AzureArtifactRepository defines the controller configuration for an Azure Blob Storage artifact repository",
+      "type": "object",
+      "required": [
+        "endpoint",
+        "container"
+      ],
+      "properties": {
+        "accountKeySecret": {
+          "description": "AccountKeySecret is the secret selector to the Azure Blob Storage account access key",
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
+        },
+        "blobNameFormat": {
+          "description": "BlobNameFormat is defines the format of how to store blob names. Can reference workflow variables",
+          "type": "string"
+        },
+        "container": {
+          "description": "Container is the container where resources will be stored",
+          "type": "string"
+        },
+        "endpoint": {
+          "description": "Endpoint is the service url associated with an account. It is most likely \"https://\u003cACCOUNT_NAME\u003e.blob.core.windows.net\"",
+          "type": "string"
+        },
+        "useSDKCreds": {
+          "description": "UseSDKCreds tells the driver to figure out credentials based on sdk defaults.",
+          "type": "boolean"
         }
       }
     },

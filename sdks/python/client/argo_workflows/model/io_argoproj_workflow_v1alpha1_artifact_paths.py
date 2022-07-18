@@ -33,6 +33,7 @@ def lazy_import():
     from argo_workflows.model.io_argoproj_workflow_v1alpha1_archive_strategy import IoArgoprojWorkflowV1alpha1ArchiveStrategy
     from argo_workflows.model.io_argoproj_workflow_v1alpha1_artifact_gc import IoArgoprojWorkflowV1alpha1ArtifactGC
     from argo_workflows.model.io_argoproj_workflow_v1alpha1_artifactory_artifact import IoArgoprojWorkflowV1alpha1ArtifactoryArtifact
+    from argo_workflows.model.io_argoproj_workflow_v1alpha1_azure_artifact import IoArgoprojWorkflowV1alpha1AzureArtifact
     from argo_workflows.model.io_argoproj_workflow_v1alpha1_gcs_artifact import IoArgoprojWorkflowV1alpha1GCSArtifact
     from argo_workflows.model.io_argoproj_workflow_v1alpha1_git_artifact import IoArgoprojWorkflowV1alpha1GitArtifact
     from argo_workflows.model.io_argoproj_workflow_v1alpha1_hdfs_artifact import IoArgoprojWorkflowV1alpha1HDFSArtifact
@@ -43,6 +44,7 @@ def lazy_import():
     globals()['IoArgoprojWorkflowV1alpha1ArchiveStrategy'] = IoArgoprojWorkflowV1alpha1ArchiveStrategy
     globals()['IoArgoprojWorkflowV1alpha1ArtifactGC'] = IoArgoprojWorkflowV1alpha1ArtifactGC
     globals()['IoArgoprojWorkflowV1alpha1ArtifactoryArtifact'] = IoArgoprojWorkflowV1alpha1ArtifactoryArtifact
+    globals()['IoArgoprojWorkflowV1alpha1AzureArtifact'] = IoArgoprojWorkflowV1alpha1AzureArtifact
     globals()['IoArgoprojWorkflowV1alpha1GCSArtifact'] = IoArgoprojWorkflowV1alpha1GCSArtifact
     globals()['IoArgoprojWorkflowV1alpha1GitArtifact'] = IoArgoprojWorkflowV1alpha1GitArtifact
     globals()['IoArgoprojWorkflowV1alpha1HDFSArtifact'] = IoArgoprojWorkflowV1alpha1HDFSArtifact
@@ -110,6 +112,7 @@ class IoArgoprojWorkflowV1alpha1ArtifactPaths(ModelNormal):
             'archive_logs': (bool,),  # noqa: E501
             'artifact_gc': (IoArgoprojWorkflowV1alpha1ArtifactGC,),  # noqa: E501
             'artifactory': (IoArgoprojWorkflowV1alpha1ArtifactoryArtifact,),  # noqa: E501
+            'azure': (IoArgoprojWorkflowV1alpha1AzureArtifact,),  # noqa: E501
             'deleted': (bool,),  # noqa: E501
             '_from': (str,),  # noqa: E501
             'from_expression': (str,),  # noqa: E501
@@ -139,6 +142,7 @@ class IoArgoprojWorkflowV1alpha1ArtifactPaths(ModelNormal):
         'archive_logs': 'archiveLogs',  # noqa: E501
         'artifact_gc': 'artifactGC',  # noqa: E501
         'artifactory': 'artifactory',  # noqa: E501
+        'azure': 'azure',  # noqa: E501
         'deleted': 'deleted',  # noqa: E501
         '_from': 'from',  # noqa: E501
         'from_expression': 'fromExpression',  # noqa: E501
@@ -205,6 +209,7 @@ class IoArgoprojWorkflowV1alpha1ArtifactPaths(ModelNormal):
             archive_logs (bool): ArchiveLogs indicates if the container logs should be archived. [optional]  # noqa: E501
             artifact_gc (IoArgoprojWorkflowV1alpha1ArtifactGC): [optional]  # noqa: E501
             artifactory (IoArgoprojWorkflowV1alpha1ArtifactoryArtifact): [optional]  # noqa: E501
+            azure (IoArgoprojWorkflowV1alpha1AzureArtifact): [optional]  # noqa: E501
             deleted (bool): Has this been deleted?. [optional]  # noqa: E501
             _from (str): From allows an artifact to reference an artifact from a previous step. [optional]  # noqa: E501
             from_expression (str): FromExpression, if defined, is evaluated to specify the value for the artifact. [optional]  # noqa: E501
@@ -310,6 +315,7 @@ class IoArgoprojWorkflowV1alpha1ArtifactPaths(ModelNormal):
             archive_logs (bool): ArchiveLogs indicates if the container logs should be archived. [optional]  # noqa: E501
             artifact_gc (IoArgoprojWorkflowV1alpha1ArtifactGC): [optional]  # noqa: E501
             artifactory (IoArgoprojWorkflowV1alpha1ArtifactoryArtifact): [optional]  # noqa: E501
+            azure (IoArgoprojWorkflowV1alpha1AzureArtifact): [optional]  # noqa: E501
             deleted (bool): Has this been deleted?. [optional]  # noqa: E501
             _from (str): From allows an artifact to reference an artifact from a previous step. [optional]  # noqa: E501
             from_expression (str): FromExpression, if defined, is evaluated to specify the value for the artifact. [optional]  # noqa: E501
