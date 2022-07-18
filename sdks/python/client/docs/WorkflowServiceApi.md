@@ -53582,6 +53582,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
         memoized=True,
         name="name_example",
         namespace="namespace_example",
+        parameters=[
+            "parameters_example",
+        ],
     ) # IoArgoprojWorkflowV1alpha1WorkflowResubmitRequest | 
 
     # example passing only required values which don't have defaults set
@@ -53750,6 +53753,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
         name="name_example",
         namespace="namespace_example",
         node_field_selector="node_field_selector_example",
+        parameters=[
+            "parameters_example",
+        ],
         restart_successful=True,
     ) # IoArgoprojWorkflowV1alpha1WorkflowRetryRequest | 
 

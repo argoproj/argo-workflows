@@ -3757,7 +3757,11 @@
         ],
         "responses": {
           "200": {
-            "description": "An artifact file."
+            "description": "An artifact file.",
+            "schema": {
+              "type": "string",
+              "format": "binary"
+            }
           },
           "default": {
             "description": "An unexpected error response.",
@@ -3897,7 +3901,11 @@
         ],
         "responses": {
           "200": {
-            "description": "An artifact file."
+            "description": "An artifact file.",
+            "schema": {
+              "type": "string",
+              "format": "binary"
+            }
           },
           "default": {
             "description": "An unexpected error response.",
@@ -9559,6 +9567,12 @@
         "namespace": {
           "type": "string"
         },
+        "parameters": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
         "uid": {
           "type": "string"
         }
@@ -9584,6 +9598,12 @@
         },
         "nodeFieldSelector": {
           "type": "string"
+        },
+        "parameters": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
         },
         "restartSuccessful": {
           "type": "boolean"
@@ -10752,6 +10772,12 @@
         },
         "namespace": {
           "type": "string"
+        },
+        "parameters": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
         }
       }
     },
@@ -10780,6 +10806,12 @@
         },
         "nodeFieldSelector": {
           "type": "string"
+        },
+        "parameters": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
         },
         "restartSuccessful": {
           "type": "boolean"
