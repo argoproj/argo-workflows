@@ -2170,6 +2170,13 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#azureartifact" class="md-nav__link">
+     AzureArtifact
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#azuredatadiskcachingmode" class="md-nav__link">
      AzureDataDiskCachingMode
   </a>
@@ -5582,6 +5589,13 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#azureartifact" class="md-nav__link">
+     AzureArtifact
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#azuredatadiskcachingmode" class="md-nav__link">
      AzureDataDiskCachingMode
   </a>
@@ -7433,6 +7447,15 @@ It will marshall back to string - marshalling is not symmetric.</p>
 <td></td>
 </tr>
 <tr>
+<td>azure</td>
+<td><a href="#azure-artifact">AzureArtifact</a></td>
+<td><code>AzureArtifact</code></td>
+<td style="text-align: center;"></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
 <td>deleted</td>
 <td>boolean</td>
 <td><code>bool</code></td>
@@ -7696,6 +7719,15 @@ of a single workflow step, which the executor will use as a default location to 
 <td></td>
 </tr>
 <tr>
+<td>azure</td>
+<td><a href="#azure-artifact">AzureArtifact</a></td>
+<td><code>AzureArtifact</code></td>
+<td style="text-align: center;"></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
 <td>gcs</td>
 <td><a href="#g-c-s-artifact">GCSArtifact</a></td>
 <td><code>GCSArtifact</code></td>
@@ -7809,6 +7841,15 @@ of a single workflow step, which the executor will use as a default location to 
 <td>artifactory</td>
 <td><a href="#artifactory-artifact">ArtifactoryArtifact</a></td>
 <td><code>ArtifactoryArtifact</code></td>
+<td style="text-align: center;"></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>azure</td>
+<td><a href="#azure-artifact">AzureArtifact</a></td>
+<td><code>AzureArtifact</code></td>
 <td style="text-align: center;"></td>
 <td></td>
 <td></td>
@@ -8036,6 +8077,71 @@ of a single workflow step, which the executor will use as a default location to 
 </table>
 <h3 id="artifacts"><span id="artifacts"></span> Artifacts<a class="headerlink" href="#artifacts" title="Permanent link">&para;</a></h3>
 <p>[]<a href="#artifact">Artifact</a></p>
+<h3 id="azureartifact"><span id="azure-artifact"></span> AzureArtifact<a class="headerlink" href="#azureartifact" title="Permanent link">&para;</a></h3>
+<blockquote>
+<p>AzureArtifact is the location of a an Azure Storage artifact</p>
+</blockquote>
+<p><strong>Properties</strong></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Go type</th>
+<th style="text-align: center;">Required</th>
+<th>Default</th>
+<th>Description</th>
+<th>Example</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>accountKeySecret</td>
+<td><a href="#secret-key-selector">SecretKeySelector</a></td>
+<td><code>SecretKeySelector</code></td>
+<td style="text-align: center;"></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>blob</td>
+<td>string</td>
+<td><code>string</code></td>
+<td style="text-align: center;"></td>
+<td></td>
+<td>Blob is the blob name (i.e., path) in the container where the artifact resides</td>
+<td></td>
+</tr>
+<tr>
+<td>container</td>
+<td>string</td>
+<td><code>string</code></td>
+<td style="text-align: center;"></td>
+<td></td>
+<td>Container is the container where resources will be stored</td>
+<td></td>
+</tr>
+<tr>
+<td>endpoint</td>
+<td>string</td>
+<td><code>string</code></td>
+<td style="text-align: center;"></td>
+<td></td>
+<td>Endpoint is the service url associated with an account. It is most likely "https://<ACCOUNT_NAME>.blob.core.windows.net"</td>
+<td></td>
+</tr>
+<tr>
+<td>useSDKCreds</td>
+<td>boolean</td>
+<td><code>bool</code></td>
+<td style="text-align: center;"></td>
+<td></td>
+<td>UseSDKCreds tells the driver to figure out credentials based on sdk defaults.</td>
+<td></td>
+</tr>
+</tbody>
+</table>
 <h3 id="azuredatadiskcachingmode"><span id="azure-data-disk-caching-mode"></span> AzureDataDiskCachingMode<a class="headerlink" href="#azuredatadiskcachingmode" title="Permanent link">&para;</a></h3>
 <blockquote>
 <p>+enum</p>

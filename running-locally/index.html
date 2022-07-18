@@ -4027,6 +4027,7 @@ returns <code>allowed</code>).</p>
 127.0.0.1 minio
 127.0.0.1 postgres
 127.0.0.1 mysql
+127.0.0.1 azurite
 </code></pre></div>
 <p>To start:</p>
 <ul>
@@ -4069,11 +4070,17 @@ returns <code>allowed</code>).</p>
 <p>Start up Argo Workflows using the following:</p>
 <div class="highlight"><pre><span></span><code>make start <span class="nv">PROFILE</span><span class="o">=</span>mysql <span class="nv">AUTH_MODE</span><span class="o">=</span>client <span class="nv">STATIC_FILES</span><span class="o">=</span><span class="nb">false</span> <span class="nv">API</span><span class="o">=</span><span class="nb">true</span> 
 </code></pre></div>
+<p>If you want to run Azure tests against a local Azurite, add <code>AZURE=true</code>:</p>
+<div class="highlight"><pre><span></span><code>make start <span class="nv">PROFILE</span><span class="o">=</span>mysql <span class="nv">AUTH_MODE</span><span class="o">=</span>client <span class="nv">STATIC_FILES</span><span class="o">=</span><span class="nb">false</span> <span class="nv">API</span><span class="o">=</span><span class="nb">true</span> <span class="nv">AZURE</span><span class="o">=</span><span class="nb">true</span>
+</code></pre></div>
 <h4 id="running-one-test">Running One Test<a class="headerlink" href="#running-one-test" title="Permanent link">&para;</a></h4>
 <p>In most cases, you want to run the test that relates to your changes locally. You should not run all the tests suites.
 Our CI will run those concurrently when you create a PR, which will give you feedback much faster.</p>
 <p>Find the test that you want to run in <code>test/e2e</code></p>
 <div class="highlight"><pre><span></span><code>make TestArtifactServer  
+</code></pre></div>
+<p>If you wish to include tests against Azure Storage, define <code>AZURE=true</code>:</p>
+<div class="highlight"><pre><span></span><code>make <span class="nv">AZURE</span><span class="o">=</span><span class="nb">true</span> TestArtifactServer
 </code></pre></div>
 <h4 id="running-a-set-of-tests">Running A Set Of Tests<a class="headerlink" href="#running-a-set-of-tests" title="Permanent link">&para;</a></h4>
 <p>You can find the build tag at the top of the test file.</p>

@@ -3174,6 +3174,13 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#configuring-azure-blob-storage" class="md-nav__link">
+    Configuring Azure Blob Storage
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#configure-the-default-artifact-repository" class="md-nav__link">
     Configure the Default Artifact Repository
   </a>
@@ -3899,6 +3906,13 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#configuring-azure-blob-storage" class="md-nav__link">
+    Configuring Azure Blob Storage
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#configure-the-default-artifact-repository" class="md-nav__link">
     Configure the Default Artifact Repository
   </a>
@@ -3970,6 +3984,12 @@ Subsequent sections will show how to use it.</p>
 <td>Yes</td>
 <td>Yes</td>
 <td>11%</td>
+</tr>
+<tr>
+<td>Azure Blob</td>
+<td>Yes</td>
+<td>Yes</td>
+<td>-</td>
 </tr>
 <tr>
 <td>GCS</td>
@@ -4171,6 +4191,54 @@ configure the artifact storage for your workflow:</p>
 <span class="w">        </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">secretKey</span><span class="w"></span>
 </code></pre></div>
 <p>You can also set <code>createBucketIfNotPresent</code> to <code>true</code> to tell the artifact driver to automatically create the OSS bucket if it doesn't exist yet when saving artifacts. Note that you'll need to set additional permission for your OSS account to create new buckets.</p>
+<h2 id="configuring-azure-blob-storage">Configuring Azure Blob Storage<a class="headerlink" href="#configuring-azure-blob-storage" title="Permanent link">&para;</a></h2>
+<p>Create an Azure Storage account and a container within that account. There are a number of
+ways to accomplish this, including the <a href="https://portal.azure.com">Azure Portal</a> or the
+<a href="https://docs.microsoft.com/en-us/cli/azure/">CLI</a>.</p>
+<ol>
+<li>Retrieve the blob service endpoint for the storage account. For example:</li>
+</ol>
+<div class="highlight"><pre><span></span><code>az storage account show -n mystorageaccountname --query <span class="s1">&#39;primaryEndpoints.blob&#39;</span> -otsv
+</code></pre></div>
+<ol>
+<li>Retrieve the access key for the storage account. For example:</li>
+</ol>
+<div class="highlight"><pre><span></span><code>az storage account keys list -n mystorageaccountname --query <span class="s1">&#39;[0].value&#39;</span> -otsv
+</code></pre></div>
+<ol>
+<li>Create a kubernetes secret to hold the storage account key. For example:</li>
+</ol>
+<div class="highlight"><pre><span></span><code>kubectl create secret generic my-azure-storage-credentials <span class="se">\</span>
+  --from-literal <span class="s2">&quot;account-access-key=</span><span class="k">$(</span>az storage account keys list -n mystorageaccountname --query <span class="s1">&#39;[0].value&#39;</span> -otsv<span class="k">)</span><span class="s2">&quot;</span>
+</code></pre></div>
+<ol>
+<li>Configure <code>azure</code> artifact as following in the yaml.</li>
+</ol>
+<div class="highlight"><pre><span></span><code><span class="nt">artifacts</span><span class="p">:</span><span class="w"></span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">message</span><span class="w"></span>
+<span class="w">    </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/tmp/message</span><span class="w"></span>
+<span class="w">    </span><span class="nt">azure</span><span class="p">:</span><span class="w"></span>
+<span class="w">      </span><span class="nt">endpoint</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://mystorageaccountname.blob.core.windows.net</span><span class="w"></span>
+<span class="w">      </span><span class="nt">container</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-container-name</span><span class="w"></span>
+<span class="w">      </span><span class="nt">blob</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">path/in/container</span><span class="w"></span>
+<span class="w">      </span><span class="c1"># accountKeySecret is a secret selector.</span><span class="w"></span>
+<span class="w">      </span><span class="c1"># It references the k8s secret named &#39;my-azure-storage-credentials&#39;.</span><span class="w"></span>
+<span class="w">      </span><span class="c1"># This secret is expected to have have the key &#39;account-access-key&#39;,</span><span class="w"></span>
+<span class="w">      </span><span class="c1"># containing the base64 encoded credentials to the storage account.</span><span class="w"></span>
+<span class="w">      </span><span class="c1">#</span><span class="w"></span>
+<span class="w">      </span><span class="c1"># If a managed identity has been assigned to the machines running the</span><span class="w"></span>
+<span class="w">      </span><span class="c1"># workflow (e.g., https://docs.microsoft.com/en-us/azure/aks/use-managed-identity)</span><span class="w"></span>
+<span class="w">      </span><span class="c1"># then accountKeySecret is not needed, and useSDKCreds should be</span><span class="w"></span>
+<span class="w">      </span><span class="c1"># set to true instead:</span><span class="w"></span>
+<span class="w">      </span><span class="c1"># useSDKCreds: true</span><span class="w"></span>
+<span class="w">      </span><span class="nt">accountKeySecret</span><span class="p">:</span><span class="w"></span>
+<span class="w">        </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-azure-storage-credentials</span><span class="w"></span>
+<span class="w">        </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">account-access-key</span><span class="w">     </span>
+</code></pre></div>
+<p>If <code>useSDKCreds</code> is set to <code>true</code>, then the <code>accountKeySecret</code> value is not
+used and authentication with Azure will be attempted using a
+<a href="https://docs.microsoft.com/en-us/azure/developer/go/azure-sdk-authentication"><code>DefaultAzureCredential</code></a>
+instead.</p>
 <h2 id="configure-the-default-artifact-repository">Configure the Default Artifact Repository<a class="headerlink" href="#configure-the-default-artifact-repository" title="Permanent link">&para;</a></h2>
 <p>In order for Argo to use your artifact repository, you can configure it as the
 default repository. Edit the workflow-controller config map with the correct
