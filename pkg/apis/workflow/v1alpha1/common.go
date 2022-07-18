@@ -1,6 +1,8 @@
 package v1alpha1
 
 import (
+	"strings"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
@@ -38,6 +40,15 @@ type TemplateReferenceHolder interface {
 	GetTemplateName() string
 	// GetPriority returns the priority of the step or task.
 	GetPriority() int32
+	// GetName returns the name of the step or task.
+	GetName() string
+}
+
+func CompareByPriority(a, b TemplateReferenceHolder) bool {
+	if a.GetPriority() > b.GetPriority() {
+		return true
+	}
+	return strings.Compare(a.GetName(), b.GetName()) > 0
 }
 
 // SubmitOpts are workflow submission options

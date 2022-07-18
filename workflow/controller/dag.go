@@ -654,14 +654,9 @@ func (d *dagContext) findLeafTaskNames(tasks []wfv1.DAGTask) []string {
 
 	prioritySort := false
 
-	// Sort tasks by priority
+	// Sort tasks by priority.
 	sort.Slice(tasks, func(i, j int) bool {
-
-		if tasks[i].GetPriority() > tasks[j].GetPriority() {
-			return true
-		}
-
-		return strings.Compare(tasks[i].Name, tasks[j].Name) > 0
+		return wfv1.CompareByPriority(&tasks[i], &tasks[j])
 	})
 
 	taskIsLeaf := make(map[string]bool)

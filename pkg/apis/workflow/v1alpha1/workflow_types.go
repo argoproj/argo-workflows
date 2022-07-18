@@ -1478,6 +1478,10 @@ func (step *WorkflowStep) GetPriority() int32 {
 	return step.Priority
 }
 
+func (step *WorkflowStep) GetName() string {
+	return step.Name
+}
+
 func (step *WorkflowStep) ShouldExpand() bool {
 	return len(step.WithItems) != 0 || step.WithParam != "" || step.WithSequence != nil
 }
@@ -2147,6 +2151,10 @@ func (n *NodeStatus) GetOutputs() *Outputs {
 
 func (n *NodeStatus) GetPriority() int32 {
 	return 0
+}
+
+func (n *NodeStatus) GetName() string {
+	return n.Name
 }
 
 // IsActiveSuspendNode returns whether this node is an active suspend node
@@ -2879,6 +2887,10 @@ func (t *DAGTask) ShouldExpand() bool {
 
 func (t *DAGTask) GetPriority() int32 {
 	return t.Priority
+}
+
+func (t *DAGTask) GetName() string {
+	return t.Name
 }
 
 // SuspendTemplate is a template subtype to suspend a workflow at a predetermined point in time
