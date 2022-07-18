@@ -279,9 +279,9 @@ func (woc *wfOperationCtx) createArtifactGCTaskSet(ctx context.Context, taskSet 
 	} else {
 		woc.log.Infof("Creating Artifact GC Task Set %s", taskSet.Name)
 
-		_, err = woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskSets(woc.wf.Namespace).Create(ctx, taskSet, metav1.CreateOptions{})
+		taskSet, err = woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskSets(woc.wf.Namespace).Create(ctx, taskSet, metav1.CreateOptions{})
 		if err != nil {
-			return fmt.Errorf("failed to get create WorkflowTaskSet '%s' for Garbage Collection: %w", taskSet.Name, err)
+			return fmt.Errorf("failed to Create WorkflowTaskSet '%s' for Garbage Collection: %w", taskSet.Name, err)
 		}
 	}
 	return nil

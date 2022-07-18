@@ -29,20 +29,20 @@ func NewArtifactDeleteCommand() *cobra.Command {
 			//			each worker will send the results on a channel which is receiving the results
 			//			to populate an in-memory WorkflowTaskResult
 			// wait for the goroutines to finish, then write the WorkflowTaskResult
-			/*
-				a := &wfv1.Artifact{}
-				if err := json.Unmarshal([]byte(os.Getenv(common.EnvVarArtifact)), a); err != nil {
-					return fmt.Errorf("failed to unmarshal artifact: %w", err)
-				}
 
-				drv, err := executor.NewDriver(cmd.Context(), a, &resources{})
-				if err != nil {
-					return fmt.Errorf("failed to create driver: %w", err)
-				}
+			/*a := &wfv1.Artifact{}
+			if err := json.Unmarshal([]byte(os.Getenv(common.EnvVarArtifact)), a); err != nil {
+				return fmt.Errorf("failed to unmarshal artifact: %w", err)
+			}
 
-				if err := drv.Delete(a); err != nil {
-					return fmt.Errorf("failed to delete artifact: %w", err)
-				}*/
+			drv, err := executor.NewDriver(cmd.Context(), a, &resources{})
+			if err != nil {
+				return fmt.Errorf("failed to create driver: %w", err)
+			}
+
+			if err := drv.Delete(a); err != nil {
+				return fmt.Errorf("failed to delete artifact: %w", err)
+			}*/
 			return nil
 		},
 	}
