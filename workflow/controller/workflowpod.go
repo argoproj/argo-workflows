@@ -1160,6 +1160,8 @@ func createArchiveLocationSecret(tmpl *wfv1.Template, volMap map[string]apiv1.Vo
 		createSecretVal(volMap, httpArtRepo.Auth.OAuth2.ClientIDSecret, uniqueKeyMap)
 		createSecretVal(volMap, httpArtRepo.Auth.OAuth2.ClientSecretSecret, uniqueKeyMap)
 		createSecretVal(volMap, httpArtRepo.Auth.OAuth2.TokenURLSecret, uniqueKeyMap)
+	} else if azure := tmpl.ArchiveLocation.Azure; azure != nil {
+		createSecretVal(volMap, azure.AccountKeySecret, uniqueKeyMap)
 	}
 }
 
@@ -1190,6 +1192,8 @@ func createSecretVolume(volMap map[string]apiv1.Volume, art wfv1.Artifact, keyMa
 		createSecretVal(volMap, art.HTTP.Auth.OAuth2.ClientIDSecret, keyMap)
 		createSecretVal(volMap, art.HTTP.Auth.OAuth2.ClientSecretSecret, keyMap)
 		createSecretVal(volMap, art.HTTP.Auth.OAuth2.TokenURLSecret, keyMap)
+	} else if art.Azure != nil {
+		createSecretVal(volMap, art.Azure.AccountKeySecret, keyMap)
 	}
 }
 

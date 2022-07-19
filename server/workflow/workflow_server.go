@@ -324,7 +324,7 @@ func (s *workflowServer) RetryWorkflow(ctx context.Context, req *workflowpkg.Wor
 		return nil, err
 	}
 
-	wf, podsToDelete, err := util.FormulateRetryWorkflow(ctx, wf, req.RestartSuccessful, req.NodeFieldSelector)
+	wf, podsToDelete, err := util.FormulateRetryWorkflow(ctx, wf, req.RestartSuccessful, req.NodeFieldSelector, req.Parameters)
 	if err != nil {
 		return nil, err
 	}
@@ -362,7 +362,7 @@ func (s *workflowServer) ResubmitWorkflow(ctx context.Context, req *workflowpkg.
 		return nil, err
 	}
 
-	newWF, err := util.FormulateResubmitWorkflow(wf, req.Memoized)
+	newWF, err := util.FormulateResubmitWorkflow(wf, req.Memoized, req.Parameters)
 	if err != nil {
 		return nil, err
 	}
