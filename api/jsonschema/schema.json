@@ -3698,14 +3698,14 @@
     },
     "io.argoproj.workflow.v1alpha1.ArtifactResult": {
       "properties": {
-        "deleted": {
-          "type": "boolean"
-        },
         "error": {
           "type": "string"
         },
         "name": {
           "type": "string"
+        },
+        "success": {
+          "type": "boolean"
         }
       },
       "required": [

@@ -1033,7 +1033,7 @@ func schema_pkg_apis_workflow_v1alpha1_ArtifactResult(ref common.ReferenceCallba
 							Format:  "",
 						},
 					},
-					"deleted": {
+					"success": {
 						SchemaProps: spec.SchemaProps{
 							Type:   []string{"boolean"},
 							Format: "",

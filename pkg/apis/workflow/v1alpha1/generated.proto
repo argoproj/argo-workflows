@@ -223,7 +223,7 @@ message ArtifactRepositoryRefStatus {
 message ArtifactResult {
   optional string name = 1;
 
-  optional bool deleted = 2;
+  optional bool success = 2;
 
   optional string error = 3;
 }

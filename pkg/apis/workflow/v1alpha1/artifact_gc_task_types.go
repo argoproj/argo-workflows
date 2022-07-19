@@ -39,7 +39,7 @@ type ArtifactResultNodeStatus struct {
 type ArtifactResult struct {
 	Name string `json:"name" protobuf:"bytes,1,opt,name=name"`
 
-	Deleted bool `json:"deleted,omitempty" protobuf:"varint,2,opt,name=deleted"`
+	Success bool `json:"success,omitempty" protobuf:"varint,2,opt,name=success"`
 
 	Error *string `json:"error,omitempty" protobuf:"bytes,3,opt,name=error"`
 }

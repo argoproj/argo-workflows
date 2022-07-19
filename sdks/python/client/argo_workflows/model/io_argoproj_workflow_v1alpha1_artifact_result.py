@@ -82,8 +82,8 @@ class IoArgoprojWorkflowV1alpha1ArtifactResult(ModelNormal):
         """
         return {
             'name': (str,),  # noqa: E501
-            'deleted': (bool,),  # noqa: E501
             'error': (str,),  # noqa: E501
+            'success': (bool,),  # noqa: E501
         }
 
     @cached_property
@@ -93,8 +93,8 @@ class IoArgoprojWorkflowV1alpha1ArtifactResult(ModelNormal):
 
     attribute_map = {
         'name': 'name',  # noqa: E501
-        'deleted': 'deleted',  # noqa: E501
         'error': 'error',  # noqa: E501
+        'success': 'success',  # noqa: E501
     }
 
     read_only_vars = {
@@ -141,8 +141,8 @@ class IoArgoprojWorkflowV1alpha1ArtifactResult(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            deleted (bool): [optional]  # noqa: E501
             error (str): [optional]  # noqa: E501
+            success (bool): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -228,8 +228,8 @@ class IoArgoprojWorkflowV1alpha1ArtifactResult(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            deleted (bool): [optional]  # noqa: E501
             error (str): [optional]  # noqa: E501
+            success (bool): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)

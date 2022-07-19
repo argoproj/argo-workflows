@@ -7618,14 +7618,14 @@
         "name"
       ],
       "properties": {
-        "deleted": {
-          "type": "boolean"
-        },
         "error": {
           "type": "string"
         },
         "name": {
           "type": "string"
+        },
+        "success": {
+          "type": "boolean"
         }
       }
     },

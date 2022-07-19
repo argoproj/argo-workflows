@@ -7,9 +7,9 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**deleted** | **Boolean** |  |  [optional]
 **error** | **String** |  |  [optional]
 **name** | **String** |  | 
+**success** | **Boolean** |  |  [optional]
 
 
 
