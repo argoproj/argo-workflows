@@ -62,6 +62,9 @@ import (
 	"github.com/argoproj/argo-workflows/v3/workflow/artifactrepositories"
 	"github.com/argoproj/argo-workflows/v3/workflow/events"
 	"github.com/argoproj/argo-workflows/v3/workflow/hydrator"
+
+	limiter "github.com/sethvargo/go-limiter"
+	"github.com/sethvargo/go-limiter/memorystore"
 )
 
 var MaxGRPCMessageSize int
@@ -83,6 +86,7 @@ type argoServer struct {
 	eventAsyncDispatch       bool
 	xframeOptions            string
 	accessControlAllowOrigin string
+	apiRateLimiter           limiter.Store
 	allowedLinkProtocol      []string
 	cache                    *cache.ResourceCache
 }
@@ -105,6 +109,7 @@ type ArgoServerOpts struct {
 	EventAsyncDispatch       bool
 	XFrameOptions            string
 	AccessControlAllowOrigin string
+	APIRateLimit             uint64
 	AllowedLinkProtocol      []string
 }
 
@@ -146,6 +151,14 @@ func NewArgoServer(ctx context.Context, opts ArgoServerOpts) (*argoServer, error
 	if err != nil {
 		return nil, err
 	}
+	store, err := memorystore.New(&memorystore.Config{
+		Tokens:   opts.APIRateLimit,
+		Interval: time.Second,
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	return &argoServer{
 		baseHRef:                 opts.BaseHRef,
 		tlsConfig:                opts.TLSConfig,
@@ -162,6 +175,7 @@ func NewArgoServer(ctx context.Context, opts ArgoServerOpts) (*argoServer, error
 		eventAsyncDispatch:       opts.EventAsyncDispatch,
 		xframeOptions:            opts.XFrameOptions,
 		accessControlAllowOrigin: opts.AccessControlAllowOrigin,
+		apiRateLimiter:           store,
 		allowedLinkProtocol:      opts.AllowedLinkProtocol,
 		cache:                    resourceCache,
 	}, nil
@@ -272,6 +286,7 @@ func (as *argoServer) newGRPCServer(instanceIDService instanceid.Service, offloa
 			grpcutil.PanicLoggerUnaryServerInterceptor(serverLog),
 			grpcutil.ErrorTranslationUnaryServerInterceptor,
 			as.gatekeeper.UnaryServerInterceptor(),
+			grpcutil.RatelimitUnaryServerInterceptor(as.apiRateLimiter),
 		)),
 		grpc.StreamInterceptor(grpc_middleware.ChainStreamServer(
 			grpc_prometheus.StreamServerInterceptor,
@@ -279,6 +294,7 @@ func (as *argoServer) newGRPCServer(instanceIDService instanceid.Service, offloa
 			grpcutil.PanicLoggerStreamServerInterceptor(serverLog),
 			grpcutil.ErrorTranslationStreamServerInterceptor,
 			as.gatekeeper.StreamServerInterceptor(),
+			grpcutil.RatelimitStreamServerInterceptor(as.apiRateLimiter),
 		)),
 	}
 
@@ -305,7 +321,7 @@ func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServe
 	mux := http.NewServeMux()
 	httpServer := http.Server{
 		Addr:      endpoint,
-		Handler:   accesslog.Interceptor(mux),
+		Handler:   as.httpLimit(accesslog.Interceptor(mux)),
 		TLSConfig: as.tlsConfig,
 	}
 	dialOpts := []grpc.DialOption{
@@ -396,4 +412,27 @@ func (as *argoServer) checkServeErr(name string, err error) {
 	} else {
 		log.Infof("graceful shutdown %s", name)
 	}
+}
+
+func (as *argoServer) httpLimit(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Get the IP address for the current user.
+		ip, _, err := net.SplitHostPort(r.RemoteAddr)
+		if err != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+			return
+		}
+		ctx := r.Context()
+		_, _, _, ok, err := as.apiRateLimiter.Take(ctx, ip)
+		if err != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+			return
+		}
+		if !ok {
+			http.Error(w, http.StatusText(429), http.StatusTooManyRequests)
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
 }
