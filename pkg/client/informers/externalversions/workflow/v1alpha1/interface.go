@@ -8,6 +8,8 @@ import (
 
 // Interface provides access to all the informers in this group version.
 type Interface interface {
+	// ArtifactGCTasks returns a ArtifactGCTaskInformer.
+	ArtifactGCTasks() ArtifactGCTaskInformer
 	// ClusterWorkflowTemplates returns a ClusterWorkflowTemplateInformer.
 	ClusterWorkflowTemplates() ClusterWorkflowTemplateInformer
 	// CronWorkflows returns a CronWorkflowInformer.
@@ -33,6 +35,11 @@ type version struct {
 // New returns a new Interface.
 func New(f internalinterfaces.SharedInformerFactory, namespace string, tweakListOptions internalinterfaces.TweakListOptionsFunc) Interface {
 	return &version{factory: f, namespace: namespace, tweakListOptions: tweakListOptions}
+}
+
+// ArtifactGCTasks returns a ArtifactGCTaskInformer.
+func (v *version) ArtifactGCTasks() ArtifactGCTaskInformer {
+	return &artifactGCTaskInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }
 
 // ClusterWorkflowTemplates returns a ClusterWorkflowTemplateInformer.

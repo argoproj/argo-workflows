@@ -2,6 +2,8 @@
 
 package v1alpha1
 
+type ArtifactGCTaskExpansion interface{}
+
 type ClusterWorkflowTemplateExpansion interface{}
 
 type CronWorkflowExpansion interface{}

@@ -12,6 +12,10 @@ type FakeArgoprojV1alpha1 struct {
 	*testing.Fake
 }
 
+func (c *FakeArgoprojV1alpha1) ArtifactGCTasks(namespace string) v1alpha1.ArtifactGCTaskInterface {
+	return &FakeArtifactGCTasks{c, namespace}
+}
+
 func (c *FakeArgoprojV1alpha1) ClusterWorkflowTemplates() v1alpha1.ClusterWorkflowTemplateInterface {
 	return &FakeClusterWorkflowTemplates{c}
 }

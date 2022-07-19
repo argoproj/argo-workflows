@@ -2,6 +2,14 @@
 
 package v1alpha1
 
+// ArtifactGCTaskListerExpansion allows custom methods to be added to
+// ArtifactGCTaskLister.
+type ArtifactGCTaskListerExpansion interface{}
+
+// ArtifactGCTaskNamespaceListerExpansion allows custom methods to be added to
+// ArtifactGCTaskNamespaceLister.
+type ArtifactGCTaskNamespaceListerExpansion interface{}
+
 // ClusterWorkflowTemplateListerExpansion allows custom methods to be added to
 // ClusterWorkflowTemplateLister.
 type ClusterWorkflowTemplateListerExpansion interface{}

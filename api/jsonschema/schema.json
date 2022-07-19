@@ -3431,6 +3431,20 @@
       },
       "type": "object"
     },
+    "io.argoproj.workflow.v1alpha1.ArtifactList": {
+      "properties": {
+        "artifacts": {
+          "items": {
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Artifact"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "artifacts"
+      ],
+      "type": "object"
+    },
     "io.argoproj.workflow.v1alpha1.ArtifactLocation": {
       "description": "ArtifactLocation describes a location for a single or multiple artifacts. It is used as single artifact in the context of inputs/outputs (e.g. outputs.artifacts.artname). It is also used to describe the location of multiple artifacts such as the archive location of a single workflow step, which the executor will use as a default location to store its files.",
       "properties": {
@@ -3473,6 +3487,20 @@
         "s3": {
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.S3Artifact",
           "description": "S3 contains S3 artifact location details"
+        }
+      },
+      "type": "object"
+    },
+    "io.argoproj.workflow.v1alpha1.ArtifactNodeSpec": {
+      "properties": {
+        "archiveLocation": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactLocation"
+        },
+        "artifacts": {
+          "additionalProperties": {
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactList"
+          },
+          "type": "object"
         }
       },
       "type": "object"
@@ -3642,6 +3670,34 @@
         "namespace": {
           "description": "The namespace of the config map. Defaults to the workflow's namespace, or the controller's namespace (if found).",
           "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "io.argoproj.workflow.v1alpha1.ArtifactResult": {
+      "properties": {
+        "deleted": {
+          "type": "boolean"
+        },
+        "error": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "type": "object"
+    },
+    "io.argoproj.workflow.v1alpha1.ArtifactResultNodeStatus": {
+      "properties": {
+        "artifactResults": {
+          "items": {
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactResult"
+          },
+          "type": "array"
         }
       },
       "type": "object"

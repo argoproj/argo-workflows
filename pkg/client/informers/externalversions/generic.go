@@ -37,6 +37,8 @@ func (f *genericInformer) Lister() cache.GenericLister {
 func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource) (GenericInformer, error) {
 	switch resource {
 	// Group=argoproj.io, Version=v1alpha1
+	case v1alpha1.SchemeGroupVersion.WithResource("artifactgctasks"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Argoproj().V1alpha1().ArtifactGCTasks().Informer()}, nil
 	case v1alpha1.SchemeGroupVersion.WithResource("clusterworkflowtemplates"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Argoproj().V1alpha1().ClusterWorkflowTemplates().Informer()}, nil
 	case v1alpha1.SchemeGroupVersion.WithResource("cronworkflows"):

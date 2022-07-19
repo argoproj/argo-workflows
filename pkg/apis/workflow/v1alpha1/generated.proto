@@ -114,6 +114,13 @@ message ArtifactGCTask {
   optional ArtifactGCSStatus status = 3;
 }
 
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+message ArtifactGCTaskList {
+  optional k8s.io.apimachinery.pkg.apis.meta.v1.ListMeta metadata = 1;
+
+  repeated ArtifactGCTask items = 2;
+}
+
 message ArtifactList {
   repeated Artifact artifacts = 1;
 }

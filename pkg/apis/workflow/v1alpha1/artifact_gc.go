@@ -43,3 +43,10 @@ type ArtifactResult struct {
 
 	Error *string `json:"error,omitempty" protobuf:"bytes,3,opt,name=error"`
 }
+
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+type ArtifactGCTaskList struct {
+	metav1.TypeMeta `json:",inline"`
+	metav1.ListMeta `json:"metadata" protobuf:"bytes,1,opt,name=metadata"`
+	Items           []ArtifactGCTask `json:"items" protobuf:"bytes,2,opt,name=items"`
+}
