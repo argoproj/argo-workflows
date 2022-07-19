@@ -5,7 +5,7 @@ import (
 )
 
 // +genclient
-// +kubebuilder:resource:shortName=wfts
+// +kubebuilder:resource:shortName=agw
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // +kubebuilder:subresource:status
 type ArtifactGCWork struct {
@@ -20,8 +20,12 @@ type ArtifactGCWorkSpec struct {
 }
 
 type ArtifactNodeSpec struct {
-	ArchiveLocation *ArtifactLocation    `json:"archiveLocation,omitempty" protobuf:"bytes,1,opt,name=archiveLocation"`
-	Artifacts       map[string]Artifacts `json:"artifacts,omitempty" protobuf:"bytes,2,rep,name=artifacts"`
+	ArchiveLocation *ArtifactLocation       `json:"archiveLocation,omitempty" protobuf:"bytes,1,opt,name=archiveLocation"`
+	Artifacts       map[string]ArtifactList `json:"artifacts,omitempty" protobuf:"bytes,2,rep,name=artifacts"`
+}
+
+type ArtifactList struct {
+	Artifacts `json:"artifacts" protobuf:"bytes,1,rep,name=artifacts"`
 }
 
 type ArtifactGCSWorktatus struct {

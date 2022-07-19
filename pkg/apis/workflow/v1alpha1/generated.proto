@@ -94,6 +94,30 @@ message ArtifactGC {
   optional string strategy = 1;
 }
 
+message ArtifactGCSWorktatus {
+  map<string, ArtifactResultNodeStatus> artifactResultsByNode = 1;
+}
+
+// +genclient
+// +kubebuilder:resource:shortName=agw
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// +kubebuilder:subresource:status
+message ArtifactGCWork {
+  optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
+
+  optional ArtifactGCWorkSpec spec = 2;
+
+  optional ArtifactGCSWorktatus status = 3;
+}
+
+message ArtifactGCWorkSpec {
+  map<string, ArtifactNodeSpec> artifactsByNode = 1;
+}
+
+message ArtifactList {
+  repeated Artifact artifacts = 1;
+}
+
 // ArtifactLocation describes a location for a single or multiple artifacts.
 // It is used as single artifact in the context of inputs/outputs (e.g. outputs.artifacts.artname).
 // It is also used to describe the location of multiple artifacts such as the archive location
@@ -128,6 +152,12 @@ message ArtifactLocation {
 
   // Azure contains Azure Storage artifact location details
   optional AzureArtifact azure = 10;
+}
+
+message ArtifactNodeSpec {
+  optional ArtifactLocation archiveLocation = 1;
+
+  map<string, ArtifactList> artifacts = 2;
 }
 
 // ArtifactPaths expands a step from a collection of artifacts
@@ -181,6 +211,18 @@ message ArtifactRepositoryRefStatus {
 
   // The repository the workflow will use. This maybe empty before v3.1.
   optional ArtifactRepository artifactRepository = 4;
+}
+
+message ArtifactResult {
+  optional string name = 1;
+
+  optional bool deleted = 2;
+
+  optional string error = 3;
+}
+
+message ArtifactResultNodeStatus {
+  repeated ArtifactResult artifactResults = 1;
 }
 
 message ArtifactSearchQuery {
