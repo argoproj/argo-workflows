@@ -8,14 +8,14 @@ import (
 // +kubebuilder:resource:shortName=agw
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // +kubebuilder:subresource:status
-type ArtifactGCWork struct {
+type ArtifactGCTask struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata" protobuf:"bytes,1,opt,name=metadata"`
-	Spec              ArtifactGCWorkSpec   `json:"spec" protobuf:"bytes,2,opt,name=spec"`
-	Status            ArtifactGCSWorktatus `json:"status,omitempty" protobuf:"bytes,3,opt,name=status"`
+	Spec              ArtifactGCSpec    `json:"spec" protobuf:"bytes,2,opt,name=spec"`
+	Status            ArtifactGCSStatus `json:"status,omitempty" protobuf:"bytes,3,opt,name=status"`
 }
 
-type ArtifactGCWorkSpec struct {
+type ArtifactGCSpec struct {
 	ArtifactsByNode map[string]ArtifactNodeSpec `json:"artifactsByNode,omitempty" protobuf:"bytes,1,rep,name=artifactsByNode"`
 }
 
@@ -28,7 +28,7 @@ type ArtifactList struct {
 	Artifacts `json:"artifacts" protobuf:"bytes,1,rep,name=artifacts"`
 }
 
-type ArtifactGCSWorktatus struct {
+type ArtifactGCSStatus struct {
 	ArtifactResultsByNode map[string]ArtifactResultNodeStatus `json:"artifactResultsByNode,omitempty" protobuf:"bytes,1,rep,name=artifactResultsByNode"`
 }
 

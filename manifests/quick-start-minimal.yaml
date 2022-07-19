@@ -908,6 +908,7 @@ rules:
   - workflows/finalizers
   - workflowtasksets
   - workflowtasksets/finalizers
+  - artifactgctasks
   verbs:
   - get
   - list

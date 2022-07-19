@@ -94,24 +94,24 @@ message ArtifactGC {
   optional string strategy = 1;
 }
 
-message ArtifactGCSWorktatus {
+message ArtifactGCSStatus {
   map<string, ArtifactResultNodeStatus> artifactResultsByNode = 1;
+}
+
+message ArtifactGCSpec {
+  map<string, ArtifactNodeSpec> artifactsByNode = 1;
 }
 
 // +genclient
 // +kubebuilder:resource:shortName=agw
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // +kubebuilder:subresource:status
-message ArtifactGCWork {
+message ArtifactGCTask {
   optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
 
-  optional ArtifactGCWorkSpec spec = 2;
+  optional ArtifactGCSpec spec = 2;
 
-  optional ArtifactGCSWorktatus status = 3;
-}
-
-message ArtifactGCWorkSpec {
-  map<string, ArtifactNodeSpec> artifactsByNode = 1;
+  optional ArtifactGCSStatus status = 3;
 }
 
 message ArtifactList {
