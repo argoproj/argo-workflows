@@ -18,7 +18,7 @@ Artifacts can be specified for Garbage Collection at different stages: `OnWorkfl
 
 1. Artifact has a boolean `Deleted` flag
 2. `WorkflowStatus.Conditions` can be set to `ArtifactGCError`
-3. `WorkflowStatus` can include a new field `GCStatus` which maps `ArtifactGCStrategy` to a status (string) which can be set to "NotStarted", "Running", "Succeeded", or "Failed" and can be used to ensure we don't re-run Artifact GC for a given strategy.
+3. `WorkflowStatus` can include a new field `GCStatus` which maps `ArtifactGCStrategy` to a status (string) which can be set to `NotStarted`, `Running`, `Succeeded`, or `Failed` and can be used to ensure we don't re-run Artifact GC for a given strategy.
 
 ### How it will work
 
@@ -69,7 +69,7 @@ Summarizing ADR statement:
 We considered some alternatives for how to specify Service Account and/or Annotations, which are applied to give the GC Pod access (slide 12). We will have them specify this information in a new part of the spec that's specific to the Artifact GC Pod (and applies to all artifacts). Other options considered involve allowing users to specify Service Accounts/Annotations on the template level (which could provide more granular security per pod), but Option 2 is preferred in order to reduce the complexity of the code and reduce the potential number of Pods running.
 
 Summarizing ADR statement:
-"In the context of Artifact Garbage Collection, facing the question of how users should specify Service Account and annotations, we decided that they will specify them for ArtifactGC as a whole (on the Workflow level) to achieve being able to run fewer Pods and simpler code, accepting that the Pod will require the permissions to access all artifacts."
+"In the context of Artifact Garbage Collection, facing the question of how users should specify Service Account and annotations, we decided that they will specify them just on the Workflow level to achieve being able to run fewer Pods and simpler code, accepting that the Pod will require the permissions to access all artifacts."
 
 ### MVP vs post-MVP
 
