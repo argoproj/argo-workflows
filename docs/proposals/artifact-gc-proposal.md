@@ -61,9 +61,15 @@ and these drawbacks:
 - a Workflow with thousands of artifacts causes thousands of Pods to get executed, which could overwhelm kube-scheduler and kube-apiserver.
 - if we delay the Artifact GC Pods by giving them a lower priority than the Workflow Pods, users will not get their artifacts deleted when they expect and may log bugs
 
+Summarizing ADR statement:
+"In the context of Artifact Garbage Collection, facing whether to use a separate Pod for every artifact or not, we decided not to, to achieve faster garbage collection and reduced load on K8S, accepting that we will require a new CRD type, and also that our Pod will require the permissions to access all artifacts."
+
 #### Service Account/IAM roles
 
 We considered some alternatives for how to specify Service Account and/or Annotations, which are applied to give the GC Pod access (slide 12). We will have them specify this information in a new part of the spec that's specific to the Artifact GC Pod (and applies to all artifacts). Other options considered involve allowing users to specify Service Accounts/Annotations on the template level (which could provide more granular security per pod), but Option 2 is preferred in order to reduce the complexity of the code and reduce the potential number of Pods running.
+
+Summarizing ADR statement:
+"In the context of Artifact Garbage Collection, facing the question of how users should specify Service Account and annotations, we decided that they will specify them for ArtifactGC as a whole (on the Workflow level) to achieve being able to run fewer Pods and simpler code, accepting that the Pod will require the permissions to access all artifacts."
 
 ### MVP vs post-MVP
 
