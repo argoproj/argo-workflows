@@ -7347,6 +7347,28 @@
         }
       }
     },
+    "io.argoproj.workflow.v1alpha1.ArtifactGCSStatus": {
+      "type": "object",
+      "properties": {
+        "artifactResultsByNode": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactResultNodeStatus"
+          }
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.ArtifactGCSpec": {
+      "type": "object",
+      "properties": {
+        "artifactsByNode": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactNodeSpec"
+          }
+        }
+      }
+    },
     "io.argoproj.workflow.v1alpha1.ArtifactList": {
       "type": "object",
       "required": [
