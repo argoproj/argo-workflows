@@ -207,7 +207,7 @@ func (woc *wfOperationCtx) artGCTaskSetName(strategy wfv1.ArtifactGCStrategy, ta
 	return fmt.Sprintf("%s-artgc-%s-%d", woc.wf.Name, strategy.AbbreviatedName(), taskSetIndex)
 }
 
-func (woc *wfOperationCtx) addTemplateArtifactsToTasks(strategy wfv1.ArtifactGCStrategy, taskSets *[]*wfv1.ArtifactGCTask, template *wfv1.Template) {
+func (woc *wfOperationCtx) addTemplateArtifactsToTasks(strategy wfv1.ArtifactGCStrategy, tasks *[]*wfv1.ArtifactGCTask, template *wfv1.Template) {
 	// are there artifactSearchResults configured for this strategy?
 	artifactSearchResults := woc.execWf.SearchArtifacts(&wfv1.ArtifactSearchQuery{ArtifactGCStrategies: map[wfv1.ArtifactGCStrategy]bool{strategy: true}, TemplateName: template.Name, Deleted: pointer.BoolPtr(false)})
 	fmt.Printf("deletethis: SearchArtifacts for what's deletable for strategy %v returned: %+v\n", strategy, artifactSearchResults)
@@ -215,9 +215,9 @@ func (woc *wfOperationCtx) addTemplateArtifactsToTasks(strategy wfv1.ArtifactGCS
 	if len(artifactSearchResults) == 0 {
 		return
 	}
-	if taskSets == nil {
+	if tasks == nil {
 		ts := make([]*wfv1.ArtifactGCTask, 0)
-		taskSets = &ts
+		tasks = &ts
 	}
 
 	artifactsByNode := make(map[string]wfv1.ArtifactNodeSpec)
@@ -229,27 +229,19 @@ func (woc *wfOperationCtx) addTemplateArtifactsToTasks(strategy wfv1.ArtifactGCS
 		if !found {
 			artifactsByNode[artifactSearchResult.NodeID] = wfv1.ArtifactNodeSpec{
 				ArchiveLocation: template.ArchiveLocation,
-				Artifacts:       make(map[string]wfv1.ArtifactList),
+				Artifacts:       make(map[string]wfv1.Artifact),
 			}
 			artifactNodeSpec = artifactsByNode[artifactSearchResult.NodeID]
 		}
 
-		//todo: add more....
+		artifactNodeSpec.Artifacts[artifactSearchResult.Name] = artifactSearchResult.Artifact
 
 	}
 
-	/*	// generate a Template for the WorkflowTaskSet
-		reducedTemplate := wfv1.Template{}
-		reducedTemplate.ArchiveLocation = template.ArchiveLocation //todo: determine if this is sufficient for all cases
-		for _, searchResult := range artifactSearchResults {
-			reducedTemplate.Outputs.Artifacts = append(reducedTemplate.Outputs.Artifacts, searchResult.Artifact) // no need for DeepCopy of Artifact since we'll be writing it CRD object immediately
-		}
-	*/
-
-	// do we need to generate a new WorkflowTaskSet or can we use current?
+	// do we need to generate a new ArtifactGCTask or can we use current?
 	//if len(taskSets) == 0 || taskSets[len(taskSets) - 1].Spec.Tasks //todo: handle multiple WorkflowTaskSets
-	if len(*taskSets) == 0 {
-		*taskSets = append(*taskSets, &wfv1.WorkflowTaskSet{
+	if len(*tasks) == 0 {
+		currentTask := &wfv1.ArtifactGCTask{
 			TypeMeta: metav1.TypeMeta{
 				Kind:       workflow.WorkflowTaskSetKind,
 				APIVersion: workflow.APIVersion,
@@ -262,14 +254,16 @@ func (woc *wfOperationCtx) addTemplateArtifactsToTasks(strategy wfv1.ArtifactGCS
 					*metav1.NewControllerRef(woc.wf, wfv1.SchemeGroupVersion.WithKind(workflow.WorkflowKind)),
 				},
 			},
-			Spec: wfv1.WorkflowTaskSetSpec{
-				Tasks: map[string]wfv1.Template{template.Name: reducedTemplate},
+			Spec: wfv1.ArtifactGCSpec{
+				ArtifactsByNode: make(map[string]wfv1.ArtifactNodeSpec),
 			},
 		})
-	} else {
-		currentTaskSet := (*taskSets)[len(*taskSets)-1]
-		currentTaskSet.Spec.Tasks[template.Name] = reducedTemplate
-	}
+		*tasks = append(*tasks,currentTask)
+	} 
+
+	currentTask := (*tasks)[len(*tasks)-1]
+	artifactsByNode := currentTask.Spec.ArtifactsByNode
+	
 
 }
 
