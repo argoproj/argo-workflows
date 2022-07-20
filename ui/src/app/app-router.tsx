@@ -65,6 +65,7 @@ export const AppRouter = ({popupManager, history, notificationsManager}: {popupM
     useEffect(() => {
         services.info.getUserInfo().then(userInfo => {
             Utils.userNamespace = userInfo.serviceAccountNamespace;
+            setNamespace(Utils.currentNamespace);
         });
         services.info
             .getInfo()
