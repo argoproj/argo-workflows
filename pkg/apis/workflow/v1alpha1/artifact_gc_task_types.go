@@ -20,12 +20,8 @@ type ArtifactGCSpec struct {
 }
 
 type ArtifactNodeSpec struct {
-	ArchiveLocation *ArtifactLocation       `json:"archiveLocation,omitempty" protobuf:"bytes,1,opt,name=archiveLocation"`
-	Artifacts       map[string]ArtifactList `json:"artifacts,omitempty" protobuf:"bytes,2,rep,name=artifacts"`
-}
-
-type ArtifactList struct {
-	Artifacts `json:"artifacts" protobuf:"bytes,1,rep,name=artifacts"`
+	ArchiveLocation *ArtifactLocation   `json:"archiveLocation,omitempty" protobuf:"bytes,1,opt,name=archiveLocation"`
+	Artifacts       map[string]Artifact `json:"artifacts,omitempty" protobuf:"bytes,2,rep,name=artifacts"`
 }
 
 type ArtifactGCSStatus struct {

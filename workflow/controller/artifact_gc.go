@@ -220,8 +220,23 @@ func (woc *wfOperationCtx) addTemplateArtifactsToTasks(strategy wfv1.ArtifactGCS
 		taskSets = &ts
 	}
 
+	artifactsByNode := make(map[string]wfv1.ArtifactNodeSpec)
+
 	// go through artifactSearchResults and create a map from nodeID to artifacts
 	// for each node, create an ArtifactNodeSpec with our Template's ArchiveLocation (if any) and our list of Artifacts
+	for _, artifactSearchResult := range artifactSearchResults {
+		artifactNodeSpec, found := artifactsByNode[artifactSearchResult.NodeID]
+		if !found {
+			artifactsByNode[artifactSearchResult.NodeID] = wfv1.ArtifactNodeSpec{
+				ArchiveLocation: template.ArchiveLocation,
+				Artifacts:       make(map[string]wfv1.ArtifactList),
+			}
+			artifactNodeSpec = artifactsByNode[artifactSearchResult.NodeID]
+		}
+
+		//todo: add more....
+
+	}
 
 	/*	// generate a Template for the WorkflowTaskSet
 		reducedTemplate := wfv1.Template{}
