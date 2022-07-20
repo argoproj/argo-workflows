@@ -143,20 +143,20 @@ func (woc *wfOperationCtx) processArtifactGCStrategy(ctx context.Context, strate
 		if exists {
 			woc.log.Debugf("pod %s already exists, not re-creating", podName)
 		} else {
-			workflowTaskSets := make([]*wfv1.WorkflowTaskSet, 0)
+			tasks := make([]*wfv1.ArtifactGCTask, 0)
 			for _, template := range woc.wf.Spec.Templates {
-				woc.addTemplateArtifactsToTasks(strategy, &workflowTaskSets, &template)
+				woc.addTemplateArtifactsToTasks(strategy, &tasks, &template)
 			}
-			if len(workflowTaskSets) > 0 {
+			if len(tasks) > 0 {
 				// create the K8s WorkflowTaskSet objects
-				for _, wfts := range workflowTaskSets {
-					err := woc.createArtifactGCTaskSet(ctx, wfts)
+				for _, task := range tasks {
+					err := woc.createArtifactGCTask(ctx, task)
 					if err != nil {
 						return err
 					}
 				}
 				// create the pod
-				err = woc.createArtifactGCPod(ctx, strategy, workflowTaskSets)
+				err = woc.createArtifactGCPod(ctx, strategy, tasks)
 				if err != nil {
 					return err
 				}
@@ -220,26 +220,8 @@ func (woc *wfOperationCtx) addTemplateArtifactsToTasks(strategy wfv1.ArtifactGCS
 		tasks = &ts
 	}
 
-	artifactsByNode := make(map[string]wfv1.ArtifactNodeSpec)
-
-	// go through artifactSearchResults and create a map from nodeID to artifacts
-	// for each node, create an ArtifactNodeSpec with our Template's ArchiveLocation (if any) and our list of Artifacts
-	for _, artifactSearchResult := range artifactSearchResults {
-		artifactNodeSpec, found := artifactsByNode[artifactSearchResult.NodeID]
-		if !found {
-			artifactsByNode[artifactSearchResult.NodeID] = wfv1.ArtifactNodeSpec{
-				ArchiveLocation: template.ArchiveLocation,
-				Artifacts:       make(map[string]wfv1.Artifact),
-			}
-			artifactNodeSpec = artifactsByNode[artifactSearchResult.NodeID]
-		}
-
-		artifactNodeSpec.Artifacts[artifactSearchResult.Name] = artifactSearchResult.Artifact
-
-	}
-
 	// do we need to generate a new ArtifactGCTask or can we use current?
-	//if len(taskSets) == 0 || taskSets[len(taskSets) - 1].Spec.Tasks //todo: handle multiple WorkflowTaskSets
+	//if len(taskSets) == 0 || taskSets[len(taskSets) - 1].Spec.Tasks
 	if len(*tasks) == 0 {
 		currentTask := &wfv1.ArtifactGCTask{
 			TypeMeta: metav1.TypeMeta{
@@ -257,60 +239,77 @@ func (woc *wfOperationCtx) addTemplateArtifactsToTasks(strategy wfv1.ArtifactGCS
 			Spec: wfv1.ArtifactGCSpec{
 				ArtifactsByNode: make(map[string]wfv1.ArtifactNodeSpec),
 			},
-		})
-		*tasks = append(*tasks,currentTask)
-	} 
+		}
+		*tasks = append(*tasks, currentTask)
+	} /*else if len(*tasks) > SOME_THRESHOLD { //todo: handle multiple ArtifactGCTasks
+		// add a new ArtifactGCTask to *tasks
+	}*/
 
 	currentTask := (*tasks)[len(*tasks)-1]
 	artifactsByNode := currentTask.Spec.ArtifactsByNode
-	
+
+	// go through artifactSearchResults and create a map from nodeID to artifacts
+	// for each node, create an ArtifactNodeSpec with our Template's ArchiveLocation (if any) and our list of Artifacts
+	for _, artifactSearchResult := range artifactSearchResults {
+		artifactNodeSpec, found := artifactsByNode[artifactSearchResult.NodeID]
+		if !found {
+			artifactsByNode[artifactSearchResult.NodeID] = wfv1.ArtifactNodeSpec{
+				ArchiveLocation: template.ArchiveLocation,
+				Artifacts:       make(map[string]wfv1.Artifact),
+			}
+			artifactNodeSpec = artifactsByNode[artifactSearchResult.NodeID]
+		}
+
+		artifactNodeSpec.Artifacts[artifactSearchResult.Name] = artifactSearchResult.Artifact
+
+	}
 
 }
 
-func (woc *wfOperationCtx) getArtifactTaskSet(taskSetName string) (*wfv1.WorkflowTaskSet, error) {
+func (woc *wfOperationCtx) getArtifactTask(taskSetName string) (*wfv1.ArtifactGCTask, error) {
 	key := woc.wf.Namespace + "/" + taskSetName
-	taskSet, exists, err := woc.controller.wfTaskSetInformer.Informer().GetIndexer().GetByKey(key)
+	task, exists, err := woc.controller.artifactGCTaskInformer.Informer().GetIndexer().GetByKey(key)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get WorkflowTaskSet by key '%s': %w", key, err)
 	}
 	if !exists {
 		return nil, nil
 	}
-	return taskSet.(*wfv1.WorkflowTaskSet), nil
+	return task.(*wfv1.ArtifactGCTask), nil
 }
 
 //	create WorkflowTaskSet CRD object
-func (woc *wfOperationCtx) createArtifactGCTaskSet(ctx context.Context, taskSet *wfv1.WorkflowTaskSet) error {
+func (woc *wfOperationCtx) createArtifactGCTask(ctx context.Context, taskSet *wfv1.ArtifactGCTask) error {
 
 	// first make sure it doesn't already exist
-	foundTaskSet, err := woc.getArtifactTaskSet(taskSet.Name)
+	foundTask, err := woc.getArtifactTask(taskSet.Name)
 	if err != nil {
 		return err
 	}
-	if foundTaskSet != nil {
-		woc.log.Debugf("Artifact GC Task Set %s already exists", taskSet.Name)
+	if foundTask != nil {
+		woc.log.Debugf("Artifact GC Task %s already exists", taskSet.Name)
 	} else {
-		woc.log.Infof("Creating Artifact GC Task Set %s", taskSet.Name)
+		woc.log.Infof("Creating Artifact GC Task %s", taskSet.Name)
 
-		taskSet, err = woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskSets(woc.wf.Namespace).Create(ctx, taskSet, metav1.CreateOptions{})
+		taskSet, err = woc.controller.wfclientset.ArgoprojV1alpha1().ArtifactGCTasks(woc.wf.Namespace).Create(ctx, taskSet, metav1.CreateOptions{})
 		if err != nil {
-			return fmt.Errorf("failed to Create WorkflowTaskSet '%s' for Garbage Collection: %w", taskSet.Name, err)
+			return fmt.Errorf("failed to Create ArtifactGCTask '%s' for Garbage Collection: %w", taskSet.Name, err)
 		}
 	}
 	return nil
 }
 
-func (woc *wfOperationCtx) createArtifactGCPod(ctx context.Context, strategy wfv1.ArtifactGCStrategy, taskSets []*wfv1.WorkflowTaskSet) error {
+func (woc *wfOperationCtx) createArtifactGCPod(ctx context.Context, strategy wfv1.ArtifactGCStrategy, tasks []*wfv1.ArtifactGCTask) error {
 	podName := woc.artGCPodName(strategy)
 
 	woc.log.
 		WithField("strategy", strategy).
 		Infof("create pod to delete artifacts: %s", podName)
 
-	ownerReferences := make([]metav1.OwnerReference, len(taskSets))
-	for i, taskSet := range taskSets {
-		// make sure pod gets deleted with the WorkflowTaskSets
-		ownerReferences[i] = *metav1.NewControllerRef(taskSet, wfv1.SchemeGroupVersion.WithKind(workflow.WorkflowTaskSetKind))
+	ownerReferences := make([]metav1.OwnerReference, len(tasks))
+	for i, task := range tasks {
+		// make sure pod gets deleted with the ArtifactGCTasks
+		ownerReferences[i] = *metav1.NewControllerRef(task, wfv1.SchemeGroupVersion.WithKind(workflow.WorkflowTaskSetKind))
 	}
 
 	pod := &corev1.Pod{
