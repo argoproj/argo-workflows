@@ -145,7 +145,7 @@ func (woc *wfOperationCtx) processArtifactGCStrategy(ctx context.Context, strate
 		} else {
 			workflowTaskSets := make([]*wfv1.WorkflowTaskSet, 0)
 			for _, template := range woc.wf.Spec.Templates {
-				woc.addTemplateArtifactsToWorkflowTaskSets(strategy, &workflowTaskSets, &template)
+				woc.addTemplateArtifactsToTasks(strategy, &workflowTaskSets, &template)
 			}
 			if len(workflowTaskSets) > 0 {
 				// create the K8s WorkflowTaskSet objects
@@ -207,7 +207,7 @@ func (woc *wfOperationCtx) artGCTaskSetName(strategy wfv1.ArtifactGCStrategy, ta
 	return fmt.Sprintf("%s-artgc-%s-%d", woc.wf.Name, strategy.AbbreviatedName(), taskSetIndex)
 }
 
-func (woc *wfOperationCtx) addTemplateArtifactsToWorkflowTaskSets(strategy wfv1.ArtifactGCStrategy, taskSets *[]*wfv1.WorkflowTaskSet, template *wfv1.Template) {
+func (woc *wfOperationCtx) addTemplateArtifactsToTasks(strategy wfv1.ArtifactGCStrategy, taskSets *[]*wfv1.ArtifactGCTask, template *wfv1.Template) {
 	// are there artifactSearchResults configured for this strategy?
 	artifactSearchResults := woc.execWf.SearchArtifacts(&wfv1.ArtifactSearchQuery{ArtifactGCStrategies: map[wfv1.ArtifactGCStrategy]bool{strategy: true}, TemplateName: template.Name, Deleted: pointer.BoolPtr(false)})
 	fmt.Printf("deletethis: SearchArtifacts for what's deletable for strategy %v returned: %+v\n", strategy, artifactSearchResults)
@@ -216,16 +216,20 @@ func (woc *wfOperationCtx) addTemplateArtifactsToWorkflowTaskSets(strategy wfv1.
 		return
 	}
 	if taskSets == nil {
-		ts := make([]*wfv1.WorkflowTaskSet, 0)
+		ts := make([]*wfv1.ArtifactGCTask, 0)
 		taskSets = &ts
 	}
 
-	// generate a Template for the WorkflowTaskSet
-	reducedTemplate := wfv1.Template{}
-	reducedTemplate.ArchiveLocation = template.ArchiveLocation //todo: determine if this is sufficient for all cases
-	for _, searchResult := range artifactSearchResults {
-		reducedTemplate.Outputs.Artifacts = append(reducedTemplate.Outputs.Artifacts, searchResult.Artifact) // no need for DeepCopy of Artifact since we'll be writing it CRD object immediately
-	}
+	// go through artifactSearchResults and create a map from nodeID to artifacts
+	// for each node, create an ArtifactNodeSpec with our Template's ArchiveLocation (if any) and our list of Artifacts
+
+	/*	// generate a Template for the WorkflowTaskSet
+		reducedTemplate := wfv1.Template{}
+		reducedTemplate.ArchiveLocation = template.ArchiveLocation //todo: determine if this is sufficient for all cases
+		for _, searchResult := range artifactSearchResults {
+			reducedTemplate.Outputs.Artifacts = append(reducedTemplate.Outputs.Artifacts, searchResult.Artifact) // no need for DeepCopy of Artifact since we'll be writing it CRD object immediately
+		}
+	*/
 
 	// do we need to generate a new WorkflowTaskSet or can we use current?
 	//if len(taskSets) == 0 || taskSets[len(taskSets) - 1].Spec.Tasks //todo: handle multiple WorkflowTaskSets
