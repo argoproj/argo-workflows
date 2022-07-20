@@ -7369,20 +7369,6 @@
         }
       }
     },
-    "io.argoproj.workflow.v1alpha1.ArtifactList": {
-      "type": "object",
-      "required": [
-        "artifacts"
-      ],
-      "properties": {
-        "artifacts": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Artifact"
-          }
-        }
-      }
-    },
     "io.argoproj.workflow.v1alpha1.ArtifactLocation": {
       "description": "ArtifactLocation describes a location for a single or multiple artifacts. It is used as single artifact in the context of inputs/outputs (e.g. outputs.artifacts.artname). It is also used to describe the location of multiple artifacts such as the archive location of a single workflow step, which the executor will use as a default location to store its files.",
       "type": "object",
@@ -7438,7 +7424,7 @@
         "artifacts": {
           "type": "object",
           "additionalProperties": {
-            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactList"
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Artifact"
           }
         }
       }

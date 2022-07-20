@@ -121,10 +121,6 @@ message ArtifactGCTaskList {
   repeated ArtifactGCTask items = 2;
 }
 
-message ArtifactList {
-  repeated Artifact artifacts = 1;
-}
-
 // ArtifactLocation describes a location for a single or multiple artifacts.
 // It is used as single artifact in the context of inputs/outputs (e.g. outputs.artifacts.artname).
 // It is also used to describe the location of multiple artifacts such as the archive location
@@ -164,7 +160,7 @@ message ArtifactLocation {
 message ArtifactNodeSpec {
   optional ArtifactLocation archiveLocation = 1;
 
-  map<string, ArtifactList> artifacts = 2;
+  map<string, Artifact> artifacts = 2;
 }
 
 // ArtifactPaths expands a step from a collection of artifacts

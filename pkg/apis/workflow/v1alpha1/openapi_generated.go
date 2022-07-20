@@ -23,7 +23,6 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactGCSpec":                schema_pkg_apis_workflow_v1alpha1_ArtifactGCSpec(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactGCTask":                schema_pkg_apis_workflow_v1alpha1_ArtifactGCTask(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactGCTaskList":            schema_pkg_apis_workflow_v1alpha1_ArtifactGCTaskList(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactList":                  schema_pkg_apis_workflow_v1alpha1_ArtifactList(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactLocation":              schema_pkg_apis_workflow_v1alpha1_ArtifactLocation(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactNodeSpec":              schema_pkg_apis_workflow_v1alpha1_ArtifactNodeSpec(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactPaths":                 schema_pkg_apis_workflow_v1alpha1_ArtifactPaths(ref),
@@ -592,34 +591,6 @@ func schema_pkg_apis_workflow_v1alpha1_ArtifactGCTaskList(ref common.ReferenceCa
 	}
 }
 
-func schema_pkg_apis_workflow_v1alpha1_ArtifactList(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Type: []string{"object"},
-				Properties: map[string]spec.Schema{
-					"artifacts": {
-						SchemaProps: spec.SchemaProps{
-							Type: []string{"array"},
-							Items: &spec.SchemaOrArray{
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Default: map[string]interface{}{},
-										Ref:     ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Artifact"),
-									},
-								},
-							},
-						},
-					},
-				},
-				Required: []string{"artifacts"},
-			},
-		},
-		Dependencies: []string{
-			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Artifact"},
-	}
-}
-
 func schema_pkg_apis_workflow_v1alpha1_ArtifactLocation(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
@@ -714,7 +685,8 @@ func schema_pkg_apis_workflow_v1alpha1_ArtifactNodeSpec(ref common.ReferenceCall
 								Allows: true,
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactList"),
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Artifact"),
 									},
 								},
 							},
@@ -724,7 +696,7 @@ func schema_pkg_apis_workflow_v1alpha1_ArtifactNodeSpec(ref common.ReferenceCall
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactList", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactLocation"},
+			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Artifact", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactLocation"},
 	}
 }
 

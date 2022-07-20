@@ -30,9 +30,9 @@ from argo_workflows.exceptions import ApiAttributeError
 
 
 def lazy_import():
-    from argo_workflows.model.io_argoproj_workflow_v1alpha1_artifact_list import IoArgoprojWorkflowV1alpha1ArtifactList
+    from argo_workflows.model.io_argoproj_workflow_v1alpha1_artifact import IoArgoprojWorkflowV1alpha1Artifact
     from argo_workflows.model.io_argoproj_workflow_v1alpha1_artifact_location import IoArgoprojWorkflowV1alpha1ArtifactLocation
-    globals()['IoArgoprojWorkflowV1alpha1ArtifactList'] = IoArgoprojWorkflowV1alpha1ArtifactList
+    globals()['IoArgoprojWorkflowV1alpha1Artifact'] = IoArgoprojWorkflowV1alpha1Artifact
     globals()['IoArgoprojWorkflowV1alpha1ArtifactLocation'] = IoArgoprojWorkflowV1alpha1ArtifactLocation
 
 
@@ -90,7 +90,7 @@ class IoArgoprojWorkflowV1alpha1ArtifactNodeSpec(ModelNormal):
         lazy_import()
         return {
             'archive_location': (IoArgoprojWorkflowV1alpha1ArtifactLocation,),  # noqa: E501
-            'artifacts': ({str: (IoArgoprojWorkflowV1alpha1ArtifactList,)},),  # noqa: E501
+            'artifacts': ({str: (IoArgoprojWorkflowV1alpha1Artifact,)},),  # noqa: E501
         }
 
     @cached_property
@@ -145,7 +145,7 @@ class IoArgoprojWorkflowV1alpha1ArtifactNodeSpec(ModelNormal):
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
             archive_location (IoArgoprojWorkflowV1alpha1ArtifactLocation): [optional]  # noqa: E501
-            artifacts ({str: (IoArgoprojWorkflowV1alpha1ArtifactList,)}): [optional]  # noqa: E501
+            artifacts ({str: (IoArgoprojWorkflowV1alpha1Artifact,)}): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -228,7 +228,7 @@ class IoArgoprojWorkflowV1alpha1ArtifactNodeSpec(ModelNormal):
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
             archive_location (IoArgoprojWorkflowV1alpha1ArtifactLocation): [optional]  # noqa: E501
-            artifacts ({str: (IoArgoprojWorkflowV1alpha1ArtifactList,)}): [optional]  # noqa: E501
+            artifacts ({str: (IoArgoprojWorkflowV1alpha1Artifact,)}): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
