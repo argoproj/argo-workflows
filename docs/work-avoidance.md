@@ -7,9 +7,9 @@ You can make workflows faster and more robust by employing **work avoidance**. A
 Use cases:
 
 * An expensive step appears across multiple workflows - you want to avoid repeating them.
-* A workflow has unreliable tasks - you want to be able resubmit the workflow.
+* A workflow has unreliable tasks - you want to be able to resubmit the workflow.
 
-A **marker file** is a file on that indicates the work has already been done, before doing the work you check to see if the marker has already been done:
+A **marker file** is a file that indicates the work has already been done. Before doing the work you check to see if the marker has already been done:
 
 ```sh
 if [ -e /work/markers/name-of-task ]; then
