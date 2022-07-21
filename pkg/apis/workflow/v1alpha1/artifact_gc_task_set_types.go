@@ -54,7 +54,7 @@ type ArtifactResult struct {
 	Error *string `json:"error,omitempty" protobuf:"bytes,3,opt,name=error"`
 }
 
-// ArtifactGCTaskList is list of ArtifactGCTask resources
+// WorkflowArtifactGCTaskSetList is list of WorkflowArtifactGCTaskSet resources
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 type WorkflowArtifactGCTaskSetList struct {
 	metav1.TypeMeta `json:",inline"`

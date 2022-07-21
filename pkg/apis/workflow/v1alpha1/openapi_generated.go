@@ -6732,7 +6732,7 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowArtifactGCTaskSetList(ref common.
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "ArtifactGCTaskList is list of ArtifactGCTask resources",
+				Description: "WorkflowArtifactGCTaskSetList is list of WorkflowArtifactGCTaskSet resources",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"kind": {

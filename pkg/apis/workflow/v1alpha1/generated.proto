@@ -1744,7 +1744,7 @@ message WorkflowArtifactGCTaskSet {
   optional ArtifactGCSStatus status = 3;
 }
 
-// ArtifactGCTaskList is list of ArtifactGCTask resources
+// WorkflowArtifactGCTaskSetList is list of WorkflowArtifactGCTaskSet resources
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 message WorkflowArtifactGCTaskSetList {
   optional k8s.io.apimachinery.pkg.apis.meta.v1.ListMeta metadata = 1;
