@@ -393,7 +393,7 @@ dist/manifests/%: manifests/%
 # lint/test/etc
 
 $(GOPATH)/bin/golangci-lint:
-	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b `go env GOPATH`/bin
+	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b `go env GOPATH`/bin v1.47.1
 
 .PHONY: lint
 lint: server/static/files.go $(GOPATH)/bin/golangci-lint
