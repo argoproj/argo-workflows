@@ -184,16 +184,11 @@ func (woc *wfOperationCtx) createTaskSet(ctx context.Context) error {
 
 	if apierr.IsConflict(err) || apierr.IsAlreadyExists(err) {
 		woc.log.Debug("patching the exiting taskset")
-		wfFinalizers := woc.wf.Finalizers
-		if woc.wf.Status.Fulfilled() {
-			wfFinalizers = []string{}
-		}
 		spec := map[string]interface{}{
 			"metadata": metav1.ObjectMeta{
 				Labels: map[string]string{
 					common.LabelKeyCompleted: strconv.FormatBool(woc.wf.Status.Fulfilled()),
 				},
-				Finalizers: wfFinalizers,
 			},
 			"spec": wfv1.WorkflowTaskSetSpec{Tasks: woc.taskSet},
 		}
