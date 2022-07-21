@@ -103,7 +103,7 @@ export const Utils = {
     },
 
     get currentNamespace() {
-        // we always prefer the managed namespace
+        // we always prefer the user namespace
         return this.userNamespace || this.managedNamespace || this.fixLocalStorageString(localStorage.getItem(currentNamespaceKey));
     },
 
