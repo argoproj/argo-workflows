@@ -29,7 +29,7 @@ type ArtifactGCSStatus struct {
 }
 
 type ArtifactResultNodeStatus struct {
-	ArtifactResults []ArtifactResult `json:"artifactResults,omitempty" protobuf:"bytes,1,rep,name=artifactResults"`
+	ArtifactResults map[string]ArtifactResult `json:"artifactResults,omitempty" protobuf:"bytes,1,rep,name=artifactResults"`
 }
 
 type ArtifactResult struct {

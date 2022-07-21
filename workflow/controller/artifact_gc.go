@@ -159,7 +159,7 @@ if err != nil {
 	}*/
 
 // go through any GC pods that are already running and may have completed
-func (woc *wfOperationCtx) processArtifactGCCompletion(ctx context.Context) error {
+func (woc *wfOperationCtx) processArtifactGCCompletion(ctx context.Context, strategy wfv1.ArtifactGCStrategy) error {
 	// check if any previous Artifact GC Pods completed
 	pods, err := woc.controller.podInformer.GetIndexer().ByIndex(indexes.WorkflowIndex, woc.wf.GetNamespace()+"/"+woc.wf.GetName())
 	if err != nil {
@@ -179,7 +179,7 @@ func (woc *wfOperationCtx) processArtifactGCCompletion(ctx context.Context) erro
 			Info("reconciling artifact-gc pod")
 
 		if phase == corev1.PodSucceeded || phase == corev1.PodFailed {
-			err = woc.processCompletedArtifactGCPod(ctx, pod)
+			err = woc.processCompletedArtifactGCPod(ctx, pod, strategy)
 			if err != nil {
 				return err
 			}
@@ -204,37 +204,62 @@ func (woc *wfOperationCtx) processCompletedArtifactGCPod(ctx context.Context, po
 	if err != nil {
 		return fmt.Errorf("failed to List ArtifactGCTasks: %w", err)
 	}
-	gcError := false
+
 	for _, task := range taskList.Items {
 		// for each ArtifactGCTask: call processCompletedArtifactGCTask() which can delete the Task and also should return whether there was an error
-		succeeded, err := woc.processCompletedArtifactGCTask(ctx, task)
+		err = woc.processCompletedArtifactGCTask(ctx, task)
 		if err != nil {
 			return err
 		}
-		if !succeeded {
-			gcError = true
-		}
-	}
-
-	// if there was an error, issue a K8S Event
-	if gcError {
-		woc.eventRecorder.Event(woc.wf, apiv1.EventTypeWarning, "ArtifactGCFailed", fmt.Sprintf("Artifact Garbage Collection failed for strategy %s", strategy))
 	}
 	return nil
 }
 
 // process the Status in the ArtifactGCTask which was completed and reflect it in Workflow Status; then delete the Task CRD Object
-// return whether or not GC succeeded for all artifacts
-func (woc *wfOperationCtx) processCompletedArtifactGCTask(ctx, artifactGCTask *wfv1.ArtifactGCTask) (bool, error) {
-	for node, nodeStatus := range artifactGCTask.Spec.ArtifactsByNode {
+// return first found error message if GC failed
+func (woc *wfOperationCtx) processCompletedArtifactGCTask(ctx, artifactGCTask *wfv1.ArtifactGCTask, strategy wfv1.ArtifactGCStrategy) error {
+	foundGCFailure := false
+	for nodeName, nodeResult := range artifactGCTask.Status.ArtifactResultsByNode {
 		// find this node result in the Workflow Status
-		wfNode, found := woc.wf.Status.Nodes[node]
+		wfNode, found := woc.wf.Status.Nodes[nodeName]
 		if !found {
-
+			return fmt.Errorf("node named '%s' returned by ArtifactGCTask '%s' wasn't found in Workflow '%s' Status", nodeName, artifactGCTask.Name, woc.wf.Name)
 		}
-		mappedArtifacts
-		wfNode.Status
+
+		if wfNode.Outputs == nil {
+			return fmt.Errorf("node named '%s' returned by ArtifactGCTask '%s' doesn't seem to have Outputs in Workflow Status")
+		}
+		for i, wfArtifact := range wfNode.Outputs.Artifacts {
+			// find artifact in the ArtifactGCTask Status
+			artifactResult, foundArt := nodeResult.ArtifactResults[wfArtifact.Name]
+			if !foundArt {
+				// todo
+			}
+			woc.wf.Status.Nodes[nodeName].Outputs.Artifacts[i].Deleted = artifactResult.Success
+			if artifactResult.Error != nil {
+				// issue an Event if there was an error - just do this one to prevent flooding the system with Events
+				if !foundGCFailure {
+					foundGCFailure = true
+					gcFailureMsg := *artifactResult.Error
+					woc.eventRecorder.Event(woc.wf, apiv1.EventTypeWarning, "ArtifactGCFailed",
+						fmt.Sprintf("Artifact Garbage Collection failed for strategy %s, err:%s", strategy, gcFailureMsg))
+
+				}
+			}
+		}
+
 	}
+
+	if woc.wf.Status.ArtifactGCStatus == nil {
+		woc.wf.Status.ArtifactGCStatus = make(wfv1.ArtifactGCStatus)
+	}
+	if foundGCFailure {
+		woc.wf.Status.ArtifactGCStatus[strategy] = wfv1.NodeSucceeded
+	} else {
+		woc.wf.Status.ArtifactGCStatus[strategy] = wfv1.NodeFailed
+	}
+
+	return nil
 }
 
 func (woc *wfOperationCtx) processArtifactGCStrategy(ctx context.Context, strategy wfv1.ArtifactGCStrategy) error {
