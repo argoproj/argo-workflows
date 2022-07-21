@@ -6,7 +6,7 @@ import (
 
 // WorkflowArtifactGCTask specifies the Artifacts that need to be deleted as well as the status of deletion
 // +genclient
-// +kubebuilder:resource:shortName=wfats
+// +kubebuilder:resource:shortName=wfat
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // +kubebuilder:subresource:status
 type WorkflowArtifactGCTask struct {
