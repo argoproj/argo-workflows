@@ -192,11 +192,15 @@ func (woc *wfOperationCtx) processArtifactGCCompletion(ctx context.Context) erro
 
 		if phase == corev1.PodSucceeded || phase == corev1.PodFailed {
 			err = woc.processCompletedArtifactGCPod(ctx, pod, strategy)
+			woc.updated = true
 			if err != nil {
 				return err
 			}
 			if phase == corev1.PodSucceeded {
 				anyPodSuccess = true
+				woc.wf.Status.ArtifactGCStatus[strategy] = wfv1.NodeSucceeded
+			} else {
+				woc.wf.Status.ArtifactGCStatus[strategy] = wfv1.NodeFailed
 			}
 		}
 	}
@@ -222,14 +226,8 @@ func (woc *wfOperationCtx) allArtifactsDeleted() bool {
 	return true
 }
 
-func (woc *wfOperationCtx) processCompletedArtifactGCPod(ctx context.Context, pod *corev1.Pod) error {
+func (woc *wfOperationCtx) processCompletedArtifactGCPod(ctx context.Context, pod *corev1.Pod, strategy wfv1.ArtifactGCStrategy) error {
 	woc.log.Infof("processing completed Artifact GC Pod '%s'", pod.Name)
-
-	strategyStr, found := pod.Annotations[common.AnnotationKeyArtifactGCStrategy]
-	if !found {
-		return fmt.Errorf("Artifact GC Pod '%s' doesn't have annotation '%s'?", pod.Name, common.AnnotationKeyArtifactGCStrategy)
-	}
-	strategy := wfv1.ArtifactGCStrategy(strategyStr)
 
 	// get associated WorkflowArtifactGCTaskSets
 	labelSelector := fmt.Sprintf("%s = %s", common.LabelKeyArtifactGCPodName, pod.Name)
@@ -285,15 +283,6 @@ func (woc *wfOperationCtx) processCompletedWorkflowArtifactGCTaskSet(ctx, artifa
 
 	}
 
-	if woc.wf.Status.ArtifactGCStatus == nil {
-		woc.wf.Status.ArtifactGCStatus = make(wfv1.ArtifactGCStatus)
-	}
-	if foundGCFailure {
-		woc.wf.Status.ArtifactGCStatus[strategy] = wfv1.NodeSucceeded
-	} else {
-		woc.wf.Status.ArtifactGCStatus[strategy] = wfv1.NodeFailed
-	}
-
 	return nil
 }
 
@@ -308,6 +297,7 @@ func (woc *wfOperationCtx) processArtifactGCStrategy(ctx context.Context, strate
 	status, exists := woc.wf.Status.ArtifactGCStatus[strategy]
 	if !exists {
 		woc.wf.Status.ArtifactGCStatus[strategy] = wfv1.NodePending
+		woc.updated = true
 	} else {
 		podRan = (status == wfv1.NodeSucceeded || status == wfv1.NodeFailed)
 	}
