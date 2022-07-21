@@ -515,11 +515,23 @@ func (wfc *WorkflowController) processNextPodCleanupItem(ctx context.Context) bo
 				return err
 			}
 		case labelPodCompleted:
-			_, err := pods.Patch(
+			data, err := json.Marshal(map[string]interface{}{
+				"metadata": map[string]interface{}{
+					"labels": map[string]interface{}{
+						common.LabelKeyCompleted: "true",
+					},
+					"finalizers": []string{},
+				},
+			})
+			if err != nil {
+				return err
+			}
+
+			_, err = pods.Patch(
 				ctx,
 				podName,
 				types.MergePatchType,
-				[]byte(`{"metadata": {"labels": {"workflows.argoproj.io/completed": "true"}, "finalizers": []}}`),
+				data,
 				metav1.PatchOptions{},
 			)
 			if err != nil {
@@ -527,11 +539,19 @@ func (wfc *WorkflowController) processNextPodCleanupItem(ctx context.Context) bo
 			}
 		case deletePod:
 			// remove the finalizer to allow the pod to be deleted
-			_, err := pods.Patch(
+			data, err := json.Marshal(map[string]interface{}{
+				"metadata": map[string]interface{}{
+					"finalizers": []string{},
+				},
+			})
+			if err != nil {
+				return err
+			}
+			_, err = pods.Patch(
 				ctx,
 				podName,
 				types.MergePatchType,
-				[]byte(`{"metadata": {"finalizers": []}}`),
+				data,
 				metav1.PatchOptions{},
 			)
 			if err != nil {
