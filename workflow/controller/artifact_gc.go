@@ -159,7 +159,7 @@ if err != nil {
 	}*/
 
 // go through any GC pods that are already running and may have completed
-func (woc *wfOperationCtx) processArtifactGCCompletion(ctx context.Context, strategy wfv1.ArtifactGCStrategy) error {
+func (woc *wfOperationCtx) processArtifactGCCompletion(ctx context.Context) error {
 	// check if any previous Artifact GC Pods completed
 	pods, err := woc.controller.podInformer.GetIndexer().ByIndex(indexes.WorkflowIndex, woc.wf.GetNamespace()+"/"+woc.wf.GetName())
 	if err != nil {
@@ -179,7 +179,7 @@ func (woc *wfOperationCtx) processArtifactGCCompletion(ctx context.Context, stra
 			Info("reconciling artifact-gc pod")
 
 		if phase == corev1.PodSucceeded || phase == corev1.PodFailed {
-			err = woc.processCompletedArtifactGCPod(ctx, pod, strategy)
+			err = woc.processCompletedArtifactGCPod(ctx, pod)
 			if err != nil {
 				return err
 			}
@@ -196,7 +196,14 @@ func (woc *wfOperationCtx) processArtifactGCCompletion(ctx context.Context, stra
 	return nil
 }
 
-func (woc *wfOperationCtx) processCompletedArtifactGCPod(ctx context.Context, pod *corev1.Pod, strategy wfv1.ArtifactGCStrategy) error {
+func (woc *wfOperationCtx) processCompletedArtifactGCPod(ctx context.Context, pod *corev1.Pod) error {
+	woc.log.Infof("processing completed Artifact GC Pod '%s'", pod.Name)
+
+	strategyStr, found := pod.Annotations[common.AnnotationKeyArtifactGCStrategy]
+	if !found {
+		return fmt.Errorf("Artifact GC Pod '%s' doesn't have annotation '%s'?", pod.Name, common.AnnotationKeyArtifactGCStrategy)
+	}
+	strategy := wfv1.ArtifactGCStrategy(strategyStr)
 
 	// get associated ArtifactGCTasks
 	labelSelector := fmt.Sprintf("%s = %s", common.LabelKeyArtifactGCPodName, pod.Name)
@@ -207,7 +214,7 @@ func (woc *wfOperationCtx) processCompletedArtifactGCPod(ctx context.Context, po
 
 	for _, task := range taskList.Items {
 		// for each ArtifactGCTask: call processCompletedArtifactGCTask() which can delete the Task and also should return whether there was an error
-		err = woc.processCompletedArtifactGCTask(ctx, task)
+		err = woc.processCompletedArtifactGCTask(ctx, task, strategy)
 		if err != nil {
 			return err
 		}
@@ -218,6 +225,8 @@ func (woc *wfOperationCtx) processCompletedArtifactGCPod(ctx context.Context, po
 // process the Status in the ArtifactGCTask which was completed and reflect it in Workflow Status; then delete the Task CRD Object
 // return first found error message if GC failed
 func (woc *wfOperationCtx) processCompletedArtifactGCTask(ctx, artifactGCTask *wfv1.ArtifactGCTask, strategy wfv1.ArtifactGCStrategy) error {
+	woc.log.Debugf("processing ArtifactGCTask %s", artifactGCTask.Name)
+
 	foundGCFailure := false
 	for nodeName, nodeResult := range artifactGCTask.Status.ArtifactResultsByNode {
 		// find this node result in the Workflow Status
@@ -432,10 +441,9 @@ func (woc *wfOperationCtx) createArtifactGCPod(ctx context.Context, strategy wfv
 				common.LabelKeyComponent: artifactGCComponent,
 				common.LabelKeyCompleted: "false", // todo: do we need this? what is the effect?
 			},
-			/*Annotations: map[string]string{
-				common.AnnotationKeyNodeID:    a.NodeID,
-				common.AnnotationArtifactName: a.Name,
-			},*/
+			Annotations: map[string]string{
+				common.AnnotationKeyArtifactGCStrategy: string(strategy),
+			},
 
 			OwnerReferences: ownerReferences,
 		},
