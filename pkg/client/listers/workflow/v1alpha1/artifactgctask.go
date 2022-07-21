@@ -14,7 +14,7 @@ import (
 type ArtifactGCTaskLister interface {
 	// List lists all ArtifactGCTasks in the indexer.
 	// Objects returned here must be treated as read-only.
-	List(selector labels.Selector) (ret []*v1alpha1.ArtifactGCTask, err error)
+	List(selector labels.Selector) (ret []*v1alpha1.WorkflowArtifactGCTaskSet, err error)
 	// ArtifactGCTasks returns an object that can list and get ArtifactGCTasks.
 	ArtifactGCTasks(namespace string) ArtifactGCTaskNamespaceLister
 	ArtifactGCTaskListerExpansion
@@ -31,9 +31,9 @@ func NewArtifactGCTaskLister(indexer cache.Indexer) ArtifactGCTaskLister {
 }
 
 // List lists all ArtifactGCTasks in the indexer.
-func (s *artifactGCTaskLister) List(selector labels.Selector) (ret []*v1alpha1.ArtifactGCTask, err error) {
+func (s *artifactGCTaskLister) List(selector labels.Selector) (ret []*v1alpha1.WorkflowArtifactGCTaskSet, err error) {
 	err = cache.ListAll(s.indexer, selector, func(m interface{}) {
-		ret = append(ret, m.(*v1alpha1.ArtifactGCTask))
+		ret = append(ret, m.(*v1alpha1.WorkflowArtifactGCTaskSet))
 	})
 	return ret, err
 }
@@ -48,10 +48,10 @@ func (s *artifactGCTaskLister) ArtifactGCTasks(namespace string) ArtifactGCTaskN
 type ArtifactGCTaskNamespaceLister interface {
 	// List lists all ArtifactGCTasks in the indexer for a given namespace.
 	// Objects returned here must be treated as read-only.
-	List(selector labels.Selector) (ret []*v1alpha1.ArtifactGCTask, err error)
+	List(selector labels.Selector) (ret []*v1alpha1.WorkflowArtifactGCTaskSet, err error)
 	// Get retrieves the ArtifactGCTask from the indexer for a given namespace and name.
 	// Objects returned here must be treated as read-only.
-	Get(name string) (*v1alpha1.ArtifactGCTask, error)
+	Get(name string) (*v1alpha1.WorkflowArtifactGCTaskSet, error)
 	ArtifactGCTaskNamespaceListerExpansion
 }
 
@@ -63,15 +63,15 @@ type artifactGCTaskNamespaceLister struct {
 }
 
 // List lists all ArtifactGCTasks in the indexer for a given namespace.
-func (s artifactGCTaskNamespaceLister) List(selector labels.Selector) (ret []*v1alpha1.ArtifactGCTask, err error) {
+func (s artifactGCTaskNamespaceLister) List(selector labels.Selector) (ret []*v1alpha1.WorkflowArtifactGCTaskSet, err error) {
 	err = cache.ListAllByNamespace(s.indexer, s.namespace, selector, func(m interface{}) {
-		ret = append(ret, m.(*v1alpha1.ArtifactGCTask))
+		ret = append(ret, m.(*v1alpha1.WorkflowArtifactGCTaskSet))
 	})
 	return ret, err
 }
 
 // Get retrieves the ArtifactGCTask from the indexer for a given namespace and name.
-func (s artifactGCTaskNamespaceLister) Get(name string) (*v1alpha1.ArtifactGCTask, error) {
+func (s artifactGCTaskNamespaceLister) Get(name string) (*v1alpha1.WorkflowArtifactGCTaskSet, error) {
 	obj, exists, err := s.indexer.GetByKey(s.namespace + "/" + name)
 	if err != nil {
 		return nil, err
@@ -79,5 +79,5 @@ func (s artifactGCTaskNamespaceLister) Get(name string) (*v1alpha1.ArtifactGCTas
 	if !exists {
 		return nil, errors.NewNotFound(v1alpha1.Resource("artifactgctask"), name)
 	}
-	return obj.(*v1alpha1.ArtifactGCTask), nil
+	return obj.(*v1alpha1.WorkflowArtifactGCTaskSet), nil
 }

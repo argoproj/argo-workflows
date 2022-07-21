@@ -8,14 +8,14 @@ import (
 
 // Interface provides access to all the informers in this group version.
 type Interface interface {
-	// ArtifactGCTasks returns a ArtifactGCTaskInformer.
-	ArtifactGCTasks() ArtifactGCTaskInformer
 	// ClusterWorkflowTemplates returns a ClusterWorkflowTemplateInformer.
 	ClusterWorkflowTemplates() ClusterWorkflowTemplateInformer
 	// CronWorkflows returns a CronWorkflowInformer.
 	CronWorkflows() CronWorkflowInformer
 	// Workflows returns a WorkflowInformer.
 	Workflows() WorkflowInformer
+	// WorkflowArtifactGCTaskSets returns a WorkflowArtifactGCTaskSetInformer.
+	WorkflowArtifactGCTaskSets() WorkflowArtifactGCTaskSetInformer
 	// WorkflowEventBindings returns a WorkflowEventBindingInformer.
 	WorkflowEventBindings() WorkflowEventBindingInformer
 	// WorkflowTaskResults returns a WorkflowTaskResultInformer.
@@ -37,11 +37,6 @@ func New(f internalinterfaces.SharedInformerFactory, namespace string, tweakList
 	return &version{factory: f, namespace: namespace, tweakListOptions: tweakListOptions}
 }
 
-// ArtifactGCTasks returns a ArtifactGCTaskInformer.
-func (v *version) ArtifactGCTasks() ArtifactGCTaskInformer {
-	return &artifactGCTaskInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
-}
-
 // ClusterWorkflowTemplates returns a ClusterWorkflowTemplateInformer.
 func (v *version) ClusterWorkflowTemplates() ClusterWorkflowTemplateInformer {
 	return &clusterWorkflowTemplateInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
@@ -55,6 +50,11 @@ func (v *version) CronWorkflows() CronWorkflowInformer {
 // Workflows returns a WorkflowInformer.
 func (v *version) Workflows() WorkflowInformer {
 	return &workflowInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+}
+
+// WorkflowArtifactGCTaskSets returns a WorkflowArtifactGCTaskSetInformer.
+func (v *version) WorkflowArtifactGCTaskSets() WorkflowArtifactGCTaskSetInformer {
+	return &workflowArtifactGCTaskSetInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }
 
 // WorkflowEventBindings returns a WorkflowEventBindingInformer.

@@ -10,10 +10,10 @@ import (
 
 type ArgoprojV1alpha1Interface interface {
 	RESTClient() rest.Interface
-	ArtifactGCTasksGetter
 	ClusterWorkflowTemplatesGetter
 	CronWorkflowsGetter
 	WorkflowsGetter
+	WorkflowArtifactGCTaskSetsGetter
 	WorkflowEventBindingsGetter
 	WorkflowTaskResultsGetter
 	WorkflowTaskSetsGetter
@@ -23,10 +23,6 @@ type ArgoprojV1alpha1Interface interface {
 // ArgoprojV1alpha1Client is used to interact with features provided by the argoproj.io group.
 type ArgoprojV1alpha1Client struct {
 	restClient rest.Interface
-}
-
-func (c *ArgoprojV1alpha1Client) ArtifactGCTasks(namespace string) ArtifactGCTaskInterface {
-	return newArtifactGCTasks(c, namespace)
 }
 
 func (c *ArgoprojV1alpha1Client) ClusterWorkflowTemplates() ClusterWorkflowTemplateInterface {
@@ -39,6 +35,10 @@ func (c *ArgoprojV1alpha1Client) CronWorkflows(namespace string) CronWorkflowInt
 
 func (c *ArgoprojV1alpha1Client) Workflows(namespace string) WorkflowInterface {
 	return newWorkflows(c, namespace)
+}
+
+func (c *ArgoprojV1alpha1Client) WorkflowArtifactGCTaskSets(namespace string) WorkflowArtifactGCTaskSetInterface {
+	return newWorkflowArtifactGCTaskSets(c, namespace)
 }
 
 func (c *ArgoprojV1alpha1Client) WorkflowEventBindings(namespace string) WorkflowEventBindingInterface {

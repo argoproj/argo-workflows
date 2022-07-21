@@ -55,7 +55,7 @@ func NewFilteredArtifactGCTaskInformer(client versioned.Interface, namespace str
 				return client.ArgoprojV1alpha1().ArtifactGCTasks(namespace).Watch(context.TODO(), options)
 			},
 		},
-		&workflowv1alpha1.ArtifactGCTask{},
+		&workflowv1alpha1.WorkflowArtifactGCTaskSet{},
 		resyncPeriod,
 		indexers,
 	)
@@ -66,7 +66,7 @@ func (f *artifactGCTaskInformer) defaultInformer(client versioned.Interface, res
 }
 
 func (f *artifactGCTaskInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.InformerFor(&workflowv1alpha1.ArtifactGCTask{}, f.defaultInformer)
+	return f.factory.InformerFor(&workflowv1alpha1.WorkflowArtifactGCTaskSet{}, f.defaultInformer)
 }
 
 func (f *artifactGCTaskInformer) Lister() v1alpha1.ArtifactGCTaskLister {

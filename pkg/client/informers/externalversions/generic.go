@@ -37,14 +37,14 @@ func (f *genericInformer) Lister() cache.GenericLister {
 func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource) (GenericInformer, error) {
 	switch resource {
 	// Group=argoproj.io, Version=v1alpha1
-	case v1alpha1.SchemeGroupVersion.WithResource("artifactgctasks"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.Argoproj().V1alpha1().ArtifactGCTasks().Informer()}, nil
 	case v1alpha1.SchemeGroupVersion.WithResource("clusterworkflowtemplates"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Argoproj().V1alpha1().ClusterWorkflowTemplates().Informer()}, nil
 	case v1alpha1.SchemeGroupVersion.WithResource("cronworkflows"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Argoproj().V1alpha1().CronWorkflows().Informer()}, nil
 	case v1alpha1.SchemeGroupVersion.WithResource("workflows"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Argoproj().V1alpha1().Workflows().Informer()}, nil
+	case v1alpha1.SchemeGroupVersion.WithResource("workflowartifactgctasksets"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Argoproj().V1alpha1().WorkflowArtifactGCTaskSets().Informer()}, nil
 	case v1alpha1.SchemeGroupVersion.WithResource("workfloweventbindings"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Argoproj().V1alpha1().WorkflowEventBindings().Informer()}, nil
 	case v1alpha1.SchemeGroupVersion.WithResource("workflowtaskresults"):

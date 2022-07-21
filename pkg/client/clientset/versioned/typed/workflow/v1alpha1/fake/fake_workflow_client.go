@@ -12,10 +12,6 @@ type FakeArgoprojV1alpha1 struct {
 	*testing.Fake
 }
 
-func (c *FakeArgoprojV1alpha1) ArtifactGCTasks(namespace string) v1alpha1.ArtifactGCTaskInterface {
-	return &FakeArtifactGCTasks{c, namespace}
-}
-
 func (c *FakeArgoprojV1alpha1) ClusterWorkflowTemplates() v1alpha1.ClusterWorkflowTemplateInterface {
 	return &FakeClusterWorkflowTemplates{c}
 }
@@ -26,6 +22,10 @@ func (c *FakeArgoprojV1alpha1) CronWorkflows(namespace string) v1alpha1.CronWork
 
 func (c *FakeArgoprojV1alpha1) Workflows(namespace string) v1alpha1.WorkflowInterface {
 	return &FakeWorkflows{c, namespace}
+}
+
+func (c *FakeArgoprojV1alpha1) WorkflowArtifactGCTaskSets(namespace string) v1alpha1.WorkflowArtifactGCTaskSetInterface {
+	return &FakeWorkflowArtifactGCTaskSets{c, namespace}
 }
 
 func (c *FakeArgoprojV1alpha1) WorkflowEventBindings(namespace string) v1alpha1.WorkflowEventBindingInterface {

@@ -21,8 +21,6 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactGC":                    schema_pkg_apis_workflow_v1alpha1_ArtifactGC(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactGCSStatus":             schema_pkg_apis_workflow_v1alpha1_ArtifactGCSStatus(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactGCSpec":                schema_pkg_apis_workflow_v1alpha1_ArtifactGCSpec(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactGCTask":                schema_pkg_apis_workflow_v1alpha1_ArtifactGCTask(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactGCTaskList":            schema_pkg_apis_workflow_v1alpha1_ArtifactGCTaskList(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactLocation":              schema_pkg_apis_workflow_v1alpha1_ArtifactLocation(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactNodeSpec":              schema_pkg_apis_workflow_v1alpha1_ArtifactNodeSpec(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactPaths":                 schema_pkg_apis_workflow_v1alpha1_ArtifactPaths(ref),
@@ -142,6 +140,8 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Version":                       schema_pkg_apis_workflow_v1alpha1_Version(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.VolumeClaimGC":                 schema_pkg_apis_workflow_v1alpha1_VolumeClaimGC(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Workflow":                      schema_pkg_apis_workflow_v1alpha1_Workflow(ref),
+		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowArtifactGCTaskSet":     schema_pkg_apis_workflow_v1alpha1_WorkflowArtifactGCTaskSet(ref),
+		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowArtifactGCTaskSetList": schema_pkg_apis_workflow_v1alpha1_WorkflowArtifactGCTaskSetList(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowEventBinding":          schema_pkg_apis_workflow_v1alpha1_WorkflowEventBinding(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowEventBindingList":      schema_pkg_apis_workflow_v1alpha1_WorkflowEventBindingList(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowEventBindingSpec":      schema_pkg_apis_workflow_v1alpha1_WorkflowEventBindingSpec(ref),
@@ -497,103 +497,6 @@ func schema_pkg_apis_workflow_v1alpha1_ArtifactGCSpec(ref common.ReferenceCallba
 		},
 		Dependencies: []string{
 			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactNodeSpec"},
-	}
-}
-
-func schema_pkg_apis_workflow_v1alpha1_ArtifactGCTask(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Description: "ArtifactGCTask specifies the Artifacts that need to be deleted as well as the status of deletion",
-				Type:        []string{"object"},
-				Properties: map[string]spec.Schema{
-					"kind": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"apiVersion": {
-						SchemaProps: spec.SchemaProps{
-							Description: "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"metadata": {
-						SchemaProps: spec.SchemaProps{
-							Default: map[string]interface{}{},
-							Ref:     ref("k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"),
-						},
-					},
-					"spec": {
-						SchemaProps: spec.SchemaProps{
-							Default: map[string]interface{}{},
-							Ref:     ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactGCSpec"),
-						},
-					},
-					"status": {
-						SchemaProps: spec.SchemaProps{
-							Default: map[string]interface{}{},
-							Ref:     ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactGCSStatus"),
-						},
-					},
-				},
-				Required: []string{"metadata", "spec"},
-			},
-		},
-		Dependencies: []string{
-			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactGCSStatus", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactGCSpec", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
-	}
-}
-
-func schema_pkg_apis_workflow_v1alpha1_ArtifactGCTaskList(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Description: "ArtifactGCTaskList is list of ArtifactGCTask resources",
-				Type:        []string{"object"},
-				Properties: map[string]spec.Schema{
-					"kind": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"apiVersion": {
-						SchemaProps: spec.SchemaProps{
-							Description: "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"metadata": {
-						SchemaProps: spec.SchemaProps{
-							Default: map[string]interface{}{},
-							Ref:     ref("k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"),
-						},
-					},
-					"items": {
-						SchemaProps: spec.SchemaProps{
-							Type: []string{"array"},
-							Items: &spec.SchemaOrArray{
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Default: map[string]interface{}{},
-										Ref:     ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactGCTask"),
-									},
-								},
-							},
-						},
-					},
-				},
-				Required: []string{"metadata", "items"},
-			},
-		},
-		Dependencies: []string{
-			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactGCTask", "k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"},
 	}
 }
 
@@ -6774,6 +6677,103 @@ func schema_pkg_apis_workflow_v1alpha1_Workflow(ref common.ReferenceCallback) co
 		},
 		Dependencies: []string{
 			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowSpec", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
+	}
+}
+
+func schema_pkg_apis_workflow_v1alpha1_WorkflowArtifactGCTaskSet(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "WorkflowArtifactGCTaskSet specifies the Artifacts that need to be deleted as well as the status of deletion",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"kind": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"apiVersion": {
+						SchemaProps: spec.SchemaProps{
+							Description: "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"metadata": {
+						SchemaProps: spec.SchemaProps{
+							Default: map[string]interface{}{},
+							Ref:     ref("k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"),
+						},
+					},
+					"spec": {
+						SchemaProps: spec.SchemaProps{
+							Default: map[string]interface{}{},
+							Ref:     ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactGCSpec"),
+						},
+					},
+					"status": {
+						SchemaProps: spec.SchemaProps{
+							Default: map[string]interface{}{},
+							Ref:     ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactGCSStatus"),
+						},
+					},
+				},
+				Required: []string{"metadata", "spec"},
+			},
+		},
+		Dependencies: []string{
+			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactGCSStatus", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactGCSpec", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
+	}
+}
+
+func schema_pkg_apis_workflow_v1alpha1_WorkflowArtifactGCTaskSetList(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "ArtifactGCTaskList is list of ArtifactGCTask resources",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"kind": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"apiVersion": {
+						SchemaProps: spec.SchemaProps{
+							Description: "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"metadata": {
+						SchemaProps: spec.SchemaProps{
+							Default: map[string]interface{}{},
+							Ref:     ref("k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"),
+						},
+					},
+					"items": {
+						SchemaProps: spec.SchemaProps{
+							Type: []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowArtifactGCTaskSet"),
+									},
+								},
+							},
+						},
+					},
+				},
+				Required: []string{"metadata", "items"},
+			},
+		},
+		Dependencies: []string{
+			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowArtifactGCTaskSet", "k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"},
 	}
 }
 

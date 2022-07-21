@@ -106,27 +106,6 @@ message ArtifactGCSpec {
   map<string, ArtifactNodeSpec> artifactsByNode = 1;
 }
 
-// ArtifactGCTask specifies the Artifacts that need to be deleted as well as the status of deletion
-// +genclient
-// +kubebuilder:resource:shortName=agw
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-// +kubebuilder:subresource:status
-message ArtifactGCTask {
-  optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
-
-  optional ArtifactGCSpec spec = 2;
-
-  optional ArtifactGCSStatus status = 3;
-}
-
-// ArtifactGCTaskList is list of ArtifactGCTask resources
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-message ArtifactGCTaskList {
-  optional k8s.io.apimachinery.pkg.apis.meta.v1.ListMeta metadata = 1;
-
-  repeated ArtifactGCTask items = 2;
-}
-
 // ArtifactLocation describes a location for a single or multiple artifacts.
 // It is used as single artifact in the context of inputs/outputs (e.g. outputs.artifacts.artname).
 // It is also used to describe the location of multiple artifacts such as the archive location
@@ -1750,6 +1729,27 @@ message Workflow {
   optional WorkflowSpec spec  = 2;
 
   optional WorkflowStatus status = 3;
+}
+
+// WorkflowArtifactGCTaskSet specifies the Artifacts that need to be deleted as well as the status of deletion
+// +genclient
+// +kubebuilder:resource:shortName=wfats
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// +kubebuilder:subresource:status
+message WorkflowArtifactGCTaskSet {
+  optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
+
+  optional ArtifactGCSpec spec = 2;
+
+  optional ArtifactGCSStatus status = 3;
+}
+
+// ArtifactGCTaskList is list of ArtifactGCTask resources
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+message WorkflowArtifactGCTaskSetList {
+  optional k8s.io.apimachinery.pkg.apis.meta.v1.ListMeta metadata = 1;
+
+  repeated WorkflowArtifactGCTaskSet items = 2;
 }
 
 // WorkflowEventBinding is the definition of an event resource
