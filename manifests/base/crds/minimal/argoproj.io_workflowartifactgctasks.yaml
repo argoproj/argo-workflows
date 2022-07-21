@@ -9,7 +9,7 @@ spec:
     listKind: WorkflowArtifactGCTaskList
     plural: workflowartifactgctasks
     shortNames:
-    - wfats
+    - wfat
     singular: workflowartifactgctask
   scope: Namespaced
   versions:
