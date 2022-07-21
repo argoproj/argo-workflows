@@ -947,7 +947,7 @@ spec:
                 additionalProperties:
                   properties:
                     artifactResults:
-                      items:
+                      additionalProperties:
                         properties:
                           error:
                             type: string
@@ -958,7 +958,7 @@ spec:
                         required:
                         - name
                         type: object
-                      type: array
+                      type: object
                   type: object
                 type: object
             type: object

@@ -7619,8 +7619,8 @@
       "type": "object",
       "properties": {
         "artifactResults": {
-          "type": "array",
-          "items": {
+          "type": "object",
+          "additionalProperties": {
             "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactResult"
           }
         }

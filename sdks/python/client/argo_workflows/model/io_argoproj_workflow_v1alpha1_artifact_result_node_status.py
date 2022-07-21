@@ -87,7 +87,7 @@ class IoArgoprojWorkflowV1alpha1ArtifactResultNodeStatus(ModelNormal):
         """
         lazy_import()
         return {
-            'artifact_results': ([IoArgoprojWorkflowV1alpha1ArtifactResult],),  # noqa: E501
+            'artifact_results': ({str: (IoArgoprojWorkflowV1alpha1ArtifactResult,)},),  # noqa: E501
         }
 
     @cached_property
@@ -140,7 +140,7 @@ class IoArgoprojWorkflowV1alpha1ArtifactResultNodeStatus(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            artifact_results ([IoArgoprojWorkflowV1alpha1ArtifactResult]): [optional]  # noqa: E501
+            artifact_results ({str: (IoArgoprojWorkflowV1alpha1ArtifactResult,)}): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -222,7 +222,7 @@ class IoArgoprojWorkflowV1alpha1ArtifactResultNodeStatus(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            artifact_results ([IoArgoprojWorkflowV1alpha1ArtifactResult]): [optional]  # noqa: E501
+            artifact_results ({str: (IoArgoprojWorkflowV1alpha1ArtifactResult,)}): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)

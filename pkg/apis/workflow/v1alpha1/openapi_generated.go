@@ -1032,8 +1032,9 @@ func schema_pkg_apis_workflow_v1alpha1_ArtifactResultNodeStatus(ref common.Refer
 				Properties: map[string]spec.Schema{
 					"artifactResults": {
 						SchemaProps: spec.SchemaProps{
-							Type: []string{"array"},
-							Items: &spec.SchemaOrArray{
+							Type: []string{"object"},
+							AdditionalProperties: &spec.SchemaOrBool{
+								Allows: true,
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
 										Default: map[string]interface{}{},

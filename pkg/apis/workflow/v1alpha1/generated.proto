@@ -225,7 +225,7 @@ message ArtifactResult {
 }
 
 message ArtifactResultNodeStatus {
-  repeated ArtifactResult artifactResults = 1;
+  map<string, ArtifactResult> artifactResults = 1;
 }
 
 message ArtifactSearchQuery {

@@ -3702,10 +3702,10 @@
     "io.argoproj.workflow.v1alpha1.ArtifactResultNodeStatus": {
       "properties": {
         "artifactResults": {
-          "items": {
+          "additionalProperties": {
             "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactResult"
           },
-          "type": "array"
+          "type": "object"
         }
       },
       "type": "object"

@@ -473,9 +473,9 @@ func (in *ArtifactResultNodeStatus) DeepCopyInto(out *ArtifactResultNodeStatus) 
 	*out = *in
 	if in.ArtifactResults != nil {
 		in, out := &in.ArtifactResults, &out.ArtifactResults
-		*out = make([]ArtifactResult, len(*in))
-		for i := range *in {
-			(*in)[i].DeepCopyInto(&(*out)[i])
+		*out = make(map[string]ArtifactResult, len(*in))
+		for key, val := range *in {
+			(*out)[key] = *val.DeepCopy()
 		}
 	}
 	return
