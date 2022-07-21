@@ -1313,7 +1313,21 @@ type ArtifactSearchQuery struct {
 	Deleted              *bool                       `json:"deleted,omitempty" protobuf:"varint,5,opt,name=deleted"`
 }
 
-type ArtifactGCStatus map[ArtifactGCStrategy]NodePhase //todo: determine if we really want NodePhase - might be confusing
+type ArtifactGCPhase string
+
+// Status of Artifact GC Pod
+const (
+	// has not been scheduled
+	ArtifactGCNotStarted ArtifactGCPhase = "NotStarted"
+	// has been scheduled to run and/or is running
+	ArtifactGCScheduled ArtifactGCPhase = "Scheduled"
+	// finished with 0 code
+	ArtifactGCSucceeded ArtifactGCPhase = "Succeeded"
+	// finished with non-0 code
+	ArtifactGCSucceeded ArtifactGCPhase = "Failed"
+)
+
+type ArtifactGCStatus map[ArtifactGCStrategy]ArtifactGCPhase
 
 type ArtifactSearchResult struct {
 	Artifact `protobuf:"bytes,1,opt,name=artifact"`

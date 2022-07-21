@@ -276,7 +276,6 @@ func (woc *wfOperationCtx) processCompletedWorkflowArtifactGCTaskSet(ctx, artifa
 					gcFailureMsg := *artifactResult.Error
 					woc.eventRecorder.Event(woc.wf, apiv1.EventTypeWarning, "ArtifactGCFailed",
 						fmt.Sprintf("Artifact Garbage Collection failed for strategy %s, err:%s", strategy, gcFailureMsg))
-
 				}
 			}
 		}
@@ -295,11 +294,8 @@ func (woc *wfOperationCtx) processArtifactGCStrategy(ctx context.Context, strate
 	}
 	podRan := false
 	status, exists := woc.wf.Status.ArtifactGCStatus[strategy]
-	if !exists {
-		woc.wf.Status.ArtifactGCStatus[strategy] = wfv1.NodePending
-		woc.updated = true
-	} else {
-		podRan = (status == wfv1.NodeSucceeded || status == wfv1.NodeFailed)
+	if exists {
+		podRan = (status == wfv1.NodeSucceeded || status == wfv1.NodeFailed || status == wfv1.NodeRunning)
 	}
 	fmt.Printf("deletethis: strategy=%s, podRan=%t\n", strategy, podRan)
 
@@ -329,8 +325,11 @@ func (woc *wfOperationCtx) processArtifactGCStrategy(ctx context.Context, strate
 				if err != nil {
 					return err
 				}
+				woc.wf.Status.ArtifactGCStatus[strategy] = wfv1.NodePending
+				woc.updated = true
 			}
 		}
+
 	}
 
 	return nil
