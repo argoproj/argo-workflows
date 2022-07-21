@@ -226,7 +226,15 @@ func (woc *wfOperationCtx) processCompletedArtifactGCPod(ctx context.Context, po
 // process the Status in the ArtifactGCTask which was completed and reflect it in Workflow Status; then delete the Task CRD Object
 // return whether or not GC succeeded for all artifacts
 func (woc *wfOperationCtx) processCompletedArtifactGCTask(ctx, artifactGCTask *wfv1.ArtifactGCTask) (bool, error) {
+	for node, nodeStatus := range artifactGCTask.Spec.ArtifactsByNode {
+		// find this node result in the Workflow Status
+		wfNode, found := woc.wf.Status.Nodes[node]
+		if !found {
 
+		}
+		mappedArtifacts
+		wfNode.Status
+	}
 }
 
 func (woc *wfOperationCtx) processArtifactGCStrategy(ctx context.Context, strategy wfv1.ArtifactGCStrategy) error {
