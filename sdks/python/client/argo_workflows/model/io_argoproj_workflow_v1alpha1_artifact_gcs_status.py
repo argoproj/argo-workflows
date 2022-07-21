@@ -140,7 +140,7 @@ class IoArgoprojWorkflowV1alpha1ArtifactGCSStatus(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            artifact_results_by_node ({str: (IoArgoprojWorkflowV1alpha1ArtifactResultNodeStatus,)}): [optional]  # noqa: E501
+            artifact_results_by_node ({str: (IoArgoprojWorkflowV1alpha1ArtifactResultNodeStatus,)}): ArtifactResultsByNode maps Node name to result. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -222,7 +222,7 @@ class IoArgoprojWorkflowV1alpha1ArtifactGCSStatus(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            artifact_results_by_node ({str: (IoArgoprojWorkflowV1alpha1ArtifactResultNodeStatus,)}): [optional]  # noqa: E501
+            artifact_results_by_node ({str: (IoArgoprojWorkflowV1alpha1ArtifactResultNodeStatus,)}): ArtifactResultsByNode maps Node name to result. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)

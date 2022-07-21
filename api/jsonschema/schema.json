@@ -3432,22 +3432,26 @@
       "type": "object"
     },
     "io.argoproj.workflow.v1alpha1.ArtifactGCSStatus": {
+      "description": "ArtifactGCSStatus describes the result of the deletion",
       "properties": {
         "artifactResultsByNode": {
           "additionalProperties": {
             "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactResultNodeStatus"
           },
+          "description": "ArtifactResultsByNode maps Node name to result",
           "type": "object"
         }
       },
       "type": "object"
     },
     "io.argoproj.workflow.v1alpha1.ArtifactGCSpec": {
+      "description": "ArtifactGCSpec specifies the Artifacts that need to be deleted",
       "properties": {
         "artifactsByNode": {
           "additionalProperties": {
             "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactNodeSpec"
           },
+          "description": "ArtifactsByNode maps Node name to information pertaining to Artifacts on that Node",
           "type": "object"
         }
       },
@@ -3500,14 +3504,17 @@
       "type": "object"
     },
     "io.argoproj.workflow.v1alpha1.ArtifactNodeSpec": {
+      "description": "ArtifactNodeSpec specifies the Artifacts that need to be deleted for a given Node",
       "properties": {
         "archiveLocation": {
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactLocation"
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactLocation",
+          "description": "ArchiveLocation is the template-level Artifact location specification"
         },
         "artifacts": {
           "additionalProperties": {
             "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Artifact"
           },
+          "description": "Artifacts maps artifact name to Artifact description",
           "type": "object"
         }
       },
@@ -3683,14 +3690,18 @@
       "type": "object"
     },
     "io.argoproj.workflow.v1alpha1.ArtifactResult": {
+      "description": "ArtifactResult describes the result of attempting to delete a given Artifact",
       "properties": {
         "error": {
+          "description": "Error is an optional error message which should be set if Success==false",
           "type": "string"
         },
         "name": {
+          "description": "Name is the name of the Artifact",
           "type": "string"
         },
         "success": {
+          "description": "Success describes whether the deletion succeeded",
           "type": "boolean"
         }
       },
@@ -3700,11 +3711,13 @@
       "type": "object"
     },
     "io.argoproj.workflow.v1alpha1.ArtifactResultNodeStatus": {
+      "description": "ArtifactResultNodeStatus describes the result of the deletion on a given node",
       "properties": {
         "artifactResults": {
           "additionalProperties": {
             "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactResult"
           },
+          "description": "ArtifactResults maps Artifact name to result of the deletion",
           "type": "object"
         }
       },

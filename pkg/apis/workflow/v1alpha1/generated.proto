@@ -94,14 +94,19 @@ message ArtifactGC {
   optional string strategy = 1;
 }
 
+// ArtifactGCSStatus describes the result of the deletion
 message ArtifactGCSStatus {
+  // ArtifactResultsByNode maps Node name to result
   map<string, ArtifactResultNodeStatus> artifactResultsByNode = 1;
 }
 
+// ArtifactGCSpec specifies the Artifacts that need to be deleted
 message ArtifactGCSpec {
+  // ArtifactsByNode maps Node name to information pertaining to Artifacts on that Node
   map<string, ArtifactNodeSpec> artifactsByNode = 1;
 }
 
+// ArtifactGCTask specifies the Artifacts that need to be deleted as well as the status of deletion
 // +genclient
 // +kubebuilder:resource:shortName=agw
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -114,6 +119,7 @@ message ArtifactGCTask {
   optional ArtifactGCSStatus status = 3;
 }
 
+// ArtifactGCTaskList is list of ArtifactGCTask resources
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 message ArtifactGCTaskList {
   optional k8s.io.apimachinery.pkg.apis.meta.v1.ListMeta metadata = 1;
@@ -157,9 +163,12 @@ message ArtifactLocation {
   optional AzureArtifact azure = 10;
 }
 
+// ArtifactNodeSpec specifies the Artifacts that need to be deleted for a given Node
 message ArtifactNodeSpec {
+  // ArchiveLocation is the template-level Artifact location specification
   optional ArtifactLocation archiveLocation = 1;
 
+  // Artifacts maps artifact name to Artifact description
   map<string, Artifact> artifacts = 2;
 }
 
@@ -216,15 +225,21 @@ message ArtifactRepositoryRefStatus {
   optional ArtifactRepository artifactRepository = 4;
 }
 
+// ArtifactResult describes the result of attempting to delete a given Artifact
 message ArtifactResult {
+  // Name is the name of the Artifact
   optional string name = 1;
 
+  // Success describes whether the deletion succeeded
   optional bool success = 2;
 
+  // Error is an optional error message which should be set if Success==false
   optional string error = 3;
 }
 
+// ArtifactResultNodeStatus describes the result of the deletion on a given node
 message ArtifactResultNodeStatus {
+  // ArtifactResults maps Artifact name to result of the deletion
   map<string, ArtifactResult> artifactResults = 1;
 }
 

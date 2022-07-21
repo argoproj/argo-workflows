@@ -145,7 +145,7 @@ class IoArgoprojWorkflowV1alpha1ArtifactNodeSpec(ModelNormal):
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
             archive_location (IoArgoprojWorkflowV1alpha1ArtifactLocation): [optional]  # noqa: E501
-            artifacts ({str: (IoArgoprojWorkflowV1alpha1Artifact,)}): [optional]  # noqa: E501
+            artifacts ({str: (IoArgoprojWorkflowV1alpha1Artifact,)}): Artifacts maps artifact name to Artifact description. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -228,7 +228,7 @@ class IoArgoprojWorkflowV1alpha1ArtifactNodeSpec(ModelNormal):
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
             archive_location (IoArgoprojWorkflowV1alpha1ArtifactLocation): [optional]  # noqa: E501
-            artifacts ({str: (IoArgoprojWorkflowV1alpha1Artifact,)}): [optional]  # noqa: E501
+            artifacts ({str: (IoArgoprojWorkflowV1alpha1Artifact,)}): Artifacts maps artifact name to Artifact description. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)

@@ -444,11 +444,13 @@ func schema_pkg_apis_workflow_v1alpha1_ArtifactGCSStatus(ref common.ReferenceCal
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Type: []string{"object"},
+				Description: "ArtifactGCSStatus describes the result of the deletion",
+				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"artifactResultsByNode": {
 						SchemaProps: spec.SchemaProps{
-							Type: []string{"object"},
+							Description: "ArtifactResultsByNode maps Node name to result",
+							Type:        []string{"object"},
 							AdditionalProperties: &spec.SchemaOrBool{
 								Allows: true,
 								Schema: &spec.Schema{
@@ -472,11 +474,13 @@ func schema_pkg_apis_workflow_v1alpha1_ArtifactGCSpec(ref common.ReferenceCallba
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Type: []string{"object"},
+				Description: "ArtifactGCSpec specifies the Artifacts that need to be deleted",
+				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"artifactsByNode": {
 						SchemaProps: spec.SchemaProps{
-							Type: []string{"object"},
+							Description: "ArtifactsByNode maps Node name to information pertaining to Artifacts on that Node",
+							Type:        []string{"object"},
 							AdditionalProperties: &spec.SchemaOrBool{
 								Allows: true,
 								Schema: &spec.Schema{
@@ -500,7 +504,8 @@ func schema_pkg_apis_workflow_v1alpha1_ArtifactGCTask(ref common.ReferenceCallba
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Type: []string{"object"},
+				Description: "ArtifactGCTask specifies the Artifacts that need to be deleted as well as the status of deletion",
+				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"kind": {
 						SchemaProps: spec.SchemaProps{
@@ -547,7 +552,8 @@ func schema_pkg_apis_workflow_v1alpha1_ArtifactGCTaskList(ref common.ReferenceCa
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Type: []string{"object"},
+				Description: "ArtifactGCTaskList is list of ArtifactGCTask resources",
+				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"kind": {
 						SchemaProps: spec.SchemaProps{
@@ -671,16 +677,19 @@ func schema_pkg_apis_workflow_v1alpha1_ArtifactNodeSpec(ref common.ReferenceCall
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Type: []string{"object"},
+				Description: "ArtifactNodeSpec specifies the Artifacts that need to be deleted for a given Node",
+				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"archiveLocation": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactLocation"),
+							Description: "ArchiveLocation is the template-level Artifact location specification",
+							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactLocation"),
 						},
 					},
 					"artifacts": {
 						SchemaProps: spec.SchemaProps{
-							Type: []string{"object"},
+							Description: "Artifacts maps artifact name to Artifact description",
+							Type:        []string{"object"},
 							AdditionalProperties: &spec.SchemaOrBool{
 								Allows: true,
 								Schema: &spec.Schema{
@@ -996,25 +1005,29 @@ func schema_pkg_apis_workflow_v1alpha1_ArtifactResult(ref common.ReferenceCallba
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Type: []string{"object"},
+				Description: "ArtifactResult describes the result of attempting to delete a given Artifact",
+				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"name": {
 						SchemaProps: spec.SchemaProps{
-							Default: "",
-							Type:    []string{"string"},
-							Format:  "",
+							Description: "Name is the name of the Artifact",
+							Default:     "",
+							Type:        []string{"string"},
+							Format:      "",
 						},
 					},
 					"success": {
 						SchemaProps: spec.SchemaProps{
-							Type:   []string{"boolean"},
-							Format: "",
+							Description: "Success describes whether the deletion succeeded",
+							Type:        []string{"boolean"},
+							Format:      "",
 						},
 					},
 					"error": {
 						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
+							Description: "Error is an optional error message which should be set if Success==false",
+							Type:        []string{"string"},
+							Format:      "",
 						},
 					},
 				},
@@ -1028,11 +1041,13 @@ func schema_pkg_apis_workflow_v1alpha1_ArtifactResultNodeStatus(ref common.Refer
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Type: []string{"object"},
+				Description: "ArtifactResultNodeStatus describes the result of the deletion on a given node",
+				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"artifactResults": {
 						SchemaProps: spec.SchemaProps{
-							Type: []string{"object"},
+							Description: "ArtifactResults maps Artifact name to result of the deletion",
+							Type:        []string{"object"},
 							AdditionalProperties: &spec.SchemaOrBool{
 								Allows: true,
 								Schema: &spec.Schema{

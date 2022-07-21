@@ -108,7 +108,7 @@ class IoArgoprojWorkflowV1alpha1ArtifactResult(ModelNormal):
         """IoArgoprojWorkflowV1alpha1ArtifactResult - a model defined in OpenAPI
 
         Args:
-            name (str):
+            name (str): Name is the name of the Artifact
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
@@ -141,8 +141,8 @@ class IoArgoprojWorkflowV1alpha1ArtifactResult(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            error (str): [optional]  # noqa: E501
-            success (bool): [optional]  # noqa: E501
+            error (str): Error is an optional error message which should be set if Success==false. [optional]  # noqa: E501
+            success (bool): Success describes whether the deletion succeeded. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -195,7 +195,7 @@ class IoArgoprojWorkflowV1alpha1ArtifactResult(ModelNormal):
         """IoArgoprojWorkflowV1alpha1ArtifactResult - a model defined in OpenAPI
 
         Args:
-            name (str):
+            name (str): Name is the name of the Artifact
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
@@ -228,8 +228,8 @@ class IoArgoprojWorkflowV1alpha1ArtifactResult(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            error (str): [optional]  # noqa: E501
-            success (bool): [optional]  # noqa: E501
+            error (str): Error is an optional error message which should be set if Success==false. [optional]  # noqa: E501
+            success (bool): Success describes whether the deletion succeeded. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
