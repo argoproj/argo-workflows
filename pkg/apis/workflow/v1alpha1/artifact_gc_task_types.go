@@ -4,12 +4,12 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// WorkflowArtifactGCTaskSet specifies the Artifacts that need to be deleted as well as the status of deletion
+// WorkflowArtifactGCTask specifies the Artifacts that need to be deleted as well as the status of deletion
 // +genclient
 // +kubebuilder:resource:shortName=wfats
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // +kubebuilder:subresource:status
-type WorkflowArtifactGCTaskSet struct {
+type WorkflowArtifactGCTask struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata" protobuf:"bytes,1,opt,name=metadata"`
 	Spec              ArtifactGCSpec    `json:"spec" protobuf:"bytes,2,opt,name=spec"`
@@ -54,10 +54,10 @@ type ArtifactResult struct {
 	Error *string `json:"error,omitempty" protobuf:"bytes,3,opt,name=error"`
 }
 
-// WorkflowArtifactGCTaskSetList is list of WorkflowArtifactGCTaskSet resources
+// WorkflowArtifactGCTaskList is list of WorkflowArtifactGCTask resources
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-type WorkflowArtifactGCTaskSetList struct {
+type WorkflowArtifactGCTaskList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata" protobuf:"bytes,1,opt,name=metadata"`
-	Items           []WorkflowArtifactGCTaskSet `json:"items" protobuf:"bytes,2,opt,name=items"`
+	Items           []WorkflowArtifactGCTask `json:"items" protobuf:"bytes,2,opt,name=items"`
 }

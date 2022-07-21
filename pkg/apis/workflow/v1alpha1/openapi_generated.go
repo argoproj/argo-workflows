@@ -140,8 +140,8 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Version":                       schema_pkg_apis_workflow_v1alpha1_Version(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.VolumeClaimGC":                 schema_pkg_apis_workflow_v1alpha1_VolumeClaimGC(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Workflow":                      schema_pkg_apis_workflow_v1alpha1_Workflow(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowArtifactGCTaskSet":     schema_pkg_apis_workflow_v1alpha1_WorkflowArtifactGCTaskSet(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowArtifactGCTaskSetList": schema_pkg_apis_workflow_v1alpha1_WorkflowArtifactGCTaskSetList(ref),
+		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowArtifactGCTask":        schema_pkg_apis_workflow_v1alpha1_WorkflowArtifactGCTask(ref),
+		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowArtifactGCTaskList":    schema_pkg_apis_workflow_v1alpha1_WorkflowArtifactGCTaskList(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowEventBinding":          schema_pkg_apis_workflow_v1alpha1_WorkflowEventBinding(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowEventBindingList":      schema_pkg_apis_workflow_v1alpha1_WorkflowEventBindingList(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowEventBindingSpec":      schema_pkg_apis_workflow_v1alpha1_WorkflowEventBindingSpec(ref),
@@ -6680,11 +6680,11 @@ func schema_pkg_apis_workflow_v1alpha1_Workflow(ref common.ReferenceCallback) co
 	}
 }
 
-func schema_pkg_apis_workflow_v1alpha1_WorkflowArtifactGCTaskSet(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_pkg_apis_workflow_v1alpha1_WorkflowArtifactGCTask(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "WorkflowArtifactGCTaskSet specifies the Artifacts that need to be deleted as well as the status of deletion",
+				Description: "WorkflowArtifactGCTask specifies the Artifacts that need to be deleted as well as the status of deletion",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"kind": {
@@ -6728,11 +6728,11 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowArtifactGCTaskSet(ref common.Refe
 	}
 }
 
-func schema_pkg_apis_workflow_v1alpha1_WorkflowArtifactGCTaskSetList(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_pkg_apis_workflow_v1alpha1_WorkflowArtifactGCTaskList(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "WorkflowArtifactGCTaskSetList is list of WorkflowArtifactGCTaskSet resources",
+				Description: "WorkflowArtifactGCTaskList is list of WorkflowArtifactGCTask resources",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"kind": {
@@ -6762,7 +6762,7 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowArtifactGCTaskSetList(ref common.
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
 										Default: map[string]interface{}{},
-										Ref:     ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowArtifactGCTaskSet"),
+										Ref:     ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowArtifactGCTask"),
 									},
 								},
 							},
@@ -6773,7 +6773,7 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowArtifactGCTaskSetList(ref common.
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowArtifactGCTaskSet", "k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"},
+			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowArtifactGCTask", "k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"},
 	}
 }
 

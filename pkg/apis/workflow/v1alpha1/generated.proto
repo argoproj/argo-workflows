@@ -1731,12 +1731,12 @@ message Workflow {
   optional WorkflowStatus status = 3;
 }
 
-// WorkflowArtifactGCTaskSet specifies the Artifacts that need to be deleted as well as the status of deletion
+// WorkflowArtifactGCTask specifies the Artifacts that need to be deleted as well as the status of deletion
 // +genclient
 // +kubebuilder:resource:shortName=wfats
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // +kubebuilder:subresource:status
-message WorkflowArtifactGCTaskSet {
+message WorkflowArtifactGCTask {
   optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
 
   optional ArtifactGCSpec spec = 2;
@@ -1744,12 +1744,12 @@ message WorkflowArtifactGCTaskSet {
   optional ArtifactGCSStatus status = 3;
 }
 
-// WorkflowArtifactGCTaskSetList is list of WorkflowArtifactGCTaskSet resources
+// WorkflowArtifactGCTaskList is list of WorkflowArtifactGCTask resources
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-message WorkflowArtifactGCTaskSetList {
+message WorkflowArtifactGCTaskList {
   optional k8s.io.apimachinery.pkg.apis.meta.v1.ListMeta metadata = 1;
 
-  repeated WorkflowArtifactGCTaskSet items = 2;
+  repeated WorkflowArtifactGCTask items = 2;
 }
 
 // WorkflowEventBinding is the definition of an event resource
