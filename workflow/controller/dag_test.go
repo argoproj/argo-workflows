@@ -3453,161 +3453,30 @@ var tasksWithPriority = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  annotations:
-    workflows.argoproj.io/pod-name-format: v2
-  creationTimestamp: "2022-07-18T22:45:27Z"
-  generateName: dag-contiue-on-fail-
-  generation: 7
-  labels:
-    workflows.argoproj.io/completed: "true"
-    workflows.argoproj.io/phase: Failed
-    workflows.argoproj.io/workflow-archiving-status: Archived
-  name: dag-contiue-on-fail-987nb
-  namespace: argo
-  resourceVersion: "2137743"
-  uid: c07c5a1a-efb2-41c0-bc60-28b0ea05b46e
+  generateName: tasks-with-priority-
 spec:
-  activeDeadlineSeconds: 300
-  arguments: {}
-  entrypoint: workflow
-  podSpecPatch: |
-    terminationGracePeriodSeconds: 3
+  entrypoint: main
   templates:
-  - dag:
-      tasks:
-      - arguments: {}
-        name: A
-        priority: 50
-        template: whalesay
-      - arguments: {}
-        name: B
-        priority: 100
-        template: intentional-fail
-    inputs: {}
-    metadata: {}
-    name: workflow
-    outputs: {}
+  - name: main
     parallelism: 1
-  - container:
-      args:
-      - hello world
-      command:
-      - cowsay
-      image: docker/whalesay:latest
-      name: ""
-      resources: {}
-    inputs: {}
-    metadata: {}
-    name: whalesay
-    outputs: {}
-  - container:
-      args:
-      - echo intentional failure; exit 1
-      command:
-      - sh
-      - -c
-      image: alpine:latest
-      name: ""
-      resources: {}
-    inputs: {}
-    metadata: {}
-    name: intentional-fail
-    outputs: {}
-status:
-  artifactRepositoryRef:
-    artifactRepository:
-      archiveLogs: true
-      s3:
-        accessKeySecret:
-          key: accesskey
-          name: my-minio-cred
-        bucket: my-bucket
-        endpoint: minio:9000
-        insecure: true
-        secretKeySecret:
-          key: secretkey
-          name: my-minio-cred
-    configMap: artifact-repositories
-    key: default-v1
-    namespace: argo
-  conditions:
-  - status: "False"
-    type: PodRunning
-  - status: "True"
-    type: Completed
-  finishedAt: "2022-07-18T22:45:40Z"
-  nodes:
-    dag-contiue-on-fail-987nb:
-      children:
-      - dag-contiue-on-fail-987nb-3791482269
-      - dag-contiue-on-fail-987nb-3741149412
-      displayName: dag-contiue-on-fail-987nb
-      finishedAt: "2022-07-18T22:45:40Z"
-      id: dag-contiue-on-fail-987nb
-      name: dag-contiue-on-fail-987nb
-      outboundNodes:
-      - dag-contiue-on-fail-987nb-3791482269
-      - dag-contiue-on-fail-987nb-3741149412
-      phase: Failed
-      progress: 1/2
-      resourcesDuration:
-        cpu: 8
-        memory: 4
-      startedAt: "2022-07-18T22:45:27Z"
-      templateName: workflow
-      templateScope: local/dag-contiue-on-fail-987nb
-      type: DAG
-    dag-contiue-on-fail-987nb-3741149412:
-      boundaryID: dag-contiue-on-fail-987nb
-      displayName: A
-      finishedAt: "2022-07-18T22:45:39Z"
-      hostNodeName: k3d-k3s-default-server-0
-      id: dag-contiue-on-fail-987nb-3741149412
-      name: dag-contiue-on-fail-987nb.A
-      outputs:
-        artifacts:
-        - name: main-logs
-          s3:
-            key: dag-contiue-on-fail-987nb/dag-contiue-on-fail-987nb-whalesay-3741149412/main.log
-        exitCode: "0"
-      phase: Succeeded
-      progress: 1/1
-      resourcesDuration:
-        cpu: 4
-        memory: 2
-      startedAt: "2022-07-18T22:45:33Z"
-      templateName: whalesay
-      templateScope: local/dag-contiue-on-fail-987nb
-      type: Pod
-    dag-contiue-on-fail-987nb-3791482269:
-      boundaryID: dag-contiue-on-fail-987nb
-      displayName: B
-      finishedAt: "2022-07-18T22:45:31Z"
-      hostNodeName: k3d-k3s-default-server-0
-      id: dag-contiue-on-fail-987nb-3791482269
-      message: Error (exit code 1)
-      name: dag-contiue-on-fail-987nb.B
-      outputs:
-        artifacts:
-        - name: main-logs
-          s3:
-            key: dag-contiue-on-fail-987nb/dag-contiue-on-fail-987nb-intentional-fail-3791482269/main.log
-        exitCode: "1"
-      phase: Failed
-      progress: 0/1
-      resourcesDuration:
-        cpu: 4
-        memory: 2
-      startedAt: "2022-07-18T22:45:27Z"
-      templateName: intentional-fail
-      templateScope: local/dag-contiue-on-fail-987nb
-      type: Pod
-  phase: Failed
-  progress: 1/2
-  resourcesDuration:
-    cpu: 8
-    memory: 4
-  startedAt: "2022-07-18T22:45:27Z"
+    dag:
+      tasks:
+      - name: A
+        priority: 50
+        template: fail
+      - name: B
+        priority: 100
+        template: succeed
+        
+  - name: succeed
+    container:
+      image: alpine:3.7
+      command: [sh, -c, "exit 0"]
+     
+  - name: fail
+    container:
+      image: alpine:3.7
+      command: [sh, -c, "exit 1"]
 `
 
 func TestTasksWithPriority(t *testing.T) {
@@ -3617,9 +3486,12 @@ func TestTasksWithPriority(t *testing.T) {
 
 	ctx := context.Background()
 	woc := newWorkflowOperationCtx(wf, controller)
-	woc.operate(ctx)
 
-	assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
+	woc.operate(ctx)
+	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
+
+	woc.operate(ctx)
+	// assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
 
 	woc.wf.Status.Nodes.FindByDisplayName("B").StartedAt.Before(&woc.wf.Status.Nodes.FindByDisplayName("A").StartedAt)
 }

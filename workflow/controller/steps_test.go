@@ -319,166 +319,29 @@ var stepsWithPriority = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  name: steps-with-priority-r46kf
+  generateName: steps-with-priority-
 spec:
-  activeDeadlineSeconds: 300
-  arguments: {}
   entrypoint: main
-  podSpecPatch: |
-    terminationGracePeriodSeconds: 3
   templates:
-  - inputs: {}
-    metadata: {}
-    name: main
-    outputs: {}
+  - name: main
     parallelism: 1
     steps:
-    - - arguments: {}
-        name: succeed
-        priority: 25
+    - - name: succeed
         template: succeed
-      - arguments: {}
-        name: fail
-        priority: 100
+        priority: 25
+      - name: fail
         template: fail
-  - container:
-      command:
-      - sh
-      - -c
-      - exit 0
+        priority: 100
+        
+  - name: succeed
+    container:
       image: alpine:3.7
-      name: ""
-      resources: {}
-    inputs: {}
-    metadata: {}
-    name: succeed
-    outputs: {}
-  - container:
-      command:
-      - sh
-      - -c
-      - exit 1
+      command: [sh, -c, "exit 0"]
+     
+  - name: fail
+    container:
       image: alpine:3.7
-      name: ""
-      resources: {}
-    inputs: {}
-    metadata: {}
-    name: fail
-    outputs: {}
-status:
-  artifactRepositoryRef:
-    artifactRepository:
-      archiveLogs: true
-      s3:
-        accessKeySecret:
-          key: accesskey
-          name: my-minio-cred
-        bucket: my-bucket
-        endpoint: minio:9000
-        insecure: true
-        secretKeySecret:
-          key: secretkey
-          name: my-minio-cred
-    configMap: artifact-repositories
-    key: default-v1
-    namespace: argo
-  conditions:
-  - status: "False"
-    type: PodRunning
-  - status: "True"
-    type: Completed
-  finishedAt: "2022-07-18T21:31:14Z"
-  message: child 'steps-with-priority-r46kf-3142289982' failed
-  nodes:
-    steps-with-priority-r46kf:
-      children:
-      - steps-with-priority-r46kf-2671303556
-      displayName: steps-with-priority-r46kf
-      finishedAt: "2022-07-18T21:31:14Z"
-      id: steps-with-priority-r46kf
-      message: child 'steps-with-priority-r46kf-3142289982' failed
-      name: steps-with-priority-r46kf
-      outboundNodes:
-      - steps-with-priority-r46kf-3142289982
-      - steps-with-priority-r46kf-1728648418
-      phase: Failed
-      progress: 1/2
-      resourcesDuration:
-        cpu: 11
-        memory: 5
-      startedAt: "2022-07-18T21:30:51Z"
-      templateName: main
-      templateScope: local/steps-with-priority-r46kf
-      type: Steps
-    steps-with-priority-r46kf-1728648418:
-      boundaryID: steps-with-priority-r46kf
-      displayName: succeed
-      finishedAt: "2022-07-18T21:31:12Z"
-      hostNodeName: k3d-k3s-default-server-0
-      id: steps-with-priority-r46kf-1728648418
-      name: steps-with-priority-r46kf[0].succeed
-      outputs:
-        artifacts:
-        - name: main-logs
-          s3:
-            key: steps-with-priority-r46kf/steps-with-priority-r46kf-succeed-1728648418/main.log
-        exitCode: "0"
-      phase: Succeeded
-      progress: 1/1
-      resourcesDuration:
-        cpu: 2
-        memory: 0
-      startedAt: "2022-07-18T21:31:07Z"
-      templateName: succeed
-      templateScope: local/steps-with-priority-r46kf
-      type: Pod
-    steps-with-priority-r46kf-2671303556:
-      boundaryID: steps-with-priority-r46kf
-      children:
-      - steps-with-priority-r46kf-3142289982
-      - steps-with-priority-r46kf-1728648418
-      displayName: '[0]'
-      finishedAt: "2022-07-18T21:31:14Z"
-      id: steps-with-priority-r46kf-2671303556
-      message: child 'steps-with-priority-r46kf-3142289982' failed
-      name: steps-with-priority-r46kf[0]
-      phase: Failed
-      progress: 1/2
-      resourcesDuration:
-        cpu: 11
-        memory: 5
-      startedAt: "2022-07-18T21:30:51Z"
-      templateScope: local/steps-with-priority-r46kf
-      type: StepGroup
-    steps-with-priority-r46kf-3142289982:
-      boundaryID: steps-with-priority-r46kf
-      displayName: fail
-      finishedAt: "2022-07-18T21:31:07Z"
-      hostNodeName: k3d-k3s-default-server-0
-      id: steps-with-priority-r46kf-3142289982
-      message: Error (exit code 1)
-      name: steps-with-priority-r46kf[0].fail
-      outputs:
-        artifacts:
-        - name: main-logs
-          s3:
-            key: steps-with-priority-r46kf/steps-with-priority-r46kf-fail-3142289982/main.log
-        exitCode: "1"
-      phase: Failed
-      progress: 0/1
-      resourcesDuration:
-        cpu: 9
-        memory: 5
-      startedAt: "2022-07-18T21:30:51Z"
-      templateName: fail
-      templateScope: local/steps-with-priority-r46kf
-      type: Pod
-  phase: Failed
-  progress: 1/2
-  resourcesDuration:
-    cpu: 11
-    memory: 5
-  startedAt: "2022-07-18T21:30:51Z"
+      command: [sh, -c, "exit 1"]
 `
 
 func TestStepsWithPriority(t *testing.T) {
@@ -491,6 +354,9 @@ func TestStepsWithPriority(t *testing.T) {
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	assert.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
+
+	woc.operate(ctx)
+	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
 
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
