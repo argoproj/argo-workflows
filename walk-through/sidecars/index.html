@@ -3787,6 +3787,7 @@
 <span class="w">    </span><span class="nt">sidecars</span><span class="p">:</span><span class="w"></span>
 <span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nginx</span><span class="w"></span>
 <span class="w">      </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nginx:1.13</span><span class="w"></span>
+<span class="w">      </span><span class="nt">command</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">nginx</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">-g</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">daemon off;</span><span class="p p-Indicator">]</span><span class="w"></span>
 </code></pre></div>
 <p>In the above example, we create a sidecar container that runs Nginx as a simple web server. The order in which containers come up is random, so in this example the main container polls the Nginx container until it is ready to service requests. This is a good design pattern when designing multi-container systems: always wait for any services you need to come up before running your main code.</p>
 
