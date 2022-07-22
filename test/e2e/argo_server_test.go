@@ -82,7 +82,7 @@ func (s *ArgoServerSuite) TestInfo() {
 			Equal("workflow")
 		json.
 			Path("$.links[0].url").
-			Equal("http://logging-facility?namespace=${metadata.namespace}&workflowName=${metadata.name}&startedAt=${status.startedAt}&finishedAt=${status.finishedAt}")
+			Equal("http://logging-facility?namespace=${metadata.namespace}&amp;workflowName=${metadata.name}&amp;startedAt=${status.startedAt}&amp;finishedAt=${status.finishedAt}")
 	})
 }
 
@@ -1057,6 +1057,30 @@ func (s *ArgoServerSuite) TestArtifactServer() {
 			uid = metadata.UID
 		})
 
+	s.artifactServerRetrievalTests(name, uid)
+}
+
+func (s *ArgoServerSuite) TestArtifactServerAzure() {
+	if os.Getenv("AZURE") != "true" {
+		s.T().Skip("AZURE must be true to run Azure Storage e2e tests")
+	}
+	var uid types.UID
+	var name string
+	s.Given().
+		Workflow(`@testdata/artifact-workflow-azure.yaml`).
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeArchived).
+		Then().
+		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			name = metadata.Name
+			uid = metadata.UID
+		})
+
+	s.artifactServerRetrievalTests(name, uid)
+}
+
+func (s *ArgoServerSuite) artifactServerRetrievalTests(name string, uid types.UID) {
 	s.Run("GetArtifact", func() {
 		resp := s.e().GET("/artifacts/argo/" + name + "/" + name + "/main-file").
 			Expect().
@@ -1821,20 +1845,6 @@ func (s *ArgoServerSuite) TestEventSourcesService() {
 	})
 	s.Run("DeleteEventSource", func() {
 		s.e().DELETE("/api/v1/event-sources/argo/test-event-source").
-			Expect().
-			Status(200)
-	})
-}
-
-func (s *ArgoServerSuite) TestPipelineService() {
-	s.T().SkipNow()
-	s.Run("GetPipeline", func() {
-		s.e().GET("/api/v1/pipelines/argo/not-exists").
-			Expect().
-			Status(404)
-	})
-	s.Run("ListPipelines", func() {
-		s.e().GET("/api/v1/pipelines/argo").
 			Expect().
 			Status(200)
 	})

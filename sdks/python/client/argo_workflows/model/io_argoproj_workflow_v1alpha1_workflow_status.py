@@ -101,6 +101,7 @@ class IoArgoprojWorkflowV1alpha1WorkflowStatus(ModelNormal):
         """
         lazy_import()
         return {
+            'artifact_gc_status': ({str: (str,)},),  # noqa: E501
             'artifact_repository_ref': (IoArgoprojWorkflowV1alpha1ArtifactRepositoryRefStatus,),  # noqa: E501
             'compressed_nodes': (str,),  # noqa: E501
             'conditions': ([IoArgoprojWorkflowV1alpha1Condition],),  # noqa: E501
@@ -126,6 +127,7 @@ class IoArgoprojWorkflowV1alpha1WorkflowStatus(ModelNormal):
 
 
     attribute_map = {
+        'artifact_gc_status': 'artifactGCStatus',  # noqa: E501
         'artifact_repository_ref': 'artifactRepositoryRef',  # noqa: E501
         'compressed_nodes': 'compressedNodes',  # noqa: E501
         'conditions': 'conditions',  # noqa: E501
@@ -186,6 +188,7 @@ class IoArgoprojWorkflowV1alpha1WorkflowStatus(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
+            artifact_gc_status ({str: (str,)}): ArtifactGCStatus maintains the status of Artifact Garbage Collection per ArtifactGCStrategy. [optional]  # noqa: E501
             artifact_repository_ref (IoArgoprojWorkflowV1alpha1ArtifactRepositoryRefStatus): [optional]  # noqa: E501
             compressed_nodes (str): Compressed and base64 decoded Nodes map. [optional]  # noqa: E501
             conditions ([IoArgoprojWorkflowV1alpha1Condition]): Conditions is a list of conditions the Workflow may have. [optional]  # noqa: E501
@@ -284,6 +287,7 @@ class IoArgoprojWorkflowV1alpha1WorkflowStatus(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
+            artifact_gc_status ({str: (str,)}): ArtifactGCStatus maintains the status of Artifact Garbage Collection per ArtifactGCStrategy. [optional]  # noqa: E501
             artifact_repository_ref (IoArgoprojWorkflowV1alpha1ArtifactRepositoryRefStatus): [optional]  # noqa: E501
             compressed_nodes (str): Compressed and base64 decoded Nodes map. [optional]  # noqa: E501
             conditions ([IoArgoprojWorkflowV1alpha1Condition]): Conditions is a list of conditions the Workflow may have. [optional]  # noqa: E501

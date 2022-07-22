@@ -4,7 +4,6 @@ import {CronWorkflowService} from './cron-workflow-service';
 import {EventService} from './event-service';
 import {EventSourceService} from './event-source-service';
 import {InfoService} from './info-service';
-import {PipelineService} from './pipeline-service';
 import {SensorService} from './sensor-service';
 import {WorkflowTemplateService} from './workflow-template-service';
 import {WorkflowsService} from './workflows-service';
@@ -12,7 +11,6 @@ import {WorkflowsService} from './workflows-service';
 interface Services {
     info: InfoService;
     sensor: SensorService;
-    pipeline: PipelineService;
     event: EventService;
     eventSource: EventSourceService;
     workflows: WorkflowsService;
@@ -30,7 +28,6 @@ export const services: Services = {
     event: new EventService(),
     eventSource: new EventSourceService(),
     sensor: new SensorService(),
-    pipeline: new PipelineService(),
     archivedWorkflows: new ArchivedWorkflowsService(),
     cronWorkflows: new CronWorkflowService()
 };

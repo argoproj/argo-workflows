@@ -55,6 +55,8 @@ func NewServerCommand() *cobra.Command {
 		eventAsyncDispatch       bool
 		frameOptions             string
 		accessControlAllowOrigin string
+		apiRateLimit             uint64
+		allowedLinkProtocol      []string
 		logFormat                string // --log-format
 	)
 
@@ -165,6 +167,8 @@ See %s`, help.ArgoServer),
 				EventAsyncDispatch:       eventAsyncDispatch,
 				XFrameOptions:            frameOptions,
 				AccessControlAllowOrigin: accessControlAllowOrigin,
+				APIRateLimit:             apiRateLimit,
+				AllowedLinkProtocol:      allowedLinkProtocol,
 			}
 			browserOpenFunc := func(url string) {}
 			if enableOpenBrowser {
@@ -204,6 +208,11 @@ See %s`, help.ArgoServer),
 		defaultBaseHRef = "/"
 	}
 
+	defaultAllowedLinkProtocol := []string{"http", "https"}
+	if protocol := os.Getenv("ALLOWED_LINK_PROTOCOL"); protocol != "" {
+		defaultAllowedLinkProtocol = strings.Split(protocol, ",")
+	}
+
 	command.Flags().IntVarP(&port, "port", "p", 2746, "Port to listen on")
 	command.Flags().StringVar(&baseHRef, "basehref", defaultBaseHRef, "Value for base href in index.html. Used if the server is running behind reverse proxy under subpath different from /. Defaults to the environment variable BASE_HREF.")
 	// "-e" for encrypt, like zip
@@ -219,6 +228,8 @@ See %s`, help.ArgoServer),
 	command.Flags().BoolVar(&eventAsyncDispatch, "event-async-dispatch", false, "dispatch event async")
 	command.Flags().StringVar(&frameOptions, "x-frame-options", "DENY", "Set X-Frame-Options header in HTTP responses.")
 	command.Flags().StringVar(&accessControlAllowOrigin, "access-control-allow-origin", "", "Set Access-Control-Allow-Origin header in HTTP responses.")
+	command.Flags().Uint64Var(&apiRateLimit, "api-rate-limit", 1000, "Set limit per IP for api ratelimiter")
+	command.Flags().StringArrayVar(&allowedLinkProtocol, "allowed-link-protocol", defaultAllowedLinkProtocol, "Allowed link protocol in configMap. Used if the allowed configMap links protocol are different from http,https. Defaults to the environment variable ALLOWED_LINK_PROTOCOL")
 	command.Flags().StringVar(&logFormat, "log-format", "text", "The formatter to use for logs. One of: text|json")
 
 	viper.AutomaticEnv()

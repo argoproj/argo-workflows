@@ -91,7 +91,7 @@ Name | Type | Description  | Notes
 
 <a name="artifactServiceGetInputArtifact"></a>
 # **artifactServiceGetInputArtifact**
-> artifactServiceGetInputArtifact(namespace, name, nodeId, artifactName)
+> File artifactServiceGetInputArtifact(namespace, name, nodeId, artifactName)
 
 Get an input artifact.
 
@@ -122,7 +122,8 @@ public class Example {
     String nodeId = "nodeId_example"; // String | 
     String artifactName = "artifactName_example"; // String | 
     try {
-      apiInstance.artifactServiceGetInputArtifact(namespace, name, nodeId, artifactName);
+      File result = apiInstance.artifactServiceGetInputArtifact(namespace, name, nodeId, artifactName);
+      System.out.println(result);
     } catch (ApiException e) {
       System.err.println("Exception when calling ArtifactServiceApi#artifactServiceGetInputArtifact");
       System.err.println("Status code: " + e.getCode());
@@ -145,7 +146,7 @@ Name | Type | Description  | Notes
 
 ### Return type
 
-null (empty response body)
+[**File**](File.md)
 
 ### Authorization
 
@@ -310,7 +311,7 @@ Name | Type | Description  | Notes
 
 <a name="artifactServiceGetOutputArtifactByUID"></a>
 # **artifactServiceGetOutputArtifactByUID**
-> artifactServiceGetOutputArtifactByUID(uid, nodeId, artifactName)
+> File artifactServiceGetOutputArtifactByUID(uid, nodeId, artifactName)
 
 Get an output artifact by UID.
 
@@ -340,7 +341,8 @@ public class Example {
     String nodeId = "nodeId_example"; // String | 
     String artifactName = "artifactName_example"; // String | 
     try {
-      apiInstance.artifactServiceGetOutputArtifactByUID(uid, nodeId, artifactName);
+      File result = apiInstance.artifactServiceGetOutputArtifactByUID(uid, nodeId, artifactName);
+      System.out.println(result);
     } catch (ApiException e) {
       System.err.println("Exception when calling ArtifactServiceApi#artifactServiceGetOutputArtifactByUID");
       System.err.println("Status code: " + e.getCode());
@@ -362,7 +364,7 @@ Name | Type | Description  | Notes
 
 ### Return type
 
-null (empty response body)
+[**File**](File.md)
 
 ### Authorization
 

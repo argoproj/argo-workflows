@@ -31,8 +31,8 @@ spec:
             value: "test-value"
         # Template will succeed if evaluated to true, otherwise will fail
         # Available variables:
-        #  request.body: string, the response body
-        #  request.headers: map[string][]string, the response headers
+        #  request.body: string, the request body
+        #  request.headers: map[string][]string, the request headers
         #  response.url: string, the request url
         #  response.method: string, the request method
         #  response.statusCode: int, the response status code

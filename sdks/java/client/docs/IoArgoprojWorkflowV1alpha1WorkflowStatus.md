@@ -8,6 +8,7 @@ WorkflowStatus contains overall status information about a workflow
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
+**artifactGCStatus** | **Map&lt;String, String&gt;** | ArtifactGCStatus maintains the status of Artifact Garbage Collection per ArtifactGCStrategy |  [optional]
 **artifactRepositoryRef** | [**IoArgoprojWorkflowV1alpha1ArtifactRepositoryRefStatus**](IoArgoprojWorkflowV1alpha1ArtifactRepositoryRefStatus.md) |  |  [optional]
 **compressedNodes** | **String** | Compressed and base64 decoded Nodes map |  [optional]
 **conditions** | [**List&lt;IoArgoprojWorkflowV1alpha1Condition&gt;**](IoArgoprojWorkflowV1alpha1Condition.md) | Conditions is a list of conditions the Workflow may have |  [optional]

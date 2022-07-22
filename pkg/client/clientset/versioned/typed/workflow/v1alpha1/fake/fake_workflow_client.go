@@ -24,6 +24,10 @@ func (c *FakeArgoprojV1alpha1) Workflows(namespace string) v1alpha1.WorkflowInte
 	return &FakeWorkflows{c, namespace}
 }
 
+func (c *FakeArgoprojV1alpha1) WorkflowArtifactGCTasks(namespace string) v1alpha1.WorkflowArtifactGCTaskInterface {
+	return &FakeWorkflowArtifactGCTasks{c, namespace}
+}
+
 func (c *FakeArgoprojV1alpha1) WorkflowEventBindings(namespace string) v1alpha1.WorkflowEventBindingInterface {
 	return &FakeWorkflowEventBindings{c, namespace}
 }

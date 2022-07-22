@@ -326,9 +326,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 zip={},
                             ),
                             archive_logs=True,
-                            artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
-                                strategy="strategy_example",
-                            ),
                             artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                 password_secret=SecretKeySelector(
                                     key="key_example",
@@ -342,9 +339,21 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     optional=True,
                                 ),
                             ),
+                            azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
+                                account_key_secret=SecretKeySelector(
+                                    key="key_example",
+                                    name="name_example",
+                                    optional=True,
+                                ),
+                                blob="blob_example",
+                                container="container_example",
+                                endpoint="endpoint_example",
+                                use_sdk_creds=True,
+                            ),
                             deleted=True,
                             _from="_from_example",
                             from_expression="from_expression_example",
+                            gc_strategy="gc_strategy_example",
                             gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
                                 bucket="bucket_example",
                                 key="key_example",
@@ -562,6 +571,15 @@ with argo_workflows.ApiClient(configuration) as api_client:
                     ],
                 ),
                 artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                    pod_metadata=IoArgoprojWorkflowV1alpha1Metadata(
+                        annotations={
+                            "key": "key_example",
+                        },
+                        labels={
+                            "key": "key_example",
+                        },
+                    ),
+                    service_account_name="service_account_name_example",
                     strategy="strategy_example",
                 ),
                 artifact_repository_ref=IoArgoprojWorkflowV1alpha1ArtifactRepositoryRef(
@@ -601,9 +619,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         zip={},
                                     ),
                                     archive_logs=True,
-                                    artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
-                                        strategy="strategy_example",
-                                    ),
                                     artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                         password_secret=SecretKeySelector(
                                             key="key_example",
@@ -617,9 +632,21 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             optional=True,
                                         ),
                                     ),
+                                    azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
+                                        account_key_secret=SecretKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
+                                        blob="blob_example",
+                                        container="container_example",
+                                        endpoint="endpoint_example",
+                                        use_sdk_creds=True,
+                                    ),
                                     deleted=True,
                                     _from="_from_example",
                                     from_expression="from_expression_example",
+                                    gc_strategy="gc_strategy_example",
                                     gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
                                         bucket="bucket_example",
                                         key="key_example",
@@ -1223,6 +1250,17 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 name="name_example",
                                 optional=True,
                             ),
+                        ),
+                        azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
+                            account_key_secret=SecretKeySelector(
+                                key="key_example",
+                                name="name_example",
+                                optional=True,
+                            ),
+                            blob="blob_example",
+                            container="container_example",
+                            endpoint="endpoint_example",
+                            use_sdk_creds=True,
                         ),
                         gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
                             bucket="bucket_example",
@@ -1983,9 +2021,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 zip={},
                                             ),
                                             archive_logs=True,
-                                            artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
-                                                strategy="strategy_example",
-                                            ),
                                             artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                                 password_secret=SecretKeySelector(
                                                     key="key_example",
@@ -1999,9 +2034,21 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                     optional=True,
                                                 ),
                                             ),
+                                            azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
+                                                account_key_secret=SecretKeySelector(
+                                                    key="key_example",
+                                                    name="name_example",
+                                                    optional=True,
+                                                ),
+                                                blob="blob_example",
+                                                container="container_example",
+                                                endpoint="endpoint_example",
+                                                use_sdk_creds=True,
+                                            ),
                                             deleted=True,
                                             _from="_from_example",
                                             from_expression="from_expression_example",
+                                            gc_strategy="gc_strategy_example",
                                             gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
                                                 bucket="bucket_example",
                                                 key="key_example",
@@ -2239,9 +2286,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         zip={},
                                                     ),
                                                     archive_logs=True,
-                                                    artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
-                                                        strategy="strategy_example",
-                                                    ),
                                                     artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                                         password_secret=SecretKeySelector(
                                                             key="key_example",
@@ -2255,9 +2299,21 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             optional=True,
                                                         ),
                                                     ),
+                                                    azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
+                                                        account_key_secret=SecretKeySelector(
+                                                            key="key_example",
+                                                            name="name_example",
+                                                            optional=True,
+                                                        ),
+                                                        blob="blob_example",
+                                                        container="container_example",
+                                                        endpoint="endpoint_example",
+                                                        use_sdk_creds=True,
+                                                    ),
                                                     deleted=True,
                                                     _from="_from_example",
                                                     from_expression="from_expression_example",
+                                                    gc_strategy="gc_strategy_example",
                                                     gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
                                                         bucket="bucket_example",
                                                         key="key_example",
@@ -2517,9 +2573,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     zip={},
                                 ),
                                 archive_logs=True,
-                                artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
-                                    strategy="strategy_example",
-                                ),
                                 artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                     password_secret=SecretKeySelector(
                                         key="key_example",
@@ -2533,9 +2586,21 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         optional=True,
                                     ),
                                 ),
+                                azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
+                                    account_key_secret=SecretKeySelector(
+                                        key="key_example",
+                                        name="name_example",
+                                        optional=True,
+                                    ),
+                                    blob="blob_example",
+                                    container="container_example",
+                                    endpoint="endpoint_example",
+                                    use_sdk_creds=True,
+                                ),
                                 deleted=True,
                                 _from="_from_example",
                                 from_expression="from_expression_example",
+                                gc_strategy="gc_strategy_example",
                                 gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
                                     bucket="bucket_example",
                                     key="key_example",
@@ -2744,6 +2809,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                     ],
                     http=IoArgoprojWorkflowV1alpha1HTTP(
                         body="body_example",
+                        body_from=IoArgoprojWorkflowV1alpha1HTTPBodySource(
+                            bytes='YQ==',
+                        ),
                         headers=[
                             IoArgoprojWorkflowV1alpha1HTTPHeader(
                                 name="name_example",
@@ -3047,9 +3115,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     zip={},
                                 ),
                                 archive_logs=True,
-                                artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
-                                    strategy="strategy_example",
-                                ),
                                 artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                     password_secret=SecretKeySelector(
                                         key="key_example",
@@ -3063,9 +3128,21 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         optional=True,
                                     ),
                                 ),
+                                azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
+                                    account_key_secret=SecretKeySelector(
+                                        key="key_example",
+                                        name="name_example",
+                                        optional=True,
+                                    ),
+                                    blob="blob_example",
+                                    container="container_example",
+                                    endpoint="endpoint_example",
+                                    use_sdk_creds=True,
+                                ),
                                 deleted=True,
                                 _from="_from_example",
                                 from_expression="from_expression_example",
+                                gc_strategy="gc_strategy_example",
                                 gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
                                     bucket="bucket_example",
                                     key="key_example",
@@ -3344,9 +3421,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     zip={},
                                 ),
                                 archive_logs=True,
-                                artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
-                                    strategy="strategy_example",
-                                ),
                                 artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                     password_secret=SecretKeySelector(
                                         key="key_example",
@@ -3360,9 +3434,21 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         optional=True,
                                     ),
                                 ),
+                                azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
+                                    account_key_secret=SecretKeySelector(
+                                        key="key_example",
+                                        name="name_example",
+                                        optional=True,
+                                    ),
+                                    blob="blob_example",
+                                    container="container_example",
+                                    endpoint="endpoint_example",
+                                    use_sdk_creds=True,
+                                ),
                                 deleted=True,
                                 _from="_from_example",
                                 from_expression="from_expression_example",
+                                gc_strategy="gc_strategy_example",
                                 gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
                                     bucket="bucket_example",
                                     key="key_example",
@@ -3603,9 +3689,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     zip={},
                                 ),
                                 archive_logs=True,
-                                artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
-                                    strategy="strategy_example",
-                                ),
                                 artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                     password_secret=SecretKeySelector(
                                         key="key_example",
@@ -3619,9 +3702,21 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         optional=True,
                                     ),
                                 ),
+                                azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
+                                    account_key_secret=SecretKeySelector(
+                                        key="key_example",
+                                        name="name_example",
+                                        optional=True,
+                                    ),
+                                    blob="blob_example",
+                                    container="container_example",
+                                    endpoint="endpoint_example",
+                                    use_sdk_creds=True,
+                                ),
                                 deleted=True,
                                 _from="_from_example",
                                 from_expression="from_expression_example",
+                                gc_strategy="gc_strategy_example",
                                 gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
                                     bucket="bucket_example",
                                     key="key_example",
@@ -4419,9 +4514,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 zip={},
                                             ),
                                             archive_logs=True,
-                                            artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
-                                                strategy="strategy_example",
-                                            ),
                                             artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                                 password_secret=SecretKeySelector(
                                                     key="key_example",
@@ -4435,9 +4527,21 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                     optional=True,
                                                 ),
                                             ),
+                                            azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
+                                                account_key_secret=SecretKeySelector(
+                                                    key="key_example",
+                                                    name="name_example",
+                                                    optional=True,
+                                                ),
+                                                blob="blob_example",
+                                                container="container_example",
+                                                endpoint="endpoint_example",
+                                                use_sdk_creds=True,
+                                            ),
                                             deleted=True,
                                             _from="_from_example",
                                             from_expression="from_expression_example",
+                                            gc_strategy="gc_strategy_example",
                                             gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
                                                 bucket="bucket_example",
                                                 key="key_example",
@@ -4671,9 +4775,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         zip={},
                                                     ),
                                                     archive_logs=True,
-                                                    artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
-                                                        strategy="strategy_example",
-                                                    ),
                                                     artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                                         password_secret=SecretKeySelector(
                                                             key="key_example",
@@ -4687,9 +4788,21 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             optional=True,
                                                         ),
                                                     ),
+                                                    azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
+                                                        account_key_secret=SecretKeySelector(
+                                                            key="key_example",
+                                                            name="name_example",
+                                                            optional=True,
+                                                        ),
+                                                        blob="blob_example",
+                                                        container="container_example",
+                                                        endpoint="endpoint_example",
+                                                        use_sdk_creds=True,
+                                                    ),
                                                     deleted=True,
                                                     _from="_from_example",
                                                     from_expression="from_expression_example",
+                                                    gc_strategy="gc_strategy_example",
                                                     gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
                                                         bucket="bucket_example",
                                                         key="key_example",
@@ -5560,6 +5673,17 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     optional=True,
                                 ),
                             ),
+                            azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
+                                account_key_secret=SecretKeySelector(
+                                    key="key_example",
+                                    name="name_example",
+                                    optional=True,
+                                ),
+                                blob="blob_example",
+                                container="container_example",
+                                endpoint="endpoint_example",
+                                use_sdk_creds=True,
+                            ),
                             gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
                                 bucket="bucket_example",
                                 key="key_example",
@@ -6319,9 +6443,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                     zip={},
                                                 ),
                                                 archive_logs=True,
-                                                artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
-                                                    strategy="strategy_example",
-                                                ),
                                                 artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                                     password_secret=SecretKeySelector(
                                                         key="key_example",
@@ -6335,9 +6456,21 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         optional=True,
                                                     ),
                                                 ),
+                                                azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
+                                                    account_key_secret=SecretKeySelector(
+                                                        key="key_example",
+                                                        name="name_example",
+                                                        optional=True,
+                                                    ),
+                                                    blob="blob_example",
+                                                    container="container_example",
+                                                    endpoint="endpoint_example",
+                                                    use_sdk_creds=True,
+                                                ),
                                                 deleted=True,
                                                 _from="_from_example",
                                                 from_expression="from_expression_example",
+                                                gc_strategy="gc_strategy_example",
                                                 gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
                                                     bucket="bucket_example",
                                                     key="key_example",
@@ -6575,9 +6708,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             zip={},
                                                         ),
                                                         archive_logs=True,
-                                                        artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
-                                                            strategy="strategy_example",
-                                                        ),
                                                         artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                                             password_secret=SecretKeySelector(
                                                                 key="key_example",
@@ -6591,9 +6721,21 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                                 optional=True,
                                                             ),
                                                         ),
+                                                        azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
+                                                            account_key_secret=SecretKeySelector(
+                                                                key="key_example",
+                                                                name="name_example",
+                                                                optional=True,
+                                                            ),
+                                                            blob="blob_example",
+                                                            container="container_example",
+                                                            endpoint="endpoint_example",
+                                                            use_sdk_creds=True,
+                                                        ),
                                                         deleted=True,
                                                         _from="_from_example",
                                                         from_expression="from_expression_example",
+                                                        gc_strategy="gc_strategy_example",
                                                         gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
                                                             bucket="bucket_example",
                                                             key="key_example",
@@ -6853,9 +6995,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         zip={},
                                     ),
                                     archive_logs=True,
-                                    artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
-                                        strategy="strategy_example",
-                                    ),
                                     artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                         password_secret=SecretKeySelector(
                                             key="key_example",
@@ -6869,9 +7008,21 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             optional=True,
                                         ),
                                     ),
+                                    azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
+                                        account_key_secret=SecretKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
+                                        blob="blob_example",
+                                        container="container_example",
+                                        endpoint="endpoint_example",
+                                        use_sdk_creds=True,
+                                    ),
                                     deleted=True,
                                     _from="_from_example",
                                     from_expression="from_expression_example",
+                                    gc_strategy="gc_strategy_example",
                                     gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
                                         bucket="bucket_example",
                                         key="key_example",
@@ -7080,6 +7231,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         ],
                         http=IoArgoprojWorkflowV1alpha1HTTP(
                             body="body_example",
+                            body_from=IoArgoprojWorkflowV1alpha1HTTPBodySource(
+                                bytes='YQ==',
+                            ),
                             headers=[
                                 IoArgoprojWorkflowV1alpha1HTTPHeader(
                                     name="name_example",
@@ -7383,9 +7537,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         zip={},
                                     ),
                                     archive_logs=True,
-                                    artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
-                                        strategy="strategy_example",
-                                    ),
                                     artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                         password_secret=SecretKeySelector(
                                             key="key_example",
@@ -7399,9 +7550,21 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             optional=True,
                                         ),
                                     ),
+                                    azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
+                                        account_key_secret=SecretKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
+                                        blob="blob_example",
+                                        container="container_example",
+                                        endpoint="endpoint_example",
+                                        use_sdk_creds=True,
+                                    ),
                                     deleted=True,
                                     _from="_from_example",
                                     from_expression="from_expression_example",
+                                    gc_strategy="gc_strategy_example",
                                     gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
                                         bucket="bucket_example",
                                         key="key_example",
@@ -7680,9 +7843,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         zip={},
                                     ),
                                     archive_logs=True,
-                                    artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
-                                        strategy="strategy_example",
-                                    ),
                                     artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                         password_secret=SecretKeySelector(
                                             key="key_example",
@@ -7696,9 +7856,21 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             optional=True,
                                         ),
                                     ),
+                                    azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
+                                        account_key_secret=SecretKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
+                                        blob="blob_example",
+                                        container="container_example",
+                                        endpoint="endpoint_example",
+                                        use_sdk_creds=True,
+                                    ),
                                     deleted=True,
                                     _from="_from_example",
                                     from_expression="from_expression_example",
+                                    gc_strategy="gc_strategy_example",
                                     gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
                                         bucket="bucket_example",
                                         key="key_example",
@@ -7939,9 +8111,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         zip={},
                                     ),
                                     archive_logs=True,
-                                    artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
-                                        strategy="strategy_example",
-                                    ),
                                     artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                         password_secret=SecretKeySelector(
                                             key="key_example",
@@ -7955,9 +8124,21 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             optional=True,
                                         ),
                                     ),
+                                    azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
+                                        account_key_secret=SecretKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
+                                        blob="blob_example",
+                                        container="container_example",
+                                        endpoint="endpoint_example",
+                                        use_sdk_creds=True,
+                                    ),
                                     deleted=True,
                                     _from="_from_example",
                                     from_expression="from_expression_example",
+                                    gc_strategy="gc_strategy_example",
                                     gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
                                         bucket="bucket_example",
                                         key="key_example",
@@ -8755,9 +8936,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                     zip={},
                                                 ),
                                                 archive_logs=True,
-                                                artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
-                                                    strategy="strategy_example",
-                                                ),
                                                 artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                                     password_secret=SecretKeySelector(
                                                         key="key_example",
@@ -8771,9 +8949,21 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         optional=True,
                                                     ),
                                                 ),
+                                                azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
+                                                    account_key_secret=SecretKeySelector(
+                                                        key="key_example",
+                                                        name="name_example",
+                                                        optional=True,
+                                                    ),
+                                                    blob="blob_example",
+                                                    container="container_example",
+                                                    endpoint="endpoint_example",
+                                                    use_sdk_creds=True,
+                                                ),
                                                 deleted=True,
                                                 _from="_from_example",
                                                 from_expression="from_expression_example",
+                                                gc_strategy="gc_strategy_example",
                                                 gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
                                                     bucket="bucket_example",
                                                     key="key_example",
@@ -9007,9 +9197,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             zip={},
                                                         ),
                                                         archive_logs=True,
-                                                        artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
-                                                            strategy="strategy_example",
-                                                        ),
                                                         artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                                             password_secret=SecretKeySelector(
                                                                 key="key_example",
@@ -9023,9 +9210,21 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                                 optional=True,
                                                             ),
                                                         ),
+                                                        azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
+                                                            account_key_secret=SecretKeySelector(
+                                                                key="key_example",
+                                                                name="name_example",
+                                                                optional=True,
+                                                            ),
+                                                            blob="blob_example",
+                                                            container="container_example",
+                                                            endpoint="endpoint_example",
+                                                            use_sdk_creds=True,
+                                                        ),
                                                         deleted=True,
                                                         _from="_from_example",
                                                         from_expression="from_expression_example",
+                                                        gc_strategy="gc_strategy_example",
                                                         gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
                                                             bucket="bucket_example",
                                                             key="key_example",
@@ -10730,9 +10929,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 zip={},
                             ),
                             archive_logs=True,
-                            artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
-                                strategy="strategy_example",
-                            ),
                             artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                 password_secret=SecretKeySelector(
                                     key="key_example",
@@ -10746,9 +10942,21 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     optional=True,
                                 ),
                             ),
+                            azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
+                                account_key_secret=SecretKeySelector(
+                                    key="key_example",
+                                    name="name_example",
+                                    optional=True,
+                                ),
+                                blob="blob_example",
+                                container="container_example",
+                                endpoint="endpoint_example",
+                                use_sdk_creds=True,
+                            ),
                             deleted=True,
                             _from="_from_example",
                             from_expression="from_expression_example",
+                            gc_strategy="gc_strategy_example",
                             gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
                                 bucket="bucket_example",
                                 key="key_example",
@@ -10966,6 +11174,15 @@ with argo_workflows.ApiClient(configuration) as api_client:
                     ],
                 ),
                 artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                    pod_metadata=IoArgoprojWorkflowV1alpha1Metadata(
+                        annotations={
+                            "key": "key_example",
+                        },
+                        labels={
+                            "key": "key_example",
+                        },
+                    ),
+                    service_account_name="service_account_name_example",
                     strategy="strategy_example",
                 ),
                 artifact_repository_ref=IoArgoprojWorkflowV1alpha1ArtifactRepositoryRef(
@@ -11005,9 +11222,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         zip={},
                                     ),
                                     archive_logs=True,
-                                    artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
-                                        strategy="strategy_example",
-                                    ),
                                     artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                         password_secret=SecretKeySelector(
                                             key="key_example",
@@ -11021,9 +11235,21 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             optional=True,
                                         ),
                                     ),
+                                    azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
+                                        account_key_secret=SecretKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
+                                        blob="blob_example",
+                                        container="container_example",
+                                        endpoint="endpoint_example",
+                                        use_sdk_creds=True,
+                                    ),
                                     deleted=True,
                                     _from="_from_example",
                                     from_expression="from_expression_example",
+                                    gc_strategy="gc_strategy_example",
                                     gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
                                         bucket="bucket_example",
                                         key="key_example",
@@ -11627,6 +11853,17 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 name="name_example",
                                 optional=True,
                             ),
+                        ),
+                        azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
+                            account_key_secret=SecretKeySelector(
+                                key="key_example",
+                                name="name_example",
+                                optional=True,
+                            ),
+                            blob="blob_example",
+                            container="container_example",
+                            endpoint="endpoint_example",
+                            use_sdk_creds=True,
                         ),
                         gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
                             bucket="bucket_example",
@@ -12387,9 +12624,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 zip={},
                                             ),
                                             archive_logs=True,
-                                            artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
-                                                strategy="strategy_example",
-                                            ),
                                             artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                                 password_secret=SecretKeySelector(
                                                     key="key_example",
@@ -12403,9 +12637,21 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                     optional=True,
                                                 ),
                                             ),
+                                            azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
+                                                account_key_secret=SecretKeySelector(
+                                                    key="key_example",
+                                                    name="name_example",
+                                                    optional=True,
+                                                ),
+                                                blob="blob_example",
+                                                container="container_example",
+                                                endpoint="endpoint_example",
+                                                use_sdk_creds=True,
+                                            ),
                                             deleted=True,
                                             _from="_from_example",
                                             from_expression="from_expression_example",
+                                            gc_strategy="gc_strategy_example",
                                             gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
                                                 bucket="bucket_example",
                                                 key="key_example",
@@ -12643,9 +12889,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         zip={},
                                                     ),
                                                     archive_logs=True,
-                                                    artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
-                                                        strategy="strategy_example",
-                                                    ),
                                                     artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                                         password_secret=SecretKeySelector(
                                                             key="key_example",
@@ -12659,9 +12902,21 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             optional=True,
                                                         ),
                                                     ),
+                                                    azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
+                                                        account_key_secret=SecretKeySelector(
+                                                            key="key_example",
+                                                            name="name_example",
+                                                            optional=True,
+                                                        ),
+                                                        blob="blob_example",
+                                                        container="container_example",
+                                                        endpoint="endpoint_example",
+                                                        use_sdk_creds=True,
+                                                    ),
                                                     deleted=True,
                                                     _from="_from_example",
                                                     from_expression="from_expression_example",
+                                                    gc_strategy="gc_strategy_example",
                                                     gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
                                                         bucket="bucket_example",
                                                         key="key_example",
@@ -12921,9 +13176,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     zip={},
                                 ),
                                 archive_logs=True,
-                                artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
-                                    strategy="strategy_example",
-                                ),
                                 artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                     password_secret=SecretKeySelector(
                                         key="key_example",
@@ -12937,9 +13189,21 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         optional=True,
                                     ),
                                 ),
+                                azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
+                                    account_key_secret=SecretKeySelector(
+                                        key="key_example",
+                                        name="name_example",
+                                        optional=True,
+                                    ),
+                                    blob="blob_example",
+                                    container="container_example",
+                                    endpoint="endpoint_example",
+                                    use_sdk_creds=True,
+                                ),
                                 deleted=True,
                                 _from="_from_example",
                                 from_expression="from_expression_example",
+                                gc_strategy="gc_strategy_example",
                                 gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
                                     bucket="bucket_example",
                                     key="key_example",
@@ -13148,6 +13412,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                     ],
                     http=IoArgoprojWorkflowV1alpha1HTTP(
                         body="body_example",
+                        body_from=IoArgoprojWorkflowV1alpha1HTTPBodySource(
+                            bytes='YQ==',
+                        ),
                         headers=[
                             IoArgoprojWorkflowV1alpha1HTTPHeader(
                                 name="name_example",
@@ -13451,9 +13718,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     zip={},
                                 ),
                                 archive_logs=True,
-                                artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
-                                    strategy="strategy_example",
-                                ),
                                 artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                     password_secret=SecretKeySelector(
                                         key="key_example",
@@ -13467,9 +13731,21 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         optional=True,
                                     ),
                                 ),
+                                azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
+                                    account_key_secret=SecretKeySelector(
+                                        key="key_example",
+                                        name="name_example",
+                                        optional=True,
+                                    ),
+                                    blob="blob_example",
+                                    container="container_example",
+                                    endpoint="endpoint_example",
+                                    use_sdk_creds=True,
+                                ),
                                 deleted=True,
                                 _from="_from_example",
                                 from_expression="from_expression_example",
+                                gc_strategy="gc_strategy_example",
                                 gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
                                     bucket="bucket_example",
                                     key="key_example",
@@ -13748,9 +14024,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     zip={},
                                 ),
                                 archive_logs=True,
-                                artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
-                                    strategy="strategy_example",
-                                ),
                                 artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                     password_secret=SecretKeySelector(
                                         key="key_example",
@@ -13764,9 +14037,21 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         optional=True,
                                     ),
                                 ),
+                                azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
+                                    account_key_secret=SecretKeySelector(
+                                        key="key_example",
+                                        name="name_example",
+                                        optional=True,
+                                    ),
+                                    blob="blob_example",
+                                    container="container_example",
+                                    endpoint="endpoint_example",
+                                    use_sdk_creds=True,
+                                ),
                                 deleted=True,
                                 _from="_from_example",
                                 from_expression="from_expression_example",
+                                gc_strategy="gc_strategy_example",
                                 gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
                                     bucket="bucket_example",
                                     key="key_example",
@@ -14007,9 +14292,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     zip={},
                                 ),
                                 archive_logs=True,
-                                artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
-                                    strategy="strategy_example",
-                                ),
                                 artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                     password_secret=SecretKeySelector(
                                         key="key_example",
@@ -14023,9 +14305,21 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         optional=True,
                                     ),
                                 ),
+                                azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
+                                    account_key_secret=SecretKeySelector(
+                                        key="key_example",
+                                        name="name_example",
+                                        optional=True,
+                                    ),
+                                    blob="blob_example",
+                                    container="container_example",
+                                    endpoint="endpoint_example",
+                                    use_sdk_creds=True,
+                                ),
                                 deleted=True,
                                 _from="_from_example",
                                 from_expression="from_expression_example",
+                                gc_strategy="gc_strategy_example",
                                 gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
                                     bucket="bucket_example",
                                     key="key_example",
@@ -14823,9 +15117,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 zip={},
                                             ),
                                             archive_logs=True,
-                                            artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
-                                                strategy="strategy_example",
-                                            ),
                                             artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                                 password_secret=SecretKeySelector(
                                                     key="key_example",
@@ -14839,9 +15130,21 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                     optional=True,
                                                 ),
                                             ),
+                                            azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
+                                                account_key_secret=SecretKeySelector(
+                                                    key="key_example",
+                                                    name="name_example",
+                                                    optional=True,
+                                                ),
+                                                blob="blob_example",
+                                                container="container_example",
+                                                endpoint="endpoint_example",
+                                                use_sdk_creds=True,
+                                            ),
                                             deleted=True,
                                             _from="_from_example",
                                             from_expression="from_expression_example",
+                                            gc_strategy="gc_strategy_example",
                                             gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
                                                 bucket="bucket_example",
                                                 key="key_example",
@@ -15075,9 +15378,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         zip={},
                                                     ),
                                                     archive_logs=True,
-                                                    artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
-                                                        strategy="strategy_example",
-                                                    ),
                                                     artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                                         password_secret=SecretKeySelector(
                                                             key="key_example",
@@ -15091,9 +15391,21 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             optional=True,
                                                         ),
                                                     ),
+                                                    azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
+                                                        account_key_secret=SecretKeySelector(
+                                                            key="key_example",
+                                                            name="name_example",
+                                                            optional=True,
+                                                        ),
+                                                        blob="blob_example",
+                                                        container="container_example",
+                                                        endpoint="endpoint_example",
+                                                        use_sdk_creds=True,
+                                                    ),
                                                     deleted=True,
                                                     _from="_from_example",
                                                     from_expression="from_expression_example",
+                                                    gc_strategy="gc_strategy_example",
                                                     gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
                                                         bucket="bucket_example",
                                                         key="key_example",
@@ -15964,6 +16276,17 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     optional=True,
                                 ),
                             ),
+                            azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
+                                account_key_secret=SecretKeySelector(
+                                    key="key_example",
+                                    name="name_example",
+                                    optional=True,
+                                ),
+                                blob="blob_example",
+                                container="container_example",
+                                endpoint="endpoint_example",
+                                use_sdk_creds=True,
+                            ),
                             gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
                                 bucket="bucket_example",
                                 key="key_example",
@@ -16723,9 +17046,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                     zip={},
                                                 ),
                                                 archive_logs=True,
-                                                artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
-                                                    strategy="strategy_example",
-                                                ),
                                                 artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                                     password_secret=SecretKeySelector(
                                                         key="key_example",
@@ -16739,9 +17059,21 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         optional=True,
                                                     ),
                                                 ),
+                                                azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
+                                                    account_key_secret=SecretKeySelector(
+                                                        key="key_example",
+                                                        name="name_example",
+                                                        optional=True,
+                                                    ),
+                                                    blob="blob_example",
+                                                    container="container_example",
+                                                    endpoint="endpoint_example",
+                                                    use_sdk_creds=True,
+                                                ),
                                                 deleted=True,
                                                 _from="_from_example",
                                                 from_expression="from_expression_example",
+                                                gc_strategy="gc_strategy_example",
                                                 gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
                                                     bucket="bucket_example",
                                                     key="key_example",
@@ -16979,9 +17311,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             zip={},
                                                         ),
                                                         archive_logs=True,
-                                                        artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
-                                                            strategy="strategy_example",
-                                                        ),
                                                         artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                                             password_secret=SecretKeySelector(
                                                                 key="key_example",
@@ -16995,9 +17324,21 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                                 optional=True,
                                                             ),
                                                         ),
+                                                        azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
+                                                            account_key_secret=SecretKeySelector(
+                                                                key="key_example",
+                                                                name="name_example",
+                                                                optional=True,
+                                                            ),
+                                                            blob="blob_example",
+                                                            container="container_example",
+                                                            endpoint="endpoint_example",
+                                                            use_sdk_creds=True,
+                                                        ),
                                                         deleted=True,
                                                         _from="_from_example",
                                                         from_expression="from_expression_example",
+                                                        gc_strategy="gc_strategy_example",
                                                         gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
                                                             bucket="bucket_example",
                                                             key="key_example",
@@ -17257,9 +17598,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         zip={},
                                     ),
                                     archive_logs=True,
-                                    artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
-                                        strategy="strategy_example",
-                                    ),
                                     artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                         password_secret=SecretKeySelector(
                                             key="key_example",
@@ -17273,9 +17611,21 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             optional=True,
                                         ),
                                     ),
+                                    azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
+                                        account_key_secret=SecretKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
+                                        blob="blob_example",
+                                        container="container_example",
+                                        endpoint="endpoint_example",
+                                        use_sdk_creds=True,
+                                    ),
                                     deleted=True,
                                     _from="_from_example",
                                     from_expression="from_expression_example",
+                                    gc_strategy="gc_strategy_example",
                                     gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
                                         bucket="bucket_example",
                                         key="key_example",
@@ -17484,6 +17834,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         ],
                         http=IoArgoprojWorkflowV1alpha1HTTP(
                             body="body_example",
+                            body_from=IoArgoprojWorkflowV1alpha1HTTPBodySource(
+                                bytes='YQ==',
+                            ),
                             headers=[
                                 IoArgoprojWorkflowV1alpha1HTTPHeader(
                                     name="name_example",
@@ -17787,9 +18140,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         zip={},
                                     ),
                                     archive_logs=True,
-                                    artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
-                                        strategy="strategy_example",
-                                    ),
                                     artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                         password_secret=SecretKeySelector(
                                             key="key_example",
@@ -17803,9 +18153,21 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             optional=True,
                                         ),
                                     ),
+                                    azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
+                                        account_key_secret=SecretKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
+                                        blob="blob_example",
+                                        container="container_example",
+                                        endpoint="endpoint_example",
+                                        use_sdk_creds=True,
+                                    ),
                                     deleted=True,
                                     _from="_from_example",
                                     from_expression="from_expression_example",
+                                    gc_strategy="gc_strategy_example",
                                     gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
                                         bucket="bucket_example",
                                         key="key_example",
@@ -18084,9 +18446,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         zip={},
                                     ),
                                     archive_logs=True,
-                                    artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
-                                        strategy="strategy_example",
-                                    ),
                                     artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                         password_secret=SecretKeySelector(
                                             key="key_example",
@@ -18100,9 +18459,21 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             optional=True,
                                         ),
                                     ),
+                                    azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
+                                        account_key_secret=SecretKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
+                                        blob="blob_example",
+                                        container="container_example",
+                                        endpoint="endpoint_example",
+                                        use_sdk_creds=True,
+                                    ),
                                     deleted=True,
                                     _from="_from_example",
                                     from_expression="from_expression_example",
+                                    gc_strategy="gc_strategy_example",
                                     gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
                                         bucket="bucket_example",
                                         key="key_example",
@@ -18343,9 +18714,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         zip={},
                                     ),
                                     archive_logs=True,
-                                    artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
-                                        strategy="strategy_example",
-                                    ),
                                     artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                         password_secret=SecretKeySelector(
                                             key="key_example",
@@ -18359,9 +18727,21 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             optional=True,
                                         ),
                                     ),
+                                    azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
+                                        account_key_secret=SecretKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
+                                        blob="blob_example",
+                                        container="container_example",
+                                        endpoint="endpoint_example",
+                                        use_sdk_creds=True,
+                                    ),
                                     deleted=True,
                                     _from="_from_example",
                                     from_expression="from_expression_example",
+                                    gc_strategy="gc_strategy_example",
                                     gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
                                         bucket="bucket_example",
                                         key="key_example",
@@ -19159,9 +19539,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                     zip={},
                                                 ),
                                                 archive_logs=True,
-                                                artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
-                                                    strategy="strategy_example",
-                                                ),
                                                 artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                                     password_secret=SecretKeySelector(
                                                         key="key_example",
@@ -19175,9 +19552,21 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         optional=True,
                                                     ),
                                                 ),
+                                                azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
+                                                    account_key_secret=SecretKeySelector(
+                                                        key="key_example",
+                                                        name="name_example",
+                                                        optional=True,
+                                                    ),
+                                                    blob="blob_example",
+                                                    container="container_example",
+                                                    endpoint="endpoint_example",
+                                                    use_sdk_creds=True,
+                                                ),
                                                 deleted=True,
                                                 _from="_from_example",
                                                 from_expression="from_expression_example",
+                                                gc_strategy="gc_strategy_example",
                                                 gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
                                                     bucket="bucket_example",
                                                     key="key_example",
@@ -19411,9 +19800,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             zip={},
                                                         ),
                                                         archive_logs=True,
-                                                        artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
-                                                            strategy="strategy_example",
-                                                        ),
                                                         artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                                             password_secret=SecretKeySelector(
                                                                 key="key_example",
@@ -19427,9 +19813,21 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                                 optional=True,
                                                             ),
                                                         ),
+                                                        azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
+                                                            account_key_secret=SecretKeySelector(
+                                                                key="key_example",
+                                                                name="name_example",
+                                                                optional=True,
+                                                            ),
+                                                            blob="blob_example",
+                                                            container="container_example",
+                                                            endpoint="endpoint_example",
+                                                            use_sdk_creds=True,
+                                                        ),
                                                         deleted=True,
                                                         _from="_from_example",
                                                         from_expression="from_expression_example",
+                                                        gc_strategy="gc_strategy_example",
                                                         gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
                                                             bucket="bucket_example",
                                                             key="key_example",
@@ -21045,9 +21443,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 zip={},
                             ),
                             archive_logs=True,
-                            artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
-                                strategy="strategy_example",
-                            ),
                             artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                 password_secret=SecretKeySelector(
                                     key="key_example",
@@ -21061,9 +21456,21 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     optional=True,
                                 ),
                             ),
+                            azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
+                                account_key_secret=SecretKeySelector(
+                                    key="key_example",
+                                    name="name_example",
+                                    optional=True,
+                                ),
+                                blob="blob_example",
+                                container="container_example",
+                                endpoint="endpoint_example",
+                                use_sdk_creds=True,
+                            ),
                             deleted=True,
                             _from="_from_example",
                             from_expression="from_expression_example",
+                            gc_strategy="gc_strategy_example",
                             gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
                                 bucket="bucket_example",
                                 key="key_example",
@@ -21281,6 +21688,15 @@ with argo_workflows.ApiClient(configuration) as api_client:
                     ],
                 ),
                 artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                    pod_metadata=IoArgoprojWorkflowV1alpha1Metadata(
+                        annotations={
+                            "key": "key_example",
+                        },
+                        labels={
+                            "key": "key_example",
+                        },
+                    ),
+                    service_account_name="service_account_name_example",
                     strategy="strategy_example",
                 ),
                 artifact_repository_ref=IoArgoprojWorkflowV1alpha1ArtifactRepositoryRef(
@@ -21320,9 +21736,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         zip={},
                                     ),
                                     archive_logs=True,
-                                    artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
-                                        strategy="strategy_example",
-                                    ),
                                     artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                         password_secret=SecretKeySelector(
                                             key="key_example",
@@ -21336,9 +21749,21 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             optional=True,
                                         ),
                                     ),
+                                    azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
+                                        account_key_secret=SecretKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
+                                        blob="blob_example",
+                                        container="container_example",
+                                        endpoint="endpoint_example",
+                                        use_sdk_creds=True,
+                                    ),
                                     deleted=True,
                                     _from="_from_example",
                                     from_expression="from_expression_example",
+                                    gc_strategy="gc_strategy_example",
                                     gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
                                         bucket="bucket_example",
                                         key="key_example",
@@ -21942,6 +22367,17 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 name="name_example",
                                 optional=True,
                             ),
+                        ),
+                        azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
+                            account_key_secret=SecretKeySelector(
+                                key="key_example",
+                                name="name_example",
+                                optional=True,
+                            ),
+                            blob="blob_example",
+                            container="container_example",
+                            endpoint="endpoint_example",
+                            use_sdk_creds=True,
                         ),
                         gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
                             bucket="bucket_example",
@@ -22702,9 +23138,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 zip={},
                                             ),
                                             archive_logs=True,
-                                            artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
-                                                strategy="strategy_example",
-                                            ),
                                             artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                                 password_secret=SecretKeySelector(
                                                     key="key_example",
@@ -22718,9 +23151,21 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                     optional=True,
                                                 ),
                                             ),
+                                            azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
+                                                account_key_secret=SecretKeySelector(
+                                                    key="key_example",
+                                                    name="name_example",
+                                                    optional=True,
+                                                ),
+                                                blob="blob_example",
+                                                container="container_example",
+                                                endpoint="endpoint_example",
+                                                use_sdk_creds=True,
+                                            ),
                                             deleted=True,
                                             _from="_from_example",
                                             from_expression="from_expression_example",
+                                            gc_strategy="gc_strategy_example",
                                             gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
                                                 bucket="bucket_example",
                                                 key="key_example",
@@ -22958,9 +23403,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         zip={},
                                                     ),
                                                     archive_logs=True,
-                                                    artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
-                                                        strategy="strategy_example",
-                                                    ),
                                                     artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                                         password_secret=SecretKeySelector(
                                                             key="key_example",
@@ -22974,9 +23416,21 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             optional=True,
                                                         ),
                                                     ),
+                                                    azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
+                                                        account_key_secret=SecretKeySelector(
+                                                            key="key_example",
+                                                            name="name_example",
+                                                            optional=True,
+                                                        ),
+                                                        blob="blob_example",
+                                                        container="container_example",
+                                                        endpoint="endpoint_example",
+                                                        use_sdk_creds=True,
+                                                    ),
                                                     deleted=True,
                                                     _from="_from_example",
                                                     from_expression="from_expression_example",
+                                                    gc_strategy="gc_strategy_example",
                                                     gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
                                                         bucket="bucket_example",
                                                         key="key_example",
@@ -23236,9 +23690,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     zip={},
                                 ),
                                 archive_logs=True,
-                                artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
-                                    strategy="strategy_example",
-                                ),
                                 artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                     password_secret=SecretKeySelector(
                                         key="key_example",
@@ -23252,9 +23703,21 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         optional=True,
                                     ),
                                 ),
+                                azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
+                                    account_key_secret=SecretKeySelector(
+                                        key="key_example",
+                                        name="name_example",
+                                        optional=True,
+                                    ),
+                                    blob="blob_example",
+                                    container="container_example",
+                                    endpoint="endpoint_example",
+                                    use_sdk_creds=True,
+                                ),
                                 deleted=True,
                                 _from="_from_example",
                                 from_expression="from_expression_example",
+                                gc_strategy="gc_strategy_example",
                                 gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
                                     bucket="bucket_example",
                                     key="key_example",
@@ -23463,6 +23926,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                     ],
                     http=IoArgoprojWorkflowV1alpha1HTTP(
                         body="body_example",
+                        body_from=IoArgoprojWorkflowV1alpha1HTTPBodySource(
+                            bytes='YQ==',
+                        ),
                         headers=[
                             IoArgoprojWorkflowV1alpha1HTTPHeader(
                                 name="name_example",
@@ -23766,9 +24232,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     zip={},
                                 ),
                                 archive_logs=True,
-                                artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
-                                    strategy="strategy_example",
-                                ),
                                 artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                     password_secret=SecretKeySelector(
                                         key="key_example",
@@ -23782,9 +24245,21 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         optional=True,
                                     ),
                                 ),
+                                azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
+                                    account_key_secret=SecretKeySelector(
+                                        key="key_example",
+                                        name="name_example",
+                                        optional=True,
+                                    ),
+                                    blob="blob_example",
+                                    container="container_example",
+                                    endpoint="endpoint_example",
+                                    use_sdk_creds=True,
+                                ),
                                 deleted=True,
                                 _from="_from_example",
                                 from_expression="from_expression_example",
+                                gc_strategy="gc_strategy_example",
                                 gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
                                     bucket="bucket_example",
                                     key="key_example",
@@ -24063,9 +24538,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     zip={},
                                 ),
                                 archive_logs=True,
-                                artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
-                                    strategy="strategy_example",
-                                ),
                                 artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                     password_secret=SecretKeySelector(
                                         key="key_example",
@@ -24079,9 +24551,21 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         optional=True,
                                     ),
                                 ),
+                                azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
+                                    account_key_secret=SecretKeySelector(
+                                        key="key_example",
+                                        name="name_example",
+                                        optional=True,
+                                    ),
+                                    blob="blob_example",
+                                    container="container_example",
+                                    endpoint="endpoint_example",
+                                    use_sdk_creds=True,
+                                ),
                                 deleted=True,
                                 _from="_from_example",
                                 from_expression="from_expression_example",
+                                gc_strategy="gc_strategy_example",
                                 gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
                                     bucket="bucket_example",
                                     key="key_example",
@@ -24322,9 +24806,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     zip={},
                                 ),
                                 archive_logs=True,
-                                artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
-                                    strategy="strategy_example",
-                                ),
                                 artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                     password_secret=SecretKeySelector(
                                         key="key_example",
@@ -24338,9 +24819,21 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         optional=True,
                                     ),
                                 ),
+                                azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
+                                    account_key_secret=SecretKeySelector(
+                                        key="key_example",
+                                        name="name_example",
+                                        optional=True,
+                                    ),
+                                    blob="blob_example",
+                                    container="container_example",
+                                    endpoint="endpoint_example",
+                                    use_sdk_creds=True,
+                                ),
                                 deleted=True,
                                 _from="_from_example",
                                 from_expression="from_expression_example",
+                                gc_strategy="gc_strategy_example",
                                 gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
                                     bucket="bucket_example",
                                     key="key_example",
@@ -25138,9 +25631,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 zip={},
                                             ),
                                             archive_logs=True,
-                                            artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
-                                                strategy="strategy_example",
-                                            ),
                                             artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                                 password_secret=SecretKeySelector(
                                                     key="key_example",
@@ -25154,9 +25644,21 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                     optional=True,
                                                 ),
                                             ),
+                                            azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
+                                                account_key_secret=SecretKeySelector(
+                                                    key="key_example",
+                                                    name="name_example",
+                                                    optional=True,
+                                                ),
+                                                blob="blob_example",
+                                                container="container_example",
+                                                endpoint="endpoint_example",
+                                                use_sdk_creds=True,
+                                            ),
                                             deleted=True,
                                             _from="_from_example",
                                             from_expression="from_expression_example",
+                                            gc_strategy="gc_strategy_example",
                                             gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
                                                 bucket="bucket_example",
                                                 key="key_example",
@@ -25390,9 +25892,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         zip={},
                                                     ),
                                                     archive_logs=True,
-                                                    artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
-                                                        strategy="strategy_example",
-                                                    ),
                                                     artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                                         password_secret=SecretKeySelector(
                                                             key="key_example",
@@ -25406,9 +25905,21 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             optional=True,
                                                         ),
                                                     ),
+                                                    azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
+                                                        account_key_secret=SecretKeySelector(
+                                                            key="key_example",
+                                                            name="name_example",
+                                                            optional=True,
+                                                        ),
+                                                        blob="blob_example",
+                                                        container="container_example",
+                                                        endpoint="endpoint_example",
+                                                        use_sdk_creds=True,
+                                                    ),
                                                     deleted=True,
                                                     _from="_from_example",
                                                     from_expression="from_expression_example",
+                                                    gc_strategy="gc_strategy_example",
                                                     gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
                                                         bucket="bucket_example",
                                                         key="key_example",
@@ -26279,6 +26790,17 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     optional=True,
                                 ),
                             ),
+                            azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
+                                account_key_secret=SecretKeySelector(
+                                    key="key_example",
+                                    name="name_example",
+                                    optional=True,
+                                ),
+                                blob="blob_example",
+                                container="container_example",
+                                endpoint="endpoint_example",
+                                use_sdk_creds=True,
+                            ),
                             gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
                                 bucket="bucket_example",
                                 key="key_example",
@@ -27038,9 +27560,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                     zip={},
                                                 ),
                                                 archive_logs=True,
-                                                artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
-                                                    strategy="strategy_example",
-                                                ),
                                                 artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                                     password_secret=SecretKeySelector(
                                                         key="key_example",
@@ -27054,9 +27573,21 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         optional=True,
                                                     ),
                                                 ),
+                                                azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
+                                                    account_key_secret=SecretKeySelector(
+                                                        key="key_example",
+                                                        name="name_example",
+                                                        optional=True,
+                                                    ),
+                                                    blob="blob_example",
+                                                    container="container_example",
+                                                    endpoint="endpoint_example",
+                                                    use_sdk_creds=True,
+                                                ),
                                                 deleted=True,
                                                 _from="_from_example",
                                                 from_expression="from_expression_example",
+                                                gc_strategy="gc_strategy_example",
                                                 gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
                                                     bucket="bucket_example",
                                                     key="key_example",
@@ -27294,9 +27825,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             zip={},
                                                         ),
                                                         archive_logs=True,
-                                                        artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
-                                                            strategy="strategy_example",
-                                                        ),
                                                         artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                                             password_secret=SecretKeySelector(
                                                                 key="key_example",
@@ -27310,9 +27838,21 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                                 optional=True,
                                                             ),
                                                         ),
+                                                        azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
+                                                            account_key_secret=SecretKeySelector(
+                                                                key="key_example",
+                                                                name="name_example",
+                                                                optional=True,
+                                                            ),
+                                                            blob="blob_example",
+                                                            container="container_example",
+                                                            endpoint="endpoint_example",
+                                                            use_sdk_creds=True,
+                                                        ),
                                                         deleted=True,
                                                         _from="_from_example",
                                                         from_expression="from_expression_example",
+                                                        gc_strategy="gc_strategy_example",
                                                         gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
                                                             bucket="bucket_example",
                                                             key="key_example",
@@ -27572,9 +28112,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         zip={},
                                     ),
                                     archive_logs=True,
-                                    artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
-                                        strategy="strategy_example",
-                                    ),
                                     artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                         password_secret=SecretKeySelector(
                                             key="key_example",
@@ -27588,9 +28125,21 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             optional=True,
                                         ),
                                     ),
+                                    azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
+                                        account_key_secret=SecretKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
+                                        blob="blob_example",
+                                        container="container_example",
+                                        endpoint="endpoint_example",
+                                        use_sdk_creds=True,
+                                    ),
                                     deleted=True,
                                     _from="_from_example",
                                     from_expression="from_expression_example",
+                                    gc_strategy="gc_strategy_example",
                                     gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
                                         bucket="bucket_example",
                                         key="key_example",
@@ -27799,6 +28348,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         ],
                         http=IoArgoprojWorkflowV1alpha1HTTP(
                             body="body_example",
+                            body_from=IoArgoprojWorkflowV1alpha1HTTPBodySource(
+                                bytes='YQ==',
+                            ),
                             headers=[
                                 IoArgoprojWorkflowV1alpha1HTTPHeader(
                                     name="name_example",
@@ -28102,9 +28654,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         zip={},
                                     ),
                                     archive_logs=True,
-                                    artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
-                                        strategy="strategy_example",
-                                    ),
                                     artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                         password_secret=SecretKeySelector(
                                             key="key_example",
@@ -28118,9 +28667,21 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             optional=True,
                                         ),
                                     ),
+                                    azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
+                                        account_key_secret=SecretKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
+                                        blob="blob_example",
+                                        container="container_example",
+                                        endpoint="endpoint_example",
+                                        use_sdk_creds=True,
+                                    ),
                                     deleted=True,
                                     _from="_from_example",
                                     from_expression="from_expression_example",
+                                    gc_strategy="gc_strategy_example",
                                     gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
                                         bucket="bucket_example",
                                         key="key_example",
@@ -28399,9 +28960,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         zip={},
                                     ),
                                     archive_logs=True,
-                                    artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
-                                        strategy="strategy_example",
-                                    ),
                                     artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                         password_secret=SecretKeySelector(
                                             key="key_example",
@@ -28415,9 +28973,21 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             optional=True,
                                         ),
                                     ),
+                                    azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
+                                        account_key_secret=SecretKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
+                                        blob="blob_example",
+                                        container="container_example",
+                                        endpoint="endpoint_example",
+                                        use_sdk_creds=True,
+                                    ),
                                     deleted=True,
                                     _from="_from_example",
                                     from_expression="from_expression_example",
+                                    gc_strategy="gc_strategy_example",
                                     gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
                                         bucket="bucket_example",
                                         key="key_example",
@@ -28658,9 +29228,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         zip={},
                                     ),
                                     archive_logs=True,
-                                    artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
-                                        strategy="strategy_example",
-                                    ),
                                     artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                         password_secret=SecretKeySelector(
                                             key="key_example",
@@ -28674,9 +29241,21 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             optional=True,
                                         ),
                                     ),
+                                    azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
+                                        account_key_secret=SecretKeySelector(
+                                            key="key_example",
+                                            name="name_example",
+                                            optional=True,
+                                        ),
+                                        blob="blob_example",
+                                        container="container_example",
+                                        endpoint="endpoint_example",
+                                        use_sdk_creds=True,
+                                    ),
                                     deleted=True,
                                     _from="_from_example",
                                     from_expression="from_expression_example",
+                                    gc_strategy="gc_strategy_example",
                                     gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
                                         bucket="bucket_example",
                                         key="key_example",
@@ -29474,9 +30053,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                     zip={},
                                                 ),
                                                 archive_logs=True,
-                                                artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
-                                                    strategy="strategy_example",
-                                                ),
                                                 artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                                     password_secret=SecretKeySelector(
                                                         key="key_example",
@@ -29490,9 +30066,21 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         optional=True,
                                                     ),
                                                 ),
+                                                azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
+                                                    account_key_secret=SecretKeySelector(
+                                                        key="key_example",
+                                                        name="name_example",
+                                                        optional=True,
+                                                    ),
+                                                    blob="blob_example",
+                                                    container="container_example",
+                                                    endpoint="endpoint_example",
+                                                    use_sdk_creds=True,
+                                                ),
                                                 deleted=True,
                                                 _from="_from_example",
                                                 from_expression="from_expression_example",
+                                                gc_strategy="gc_strategy_example",
                                                 gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
                                                     bucket="bucket_example",
                                                     key="key_example",
@@ -29726,9 +30314,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             zip={},
                                                         ),
                                                         archive_logs=True,
-                                                        artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
-                                                            strategy="strategy_example",
-                                                        ),
                                                         artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
                                                             password_secret=SecretKeySelector(
                                                                 key="key_example",
@@ -29742,9 +30327,21 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                                 optional=True,
                                                             ),
                                                         ),
+                                                        azure=IoArgoprojWorkflowV1alpha1AzureArtifact(
+                                                            account_key_secret=SecretKeySelector(
+                                                                key="key_example",
+                                                                name="name_example",
+                                                                optional=True,
+                                                            ),
+                                                            blob="blob_example",
+                                                            container="container_example",
+                                                            endpoint="endpoint_example",
+                                                            use_sdk_creds=True,
+                                                        ),
                                                         deleted=True,
                                                         _from="_from_example",
                                                         from_expression="from_expression_example",
+                                                        gc_strategy="gc_strategy_example",
                                                         gcs=IoArgoprojWorkflowV1alpha1GCSArtifact(
                                                             bucket="bucket_example",
                                                             key="key_example",

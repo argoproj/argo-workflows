@@ -96,6 +96,8 @@ definitions:
         type: boolean
       artifactory:
         $ref: '#/definitions/ArtifactoryArtifact'
+      azure:
+        $ref: '#/definitions/AzureArtifact'
       deleted:
         description: Has this been deleted?
         type: boolean
@@ -166,6 +168,8 @@ definitions:
         type: boolean
       artifactory:
         $ref: '#/definitions/ArtifactoryArtifact'
+      azure:
+        $ref: '#/definitions/AzureArtifact'
       gcs:
         $ref: '#/definitions/GCSArtifact'
       git:
@@ -192,6 +196,8 @@ definitions:
         type: boolean
       artifactory:
         $ref: '#/definitions/ArtifactoryArtifact'
+      azure:
+        $ref: '#/definitions/AzureArtifact'
       deleted:
         description: Has this been deleted?
         type: boolean
@@ -263,6 +269,27 @@ definitions:
     items:
       $ref: '#/definitions/Artifact'
     type: array
+  AzureArtifact:
+    description: AzureArtifact is the location of a an Azure Storage artifact
+    properties:
+      accountKeySecret:
+        $ref: '#/definitions/SecretKeySelector'
+      blob:
+        description: Blob is the blob name (i.e., path) in the container where the
+          artifact resides
+        type: string
+      container:
+        description: Container is the container where resources will be stored
+        type: string
+      endpoint:
+        description: Endpoint is the service url associated with an account. It is
+          most likely "https://<ACCOUNT_NAME>.blob.core.windows.net"
+        type: string
+      useSDKCreds:
+        description: UseSDKCreds tells the driver to figure out credentials based
+          on sdk defaults.
+        type: boolean
+    type: object
   AzureDataDiskCachingMode:
     description: +enum
     type: string
@@ -1598,10 +1625,12 @@ definitions:
       body:
         description: Body is content of the HTTP Request
         type: string
+      bodyFrom:
+        $ref: '#/definitions/HTTPBodySource'
       headers:
         $ref: '#/definitions/HTTPHeaders'
       insecureSkipVerify:
-        description: insecureSkipVerify is a bool when if set to true will skip TLS
+        description: InsecureSkipVerify is a bool when if set to true will skip TLS
           verification for the HTTP client
         type: boolean
       method:
@@ -1644,6 +1673,15 @@ definitions:
         $ref: '#/definitions/ClientCertAuth'
       oauth2:
         $ref: '#/definitions/OAuth2Auth'
+    type: object
+  HTTPBodySource:
+    properties:
+      bytes:
+        items:
+          format: uint8
+          type: integer
+        type: array
+    title: HTTPBodySource contains the source of the HTTP body.
     type: object
   HTTPGetAction:
     properties:

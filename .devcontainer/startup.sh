@@ -5,7 +5,7 @@ sudo apt update
 sudo chown $USER:docker /var/run/docker.sock
 sudo chown -fR $USER:golang $GOPATH
 
-echo '127.0.0.1 dex\n127.0.0.1 minio\n127.0.0.1 postgres\n127.0.0.1 mysql' | sudo tee -a /etc/hosts
+echo $'127.0.0.1 dex\n127.0.0.1 minio\n127.0.0.1 postgres\n127.0.0.1 mysql\n127.0.0.1 azurite' | sudo tee -a /etc/hosts
 
 if k3d cluster list | grep k3s-default;
 then

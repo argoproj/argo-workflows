@@ -9,7 +9,7 @@ Mentors will help you with things like:
 * Understand key concepts and learn your way around the source code
 * Getting your first pull request with a code contribution created, reviewed and merged.
 
-Mentors and mentees must abide by the [code of conduct](https://github.com/cncf/foundation/blob/master/code-of-conduct.md).
+Mentors and mentees must abide by the [code of conduct](https://github.com/cncf/foundation/blob/main/code-of-conduct.md).
 
 ## How To Get A Mentor
 

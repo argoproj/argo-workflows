@@ -12,6 +12,11 @@ type HTTPHeaderSource struct {
 
 type HTTPHeaders []HTTPHeader
 
+// HTTPBodySource contains the source of the HTTP body.
+type HTTPBodySource struct {
+	Bytes []byte `json:"bytes,omitempty" protobuf:"bytes,1,opt,name=bytes"`
+}
+
 func (h HTTPHeaders) ToHeader() http.Header {
 	outHeader := make(http.Header)
 	for _, header := range h {
@@ -43,6 +48,15 @@ type HTTP struct {
 	SuccessCondition string `json:"successCondition,omitempty" protobuf:"bytes,6,opt,name=successCondition"`
 	// Body is content of the HTTP Request
 	Body string `json:"body,omitempty" protobuf:"bytes,5,opt,name=body"`
-	// insecureSkipVerify is a bool when if set to true will skip TLS verification for the HTTP client
+	// BodyFrom is  content of the HTTP Request as Bytes
+	BodyFrom *HTTPBodySource `json:"bodyFrom,omitempty" protobuf:"bytes,8,opt,name=bodyFrom"`
+	// InsecureSkipVerify is a bool when if set to true will skip TLS verification for the HTTP client
 	InsecureSkipVerify bool `json:"insecureSkipVerify,omitempty" protobuf:"bytes,7,opt,name=insecureSkipVerify"`
+}
+
+func (h *HTTP) GetBodyBytes() []byte {
+	if h.BodyFrom != nil {
+		return h.BodyFrom.Bytes
+	}
+	return nil
 }

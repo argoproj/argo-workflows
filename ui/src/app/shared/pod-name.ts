@@ -55,7 +55,7 @@ export const getTemplateNameFromNode = (node: NodeStatus): string => {
     }
 
     // fall back to v1 pod names if no templateName or templateRef defined
-    if (!node.templateRef) {
+    if (node?.templateRef === undefined || node?.templateRef.template === '') {
         return '';
     }
 

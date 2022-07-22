@@ -202,6 +202,7 @@ It will marshall back to string - marshalling is not symmetric. |  |
 | archive | [ArchiveStrategy](#archive-strategy)| `ArchiveStrategy` |  | |  |  |
 | archiveLogs | boolean| `bool` |  | | ArchiveLogs indicates if the container logs should be archived |  |
 | artifactory | [ArtifactoryArtifact](#artifactory-artifact)| `ArtifactoryArtifact` |  | |  |  |
+| azure | [AzureArtifact](#azure-artifact)| `AzureArtifact` |  | |  |  |
 | deleted | boolean| `bool` |  | | Has this been deleted? |  |
 | from | string| `string` |  | | From allows an artifact to reference an artifact from a previous step |  |
 | fromExpression | string| `string` |  | | FromExpression, if defined, is evaluated to specify the value for the artifact |  |
@@ -254,6 +255,7 @@ of a single workflow step, which the executor will use as a default location to 
 |------|------|---------|:--------:| ------- |-------------|---------|
 | archiveLogs | boolean| `bool` |  | | ArchiveLogs indicates if the container logs should be archived |  |
 | artifactory | [ArtifactoryArtifact](#artifactory-artifact)| `ArtifactoryArtifact` |  | |  |  |
+| azure | [AzureArtifact](#azure-artifact)| `AzureArtifact` |  | |  |  |
 | gcs | [GCSArtifact](#g-c-s-artifact)| `GCSArtifact` |  | |  |  |
 | git | [GitArtifact](#git-artifact)| `GitArtifact` |  | |  |  |
 | hdfs | [HDFSArtifact](#h-d-f-s-artifact)| `HDFSArtifact` |  | |  |  |
@@ -281,6 +283,7 @@ of a single workflow step, which the executor will use as a default location to 
 | archive | [ArchiveStrategy](#archive-strategy)| `ArchiveStrategy` |  | |  |  |
 | archiveLogs | boolean| `bool` |  | | ArchiveLogs indicates if the container logs should be archived |  |
 | artifactory | [ArtifactoryArtifact](#artifactory-artifact)| `ArtifactoryArtifact` |  | |  |  |
+| azure | [AzureArtifact](#azure-artifact)| `AzureArtifact` |  | |  |  |
 | deleted | boolean| `bool` |  | | Has this been deleted? |  |
 | from | string| `string` |  | | From allows an artifact to reference an artifact from a previous step |  |
 | fromExpression | string| `string` |  | | FromExpression, if defined, is evaluated to specify the value for the artifact |  |
@@ -330,6 +333,28 @@ set when loading input artifacts. |  |
   
 
 [][Artifact](#artifact)
+
+### <span id="azure-artifact"></span> AzureArtifact
+
+
+> AzureArtifact is the location of a an Azure Storage artifact
+  
+
+
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| accountKeySecret | [SecretKeySelector](#secret-key-selector)| `SecretKeySelector` |  | |  |  |
+| blob | string| `string` |  | | Blob is the blob name (i.e., path) in the container where the artifact resides |  |
+| container | string| `string` |  | | Container is the container where resources will be stored |  |
+| endpoint | string| `string` |  | | Endpoint is the service url associated with an account. It is most likely "https://<ACCOUNT_NAME>.blob.core.windows.net" |  |
+| useSDKCreds | boolean| `bool` |  | | UseSDKCreds tells the driver to figure out credentials based on sdk defaults. |  |
+
+
 
 ### <span id="azure-data-disk-caching-mode"></span> AzureDataDiskCachingMode
 
@@ -1746,8 +1771,9 @@ It must be set if keytab is used. |  |
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
 | body | string| `string` |  | | Body is content of the HTTP Request |  |
+| bodyFrom | [HTTPBodySource](#http-body-source)| `HTTPBodySource` |  | |  |  |
 | headers | [HTTPHeaders](#http-headers)| `HTTPHeaders` |  | |  |  |
-| insecureSkipVerify | boolean| `bool` |  | | insecureSkipVerify is a bool when if set to true will skip TLS verification for the HTTP client |  |
+| insecureSkipVerify | boolean| `bool` |  | | InsecureSkipVerify is a bool when if set to true will skip TLS verification for the HTTP client |  |
 | method | string| `string` |  | | Method is HTTP methods for HTTP Request |  |
 | successCondition | string| `string` |  | | SuccessCondition is an expression if evaluated to true is considered successful |  |
 | timeoutSeconds | int64 (formatted integer)| `int64` |  | | TimeoutSeconds is request timeout for HTTP Request. Default is 30 seconds |  |
@@ -1789,6 +1815,21 @@ It must be set if keytab is used. |  |
 | basicAuth | [BasicAuth](#basic-auth)| `BasicAuth` |  | |  |  |
 | clientCert | [ClientCertAuth](#client-cert-auth)| `ClientCertAuth` |  | |  |  |
 | oauth2 | [OAuth2Auth](#o-auth2-auth)| `OAuth2Auth` |  | |  |  |
+
+
+
+### <span id="http-body-source"></span> HTTPBodySource
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| bytes | []uint8 (formatted integer)| `[]uint8` |  | |  |  |
 
 
 
