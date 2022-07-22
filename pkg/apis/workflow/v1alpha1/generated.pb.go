@@ -3952,7 +3952,7 @@ func init() {
 	proto.RegisterMapType((LifecycleHooks)(nil), "github.com.argoproj.argo_workflows.v3.pkg.apis.workflow.v1alpha1.WorkflowSpec.HooksEntry")
 	proto.RegisterMapType((map[string]string)(nil), "github.com.argoproj.argo_workflows.v3.pkg.apis.workflow.v1alpha1.WorkflowSpec.NodeSelectorEntry")
 	proto.RegisterType((*WorkflowStatus)(nil), "github.com.argoproj.argo_workflows.v3.pkg.apis.workflow.v1alpha1.WorkflowStatus")
-	proto.RegisterMapType((ArtifactGCStatus)(nil), "github.com.argoproj.argo_workflows.v3.pkg.apis.workflow.v1alpha1.WorkflowStatus.ArtifactGCStatusEntry")
+	proto.RegisterMapType((ArtGCStatus)(nil), "github.com.argoproj.argo_workflows.v3.pkg.apis.workflow.v1alpha1.WorkflowStatus.ArtifactGCStatusEntry")
 	proto.RegisterMapType((Nodes)(nil), "github.com.argoproj.argo_workflows.v3.pkg.apis.workflow.v1alpha1.WorkflowStatus.NodesEntry")
 	proto.RegisterMapType((ResourcesDuration)(nil), "github.com.argoproj.argo_workflows.v3.pkg.apis.workflow.v1alpha1.WorkflowStatus.ResourcesDurationEntry")
 	proto.RegisterMapType((map[string]Template)(nil), "github.com.argoproj.argo_workflows.v3.pkg.apis.workflow.v1alpha1.WorkflowStatus.StoredTemplatesEntry")
@@ -40582,7 +40582,7 @@ func (m *WorkflowStatus) Unmarshal(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			if m.ArtifactGCStatus == nil {
-				m.ArtifactGCStatus = make(ArtifactGCStatus)
+				m.ArtifactGCStatus = make(ArtGCStatus)
 			}
 			var mapkey ArtifactGCStrategy
 			var mapvalue NodePhase

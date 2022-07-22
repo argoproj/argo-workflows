@@ -1324,10 +1324,10 @@ const (
 	// finished with 0 code
 	ArtifactGCSucceeded ArtifactGCPhase = "Succeeded"
 	// finished with non-0 code
-	ArtifactGCSucceeded ArtifactGCPhase = "Failed"
+	ArtifactGCFailed ArtifactGCPhase = "Failed"
 )
 
-type ArtifactGCStatus map[ArtifactGCStrategy]ArtifactGCPhase
+type ArtGCStatus map[ArtifactGCStrategy]ArtifactGCPhase
 
 type ArtifactSearchResult struct {
 	Artifact `protobuf:"bytes,1,opt,name=artifact"`
@@ -1776,7 +1776,7 @@ type WorkflowStatus struct {
 	ArtifactRepositoryRef *ArtifactRepositoryRefStatus `json:"artifactRepositoryRef,omitempty" protobuf:"bytes,18,opt,name=artifactRepositoryRef"`
 
 	// ArtifactGCStatus maintains the status of Artifact Garbage Collection per ArtifactGCStrategy
-	ArtifactGCStatus ArtifactGCStatus `json:"artifactGCStatus,omitempty" protobuf:"bytes,19,opt,name=artifactGCStatus"`
+	ArtifactGCStatus ArtGCStatus `json:"artifactGCStatus,omitempty" protobuf:"bytes,19,opt,name=artifactGCStatus"`
 }
 
 func (ws *WorkflowStatus) IsOffloadNodeStatus() bool {

@@ -179,7 +179,7 @@ func (woc *wfOperationCtx) processArtifactGCCompletion(ctx context.Context) erro
 		strategy := wfv1.ArtifactGCStrategy(strategyStr)
 		// make sure we didn't already process this one
 		previousStatus, found := woc.wf.Status.ArtifactGCStatus[strategy]
-		if found && (previousStatus == wfv1.NodeSucceeded || previousStatus == wfv1.NodeFailed) {
+		if found && (previousStatus == wfv1.ArtifactGCSucceeded || previousStatus == wfv1.ArtifactGCFailed) {
 			// already processed
 			continue
 		}
@@ -198,9 +198,9 @@ func (woc *wfOperationCtx) processArtifactGCCompletion(ctx context.Context) erro
 			}
 			if phase == corev1.PodSucceeded {
 				anyPodSuccess = true
-				woc.wf.Status.ArtifactGCStatus[strategy] = wfv1.NodeSucceeded
+				woc.wf.Status.ArtifactGCStatus[strategy] = wfv1.ArtifactGCSucceeded
 			} else {
-				woc.wf.Status.ArtifactGCStatus[strategy] = wfv1.NodeFailed
+				woc.wf.Status.ArtifactGCStatus[strategy] = wfv1.ArtifactGCFailed
 			}
 		}
 	}
@@ -290,16 +290,16 @@ func (woc *wfOperationCtx) processArtifactGCStrategy(ctx context.Context, strate
 	// If so, we don't want to run it again; however, if it's in a "Running" state we should make sure the Pod exists -
 	// it's possible if it's in this state, then it was evicted and we need to rerun it
 	if woc.wf.Status.ArtifactGCStatus == nil {
-		woc.wf.Status.ArtifactGCStatus = make(wfv1.ArtifactGCStatus)
+		woc.wf.Status.ArtifactGCStatus = make(wfv1.ArtGCStatus)
 	}
-	podRan := false
+	ranOrRunning := false
 	status, exists := woc.wf.Status.ArtifactGCStatus[strategy]
 	if exists {
-		podRan = (status == wfv1.NodeSucceeded || status == wfv1.NodeFailed || status == wfv1.NodeRunning)
+		ranOrRunning = (status != wfv1.ArtifactGCNotStarted)
 	}
-	fmt.Printf("deletethis: strategy=%s, podRan=%t\n", strategy, podRan)
+	fmt.Printf("deletethis: strategy=%s, podRan=%t\n", strategy, ranOrRunning)
 
-	if !podRan {
+	if !ranOrRunning {
 		podName := woc.artGCPodName(strategy)
 		_, exists, err := woc.controller.podInformer.GetIndexer().GetByKey(woc.wf.Namespace + "/" + podName)
 		if err != nil {
@@ -325,7 +325,7 @@ func (woc *wfOperationCtx) processArtifactGCStrategy(ctx context.Context, strate
 				if err != nil {
 					return err
 				}
-				woc.wf.Status.ArtifactGCStatus[strategy] = wfv1.NodePending
+				woc.wf.Status.ArtifactGCStatus[strategy] = wfv1.ArtifactGCScheduled
 				woc.updated = true
 			}
 		}
