@@ -170,6 +170,7 @@ Argo Server does not log the IP addresses of API requests. We recommend you put 
 > v3.4 and after
 
 Argo Server by default rate limits to 1000 per IP per minute, you can configure it through `--api-rate-limit`. You can access additional information through the following headers.
+
 * `X-Rate-Limit-Limit` - the rate limit ceiling that is applicable for the current request.
 * `X-Rate-Limit-Remaining` - the number of requests left for the current rate-limit window.
 * `X-Rate-Limit-Reset` - the time at which the rate limit resets, specified in UTC time.

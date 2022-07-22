@@ -321,7 +321,7 @@ func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServe
 
 	ratelimit_middleware, err := httplimit.NewMiddleware(as.apiRateLimiter, httplimit.IPKeyFunc())
 	if err != nil {
-	  log.Fatal(err)
+		log.Fatal(err)
 	}
 
 	mux := http.NewServeMux()
