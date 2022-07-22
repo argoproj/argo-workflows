@@ -1221,7 +1221,7 @@ func (wfc *WorkflowController) newWorkflowTaskSetInformer() wfextvv1alpha1.Workf
 	return informer
 }
 
-func (wfc *WorkflowController) newArtGCTaskInformer() wfextvv1alpha1.WorkflowTaskSetInformer {
+func (wfc *WorkflowController) newArtGCTaskInformer() wfextvv1alpha1.WorkflowArtifactGCTaskInformer {
 	informer := externalversions.NewSharedInformerFactoryWithOptions(
 		wfc.wfclientset,
 		workflowTaskSetResyncPeriod,
@@ -1229,7 +1229,7 @@ func (wfc *WorkflowController) newArtGCTaskInformer() wfextvv1alpha1.WorkflowTas
 		externalversions.WithTweakListOptions(func(x *metav1.ListOptions) {
 			r := util.InstanceIDRequirement(wfc.Config.InstanceID)
 			x.LabelSelector = r.String()
-		})).Argoproj().V1alpha1().WorkflowArtifactGCTaskSets()
+		})).Argoproj().V1alpha1().WorkflowArtifactGCTasks()
 	informer.Informer().AddEventHandler(
 		cache.ResourceEventHandlerFuncs{
 			UpdateFunc: func(old, new interface{}) {

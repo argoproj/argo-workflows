@@ -229,16 +229,16 @@ func (woc *wfOperationCtx) allArtifactsDeleted() bool {
 func (woc *wfOperationCtx) processCompletedArtifactGCPod(ctx context.Context, pod *corev1.Pod, strategy wfv1.ArtifactGCStrategy) error {
 	woc.log.Infof("processing completed Artifact GC Pod '%s'", pod.Name)
 
-	// get associated WorkflowArtifactGCTaskSets
+	// get associated WorkflowArtifactGCTasks
 	labelSelector := fmt.Sprintf("%s = %s", common.LabelKeyArtifactGCPodName, pod.Name)
-	taskList, err := woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowArtifactGCTaskSets(woc.wf.Namespace).List(ctx, metav1.ListOptions{LabelSelector: labelSelector})
+	taskList, err := woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowArtifactGCTasks(woc.wf.Namespace).List(ctx, metav1.ListOptions{LabelSelector: labelSelector})
 	if err != nil {
-		return fmt.Errorf("failed to List WorkflowArtifactGCTaskSets: %w", err)
+		return fmt.Errorf("failed to List WorkflowArtifactGCTasks: %w", err)
 	}
 
 	for _, task := range taskList.Items {
-		// for each WorkflowArtifactGCTaskSet: call processCompletedWorkflowArtifactGCTaskSet() which can delete the Task and also should return whether there was an error
-		err = woc.processCompletedWorkflowArtifactGCTaskSet(ctx, task, strategy)
+		// for each WorkflowArtifactGCTask: call processCompletedWorkflowArtifactGCTask() which can delete the Task and also should return whether there was an error
+		err = woc.processCompletedWorkflowArtifactGCTask(ctx, &task, strategy)
 		if err != nil {
 			return err
 		}
@@ -246,24 +246,24 @@ func (woc *wfOperationCtx) processCompletedArtifactGCPod(ctx context.Context, po
 	return nil
 }
 
-// process the Status in the WorkflowArtifactGCTaskSet which was completed and reflect it in Workflow Status; then delete the Task CRD Object
+// process the Status in the WorkflowArtifactGCTask which was completed and reflect it in Workflow Status; then delete the Task CRD Object
 // return first found error message if GC failed
-func (woc *wfOperationCtx) processCompletedWorkflowArtifactGCTaskSet(ctx, artifactGCTask *wfv1.WorkflowArtifactGCTaskSet, strategy wfv1.ArtifactGCStrategy) error {
-	woc.log.Debugf("processing WorkflowArtifactGCTaskSet %s", artifactGCTask.Name)
+func (woc *wfOperationCtx) processCompletedWorkflowArtifactGCTask(ctx context.Context, artifactGCTask *wfv1.WorkflowArtifactGCTask, strategy wfv1.ArtifactGCStrategy) error {
+	woc.log.Debugf("processing WorkflowArtifactGCTask %s", artifactGCTask.Name)
 
 	foundGCFailure := false
 	for nodeName, nodeResult := range artifactGCTask.Status.ArtifactResultsByNode {
 		// find this node result in the Workflow Status
 		wfNode, found := woc.wf.Status.Nodes[nodeName]
 		if !found {
-			return fmt.Errorf("node named '%s' returned by WorkflowArtifactGCTaskSet '%s' wasn't found in Workflow '%s' Status", nodeName, artifactGCTask.Name, woc.wf.Name)
+			return fmt.Errorf("node named '%s' returned by WorkflowArtifactGCTask '%s' wasn't found in Workflow '%s' Status", nodeName, artifactGCTask.Name, woc.wf.Name)
 		}
 
 		if wfNode.Outputs == nil {
-			return fmt.Errorf("node named '%s' returned by WorkflowArtifactGCTaskSet '%s' doesn't seem to have Outputs in Workflow Status")
+			return fmt.Errorf("node named '%s' returned by WorkflowArtifactGCTask '%s' doesn't seem to have Outputs in Workflow Status")
 		}
 		for i, wfArtifact := range wfNode.Outputs.Artifacts {
-			// find artifact in the WorkflowArtifactGCTaskSet Status
+			// find artifact in the WorkflowArtifactGCTask Status
 			artifactResult, foundArt := nodeResult.ArtifactResults[wfArtifact.Name]
 			if !foundArt {
 				// todo
@@ -308,14 +308,14 @@ func (woc *wfOperationCtx) processArtifactGCStrategy(ctx context.Context, strate
 		if exists {
 			woc.log.Debugf("pod %s already exists, not re-creating", podName)
 		} else {
-			tasks := make([]*wfv1.WorkflowArtifactGCTaskSet, 0)
+			tasks := make([]*wfv1.WorkflowArtifactGCTask, 0)
 			for _, template := range woc.wf.Spec.Templates {
 				woc.addTemplateArtifactsToTasks(strategy, &tasks, &template)
 			}
 			if len(tasks) > 0 {
-				// create the K8s WorkflowTaskSet objects
+				// create the K8s WorkflowArtifactGCTask objects
 				for _, task := range tasks {
-					err := woc.createWorkflowArtifactGCTaskSet(ctx, task)
+					err := woc.createWorkflowArtifactGCTask(ctx, task)
 					if err != nil {
 						return err
 					}
@@ -343,7 +343,7 @@ func (woc *wfOperationCtx) artGCTaskSetName(strategy wfv1.ArtifactGCStrategy, ta
 	return fmt.Sprintf("%s-artgc-%s-%d", woc.wf.Name, strategy.AbbreviatedName(), taskSetIndex)
 }
 
-func (woc *wfOperationCtx) addTemplateArtifactsToTasks(strategy wfv1.ArtifactGCStrategy, tasks *[]*wfv1.WorkflowArtifactGCTaskSet, template *wfv1.Template) {
+func (woc *wfOperationCtx) addTemplateArtifactsToTasks(strategy wfv1.ArtifactGCStrategy, tasks *[]*wfv1.WorkflowArtifactGCTask, template *wfv1.Template) {
 	// are there artifactSearchResults configured for this strategy?
 	artifactSearchResults := woc.execWf.SearchArtifacts(&wfv1.ArtifactSearchQuery{ArtifactGCStrategies: map[wfv1.ArtifactGCStrategy]bool{strategy: true}, TemplateName: template.Name, Deleted: pointer.BoolPtr(false)})
 	fmt.Printf("deletethis: SearchArtifacts for what's deletable for strategy %v returned: %+v\n", strategy, artifactSearchResults)
@@ -352,16 +352,16 @@ func (woc *wfOperationCtx) addTemplateArtifactsToTasks(strategy wfv1.ArtifactGCS
 		return
 	}
 	if tasks == nil {
-		ts := make([]*wfv1.WorkflowArtifactGCTaskSet, 0)
+		ts := make([]*wfv1.WorkflowArtifactGCTask, 0)
 		tasks = &ts
 	}
 
-	// do we need to generate a new WorkflowArtifactGCTaskSet or can we use current?
+	// do we need to generate a new WorkflowArtifactGCTask or can we use current?
 	//if len(taskSets) == 0 || taskSets[len(taskSets) - 1].Spec.Tasks
 	if len(*tasks) == 0 {
-		currentTask := &wfv1.WorkflowArtifactGCTaskSet{
+		currentTask := &wfv1.WorkflowArtifactGCTask{
 			TypeMeta: metav1.TypeMeta{
-				Kind:       workflow.WorkflowTaskSetKind,
+				Kind:       workflow.WorkflowArtifactGCTaskKind,
 				APIVersion: workflow.APIVersion,
 			},
 			ObjectMeta: metav1.ObjectMeta{
@@ -377,8 +377,8 @@ func (woc *wfOperationCtx) addTemplateArtifactsToTasks(strategy wfv1.ArtifactGCS
 			},
 		}
 		*tasks = append(*tasks, currentTask)
-	} /*else if len(*tasks) > SOME_THRESHOLD { //todo: handle multiple WorkflowArtifactGCTaskSets
-		// add a new WorkflowArtifactGCTaskSet to *tasks
+	} /*else if len(*tasks) > SOME_THRESHOLD { //todo: handle multiple WorkflowArtifactGCTasks
+		// add a new WorkflowArtifactGCTask to *tasks
 	}*/
 
 	currentTask := (*tasks)[len(*tasks)-1]
@@ -402,20 +402,20 @@ func (woc *wfOperationCtx) addTemplateArtifactsToTasks(strategy wfv1.ArtifactGCS
 
 }
 
-func (woc *wfOperationCtx) getArtifactTask(taskSetName string) (*wfv1.WorkflowArtifactGCTaskSet, error) {
+func (woc *wfOperationCtx) getArtifactTask(taskSetName string) (*wfv1.WorkflowArtifactGCTask, error) {
 	key := woc.wf.Namespace + "/" + taskSetName
-	task, exists, err := woc.controller.artifactGCTaskSetInformer.Informer().GetIndexer().GetByKey(key)
+	task, exists, err := woc.controller.artGCTaskSetInformer.Informer().GetIndexer().GetByKey(key)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get WorkflowTaskSet by key '%s': %w", key, err)
+		return nil, fmt.Errorf("failed to get WorkflowArtifactGCTask by key '%s': %w", key, err)
 	}
 	if !exists {
 		return nil, nil
 	}
-	return task.(*wfv1.WorkflowArtifactGCTaskSet), nil
+	return task.(*wfv1.WorkflowArtifactGCTask), nil
 }
 
-//	create WorkflowTaskSet CRD object
-func (woc *wfOperationCtx) createWorkflowArtifactGCTaskSet(ctx context.Context, taskSet *wfv1.WorkflowArtifactGCTaskSet) error {
+//	create WorkflowArtifactGCTask CRD object
+func (woc *wfOperationCtx) createWorkflowArtifactGCTask(ctx context.Context, taskSet *wfv1.WorkflowArtifactGCTask) error {
 
 	// first make sure it doesn't already exist
 	foundTask, err := woc.getArtifactTask(taskSet.Name)
@@ -427,15 +427,15 @@ func (woc *wfOperationCtx) createWorkflowArtifactGCTaskSet(ctx context.Context, 
 	} else {
 		woc.log.Infof("Creating Artifact GC Task %s", taskSet.Name)
 
-		taskSet, err = woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowArtifactGCTaskSets(woc.wf.Namespace).Create(ctx, taskSet, metav1.CreateOptions{})
+		taskSet, err = woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowArtifactGCTasks(woc.wf.Namespace).Create(ctx, taskSet, metav1.CreateOptions{})
 		if err != nil {
-			return fmt.Errorf("failed to Create WorkflowArtifactGCTaskSet '%s' for Garbage Collection: %w", taskSet.Name, err)
+			return fmt.Errorf("failed to Create WorkflowArtifactGCTask '%s' for Garbage Collection: %w", taskSet.Name, err)
 		}
 	}
 	return nil
 }
 
-func (woc *wfOperationCtx) createArtifactGCPod(ctx context.Context, strategy wfv1.ArtifactGCStrategy, tasks []*wfv1.WorkflowArtifactGCTaskSet) error {
+func (woc *wfOperationCtx) createArtifactGCPod(ctx context.Context, strategy wfv1.ArtifactGCStrategy, tasks []*wfv1.WorkflowArtifactGCTask) error {
 	podName := woc.artGCPodName(strategy)
 
 	woc.log.
@@ -444,8 +444,8 @@ func (woc *wfOperationCtx) createArtifactGCPod(ctx context.Context, strategy wfv
 
 	ownerReferences := make([]metav1.OwnerReference, len(tasks))
 	for i, task := range tasks {
-		// make sure pod gets deleted with the WorkflowArtifactGCTaskSets
-		ownerReferences[i] = *metav1.NewControllerRef(task, wfv1.SchemeGroupVersion.WithKind(workflow.WorkflowTaskSetKind))
+		// make sure pod gets deleted with the WorkflowArtifactGCTasks
+		ownerReferences[i] = *metav1.NewControllerRef(task, wfv1.SchemeGroupVersion.WithKind(workflow.WorkflowArtifactGCTaskKind))
 	}
 
 	pod := &corev1.Pod{
@@ -538,8 +538,8 @@ func (woc *wfOperationCtx) createArtifactGCPod(ctx context.Context, strategy wfv
 
 func (woc *wfOperationCtx) createArtifactGCPod(ctx context.Context, strategy wfv1.ArtifactGCStrategy, serviceAcct string, artifacts wfv1.ArtifactSearchResults, templates []*wfv1.Template) error {
 
-	//	create a WorkflowTaskSet which contains a subset of our Workflow's spec (just the Templates for this Service Account), as well as a GC Pod with the following environment variables:
-	//		- WorkflowTaskSet name
+	//	create a WorkflowArtifactGCTask which contains a subset of our Workflow's spec (just the Templates for this Service Account), as well as a GC Pod with the following environment variables:
+	//		- WorkflowArtifactGCTask name
 	//		- ArtifactGC Strategy
 	//	need to set Ownership for both
 	// Need to make sure that Template.ArchiveLocation grabs the ArtifactRepositoryRef! If this is what's being passed to the wait container, then that would need to have access to this so I assume it does?
@@ -565,7 +565,7 @@ func (woc *wfOperationCtx) createArtifactGCPod(ctx context.Context, strategy wfv
 	}
 
 	taskSetName := podName
-	err = woc.createWorkflowArtifactGCTaskSetSet(ctx, templates, taskSetName)
+	err = woc.createWorkflowArtifactGCTaskSet(ctx, templates, taskSetName)
 	if err != nil {
 		return err
 	}
@@ -618,7 +618,7 @@ if err != nil {
 					Args:            []string{"artifact", "delete", "--loglevel", getExecutorLogLevel()},
 					Env: []corev1.EnvVar{
 						{Name: common.EnvVarArtifactGCStrategy, Value: string(strategy)},
-						{Name: common.EnvVarWorkflowArtifactGCTaskSetSet, Value: taskSetName},
+						{Name: common.EnvVarWorkflowArtifactGCTaskSet, Value: taskSetName},
 					},
 					// if this pod is breached by an attacker we:
 					// * prevent installation of any new packages
