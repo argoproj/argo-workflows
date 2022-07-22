@@ -64,6 +64,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/workflow/hydrator"
 
 	limiter "github.com/sethvargo/go-limiter"
+	"github.com/sethvargo/go-limiter/httplimit"
 	"github.com/sethvargo/go-limiter/memorystore"
 )
 
@@ -318,10 +319,15 @@ func (as *argoServer) newGRPCServer(instanceIDService instanceid.Service, offloa
 func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServer *artifacts.ArtifactServer) *http.Server {
 	endpoint := fmt.Sprintf("localhost:%d", port)
 
+	ratelimit_middleware, err := httplimit.NewMiddleware(as.apiRateLimiter, httplimit.IPKeyFunc())
+	if err != nil {
+	  log.Fatal(err)
+	}
+
 	mux := http.NewServeMux()
 	httpServer := http.Server{
 		Addr:      endpoint,
-		Handler:   as.httpLimit(accesslog.Interceptor(mux)),
+		Handler:   ratelimit_middleware.Handle(accesslog.Interceptor(mux)),
 		TLSConfig: as.tlsConfig,
 	}
 	dialOpts := []grpc.DialOption{
@@ -412,27 +418,4 @@ func (as *argoServer) checkServeErr(name string, err error) {
 	} else {
 		log.Infof("graceful shutdown %s", name)
 	}
-}
-
-func (as *argoServer) httpLimit(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Get the IP address for the current user.
-		ip, _, err := net.SplitHostPort(r.RemoteAddr)
-		if err != nil {
-			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-			return
-		}
-		ctx := r.Context()
-		_, _, _, ok, err := as.apiRateLimiter.Take(ctx, ip)
-		if err != nil {
-			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-			return
-		}
-		if !ok {
-			http.Error(w, http.StatusText(429), http.StatusTooManyRequests)
-			return
-		}
-
-		next.ServeHTTP(w, r)
-	})
 }
