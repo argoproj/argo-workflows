@@ -1103,6 +1103,8 @@ func createSecretVolumes(tmpl *wfv1.Template) ([]apiv1.Volume, []apiv1.VolumeMou
 	var secretVolumes []apiv1.Volume
 	var secretVolMounts []apiv1.VolumeMount
 
+	createArchiveLocationSecret(tmpl, allVolumesMap, uniqueKeyMap)
+
 	for _, art := range tmpl.Outputs.Artifacts {
 		createSecretVolume(allVolumesMap, art, uniqueKeyMap)
 	}
