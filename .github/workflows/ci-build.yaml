@@ -32,7 +32,7 @@ jobs:
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
           restore-keys: |
             ${{ runner.os }}-go-
-      - run: make test STATIC_FILES=false GOTEST='go test -covermode=atomic -coverprofile=coverage.out'
+      - run: make test STATIC_FILES=false GOTEST='go test -p 20 -covermode=atomic -coverprofile=coverage.out'
       # engineers just ignore this in PRs, so lets not even run it
       - run: bash <(curl -s https://codecov.io/bash)
         if: github.ref == 'refs/heads/master'
@@ -83,6 +83,10 @@ jobs:
           - test: test-plugins
             containerRuntimeExecutor: emissary
             profile: plugins
+          - test: test-executor
+            profile: minimal
+          - test: test-corefunctional
+            profile: minimal
           - test: test-functional
             containerRuntimeExecutor: emissary
             profile: minimal

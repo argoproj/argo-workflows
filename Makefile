@@ -31,7 +31,7 @@ MANAGED_NAMESPACE     ?= $(KUBE_NAMESPACE)
 # Timeout for wait conditions
 E2E_WAIT_TIMEOUT      ?= 1m
 
-E2E_PARALLEL          ?= 10
+E2E_PARALLEL          ?= 20
 E2E_SUITE_TIMEOUT     ?= 15m
 
 VERSION               := latest
@@ -53,7 +53,7 @@ endif
 UI                    ?= false
 # start the Argo Server
 API                   ?= $(UI)
-GOTEST                ?= go test -v
+GOTEST                ?= go test -v -p 20
 PROFILE               ?= minimal
 PLUGINS               ?= $(shell [ $PROFILE = plugins ] && echo false || echo true)
 # by keeping this short we speed up the tests
