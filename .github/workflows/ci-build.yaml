@@ -88,6 +88,8 @@ jobs:
         include:
           - test: test-executor
             profile: minimal
+          - test: test-corefunctional
+            profile: minimal
           - test: test-functional
             profile: minimal
           - test: test-api
