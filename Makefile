@@ -32,7 +32,7 @@ MANAGED_NAMESPACE     ?= $(KUBE_NAMESPACE)
 # Timeout for wait conditions
 E2E_WAIT_TIMEOUT      ?= 1m
 
-E2E_PARALLEL          ?= 10
+E2E_PARALLEL          ?= 20
 E2E_SUITE_TIMEOUT     ?= 15m
 
 VERSION               := latest
