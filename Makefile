@@ -524,7 +524,7 @@ test-%:
 
 .PHONY: test-examples
 test-examples:
-	./hack/test-examples.shm
+	./hack/test-examples.sh
 
 .PHONY: test-%-sdk
 test-%-sdk:
