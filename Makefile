@@ -32,7 +32,7 @@ MANAGED_NAMESPACE     ?= $(KUBE_NAMESPACE)
 # Timeout for wait conditions
 E2E_WAIT_TIMEOUT      ?= 1m
 
-E2E_PARALLEL          ?= 10
+E2E_PARALLEL          ?= 20
 E2E_SUITE_TIMEOUT     ?= 15m
 
 VERSION               := latest
@@ -59,7 +59,7 @@ LOGS                  ?= $(CTRL)
 UI                    ?= $(shell [ $(CTRL) = true ] && echo false || echo true)
 # start the Argo Server
 API                   ?= $(UI)
-GOTEST                ?= go test -v
+GOTEST                ?= go test -v -p 20
 PROFILE               ?= minimal
 PLUGINS               ?= $(shell [ $PROFILE = plugins ] && echo false || echo true)
 # by keeping this short we speed up the tests
@@ -531,7 +531,8 @@ test-%-sdk:
 	make --directory sdks/$* install test -B
 
 Test%:
-	go test -failfast -v -timeout $(E2E_SUITE_TIMEOUT) -count 1 --tags api,cli,cron,executor,examples,functional,plugins -parallel $(E2E_PARALLEL) ./test/e2e  -run='.*/$*'
+	go test -failfast -v -timeout $(E2E_SUITE_TIMEOUT) -count 1 --tags api,cli,cron,executor,examples,corefunctional,functional,plugins -parallel $(E2E_PARALLEL) ./test/e2e  -run='.*/$*'
+
 
 # clean
 
