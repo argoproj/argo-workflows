@@ -35,14 +35,14 @@ func (woc *wfOperationCtx) executeWfLifeCycleHook(ctx context.Context, tmplCtx *
 	return nil
 }
 
-func (woc *wfOperationCtx) executeTmplLifeCycleHook(ctx context.Context, envMap map[string]string, lifeCycleHooks wfv1.LifecycleHooks, parentNode *wfv1.NodeStatus, boundaryID string, tmplCtx *templateresolution.Context, prefix string) (bool, error) {
+func (woc *wfOperationCtx) executeTmplLifeCycleHook(ctx context.Context, scope *wfScope, lifeCycleHooks wfv1.LifecycleHooks, parentNode *wfv1.NodeStatus, boundaryID string, tmplCtx *templateresolution.Context, prefix string) (bool, error) {
 	var hookNodes []*wfv1.NodeStatus
 	for hookName, hook := range lifeCycleHooks {
 		//exit hook will be executed in runOnExitNode
 		if hookName == wfv1.ExitLifecycleEvent {
 			continue
 		}
-		execute, err := argoexpr.EvalBool(hook.Expression, env.GetFuncMap(template.EnvMap(envMap)))
+		execute, err := argoexpr.EvalBool(hook.Expression, env.GetFuncMap(template.EnvMap(woc.globalParams.Merge(scope.getParameters()))))
 		if err != nil {
 			return false, err
 		}
@@ -57,7 +57,7 @@ func (woc *wfOperationCtx) executeTmplLifeCycleHook(ctx context.Context, envMap 
 			resolvedArgs := hook.Arguments
 			var err error
 			if !resolvedArgs.IsEmpty() && outputs != nil {
-				resolvedArgs, err = woc.resolveExitTmplArgument(hook.Arguments, prefix, outputs)
+				resolvedArgs, err = woc.resolveExitTmplArgument(hook.Arguments, prefix, outputs, scope)
 				if err != nil {
 					return false, err
 				}
