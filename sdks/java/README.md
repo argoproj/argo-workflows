@@ -7,8 +7,8 @@ This provides model and APIs for accessing the Argo Server API rather.
 If you wish to access the Kubernetes APIs, you can use the models to do this. You'll need to write your own code to
 speak to the API.
 
-⚠️ The Java SDK is published to Github packages, not Maven Central. You must update your Maven settings.xml
-file: [how to do that](https://github.com/argoproj/argo-workflows/packages).
+⚠️ The Java SDK is published to GitHub Packages, not Maven Central. You must update your Maven `settings.xml`
+file: [how to do that](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-apache-maven-registry).
 
 Recommended:
 
