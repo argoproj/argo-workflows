@@ -957,6 +957,7 @@ func (woc *wfOperationCtx) addArchiveLocation(tmpl *wfv1.Template) {
 		return
 	}
 	tmpl.ArchiveLocation = woc.artifactRepository.ToArtifactLocation()
+	fmt.Printf("deletethis: updating template ArchiveLocation to %+v\n", tmpl.ArchiveLocation)
 	tmpl.ArchiveLocation.ArchiveLogs = &archiveLogs
 }
 

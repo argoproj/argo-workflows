@@ -26,6 +26,14 @@ var artifactGCEnabled, _ = env.GetBool("ARGO_ARTIFACT_GC_ENABLED", true)
 
 func (woc *wfOperationCtx) garbageCollectArtifacts(ctx context.Context) error {
 
+	// todo: don't want this here but want to see if it works
+	/*repo, err := woc.controller.artifactRepositories.Get(ctx, woc.wf.Status.ArtifactRepositoryRef)
+	if err != nil {
+		woc.markWorkflowError(ctx, fmt.Errorf("failed to get artifact repository: %v", err))
+		return err
+	}
+	woc.artifactRepository = repo*/
+
 	if !artifactGCEnabled {
 		return nil
 	}
@@ -208,7 +216,9 @@ func (woc *wfOperationCtx) processArtifactGCCompletion(ctx context.Context) erro
 	if anyPodSuccess {
 		// check if all artifacts have been deleted and if so remove Finalizer
 		if woc.allArtifactsDeleted() {
-
+			woc.log.Info("no remaining artifacts to GC, removing artifact GC finalizer")
+			woc.wf.Finalizers = slice.RemoveString(woc.wf.Finalizers, common.FinalizerArtifactGC)
+			woc.updated = true
 		}
 
 	}
@@ -382,13 +392,18 @@ func (woc *wfOperationCtx) addTemplateArtifactsToTasks(strategy wfv1.ArtifactGCS
 	currentTask := (*tasks)[len(*tasks)-1]
 	artifactsByNode := currentTask.Spec.ArtifactsByNode
 
+	archiveLocation := template.ArchiveLocation
+	if archiveLocation == nil {
+		archiveLocation = woc.artifactRepository.ToArtifactLocation()
+	}
+
 	// go through artifactSearchResults and create a map from nodeID to artifacts
 	// for each node, create an ArtifactNodeSpec with our Template's ArchiveLocation (if any) and our list of Artifacts
 	for _, artifactSearchResult := range artifactSearchResults {
 		artifactNodeSpec, found := artifactsByNode[artifactSearchResult.NodeID]
 		if !found {
 			artifactsByNode[artifactSearchResult.NodeID] = wfv1.ArtifactNodeSpec{
-				ArchiveLocation: template.ArchiveLocation,
+				ArchiveLocation: archiveLocation,
 				Artifacts:       make(map[string]wfv1.Artifact),
 			}
 			artifactNodeSpec = artifactsByNode[artifactSearchResult.NodeID]
@@ -494,8 +509,7 @@ func (woc *wfOperationCtx) createArtifactGCPod(ctx context.Context, strategy wfv
 					},
 				},
 			},
-			// if this pod is breached by an attacker this prevents them making Kubernetes API requests
-			AutomountServiceAccountToken: pointer.Bool(false),
+			AutomountServiceAccountToken: pointer.Bool(true),
 			RestartPolicy:                corev1.RestartPolicyOnFailure, //todo: verify
 		},
 	}

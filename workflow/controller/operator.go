@@ -201,13 +201,13 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 
 	// check to see if we can do garbage collection of Artifacts; this is the only functionality in this method which can be called for 'Completed' Workflows,
 	// so we can check for Completed Workflows after and return
-	if err := woc.garbageCollectArtifacts(ctx); err != nil {
+	/*if err := woc.garbageCollectArtifacts(ctx); err != nil {
 		woc.log.WithError(err).Error("failed to GC artifacts")
 		return
 	}
 	if woc.wf.Labels[common.LabelKeyCompleted] == "true" { // abort now, we do not want to perform any more processing on a complete workflow because we could corrupt it
 		return
-	}
+	}*/
 
 	// Set the Execute workflow spec for execution
 	// ExecWF is a runtime execution spec which merged from Wf, WFT and Wfdefault
@@ -233,6 +233,15 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 		return
 	}
 	woc.artifactRepository = repo
+
+	//todo: what are the impacts of moving this down here from above?
+	if err := woc.garbageCollectArtifacts(ctx); err != nil {
+		woc.log.WithError(err).Error("failed to GC artifacts")
+		return
+	}
+	if woc.wf.Labels[common.LabelKeyCompleted] == "true" { // abort now, we do not want to perform any more processing on a complete workflow because we could corrupt it
+		return
+	}
 
 	// Workflow Level Synchronization lock
 	if woc.execWf.Spec.Synchronization != nil {
