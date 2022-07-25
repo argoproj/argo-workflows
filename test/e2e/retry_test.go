@@ -5,6 +5,7 @@ package e2e
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
@@ -22,7 +23,7 @@ func (s *RetryTestSuite) TestRetryLimit() {
 	s.Given().
 		Workflow(`
 metadata:
-  generateName: test-backoff-
+  generateName: test-retry-limit-
 spec:
   entrypoint: main
   templates:
@@ -45,6 +46,35 @@ spec:
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.WorkflowPhase("Failed"), status.Phase)
 			assert.Equal(t, "No more retries left", status.Message)
+		})
+}
+
+func (s *RetryTestSuite) TestRetryBackoff() {
+	s.Given().
+		Workflow(`
+metadata:
+  generateName: test-backoff-strategy-
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      retryStrategy:
+        limit: 10
+        backoff:
+          duration: 10s
+          maxDuration: 50s
+      container:
+          name: main
+          image: 'argoproj/argosay:v2'
+          args: [ exit, "1" ]
+`).
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(time.Minute).
+		Then().
+		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.WorkflowPhase("Failed"), status.Phase)
+			assert.Equal(t, "Max duration limit exceeded", status.Message)
 		})
 }
 
