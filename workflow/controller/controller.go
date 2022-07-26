@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"math"
 	"strconv"
 	"strings"
 	"syscall"
@@ -204,78 +203,57 @@ func (wfc *WorkflowController) getResourceAllowance(resourceSharingID, template 
 }
 
 // either Pending or Running
-func (wfc *WorkflowController) numActivePodsForTemplate(template string) (int, error) {
-	podIndexer := wfc.podInformer.GetIndexer()
+// todo: test this
+func (wfc *WorkflowController) numActivePodsForTemplate(template, namespace string) (int, error) {
+	p, _ := wfc.kubeclientset.CoreV1().Pods(namespace).List(context.Background(), metav1.ListOptions{})
+	return len(p.Items), nil
+}
 
-	indexResults := make([]interface{}, 0)
-	for _, phase := range []apiv1.PodPhase{apiv1.PodRunning, apiv1.PodPending} {
-		objs, err := podIndexer.ByIndex(indexes.PodPhaseIndex, string(phase))
-		if err != nil {
-			log.WithError(err).Error("failed to list active pods")
-			return -1, err
+// numActiveResourceSharingIDs counts how many resource sharing IDs are trying to use this template
+// todo: test this
+func numActiveResourceSharingIDs(wfs *wfv1.WorkflowList, tmpl string) int {
+	idMap := map[string]bool{}
+	for _, wf := range wfs.Items {
+		for _, r := range wf.Status.RequestedResources {
+			pieces := strings.Split(r, ":")
+			template := pieces[1]
+			if template == tmpl {
+				idMap[wf.Spec.ResourceSharingID] = true
+			}
 		}
-		indexResults = append(indexResults, objs...)
 	}
-	return len(indexResults), nil
+	return len(idMap)
 }
 
 // iterate through all of the resources that we're limiting, check their current usage, and
 // update the resourceAllowances to reflect slots available for a given resourceSharingID
-func (wfc *WorkflowController) updateResourceAllowances(resourceSharingID string) error {
-	wfIndexer := wfc.wfInformer.GetIndexer()
-
-	// note elsewhere in the code others are using pod/wf phases interchangeably?
-	indexResults, err := wfIndexer.ByIndex(indexes.WorkflowPhaseIndex, "Running")
+func (wfc *WorkflowController) updateResourceAllowances(namespace, resourceSharingID string) error {
+	wfs, err := wfc.wfclientset.ArgoprojV1alpha1().Workflows(namespace).List(context.Background(), metav1.ListOptions{})
 	if err != nil {
-		log.WithError(err).Error("failed to list active workflows")
-		return err
+		return fmt.Errorf("error listing workflows: %v", err)
 	}
 
-	log.Println("????")
-	log.Println(indexResults)
 	for tmpl, totalAvailable := range wfc.Config.ResourcesAvailable {
+		// totalPossible is how many pod instances we're allowed to have for this tmpl
 		totalPossible, err := strconv.Atoi(totalAvailable)
 		if err != nil {
-			return err
+			return fmt.Errorf("error determining available resources for %s: %v", tmpl, err)
 		}
 
-		// iterate through _all_ resource requests, across all workflows, and keep track of
-		// unique users who are requesting the current iterResource
-		idMap := map[string]bool{}
-		for _, obj := range indexResults {
-			un, _ := obj.(*unstructured.Unstructured)
-			wf, err := util.FromUnstructured(un)
-			if err != nil {
-				return err
-			}
-			for _, r := range wf.Status.RequestedResources {
-				pieces := strings.Split(r, ":")
-				template := pieces[1]
-				if template == tmpl {
-					idMap[wf.Spec.ResourceSharingID] = true
-				}
-			}
-		}
+		// numActiveUsers is how many unique resource sharing IDs are trying to use this resource
+		numActiveUsers := numActiveResourceSharingIDs(wfs, tmpl)
 
-		totalActive, err := wfc.numActivePodsForTemplate(tmpl)
-		if err != nil {
-			return err
-		}
-		log.Println(totalPossible)
-		log.Println(len(idMap))
-		userLimit := math.Ceil(float64(totalPossible) / float64(len(idMap)))
-		allowance := int(math.Min(float64(totalPossible)-float64(totalActive), userLimit))
+		//
+		// allowance = ??
+
 		wfc.resourceAllowances[resourceAllowanceKey(resourceSharingID, tmpl)] = &allowance
 	}
 
 	log.Println("******************")
 	log.Println("******************")
-	log.Println("******************")
 	for k, v := range wfc.resourceAllowances {
 		log.Printf("%s --> %d", k, *v)
 	}
-	log.Println(wfc.resourceAllowances)
-	log.Println("******************")
 	log.Println("******************")
 	log.Println("******************")
 

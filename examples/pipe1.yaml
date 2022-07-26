@@ -1,0 +1,150 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: pipe1-0
+spec:
+  entrypoint: start-pipe1-job
+  resourceSharingID: user-000001
+  podGC:
+    strategy: OnPodSuccess  
+  
+  templates:
+  # JOB PIPELINE
+  - name: start-pipe1-job
+    steps:
+    - - name: ingest-job
+        template: create-tasks
+    - - name: process-single-task
+        template: task-pipeline
+        arguments:
+          parameters:
+          - name: tid
+            value: "{{item}}"
+        withParam: "{{steps.ingest-job.outputs.result}}"
+    - - name: declare-completion
+        template: job-completion
+
+  # TASK PIPELINE
+  - name: task-pipeline
+    inputs:
+      parameters:
+      - name: tid  
+    steps:
+    - - name: get-assets-to-do
+        template: determine-assets
+    - - name: process-single-asset
+        template: asset-pipeline
+        arguments:
+          parameters:
+          - name: aid
+            value: "{{item}}"
+        withParam: "{{steps.get-assets-to-do.outputs.result}}"        
+    - - name: sg
+        template: run-sg
+        arguments:
+          parameters:
+          - name: tid
+            value: "{{input.parameters.tid}}"
+    - - name: render
+        template: run-render
+        arguments:
+          parameters:
+          - name: tid
+            value: "{{input.parameters.tid}}"
+    - - name: run-compositing
+        template: compositing
+        arguments:
+          parameters:
+          - name: tid
+            value: "{{input.parameters.tid}}"        
+        when: "{{inputs.parameters.tid}} % 2 == 0"
+      - name: run-exr2png
+        template: exr2png
+        arguments:
+          parameters:
+          - name: tid
+            value: "{{input.parameters.tid}}"        
+        when: "{{inputs.parameters.tid}} % 2 != 0"        
+
+  # ASSET PIPELINE
+  - name: asset-pipeline
+    inputs:
+      parameters:
+      - name: aid  
+    steps:
+    - - name: process-a-single-asset
+        template: process-one-asset
+        arguments:
+          parameters:
+          - name: aid
+            value: "{{input.parameters.aid}}"                    
+
+  # THESE TEMPLATES ARE INDIVIDUAL PODS THAT RUN WITHIN DIFFERENT LAYERS
+  - name: create-tasks
+    script:
+      image: python:alpine3.6
+      command: [python]
+      source: |
+        import json
+        import sys
+        json.dump([i for i in range(1, 6)], sys.stdout)
+
+  - name: determine-assets
+    script:
+      image: python:alpine3.6
+      command: [python]
+      source: |
+        import json
+        import sys
+        json.dump(["ASSET_PNG", "ASSET_EXR"], sys.stdout)        
+
+  - name: job-completion
+    container:
+      image: alpine:latest
+      command: [sh, -c]
+      args: ["echo YAY THE ENTIRE JOB IS DONEEEEEE"]    
+
+  - name: run-sg
+    inputs:
+      parameters:
+      - name: tid
+    container:
+      image: alpine:latest
+      command: [sh, -c]
+      args: ["echo SCENE GEN: task {{inputs.parameters.tid}}; sleep 20; echo done"]
+
+  - name: run-render
+    inputs:
+      parameters:
+      - name: tid
+    container:
+      image: alpine:latest
+      command: [sh, -c]
+      args: ["echo RENDER: task {{inputs.parameters.tid}}; sleep 1; echo done"]
+
+  - name: exr2png
+    inputs:
+      parameters:
+      - name: tid
+    container:
+      image: alpine:latest
+      command: [sh, -c]
+      args: ["echo EXR2PNG: task {{inputs.parameters.tid}}; sleep 0.5; echo done"]
+
+  - name: compositing
+    inputs:
+      parameters:
+      - name: tid
+    container:
+      image: alpine:latest
+      command: [sh, -c]
+      args: ["echo COMPOSITING: task {{inputs.parameters.tid}}; sleep 0.5; echo done"]      
+
+  - name: process-one-asset
+    inputs:
+      parameters:
+      - name: aid
+    container:
+      image: alpine:latest
+      command: [sh, -c]
+      args: ["echo BEEP BOOP...PROCESSING ASSET {{inputs.parameters.aid}}; sleep 1; echo done"]      

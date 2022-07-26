@@ -207,9 +207,10 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 		return
 	}
 
-	// update resource limits for this particular user before processing their workflow
+	// before we run the bulk of operate we want to determine how many resources are
+	// available for execution, if resource sharing is enabled.
 	resourceSharingID := woc.execWf.Spec.ResourceSharingID
-	woc.controller.updateResourceAllowances(resourceSharingID)
+	woc.controller.updateResourceAllowances(woc.execWf.Namespace, resourceSharingID)
 
 	if woc.wf.Status.ArtifactRepositoryRef == nil {
 		ref, err := woc.controller.artifactRepositories.Resolve(ctx, woc.execWf.Spec.ArtifactRepositoryRef, woc.wf.Namespace)

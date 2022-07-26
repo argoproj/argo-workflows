@@ -15,6 +15,7 @@ import (
 	"github.com/argoproj/pkg/strftime"
 	"github.com/prometheus/client_golang/prometheus"
 	dto "github.com/prometheus/client_model/go"
+	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	apiv1 "k8s.io/api/core/v1"
@@ -1589,7 +1590,10 @@ func TestWorkflowStepRetry(t *testing.T) {
 	}
 }
 
-func launchWorkflowForResourceSharing(ctx context.Context, c *WorkflowController, wfName, resourceSharingID string) *wfOperationCtx {
+// runWorkflowForResourceSharing kicks off a workflow with a 1-step steps template, and
+// schedules this step for execution.
+func runWorkflowForResourceSharing(ctx context.Context, controller *WorkflowController, wfName, resourceSharingID string) (*wfOperationCtx, error) {
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 	var wfTemplate = fmt.Sprintf(`
   apiVersion: argoproj.io/v1alpha1
   kind: Workflow
@@ -1609,10 +1613,19 @@ func launchWorkflowForResourceSharing(ctx context.Context, c *WorkflowController
         command: [sh, -c, sleep 10]
  `, wfName, resourceSharingID)
 	wf := wfv1.MustUnmarshalWorkflow(wfTemplate)
-	woc := newWorkflowOperationCtx(wf, c)
+	// create the workflow with wf client
+	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("error creating workflow: %v", err)
+	}
+	// verify creation
+	wf, err = wfcset.Get(ctx, wf.ObjectMeta.Name, metav1.GetOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("could not fetch newly created wf: %v", err)
+	}
+	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate(ctx)
-	makePodsPhase(ctx, woc, apiv1.PodRunning)
-	return woc
+	return woc, nil
 }
 
 // TestResourceSharingInSteps verifies that a resource's limits are honored in Steps
@@ -1625,14 +1638,22 @@ func TestResourceSharingInSteps(t *testing.T) {
 	}
 	defer cancel()
 
-	woc := launchWorkflowForResourceSharing(ctx, controller, "001-job1", "001")
-	launchWorkflowForResourceSharing(ctx, controller, "002-job1", "002")
-	launchWorkflowForResourceSharing(ctx, controller, "001-job2", "001")
-	launchWorkflowForResourceSharing(ctx, controller, "001-job3", "001")
+	woc, err := runWorkflowForResourceSharing(ctx, controller, "wf-name-000", "user-id-000")
+	assert.Nil(t, err)
 
-	pods, err := controller.kubeclientset.CoreV1().Pods(woc.wf.Namespace).List(context.Background(), metav1.ListOptions{})
-	assert.NoError(t, err)
-	assert.Equal(t, 3, len(pods.Items))
+	woc, err = runWorkflowForResourceSharing(ctx, controller, "wf-name-001", "user-id-001")
+	assert.Nil(t, err)
+
+	woc, err = runWorkflowForResourceSharing(ctx, controller, "wf-name-002", "user-id-000")
+	assert.Nil(t, err)
+
+	pods, err := listPods(woc)
+	assert.Nil(t, err)
+
+	log.Printf("~~~~~~~~~~~~~~~~~~~~~~~~~")
+	for _, p := range pods.Items {
+		log.Print(p.Name)
+	}
 
 	// there are only 3 pods running because user 00001 has 2 slots, but is not using
 	// one of them. Discuss this with team as it seems weird.
