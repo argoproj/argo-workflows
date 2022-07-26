@@ -405,6 +405,28 @@ spec:
                           type: object
                         archiveLogs:
                           type: boolean
+                        artifactGC:
+                          properties:
+                            podMetadata:
+                              properties:
+                                annotations:
+                                  additionalProperties:
+                                    type: string
+                                  type: object
+                                labels:
+                                  additionalProperties:
+                                    type: string
+                                  type: object
+                              type: object
+                            serviceAccountName:
+                              type: string
+                            strategy:
+                              enum:
+                              - ""
+                              - OnWorkflowCompletion
+                              - OnWorkflowDeletion
+                              type: string
+                          type: object
                         artifactory:
                           properties:
                             passwordSecret:
@@ -465,8 +487,6 @@ spec:
                         from:
                           type: string
                         fromExpression:
-                          type: string
-                        gcStrategy:
                           type: string
                         gcs:
                           properties:
@@ -993,6 +1013,28 @@ spec:
                                 type: object
                               archiveLogs:
                                 type: boolean
+                              artifactGC:
+                                properties:
+                                  podMetadata:
+                                    properties:
+                                      annotations:
+                                        additionalProperties:
+                                          type: string
+                                        type: object
+                                      labels:
+                                        additionalProperties:
+                                          type: string
+                                        type: object
+                                    type: object
+                                  serviceAccountName:
+                                    type: string
+                                  strategy:
+                                    enum:
+                                    - ""
+                                    - OnWorkflowCompletion
+                                    - OnWorkflowDeletion
+                                    type: string
+                                type: object
                               artifactory:
                                 properties:
                                   passwordSecret:
@@ -1053,8 +1095,6 @@ spec:
                               from:
                                 type: string
                               fromExpression:
-                                type: string
-                              gcStrategy:
                                 type: string
                               gcs:
                                 properties:
@@ -3848,6 +3888,28 @@ spec:
                                         type: object
                                       archiveLogs:
                                         type: boolean
+                                      artifactGC:
+                                        properties:
+                                          podMetadata:
+                                            properties:
+                                              annotations:
+                                                additionalProperties:
+                                                  type: string
+                                                type: object
+                                              labels:
+                                                additionalProperties:
+                                                  type: string
+                                                type: object
+                                            type: object
+                                          serviceAccountName:
+                                            type: string
+                                          strategy:
+                                            enum:
+                                            - ""
+                                            - OnWorkflowCompletion
+                                            - OnWorkflowDeletion
+                                            type: string
+                                        type: object
                                       artifactory:
                                         properties:
                                           passwordSecret:
@@ -3908,8 +3970,6 @@ spec:
                                       from:
                                         type: string
                                       fromExpression:
-                                        type: string
-                                      gcStrategy:
                                         type: string
                                       gcs:
                                         properties:
@@ -4389,6 +4449,28 @@ spec:
                                               type: object
                                             archiveLogs:
                                               type: boolean
+                                            artifactGC:
+                                              properties:
+                                                podMetadata:
+                                                  properties:
+                                                    annotations:
+                                                      additionalProperties:
+                                                        type: string
+                                                      type: object
+                                                    labels:
+                                                      additionalProperties:
+                                                        type: string
+                                                      type: object
+                                                  type: object
+                                                serviceAccountName:
+                                                  type: string
+                                                strategy:
+                                                  enum:
+                                                  - ""
+                                                  - OnWorkflowCompletion
+                                                  - OnWorkflowDeletion
+                                                  type: string
+                                              type: object
                                             artifactory:
                                               properties:
                                                 passwordSecret:
@@ -4449,8 +4531,6 @@ spec:
                                             from:
                                               type: string
                                             fromExpression:
-                                              type: string
-                                            gcStrategy:
                                               type: string
                                             gcs:
                                               properties:
@@ -4981,6 +5061,28 @@ spec:
                                 type: object
                               archiveLogs:
                                 type: boolean
+                              artifactGC:
+                                properties:
+                                  podMetadata:
+                                    properties:
+                                      annotations:
+                                        additionalProperties:
+                                          type: string
+                                        type: object
+                                      labels:
+                                        additionalProperties:
+                                          type: string
+                                        type: object
+                                    type: object
+                                  serviceAccountName:
+                                    type: string
+                                  strategy:
+                                    enum:
+                                    - ""
+                                    - OnWorkflowCompletion
+                                    - OnWorkflowDeletion
+                                    type: string
+                                type: object
                               artifactory:
                                 properties:
                                   passwordSecret:
@@ -5041,8 +5143,6 @@ spec:
                               from:
                                 type: string
                               fromExpression:
-                                type: string
-                              gcStrategy:
                                 type: string
                               gcs:
                                 properties:
@@ -6123,6 +6223,28 @@ spec:
                               type: object
                             archiveLogs:
                               type: boolean
+                            artifactGC:
+                              properties:
+                                podMetadata:
+                                  properties:
+                                    annotations:
+                                      additionalProperties:
+                                        type: string
+                                      type: object
+                                    labels:
+                                      additionalProperties:
+                                        type: string
+                                      type: object
+                                  type: object
+                                serviceAccountName:
+                                  type: string
+                                strategy:
+                                  enum:
+                                  - ""
+                                  - OnWorkflowCompletion
+                                  - OnWorkflowDeletion
+                                  type: string
+                              type: object
                             artifactory:
                               properties:
                                 passwordSecret:
@@ -6183,8 +6305,6 @@ spec:
                             from:
                               type: string
                             fromExpression:
-                              type: string
-                            gcStrategy:
                               type: string
                             gcs:
                               properties:
@@ -6752,6 +6872,28 @@ spec:
                               type: object
                             archiveLogs:
                               type: boolean
+                            artifactGC:
+                              properties:
+                                podMetadata:
+                                  properties:
+                                    annotations:
+                                      additionalProperties:
+                                        type: string
+                                      type: object
+                                    labels:
+                                      additionalProperties:
+                                        type: string
+                                      type: object
+                                  type: object
+                                serviceAccountName:
+                                  type: string
+                                strategy:
+                                  enum:
+                                  - ""
+                                  - OnWorkflowCompletion
+                                  - OnWorkflowDeletion
+                                  type: string
+                              type: object
                             artifactory:
                               properties:
                                 passwordSecret:
@@ -6812,8 +6954,6 @@ spec:
                             from:
                               type: string
                             fromExpression:
-                              type: string
-                            gcStrategy:
                               type: string
                             gcs:
                               properties:
@@ -7304,6 +7444,28 @@ spec:
                                 type: object
                               archiveLogs:
                                 type: boolean
+                              artifactGC:
+                                properties:
+                                  podMetadata:
+                                    properties:
+                                      annotations:
+                                        additionalProperties:
+                                          type: string
+                                        type: object
+                                      labels:
+                                        additionalProperties:
+                                          type: string
+                                        type: object
+                                    type: object
+                                  serviceAccountName:
+                                    type: string
+                                  strategy:
+                                    enum:
+                                    - ""
+                                    - OnWorkflowCompletion
+                                    - OnWorkflowDeletion
+                                    type: string
+                                type: object
                               artifactory:
                                 properties:
                                   passwordSecret:
@@ -7364,8 +7526,6 @@ spec:
                               from:
                                 type: string
                               fromExpression:
-                                type: string
-                              gcStrategy:
                                 type: string
                               gcs:
                                 properties:
@@ -11811,6 +11971,28 @@ spec:
                                           type: object
                                         archiveLogs:
                                           type: boolean
+                                        artifactGC:
+                                          properties:
+                                            podMetadata:
+                                              properties:
+                                                annotations:
+                                                  additionalProperties:
+                                                    type: string
+                                                  type: object
+                                                labels:
+                                                  additionalProperties:
+                                                    type: string
+                                                  type: object
+                                              type: object
+                                            serviceAccountName:
+                                              type: string
+                                            strategy:
+                                              enum:
+                                              - ""
+                                              - OnWorkflowCompletion
+                                              - OnWorkflowDeletion
+                                              type: string
+                                          type: object
                                         artifactory:
                                           properties:
                                             passwordSecret:
@@ -11871,8 +12053,6 @@ spec:
                                         from:
                                           type: string
                                         fromExpression:
-                                          type: string
-                                        gcStrategy:
                                           type: string
                                         gcs:
                                           properties:
@@ -12352,6 +12532,28 @@ spec:
                                                 type: object
                                               archiveLogs:
                                                 type: boolean
+                                              artifactGC:
+                                                properties:
+                                                  podMetadata:
+                                                    properties:
+                                                      annotations:
+                                                        additionalProperties:
+                                                          type: string
+                                                        type: object
+                                                      labels:
+                                                        additionalProperties:
+                                                          type: string
+                                                        type: object
+                                                    type: object
+                                                  serviceAccountName:
+                                                    type: string
+                                                  strategy:
+                                                    enum:
+                                                    - ""
+                                                    - OnWorkflowCompletion
+                                                    - OnWorkflowDeletion
+                                                    type: string
+                                                type: object
                                               artifactory:
                                                 properties:
                                                   passwordSecret:
@@ -12412,8 +12614,6 @@ spec:
                                               from:
                                                 type: string
                                               fromExpression:
-                                                type: string
-                                              gcStrategy:
                                                 type: string
                                               gcs:
                                                 properties:
@@ -12944,6 +13144,28 @@ spec:
                                   type: object
                                 archiveLogs:
                                   type: boolean
+                                artifactGC:
+                                  properties:
+                                    podMetadata:
+                                      properties:
+                                        annotations:
+                                          additionalProperties:
+                                            type: string
+                                          type: object
+                                        labels:
+                                          additionalProperties:
+                                            type: string
+                                          type: object
+                                      type: object
+                                    serviceAccountName:
+                                      type: string
+                                    strategy:
+                                      enum:
+                                      - ""
+                                      - OnWorkflowCompletion
+                                      - OnWorkflowDeletion
+                                      type: string
+                                  type: object
                                 artifactory:
                                   properties:
                                     passwordSecret:
@@ -13004,8 +13226,6 @@ spec:
                                 from:
                                   type: string
                                 fromExpression:
-                                  type: string
-                                gcStrategy:
                                   type: string
                                 gcs:
                                   properties:
@@ -14086,6 +14306,28 @@ spec:
                                 type: object
                               archiveLogs:
                                 type: boolean
+                              artifactGC:
+                                properties:
+                                  podMetadata:
+                                    properties:
+                                      annotations:
+                                        additionalProperties:
+                                          type: string
+                                        type: object
+                                      labels:
+                                        additionalProperties:
+                                          type: string
+                                        type: object
+                                    type: object
+                                  serviceAccountName:
+                                    type: string
+                                  strategy:
+                                    enum:
+                                    - ""
+                                    - OnWorkflowCompletion
+                                    - OnWorkflowDeletion
+                                    type: string
+                                type: object
                               artifactory:
                                 properties:
                                   passwordSecret:
@@ -14146,8 +14388,6 @@ spec:
                               from:
                                 type: string
                               fromExpression:
-                                type: string
-                              gcStrategy:
                                 type: string
                               gcs:
                                 properties:
@@ -14715,6 +14955,28 @@ spec:
                                 type: object
                               archiveLogs:
                                 type: boolean
+                              artifactGC:
+                                properties:
+                                  podMetadata:
+                                    properties:
+                                      annotations:
+                                        additionalProperties:
+                                          type: string
+                                        type: object
+                                      labels:
+                                        additionalProperties:
+                                          type: string
+                                        type: object
+                                    type: object
+                                  serviceAccountName:
+                                    type: string
+                                  strategy:
+                                    enum:
+                                    - ""
+                                    - OnWorkflowCompletion
+                                    - OnWorkflowDeletion
+                                    type: string
+                                type: object
                               artifactory:
                                 properties:
                                   passwordSecret:
@@ -14775,8 +15037,6 @@ spec:
                               from:
                                 type: string
                               fromExpression:
-                                type: string
-                              gcStrategy:
                                 type: string
                               gcs:
                                 properties:
@@ -15267,6 +15527,28 @@ spec:
                                   type: object
                                 archiveLogs:
                                   type: boolean
+                                artifactGC:
+                                  properties:
+                                    podMetadata:
+                                      properties:
+                                        annotations:
+                                          additionalProperties:
+                                            type: string
+                                          type: object
+                                        labels:
+                                          additionalProperties:
+                                            type: string
+                                          type: object
+                                      type: object
+                                    serviceAccountName:
+                                      type: string
+                                    strategy:
+                                      enum:
+                                      - ""
+                                      - OnWorkflowCompletion
+                                      - OnWorkflowDeletion
+                                      type: string
+                                  type: object
                                 artifactory:
                                   properties:
                                     passwordSecret:
@@ -15327,8 +15609,6 @@ spec:
                                 from:
                                   type: string
                                 fromExpression:
-                                  type: string
-                                gcStrategy:
                                   type: string
                                 gcs:
                                   properties:

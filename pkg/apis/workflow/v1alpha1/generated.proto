@@ -43,6 +43,15 @@ message Arguments {
   repeated Artifact artifacts = 2;
 }
 
+// map ArtifactGC Pod name to phase
+message ArtGCStatus {
+  // have Pods been started to perform this strategy?
+  map<string, bool> strategiesProcessed = 1;
+
+  // have completed Pods been processed? (mapped by Pod name)
+  map<string, bool> podsRecouped = 2;
+}
+
 // Artifact indicates an artifact to place at a specified path
 message Artifact {
   // name of the artifact. must be unique within a template's inputs/outputs.
@@ -81,7 +90,7 @@ message Artifact {
   optional string fromExpression = 11;
 
   // ArtifactGC describes the strategy to use when to deleting an artifact from completed or deleted workflows
-  optional string gcStrategy = 12;
+  optional ArtifactGC artifactGC = 12;
 
   // Has this been deleted?
   optional bool deleted = 13;
@@ -93,8 +102,10 @@ message ArtifactGC {
   // +kubebuilder:validation:Enum="";OnWorkflowCompletion;OnWorkflowDeletion
   optional string strategy = 1;
 
+  // PodMetadata is an optional field for specifying the Labels and Annotations that should be assigned to the Pod doing the deletion
   optional Metadata podMetadata = 2;
 
+  // ServiceAccountName is an optional field for specifying the Service Account that should be assigned to the Pod doing the deletion
   optional string serviceAccountName = 3;
 }
 
@@ -2032,8 +2043,8 @@ message WorkflowStatus {
   // ArtifactRepositoryRef is used to cache the repository to use so we do not need to determine it everytime we reconcile.
   optional ArtifactRepositoryRefStatus artifactRepositoryRef = 18;
 
-  // ArtifactGCStatus maintains the status of Artifact Garbage Collection per ArtifactGCStrategy
-  map<string, string> artifactGCStatus = 19;
+  // ArtifactGCStatus maintains the status of Artifact Garbage Collection
+  optional ArtGCStatus artifactGCStatus = 19;
 }
 
 // WorkflowStep is a reference to a template to execute in a series of step

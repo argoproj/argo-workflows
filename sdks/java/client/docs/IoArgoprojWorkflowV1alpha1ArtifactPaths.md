@@ -10,12 +10,12 @@ Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **archive** | [**IoArgoprojWorkflowV1alpha1ArchiveStrategy**](IoArgoprojWorkflowV1alpha1ArchiveStrategy.md) |  |  [optional]
 **archiveLogs** | **Boolean** | ArchiveLogs indicates if the container logs should be archived |  [optional]
+**artifactGC** | [**IoArgoprojWorkflowV1alpha1ArtifactGC**](IoArgoprojWorkflowV1alpha1ArtifactGC.md) |  |  [optional]
 **artifactory** | [**IoArgoprojWorkflowV1alpha1ArtifactoryArtifact**](IoArgoprojWorkflowV1alpha1ArtifactoryArtifact.md) |  |  [optional]
 **azure** | [**IoArgoprojWorkflowV1alpha1AzureArtifact**](IoArgoprojWorkflowV1alpha1AzureArtifact.md) |  |  [optional]
 **deleted** | **Boolean** | Has this been deleted? |  [optional]
 **from** | **String** | From allows an artifact to reference an artifact from a previous step |  [optional]
 **fromExpression** | **String** | FromExpression, if defined, is evaluated to specify the value for the artifact |  [optional]
-**gcStrategy** | **String** | ArtifactGC describes the strategy to use when to deleting an artifact from completed or deleted workflows |  [optional]
 **gcs** | [**IoArgoprojWorkflowV1alpha1GCSArtifact**](IoArgoprojWorkflowV1alpha1GCSArtifact.md) |  |  [optional]
 **git** | [**IoArgoprojWorkflowV1alpha1GitArtifact**](IoArgoprojWorkflowV1alpha1GitArtifact.md) |  |  [optional]
 **globalName** | **String** | GlobalName exports an output artifact to the global scope, making it available as &#39;{{io.argoproj.workflow.v1alpha1.outputs.artifacts.XXXX}} and in workflow.status.outputs.artifacts |  [optional]

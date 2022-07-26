@@ -6,7 +6,7 @@ ArtifactGC describes how to delete artifacts from completed Workflows
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **pod_metadata** | [**IoArgoprojWorkflowV1alpha1Metadata**](IoArgoprojWorkflowV1alpha1Metadata.md) |  | [optional] 
-**service_account_name** | **str** |  | [optional] 
+**service_account_name** | **str** | ServiceAccountName is an optional field for specifying the Service Account that should be assigned to the Pod doing the deletion | [optional] 
 **strategy** | **str** | Strategy is the strategy to use. One of \&quot;OnWorkflowCompletion\&quot;, \&quot;OnWorkflowDeletion\&quot; | [optional] 
 **any string name** | **bool, date, datetime, dict, float, int, list, str, none_type** | any string name can be used but the value must be the correct type | [optional]
 

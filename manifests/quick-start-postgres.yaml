@@ -80,6 +80,48 @@ spec:
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
+  name: workflowartifactgctasks.argoproj.io
+spec:
+  group: argoproj.io
+  names:
+    kind: WorkflowArtifactGCTask
+    listKind: WorkflowArtifactGCTaskList
+    plural: workflowartifactgctasks
+    shortNames:
+    - wfat
+    singular: workflowartifactgctask
+  scope: Namespaced
+  versions:
+  - name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        properties:
+          apiVersion:
+            type: string
+          kind:
+            type: string
+          metadata:
+            type: object
+          spec:
+            type: object
+            x-kubernetes-map-type: atomic
+            x-kubernetes-preserve-unknown-fields: true
+          status:
+            type: object
+            x-kubernetes-map-type: atomic
+            x-kubernetes-preserve-unknown-fields: true
+        required:
+        - metadata
+        - spec
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
   name: workfloweventbindings.argoproj.io
 spec:
   group: argoproj.io
@@ -214,6 +256,28 @@ spec:
                       type: object
                     archiveLogs:
                       type: boolean
+                    artifactGC:
+                      properties:
+                        podMetadata:
+                          properties:
+                            annotations:
+                              additionalProperties:
+                                type: string
+                              type: object
+                            labels:
+                              additionalProperties:
+                                type: string
+                              type: object
+                          type: object
+                        serviceAccountName:
+                          type: string
+                        strategy:
+                          enum:
+                          - ""
+                          - OnWorkflowCompletion
+                          - OnWorkflowDeletion
+                          type: string
+                      type: object
                     artifactory:
                       properties:
                         passwordSecret:
@@ -274,8 +338,6 @@ spec:
                     from:
                       type: string
                     fromExpression:
-                      type: string
-                    gcStrategy:
                       type: string
                     gcs:
                       properties:

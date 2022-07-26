@@ -94,6 +94,8 @@ definitions:
       archiveLogs:
         description: ArchiveLogs indicates if the container logs should be archived
         type: boolean
+      artifactGC:
+        $ref: '#/definitions/ArtifactGC'
       artifactory:
         $ref: '#/definitions/ArtifactoryArtifact'
       azure:
@@ -109,8 +111,6 @@ definitions:
         description: FromExpression, if defined, is evaluated to specify the value
           for the artifact
         type: string
-      gcStrategy:
-        $ref: '#/definitions/ArtifactGCStrategy'
       gcs:
         $ref: '#/definitions/GCSArtifact'
       git:
@@ -154,6 +154,18 @@ definitions:
           the specified source
         type: string
     type: object
+  ArtifactGC:
+    description: ArtifactGC describes how to delete artifacts from completed Workflows
+    properties:
+      podMetadata:
+        $ref: '#/definitions/Metadata'
+      serviceAccountName:
+        description: ServiceAccountName is an optional field for specifying the Service
+          Account that should be assigned to the Pod doing the deletion
+        type: string
+      strategy:
+        $ref: '#/definitions/ArtifactGCStrategy'
+    type: object
   ArtifactGCStrategy:
     title: ArtifactGCStrategy is the strategy when to delete artifacts for GC.
     type: string
@@ -194,6 +206,8 @@ definitions:
       archiveLogs:
         description: ArchiveLogs indicates if the container logs should be archived
         type: boolean
+      artifactGC:
+        $ref: '#/definitions/ArtifactGC'
       artifactory:
         $ref: '#/definitions/ArtifactoryArtifact'
       azure:
@@ -209,8 +223,6 @@ definitions:
         description: FromExpression, if defined, is evaluated to specify the value
           for the artifact
         type: string
-      gcStrategy:
-        $ref: '#/definitions/ArtifactGCStrategy'
       gcs:
         $ref: '#/definitions/GCSArtifact'
       git:

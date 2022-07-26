@@ -145,7 +145,7 @@ class IoArgoprojWorkflowV1alpha1ArtifactGC(ModelNormal):
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
             pod_metadata (IoArgoprojWorkflowV1alpha1Metadata): [optional]  # noqa: E501
-            service_account_name (str): [optional]  # noqa: E501
+            service_account_name (str): ServiceAccountName is an optional field for specifying the Service Account that should be assigned to the Pod doing the deletion. [optional]  # noqa: E501
             strategy (str): Strategy is the strategy to use. One of \"OnWorkflowCompletion\", \"OnWorkflowDeletion\". [optional]  # noqa: E501
         """
 
@@ -229,7 +229,7 @@ class IoArgoprojWorkflowV1alpha1ArtifactGC(ModelNormal):
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
             pod_metadata (IoArgoprojWorkflowV1alpha1Metadata): [optional]  # noqa: E501
-            service_account_name (str): [optional]  # noqa: E501
+            service_account_name (str): ServiceAccountName is an optional field for specifying the Service Account that should be assigned to the Pod doing the deletion. [optional]  # noqa: E501
             strategy (str): Strategy is the strategy to use. One of \"OnWorkflowCompletion\", \"OnWorkflowDeletion\". [optional]  # noqa: E501
         """
 

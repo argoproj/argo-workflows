@@ -201,12 +201,12 @@ It will marshall back to string - marshalling is not symmetric. |  |
 |------|------|---------|:--------:| ------- |-------------|---------|
 | archive | [ArchiveStrategy](#archive-strategy)| `ArchiveStrategy` |  | |  |  |
 | archiveLogs | boolean| `bool` |  | | ArchiveLogs indicates if the container logs should be archived |  |
+| artifactGC | [ArtifactGC](#artifact-g-c)| `ArtifactGC` |  | |  |  |
 | artifactory | [ArtifactoryArtifact](#artifactory-artifact)| `ArtifactoryArtifact` |  | |  |  |
 | azure | [AzureArtifact](#azure-artifact)| `AzureArtifact` |  | |  |  |
 | deleted | boolean| `bool` |  | | Has this been deleted? |  |
 | from | string| `string` |  | | From allows an artifact to reference an artifact from a previous step |  |
 | fromExpression | string| `string` |  | | FromExpression, if defined, is evaluated to specify the value for the artifact |  |
-| gcStrategy | [ArtifactGCStrategy](#artifact-g-c-strategy)| `ArtifactGCStrategy` |  | |  |  |
 | gcs | [GCSArtifact](#g-c-s-artifact)| `GCSArtifact` |  | |  |  |
 | git | [GitArtifact](#git-artifact)| `GitArtifact` |  | |  |  |
 | globalName | string| `string` |  | | GlobalName exports an output artifact to the global scope, making it available as
@@ -223,6 +223,26 @@ set when loading input artifacts. |  |
 | recurseMode | boolean| `bool` |  | | If mode is set, apply the permission recursively into the artifact if it is a folder |  |
 | s3 | [S3Artifact](#s3-artifact)| `S3Artifact` |  | |  |  |
 | subPath | string| `string` |  | | SubPath allows an artifact to be sourced from a subpath within the specified source |  |
+
+
+
+### <span id="artifact-g-c"></span> ArtifactGC
+
+
+> ArtifactGC describes how to delete artifacts from completed Workflows
+  
+
+
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| podMetadata | [Metadata](#metadata)| `Metadata` |  | |  |  |
+| serviceAccountName | string| `string` |  | | ServiceAccountName is an optional field for specifying the Service Account that should be assigned to the Pod doing the deletion |  |
+| strategy | [ArtifactGCStrategy](#artifact-g-c-strategy)| `ArtifactGCStrategy` |  | |  |  |
 
 
 
@@ -282,12 +302,12 @@ of a single workflow step, which the executor will use as a default location to 
 |------|------|---------|:--------:| ------- |-------------|---------|
 | archive | [ArchiveStrategy](#archive-strategy)| `ArchiveStrategy` |  | |  |  |
 | archiveLogs | boolean| `bool` |  | | ArchiveLogs indicates if the container logs should be archived |  |
+| artifactGC | [ArtifactGC](#artifact-g-c)| `ArtifactGC` |  | |  |  |
 | artifactory | [ArtifactoryArtifact](#artifactory-artifact)| `ArtifactoryArtifact` |  | |  |  |
 | azure | [AzureArtifact](#azure-artifact)| `AzureArtifact` |  | |  |  |
 | deleted | boolean| `bool` |  | | Has this been deleted? |  |
 | from | string| `string` |  | | From allows an artifact to reference an artifact from a previous step |  |
 | fromExpression | string| `string` |  | | FromExpression, if defined, is evaluated to specify the value for the artifact |  |
-| gcStrategy | [ArtifactGCStrategy](#artifact-g-c-strategy)| `ArtifactGCStrategy` |  | |  |  |
 | gcs | [GCSArtifact](#g-c-s-artifact)| `GCSArtifact` |  | |  |  |
 | git | [GitArtifact](#git-artifact)| `GitArtifact` |  | |  |  |
 | globalName | string| `string` |  | | GlobalName exports an output artifact to the global scope, making it available as

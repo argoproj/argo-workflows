@@ -7240,6 +7240,26 @@
         }
       }
     },
+    "io.argoproj.workflow.v1alpha1.ArtGCStatus": {
+      "description": "map ArtifactGC Pod name to phase",
+      "type": "object",
+      "properties": {
+        "podsRecouped": {
+          "description": "have completed Pods been processed? (mapped by Pod name)",
+          "type": "object",
+          "additionalProperties": {
+            "type": "boolean"
+          }
+        },
+        "strategiesProcessed": {
+          "description": "have Pods been started to perform this strategy?",
+          "type": "object",
+          "additionalProperties": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
     "io.argoproj.workflow.v1alpha1.Artifact": {
       "description": "Artifact indicates an artifact to place at a specified path",
       "type": "object",
@@ -7254,6 +7274,10 @@
         "archiveLogs": {
           "description": "ArchiveLogs indicates if the container logs should be archived",
           "type": "boolean"
+        },
+        "artifactGC": {
+          "description": "ArtifactGC describes the strategy to use when to deleting an artifact from completed or deleted workflows",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactGC"
         },
         "artifactory": {
           "description": "Artifactory contains artifactory artifact location details",
@@ -7273,10 +7297,6 @@
         },
         "fromExpression": {
           "description": "FromExpression, if defined, is evaluated to specify the value for the artifact",
-          "type": "string"
-        },
-        "gcStrategy": {
-          "description": "ArtifactGC describes the strategy to use when to deleting an artifact from completed or deleted workflows",
           "type": "string"
         },
         "gcs": {
@@ -7342,9 +7362,11 @@
       "type": "object",
       "properties": {
         "podMetadata": {
+          "description": "PodMetadata is an optional field for specifying the Labels and Annotations that should be assigned to the Pod doing the deletion",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Metadata"
         },
         "serviceAccountName": {
+          "description": "ServiceAccountName is an optional field for specifying the Service Account that should be assigned to the Pod doing the deletion",
           "type": "string"
         },
         "strategy": {
@@ -7457,6 +7479,10 @@
           "description": "ArchiveLogs indicates if the container logs should be archived",
           "type": "boolean"
         },
+        "artifactGC": {
+          "description": "ArtifactGC describes the strategy to use when to deleting an artifact from completed or deleted workflows",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactGC"
+        },
         "artifactory": {
           "description": "Artifactory contains artifactory artifact location details",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactoryArtifact"
@@ -7475,10 +7501,6 @@
         },
         "fromExpression": {
           "description": "FromExpression, if defined, is evaluated to specify the value for the artifact",
-          "type": "string"
-        },
-        "gcStrategy": {
-          "description": "ArtifactGC describes the strategy to use when to deleting an artifact from completed or deleted workflows",
           "type": "string"
         },
         "gcs": {
@@ -11138,11 +11160,8 @@
       "type": "object",
       "properties": {
         "artifactGCStatus": {
-          "description": "ArtifactGCStatus maintains the status of Artifact Garbage Collection per ArtifactGCStrategy",
-          "type": "object",
-          "additionalProperties": {
-            "type": "string"
-          }
+          "description": "ArtifactGCStatus maintains the status of Artifact Garbage Collection",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtGCStatus"
         },
         "artifactRepositoryRef": {
           "description": "ArtifactRepositoryRef is used to cache the repository to use so we do not need to determine it everytime we reconcile.",

@@ -30,6 +30,7 @@ from argo_workflows.exceptions import ApiAttributeError
 
 
 def lazy_import():
+    from argo_workflows.model.io_argoproj_workflow_v1alpha1_art_gc_status import IoArgoprojWorkflowV1alpha1ArtGCStatus
     from argo_workflows.model.io_argoproj_workflow_v1alpha1_artifact_repository_ref_status import IoArgoprojWorkflowV1alpha1ArtifactRepositoryRefStatus
     from argo_workflows.model.io_argoproj_workflow_v1alpha1_condition import IoArgoprojWorkflowV1alpha1Condition
     from argo_workflows.model.io_argoproj_workflow_v1alpha1_node_status import IoArgoprojWorkflowV1alpha1NodeStatus
@@ -38,6 +39,7 @@ def lazy_import():
     from argo_workflows.model.io_argoproj_workflow_v1alpha1_template import IoArgoprojWorkflowV1alpha1Template
     from argo_workflows.model.io_argoproj_workflow_v1alpha1_workflow_spec import IoArgoprojWorkflowV1alpha1WorkflowSpec
     from argo_workflows.model.volume import Volume
+    globals()['IoArgoprojWorkflowV1alpha1ArtGCStatus'] = IoArgoprojWorkflowV1alpha1ArtGCStatus
     globals()['IoArgoprojWorkflowV1alpha1ArtifactRepositoryRefStatus'] = IoArgoprojWorkflowV1alpha1ArtifactRepositoryRefStatus
     globals()['IoArgoprojWorkflowV1alpha1Condition'] = IoArgoprojWorkflowV1alpha1Condition
     globals()['IoArgoprojWorkflowV1alpha1NodeStatus'] = IoArgoprojWorkflowV1alpha1NodeStatus
@@ -101,7 +103,7 @@ class IoArgoprojWorkflowV1alpha1WorkflowStatus(ModelNormal):
         """
         lazy_import()
         return {
-            'artifact_gc_status': ({str: (str,)},),  # noqa: E501
+            'artifact_gc_status': (IoArgoprojWorkflowV1alpha1ArtGCStatus,),  # noqa: E501
             'artifact_repository_ref': (IoArgoprojWorkflowV1alpha1ArtifactRepositoryRefStatus,),  # noqa: E501
             'compressed_nodes': (str,),  # noqa: E501
             'conditions': ([IoArgoprojWorkflowV1alpha1Condition],),  # noqa: E501
@@ -188,7 +190,7 @@ class IoArgoprojWorkflowV1alpha1WorkflowStatus(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            artifact_gc_status ({str: (str,)}): ArtifactGCStatus maintains the status of Artifact Garbage Collection per ArtifactGCStrategy. [optional]  # noqa: E501
+            artifact_gc_status (IoArgoprojWorkflowV1alpha1ArtGCStatus): [optional]  # noqa: E501
             artifact_repository_ref (IoArgoprojWorkflowV1alpha1ArtifactRepositoryRefStatus): [optional]  # noqa: E501
             compressed_nodes (str): Compressed and base64 decoded Nodes map. [optional]  # noqa: E501
             conditions ([IoArgoprojWorkflowV1alpha1Condition]): Conditions is a list of conditions the Workflow may have. [optional]  # noqa: E501
@@ -287,7 +289,7 @@ class IoArgoprojWorkflowV1alpha1WorkflowStatus(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            artifact_gc_status ({str: (str,)}): ArtifactGCStatus maintains the status of Artifact Garbage Collection per ArtifactGCStrategy. [optional]  # noqa: E501
+            artifact_gc_status (IoArgoprojWorkflowV1alpha1ArtGCStatus): [optional]  # noqa: E501
             artifact_repository_ref (IoArgoprojWorkflowV1alpha1ArtifactRepositoryRefStatus): [optional]  # noqa: E501
             compressed_nodes (str): Compressed and base64 decoded Nodes map. [optional]  # noqa: E501
             conditions ([IoArgoprojWorkflowV1alpha1Condition]): Conditions is a list of conditions the Workflow may have. [optional]  # noqa: E501

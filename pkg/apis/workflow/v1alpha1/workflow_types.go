@@ -1336,7 +1336,14 @@ const (
 	ArtifactGCFailed ArtifactGCPhase = "Failed"
 )
 
-type ArtGCStatus map[ArtifactGCStrategy]ArtifactGCPhase
+// map ArtifactGC Pod name to phase
+type ArtGCStatus struct {
+	// have Pods been started to perform this strategy?
+	StrategiesProcessed map[ArtifactGCStrategy]bool `json:"strategiesProcessed,omitempty" protobuf:"bytes,1,opt,name=strategiesProcessed"`
+
+	// have completed Pods been processed? (mapped by Pod name)
+	PodsRecouped map[string]bool `json:"podsRecouped,omitempty" protobuf:"bytes,2,opt,name=podsRecouped"`
+}
 
 type ArtifactSearchResult struct {
 	Artifact `protobuf:"bytes,1,opt,name=artifact"`
@@ -1784,7 +1791,7 @@ type WorkflowStatus struct {
 	// ArtifactRepositoryRef is used to cache the repository to use so we do not need to determine it everytime we reconcile.
 	ArtifactRepositoryRef *ArtifactRepositoryRefStatus `json:"artifactRepositoryRef,omitempty" protobuf:"bytes,18,opt,name=artifactRepositoryRef"`
 
-	// ArtifactGCStatus maintains the status of Artifact Garbage Collection per ArtifactGCStrategy
+	// ArtifactGCStatus maintains the status of Artifact Garbage Collection
 	ArtifactGCStatus ArtGCStatus `json:"artifactGCStatus,omitempty" protobuf:"bytes,19,opt,name=artifactGCStatus"`
 }
 

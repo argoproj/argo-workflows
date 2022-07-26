@@ -835,7 +835,7 @@ WorkflowStatus contains overall status information about a workflow
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`artifactGCStatus`|`Map< string , string >`|ArtifactGCStatus maintains the status of Artifact Garbage Collection per ArtifactGCStrategy|
+|`artifactGCStatus`|[`ArtGCStatus`](#artgcstatus)|ArtifactGCStatus maintains the status of Artifact Garbage Collection|
 |`artifactRepositoryRef`|[`ArtifactRepositoryRefStatus`](#artifactrepositoryrefstatus)|ArtifactRepositoryRef is used to cache the repository to use so we do not need to determine it everytime we reconcile.|
 |`compressedNodes`|`string`|Compressed and base64 decoded Nodes map|
 |`conditions`|`Array<`[`Condition`](#condition)`>`|Conditions is a list of conditions the Workflow may have|
@@ -1444,8 +1444,8 @@ ArtifactGC describes how to delete artifacts from completed Workflows
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`podMetadata`|[`Metadata`](#metadata)|_No description available_|
-|`serviceAccountName`|`string`|_No description available_|
+|`podMetadata`|[`Metadata`](#metadata)|PodMetadata is an optional field for specifying the Labels and Annotations that should be assigned to the Pod doing the deletion|
+|`serviceAccountName`|`string`|ServiceAccountName is an optional field for specifying the Service Account that should be assigned to the Pod doing the deletion|
 |`strategy`|`string`|Strategy is the strategy to use. One of "OnWorkflowCompletion", "OnWorkflowDeletion"|
 
 ## ArtifactRepositoryRef
@@ -1757,6 +1757,16 @@ WorkflowTemplateRef is a reference to a WorkflowTemplate resource.
 |`clusterScope`|`boolean`|ClusterScope indicates the referred template is cluster scoped (i.e. a ClusterWorkflowTemplate).|
 |`name`|`string`|Name is the resource name of the workflow template.|
 
+## ArtGCStatus
+
+map ArtifactGC Pod name to phase
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`podsRecouped`|`Map< boolean , string >`|have completed Pods been processed? (mapped by Pod name)|
+|`strategiesProcessed`|`Map< boolean , string >`|have Pods been started to perform this strategy?|
+
 ## ArtifactRepositoryRefStatus
 
 _No description available_
@@ -2024,12 +2034,12 @@ Artifact indicates an artifact to place at a specified path
 |:----------:|:----------:|---------------|
 |`archive`|[`ArchiveStrategy`](#archivestrategy)|Archive controls how the artifact will be saved to the artifact repository.|
 |`archiveLogs`|`boolean`|ArchiveLogs indicates if the container logs should be archived|
+|`artifactGC`|[`ArtifactGC`](#artifactgc)|ArtifactGC describes the strategy to use when to deleting an artifact from completed or deleted workflows|
 |`artifactory`|[`ArtifactoryArtifact`](#artifactoryartifact)|Artifactory contains artifactory artifact location details|
 |`azure`|[`AzureArtifact`](#azureartifact)|Azure contains Azure Storage artifact location details|
 |`deleted`|`boolean`|Has this been deleted?|
 |`from`|`string`|From allows an artifact to reference an artifact from a previous step|
 |`fromExpression`|`string`|FromExpression, if defined, is evaluated to specify the value for the artifact|
-|`gcStrategy`|`string`|ArtifactGC describes the strategy to use when to deleting an artifact from completed or deleted workflows|
 |`gcs`|[`GCSArtifact`](#gcsartifact)|GCS contains GCS artifact location details|
 |`git`|[`GitArtifact`](#gitartifact)|Git contains git artifact location details|
 |`globalName`|`string`|GlobalName exports an output artifact to the global scope, making it available as '{{io.argoproj.workflow.v1alpha1.outputs.artifacts.XXXX}} and in workflow.status.outputs.artifacts|
@@ -4369,12 +4379,12 @@ ArtifactPaths expands a step from a collection of artifacts
 |:----------:|:----------:|---------------|
 |`archive`|[`ArchiveStrategy`](#archivestrategy)|Archive controls how the artifact will be saved to the artifact repository.|
 |`archiveLogs`|`boolean`|ArchiveLogs indicates if the container logs should be archived|
+|`artifactGC`|[`ArtifactGC`](#artifactgc)|ArtifactGC describes the strategy to use when to deleting an artifact from completed or deleted workflows|
 |`artifactory`|[`ArtifactoryArtifact`](#artifactoryartifact)|Artifactory contains artifactory artifact location details|
 |`azure`|[`AzureArtifact`](#azureartifact)|Azure contains Azure Storage artifact location details|
 |`deleted`|`boolean`|Has this been deleted?|
 |`from`|`string`|From allows an artifact to reference an artifact from a previous step|
 |`fromExpression`|`string`|FromExpression, if defined, is evaluated to specify the value for the artifact|
-|`gcStrategy`|`string`|ArtifactGC describes the strategy to use when to deleting an artifact from completed or deleted workflows|
 |`gcs`|[`GCSArtifact`](#gcsartifact)|GCS contains GCS artifact location details|
 |`git`|[`GitArtifact`](#gitartifact)|Git contains git artifact location details|
 |`globalName`|`string`|GlobalName exports an output artifact to the global scope, making it available as '{{io.argoproj.workflow.v1alpha1.outputs.artifacts.XXXX}} and in workflow.status.outputs.artifacts|
