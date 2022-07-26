@@ -226,7 +226,7 @@ func (w *Workflow) HasArtifactGC() bool {
 	// either it's defined by an Output Artifact or by the WorkflowSpec itself, or both
 	for _, template := range w.Spec.Templates {
 		for _, artifact := range template.Outputs.Artifacts {
-			if artifact.GCStrategy != ArtifactGCNever {
+			if artifact.GetArtifactGC().Strategy != ArtifactGCNever {
 				return true
 			}
 		}
@@ -978,20 +978,20 @@ type Artifact struct {
 	FromExpression string `json:"fromExpression,omitempty" protobuf:"bytes,11,opt,name=fromExpression"`
 
 	// ArtifactGC describes the strategy to use when to deleting an artifact from completed or deleted workflows
-	GCStrategy ArtifactGCStrategy `json:"gcStrategy,omitempty" protobuf:"bytes,12,opt,name=gcStrategy"` //todo: why doesn't 12 work?
+	ArtifactGC *ArtifactGC `json:"artifactGC,omitempty" protobuf:"bytes,12,opt,name=artifactGC"`
 
 	// Has this been deleted?
 	Deleted bool `json:"deleted,omitempty" protobuf:"varint,13,opt,name=deleted"`
 }
 
 // ArtifactGC returns the ArtifactGC that was defined by the artifact.  If none was provided, a default value is returned.
-/*func (a *Artifact) GetArtifactGCStrategy() ArtifactGCStrategy {
-	if a.ArtifactGCStrategy == nil {
-		return ArtifactGCNever
+func (a *Artifact) GetArtifactGC() *ArtifactGC {
+	if a.ArtifactGC == nil {
+		return &ArtifactGC{Strategy: ArtifactGCNever}
 	}
 
-	return *a.ArtifactGCStrategy
-}*/
+	return a.ArtifactGC
+}
 
 // CleanPath validates and cleans the artifact path.
 func (a *Artifact) CleanPath() error {
@@ -1056,8 +1056,10 @@ type ArtifactGC struct {
 	// +kubebuilder:validation:Enum="";OnWorkflowCompletion;OnWorkflowDeletion
 	Strategy ArtifactGCStrategy `json:"strategy,omitempty" protobuf:"bytes,1,opt,name=strategy,casttype=ArtifactGCStategy"`
 
+	// PodMetadata is an optional field for specifying the Labels and Annotations that should be assigned to the Pod doing the deletion
 	PodMetadata *Metadata `json:"podMetadata,omitempty" protobuf:"bytes,2,opt,name=podMetadata"`
 
+	// ServiceAccountName is an optional field for specifying the Service Account that should be assigned to the Pod doing the deletion
 	ServiceAccountName string `json:"serviceAccountName,omitempty" protobuf:"bytes,3,opt,name=serviceAccountName"`
 }
 
@@ -1374,7 +1376,7 @@ func (w *Workflow) SearchArtifacts(q *ArtifactSearchQuery) ArtifactSearchResults
 			if q.anyArtifactGCStrategy() {
 				// artifact strategy is either based on overall Workflow ArtifactGC Strategy, or
 				// if it's specified on the individual artifact level that takes priority
-				artifactStrategy := a.GCStrategy
+				artifactStrategy := a.GetArtifactGC().GetStrategy()
 				wfStrategy := w.Spec.GetArtifactGC().GetStrategy()
 				strategy := wfStrategy
 				if artifactStrategy != ArtifactGCNever {
@@ -3178,7 +3180,7 @@ func (wf *Workflow) SetStoredTemplate(scope ResourceScope, resourceName string, 
 
 // return true either if an individual artifact has an ArtifactGC strategy or the Workflow as a whole does
 // now we have Workflow.HasArtifactGC() so maybe don't need this
-/*func (w *Workflow) AnyArtifactGC() bool {
+func (w *Workflow) AnyArtifactGC() bool {
 	for _, t := range w.GetTemplates() {
 		for _, a := range t.GetOutputs().GetArtifacts() {
 			if a.GetArtifactGC().Strategy != ArtifactGCNever {
@@ -3187,7 +3189,7 @@ func (wf *Workflow) SetStoredTemplate(scope ResourceScope, resourceName string, 
 		}
 	}
 	return w.Spec.GetArtifactGC().GetStrategy() != ArtifactGCNever
-}*/
+}
 
 // resolveTemplateReference resolves the stored template name of a given template holder on the template scope and determines
 // if it should be stored

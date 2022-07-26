@@ -31,7 +31,7 @@ type ArtifactNodeSpec struct {
 }
 
 // ArtifactGCSStatus describes the result of the deletion
-type ArtifactGCSStatus struct {
+type ArtifactGCSStatus struct { //todo: need to fix misspelling
 	// ArtifactResultsByNode maps Node name to result
 	ArtifactResultsByNode map[string]ArtifactResultNodeStatus `json:"artifactResultsByNode,omitempty" protobuf:"bytes,1,rep,name=artifactResultsByNode"`
 }

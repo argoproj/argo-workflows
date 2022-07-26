@@ -3,6 +3,7 @@ package controller
 import (
 	"context"
 	"fmt"
+	"hash/fnv"
 
 	apiv1 "k8s.io/api/core/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -295,6 +296,68 @@ func (woc *wfOperationCtx) processCompletedWorkflowArtifactGCTask(ctx context.Co
 	return nil
 }
 
+type templatesToArtifacts map[*wfv1.Template]wfv1.ArtifactSearchResults
+
+/*func (woc *wfOperationCtx) getArtifactGCHashedAccessString(artifactGC *wfv1.ArtifactGC) string {
+	h := fnv.New64a()
+	_, _ = h.Write([]byte(artifactGC.ServiceAccountName))
+	if artifactGC.PodMetadata != nil {
+		for _, label := range artifactGC.PodMetadata.Labels {
+			_, _ = h.Write([]byte(label))
+		}
+		for _, annotation := range artifactGC.PodMetadata.Annotations {
+			_, _ = h.Write([]byte(annotation))
+		}
+	}
+
+	return fmt.Sprintf("%v", h.Sum64())
+}*/
+
+func (woc *wfOperationCtx) getArtifactAccess(artifact *wfv1.Artifact) podInfo {
+	//  start with Workflow.ArtifactGC and override with Artifact.ArtifactGC
+	podAccessInfo := podInfo{}
+	if woc.wf.Spec.ArtifactGC != nil {
+		woc.updateArtifactAccess(woc.wf.Spec.ArtifactGC, &podAccessInfo)
+	}
+	if artifact.ArtifactGC != nil {
+		woc.updateArtifactAccess(artifact.ArtifactGC, &podAccessInfo)
+	}
+	return podAccessInfo
+}
+
+func (woc *wfOperationCtx) updateArtifactAccess(artifactGC *wfv1.ArtifactGC, podAccessInfo *podInfo) {
+
+	if artifactGC.ServiceAccountName != "" {
+		podAccessInfo.serviceAccount = artifactGC.ServiceAccountName
+	}
+	if artifactGC.PodMetadata != nil {
+		for labelKey, labelValue := range artifactGC.PodMetadata.Labels {
+			podAccessInfo.podMetadata.Labels[labelKey] = labelValue
+		}
+		for annotationKey, annotationValue := range artifactGC.PodMetadata.Annotations {
+			podAccessInfo.podMetadata.Annotations[annotationKey] = annotationValue
+		}
+	}
+
+}
+
+func (woc *wfOperationCtx) getHashedAccessString(podAccessInfo podInfo) string {
+	h := fnv.New64a()
+	_, _ = h.Write([]byte(podAccessInfo.serviceAccount))
+	for _, label := range podAccessInfo.podMetadata.Labels {
+		_, _ = h.Write([]byte(label))
+	}
+	for _, annotation := range podAccessInfo.podMetadata.Annotations {
+		_, _ = h.Write([]byte(annotation))
+	}
+	return fmt.Sprintf("%v", h.Sum64())
+}
+
+type podInfo struct {
+	serviceAccount string
+	podMetadata    wfv1.Metadata
+}
+
 func (woc *wfOperationCtx) processArtifactGCStrategy(ctx context.Context, strategy wfv1.ArtifactGCStrategy) error {
 	// determine current Status associated with this garbage collection strategy: has it run before?
 	// If so, we don't want to run it again; however, if it's in a "Running" state we should make sure the Pod exists -
@@ -318,26 +381,109 @@ func (woc *wfOperationCtx) processArtifactGCStrategy(ctx context.Context, strate
 	if exists {
 		woc.log.Debugf("pod %s already exists, not re-creating", podName)
 	} else {
-		tasks := make([]*wfv1.WorkflowArtifactGCTask, 0)
-		for _, template := range woc.wf.Spec.Templates {
-			woc.addTemplateArtifactsToTasks(strategy, &tasks, &template)
+
+		// Search for artifacts
+		artifactSearchResults := woc.execWf.SearchArtifacts(&wfv1.ArtifactSearchQuery{ArtifactGCStrategies: map[wfv1.ArtifactGCStrategy]bool{strategy: true}, Deleted: pointer.BoolPtr(false)})
+		if len(artifactSearchResults) == 0 {
+
 		}
-		if len(tasks) > 0 {
-			// create the K8s WorkflowArtifactGCTask objects
-			for i, task := range tasks {
-				tasks[i], err = woc.createWorkflowArtifactGCTask(ctx, task)
-				if err != nil {
-					return err
+
+		// cache the templates by name so we can find them easily
+		templatesByName := make(map[string]*wfv1.Template)
+
+		// We need to create a separate Pod for each set of Artifacts that require special access requirements (i.e. Service Account and Pod Metadata)
+		// So first group artifacts that need to be deleted by access requirements
+
+		// grouping the Artifacts according to access requirements and Template
+		groupedByAccess := make(map[string]templatesToArtifacts)
+
+		// a mapping from the hashed access string to the actual metadata and Service Account that need to be applied
+		hashedAccessStrings := make(map[string]podInfo)
+
+		var hashedAccessString string
+		var podAccessInfo podInfo
+
+		for _, artifactSearchResult := range artifactSearchResults {
+			// get the access requirements and hash them
+			podAccessInfo = woc.getArtifactAccess(&artifactSearchResult.Artifact)
+			hashedAccessString = woc.getHashedAccessString(podAccessInfo)
+			_, found := hashedAccessStrings[hashedAccessString]
+			if !found {
+				hashedAccessStrings[hashedAccessString] = podAccessInfo
+			}
+			_, found = groupedByAccess[hashedAccessString]
+			if !found {
+				groupedByAccess[hashedAccessString] = make(templatesToArtifacts)
+			}
+			// get the Template
+			node, found := woc.wf.Status.Nodes[artifactSearchResult.NodeID]
+			if !found {
+				//todo: error
+			}
+			template, found := templatesByName[node.TemplateName]
+			if !found {
+				template = woc.wf.GetTemplateByName(node.TemplateName)
+				if template == nil {
+					//todo: error
+				}
+				templatesByName[node.TemplateName] = template
+			}
+
+			_, found = groupedByAccess[hashedAccessString][template]
+			if !found {
+				groupedByAccess[hashedAccessString][template] = make(wfv1.ArtifactSearchResults, 0)
+			}
+
+			groupedByAccess[hashedAccessString][template] = append(groupedByAccess[hashedAccessString][template], artifactSearchResult)
+		}
+
+		// Alternative:
+		// for each access type:
+		// 	create separate set of Tasks (ArtifactLocation equal to node.Template.ArchiveLocation)
+		// 	create Pod
+		// 	assign Pod access according to the access type
+
+		/*
+			groupedByAccess := make(map[string]templatesToArtifacts)
+			for _, template := range woc.wf.Spec.Templates {
+			//    if there are artifacts:
+				artifactResults, err := woc.searchArtifacts(template, strategy)
+				if len(artifactResults) > 0 {
+					hashedAccessString := woc.hashArtGCPodMetadata(template)
+					_, found := groupedByAccess[hashedAccessString]
+					if !found {
+						groupedByAccess[hashedAccessString] = make(templatesToArtifacts)
+					}
+					groupedByAccess[hashedAccessString][&template] = artifactResults
 				}
 			}
-			// create the pod
-			err = woc.createArtifactGCPod(ctx, strategy, tasks)
-			if err != nil {
-				return err
-			}
-			woc.wf.Status.ArtifactGCStatus[strategy] = wfv1.ArtifactGCScheduled
-			woc.updated = true
-		}
+			for accessString, templatesToArtList := range groupedByAccess {
+			//    create a new set of Tasks and Pod
+
+				tasks := make([]*wfv1.WorkflowArtifactGCTask, 0)
+				for template, artifacts := range templatesToArtList {
+					woc.addTemplateArtifactsToTasks(strategy, &tasks, artifacts)
+				}
+
+
+
+				if len(tasks) > 0 {
+					// create the K8s WorkflowArtifactGCTask objects
+					for i, task := range tasks {
+						tasks[i], err = woc.createWorkflowArtifactGCTask(ctx, task)
+						if err != nil {
+							return err
+						}
+					}
+					// create the pod
+					err = woc.createArtifactGCPod(ctx, strategy, tasks, &template)
+					if err != nil {
+						return err
+					}
+					woc.wf.Status.ArtifactGCStatus[strategy][accessString] = wfv1.ArtifactGCScheduled
+					woc.updated = true
+				}
+			}*/
 	}
 
 	return nil
@@ -448,7 +594,7 @@ func (woc *wfOperationCtx) createWorkflowArtifactGCTask(ctx context.Context, tas
 	return task, nil
 }
 
-func (woc *wfOperationCtx) createArtifactGCPod(ctx context.Context, strategy wfv1.ArtifactGCStrategy, tasks []*wfv1.WorkflowArtifactGCTask) error {
+func (woc *wfOperationCtx) createArtifactGCPod(ctx context.Context, strategy wfv1.ArtifactGCStrategy, tasks []*wfv1.WorkflowArtifactGCTask, template *wfv1.Template) error {
 	podName := woc.artGCPodName(strategy)
 
 	woc.log.
@@ -515,18 +661,12 @@ func (woc *wfOperationCtx) createArtifactGCPod(ctx context.Context, strategy wfv
 	}
 
 	// if the Workflow has a Service Account and/or Labels and Annotations specified for Artifact GC, use them
-	if woc.wf.Spec.ArtifactGC != nil {
-		if woc.wf.Spec.ArtifactGC.ServiceAccountName != "" {
-			pod.Spec.ServiceAccountName = woc.wf.Spec.ArtifactGC.ServiceAccountName
-		}
-		if woc.wf.Spec.ArtifactGC.PodMetadata != nil {
-			for label, value := range woc.wf.Spec.ArtifactGC.PodMetadata.Labels {
-				pod.ObjectMeta.Labels[label] = value
-			}
-			for annotation, value := range woc.wf.Spec.ArtifactGC.PodMetadata.Annotations {
-				pod.ObjectMeta.Annotations[annotation] = value
-			}
-		}
+	if woc.wf.Spec.ArtifactGC != nil && woc.wf.Spec.ArtifactGC.ArtifactGCPod != nil {
+		woc.setArtifactGCPodAccess(pod, woc.wf.Spec.ArtifactGC.ArtifactGCPod)
+	}
+	// if the Template has a Service Account and/or Labels and Annotations specified for Artifact GC, override with those
+	if template.ArtifactGCPod != nil {
+		woc.setArtifactGCPodAccess(pod, template.ArtifactGCPod)
 	}
 
 	if v := woc.controller.Config.InstanceID; v != "" {
@@ -544,6 +684,20 @@ func (woc *wfOperationCtx) createArtifactGCPod(ctx context.Context, strategy wfv
 		}
 	}
 	return nil
+}
+
+func (woc *wfOperationCtx) setArtifactGCPodAccess(pod *corev1.Pod, artifactGCPodSpec *wfv1.ArtifactGCPod) {
+	if artifactGCPodSpec.ServiceAccountName != "" {
+		pod.Spec.ServiceAccountName = artifactGCPodSpec.ServiceAccountName
+	}
+	if artifactGCPodSpec.PodMetadata != nil {
+		for label, value := range artifactGCPodSpec.PodMetadata.Labels {
+			pod.ObjectMeta.Labels[label] = value
+		}
+		for annotation, value := range artifactGCPodSpec.PodMetadata.Annotations {
+			pod.ObjectMeta.Annotations[annotation] = value
+		}
+	}
 }
 
 /*
