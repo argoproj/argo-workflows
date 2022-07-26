@@ -62,7 +62,7 @@ spec:
         limit: 10
         backoff:
           duration: 10s
-          maxDuration: 50s
+          maxDuration: 1m
       container:
           name: main
           image: 'argoproj/argosay:v2'
@@ -74,7 +74,8 @@ spec:
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.WorkflowPhase("Failed"), status.Phase)
-			assert.Equal(t, "Max duration limit exceeded", status.Message)
+			assert.Equal(t, "Backoff would exceed max duration limit", status.Message)
+			assert.Equal(t, 5, len(status.Nodes))
 		})
 }
 
