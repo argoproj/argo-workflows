@@ -1548,7 +1548,7 @@ spec:
       args: ["cowsay {{inputs.parameters.message}}"]
 `
 
-// TestWorkflowParallelismLimit verifies parallelism at a workflow level is honored.
+// TestWorkflowStepRetry verifies that steps retry will restart from the 0th step
 func TestWorkflowStepRetry(t *testing.T) {
 	cancel, controller := newController()
 	defer cancel()
