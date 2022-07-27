@@ -510,6 +510,26 @@ func (wfc *WorkflowController) processNextPodCleanupItem(ctx context.Context) bo
 			if err != nil && !apierr.IsNotFound(err) {
 				return err
 			}
+		case remarkExitCode:
+			innerPod, err := wfc.getPod(namespace, podName)
+			if innerPod == nil || err != nil {
+				return err
+			}
+			for _, c := range innerPod.Spec.Containers {
+				if c.Name == common.WaitContainerName {
+					//exec cmd  /bin/sh -c "echo 137 > /var/run/argo/ctr/main/exitcode"
+					toPath := common.VarRunArgoPath + "/ctr/" + common.MainContainerName + "/exitcode"
+					command := []string{"/bin/sh", "-c", fmt.Sprintf("echo 137 > %s", toPath)}
+					if err := signal.ExecPodContainerAndGetOutput(wfc.restConfig,
+						innerPod.Namespace, innerPod.Name,
+						common.WaitContainerName, command...); errorsutil.IgnoreContainerNotFoundErr(err) != nil {
+						logCtx.WithError(err).Warn("failed to force terminate wait pod")
+						return err
+					}
+					log.WithFields(log.Fields{"key": "pod", "name": innerPod.Name, "cmd": command}).Info("force terminate wait pod")
+					return nil // done
+				}
+			}
 		}
 		return nil
 	}()
