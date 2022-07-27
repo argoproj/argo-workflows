@@ -210,6 +210,9 @@ func (woc *wfOperationCtx) processCompletedWorkflowArtifactGCTask(ctx context.Co
 
 	}
 
+	// now we can delete it
+	woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowArtifactGCTasks(woc.wf.Namespace).Delete(ctx, artifactGCTask.Name, metav1.DeleteOptions{})
+
 	return nil
 }
 
@@ -244,6 +247,12 @@ func (woc *wfOperationCtx) updateArtifactAccess(artifactGC *wfv1.ArtifactGC, pod
 type templatesToArtifacts map[string]wfv1.ArtifactSearchResults
 
 func (woc *wfOperationCtx) processArtifactGCStrategy(ctx context.Context, strategy wfv1.ArtifactGCStrategy) error {
+
+	defer func() {
+		woc.wf.Status.ArtifactGCStatus.SetArtifactGCStrategyProcessed(strategy, true)
+		woc.updated = true
+	}()
+
 	// determine current Status associated with this garbage collection strategy: has it run before?
 	// If so, we don't want to run it again
 	started := woc.wf.Status.ArtifactGCStatus.IsArtifactGCStrategyProcessed(strategy)
@@ -271,23 +280,23 @@ func (woc *wfOperationCtx) processArtifactGCStrategy(ctx context.Context, strate
 	// grouping the Artifacts according to access requirements and Template
 	groupedByPod := make(map[string]templatesToArtifacts)
 
-	// a mapping from the hash representing the Pod to the actual metadata and Service Account that need to be applied for that Pod
-	podIDHashes := make(map[string]podInfo)
+	// a mapping from the name we'll use for the Pod to the actual metadata and Service Account that need to be applied for that Pod
+	podNames := make(map[string]podInfo)
 
-	var podIDHash string
+	var podName string
 	var podAccessInfo podInfo
 
 	for _, artifactSearchResult := range artifactSearchResults {
 		// get the access requirements and hash them
 		podAccessInfo = woc.getArtifactAccess(&artifactSearchResult.Artifact)
-		podIDHash = woc.getPodIDHash(podAccessInfo)
-		_, found := podIDHashes[podIDHash]
+		podName = woc.artGCPodName(strategy, podAccessInfo)
+		_, found := podNames[podName]
 		if !found {
-			podIDHashes[podIDHash] = podAccessInfo
+			podNames[podName] = podAccessInfo
 		}
-		_, found = groupedByPod[podIDHash]
+		_, found = groupedByPod[podName]
 		if !found {
-			groupedByPod[podIDHash] = make(templatesToArtifacts)
+			groupedByPod[podName] = make(templatesToArtifacts)
 		}
 		// get the Template
 		node, found := woc.wf.Status.Nodes[artifactSearchResult.NodeID]
@@ -303,18 +312,18 @@ func (woc *wfOperationCtx) processArtifactGCStrategy(ctx context.Context, strate
 			templatesByName[node.TemplateName] = template
 		}
 
-		_, found = groupedByPod[podIDHash][template.Name]
+		_, found = groupedByPod[podName][template.Name]
 		if !found {
-			groupedByPod[podIDHash][template.Name] = make(wfv1.ArtifactSearchResults, 0)
+			groupedByPod[podName][template.Name] = make(wfv1.ArtifactSearchResults, 0)
 		}
 
-		groupedByPod[podIDHash][template.Name] = append(groupedByPod[podIDHash][template.Name], artifactSearchResult)
+		groupedByPod[podName][template.Name] = append(groupedByPod[podName][template.Name], artifactSearchResult)
 	}
 
 	// start up a separate Pod with a separate set of ArtifactGCTasks for it to use for each unique Access Requirement
-	for podIDHash, templatesToArtList := range groupedByPod {
+	for podName, templatesToArtList := range groupedByPod {
 		tasks := make([]*wfv1.WorkflowArtifactGCTask, 0)
-		podName := woc.artGCPodName(strategy, podIDHash)
+
 		for templateName, artifacts := range templatesToArtList {
 			template := templatesByName[templateName]
 			woc.addTemplateArtifactsToTasks(strategy, podName, &tasks, template, artifacts)
@@ -329,7 +338,7 @@ func (woc *wfOperationCtx) processArtifactGCStrategy(ctx context.Context, strate
 				}
 			}
 			// create the pod
-			podAccessInfo, found := podIDHashes[podIDHash]
+			podAccessInfo, found := podNames[podName]
 			if !found {
 				//todo: error
 			}
@@ -340,9 +349,6 @@ func (woc *wfOperationCtx) processArtifactGCStrategy(ctx context.Context, strate
 		}
 	}
 
-	woc.wf.Status.ArtifactGCStatus.SetArtifactGCStrategyProcessed(strategy, true)
-	woc.updated = true
-
 	return nil
 }
 
@@ -351,6 +357,7 @@ type podInfo struct {
 	podMetadata    wfv1.Metadata
 }
 
+/*
 // create a string to uniquely identify a pod by its access requirement
 func (woc *wfOperationCtx) getPodIDHash(podAccessInfo podInfo) string {
 	h := fnv.New32a()
@@ -375,12 +382,37 @@ func (woc *wfOperationCtx) getPodIDHash(podAccessInfo podInfo) string {
 	return fmt.Sprintf("%v", h.Sum32())
 }
 
+
 func (woc *wfOperationCtx) artGCPodName(strategy wfv1.ArtifactGCStrategy, podIDHash string) string {
 	return fmt.Sprintf("%s-artgc-%s-%s", woc.wf.Name, strategy.AbbreviatedName(), podIDHash)
+}*/
+
+func (woc *wfOperationCtx) artGCPodName(strategy wfv1.ArtifactGCStrategy, podAccessInfo podInfo) string {
+	h := fnv.New32a()
+	_, _ = h.Write([]byte(podAccessInfo.serviceAccount))
+	// we should be able to always get the same result regardless of the order of our Labels or Annotations
+	// so sort alphabetically
+	sortedLabels := maps.Keys(podAccessInfo.podMetadata.Labels)
+	sort.Strings(sortedLabels)
+	for _, label := range sortedLabels {
+		labelValue := podAccessInfo.podMetadata.Labels[label]
+		_, _ = h.Write([]byte(label))
+		_, _ = h.Write([]byte(labelValue))
+	}
+
+	sortedAnnotations := maps.Keys(podAccessInfo.podMetadata.Annotations)
+	sort.Strings(sortedAnnotations)
+	for _, annotation := range sortedAnnotations {
+		annotationValue := podAccessInfo.podMetadata.Annotations[annotation]
+		_, _ = h.Write([]byte(annotation))
+		_, _ = h.Write([]byte(annotationValue))
+	}
+
+	return fmt.Sprintf("%s-artgc-%s-%v", woc.wf.Name, strategy.AbbreviatedName(), h.Sum32())
 }
 
-func (woc *wfOperationCtx) artGCTaskSetName(strategy wfv1.ArtifactGCStrategy, taskIndex int) string {
-	return fmt.Sprintf("%s-artgc-%s-%d", woc.wf.Name, strategy.AbbreviatedName(), taskIndex)
+func (woc *wfOperationCtx) artGCTaskSetName(podName string, taskIndex int) string {
+	return fmt.Sprintf("%s-%d", podName, taskIndex)
 }
 
 func (woc *wfOperationCtx) addTemplateArtifactsToTasks(strategy wfv1.ArtifactGCStrategy, podName string, tasks *[]*wfv1.WorkflowArtifactGCTask, template *wfv1.Template, artifactSearchResults wfv1.ArtifactSearchResults) {
@@ -402,7 +434,7 @@ func (woc *wfOperationCtx) addTemplateArtifactsToTasks(strategy wfv1.ArtifactGCS
 			},
 			ObjectMeta: metav1.ObjectMeta{
 				Namespace: woc.wf.Namespace,
-				Name:      woc.artGCTaskSetName(strategy, 0),
+				Name:      woc.artGCTaskSetName(podName, 0),
 				Labels:    map[string]string{common.LabelKeyArtifactGCPodName: podName},
 				OwnerReferences: []metav1.OwnerReference{ // make sure we get deleted with the workflow
 					*metav1.NewControllerRef(woc.wf, wfv1.SchemeGroupVersion.WithKind(workflow.WorkflowKind)),
