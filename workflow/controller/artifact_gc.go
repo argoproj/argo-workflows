@@ -219,19 +219,19 @@ func (woc *wfOperationCtx) processCompletedWorkflowArtifactGCTask(ctx context.Co
 	return nil
 }
 
-func (woc *wfOperationCtx) getArtifactAccess(artifact *wfv1.Artifact) podInfo {
+func (woc *wfOperationCtx) getArtifactGCPodInfo(artifact *wfv1.Artifact) podInfo {
 	//  start with Workflow.ArtifactGC and override with Artifact.ArtifactGC
 	podAccessInfo := podInfo{}
 	if woc.wf.Spec.ArtifactGC != nil {
-		woc.updateArtifactAccess(woc.wf.Spec.ArtifactGC, &podAccessInfo)
+		woc.updateArtifactGCPodInfo(woc.wf.Spec.ArtifactGC, &podAccessInfo)
 	}
 	if artifact.ArtifactGC != nil {
-		woc.updateArtifactAccess(artifact.ArtifactGC, &podAccessInfo)
+		woc.updateArtifactGCPodInfo(artifact.ArtifactGC, &podAccessInfo)
 	}
 	return podAccessInfo
 }
 
-func (woc *wfOperationCtx) updateArtifactAccess(artifactGC *wfv1.ArtifactGC, podAccessInfo *podInfo) {
+func (woc *wfOperationCtx) updateArtifactGCPodInfo(artifactGC *wfv1.ArtifactGC, podAccessInfo *podInfo) {
 
 	if artifactGC.ServiceAccountName != "" {
 		podAccessInfo.serviceAccount = artifactGC.ServiceAccountName
@@ -297,7 +297,7 @@ func (woc *wfOperationCtx) processArtifactGCStrategy(ctx context.Context, strate
 
 	for _, artifactSearchResult := range artifactSearchResults {
 		// get the access requirements and hash them
-		podAccessInfo = woc.getArtifactAccess(&artifactSearchResult.Artifact)
+		podAccessInfo = woc.getArtifactGCPodInfo(&artifactSearchResult.Artifact)
 		podName = woc.artGCPodName(strategy, podAccessInfo)
 		_, found := podNames[podName]
 		if !found {
@@ -310,13 +310,13 @@ func (woc *wfOperationCtx) processArtifactGCStrategy(ctx context.Context, strate
 		// get the Template
 		node, found := woc.wf.Status.Nodes[artifactSearchResult.NodeID]
 		if !found {
-			//todo: error
+			return fmt.Errorf("can't process Artifact GC Strategy %s: node ID '%s' not found in Status??", strategy, artifactSearchResult.NodeID)
 		}
 		template, found := templatesByName[node.TemplateName]
 		if !found {
 			template = woc.wf.GetTemplateByName(node.TemplateName)
 			if template == nil {
-				//todo: error
+				return fmt.Errorf("can't process Artifact GC Strategy %s: template name '%s' belonging to node %+v not found??", strategy, node.TemplateName, node)
 			}
 			templatesByName[node.TemplateName] = template
 		}
@@ -355,7 +355,7 @@ func (woc *wfOperationCtx) processArtifactGCStrategy(ctx context.Context, strate
 			// create the pod
 			podAccessInfo, found := podNames[podName]
 			if !found {
-				//todo: error
+				return fmt.Errorf("can't find podInfo for podName '%s'??", podName)
 			}
 			_, err := woc.createArtifactGCPod(ctx, strategy, tasks, podAccessInfo, podName)
 			if err != nil {
