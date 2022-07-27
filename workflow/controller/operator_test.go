@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"os"
 	"regexp"
 	"strconv"
@@ -15,7 +16,6 @@ import (
 	"github.com/argoproj/pkg/strftime"
 	"github.com/prometheus/client_golang/prometheus"
 	dto "github.com/prometheus/client_model/go"
-	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	apiv1 "k8s.io/api/core/v1"
@@ -1605,9 +1605,9 @@ func runWorkflowForResourceSharing(ctx context.Context, controller *WorkflowCont
     templates:
     - name: step-with-resource-sharing
       steps:
-        - - name: run-sleep10
-            template: sleep10
-    - name: sleep10
+        - - name: run-sleeppp
+            template: sleeppp
+    - name: sleeppp
       container:
         image: alpine:latest
         command: [sh, -c, sleep 10]
@@ -1625,6 +1625,7 @@ func runWorkflowForResourceSharing(ctx context.Context, controller *WorkflowCont
 	}
 	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate(ctx)
+	makePodsPhase(ctx, woc, apiv1.PodRunning)
 	return woc, nil
 }
 
@@ -1634,17 +1635,12 @@ func TestResourceSharingInSteps(t *testing.T) {
 
 	cancel, controller := newController()
 	controller.Config.ResourcesAvailable = map[string]string{
-		"sleep10": "4",
+		"sleeppp": "4",
 	}
 	defer cancel()
+	var err error
 
-	woc, err := runWorkflowForResourceSharing(ctx, controller, "wf-name-000", "user-id-000")
-	assert.Nil(t, err)
-
-	woc, err = runWorkflowForResourceSharing(ctx, controller, "wf-name-001", "user-id-001")
-	assert.Nil(t, err)
-
-	woc, err = runWorkflowForResourceSharing(ctx, controller, "wf-name-002", "user-id-000")
+	woc, err := runWorkflowForResourceSharing(ctx, controller, "wf000", "user000")
 	assert.Nil(t, err)
 
 	pods, err := listPods(woc)
@@ -1654,6 +1650,13 @@ func TestResourceSharingInSteps(t *testing.T) {
 	for _, p := range pods.Items {
 		log.Print(p.Name)
 	}
+	log.Printf("~~~~~~~~~~~~~~~~~~~~~~~~~")
+
+	_, err = runWorkflowForResourceSharing(ctx, controller, "wf001", "user001")
+	assert.Nil(t, err)
+
+	// woc, err = runWorkflowForResourceSharing(ctx, controller, "wf002", "user000")
+	// assert.Nil(t, err)
 
 	// there are only 3 pods running because user 00001 has 2 slots, but is not using
 	// one of them. Discuss this with team as it seems weird.

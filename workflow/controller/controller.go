@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math"
 	"strconv"
 	"strings"
 	"syscall"
@@ -204,14 +205,30 @@ func (wfc *WorkflowController) getResourceAllowance(resourceSharingID, template 
 
 // either Pending or Running
 // todo: test this
-func (wfc *WorkflowController) numActivePodsForTemplate(template, namespace string) (int, error) {
-	p, _ := wfc.kubeclientset.CoreV1().Pods(namespace).List(context.Background(), metav1.ListOptions{})
+func (wfc *WorkflowController) numActiveResources(namespace, template string) (int, error) {
+	p, err := wfc.kubeclientset.CoreV1().Pods(namespace).List(context.Background(), metav1.ListOptions{
+		LabelSelector: fmt.Sprintf("%s=%s", common.LabelKeyTemplateName, template),
+		FieldSelector: fmt.Sprintf("status.phase=Running"),
+	})
+	if err != nil {
+		return -1, err
+	}
+	log.Error("******")
+	for _, iterp := range p.Items {
+		log.Error(iterp.Labels)
+	}
+	log.Error("******")
 	return len(p.Items), nil
 }
 
-// numActiveResourceSharingIDs counts how many resource sharing IDs are trying to use this template
+// numUsersRequestingResources counts how many rsids are REQUESTING this template
 // todo: test this
-func numActiveResourceSharingIDs(wfs *wfv1.WorkflowList, tmpl string) int {
+func (wfc *WorkflowController) numUsersRequestingResource(namespace, tmpl string) (int, error) {
+	wfs, err := wfc.wfclientset.ArgoprojV1alpha1().Workflows(namespace).List(context.Background(), metav1.ListOptions{})
+	if err != nil {
+		return -1, fmt.Errorf("error listing workflows: %v", err)
+	}
+
 	idMap := map[string]bool{}
 	for _, wf := range wfs.Items {
 		for _, r := range wf.Status.RequestedResources {
@@ -222,40 +239,53 @@ func numActiveResourceSharingIDs(wfs *wfv1.WorkflowList, tmpl string) int {
 			}
 		}
 	}
-	return len(idMap)
+	return len(idMap), nil
+}
+
+// T: total possible for this type of resource
+// A: total active/pending pods for this type of resource
+// R: number of unique users requesting this resource
+// C: current pods currently used by this particular user
+func calculateResourceAllowance(T, A, R, C int) int {
+	slotsPerUser := math.Ceil(float64(T) / float64(R))
+	slotsUsedAlready := float64(C)
+	slotsAvailable := float64(T) - float64(A)
+	return int(math.Min(slotsAvailable, slotsPerUser-slotsUsedAlready))
 }
 
 // iterate through all of the resources that we're limiting, check their current usage, and
 // update the resourceAllowances to reflect slots available for a given resourceSharingID
 func (wfc *WorkflowController) updateResourceAllowances(namespace, resourceSharingID string) error {
-	wfs, err := wfc.wfclientset.ArgoprojV1alpha1().Workflows(namespace).List(context.Background(), metav1.ListOptions{})
-	if err != nil {
-		return fmt.Errorf("error listing workflows: %v", err)
-	}
+	// for tmpl, totalAvailable := range wfc.Config.ResourcesAvailable {
+	// 	// numResourcesPossible is how many resource slots we have available
+	// 	numResourcesPossible, err := strconv.Atoi(totalAvailable)
+	// 	if err != nil {
+	// 		return fmt.Errorf("error determining available resources for %s: %v", tmpl, err)
+	// 	}
 
-	for tmpl, totalAvailable := range wfc.Config.ResourcesAvailable {
-		// totalPossible is how many pod instances we're allowed to have for this tmpl
-		totalPossible, err := strconv.Atoi(totalAvailable)
-		if err != nil {
-			return fmt.Errorf("error determining available resources for %s: %v", tmpl, err)
-		}
+	// 	// numResourceRequesters counts num REQUESTS for this resource
+	// 	numResourceRequesters, err := wfc.numUsersRequestingResource(namespace, tmpl)
+	// 	if err != nil {
+	// 		return fmt.Errorf("error determining resource requesters %s: %v", tmpl, err)
+	// 	}
 
-		// numActiveUsers is how many unique resource sharing IDs are trying to use this resource
-		numActiveUsers := numActiveResourceSharingIDs(wfs, tmpl)
+	// 	// numResourcesActive is how many pods are CURRENTLY running this resource
+	// 	numResourcesActive, err := wfc.numActiveResources(namespace, tmpl)
+	// 	if err != nil {
+	// 		return fmt.Errorf("error counting active resources for %s: %v", tmpl, err)
+	// 	}
 
-		//
-		// allowance = ??
+	// 	allowance := int(math.Min(float64(totalPossible)-float64(totalActive), userLimit))
+	// 	wfc.resourceAllowances[resourceAllowanceKey(resourceSharingID, tmpl)] = &allowance
+	// }
 
-		wfc.resourceAllowances[resourceAllowanceKey(resourceSharingID, tmpl)] = &allowance
-	}
-
-	log.Println("******************")
-	log.Println("******************")
-	for k, v := range wfc.resourceAllowances {
-		log.Printf("%s --> %d", k, *v)
-	}
-	log.Println("******************")
-	log.Println("******************")
+	// log.Println("******************")
+	// log.Println("******************")
+	// for k, v := range wfc.resourceAllowances {
+	// 	log.Printf("%s --> %d", k, *v)
+	// }
+	// log.Println("******************")
+	// log.Println("******************")
 
 	return nil
 }

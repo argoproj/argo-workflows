@@ -276,9 +276,10 @@ func (woc *wfOperationCtx) executeStepGroup(ctx context.Context, stepGroup []wfv
 			nodeSteps[childNodeName] = step
 			woc.addChildNode(sgNodeName, childNodeName)
 			// completed() as opposed to fulfilled() because we skipped phases won't require any resources.
-			if !childNode.Phase.Completed() {
-				requiredResourcesMap[step.Template] = true
-			}
+			// I _think_ we don't want this because a node that has been executed is not longer requested.
+			// if !childNode.Phase.Completed() {
+			// 	requiredResourcesMap[step.Template] = true
+			// }
 		}
 	}
 

@@ -18,15 +18,6 @@ spec:
             value: "{{item}}"
         withItems:
         - 1
-        - 2
-        - 3
-        - 4
-    - - name: run-render-step-group
-        template: run-render
-        arguments:
-          parameters:
-          - name: taskid
-            value: "{{item}}"          
 
 
   - name: run-sg
@@ -37,12 +28,3 @@ spec:
       image: alpine:latest
       command: [sh, -c]
       args: ["sleep 20"]
-
-  - name: run-render
-    inputs:
-      parameters:
-      - name: taskid
-    container:
-      image: alpine:latest
-      command: [sh, -c]
-      args: ["sleep 20"]      
