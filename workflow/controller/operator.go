@@ -1187,6 +1187,11 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, old *wfv1.NodeStatus
 		} else {
 			new.Phase = wfv1.NodeRunning
 		}
+		// fix pod(main oom but wait stuck in running)
+		if tmpl != nil {
+			woc.forceTerminatePod(pod, *tmpl)
+		}
+
 		if tmpl != nil {
 			woc.cleanUpPod(pod, *tmpl)
 		}
@@ -1314,6 +1319,34 @@ func podHasContainerNeedingTermination(pod *apiv1.Pod, tmpl wfv1.Template) bool 
 		}
 	}
 	return true
+}
+
+func podNeedForceWaitTermination(pod *apiv1.Pod, tmpl wfv1.Template) bool {
+	var waitStuckRunning bool = false
+	var nameTerminated bool = false
+	for _, c := range pod.Status.ContainerStatuses {
+		if c.Name == common.WaitContainerName && c.State.Running != nil {
+			waitStuckRunning = true
+		}
+		if tmpl.IsMainContainerName(c.Name) && c.State.Terminated != nil {
+			nameTerminated = true
+		}
+	}
+	// wait stuck running and main terminated
+	return waitStuckRunning && nameTerminated
+}
+
+func (woc *wfOperationCtx) forceTerminatePod(pod *apiv1.Pod, tmpl wfv1.Template) {
+	if podNeedForceWaitTermination(pod, tmpl) {
+		if exitCode := getExitCode(pod); exitCode != nil {
+			if 137 == int(*exitCode) {
+				// re-mark 137 to wait container file /var/run/argo/ctr/main/exitcode
+				log.WithField("exit code ", *exitCode).
+					WithField("pod ", pod.Name).Info("main oom killed but wait stuck in running")
+				woc.controller.queuePodForCleanup(woc.wf.Namespace, pod.Name, remarkExitCode)
+			}
+		}
+	}
 }
 
 func (woc *wfOperationCtx) cleanUpPod(pod *apiv1.Pod, tmpl wfv1.Template) {
