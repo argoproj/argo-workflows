@@ -3886,7 +3886,11 @@ func (in *WorkflowStatus) DeepCopyInto(out *WorkflowStatus) {
 		*out = new(ArtifactRepositoryRefStatus)
 		(*in).DeepCopyInto(*out)
 	}
-	in.ArtifactGCStatus.DeepCopyInto(&out.ArtifactGCStatus)
+	if in.ArtifactGCStatus != nil {
+		in, out := &in.ArtifactGCStatus, &out.ArtifactGCStatus
+		*out = new(ArtGCStatus)
+		(*in).DeepCopyInto(*out)
+	}
 	return
 }
 

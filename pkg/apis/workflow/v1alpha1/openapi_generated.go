@@ -7620,7 +7620,6 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowStatus(ref common.ReferenceCallba
 					"artifactGCStatus": {
 						SchemaProps: spec.SchemaProps{
 							Description: "ArtifactGCStatus maintains the status of Artifact Garbage Collection",
-							Default:     map[string]interface{}{},
 							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtGCStatus"),
 						},
 					},

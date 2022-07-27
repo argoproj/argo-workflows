@@ -39,6 +39,10 @@ func (woc *wfOperationCtx) garbageCollectArtifacts(ctx context.Context) error {
 		return nil
 	}
 
+	if woc.wf.Status.ArtifactGCStatus == nil {
+		woc.wf.Status.ArtifactGCStatus = &wfv1.ArtGCStatus{}
+	}
+
 	if !slice.ContainsString(woc.wf.Finalizers, common.FinalizerArtifactGC) {
 		return nil
 	}
@@ -76,40 +80,40 @@ func (woc *wfOperationCtx) garbageCollectArtifacts(ctx context.Context) error {
 		return err
 	}
 	return nil
-
-	/*
-		for strategy, _ := range strategies {
-
-			for serviceAcct, templates := range templatesByServiceAcct {
-
-				// get all of the Artifacts for this ServiceAccount and Strategy, so we can delete those in one Pod
-				artifacts := make(wfv1.ArtifactSearchResults, 0)
-
-				for _, template := range templates { // todo: consider optimizing this: it will walk through all nodes multiple times
-					// search for the Artifacts that are currently deletable
-					artifactsForTemplate := woc.execWf.SearchArtifacts(&wfv1.ArtifactSearchQuery{ArtifactGCStrategies: map[wfv1.ArtifactGCStrategy]bool{strategy: true}, TemplateName: template.Name, Deleted: pointer.BoolPtr(false)})
-					fmt.Printf("deletethis: SearchArtifacts for what's deletable for strategy %v returned: %+v\n", strategy, artifacts)
-					artifacts = append(artifacts, artifactsForTemplate...)
-				}
-
-				// create pods for deleting those artifacts, if they don't already exist
-				if err := woc.createArtifactGCPod(ctx, strategy, serviceAcct, artifacts, templates); err != nil {
-					return fmt.Errorf("failed to create pods to delete artifacts: %w", err)
-				}
-
-			}
-		}
-
-		// check to see if everything's been deleted
-		remaining := woc.execWf.SearchArtifacts(&wfv1.ArtifactSearchQuery{ArtifactGCStrategies: wfv1.AnyArtifactGCStrategy, Deleted: pointer.BoolPtr(false)})
-		fmt.Printf("deletethis: SearchArtifacts for remaining returned: %+v\n", remaining)
-
-		if len(remaining) == 0 {
-			woc.log.Info("no remaining artifacts to GC, removing artifact GC finalizer")
-			woc.wf.Finalizers = slice.RemoveString(woc.wf.Finalizers, common.FinalizerArtifactGC)
-			woc.updated = true
-		}*/
 }
+
+/*
+	for strategy, _ := range strategies {
+
+		for serviceAcct, templates := range templatesByServiceAcct {
+
+			// get all of the Artifacts for this ServiceAccount and Strategy, so we can delete those in one Pod
+			artifacts := make(wfv1.ArtifactSearchResults, 0)
+
+			for _, template := range templates { // todo: consider optimizing this: it will walk through all nodes multiple times
+				// search for the Artifacts that are currently deletable
+				artifactsForTemplate := woc.execWf.SearchArtifacts(&wfv1.ArtifactSearchQuery{ArtifactGCStrategies: map[wfv1.ArtifactGCStrategy]bool{strategy: true}, TemplateName: template.Name, Deleted: pointer.BoolPtr(false)})
+				fmt.Printf("deletethis: SearchArtifacts for what's deletable for strategy %v returned: %+v\n", strategy, artifacts)
+				artifacts = append(artifacts, artifactsForTemplate...)
+			}
+
+			// create pods for deleting those artifacts, if they don't already exist
+			if err := woc.createArtifactGCPod(ctx, strategy, serviceAcct, artifacts, templates); err != nil {
+				return fmt.Errorf("failed to create pods to delete artifacts: %w", err)
+			}
+
+		}
+	}
+
+	// check to see if everything's been deleted
+	remaining := woc.execWf.SearchArtifacts(&wfv1.ArtifactSearchQuery{ArtifactGCStrategies: wfv1.AnyArtifactGCStrategy, Deleted: pointer.BoolPtr(false)})
+	fmt.Printf("deletethis: SearchArtifacts for remaining returned: %+v\n", remaining)
+
+	if len(remaining) == 0 {
+		woc.log.Info("no remaining artifacts to GC, removing artifact GC finalizer")
+		woc.wf.Finalizers = slice.RemoveString(woc.wf.Finalizers, common.FinalizerArtifactGC)
+		woc.updated = true
+	}*/
 
 /*pods, err := woc.controller.podInformer.GetIndexer().ByIndex(indexes.WorkflowIndex, woc.wf.GetNamespace()+"/"+woc.wf.GetName())
 if err != nil {
@@ -187,7 +191,7 @@ func (woc *wfOperationCtx) processArtifactGCCompletion(ctx context.Context) erro
 		}
 		strategy := wfv1.ArtifactGCStrategy(strategyStr)
 		// make sure we didn't already process this one
-		alreadyRecouped, found := woc.wf.Status.ArtifactGCStatus.PodsRecouped[pod.Name]
+		alreadyRecouped := woc.wf.Status.ArtifactGCStatus.IsArtifactGCPodRecouped(pod.Name)
 		if found && alreadyRecouped {
 			// already processed
 			continue
@@ -360,8 +364,8 @@ type templatesToArtifacts map[string]wfv1.ArtifactSearchResults
 func (woc *wfOperationCtx) processArtifactGCStrategy(ctx context.Context, strategy wfv1.ArtifactGCStrategy) error {
 	// determine current Status associated with this garbage collection strategy: has it run before?
 	// If so, we don't want to run it again
-	started, found := woc.wf.Status.ArtifactGCStatus.StrategiesProcessed[strategy]
-	if found && started {
+	started := woc.wf.Status.ArtifactGCStatus.IsArtifactGCStrategyProcessed(strategy)
+	if started {
 		return nil
 	}
 
@@ -372,7 +376,8 @@ func (woc *wfOperationCtx) processArtifactGCStrategy(ctx context.Context, strate
 	// Search for artifacts
 	artifactSearchResults := woc.execWf.SearchArtifacts(&wfv1.ArtifactSearchQuery{ArtifactGCStrategies: map[wfv1.ArtifactGCStrategy]bool{strategy: true}, Deleted: pointer.BoolPtr(false)})
 	if len(artifactSearchResults) == 0 {
-
+		woc.log.Debugf("No Artifact Search Results returned from strategy %s", strategy)
+		return nil
 	}
 
 	// cache the templates by name so we can find them easily
@@ -453,7 +458,7 @@ func (woc *wfOperationCtx) processArtifactGCStrategy(ctx context.Context, strate
 		}
 	}
 
-	woc.wf.Status.ArtifactGCStatus.StrategiesProcessed[strategy] = true
+	woc.wf.Status.ArtifactGCStatus.SetArtifactGCStrategyProcessed(strategy, true)
 	woc.updated = true
 
 	// Alternative:

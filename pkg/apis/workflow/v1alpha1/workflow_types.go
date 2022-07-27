@@ -1345,6 +1345,36 @@ type ArtGCStatus struct {
 	PodsRecouped map[string]bool `json:"podsRecouped,omitempty" protobuf:"bytes,2,opt,name=podsRecouped"`
 }
 
+func (gcStatus *ArtGCStatus) SetArtifactGCStrategyProcessed(strategy ArtifactGCStrategy, processed bool) {
+	if gcStatus.StrategiesProcessed == nil {
+		gcStatus.StrategiesProcessed = make(map[ArtifactGCStrategy]bool)
+	}
+	gcStatus.StrategiesProcessed[strategy] = processed
+}
+
+func (gcStatus *ArtGCStatus) IsArtifactGCStrategyProcessed(strategy ArtifactGCStrategy) bool {
+	if gcStatus.StrategiesProcessed != nil {
+		processed, _ := gcStatus.StrategiesProcessed[strategy]
+		return processed
+	}
+	return false
+}
+
+func (gcStatus *ArtGCStatus) SetArtifactGCPodRecouped(podName string, recouped bool) {
+	if gcStatus.PodsRecouped == nil {
+		gcStatus.PodsRecouped = make(map[string]bool)
+	}
+	gcStatus.PodsRecouped[podName] = recouped
+}
+
+func (gcStatus *ArtGCStatus) IsArtifactGCPodRecouped(podName string) bool {
+	if gcStatus.PodsRecouped != nil {
+		recouped, _ := gcStatus.PodsRecouped[podName]
+		return recouped
+	}
+	return false
+}
+
 type ArtifactSearchResult struct {
 	Artifact `protobuf:"bytes,1,opt,name=artifact"`
 	NodeID   string `protobuf:"bytes,2,opt,name=nodeID"`
@@ -1792,7 +1822,7 @@ type WorkflowStatus struct {
 	ArtifactRepositoryRef *ArtifactRepositoryRefStatus `json:"artifactRepositoryRef,omitempty" protobuf:"bytes,18,opt,name=artifactRepositoryRef"`
 
 	// ArtifactGCStatus maintains the status of Artifact Garbage Collection
-	ArtifactGCStatus ArtGCStatus `json:"artifactGCStatus,omitempty" protobuf:"bytes,19,opt,name=artifactGCStatus"`
+	ArtifactGCStatus *ArtGCStatus `json:"artifactGCStatus,omitempty" protobuf:"bytes,19,opt,name=artifactGCStatus"`
 }
 
 func (ws *WorkflowStatus) IsOffloadNodeStatus() bool {
