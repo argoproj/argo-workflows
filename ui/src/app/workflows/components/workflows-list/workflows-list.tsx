@@ -1,4 +1,4 @@
-import {Autocomplete, Page, SlidingPanel} from 'argo-ui';
+import {Page, SlidingPanel} from 'argo-ui';
 import * as React from 'react';
 import {RouteComponentProps} from 'react-router-dom';
 import * as models from '../../../../models';
@@ -13,7 +13,6 @@ import {ExampleManifests} from '../../../shared/components/example-manifests';
 import {FirstTimeUserPanel} from '../../../shared/components/first-time-user-panel';
 import {Loading} from '../../../shared/components/loading';
 import {PaginationPanel} from '../../../shared/components/pagination-panel';
-import {Query} from '../../../shared/components/query';
 import {ZeroState} from '../../../shared/components/zero-state';
 import {Consumer} from '../../../shared/context';
 import {ListWatch, sortByYouth} from '../../../shared/list-watch';
@@ -194,7 +193,6 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                                 />
                                 <div className='row'>
                                     <div className='columns small-12 xlarge-2'>
-                                        {this.renderQuery(ctx)}
                                         <div>
                                             <WorkflowFilters
                                                 workflows={this.state.workflows || []}
@@ -425,53 +423,5 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
             }
         }
         this.setState({batchActionDisabled: nowDisabled, selectedWorkflows: new Map<string, models.Workflow>(newSelectedWorkflows)});
-    }
-
-    private renderQuery(ctx: any) {
-        return (
-            <Query>
-                {q => (
-                    <div>
-                        <i className='fa fa-search' />
-                        {q.get('search') && (
-                            <i
-                                className='fa fa-times'
-                                onClick={() => {
-                                    ctx.navigation.goto('.', {search: null}, {replace: true});
-                                }}
-                            />
-                        )}
-                        <Autocomplete
-                            filterSuggestions={true}
-                            renderInput={inputProps => (
-                                <input
-                                    {...inputProps}
-                                    onFocus={e => {
-                                        e.target.select();
-                                        if (inputProps.onFocus) {
-                                            inputProps.onFocus(e);
-                                        }
-                                    }}
-                                    className='argo-field'
-                                />
-                            )}
-                            renderItem={item => (
-                                <React.Fragment>
-                                    <i className='icon argo-icon-workflow' /> {item.label}
-                                </React.Fragment>
-                            )}
-                            onSelect={val => {
-                                ctx.navigation.goto(uiUrl(`workflows/${val}`));
-                            }}
-                            onChange={e => {
-                                ctx.navigation.goto('.', {search: e.target.value}, {replace: true});
-                            }}
-                            value={q.get('search') || ''}
-                            items={(this.state.workflows || []).map(wf => wf.metadata.namespace + '/' + wf.metadata.name)}
-                        />
-                    </div>
-                )}
-            </Query>
-        );
     }
 }
