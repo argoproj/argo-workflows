@@ -4,7 +4,9 @@ import (
 	"context"
 	"fmt"
 	"hash/fnv"
+	"sort"
 
+	"golang.org/x/exp/maps"
 	apiv1 "k8s.io/api/core/v1"
 	corev1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
@@ -82,95 +84,6 @@ func (woc *wfOperationCtx) garbageCollectArtifacts(ctx context.Context) error {
 	return nil
 }
 
-/*
-	for strategy, _ := range strategies {
-
-		for serviceAcct, templates := range templatesByServiceAcct {
-
-			// get all of the Artifacts for this ServiceAccount and Strategy, so we can delete those in one Pod
-			artifacts := make(wfv1.ArtifactSearchResults, 0)
-
-			for _, template := range templates { // todo: consider optimizing this: it will walk through all nodes multiple times
-				// search for the Artifacts that are currently deletable
-				artifactsForTemplate := woc.execWf.SearchArtifacts(&wfv1.ArtifactSearchQuery{ArtifactGCStrategies: map[wfv1.ArtifactGCStrategy]bool{strategy: true}, TemplateName: template.Name, Deleted: pointer.BoolPtr(false)})
-				fmt.Printf("deletethis: SearchArtifacts for what's deletable for strategy %v returned: %+v\n", strategy, artifacts)
-				artifacts = append(artifacts, artifactsForTemplate...)
-			}
-
-			// create pods for deleting those artifacts, if they don't already exist
-			if err := woc.createArtifactGCPod(ctx, strategy, serviceAcct, artifacts, templates); err != nil {
-				return fmt.Errorf("failed to create pods to delete artifacts: %w", err)
-			}
-
-		}
-	}
-
-	// check to see if everything's been deleted
-	remaining := woc.execWf.SearchArtifacts(&wfv1.ArtifactSearchQuery{ArtifactGCStrategies: wfv1.AnyArtifactGCStrategy, Deleted: pointer.BoolPtr(false)})
-	fmt.Printf("deletethis: SearchArtifacts for remaining returned: %+v\n", remaining)
-
-	if len(remaining) == 0 {
-		woc.log.Info("no remaining artifacts to GC, removing artifact GC finalizer")
-		woc.wf.Finalizers = slice.RemoveString(woc.wf.Finalizers, common.FinalizerArtifactGC)
-		woc.updated = true
-	}*/
-
-/*pods, err := woc.controller.podInformer.GetIndexer().ByIndex(indexes.WorkflowIndex, woc.wf.GetNamespace()+"/"+woc.wf.GetName())
-if err != nil {
-	return fmt.Errorf("failed to get pods from informer: %w", err)
-}
-
-// go through any GC pods that are already running and may have completed
-// todo: break this out into its own method?
-
-	podCount := 0
-	for _, obj := range pods {
-		pod := obj.(*corev1.Pod)
-		if pod.Labels[common.LabelKeyComponent] != artifactGCComponent {
-			continue
-		}
-		podCount++
-		nodeID := pod.Annotations[common.AnnotationKeyNodeID]
-		artifactName := pod.Annotations[common.AnnotationArtifactName]
-		phase := pod.Status.Phase
-		log.WithField("pod", pod.Name).
-			WithField("nodeID", nodeID).
-			WithField("artifactName", artifactName).
-			WithField("phase", phase).
-			WithField("message", pod.Status.Message).
-			Info("reconciling artifact-gc pod")
-
-		switch phase {
-		case corev1.PodSucceeded:
-			n := woc.wf.Status.Nodes[nodeID]
-			for i, a := range n.Outputs.Artifacts {
-				if a.Name == artifactName {
-					a.Deleted = true
-					n.Outputs.Artifacts[i] = a
-				}
-			}
-			woc.wf.Status.Nodes[n.ID] = n
-			woc.updated = true
-			woc.controller.queuePodForCleanup(woc.wf.Namespace, pod.Name, deletePod)
-		case corev1.PodFailed:
-			woc.wf.Status.Conditions.UpsertCondition(wfv1.Condition{
-				Type:    wfv1.ConditionTypeArtifactGCError,
-				Status:  metav1.ConditionTrue,
-				Message: fmt.Sprintf("%s/%s: %s", nodeID, artifactName, pod.Status.Message),
-			})
-			woc.updated = true
-		}
-	}
-
-	maxConcurrency, err := env.GetInt("ARGO_ARTIFACT_MAX_CONCURRENT_PODS", 8)
-	if err != nil {
-		return fmt.Errorf("failed to get artifact max concurrent pods env var: %w", err)
-	}
-	if podCount >= maxConcurrency {
-		woc.log.WithField("maxConcurrency", maxConcurrency).Info("max artifact concurrent pods reached")
-		return nil
-	}*/
-
 // go through any GC pods that are already running and may have completed
 func (woc *wfOperationCtx) processArtifactGCCompletion(ctx context.Context) error {
 	// check if any previous Artifact GC Pods completed
@@ -189,11 +102,13 @@ func (woc *wfOperationCtx) processArtifactGCCompletion(ctx context.Context) erro
 		if !found {
 			return fmt.Errorf("Artifact GC Pod '%s' doesn't have annotation '%s'?", pod.Name, common.AnnotationKeyArtifactGCStrategy)
 		}
+		fmt.Printf("deletethis: processing pod %s for strategy %s\n", pod.Name, strategyStr)
 		strategy := wfv1.ArtifactGCStrategy(strategyStr)
 		// make sure we didn't already process this one
 		alreadyRecouped := woc.wf.Status.ArtifactGCStatus.IsArtifactGCPodRecouped(pod.Name)
 		if found && alreadyRecouped {
 			// already processed
+			fmt.Printf("deletethis: pod %s for strategy %s was already recouped\n", pod.Name, strategyStr)
 			continue
 		}
 
@@ -205,16 +120,15 @@ func (woc *wfOperationCtx) processArtifactGCCompletion(ctx context.Context) erro
 
 		if phase == corev1.PodSucceeded || phase == corev1.PodFailed {
 			err = woc.processCompletedArtifactGCPod(ctx, pod, strategy)
-			woc.updated = true
 			if err != nil {
 				return err
 			}
+			woc.wf.Status.ArtifactGCStatus.SetArtifactGCPodRecouped(pod.Name, true)
 			if phase == corev1.PodSucceeded {
 				anyPodSuccess = true
 			}
+			woc.updated = true
 		}
-		woc.wf.Status.ArtifactGCStatus.PodsRecouped[pod.Name] = true
-		woc.updated = true
 	}
 
 	if anyPodSuccess {
@@ -299,26 +213,6 @@ func (woc *wfOperationCtx) processCompletedWorkflowArtifactGCTask(ctx context.Co
 	return nil
 }
 
-/*func (woc *wfOperationCtx) getArtifactGCHashedAccessString(artifactGC *wfv1.ArtifactGC) string {
-	h := fnv.New64a()
-	_, _ = h.Write([]byte(artifactGC.ServiceAccountName))
-	if artifactGC.PodMetadata != nil {
-		for _, label := range artifactGC.PodMetadata.Labels {
-			_, _ = h.Write([]byte(label))
-		}
-		for _, annotation := range artifactGC.PodMetadata.Annotations {
-			_, _ = h.Write([]byte(annotation))
-		}
-	}
-
-	return fmt.Sprintf("%v", h.Sum64())
-}*/
-
-type podInfo struct {
-	serviceAccount string
-	podMetadata    wfv1.Metadata
-}
-
 func (woc *wfOperationCtx) getArtifactAccess(artifact *wfv1.Artifact) podInfo {
 	//  start with Workflow.ArtifactGC and override with Artifact.ArtifactGC
 	podAccessInfo := podInfo{}
@@ -345,18 +239,6 @@ func (woc *wfOperationCtx) updateArtifactAccess(artifactGC *wfv1.ArtifactGC, pod
 		}
 	}
 
-}
-
-func (woc *wfOperationCtx) getHashedAccessString(podAccessInfo podInfo) string {
-	h := fnv.New64a()
-	_, _ = h.Write([]byte(podAccessInfo.serviceAccount))
-	for _, label := range podAccessInfo.podMetadata.Labels {
-		_, _ = h.Write([]byte(label))
-	}
-	for _, annotation := range podAccessInfo.podMetadata.Annotations {
-		_, _ = h.Write([]byte(annotation))
-	}
-	return fmt.Sprintf("%v", h.Sum64())
 }
 
 type templatesToArtifacts map[string]wfv1.ArtifactSearchResults
@@ -387,25 +269,25 @@ func (woc *wfOperationCtx) processArtifactGCStrategy(ctx context.Context, strate
 	// So first group artifacts that need to be deleted by access requirements
 
 	// grouping the Artifacts according to access requirements and Template
-	groupedByAccess := make(map[string]templatesToArtifacts) //todo: maybe the term "access" is confusing and we could switch to using the term "Pod"?
+	groupedByPod := make(map[string]templatesToArtifacts)
 
-	// a mapping from the hashed access string to the actual metadata and Service Account that need to be applied
-	hashedAccessStrings := make(map[string]podInfo)
+	// a mapping from the hash representing the Pod to the actual metadata and Service Account that need to be applied for that Pod
+	podIDHashes := make(map[string]podInfo)
 
-	var hashedAccessString string
+	var podIDHash string
 	var podAccessInfo podInfo
 
 	for _, artifactSearchResult := range artifactSearchResults {
 		// get the access requirements and hash them
 		podAccessInfo = woc.getArtifactAccess(&artifactSearchResult.Artifact)
-		hashedAccessString = woc.getHashedAccessString(podAccessInfo)
-		_, found := hashedAccessStrings[hashedAccessString]
+		podIDHash = woc.getPodIDHash(podAccessInfo)
+		_, found := podIDHashes[podIDHash]
 		if !found {
-			hashedAccessStrings[hashedAccessString] = podAccessInfo
+			podIDHashes[podIDHash] = podAccessInfo
 		}
-		_, found = groupedByAccess[hashedAccessString]
+		_, found = groupedByPod[podIDHash]
 		if !found {
-			groupedByAccess[hashedAccessString] = make(templatesToArtifacts)
+			groupedByPod[podIDHash] = make(templatesToArtifacts)
 		}
 		// get the Template
 		node, found := woc.wf.Status.Nodes[artifactSearchResult.NodeID]
@@ -421,18 +303,18 @@ func (woc *wfOperationCtx) processArtifactGCStrategy(ctx context.Context, strate
 			templatesByName[node.TemplateName] = template
 		}
 
-		_, found = groupedByAccess[hashedAccessString][template.Name]
+		_, found = groupedByPod[podIDHash][template.Name]
 		if !found {
-			groupedByAccess[hashedAccessString][template.Name] = make(wfv1.ArtifactSearchResults, 0)
+			groupedByPod[podIDHash][template.Name] = make(wfv1.ArtifactSearchResults, 0)
 		}
 
-		groupedByAccess[hashedAccessString][template.Name] = append(groupedByAccess[hashedAccessString][template.Name], artifactSearchResult)
+		groupedByPod[podIDHash][template.Name] = append(groupedByPod[podIDHash][template.Name], artifactSearchResult)
 	}
 
 	// start up a separate Pod with a separate set of ArtifactGCTasks for it to use for each unique Access Requirement
-	for hashedAccessString, templatesToArtList := range groupedByAccess {
+	for podIDHash, templatesToArtList := range groupedByPod {
 		tasks := make([]*wfv1.WorkflowArtifactGCTask, 0)
-		podName := woc.artGCPodName(strategy, hashedAccessString)
+		podName := woc.artGCPodName(strategy, podIDHash)
 		for templateName, artifacts := range templatesToArtList {
 			template := templatesByName[templateName]
 			woc.addTemplateArtifactsToTasks(strategy, podName, &tasks, template, artifacts)
@@ -447,7 +329,7 @@ func (woc *wfOperationCtx) processArtifactGCStrategy(ctx context.Context, strate
 				}
 			}
 			// create the pod
-			podAccessInfo, found := hashedAccessStrings[hashedAccessString]
+			podAccessInfo, found := podIDHashes[podIDHash]
 			if !found {
 				//todo: error
 			}
@@ -461,59 +343,40 @@ func (woc *wfOperationCtx) processArtifactGCStrategy(ctx context.Context, strate
 	woc.wf.Status.ArtifactGCStatus.SetArtifactGCStrategyProcessed(strategy, true)
 	woc.updated = true
 
-	// Alternative:
-	// for each access type:
-	// 	create separate set of Tasks (ArtifactLocation equal to node.Template.ArchiveLocation)
-	// 	create Pod
-	// 	assign Pod access according to the access type
-
-	/*
-		groupedByAccess := make(map[string]templatesToArtifacts)
-		for _, template := range woc.wf.Spec.Templates {
-		//    if there are artifacts:
-			artifactResults, err := woc.searchArtifacts(template, strategy)
-			if len(artifactResults) > 0 {
-				hashedAccessString := woc.hashArtGCPodMetadata(template)
-				_, found := groupedByAccess[hashedAccessString]
-				if !found {
-					groupedByAccess[hashedAccessString] = make(templatesToArtifacts)
-				}
-				groupedByAccess[hashedAccessString][&template] = artifactResults
-			}
-		}
-		for accessString, templatesToArtList := range groupedByAccess {
-		//    create a new set of Tasks and Pod
-
-			tasks := make([]*wfv1.WorkflowArtifactGCTask, 0)
-			for template, artifacts := range templatesToArtList {
-				woc.addTemplateArtifactsToTasks(strategy, &tasks, artifacts)
-			}
-
-
-
-			if len(tasks) > 0 {
-				// create the K8s WorkflowArtifactGCTask objects
-				for i, task := range tasks {
-					tasks[i], err = woc.createWorkflowArtifactGCTask(ctx, task)
-					if err != nil {
-						return err
-					}
-				}
-				// create the pod
-				err = woc.createArtifactGCPod(ctx, strategy, tasks, &template)
-				if err != nil {
-					return err
-				}
-				woc.wf.Status.ArtifactGCStatus[strategy][accessString] = wfv1.ArtifactGCScheduled
-				woc.updated = true
-			}
-		}*/
-
 	return nil
 }
 
-func (woc *wfOperationCtx) artGCPodName(strategy wfv1.ArtifactGCStrategy, hashedAccessString string) string {
-	return fmt.Sprintf("%s-artgc-%s-%s", woc.wf.Name, strategy.AbbreviatedName(), hashedAccessString)
+type podInfo struct {
+	serviceAccount string
+	podMetadata    wfv1.Metadata
+}
+
+// create a string to uniquely identify a pod by its access requirement
+func (woc *wfOperationCtx) getPodIDHash(podAccessInfo podInfo) string {
+	h := fnv.New32a()
+	_, _ = h.Write([]byte(podAccessInfo.serviceAccount))
+	// we should be able to always get the same result regardless of the order of our Labels or Annotations
+	// so sort alphabetically
+	sortedLabels := maps.Keys(podAccessInfo.podMetadata.Labels)
+	sort.Strings(sortedLabels)
+	for _, label := range sortedLabels {
+		labelValue := podAccessInfo.podMetadata.Labels[label]
+		_, _ = h.Write([]byte(label))
+		_, _ = h.Write([]byte(labelValue))
+	}
+
+	sortedAnnotations := maps.Keys(podAccessInfo.podMetadata.Annotations)
+	sort.Strings(sortedAnnotations)
+	for _, annotation := range sortedAnnotations {
+		annotationValue := podAccessInfo.podMetadata.Annotations[annotation]
+		_, _ = h.Write([]byte(annotation))
+		_, _ = h.Write([]byte(annotationValue))
+	}
+	return fmt.Sprintf("%v", h.Sum32())
+}
+
+func (woc *wfOperationCtx) artGCPodName(strategy wfv1.ArtifactGCStrategy, podIDHash string) string {
+	return fmt.Sprintf("%s-artgc-%s-%s", woc.wf.Name, strategy.AbbreviatedName(), podIDHash)
 }
 
 func (woc *wfOperationCtx) artGCTaskSetName(strategy wfv1.ArtifactGCStrategy, taskIndex int) string {
@@ -682,8 +545,12 @@ func (woc *wfOperationCtx) createArtifactGCPod(ctx context.Context, strategy wfv
 	if podAccessInfo.serviceAccount != "" {
 		pod.Spec.ServiceAccountName = podAccessInfo.serviceAccount
 	}
-	pod.ObjectMeta.Labels = podAccessInfo.podMetadata.Labels
-	pod.ObjectMeta.Annotations = podAccessInfo.podMetadata.Annotations
+	for label, labelVal := range podAccessInfo.podMetadata.Labels {
+		pod.ObjectMeta.Labels[label] = labelVal
+	}
+	for annotation, annotationVal := range podAccessInfo.podMetadata.Annotations {
+		pod.ObjectMeta.Labels[annotation] = annotationVal
+	}
 
 	if v := woc.controller.Config.InstanceID; v != "" {
 		pod.Labels[common.EnvVarInstanceID] = v
