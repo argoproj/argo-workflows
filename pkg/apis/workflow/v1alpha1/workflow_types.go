@@ -1052,8 +1052,8 @@ func (podGC *PodGC) GetStrategy() PodGCStrategy {
 
 // ArtifactGC describes how to delete artifacts from completed Workflows
 type ArtifactGC struct {
-	// Strategy is the strategy to use. One of "OnWorkflowCompletion", "OnWorkflowDeletion"
-	// +kubebuilder:validation:Enum="";OnWorkflowCompletion;OnWorkflowDeletion
+	// Strategy is the strategy to use.
+	// +kubebuilder:validation:Enum="";OnWorkflowCompletion;OnWorkflowDeletion;OnWorkflowSuccess;OnWorkflowFailure
 	Strategy ArtifactGCStrategy `json:"strategy,omitempty" protobuf:"bytes,1,opt,name=strategy,casttype=ArtifactGCStategy"`
 
 	// PodMetadata is an optional field for specifying the Labels and Annotations that should be assigned to the Pod doing the deletion

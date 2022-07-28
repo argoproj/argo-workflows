@@ -146,7 +146,7 @@ func (woc *wfOperationCtx) processArtifactGCCompletion(ctx context.Context) erro
 func (woc *wfOperationCtx) allArtifactsDeleted() bool {
 	for _, n := range woc.wf.Status.Nodes {
 		for _, a := range n.GetOutputs().GetArtifacts() {
-			if !a.Deleted {
+			if !a.Deleted && a.GetArtifactGC().Strategy != wfv1.ArtifactGCNever {
 				return false
 			}
 		}
@@ -212,10 +212,12 @@ func (woc *wfOperationCtx) processCompletedWorkflowArtifactGCTask(ctx context.Co
 
 	}
 
-	// now we can delete it
-	// todo: temporarily commented out for testing
-	//woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowArtifactGCTasks(woc.wf.Namespace).Delete(ctx, artifactGCTask.Name, metav1.DeleteOptions{})
-
+	// now we can delete it, if it succeeded (otherwise we leave it up to be inspected)
+	if !foundGCFailure {
+		// todo: temporarily commented out for testing
+		woc.log.Debugf("deleting WorkflowArtifactGCTask: %s", artifactGCTask.Name)
+		woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowArtifactGCTasks(woc.wf.Namespace).Delete(ctx, artifactGCTask.Name, metav1.DeleteOptions{})
+	}
 	return nil
 }
 
@@ -597,7 +599,7 @@ func (woc *wfOperationCtx) createArtifactGCPod(ctx context.Context, strategy wfv
 		pod.ObjectMeta.Labels[label] = labelVal
 	}
 	for annotation, annotationVal := range podAccessInfo.podMetadata.Annotations {
-		pod.ObjectMeta.Labels[annotation] = annotationVal
+		pod.ObjectMeta.Annotations[annotation] = annotationVal
 	}
 
 	if v := woc.controller.Config.InstanceID; v != "" {

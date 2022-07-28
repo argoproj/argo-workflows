@@ -3453,7 +3453,7 @@
           "type": "string"
         },
         "strategy": {
-          "description": "Strategy is the strategy to use. One of \"OnWorkflowCompletion\", \"OnWorkflowDeletion\"",
+          "description": "Strategy is the strategy to use.",
           "type": "string"
         }
       },

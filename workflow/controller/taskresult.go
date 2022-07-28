@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"fmt"
 	"reflect"
 	"time"
 
@@ -46,6 +47,7 @@ func (woc *wfOperationCtx) taskResultReconciliation() {
 			if new.Outputs == nil {
 				new.Outputs = &wfv1.Outputs{}
 			}
+			fmt.Printf("deletethis: result.Outputs from WorkflowTaskResult: %+v\n", result.Outputs)
 			result.Outputs.DeepCopyInto(new.Outputs)               // preserve any existing values
 			if old.Outputs != nil && new.Outputs.ExitCode == nil { // prevent overwriting of ExitCode
 				new.Outputs.ExitCode = old.Outputs.ExitCode

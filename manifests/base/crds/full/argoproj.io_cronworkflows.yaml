@@ -447,6 +447,8 @@ spec:
                                   - ""
                                   - OnWorkflowCompletion
                                   - OnWorkflowDeletion
+                                  - OnWorkflowSuccess
+                                  - OnWorkflowFailure
                                   type: string
                               type: object
                             artifactory:
@@ -972,6 +974,8 @@ spec:
                         - ""
                         - OnWorkflowCompletion
                         - OnWorkflowDeletion
+                        - OnWorkflowSuccess
+                        - OnWorkflowFailure
                         type: string
                     type: object
                   artifactRepositoryRef:
@@ -1055,6 +1059,8 @@ spec:
                                         - ""
                                         - OnWorkflowCompletion
                                         - OnWorkflowDeletion
+                                        - OnWorkflowSuccess
+                                        - OnWorkflowFailure
                                         type: string
                                     type: object
                                   artifactory:
@@ -3930,6 +3936,8 @@ spec:
                                                 - ""
                                                 - OnWorkflowCompletion
                                                 - OnWorkflowDeletion
+                                                - OnWorkflowSuccess
+                                                - OnWorkflowFailure
                                                 type: string
                                             type: object
                                           artifactory:
@@ -4491,6 +4499,8 @@ spec:
                                                       - ""
                                                       - OnWorkflowCompletion
                                                       - OnWorkflowDeletion
+                                                      - OnWorkflowSuccess
+                                                      - OnWorkflowFailure
                                                       type: string
                                                   type: object
                                                 artifactory:
@@ -5103,6 +5113,8 @@ spec:
                                         - ""
                                         - OnWorkflowCompletion
                                         - OnWorkflowDeletion
+                                        - OnWorkflowSuccess
+                                        - OnWorkflowFailure
                                         type: string
                                     type: object
                                   artifactory:
@@ -6265,6 +6277,8 @@ spec:
                                       - ""
                                       - OnWorkflowCompletion
                                       - OnWorkflowDeletion
+                                      - OnWorkflowSuccess
+                                      - OnWorkflowFailure
                                       type: string
                                   type: object
                                 artifactory:
@@ -6914,6 +6928,8 @@ spec:
                                       - ""
                                       - OnWorkflowCompletion
                                       - OnWorkflowDeletion
+                                      - OnWorkflowSuccess
+                                      - OnWorkflowFailure
                                       type: string
                                   type: object
                                 artifactory:
@@ -7486,6 +7502,8 @@ spec:
                                         - ""
                                         - OnWorkflowCompletion
                                         - OnWorkflowDeletion
+                                        - OnWorkflowSuccess
+                                        - OnWorkflowFailure
                                         type: string
                                     type: object
                                   artifactory:
@@ -12013,6 +12031,8 @@ spec:
                                                   - ""
                                                   - OnWorkflowCompletion
                                                   - OnWorkflowDeletion
+                                                  - OnWorkflowSuccess
+                                                  - OnWorkflowFailure
                                                   type: string
                                               type: object
                                             artifactory:
@@ -12574,6 +12594,8 @@ spec:
                                                         - ""
                                                         - OnWorkflowCompletion
                                                         - OnWorkflowDeletion
+                                                        - OnWorkflowSuccess
+                                                        - OnWorkflowFailure
                                                         type: string
                                                     type: object
                                                   artifactory:
@@ -13186,6 +13208,8 @@ spec:
                                           - ""
                                           - OnWorkflowCompletion
                                           - OnWorkflowDeletion
+                                          - OnWorkflowSuccess
+                                          - OnWorkflowFailure
                                           type: string
                                       type: object
                                     artifactory:
@@ -14348,6 +14372,8 @@ spec:
                                         - ""
                                         - OnWorkflowCompletion
                                         - OnWorkflowDeletion
+                                        - OnWorkflowSuccess
+                                        - OnWorkflowFailure
                                         type: string
                                     type: object
                                   artifactory:
@@ -14997,6 +15023,8 @@ spec:
                                         - ""
                                         - OnWorkflowCompletion
                                         - OnWorkflowDeletion
+                                        - OnWorkflowSuccess
+                                        - OnWorkflowFailure
                                         type: string
                                     type: object
                                   artifactory:
@@ -15569,6 +15597,8 @@ spec:
                                           - ""
                                           - OnWorkflowCompletion
                                           - OnWorkflowDeletion
+                                          - OnWorkflowSuccess
+                                          - OnWorkflowFailure
                                           type: string
                                       type: object
                                     artifactory:

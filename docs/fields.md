@@ -1446,7 +1446,7 @@ ArtifactGC describes how to delete artifacts from completed Workflows
 |:----------:|:----------:|---------------|
 |`podMetadata`|[`Metadata`](#metadata)|PodMetadata is an optional field for specifying the Labels and Annotations that should be assigned to the Pod doing the deletion|
 |`serviceAccountName`|`string`|ServiceAccountName is an optional field for specifying the Service Account that should be assigned to the Pod doing the deletion|
-|`strategy`|`string`|Strategy is the strategy to use. One of "OnWorkflowCompletion", "OnWorkflowDeletion"|
+|`strategy`|`string`|Strategy is the strategy to use.|
 
 ## ArtifactRepositoryRef
 

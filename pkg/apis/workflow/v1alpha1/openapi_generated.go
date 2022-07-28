@@ -475,7 +475,7 @@ func schema_pkg_apis_workflow_v1alpha1_ArtifactGC(ref common.ReferenceCallback) 
 				Properties: map[string]spec.Schema{
 					"strategy": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Strategy is the strategy to use. One of \"OnWorkflowCompletion\", \"OnWorkflowDeletion\"",
+							Description: "Strategy is the strategy to use.",
 							Type:        []string{"string"},
 							Format:      "",
 						},

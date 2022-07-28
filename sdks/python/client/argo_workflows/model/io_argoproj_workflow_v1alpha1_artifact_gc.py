@@ -146,7 +146,7 @@ class IoArgoprojWorkflowV1alpha1ArtifactGC(ModelNormal):
                                 _visited_composed_classes = (Animal,)
             pod_metadata (IoArgoprojWorkflowV1alpha1Metadata): [optional]  # noqa: E501
             service_account_name (str): ServiceAccountName is an optional field for specifying the Service Account that should be assigned to the Pod doing the deletion. [optional]  # noqa: E501
-            strategy (str): Strategy is the strategy to use. One of \"OnWorkflowCompletion\", \"OnWorkflowDeletion\". [optional]  # noqa: E501
+            strategy (str): Strategy is the strategy to use.. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -230,7 +230,7 @@ class IoArgoprojWorkflowV1alpha1ArtifactGC(ModelNormal):
                                 _visited_composed_classes = (Animal,)
             pod_metadata (IoArgoprojWorkflowV1alpha1Metadata): [optional]  # noqa: E501
             service_account_name (str): ServiceAccountName is an optional field for specifying the Service Account that should be assigned to the Pod doing the deletion. [optional]  # noqa: E501
-            strategy (str): Strategy is the strategy to use. One of \"OnWorkflowCompletion\", \"OnWorkflowDeletion\". [optional]  # noqa: E501
+            strategy (str): Strategy is the strategy to use.. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
