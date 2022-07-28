@@ -10,15 +10,14 @@ Artifacts can be specified for Garbage Collection at different stages: `OnWorkfl
 
 ### Workflow Spec changes
 
-1. `WorkflowSpec` has an `ArtifactGCStrategy`, which is the default for all artifacts: can be `OnWorkflowCompletion`, `OnWorkflowDeletion`, `OnWorkflowSuccess`, `OnWorkflowFailure`, or `Never`
-2. Artifact has an `ArtifactGCStrategy` (only really applies to Output Artifacts), which can override the setting for `WorkflowSpec`
-3. `WorkflowSpec` can add specification of Service Account and/or Annotations to be used for the Garbage Collection pods, to enable their access to the storage. One Service Account and/or Annotation should be specified to apply to all artifacts.
+1. `WorkflowSpec` has an `ArtifactGC` structure, which consists of an `ArtifactGCStrategy`, as well as the optional designation of a `ServiceAccount` and Pod metadata (labels and annotations) to be used by the Pod doing the deletion. The `ArtifactGCStrategy` can be set to `OnWorkflowCompletion`, `OnWorkflowDeletion`, `OnWorkflowSuccess`, `OnWorkflowFailure`, or `Never`
+2. Artifact has an `ArtifactGC` section which can be used to override the Workflow level.
 
 ### Workflow Status changes
 
 1. Artifact has a boolean `Deleted` flag
 2. `WorkflowStatus.Conditions` can be set to `ArtifactGCError`
-3. `WorkflowStatus` can include a new field `GCStatus` which maps `ArtifactGCStrategy` to a status (string) which can be set to `NotStarted`, `Running`, `Succeeded`, or `Failed` and can be used to ensure we don't re-run Artifact GC for a given strategy.
+3. `WorkflowStatus` can include a new field `ArtGCStatus` which holds additional information to keep track of the state of Artifact Garbage Collection.
 
 ### How it will work
 
@@ -62,14 +61,14 @@ and these drawbacks:
 - if we delay the Artifact GC Pods by giving them a lower priority than the Workflow Pods, users will not get their artifacts deleted when they expect and may log bugs
 
 Summarizing ADR statement:
-"In the context of Artifact Garbage Collection, facing whether to use a separate Pod for every artifact or not, we decided not to, to achieve faster garbage collection and reduced load on K8S, accepting that we will require a new CRD type, and also that our Pod will require the permissions to access all artifacts."
+"In the context of Artifact Garbage Collection, facing whether to use a separate Pod for every artifact or not, we decided not to, to achieve faster garbage collection and reduced load on K8S, accepting that we will require a new CRD type."
 
 #### Service Account/IAM roles
 
-We considered some alternatives for how to specify Service Account and/or Annotations, which are applied to give the GC Pod access (slide 12). We will have them specify this information in a new part of the spec that's specific to the Artifact GC Pod (and applies to all artifacts). Other options considered involve allowing users to specify Service Accounts/Annotations on the template level (which could provide more granular security per pod), but Option 2 is preferred in order to reduce the complexity of the code and reduce the potential number of Pods running.
+We considered some alternatives for how to specify Service Account and/or Annotations, which are applied to give the GC Pod access (slide 12). We will have them specify this information in a new `ArtifactGC` section of the spec that lives on the Workflow level but can be overridden on the Artifact level (option 3 from slide). Another option considered was to just allow specification on the Workflow level (option 2 from slide) so as to reduce the complexity of the code and reduce the potential number of Pods running, but Option 3 was selected in the end to maximize flexibility.
 
 Summarizing ADR statement:
-"In the context of Artifact Garbage Collection, facing the question of how users should specify Service Account and annotations, we decided that they will specify them just on the Workflow level to achieve being able to run fewer Pods and simpler code, accepting that the Pod will require the permissions to access all artifacts."
+"In the context of Artifact Garbage Collection, facing the question of how users should specify Service Account and annotations, we decided to give them the option to specify them on the Workflow level and/or override them on the Artifact level, to maximize flexibility for user needs, accepting that the code will be more complicated, and sometimes there will be many Pods running."
 
 ### MVP vs post-MVP
 
