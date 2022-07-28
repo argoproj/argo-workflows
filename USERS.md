@@ -137,6 +137,7 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [Raccoon Digital Marketing](https://raccoon.ag/)
 1. [Ramboll Shair](https://ramboll-shair.com/)
 1. [Ravelin](https://www.ravelin.com/)
+1. [Reco](https://reco.ai)
 1. [Red Hat](https://www.redhat.com/en)
 1. [Reserved AI](https://reserved.ai/)
 1. [Riskified](https://www.riskified.com)
