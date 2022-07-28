@@ -59,6 +59,32 @@ spec:
   templates:
     - name: main
       retryStrategy:
+        limit: '10'
+        backoff:
+          duration: 10s
+          maxDuration: 1m
+      container:
+          name: main
+          image: 'argoproj/argosay:v2'
+          args: [ exit, "1" ]
+`).
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(time.Minute).
+		Then().
+		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.WorkflowPhase("Failed"), status.Phase)
+			assert.LessOrEqual(t, len(status.Nodes), 10)
+		})
+	s.Given().
+		Workflow(`
+metadata:
+  generateName: test-backoff-strategy-
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      retryStrategy:
         limit: 10
         backoff:
           duration: 10s
@@ -74,8 +100,7 @@ spec:
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.WorkflowPhase("Failed"), status.Phase)
-			assert.Equal(t, "Backoff would exceed max duration limit", status.Message)
-			assert.Equal(t, 5, len(status.Nodes))
+			assert.LessOrEqual(t, len(status.Nodes), 10)
 		})
 }
 
