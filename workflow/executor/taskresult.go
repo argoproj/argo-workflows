@@ -3,7 +3,6 @@ package executor
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"os"
 
 	apierr "k8s.io/apimachinery/pkg/api/errors"
@@ -17,7 +16,6 @@ import (
 
 func (we *WorkflowExecutor) upsertTaskResult(ctx context.Context, result wfv1.NodeResult) error {
 	err := we.createTaskResult(ctx, result)
-	fmt.Printf("deletethis: upsertTaskResult: %+v\n", result)
 	if apierr.IsAlreadyExists(err) {
 		return we.patchTaskResult(ctx, result)
 	}

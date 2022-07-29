@@ -295,13 +295,11 @@ func (we *WorkflowExecutor) SaveArtifacts(ctx context.Context) error {
 	}
 
 	for i, art := range we.Template.Outputs.Artifacts {
-		log.Infof("deletethis: saving artifact %+v", art)
 		err := we.saveArtifact(ctx, common.MainContainerName, &art)
 		if err != nil {
 			return err
 		}
 		we.Template.Outputs.Artifacts[i] = art
-		log.Infof("deletethis: saved artifact %+v to Template.Outputs", art)
 	}
 	return nil
 }
@@ -341,13 +339,10 @@ func (we *WorkflowExecutor) saveArtifactFromFile(ctx context.Context, art *wfv1.
 			return err
 		}
 	}
-	log.Infof("Saving artifact %+v", art)
 	driverArt, err := we.newDriverArt(art)
 	if err != nil {
 		return err
 	}
-	log.Infof("Set location for artifact, now: %+v", driverArt)
-
 	artDriver, err := we.InitDriver(ctx, driverArt)
 	if err != nil {
 		return err
@@ -357,7 +352,6 @@ func (we *WorkflowExecutor) saveArtifactFromFile(ctx context.Context, art *wfv1.
 		return err
 	}
 	we.maybeDeleteLocalArtPath(localArtPath)
-	*art = *driverArt
 	log.Infof("Successfully saved file: %s", localArtPath)
 	return nil
 }
