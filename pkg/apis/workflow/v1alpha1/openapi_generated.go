@@ -4791,7 +4791,7 @@ func schema_pkg_apis_workflow_v1alpha1_RetryStrategy(ref common.ReferenceCallbac
 				Properties: map[string]spec.Schema{
 					"limit": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Limit is the maximum number of attempts when retrying a container",
+							Description: "Limit is the maximum number of retry attempts when retrying a container. It does not include the original container; the maximum number of total attempts will be `limit + 1`.",
 							Ref:         ref("k8s.io/apimachinery/pkg/util/intstr.IntOrString"),
 						},
 					},
