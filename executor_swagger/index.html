@@ -7070,7 +7070,7 @@ ownership management and SELinux relabeling.</p>
 <td><code>string</code></td>
 <td style="text-align: center;"></td>
 <td></td>
-<td>Filesystem type of the volume that you want to mount.</td>
+<td>fsType is the filesystem type of the volume that you want to mount.</td>
 <td></td>
 </tr>
 <tr>
@@ -7124,7 +7124,7 @@ ownership management and SELinux relabeling.</p>
 <td><code>int32</code></td>
 <td style="text-align: center;"></td>
 <td></td>
-<td>The partition in the volume that you want to mount.</td>
+<td>partition is the partition in the volume that you want to mount.</td>
 <td></td>
 </tr>
 <tr>
@@ -7169,16 +7169,7 @@ ownership management and SELinux relabeling.</p>
 <td><code>bool</code></td>
 <td style="text-align: center;"></td>
 <td></td>
-<td>Specify "true" to force and set the ReadOnly property in VolumeMounts to "true".</td>
-<td></td>
-</tr>
-<tr>
-<td>If omitted, the default is "false".</td>
-<td></td>
-<td></td>
-<td style="text-align: center;"></td>
-<td></td>
-<td></td>
+<td>readOnly value true will force the readOnly setting in VolumeMounts.</td>
 <td></td>
 </tr>
 <tr>
@@ -7205,7 +7196,7 @@ ownership management and SELinux relabeling.</p>
 <td><code>string</code></td>
 <td style="text-align: center;"></td>
 <td></td>
-<td>Unique ID of the persistent disk resource in AWS (Amazon EBS volume).</td>
+<td>volumeID is unique ID of the persistent disk resource in AWS (Amazon EBS volume).</td>
 <td></td>
 </tr>
 <tr>
@@ -8238,7 +8229,7 @@ of a single workflow step, which the executor will use as a default location to 
 <td><code>string</code></td>
 <td style="text-align: center;"></td>
 <td></td>
-<td>The Name of the data disk in the blob storage</td>
+<td>diskName is the Name of the data disk in the blob storage</td>
 <td></td>
 </tr>
 <tr>
@@ -8247,7 +8238,7 @@ of a single workflow step, which the executor will use as a default location to 
 <td><code>string</code></td>
 <td style="text-align: center;"></td>
 <td></td>
-<td>The URI the data disk in the blob storage</td>
+<td>diskURI is the URI of data disk in the blob storage</td>
 <td></td>
 </tr>
 <tr>
@@ -8256,7 +8247,7 @@ of a single workflow step, which the executor will use as a default location to 
 <td><code>string</code></td>
 <td style="text-align: center;"></td>
 <td></td>
-<td>Filesystem type to mount.</td>
+<td>fsType is Filesystem type to mount.</td>
 <td></td>
 </tr>
 <tr>
@@ -8301,7 +8292,7 @@ of a single workflow step, which the executor will use as a default location to 
 <td><code>bool</code></td>
 <td style="text-align: center;"></td>
 <td></td>
-<td>Defaults to false (read/write). ReadOnly here will force</td>
+<td>readOnly Defaults to false (read/write). ReadOnly here will force</td>
 <td></td>
 </tr>
 <tr>
@@ -8345,7 +8336,7 @@ of a single workflow step, which the executor will use as a default location to 
 <td><code>bool</code></td>
 <td style="text-align: center;"></td>
 <td></td>
-<td>Defaults to false (read/write). ReadOnly here will force</td>
+<td>readOnly defaults to false (read/write). ReadOnly here will force</td>
 <td></td>
 </tr>
 <tr>
@@ -8372,7 +8363,7 @@ of a single workflow step, which the executor will use as a default location to 
 <td><code>string</code></td>
 <td style="text-align: center;"></td>
 <td></td>
-<td>the name of secret that contains Azure Storage Account Name and Key</td>
+<td>secretName is the  name of secret that contains Azure Storage Account Name and Key</td>
 <td></td>
 </tr>
 <tr>
@@ -8381,7 +8372,7 @@ of a single workflow step, which the executor will use as a default location to 
 <td><code>string</code></td>
 <td style="text-align: center;"></td>
 <td></td>
-<td>Share Name</td>
+<td>shareName is the azure share Name</td>
 <td></td>
 </tr>
 </tbody>
@@ -8495,7 +8486,7 @@ of a single workflow step, which the executor will use as a default location to 
 <td><code>string</code></td>
 <td style="text-align: center;"></td>
 <td></td>
-<td>Driver is the name of the CSI driver that handles this volume.</td>
+<td>driver is the name of the CSI driver that handles this volume.</td>
 <td></td>
 </tr>
 <tr>
@@ -8513,7 +8504,7 @@ of a single workflow step, which the executor will use as a default location to 
 <td><code>string</code></td>
 <td style="text-align: center;"></td>
 <td></td>
-<td>Filesystem type to mount. Ex. "ext4", "xfs", "ntfs".</td>
+<td>fsType to mount. Ex. "ext4", "xfs", "ntfs".</td>
 <td></td>
 </tr>
 <tr>
@@ -8558,7 +8549,7 @@ of a single workflow step, which the executor will use as a default location to 
 <td><code>bool</code></td>
 <td style="text-align: center;"></td>
 <td></td>
-<td>Specifies a read-only configuration for the volume.</td>
+<td>readOnly specifies a read-only configuration for the volume.</td>
 <td></td>
 </tr>
 <tr>
@@ -8585,7 +8576,7 @@ of a single workflow step, which the executor will use as a default location to 
 <td><code>map[string]string</code></td>
 <td style="text-align: center;"></td>
 <td></td>
-<td>VolumeAttributes stores driver-specific properties that are passed to the CSI</td>
+<td>volumeAttributes stores driver-specific properties that are passed to the CSI</td>
 <td></td>
 </tr>
 <tr>
@@ -8741,7 +8732,7 @@ Cephfs volumes do not support ownership management or SELinux relabeling.</p>
 <td><code>[]string</code></td>
 <td style="text-align: center;"></td>
 <td></td>
-<td>Required: Monitors is a collection of Ceph monitors</td>
+<td>monitors is Required: Monitors is a collection of Ceph monitors</td>
 <td></td>
 </tr>
 <tr>
@@ -8759,7 +8750,7 @@ Cephfs volumes do not support ownership management or SELinux relabeling.</p>
 <td><code>string</code></td>
 <td style="text-align: center;"></td>
 <td></td>
-<td>Optional: Used as the mounted root, rather than the full Ceph tree, default is /</td>
+<td>path is Optional: Used as the mounted root, rather than the full Ceph tree, default is /</td>
 <td></td>
 </tr>
 <tr>
@@ -8777,7 +8768,7 @@ Cephfs volumes do not support ownership management or SELinux relabeling.</p>
 <td><code>bool</code></td>
 <td style="text-align: center;"></td>
 <td></td>
-<td>Optional: Defaults to false (read/write). ReadOnly here will force</td>
+<td>readOnly is Optional: Defaults to false (read/write). ReadOnly here will force</td>
 <td></td>
 </tr>
 <tr>
@@ -8813,7 +8804,7 @@ Cephfs volumes do not support ownership management or SELinux relabeling.</p>
 <td><code>string</code></td>
 <td style="text-align: center;"></td>
 <td></td>
-<td>Optional: SecretFile is the path to key ring for User, default is /etc/ceph/user.secret</td>
+<td>secretFile is Optional: SecretFile is the path to key ring for User, default is /etc/ceph/user.secret</td>
 <td></td>
 </tr>
 <tr>
@@ -8849,7 +8840,7 @@ Cephfs volumes do not support ownership management or SELinux relabeling.</p>
 <td><code>string</code></td>
 <td style="text-align: center;"></td>
 <td></td>
-<td>Optional: User is the rados user name, default is admin</td>
+<td>user is optional: User is the rados user name, default is admin</td>
 <td></td>
 </tr>
 <tr>
@@ -8898,7 +8889,7 @@ Cinder volumes support ownership management and SELinux relabeling.</p>
 <td><code>string</code></td>
 <td style="text-align: center;"></td>
 <td></td>
-<td>Filesystem type to mount.</td>
+<td>fsType is the filesystem type to mount.</td>
 <td></td>
 </tr>
 <tr>
@@ -8943,7 +8934,7 @@ Cinder volumes support ownership management and SELinux relabeling.</p>
 <td><code>bool</code></td>
 <td style="text-align: center;"></td>
 <td></td>
-<td>Optional: Defaults to false (read/write). ReadOnly here will force</td>
+<td>readOnly defaults to false (read/write). ReadOnly here will force</td>
 <td></td>
 </tr>
 <tr>
@@ -8988,7 +8979,7 @@ Cinder volumes support ownership management and SELinux relabeling.</p>
 <td><code>string</code></td>
 <td style="text-align: center;"></td>
 <td></td>
-<td>volume id used to identify the volume in cinder.</td>
+<td>volumeID used to identify the volume in cinder.</td>
 <td></td>
 </tr>
 <tr>
@@ -9226,7 +9217,7 @@ mode.</p>
 <td><code>[]*KeyToPath</code></td>
 <td style="text-align: center;"></td>
 <td></td>
-<td>If unspecified, each key-value pair in the Data field of the referenced</td>
+<td>items if unspecified, each key-value pair in the Data field of the referenced</td>
 <td></td>
 </tr>
 <tr>
@@ -9334,7 +9325,7 @@ mode.</p>
 <td><code>bool</code></td>
 <td style="text-align: center;"></td>
 <td></td>
-<td>Specify whether the ConfigMap or its keys must be defined</td>
+<td>optional specify whether the ConfigMap or its keys must be defined</td>
 <td></td>
 </tr>
 <tr>
@@ -9375,7 +9366,7 @@ ConfigMap volumes support ownership management and SELinux relabeling.</p>
 <td><code>int32</code></td>
 <td style="text-align: center;"></td>
 <td></td>
-<td>Optional: mode bits used to set permissions on created files by default.</td>
+<td>defaultMode is optional: mode bits used to set permissions on created files by default.</td>
 <td></td>
 </tr>
 <tr>
@@ -9447,7 +9438,7 @@ ConfigMap volumes support ownership management and SELinux relabeling.</p>
 <td><code>[]*KeyToPath</code></td>
 <td style="text-align: center;"></td>
 <td></td>
-<td>If unspecified, each key-value pair in the Data field of the referenced</td>
+<td>items if unspecified, each key-value pair in the Data field of the referenced</td>
 <td></td>
 </tr>
 <tr>
@@ -9555,7 +9546,7 @@ ConfigMap volumes support ownership management and SELinux relabeling.</p>
 <td><code>bool</code></td>
 <td style="text-align: center;"></td>
 <td></td>
-<td>Specify whether the ConfigMap or its keys must be defined</td>
+<td>optional specify whether the ConfigMap or its keys must be defined</td>
 <td></td>
 </tr>
 <tr>
@@ -9594,7 +9585,7 @@ ConfigMap volumes support ownership management and SELinux relabeling.</p>
 <td></td>
 </tr>
 <tr>
-<td>The docker image's CMD is used if this is not provided.</td>
+<td>The container image's CMD is used if this is not provided.</td>
 <td></td>
 <td></td>
 <td style="text-align: center;"></td>
@@ -9675,7 +9666,7 @@ ConfigMap volumes support ownership management and SELinux relabeling.</p>
 <td></td>
 </tr>
 <tr>
-<td>The docker image's ENTRYPOINT is used if this is not provided.</td>
+<td>The container image's ENTRYPOINT is used if this is not provided.</td>
 <td></td>
 <td></td>
 <td style="text-align: center;"></td>
@@ -9860,7 +9851,7 @@ ConfigMap volumes support ownership management and SELinux relabeling.</p>
 <td><code>string</code></td>
 <td style="text-align: center;"></td>
 <td></td>
-<td>Docker image name.</td>
+<td>Container image name.</td>
 <td></td>
 </tr>
 <tr>
@@ -10475,7 +10466,7 @@ ConfigMap volumes support ownership management and SELinux relabeling.</p>
 <td></td>
 </tr>
 <tr>
-<td>The docker image's CMD is used if this is not provided.</td>
+<td>The container image's CMD is used if this is not provided.</td>
 <td></td>
 <td></td>
 <td style="text-align: center;"></td>
@@ -10556,7 +10547,7 @@ ConfigMap volumes support ownership management and SELinux relabeling.</p>
 <td></td>
 </tr>
 <tr>
-<td>The docker image's ENTRYPOINT is used if this is not provided.</td>
+<td>The container image's ENTRYPOINT is used if this is not provided.</td>
 <td></td>
 <td></td>
 <td style="text-align: center;"></td>
@@ -10750,7 +10741,7 @@ ConfigMap volumes support ownership management and SELinux relabeling.</p>
 <td><code>string</code></td>
 <td style="text-align: center;"></td>
 <td></td>
-<td>Docker image name.</td>
+<td>Container image name.</td>
 <td></td>
 </tr>
 <tr>
@@ -12791,7 +12782,7 @@ Fibre Channel volumes support ownership management and SELinux relabeling.</p>
 <td><code>string</code></td>
 <td style="text-align: center;"></td>
 <td></td>
-<td>Filesystem type to mount.</td>
+<td>fsType is the filesystem type to mount.</td>
 <td></td>
 </tr>
 <tr>
@@ -12836,7 +12827,7 @@ Fibre Channel volumes support ownership management and SELinux relabeling.</p>
 <td><code>int32</code></td>
 <td style="text-align: center;"></td>
 <td></td>
-<td>Optional: FC target lun number</td>
+<td>lun is Optional: FC target lun number</td>
 <td></td>
 </tr>
 <tr>
@@ -12854,7 +12845,7 @@ Fibre Channel volumes support ownership management and SELinux relabeling.</p>
 <td><code>bool</code></td>
 <td style="text-align: center;"></td>
 <td></td>
-<td>Optional: Defaults to false (read/write). ReadOnly here will force</td>
+<td>readOnly is Optional: Defaults to false (read/write). ReadOnly here will force</td>
 <td></td>
 </tr>
 <tr>
@@ -12881,7 +12872,7 @@ Fibre Channel volumes support ownership management and SELinux relabeling.</p>
 <td><code>[]string</code></td>
 <td style="text-align: center;"></td>
 <td></td>
-<td>Optional: FC target worldwide names (WWNs)</td>
+<td>targetWWNs is Optional: FC target worldwide names (WWNs)</td>
 <td></td>
 </tr>
 <tr>
@@ -12899,7 +12890,7 @@ Fibre Channel volumes support ownership management and SELinux relabeling.</p>
 <td><code>[]string</code></td>
 <td style="text-align: center;"></td>
 <td></td>
-<td>Optional: FC volume world wide identifiers (wwids)</td>
+<td>wwids Optional: FC volume world wide identifiers (wwids)</td>
 <td></td>
 </tr>
 <tr>
@@ -12960,7 +12951,7 @@ provisioned/attached using an exec based plugin.</p>
 <td><code>string</code></td>
 <td style="text-align: center;"></td>
 <td></td>
-<td>Driver is the name of the driver to use for this volume.</td>
+<td>driver is the name of the driver to use for this volume.</td>
 <td></td>
 </tr>
 <tr>
@@ -12969,7 +12960,7 @@ provisioned/attached using an exec based plugin.</p>
 <td><code>string</code></td>
 <td style="text-align: center;"></td>
 <td></td>
-<td>Filesystem type to mount.</td>
+<td>fsType is the filesystem type to mount.</td>
 <td></td>
 </tr>
 <tr>
@@ -13005,7 +12996,7 @@ provisioned/attached using an exec based plugin.</p>
 <td><code>map[string]string</code></td>
 <td style="text-align: center;"></td>
 <td></td>
-<td>Optional: Extra command options if any.</td>
+<td>options is Optional: this field holds extra command options if any.</td>
 <td></td>
 </tr>
 <tr>
@@ -13023,7 +13014,7 @@ provisioned/attached using an exec based plugin.</p>
 <td><code>bool</code></td>
 <td style="text-align: center;"></td>
 <td></td>
-<td>Optional: Defaults to false (read/write). ReadOnly here will force</td>
+<td>readOnly is Optional: defaults to false (read/write). ReadOnly here will force</td>
 <td></td>
 </tr>
 <tr>
@@ -13080,7 +13071,7 @@ Flocker volumes do not support ownership management or SELinux relabeling.</p>
 <td><code>string</code></td>
 <td style="text-align: center;"></td>
 <td></td>
-<td>Name of the dataset stored as metadata -&gt; name on the dataset for Flocker</td>
+<td>datasetName is Name of the dataset stored as metadata -&gt; name on the dataset for Flocker</td>
 <td></td>
 </tr>
 <tr>
@@ -13107,7 +13098,7 @@ Flocker volumes do not support ownership management or SELinux relabeling.</p>
 <td><code>string</code></td>
 <td style="text-align: center;"></td>
 <td></td>
-<td>UUID of the dataset. This is unique identifier of a Flocker dataset</td>
+<td>datasetUUID is the UUID of the dataset. This is unique identifier of a Flocker dataset</td>
 <td></td>
 </tr>
 <tr>
@@ -13148,7 +13139,7 @@ PDs support ownership management and SELinux relabeling.</p>
 <td><code>string</code></td>
 <td style="text-align: center;"></td>
 <td></td>
-<td>Filesystem type of the volume that you want to mount.</td>
+<td>fsType is filesystem type of the volume that you want to mount.</td>
 <td></td>
 </tr>
 <tr>
@@ -13202,7 +13193,7 @@ PDs support ownership management and SELinux relabeling.</p>
 <td><code>int32</code></td>
 <td style="text-align: center;"></td>
 <td></td>
-<td>The partition in the volume that you want to mount.</td>
+<td>partition is the partition in the volume that you want to mount.</td>
 <td></td>
 </tr>
 <tr>
@@ -13256,7 +13247,7 @@ PDs support ownership management and SELinux relabeling.</p>
 <td><code>string</code></td>
 <td style="text-align: center;"></td>
 <td></td>
-<td>Unique name of the PD resource in GCE. Used to identify the disk in GCE.</td>
+<td>pdName is unique name of the PD resource in GCE. Used to identify the disk in GCE.</td>
 <td></td>
 </tr>
 <tr>
@@ -13274,7 +13265,7 @@ PDs support ownership management and SELinux relabeling.</p>
 <td><code>bool</code></td>
 <td style="text-align: center;"></td>
 <td></td>
-<td>ReadOnly here will force the ReadOnly setting in VolumeMounts.</td>
+<td>readOnly here will force the ReadOnly setting in VolumeMounts.</td>
 <td></td>
 </tr>
 <tr>
@@ -13592,7 +13583,7 @@ into the Pod's container.</p>
 <td><code>string</code></td>
 <td style="text-align: center;"></td>
 <td></td>
-<td>Target directory name.</td>
+<td>directory is the target directory name.</td>
 <td></td>
 </tr>
 <tr>
@@ -13637,7 +13628,7 @@ into the Pod's container.</p>
 <td><code>string</code></td>
 <td style="text-align: center;"></td>
 <td></td>
-<td>Repository URL</td>
+<td>repository is the URL</td>
 <td></td>
 </tr>
 <tr>
@@ -13646,7 +13637,7 @@ into the Pod's container.</p>
 <td><code>string</code></td>
 <td style="text-align: center;"></td>
 <td></td>
-<td>Commit hash for the specified revision.</td>
+<td>revision is the commit hash for the specified revision.</td>
 <td></td>
 </tr>
 <tr>
@@ -13684,7 +13675,7 @@ into the Pod's container.</p>
 <td><code>string</code></td>
 <td style="text-align: center;"></td>
 <td></td>
-<td>EndpointsName is the endpoint name that details Glusterfs topology.</td>
+<td>endpoints is the endpoint name that details Glusterfs topology.</td>
 <td></td>
 </tr>
 <tr>
@@ -13702,7 +13693,7 @@ into the Pod's container.</p>
 <td><code>string</code></td>
 <td style="text-align: center;"></td>
 <td></td>
-<td>Path is the Glusterfs volume path.</td>
+<td>path is the Glusterfs volume path.</td>
 <td></td>
 </tr>
 <tr>
@@ -13720,7 +13711,7 @@ into the Pod's container.</p>
 <td><code>bool</code></td>
 <td style="text-align: center;"></td>
 <td></td>
-<td>ReadOnly here will force the Glusterfs volume to be mounted with read-only permissions.</td>
+<td>readOnly here will force the Glusterfs volume to be mounted with read-only permissions.</td>
 <td></td>
 </tr>
 <tr>
@@ -14439,7 +14430,7 @@ pod's hosts file.</p>
 <td><code>string</code></td>
 <td style="text-align: center;"></td>
 <td></td>
-<td>Path of the directory on the host.</td>
+<td>path of the directory on the host.</td>
 <td></td>
 </tr>
 <tr>
@@ -14496,7 +14487,7 @@ ISCSI volumes support ownership management and SELinux relabeling.</p>
 <td><code>bool</code></td>
 <td style="text-align: center;"></td>
 <td></td>
-<td>whether support iSCSI Discovery CHAP authentication</td>
+<td>chapAuthDiscovery defines whether support iSCSI Discovery CHAP authentication</td>
 <td></td>
 </tr>
 <tr>
@@ -14514,7 +14505,7 @@ ISCSI volumes support ownership management and SELinux relabeling.</p>
 <td><code>bool</code></td>
 <td style="text-align: center;"></td>
 <td></td>
-<td>whether support iSCSI Session CHAP authentication</td>
+<td>chapAuthSession defines whether support iSCSI Session CHAP authentication</td>
 <td></td>
 </tr>
 <tr>
@@ -14532,7 +14523,7 @@ ISCSI volumes support ownership management and SELinux relabeling.</p>
 <td><code>string</code></td>
 <td style="text-align: center;"></td>
 <td></td>
-<td>Filesystem type of the volume that you want to mount.</td>
+<td>fsType is the filesystem type of the volume that you want to mount.</td>
 <td></td>
 </tr>
 <tr>
@@ -14586,7 +14577,7 @@ ISCSI volumes support ownership management and SELinux relabeling.</p>
 <td><code>string</code></td>
 <td style="text-align: center;"></td>
 <td></td>
-<td>Custom iSCSI Initiator Name.</td>
+<td>initiatorName is the custom iSCSI Initiator Name.</td>
 <td></td>
 </tr>
 <tr>
@@ -14622,7 +14613,7 @@ ISCSI volumes support ownership management and SELinux relabeling.</p>
 <td><code>string</code></td>
 <td style="text-align: center;"></td>
 <td></td>
-<td>Target iSCSI Qualified Name.</td>
+<td>iqn is the target iSCSI Qualified Name.</td>
 <td></td>
 </tr>
 <tr>
@@ -14631,7 +14622,7 @@ ISCSI volumes support ownership management and SELinux relabeling.</p>
 <td><code>string</code></td>
 <td style="text-align: center;"></td>
 <td></td>
-<td>iSCSI Interface Name that uses an iSCSI transport.</td>
+<td>iscsiInterface is the interface Name that uses an iSCSI transport.</td>
 <td></td>
 </tr>
 <tr>
@@ -14658,7 +14649,7 @@ ISCSI volumes support ownership management and SELinux relabeling.</p>
 <td><code>int32</code></td>
 <td style="text-align: center;"></td>
 <td></td>
-<td>iSCSI Target Lun number.</td>
+<td>lun represents iSCSI Target Lun number.</td>
 <td></td>
 </tr>
 <tr>
@@ -14667,7 +14658,7 @@ ISCSI volumes support ownership management and SELinux relabeling.</p>
 <td><code>[]string</code></td>
 <td style="text-align: center;"></td>
 <td></td>
-<td>iSCSI Target Portal List. The portal is either an IP or ip_addr:port if the port</td>
+<td>portals is the iSCSI Target Portal List. The portal is either an IP or ip_addr:port if the port</td>
 <td></td>
 </tr>
 <tr>
@@ -14694,7 +14685,7 @@ ISCSI volumes support ownership management and SELinux relabeling.</p>
 <td><code>bool</code></td>
 <td style="text-align: center;"></td>
 <td></td>
-<td>ReadOnly here will force the ReadOnly setting in VolumeMounts.</td>
+<td>readOnly here will force the ReadOnly setting in VolumeMounts.</td>
 <td></td>
 </tr>
 <tr>
@@ -14730,7 +14721,7 @@ ISCSI volumes support ownership management and SELinux relabeling.</p>
 <td><code>string</code></td>
 <td style="text-align: center;"></td>
 <td></td>
-<td>iSCSI Target Portal. The Portal is either an IP or ip_addr:port if the port</td>
+<td>targetPortal is iSCSI Target Portal. The Portal is either an IP or ip_addr:port if the port</td>
 <td></td>
 </tr>
 <tr>
@@ -14876,7 +14867,7 @@ ISCSI volumes support ownership management and SELinux relabeling.</p>
 <td><code>string</code></td>
 <td style="text-align: center;"></td>
 <td></td>
-<td>The key to project.</td>
+<td>key is the key to project.</td>
 <td></td>
 </tr>
 <tr>
@@ -14885,7 +14876,7 @@ ISCSI volumes support ownership management and SELinux relabeling.</p>
 <td><code>int32</code></td>
 <td style="text-align: center;"></td>
 <td></td>
-<td>Optional: mode bits used to set permissions on this file.</td>
+<td>mode is Optional: mode bits used to set permissions on this file.</td>
 <td></td>
 </tr>
 <tr>
@@ -14948,7 +14939,7 @@ ISCSI volumes support ownership management and SELinux relabeling.</p>
 <td><code>string</code></td>
 <td style="text-align: center;"></td>
 <td></td>
-<td>The relative path of the file to map the key to.</td>
+<td>path is the relative path of the file to map the key to.</td>
 <td></td>
 </tr>
 <tr>
@@ -15855,7 +15846,7 @@ that the fieldset applies to.</p>
 <td><code>string</code></td>
 <td style="text-align: center;"></td>
 <td></td>
-<td>Path that is exported by the NFS server.</td>
+<td>path that is exported by the NFS server.</td>
 <td></td>
 </tr>
 <tr>
@@ -15873,16 +15864,7 @@ that the fieldset applies to.</p>
 <td><code>bool</code></td>
 <td style="text-align: center;"></td>
 <td></td>
-<td>ReadOnly here will force</td>
-<td></td>
-</tr>
-<tr>
-<td>the NFS export to be mounted with read-only permissions.</td>
-<td></td>
-<td></td>
-<td style="text-align: center;"></td>
-<td></td>
-<td></td>
+<td>readOnly here will force the NFS export to be mounted with read-only permissions.</td>
 <td></td>
 </tr>
 <tr>
@@ -15918,7 +15900,7 @@ that the fieldset applies to.</p>
 <td><code>string</code></td>
 <td style="text-align: center;"></td>
 <td></td>
-<td>Server is the hostname or IP address of the NFS server.</td>
+<td>server is the hostname or IP address of the NFS server.</td>
 <td></td>
 </tr>
 <tr>
@@ -16797,6 +16779,24 @@ be cluster-scoped, so there is no namespace field.
 <td></td>
 </tr>
 <tr>
+<td>See https://kubernetes.io/docs/concepts/architecture/garbage-collection/#foreground-deletion</td>
+<td></td>
+<td></td>
+<td style="text-align: center;"></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>for how the garbage collector interacts with this field and enforces the foreground deletion.</td>
+<td></td>
+<td></td>
+<td style="text-align: center;"></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
 <td>Defaults to false.</td>
 <td></td>
 <td></td>
@@ -17045,7 +17045,7 @@ and allows a Source for provider-specific attributes</p>
 <td><code>[]PersistentVolumeAccessMode</code></td>
 <td style="text-align: center;"></td>
 <td></td>
-<td>AccessModes contains the desired access modes the volume should have.</td>
+<td>accessModes contains the desired access modes the volume should have.</td>
 <td></td>
 </tr>
 <tr>
@@ -17108,7 +17108,7 @@ and allows a Source for provider-specific attributes</p>
 <td><code>string</code></td>
 <td style="text-align: center;"></td>
 <td></td>
-<td>Name of the StorageClass required by the claim.</td>
+<td>storageClassName is the name of the StorageClass required by the claim.</td>
 <td></td>
 </tr>
 <tr>
@@ -17144,7 +17144,7 @@ and allows a Source for provider-specific attributes</p>
 <td><code>string</code></td>
 <td style="text-align: center;"></td>
 <td></td>
-<td>VolumeName is the binding reference to the PersistentVolume backing this claim.</td>
+<td>volumeName is the binding reference to the PersistentVolume backing this claim.</td>
 <td></td>
 </tr>
 <tr>
@@ -17228,290 +17228,11 @@ PersistentVolumeClaim objects as part of an EphemeralVolumeSource.</p>
 <td><code>string</code></td>
 <td style="text-align: center;"></td>
 <td></td>
-<td>The name of the cluster which the object belongs to.</td>
+<td>Deprecated: ClusterName is a legacy field that was always cleared by</td>
 <td></td>
 </tr>
 <tr>
-<td>This is used to distinguish resources with same name and namespace in different clusters.</td>
-<td></td>
-<td></td>
-<td style="text-align: center;"></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr>
-<td>This field is not set anywhere right now and apiserver is going to ignore it if set in create or update request.</td>
-<td></td>
-<td></td>
-<td style="text-align: center;"></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr>
-<td>+optional</td>
-<td></td>
-<td></td>
-<td style="text-align: center;"></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr>
-<td>creationTimestamp</td>
-<td><a href="#time">Time</a></td>
-<td><code>Time</code></td>
-<td style="text-align: center;"></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr>
-<td>deletionGracePeriodSeconds</td>
-<td>int64 (formatted integer)</td>
-<td><code>int64</code></td>
-<td style="text-align: center;"></td>
-<td></td>
-<td>Number of seconds allowed for this object to gracefully terminate before</td>
-<td></td>
-</tr>
-<tr>
-<td>it will be removed from the system. Only set when deletionTimestamp is also set.</td>
-<td></td>
-<td></td>
-<td style="text-align: center;"></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr>
-<td>May only be shortened.</td>
-<td></td>
-<td></td>
-<td style="text-align: center;"></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr>
-<td>Read-only.</td>
-<td></td>
-<td></td>
-<td style="text-align: center;"></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr>
-<td>+optional</td>
-<td></td>
-<td></td>
-<td style="text-align: center;"></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr>
-<td>deletionTimestamp</td>
-<td><a href="#time">Time</a></td>
-<td><code>Time</code></td>
-<td style="text-align: center;"></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr>
-<td>finalizers</td>
-<td>[]string</td>
-<td><code>[]string</code></td>
-<td style="text-align: center;"></td>
-<td></td>
-<td>Must be empty before the object is deleted from the registry. Each entry</td>
-<td></td>
-</tr>
-<tr>
-<td>is an identifier for the responsible component that will remove the entry</td>
-<td></td>
-<td></td>
-<td style="text-align: center;"></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr>
-<td>from the list. If the deletionTimestamp of the object is non-nil, entries</td>
-<td></td>
-<td></td>
-<td style="text-align: center;"></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr>
-<td>in this list can only be removed.</td>
-<td></td>
-<td></td>
-<td style="text-align: center;"></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr>
-<td>Finalizers may be processed and removed in any order.  Order is NOT enforced</td>
-<td></td>
-<td></td>
-<td style="text-align: center;"></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr>
-<td>because it introduces significant risk of stuck finalizers.</td>
-<td></td>
-<td></td>
-<td style="text-align: center;"></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr>
-<td>finalizers is a shared field, any actor with permission can reorder it.</td>
-<td></td>
-<td></td>
-<td style="text-align: center;"></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr>
-<td>If the finalizer list is processed in order, then this can lead to a situation</td>
-<td></td>
-<td></td>
-<td style="text-align: center;"></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr>
-<td>in which the component responsible for the first finalizer in the list is</td>
-<td></td>
-<td></td>
-<td style="text-align: center;"></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr>
-<td>waiting for a signal (field value, external system, or other) produced by a</td>
-<td></td>
-<td></td>
-<td style="text-align: center;"></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr>
-<td>component responsible for a finalizer later in the list, resulting in a deadlock.</td>
-<td></td>
-<td></td>
-<td style="text-align: center;"></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr>
-<td>Without enforced ordering finalizers are free to order amongst themselves and</td>
-<td></td>
-<td></td>
-<td style="text-align: center;"></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr>
-<td>are not vulnerable to ordering changes in the list.</td>
-<td></td>
-<td></td>
-<td style="text-align: center;"></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr>
-<td>+optional</td>
-<td></td>
-<td></td>
-<td style="text-align: center;"></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr>
-<td>+patchStrategy=merge</td>
-<td></td>
-<td></td>
-<td style="text-align: center;"></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr>
-<td>generateName</td>
-<td>string</td>
-<td><code>string</code></td>
-<td style="text-align: center;"></td>
-<td></td>
-<td>GenerateName is an optional prefix, used by the server, to generate a unique</td>
-<td></td>
-</tr>
-<tr>
-<td>name ONLY IF the Name field has not been provided.</td>
-<td></td>
-<td></td>
-<td style="text-align: center;"></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr>
-<td>If this field is used, the name returned to the client will be different</td>
-<td></td>
-<td></td>
-<td style="text-align: center;"></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr>
-<td>than the name passed. This value will also be combined with a unique suffix.</td>
-<td></td>
-<td></td>
-<td style="text-align: center;"></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr>
-<td>The provided value has the same validation rules as the Name field,</td>
-<td></td>
-<td></td>
-<td style="text-align: center;"></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr>
-<td>and may be truncated by the length of the suffix required to make the value</td>
-<td></td>
-<td></td>
-<td style="text-align: center;"></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr>
-<td>unique on the server.</td>
+<td>the system and never used; it will be removed completely in 1.25.</td>
 <td></td>
 <td></td>
 <td style="text-align: center;"></td>
@@ -17521,10 +17242,39 @@ PersistentVolumeClaim objects as part of an EphemeralVolumeSource.</p>
 </tr>
 </tbody>
 </table>
-<p>If this field is specified and the generated name exists, the server will
-NOT return a 409 - instead, it will either return 201 Created or 500 with Reason
-ServerTimeout indicating a unique name could not be found in the time allotted, and the client
-should retry (optionally after the time indicated in the Retry-After header).</p>
+<p>The name in the go struct is changed to help clients detect
+accidental use.</p>
+<p>+optional |  |
+| creationTimestamp | <a href="#time">Time</a>| <code>Time</code> |  | |  |  |
+| deletionGracePeriodSeconds | int64 (formatted integer)| <code>int64</code> |  | | Number of seconds allowed for this object to gracefully terminate before
+it will be removed from the system. Only set when deletionTimestamp is also set.
+May only be shortened.
+Read-only.
++optional |  |
+| deletionTimestamp | <a href="#time">Time</a>| <code>Time</code> |  | |  |  |
+| finalizers | []string| <code>[]string</code> |  | | Must be empty before the object is deleted from the registry. Each entry
+is an identifier for the responsible component that will remove the entry
+from the list. If the deletionTimestamp of the object is non-nil, entries
+in this list can only be removed.
+Finalizers may be processed and removed in any order.  Order is NOT enforced
+because it introduces significant risk of stuck finalizers.
+finalizers is a shared field, any actor with permission can reorder it.
+If the finalizer list is processed in order, then this can lead to a situation
+in which the component responsible for the first finalizer in the list is
+waiting for a signal (field value, external system, or other) produced by a
+component responsible for a finalizer later in the list, resulting in a deadlock.
+Without enforced ordering finalizers are free to order amongst themselves and
+are not vulnerable to ordering changes in the list.
++optional
++patchStrategy=merge |  |
+| generateName | string| <code>string</code> |  | | GenerateName is an optional prefix, used by the server, to generate a unique
+name ONLY IF the Name field has not been provided.
+If this field is used, the name returned to the client will be different
+than the name passed. This value will also be combined with a unique suffix.
+The provided value has the same validation rules as the Name field,
+and may be truncated by the length of the suffix required to make the value
+unique on the server.</p>
+<p>If this field is specified and the generated name exists, the server will return a 409.</p>
 <p>Applied only if Name is not specified.
 More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#idempotency
 +optional |  |
@@ -17576,12 +17326,7 @@ Read-only.
 Value must be treated as opaque by clients and .
 More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#concurrency-control-and-consistency
 +optional |  |
-| selfLink | string| <code>string</code> |  | | SelfLink is a URL representing this object.
-Populated by the system.
-Read-only.</p>
-<p>DEPRECATED
-Kubernetes will stop propagating this field in 1.20 release and the field is planned
-to be removed in 1.21 release.
+| selfLink | string| <code>string</code> |  | | Deprecated: selfLink is a legacy read-only field that is no longer populated by the system.
 +optional |  |
 | spec | <a href="#persistent-volume-claim-spec">PersistentVolumeClaimSpec</a>| <code>PersistentVolumeClaimSpec</code> |  | |  |  |
 | uid | <a href="#uid">UID</a>| <code>UID</code> |  | |  |  |</p>
@@ -17611,7 +17356,7 @@ type of volume that is owned by someone else (the system).</p>
 <td><code>string</code></td>
 <td style="text-align: center;"></td>
 <td></td>
-<td>ClaimName is the name of a PersistentVolumeClaim in the same namespace as the pod using this volume.</td>
+<td>claimName is the name of a PersistentVolumeClaim in the same namespace as the pod using this volume.</td>
 <td></td>
 </tr>
 <tr>
@@ -17629,7 +17374,7 @@ type of volume that is owned by someone else (the system).</p>
 <td><code>bool</code></td>
 <td style="text-align: center;"></td>
 <td></td>
-<td>Will force the ReadOnly setting in VolumeMounts.</td>
+<td>readOnly Will force the ReadOnly setting in VolumeMounts.</td>
 <td></td>
 </tr>
 <tr>
@@ -17699,7 +17444,7 @@ type of volume that is owned by someone else (the system).</p>
 <td><code>string</code></td>
 <td style="text-align: center;"></td>
 <td></td>
-<td>Filesystem type to mount.</td>
+<td>fsType is the filesystem type to mount.</td>
 <td></td>
 </tr>
 <tr>
@@ -17726,7 +17471,7 @@ type of volume that is owned by someone else (the system).</p>
 <td><code>string</code></td>
 <td style="text-align: center;"></td>
 <td></td>
-<td>ID that identifies Photon Controller persistent disk</td>
+<td>pdID is the ID that identifies Photon Controller persistent disk</td>
 <td></td>
 </tr>
 </tbody>
@@ -17984,7 +17729,7 @@ a pod of the set of pods is running</p>
 <td></td>
 </tr>
 <tr>
-<td>null or empty namespaces list and null namespaceSelector means "this pod's namespace"</td>
+<td>null or empty namespaces list and null namespaceSelector means "this pod's namespace".</td>
 <td></td>
 <td></td>
 <td style="text-align: center;"></td>
@@ -18382,7 +18127,7 @@ Note that this field cannot be set when spec.os.name is windows.
 <td><code>string</code></td>
 <td style="text-align: center;"></td>
 <td></td>
-<td>FSType represents the filesystem type to mount</td>
+<td>fSType represents the filesystem type to mount</td>
 <td></td>
 </tr>
 <tr>
@@ -18409,7 +18154,7 @@ Note that this field cannot be set when spec.os.name is windows.
 <td><code>bool</code></td>
 <td style="text-align: center;"></td>
 <td></td>
-<td>Defaults to false (read/write). ReadOnly here will force</td>
+<td>readOnly defaults to false (read/write). ReadOnly here will force</td>
 <td></td>
 </tr>
 <tr>
@@ -18436,7 +18181,7 @@ Note that this field cannot be set when spec.os.name is windows.
 <td><code>string</code></td>
 <td style="text-align: center;"></td>
 <td></td>
-<td>VolumeID uniquely identifies a Portworx volume</td>
+<td>volumeID uniquely identifies a Portworx volume</td>
 <td></td>
 </tr>
 </tbody>
@@ -18853,7 +18598,7 @@ alive or ready to receive traffic.</p>
 <td><code>int32</code></td>
 <td style="text-align: center;"></td>
 <td></td>
-<td>Mode bits used to set permissions on created files by default.</td>
+<td>defaultMode are the mode bits used to set permissions on created files by default.</td>
 <td></td>
 </tr>
 <tr>
@@ -18916,7 +18661,7 @@ alive or ready to receive traffic.</p>
 <td><code>[]*VolumeProjection</code></td>
 <td style="text-align: center;"></td>
 <td></td>
-<td>list of volume projections</td>
+<td>sources is the list of volume projections</td>
 <td></td>
 </tr>
 <tr>
@@ -19147,7 +18892,7 @@ cause implementors to also use a fixed point implementation.</p>
 <td><code>string</code></td>
 <td style="text-align: center;"></td>
 <td></td>
-<td>Group to map volume access to</td>
+<td>group to map volume access to</td>
 <td></td>
 </tr>
 <tr>
@@ -19174,7 +18919,7 @@ cause implementors to also use a fixed point implementation.</p>
 <td><code>bool</code></td>
 <td style="text-align: center;"></td>
 <td></td>
-<td>ReadOnly here will force the Quobyte volume to be mounted with read-only permissions.</td>
+<td>readOnly here will force the Quobyte volume to be mounted with read-only permissions.</td>
 <td></td>
 </tr>
 <tr>
@@ -19201,7 +18946,7 @@ cause implementors to also use a fixed point implementation.</p>
 <td><code>string</code></td>
 <td style="text-align: center;"></td>
 <td></td>
-<td>Registry represents a single or multiple Quobyte Registry services</td>
+<td>registry represents a single or multiple Quobyte Registry services</td>
 <td></td>
 </tr>
 <tr>
@@ -19228,7 +18973,7 @@ cause implementors to also use a fixed point implementation.</p>
 <td><code>string</code></td>
 <td style="text-align: center;"></td>
 <td></td>
-<td>Tenant owning the given Quobyte volume in the Backend</td>
+<td>tenant owning the given Quobyte volume in the Backend</td>
 <td></td>
 </tr>
 <tr>
@@ -19255,7 +19000,7 @@ cause implementors to also use a fixed point implementation.</p>
 <td><code>string</code></td>
 <td style="text-align: center;"></td>
 <td></td>
-<td>User to map volume access to</td>
+<td>user to map volume access to</td>
 <td></td>
 </tr>
 <tr>
@@ -19282,7 +19027,7 @@ cause implementors to also use a fixed point implementation.</p>
 <td><code>string</code></td>
 <td style="text-align: center;"></td>
 <td></td>
-<td>Volume is a string that references an already created Quobyte volume by name.</td>
+<td>volume is a string that references an already created Quobyte volume by name.</td>
 <td></td>
 </tr>
 </tbody>
@@ -19311,7 +19056,7 @@ cause implementors to also use a fixed point implementation.</p>
 <td><code>string</code></td>
 <td style="text-align: center;"></td>
 <td></td>
-<td>Filesystem type of the volume that you want to mount.</td>
+<td>fsType is the filesystem type of the volume that you want to mount.</td>
 <td></td>
 </tr>
 <tr>
@@ -19365,7 +19110,7 @@ cause implementors to also use a fixed point implementation.</p>
 <td><code>string</code></td>
 <td style="text-align: center;"></td>
 <td></td>
-<td>The rados image name.</td>
+<td>image is the rados image name.</td>
 <td></td>
 </tr>
 <tr>
@@ -19383,7 +19128,7 @@ cause implementors to also use a fixed point implementation.</p>
 <td><code>string</code></td>
 <td style="text-align: center;"></td>
 <td></td>
-<td>Keyring is the path to key ring for RBDUser.</td>
+<td>keyring is the path to key ring for RBDUser.</td>
 <td></td>
 </tr>
 <tr>
@@ -19419,7 +19164,7 @@ cause implementors to also use a fixed point implementation.</p>
 <td><code>[]string</code></td>
 <td style="text-align: center;"></td>
 <td></td>
-<td>A collection of Ceph monitors.</td>
+<td>monitors is a collection of Ceph monitors.</td>
 <td></td>
 </tr>
 <tr>
@@ -19437,7 +19182,7 @@ cause implementors to also use a fixed point implementation.</p>
 <td><code>string</code></td>
 <td style="text-align: center;"></td>
 <td></td>
-<td>The rados pool name.</td>
+<td>pool is the rados pool name.</td>
 <td></td>
 </tr>
 <tr>
@@ -19473,7 +19218,7 @@ cause implementors to also use a fixed point implementation.</p>
 <td><code>bool</code></td>
 <td style="text-align: center;"></td>
 <td></td>
-<td>ReadOnly here will force the ReadOnly setting in VolumeMounts.</td>
+<td>readOnly here will force the ReadOnly setting in VolumeMounts.</td>
 <td></td>
 </tr>
 <tr>
@@ -19518,7 +19263,7 @@ cause implementors to also use a fixed point implementation.</p>
 <td><code>string</code></td>
 <td style="text-align: center;"></td>
 <td></td>
-<td>The rados user name.</td>
+<td>user is the rados user name.</td>
 <td></td>
 </tr>
 <tr>
@@ -20256,7 +20001,7 @@ cause implementors to also use a fixed point implementation.</p>
 <td><code>string</code></td>
 <td style="text-align: center;"></td>
 <td></td>
-<td>Filesystem type to mount.</td>
+<td>fsType is the filesystem type to mount.</td>
 <td></td>
 </tr>
 <tr>
@@ -20301,7 +20046,7 @@ cause implementors to also use a fixed point implementation.</p>
 <td><code>string</code></td>
 <td style="text-align: center;"></td>
 <td></td>
-<td>The host address of the ScaleIO API Gateway.</td>
+<td>gateway is the host address of the ScaleIO API Gateway.</td>
 <td></td>
 </tr>
 <tr>
@@ -20310,7 +20055,7 @@ cause implementors to also use a fixed point implementation.</p>
 <td><code>string</code></td>
 <td style="text-align: center;"></td>
 <td></td>
-<td>The name of the ScaleIO Protection Domain for the configured storage.</td>
+<td>protectionDomain is the name of the ScaleIO Protection Domain for the configured storage.</td>
 <td></td>
 </tr>
 <tr>
@@ -20328,7 +20073,7 @@ cause implementors to also use a fixed point implementation.</p>
 <td><code>bool</code></td>
 <td style="text-align: center;"></td>
 <td></td>
-<td>Defaults to false (read/write). ReadOnly here will force</td>
+<td>readOnly Defaults to false (read/write). ReadOnly here will force</td>
 <td></td>
 </tr>
 <tr>
@@ -20364,7 +20109,7 @@ cause implementors to also use a fixed point implementation.</p>
 <td><code>bool</code></td>
 <td style="text-align: center;"></td>
 <td></td>
-<td>Flag to enable/disable SSL communication with Gateway, default false</td>
+<td>sslEnabled Flag enable/disable SSL communication with Gateway, default false</td>
 <td></td>
 </tr>
 <tr>
@@ -20382,7 +20127,7 @@ cause implementors to also use a fixed point implementation.</p>
 <td><code>string</code></td>
 <td style="text-align: center;"></td>
 <td></td>
-<td>Indicates whether the storage for a volume should be ThickProvisioned or ThinProvisioned.</td>
+<td>storageMode indicates whether the storage for a volume should be ThickProvisioned or ThinProvisioned.</td>
 <td></td>
 </tr>
 <tr>
@@ -20409,7 +20154,7 @@ cause implementors to also use a fixed point implementation.</p>
 <td><code>string</code></td>
 <td style="text-align: center;"></td>
 <td></td>
-<td>The ScaleIO Storage Pool associated with the protection domain.</td>
+<td>storagePool is the ScaleIO Storage Pool associated with the protection domain.</td>
 <td></td>
 </tr>
 <tr>
@@ -20427,7 +20172,7 @@ cause implementors to also use a fixed point implementation.</p>
 <td><code>string</code></td>
 <td style="text-align: center;"></td>
 <td></td>
-<td>The name of the storage system as configured in ScaleIO.</td>
+<td>system is the name of the storage system as configured in ScaleIO.</td>
 <td></td>
 </tr>
 <tr>
@@ -20436,7 +20181,7 @@ cause implementors to also use a fixed point implementation.</p>
 <td><code>string</code></td>
 <td style="text-align: center;"></td>
 <td></td>
-<td>The name of a volume already created in the ScaleIO system</td>
+<td>volumeName is the name of a volume already created in the ScaleIO system</td>
 <td></td>
 </tr>
 <tr>
@@ -20478,7 +20223,7 @@ cause implementors to also use a fixed point implementation.</p>
 <td></td>
 </tr>
 <tr>
-<td>The docker image's CMD is used if this is not provided.</td>
+<td>The container image's CMD is used if this is not provided.</td>
 <td></td>
 <td></td>
 <td style="text-align: center;"></td>
@@ -20559,7 +20304,7 @@ cause implementors to also use a fixed point implementation.</p>
 <td></td>
 </tr>
 <tr>
-<td>The docker image's ENTRYPOINT is used if this is not provided.</td>
+<td>The container image's ENTRYPOINT is used if this is not provided.</td>
 <td></td>
 <td></td>
 <td style="text-align: center;"></td>
@@ -20744,7 +20489,7 @@ cause implementors to also use a fixed point implementation.</p>
 <td><code>string</code></td>
 <td style="text-align: center;"></td>
 <td></td>
-<td>Docker image name.</td>
+<td>Container image name.</td>
 <td></td>
 </tr>
 <tr>
@@ -21629,7 +21374,7 @@ mode.</p>
 <td><code>[]*KeyToPath</code></td>
 <td style="text-align: center;"></td>
 <td></td>
-<td>If unspecified, each key-value pair in the Data field of the referenced</td>
+<td>items if unspecified, each key-value pair in the Data field of the referenced</td>
 <td></td>
 </tr>
 <tr>
@@ -21737,7 +21482,7 @@ mode.</p>
 <td><code>bool</code></td>
 <td style="text-align: center;"></td>
 <td></td>
-<td>Specify whether the Secret or its key must be defined</td>
+<td>optional field specify whether the Secret or its key must be defined</td>
 <td></td>
 </tr>
 <tr>
@@ -21777,7 +21522,7 @@ Secret volumes support ownership management and SELinux relabeling.</p>
 <td><code>int32</code></td>
 <td style="text-align: center;"></td>
 <td></td>
-<td>Optional: mode bits used to set permissions on created files by default.</td>
+<td>defaultMode is Optional: mode bits used to set permissions on created files by default.</td>
 <td></td>
 </tr>
 <tr>
@@ -21849,7 +21594,7 @@ Secret volumes support ownership management and SELinux relabeling.</p>
 <td><code>[]*KeyToPath</code></td>
 <td style="text-align: center;"></td>
 <td></td>
-<td>If unspecified, each key-value pair in the Data field of the referenced</td>
+<td>items If unspecified, each key-value pair in the Data field of the referenced</td>
 <td></td>
 </tr>
 <tr>
@@ -21921,7 +21666,7 @@ Secret volumes support ownership management and SELinux relabeling.</p>
 <td><code>bool</code></td>
 <td style="text-align: center;"></td>
 <td></td>
-<td>Specify whether the Secret or its keys must be defined</td>
+<td>optional field specify whether the Secret or its keys must be defined</td>
 <td></td>
 </tr>
 <tr>
@@ -21939,7 +21684,7 @@ Secret volumes support ownership management and SELinux relabeling.</p>
 <td><code>string</code></td>
 <td style="text-align: center;"></td>
 <td></td>
-<td>Name of the secret in the pod's namespace to use.</td>
+<td>secretName is the name of the secret in the pod's namespace to use.</td>
 <td></td>
 </tr>
 <tr>
@@ -22464,7 +22209,7 @@ otherwise).</p>
 <td><code>string</code></td>
 <td style="text-align: center;"></td>
 <td></td>
-<td>Audience is the intended audience of the token. A recipient of a token</td>
+<td>audience is the intended audience of the token. A recipient of a token</td>
 <td></td>
 </tr>
 <tr>
@@ -22509,7 +22254,7 @@ otherwise).</p>
 <td><code>int64</code></td>
 <td style="text-align: center;"></td>
 <td></td>
-<td>ExpirationSeconds is the requested duration of validity of the service</td>
+<td>expirationSeconds is the requested duration of validity of the service</td>
 <td></td>
 </tr>
 <tr>
@@ -22572,7 +22317,7 @@ otherwise).</p>
 <td><code>string</code></td>
 <td style="text-align: center;"></td>
 <td></td>
-<td>Path is the path relative to the mount point of the file to project the</td>
+<td>path is the path relative to the mount point of the file to project the</td>
 <td></td>
 </tr>
 <tr>
@@ -22630,7 +22375,7 @@ otherwise).</p>
 <td><code>string</code></td>
 <td style="text-align: center;"></td>
 <td></td>
-<td>Filesystem type to mount.</td>
+<td>fsType is the filesystem type to mount.</td>
 <td></td>
 </tr>
 <tr>
@@ -22666,7 +22411,7 @@ otherwise).</p>
 <td><code>bool</code></td>
 <td style="text-align: center;"></td>
 <td></td>
-<td>Defaults to false (read/write). ReadOnly here will force</td>
+<td>readOnly defaults to false (read/write). ReadOnly here will force</td>
 <td></td>
 </tr>
 <tr>
@@ -22702,7 +22447,7 @@ otherwise).</p>
 <td><code>string</code></td>
 <td style="text-align: center;"></td>
 <td></td>
-<td>VolumeName is the human-readable name of the StorageOS volume.  Volume</td>
+<td>volumeName is the human-readable name of the StorageOS volume.  Volume</td>
 <td></td>
 </tr>
 <tr>
@@ -22720,7 +22465,7 @@ otherwise).</p>
 <td><code>string</code></td>
 <td style="text-align: center;"></td>
 <td></td>
-<td>VolumeNamespace specifies the scope of the volume within StorageOS.  If no</td>
+<td>volumeNamespace specifies the scope of the volume within StorageOS.  If no</td>
 <td></td>
 </tr>
 <tr>
@@ -24029,7 +23774,7 @@ intent and helps make sure that UIDs and names do not get conflated.</p>
 <td></td>
 </tr>
 <tr>
-<td>The docker image's CMD is used if this is not provided.</td>
+<td>The container image's CMD is used if this is not provided.</td>
 <td></td>
 <td></td>
 <td style="text-align: center;"></td>
@@ -24110,7 +23855,7 @@ intent and helps make sure that UIDs and names do not get conflated.</p>
 <td></td>
 </tr>
 <tr>
-<td>The docker image's ENTRYPOINT is used if this is not provided.</td>
+<td>The container image's ENTRYPOINT is used if this is not provided.</td>
 <td></td>
 <td></td>
 <td style="text-align: center;"></td>
@@ -24295,7 +24040,7 @@ intent and helps make sure that UIDs and names do not get conflated.</p>
 <td><code>string</code></td>
 <td style="text-align: center;"></td>
 <td></td>
-<td>Docker image name.</td>
+<td>Container image name.</td>
 <td></td>
 </tr>
 <tr>
@@ -25214,7 +24959,7 @@ intent and helps make sure that UIDs and names do not get conflated.</p>
 <td><code>string</code></td>
 <td style="text-align: center;"></td>
 <td></td>
-<td>Volume's name.</td>
+<td>name of the volume.</td>
 <td></td>
 </tr>
 <tr>
@@ -25600,7 +25345,7 @@ intent and helps make sure that UIDs and names do not get conflated.</p>
 <td><code>string</code></td>
 <td style="text-align: center;"></td>
 <td></td>
-<td>Filesystem type to mount.</td>
+<td>fsType is filesystem type to mount.</td>
 <td></td>
 </tr>
 <tr>
@@ -25636,7 +25381,7 @@ intent and helps make sure that UIDs and names do not get conflated.</p>
 <td><code>string</code></td>
 <td style="text-align: center;"></td>
 <td></td>
-<td>Storage Policy Based Management (SPBM) profile ID associated with the StoragePolicyName.</td>
+<td>storagePolicyID is the storage Policy Based Management (SPBM) profile ID associated with the StoragePolicyName.</td>
 <td></td>
 </tr>
 <tr>
@@ -25654,7 +25399,7 @@ intent and helps make sure that UIDs and names do not get conflated.</p>
 <td><code>string</code></td>
 <td style="text-align: center;"></td>
 <td></td>
-<td>Storage Policy Based Management (SPBM) profile name.</td>
+<td>storagePolicyName is the storage Policy Based Management (SPBM) profile name.</td>
 <td></td>
 </tr>
 <tr>
@@ -25672,7 +25417,7 @@ intent and helps make sure that UIDs and names do not get conflated.</p>
 <td><code>string</code></td>
 <td style="text-align: center;"></td>
 <td></td>
-<td>Path that identifies vSphere volume vmdk</td>
+<td>volumePath is the path that identifies vSphere volume vmdk</td>
 <td></td>
 </tr>
 </tbody>
