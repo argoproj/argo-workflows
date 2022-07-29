@@ -35,6 +35,11 @@ func (woc *wfOperationCtx) garbageCollectArtifacts(ctx context.Context) error {
 	// only do Artifact GC if we have a Finalizer for it (i.e. Artifact GC is configured for this Workflow
 	// and there's work left to do for it)
 	if !slice.ContainsString(woc.wf.Finalizers, common.FinalizerArtifactGC) {
+		if woc.execWf.HasArtifactGC() { //todo: if this works, consider adding something to status to prevent re-checking
+			woc.log.Info("adding artifact GC finalizer")
+			finalizers := append(woc.wf.GetFinalizers(), common.FinalizerArtifactGC)
+			woc.wf.SetFinalizers(finalizers)
+		}
 		return nil
 	}
 
@@ -143,13 +148,20 @@ func (woc *wfOperationCtx) processArtifactGCStrategy(ctx context.Context, strate
 		if !found {
 			return fmt.Errorf("can't process Artifact GC Strategy %s: node ID '%s' not found in Status??", strategy, artifactSearchResult.NodeID)
 		}
-		template, found := templatesByName[node.TemplateName]
+		templateName := node.TemplateName
+		if templateName == "" && node.GetTemplateRef() != nil {
+			templateName = node.GetTemplateRef().Name
+		}
+		if templateName == "" {
+			return fmt.Errorf("can't process Artifact GC Strategy %s: node %+v has an unnamed template", strategy, node)
+		}
+		template, found := templatesByName[templateName]
 		if !found {
-			template = woc.wf.GetTemplateByName(node.TemplateName)
+			template = woc.wf.GetTemplateByName(templateName)
 			if template == nil {
 				return fmt.Errorf("can't process Artifact GC Strategy %s: template name '%s' belonging to node %+v not found??", strategy, node.TemplateName, node)
 			}
-			templatesByName[node.TemplateName] = template
+			templatesByName[templateName] = template
 		}
 
 		_, found = groupedByPod[podName][template.Name]
