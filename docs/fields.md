@@ -1589,7 +1589,7 @@ RetryStrategy provides controls on how to retry a workflow step
 |`affinity`|[`RetryAffinity`](#retryaffinity)|Affinity prevents running workflow's step on the same host|
 |`backoff`|[`Backoff`](#backoff)|Backoff is a backoff strategy|
 |`expression`|`string`|Expression is a condition expression for when a node will be retried. If it evaluates to false, the node will not be retried and the retry strategy will be ignored|
-|`limit`|[`IntOrString`](#intorstring)|Limit is the maximum number of attempts when retrying a container|
+|`limit`|[`IntOrString`](#intorstring)|Limit is the maximum number of retry attempts when retrying a container. It does not include the original container; the maximum number of total attempts will be `limit + 1`.|
 |`retryPolicy`|`string`|RetryPolicy is a policy of NodePhase statuses that will be retried|
 
 ## Synchronization
