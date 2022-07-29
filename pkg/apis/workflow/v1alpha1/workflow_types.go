@@ -1326,20 +1326,6 @@ type ArtifactSearchQuery struct {
 	Deleted              *bool                       `json:"deleted,omitempty" protobuf:"varint,5,opt,name=deleted"`
 }
 
-type ArtifactGCPhase string
-
-// Status of Artifact GC Pod
-const (
-	// has not been scheduled
-	ArtifactGCNotStarted ArtifactGCPhase = "NotStarted"
-	// has been scheduled to run and/or is running
-	ArtifactGCScheduled ArtifactGCPhase = "Scheduled"
-	// finished with 0 code
-	ArtifactGCSucceeded ArtifactGCPhase = "Succeeded"
-	// finished with non-0 code
-	ArtifactGCFailed ArtifactGCPhase = "Failed"
-)
-
 // map ArtifactGC Pod name to phase
 type ArtGCStatus struct {
 	// have Pods been started to perform this strategy?
