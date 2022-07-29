@@ -9982,7 +9982,7 @@
 <tr>
 <td style="text-align: center;"><code>limit</code></td>
 <td style="text-align: center;"><a href="#intorstring"><code>IntOrString</code></a></td>
-<td>Limit is the maximum number of attempts when retrying a container</td>
+<td>Limit is the maximum number of retry attempts when retrying a container. It does not include the original container; the maximum number of total attempts will be <code>limit + 1</code>.</td>
 </tr>
 <tr>
 <td style="text-align: center;"><code>retryPolicy</code></td>
