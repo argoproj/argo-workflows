@@ -9711,7 +9711,7 @@
           "type": "string"
         },
         "limit": {
-          "description": "Limit is the maximum number of attempts when retrying a container",
+          "description": "Limit is the maximum number of retry attempts when retrying a container. It does not include the original container; the maximum number of total attempts will be `limit + 1`.",
           "$ref": "#/definitions/io.k8s.apimachinery.pkg.util.intstr.IntOrString"
         },
         "retryPolicy": {
