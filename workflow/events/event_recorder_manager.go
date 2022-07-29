@@ -1,6 +1,7 @@
 package events
 
 import (
+	"sort"
 	"strings"
 	"sync"
 
@@ -33,11 +34,12 @@ func customEventAggregatorFuncWithAnnotations(event *apiv1.Event) (string, strin
 	var joinedAnnotationsStr string
 	includeAnnotations := env.LookupEnvStringOr("EVENT_AGGREGATION_WITH_ANNOTATIONS", "false")
 	if annotations := event.GetAnnotations(); includeAnnotations == "true" && annotations != nil {
-		var joinedAnnotations = make([]string, 0, len(annotations))
+		annotationVals := make([]string, 0, len(annotations))
 		for _, v := range annotations {
-			joinedAnnotations = append(joinedAnnotations, v)
+			annotationVals = append(annotationVals, v)
 		}
-		joinedAnnotationsStr = strings.Join(joinedAnnotations, "")
+		sort.Sort(sort.StringSlice(annotationVals))
+		joinedAnnotationsStr = strings.Join(annotationVals, "")
 	}
 	return strings.Join([]string{
 		event.Source.Component,
