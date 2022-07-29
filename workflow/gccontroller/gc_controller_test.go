@@ -8,9 +8,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/util/clock"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
+	testingclock "k8s.io/utils/clock/testing"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	fakewfclientset "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/fake"
@@ -343,7 +343,7 @@ status:
 `
 
 func newTTLController() *Controller {
-	clock := clock.NewFakeClock(time.Now())
+	clock := testingclock.NewFakeClock(time.Now())
 	wfclientset := fakewfclientset.NewSimpleClientset()
 	wfInformer := cache.NewSharedIndexInformer(nil, nil, 0, nil)
 	return &Controller{

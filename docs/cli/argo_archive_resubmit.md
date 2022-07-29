@@ -1,17 +1,57 @@
-## argo cron list
+## argo archive resubmit
 
-list cron workflows
+resubmit one or more workflows
 
 ```
-argo cron list [flags]
+argo archive resubmit [WORKFLOW...] [flags]
+```
+
+### Examples
+
+```
+# Resubmit a workflow:
+
+  argo archive resubmit uid
+
+# Resubmit multiple workflows:
+
+  argo archive resubmit uid another-uid
+
+# Resubmit multiple workflows by label selector:
+
+  argo archive resubmit -l workflows.argoproj.io/test=true
+
+# Resubmit multiple workflows by field selector:
+
+  argo archive resubmit --field-selector metadata.namespace=argo
+
+# Resubmit and wait for completion:
+
+  argo archive resubmit --wait uid
+
+# Resubmit and watch until completion:
+
+  argo archive resubmit --watch uid
+
+# Resubmit and tail logs until completion:
+
+  argo archive resubmit --log uid
+
 ```
 
 ### Options
 
 ```
-  -A, --all-namespaces   Show workflows from all namespaces
-  -h, --help             help for list
-  -o, --output string    Output format. One of: wide|name
+      --field-selector string   Selector (field query) to filter on, supports '=', '==', and '!='.(e.g. --field-selector key1=value1,key2=value2). The server only supports a limited number of field queries per type.
+  -h, --help                    help for resubmit
+      --log                     log the workflow until it completes
+      --memoized                re-use successful steps & outputs from the previous run
+  -o, --output string           Output format. One of: name|json|yaml|wide
+  -p, --parameter stringArray   input parameter to override on the original workflow spec
+      --priority int32          workflow priority
+  -l, --selector string         Selector (label query) to filter on, not including uninitialized ones, supports '=', '==', and '!='.(e.g. -l key1=value1,key2=value2)
+  -w, --wait                    wait for the workflow to complete, only works when a single workflow is resubmitted
+      --watch                   watch the workflow until it completes, only works when a single workflow is resubmitted
 ```
 
 ### Options inherited from parent commands
@@ -50,5 +90,5 @@ argo cron list [flags]
 
 ### SEE ALSO
 
-* [argo cron](argo_cron.md)	 - manage cron workflows
+* [argo archive](argo_archive.md)	 - manage the workflow archive
 

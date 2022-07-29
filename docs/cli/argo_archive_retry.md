@@ -1,17 +1,57 @@
-## argo cron list
+## argo archive retry
 
-list cron workflows
+retry zero or more workflows
 
 ```
-argo cron list [flags]
+argo archive retry [WORKFLOW...] [flags]
+```
+
+### Examples
+
+```
+# Retry a workflow:
+
+  argo archive retry uid
+
+# Retry multiple workflows:
+
+  argo archive retry uid another-uid
+
+# Retry multiple workflows by label selector:
+
+  argo archive retry -l workflows.argoproj.io/test=true
+
+# Retry multiple workflows by field selector:
+
+  argo archive retry --field-selector metadata.namespace=argo
+
+# Retry and wait for completion:
+
+  argo archive retry --wait uid
+
+# Retry and watch until completion:
+
+  argo archive retry --watch uid
+		
+# Retry and tail logs until completion:
+
+  argo archive retry --log uid
+
 ```
 
 ### Options
 
 ```
-  -A, --all-namespaces   Show workflows from all namespaces
-  -h, --help             help for list
-  -o, --output string    Output format. One of: wide|name
+      --field-selector string        Selector (field query) to filter on, supports '=', '==', and '!='.(e.g. --field-selector key1=value1,key2=value2). The server only supports a limited number of field queries per type.
+  -h, --help                         help for retry
+      --log                          log the workflow until it completes
+      --node-field-selector string   selector of nodes to reset, eg: --node-field-selector inputs.paramaters.myparam.value=abc
+  -o, --output string                Output format. One of: name|json|yaml|wide
+  -p, --parameter stringArray        input parameter to override on the original workflow spec
+      --restart-successful           indicates to restart successful nodes matching the --node-field-selector
+  -l, --selector string              Selector (label query) to filter on, not including uninitialized ones, supports '=', '==', and '!='.(e.g. -l key1=value1,key2=value2)
+  -w, --wait                         wait for the workflow to complete, only works when a single workflow is retried
+      --watch                        watch the workflow until it completes, only works when a single workflow is retried
 ```
 
 ### Options inherited from parent commands
@@ -50,5 +90,5 @@ argo cron list [flags]
 
 ### SEE ALSO
 
-* [argo cron](argo_cron.md)	 - manage cron workflows
+* [argo archive](argo_archive.md)	 - manage the workflow archive
 

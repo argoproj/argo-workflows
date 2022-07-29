@@ -1,17 +1,32 @@
-## argo cron list
+## argo cp
 
-list cron workflows
+copy artifacts from workflow
 
 ```
-argo cron list [flags]
+argo cp my-wf output-directory ... [flags]
+```
+
+### Examples
+
+```
+# Copy a workflow's artifacts to a local output directory:
+
+  argo cp my-wf output-directory
+
+# Copy artifacts from a specific node in a workflow to a local output directory:
+
+  argo cp my-wf output-directory --node-id=my-wf-node-id-123
+
 ```
 
 ### Options
 
 ```
-  -A, --all-namespaces   Show workflows from all namespaces
-  -h, --help             help for list
-  -o, --output string    Output format. One of: wide|name
+      --artifact-name string   name of output artifact in workflow
+  -h, --help                   help for cp
+      --node-id string         id of node in workflow
+      --path string            use variables {workflowName}, {nodeId}, {templateName}, {artifactName}, and {namespace} to create a customized path to store the artifacts; example: {workflowName}/{templateName}/{artifactName} (default "{namespace}/{workflowName}/{nodeId}/outputs/{artifactName}")
+      --template-name string   name of template in workflow
 ```
 
 ### Options inherited from parent commands
@@ -50,5 +65,5 @@ argo cron list [flags]
 
 ### SEE ALSO
 
-* [argo cron](argo_cron.md)	 - manage cron workflows
+* [argo](argo.md)	 - argo is the command line interface to Argo
 
