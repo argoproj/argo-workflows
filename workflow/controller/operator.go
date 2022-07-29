@@ -2283,6 +2283,10 @@ func (woc *wfOperationCtx) recordNodePhaseEvent(node *wfv1.NodeStatus) {
 	annotations := map[string]string{
 		common.AnnotationKeyNodeType: string(node.Type),
 		common.AnnotationKeyNodeName: node.Name,
+		common.AnnotationKeyNodeID:   node.ID,
+		// For retried/resubmitted workflows, the only main differentiation is the start time of nodes.
+		// We include this annotation here so that we could avoid combining events for those nodes.
+		common.AnnotationKeyNodeStartTime: strconv.FormatInt(node.StartedAt.UnixNano(), 10),
 	}
 	var involvedObject runtime.Object = woc.wf
 	if eventConfig.SendAsPod {
