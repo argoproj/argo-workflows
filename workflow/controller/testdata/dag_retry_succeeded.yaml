@@ -6,7 +6,7 @@ metadata:
   generateName: dag-with-retries-
   generation: 1
   labels:
-    workflows.argoproj.io/completed: "true"
+    #workflows.argoproj.io/completed: "true" // todo: verify this shouldn't be set
     workflows.argoproj.io/phase: Failed
   name: dag-with-retries-4wkh8
   namespace: default
