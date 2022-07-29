@@ -15,8 +15,6 @@ const (
 	// AnnotationKeyDefaultContainer is the annotation that specify container that will be used by default in case of kubectl commands for example
 	AnnotationKeyDefaultContainer = "kubectl.kubernetes.io/default-container"
 
-	//AnnotationArtifactName = workflow.WorkflowFullName + "/artifact-name"
-
 	// AnnotationKeyNodeID is the ID of the node.
 	// Historically, the pod name was the same as the node ID.
 	// Therefore, if it does not exist, then the node ID is the pod name.
@@ -147,7 +145,6 @@ const (
 	EnvAgentTaskWorkers = "ARGO_AGENT_TASK_WORKERS"
 	// EnvAgentPatchRate is the rate that the Argo Agent will patch the Workflow TaskSet
 	EnvAgentPatchRate = "ARGO_AGENT_PATCH_RATE"
-	//EnvVarArtifact    = "ARGO_ARTIFACT"
 	// EnvVarArtifactGCPod is applied as a Label on the WorkflowTaskSets read by the Artifact GC Pod, so that the Pod can find them
 	EnvVarArtifactGCPod = "ARGO_ARTIFACT_POD_NAME"
 
