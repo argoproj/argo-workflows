@@ -224,6 +224,8 @@ func (w *Workflow) GetExecSpec() *WorkflowSpec {
 
 func (w *Workflow) HasArtifactGC() bool {
 	// either it's defined by an Output Artifact or by the WorkflowSpec itself, or both
+	// todo: in the case of the steps referencing a Workflow template this doesn't seem to be sufficient
+	// may need to get from Status, either in NodeStatus or storedTemplates
 	for _, template := range w.Spec.Templates {
 		for _, artifact := range template.Outputs.Artifacts {
 			if artifact.GetArtifactGC().Strategy != ArtifactGCNever {
@@ -3213,19 +3215,6 @@ func (wf *Workflow) SetStoredTemplate(scope ResourceScope, resourceName string, 
 		return true, nil
 	}
 	return false, nil
-}
-
-// return true either if an individual artifact has an ArtifactGC strategy or the Workflow as a whole does
-// now we have Workflow.HasArtifactGC() so maybe don't need this
-func (w *Workflow) AnyArtifactGC() bool {
-	for _, t := range w.GetTemplates() {
-		for _, a := range t.GetOutputs().GetArtifacts() {
-			if a.GetArtifactGC().Strategy != ArtifactGCNever {
-				return true
-			}
-		}
-	}
-	return w.Spec.GetArtifactGC().GetStrategy() != ArtifactGCNever
 }
 
 // resolveTemplateReference resolves the stored template name of a given template holder on the template scope and determines

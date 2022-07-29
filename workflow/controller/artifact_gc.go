@@ -101,8 +101,9 @@ func (woc *wfOperationCtx) processArtifactGCStrategy(ctx context.Context, strate
 
 	woc.log.Debugf("processing Artifact GC Strategy %s", strategy)
 
-	// Search for artifacts
-	artifactSearchResults := woc.execWf.SearchArtifacts(&wfv1.ArtifactSearchQuery{ArtifactGCStrategies: map[wfv1.ArtifactGCStrategy]bool{strategy: true}, Deleted: pointer.BoolPtr(false)})
+	// Search for artifacts // todo: execWf or wf?
+	//artifactSearchResults := woc.execWf.SearchArtifacts(&wfv1.ArtifactSearchQuery{ArtifactGCStrategies: map[wfv1.ArtifactGCStrategy]bool{strategy: true}, Deleted: pointer.BoolPtr(false)})
+	artifactSearchResults := woc.wf.SearchArtifacts(&wfv1.ArtifactSearchQuery{ArtifactGCStrategies: map[wfv1.ArtifactGCStrategy]bool{strategy: true}, Deleted: pointer.BoolPtr(false)})
 	if len(artifactSearchResults) == 0 {
 		woc.log.Debugf("No Artifact Search Results returned from strategy %s", strategy)
 		return nil
