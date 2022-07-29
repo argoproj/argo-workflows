@@ -38,7 +38,7 @@ func customEventAggregatorFuncWithAnnotations(event *apiv1.Event) (string, strin
 		for _, v := range annotations {
 			annotationVals = append(annotationVals, v)
 		}
-		sort.Sort(sort.StringSlice(annotationVals))
+		sort.Strings(annotationVals)
 		joinedAnnotationsStr = strings.Join(annotationVals, "")
 	}
 	return strings.Join([]string{
