@@ -25,6 +25,7 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [AppDirect](https://www.appdirect.com/)
 1. [Arabesque](https://www.arabesque.com/)
 1. [Argonaut](https://www.argonaut.dev/)
+1. [ArthurAI](https://arthur.ai/) 
 1. [Astraea](https://astraea.earth/)
 1. [BasisAI](https://basis-ai.com/)
 1. [BEI.RE](https://www.bei.re/)
