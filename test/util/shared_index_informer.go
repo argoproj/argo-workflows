@@ -27,4 +27,4 @@ func (s *SharedIndexInformer) LastSyncResourceVersion() string                  
 func (s *SharedIndexInformer) AddIndexers(cache.Indexers) error                           { return nil }
 func (s *SharedIndexInformer) GetIndexer() cache.Indexer                                  { return s.Indexer }
 func (s *SharedIndexInformer) SetWatchErrorHandler(handler cache.WatchErrorHandler) error { return nil }
-func (s *SharedIndexInformer) SetTransform(handler cache.TransformFunc) error             { panic("implement me") }
+func (s *SharedIndexInformer) SetTransform(handler cache.TransformFunc) error             { return nil }
