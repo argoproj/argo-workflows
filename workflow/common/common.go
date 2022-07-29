@@ -45,6 +45,8 @@ const (
 	// AnnotationKeyProgress is N/M progress for the node
 	AnnotationKeyProgress = workflow.WorkflowFullName + "/progress"
 
+	// AnnotationKeyArtifactGCStrategy is listed as an annotation on the Artifact GC Pod to identify
+	// the strategy whose artifacts are being deleted
 	AnnotationKeyArtifactGCStrategy = workflow.WorkflowFullName + "/artifact-gc-strategy"
 
 	// LabelKeyControllerInstanceID is the label the controller will carry forward to workflows/pod labels
