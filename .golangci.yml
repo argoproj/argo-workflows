@@ -19,6 +19,7 @@ run:
     - cron
     - executor
     - examples
+    - corefunctional
     - functional
     - plugins
 linters:

@@ -69,6 +69,7 @@ Add the following to your `/etc/hosts`:
 127.0.0.1 minio
 127.0.0.1 postgres
 127.0.0.1 mysql
+127.0.0.1 azurite
 ```
 
 To start:
@@ -142,6 +143,12 @@ Start up Argo Workflows using the following:
 make start PROFILE=mysql AUTH_MODE=client STATIC_FILES=false API=true 
 ```
 
+If you want to run Azure tests against a local Azurite, add `AZURE=true`:
+
+```bash
+make start PROFILE=mysql AUTH_MODE=client STATIC_FILES=false API=true AZURE=true
+```
+
 #### Running One Test
 
 In most cases, you want to run the test that relates to your changes locally. You should not run all the tests suites.
@@ -151,6 +158,12 @@ Find the test that you want to run in `test/e2e`
 
 ```bash
 make TestArtifactServer  
+```
+
+If you wish to include tests against Azure Storage, define `AZURE=true`:
+
+```bash
+make AZURE=true TestArtifactServer
 ```
 
 #### Running A Set Of Tests

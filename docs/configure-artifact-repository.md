@@ -8,6 +8,7 @@ Subsequent sections will show how to use it.
 | Name | Inputs | Outputs | Usage (Feb 2020) |
 |---|---|---|---|
 | Artifactory | Yes | Yes | 11% |
+| Azure Blob | Yes | Yes | - |
 | GCS | Yes | Yes | - |
 | Git | Yes | No | - |
 | HDFS | Yes | Yes | 3% |
@@ -204,6 +205,61 @@ artifacts:
 ```
 
 You can also set `createBucketIfNotPresent` to `true` to tell the artifact driver to automatically create the OSS bucket if it doesn't exist yet when saving artifacts. Note that you'll need to set additional permission for your OSS account to create new buckets.
+
+## Configuring Azure Blob Storage
+
+Create an Azure Storage account and a container within that account. There are a number of
+ways to accomplish this, including the [Azure Portal](https://portal.azure.com) or the
+[CLI](https://docs.microsoft.com/en-us/cli/azure/).
+
+1. Retrieve the blob service endpoint for the storage account. For example:
+
+   ```bash
+   az storage account show -n mystorageaccountname --query 'primaryEndpoints.blob' -otsv
+   ```
+
+2. Retrieve the access key for the storage account. For example:
+
+   ```bash
+   az storage account keys list -n mystorageaccountname --query '[0].value' -otsv
+   ```
+
+3. Create a kubernetes secret to hold the storage account key. For example:
+
+   ```bash
+   kubectl create secret generic my-azure-storage-credentials \
+     --from-literal "account-access-key=$(az storage account keys list -n mystorageaccountname --query '[0].value' -otsv)"
+   ```
+
+4. Configure `azure` artifact as following in the yaml.
+
+```yaml
+artifacts:
+  - name: message
+    path: /tmp/message
+    azure:
+      endpoint: https://mystorageaccountname.blob.core.windows.net
+      container: my-container-name
+      blob: path/in/container
+      # accountKeySecret is a secret selector.
+      # It references the k8s secret named 'my-azure-storage-credentials'.
+      # This secret is expected to have have the key 'account-access-key',
+      # containing the base64 encoded credentials to the storage account.
+      #
+      # If a managed identity has been assigned to the machines running the
+      # workflow (e.g., https://docs.microsoft.com/en-us/azure/aks/use-managed-identity)
+      # then accountKeySecret is not needed, and useSDKCreds should be
+      # set to true instead:
+      # useSDKCreds: true
+      accountKeySecret:
+        name: my-azure-storage-credentials
+        key: account-access-key     
+```
+
+If `useSDKCreds` is set to `true`, then the `accountKeySecret` value is not
+used and authentication with Azure will be attempted using a
+[`DefaultAzureCredential`](https://docs.microsoft.com/en-us/azure/developer/go/azure-sdk-authentication)
+instead.
 
 ## Configure the Default Artifact Repository
 

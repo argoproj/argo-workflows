@@ -96,6 +96,10 @@ func (wfc *WorkflowController) executorImage() string {
 	return fmt.Sprintf("quay.io/argoproj/argoexec:" + argo.ImageTag())
 }
 
+func (wfc *WorkflowController) executorLogFormat() string {
+	return wfc.cliExecutorLogFormat
+}
+
 // executorImagePullPolicy returns the imagePullPolicy to use for the workflow executor
 func (wfc *WorkflowController) executorImagePullPolicy() apiv1.PullPolicy {
 	if wfc.cliExecutorImagePullPolicy != "" {

@@ -506,13 +506,13 @@ func substitutePodParams(pod *apiv1.Pod, globalParams common.Parameters, tmpl *w
 
 func (woc *wfOperationCtx) newInitContainer(tmpl *wfv1.Template) apiv1.Container {
 	ctr := woc.newExecContainer(common.InitContainerName, tmpl)
-	ctr.Command = []string{"argoexec", "init", "--loglevel", getExecutorLogLevel()}
+	ctr.Command = []string{"argoexec", "init", "--loglevel", getExecutorLogLevel(), "--log-format", woc.controller.executorLogFormat()}
 	return *ctr
 }
 
 func (woc *wfOperationCtx) newWaitContainer(tmpl *wfv1.Template) *apiv1.Container {
 	ctr := woc.newExecContainer(common.WaitContainerName, tmpl)
-	ctr.Command = []string{"argoexec", "wait", "--loglevel", getExecutorLogLevel()}
+	ctr.Command = []string{"argoexec", "wait", "--loglevel", getExecutorLogLevel(), "--log-format", woc.controller.executorLogFormat()}
 	return ctr
 }
 
@@ -1160,6 +1160,8 @@ func createArchiveLocationSecret(tmpl *wfv1.Template, volMap map[string]apiv1.Vo
 		createSecretVal(volMap, httpArtRepo.Auth.OAuth2.ClientIDSecret, uniqueKeyMap)
 		createSecretVal(volMap, httpArtRepo.Auth.OAuth2.ClientSecretSecret, uniqueKeyMap)
 		createSecretVal(volMap, httpArtRepo.Auth.OAuth2.TokenURLSecret, uniqueKeyMap)
+	} else if azure := tmpl.ArchiveLocation.Azure; azure != nil {
+		createSecretVal(volMap, azure.AccountKeySecret, uniqueKeyMap)
 	}
 }
 
@@ -1190,6 +1192,8 @@ func createSecretVolume(volMap map[string]apiv1.Volume, art wfv1.Artifact, keyMa
 		createSecretVal(volMap, art.HTTP.Auth.OAuth2.ClientIDSecret, keyMap)
 		createSecretVal(volMap, art.HTTP.Auth.OAuth2.ClientSecretSecret, keyMap)
 		createSecretVal(volMap, art.HTTP.Auth.OAuth2.TokenURLSecret, keyMap)
+	} else if art.Azure != nil {
+		createSecretVal(volMap, art.Azure.AccountKeySecret, keyMap)
 	}
 }
 

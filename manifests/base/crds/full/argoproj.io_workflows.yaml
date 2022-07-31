@@ -458,6 +458,32 @@ spec:
                           required:
                           - url
                           type: object
+                        azure:
+                          properties:
+                            accountKeySecret:
+                              properties:
+                                key:
+                                  type: string
+                                name:
+                                  type: string
+                                optional:
+                                  type: boolean
+                              required:
+                              - key
+                              type: object
+                            blob:
+                              type: string
+                            container:
+                              type: string
+                            endpoint:
+                              type: string
+                            useSDKCreds:
+                              type: boolean
+                          required:
+                          - blob
+                          - container
+                          - endpoint
+                          type: object
                         deleted:
                           type: boolean
                         from:
@@ -1013,6 +1039,32 @@ spec:
                                     type: object
                                 required:
                                 - url
+                                type: object
+                              azure:
+                                properties:
+                                  accountKeySecret:
+                                    properties:
+                                      key:
+                                        type: string
+                                      name:
+                                        type: string
+                                      optional:
+                                        type: boolean
+                                    required:
+                                    - key
+                                    type: object
+                                  blob:
+                                    type: string
+                                  container:
+                                    type: string
+                                  endpoint:
+                                    type: string
+                                  useSDKCreds:
+                                    type: boolean
+                                required:
+                                - blob
+                                - container
+                                - endpoint
                                 type: object
                               deleted:
                                 type: boolean
@@ -2167,6 +2219,32 @@ spec:
                             type: object
                         required:
                         - url
+                        type: object
+                      azure:
+                        properties:
+                          accountKeySecret:
+                            properties:
+                              key:
+                                type: string
+                              name:
+                                type: string
+                              optional:
+                                type: boolean
+                            required:
+                            - key
+                            type: object
+                          blob:
+                            type: string
+                          container:
+                            type: string
+                          endpoint:
+                            type: string
+                          useSDKCreds:
+                            type: boolean
+                        required:
+                        - blob
+                        - container
+                        - endpoint
                         type: object
                       gcs:
                         properties:
@@ -3824,6 +3902,32 @@ spec:
                                         required:
                                         - url
                                         type: object
+                                      azure:
+                                        properties:
+                                          accountKeySecret:
+                                            properties:
+                                              key:
+                                                type: string
+                                              name:
+                                                type: string
+                                              optional:
+                                                type: boolean
+                                            required:
+                                            - key
+                                            type: object
+                                          blob:
+                                            type: string
+                                          container:
+                                            type: string
+                                          endpoint:
+                                            type: string
+                                          useSDKCreds:
+                                            type: boolean
+                                        required:
+                                        - blob
+                                        - container
+                                        - endpoint
+                                        type: object
                                       deleted:
                                         type: boolean
                                       from:
@@ -4345,6 +4449,32 @@ spec:
                                                   type: object
                                               required:
                                               - url
+                                              type: object
+                                            azure:
+                                              properties:
+                                                accountKeySecret:
+                                                  properties:
+                                                    key:
+                                                      type: string
+                                                    name:
+                                                      type: string
+                                                    optional:
+                                                      type: boolean
+                                                  required:
+                                                  - key
+                                                  type: object
+                                                blob:
+                                                  type: string
+                                                container:
+                                                  type: string
+                                                endpoint:
+                                                  type: string
+                                                useSDKCreds:
+                                                  type: boolean
+                                              required:
+                                              - blob
+                                              - container
+                                              - endpoint
                                               type: object
                                             deleted:
                                               type: boolean
@@ -4918,6 +5048,32 @@ spec:
                                     type: object
                                 required:
                                 - url
+                                type: object
+                              azure:
+                                properties:
+                                  accountKeySecret:
+                                    properties:
+                                      key:
+                                        type: string
+                                      name:
+                                        type: string
+                                      optional:
+                                        type: boolean
+                                    required:
+                                    - key
+                                    type: object
+                                  blob:
+                                    type: string
+                                  container:
+                                    type: string
+                                  endpoint:
+                                    type: string
+                                  useSDKCreds:
+                                    type: boolean
+                                required:
+                                - blob
+                                - container
+                                - endpoint
                                 type: object
                               deleted:
                                 type: boolean
@@ -6042,6 +6198,32 @@ spec:
                               required:
                               - url
                               type: object
+                            azure:
+                              properties:
+                                accountKeySecret:
+                                  properties:
+                                    key:
+                                      type: string
+                                    name:
+                                      type: string
+                                    optional:
+                                      type: boolean
+                                  required:
+                                  - key
+                                  type: object
+                                blob:
+                                  type: string
+                                container:
+                                  type: string
+                                endpoint:
+                                  type: string
+                                useSDKCreds:
+                                  type: boolean
+                              required:
+                              - blob
+                              - container
+                              - endpoint
+                              type: object
                             deleted:
                               type: boolean
                             from:
@@ -6652,6 +6834,32 @@ spec:
                               required:
                               - url
                               type: object
+                            azure:
+                              properties:
+                                accountKeySecret:
+                                  properties:
+                                    key:
+                                      type: string
+                                    name:
+                                      type: string
+                                    optional:
+                                      type: boolean
+                                  required:
+                                  - key
+                                  type: object
+                                blob:
+                                  type: string
+                                container:
+                                  type: string
+                                endpoint:
+                                  type: string
+                                useSDKCreds:
+                                  type: boolean
+                              required:
+                              - blob
+                              - container
+                              - endpoint
+                              type: object
                             deleted:
                               type: boolean
                             from:
@@ -7184,6 +7392,32 @@ spec:
                                     type: object
                                 required:
                                 - url
+                                type: object
+                              azure:
+                                properties:
+                                  accountKeySecret:
+                                    properties:
+                                      key:
+                                        type: string
+                                      name:
+                                        type: string
+                                      optional:
+                                        type: boolean
+                                    required:
+                                    - key
+                                    type: object
+                                  blob:
+                                    type: string
+                                  container:
+                                    type: string
+                                  endpoint:
+                                    type: string
+                                  useSDKCreds:
+                                    type: boolean
+                                required:
+                                - blob
+                                - container
+                                - endpoint
                                 type: object
                               deleted:
                                 type: boolean
@@ -9991,6 +10225,32 @@ spec:
                           required:
                           - url
                           type: object
+                        azure:
+                          properties:
+                            accountKeySecret:
+                              properties:
+                                key:
+                                  type: string
+                                name:
+                                  type: string
+                                optional:
+                                  type: boolean
+                              required:
+                              - key
+                              type: object
+                            blob:
+                              type: string
+                            container:
+                              type: string
+                            endpoint:
+                              type: string
+                            useSDKCreds:
+                              type: boolean
+                          required:
+                          - blob
+                          - container
+                          - endpoint
+                          type: object
                         gcs:
                           properties:
                             bucket:
@@ -11647,6 +11907,32 @@ spec:
                                           required:
                                           - url
                                           type: object
+                                        azure:
+                                          properties:
+                                            accountKeySecret:
+                                              properties:
+                                                key:
+                                                  type: string
+                                                name:
+                                                  type: string
+                                                optional:
+                                                  type: boolean
+                                              required:
+                                              - key
+                                              type: object
+                                            blob:
+                                              type: string
+                                            container:
+                                              type: string
+                                            endpoint:
+                                              type: string
+                                            useSDKCreds:
+                                              type: boolean
+                                          required:
+                                          - blob
+                                          - container
+                                          - endpoint
+                                          type: object
                                         deleted:
                                           type: boolean
                                         from:
@@ -12168,6 +12454,32 @@ spec:
                                                     type: object
                                                 required:
                                                 - url
+                                                type: object
+                                              azure:
+                                                properties:
+                                                  accountKeySecret:
+                                                    properties:
+                                                      key:
+                                                        type: string
+                                                      name:
+                                                        type: string
+                                                      optional:
+                                                        type: boolean
+                                                    required:
+                                                    - key
+                                                    type: object
+                                                  blob:
+                                                    type: string
+                                                  container:
+                                                    type: string
+                                                  endpoint:
+                                                    type: string
+                                                  useSDKCreds:
+                                                    type: boolean
+                                                required:
+                                                - blob
+                                                - container
+                                                - endpoint
                                                 type: object
                                               deleted:
                                                 type: boolean
@@ -12741,6 +13053,32 @@ spec:
                                       type: object
                                   required:
                                   - url
+                                  type: object
+                                azure:
+                                  properties:
+                                    accountKeySecret:
+                                      properties:
+                                        key:
+                                          type: string
+                                        name:
+                                          type: string
+                                        optional:
+                                          type: boolean
+                                      required:
+                                      - key
+                                      type: object
+                                    blob:
+                                      type: string
+                                    container:
+                                      type: string
+                                    endpoint:
+                                      type: string
+                                    useSDKCreds:
+                                      type: boolean
+                                  required:
+                                  - blob
+                                  - container
+                                  - endpoint
                                   type: object
                                 deleted:
                                   type: boolean
@@ -13865,6 +14203,32 @@ spec:
                                 required:
                                 - url
                                 type: object
+                              azure:
+                                properties:
+                                  accountKeySecret:
+                                    properties:
+                                      key:
+                                        type: string
+                                      name:
+                                        type: string
+                                      optional:
+                                        type: boolean
+                                    required:
+                                    - key
+                                    type: object
+                                  blob:
+                                    type: string
+                                  container:
+                                    type: string
+                                  endpoint:
+                                    type: string
+                                  useSDKCreds:
+                                    type: boolean
+                                required:
+                                - blob
+                                - container
+                                - endpoint
+                                type: object
                               deleted:
                                 type: boolean
                               from:
@@ -14475,6 +14839,32 @@ spec:
                                 required:
                                 - url
                                 type: object
+                              azure:
+                                properties:
+                                  accountKeySecret:
+                                    properties:
+                                      key:
+                                        type: string
+                                      name:
+                                        type: string
+                                      optional:
+                                        type: boolean
+                                    required:
+                                    - key
+                                    type: object
+                                  blob:
+                                    type: string
+                                  container:
+                                    type: string
+                                  endpoint:
+                                    type: string
+                                  useSDKCreds:
+                                    type: boolean
+                                required:
+                                - blob
+                                - container
+                                - endpoint
+                                type: object
                               deleted:
                                 type: boolean
                               from:
@@ -15007,6 +15397,32 @@ spec:
                                       type: object
                                   required:
                                   - url
+                                  type: object
+                                azure:
+                                  properties:
+                                    accountKeySecret:
+                                      properties:
+                                        key:
+                                          type: string
+                                        name:
+                                          type: string
+                                        optional:
+                                          type: boolean
+                                      required:
+                                      - key
+                                      type: object
+                                    blob:
+                                      type: string
+                                    container:
+                                      type: string
+                                    endpoint:
+                                      type: string
+                                    useSDKCreds:
+                                      type: boolean
+                                  required:
+                                  - blob
+                                  - container
+                                  - endpoint
                                   type: object
                                 deleted:
                                   type: boolean
@@ -18335,6 +18751,31 @@ spec:
                             - key
                             type: object
                         type: object
+                      azure:
+                        properties:
+                          accountKeySecret:
+                            properties:
+                              key:
+                                type: string
+                              name:
+                                type: string
+                              optional:
+                                type: boolean
+                            required:
+                            - key
+                            type: object
+                          blobNameFormat:
+                            type: string
+                          container:
+                            type: string
+                          endpoint:
+                            type: string
+                          useSDKCreds:
+                            type: boolean
+                        required:
+                        - container
+                        - endpoint
+                        type: object
                       gcs:
                         properties:
                           bucket:
@@ -18624,6 +19065,32 @@ spec:
                                     type: object
                                 required:
                                 - url
+                                type: object
+                              azure:
+                                properties:
+                                  accountKeySecret:
+                                    properties:
+                                      key:
+                                        type: string
+                                      name:
+                                        type: string
+                                      optional:
+                                        type: boolean
+                                    required:
+                                    - key
+                                    type: object
+                                  blob:
+                                    type: string
+                                  container:
+                                    type: string
+                                  endpoint:
+                                    type: string
+                                  useSDKCreds:
+                                    type: boolean
+                                required:
+                                - blob
+                                - container
+                                - endpoint
                                 type: object
                               deleted:
                                 type: boolean
@@ -19151,6 +19618,32 @@ spec:
                                     type: object
                                 required:
                                 - url
+                                type: object
+                              azure:
+                                properties:
+                                  accountKeySecret:
+                                    properties:
+                                      key:
+                                        type: string
+                                      name:
+                                        type: string
+                                      optional:
+                                        type: boolean
+                                    required:
+                                    - key
+                                    type: object
+                                  blob:
+                                    type: string
+                                  container:
+                                    type: string
+                                  endpoint:
+                                    type: string
+                                  useSDKCreds:
+                                    type: boolean
+                                required:
+                                - blob
+                                - container
+                                - endpoint
                                 type: object
                               deleted:
                                 type: boolean
@@ -19703,6 +20196,32 @@ spec:
                               type: object
                           required:
                           - url
+                          type: object
+                        azure:
+                          properties:
+                            accountKeySecret:
+                              properties:
+                                key:
+                                  type: string
+                                name:
+                                  type: string
+                                optional:
+                                  type: boolean
+                              required:
+                              - key
+                              type: object
+                            blob:
+                              type: string
+                            container:
+                              type: string
+                            endpoint:
+                              type: string
+                            useSDKCreds:
+                              type: boolean
+                          required:
+                          - blob
+                          - container
+                          - endpoint
                           type: object
                         deleted:
                           type: boolean
@@ -21242,6 +21761,32 @@ spec:
                               type: object
                           required:
                           - url
+                          type: object
+                        azure:
+                          properties:
+                            accountKeySecret:
+                              properties:
+                                key:
+                                  type: string
+                                name:
+                                  type: string
+                                optional:
+                                  type: boolean
+                              required:
+                              - key
+                              type: object
+                            blob:
+                              type: string
+                            container:
+                              type: string
+                            endpoint:
+                              type: string
+                            useSDKCreds:
+                              type: boolean
+                          required:
+                          - blob
+                          - container
+                          - endpoint
                           type: object
                         gcs:
                           properties:
@@ -22899,6 +23444,32 @@ spec:
                                           required:
                                           - url
                                           type: object
+                                        azure:
+                                          properties:
+                                            accountKeySecret:
+                                              properties:
+                                                key:
+                                                  type: string
+                                                name:
+                                                  type: string
+                                                optional:
+                                                  type: boolean
+                                              required:
+                                              - key
+                                              type: object
+                                            blob:
+                                              type: string
+                                            container:
+                                              type: string
+                                            endpoint:
+                                              type: string
+                                            useSDKCreds:
+                                              type: boolean
+                                          required:
+                                          - blob
+                                          - container
+                                          - endpoint
+                                          type: object
                                         deleted:
                                           type: boolean
                                         from:
@@ -23420,6 +23991,32 @@ spec:
                                                     type: object
                                                 required:
                                                 - url
+                                                type: object
+                                              azure:
+                                                properties:
+                                                  accountKeySecret:
+                                                    properties:
+                                                      key:
+                                                        type: string
+                                                      name:
+                                                        type: string
+                                                      optional:
+                                                        type: boolean
+                                                    required:
+                                                    - key
+                                                    type: object
+                                                  blob:
+                                                    type: string
+                                                  container:
+                                                    type: string
+                                                  endpoint:
+                                                    type: string
+                                                  useSDKCreds:
+                                                    type: boolean
+                                                required:
+                                                - blob
+                                                - container
+                                                - endpoint
                                                 type: object
                                               deleted:
                                                 type: boolean
@@ -23993,6 +24590,32 @@ spec:
                                       type: object
                                   required:
                                   - url
+                                  type: object
+                                azure:
+                                  properties:
+                                    accountKeySecret:
+                                      properties:
+                                        key:
+                                          type: string
+                                        name:
+                                          type: string
+                                        optional:
+                                          type: boolean
+                                      required:
+                                      - key
+                                      type: object
+                                    blob:
+                                      type: string
+                                    container:
+                                      type: string
+                                    endpoint:
+                                      type: string
+                                    useSDKCreds:
+                                      type: boolean
+                                  required:
+                                  - blob
+                                  - container
+                                  - endpoint
                                   type: object
                                 deleted:
                                   type: boolean
@@ -25117,6 +25740,32 @@ spec:
                                 required:
                                 - url
                                 type: object
+                              azure:
+                                properties:
+                                  accountKeySecret:
+                                    properties:
+                                      key:
+                                        type: string
+                                      name:
+                                        type: string
+                                      optional:
+                                        type: boolean
+                                    required:
+                                    - key
+                                    type: object
+                                  blob:
+                                    type: string
+                                  container:
+                                    type: string
+                                  endpoint:
+                                    type: string
+                                  useSDKCreds:
+                                    type: boolean
+                                required:
+                                - blob
+                                - container
+                                - endpoint
+                                type: object
                               deleted:
                                 type: boolean
                               from:
@@ -25727,6 +26376,32 @@ spec:
                                 required:
                                 - url
                                 type: object
+                              azure:
+                                properties:
+                                  accountKeySecret:
+                                    properties:
+                                      key:
+                                        type: string
+                                      name:
+                                        type: string
+                                      optional:
+                                        type: boolean
+                                    required:
+                                    - key
+                                    type: object
+                                  blob:
+                                    type: string
+                                  container:
+                                    type: string
+                                  endpoint:
+                                    type: string
+                                  useSDKCreds:
+                                    type: boolean
+                                required:
+                                - blob
+                                - container
+                                - endpoint
+                                type: object
                               deleted:
                                 type: boolean
                               from:
@@ -26259,6 +26934,32 @@ spec:
                                       type: object
                                   required:
                                   - url
+                                  type: object
+                                azure:
+                                  properties:
+                                    accountKeySecret:
+                                      properties:
+                                        key:
+                                          type: string
+                                        name:
+                                          type: string
+                                        optional:
+                                          type: boolean
+                                      required:
+                                      - key
+                                      type: object
+                                    blob:
+                                      type: string
+                                    container:
+                                      type: string
+                                    endpoint:
+                                      type: string
+                                    useSDKCreds:
+                                      type: boolean
+                                  required:
+                                  - blob
+                                  - container
+                                  - endpoint
                                   type: object
                                 deleted:
                                   type: boolean
@@ -29091,6 +29792,32 @@ spec:
                               required:
                               - url
                               type: object
+                            azure:
+                              properties:
+                                accountKeySecret:
+                                  properties:
+                                    key:
+                                      type: string
+                                    name:
+                                      type: string
+                                    optional:
+                                      type: boolean
+                                  required:
+                                  - key
+                                  type: object
+                                blob:
+                                  type: string
+                                container:
+                                  type: string
+                                endpoint:
+                                  type: string
+                                useSDKCreds:
+                                  type: boolean
+                              required:
+                              - blob
+                              - container
+                              - endpoint
+                              type: object
                             deleted:
                               type: boolean
                             from:
@@ -29646,6 +30373,32 @@ spec:
                                         type: object
                                     required:
                                     - url
+                                    type: object
+                                  azure:
+                                    properties:
+                                      accountKeySecret:
+                                        properties:
+                                          key:
+                                            type: string
+                                          name:
+                                            type: string
+                                          optional:
+                                            type: boolean
+                                        required:
+                                        - key
+                                        type: object
+                                      blob:
+                                        type: string
+                                      container:
+                                        type: string
+                                      endpoint:
+                                        type: string
+                                      useSDKCreds:
+                                        type: boolean
+                                    required:
+                                    - blob
+                                    - container
+                                    - endpoint
                                     type: object
                                   deleted:
                                     type: boolean
@@ -30800,6 +31553,32 @@ spec:
                                 type: object
                             required:
                             - url
+                            type: object
+                          azure:
+                            properties:
+                              accountKeySecret:
+                                properties:
+                                  key:
+                                    type: string
+                                  name:
+                                    type: string
+                                  optional:
+                                    type: boolean
+                                required:
+                                - key
+                                type: object
+                              blob:
+                                type: string
+                              container:
+                                type: string
+                              endpoint:
+                                type: string
+                              useSDKCreds:
+                                type: boolean
+                            required:
+                            - blob
+                            - container
+                            - endpoint
                             type: object
                           gcs:
                             properties:
@@ -32457,6 +33236,32 @@ spec:
                                             required:
                                             - url
                                             type: object
+                                          azure:
+                                            properties:
+                                              accountKeySecret:
+                                                properties:
+                                                  key:
+                                                    type: string
+                                                  name:
+                                                    type: string
+                                                  optional:
+                                                    type: boolean
+                                                required:
+                                                - key
+                                                type: object
+                                              blob:
+                                                type: string
+                                              container:
+                                                type: string
+                                              endpoint:
+                                                type: string
+                                              useSDKCreds:
+                                                type: boolean
+                                            required:
+                                            - blob
+                                            - container
+                                            - endpoint
+                                            type: object
                                           deleted:
                                             type: boolean
                                           from:
@@ -32978,6 +33783,32 @@ spec:
                                                       type: object
                                                   required:
                                                   - url
+                                                  type: object
+                                                azure:
+                                                  properties:
+                                                    accountKeySecret:
+                                                      properties:
+                                                        key:
+                                                          type: string
+                                                        name:
+                                                          type: string
+                                                        optional:
+                                                          type: boolean
+                                                      required:
+                                                      - key
+                                                      type: object
+                                                    blob:
+                                                      type: string
+                                                    container:
+                                                      type: string
+                                                    endpoint:
+                                                      type: string
+                                                    useSDKCreds:
+                                                      type: boolean
+                                                  required:
+                                                  - blob
+                                                  - container
+                                                  - endpoint
                                                   type: object
                                                 deleted:
                                                   type: boolean
@@ -33551,6 +34382,32 @@ spec:
                                         type: object
                                     required:
                                     - url
+                                    type: object
+                                  azure:
+                                    properties:
+                                      accountKeySecret:
+                                        properties:
+                                          key:
+                                            type: string
+                                          name:
+                                            type: string
+                                          optional:
+                                            type: boolean
+                                        required:
+                                        - key
+                                        type: object
+                                      blob:
+                                        type: string
+                                      container:
+                                        type: string
+                                      endpoint:
+                                        type: string
+                                      useSDKCreds:
+                                        type: boolean
+                                    required:
+                                    - blob
+                                    - container
+                                    - endpoint
                                     type: object
                                   deleted:
                                     type: boolean
@@ -34675,6 +35532,32 @@ spec:
                                   required:
                                   - url
                                   type: object
+                                azure:
+                                  properties:
+                                    accountKeySecret:
+                                      properties:
+                                        key:
+                                          type: string
+                                        name:
+                                          type: string
+                                        optional:
+                                          type: boolean
+                                      required:
+                                      - key
+                                      type: object
+                                    blob:
+                                      type: string
+                                    container:
+                                      type: string
+                                    endpoint:
+                                      type: string
+                                    useSDKCreds:
+                                      type: boolean
+                                  required:
+                                  - blob
+                                  - container
+                                  - endpoint
+                                  type: object
                                 deleted:
                                   type: boolean
                                 from:
@@ -35285,6 +36168,32 @@ spec:
                                   required:
                                   - url
                                   type: object
+                                azure:
+                                  properties:
+                                    accountKeySecret:
+                                      properties:
+                                        key:
+                                          type: string
+                                        name:
+                                          type: string
+                                        optional:
+                                          type: boolean
+                                      required:
+                                      - key
+                                      type: object
+                                    blob:
+                                      type: string
+                                    container:
+                                      type: string
+                                    endpoint:
+                                      type: string
+                                    useSDKCreds:
+                                      type: boolean
+                                  required:
+                                  - blob
+                                  - container
+                                  - endpoint
+                                  type: object
                                 deleted:
                                   type: boolean
                                 from:
@@ -35817,6 +36726,32 @@ spec:
                                         type: object
                                     required:
                                     - url
+                                    type: object
+                                  azure:
+                                    properties:
+                                      accountKeySecret:
+                                        properties:
+                                          key:
+                                            type: string
+                                          name:
+                                            type: string
+                                          optional:
+                                            type: boolean
+                                        required:
+                                        - key
+                                        type: object
+                                      blob:
+                                        type: string
+                                      container:
+                                        type: string
+                                      endpoint:
+                                        type: string
+                                      useSDKCreds:
+                                        type: boolean
+                                    required:
+                                    - blob
+                                    - container
+                                    - endpoint
                                     type: object
                                   deleted:
                                     type: boolean
@@ -38624,6 +39559,32 @@ spec:
                               required:
                               - url
                               type: object
+                            azure:
+                              properties:
+                                accountKeySecret:
+                                  properties:
+                                    key:
+                                      type: string
+                                    name:
+                                      type: string
+                                    optional:
+                                      type: boolean
+                                  required:
+                                  - key
+                                  type: object
+                                blob:
+                                  type: string
+                                container:
+                                  type: string
+                                endpoint:
+                                  type: string
+                                useSDKCreds:
+                                  type: boolean
+                              required:
+                              - blob
+                              - container
+                              - endpoint
+                              type: object
                             gcs:
                               properties:
                                 bucket:
@@ -40280,6 +41241,32 @@ spec:
                                               required:
                                               - url
                                               type: object
+                                            azure:
+                                              properties:
+                                                accountKeySecret:
+                                                  properties:
+                                                    key:
+                                                      type: string
+                                                    name:
+                                                      type: string
+                                                    optional:
+                                                      type: boolean
+                                                  required:
+                                                  - key
+                                                  type: object
+                                                blob:
+                                                  type: string
+                                                container:
+                                                  type: string
+                                                endpoint:
+                                                  type: string
+                                                useSDKCreds:
+                                                  type: boolean
+                                              required:
+                                              - blob
+                                              - container
+                                              - endpoint
+                                              type: object
                                             deleted:
                                               type: boolean
                                             from:
@@ -40801,6 +41788,32 @@ spec:
                                                         type: object
                                                     required:
                                                     - url
+                                                    type: object
+                                                  azure:
+                                                    properties:
+                                                      accountKeySecret:
+                                                        properties:
+                                                          key:
+                                                            type: string
+                                                          name:
+                                                            type: string
+                                                          optional:
+                                                            type: boolean
+                                                        required:
+                                                        - key
+                                                        type: object
+                                                      blob:
+                                                        type: string
+                                                      container:
+                                                        type: string
+                                                      endpoint:
+                                                        type: string
+                                                      useSDKCreds:
+                                                        type: boolean
+                                                    required:
+                                                    - blob
+                                                    - container
+                                                    - endpoint
                                                     type: object
                                                   deleted:
                                                     type: boolean
@@ -41374,6 +42387,32 @@ spec:
                                           type: object
                                       required:
                                       - url
+                                      type: object
+                                    azure:
+                                      properties:
+                                        accountKeySecret:
+                                          properties:
+                                            key:
+                                              type: string
+                                            name:
+                                              type: string
+                                            optional:
+                                              type: boolean
+                                          required:
+                                          - key
+                                          type: object
+                                        blob:
+                                          type: string
+                                        container:
+                                          type: string
+                                        endpoint:
+                                          type: string
+                                        useSDKCreds:
+                                          type: boolean
+                                      required:
+                                      - blob
+                                      - container
+                                      - endpoint
                                       type: object
                                     deleted:
                                       type: boolean
@@ -42498,6 +43537,32 @@ spec:
                                     required:
                                     - url
                                     type: object
+                                  azure:
+                                    properties:
+                                      accountKeySecret:
+                                        properties:
+                                          key:
+                                            type: string
+                                          name:
+                                            type: string
+                                          optional:
+                                            type: boolean
+                                        required:
+                                        - key
+                                        type: object
+                                      blob:
+                                        type: string
+                                      container:
+                                        type: string
+                                      endpoint:
+                                        type: string
+                                      useSDKCreds:
+                                        type: boolean
+                                    required:
+                                    - blob
+                                    - container
+                                    - endpoint
+                                    type: object
                                   deleted:
                                     type: boolean
                                   from:
@@ -43108,6 +44173,32 @@ spec:
                                     required:
                                     - url
                                     type: object
+                                  azure:
+                                    properties:
+                                      accountKeySecret:
+                                        properties:
+                                          key:
+                                            type: string
+                                          name:
+                                            type: string
+                                          optional:
+                                            type: boolean
+                                        required:
+                                        - key
+                                        type: object
+                                      blob:
+                                        type: string
+                                      container:
+                                        type: string
+                                      endpoint:
+                                        type: string
+                                      useSDKCreds:
+                                        type: boolean
+                                    required:
+                                    - blob
+                                    - container
+                                    - endpoint
+                                    type: object
                                   deleted:
                                     type: boolean
                                   from:
@@ -43640,6 +44731,32 @@ spec:
                                           type: object
                                       required:
                                       - url
+                                      type: object
+                                    azure:
+                                      properties:
+                                        accountKeySecret:
+                                          properties:
+                                            key:
+                                              type: string
+                                            name:
+                                              type: string
+                                            optional:
+                                              type: boolean
+                                          required:
+                                          - key
+                                          type: object
+                                        blob:
+                                          type: string
+                                        container:
+                                          type: string
+                                        endpoint:
+                                          type: string
+                                        useSDKCreds:
+                                          type: boolean
+                                      required:
+                                      - blob
+                                      - container
+                                      - endpoint
                                       type: object
                                     deleted:
                                       type: boolean
