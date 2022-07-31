@@ -62,27 +62,49 @@ type artifactState struct {
 }
 
 func (s *ArtifactsSuite) TestArtifactGC() {
+
+	s.Given().
+		WorkflowTemplate("@testdata/artifactgc/artgc-template.yaml").
+		When().
+		CreateWorkflowTemplates() //todo: need to delete this
+
 	for _, tt := range []struct {
 		workflowFile      string
 		expectedArtifacts []artifactState
 	}{
 		{
-			workflowFile: "@testdata/artifactgc/artifactgc-multi-strategy-multi-anno.yaml",
+			workflowFile: "@testdata/artifactgc/artgc-multi-strategy-multi-anno.yaml",
 			expectedArtifacts: []artifactState{
 				artifactState{"first-on-success-1", "my-bucket-2", true},
 				artifactState{"first-on-success-2", "my-bucket-3", true},
 				artifactState{"first-no-deletion", "my-bucket-3", false},
 				artifactState{"second-on-deletion", "my-bucket-3", true},
-				artifactState{"second-on-success", "my-bucket-3", true},
+				artifactState{"second-on-success", "my-bucket-2", true},
 			},
 		},
+		{
+			workflowFile: "@testdata/artifactgc/artgc-from-template.yaml",
+			expectedArtifacts: []artifactState{
+				artifactState{"on-success", "my-bucket-2", true},
+				artifactState{"on-deletion", "my-bucket-2", true},
+			},
+		},
+		{
+			workflowFile: "@testdata/artifactgc/artgc-step-wf-tmpl.yaml",
+			expectedArtifacts: []artifactState{
+				artifactState{"on-success", "my-bucket-2", true},
+				artifactState{"on-deletion", "my-bucket-2", true},
+			},
+		},
+		// todo: possible things to test for:
+		// failed workflow, with retries
+		// ArchiveLocation in the template is used, ArchiveLocation in the artifact
+		// parameterization
 	} {
 		// for each test make sure that:
-		// 1. the artifacts are deleted
-		// 2. the deletion is reflected in the status
-		// 3. the finalizer gets removed pre-deletion (if that makes sense)
-		// 4. file can be deleted
-		// 5. if it's possible, make sure that the right pods are started (but since they're deleted right away, could be difficult)
+		// 1. the finalizer gets added
+		// 2. the artifacts are deleted
+		// 3. the finalizer gets removed after all artifacts are deleted
 
 		when := s.Given().
 			Workflow(tt.workflowFile).
@@ -96,6 +118,7 @@ func (s *ArtifactsSuite) TestArtifactGC() {
 			})
 
 		fmt.Println("deleting workflow; verifying that Artifact GC finalizer gets removed")
+		//todo: put back, temporarily commented out:
 		when.
 			DeleteWorkflow().
 			WaitForWorkflowDeletion()
