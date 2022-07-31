@@ -337,6 +337,14 @@ func (w *When) WaitForWorkflowList(listOptions metav1.ListOptions, condition fun
 	}
 }
 
+func (w *When) WaitForWorkflowDeletion() *When {
+	fieldSelector := "metadata.name=" + w.wf.Name
+	opts := metav1.ListOptions{LabelSelector: Label, FieldSelector: fieldSelector}
+	return w.WaitForWorkflowList(opts, func(list []wfv1.Workflow) bool {
+		return len(list) == 0
+	})
+}
+
 func (w *When) hydrateWorkflow(wf *wfv1.Workflow) {
 	w.t.Helper()
 	err := w.hydrator.Hydrate(wf)
@@ -356,11 +364,23 @@ func (w *When) Wait(timeout time.Duration) *When {
 }
 
 func (w *When) DeleteWorkflow() *When {
+	fmt.Printf("deletethis: When.DeleteWorkflow()")
 	w.t.Helper()
 	_, _ = fmt.Println("Deleting", w.wf.Name)
 	ctx := context.Background()
 	err := w.client.Delete(ctx, w.wf.Name, metav1.DeleteOptions{})
 	if err != nil {
+		w.t.Fatal(err)
+	}
+	return w
+}
+
+func (w *When) RemoveFinalizers(shouldErr bool) *When {
+	w.t.Helper()
+	ctx := context.Background()
+
+	_, err := w.client.Patch(ctx, w.wf.Name, types.MergePatchType, []byte("{\"metadata\":{\"finalizers\":null}}"), metav1.PatchOptions{})
+	if err != nil && shouldErr {
 		w.t.Fatal(err)
 	}
 	return w

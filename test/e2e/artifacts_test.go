@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -52,6 +53,71 @@ func (s *ArtifactsSuite) TestArtifactPassing() {
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeSucceeded)
+}
+
+type artifactState struct {
+	key        string
+	bucketName string
+	deleted    bool
+}
+
+func (s *ArtifactsSuite) TestArtifactGC() {
+	for _, tt := range []struct {
+		workflowFile      string
+		expectedArtifacts []artifactState
+	}{
+		{
+			workflowFile: "@testdata/artifactgc/artifactgc-multi-strategy-multi-anno.yaml",
+			expectedArtifacts: []artifactState{
+				artifactState{"first-on-success-1", "my-bucket-2", true},
+				artifactState{"first-on-success-2", "my-bucket-3", true},
+				artifactState{"first-no-deletion", "my-bucket-3", false},
+				artifactState{"second-on-deletion", "my-bucket-3", true},
+				artifactState{"second-on-success", "my-bucket-3", true},
+			},
+		},
+	} {
+		// for each test make sure that:
+		// 1. the artifacts are deleted
+		// 2. the deletion is reflected in the status
+		// 3. the finalizer gets removed pre-deletion (if that makes sense)
+		// 4. file can be deleted
+		// 5. if it's possible, make sure that the right pods are started (but since they're deleted right away, could be difficult)
+
+		when := s.Given().
+			Workflow(tt.workflowFile).
+			When().
+			SubmitWorkflow()
+		when.
+			WaitForWorkflow(fixtures.ToBeCompleted).
+			Then().
+			ExpectWorkflow(func(t *testing.T, objectMeta *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+				assert.Contains(t, objectMeta.Finalizers, common.FinalizerArtifactGC)
+			})
+
+		fmt.Println("deleting workflow; verifying that Artifact GC finalizer gets removed")
+		when.
+			DeleteWorkflow().
+			WaitForWorkflowDeletion()
+
+		when = when.RemoveFinalizers(false) // just in case - if the above test failed we need to forcibly remove the finalizer for Artifact GC
+
+		then := when.Then()
+
+		for _, expectedArtifact := range tt.expectedArtifacts {
+			if expectedArtifact.deleted {
+				fmt.Printf("verifying artifact %s is deleted\n", expectedArtifact.key)
+				then.ExpectArtifactByKey(expectedArtifact.key, expectedArtifact.bucketName, func(t *testing.T, object *minio.Object, err error) {
+					assert.Nil(t, object)
+				})
+			} else {
+				fmt.Printf("verifying artifact %s is not deleted\n", expectedArtifact.key)
+				then.ExpectArtifactByKey(expectedArtifact.key, expectedArtifact.bucketName, func(t *testing.T, object *minio.Object, err error) {
+					assert.NotNil(t, object)
+				})
+			}
+		}
+	}
 }
 
 func (s *ArtifactsSuite) TestDefaultParameterOutputs() {
@@ -138,7 +204,7 @@ func (s *ArtifactsSuite) TestMainLog() {
 			SubmitWorkflow().
 			WaitForWorkflow(fixtures.ToBeSucceeded).
 			Then().
-			ExpectArtifact("-", "main-logs", func(t *testing.T, object *minio.Object, err error) {
+			ExpectArtifact("-", "main-logs", "main-bucket", func(t *testing.T, object *minio.Object, err error) {
 				assert.NoError(t, err)
 			})
 	})
@@ -149,7 +215,7 @@ func (s *ArtifactsSuite) TestMainLog() {
 			SubmitWorkflow().
 			WaitForWorkflow(fixtures.ToBeFailed).
 			Then().
-			ExpectArtifact("-", "main-logs", func(t *testing.T, object *minio.Object, err error) {
+			ExpectArtifact("-", "main-logs", "main-bucket", func(t *testing.T, object *minio.Object, err error) {
 				assert.NoError(t, err)
 			})
 	})

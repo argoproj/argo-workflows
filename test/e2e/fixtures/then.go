@@ -185,7 +185,21 @@ func (t *Then) ExpectAuditEvents(filter func(event apiv1.Event) bool, num int, b
 	return t
 }
 
-func (t *Then) ExpectArtifact(nodeName string, artifactName string, f func(t *testing.T, object *minio.Object, err error)) {
+func (t *Then) ExpectArtifact(nodeName string, artifactName string, bucketName string, f func(t *testing.T, object *minio.Object, err error)) {
+	t.t.Helper()
+
+	if nodeName == "-" {
+		nodeName = t.wf.Name
+	}
+
+	n := t.wf.GetNodeByName(nodeName)
+	a := n.GetOutputs().GetArtifactByName(artifactName)
+	key, _ := a.GetKey()
+
+	t.ExpectArtifactByKey(key, bucketName, f)
+}
+
+func (t *Then) ExpectArtifactByKey(key string, bucketName string, f func(t *testing.T, object *minio.Object, err error)) {
 	t.t.Helper()
 
 	c, err := minio.New("localhost:9000", &minio.Options{
@@ -196,15 +210,7 @@ func (t *Then) ExpectArtifact(nodeName string, artifactName string, f func(t *te
 		t.t.Error(err)
 	}
 
-	if nodeName == "-" {
-		nodeName = t.wf.Name
-	}
-
-	n := t.wf.GetNodeByName(nodeName)
-	a := n.GetOutputs().GetArtifactByName(artifactName)
-	key, _ := a.GetKey()
-
-	object, err := c.GetObject(context.Background(), "my-bucket", key, minio.GetObjectOptions{})
+	object, err := c.GetObject(context.Background(), bucketName, key, minio.GetObjectOptions{})
 	f(t.t, object, err)
 }
 
