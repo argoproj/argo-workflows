@@ -360,21 +360,20 @@ func (woc *wfOperationCtx) createArtifactGCPod(ctx context.Context, strategy wfv
 		ownerReferences[i] = *metav1.NewControllerRef(task, wfv1.SchemeGroupVersion.WithKind(workflow.WorkflowArtifactGCTaskKind))
 	}
 
-	volumes := make([]apiv1.Volume, 0)
-	volumeMounts := make([]apiv1.VolumeMount, 0)
+	artifactLocations := make([]*wfv1.ArtifactLocation, 0)
 
 	for templateName, artifacts := range templatesToArtList {
 		template, found := templatesByName[templateName]
 		if !found {
 			return nil, fmt.Errorf("can't find template with name %s???", templateName)
 		}
-		tmplVolumes, tmplVolumeMounts := createSecretVolumes(&wfv1.Template{
-			ArchiveLocation: template.ArchiveLocation,
-			Outputs:         wfv1.Outputs{Artifacts: artifacts.GetArtifacts()},
-		})
-		volumes = append(volumes, tmplVolumes...)
-		volumeMounts = append(volumeMounts, tmplVolumeMounts...)
+		artifactLocations = append(artifactLocations, template.ArchiveLocation)
+		for _, a := range artifacts {
+			artifactLocations = append(artifactLocations, &a.ArtifactLocation)
+		}
 	}
+
+	volumes, volumeMounts := createSecretVolumesAndMountsFromArtifactLocations(artifactLocations)
 
 	pod := &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{

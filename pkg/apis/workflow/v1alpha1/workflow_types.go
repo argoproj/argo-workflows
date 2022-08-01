@@ -81,6 +81,7 @@ const (
 	NodeTypeSuspend   NodeType = "Suspend"
 	NodeTypeHTTP      NodeType = "HTTP"
 	NodeTypePlugin    NodeType = "Plugin"
+	NodeTypeUndefined NodeType = ""
 )
 
 // ArtifactGCStrategy is the strategy when to delete artifacts for GC.
@@ -90,7 +91,7 @@ type ArtifactGCStrategy string
 const (
 	ArtifactGCOnWorkflowCompletion ArtifactGCStrategy = "OnWorkflowCompletion"
 	ArtifactGCOnWorkflowDeletion   ArtifactGCStrategy = "OnWorkflowDeletion"
-	ArtifactGCOnWorkflowSuccess    ArtifactGCStrategy = "OnWorkflowSuccess"
+	ArtifactGCOnWorkflowSuccess    ArtifactGCStrategy = "OnWorkflowSuccess" //todo: remove for now?
 	ArtifactGCOnWorkflowFailure    ArtifactGCStrategy = "OnWorkflowFailure"
 	ArtifactGCNever                ArtifactGCStrategy = ""
 )
@@ -1324,6 +1325,7 @@ type ArtifactSearchQuery struct {
 	TemplateName         string                      `json:"templateName,omitempty" protobuf:"bytes,3,rep,name=templateName"`
 	NodeId               string                      `json:"nodeId,omitempty" protobuf:"bytes,4,rep,name=nodeId"`
 	Deleted              *bool                       `json:"deleted,omitempty" protobuf:"varint,5,opt,name=deleted"`
+	NodeTypes            map[NodeType]bool           `json:"nodeTypes,omitempty" protobuf:"bytes,6,opt,name=nodeTypes"`
 }
 
 // map ArtifactGC Pod name to phase
@@ -1404,6 +1406,9 @@ func (w *Workflow) SearchArtifacts(q *ArtifactSearchQuery) ArtifactSearchResults
 			continue
 		}
 		if q.NodeId != "" && n.ID != q.NodeId {
+			continue
+		}
+		if q.NodeTypes != nil && !q.NodeTypes[n.Type] {
 			continue
 		}
 		for _, a := range n.GetOutputs().GetArtifacts() {
