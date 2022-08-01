@@ -66,10 +66,14 @@ Check out our [Java, Golang and Python clients](docs/client-libraries.md).
 
 ## Quickstart
 
+The following commands install Argo Workflows as well as some commmonly used components:
+
 ```bash
-kubectl create namespace argo
-kubectl apply -n argo -f https://raw.githubusercontent.com/argoproj/argo-workflows/master/manifests/install.yaml
+kubectl create ns argo
+kubectl apply -n argo -f https://raw.githubusercontent.com/argoproj/argo-workflows/master/manifests/quick-start-postgres.yaml
 ```
+
+> **These manifests are intended to help you get started quickly. They contain hard-coded passwords that are publicly available and are not suitable in production.**
 
 ## Who uses Argo Workflows?
 

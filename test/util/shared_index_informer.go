@@ -15,6 +15,7 @@ var _ cache.SharedIndexInformer = &SharedIndexInformer{}
 func NewSharedIndexInformer() *SharedIndexInformer {
 	return &SharedIndexInformer{Indexer: NewIndexer()}
 }
+
 func (s *SharedIndexInformer) AddEventHandler(cache.ResourceEventHandler) {}
 func (s *SharedIndexInformer) AddEventHandlerWithResyncPeriod(cache.ResourceEventHandler, time.Duration) {
 }
@@ -26,3 +27,4 @@ func (s *SharedIndexInformer) LastSyncResourceVersion() string                  
 func (s *SharedIndexInformer) AddIndexers(cache.Indexers) error                           { return nil }
 func (s *SharedIndexInformer) GetIndexer() cache.Indexer                                  { return s.Indexer }
 func (s *SharedIndexInformer) SetWatchErrorHandler(handler cache.WatchErrorHandler) error { return nil }
+func (s *SharedIndexInformer) SetTransform(handler cache.TransformFunc) error             { return nil }

@@ -49,6 +49,7 @@ rules:
       - workflows/finalizers
       - workflowtasksets
       - workflowtasksets/finalizers
+      - workflowartifactgctasks
     verbs:
       - get
       - list
