@@ -392,7 +392,8 @@ func (s *CLISuite) TestParametersFile() {
 		RunCli([]string{"submit", "testdata/parameters-workflow.yaml", "-l", "workflows.argoproj.io/test=true", "--parameter-file=/tmp/parameters-file.yaml"}, func(t *testing.T, output string, err error) {
 			assert.NoError(t, err)
 			assert.Contains(t, output, "message:           hello")
-		})
+		}).
+		RunCli([]string{"delete", "@latest"}, fixtures.NoError)
 }
 
 func (s *CLISuite) TestRoot() {
@@ -1430,7 +1431,7 @@ func (s *CLISuite) workflowCopyArtifactTests(workflowFileName string) {
 }
 
 func (s *CLISuite) TestRetryOmit() {
-	s.Given().
+	(s.Given().
 		Workflow("@testdata/retry-omit.yaml").
 		When().
 		SubmitWorkflow().
@@ -1439,7 +1440,8 @@ func (s *CLISuite) TestRetryOmit() {
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.NodeOmitted, status.Nodes.FindByDisplayName("O").Phase)
 		}).
-		RunCli([]string{"retry", "@latest"}, fixtures.NoError)
+		RunCli([]string{"retry", "@latest"}, fixtures.NoError)).
+		RunCli([]string{"delete", "@latest"}, fixtures.NoError)
 }
 
 func (s *CLISuite) TestResourceTemplateStopAndTerminate() {
