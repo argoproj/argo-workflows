@@ -107,7 +107,7 @@ type Config struct {
 	SSO SSOConfig `json:"sso,omitempty"`
 
 	// Secret name for token auth mode
-	TokenSecretName string `json:"tokenSecretName,omitempty"`
+	Token TokenConfig `json:"token,omitempty"`
 }
 
 func (c Config) GetExecutor() *apiv1.Container {
@@ -185,6 +185,12 @@ type KubeConfig struct {
 	VolumeName string `json:"volumeName,omitempty"`
 	// MountPath of the kubeconfig secret, default to '/kube/config'
 	MountPath string `json:"mountPath,omitempty"`
+}
+
+// Token is used for token auth mode configuration
+type TokenConfig struct {
+	// SecretName of the secret containing the tokens
+	SecretName string `json:"secretName"`
 }
 
 type PersistConfig struct {

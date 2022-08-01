@@ -362,11 +362,13 @@ data:
       enabled: false
     # Skip TLS verify, not recommended in production environments. Useful for testing purposes. >= v3.2.4
     insecureSkipVerify: false
-  # Name of the secret to use for token authentication.
-  # All values inside the secret will be valid tokens.
+  # Token auth mode configuration
   # You must also start argo server with `--auth-mode token`.
   # https://argoproj.github.io/argo-workflows/argo-server-auth-mode/
-  tokenSecretName: "token-secret"
+  token:
+    # Name of the secret to use for token authentication.
+    # All values inside the secret will be valid tokens.
+    secretName: "argo-auth-tokens"
 
   # workflowRestrictions restricts the Workflows that the controller will process.
   # Current options:
