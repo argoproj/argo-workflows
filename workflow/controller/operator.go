@@ -909,7 +909,7 @@ func (woc *wfOperationCtx) processNodeRetries(node *wfv1.NodeStatus, retryStrate
 		}
 
 		// See if we have waited past the deadline
-		if time.Now().Before(waitingDeadline) && retryStrategy.Limit != nil && int32(len(node.Children)) <= retryStrategy.Limit.IntVal {
+		if time.Now().Before(waitingDeadline) && retryStrategy.Limit != nil && int32(len(node.Children)) <= int32(retryStrategy.Limit.IntValue()) {
 			woc.requeueAfter(timeToWait)
 			retryMessage := fmt.Sprintf("Backoff for %s", humanize.Duration(timeToWait))
 			return woc.markNodePhase(node.Name, node.Phase, retryMessage), false, nil
