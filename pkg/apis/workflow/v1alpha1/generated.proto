@@ -94,6 +94,18 @@ message ArtifactGC {
   optional string strategy = 1;
 }
 
+// ArtifactGCSStatus describes the result of the deletion
+message ArtifactGCSStatus {
+  // ArtifactResultsByNode maps Node name to result
+  map<string, ArtifactResultNodeStatus> artifactResultsByNode = 1;
+}
+
+// ArtifactGCSpec specifies the Artifacts that need to be deleted
+message ArtifactGCSpec {
+  // ArtifactsByNode maps Node name to information pertaining to Artifacts on that Node
+  map<string, ArtifactNodeSpec> artifactsByNode = 1;
+}
+
 // ArtifactLocation describes a location for a single or multiple artifacts.
 // It is used as single artifact in the context of inputs/outputs (e.g. outputs.artifacts.artname).
 // It is also used to describe the location of multiple artifacts such as the archive location
@@ -125,6 +137,18 @@ message ArtifactLocation {
 
   // GCS contains GCS artifact location details
   optional GCSArtifact gcs = 9;
+
+  // Azure contains Azure Storage artifact location details
+  optional AzureArtifact azure = 10;
+}
+
+// ArtifactNodeSpec specifies the Artifacts that need to be deleted for a given Node
+message ArtifactNodeSpec {
+  // ArchiveLocation is the template-level Artifact location specification
+  optional ArtifactLocation archiveLocation = 1;
+
+  // Artifacts maps artifact name to Artifact description
+  map<string, Artifact> artifacts = 2;
 }
 
 // ArtifactPaths expands a step from a collection of artifacts
@@ -152,6 +176,9 @@ message ArtifactRepository {
 
   // GCS stores artifact in a GCS object store
   optional GCSArtifactRepository gcs = 6;
+
+  // Azure stores artifact in an Azure Storage account
+  optional AzureArtifactRepository azure = 7;
 }
 
 // +protobuf.options.(gogoproto.goproto_stringer)=false
@@ -175,6 +202,24 @@ message ArtifactRepositoryRefStatus {
 
   // The repository the workflow will use. This maybe empty before v3.1.
   optional ArtifactRepository artifactRepository = 4;
+}
+
+// ArtifactResult describes the result of attempting to delete a given Artifact
+message ArtifactResult {
+  // Name is the name of the Artifact
+  optional string name = 1;
+
+  // Success describes whether the deletion succeeded
+  optional bool success = 2;
+
+  // Error is an optional error message which should be set if Success==false
+  optional string error = 3;
+}
+
+// ArtifactResultNodeStatus describes the result of the deletion on a given node
+message ArtifactResultNodeStatus {
+  // ArtifactResults maps Artifact name to result of the deletion
+  map<string, ArtifactResult> artifactResults = 1;
 }
 
 message ArtifactSearchQuery {
@@ -216,6 +261,37 @@ message ArtifactoryAuth {
 
   // PasswordSecret is the secret selector to the repository password
   optional k8s.io.api.core.v1.SecretKeySelector passwordSecret = 2;
+}
+
+// AzureArtifact is the location of a an Azure Storage artifact
+message AzureArtifact {
+  optional AzureBlobContainer azureBlobContainer = 1;
+
+  // Blob is the blob name (i.e., path) in the container where the artifact resides
+  optional string blob = 2;
+}
+
+// AzureArtifactRepository defines the controller configuration for an Azure Blob Storage artifact repository
+message AzureArtifactRepository {
+  optional AzureBlobContainer blobContainer = 1;
+
+  // BlobNameFormat is defines the format of how to store blob names. Can reference workflow variables
+  optional string blobNameFormat = 2;
+}
+
+// AzureBlobContainer contains the access information for interfacing with an Azure Blob Storage container
+message AzureBlobContainer {
+  // Endpoint is the service url associated with an account. It is most likely "https://<ACCOUNT_NAME>.blob.core.windows.net"
+  optional string endpoint = 1;
+
+  // Container is the container where resources will be stored
+  optional string container = 2;
+
+  // AccountKeySecret is the secret selector to the Azure Blob Storage account access key
+  optional k8s.io.api.core.v1.SecretKeySelector accountKeySecret = 3;
+
+  // UseSDKCreds tells the driver to figure out credentials based on sdk defaults.
+  optional bool useSDKCreds = 4;
 }
 
 // Backoff is a backoff strategy to use within retryStrategy
@@ -641,7 +717,10 @@ message HTTP {
   // Body is content of the HTTP Request
   optional string body = 5;
 
-  // insecureSkipVerify is a bool when if set to true will skip TLS verification for the HTTP client
+  // BodyFrom is  content of the HTTP Request as Bytes
+  optional HTTPBodySource bodyFrom = 8;
+
+  // InsecureSkipVerify is a bool when if set to true will skip TLS verification for the HTTP client
   optional bool insecureSkipVerify = 7;
 }
 
@@ -663,6 +742,11 @@ message HTTPAuth {
   optional OAuth2Auth oauth2 = 2;
 
   optional BasicAuth basicAuth = 3;
+}
+
+// HTTPBodySource contains the source of the HTTP body.
+message HTTPBodySource {
+  optional bytes bytes = 1;
 }
 
 message HTTPHeader {
@@ -1171,7 +1255,8 @@ message RetryNodeAntiAffinity {
 
 // RetryStrategy provides controls on how to retry a workflow step
 message RetryStrategy {
-  // Limit is the maximum number of attempts when retrying a container
+  // Limit is the maximum number of retry attempts when retrying a container. It does not include the original
+  // container; the maximum number of total attempts will be `limit + 1`.
   optional k8s.io.apimachinery.pkg.util.intstr.IntOrString limit = 1;
 
   // RetryPolicy is a policy of NodePhase statuses that will be retried
@@ -1645,6 +1730,27 @@ message Workflow {
   optional WorkflowSpec spec  = 2;
 
   optional WorkflowStatus status = 3;
+}
+
+// WorkflowArtifactGCTask specifies the Artifacts that need to be deleted as well as the status of deletion
+// +genclient
+// +kubebuilder:resource:shortName=wfat
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// +kubebuilder:subresource:status
+message WorkflowArtifactGCTask {
+  optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
+
+  optional ArtifactGCSpec spec = 2;
+
+  optional ArtifactGCSStatus status = 3;
+}
+
+// WorkflowArtifactGCTaskList is list of WorkflowArtifactGCTask resources
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+message WorkflowArtifactGCTaskList {
+  optional k8s.io.apimachinery.pkg.apis.meta.v1.ListMeta metadata = 1;
+
+  repeated WorkflowArtifactGCTask items = 2;
 }
 
 // WorkflowEventBinding is the definition of an event resource

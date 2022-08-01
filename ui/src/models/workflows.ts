@@ -4,6 +4,8 @@ export const labels = {
     clusterWorkflowTemplate: 'workflows.argoproj.io/cluster-workflow-template',
     completed: 'workflows.argoproj.io/completed',
     creator: 'workflows.argoproj.io/creator',
+    creatorEmail: 'workflows.argoproj.io/creator-email',
+    creatorPreferredUsername: 'workflows.argoproj.io/creator-preferred-username',
     cronWorkflow: 'workflows.argoproj.io/cron-workflow',
     workflowTemplate: 'workflows.argoproj.io/workflow-template'
 };
@@ -22,6 +24,10 @@ export interface Arguments {
     parameters?: Parameter[];
 }
 
+export interface AzureArtifactRepository {
+    endpoint: string;
+    container: string;
+}
 export interface GCSArtifactRepository {
     endpoint: string;
     bucket: string;
@@ -40,10 +46,16 @@ export interface ArtifactRepository {
     gcs?: GCSArtifactRepository;
     s3?: S3ArtifactRepository;
     oss?: OSSArtifactRepository;
+    azure?: AzureArtifactRepository;
 }
-
 export interface ArtifactRepositoryRefStatus {
     artifactRepository: ArtifactRepository;
+}
+
+export interface AzureArtifact {
+    endpoint?: string;
+    container?: string;
+    blob?: string;
 }
 
 export interface GCSArtifact {
@@ -104,9 +116,14 @@ export interface Artifact {
     oss?: OSSArtifact;
     raw?: RawArtifact;
     s3?: S3Artifact;
+    azure?: AzureArtifact;
     archive?: {
         none?: {};
     };
+    artifactGC?: {
+        strategy?: 'OnWorkflowCompletion' | 'OnWorkflowDeletion';
+    };
+    deleted?: boolean;
 }
 
 /**
@@ -712,7 +729,7 @@ export interface Condition {
     message: string;
 }
 
-export type ConditionType = 'Completed' | 'SpecWarning' | 'MetricsError' | 'SubmissionError' | 'SpecError';
+export type ConditionType = 'Completed' | 'SpecWarning' | 'MetricsError' | 'SubmissionError' | 'SpecError' | 'ArtifactGCError';
 export type ConditionStatus = 'True' | 'False' | 'Unknown';
 
 /**
@@ -743,6 +760,11 @@ export interface WorkflowSpec {
      * terminate a Running workflow
      */
     activeDeadlineSeconds?: number;
+
+    artifactGC?: {
+        strategy?: 'OnWorkflowCompletion' | 'OnWorkflowDeletion';
+    };
+
     /**
      * TTLStrategy limits the lifetime of a Workflow that has finished execution depending on if it
      * Succeeded or Failed. If this struct is set, once the Workflow finishes, it will be

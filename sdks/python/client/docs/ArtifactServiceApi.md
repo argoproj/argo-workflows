@@ -96,7 +96,7 @@ Name | Type | Description  | Notes
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **get_input_artifact**
-> get_input_artifact(namespace, name, node_id, artifact_name)
+> file_type get_input_artifact(namespace, name, node_id, artifact_name)
 
 Get an input artifact.
 
@@ -138,7 +138,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
     # example passing only required values which don't have defaults set
     try:
         # Get an input artifact.
-        api_instance.get_input_artifact(namespace, name, node_id, artifact_name)
+        api_response = api_instance.get_input_artifact(namespace, name, node_id, artifact_name)
+        pprint(api_response)
     except argo_workflows.ApiException as e:
         print("Exception when calling ArtifactServiceApi->get_input_artifact: %s\n" % e)
 ```
@@ -155,7 +156,7 @@ Name | Type | Description  | Notes
 
 ### Return type
 
-void (empty response body)
+**file_type**
 
 ### Authorization
 
@@ -336,7 +337,7 @@ Name | Type | Description  | Notes
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **get_output_artifact_by_uid**
-> get_output_artifact_by_uid(uid, node_id, artifact_name)
+> file_type get_output_artifact_by_uid(uid, node_id, artifact_name)
 
 Get an output artifact by UID.
 
@@ -377,7 +378,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
     # example passing only required values which don't have defaults set
     try:
         # Get an output artifact by UID.
-        api_instance.get_output_artifact_by_uid(uid, node_id, artifact_name)
+        api_response = api_instance.get_output_artifact_by_uid(uid, node_id, artifact_name)
+        pprint(api_response)
     except argo_workflows.ApiException as e:
         print("Exception when calling ArtifactServiceApi->get_output_artifact_by_uid: %s\n" % e)
 ```
@@ -393,7 +395,7 @@ Name | Type | Description  | Notes
 
 ### Return type
 
-void (empty response body)
+**file_type**
 
 ### Authorization
 

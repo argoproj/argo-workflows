@@ -84,6 +84,7 @@ class IoArgoprojWorkflowV1alpha1WorkflowRetryRequest(ModelNormal):
             'name': (str,),  # noqa: E501
             'namespace': (str,),  # noqa: E501
             'node_field_selector': (str,),  # noqa: E501
+            'parameters': ([str],),  # noqa: E501
             'restart_successful': (bool,),  # noqa: E501
         }
 
@@ -96,6 +97,7 @@ class IoArgoprojWorkflowV1alpha1WorkflowRetryRequest(ModelNormal):
         'name': 'name',  # noqa: E501
         'namespace': 'namespace',  # noqa: E501
         'node_field_selector': 'nodeFieldSelector',  # noqa: E501
+        'parameters': 'parameters',  # noqa: E501
         'restart_successful': 'restartSuccessful',  # noqa: E501
     }
 
@@ -143,6 +145,7 @@ class IoArgoprojWorkflowV1alpha1WorkflowRetryRequest(ModelNormal):
             name (str): [optional]  # noqa: E501
             namespace (str): [optional]  # noqa: E501
             node_field_selector (str): [optional]  # noqa: E501
+            parameters ([str]): [optional]  # noqa: E501
             restart_successful (bool): [optional]  # noqa: E501
         """
 
@@ -228,6 +231,7 @@ class IoArgoprojWorkflowV1alpha1WorkflowRetryRequest(ModelNormal):
             name (str): [optional]  # noqa: E501
             namespace (str): [optional]  # noqa: E501
             node_field_selector (str): [optional]  # noqa: E501
+            parameters ([str]): [optional]  # noqa: E501
             restart_successful (bool): [optional]  # noqa: E501
         """
 
