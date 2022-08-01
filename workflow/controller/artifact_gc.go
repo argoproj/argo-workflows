@@ -108,7 +108,11 @@ func (woc *wfOperationCtx) processArtifactGCStrategy(ctx context.Context, strate
 
 	// Search for artifacts // todo: execWf or wf?
 	//artifactSearchResults := woc.execWf.SearchArtifacts(&wfv1.ArtifactSearchQuery{ArtifactGCStrategies: map[wfv1.ArtifactGCStrategy]bool{strategy: true}, Deleted: pointer.BoolPtr(false)})
-	artifactSearchResults := woc.wf.SearchArtifacts(&wfv1.ArtifactSearchQuery{ArtifactGCStrategies: map[wfv1.ArtifactGCStrategy]bool{strategy: true}, Deleted: pointer.BoolPtr(false)})
+	artifactSearchResults := woc.wf.SearchArtifacts(&wfv1.ArtifactSearchQuery{
+		ArtifactGCStrategies: map[wfv1.ArtifactGCStrategy]bool{strategy: true},
+		Deleted:              pointer.BoolPtr(false),
+		NodeTypes:            map[wfv1.NodeType]bool{wfv1.NodeTypePod: true},
+	})
 	if len(artifactSearchResults) == 0 {
 		woc.log.Debugf("No Artifact Search Results returned from strategy %s", strategy)
 		return nil
@@ -512,6 +516,9 @@ func (woc *wfOperationCtx) processArtifactGCCompletion(ctx context.Context) erro
 
 func (woc *wfOperationCtx) allArtifactsDeleted() bool {
 	for _, n := range woc.wf.Status.Nodes {
+		if n.Type != wfv1.NodeTypePod {
+			continue
+		}
 		for _, a := range n.GetOutputs().GetArtifacts() {
 			if !a.Deleted && a.GetArtifactGC().Strategy != wfv1.ArtifactGCNever {
 				return false
