@@ -35,18 +35,18 @@ func (s *FunctionalSuite) TestArchiveStrategies() {
 		})
 }
 
-// when you delete a pending pod,
-// then the pod is re- created automatically
-func (s *FunctionalSuite) TestDeletingPendingPod() {
-	s.Given().
-		Workflow("@testdata/pending-workflow.yaml").
-		When().
-		SubmitWorkflow().
-		WaitForWorkflow(fixtures.ToStart).
-		Exec("kubectl", []string{"-n", "argo", "delete", "pod", "-l", "workflows.argoproj.io/workflow"}, fixtures.OutputRegexp(`pod "pending-.*" deleted`)).
-		Wait(time.Duration(3*fixtures.EnvFactor)*time.Second). // allow 3s for reconciliation, we'll create a new pod
-		Exec("kubectl", []string{"-n", "argo", "get", "pod", "-l", "workflows.argoproj.io/workflow"}, fixtures.OutputRegexp(`pending-.*Pending`))
-}
+//// when you delete a pending pod,
+//// then the pod is re- created automatically
+//func (s *FunctionalSuite) TestDeletingPendingPod() {
+//	s.Given().
+//		Workflow("@testdata/pending-workflow.yaml").
+//		When().
+//		SubmitWorkflow().
+//		WaitForWorkflow(fixtures.ToStart).
+//		Exec("kubectl", []string{"-n", "argo", "delete", "pod", "-l", "workflows.argoproj.io/workflow"}, fixtures.OutputRegexp(`pod "pending-.*" deleted`)).
+//		Wait(time.Duration(3*fixtures.EnvFactor)*time.Second). // allow 3s for reconciliation, we'll create a new pod
+//		Exec("kubectl", []string{"-n", "argo", "get", "pod", "-l", "workflows.argoproj.io/workflow"}, fixtures.OutputRegexp(`pending-.*Pending`))
+//}
 
 func (s *FunctionalSuite) TestWorkflowLevelErrorRetryPolicy() {
 	s.Given().
