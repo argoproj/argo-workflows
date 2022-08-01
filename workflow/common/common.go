@@ -101,6 +101,8 @@ const (
 
 	// Various environment variables containing pod information exposed to the executor container(s)
 
+	// EnvVarArtifactPodName contains the name of the artifact pod
+	EnvVarArtifactPodName = "ARGO_ARTIFACT_POD_NAME"
 	// EnvVarPodName contains the name of the pod (currently unused)
 	EnvVarPodName = "ARGO_POD_NAME"
 	// EnvVarPodUID is the workflow's UID
@@ -142,6 +144,8 @@ const (
 	// EnvAgentPatchRate is the rate that the Argo Agent will patch the Workflow TaskSet
 	EnvAgentPatchRate = "ARGO_AGENT_PATCH_RATE"
 	EnvVarArtifact    = "ARGO_ARTIFACT"
+
+	LabelKeyArtifactGCPodName = "workflows.argoproj.io/artifact-gc-pod"
 
 	// Finalizer to block deletion of the workflow if deletion of artifacts fail for some reason.
 	FinalizerArtifactGC = workflow.WorkflowFullName + "/artifact-gc"
