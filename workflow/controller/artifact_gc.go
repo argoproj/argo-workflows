@@ -199,7 +199,8 @@ func (woc *wfOperationCtx) processArtifactGCStrategy(ctx context.Context, strate
 			if !found {
 				return fmt.Errorf("can't find podInfo for podName '%s'??", podName)
 			}
-			_, err := woc.createArtifactGCPod(ctx, strategy, tasks, podAccessInfo, podName)
+
+			_, err := woc.createArtifactGCPod(ctx, strategy, tasks, podAccessInfo, podName, templatesToArtList, templatesByName)
 			if err != nil {
 				return err
 			}
@@ -342,7 +343,7 @@ func (woc *wfOperationCtx) createWorkflowArtifactGCTask(ctx context.Context, tas
 
 // create the Pod which will do the deletions
 func (woc *wfOperationCtx) createArtifactGCPod(ctx context.Context, strategy wfv1.ArtifactGCStrategy, tasks []*wfv1.WorkflowArtifactGCTask,
-	podAccessInfo podInfo, podName string) (*corev1.Pod, error) {
+	podAccessInfo podInfo, podName string, templatesToArtList templatesToArtifacts, templatesByName map[string]*wfv1.Template) (*corev1.Pod, error) {
 
 	woc.log.
 		WithField("strategy", strategy).
@@ -353,6 +354,22 @@ func (woc *wfOperationCtx) createArtifactGCPod(ctx context.Context, strategy wfv
 	for i, task := range tasks {
 		// make sure pod gets deleted with the WorkflowArtifactGCTasks
 		ownerReferences[i] = *metav1.NewControllerRef(task, wfv1.SchemeGroupVersion.WithKind(workflow.WorkflowArtifactGCTaskKind))
+	}
+
+	volumes := make([]apiv1.Volume, 0)
+	volumeMounts := make([]apiv1.VolumeMount, 0)
+
+	for templateName, artifacts := range templatesToArtList {
+		template, found := templatesByName[templateName]
+		if !found {
+			return nil, fmt.Errorf("can't find template with name %s???", templateName)
+		}
+		tmplVolumes, tmplVolumeMounts := createSecretVolumes(&wfv1.Template{
+			ArchiveLocation: template.ArchiveLocation,
+			Outputs:         wfv1.Outputs{Artifacts: artifacts.GetArtifacts()},
+		})
+		volumes = append(volumes, tmplVolumes...)
+		volumeMounts = append(volumeMounts, tmplVolumeMounts...)
 	}
 
 	pod := &corev1.Pod{
@@ -370,6 +387,7 @@ func (woc *wfOperationCtx) createArtifactGCPod(ctx context.Context, strategy wfv
 			OwnerReferences: ownerReferences,
 		},
 		Spec: corev1.PodSpec{
+			Volumes: volumes,
 			Containers: []corev1.Container{
 				{
 					Name:            common.MainContainerName,
@@ -401,6 +419,7 @@ func (woc *wfOperationCtx) createArtifactGCPod(ctx context.Context, strategy wfv
 							"memory": resource.MustParse("32Mi"),
 						},
 					},
+					VolumeMounts: volumeMounts,
 				},
 			},
 			AutomountServiceAccountToken: pointer.Bool(true),

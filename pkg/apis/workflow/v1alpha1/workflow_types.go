@@ -1372,6 +1372,14 @@ type ArtifactSearchResult struct {
 
 type ArtifactSearchResults []ArtifactSearchResult
 
+func (asr ArtifactSearchResults) GetArtifacts() []Artifact {
+	artifacts := make([]Artifact, len(asr))
+	for i, result := range asr {
+		artifacts[i] = result.Artifact
+	}
+	return artifacts
+}
+
 func NewArtifactSearchQuery() *ArtifactSearchQuery {
 	var q ArtifactSearchQuery
 	q.ArtifactGCStrategies = make(map[ArtifactGCStrategy]bool)
