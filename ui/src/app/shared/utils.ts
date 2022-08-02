@@ -104,7 +104,11 @@ export const Utils = {
 
     get currentNamespace() {
         // we always prefer the managed namespace
-        return this.userNamespace || this.managedNamespace || this.fixLocalStorageString(localStorage.getItem(currentNamespaceKey));
+        if (localStorage.getItem(currentNamespaceKey) === null) {
+            return this.userNamespace || this.managedNamespace;
+        } else {
+            return this.fixLocalStorageString(localStorage.getItem(currentNamespaceKey));
+        }
     },
 
     // return a namespace, favoring managed namespace when set
@@ -114,7 +118,7 @@ export const Utils = {
 
     // return a namespace, never return null/undefined, defaults to "default"
     getNamespaceWithDefault(namespace: string) {
-        return this.userNamespace || this.managedNamespace || namespace || this.currentNamespace || 'default';
+        return namespace || this.currentNamespace || this.userNamespace || this.managedNamespace || 'default';
     },
 
     queryParams(filter: {

@@ -898,7 +898,7 @@ func (woc *wfOperationCtx) processNodeRetries(node *wfv1.NodeStatus, retryStrate
 		}
 
 		// See if we have waited past the deadline
-		if time.Now().Before(waitingDeadline) && retryStrategy.Limit != nil && int32(len(node.Children)) <= retryStrategy.Limit.IntVal {
+		if time.Now().Before(waitingDeadline) && retryStrategy.Limit != nil && int32(len(node.Children)) <= int32(retryStrategy.Limit.IntValue()) {
 			woc.requeueAfter(timeToWait)
 			retryMessage := fmt.Sprintf("Backoff for %s", humanize.Duration(timeToWait))
 			return woc.markNodePhase(node.Name, node.Phase, retryMessage), false, nil
@@ -1020,7 +1020,7 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) error {
 		go func(pod *apiv1.Pod) {
 			defer wg.Done()
 			performAssessment(pod)
-			woc.applyExecutionControl(ctx, pod, wfNodesLock)
+			woc.applyExecutionControl(pod, wfNodesLock)
 			<-parallelPodNum
 		}(pod)
 	}
@@ -2283,6 +2283,10 @@ func (woc *wfOperationCtx) recordNodePhaseEvent(node *wfv1.NodeStatus) {
 	annotations := map[string]string{
 		common.AnnotationKeyNodeType: string(node.Type),
 		common.AnnotationKeyNodeName: node.Name,
+		common.AnnotationKeyNodeID:   node.ID,
+		// For retried/resubmitted workflows, the only main differentiation is the start time of nodes.
+		// We include this annotation here so that we could avoid combining events for those nodes.
+		common.AnnotationKeyNodeStartTime: strconv.FormatInt(node.StartedAt.UnixNano(), 10),
 	}
 	var involvedObject runtime.Object = woc.wf
 	if eventConfig.SendAsPod {

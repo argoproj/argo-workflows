@@ -25,6 +25,10 @@ func (r *nullWorkflowArchive) ListWorkflows(string, string, string, time.Time, t
 	return wfv1.Workflows{}, nil
 }
 
+func (r *nullWorkflowArchive) CountWorkflows(string, string, string, time.Time, time.Time, labels.Requirements) (int64, error) {
+	return 0, nil
+}
+
 func (r *nullWorkflowArchive) GetWorkflow(string) (*wfv1.Workflow, error) {
 	return nil, fmt.Errorf("getting archived workflows not supported")
 }
