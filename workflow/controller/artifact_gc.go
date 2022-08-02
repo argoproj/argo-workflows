@@ -519,7 +519,7 @@ func (woc *wfOperationCtx) allArtifactsDeleted() bool {
 			continue
 		}
 		for _, a := range n.GetOutputs().GetArtifacts() {
-			if !a.Deleted && a.GetArtifactGC().Strategy != wfv1.ArtifactGCNever {
+			if !a.Deleted && woc.wf.GetArtifactGCStrategy(&a) != wfv1.ArtifactGCNever && woc.wf.GetArtifactGCStrategy(&a) != wfv1.ArtifactGCStrategyUndefined {
 				return false
 			}
 		}

@@ -241,6 +241,19 @@ func (w *Workflow) HasArtifactGC() bool {
 	return false
 }
 
+func (w *Workflow) GetArtifactGCStrategy(a *Artifact) ArtifactGCStrategy {
+	artifactStrategy := a.GetArtifactGC().GetStrategy()
+	wfStrategy := w.Spec.GetArtifactGC().GetStrategy()
+	strategy := wfStrategy
+	if artifactStrategy != ArtifactGCStrategyUndefined {
+		strategy = artifactStrategy
+	}
+	if strategy == ArtifactGCStrategyUndefined {
+		return ArtifactGCNever
+	}
+	return strategy
+}
+
 var (
 	WorkflowCreatedAfter = func(t time.Time) WorkflowPredicate {
 		return func(wf Workflow) bool {
@@ -1417,13 +1430,8 @@ func (w *Workflow) SearchArtifacts(q *ArtifactSearchQuery) ArtifactSearchResults
 			if q.anyArtifactGCStrategy() {
 				// artifact strategy is either based on overall Workflow ArtifactGC Strategy, or
 				// if it's specified on the individual artifact level that takes priority
-				artifactStrategy := a.GetArtifactGC().GetStrategy()
-				wfStrategy := w.Spec.GetArtifactGC().GetStrategy()
-				strategy := wfStrategy
-				if artifactStrategy != ArtifactGCStrategyUndefined {
-					strategy = artifactStrategy
-				}
-				if !q.ArtifactGCStrategies[strategy] {
+				artifactStrategy := w.GetArtifactGCStrategy(&a)
+				if !q.ArtifactGCStrategies[artifactStrategy] {
 					match = false
 				}
 			}

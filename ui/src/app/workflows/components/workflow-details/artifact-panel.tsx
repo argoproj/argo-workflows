@@ -103,7 +103,7 @@ export const ArtifactPanel = ({
                                 Unknown extension "{ext}", <a onClick={() => setShow(true)}>show anyway</a>.
                             </p>
                         )}
-                        {artifactGCStrategy && !artifact.deleted && (
+                        {artifactGCStrategy != "" && artifactGCStrategy != "Never" && !artifact.deleted && (
                             <p>Artifact will be automatically deleted shortly after the workflow {artifactGCStrategy === 'OnWorkflowCompletion' ? 'completes' : 'is deleted'}.</p>
                         )}
                         {!artifact.deleted && (
