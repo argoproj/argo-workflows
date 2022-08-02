@@ -638,11 +638,11 @@ func TestArtifact_GetArchive(t *testing.T) {
 func TestArtifactGC_GetStrategy(t *testing.T) {
 	t.Run("Nil", func(t *testing.T) {
 		var artifactGC *ArtifactGC
-		assert.Equal(t, ArtifactGCNever, artifactGC.GetStrategy())
+		assert.Equal(t, ArtifactGCStrategyUndefined, artifactGC.GetStrategy())
 	})
 	t.Run("Unspecified", func(t *testing.T) {
 		var artifactGC = &ArtifactGC{}
-		assert.Equal(t, ArtifactGCNever, artifactGC.GetStrategy())
+		assert.Equal(t, ArtifactGCStrategyUndefined, artifactGC.GetStrategy())
 	})
 	t.Run("Specified", func(t *testing.T) {
 		var artifactGC = &ArtifactGC{Strategy: ArtifactGCOnWorkflowCompletion}
@@ -1046,7 +1046,7 @@ func TestWorkflowSpec_GetArtifactGC(t *testing.T) {
 	spec := WorkflowSpec{}
 
 	assert.NotNil(t, spec.GetArtifactGC())
-	assert.Equal(t, &ArtifactGC{Strategy: ArtifactGCNever}, spec.GetArtifactGC())
+	assert.Equal(t, &ArtifactGC{Strategy: ArtifactGCStrategyUndefined}, spec.GetArtifactGC())
 }
 
 func TestWorkflowSpec_GetVolumeGC(t *testing.T) {
