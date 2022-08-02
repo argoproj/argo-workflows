@@ -98,13 +98,16 @@ func (s *ArtifactsSuite) TestArtifactGC() {
 		},
 		// todo: possible things to test for:
 		// failed workflow, with retries
-		// ArchiveLocation in the template is used, ArchiveLocation in the artifact
 		// parameterization
+		// should we have one for artifactRepositoryRef? (may reqire a new ConfigMap)
 	} {
 		// for each test make sure that:
 		// 1. the finalizer gets added
 		// 2. the artifacts are deleted
 		// 3. the finalizer gets removed after all artifacts are deleted
+		// (note that in order to verify that the finalizer has been added once the Workflow's been submitted,
+		// we need it to still be there after being submitted, so each of the following tests includes at least one
+		// 'OnWorkflowDeletion' strategy)
 
 		when := s.Given().
 			Workflow(tt.workflowFile).
