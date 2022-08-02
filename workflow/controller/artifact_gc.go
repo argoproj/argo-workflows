@@ -368,8 +368,8 @@ func (woc *wfOperationCtx) createArtifactGCPod(ctx context.Context, strategy wfv
 			return nil, fmt.Errorf("can't find template with name %s???", templateName)
 		}
 		artifactLocations = append(artifactLocations, template.ArchiveLocation)
-		for _, a := range artifacts {
-			artifactLocations = append(artifactLocations, &a.ArtifactLocation)
+		for i := range artifacts {
+			artifactLocations = append(artifactLocations, &artifacts[i].ArtifactLocation)
 		}
 	}
 
@@ -602,8 +602,8 @@ func (woc *wfOperationCtx) processCompletedWorkflowArtifactGCTask(ctx context.Co
 func (woc *wfOperationCtx) getArtifactGCPodInfo(artifact *wfv1.Artifact) podInfo {
 	//  start with Workflow.ArtifactGC and override with Artifact.ArtifactGC
 	podAccessInfo := podInfo{}
-	if woc.wf.Spec.ArtifactGC != nil {
-		woc.updateArtifactGCPodInfo(woc.wf.Spec.ArtifactGC, &podAccessInfo)
+	if woc.execWf.Spec.ArtifactGC != nil {
+		woc.updateArtifactGCPodInfo(woc.execWf.Spec.ArtifactGC, &podAccessInfo)
 	}
 	if artifact.ArtifactGC != nil {
 		woc.updateArtifactGCPodInfo(artifact.ArtifactGC, &podAccessInfo)
