@@ -86,6 +86,10 @@ type WorkflowController struct {
 	cliExecutorImagePullPolicy string
 	containerRuntimeExecutor   string
 
+	// cliExecutorLogFormat is the format in which argoexec will log
+	// possible options are json/text
+	cliExecutorLogFormat string
+
 	// restConfig is used by controller to send a SIGUSR1 to the wait sidecar using remotecommand.NewSPDYExecutor().
 	restConfig       *rest.Config
 	kubeclientset    kubernetes.Interface
@@ -143,7 +147,7 @@ func init() {
 }
 
 // NewWorkflowController instantiates a new WorkflowController
-func NewWorkflowController(ctx context.Context, restConfig *rest.Config, kubeclientset kubernetes.Interface, wfclientset wfclientset.Interface, namespace, managedNamespace, executorImage, executorImagePullPolicy, containerRuntimeExecutor, configMap string, executorPlugins bool) (*WorkflowController, error) {
+func NewWorkflowController(ctx context.Context, restConfig *rest.Config, kubeclientset kubernetes.Interface, wfclientset wfclientset.Interface, namespace, managedNamespace, executorImage, executorImagePullPolicy, executorLogFormat, containerRuntimeExecutor, configMap string, executorPlugins bool) (*WorkflowController, error) {
 	dynamicInterface, err := dynamic.NewForConfig(restConfig)
 	if err != nil {
 		return nil, err
@@ -158,6 +162,7 @@ func NewWorkflowController(ctx context.Context, restConfig *rest.Config, kubecli
 		managedNamespace:           managedNamespace,
 		cliExecutorImage:           executorImage,
 		cliExecutorImagePullPolicy: executorImagePullPolicy,
+		cliExecutorLogFormat:       executorLogFormat,
 		containerRuntimeExecutor:   containerRuntimeExecutor,
 		configController:           config.NewController(namespace, configMap, kubeclientset),
 		workflowKeyLock:            syncpkg.NewKeyLock(),
@@ -263,6 +268,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 	go wfc.configMapInformer.Run(ctx.Done())
 	go wfc.wfTaskSetInformer.Informer().Run(ctx.Done())
 	go wfc.taskResultInformer.Run(ctx.Done())
+	wfc.createClusterWorkflowTemplateInformer(ctx)
 
 	// Wait for all involved caches to be synced, before processing items from the queue is started
 	if !cache.WaitForCacheSync(
@@ -276,8 +282,6 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 	) {
 		log.Fatal("Timed out waiting for caches to sync")
 	}
-
-	wfc.createClusterWorkflowTemplateInformer(ctx)
 
 	// Start the metrics server
 	go wfc.metrics.RunServer(ctx)
@@ -420,6 +424,14 @@ func (wfc *WorkflowController) createClusterWorkflowTemplateInformer(ctx context
 	if cwftGetAllowed && cwftListAllowed && cwftWatchAllowed {
 		wfc.cwftmplInformer = informer.NewTolerantClusterWorkflowTemplateInformer(wfc.dynamicInterface, clusterWorkflowTemplateResyncPeriod)
 		go wfc.cwftmplInformer.Informer().Run(ctx.Done())
+
+		// since the above call is asynchronous, make sure we populate our cache before we try to use it later
+		if !cache.WaitForCacheSync(
+			ctx.Done(),
+			wfc.cwftmplInformer.Informer().HasSynced,
+		) {
+			log.Fatal("Timed out waiting for ClusterWorkflowTemplate cache to sync")
+		}
 	} else {
 		log.Warnf("Controller doesn't have RBAC access for ClusterWorkflowTemplates")
 	}
@@ -917,8 +929,10 @@ func (wfc *WorkflowController) archiveWorkflowAux(ctx context.Context, obj inter
 	return nil
 }
 
-var incompleteReq, _ = labels.NewRequirement(common.LabelKeyCompleted, selection.Equals, []string{"false"})
-var workflowReq, _ = labels.NewRequirement(common.LabelKeyWorkflow, selection.Exists, nil)
+var (
+	incompleteReq, _ = labels.NewRequirement(common.LabelKeyCompleted, selection.Equals, []string{"false"})
+	workflowReq, _   = labels.NewRequirement(common.LabelKeyWorkflow, selection.Exists, nil)
+)
 
 func (wfc *WorkflowController) instanceIDReq() labels.Requirement {
 	return util.InstanceIDRequirement(wfc.Config.InstanceID)

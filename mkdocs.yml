@@ -104,6 +104,7 @@ nav:
           - cron-backfill.md
           - workflow-of-workflows.md
           - workflow-notifications.md
+          - work-avoidance.md
       - UI Features:
           - artifact-visualization.md
           - widgets.md
@@ -137,6 +138,7 @@ nav:
           - use-cases/machine-learning.md
           - use-cases/other.md
           - use-cases/stream-processing.md
+          - use-cases/webhdfs.md
       - FAQ: faq.md
       - kubectl.md
       - ide-setup.md

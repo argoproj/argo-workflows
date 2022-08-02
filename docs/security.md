@@ -74,7 +74,7 @@ Argo Workflows requires various levels of network access depending on configurat
 
 The Argo Server is commonly exposed to end-users to provide users with a UI for visualizing and managing their workflows. It must also be exposed if leveraging [webhooks](webhooks.md) to trigger workflows. Both of these use cases require that the argo-server Service to be exposed for ingress traffic (e.g. with an Ingress object or load balancer). Note that the Argo UI is also available to be accessed by running the server locally (i.e. `argo server`) using local KUBECONFIG credentials, and visiting the UI over <https://localhost:2746>.
 
-The Argo Server additionally has a feature to allow downloading of artifacts through the UI. This feature requires that the argo-server be given egress access to the underlying artifact provider (e.g. S3, GCS, MinIO, Artifactory) in order to download and stream the artifact.
+The Argo Server additionally has a feature to allow downloading of artifacts through the UI. This feature requires that the argo-server be given egress access to the underlying artifact provider (e.g. S3, GCS, MinIO, Artifactory, Azure Blob Storage) in order to download and stream the artifact.
 
 ### Workflow Controller
 

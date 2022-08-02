@@ -96,6 +96,53 @@ spec:
 		})
 }
 
+func (s *ResourceTemplateSuite) TestResourceTemplateWithArtifact() {
+	s.Given().
+		Workflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: k8s-resource-tmpl-with-artifact-
+spec:
+  serviceAccount: argo
+  entrypoint: main
+  templates:
+    - name: main
+      serviceAccountName: argo
+      inputs:
+        artifacts:
+        - name: manifest
+          path: /tmp/manifestfrom-path.yaml
+          raw:
+            data: |
+              apiVersion: v1
+              kind: Pod
+              metadata:
+                generateName: k8s-pod-resource-
+              spec:
+                serviceAccountName: argo
+                containers:
+                - name: argosay-container
+                  image: argoproj/argosay:v2
+                  command: ["/argosay"]
+                restartPolicy: Never
+      resource:
+        action: create
+        successCondition: status.phase == Succeeded
+        failureCondition: status.phase == Failed
+        manifestFrom:
+          artifact:
+            name: manifest
+`).
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow().
+		Then().
+		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
+		})
+}
+
 func TestResourceTemplateSuite(t *testing.T) {
 	suite.Run(t, new(ResourceTemplateSuite))
 }

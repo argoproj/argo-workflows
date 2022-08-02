@@ -1106,6 +1106,9 @@ type ArtifactLocation struct {
 
 	// GCS contains GCS artifact location details
 	GCS *GCSArtifact `json:"gcs,omitempty" protobuf:"bytes,9,opt,name=gcs"`
+
+	// Azure contains Azure Storage artifact location details
+	Azure *AzureArtifact `json:"azure,omitempty" protobuf:"bytes,10,opt,name=azure"`
 }
 
 func (a *ArtifactLocation) Get() (ArtifactLocationType, error) {
@@ -1113,6 +1116,8 @@ func (a *ArtifactLocation) Get() (ArtifactLocationType, error) {
 		return nil, fmt.Errorf("key unsupported: cannot get key for artifact location, because it is invalid")
 	} else if a.Artifactory != nil {
 		return a.Artifactory, nil
+	} else if a.Azure != nil {
+		return a.Azure, nil
 	} else if a.Git != nil {
 		return a.Git, nil
 	} else if a.GCS != nil {
@@ -1137,6 +1142,8 @@ func (a *ArtifactLocation) SetType(x ArtifactLocationType) error {
 	switch v := x.(type) {
 	case *ArtifactoryArtifact:
 		a.Artifactory = &ArtifactoryArtifact{}
+	case *AzureArtifact:
+		a.Azure = &AzureArtifact{}
 	case *GCSArtifact:
 		a.GCS = &GCSArtifact{}
 	case *HDFSArtifact:
@@ -1759,7 +1766,8 @@ type RetryAffinity struct {
 
 // RetryStrategy provides controls on how to retry a workflow step
 type RetryStrategy struct {
-	// Limit is the maximum number of attempts when retrying a container
+	// Limit is the maximum number of retry attempts when retrying a container. It does not include the original
+	// container; the maximum number of total attempts will be `limit + 1`.
 	Limit *intstr.IntOrString `json:"limit,omitempty" protobuf:"varint,1,opt,name=limit"`
 
 	// RetryPolicy is a policy of NodePhase statuses that will be retried
@@ -1898,6 +1906,8 @@ const (
 	ConditionTypeSpecError ConditionType = "SpecError"
 	// ConditionTypeMetricsError is an error during metric emission
 	ConditionTypeMetricsError ConditionType = "MetricsError"
+	//ConditionTypeArtifactGCError is an error on artifact garbage collection
+	ConditionTypeArtifactGCError ConditionType = "ArtifactGCError"
 )
 
 type Condition struct {
@@ -2305,9 +2315,9 @@ type ArtifactoryArtifact struct {
 	ArtifactoryAuth `json:",inline" protobuf:"bytes,2,opt,name=artifactoryAuth"`
 }
 
-//func (a *ArtifactoryArtifact) String() string {
+// func (a *ArtifactoryArtifact) String() string {
 //	return a.URL
-//}
+// }
 func (a *ArtifactoryArtifact) GetKey() (string, error) {
 	u, err := url.Parse(a.URL)
 	if err != nil {
@@ -2328,6 +2338,42 @@ func (a *ArtifactoryArtifact) SetKey(key string) error {
 
 func (a *ArtifactoryArtifact) HasLocation() bool {
 	return a != nil && a.URL != "" && a.UsernameSecret != nil
+}
+
+// AzureBlobContainer contains the access information for interfacing with an Azure Blob Storage container
+type AzureBlobContainer struct {
+	// Endpoint is the service url associated with an account. It is most likely "https://<ACCOUNT_NAME>.blob.core.windows.net"
+	Endpoint string `json:"endpoint" protobuf:"bytes,1,opt,name=endpoint"`
+
+	// Container is the container where resources will be stored
+	Container string `json:"container" protobuf:"bytes,2,opt,name=container"`
+
+	// AccountKeySecret is the secret selector to the Azure Blob Storage account access key
+	AccountKeySecret *apiv1.SecretKeySelector `json:"accountKeySecret,omitempty" protobuf:"bytes,3,opt,name=accountKeySecret"`
+
+	// UseSDKCreds tells the driver to figure out credentials based on sdk defaults.
+	UseSDKCreds bool `json:"useSDKCreds,omitempty" protobuf:"varint,4,opt,name=useSDKCreds"`
+}
+
+// AzureArtifact is the location of a an Azure Storage artifact
+type AzureArtifact struct {
+	AzureBlobContainer `json:",inline" protobuf:"bytes,1,opt,name=azureBlobContainer"`
+
+	// Blob is the blob name (i.e., path) in the container where the artifact resides
+	Blob string `json:"blob" protobuf:"bytes,2,opt,name=blob"`
+}
+
+func (a *AzureArtifact) GetKey() (string, error) {
+	return a.Blob, nil
+}
+
+func (a *AzureArtifact) SetKey(key string) error {
+	a.Blob = key
+	return nil
+}
+
+func (a *AzureArtifact) HasLocation() bool {
+	return a != nil && a.Container != "" && a.Blob != ""
 }
 
 // HDFSArtifact is the location of an HDFS artifact
@@ -2604,6 +2650,9 @@ type ResourceTemplate struct {
 	// Manifest contains the kubernetes manifest
 	Manifest string `json:"manifest,omitempty" protobuf:"bytes,3,opt,name=manifest"`
 
+	// ManifestFrom is the source for a single kubernetes manifest
+	ManifestFrom *ManifestFrom `json:"manifestFrom,omitempty" protobuf:"bytes,8,opt,name=manifestFrom"`
+
 	// SetOwnerReference sets the reference to the workflow on the OwnerReference of generated resource.
 	SetOwnerReference bool `json:"setOwnerReference,omitempty" protobuf:"varint,4,opt,name=setOwnerReference"`
 
@@ -2621,6 +2670,11 @@ type ResourceTemplate struct {
 	// 	"--validate=false"  # disable resource validation
 	// ]
 	Flags []string `json:"flags,omitempty" protobuf:"varint,7,opt,name=flags"`
+}
+
+type ManifestFrom struct {
+	// Artifact contains the artifact to use
+	Artifact *Artifact `json:"artifact" protobuf:"bytes,1,opt,name=artifact"`
 }
 
 // GetType returns the type of this template

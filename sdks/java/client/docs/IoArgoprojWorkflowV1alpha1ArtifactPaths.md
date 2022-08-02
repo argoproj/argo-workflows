@@ -12,6 +12,7 @@ Name | Type | Description | Notes
 **archiveLogs** | **Boolean** | ArchiveLogs indicates if the container logs should be archived |  [optional]
 **artifactGC** | [**IoArgoprojWorkflowV1alpha1ArtifactGC**](IoArgoprojWorkflowV1alpha1ArtifactGC.md) |  |  [optional]
 **artifactory** | [**IoArgoprojWorkflowV1alpha1ArtifactoryArtifact**](IoArgoprojWorkflowV1alpha1ArtifactoryArtifact.md) |  |  [optional]
+**azure** | [**IoArgoprojWorkflowV1alpha1AzureArtifact**](IoArgoprojWorkflowV1alpha1AzureArtifact.md) |  |  [optional]
 **deleted** | **Boolean** | Has this been deleted? |  [optional]
 **from** | **String** | From allows an artifact to reference an artifact from a previous step |  [optional]
 **fromExpression** | **String** | FromExpression, if defined, is evaluated to specify the value for the artifact |  [optional]
