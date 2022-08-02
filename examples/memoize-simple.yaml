@@ -1,13 +1,13 @@
 # This example demonstrates the ability to memoize a template.
 # Cache can be configured in configmap. For example, if the cache
 # ConfigMap looks like the following, then you should expect the node output
-# retrieved from the cache to be "changed cache value". 
+# retrieved from the cache to be "different world".
 # Note that you also need to update `creationTimestamp` in
-# `data.test-5` to be within the `memoize.maxAge` if `maxAge` is specified in the workflow spec.
+# `data.hello` to be within the `memoize.maxAge` if `maxAge` is specified in the workflow spec.
 # 
 # apiVersion: v1
 # data:
-#   test-5: '{"nodeID":"memoized-hdckj","outputs":{"parameters":[{"name":"hello","value":"changed cache value","valueFrom":{"path":"/tmp/hello_world.txt"}}],"exitCode":"0"},"creationTimestamp":"2021-10-12T15:14:04Z","lastHitTimestamp":"2021-10-12T15:14:04Z"}'
+#   hello: '{"nodeID":"memoized-hdckj","outputs":{"parameters":[{"name":"message","value":"different world","valueFrom":{"path":"/tmp/hello_world.txt"}}],"exitCode":"0"},"creationTimestamp":"2021-10-12T15:14:04Z","lastHitTimestamp":"2021-10-12T15:14:04Z"}'
 # kind: ConfigMap
 # metadata:
 #   creationTimestamp: "2021-10-12T15:14:04Z"
@@ -22,7 +22,7 @@ spec:
   arguments:
     parameters:
     - name: message
-      value: test-5
+      value: hello
   templates:
   - name: whalesay
     inputs:
@@ -37,7 +37,7 @@ spec:
     container:
       image: docker/whalesay:latest
       command: [sh, -c]
-      args: ["cowsay {{inputs.parameters.message}} > /tmp/hello_world.txt"]
+      args: ["cowsay world > /tmp/hello_world.txt"]
     outputs:
       parameters:
       - name: hello
