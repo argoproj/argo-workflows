@@ -99,7 +99,7 @@ message Artifact {
 // ArtifactGC describes how to delete artifacts from completed Workflows
 message ArtifactGC {
   // Strategy is the strategy to use.
-  // +kubebuilder:validation:Enum="";OnWorkflowCompletion;OnWorkflowDeletion;OnWorkflowSuccess;OnWorkflowFailure
+  // +kubebuilder:validation:Enum="";OnWorkflowCompletion;OnWorkflowDeletion;OnWorkflowSuccess;OnWorkflowFailure;Never
   optional string strategy = 1;
 
   // PodMetadata is an optional field for specifying the Labels and Annotations that should be assigned to the Pod doing the deletion
@@ -247,6 +247,8 @@ message ArtifactSearchQuery {
   optional string nodeId = 4;
 
   optional bool deleted = 5;
+
+  map<string, bool> nodeTypes = 6;
 }
 
 message ArtifactSearchResult {

@@ -77,6 +77,7 @@ spec:
                                   - OnWorkflowDeletion
                                   - OnWorkflowSuccess
                                   - OnWorkflowFailure
+                                  - Never
                                   type: string
                               type: object
                             artifactory:

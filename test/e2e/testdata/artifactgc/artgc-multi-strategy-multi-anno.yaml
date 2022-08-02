@@ -61,21 +61,21 @@ spec:
               secretKeySecret:
                 name: my-minio-cred
                 key: secretkey
-          #- name: first-no-deletion #todo: put back on OnWorkflowNever exists
-          #  path: /tmp/message
-          #  s3:
-          #    key: first-no-deletion
-          #    bucket: my-bucket-3
-          #    endpoint: minio:9000
-          #    insecure: true
-          #    accessKeySecret:
-          #      name: my-minio-cred
-          #      key: accesskey
-          #    secretKeySecret:
-          #      name: my-minio-cred
-          #      key: secretkey
-          #  artifactGC:
-          #    strategy: OnWorkflowNever
+          - name: first-no-deletion 
+            path: /tmp/message
+            s3:
+              key: first-no-deletion
+              bucket: my-bucket-3
+              endpoint: minio:9000
+              insecure: true
+              accessKeySecret:
+                name: my-minio-cred
+                key: accesskey
+              secretKeySecret:
+                name: my-minio-cred
+                key: secretkey
+            artifactGC:
+              strategy: Never
 
     - name: second
       archiveLocation:

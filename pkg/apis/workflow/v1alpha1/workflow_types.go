@@ -93,7 +93,8 @@ const (
 	ArtifactGCOnWorkflowDeletion   ArtifactGCStrategy = "OnWorkflowDeletion"
 	ArtifactGCOnWorkflowSuccess    ArtifactGCStrategy = "OnWorkflowSuccess" //todo: remove for now?
 	ArtifactGCOnWorkflowFailure    ArtifactGCStrategy = "OnWorkflowFailure"
-	ArtifactGCNever                ArtifactGCStrategy = ""
+	ArtifactGCNever                ArtifactGCStrategy = "Never"
+	ArtifactGCStrategyUndefined    ArtifactGCStrategy = ""
 )
 
 var AnyArtifactGCStrategy = map[ArtifactGCStrategy]bool{
@@ -225,14 +226,14 @@ func (w *Workflow) GetExecSpec() *WorkflowSpec {
 
 func (w *Workflow) HasArtifactGC() bool {
 
-	if w.Spec.ArtifactGC != nil && w.Spec.ArtifactGC.Strategy != ArtifactGCNever {
+	if w.Spec.ArtifactGC != nil && w.Spec.ArtifactGC.Strategy != ArtifactGCNever && w.Spec.ArtifactGC.Strategy != ArtifactGCStrategyUndefined {
 		return true
 	}
 
 	// either it's defined by an Output Artifact or by the WorkflowSpec itself, or both
 	for _, template := range w.GetTemplates() {
 		for _, artifact := range template.Outputs.Artifacts {
-			if artifact.GetArtifactGC().Strategy != ArtifactGCNever {
+			if artifact.GetArtifactGC().Strategy != ArtifactGCNever && artifact.GetArtifactGC().Strategy != ArtifactGCStrategyUndefined {
 				return true
 			}
 		}
@@ -495,7 +496,7 @@ func (wfs WorkflowSpec) GetVolumeClaimGC() *VolumeClaimGC {
 // ArtifactGC returns the ArtifactGC that was defined in the workflow spec.  If none was provided, a default value is returned.
 func (wfs WorkflowSpec) GetArtifactGC() *ArtifactGC {
 	if wfs.ArtifactGC == nil {
-		return &ArtifactGC{Strategy: ArtifactGCNever}
+		return &ArtifactGC{Strategy: ArtifactGCStrategyUndefined}
 	}
 
 	return wfs.ArtifactGC
@@ -992,7 +993,7 @@ type Artifact struct {
 // ArtifactGC returns the ArtifactGC that was defined by the artifact.  If none was provided, a default value is returned.
 func (a *Artifact) GetArtifactGC() *ArtifactGC {
 	if a.ArtifactGC == nil {
-		return &ArtifactGC{Strategy: ArtifactGCNever}
+		return &ArtifactGC{Strategy: ArtifactGCStrategyUndefined}
 	}
 
 	return a.ArtifactGC
@@ -1058,7 +1059,7 @@ func (podGC *PodGC) GetStrategy() PodGCStrategy {
 // ArtifactGC describes how to delete artifacts from completed Workflows
 type ArtifactGC struct {
 	// Strategy is the strategy to use.
-	// +kubebuilder:validation:Enum="";OnWorkflowCompletion;OnWorkflowDeletion;OnWorkflowSuccess;OnWorkflowFailure
+	// +kubebuilder:validation:Enum="";OnWorkflowCompletion;OnWorkflowDeletion;OnWorkflowSuccess;OnWorkflowFailure;Never
 	Strategy ArtifactGCStrategy `json:"strategy,omitempty" protobuf:"bytes,1,opt,name=strategy,casttype=ArtifactGCStategy"`
 
 	// PodMetadata is an optional field for specifying the Labels and Annotations that should be assigned to the Pod doing the deletion
@@ -1073,7 +1074,7 @@ func (agc *ArtifactGC) GetStrategy() ArtifactGCStrategy {
 	if agc != nil {
 		return agc.Strategy
 	}
-	return ArtifactGCNever
+	return ArtifactGCStrategyUndefined
 }
 
 // VolumeClaimGC describes how to delete volumes from completed Workflows
@@ -1419,7 +1420,7 @@ func (w *Workflow) SearchArtifacts(q *ArtifactSearchQuery) ArtifactSearchResults
 				artifactStrategy := a.GetArtifactGC().GetStrategy()
 				wfStrategy := w.Spec.GetArtifactGC().GetStrategy()
 				strategy := wfStrategy
-				if artifactStrategy != ArtifactGCNever {
+				if artifactStrategy != ArtifactGCStrategyUndefined {
 					strategy = artifactStrategy
 				}
 				if !q.ArtifactGCStrategies[strategy] {

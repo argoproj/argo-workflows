@@ -1076,6 +1076,21 @@ func schema_pkg_apis_workflow_v1alpha1_ArtifactSearchQuery(ref common.ReferenceC
 							Format: "",
 						},
 					},
+					"nodeTypes": {
+						SchemaProps: spec.SchemaProps{
+							Type: []string{"object"},
+							AdditionalProperties: &spec.SchemaOrBool{
+								Allows: true,
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: false,
+										Type:    []string{"boolean"},
+										Format:  "",
+									},
+								},
+							},
+						},
+					},
 				},
 			},
 		},

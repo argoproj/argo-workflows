@@ -480,6 +480,13 @@ func (in *ArtifactSearchQuery) DeepCopyInto(out *ArtifactSearchQuery) {
 		*out = new(bool)
 		**out = **in
 	}
+	if in.NodeTypes != nil {
+		in, out := &in.NodeTypes, &out.NodeTypes
+		*out = make(map[NodeType]bool, len(*in))
+		for key, val := range *in {
+			(*out)[key] = val
+		}
+	}
 	return
 }
 
