@@ -3771,10 +3771,10 @@
 <h1 id="disaster-recovery-dr">Disaster Recovery (DR)<a class="headerlink" href="#disaster-recovery-dr" title="Permanent link">&para;</a></h1>
 <p>We only store data in your Kubernetes cluster. You should consider backing this up regularly.</p>
 <p>Exporting example:</p>
-<div class="highlight"><pre><span></span><code>kubectl get wf,cwf,cwft,wftmpl -o yaml &gt; backup.yaml
+<div class="highlight"><pre><span></span><code>kubectl get wf,cwf,cwft,wftmpl -A -o yaml &gt; backup.yaml
 </code></pre></div>
 <p>Importing example:</p>
-<div class="highlight"><pre><span></span><code>kubectl apply -f backup.yaml
+<div class="highlight"><pre><span></span><code>kubectl apply -f backup.yaml 
 </code></pre></div>
 <p>You should also back-up any SQL persistence you use regularly with whatever tool is provided with it.</p>
 
