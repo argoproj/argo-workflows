@@ -1057,6 +1057,30 @@ func (s *ArgoServerSuite) TestArtifactServer() {
 			uid = metadata.UID
 		})
 
+	s.artifactServerRetrievalTests(name, uid)
+}
+
+func (s *ArgoServerSuite) TestArtifactServerAzure() {
+	if os.Getenv("AZURE") != "true" {
+		s.T().Skip("AZURE must be true to run Azure Storage e2e tests")
+	}
+	var uid types.UID
+	var name string
+	s.Given().
+		Workflow(`@testdata/artifact-workflow-azure.yaml`).
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeArchived).
+		Then().
+		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			name = metadata.Name
+			uid = metadata.UID
+		})
+
+	s.artifactServerRetrievalTests(name, uid)
+}
+
+func (s *ArgoServerSuite) artifactServerRetrievalTests(name string, uid types.UID) {
 	s.Run("GetArtifact", func() {
 		resp := s.e().GET("/artifacts/argo/" + name + "/" + name + "/main-file").
 			Expect().
@@ -1952,6 +1976,19 @@ func (s *ArgoServerSuite) TestSensorService() {
 		s.e().DELETE("/api/v1/sensors/argo/test-sensor").
 			Expect().
 			Status(200)
+	})
+}
+
+func (s *ArgoServerSuite) TestRateLimitHeader() {
+	s.Run("GetRateLimit", func() {
+		resp := s.e().GET("/api/v1/version").
+			Expect().
+			Status(200)
+
+		resp.Header("X-RateLimit-Limit").NotEmpty()
+		resp.Header("X-RateLimit-Remaining").NotEmpty()
+		resp.Header("X-RateLimit-Reset").NotEmpty()
+		resp.Header("Retry-After").Empty()
 	})
 }
 
