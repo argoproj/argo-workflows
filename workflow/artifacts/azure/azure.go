@@ -119,7 +119,7 @@ func (azblobDriver *ArtifactDriver) Load(artifact *wfv1.Artifact, path string) e
 		}
 		isEmptyFile = true
 	} else if !IsAzureError(origErr, azblob.StorageErrorCodeBlobNotFound) {
-		return fmt.Errorf("unable to download blob %s: %s", artifact.Azure.Blob, err)
+		return fmt.Errorf("unable to download blob %s: %s", artifact.Azure.Blob, origErr)
 	}
 
 	isDir, err := azblobDriver.IsDirectory(artifact)
@@ -227,7 +227,7 @@ func (azblobDriver *ArtifactDriver) OpenStream(artifact *wfv1.Artifact) (io.Read
 			return response.Body(nil), nil
 		}
 	} else if !IsAzureError(origErr, azblob.StorageErrorCodeBlobNotFound) {
-		return nil, fmt.Errorf("unable to open stream for blob %s: %s", artifact.Azure.Blob, err)
+		return nil, fmt.Errorf("unable to open stream for blob %s: %s", artifact.Azure.Blob, origErr)
 	}
 
 	isDir, err := azblobDriver.IsDirectory(artifact)
