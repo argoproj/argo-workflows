@@ -46,12 +46,17 @@ type archivedWorkflowLabelRecord struct {
 	Value string `db:"value"`
 }
 
+type archivedWorkflowCount struct {
+	Total uint64 `db:"total,omitempty" json:"total"`
+}
+
 //go:generate mockery --name=WorkflowArchive
 
 type WorkflowArchive interface {
 	ArchiveWorkflow(wf *wfv1.Workflow) error
 	// list workflows, with the most recently started workflows at the beginning (i.e. index 0 is the most recent)
 	ListWorkflows(namespace string, name string, namePrefix string, minStartAt, maxStartAt time.Time, labelRequirements labels.Requirements, limit, offset int) (wfv1.Workflows, error)
+	CountWorkflows(namespace string, name string, namePrefix string, minStartAt, maxStartAt time.Time, labelRequirements labels.Requirements) (int64, error)
 	GetWorkflow(uid string) (*wfv1.Workflow, error)
 	DeleteWorkflow(uid string) error
 	DeleteExpiredWorkflows(ttl time.Duration) error
@@ -183,6 +188,30 @@ func (r *workflowArchive) ListWorkflows(namespace string, name string, namePrefi
 		}
 	}
 	return wfs, nil
+}
+
+func (r *workflowArchive) CountWorkflows(namespace string, name string, namePrefix string, minStartedAt, maxStartedAt time.Time, labelRequirements labels.Requirements) (int64, error) {
+	total := &archivedWorkflowCount{}
+	clause, err := labelsClause(r.dbType, labelRequirements)
+	if err != nil {
+		return 0, err
+	}
+
+	err = r.session.
+		Select(db.Raw("count(*) as total")).
+		From(archiveTableName).
+		Where(r.clusterManagedNamespaceAndInstanceID()).
+		And(namespaceEqual(namespace)).
+		And(nameEqual(name)).
+		And(namePrefixClause(namePrefix)).
+		And(startedAtClause(minStartedAt, maxStartedAt)).
+		And(clause).
+		One(total)
+	if err != nil {
+		return 0, err
+	}
+
+	return int64(total.Total), nil
 }
 
 func (r *workflowArchive) clusterManagedNamespaceAndInstanceID() db.Compound {

@@ -1979,6 +1979,19 @@ func (s *ArgoServerSuite) TestSensorService() {
 	})
 }
 
+func (s *ArgoServerSuite) TestRateLimitHeader() {
+	s.Run("GetRateLimit", func() {
+		resp := s.e().GET("/api/v1/version").
+			Expect().
+			Status(200)
+
+		resp.Header("X-RateLimit-Limit").NotEmpty()
+		resp.Header("X-RateLimit-Remaining").NotEmpty()
+		resp.Header("X-RateLimit-Reset").NotEmpty()
+		resp.Header("Retry-After").Empty()
+	})
+}
+
 func TestArgoServerSuite(t *testing.T) {
 	suite.Run(t, new(ArgoServerSuite))
 }

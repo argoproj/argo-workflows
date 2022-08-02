@@ -1777,7 +1777,8 @@ type RetryAffinity struct {
 
 // RetryStrategy provides controls on how to retry a workflow step
 type RetryStrategy struct {
-	// Limit is the maximum number of attempts when retrying a container
+	// Limit is the maximum number of retry attempts when retrying a container. It does not include the original
+	// container; the maximum number of total attempts will be `limit + 1`.
 	Limit *intstr.IntOrString `json:"limit,omitempty" protobuf:"varint,1,opt,name=limit"`
 
 	// RetryPolicy is a policy of NodePhase statuses that will be retried

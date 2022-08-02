@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"strings"
 	"path/filepath"
 
 	"github.com/xeipuuv/gojsonschema"
@@ -61,12 +62,23 @@ func ValidateArgoYamlRecursively(fromPath string, skipFileNames []string) (map[s
 			return err
 		}
 
+		incorrectError := false
 		if !result.Valid() {
 			errorDescriptions := []string{}
 			for _, err := range result.Errors() {
-				errorDescriptions = append(errorDescriptions, fmt.Sprintf("%s in %s", err.Description(), err.Context().String()))
+				// port should be port number or port reference string, using string port number will cause issue
+				// due swagger 2.0 limitation, we can only specify one data type (we use string, same as k8s api swagger)
+				if strings.HasSuffix(err.Field(), "httpGet.port") && err.Description() == "Invalid type. Expected: string, given: integer" {
+					incorrectError = true
+					continue
+				} else {
+					errorDescriptions = append(errorDescriptions, fmt.Sprintf("%s in %s", err.Description(), err.Context().String()))
+				}
 			}
-			failed[path] = errorDescriptions
+			
+			if !(incorrectError && len(errorDescriptions) == 1) {
+				failed[path] = errorDescriptions
+			}
 		}
 		return nil
 	})

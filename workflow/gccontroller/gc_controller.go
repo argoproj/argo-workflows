@@ -11,11 +11,11 @@ import (
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/util/clock"
 	runtimeutil "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
+	"k8s.io/utils/clock"
 
 	"github.com/argoproj/argo-workflows/v3/config"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
@@ -32,7 +32,7 @@ type Controller struct {
 	wfclientset      wfclientset.Interface
 	wfInformer       cache.SharedIndexInformer
 	workqueue        workqueue.DelayingInterface
-	clock            clock.Clock
+	clock            clock.WithTickerAndDelayedExecution
 	metrics          *metrics.Metrics
 	orderedQueueLock sync.Mutex
 	orderedQueue     map[wfv1.WorkflowPhase]*gcHeap

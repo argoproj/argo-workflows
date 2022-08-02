@@ -94,6 +94,18 @@ message ArtifactGC {
   optional string strategy = 1;
 }
 
+// ArtifactGCSStatus describes the result of the deletion
+message ArtifactGCSStatus {
+  // ArtifactResultsByNode maps Node name to result
+  map<string, ArtifactResultNodeStatus> artifactResultsByNode = 1;
+}
+
+// ArtifactGCSpec specifies the Artifacts that need to be deleted
+message ArtifactGCSpec {
+  // ArtifactsByNode maps Node name to information pertaining to Artifacts on that Node
+  map<string, ArtifactNodeSpec> artifactsByNode = 1;
+}
+
 // ArtifactLocation describes a location for a single or multiple artifacts.
 // It is used as single artifact in the context of inputs/outputs (e.g. outputs.artifacts.artname).
 // It is also used to describe the location of multiple artifacts such as the archive location
@@ -128,6 +140,15 @@ message ArtifactLocation {
 
   // Azure contains Azure Storage artifact location details
   optional AzureArtifact azure = 10;
+}
+
+// ArtifactNodeSpec specifies the Artifacts that need to be deleted for a given Node
+message ArtifactNodeSpec {
+  // ArchiveLocation is the template-level Artifact location specification
+  optional ArtifactLocation archiveLocation = 1;
+
+  // Artifacts maps artifact name to Artifact description
+  map<string, Artifact> artifacts = 2;
 }
 
 // ArtifactPaths expands a step from a collection of artifacts
@@ -181,6 +202,24 @@ message ArtifactRepositoryRefStatus {
 
   // The repository the workflow will use. This maybe empty before v3.1.
   optional ArtifactRepository artifactRepository = 4;
+}
+
+// ArtifactResult describes the result of attempting to delete a given Artifact
+message ArtifactResult {
+  // Name is the name of the Artifact
+  optional string name = 1;
+
+  // Success describes whether the deletion succeeded
+  optional bool success = 2;
+
+  // Error is an optional error message which should be set if Success==false
+  optional string error = 3;
+}
+
+// ArtifactResultNodeStatus describes the result of the deletion on a given node
+message ArtifactResultNodeStatus {
+  // ArtifactResults maps Artifact name to result of the deletion
+  map<string, ArtifactResult> artifactResults = 1;
 }
 
 message ArtifactSearchQuery {
@@ -1219,7 +1258,8 @@ message RetryNodeAntiAffinity {
 
 // RetryStrategy provides controls on how to retry a workflow step
 message RetryStrategy {
-  // Limit is the maximum number of attempts when retrying a container
+  // Limit is the maximum number of retry attempts when retrying a container. It does not include the original
+  // container; the maximum number of total attempts will be `limit + 1`.
   optional k8s.io.apimachinery.pkg.util.intstr.IntOrString limit = 1;
 
   // RetryPolicy is a policy of NodePhase statuses that will be retried
@@ -1693,6 +1733,27 @@ message Workflow {
   optional WorkflowSpec spec  = 2;
 
   optional WorkflowStatus status = 3;
+}
+
+// WorkflowArtifactGCTask specifies the Artifacts that need to be deleted as well as the status of deletion
+// +genclient
+// +kubebuilder:resource:shortName=wfat
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// +kubebuilder:subresource:status
+message WorkflowArtifactGCTask {
+  optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
+
+  optional ArtifactGCSpec spec = 2;
+
+  optional ArtifactGCSStatus status = 3;
+}
+
+// WorkflowArtifactGCTaskList is list of WorkflowArtifactGCTask resources
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+message WorkflowArtifactGCTaskList {
+  optional k8s.io.apimachinery.pkg.apis.meta.v1.ListMeta metadata = 1;
+
+  repeated WorkflowArtifactGCTask items = 2;
 }
 
 // WorkflowEventBinding is the definition of an event resource
