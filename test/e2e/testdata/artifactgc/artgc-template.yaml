@@ -20,10 +20,10 @@ spec:
           echo "hello world" > /tmp/message
     outputs:
       artifacts:
-        - name: on-success
+        - name: on-completion
           path: /tmp/message
           s3:
-            key: on-success
+            key: on-completion
             bucket: my-bucket-2
             endpoint: minio:9000
             insecure: true
@@ -34,7 +34,7 @@ spec:
               name: my-minio-cred
               key: secretkey
           artifactGC:
-            strategy: OnWorkflowSuccess
+            strategy: OnWorkflowCompletion
         - name: on-deletion
           path: /tmp/message
           s3:

@@ -185,7 +185,7 @@ func (t *Then) ExpectAuditEvents(filter func(event apiv1.Event) bool, num int, b
 	return t
 }
 
-func (t *Then) ExpectArtifact(nodeName string, artifactName string, bucketName string, f func(t *testing.T, object *minio.Object, err error)) {
+func (t *Then) ExpectArtifact(nodeName string, artifactName string, bucketName string, f func(t *testing.T, object minio.ObjectInfo, err error)) {
 	t.t.Helper()
 
 	if nodeName == "-" {
@@ -199,7 +199,7 @@ func (t *Then) ExpectArtifact(nodeName string, artifactName string, bucketName s
 	t.ExpectArtifactByKey(key, bucketName, f)
 }
 
-func (t *Then) ExpectArtifactByKey(key string, bucketName string, f func(t *testing.T, object *minio.Object, err error)) {
+func (t *Then) ExpectArtifactByKey(key string, bucketName string, f func(t *testing.T, object minio.ObjectInfo, err error)) {
 	t.t.Helper()
 
 	c, err := minio.New("localhost:9000", &minio.Options{
@@ -210,7 +210,7 @@ func (t *Then) ExpectArtifactByKey(key string, bucketName string, f func(t *test
 		t.t.Error(err)
 	}
 
-	object, err := c.GetObject(context.Background(), bucketName, key, minio.GetObjectOptions{})
+	object, err := c.StatObject(context.Background(), bucketName, key, minio.StatObjectOptions{})
 	f(t.t, object, err)
 }
 

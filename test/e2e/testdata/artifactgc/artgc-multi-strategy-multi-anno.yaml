@@ -7,7 +7,7 @@ metadata:
 spec:
   entrypoint: entrypoint
   artifactGC:
-    strategy: OnWorkflowSuccess
+    strategy: OnWorkflowCompletion
   podGC:
     strategy: ""
   templates:
@@ -28,10 +28,10 @@ spec:
             echo "hello world" > /tmp/message
       outputs:
         artifacts:
-          - name: first-on-success-1
+          - name: first-on-completion-1
             path: /tmp/message
             s3:
-              key: first-on-success-1
+              key: first-on-completion-1
               bucket: my-bucket-2
               endpoint: minio:9000
               insecure: true
@@ -42,16 +42,16 @@ spec:
                 name: my-minio-cred
                 key: secretkey
             artifactGC:
-              strategy: OnWorkflowSuccess
+              strategy: OnWorkflowCompletion
               serviceAccountName: default
               podMetadata:
                 annotations:
                   annotation-key-1: annotation-value-1
                   annotation-key-2: annotation-value-2
-          - name: first-on-success-2
+          - name: first-on-completion-2
             path: /tmp/message
             s3:
-              key: first-on-success-2
+              key: first-on-completion-2
               bucket: my-bucket-3
               endpoint: minio:9000
               insecure: true
@@ -61,21 +61,21 @@ spec:
               secretKeySecret:
                 name: my-minio-cred
                 key: secretkey
-          - name: first-no-deletion
-            path: /tmp/message
-            s3:
-              key: first-no-deletion
-              bucket: my-bucket-3
-              endpoint: minio:9000
-              insecure: true
-              accessKeySecret:
-                name: my-minio-cred
-                key: accesskey
-              secretKeySecret:
-                name: my-minio-cred
-                key: secretkey
-            artifactGC:
-              strategy: ""
+          #- name: first-no-deletion #todo: put back on OnWorkflowNever exists
+          #  path: /tmp/message
+          #  s3:
+          #    key: first-no-deletion
+          #    bucket: my-bucket-3
+          #    endpoint: minio:9000
+          #    insecure: true
+          #    accessKeySecret:
+          #      name: my-minio-cred
+          #      key: accesskey
+          #    secretKeySecret:
+          #      name: my-minio-cred
+          #      key: secretkey
+          #  artifactGC:
+          #    strategy: OnWorkflowNever
 
     - name: second
       archiveLocation:
@@ -106,10 +106,10 @@ spec:
             path: /tmp/message
             artifactGC:
               strategy: OnWorkflowDeletion
-          - name: second-on-success
+          - name: second-on-completion
             path: /tmp/message
             s3:
-              key: second-on-success
+              key: second-on-completion
               bucket: my-bucket-2
               endpoint: minio:9000
               insecure: true
@@ -120,4 +120,4 @@ spec:
                 name: my-minio-cred
                 key: secretkey
             artifactGC:
-              strategy: OnWorkflowSuccess
+              strategy: OnWorkflowCompletion

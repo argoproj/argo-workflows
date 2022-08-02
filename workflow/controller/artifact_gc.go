@@ -395,10 +395,10 @@ func (woc *wfOperationCtx) createArtifactGCPod(ctx context.Context, strategy wfv
 				{
 					Name:            common.MainContainerName,
 					Image:           woc.controller.executorImage(),
-					ImagePullPolicy: woc.controller.executorImagePullPolicy(),
+					ImagePullPolicy: apiv1.PullIfNotPresent, // woc.controller.executorImagePullPolicy(), //todo: put back!!
 					Args:            []string{"artifact", "delete", "--loglevel", getExecutorLogLevel()},
 					Env: []corev1.EnvVar{
-						{Name: common.EnvVarArtifactGCPod, Value: podName},
+						{Name: common.EnvVarArtifactPodName, Value: podName},
 					},
 					// if this pod is breached by an attacker we:
 					// * prevent installation of any new packages
