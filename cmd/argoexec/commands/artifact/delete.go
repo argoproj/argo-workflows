@@ -23,10 +23,6 @@ func NewArtifactDeleteCommand() *cobra.Command {
 		Use:          "delete",
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			// a := &wfv1.Artifact{}
-			// if err := json.Unmarshal([]byte(os.Getenv(common.EnvVarArtifact)), a); err != nil {
-			// 	return fmt.Errorf("failed to unmarshal artifact: %w", err)
-			// }
 
 			namespace := client.Namespace()
 			clientConfig := client.GetConfig()
@@ -53,12 +49,14 @@ func NewArtifactDeleteCommand() *cobra.Command {
 							archiveLocation = artifactNodeSpec.ArchiveLocation
 						}
 
+						var resources resources
+						resources.Files = make(map[string][]byte) // same resources for every artifact
 						for _, artifact := range artifactNodeSpec.Artifacts {
 							if archiveLocation != nil {
 								artifact.Relocate(archiveLocation)
 							}
 
-							drv, err := executor.NewDriver(cmd.Context(), &artifact, &resources{})
+							drv, err := executor.NewDriver(cmd.Context(), &artifact, resources)
 							checkErr(err)
 
 							err = drv.Delete(&artifact)
@@ -84,15 +82,20 @@ func NewArtifactDeleteCommand() *cobra.Command {
 	}
 }
 
-type resources struct{}
-
-// map[filepath] = string(file) in struct
+type resources struct {
+	Files map[string][]byte
+}
 
 func (r resources) GetSecret(ctx context.Context, name, key string) (string, error) {
 	// file, err := os.ReadFile(filepath.Join("/Users/dpadhiar/go/src/github.com/argoproj/argo-workflows", name, key))
-	file, err := os.ReadFile(filepath.Join(common.SecretVolMountPath, name, key))
-	return string(file), err
+	path := filepath.Join(common.SecretVolMountPath, name, key)
+	if file, ok := r.Files[path]; ok {
+		return string(file), nil
+	}
 
+	file, err := os.ReadFile(path)
+	r.Files[path] = file
+	return string(file), err
 }
 
 func (r resources) GetConfigMapKey(ctx context.Context, name, key string) (string, error) {
