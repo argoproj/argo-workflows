@@ -81,22 +81,21 @@ ownership management and SELinux relabeling.
 
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
-| fsType | string| `string` |  | | Filesystem type of the volume that you want to mount.
+| fsType | string| `string` |  | | fsType is the filesystem type of the volume that you want to mount.
 Tip: Ensure that the filesystem type is supported by the host operating system.
 Examples: "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified.
 More info: https://kubernetes.io/docs/concepts/storage/volumes#awselasticblockstore
 TODO: how do we prevent errors in the filesystem from compromising the machine
 +optional |  |
-| partition | int32 (formatted integer)| `int32` |  | | The partition in the volume that you want to mount.
+| partition | int32 (formatted integer)| `int32` |  | | partition is the partition in the volume that you want to mount.
 If omitted, the default is to mount by volume name.
 Examples: For volume /dev/sda1, you specify the partition as "1".
 Similarly, the volume partition for /dev/sda is "0" (or you can leave the property empty).
 +optional |  |
-| readOnly | boolean| `bool` |  | | Specify "true" to force and set the ReadOnly property in VolumeMounts to "true".
-If omitted, the default is "false".
+| readOnly | boolean| `bool` |  | | readOnly value true will force the readOnly setting in VolumeMounts.
 More info: https://kubernetes.io/docs/concepts/storage/volumes#awselasticblockstore
 +optional |  |
-| volumeID | string| `string` |  | | Unique ID of the persistent disk resource in AWS (Amazon EBS volume).
+| volumeID | string| `string` |  | | volumeID is unique ID of the persistent disk resource in AWS (Amazon EBS volume).
 More info: https://kubernetes.io/docs/concepts/storage/volumes#awselasticblockstore |  |
 
 
@@ -414,14 +413,14 @@ set when loading input artifacts. |  |
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
 | cachingMode | [AzureDataDiskCachingMode](#azure-data-disk-caching-mode)| `AzureDataDiskCachingMode` |  | |  |  |
-| diskName | string| `string` |  | | The Name of the data disk in the blob storage |  |
-| diskURI | string| `string` |  | | The URI the data disk in the blob storage |  |
-| fsType | string| `string` |  | | Filesystem type to mount.
+| diskName | string| `string` |  | | diskName is the Name of the data disk in the blob storage |  |
+| diskURI | string| `string` |  | | diskURI is the URI of data disk in the blob storage |  |
+| fsType | string| `string` |  | | fsType is Filesystem type to mount.
 Must be a filesystem type supported by the host operating system.
 Ex. "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified.
 +optional |  |
 | kind | [AzureDataDiskKind](#azure-data-disk-kind)| `AzureDataDiskKind` |  | |  |  |
-| readOnly | boolean| `bool` |  | | Defaults to false (read/write). ReadOnly here will force
+| readOnly | boolean| `bool` |  | | readOnly Defaults to false (read/write). ReadOnly here will force
 the ReadOnly setting in VolumeMounts.
 +optional |  |
 
@@ -438,11 +437,11 @@ the ReadOnly setting in VolumeMounts.
 
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
-| readOnly | boolean| `bool` |  | | Defaults to false (read/write). ReadOnly here will force
+| readOnly | boolean| `bool` |  | | readOnly defaults to false (read/write). ReadOnly here will force
 the ReadOnly setting in VolumeMounts.
 +optional |  |
-| secretName | string| `string` |  | | the name of secret that contains Azure Storage Account Name and Key |  |
-| shareName | string| `string` |  | | Share Name |  |
+| secretName | string| `string` |  | | secretName is the  name of secret that contains Azure Storage Account Name and Key |  |
+| shareName | string| `string` |  | | shareName is the azure share Name |  |
 
 
 
@@ -499,17 +498,17 @@ the ReadOnly setting in VolumeMounts.
 
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
-| driver | string| `string` |  | | Driver is the name of the CSI driver that handles this volume.
+| driver | string| `string` |  | | driver is the name of the CSI driver that handles this volume.
 Consult with your admin for the correct name as registered in the cluster. |  |
-| fsType | string| `string` |  | | Filesystem type to mount. Ex. "ext4", "xfs", "ntfs".
+| fsType | string| `string` |  | | fsType to mount. Ex. "ext4", "xfs", "ntfs".
 If not provided, the empty value is passed to the associated CSI driver
 which will determine the default filesystem to apply.
 +optional |  |
 | nodePublishSecretRef | [LocalObjectReference](#local-object-reference)| `LocalObjectReference` |  | |  |  |
-| readOnly | boolean| `bool` |  | | Specifies a read-only configuration for the volume.
+| readOnly | boolean| `bool` |  | | readOnly specifies a read-only configuration for the volume.
 Defaults to false (read/write).
 +optional |  |
-| volumeAttributes | map of string| `map[string]string` |  | | VolumeAttributes stores driver-specific properties that are passed to the CSI
+| volumeAttributes | map of string| `map[string]string` |  | | volumeAttributes stores driver-specific properties that are passed to the CSI
 driver. Consult your driver's documentation for supported values.
 +optional |  |
 
@@ -580,19 +579,19 @@ Cephfs volumes do not support ownership management or SELinux relabeling.
 
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
-| monitors | []string| `[]string` |  | | Required: Monitors is a collection of Ceph monitors
+| monitors | []string| `[]string` |  | | monitors is Required: Monitors is a collection of Ceph monitors
 More info: https://examples.k8s.io/volumes/cephfs/README.md#how-to-use-it |  |
-| path | string| `string` |  | | Optional: Used as the mounted root, rather than the full Ceph tree, default is /
+| path | string| `string` |  | | path is Optional: Used as the mounted root, rather than the full Ceph tree, default is /
 +optional |  |
-| readOnly | boolean| `bool` |  | | Optional: Defaults to false (read/write). ReadOnly here will force
+| readOnly | boolean| `bool` |  | | readOnly is Optional: Defaults to false (read/write). ReadOnly here will force
 the ReadOnly setting in VolumeMounts.
 More info: https://examples.k8s.io/volumes/cephfs/README.md#how-to-use-it
 +optional |  |
-| secretFile | string| `string` |  | | Optional: SecretFile is the path to key ring for User, default is /etc/ceph/user.secret
+| secretFile | string| `string` |  | | secretFile is Optional: SecretFile is the path to key ring for User, default is /etc/ceph/user.secret
 More info: https://examples.k8s.io/volumes/cephfs/README.md#how-to-use-it
 +optional |  |
 | secretRef | [LocalObjectReference](#local-object-reference)| `LocalObjectReference` |  | |  |  |
-| user | string| `string` |  | | Optional: User is the rados user name, default is admin
+| user | string| `string` |  | | user is optional: User is the rados user name, default is admin
 More info: https://examples.k8s.io/volumes/cephfs/README.md#how-to-use-it
 +optional |  |
 
@@ -614,17 +613,17 @@ Cinder volumes support ownership management and SELinux relabeling.
 
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
-| fsType | string| `string` |  | | Filesystem type to mount.
+| fsType | string| `string` |  | | fsType is the filesystem type to mount.
 Must be a filesystem type supported by the host operating system.
 Examples: "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified.
 More info: https://examples.k8s.io/mysql-cinder-pd/README.md
 +optional |  |
-| readOnly | boolean| `bool` |  | | Optional: Defaults to false (read/write). ReadOnly here will force
+| readOnly | boolean| `bool` |  | | readOnly defaults to false (read/write). ReadOnly here will force
 the ReadOnly setting in VolumeMounts.
 More info: https://examples.k8s.io/mysql-cinder-pd/README.md
 +optional |  |
 | secretRef | [LocalObjectReference](#local-object-reference)| `LocalObjectReference` |  | |  |  |
-| volumeID | string| `string` |  | | volume id used to identify the volume in cinder.
+| volumeID | string| `string` |  | | volumeID used to identify the volume in cinder.
 More info: https://examples.k8s.io/mysql-cinder-pd/README.md |  |
 
 
@@ -714,7 +713,7 @@ mode.
 
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
-| items | [][KeyToPath](#key-to-path)| `[]*KeyToPath` |  | | If unspecified, each key-value pair in the Data field of the referenced
+| items | [][KeyToPath](#key-to-path)| `[]*KeyToPath` |  | | items if unspecified, each key-value pair in the Data field of the referenced
 ConfigMap will be projected into the volume as a file whose name is the
 key and content is the value. If specified, the listed keys will be
 projected into the specified paths, and unlisted keys will not be
@@ -726,7 +725,7 @@ relative and may not contain the '..' path or start with '..'.
 More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
 TODO: Add other useful fields. apiVersion, kind, uid?
 +optional |  |
-| optional | boolean| `bool` |  | | Specify whether the ConfigMap or its keys must be defined
+| optional | boolean| `bool` |  | | optional specify whether the ConfigMap or its keys must be defined
 +optional |  |
 
 
@@ -748,7 +747,7 @@ ConfigMap volumes support ownership management and SELinux relabeling.
 
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
-| defaultMode | int32 (formatted integer)| `int32` |  | | Optional: mode bits used to set permissions on created files by default.
+| defaultMode | int32 (formatted integer)| `int32` |  | | defaultMode is optional: mode bits used to set permissions on created files by default.
 Must be an octal value between 0000 and 0777 or a decimal value between 0 and 511.
 YAML accepts both octal and decimal values, JSON requires decimal values for mode bits.
 Defaults to 0644.
@@ -756,7 +755,7 @@ Directories within the path are not affected by this setting.
 This might be in conflict with other options that affect the file
 mode, like fsGroup, and the result can be other mode bits set.
 +optional |  |
-| items | [][KeyToPath](#key-to-path)| `[]*KeyToPath` |  | | If unspecified, each key-value pair in the Data field of the referenced
+| items | [][KeyToPath](#key-to-path)| `[]*KeyToPath` |  | | items if unspecified, each key-value pair in the Data field of the referenced
 ConfigMap will be projected into the volume as a file whose name is the
 key and content is the value. If specified, the listed keys will be
 projected into the specified paths, and unlisted keys will not be
@@ -768,7 +767,7 @@ relative and may not contain the '..' path or start with '..'.
 More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
 TODO: Add other useful fields. apiVersion, kind, uid?
 +optional |  |
-| optional | boolean| `bool` |  | | Specify whether the ConfigMap or its keys must be defined
+| optional | boolean| `bool` |  | | optional specify whether the ConfigMap or its keys must be defined
 +optional |  |
 
 
@@ -785,7 +784,7 @@ TODO: Add other useful fields. apiVersion, kind, uid?
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
 | args | []string| `[]string` |  | | Arguments to the entrypoint.
-The docker image's CMD is used if this is not provided.
+The container image's CMD is used if this is not provided.
 Variable references $(VAR_NAME) are expanded using the container's environment. If a variable
 cannot be resolved, the reference in the input string will be unchanged. Double $$ are reduced
 to a single $, which allows for escaping the $(VAR_NAME) syntax: i.e. "$$(VAR_NAME)" will
@@ -794,7 +793,7 @@ of whether the variable exists or not. Cannot be updated.
 More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell
 +optional |  |
 | command | []string| `[]string` |  | | Entrypoint array. Not executed within a shell.
-The docker image's ENTRYPOINT is used if this is not provided.
+The container image's ENTRYPOINT is used if this is not provided.
 Variable references $(VAR_NAME) are expanded using the container's environment. If a variable
 cannot be resolved, the reference in the input string will be unchanged. Double $$ are reduced
 to a single $, which allows for escaping the $(VAR_NAME) syntax: i.e. "$$(VAR_NAME)" will
@@ -814,7 +813,7 @@ sources, the value associated with the last source will take precedence.
 Values defined by an Env with a duplicate key will take precedence.
 Cannot be updated.
 +optional |  |
-| image | string| `string` |  | | Docker image name.
+| image | string| `string` |  | | Container image name.
 More info: https://kubernetes.io/docs/concepts/containers/images
 This field is optional to allow higher level config management to default or override
 container images in workload controllers like Deployments and StatefulSets.
@@ -895,7 +894,7 @@ Cannot be updated.
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
 | args | []string| `[]string` |  | | Arguments to the entrypoint.
-The docker image's CMD is used if this is not provided.
+The container image's CMD is used if this is not provided.
 Variable references $(VAR_NAME) are expanded using the container's environment. If a variable
 cannot be resolved, the reference in the input string will be unchanged. Double $$ are reduced
 to a single $, which allows for escaping the $(VAR_NAME) syntax: i.e. "$$(VAR_NAME)" will
@@ -904,7 +903,7 @@ of whether the variable exists or not. Cannot be updated.
 More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell
 +optional |  |
 | command | []string| `[]string` |  | | Entrypoint array. Not executed within a shell.
-The docker image's ENTRYPOINT is used if this is not provided.
+The container image's ENTRYPOINT is used if this is not provided.
 Variable references $(VAR_NAME) are expanded using the container's environment. If a variable
 cannot be resolved, the reference in the input string will be unchanged. Double $$ are reduced
 to a single $, which allows for escaping the $(VAR_NAME) syntax: i.e. "$$(VAR_NAME)" will
@@ -925,7 +924,7 @@ sources, the value associated with the last source will take precedence.
 Values defined by an Env with a duplicate key will take precedence.
 Cannot be updated.
 +optional |  |
-| image | string| `string` |  | | Docker image name.
+| image | string| `string` |  | | Container image name.
 More info: https://kubernetes.io/docs/concepts/containers/images
 This field is optional to allow higher level config management to default or override
 container images in workload controllers like Deployments and StatefulSets.
@@ -1478,19 +1477,19 @@ Fibre Channel volumes support ownership management and SELinux relabeling.
 
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
-| fsType | string| `string` |  | | Filesystem type to mount.
+| fsType | string| `string` |  | | fsType is the filesystem type to mount.
 Must be a filesystem type supported by the host operating system.
 Ex. "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified.
 TODO: how do we prevent errors in the filesystem from compromising the machine
 +optional |  |
-| lun | int32 (formatted integer)| `int32` |  | | Optional: FC target lun number
+| lun | int32 (formatted integer)| `int32` |  | | lun is Optional: FC target lun number
 +optional |  |
-| readOnly | boolean| `bool` |  | | Optional: Defaults to false (read/write). ReadOnly here will force
+| readOnly | boolean| `bool` |  | | readOnly is Optional: Defaults to false (read/write). ReadOnly here will force
 the ReadOnly setting in VolumeMounts.
 +optional |  |
-| targetWWNs | []string| `[]string` |  | | Optional: FC target worldwide names (WWNs)
+| targetWWNs | []string| `[]string` |  | | targetWWNs is Optional: FC target worldwide names (WWNs)
 +optional |  |
-| wwids | []string| `[]string` |  | | Optional: FC volume world wide identifiers (wwids)
+| wwids | []string| `[]string` |  | | wwids Optional: FC volume world wide identifiers (wwids)
 Either wwids or combination of targetWWNs and lun must be set, but not both simultaneously.
 +optional |  |
 
@@ -1530,14 +1529,14 @@ provisioned/attached using an exec based plugin.
 
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
-| driver | string| `string` |  | | Driver is the name of the driver to use for this volume. |  |
-| fsType | string| `string` |  | | Filesystem type to mount.
+| driver | string| `string` |  | | driver is the name of the driver to use for this volume. |  |
+| fsType | string| `string` |  | | fsType is the filesystem type to mount.
 Must be a filesystem type supported by the host operating system.
 Ex. "ext4", "xfs", "ntfs". The default filesystem depends on FlexVolume script.
 +optional |  |
-| options | map of string| `map[string]string` |  | | Optional: Extra command options if any.
+| options | map of string| `map[string]string` |  | | options is Optional: this field holds extra command options if any.
 +optional |  |
-| readOnly | boolean| `bool` |  | | Optional: Defaults to false (read/write). ReadOnly here will force
+| readOnly | boolean| `bool` |  | | readOnly is Optional: defaults to false (read/write). ReadOnly here will force
 the ReadOnly setting in VolumeMounts.
 +optional |  |
 | secretRef | [LocalObjectReference](#local-object-reference)| `LocalObjectReference` |  | |  |  |
@@ -1559,10 +1558,10 @@ Flocker volumes do not support ownership management or SELinux relabeling.
 
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
-| datasetName | string| `string` |  | | Name of the dataset stored as metadata -> name on the dataset for Flocker
+| datasetName | string| `string` |  | | datasetName is Name of the dataset stored as metadata -> name on the dataset for Flocker
 should be considered as deprecated
 +optional |  |
-| datasetUUID | string| `string` |  | | UUID of the dataset. This is unique identifier of a Flocker dataset
+| datasetUUID | string| `string` |  | | datasetUUID is the UUID of the dataset. This is unique identifier of a Flocker dataset
 +optional |  |
 
 
@@ -1584,21 +1583,21 @@ PDs support ownership management and SELinux relabeling.
 
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
-| fsType | string| `string` |  | | Filesystem type of the volume that you want to mount.
+| fsType | string| `string` |  | | fsType is filesystem type of the volume that you want to mount.
 Tip: Ensure that the filesystem type is supported by the host operating system.
 Examples: "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified.
 More info: https://kubernetes.io/docs/concepts/storage/volumes#gcepersistentdisk
 TODO: how do we prevent errors in the filesystem from compromising the machine
 +optional |  |
-| partition | int32 (formatted integer)| `int32` |  | | The partition in the volume that you want to mount.
+| partition | int32 (formatted integer)| `int32` |  | | partition is the partition in the volume that you want to mount.
 If omitted, the default is to mount by volume name.
 Examples: For volume /dev/sda1, you specify the partition as "1".
 Similarly, the volume partition for /dev/sda is "0" (or you can leave the property empty).
 More info: https://kubernetes.io/docs/concepts/storage/volumes#gcepersistentdisk
 +optional |  |
-| pdName | string| `string` |  | | Unique name of the PD resource in GCE. Used to identify the disk in GCE.
+| pdName | string| `string` |  | | pdName is unique name of the PD resource in GCE. Used to identify the disk in GCE.
 More info: https://kubernetes.io/docs/concepts/storage/volumes#gcepersistentdisk |  |
-| readOnly | boolean| `bool` |  | | ReadOnly here will force the ReadOnly setting in VolumeMounts.
+| readOnly | boolean| `bool` |  | | readOnly here will force the ReadOnly setting in VolumeMounts.
 Defaults to false.
 More info: https://kubernetes.io/docs/concepts/storage/volumes#gcepersistentdisk
 +optional |  |
@@ -1710,13 +1709,13 @@ into the Pod's container.
 
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
-| directory | string| `string` |  | | Target directory name.
+| directory | string| `string` |  | | directory is the target directory name.
 Must not contain or start with '..'.  If '.' is supplied, the volume directory will be the
 git repository.  Otherwise, if specified, the volume will contain the git repository in
 the subdirectory with the given name.
 +optional |  |
-| repository | string| `string` |  | | Repository URL |  |
-| revision | string| `string` |  | | Commit hash for the specified revision.
+| repository | string| `string` |  | | repository is the URL |  |
+| revision | string| `string` |  | | revision is the commit hash for the specified revision.
 +optional |  |
 
 
@@ -1735,11 +1734,11 @@ the subdirectory with the given name.
 
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
-| endpoints | string| `string` |  | | EndpointsName is the endpoint name that details Glusterfs topology.
+| endpoints | string| `string` |  | | endpoints is the endpoint name that details Glusterfs topology.
 More info: https://examples.k8s.io/volumes/glusterfs/README.md#create-a-pod |  |
-| path | string| `string` |  | | Path is the Glusterfs volume path.
+| path | string| `string` |  | | path is the Glusterfs volume path.
 More info: https://examples.k8s.io/volumes/glusterfs/README.md#create-a-pod |  |
-| readOnly | boolean| `bool` |  | | ReadOnly here will force the Glusterfs volume to be mounted with read-only permissions.
+| readOnly | boolean| `bool` |  | | readOnly here will force the Glusterfs volume to be mounted with read-only permissions.
 Defaults to false.
 More info: https://examples.k8s.io/volumes/glusterfs/README.md#create-a-pod
 +optional |  |
@@ -1999,7 +1998,7 @@ pod's hosts file.
 
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
-| path | string| `string` |  | | Path of the directory on the host.
+| path | string| `string` |  | | path of the directory on the host.
 If the path is a symlink, it will follow the link to the real path.
 More info: https://kubernetes.io/docs/concepts/storage/volumes#hostpath |  |
 | type | [HostPathType](#host-path-type)| `HostPathType` |  | |  |  |
@@ -2021,33 +2020,33 @@ ISCSI volumes support ownership management and SELinux relabeling.
 
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
-| chapAuthDiscovery | boolean| `bool` |  | | whether support iSCSI Discovery CHAP authentication
+| chapAuthDiscovery | boolean| `bool` |  | | chapAuthDiscovery defines whether support iSCSI Discovery CHAP authentication
 +optional |  |
-| chapAuthSession | boolean| `bool` |  | | whether support iSCSI Session CHAP authentication
+| chapAuthSession | boolean| `bool` |  | | chapAuthSession defines whether support iSCSI Session CHAP authentication
 +optional |  |
-| fsType | string| `string` |  | | Filesystem type of the volume that you want to mount.
+| fsType | string| `string` |  | | fsType is the filesystem type of the volume that you want to mount.
 Tip: Ensure that the filesystem type is supported by the host operating system.
 Examples: "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified.
 More info: https://kubernetes.io/docs/concepts/storage/volumes#iscsi
 TODO: how do we prevent errors in the filesystem from compromising the machine
 +optional |  |
-| initiatorName | string| `string` |  | | Custom iSCSI Initiator Name.
+| initiatorName | string| `string` |  | | initiatorName is the custom iSCSI Initiator Name.
 If initiatorName is specified with iscsiInterface simultaneously, new iSCSI interface
 <target portal>:<volume name> will be created for the connection.
 +optional |  |
-| iqn | string| `string` |  | | Target iSCSI Qualified Name. |  |
-| iscsiInterface | string| `string` |  | | iSCSI Interface Name that uses an iSCSI transport.
+| iqn | string| `string` |  | | iqn is the target iSCSI Qualified Name. |  |
+| iscsiInterface | string| `string` |  | | iscsiInterface is the interface Name that uses an iSCSI transport.
 Defaults to 'default' (tcp).
 +optional |  |
-| lun | int32 (formatted integer)| `int32` |  | | iSCSI Target Lun number. |  |
-| portals | []string| `[]string` |  | | iSCSI Target Portal List. The portal is either an IP or ip_addr:port if the port
+| lun | int32 (formatted integer)| `int32` |  | | lun represents iSCSI Target Lun number. |  |
+| portals | []string| `[]string` |  | | portals is the iSCSI Target Portal List. The portal is either an IP or ip_addr:port if the port
 is other than default (typically TCP ports 860 and 3260).
 +optional |  |
-| readOnly | boolean| `bool` |  | | ReadOnly here will force the ReadOnly setting in VolumeMounts.
+| readOnly | boolean| `bool` |  | | readOnly here will force the ReadOnly setting in VolumeMounts.
 Defaults to false.
 +optional |  |
 | secretRef | [LocalObjectReference](#local-object-reference)| `LocalObjectReference` |  | |  |  |
-| targetPortal | string| `string` |  | | iSCSI Target Portal. The Portal is either an IP or ip_addr:port if the port
+| targetPortal | string| `string` |  | | targetPortal is iSCSI Target Portal. The Portal is either an IP or ip_addr:port if the port
 is other than default (typically TCP ports 860 and 3260). |  |
 
 
@@ -2117,15 +2116,15 @@ is other than default (typically TCP ports 860 and 3260). |  |
 
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
-| key | string| `string` |  | | The key to project. |  |
-| mode | int32 (formatted integer)| `int32` |  | | Optional: mode bits used to set permissions on this file.
+| key | string| `string` |  | | key is the key to project. |  |
+| mode | int32 (formatted integer)| `int32` |  | | mode is Optional: mode bits used to set permissions on this file.
 Must be an octal value between 0000 and 0777 or a decimal value between 0 and 511.
 YAML accepts both octal and decimal values, JSON requires decimal values for mode bits.
 If not specified, the volume defaultMode will be used.
 This might be in conflict with other options that affect the file
 mode, like fsGroup, and the result can be other mode bits set.
 +optional |  |
-| path | string| `string` |  | | The relative path of the file to map the key to.
+| path | string| `string` |  | | path is the relative path of the file to map the key to.
 May not be an absolute path.
 May not contain the path element '..'.
 May not start with the string '..'. |  |
@@ -2471,14 +2470,13 @@ than the MaxAge, it will be ignored. |  |
 
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
-| path | string| `string` |  | | Path that is exported by the NFS server.
+| path | string| `string` |  | | path that is exported by the NFS server.
 More info: https://kubernetes.io/docs/concepts/storage/volumes#nfs |  |
-| readOnly | boolean| `bool` |  | | ReadOnly here will force
-the NFS export to be mounted with read-only permissions.
+| readOnly | boolean| `bool` |  | | readOnly here will force the NFS export to be mounted with read-only permissions.
 Defaults to false.
 More info: https://kubernetes.io/docs/concepts/storage/volumes#nfs
 +optional |  |
-| server | string| `string` |  | | Server is the hostname or IP address of the NFS server.
+| server | string| `string` |  | | server is the hostname or IP address of the NFS server.
 More info: https://kubernetes.io/docs/concepts/storage/volumes#nfs |  |
 
 
@@ -2802,6 +2800,8 @@ be cluster-scoped, so there is no namespace field.
 | blockOwnerDeletion | boolean| `bool` |  | | If true, AND if the owner has the "foregroundDeletion" finalizer, then
 the owner cannot be deleted from the key-value store until this
 reference is removed.
+See https://kubernetes.io/docs/concepts/architecture/garbage-collection/#foreground-deletion
+for how the garbage collector interacts with this field and enforces the foreground deletion.
 Defaults to false.
 To set this field, a user needs "delete" permission of the owner,
 otherwise 422 (Unprocessable Entity) will be returned.
@@ -2880,18 +2880,18 @@ and allows a Source for provider-specific attributes
 
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
-| accessModes | [][PersistentVolumeAccessMode](#persistent-volume-access-mode)| `[]PersistentVolumeAccessMode` |  | | AccessModes contains the desired access modes the volume should have.
+| accessModes | [][PersistentVolumeAccessMode](#persistent-volume-access-mode)| `[]PersistentVolumeAccessMode` |  | | accessModes contains the desired access modes the volume should have.
 More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#access-modes-1
 +optional |  |
 | dataSource | [TypedLocalObjectReference](#typed-local-object-reference)| `TypedLocalObjectReference` |  | |  |  |
 | dataSourceRef | [TypedLocalObjectReference](#typed-local-object-reference)| `TypedLocalObjectReference` |  | |  |  |
 | resources | [ResourceRequirements](#resource-requirements)| `ResourceRequirements` |  | |  |  |
 | selector | [LabelSelector](#label-selector)| `LabelSelector` |  | |  |  |
-| storageClassName | string| `string` |  | | Name of the StorageClass required by the claim.
+| storageClassName | string| `string` |  | | storageClassName is the name of the StorageClass required by the claim.
 More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#class-1
 +optional |  |
 | volumeMode | [PersistentVolumeMode](#persistent-volume-mode)| `PersistentVolumeMode` |  | |  |  |
-| volumeName | string| `string` |  | | VolumeName is the binding reference to the PersistentVolume backing this claim.
+| volumeName | string| `string` |  | | volumeName is the binding reference to the PersistentVolume backing this claim.
 +optional |  |
 
 
@@ -2916,9 +2916,12 @@ set by external tools to store and retrieve arbitrary metadata. They are not
 queryable and should be preserved when modifying objects.
 More info: http://kubernetes.io/docs/user-guide/annotations
 +optional |  |
-| clusterName | string| `string` |  | | The name of the cluster which the object belongs to.
-This is used to distinguish resources with same name and namespace in different clusters.
-This field is not set anywhere right now and apiserver is going to ignore it if set in create or update request.
+| clusterName | string| `string` |  | | Deprecated: ClusterName is a legacy field that was always cleared by
+the system and never used; it will be removed completely in 1.25.
+
+The name in the go struct is changed to help clients detect
+accidental use.
+
 +optional |  |
 | creationTimestamp | [Time](#time)| `Time` |  | |  |  |
 | deletionGracePeriodSeconds | int64 (formatted integer)| `int64` |  | | Number of seconds allowed for this object to gracefully terminate before
@@ -2950,10 +2953,7 @@ The provided value has the same validation rules as the Name field,
 and may be truncated by the length of the suffix required to make the value
 unique on the server.
 
-If this field is specified and the generated name exists, the server will
-NOT return a 409 - instead, it will either return 201 Created or 500 with Reason
-ServerTimeout indicating a unique name could not be found in the time allotted, and the client
-should retry (optionally after the time indicated in the Retry-After header).
+If this field is specified and the generated name exists, the server will return a 409.
 
 Applied only if Name is not specified.
 More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#idempotency
@@ -3009,13 +3009,7 @@ Read-only.
 Value must be treated as opaque by clients and .
 More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#concurrency-control-and-consistency
 +optional |  |
-| selfLink | string| `string` |  | | SelfLink is a URL representing this object.
-Populated by the system.
-Read-only.
-
-DEPRECATED
-Kubernetes will stop propagating this field in 1.20 release and the field is planned
-to be removed in 1.21 release.
+| selfLink | string| `string` |  | | Deprecated: selfLink is a legacy read-only field that is no longer populated by the system.
 +optional |  |
 | spec | [PersistentVolumeClaimSpec](#persistent-volume-claim-spec)| `PersistentVolumeClaimSpec` |  | |  |  |
 | uid | [UID](#uid)| `UID` |  | |  |  |
@@ -3038,9 +3032,9 @@ type of volume that is owned by someone else (the system).
 
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
-| claimName | string| `string` |  | | ClaimName is the name of a PersistentVolumeClaim in the same namespace as the pod using this volume.
+| claimName | string| `string` |  | | claimName is the name of a PersistentVolumeClaim in the same namespace as the pod using this volume.
 More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#persistentvolumeclaims |  |
-| readOnly | boolean| `bool` |  | | Will force the ReadOnly setting in VolumeMounts.
+| readOnly | boolean| `bool` |  | | readOnly Will force the ReadOnly setting in VolumeMounts.
 Default false.
 +optional |  |
 
@@ -3071,10 +3065,10 @@ Default false.
 
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
-| fsType | string| `string` |  | | Filesystem type to mount.
+| fsType | string| `string` |  | | fsType is the filesystem type to mount.
 Must be a filesystem type supported by the host operating system.
 Ex. "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified. |  |
-| pdID | string| `string` |  | | ID that identifies Photon Controller persistent disk |  |
+| pdID | string| `string` |  | | pdID is the ID that identifies Photon Controller persistent disk |  |
 
 
 
@@ -3144,7 +3138,7 @@ a pod of the set of pods is running
 | namespaces | []string| `[]string` |  | | namespaces specifies a static list of namespace names that the term applies to.
 The term is applied to the union of the namespaces listed in this field
 and the ones selected by namespaceSelector.
-null or empty namespaces list and null namespaceSelector means "this pod's namespace"
+null or empty namespaces list and null namespaceSelector means "this pod's namespace".
 +optional |  |
 | topologyKey | string| `string` |  | | This pod should be co-located (affinity) or not co-located (anti-affinity) with the pods matching
 the labelSelector in the specified namespaces, where co-located is defined as running on a node
@@ -3278,13 +3272,13 @@ Note that this field cannot be set when spec.os.name is windows.
 
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
-| fsType | string| `string` |  | | FSType represents the filesystem type to mount
+| fsType | string| `string` |  | | fSType represents the filesystem type to mount
 Must be a filesystem type supported by the host operating system.
 Ex. "ext4", "xfs". Implicitly inferred to be "ext4" if unspecified. |  |
-| readOnly | boolean| `bool` |  | | Defaults to false (read/write). ReadOnly here will force
+| readOnly | boolean| `bool` |  | | readOnly defaults to false (read/write). ReadOnly here will force
 the ReadOnly setting in VolumeMounts.
 +optional |  |
-| volumeID | string| `string` |  | | VolumeID uniquely identifies a Portworx volume |  |
+| volumeID | string| `string` |  | | volumeID uniquely identifies a Portworx volume |  |
 
 
 
@@ -3396,14 +3390,14 @@ More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#cont
 
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
-| defaultMode | int32 (formatted integer)| `int32` |  | | Mode bits used to set permissions on created files by default.
+| defaultMode | int32 (formatted integer)| `int32` |  | | defaultMode are the mode bits used to set permissions on created files by default.
 Must be an octal value between 0000 and 0777 or a decimal value between 0 and 511.
 YAML accepts both octal and decimal values, JSON requires decimal values for mode bits.
 Directories within the path are not affected by this setting.
 This might be in conflict with other options that affect the file
 mode, like fsGroup, and the result can be other mode bits set.
 +optional |  |
-| sources | [][VolumeProjection](#volume-projection)| `[]*VolumeProjection` |  | | list of volume projections
+| sources | [][VolumeProjection](#volume-projection)| `[]*VolumeProjection` |  | | sources is the list of volume projections
 +optional |  |
 
 
@@ -3539,22 +3533,22 @@ cause implementors to also use a fixed point implementation.
 
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
-| group | string| `string` |  | | Group to map volume access to
+| group | string| `string` |  | | group to map volume access to
 Default is no group
 +optional |  |
-| readOnly | boolean| `bool` |  | | ReadOnly here will force the Quobyte volume to be mounted with read-only permissions.
+| readOnly | boolean| `bool` |  | | readOnly here will force the Quobyte volume to be mounted with read-only permissions.
 Defaults to false.
 +optional |  |
-| registry | string| `string` |  | | Registry represents a single or multiple Quobyte Registry services
+| registry | string| `string` |  | | registry represents a single or multiple Quobyte Registry services
 specified as a string as host:port pair (multiple entries are separated with commas)
 which acts as the central registry for volumes |  |
-| tenant | string| `string` |  | | Tenant owning the given Quobyte volume in the Backend
+| tenant | string| `string` |  | | tenant owning the given Quobyte volume in the Backend
 Used with dynamically provisioned Quobyte volumes, value is set by the plugin
 +optional |  |
-| user | string| `string` |  | | User to map volume access to
+| user | string| `string` |  | | user to map volume access to
 Defaults to serivceaccount user
 +optional |  |
-| volume | string| `string` |  | | Volume is a string that references an already created Quobyte volume by name. |  |
+| volume | string| `string` |  | | volume is a string that references an already created Quobyte volume by name. |  |
 
 
 
@@ -3572,30 +3566,30 @@ Defaults to serivceaccount user
 
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
-| fsType | string| `string` |  | | Filesystem type of the volume that you want to mount.
+| fsType | string| `string` |  | | fsType is the filesystem type of the volume that you want to mount.
 Tip: Ensure that the filesystem type is supported by the host operating system.
 Examples: "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified.
 More info: https://kubernetes.io/docs/concepts/storage/volumes#rbd
 TODO: how do we prevent errors in the filesystem from compromising the machine
 +optional |  |
-| image | string| `string` |  | | The rados image name.
+| image | string| `string` |  | | image is the rados image name.
 More info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it |  |
-| keyring | string| `string` |  | | Keyring is the path to key ring for RBDUser.
+| keyring | string| `string` |  | | keyring is the path to key ring for RBDUser.
 Default is /etc/ceph/keyring.
 More info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it
 +optional |  |
-| monitors | []string| `[]string` |  | | A collection of Ceph monitors.
+| monitors | []string| `[]string` |  | | monitors is a collection of Ceph monitors.
 More info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it |  |
-| pool | string| `string` |  | | The rados pool name.
+| pool | string| `string` |  | | pool is the rados pool name.
 Default is rbd.
 More info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it
 +optional |  |
-| readOnly | boolean| `bool` |  | | ReadOnly here will force the ReadOnly setting in VolumeMounts.
+| readOnly | boolean| `bool` |  | | readOnly here will force the ReadOnly setting in VolumeMounts.
 Defaults to false.
 More info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it
 +optional |  |
 | secretRef | [LocalObjectReference](#local-object-reference)| `LocalObjectReference` |  | |  |  |
-| user | string| `string` |  | | The rados user name.
+| user | string| `string` |  | | user is the rados user name.
 Default is admin.
 More info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it
 +optional |  |
@@ -3845,27 +3839,27 @@ be retried and the retry strategy will be ignored |  |
 
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
-| fsType | string| `string` |  | | Filesystem type to mount.
+| fsType | string| `string` |  | | fsType is the filesystem type to mount.
 Must be a filesystem type supported by the host operating system.
 Ex. "ext4", "xfs", "ntfs".
 Default is "xfs".
 +optional |  |
-| gateway | string| `string` |  | | The host address of the ScaleIO API Gateway. |  |
-| protectionDomain | string| `string` |  | | The name of the ScaleIO Protection Domain for the configured storage.
+| gateway | string| `string` |  | | gateway is the host address of the ScaleIO API Gateway. |  |
+| protectionDomain | string| `string` |  | | protectionDomain is the name of the ScaleIO Protection Domain for the configured storage.
 +optional |  |
-| readOnly | boolean| `bool` |  | | Defaults to false (read/write). ReadOnly here will force
+| readOnly | boolean| `bool` |  | | readOnly Defaults to false (read/write). ReadOnly here will force
 the ReadOnly setting in VolumeMounts.
 +optional |  |
 | secretRef | [LocalObjectReference](#local-object-reference)| `LocalObjectReference` |  | |  |  |
-| sslEnabled | boolean| `bool` |  | | Flag to enable/disable SSL communication with Gateway, default false
+| sslEnabled | boolean| `bool` |  | | sslEnabled Flag enable/disable SSL communication with Gateway, default false
 +optional |  |
-| storageMode | string| `string` |  | | Indicates whether the storage for a volume should be ThickProvisioned or ThinProvisioned.
+| storageMode | string| `string` |  | | storageMode indicates whether the storage for a volume should be ThickProvisioned or ThinProvisioned.
 Default is ThinProvisioned.
 +optional |  |
-| storagePool | string| `string` |  | | The ScaleIO Storage Pool associated with the protection domain.
+| storagePool | string| `string` |  | | storagePool is the ScaleIO Storage Pool associated with the protection domain.
 +optional |  |
-| system | string| `string` |  | | The name of the storage system as configured in ScaleIO. |  |
-| volumeName | string| `string` |  | | The name of a volume already created in the ScaleIO system
+| system | string| `string` |  | | system is the name of the storage system as configured in ScaleIO. |  |
+| volumeName | string| `string` |  | | volumeName is the name of a volume already created in the ScaleIO system
 that is associated with this volume source. |  |
 
 
@@ -3885,7 +3879,7 @@ that is associated with this volume source. |  |
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
 | args | []string| `[]string` |  | | Arguments to the entrypoint.
-The docker image's CMD is used if this is not provided.
+The container image's CMD is used if this is not provided.
 Variable references $(VAR_NAME) are expanded using the container's environment. If a variable
 cannot be resolved, the reference in the input string will be unchanged. Double $$ are reduced
 to a single $, which allows for escaping the $(VAR_NAME) syntax: i.e. "$$(VAR_NAME)" will
@@ -3894,7 +3888,7 @@ of whether the variable exists or not. Cannot be updated.
 More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell
 +optional |  |
 | command | []string| `[]string` |  | | Entrypoint array. Not executed within a shell.
-The docker image's ENTRYPOINT is used if this is not provided.
+The container image's ENTRYPOINT is used if this is not provided.
 Variable references $(VAR_NAME) are expanded using the container's environment. If a variable
 cannot be resolved, the reference in the input string will be unchanged. Double $$ are reduced
 to a single $, which allows for escaping the $(VAR_NAME) syntax: i.e. "$$(VAR_NAME)" will
@@ -3914,7 +3908,7 @@ sources, the value associated with the last source will take precedence.
 Values defined by an Env with a duplicate key will take precedence.
 Cannot be updated.
 +optional |  |
-| image | string| `string` |  | | Docker image name.
+| image | string| `string` |  | | Container image name.
 More info: https://kubernetes.io/docs/concepts/containers/images
 This field is optional to allow higher level config management to default or override
 container images in workload controllers like Deployments and StatefulSets.
@@ -4087,7 +4081,7 @@ mode.
 
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
-| items | [][KeyToPath](#key-to-path)| `[]*KeyToPath` |  | | If unspecified, each key-value pair in the Data field of the referenced
+| items | [][KeyToPath](#key-to-path)| `[]*KeyToPath` |  | | items if unspecified, each key-value pair in the Data field of the referenced
 Secret will be projected into the volume as a file whose name is the
 key and content is the value. If specified, the listed keys will be
 projected into the specified paths, and unlisted keys will not be
@@ -4099,7 +4093,7 @@ relative and may not contain the '..' path or start with '..'.
 More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
 TODO: Add other useful fields. apiVersion, kind, uid?
 +optional |  |
-| optional | boolean| `bool` |  | | Specify whether the Secret or its key must be defined
+| optional | boolean| `bool` |  | | optional field specify whether the Secret or its key must be defined
 +optional |  |
 
 
@@ -4120,7 +4114,7 @@ Secret volumes support ownership management and SELinux relabeling.
 
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
-| defaultMode | int32 (formatted integer)| `int32` |  | | Optional: mode bits used to set permissions on created files by default.
+| defaultMode | int32 (formatted integer)| `int32` |  | | defaultMode is Optional: mode bits used to set permissions on created files by default.
 Must be an octal value between 0000 and 0777 or a decimal value between 0 and 511.
 YAML accepts both octal and decimal values, JSON requires decimal values
 for mode bits. Defaults to 0644.
@@ -4128,7 +4122,7 @@ Directories within the path are not affected by this setting.
 This might be in conflict with other options that affect the file
 mode, like fsGroup, and the result can be other mode bits set.
 +optional |  |
-| items | [][KeyToPath](#key-to-path)| `[]*KeyToPath` |  | | If unspecified, each key-value pair in the Data field of the referenced
+| items | [][KeyToPath](#key-to-path)| `[]*KeyToPath` |  | | items If unspecified, each key-value pair in the Data field of the referenced
 Secret will be projected into the volume as a file whose name is the
 key and content is the value. If specified, the listed keys will be
 projected into the specified paths, and unlisted keys will not be
@@ -4136,9 +4130,9 @@ present. If a key is specified which is not present in the Secret,
 the volume setup will error unless it is marked optional. Paths must be
 relative and may not contain the '..' path or start with '..'.
 +optional |  |
-| optional | boolean| `bool` |  | | Specify whether the Secret or its keys must be defined
+| optional | boolean| `bool` |  | | optional field specify whether the Secret or its keys must be defined
 +optional |  |
-| secretName | string| `string` |  | | Name of the secret in the pod's namespace to use.
+| secretName | string| `string` |  | | secretName is the name of the secret in the pod's namespace to use.
 More info: https://kubernetes.io/docs/concepts/storage/volumes#secret
 +optional |  |
 
@@ -4259,19 +4253,19 @@ otherwise).
 
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
-| audience | string| `string` |  | | Audience is the intended audience of the token. A recipient of a token
+| audience | string| `string` |  | | audience is the intended audience of the token. A recipient of a token
 must identify itself with an identifier specified in the audience of the
 token, and otherwise should reject the token. The audience defaults to the
 identifier of the apiserver.
 +optional |  |
-| expirationSeconds | int64 (formatted integer)| `int64` |  | | ExpirationSeconds is the requested duration of validity of the service
+| expirationSeconds | int64 (formatted integer)| `int64` |  | | expirationSeconds is the requested duration of validity of the service
 account token. As the token approaches expiration, the kubelet volume
 plugin will proactively rotate the service account token. The kubelet will
 start trying to rotate the token if the token is older than 80 percent of
 its time to live or if the token is older than 24 hours.Defaults to 1 hour
 and must be at least 10 minutes.
 +optional |  |
-| path | string| `string` |  | | Path is the path relative to the mount point of the file to project the
+| path | string| `string` |  | | path is the path relative to the mount point of the file to project the
 token into. |  |
 
 
@@ -4298,17 +4292,17 @@ token into. |  |
 
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
-| fsType | string| `string` |  | | Filesystem type to mount.
+| fsType | string| `string` |  | | fsType is the filesystem type to mount.
 Must be a filesystem type supported by the host operating system.
 Ex. "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified.
 +optional |  |
-| readOnly | boolean| `bool` |  | | Defaults to false (read/write). ReadOnly here will force
+| readOnly | boolean| `bool` |  | | readOnly defaults to false (read/write). ReadOnly here will force
 the ReadOnly setting in VolumeMounts.
 +optional |  |
 | secretRef | [LocalObjectReference](#local-object-reference)| `LocalObjectReference` |  | |  |  |
-| volumeName | string| `string` |  | | VolumeName is the human-readable name of the StorageOS volume.  Volume
+| volumeName | string| `string` |  | | volumeName is the human-readable name of the StorageOS volume.  Volume
 names are only unique within a namespace. |  |
-| volumeNamespace | string| `string` |  | | VolumeNamespace specifies the scope of the volume within StorageOS.  If no
+| volumeNamespace | string| `string` |  | | volumeNamespace specifies the scope of the volume within StorageOS.  If no
 namespace is specified then the Pod's namespace will be used.  This allows the
 Kubernetes name scoping to be mirrored within StorageOS for tighter integration.
 Set VolumeName to any name to override the default behaviour.
@@ -4703,7 +4697,7 @@ intent and helps make sure that UIDs and names do not get conflated. |  |
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
 | args | []string| `[]string` |  | | Arguments to the entrypoint.
-The docker image's CMD is used if this is not provided.
+The container image's CMD is used if this is not provided.
 Variable references $(VAR_NAME) are expanded using the container's environment. If a variable
 cannot be resolved, the reference in the input string will be unchanged. Double $$ are reduced
 to a single $, which allows for escaping the $(VAR_NAME) syntax: i.e. "$$(VAR_NAME)" will
@@ -4712,7 +4706,7 @@ of whether the variable exists or not. Cannot be updated.
 More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell
 +optional |  |
 | command | []string| `[]string` |  | | Entrypoint array. Not executed within a shell.
-The docker image's ENTRYPOINT is used if this is not provided.
+The container image's ENTRYPOINT is used if this is not provided.
 Variable references $(VAR_NAME) are expanded using the container's environment. If a variable
 cannot be resolved, the reference in the input string will be unchanged. Double $$ are reduced
 to a single $, which allows for escaping the $(VAR_NAME) syntax: i.e. "$$(VAR_NAME)" will
@@ -4732,7 +4726,7 @@ sources, the value associated with the last source will take precedence.
 Values defined by an Env with a duplicate key will take precedence.
 Cannot be updated.
 +optional |  |
-| image | string| `string` |  | | Docker image name.
+| image | string| `string` |  | | Container image name.
 More info: https://kubernetes.io/docs/concepts/containers/images
 This field is optional to allow higher level config management to default or override
 container images in workload controllers like Deployments and StatefulSets.
@@ -4861,7 +4855,7 @@ Cannot be updated.
 | glusterfs | [GlusterfsVolumeSource](#glusterfs-volume-source)| `GlusterfsVolumeSource` |  | |  |  |
 | hostPath | [HostPathVolumeSource](#host-path-volume-source)| `HostPathVolumeSource` |  | |  |  |
 | iscsi | [ISCSIVolumeSource](#i-s-c-s-i-volume-source)| `ISCSIVolumeSource` |  | |  |  |
-| name | string| `string` |  | | Volume's name.
+| name | string| `string` |  | | name of the volume.
 Must be a DNS_LABEL and unique within the pod.
 More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names |  |
 | nfs | [NFSVolumeSource](#n-f-s-volume-source)| `NFSVolumeSource` |  | |  |  |
@@ -4955,15 +4949,15 @@ SubPathExpr and SubPath are mutually exclusive.
 
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
-| fsType | string| `string` |  | | Filesystem type to mount.
+| fsType | string| `string` |  | | fsType is filesystem type to mount.
 Must be a filesystem type supported by the host operating system.
 Ex. "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified.
 +optional |  |
-| storagePolicyID | string| `string` |  | | Storage Policy Based Management (SPBM) profile ID associated with the StoragePolicyName.
+| storagePolicyID | string| `string` |  | | storagePolicyID is the storage Policy Based Management (SPBM) profile ID associated with the StoragePolicyName.
 +optional |  |
-| storagePolicyName | string| `string` |  | | Storage Policy Based Management (SPBM) profile name.
+| storagePolicyName | string| `string` |  | | storagePolicyName is the storage Policy Based Management (SPBM) profile name.
 +optional |  |
-| volumePath | string| `string` |  | | Path that identifies vSphere volume vmdk |  |
+| volumePath | string| `string` |  | | volumePath is the path that identifies vSphere volume vmdk |  |
 
 
 
