@@ -1409,7 +1409,7 @@ type WorkflowStep struct {
 	// step, irrespective of the success, failure, or error status of the primary step
 	Hooks LifecycleHooks `json:"hooks,omitempty" protobuf:"bytes,12,opt,name=hooks"`
 
-	// Priority is used if controller is configured to process limited number of steps in parallel. Steps with higher priority are processed first.
+	// Priority controls which step is scheduled first. Higher values will be processed first.
 	Priority int32 `json:"priority,omitempty" protobuf:"bytes,14,opt,name=priority"`
 }
 
@@ -2895,7 +2895,7 @@ type DAGTask struct {
 	// task, irrespective of the success, failure, or error status of the primary task
 	Hooks LifecycleHooks `json:"hooks,omitempty" protobuf:"bytes,13,opt,name=hooks"`
 
-	// Priority is used if controller is configured to process limited number of tasks in parallel. Tasks with higher priority are processed first.
+	// Priority controls which task is scheduled first. Higher values will be processed first.
 	Priority int32 `json:"priority,omitempty" protobuf:"bytes,15,opt,name=priority"`
 }
 
