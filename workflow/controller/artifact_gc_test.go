@@ -110,7 +110,7 @@ spec:
         bucket: my-bucket-3
         endpoint: minio:9000
         insecure: true
-        key: on-deletion-key-{{pod.name}}
+        key: on-deletion
         secretKeySecret:
           key: secretkey
           name: my-minio-cred
@@ -131,10 +131,10 @@ spec:
       artifacts:
       - artifactGC:
           strategy: OnWorkflowDeletion
-        name: on-deletion-key-{{pod.name}}
+        name: on-deletion
         path: /tmp/message
         s3:
-          key: on-deletion-key-{{pod.name}}
+          key: on-deletion
       - artifactGC:
           strategy: OnWorkflowCompletion
         name: on-completion-second
@@ -299,10 +299,10 @@ status:
         artifacts:
         - artifactGC:
             strategy: OnWorkflowDeletion
-          name: on-deletion-key-two-artgc-8tcvt-second-1079173309
+          name: on-deletion
           path: /tmp/message
           s3:
-            key: on-deletion-key-two-artgc-8tcvt-second-1079173309
+            key: on-deletion
         - artifactGC:
             strategy: OnWorkflowCompletion
           name: on-completion-second
@@ -360,7 +360,6 @@ func TestProcessArtifactGCStrategy(t *testing.T) {
 	if err != nil {
 		panic(err)
 	}
-	fmt.Printf("deletethis: pods (using kubeclientset): %+v\n\n", pods)
 
 	// We should have one Pod per:
 	//  [ServiceAccount,PodMetadata]
@@ -370,12 +369,12 @@ func TestProcessArtifactGCStrategy(t *testing.T) {
 	assert.Equal(t, 2, len((*pods).Items))
 	var pod1 *corev1.Pod
 	var pod2 *corev1.Pod
-	for _, pod := range (*pods).Items {
+	for i, pod := range (*pods).Items {
 		switch pod.Name {
 		case "two-artgc-8tcvt-artgc-wfcomp-592587874":
-			pod1 = &pod
+			pod1 = &(*pods).Items[i]
 		case "two-artgc-8tcvt-artgc-wfcomp-3953780960":
-			pod2 = &pod
+			pod2 = &(*pods).Items[i]
 		default:
 			assert.Fail(t, fmt.Sprintf("pod name '%s' doesn't match expected", pod.Name))
 		}
@@ -390,7 +389,7 @@ func TestProcessArtifactGCStrategy(t *testing.T) {
 	//  verify that the right volume mounts get created
 	assert.Equal(t, pod1.Spec.ServiceAccountName, "default")
 	assert.Contains(t, pod1.Annotations, "annotation-key-1")
-	assert.Equal(t, pod1.Annotations["annotation-key-1"], "annotation-value-1")
+	assert.Equal(t, "annotation-value-1", pod1.Annotations["annotation-key-1"])
 	volumesMap1 := make(map[string]struct{})
 	for _, v := range pod1.Spec.Volumes {
 		volumesMap1[v.Name] = struct{}{}
@@ -400,22 +399,22 @@ func TestProcessArtifactGCStrategy(t *testing.T) {
 
 	assert.Equal(t, pod2.Spec.ServiceAccountName, "default")
 	assert.Contains(t, pod2.Annotations, "annotation-key-1")
-	assert.Equal(t, pod2.Annotations["annotation-key-1"], "annotation-value-3")
+	assert.Equal(t, "annotation-value-3", pod2.Annotations["annotation-key-1"])
 	volumesMap2 := make(map[string]struct{})
-	for _, v := range pod1.Spec.Volumes {
+	for _, v := range pod2.Spec.Volumes {
 		volumesMap2[v.Name] = struct{}{}
 	}
 	assert.Contains(t, volumesMap2, "my-minio-cred-1")
 	assert.NotContains(t, volumesMap2, "my-minio-cred-2")
 
 	///////////////////////////////////////////////////////////////////////////////////////////
-	// Verify WFATs
+	// Verify WorkflowArtifactGCTasks
 	///////////////////////////////////////////////////////////////////////////////////////////
 	wfats, err := wfatcs.List(ctx, metav1.ListOptions{}) //todo: add ListOptions if this works
 	if err != nil {
 		panic(err)
 	}
-	fmt.Printf("deletethis: wfats=%+v\n", wfats.Items)
+
 	// We should have on WFAT per Pod (for now until we implement the capability to have multiple)
 
 	assert.NotNil(t, wfats)
@@ -423,12 +422,12 @@ func TestProcessArtifactGCStrategy(t *testing.T) {
 
 	var wfat1 *wfv1.WorkflowArtifactGCTask
 	var wfat2 *wfv1.WorkflowArtifactGCTask
-	for _, wfat := range (*wfats).Items {
+	for i, wfat := range (*wfats).Items {
 		switch wfat.Name {
-		case "two-artgc-8tcvt-artgc-wfcomp-592587874":
-			wfat1 = &wfat
-		case "two-artgc-8tcvt-artgc-wfcomp-3953780960":
-			wfat2 = &wfat
+		case "two-artgc-8tcvt-artgc-wfcomp-592587874-0":
+			wfat1 = &(*wfats).Items[i]
+		case "two-artgc-8tcvt-artgc-wfcomp-3953780960-0":
+			wfat2 = &(*wfats).Items[i]
 		default:
 			assert.Fail(t, fmt.Sprintf("WorkflowArtifactGCTask name '%s' doesn't match expected", wfat.Name))
 		}
@@ -439,5 +438,16 @@ func TestProcessArtifactGCStrategy(t *testing.T) {
 	})
 
 	// Verify that the ArchiveLocation and list of artifacts on each is correct
+	assert.Contains(t, wfat1.Spec.ArtifactsByNode, "two-artgc-8tcvt-802059674")
+	assert.Contains(t, wfat1.Spec.ArtifactsByNode["two-artgc-8tcvt-802059674"].Artifacts, "on-completion-first-1")
+	assert.NotContains(t, wfat1.Spec.ArtifactsByNode["two-artgc-8tcvt-802059674"].Artifacts, "on-deletion")
+	assert.Contains(t, wfat1.Spec.ArtifactsByNode, "two-artgc-8tcvt-1079173309")
+	assert.Equal(t, "my-bucket-3", wfat1.Spec.ArtifactsByNode["two-artgc-8tcvt-1079173309"].ArchiveLocation.S3.Bucket)
+	assert.Contains(t, wfat1.Spec.ArtifactsByNode["two-artgc-8tcvt-1079173309"].Artifacts, "on-completion-second")
+	assert.NotContains(t, wfat1.Spec.ArtifactsByNode["two-artgc-8tcvt-1079173309"].Artifacts, "on-deletion")
+
+	assert.Contains(t, wfat2.Spec.ArtifactsByNode, "two-artgc-8tcvt-802059674")
+	assert.Contains(t, wfat2.Spec.ArtifactsByNode["two-artgc-8tcvt-802059674"].Artifacts, "on-completion-first-2")
+	assert.NotContains(t, wfat2.Spec.ArtifactsByNode["two-artgc-8tcvt-802059674"].Artifacts, "on-deletion")
 
 }
