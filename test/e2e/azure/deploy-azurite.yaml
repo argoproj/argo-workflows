@@ -1,0 +1,86 @@
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: azurite-credentials
+type: Opaque
+data:
+  # Well-known access key for Azurite (see https://docs.microsoft.com/en-us/azure/storage/common/storage-use-azurite?tabs=docker-hub#well-known-storage-account-and-key)
+  account-access-key: RWJ5OHZkTTAyeE5PY3FGbHFVd0pQTGxtRXRsQ0RYSjFPVXpGVDUwdVNSWjZJRnN1RnEyVVZFckN6NEk2dHEvSzFTWkZQVE90ci9LQkhCZWtzb0dNR3c9PQ==
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: azure-artifact-repositories
+data:
+  azure-v1: |
+    archiveLogs: true
+    azure:
+      endpoint: http://azurite:10000/azurite
+      container: my-container
+      accountKeySecret:
+        name: azurite-credentials
+        key: account-access-key
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: azurite
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: azurite
+  template:
+    metadata:
+      labels:
+        app: azurite
+    spec:
+      terminationGracePeriodSeconds: 10
+      containers:
+      - name: azurite
+        image: mcr.microsoft.com/azure-storage/azurite
+        args:
+          - azurite-blob
+          - --blobHost
+          - 0.0.0.0
+        ports:
+        - containerPort: 10000
+          protocol: TCP
+        env:
+        - name: AZURITE_ACCOUNT_KEY
+          valueFrom:
+            secretKeyRef:
+              name: azurite-credentials
+              key: account-access-key
+        - name: AZURITE_ACCOUNTS
+          value: "azurite:$(AZURITE_ACCOUNT_KEY)"
+      - name: create-storage-container
+        image: mcr.microsoft.com/azure-cli
+        command: [ "/bin/bash", "-c" ]
+        args:
+          - until az storage container show -n my-container --blob-endpoint http://localhost:10000/azurite --account-key $AZURE_ACCOUNT_KEY -onone; do
+              result=$(az storage container create -n my-container --blob-endpoint http://localhost:10000/azurite --account-key $AZURE_ACCOUNT_KEY -otsv);
+              [[ "$result" == "True" ]] && { echo "Storage container was created!"; break; };
+              echo "Waiting for azurite container to start...";
+              sleep 2;
+            done;
+            while true; do sleep infinity; done
+        env:
+         - name: AZURE_ACCOUNT_KEY
+           valueFrom:
+             secretKeyRef:
+               name: azurite-credentials
+               key: account-access-key
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: azurite
+spec:
+  selector:
+    app: azurite
+  ports:
+  - port: 10000
+    targetPort: 10000
+    protocol: TCP

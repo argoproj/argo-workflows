@@ -19,16 +19,24 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Arguments":                     schema_pkg_apis_workflow_v1alpha1_Arguments(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Artifact":                      schema_pkg_apis_workflow_v1alpha1_Artifact(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactGC":                    schema_pkg_apis_workflow_v1alpha1_ArtifactGC(ref),
+		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactGCSStatus":             schema_pkg_apis_workflow_v1alpha1_ArtifactGCSStatus(ref),
+		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactGCSpec":                schema_pkg_apis_workflow_v1alpha1_ArtifactGCSpec(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactLocation":              schema_pkg_apis_workflow_v1alpha1_ArtifactLocation(ref),
+		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactNodeSpec":              schema_pkg_apis_workflow_v1alpha1_ArtifactNodeSpec(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactPaths":                 schema_pkg_apis_workflow_v1alpha1_ArtifactPaths(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactRepository":            schema_pkg_apis_workflow_v1alpha1_ArtifactRepository(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactRepositoryRef":         schema_pkg_apis_workflow_v1alpha1_ArtifactRepositoryRef(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactRepositoryRefStatus":   schema_pkg_apis_workflow_v1alpha1_ArtifactRepositoryRefStatus(ref),
+		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactResult":                schema_pkg_apis_workflow_v1alpha1_ArtifactResult(ref),
+		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactResultNodeStatus":      schema_pkg_apis_workflow_v1alpha1_ArtifactResultNodeStatus(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactSearchQuery":           schema_pkg_apis_workflow_v1alpha1_ArtifactSearchQuery(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactSearchResult":          schema_pkg_apis_workflow_v1alpha1_ArtifactSearchResult(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactoryArtifact":           schema_pkg_apis_workflow_v1alpha1_ArtifactoryArtifact(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactoryArtifactRepository": schema_pkg_apis_workflow_v1alpha1_ArtifactoryArtifactRepository(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactoryAuth":               schema_pkg_apis_workflow_v1alpha1_ArtifactoryAuth(ref),
+		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.AzureArtifact":                 schema_pkg_apis_workflow_v1alpha1_AzureArtifact(ref),
+		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.AzureArtifactRepository":       schema_pkg_apis_workflow_v1alpha1_AzureArtifactRepository(ref),
+		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.AzureBlobContainer":            schema_pkg_apis_workflow_v1alpha1_AzureBlobContainer(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Backoff":                       schema_pkg_apis_workflow_v1alpha1_Backoff(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.BasicAuth":                     schema_pkg_apis_workflow_v1alpha1_BasicAuth(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Cache":                         schema_pkg_apis_workflow_v1alpha1_Cache(ref),
@@ -64,6 +72,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.HTTP":                          schema_pkg_apis_workflow_v1alpha1_HTTP(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.HTTPArtifact":                  schema_pkg_apis_workflow_v1alpha1_HTTPArtifact(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.HTTPAuth":                      schema_pkg_apis_workflow_v1alpha1_HTTPAuth(ref),
+		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.HTTPBodySource":                schema_pkg_apis_workflow_v1alpha1_HTTPBodySource(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.HTTPHeader":                    schema_pkg_apis_workflow_v1alpha1_HTTPHeader(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.HTTPHeaderSource":              schema_pkg_apis_workflow_v1alpha1_HTTPHeaderSource(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Header":                        schema_pkg_apis_workflow_v1alpha1_Header(ref),
@@ -131,6 +140,8 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Version":                       schema_pkg_apis_workflow_v1alpha1_Version(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.VolumeClaimGC":                 schema_pkg_apis_workflow_v1alpha1_VolumeClaimGC(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Workflow":                      schema_pkg_apis_workflow_v1alpha1_Workflow(ref),
+		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowArtifactGCTask":        schema_pkg_apis_workflow_v1alpha1_WorkflowArtifactGCTask(ref),
+		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowArtifactGCTaskList":    schema_pkg_apis_workflow_v1alpha1_WorkflowArtifactGCTaskList(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowEventBinding":          schema_pkg_apis_workflow_v1alpha1_WorkflowEventBinding(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowEventBindingList":      schema_pkg_apis_workflow_v1alpha1_WorkflowEventBindingList(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowEventBindingSpec":      schema_pkg_apis_workflow_v1alpha1_WorkflowEventBindingSpec(ref),
@@ -340,6 +351,12 @@ func schema_pkg_apis_workflow_v1alpha1_Artifact(ref common.ReferenceCallback) co
 							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.GCSArtifact"),
 						},
 					},
+					"azure": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Azure contains Azure Storage artifact location details",
+							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.AzureArtifact"),
+						},
+					},
 					"globalName": {
 						SchemaProps: spec.SchemaProps{
 							Description: "GlobalName exports an output artifact to the global scope, making it available as '{{workflow.outputs.artifacts.XXXX}} and in workflow.status.outputs.artifacts",
@@ -399,7 +416,7 @@ func schema_pkg_apis_workflow_v1alpha1_Artifact(ref common.ReferenceCallback) co
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArchiveStrategy", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactGC", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactoryArtifact", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.GCSArtifact", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.GitArtifact", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.HDFSArtifact", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.HTTPArtifact", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.OSSArtifact", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.RawArtifact", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.S3Artifact"},
+			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArchiveStrategy", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactGC", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactoryArtifact", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.AzureArtifact", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.GCSArtifact", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.GitArtifact", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.HDFSArtifact", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.HTTPArtifact", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.OSSArtifact", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.RawArtifact", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.S3Artifact"},
 	}
 }
 
@@ -420,6 +437,66 @@ func schema_pkg_apis_workflow_v1alpha1_ArtifactGC(ref common.ReferenceCallback) 
 				},
 			},
 		},
+	}
+}
+
+func schema_pkg_apis_workflow_v1alpha1_ArtifactGCSStatus(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "ArtifactGCSStatus describes the result of the deletion",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"artifactResultsByNode": {
+						SchemaProps: spec.SchemaProps{
+							Description: "ArtifactResultsByNode maps Node name to result",
+							Type:        []string{"object"},
+							AdditionalProperties: &spec.SchemaOrBool{
+								Allows: true,
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactResultNodeStatus"),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		Dependencies: []string{
+			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactResultNodeStatus"},
+	}
+}
+
+func schema_pkg_apis_workflow_v1alpha1_ArtifactGCSpec(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "ArtifactGCSpec specifies the Artifacts that need to be deleted",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"artifactsByNode": {
+						SchemaProps: spec.SchemaProps{
+							Description: "ArtifactsByNode maps Node name to information pertaining to Artifacts on that Node",
+							Type:        []string{"object"},
+							AdditionalProperties: &spec.SchemaOrBool{
+								Allows: true,
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactNodeSpec"),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		Dependencies: []string{
+			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactNodeSpec"},
 	}
 }
 
@@ -485,11 +562,53 @@ func schema_pkg_apis_workflow_v1alpha1_ArtifactLocation(ref common.ReferenceCall
 							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.GCSArtifact"),
 						},
 					},
+					"azure": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Azure contains Azure Storage artifact location details",
+							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.AzureArtifact"),
+						},
+					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactoryArtifact", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.GCSArtifact", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.GitArtifact", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.HDFSArtifact", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.HTTPArtifact", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.OSSArtifact", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.RawArtifact", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.S3Artifact"},
+			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactoryArtifact", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.AzureArtifact", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.GCSArtifact", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.GitArtifact", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.HDFSArtifact", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.HTTPArtifact", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.OSSArtifact", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.RawArtifact", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.S3Artifact"},
+	}
+}
+
+func schema_pkg_apis_workflow_v1alpha1_ArtifactNodeSpec(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "ArtifactNodeSpec specifies the Artifacts that need to be deleted for a given Node",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"archiveLocation": {
+						SchemaProps: spec.SchemaProps{
+							Description: "ArchiveLocation is the template-level Artifact location specification",
+							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactLocation"),
+						},
+					},
+					"artifacts": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Artifacts maps artifact name to Artifact description",
+							Type:        []string{"object"},
+							AdditionalProperties: &spec.SchemaOrBool{
+								Allows: true,
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Artifact"),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		Dependencies: []string{
+			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Artifact", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactLocation"},
 	}
 }
 
@@ -584,6 +703,12 @@ func schema_pkg_apis_workflow_v1alpha1_ArtifactPaths(ref common.ReferenceCallbac
 							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.GCSArtifact"),
 						},
 					},
+					"azure": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Azure contains Azure Storage artifact location details",
+							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.AzureArtifact"),
+						},
+					},
 					"globalName": {
 						SchemaProps: spec.SchemaProps{
 							Description: "GlobalName exports an output artifact to the global scope, making it available as '{{workflow.outputs.artifacts.XXXX}} and in workflow.status.outputs.artifacts",
@@ -643,7 +768,7 @@ func schema_pkg_apis_workflow_v1alpha1_ArtifactPaths(ref common.ReferenceCallbac
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArchiveStrategy", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactGC", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactoryArtifact", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.GCSArtifact", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.GitArtifact", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.HDFSArtifact", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.HTTPArtifact", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.OSSArtifact", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.RawArtifact", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.S3Artifact"},
+			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArchiveStrategy", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactGC", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactoryArtifact", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.AzureArtifact", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.GCSArtifact", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.GitArtifact", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.HDFSArtifact", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.HTTPArtifact", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.OSSArtifact", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.RawArtifact", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.S3Artifact"},
 	}
 }
 
@@ -691,11 +816,17 @@ func schema_pkg_apis_workflow_v1alpha1_ArtifactRepository(ref common.ReferenceCa
 							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.GCSArtifactRepository"),
 						},
 					},
+					"azure": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Azure stores artifact in an Azure Storage account",
+							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.AzureArtifactRepository"),
+						},
+					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactoryArtifactRepository", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.GCSArtifactRepository", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.HDFSArtifactRepository", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.OSSArtifactRepository", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.S3ArtifactRepository"},
+			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactoryArtifactRepository", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.AzureArtifactRepository", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.GCSArtifactRepository", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.HDFSArtifactRepository", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.OSSArtifactRepository", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.S3ArtifactRepository"},
 	}
 }
 
@@ -770,6 +901,72 @@ func schema_pkg_apis_workflow_v1alpha1_ArtifactRepositoryRefStatus(ref common.Re
 		},
 		Dependencies: []string{
 			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactRepository"},
+	}
+}
+
+func schema_pkg_apis_workflow_v1alpha1_ArtifactResult(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "ArtifactResult describes the result of attempting to delete a given Artifact",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"name": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Name is the name of the Artifact",
+							Default:     "",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"success": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Success describes whether the deletion succeeded",
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
+					"error": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Error is an optional error message which should be set if Success==false",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+				},
+				Required: []string{"name"},
+			},
+		},
+	}
+}
+
+func schema_pkg_apis_workflow_v1alpha1_ArtifactResultNodeStatus(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "ArtifactResultNodeStatus describes the result of the deletion on a given node",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"artifactResults": {
+						SchemaProps: spec.SchemaProps{
+							Description: "ArtifactResults maps Artifact name to result of the deletion",
+							Type:        []string{"object"},
+							AdditionalProperties: &spec.SchemaOrBool{
+								Allows: true,
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactResult"),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		Dependencies: []string{
+			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactResult"},
 	}
 }
 
@@ -936,6 +1133,156 @@ func schema_pkg_apis_workflow_v1alpha1_ArtifactoryAuth(ref common.ReferenceCallb
 						},
 					},
 				},
+			},
+		},
+		Dependencies: []string{
+			"k8s.io/api/core/v1.SecretKeySelector"},
+	}
+}
+
+func schema_pkg_apis_workflow_v1alpha1_AzureArtifact(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "AzureArtifact is the location of a an Azure Storage artifact",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"endpoint": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Endpoint is the service url associated with an account. It is most likely \"https://<ACCOUNT_NAME>.blob.core.windows.net\"",
+							Default:     "",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"container": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Container is the container where resources will be stored",
+							Default:     "",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"accountKeySecret": {
+						SchemaProps: spec.SchemaProps{
+							Description: "AccountKeySecret is the secret selector to the Azure Blob Storage account access key",
+							Ref:         ref("k8s.io/api/core/v1.SecretKeySelector"),
+						},
+					},
+					"useSDKCreds": {
+						SchemaProps: spec.SchemaProps{
+							Description: "UseSDKCreds tells the driver to figure out credentials based on sdk defaults.",
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
+					"blob": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Blob is the blob name (i.e., path) in the container where the artifact resides",
+							Default:     "",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+				},
+				Required: []string{"endpoint", "container", "blob"},
+			},
+		},
+		Dependencies: []string{
+			"k8s.io/api/core/v1.SecretKeySelector"},
+	}
+}
+
+func schema_pkg_apis_workflow_v1alpha1_AzureArtifactRepository(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "AzureArtifactRepository defines the controller configuration for an Azure Blob Storage artifact repository",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"endpoint": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Endpoint is the service url associated with an account. It is most likely \"https://<ACCOUNT_NAME>.blob.core.windows.net\"",
+							Default:     "",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"container": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Container is the container where resources will be stored",
+							Default:     "",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"accountKeySecret": {
+						SchemaProps: spec.SchemaProps{
+							Description: "AccountKeySecret is the secret selector to the Azure Blob Storage account access key",
+							Ref:         ref("k8s.io/api/core/v1.SecretKeySelector"),
+						},
+					},
+					"useSDKCreds": {
+						SchemaProps: spec.SchemaProps{
+							Description: "UseSDKCreds tells the driver to figure out credentials based on sdk defaults.",
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
+					"blobNameFormat": {
+						SchemaProps: spec.SchemaProps{
+							Description: "BlobNameFormat is defines the format of how to store blob names. Can reference workflow variables",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+				},
+				Required: []string{"endpoint", "container"},
+			},
+		},
+		Dependencies: []string{
+			"k8s.io/api/core/v1.SecretKeySelector"},
+	}
+}
+
+func schema_pkg_apis_workflow_v1alpha1_AzureBlobContainer(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "AzureBlobContainer contains the access information for interfacing with an Azure Blob Storage container",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"endpoint": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Endpoint is the service url associated with an account. It is most likely \"https://<ACCOUNT_NAME>.blob.core.windows.net\"",
+							Default:     "",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"container": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Container is the container where resources will be stored",
+							Default:     "",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"accountKeySecret": {
+						SchemaProps: spec.SchemaProps{
+							Description: "AccountKeySecret is the secret selector to the Azure Blob Storage account access key",
+							Ref:         ref("k8s.io/api/core/v1.SecretKeySelector"),
+						},
+					},
+					"useSDKCreds": {
+						SchemaProps: spec.SchemaProps{
+							Description: "UseSDKCreds tells the driver to figure out credentials based on sdk defaults.",
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
+				},
+				Required: []string{"endpoint", "container"},
 			},
 		},
 		Dependencies: []string{
@@ -1192,14 +1539,14 @@ func schema_pkg_apis_workflow_v1alpha1_ContainerNode(ref common.ReferenceCallbac
 					},
 					"image": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Docker image name. More info: https://kubernetes.io/docs/concepts/containers/images This field is optional to allow higher level config management to default or override container images in workload controllers like Deployments and StatefulSets.",
+							Description: "Container image name. More info: https://kubernetes.io/docs/concepts/containers/images This field is optional to allow higher level config management to default or override container images in workload controllers like Deployments and StatefulSets.",
 							Type:        []string{"string"},
 							Format:      "",
 						},
 					},
 					"command": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Entrypoint array. Not executed within a shell. The docker image's ENTRYPOINT is used if this is not provided. Variable references $(VAR_NAME) are expanded using the container's environment. If a variable cannot be resolved, the reference in the input string will be unchanged. Double $$ are reduced to a single $, which allows for escaping the $(VAR_NAME) syntax: i.e. \"$$(VAR_NAME)\" will produce the string literal \"$(VAR_NAME)\". Escaped references will never be expanded, regardless of whether the variable exists or not. Cannot be updated. More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell",
+							Description: "Entrypoint array. Not executed within a shell. The container image's ENTRYPOINT is used if this is not provided. Variable references $(VAR_NAME) are expanded using the container's environment. If a variable cannot be resolved, the reference in the input string will be unchanged. Double $$ are reduced to a single $, which allows for escaping the $(VAR_NAME) syntax: i.e. \"$$(VAR_NAME)\" will produce the string literal \"$(VAR_NAME)\". Escaped references will never be expanded, regardless of whether the variable exists or not. Cannot be updated. More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell",
 							Type:        []string{"array"},
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
@@ -1214,7 +1561,7 @@ func schema_pkg_apis_workflow_v1alpha1_ContainerNode(ref common.ReferenceCallbac
 					},
 					"args": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Arguments to the entrypoint. The docker image's CMD is used if this is not provided. Variable references $(VAR_NAME) are expanded using the container's environment. If a variable cannot be resolved, the reference in the input string will be unchanged. Double $$ are reduced to a single $, which allows for escaping the $(VAR_NAME) syntax: i.e. \"$$(VAR_NAME)\" will produce the string literal \"$(VAR_NAME)\". Escaped references will never be expanded, regardless of whether the variable exists or not. Cannot be updated. More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell",
+							Description: "Arguments to the entrypoint. The container image's CMD is used if this is not provided. Variable references $(VAR_NAME) are expanded using the container's environment. If a variable cannot be resolved, the reference in the input string will be unchanged. Double $$ are reduced to a single $, which allows for escaping the $(VAR_NAME) syntax: i.e. \"$$(VAR_NAME)\" will produce the string literal \"$(VAR_NAME)\". Escaped references will never be expanded, regardless of whether the variable exists or not. Cannot be updated. More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell",
 							Type:        []string{"array"},
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
@@ -2682,9 +3029,15 @@ func schema_pkg_apis_workflow_v1alpha1_HTTP(ref common.ReferenceCallback) common
 							Format:      "",
 						},
 					},
+					"bodyFrom": {
+						SchemaProps: spec.SchemaProps{
+							Description: "BodyFrom is  content of the HTTP Request as Bytes",
+							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.HTTPBodySource"),
+						},
+					},
 					"insecureSkipVerify": {
 						SchemaProps: spec.SchemaProps{
-							Description: "insecureSkipVerify is a bool when if set to true will skip TLS verification for the HTTP client",
+							Description: "InsecureSkipVerify is a bool when if set to true will skip TLS verification for the HTTP client",
 							Type:        []string{"boolean"},
 							Format:      "",
 						},
@@ -2694,7 +3047,7 @@ func schema_pkg_apis_workflow_v1alpha1_HTTP(ref common.ReferenceCallback) common
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.HTTPHeader"},
+			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.HTTPBodySource", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.HTTPHeader"},
 	}
 }
 
@@ -2771,6 +3124,25 @@ func schema_pkg_apis_workflow_v1alpha1_HTTPAuth(ref common.ReferenceCallback) co
 		},
 		Dependencies: []string{
 			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.BasicAuth", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ClientCertAuth", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.OAuth2Auth"},
+	}
+}
+
+func schema_pkg_apis_workflow_v1alpha1_HTTPBodySource(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "HTTPBodySource contains the source of the HTTP body.",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"bytes": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "byte",
+						},
+					},
+				},
+			},
+		},
 	}
 }
 
@@ -4419,7 +4791,7 @@ func schema_pkg_apis_workflow_v1alpha1_RetryStrategy(ref common.ReferenceCallbac
 				Properties: map[string]spec.Schema{
 					"limit": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Limit is the maximum number of attempts when retrying a container",
+							Description: "Limit is the maximum number of retry attempts when retrying a container. It does not include the original container; the maximum number of total attempts will be `limit + 1`.",
 							Ref:         ref("k8s.io/apimachinery/pkg/util/intstr.IntOrString"),
 						},
 					},
@@ -4777,14 +5149,14 @@ func schema_pkg_apis_workflow_v1alpha1_ScriptTemplate(ref common.ReferenceCallba
 					},
 					"image": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Docker image name. More info: https://kubernetes.io/docs/concepts/containers/images This field is optional to allow higher level config management to default or override container images in workload controllers like Deployments and StatefulSets.",
+							Description: "Container image name. More info: https://kubernetes.io/docs/concepts/containers/images This field is optional to allow higher level config management to default or override container images in workload controllers like Deployments and StatefulSets.",
 							Type:        []string{"string"},
 							Format:      "",
 						},
 					},
 					"command": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Entrypoint array. Not executed within a shell. The docker image's ENTRYPOINT is used if this is not provided. Variable references $(VAR_NAME) are expanded using the container's environment. If a variable cannot be resolved, the reference in the input string will be unchanged. Double $$ are reduced to a single $, which allows for escaping the $(VAR_NAME) syntax: i.e. \"$$(VAR_NAME)\" will produce the string literal \"$(VAR_NAME)\". Escaped references will never be expanded, regardless of whether the variable exists or not. Cannot be updated. More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell",
+							Description: "Entrypoint array. Not executed within a shell. The container image's ENTRYPOINT is used if this is not provided. Variable references $(VAR_NAME) are expanded using the container's environment. If a variable cannot be resolved, the reference in the input string will be unchanged. Double $$ are reduced to a single $, which allows for escaping the $(VAR_NAME) syntax: i.e. \"$$(VAR_NAME)\" will produce the string literal \"$(VAR_NAME)\". Escaped references will never be expanded, regardless of whether the variable exists or not. Cannot be updated. More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell",
 							Type:        []string{"array"},
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
@@ -4799,7 +5171,7 @@ func schema_pkg_apis_workflow_v1alpha1_ScriptTemplate(ref common.ReferenceCallba
 					},
 					"args": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Arguments to the entrypoint. The docker image's CMD is used if this is not provided. Variable references $(VAR_NAME) are expanded using the container's environment. If a variable cannot be resolved, the reference in the input string will be unchanged. Double $$ are reduced to a single $, which allows for escaping the $(VAR_NAME) syntax: i.e. \"$$(VAR_NAME)\" will produce the string literal \"$(VAR_NAME)\". Escaped references will never be expanded, regardless of whether the variable exists or not. Cannot be updated. More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell",
+							Description: "Arguments to the entrypoint. The container image's CMD is used if this is not provided. Variable references $(VAR_NAME) are expanded using the container's environment. If a variable cannot be resolved, the reference in the input string will be unchanged. Double $$ are reduced to a single $, which allows for escaping the $(VAR_NAME) syntax: i.e. \"$$(VAR_NAME)\" will produce the string literal \"$(VAR_NAME)\". Escaped references will never be expanded, regardless of whether the variable exists or not. Cannot be updated. More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell",
 							Type:        []string{"array"},
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
@@ -5859,14 +6231,14 @@ func schema_pkg_apis_workflow_v1alpha1_UserContainer(ref common.ReferenceCallbac
 					},
 					"image": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Docker image name. More info: https://kubernetes.io/docs/concepts/containers/images This field is optional to allow higher level config management to default or override container images in workload controllers like Deployments and StatefulSets.",
+							Description: "Container image name. More info: https://kubernetes.io/docs/concepts/containers/images This field is optional to allow higher level config management to default or override container images in workload controllers like Deployments and StatefulSets.",
 							Type:        []string{"string"},
 							Format:      "",
 						},
 					},
 					"command": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Entrypoint array. Not executed within a shell. The docker image's ENTRYPOINT is used if this is not provided. Variable references $(VAR_NAME) are expanded using the container's environment. If a variable cannot be resolved, the reference in the input string will be unchanged. Double $$ are reduced to a single $, which allows for escaping the $(VAR_NAME) syntax: i.e. \"$$(VAR_NAME)\" will produce the string literal \"$(VAR_NAME)\". Escaped references will never be expanded, regardless of whether the variable exists or not. Cannot be updated. More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell",
+							Description: "Entrypoint array. Not executed within a shell. The container image's ENTRYPOINT is used if this is not provided. Variable references $(VAR_NAME) are expanded using the container's environment. If a variable cannot be resolved, the reference in the input string will be unchanged. Double $$ are reduced to a single $, which allows for escaping the $(VAR_NAME) syntax: i.e. \"$$(VAR_NAME)\" will produce the string literal \"$(VAR_NAME)\". Escaped references will never be expanded, regardless of whether the variable exists or not. Cannot be updated. More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell",
 							Type:        []string{"array"},
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
@@ -5881,7 +6253,7 @@ func schema_pkg_apis_workflow_v1alpha1_UserContainer(ref common.ReferenceCallbac
 					},
 					"args": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Arguments to the entrypoint. The docker image's CMD is used if this is not provided. Variable references $(VAR_NAME) are expanded using the container's environment. If a variable cannot be resolved, the reference in the input string will be unchanged. Double $$ are reduced to a single $, which allows for escaping the $(VAR_NAME) syntax: i.e. \"$$(VAR_NAME)\" will produce the string literal \"$(VAR_NAME)\". Escaped references will never be expanded, regardless of whether the variable exists or not. Cannot be updated. More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell",
+							Description: "Arguments to the entrypoint. The container image's CMD is used if this is not provided. Variable references $(VAR_NAME) are expanded using the container's environment. If a variable cannot be resolved, the reference in the input string will be unchanged. Double $$ are reduced to a single $, which allows for escaping the $(VAR_NAME) syntax: i.e. \"$$(VAR_NAME)\" will produce the string literal \"$(VAR_NAME)\". Escaped references will never be expanded, regardless of whether the variable exists or not. Cannot be updated. More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell",
 							Type:        []string{"array"},
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
@@ -6305,6 +6677,103 @@ func schema_pkg_apis_workflow_v1alpha1_Workflow(ref common.ReferenceCallback) co
 		},
 		Dependencies: []string{
 			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowSpec", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
+	}
+}
+
+func schema_pkg_apis_workflow_v1alpha1_WorkflowArtifactGCTask(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "WorkflowArtifactGCTask specifies the Artifacts that need to be deleted as well as the status of deletion",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"kind": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"apiVersion": {
+						SchemaProps: spec.SchemaProps{
+							Description: "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"metadata": {
+						SchemaProps: spec.SchemaProps{
+							Default: map[string]interface{}{},
+							Ref:     ref("k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"),
+						},
+					},
+					"spec": {
+						SchemaProps: spec.SchemaProps{
+							Default: map[string]interface{}{},
+							Ref:     ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactGCSpec"),
+						},
+					},
+					"status": {
+						SchemaProps: spec.SchemaProps{
+							Default: map[string]interface{}{},
+							Ref:     ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactGCSStatus"),
+						},
+					},
+				},
+				Required: []string{"metadata", "spec"},
+			},
+		},
+		Dependencies: []string{
+			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactGCSStatus", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactGCSpec", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
+	}
+}
+
+func schema_pkg_apis_workflow_v1alpha1_WorkflowArtifactGCTaskList(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "WorkflowArtifactGCTaskList is list of WorkflowArtifactGCTask resources",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"kind": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"apiVersion": {
+						SchemaProps: spec.SchemaProps{
+							Description: "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"metadata": {
+						SchemaProps: spec.SchemaProps{
+							Default: map[string]interface{}{},
+							Ref:     ref("k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"),
+						},
+					},
+					"items": {
+						SchemaProps: spec.SchemaProps{
+							Type: []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowArtifactGCTask"),
+									},
+								},
+							},
+						},
+					},
+				},
+				Required: []string{"metadata", "items"},
+			},
+		},
+		Dependencies: []string{
+			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowArtifactGCTask", "k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"},
 	}
 }
 

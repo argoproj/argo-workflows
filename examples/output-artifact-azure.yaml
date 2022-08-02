@@ -1,0 +1,36 @@
+# This is an example of a workflow producing an Azure Storage output artifact which is saved
+# to a hard-wired location. This is useful for workflows which want to publish results to a well
+# known or pre-determined location.
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: output-artifact-s3-
+spec:
+  entrypoint: whalesay
+  templates:
+  - name: whalesay
+    container:
+      image: docker/whalesay:latest
+      command: [sh, -c]
+      args: ["cowsay hello world | tee /tmp/hello_world.txt"]
+    outputs:
+      artifacts:
+      - name: message
+        path: /tmp
+        azure:
+          # For most people, the endpoint is in the form https://<account-name>.blob.core.windows.net.
+          # In sovereign clouds, or Azure Stack clouds, the endpoint may be different.
+          endpoint: https://myazurestorageaccountname.blob.core.windows.net
+          # The name of the container within the storage account.
+          container: my-container
+          # The path (within the container) to the artifact
+          blob: path/in/container/hello_world.txt.tgz
+          # accountKeySecret is a secret selector. It references the k8s secret named
+          # 'my-azure-credentials'. This secret is expected to have the key
+          # 'accountKey', containing the Azure Blob Storage account name and access key.
+          accountKeySecret:
+            name: my-azure-credentials
+            key: accountKey
+          # Optional: set UseSDKCreds to true and skip setting accountKeySecret if
+          # you are using environment variables to configure, or a Managed Identity.
+          # useSDKCreds: true

@@ -20,6 +20,7 @@ spec:
     sidecars:
     - name: nginx
       image: nginx:1.13
+      command: [nginx, -g, daemon off;]
 ```
 
 In the above example, we create a sidecar container that runs Nginx as a simple web server. The order in which containers come up is random, so in this example the main container polls the Nginx container until it is ready to service requests. This is a good design pattern when designing multi-container systems: always wait for any services you need to come up before running your main code.

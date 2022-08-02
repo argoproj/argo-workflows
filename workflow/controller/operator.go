@@ -360,6 +360,28 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 
 	woc.globalParams[common.GlobalVarWorkflowStatus] = string(workflowStatus)
 
+	var failures []failedNodeStatus
+	for _, node := range woc.wf.Status.Nodes {
+		if node.Phase == wfv1.NodeFailed || node.Phase == wfv1.NodeError {
+			failures = append(failures,
+				failedNodeStatus{
+					DisplayName:  node.DisplayName,
+					Message:      node.Message,
+					TemplateName: node.TemplateName,
+					Phase:        string(node.Phase),
+					PodName:      node.ID,
+					FinishedAt:   node.FinishedAt,
+				})
+		}
+	}
+	failedNodeBytes, err := json.Marshal(failures)
+	if err != nil {
+		woc.log.Errorf("Error marshalling failed nodes list: %+v", err)
+		// No need to return here
+	}
+	// This strconv.Quote is necessary so that the escaped quotes are not removed during parameter substitution
+	woc.globalParams[common.GlobalVarWorkflowFailures] = strconv.Quote(string(failedNodeBytes))
+
 	err = woc.executeWfLifeCycleHook(ctx, tmplCtx)
 	if err != nil {
 		woc.markNodeError(node.Name, err)
@@ -374,28 +396,6 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 
 	var onExitNode *wfv1.NodeStatus
 	if woc.execWf.Spec.HasExitHook() && woc.GetShutdownStrategy().ShouldExecute(true) {
-		var failures []failedNodeStatus
-		for _, node := range woc.wf.Status.Nodes {
-			if node.Phase == wfv1.NodeFailed || node.Phase == wfv1.NodeError {
-				failures = append(failures,
-					failedNodeStatus{
-						DisplayName:  node.DisplayName,
-						Message:      node.Message,
-						TemplateName: node.TemplateName,
-						Phase:        string(node.Phase),
-						PodName:      node.ID,
-						FinishedAt:   node.FinishedAt,
-					})
-			}
-		}
-		failedNodeBytes, err := json.Marshal(failures)
-		if err != nil {
-			woc.log.Errorf("Error marshalling failed nodes list: %+v", err)
-			// No need to return here
-		}
-		// This strconv.Quote is necessary so that the escaped quotes are not removed during parameter substitution
-		woc.globalParams[common.GlobalVarWorkflowFailures] = strconv.Quote(string(failedNodeBytes))
-
 		woc.log.Infof("Running OnExit handler: %s", woc.execWf.Spec.OnExit)
 		onExitNodeName := common.GenerateOnExitNodeName(woc.wf.ObjectMeta.Name)
 		exitHook := woc.execWf.Spec.GetExitHook(woc.execWf.Spec.Arguments)
@@ -898,7 +898,7 @@ func (woc *wfOperationCtx) processNodeRetries(node *wfv1.NodeStatus, retryStrate
 		}
 
 		// See if we have waited past the deadline
-		if time.Now().Before(waitingDeadline) && retryStrategy.Limit != nil && int32(len(node.Children)) <= retryStrategy.Limit.IntVal {
+		if time.Now().Before(waitingDeadline) && retryStrategy.Limit != nil && int32(len(node.Children)) <= int32(retryStrategy.Limit.IntValue()) {
 			woc.requeueAfter(timeToWait)
 			retryMessage := fmt.Sprintf("Backoff for %s", humanize.Duration(timeToWait))
 			return woc.markNodePhase(node.Name, node.Phase, retryMessage), false, nil
@@ -1020,7 +1020,7 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) error {
 		go func(pod *apiv1.Pod) {
 			defer wg.Done()
 			performAssessment(pod)
-			woc.applyExecutionControl(ctx, pod, wfNodesLock)
+			woc.applyExecutionControl(pod, wfNodesLock)
 			<-parallelPodNum
 		}(pod)
 	}
@@ -1895,8 +1895,6 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 	if err != nil {
 		node = woc.markNodeError(nodeName, err)
 
-		woc.controller.syncManager.Release(woc.wf, node.ID, processedTmpl.Synchronization)
-
 		// If retry policy is not set, or if it is not set to Always or OnError, we won't attempt to retry an errored container
 		// and we return instead.
 		retryStrategy := woc.retryStrategy(processedTmpl)
@@ -1904,6 +1902,7 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 			(retryStrategy.RetryPolicy != wfv1.RetryPolicyAlways &&
 				retryStrategy.RetryPolicy != wfv1.RetryPolicyOnError &&
 				retryStrategy.RetryPolicy != wfv1.RetryPolicyOnTransientError) {
+			woc.controller.syncManager.Release(woc.wf, node.ID, processedTmpl.Synchronization)
 			return node, err
 		}
 	}
@@ -2284,6 +2283,10 @@ func (woc *wfOperationCtx) recordNodePhaseEvent(node *wfv1.NodeStatus) {
 	annotations := map[string]string{
 		common.AnnotationKeyNodeType: string(node.Type),
 		common.AnnotationKeyNodeName: node.Name,
+		common.AnnotationKeyNodeID:   node.ID,
+		// For retried/resubmitted workflows, the only main differentiation is the start time of nodes.
+		// We include this annotation here so that we could avoid combining events for those nodes.
+		common.AnnotationKeyNodeStartTime: strconv.FormatInt(node.StartedAt.UnixNano(), 10),
 	}
 	var involvedObject runtime.Object = woc.wf
 	if eventConfig.SendAsPod {

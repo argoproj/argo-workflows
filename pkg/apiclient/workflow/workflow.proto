@@ -39,6 +39,7 @@ message WorkflowResubmitRequest {
   string name = 1;
   string namespace = 2;
   bool memoized = 3;
+  repeated string parameters = 5;
 }
 
 message WorkflowRetryRequest {
@@ -46,6 +47,7 @@ message WorkflowRetryRequest {
   string namespace = 2;
   bool restartSuccessful = 3;
   string nodeFieldSelector = 4;
+  repeated string parameters = 5;
 }
 message WorkflowResumeRequest {
   string name = 1;

@@ -6,6 +6,7 @@ import (
 	gohttp "net/http"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/azure"
 	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/gcs"
 	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/git"
@@ -228,6 +229,25 @@ func newDriver(ctx context.Context, art *wfv1.Artifact, ri resource.Interface) (
 			driver.ServiceAccountKey = serviceAccountKey
 		}
 		// key is not set, assume it is using Workload Idendity
+		return &driver, nil
+	}
+
+	if art.Azure != nil {
+		var accountKey string
+
+		if !art.Azure.UseSDKCreds && art.Azure.AccountKeySecret != nil && art.Azure.AccountKeySecret.Name != "" {
+			accountKeyBytes, err := ri.GetSecret(ctx, art.Azure.AccountKeySecret.Name, art.Azure.AccountKeySecret.Key)
+			if err != nil {
+				return nil, err
+			}
+			accountKey = accountKeyBytes
+		}
+		driver := azure.ArtifactDriver{
+			AccountKey:  accountKey,
+			Container:   art.Azure.Container,
+			Endpoint:    art.Azure.Endpoint,
+			UseSDKCreds: art.Azure.UseSDKCreds,
+		}
 		return &driver, nil
 	}
 
