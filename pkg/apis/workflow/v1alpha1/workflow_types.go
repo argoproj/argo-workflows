@@ -1064,7 +1064,7 @@ func (podGC *PodGC) GetStrategy() PodGCStrategy {
 // ArtifactGC describes how to delete artifacts from completed Workflows
 type ArtifactGC struct {
 	// Strategy is the strategy to use.
-	// +kubebuilder:validation:Enum="";OnWorkflowCompletion;OnWorkflowDeletion;OnWorkflowSuccess;OnWorkflowFailure;Never
+	// +kubebuilder:validation:Enum="";OnWorkflowCompletion;OnWorkflowDeletion;Never
 	Strategy ArtifactGCStrategy `json:"strategy,omitempty" protobuf:"bytes,1,opt,name=strategy,casttype=ArtifactGCStategy"`
 
 	// PodMetadata is an optional field for specifying the Labels and Annotations that should be assigned to the Pod doing the deletion
@@ -1334,13 +1334,14 @@ type ArtifactSearchQuery struct {
 	NodeTypes            map[NodeType]bool           `json:"nodeTypes,omitempty" protobuf:"bytes,6,opt,name=nodeTypes"`
 }
 
-// map ArtifactGC Pod name to phase
+// ArtGCStatus maintains state related to ArtifactGC
 type ArtGCStatus struct {
 
-	// have Pods been started to perform this strategy?
+	// have Pods been started to perform this strategy? (enables us not to re-process what we've already done)
 	StrategiesProcessed map[ArtifactGCStrategy]bool `json:"strategiesProcessed,omitempty" protobuf:"bytes,1,opt,name=strategiesProcessed"`
 
 	// have completed Pods been processed? (mapped by Pod name)
+	// used to prevent re-processing the Status of a Pod more than once
 	PodsRecouped map[string]bool `json:"podsRecouped,omitempty" protobuf:"bytes,2,opt,name=podsRecouped"`
 
 	// if this is true, we already checked to see if we need to do it and we don't
