@@ -291,7 +291,7 @@ func (woc *wfOperationCtx) addTemplateArtifactsToTasks(podName string, tasks *[]
 
 	// if ArchiveLocation is specified for the Template use that, otherwise use default
 	archiveLocation := template.ArchiveLocation
-	if archiveLocation == nil {
+	if !archiveLocation.HasLocation() {
 		archiveLocation = woc.artifactRepository.ToArtifactLocation()
 	}
 
@@ -371,10 +371,10 @@ func (woc *wfOperationCtx) createArtifactGCPod(ctx context.Context, strategy wfv
 			return nil, fmt.Errorf("can't find template with name %s???", templateName)
 		}
 
-		if template.ArchiveLocation == nil {
-			artifactLocations = append(artifactLocations, woc.artifactRepository.ToArtifactLocation())
-		} else {
+		if template.ArchiveLocation.HasLocation() {
 			artifactLocations = append(artifactLocations, template.ArchiveLocation)
+		} else {
+			artifactLocations = append(artifactLocations, woc.artifactRepository.ToArtifactLocation())
 		}
 		for i := range artifacts {
 			artifactLocations = append(artifactLocations, &artifacts[i].ArtifactLocation)
