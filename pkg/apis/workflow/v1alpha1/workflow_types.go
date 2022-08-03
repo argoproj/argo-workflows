@@ -81,7 +81,6 @@ const (
 	NodeTypeSuspend   NodeType = "Suspend"
 	NodeTypeHTTP      NodeType = "HTTP"
 	NodeTypePlugin    NodeType = "Plugin"
-	NodeTypeUndefined NodeType = ""
 )
 
 // ArtifactGCStrategy is the strategy when to delete artifacts for GC.
