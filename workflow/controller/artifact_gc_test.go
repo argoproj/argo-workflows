@@ -72,7 +72,7 @@ spec:
       artifacts:
       - artifactGC:
           strategy: OnWorkflowCompletion
-        name: on-completion-first-1
+        name: first-on-completion-1
         path: /tmp/message
         s3:
           accessKeySecret:
@@ -81,7 +81,7 @@ spec:
           bucket: my-bucket-2
           endpoint: minio:9000
           insecure: true
-          key: on-completion-first-1
+          key: first-on-completion-1
           secretKeySecret:
             key: secretkey
             name: my-minio-cred-1
@@ -90,7 +90,7 @@ spec:
             annotations:
               annotation-key-1: annotation-value-3
           strategy: OnWorkflowCompletion
-        name: on-completion-first-2
+        name: first-on-completion-2
         path: /tmp/message
         s3:
           accessKeySecret:
@@ -99,7 +99,7 @@ spec:
           bucket: my-bucket-3
           endpoint: minio:9000
           insecure: true
-          key: on-completion-first-2
+          key: first-on-completion-2
           secretKeySecret:
             key: secretkey
             name: my-minio-cred-1
@@ -138,7 +138,7 @@ spec:
           key: on-deletion
       - artifactGC:
           strategy: OnWorkflowCompletion
-        name: on-completion-second
+        name: second-on-completion
         path: /tmp/message
         s3:
           accessKeySecret:
@@ -147,7 +147,7 @@ spec:
           bucket: my-bucket-3
           endpoint: minio:9000
           insecure: true
-          key: on-completion-second
+          key: second-on-completion
           secretKeySecret:
             key: secretkey
             name: my-minio-cred-2
@@ -239,7 +239,7 @@ status:
         artifacts:
         - artifactGC:
             strategy: OnWorkflowCompletion
-          name: on-completion-first-1
+          name: first-on-completion-1
           path: /tmp/message
           s3:
             accessKeySecret:
@@ -248,7 +248,7 @@ status:
             bucket: my-bucket-2
             endpoint: minio:9000
             insecure: true
-            key: on-completion-first-1
+            key: first-on-completion-1
             secretKeySecret:
               key: secretkey
               name: my-minio-cred-1
@@ -257,7 +257,7 @@ status:
               annotations:
                 annotation-key-1: annotation-value-3
             strategy: OnWorkflowCompletion
-          name: on-completion-first-2
+          name: first-on-completion-2
           path: /tmp/message
           s3:
             accessKeySecret:
@@ -266,7 +266,7 @@ status:
             bucket: my-bucket-3
             endpoint: minio:9000
             insecure: true
-            key: on-completion-first-2
+            key: first-on-completion-2
             secretKeySecret:
               key: secretkey
               name: my-minio-cred-1
@@ -300,7 +300,7 @@ status:
             key: on-deletion
         - artifactGC:
             strategy: OnWorkflowCompletion
-          name: on-completion-second
+          name: second-on-completion
           path: /tmp/message
           s3:
             accessKeySecret:
@@ -309,7 +309,7 @@ status:
             bucket: my-bucket-3
             endpoint: minio:9000
             insecure: true
-            key: on-completion-second
+            key: second-on-completion
             secretKeySecret:
               key: secretkey
               name: my-minio-cred-2
@@ -435,15 +435,178 @@ func TestProcessArtifactGCStrategy(t *testing.T) {
 
 	// Verify that the ArchiveLocation and list of artifacts on each is correct
 	assert.Contains(t, wfat1.Spec.ArtifactsByNode, "two-artgc-8tcvt-802059674")
-	assert.Contains(t, wfat1.Spec.ArtifactsByNode["two-artgc-8tcvt-802059674"].Artifacts, "on-completion-first-1")
+	assert.Contains(t, wfat1.Spec.ArtifactsByNode["two-artgc-8tcvt-802059674"].Artifacts, "first-on-completion-1")
 	assert.NotContains(t, wfat1.Spec.ArtifactsByNode["two-artgc-8tcvt-802059674"].Artifacts, "on-deletion")
 	assert.Contains(t, wfat1.Spec.ArtifactsByNode, "two-artgc-8tcvt-1079173309")
 	assert.Equal(t, "my-bucket-3", wfat1.Spec.ArtifactsByNode["two-artgc-8tcvt-1079173309"].ArchiveLocation.S3.Bucket)
-	assert.Contains(t, wfat1.Spec.ArtifactsByNode["two-artgc-8tcvt-1079173309"].Artifacts, "on-completion-second")
+	assert.Contains(t, wfat1.Spec.ArtifactsByNode["two-artgc-8tcvt-1079173309"].Artifacts, "second-on-completion")
 	assert.NotContains(t, wfat1.Spec.ArtifactsByNode["two-artgc-8tcvt-1079173309"].Artifacts, "on-deletion")
 
 	assert.Contains(t, wfat2.Spec.ArtifactsByNode, "two-artgc-8tcvt-802059674")
-	assert.Contains(t, wfat2.Spec.ArtifactsByNode["two-artgc-8tcvt-802059674"].Artifacts, "on-completion-first-2")
+	assert.Contains(t, wfat2.Spec.ArtifactsByNode["two-artgc-8tcvt-802059674"].Artifacts, "first-on-completion-2")
 	assert.NotContains(t, wfat2.Spec.ArtifactsByNode["two-artgc-8tcvt-802059674"].Artifacts, "on-deletion")
+
+}
+
+var artgcTask = `apiVersion: argoproj.io/v1alpha1
+kind: WorkflowArtifactGCTask
+metadata:
+  creationTimestamp: "2022-08-03T20:29:01Z"
+  generation: 1
+  labels:
+    workflows.argoproj.io/artifact-gc-pod: two-artgc-8tcvt-artgc-wfcomp-2166136261
+  name: two-artgc-8tcvt-artgc-wfcomp-2166136261-0
+  namespace: argo
+  ownerReferences:
+  - apiVersion: argoproj.io/v1alpha1
+    blockOwnerDeletion: true
+    controller: true
+    kind: Workflow
+    name: two-artgc-8tcvt
+    uid: 98ecc84d-5aed-4bcd-bc9d-01daaa2b9948
+  resourceVersion: "7950481"
+  uid: 1a988e8b-25c3-45a2-8a71-3b75da48679d
+spec:
+  artifactsByNode:
+    two-artgc-8tcvt-1079173309:
+      archiveLocation:
+        s3:
+          accessKeySecret:
+            key: accesskey
+            name: my-minio-cred
+          bucket: my-bucket-3
+          endpoint: minio:9000
+          insecure: true
+          key: default-to-be-overridden
+          secretKeySecret:
+            key: secretkey
+            name: my-minio-cred
+      artifacts:
+        second-on-completion:
+          artifactGC:
+            strategy: OnWorkflowCompletion
+          name: second-on-completion
+          path: /tmp/message
+          s3:
+            accessKeySecret:
+              key: accesskey
+              name: my-minio-cred
+            bucket: my-bucket-2
+            endpoint: minio:9000
+            insecure: true
+            key: second-on-completion
+            secretKeySecret:
+              key: secretkey
+              name: my-minio-cred
+    two-artgc-8tcvt-4033701975:
+      archiveLocation:
+        archiveLogs: true
+        s3:
+          accessKeySecret:
+            key: accesskey
+            name: my-minio-cred
+          bucket: my-bucket
+          endpoint: minio:9000
+          insecure: true
+          key: '{{workflow.name}}/{{pod.name}}'
+          secretKeySecret:
+            key: secretkey
+            name: my-minio-cred
+      artifacts:
+        first-on-completion-2:
+          name: first-on-completion-2
+          path: /tmp/message
+          s3:
+            accessKeySecret:
+              key: accesskey
+              name: my-minio-cred
+            bucket: my-bucket-3
+            endpoint: minio:9000
+            insecure: true
+            key: first-on-completion-2
+            secretKeySecret:
+              key: secretkey
+              name: my-minio-cred
+        main-logs:
+          name: main-logs
+          s3:
+            key: two-artgc-8tcvt/two-artgc-8tcvt-first-4033701975/main.log
+status:
+  artifactResultsByNode:
+    two-artgc-8tcvt-1079173309:
+      artifactResults:
+        second-on-completion:
+          name: second-on-completion
+          success: true
+    two-artgc-8tcvt-802059674:
+      artifactResults:
+        first-on-completion-2:
+          name: first-on-completion-2
+          success: false
+          error: 'something went wrong'
+        main-logs:
+          name: main-logs
+          success: true
+`
+
+func TestProcessCompletedWorkflowArtifactGCTask(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(artgcWorkflow)
+	wfat := wfv1.MustUnmarshalWorkflowArtifactGCTask(artgcTask)
+	cancel, controller := newController(wf)
+	defer cancel()
+
+	ctx := context.Background()
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.wf.Status.ArtifactGCStatus = &wfv1.ArtGCStatus{}
+
+	// verify that we update these Status fields:
+	// - Artifact.Deleted
+	// - Conditions
+
+	err := woc.processCompletedWorkflowArtifactGCTask(ctx, wfat, "OnWorkflowCompletion")
+	assert.Nil(t, err)
+
+	for _, expectedArtifact := range []struct {
+		nodeName     string
+		artifactName string
+		deleted      bool
+	}{
+		{
+			"two-artgc-8tcvt-1079173309",
+			"second-on-completion",
+			true,
+		},
+		{
+			"two-artgc-8tcvt-802059674",
+			"first-on-completion-2",
+			false,
+		},
+		{
+			"two-artgc-8tcvt-802059674",
+			"main-logs",
+			true,
+		},
+	} {
+		fmt.Printf("deletethis: woc.wf.Status.Nodes=%+v\n", woc.wf.Status.Nodes)
+		node := woc.wf.Status.Nodes[expectedArtifact.nodeName]
+		artifact := node.Outputs.Artifacts.GetArtifactByName(expectedArtifact.artifactName)
+		if artifact == nil {
+			panic(fmt.Sprintf("can't find artifact named %s in node %s", expectedArtifact.artifactName, expectedArtifact.nodeName))
+		}
+		assert.Equal(t, expectedArtifact.deleted, artifact.Deleted)
+
+		if expectedArtifact.deleted {
+			var gcFailureCondition *wfv1.Condition
+			for _, condition := range woc.wf.Status.Conditions {
+				if condition.Type == wfv1.ConditionTypeArtifactGCError {
+					gcFailureCondition = &condition
+					break
+				}
+			}
+			assert.NotNil(t, gcFailureCondition)
+			assert.Equal(t, metav1.ConditionTrue, gcFailureCondition.Status)
+			assert.Contains(t, gcFailureCondition.Message, "something went wrong")
+		}
+	}
 
 }
