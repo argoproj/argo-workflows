@@ -23,6 +23,8 @@ const (
 	AnnotationKeyNodeName = workflow.WorkflowFullName + "/node-name"
 	// AnnotationKeyNodeName is the node's type
 	AnnotationKeyNodeType = workflow.WorkflowFullName + "/node-type"
+	// AnnotationKeyNodeStartTime is the node's start timestamp.
+	AnnotationKeyNodeStartTime = workflow.WorkflowFullName + "/node-start-time"
 
 	// AnnotationKeyRBACRule is a rule to match the claims
 	AnnotationKeyRBACRule           = workflow.WorkflowFullName + "/rbac-rule"
