@@ -1360,7 +1360,7 @@ func (gcStatus *ArtGCStatus) SetArtifactGCStrategyProcessed(strategy ArtifactGCS
 
 func (gcStatus *ArtGCStatus) IsArtifactGCStrategyProcessed(strategy ArtifactGCStrategy) bool {
 	if gcStatus.StrategiesProcessed != nil {
-		processed, _ := gcStatus.StrategiesProcessed[strategy]
+		processed := gcStatus.StrategiesProcessed[strategy]
 		return processed
 	}
 	return false
@@ -1375,7 +1375,7 @@ func (gcStatus *ArtGCStatus) SetArtifactGCPodRecouped(podName string, recouped b
 
 func (gcStatus *ArtGCStatus) IsArtifactGCPodRecouped(podName string) bool {
 	if gcStatus.PodsRecouped != nil {
-		recouped, _ := gcStatus.PodsRecouped[podName]
+		recouped := gcStatus.PodsRecouped[podName]
 		return recouped
 	}
 	return false

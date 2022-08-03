@@ -62,7 +62,7 @@ func NewArtifactDeleteCommand() *cobra.Command {
 
 						for _, artifact := range artifactNodeSpec.Artifacts {
 							if archiveLocation != nil {
-								artifact.Relocate(archiveLocation)
+								_ = artifact.Relocate(archiveLocation)
 							}
 
 							drv, err := executor.NewDriver(cmd.Context(), &artifact, &resources{})

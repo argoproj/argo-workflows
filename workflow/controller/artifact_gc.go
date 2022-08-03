@@ -49,7 +49,7 @@ func (woc *wfOperationCtx) garbageCollectArtifacts(ctx context.Context) error {
 
 	// based on current state of Workflow, which Artifact GC Strategies can be processed now?
 	strategies := woc.artifactGCStrategiesReady()
-	for strategy, _ := range strategies {
+	for strategy := range strategies {
 		woc.log.Debugf("processing Artifact GC Strategy %s", strategy)
 		err := woc.processArtifactGCStrategy(ctx, strategy)
 		if err != nil {
@@ -187,7 +187,7 @@ func (woc *wfOperationCtx) processArtifactGCStrategy(ctx context.Context, strate
 		for templateName, artifacts := range templatesToArtList {
 			fmt.Printf("deletethis: for podName '%s' from groupedByPod, processing templateName '%s'\n", podName, templateName)
 			template := templatesByName[templateName]
-			woc.addTemplateArtifactsToTasks(strategy, podName, &tasks, template, artifacts)
+			woc.addTemplateArtifactsToTasks(podName, &tasks, template, artifacts)
 		}
 
 		if len(tasks) > 0 {
@@ -249,7 +249,7 @@ func (woc *wfOperationCtx) artGCTaskName(podName string, taskIndex int) string {
 	return fmt.Sprintf("%s-%d", podName, taskIndex)
 }
 
-func (woc *wfOperationCtx) addTemplateArtifactsToTasks(strategy wfv1.ArtifactGCStrategy, podName string, tasks *[]*wfv1.WorkflowArtifactGCTask, template *wfv1.Template, artifactSearchResults wfv1.ArtifactSearchResults) {
+func (woc *wfOperationCtx) addTemplateArtifactsToTasks(podName string, tasks *[]*wfv1.WorkflowArtifactGCTask, template *wfv1.Template, artifactSearchResults wfv1.ArtifactSearchResults) {
 	if len(artifactSearchResults) == 0 {
 		return
 	}
@@ -597,9 +597,8 @@ func (woc *wfOperationCtx) processCompletedWorkflowArtifactGCTask(ctx context.Co
 
 	// now we can delete it, if it succeeded (otherwise we leave it up to be inspected)
 	if !foundGCFailure {
-		// todo: temporarily commented out for testing
-		//woc.log.Debugf("deleting WorkflowArtifactGCTask: %s", artifactGCTask.Name)
-		//woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowArtifactGCTasks(woc.wf.Namespace).Delete(ctx, artifactGCTask.Name, metav1.DeleteOptions{})
+		woc.log.Debugf("deleting WorkflowArtifactGCTask: %s", artifactGCTask.Name)
+		woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowArtifactGCTasks(woc.wf.Namespace).Delete(ctx, artifactGCTask.Name, metav1.DeleteOptions{})
 	}
 	return nil
 }

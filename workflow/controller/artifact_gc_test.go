@@ -346,7 +346,8 @@ func TestProcessArtifactGCStrategy(t *testing.T) {
 	woc := newWorkflowOperationCtx(wf, controller)
 	woc.wf.Status.ArtifactGCStatus = &wfv1.ArtGCStatus{}
 
-	woc.processArtifactGCStrategy(ctx, wfv1.ArtifactGCOnWorkflowCompletion)
+	err := woc.processArtifactGCStrategy(ctx, wfv1.ArtifactGCOnWorkflowCompletion)
+	assert.Nil(t, err)
 
 	wfatcs := controller.wfclientset.ArgoprojV1alpha1().WorkflowArtifactGCTasks(woc.wf.GetNamespace())
 	podcs := woc.controller.kubeclientset.CoreV1().Pods(woc.wf.GetNamespace())
