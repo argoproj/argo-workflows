@@ -19,7 +19,7 @@ func (woc *wfOperationCtx) queuePodsForCleanup() {
 	objs, _ := woc.controller.podInformer.GetIndexer().ByIndex(indexes.WorkflowIndex, woc.wf.Namespace+"/"+woc.wf.Name)
 	for _, obj := range objs {
 		pod := obj.(*apiv1.Pod)
-		if _, ok := pod.Labels[common.LabelKeyComponent]; ok {
+		if _, ok := pod.Labels[common.LabelKeyComponent]; ok { // for these types we don't want to do PodGC
 			continue
 		}
 		nodeID := woc.nodeID(pod)
