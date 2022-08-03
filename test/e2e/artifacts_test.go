@@ -231,7 +231,7 @@ func (s *ArtifactsSuite) TestMainLog() {
 			SubmitWorkflow().
 			WaitForWorkflow(fixtures.ToBeSucceeded).
 			Then().
-			ExpectArtifact("-", "main-logs", "main-bucket", func(t *testing.T, object minio.ObjectInfo, err error) {
+			ExpectArtifact("-", "main-logs", "my-bucket", func(t *testing.T, object minio.ObjectInfo, err error) {
 				assert.NoError(t, err)
 			})
 	})
@@ -242,7 +242,7 @@ func (s *ArtifactsSuite) TestMainLog() {
 			SubmitWorkflow().
 			WaitForWorkflow(fixtures.ToBeFailed).
 			Then().
-			ExpectArtifact("-", "main-logs", "main-bucket", func(t *testing.T, object minio.ObjectInfo, err error) {
+			ExpectArtifact("-", "main-logs", "my-bucket", func(t *testing.T, object minio.ObjectInfo, err error) {
 				assert.NoError(t, err)
 			})
 	})
