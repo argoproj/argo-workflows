@@ -85,16 +85,18 @@ func (woc *wfOperationCtx) artifactGCStrategiesReady() map[wfv1.ArtifactGCStrate
 			strategies[wfv1.ArtifactGCOnWorkflowDeletion] = struct{}{}
 		}
 	}
-	if woc.wf.Status.Successful() {
-		if !woc.wf.Status.ArtifactGCStatus.IsArtifactGCStrategyProcessed(wfv1.ArtifactGCOnWorkflowSuccess) {
-			strategies[wfv1.ArtifactGCOnWorkflowSuccess] = struct{}{}
+	// todo: look at implementing "OnWorkflowSuccessOrDeletion" and "OnWorkflowFailureOrDeletion" instead of these:
+	/*
+		if woc.wf.Status.Successful() {
+			if !woc.wf.Status.ArtifactGCStatus.IsArtifactGCStrategyProcessed(wfv1.ArtifactGCOnWorkflowSuccess) {
+				strategies[wfv1.ArtifactGCOnWorkflowSuccess] = struct{}{}
+			}
 		}
-	}
-	if woc.wf.Status.Failed() {
-		if !woc.wf.Status.ArtifactGCStatus.IsArtifactGCStrategyProcessed(wfv1.ArtifactGCOnWorkflowFailure) {
-			strategies[wfv1.ArtifactGCOnWorkflowFailure] = struct{}{}
-		}
-	}
+		if woc.wf.Status.Failed() {
+			if !woc.wf.Status.ArtifactGCStatus.IsArtifactGCStrategyProcessed(wfv1.ArtifactGCOnWorkflowFailure) {
+				strategies[wfv1.ArtifactGCOnWorkflowFailure] = struct{}{}
+			}
+		}*/
 
 	return strategies
 }
@@ -182,16 +184,11 @@ func (woc *wfOperationCtx) processArtifactGCStrategy(ctx context.Context, strate
 		groupedByPod[podName][template.Name] = append(groupedByPod[podName][template.Name], artifactSearchResult)
 	}
 
-	fmt.Printf("deletethis: groupedByPod=%+v\n", groupedByPod)
-
 	// start up a separate Pod with a separate set of ArtifactGCTasks for it to use for each unique Service Account/metadata
 	for podName, templatesToArtList := range groupedByPod {
 		tasks := make([]*wfv1.WorkflowArtifactGCTask, 0)
 
-		fmt.Printf("deletethis: processing podName %s from groupedByPod\n", podName)
-
 		for templateName, artifacts := range templatesToArtList {
-			fmt.Printf("deletethis: for podName '%s' from groupedByPod, processing templateName '%s'\n", podName, templateName)
 			template := templatesByName[templateName]
 			woc.addTemplateArtifactsToTasks(podName, &tasks, template, artifacts)
 		}
@@ -486,12 +483,10 @@ func (woc *wfOperationCtx) processArtifactGCCompletion(ctx context.Context) erro
 		// make sure we didn't already process this one
 		if woc.wf.Status.ArtifactGCStatus.IsArtifactGCPodRecouped(pod.Name) {
 			// already processed
-			fmt.Printf("deletethis: pod %s was already recouped\n", pod.Name)
 			continue
 		}
 
 		phase := pod.Status.Phase
-		fmt.Printf("deletethis: notification for status change of pod %s, phase: %v\n", pod.Name, phase)
 
 		// if Pod is done process the results
 		if phase == corev1.PodSucceeded || phase == corev1.PodFailed {
@@ -552,7 +547,6 @@ func (woc *wfOperationCtx) processCompletedArtifactGCPod(ctx context.Context, po
 	if !found {
 		return fmt.Errorf("Artifact GC Pod '%s' doesn't have annotation '%s'?", pod.Name, common.AnnotationKeyArtifactGCStrategy)
 	}
-	fmt.Printf("deletethis: processing pod %s for strategy %s\n", pod.Name, strategyStr)
 	strategy := wfv1.ArtifactGCStrategy(strategyStr)
 
 	for _, task := range taskList.Items {
@@ -586,7 +580,6 @@ func (woc *wfOperationCtx) processCompletedWorkflowArtifactGCTask(ctx context.Co
 				// could be in a different WorkflowArtifactGCTask
 				continue
 			}
-			fmt.Printf("deletethis: setting artifact Deleted=%t, %+v\n", artifactResult.Success, woc.wf.Status.Nodes[nodeName].Outputs.Artifacts[i])
 			woc.wf.Status.Nodes[nodeName].Outputs.Artifacts[i].Deleted = artifactResult.Success
 			if artifactResult.Error != nil {
 				// issue an Event if there was an error - just do this one to prevent flooding the system with Events

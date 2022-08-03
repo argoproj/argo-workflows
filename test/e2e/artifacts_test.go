@@ -64,11 +64,10 @@ type artifactState struct {
 
 func (s *ArtifactsSuite) TestArtifactGC() {
 
-	fmt.Printf("deletethis: got to TestArtifactGC")
 	s.Given().
 		WorkflowTemplate("@testdata/artifactgc/artgc-template.yaml").
 		When().
-		CreateWorkflowTemplates() //todo: need to delete the WorkflowTemplate
+		CreateWorkflowTemplates()
 
 	for _, tt := range []struct {
 		workflowFile      string

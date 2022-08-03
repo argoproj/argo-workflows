@@ -91,8 +91,6 @@ type ArtifactGCStrategy string
 const (
 	ArtifactGCOnWorkflowCompletion ArtifactGCStrategy = "OnWorkflowCompletion"
 	ArtifactGCOnWorkflowDeletion   ArtifactGCStrategy = "OnWorkflowDeletion"
-	ArtifactGCOnWorkflowSuccess    ArtifactGCStrategy = "OnWorkflowSuccess" //todo: remove for now?
-	ArtifactGCOnWorkflowFailure    ArtifactGCStrategy = "OnWorkflowFailure"
 	ArtifactGCNever                ArtifactGCStrategy = "Never"
 	ArtifactGCStrategyUndefined    ArtifactGCStrategy = ""
 )
@@ -100,8 +98,6 @@ const (
 var AnyArtifactGCStrategy = map[ArtifactGCStrategy]bool{
 	ArtifactGCOnWorkflowCompletion: true,
 	ArtifactGCOnWorkflowDeletion:   true,
-	ArtifactGCOnWorkflowSuccess:    true,
-	ArtifactGCOnWorkflowFailure:    true,
 }
 
 func (s ArtifactGCStrategy) AbbreviatedName() string {
@@ -110,10 +106,6 @@ func (s ArtifactGCStrategy) AbbreviatedName() string {
 		return "wfcomp"
 	case ArtifactGCOnWorkflowDeletion:
 		return "wfdel"
-	case ArtifactGCOnWorkflowSuccess:
-		return "wfsuccess"
-	case ArtifactGCOnWorkflowFailure:
-		return "wffail"
 	case ArtifactGCNever:
 		return "never"
 	default:

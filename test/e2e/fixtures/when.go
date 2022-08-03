@@ -364,7 +364,6 @@ func (w *When) Wait(timeout time.Duration) *When {
 }
 
 func (w *When) DeleteWorkflow() *When {
-	fmt.Printf("deletethis: When.DeleteWorkflow()")
 	w.t.Helper()
 	_, _ = fmt.Println("Deleting", w.wf.Name)
 	ctx := context.Background()

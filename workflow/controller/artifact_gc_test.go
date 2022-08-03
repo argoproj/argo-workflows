@@ -153,12 +153,6 @@ spec:
             name: my-minio-cred-2
 status:
   artifactGCStatus:
-    podsRecouped:
-      two-artgc-8tcvt-artgc-wfcomp-592587874: true
-      two-artgc-8tcvt-artgc-wfcomp-3953780960: true
-    strategiesProcessed:
-      OnWorkflowCompletion: true
-      OnWorkflowSuccess: true
   artifactRepositoryRef:
     artifactRepository:
       archiveLogs: true
