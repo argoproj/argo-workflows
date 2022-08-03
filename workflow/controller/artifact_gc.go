@@ -40,16 +40,16 @@ func (woc *wfOperationCtx) garbageCollectArtifacts(ctx context.Context) error {
 	// only do Artifact GC if we have a Finalizer for it (i.e. Artifact GC is configured for this Workflow
 	// and there's work left to do for it)
 	if !slice.ContainsString(woc.wf.Finalizers, common.FinalizerArtifactGC) {
-		if woc.execWf.Status.ArtifactGCStatus.NotSpecified {
+		if woc.wf.Status.ArtifactGCStatus.NotSpecified {
 			return nil // we already verified it's not required for this workflow
 		}
 		if woc.execWf.HasArtifactGC() {
 			woc.log.Info("adding artifact GC finalizer")
 			finalizers := append(woc.wf.GetFinalizers(), common.FinalizerArtifactGC)
 			woc.wf.SetFinalizers(finalizers)
-			woc.execWf.Status.ArtifactGCStatus.NotSpecified = false
+			woc.wf.Status.ArtifactGCStatus.NotSpecified = false
 		} else {
-			woc.execWf.Status.ArtifactGCStatus.NotSpecified = true
+			woc.wf.Status.ArtifactGCStatus.NotSpecified = true
 		}
 		return nil
 	}
@@ -425,7 +425,7 @@ func (woc *wfOperationCtx) createArtifactGCPod(ctx context.Context, strategy wfv
 					// if this pod is breached by an attacker these limits prevent excessive CPU and memory usage
 					Resources: corev1.ResourceRequirements{
 						Limits: map[corev1.ResourceName]resource.Quantity{
-							"cpu":    resource.MustParse("100m"), //todo: should these values be in the Controller config, and also maybe increased?
+							"cpu":    resource.MustParse("100m"),
 							"memory": resource.MustParse("64Mi"),
 						},
 						Requests: map[corev1.ResourceName]resource.Quantity{
