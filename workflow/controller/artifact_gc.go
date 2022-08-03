@@ -581,7 +581,13 @@ func (woc *wfOperationCtx) processCompletedWorkflowArtifactGCTask(ctx context.Co
 				continue
 			}
 			woc.wf.Status.Nodes[nodeName].Outputs.Artifacts[i].Deleted = artifactResult.Success
+
 			if artifactResult.Error != nil {
+				woc.wf.Status.Conditions.UpsertCondition(wfv1.Condition{
+					Type:    wfv1.ConditionTypeArtifactGCError,
+					Status:  metav1.ConditionTrue,
+					Message: fmt.Sprintf("%s (artifactGCTask: %s)", *artifactResult.Error, artifactGCTask.Name),
+				})
 				// issue an Event if there was an error - just do this one to prevent flooding the system with Events
 				if !foundGCFailure {
 					foundGCFailure = true

@@ -139,8 +139,8 @@ class IoArgoprojWorkflowV1alpha1ArtGCStatus(ModelNormal):
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
             not_specified (bool): if this is true, we already checked to see if we need to do it and we don't. [optional]  # noqa: E501
-            pods_recouped ({str: (bool,)}): have completed Pods been processed? (mapped by Pod name). [optional]  # noqa: E501
-            strategies_processed ({str: (bool,)}): have Pods been started to perform this strategy?. [optional]  # noqa: E501
+            pods_recouped ({str: (bool,)}): have completed Pods been processed? (mapped by Pod name) used to prevent re-processing the Status of a Pod more than once. [optional]  # noqa: E501
+            strategies_processed ({str: (bool,)}): have Pods been started to perform this strategy? (enables us not to re-process what we've already done). [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -223,8 +223,8 @@ class IoArgoprojWorkflowV1alpha1ArtGCStatus(ModelNormal):
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
             not_specified (bool): if this is true, we already checked to see if we need to do it and we don't. [optional]  # noqa: E501
-            pods_recouped ({str: (bool,)}): have completed Pods been processed? (mapped by Pod name). [optional]  # noqa: E501
-            strategies_processed ({str: (bool,)}): have Pods been started to perform this strategy?. [optional]  # noqa: E501
+            pods_recouped ({str: (bool,)}): have completed Pods been processed? (mapped by Pod name) used to prevent re-processing the Status of a Pod more than once. [optional]  # noqa: E501
+            strategies_processed ({str: (bool,)}): have Pods been started to perform this strategy? (enables us not to re-process what we've already done). [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)

@@ -43,12 +43,13 @@ message Arguments {
   repeated Artifact artifacts = 2;
 }
 
-// map ArtifactGC Pod name to phase
+// ArtGCStatus maintains state related to ArtifactGC
 message ArtGCStatus {
-  // have Pods been started to perform this strategy?
+  // have Pods been started to perform this strategy? (enables us not to re-process what we've already done)
   map<string, bool> strategiesProcessed = 1;
 
   // have completed Pods been processed? (mapped by Pod name)
+  // used to prevent re-processing the Status of a Pod more than once
   map<string, bool> podsRecouped = 2;
 
   // if this is true, we already checked to see if we need to do it and we don't

@@ -7241,7 +7241,7 @@
       }
     },
     "io.argoproj.workflow.v1alpha1.ArtGCStatus": {
-      "description": "map ArtifactGC Pod name to phase",
+      "description": "ArtGCStatus maintains state related to ArtifactGC",
       "type": "object",
       "properties": {
         "notSpecified": {
@@ -7249,14 +7249,14 @@
           "type": "boolean"
         },
         "podsRecouped": {
-          "description": "have completed Pods been processed? (mapped by Pod name)",
+          "description": "have completed Pods been processed? (mapped by Pod name) used to prevent re-processing the Status of a Pod more than once",
           "type": "object",
           "additionalProperties": {
             "type": "boolean"
           }
         },
         "strategiesProcessed": {
-          "description": "have Pods been started to perform this strategy?",
+          "description": "have Pods been started to perform this strategy? (enables us not to re-process what we've already done)",
           "type": "object",
           "additionalProperties": {
             "type": "boolean"

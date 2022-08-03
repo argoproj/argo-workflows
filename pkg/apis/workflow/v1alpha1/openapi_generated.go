@@ -265,12 +265,12 @@ func schema_pkg_apis_workflow_v1alpha1_ArtGCStatus(ref common.ReferenceCallback)
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "map ArtifactGC Pod name to phase",
+				Description: "ArtGCStatus maintains state related to ArtifactGC",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"strategiesProcessed": {
 						SchemaProps: spec.SchemaProps{
-							Description: "have Pods been started to perform this strategy?",
+							Description: "have Pods been started to perform this strategy? (enables us not to re-process what we've already done)",
 							Type:        []string{"object"},
 							AdditionalProperties: &spec.SchemaOrBool{
 								Allows: true,
@@ -286,7 +286,7 @@ func schema_pkg_apis_workflow_v1alpha1_ArtGCStatus(ref common.ReferenceCallback)
 					},
 					"podsRecouped": {
 						SchemaProps: spec.SchemaProps{
-							Description: "have completed Pods been processed? (mapped by Pod name)",
+							Description: "have completed Pods been processed? (mapped by Pod name) used to prevent re-processing the Status of a Pod more than once",
 							Type:        []string{"object"},
 							AdditionalProperties: &spec.SchemaOrBool{
 								Allows: true,
