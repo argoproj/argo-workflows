@@ -597,7 +597,10 @@ func (woc *wfOperationCtx) processCompletedWorkflowArtifactGCTask(ctx context.Co
 	// now we can delete it, if it succeeded (otherwise we leave it up to be inspected)
 	if !foundGCFailure {
 		woc.log.Debugf("deleting WorkflowArtifactGCTask: %s", artifactGCTask.Name)
-		woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowArtifactGCTasks(woc.wf.Namespace).Delete(ctx, artifactGCTask.Name, metav1.DeleteOptions{})
+		err := woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowArtifactGCTasks(woc.wf.Namespace).Delete(ctx, artifactGCTask.Name, metav1.DeleteOptions{})
+		if err != nil {
+			woc.log.Errorf("error deleting WorkflowArtifactGCTask: %s: %v", artifactGCTask.Name, err)
+		}
 	}
 	return nil
 }
