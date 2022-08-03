@@ -587,7 +587,7 @@ func TestProcessCompletedWorkflowArtifactGCTask(t *testing.T) {
 			true,
 		},
 	} {
-		fmt.Printf("deletethis: woc.wf.Status.Nodes=%+v\n", woc.wf.Status.Nodes)
+
 		node := woc.wf.Status.Nodes[expectedArtifact.nodeName]
 		artifact := node.Outputs.Artifacts.GetArtifactByName(expectedArtifact.artifactName)
 		if artifact == nil {
@@ -597,9 +597,9 @@ func TestProcessCompletedWorkflowArtifactGCTask(t *testing.T) {
 
 		if expectedArtifact.deleted {
 			var gcFailureCondition *wfv1.Condition
-			for _, condition := range woc.wf.Status.Conditions {
+			for i, condition := range woc.wf.Status.Conditions {
 				if condition.Type == wfv1.ConditionTypeArtifactGCError {
-					gcFailureCondition = &condition
+					gcFailureCondition = &woc.wf.Status.Conditions[i]
 					break
 				}
 			}
