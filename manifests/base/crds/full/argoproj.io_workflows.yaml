@@ -18960,6 +18960,8 @@ spec:
             properties:
               artifactGCStatus:
                 properties:
+                  notSpecified:
+                    type: boolean
                   podsRecouped:
                     additionalProperties:
                       type: boolean

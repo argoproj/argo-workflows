@@ -1762,6 +1762,7 @@ map ArtifactGC Pod name to phase
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
+|`notSpecified`|`boolean`|if this is true, we already checked to see if we need to do it and we don't|
 |`podsRecouped`|`Map< boolean , string >`|have completed Pods been processed? (mapped by Pod name)|
 |`strategiesProcessed`|`Map< boolean , string >`|have Pods been started to perform this strategy?|
 

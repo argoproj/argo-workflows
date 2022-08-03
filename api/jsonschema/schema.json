@@ -3327,6 +3327,10 @@
     "io.argoproj.workflow.v1alpha1.ArtGCStatus": {
       "description": "map ArtifactGC Pod name to phase",
       "properties": {
+        "notSpecified": {
+          "description": "if this is true, we already checked to see if we need to do it and we don't",
+          "type": "boolean"
+        },
         "podsRecouped": {
           "additionalProperties": {
             "type": "boolean"

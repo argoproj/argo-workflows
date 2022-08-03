@@ -81,6 +81,7 @@ class IoArgoprojWorkflowV1alpha1ArtGCStatus(ModelNormal):
                 and the value is attribute type.
         """
         return {
+            'not_specified': (bool,),  # noqa: E501
             'pods_recouped': ({str: (bool,)},),  # noqa: E501
             'strategies_processed': ({str: (bool,)},),  # noqa: E501
         }
@@ -91,6 +92,7 @@ class IoArgoprojWorkflowV1alpha1ArtGCStatus(ModelNormal):
 
 
     attribute_map = {
+        'not_specified': 'notSpecified',  # noqa: E501
         'pods_recouped': 'podsRecouped',  # noqa: E501
         'strategies_processed': 'strategiesProcessed',  # noqa: E501
     }
@@ -136,6 +138,7 @@ class IoArgoprojWorkflowV1alpha1ArtGCStatus(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
+            not_specified (bool): if this is true, we already checked to see if we need to do it and we don't. [optional]  # noqa: E501
             pods_recouped ({str: (bool,)}): have completed Pods been processed? (mapped by Pod name). [optional]  # noqa: E501
             strategies_processed ({str: (bool,)}): have Pods been started to perform this strategy?. [optional]  # noqa: E501
         """
@@ -219,6 +222,7 @@ class IoArgoprojWorkflowV1alpha1ArtGCStatus(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
+            not_specified (bool): if this is true, we already checked to see if we need to do it and we don't. [optional]  # noqa: E501
             pods_recouped ({str: (bool,)}): have completed Pods been processed? (mapped by Pod name). [optional]  # noqa: E501
             strategies_processed ({str: (bool,)}): have Pods been started to perform this strategy?. [optional]  # noqa: E501
         """

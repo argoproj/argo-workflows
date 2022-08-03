@@ -300,6 +300,13 @@ func schema_pkg_apis_workflow_v1alpha1_ArtGCStatus(ref common.ReferenceCallback)
 							},
 						},
 					},
+					"notSpecified": {
+						SchemaProps: spec.SchemaProps{
+							Description: "if this is true, we already checked to see if we need to do it and we don't",
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
 				},
 			},
 		},

@@ -1344,11 +1344,15 @@ type ArtifactSearchQuery struct {
 
 // map ArtifactGC Pod name to phase
 type ArtGCStatus struct {
+
 	// have Pods been started to perform this strategy?
 	StrategiesProcessed map[ArtifactGCStrategy]bool `json:"strategiesProcessed,omitempty" protobuf:"bytes,1,opt,name=strategiesProcessed"`
 
 	// have completed Pods been processed? (mapped by Pod name)
 	PodsRecouped map[string]bool `json:"podsRecouped,omitempty" protobuf:"bytes,2,opt,name=podsRecouped"`
+
+	// if this is true, we already checked to see if we need to do it and we don't
+	NotSpecified bool `json:"notSpecified,omitempty" protobuf:"varint,3,opt,name=notSpecified"`
 }
 
 func (gcStatus *ArtGCStatus) SetArtifactGCStrategyProcessed(strategy ArtifactGCStrategy, processed bool) {

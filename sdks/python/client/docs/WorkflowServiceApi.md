@@ -10602,6 +10602,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
             ),
             status=IoArgoprojWorkflowV1alpha1WorkflowStatus(
                 artifact_gc_status=IoArgoprojWorkflowV1alpha1ArtGCStatus(
+                    not_specified=True,
                     pods_recouped={
                         "key": True,
                     },
@@ -37790,6 +37791,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
             ),
             status=IoArgoprojWorkflowV1alpha1WorkflowStatus(
                 artifact_gc_status=IoArgoprojWorkflowV1alpha1ArtGCStatus(
+                    not_specified=True,
                     pods_recouped={
                         "key": True,
                     },

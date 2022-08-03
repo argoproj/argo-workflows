@@ -32,19 +32,26 @@ func (woc *wfOperationCtx) garbageCollectArtifacts(ctx context.Context) error {
 	if !artifactGCEnabled {
 		return nil
 	}
-	// only do Artifact GC if we have a Finalizer for it (i.e. Artifact GC is configured for this Workflow
-	// and there's work left to do for it)
-	if !slice.ContainsString(woc.wf.Finalizers, common.FinalizerArtifactGC) {
-		if woc.execWf.HasArtifactGC() { //todo: if this works, consider adding something to status to prevent re-checking
-			woc.log.Info("adding artifact GC finalizer")
-			finalizers := append(woc.wf.GetFinalizers(), common.FinalizerArtifactGC)
-			woc.wf.SetFinalizers(finalizers)
-		}
-		return nil
-	}
 
 	if woc.wf.Status.ArtifactGCStatus == nil {
 		woc.wf.Status.ArtifactGCStatus = &wfv1.ArtGCStatus{}
+	}
+
+	// only do Artifact GC if we have a Finalizer for it (i.e. Artifact GC is configured for this Workflow
+	// and there's work left to do for it)
+	if !slice.ContainsString(woc.wf.Finalizers, common.FinalizerArtifactGC) {
+		if woc.execWf.Status.ArtifactGCStatus.NotSpecified {
+			return nil // we already verified it's not required for this workflow
+		}
+		if woc.execWf.HasArtifactGC() {
+			woc.log.Info("adding artifact GC finalizer")
+			finalizers := append(woc.wf.GetFinalizers(), common.FinalizerArtifactGC)
+			woc.wf.SetFinalizers(finalizers)
+			woc.execWf.Status.ArtifactGCStatus.NotSpecified = false
+		} else {
+			woc.execWf.Status.ArtifactGCStatus.NotSpecified = true
+		}
+		return nil
 	}
 
 	// based on current state of Workflow, which Artifact GC Strategies can be processed now?
@@ -411,7 +418,7 @@ func (woc *wfOperationCtx) createArtifactGCPod(ctx context.Context, strategy wfv
 						Capabilities:             &corev1.Capabilities{Drop: []corev1.Capability{"ALL"}},
 						Privileged:               pointer.Bool(false),
 						RunAsNonRoot:             pointer.Bool(true),
-						RunAsUser:                pointer.Int64Ptr(8737), //todo: magic number
+						RunAsUser:                pointer.Int64Ptr(8737),
 						ReadOnlyRootFilesystem:   pointer.Bool(true),
 						AllowPrivilegeEscalation: pointer.Bool(false),
 					},

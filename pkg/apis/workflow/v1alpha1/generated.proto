@@ -50,6 +50,9 @@ message ArtGCStatus {
 
   // have completed Pods been processed? (mapped by Pod name)
   map<string, bool> podsRecouped = 2;
+
+  // if this is true, we already checked to see if we need to do it and we don't
+  optional bool notSpecified = 3;
 }
 
 // Artifact indicates an artifact to place at a specified path
