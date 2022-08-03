@@ -367,7 +367,12 @@ func (woc *wfOperationCtx) createArtifactGCPod(ctx context.Context, strategy wfv
 		if !found {
 			return nil, fmt.Errorf("can't find template with name %s???", templateName)
 		}
-		artifactLocations = append(artifactLocations, template.ArchiveLocation)
+
+		if template.ArchiveLocation == nil {
+			artifactLocations = append(artifactLocations, woc.artifactRepository.ToArtifactLocation())
+		} else {
+			artifactLocations = append(artifactLocations, template.ArchiveLocation)
+		}
 		for i := range artifacts {
 			artifactLocations = append(artifactLocations, &artifacts[i].ArtifactLocation)
 		}
