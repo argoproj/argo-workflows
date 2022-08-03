@@ -112,16 +112,16 @@ message ArtifactGC {
   optional string serviceAccountName = 3;
 }
 
-// ArtifactGCSStatus describes the result of the deletion
-message ArtifactGCSStatus {
-  // ArtifactResultsByNode maps Node name to result
-  map<string, ArtifactResultNodeStatus> artifactResultsByNode = 1;
-}
-
 // ArtifactGCSpec specifies the Artifacts that need to be deleted
 message ArtifactGCSpec {
   // ArtifactsByNode maps Node name to information pertaining to Artifacts on that Node
   map<string, ArtifactNodeSpec> artifactsByNode = 1;
+}
+
+// ArtifactGCStatus describes the result of the deletion
+message ArtifactGCStatus {
+  // ArtifactResultsByNode maps Node name to result
+  map<string, ArtifactResultNodeStatus> artifactResultsByNode = 1;
 }
 
 // ArtifactLocation describes a location for a single or multiple artifacts.
@@ -1763,7 +1763,7 @@ message WorkflowArtifactGCTask {
 
   optional ArtifactGCSpec spec = 2;
 
-  optional ArtifactGCSStatus status = 3;
+  optional ArtifactGCStatus status = 3;
 }
 
 // WorkflowArtifactGCTaskList is list of WorkflowArtifactGCTask resources

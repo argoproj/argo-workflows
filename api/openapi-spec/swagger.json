@@ -7379,19 +7379,6 @@
         }
       }
     },
-    "io.argoproj.workflow.v1alpha1.ArtifactGCSStatus": {
-      "description": "ArtifactGCSStatus describes the result of the deletion",
-      "type": "object",
-      "properties": {
-        "artifactResultsByNode": {
-          "description": "ArtifactResultsByNode maps Node name to result",
-          "type": "object",
-          "additionalProperties": {
-            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactResultNodeStatus"
-          }
-        }
-      }
-    },
     "io.argoproj.workflow.v1alpha1.ArtifactGCSpec": {
       "description": "ArtifactGCSpec specifies the Artifacts that need to be deleted",
       "type": "object",
@@ -7401,6 +7388,19 @@
           "type": "object",
           "additionalProperties": {
             "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactNodeSpec"
+          }
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.ArtifactGCStatus": {
+      "description": "ArtifactGCStatus describes the result of the deletion",
+      "type": "object",
+      "properties": {
+        "artifactResultsByNode": {
+          "description": "ArtifactResultsByNode maps Node name to result",
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactResultNodeStatus"
           }
         }
       }

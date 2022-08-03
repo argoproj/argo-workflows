@@ -82,7 +82,7 @@ func NewArtifactDeleteCommand() *cobra.Command {
 
 						task.Status.ArtifactResultsByNode[nodeName] = artResultNodeStatus
 					}
-					patch, err := json.Marshal(map[string]interface{}{"status": v1alpha1.ArtifactGCSStatus{ArtifactResultsByNode: task.Status.ArtifactResultsByNode}})
+					patch, err := json.Marshal(map[string]interface{}{"status": v1alpha1.ArtifactGCStatus{ArtifactResultsByNode: task.Status.ArtifactResultsByNode}})
 					if err != nil {
 						panic(err)
 					}
