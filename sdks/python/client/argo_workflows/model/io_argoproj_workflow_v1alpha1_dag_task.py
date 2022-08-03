@@ -188,7 +188,7 @@ class IoArgoprojWorkflowV1alpha1DAGTask(ModelNormal):
             hooks ({str: (IoArgoprojWorkflowV1alpha1LifecycleHook,)}): Hooks hold the lifecycle hook which is invoked at lifecycle of task, irrespective of the success, failure, or error status of the primary task. [optional]  # noqa: E501
             inline (IoArgoprojWorkflowV1alpha1Template): [optional]  # noqa: E501
             on_exit (str): OnExit is a template reference which is invoked at the end of the template, irrespective of the success, failure, or error of the primary template. DEPRECATED: Use Hooks[exit].Template instead.. [optional]  # noqa: E501
-            priority (int): Priority is used if controller is configured to process limited number of tasks in parallel. Tasks with higher priority are processed first.. [optional]  # noqa: E501
+            priority (int): Priority controls which task is scheduled first. Higher values will be processed first.. [optional]  # noqa: E501
             template (str): Name of template to execute. [optional]  # noqa: E501
             template_ref (IoArgoprojWorkflowV1alpha1TemplateRef): [optional]  # noqa: E501
             when (str): When is an expression in which the task should conditionally execute. [optional]  # noqa: E501
@@ -287,7 +287,7 @@ class IoArgoprojWorkflowV1alpha1DAGTask(ModelNormal):
             hooks ({str: (IoArgoprojWorkflowV1alpha1LifecycleHook,)}): Hooks hold the lifecycle hook which is invoked at lifecycle of task, irrespective of the success, failure, or error status of the primary task. [optional]  # noqa: E501
             inline (IoArgoprojWorkflowV1alpha1Template): [optional]  # noqa: E501
             on_exit (str): OnExit is a template reference which is invoked at the end of the template, irrespective of the success, failure, or error of the primary template. DEPRECATED: Use Hooks[exit].Template instead.. [optional]  # noqa: E501
-            priority (int): Priority is used if controller is configured to process limited number of tasks in parallel. Tasks with higher priority are processed first.. [optional]  # noqa: E501
+            priority (int): Priority controls which task is scheduled first. Higher values will be processed first.. [optional]  # noqa: E501
             template (str): Name of template to execute. [optional]  # noqa: E501
             template_ref (IoArgoprojWorkflowV1alpha1TemplateRef): [optional]  # noqa: E501
             when (str): When is an expression in which the task should conditionally execute. [optional]  # noqa: E501

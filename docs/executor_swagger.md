@@ -1135,7 +1135,7 @@ Valid time units are "ns", "us" (or "µs"), "ms", "s", "m", "h". |  |
 template, irrespective of the success, failure, or error of the
 primary template.
 DEPRECATED: Use Hooks[exit].Template instead. |  |
-| priority | int32 (formatted integer)| `int32` |  | | Priority is used if controller is configured to process limited number of tasks in parallel. Tasks with higher priority are processed first. |  |
+| priority | int32 (formatted integer)| `int32` |  | | Priority controls which task is scheduled first. Higher values will be processed first. |  |
 | template | string| `string` |  | | Name of template to execute |  |
 | templateRef | [TemplateRef](#template-ref)| `TemplateRef` |  | |  |  |
 | when | string| `string` |  | | When is an expression in which the task should conditionally execute |  |

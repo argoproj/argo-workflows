@@ -4435,7 +4435,7 @@
           "type": "string"
         },
         "priority": {
-          "description": "Priority is used if controller is configured to process limited number of tasks in parallel. Tasks with higher priority are processed first.",
+          "description": "Priority controls which task is scheduled first. Higher values will be processed first.",
           "type": "integer"
         },
         "template": {
@@ -7372,7 +7372,7 @@
           "type": "string"
         },
         "priority": {
-          "description": "Priority is used if controller is configured to process limited number of steps in parallel. Steps with higher priority are processed first.",
+          "description": "Priority controls which step is scheduled first. Higher values will be processed first.",
           "type": "integer"
         },
         "template": {
