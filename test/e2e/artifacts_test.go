@@ -64,10 +64,11 @@ type artifactState struct {
 
 func (s *ArtifactsSuite) TestArtifactGC() {
 
+	fmt.Printf("deletethis: got to TestArtifactGC")
 	s.Given().
 		WorkflowTemplate("@testdata/artifactgc/artgc-template.yaml").
 		When().
-		CreateWorkflowTemplates() //todo: need to delete this
+		CreateWorkflowTemplates() //todo: need to delete the WorkflowTemplate
 
 	for _, tt := range []struct {
 		workflowFile      string
@@ -78,7 +79,7 @@ func (s *ArtifactsSuite) TestArtifactGC() {
 			expectedArtifacts: []artifactState{
 				artifactState{"first-on-success-1", "my-bucket-2", true},
 				artifactState{"first-on-success-2", "my-bucket-3", true},
-				//artifactState{"first-no-deletion", "my-bucket-3", false}, //todo: put back once I have this back
+				artifactState{"first-no-deletion", "my-bucket-3", false},
 				artifactState{"second-on-deletion", "my-bucket-3", true},
 				artifactState{"second-on-success", "my-bucket-2", true},
 			},
@@ -97,10 +98,6 @@ func (s *ArtifactsSuite) TestArtifactGC() {
 				artifactState{"on-deletion", "my-bucket-2", true},
 			},
 		},
-		// todo: possible things to test for:
-		// failed workflow, with retries
-		// parameterization
-		// should we have one for artifactRepositoryRef? (may reqire a new ConfigMap)
 	} {
 		// for each test make sure that:
 		// 1. the finalizer gets added
@@ -122,13 +119,12 @@ func (s *ArtifactsSuite) TestArtifactGC() {
 			})
 
 		fmt.Println("deleting workflow; verifying that Artifact GC finalizer gets removed")
-		//todo: put back, temporarily commented out:
+
 		when.
 			DeleteWorkflow().
 			WaitForWorkflowDeletion()
 
-			//todo: put this back!!!
-		//when = when.RemoveFinalizers(false) // just in case - if the above test failed we need to forcibly remove the finalizer for Artifact GC
+		when = when.RemoveFinalizers(false) // just in case - if the above test failed we need to forcibly remove the finalizer for Artifact GC
 
 		then := when.Then()
 
