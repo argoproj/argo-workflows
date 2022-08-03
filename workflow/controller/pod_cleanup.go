@@ -1,9 +1,10 @@
 package controller
 
 import (
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	apiv1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/labels"
+
+	"github.com/argoproj/argo-workflows/v3/workflow/common"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/workflow/controller/indexes"

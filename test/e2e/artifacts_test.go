@@ -7,10 +7,11 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/argoproj/argo-workflows/v3/workflow/common"
 
 	"github.com/minio/minio-go/v7"
 
