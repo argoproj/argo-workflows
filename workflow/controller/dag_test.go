@@ -3569,8 +3569,8 @@ func TestRetryTypeDagTaskRunExitNodeAfterCompleted(t *testing.T) {
 	ctx := context.Background()
 	woc := newWorkflowOperationCtx(wf, controller)
 	// retryTypeDAGTask completed
-	printAChildren := woc.wf.Status.Nodes.FindByDisplayName("printA(0)")
-	assert.Equal(t, wfv1.NodeSucceeded, printAChildren.Phase)
+	printAChild := woc.wf.Status.Nodes.FindByDisplayName("printA(0)")
+	assert.Equal(t, wfv1.NodeSucceeded, printAChild.Phase)
 
 	// run ExitNode
 	woc.operate(ctx)

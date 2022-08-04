@@ -525,7 +525,7 @@ func (woc *wfOperationCtx) executeDAGTask(ctx context.Context, dagCtx *dagContex
 			}
 		}
 		if node.Completed() {
-			// if the node type is retry, and its last children is completed, it will be completed after woc.executeTemplate;
+			// if the node type is NodeTypeRetry, and its last child is completed, it will be completed after woc.executeTemplate;
 			hasOnExitNode, onExitNode, err := woc.runOnExitNode(ctx, task.GetExitHook(woc.execWf.Spec.Arguments), node, dagCtx.boundaryID, dagCtx.tmplCtx, "tasks."+taskName)
 			if hasOnExitNode && (onExitNode == nil || !onExitNode.Fulfilled() || err != nil) {
 				// The onExit node is either not complete or has errored out, return.
