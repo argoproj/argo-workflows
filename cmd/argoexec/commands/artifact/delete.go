@@ -20,7 +20,8 @@ import (
 )
 
 //todo: this is only temporarily in this branch - it's code being modified by Dillen Padhiar as part of a separate PR
-// committing so it can run against our CI
+// contained within here is his first draft
+// committing in this branch so it can run against our CI
 
 func NewArtifactDeleteCommand() *cobra.Command {
 	return &cobra.Command{
