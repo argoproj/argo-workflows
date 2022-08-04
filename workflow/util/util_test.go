@@ -1048,3 +1048,280 @@ func TestGetTemplateFromNode(t *testing.T) {
 		assert.Equal(t, tc.expectedTemplateName, actual)
 	}
 }
+
+var retryWorkflowWithFailedNodeHasChildrenNodes = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  annotations:
+    workflows.argoproj.io/pod-name-format: v1
+  creationTimestamp: "2022-08-04T08:35:10Z"
+  generateName: test-pipeline-
+  generation: 10
+  labels:
+    workflows.argoproj.io/completed: "true"
+    workflows.argoproj.io/phase: Failed
+    workflows.argoproj.io/resubmitted-from-workflow: test-pipeline-t5h77
+  managedFields:
+  - apiVersion: argoproj.io/v1alpha1
+    fieldsType: FieldsV1
+    fieldsV1:
+      f:metadata:
+        f:annotations:
+          .: {}
+          f:workflows.argoproj.io/pod-name-format: {}
+        f:generateName: {}
+        f:labels:
+          .: {}
+          f:workflows.argoproj.io/resubmitted-from-workflow: {}
+      f:spec: {}
+    manager: argo
+    operation: Update
+    time: "2022-08-04T08:35:10Z"
+  - apiVersion: argoproj.io/v1alpha1
+    fieldsType: FieldsV1
+    fieldsV1:
+      f:metadata:
+        f:labels:
+          f:workflows.argoproj.io/completed: {}
+          f:workflows.argoproj.io/phase: {}
+      f:status: {}
+    manager: workflow-controller
+    operation: Update
+    time: "2022-08-04T08:36:31Z"
+  name: test-pipeline-bnzwv
+  namespace: argo-system
+  resourceVersion: "2588589"
+  uid: 1ce08a8a-0d95-46a3-b7d8-b6e04a0e6136
+spec:
+  arguments: {}
+  entrypoint: test-pipeline-dag
+  templates:
+  - dag:
+      tasks:
+      - arguments: {}
+        name: t1
+        template: succeeded
+      - arguments: {}
+        depends: t1
+        name: t2
+        template: failed
+      - arguments: {}
+        depends: t2 || t2.Failed
+        name: t3
+        template: succeeded
+      - arguments: {}
+        depends: t3
+        name: t4-1
+        template: succeeded
+      - arguments: {}
+        depends: t3
+        name: t4-2
+        template: succeeded
+      - arguments: {}
+        depends: t3
+        name: t4-3
+        template: failed
+    inputs: {}
+    metadata: {}
+    name: test-pipeline-dag
+    outputs: {}
+  - container:
+      command:
+      - "true"
+      image: alpine
+      name: ""
+      resources: {}
+    inputs: {}
+    metadata: {}
+    name: succeeded
+    outputs: {}
+  - container:
+      command:
+      - "false"
+      image: alpine
+      name: ""
+      resources: {}
+    inputs: {}
+    metadata: {}
+    name: failed
+    outputs: {}
+status:
+  artifactRepositoryRef:
+    artifactRepository:
+      s3:
+        accessKeySecret:
+          key: accessKey
+          name: minio-secret
+        bucket: argo-artifact
+        endpoint: minio-service.middleware-system.svc:9000
+        insecure: true
+        secretKeySecret:
+          key: secretKey
+          name: minio-secret
+    default: true
+  conditions:
+  - status: "False"
+    type: PodRunning
+  - status: "True"
+    type: Completed
+  finishedAt: "2022-08-04T08:36:31Z"
+  nodes:
+    test-pipeline-bnzwv:
+      children:
+      - test-pipeline-bnzwv-929756297
+      displayName: test-pipeline-bnzwv
+      finishedAt: "2022-08-04T08:36:31Z"
+      id: test-pipeline-bnzwv
+      name: test-pipeline-bnzwv
+      outboundNodes:
+      - test-pipeline-bnzwv-748480356
+      - test-pipeline-bnzwv-798813213
+      - test-pipeline-bnzwv-782035594
+      phase: Failed
+      progress: 4/6
+      resourcesDuration:
+        cpu: 32
+        memory: 32
+      startedAt: "2022-08-04T08:35:10Z"
+      templateName: test-pipeline-dag
+      templateScope: local/test-pipeline-bnzwv
+      type: DAG
+    test-pipeline-bnzwv-748480356:
+      boundaryID: test-pipeline-bnzwv
+      displayName: t4-1
+      finishedAt: "2022-08-04T08:36:19Z"
+      hostNodeName: node2
+      id: test-pipeline-bnzwv-748480356
+      name: test-pipeline-bnzwv.t4-1
+      outputs:
+        exitCode: "0"
+      phase: Succeeded
+      progress: 1/1
+      resourcesDuration:
+        cpu: 5
+        memory: 5
+      startedAt: "2022-08-04T08:36:11Z"
+      templateName: succeeded
+      templateScope: local/test-pipeline-bnzwv
+      type: Pod
+    test-pipeline-bnzwv-782035594:
+      boundaryID: test-pipeline-bnzwv
+      displayName: t4-3
+      finishedAt: "2022-08-04T08:36:16Z"
+      hostNodeName: node1
+      id: test-pipeline-bnzwv-782035594
+      message: Error (exit code 1)
+      name: test-pipeline-bnzwv.t4-3
+      outputs:
+        exitCode: "1"
+      phase: Failed
+      progress: 0/1
+      resourcesDuration:
+        cpu: 4
+        memory: 4
+      startedAt: "2022-08-04T08:36:11Z"
+      templateName: failed
+      templateScope: local/test-pipeline-bnzwv
+      type: Pod
+    test-pipeline-bnzwv-798813213:
+      boundaryID: test-pipeline-bnzwv
+      displayName: t4-2
+      finishedAt: "2022-08-04T08:36:19Z"
+      hostNodeName: node1
+      id: test-pipeline-bnzwv-798813213
+      name: test-pipeline-bnzwv.t4-2
+      outputs:
+        exitCode: "0"
+      phase: Succeeded
+      progress: 1/1
+      resourcesDuration:
+        cpu: 8
+        memory: 8
+      startedAt: "2022-08-04T08:36:11Z"
+      templateName: succeeded
+      templateScope: local/test-pipeline-bnzwv
+      type: Pod
+    test-pipeline-bnzwv-879423440:
+      boundaryID: test-pipeline-bnzwv
+      children:
+      - test-pipeline-bnzwv-896201059
+      displayName: t2
+      finishedAt: "2022-08-04T08:35:39Z"
+      hostNodeName: node2
+      id: test-pipeline-bnzwv-879423440
+      message: Error (exit code 1)
+      name: test-pipeline-bnzwv.t2
+      outputs:
+        exitCode: "1"
+      phase: Failed
+      progress: 0/1
+      resourcesDuration:
+        cpu: 5
+        memory: 5
+      startedAt: "2022-08-04T08:35:30Z"
+      templateName: failed
+      templateScope: local/test-pipeline-bnzwv
+      type: Pod
+    test-pipeline-bnzwv-896201059:
+      boundaryID: test-pipeline-bnzwv
+      children:
+      - test-pipeline-bnzwv-748480356
+      - test-pipeline-bnzwv-798813213
+      - test-pipeline-bnzwv-782035594
+      displayName: t3
+      finishedAt: "2022-08-04T08:36:00Z"
+      hostNodeName: node2
+      id: test-pipeline-bnzwv-896201059
+      name: test-pipeline-bnzwv.t3
+      outputs:
+        exitCode: "0"
+      phase: Succeeded
+      progress: 1/1
+      resourcesDuration:
+        cpu: 5
+        memory: 5
+      startedAt: "2022-08-04T08:35:50Z"
+      templateName: succeeded
+      templateScope: local/test-pipeline-bnzwv
+      type: Pod
+    test-pipeline-bnzwv-929756297:
+      boundaryID: test-pipeline-bnzwv
+      children:
+      - test-pipeline-bnzwv-879423440
+      displayName: t1
+      finishedAt: "2022-08-04T08:35:18Z"
+      hostNodeName: node2
+      id: test-pipeline-bnzwv-929756297
+      name: test-pipeline-bnzwv.t1
+      outputs:
+        exitCode: "0"
+      phase: Succeeded
+      progress: 1/1
+      resourcesDuration:
+        cpu: 5
+        memory: 5
+      startedAt: "2022-08-04T08:35:10Z"
+      templateName: succeeded
+      templateScope: local/test-pipeline-bnzwv
+      type: Pod
+  phase: Failed
+  progress: 4/6
+  resourcesDuration:
+    cpu: 32
+    memory: 32
+  startedAt: "2022-08-04T08:35:10Z"
+`
+
+func TestRetryWorkflowWithFailedNodeHasChildrenNodes(t *testing.T) {
+	ctx := context.Background()
+	wf := wfv1.MustUnmarshalWorkflow(retryWorkflowWithFailedNodeHasChildrenNodes)
+
+	wf, _, err := FormulateRetryWorkflow(ctx, wf, false, "", nil)
+	assert.NoError(t, err)
+	assert.Equal(t, 2, len(wf.Status.Nodes))
+	t2Node := wf.Status.Nodes.FindByDisplayName("t2")
+	assert.Nil(t, t2Node)
+	t3Node := wf.Status.Nodes.FindByDisplayName("t3")
+	assert.Nil(t, t3Node)
+}

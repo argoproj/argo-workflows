@@ -745,6 +745,15 @@ func convertNodeID(newWf *wfv1.Workflow, regex *regexp.Regexp, oldNodeID string,
 	return newWf.NodeID(newNodeName)
 }
 
+func getDescendantNodes(wf *wfv1.Workflow, node wfv1.NodeStatus) []string {
+	var descendantNodes []string
+	descendantNodes = append(descendantNodes, node.Children...)
+	for _, child := range node.Children {
+		descendantNodes = append(descendantNodes, getDescendantNodes(wf, wf.Status.Nodes[child])...)
+	}
+	return descendantNodes
+}
+
 // FormulateRetryWorkflow formulates a previous workflow to be retried, deleting all failed steps as well as the onExit node (and children)
 func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSuccessful bool, nodeFieldSelector string, parameters []string) (*wfv1.Workflow, []string, error) {
 
@@ -836,6 +845,10 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 				continue
 			} else {
 				deletedNodes[node.ID] = true
+				descendantNodes := getDescendantNodes(wf, node)
+				for _, descendantNode := range descendantNodes {
+					deletedNodes[descendantNode] = true
+				}
 			}
 			// do not add this status to the node. pretend as if this node never existed.
 		default:
@@ -857,6 +870,11 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 
 	if len(deletedNodes) > 0 {
 		for _, node := range newWF.Status.Nodes {
+			if deletedNodes[node.ID] {
+				delete(newWF.Status.Nodes, node.ID)
+				continue
+			}
+
 			var newChildren []string
 			for _, child := range node.Children {
 				if !deletedNodes[child] {
