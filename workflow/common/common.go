@@ -21,7 +21,7 @@ const (
 	AnnotationKeyNodeID = workflow.WorkflowFullName + "/node-id"
 	// AnnotationKeyNodeName is the pod metadata annotation key containing the workflow node name
 	AnnotationKeyNodeName = workflow.WorkflowFullName + "/node-name"
-	// AnnotationKeyNodeName is the node's type
+	// AnnotationKeyNodeType is the node's type
 	AnnotationKeyNodeType = workflow.WorkflowFullName + "/node-type"
 	// AnnotationKeyNodeStartTime is the node's start timestamp.
 	AnnotationKeyNodeStartTime = workflow.WorkflowFullName + "/node-start-time"
