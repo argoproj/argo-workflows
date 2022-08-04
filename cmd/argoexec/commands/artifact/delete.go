@@ -32,22 +32,29 @@ func NewArtifactDeleteCommand() *cobra.Command {
 
 				config, err := clientConfig.ClientConfig()
 				workflowInterface := workflow.NewForConfigOrDie(config)
-				checkErr(err)
+				if err != nil {
+					return err
+				}
 
 				artifactGCTaskInterface := workflowInterface.ArgoprojV1alpha1().WorkflowArtifactGCTasks(namespace)
 				labelSelector := fmt.Sprintf("%s = %s", common.LabelKeyArtifactGCPodName, podName)
 
 				taskList, err := artifactGCTaskInterface.List(context.Background(), metav1.ListOptions{LabelSelector: labelSelector})
-				checkErr(err)
+				if err != nil {
+					return err
+				}
 
-				deleteArtifacts(taskList, cmd, artifactGCTaskInterface)
+				err = deleteArtifacts(taskList, cmd, artifactGCTaskInterface)
+				if err != nil {
+					return err
+				}
 			}
 			return nil
 		},
 	}
 }
 
-func deleteArtifacts(taskList *v1alpha1.WorkflowArtifactGCTaskList, cmd *cobra.Command, artifactGCTaskInterface wfv1alpha1.WorkflowArtifactGCTaskInterface) {
+func deleteArtifacts(taskList *v1alpha1.WorkflowArtifactGCTaskList, cmd *cobra.Command, artifactGCTaskInterface wfv1alpha1.WorkflowArtifactGCTaskInterface) error {
 	for _, task := range taskList.Items {
 		task.Status.ArtifactResultsByNode = make(map[string]v1alpha1.ArtifactResultNodeStatus)
 		for nodeName, artifactNodeSpec := range task.Spec.ArtifactsByNode {
@@ -66,7 +73,9 @@ func deleteArtifacts(taskList *v1alpha1.WorkflowArtifactGCTaskList, cmd *cobra.C
 				}
 
 				drv, err := executor.NewDriver(cmd.Context(), &artifact, resources)
-				checkErr(err)
+				if err != nil {
+					return err
+				}
 
 				err = drv.Delete(&artifact)
 				if err != nil {
@@ -80,10 +89,16 @@ func deleteArtifacts(taskList *v1alpha1.WorkflowArtifactGCTaskList, cmd *cobra.C
 			task.Status.ArtifactResultsByNode[nodeName] = artResultNodeStatus
 		}
 		patch, err := json.Marshal(map[string]interface{}{"status": v1alpha1.ArtifactGCSStatus{ArtifactResultsByNode: task.Status.ArtifactResultsByNode}})
-		checkErr(err)
+		if err != nil {
+			return err
+		}
 		_, err = artifactGCTaskInterface.Patch(context.Background(), task.Name, types.MergePatchType, patch, metav1.PatchOptions{}, "status")
-		checkErr(err)
+		if err != nil {
+			return err
+		}
 	}
+
+	return nil
 }
 
 type resources struct {
@@ -91,7 +106,7 @@ type resources struct {
 }
 
 func (r resources) GetSecret(ctx context.Context, name, key string) (string, error) {
-	// path := filepath.Join("/Users/dpadhiar/go/src/github.com/argoproj/argo-workflows", name, key)
+
 	path := filepath.Join(common.SecretVolMountPath, name, key)
 	if file, ok := r.Files[path]; ok {
 		return string(file), nil
