@@ -9,14 +9,15 @@ import (
 
 	"github.com/spf13/cobra"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
+
 	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	workflow "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
 	wfv1alpha1 "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
 	executor "github.com/argoproj/argo-workflows/v3/workflow/artifacts"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
 )
 
 func NewArtifactDeleteCommand() *cobra.Command {
@@ -44,7 +45,7 @@ func NewArtifactDeleteCommand() *cobra.Command {
 					return err
 				}
 
-				err = deleteArtifacts(taskList, cmd, artifactGCTaskInterface)
+				err = deleteArtifacts(taskList, cmd.Context(), artifactGCTaskInterface)
 				if err != nil {
 					return err
 				}
@@ -54,7 +55,7 @@ func NewArtifactDeleteCommand() *cobra.Command {
 	}
 }
 
-func deleteArtifacts(taskList *v1alpha1.WorkflowArtifactGCTaskList, cmd *cobra.Command, artifactGCTaskInterface wfv1alpha1.WorkflowArtifactGCTaskInterface) error {
+func deleteArtifacts(taskList *v1alpha1.WorkflowArtifactGCTaskList, ctx context.Context, artifactGCTaskInterface wfv1alpha1.WorkflowArtifactGCTaskInterface) error {
 	for _, task := range taskList.Items {
 		task.Status.ArtifactResultsByNode = make(map[string]v1alpha1.ArtifactResultNodeStatus)
 		for nodeName, artifactNodeSpec := range task.Spec.ArtifactsByNode {
@@ -69,10 +70,13 @@ func deleteArtifacts(taskList *v1alpha1.WorkflowArtifactGCTaskList, cmd *cobra.C
 			resources.Files = make(map[string][]byte) // same resources for every artifact
 			for _, artifact := range artifactNodeSpec.Artifacts {
 				if archiveLocation != nil {
-					artifact.Relocate(archiveLocation)
+					err := artifact.Relocate(archiveLocation)
+					if err != nil {
+						return err
+					}
 				}
 
-				drv, err := executor.NewDriver(cmd.Context(), &artifact, resources)
+				drv, err := executor.NewDriver(ctx, &artifact, resources)
 				if err != nil {
 					return err
 				}
@@ -113,8 +117,12 @@ func (r resources) GetSecret(ctx context.Context, name, key string) (string, err
 	}
 
 	file, err := os.ReadFile(path)
-	r.Files[path] = file
-	return string(file), err
+	if err != nil {
+		return "", err
+	} else {
+		r.Files[path] = file
+		return string(file), err
+	}
 }
 
 func (r resources) GetConfigMapKey(ctx context.Context, name, key string) (string, error) {
