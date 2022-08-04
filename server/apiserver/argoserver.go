@@ -66,6 +66,7 @@ import (
 	limiter "github.com/sethvargo/go-limiter"
 	"github.com/sethvargo/go-limiter/httplimit"
 	"github.com/sethvargo/go-limiter/memorystore"
+	"github.com/golang/protobuf/proto"
 )
 
 var MaxGRPCMessageSize int
@@ -351,6 +352,11 @@ func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServe
 	gwmux := runtime.NewServeMux(gwMuxOpts,
 		runtime.WithIncomingHeaderMatcher(func(key string) (string, bool) { return key, true }),
 		runtime.WithProtoErrorHandler(runtime.DefaultHTTPProtoErrorHandler),
+		runtime.WithForwardResponseOption(func(ctx context.Context, w http.ResponseWriter, p proto.Message) error {
+			//http://nginx.org/en/docs/http/ngx_http_proxy_module.html#proxy_buffering
+			w.Header().Set("X-Accel-Buffering", "no")
+			return nil
+		}),				     
 	)
 	mustRegisterGWHandler(infopkg.RegisterInfoServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
 	mustRegisterGWHandler(eventpkg.RegisterEventServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
