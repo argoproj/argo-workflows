@@ -87,13 +87,13 @@ Artifacts are packaged as Tarballs and gzipped by default. You may customize thi
 <... snipped ...>
 ```
 
-# Artifact Garbage Collection
+## Artifact Garbage Collection
 
 As of version 3.4 you can configure your Workflow to automatically delete Artifacts that you don't need (presuming you're using S3 - other storage engines still need to be implemented).
 
 Artifacts can be deleted `OnWorkflowCompletion` or `OnWorkflowDeletion`. You can specify your Garbage Collection strategy on both the Workflow level and the Artifact level, so for example, you may have temporary artifacts that can be deleted right away but a final output that should be persisted:
 
-```
+```yaml
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
@@ -127,15 +127,15 @@ spec:
               strategy: Never   # optional override for an Artifact
 ```
 
-## Artifact Naming
+### Artifact Naming
 
 Consider parameterizing your S3 keys by {{workflow.uid}}, etc (as shown in the example above) if there's a possibility that you could have concurrent Workflows of the same spec. This would be to avoid a scenario in which the artifact from one Workflow is being deleted while the same S3 key is being generated for a different Workflow.
 
-## Service Accounts and Annotations
+### Service Accounts and Annotations
 
 Does your S3 bucket require you to run with a special Service Account or IAM Role Annotation? You can either use the same ones you use for creating artifacts or generate new ones that are specific for deletion permission. Generally users will probably just have a single Service Account or IAM Role to apply to all artifacts for the Workflow, but you can also customize on the artifact level if you need that:
 
-```
+```yaml
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
@@ -186,11 +186,11 @@ spec:
 
 If you do supply your own Service Account you will need to create a RoleBinding that binds it with the new `artifactgc` Role.
 
-## What happens if Garbage Collection fails?
+### What happens if Garbage Collection fails?
 
 If deletion of the artifact fails for some reason (other than the Artifact already have been deleted which is not considered a failure), the Workflow's Status will be marked with a new Condition to indicate "Artifact GC Failure", a Kubernetes Event will be issued, and the Argo Server UI will also indicate the failure. In that case, if the user needs to delete the Workflow and its child CRD objects, the user will need to patch the Workflow to remove the finalizer preventing the deletion:
 
-```
+```yaml
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
   finalizers:
@@ -198,7 +198,7 @@ kind: Workflow
 ```
 
 The finalizer can be deleted by doing:
-```
+```sh
 kubectl patch workflow my-wf \
     --type json \
     --patch='[ { "op": "remove", "path": "/metadata/finalizers" } ]'
