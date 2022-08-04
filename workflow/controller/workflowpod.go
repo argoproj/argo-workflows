@@ -13,6 +13,7 @@ import (
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/strategicpatch"
+	"k8s.io/utils/pointer"
 
 	"github.com/argoproj/argo-workflows/v3/errors"
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
@@ -505,13 +506,13 @@ func substitutePodParams(pod *apiv1.Pod, globalParams common.Parameters, tmpl *w
 
 func (woc *wfOperationCtx) newInitContainer(tmpl *wfv1.Template) apiv1.Container {
 	ctr := woc.newExecContainer(common.InitContainerName, tmpl)
-	ctr.Command = []string{"argoexec", "init", "--loglevel", getExecutorLogLevel()}
+	ctr.Command = []string{"argoexec", "init", "--loglevel", getExecutorLogLevel(), "--log-format", woc.controller.executorLogFormat()}
 	return *ctr
 }
 
 func (woc *wfOperationCtx) newWaitContainer(tmpl *wfv1.Template) *apiv1.Container {
 	ctr := woc.newExecContainer(common.WaitContainerName, tmpl)
-	ctr.Command = []string{"argoexec", "wait", "--loglevel", getExecutorLogLevel()}
+	ctr.Command = []string{"argoexec", "wait", "--loglevel", getExecutorLogLevel(), "--log-format", woc.controller.executorLogFormat()}
 	return ctr
 }
 
@@ -593,6 +594,20 @@ func (woc *wfOperationCtx) newExecContainer(name string, tmpl *wfv1.Template) *a
 		Env:             woc.createEnvVars(),
 		Resources:       woc.controller.Config.GetExecutor().Resources,
 		SecurityContext: woc.controller.Config.GetExecutor().SecurityContext,
+	}
+	// lock down resource pods by default
+	if tmpl.GetType() == wfv1.TemplateTypeResource && exec.SecurityContext == nil {
+		exec.SecurityContext = &apiv1.SecurityContext{
+			Capabilities: &apiv1.Capabilities{
+				Drop: []apiv1.Capability{"ALL"},
+			},
+			RunAsNonRoot:             pointer.BoolPtr(true),
+			RunAsUser:                pointer.Int64Ptr(8737),
+			AllowPrivilegeEscalation: pointer.BoolPtr(false),
+		}
+		if exec.Name != common.InitContainerName && exec.Name != common.WaitContainerName {
+			exec.SecurityContext.ReadOnlyRootFilesystem = pointer.BoolPtr(true)
+		}
 	}
 	if woc.controller.Config.KubeConfig != nil {
 		path := woc.controller.Config.KubeConfig.MountPath
@@ -704,7 +719,7 @@ func addSchedulingConstraints(pod *apiv1.Pod, wfSpec *wfv1.WorkflowSpec, tmpl *w
 // These are either specified in the workflow.spec.volumes or the workflow.spec.volumeClaimTemplate section
 func addVolumeReferences(pod *apiv1.Pod, vols []apiv1.Volume, tmpl *wfv1.Template, pvcs []apiv1.Volume) error {
 	switch tmpl.GetType() {
-	case wfv1.TemplateTypeContainer, wfv1.TemplateTypeContainerSet, wfv1.TemplateTypeScript, wfv1.TemplateTypeData:
+	case wfv1.TemplateTypeContainer, wfv1.TemplateTypeContainerSet, wfv1.TemplateTypeScript, wfv1.TemplateTypeResource, wfv1.TemplateTypeData:
 	default:
 		return nil
 	}
@@ -1145,6 +1160,8 @@ func createArchiveLocationSecret(tmpl *wfv1.Template, volMap map[string]apiv1.Vo
 		createSecretVal(volMap, httpArtRepo.Auth.OAuth2.ClientIDSecret, uniqueKeyMap)
 		createSecretVal(volMap, httpArtRepo.Auth.OAuth2.ClientSecretSecret, uniqueKeyMap)
 		createSecretVal(volMap, httpArtRepo.Auth.OAuth2.TokenURLSecret, uniqueKeyMap)
+	} else if azure := tmpl.ArchiveLocation.Azure; azure != nil {
+		createSecretVal(volMap, azure.AccountKeySecret, uniqueKeyMap)
 	}
 }
 
@@ -1175,6 +1192,8 @@ func createSecretVolume(volMap map[string]apiv1.Volume, art wfv1.Artifact, keyMa
 		createSecretVal(volMap, art.HTTP.Auth.OAuth2.ClientIDSecret, keyMap)
 		createSecretVal(volMap, art.HTTP.Auth.OAuth2.ClientSecretSecret, keyMap)
 		createSecretVal(volMap, art.HTTP.Auth.OAuth2.TokenURLSecret, keyMap)
+	} else if art.Azure != nil {
+		createSecretVal(volMap, art.Azure.AccountKeySecret, keyMap)
 	}
 }
 

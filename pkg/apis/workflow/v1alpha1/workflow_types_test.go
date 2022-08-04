@@ -338,6 +338,15 @@ func TestArtifactoryArtifact(t *testing.T) {
 	assert.Equal(t, "/my-key", key, "has leading slash")
 }
 
+func TestAzureArtifact(t *testing.T) {
+	a := &AzureArtifact{Blob: "my-blob", AzureBlobContainer: AzureBlobContainer{Container: "my-container"}}
+	assert.True(t, a.HasLocation())
+	assert.NoError(t, a.SetKey("my-blob"))
+	key, err := a.GetKey()
+	assert.NoError(t, err)
+	assert.Equal(t, "my-blob", key)
+}
+
 func TestGitArtifact(t *testing.T) {
 	a := &GitArtifact{Repo: "my-repo"}
 	assert.True(t, a.HasLocation())
@@ -437,6 +446,9 @@ func TestArtifactLocation_Get(t *testing.T) {
 	assert.Nil(t, v)
 	assert.EqualError(t, err, "You need to configure artifact storage. More information on how to do this can be found in the docs: https://argoproj.github.io/argo-workflows/configure-artifact-repository/")
 
+	v, _ = (&ArtifactLocation{Azure: &AzureArtifact{}}).Get()
+	assert.IsType(t, &AzureArtifact{}, v)
+
 	v, _ = (&ArtifactLocation{Git: &GitArtifact{}}).Get()
 	assert.IsType(t, &GitArtifact{}, v)
 
@@ -469,6 +481,11 @@ func TestArtifactLocation_SetType(t *testing.T) {
 		assert.NoError(t, l.SetType(&ArtifactoryArtifact{}))
 		assert.NotNil(t, l.Artifactory)
 	})
+	t.Run("Azure", func(t *testing.T) {
+		l := &ArtifactLocation{}
+		assert.NoError(t, l.SetType(&AzureArtifact{}))
+		assert.NotNil(t, l.Azure)
+	})
 	t.Run("GCS", func(t *testing.T) {
 		l := &ArtifactLocation{}
 		assert.NoError(t, l.SetType(&GCSArtifact{}))
@@ -499,6 +516,11 @@ func TestArtifactLocation_SetType(t *testing.T) {
 		assert.NoError(t, l.SetType(&S3Artifact{}))
 		assert.NotNil(t, l.S3)
 	})
+	t.Run("Azure", func(t *testing.T) {
+		l := &ArtifactLocation{}
+		assert.NoError(t, l.SetType(&AzureArtifact{}))
+		assert.NotNil(t, l.Azure)
+	})
 }
 
 func TestArtifactLocation_Key(t *testing.T) {
@@ -524,6 +546,12 @@ func TestArtifactLocation_Key(t *testing.T) {
 		err := l.AppendToKey("my-file")
 		assert.NoError(t, err)
 		assert.Equal(t, "http://my-host/my-dir/my-file?a=1", l.Artifactory.URL, "appends to Artifactory path")
+	})
+	t.Run("Azure", func(t *testing.T) {
+		l := &ArtifactLocation{Azure: &AzureArtifact{Blob: "my-dir"}}
+		err := l.AppendToKey("my-file")
+		assert.NoError(t, err)
+		assert.Equal(t, "my-dir/my-file", l.Azure.Blob, "appends to Azure Blob name")
 	})
 	t.Run("Git", func(t *testing.T) {
 		l := &ArtifactLocation{Git: &GitArtifact{}}

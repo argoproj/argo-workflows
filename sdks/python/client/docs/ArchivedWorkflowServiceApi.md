@@ -461,6 +461,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
         memoized=True,
         name="name_example",
         namespace="namespace_example",
+        parameters=[
+            "parameters_example",
+        ],
         uid="uid_example",
     ) # IoArgoprojWorkflowV1alpha1ResubmitArchivedWorkflowRequest | 
 
@@ -544,6 +547,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
         name="name_example",
         namespace="namespace_example",
         node_field_selector="node_field_selector_example",
+        parameters=[
+            "parameters_example",
+        ],
         restart_successful=True,
         uid="uid_example",
     ) # IoArgoprojWorkflowV1alpha1RetryArchivedWorkflowRequest | 

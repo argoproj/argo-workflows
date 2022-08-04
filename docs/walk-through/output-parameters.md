@@ -1,6 +1,6 @@
 # Output Parameters
 
-Output parameters provide a general mechanism to use the result of a step as a parameter rather than as an artifact. This allows you to use the result from any type of step, not just a `script`, for conditional tests, loops, and arguments. Output parameters work similarly to `script result` except that the value of the output parameter is set to the contents of a generated file rather than the contents of `stdout`.
+Output parameters provide a general mechanism to use the result of a step as a parameter (and not just as an artifact). This allows you to use the result from any type of step, not just a `script`, for conditional tests, loops, and arguments. Output parameters work similarly to `script result` except that the value of the output parameter is set to the contents of a generated file rather than the contents of `stdout`.
 
 ```yaml
 apiVersion: argoproj.io/v1alpha1

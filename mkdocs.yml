@@ -104,6 +104,7 @@ nav:
           - cron-backfill.md
           - workflow-of-workflows.md
           - workflow-notifications.md
+          - work-avoidance.md
       - UI Features:
           - artifact-visualization.md
           - widgets.md
