@@ -144,7 +144,9 @@ spec:
   entrypoint: main
   artifactGC:
     strategy: OnWorkflowDeletion 
+    ##############################################################################################
     #    Workflow Level Service Account and Metadata
+    ##############################################################################################
     serviceAccountName: my-sa
     podMetadata:
       annotations:
@@ -167,7 +169,9 @@ spec:
             s3:
               key: temporary-artifact-{{workflow.uid}}.txt
             artifactGC:
+              ####################################################################################
               #    Optional override capability
+              ####################################################################################
               serviceAccountName: artifact-specific-sa
               podMetadata:
                 annotations:
