@@ -184,11 +184,11 @@ spec:
               strategy: Never
 ```
 
-If you do supply your own ServiceAccount you will need to create a RoleBinding that binds it with the new "artifactgc" Role.
+If you do supply your own Service Account you will need to create a RoleBinding that binds it with the new `artifactgc` Role.
 
 ## What happens if Garbage Collection fails?
 
-If deletion of the artifact fails for some reason (other than the Artifact already have been deleted which is not considererd a failure), the Workflow's Status will be marked with a new Condition to indicate "Artifact GC Failure", a Kubernetes Event will be issued, and the Argo Server UI will also indicate the failure. In that case, if the user needs to delete the Workflow and its child CRD objects, the user will need to patch the Workflow to remove the finalizer preventing the deletion:
+If deletion of the artifact fails for some reason (other than the Artifact already have been deleted which is not considered a failure), the Workflow's Status will be marked with a new Condition to indicate "Artifact GC Failure", a Kubernetes Event will be issued, and the Argo Server UI will also indicate the failure. In that case, if the user needs to delete the Workflow and its child CRD objects, the user will need to patch the Workflow to remove the finalizer preventing the deletion:
 
 ```
 apiVersion: argoproj.io/v1alpha1
