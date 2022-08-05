@@ -198,6 +198,7 @@ kind: Workflow
 ```
 
 The finalizer can be deleted by doing:
+
 ```sh
 kubectl patch workflow my-wf \
     --type json \
