@@ -40,12 +40,7 @@ func NewArtifactDeleteCommand() *cobra.Command {
 				artifactGCTaskInterface := workflowInterface.ArgoprojV1alpha1().WorkflowArtifactGCTasks(namespace)
 				labelSelector := fmt.Sprintf("%s = %s", common.LabelKeyArtifactGCPodName, podName)
 
-				taskList, err := artifactGCTaskInterface.List(context.Background(), metav1.ListOptions{LabelSelector: labelSelector})
-				if err != nil {
-					return err
-				}
-
-				err = deleteArtifacts(taskList, cmd.Context(), artifactGCTaskInterface)
+				err = deleteArtifacts(labelSelector, cmd.Context(), artifactGCTaskInterface)
 				if err != nil {
 					return err
 				}
@@ -55,7 +50,13 @@ func NewArtifactDeleteCommand() *cobra.Command {
 	}
 }
 
-func deleteArtifacts(taskList *v1alpha1.WorkflowArtifactGCTaskList, ctx context.Context, artifactGCTaskInterface wfv1alpha1.WorkflowArtifactGCTaskInterface) error {
+func deleteArtifacts(labelSelector string, ctx context.Context, artifactGCTaskInterface wfv1alpha1.WorkflowArtifactGCTaskInterface) error {
+
+	taskList, err := artifactGCTaskInterface.List(context.Background(), metav1.ListOptions{LabelSelector: labelSelector})
+	if err != nil {
+		return err
+	}
+
 	for _, task := range taskList.Items {
 		task.Status.ArtifactResultsByNode = make(map[string]v1alpha1.ArtifactResultNodeStatus)
 		for nodeName, artifactNodeSpec := range task.Spec.ArtifactsByNode {
