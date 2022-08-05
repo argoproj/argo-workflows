@@ -2,8 +2,8 @@
 
 You have two options:
 
-1. If you're using VSCode, you use the Dev-Container. This takes about 7 minutes. Pre-commit checks take about 4 minutes to run.
-1. Install the requirements on your computer manually. This takes about 1 hour. Pre-commit checks take about 3 minutes to run.
+1. If you're using VSCode, you use the [Dev-Container](/argo-workflows/running-locally/#development-container). This takes about 7 minutes. 
+1. Install the [requirements](/argo-workflows/running-locally/#requirements) on your computer manually. This takes about 1 hour. 
 
 ## Git Clone
 
