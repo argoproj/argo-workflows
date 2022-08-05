@@ -3863,25 +3863,25 @@
 <h2 id="proposal-specifics">Proposal Specifics<a class="headerlink" href="#proposal-specifics" title="Permanent link">&para;</a></h2>
 <h3 id="workflow-spec-changes">Workflow Spec changes<a class="headerlink" href="#workflow-spec-changes" title="Permanent link">&para;</a></h3>
 <ol>
-<li><code>WorkflowSpec</code> has an <code>ArtifactGCStrategy</code>, which is the default for all artifacts: can be <code>OnWorkflowCompletion</code>, <code>OnWorkflowDeletion</code>, <code>OnWorkflowSuccess</code>, <code>OnWorkflowFailure</code>, or <code>Never</code></li>
-<li>Artifact has an <code>ArtifactGCStrategy</code> (only really applies to Output Artifacts), which can override the setting for <code>WorkflowSpec</code></li>
-<li><code>WorkflowSpec</code> can add specification of Service Account and/or Annotations to be used for the Garbage Collection pods, to enable their access to the storage. One Service Account and/or Annotation should be specified to apply to all artifacts.</li>
+<li><code>WorkflowSpec</code> has an <code>ArtifactGC</code> structure, which consists of an <code>ArtifactGCStrategy</code>, as well as the optional designation of a <code>ServiceAccount</code> and Pod metadata (labels and annotations) to be used by the Pod doing the deletion. The <code>ArtifactGCStrategy</code> can be set to <code>OnWorkflowCompletion</code>, <code>OnWorkflowDeletion</code>, <code>OnWorkflowSuccess</code>, <code>OnWorkflowFailure</code>, or <code>Never</code></li>
+<li>Artifact has an <code>ArtifactGC</code> section which can be used to override the Workflow level.</li>
 </ol>
 <h3 id="workflow-status-changes">Workflow Status changes<a class="headerlink" href="#workflow-status-changes" title="Permanent link">&para;</a></h3>
 <ol>
 <li>Artifact has a boolean <code>Deleted</code> flag</li>
 <li><code>WorkflowStatus.Conditions</code> can be set to <code>ArtifactGCError</code></li>
+<li><code>WorkflowStatus</code> can include a new field <code>ArtGCStatus</code> which holds additional information to keep track of the state of Artifact Garbage Collection.</li>
 </ol>
 <h3 id="how-it-will-work">How it will work<a class="headerlink" href="#how-it-will-work" title="Permanent link">&para;</a></h3>
 <p>For each <code>ArtifactGCStrategy</code> the Controller will execute one Pod that runs in the user's namespace and deletes all artifacts pertaining to that strategy.</p>
 <p><img alt="Option 2 Flow" src="../../assets/artifact-gc-option-2-flow.jpg" /></p>
 <p>Since <code>OnWorkflowSuccess</code> happens at the same time as <code>OnWorkflowCompletion</code> and <code>OnWorkflowFailure</code> also happens at the same time as <code>OnWorkflowCompletion</code>, we can consider consolidating these GC Strategies together.</p>
-<p>We will use one or more <code>WorkflowTaskSets</code> to specify the Templates (containing Artifacts), which the GC Pod will read and then write Status to (note individual artifacts have individual statuses). The Controller will read the Status and reflect that in the Workflow Status. The Controller will deem the <code>WorkflowTaskSets</code> ready to read once the Pod has completed (in success or failure).</p>
-<p>Once the GC Pod has completed and the Workflow status has been persisted, assuming the Pod completed with Success, the Controller can delete the <code>WorkflowTaskSets</code>, which will cause the GC Pod to also get deleted as it will be "owned" by the <code>WorkflowTaskSets</code>.</p>
+<p>We will have a new CRD type called <code>ArtifactGCTask</code> and use one or more of them to specify the Artifacts which the GC Pod will read and then write Status to (note individual artifacts have individual statuses). The Controller will read the Status and reflect that in the Workflow Status. The Controller will deem the <code>ArtifactGCTasks</code> ready to read once the Pod has completed (in success or failure).</p>
+<p>Once the GC Pod has completed and the Workflow status has been persisted, assuming the Pod completed with Success, the Controller can delete the <code>ArtifactGCTasks</code>, which will cause the GC Pod to also get deleted as it will be "owned" by the <code>ArtifactGCTasks</code>.</p>
 <p>The Workflow will have a Finalizer on it to prevent it from being deleted until Artifact GC has occurred. Once all deletions for all GC Strategies have occurred, the Controller will remove the Finalizer.</p>
 <h3 id="failures">Failures<a class="headerlink" href="#failures" title="Permanent link">&para;</a></h3>
 <p>If a deletion fails, the Pod will retry a few times through exponential back off. Note: it will not be considered a failure if the key does not exist - the principal of idempotence will allow this (i.e. if a Pod were to get evicted and then re-run it should be okay if some artifacts were previously deleted).</p>
-<p>Once it retries a few times, if it didn't succeed, it will end in a "Failed" state. The user will manually need to delete the <code>WorkflowTaskSets</code> (which will delete the GC Pod), and remove the Finalizer on the Workflow.</p>
+<p>Once it retries a few times, if it didn't succeed, it will end in a "Failed" state. The user will manually need to delete the <code>ArtifactGCTasks</code> (which will delete the GC Pod), and remove the Finalizer on the Workflow.</p>
 <p>The Failure will be reflected in both the Workflow Conditions as well as as a Kubernetes Event (and the Artifacts that failed will have "Deleted"=false).</p>
 <h3 id="alternatives-considered">Alternatives Considered<a class="headerlink" href="#alternatives-considered" title="Permanent link">&para;</a></h3>
 <p>For reference, these <a href="../../assets/artifact-gc-proposal.pptx">slides</a> were presented to the Argo Contributor meeting on 7/12/22 which go through some of the alternative options that were weighed. These alternatives are explained below:</p>
@@ -3889,7 +3889,7 @@
 <p>The <a href="https://github.com/argoproj/argo-workflows/pull/8530">POC</a> that was done, which uses just one Pod to delete each Artifact, was considered as an alternative for MVP (Option 1 from the slides).</p>
 <p>This option has these benefits:</p>
 <ul>
-<li>simpler in that the Pod doesn't require any additional Object to report status (e.g. <code>WorkflowTaskSet</code>) because it simply succeeds or fails based on its exit code (whereas in Option 2 the Pod needs to report individual failure statuses for each artifact)</li>
+<li>simpler in that the Pod doesn't require any additional Object to report status (e.g. <code>ArtifactGCTask</code>) because it simply succeeds or fails based on its exit code (whereas in Option 2 the Pod needs to report individual failure statuses for each artifact)</li>
 <li>could have a very minimal Service Account which provides access to just that one artifact's location</li>
 </ul>
 <p>and these drawbacks:</p>
@@ -3898,8 +3898,12 @@
 <li>a Workflow with thousands of artifacts causes thousands of Pods to get executed, which could overwhelm kube-scheduler and kube-apiserver.</li>
 <li>if we delay the Artifact GC Pods by giving them a lower priority than the Workflow Pods, users will not get their artifacts deleted when they expect and may log bugs</li>
 </ul>
+<p>Summarizing ADR statement:
+"In the context of Artifact Garbage Collection, facing whether to use a separate Pod for every artifact or not, we decided not to, to achieve faster garbage collection and reduced load on K8S, accepting that we will require a new CRD type."</p>
 <h4 id="service-accountiam-roles">Service Account/IAM roles<a class="headerlink" href="#service-accountiam-roles" title="Permanent link">&para;</a></h4>
-<p>We considered some alternatives for how to specify Service Account and/or Annotations, which are applied to give the GC Pod access (slide 12). We will have them specify this information in a new part of the spec that's specific to the Artifact GC Pod (and applies to all artifacts). Other options considered involve allowing users to specify Service Accounts/Annotations on the template level (which could provide more granular security per pod), but Option 2 is preferred in order to reduce the complexity of the code and reduce the potential number of Pods running.</p>
+<p>We considered some alternatives for how to specify Service Account and/or Annotations, which are applied to give the GC Pod access (slide 12). We will have them specify this information in a new <code>ArtifactGC</code> section of the spec that lives on the Workflow level but can be overridden on the Artifact level (option 3 from slide). Another option considered was to just allow specification on the Workflow level (option 2 from slide) so as to reduce the complexity of the code and reduce the potential number of Pods running, but Option 3 was selected in the end to maximize flexibility.</p>
+<p>Summarizing ADR statement:
+"In the context of Artifact Garbage Collection, facing the question of how users should specify Service Account and annotations, we decided to give them the option to specify them on the Workflow level and/or override them on the Artifact level, to maximize flexibility for user needs, accepting that the code will be more complicated, and sometimes there will be many Pods running."</p>
 <h3 id="mvp-vs-post-mvp">MVP vs post-MVP<a class="headerlink" href="#mvp-vs-post-mvp" title="Permanent link">&para;</a></h3>
 <p>We will start with just S3.</p>
 <p>We can also make other determinations if it makes sense to postpone some parts for after MVP.</p>
@@ -3909,7 +3913,7 @@
 <p>Need to clarify certain things in our documentation:</p>
 <ol>
 <li>Users need to know that if they don't name their artifacts with unique keys, they risk the same key being deleted by one Workflow and created by another at the same time. One recommendation is to parametrize the key, e.g. <code>{{workflow.uid}}/hello.txt</code>.</li>
-<li>Requirement to specify Service Account or Annotation for <code>ArtifactGC</code> specifically if they are needed (we won't fall back to default Workflow SA/annotations). Also, the Service Account needs to either be bound to the "agent" role or otherwise allow the same access to <code>WorkflowTaskSets</code>.</li>
+<li>Requirement to specify Service Account or Annotation for <code>ArtifactGC</code> specifically if they are needed (we won't fall back to default Workflow SA/annotations). Also, the Service Account needs to either be bound to the "agent" role or otherwise allow the same access to <code>ArtifactGCTasks</code>.</li>
 </ol>
 
               
