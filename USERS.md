@@ -135,6 +135,7 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [Promaton](https://www.promaton.com/)
 1. [Prudential](https://www.prudential.com.sg/)
 1. [Quantibio](http://quantibio.com/us/en/)
+1. [QuantumBlack](https://quantumblack.com/)
 1. [Raccoon Digital Marketing](https://raccoon.ag/)
 1. [Ramboll Shair](https://ramboll-shair.com/)
 1. [Ravelin](https://www.ravelin.com/)
@@ -188,3 +189,4 @@ In addition, the following projects are **officially** using Argo Workflows:
 1. [Kubeflow](https://www.kubeflow.org/)
 1. [Onepanel](https://github.com/onepanelio/onepanel)
 1. [SQLFlow](https://github.com/sql-machine-learning/sqlflow)
+1. [BisQue](https://github.com/UCSB-VRL/bisqueUCSB)
