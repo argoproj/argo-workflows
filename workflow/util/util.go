@@ -745,9 +745,11 @@ func convertNodeID(newWf *wfv1.Workflow, regex *regexp.Regexp, oldNodeID string,
 	return newWf.NodeID(newNodeName)
 }
 
-func getDescendantNodes(wf *wfv1.Workflow, node wfv1.NodeStatus) []string {
-	var descendantNodes []string
-	descendantNodes = append(descendantNodes, node.Children...)
+func getDescendantNodes(wf *wfv1.Workflow, node wfv1.NodeStatus) []wfv1.NodeStatus {
+	var descendantNodes []wfv1.NodeStatus
+	for _, child := range node.Children {
+		descendantNodes = append(descendantNodes, wf.Status.Nodes[child])
+	}
 	for _, child := range node.Children {
 		descendantNodes = append(descendantNodes, getDescendantNodes(wf, wf.Status.Nodes[child])...)
 	}
@@ -845,10 +847,6 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 				continue
 			} else {
 				deletedNodes[node.ID] = true
-				descendantNodes := getDescendantNodes(wf, node)
-				for _, descendantNode := range descendantNodes {
-					deletedNodes[descendantNode] = true
-				}
 			}
 			// do not add this status to the node. pretend as if this node never existed.
 		default:
@@ -861,6 +859,19 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 			version := GetWorkflowPodNameVersion(wf)
 			podName := PodName(wf.Name, node.Name, templateName, node.ID, version)
 			podsToDelete = append(podsToDelete, podName)
+
+			deletedNodes[node.ID] = true
+
+			descendantNodes := getDescendantNodes(wf, node)
+			for _, descendantNode := range descendantNodes {
+				deletedNodes[descendantNode.ID] = true
+				if descendantNode.Type == wfv1.NodeTypePod {
+					templateName := getTemplateFromNode(descendantNode)
+					version := GetWorkflowPodNameVersion(wf)
+					podName := PodName(wf.Name, descendantNode.Name, templateName, descendantNode.ID, version)
+					podsToDelete = append(podsToDelete, podName)
+				}
+			}
 		} else if node.Name == wf.ObjectMeta.Name {
 			newNode := node.DeepCopy()
 			newWF.Status.Nodes[newNode.ID] = resetNode(*newNode)

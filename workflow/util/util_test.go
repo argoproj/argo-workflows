@@ -920,13 +920,14 @@ func TestFormulateRetryWorkflow(t *testing.T) {
 		assert.NoError(t, err)
 		wf, _, err = FormulateRetryWorkflow(ctx, wf, true, "id=3", nil)
 		if assert.NoError(t, err) {
-			if assert.Len(t, wf.Status.Nodes, 5) {
+			// node #3 & node #4 are deleted and will be recreated. so only 3 nodes in wf.Status.Nodes
+			if assert.Len(t, wf.Status.Nodes, 3) {
 				assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes["my-nested-dag-1"].Phase)
 				// These should all be running since the child node #3 belongs up to node #1.
 				assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["1"].Phase)
 				assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["2"].Phase)
-				assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["3"].Phase)
-				assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["4"].Phase)
+				//assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["3"].Phase)
+				//assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["4"].Phase)
 			}
 		}
 	})
@@ -950,14 +951,15 @@ func TestFormulateRetryWorkflow(t *testing.T) {
 		assert.NoError(t, err)
 		wf, _, err = FormulateRetryWorkflow(ctx, wf, true, "", nil)
 		if assert.NoError(t, err) {
-			if assert.Len(t, wf.Status.Nodes, 5) {
+			// node #4 is deleted and will be recreated. so only 4 nodes in wf.Status.Nodes
+			if assert.Len(t, wf.Status.Nodes, 4) {
 				assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes["my-nested-dag-2"].Phase)
 				// This should be running since it's node #4's parent node.
 				assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["1"].Phase)
 				// This should be running since it's node #1's child node and node #1 is being retried.
 				assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["2"].Phase)
 				assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes["3"].Phase)
-				assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["4"].Phase)
+				//assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["4"].Phase)
 			}
 		}
 	})
