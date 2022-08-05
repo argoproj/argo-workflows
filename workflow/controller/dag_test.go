@@ -3496,7 +3496,7 @@ spec:
         hooks:
           exit:
             template: linuxExitHandler
-        name: dependecyTesting
+        name: dependencyTesting
         template: printA
     name: dag
 status:
@@ -3586,7 +3586,7 @@ func TestRetryTypeDagTaskRunExitNodeAfterCompleted(t *testing.T) {
 
 	// run next DAGTask
 	woc.operate(ctx)
-	nextDAGTaskNode := woc.wf.Status.Nodes.FindByDisplayName("dependecyTesting")
+	nextDAGTaskNode := woc.wf.Status.Nodes.FindByDisplayName("dependencyTesting")
 	assert.NotNil(t, nextDAGTaskNode)
 	assert.Equal(t, wfv1.NodeRunning, nextDAGTaskNode.Phase)
 }
