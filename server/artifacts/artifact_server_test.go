@@ -165,7 +165,7 @@ func newServer() *ArtifactServer {
 						S3: &wfv1.S3Artifact{
 							Key: "key-1",
 							S3Bucket: wfv1.S3Bucket{
-								Bucket:   "my-bucket-2",
+								Bucket:   "my-bucket-3",
 								Endpoint: "minio:9000",
 							},
 						},
@@ -254,7 +254,7 @@ func newServer() *ArtifactServer {
 					Outputs: &wfv1.Outputs{
 						Artifacts: wfv1.Artifacts{
 							{
-								Name: "my-s3-artifact-1-template-2",
+								Name: "my-s3-artifact-bucket-3",
 								ArtifactLocation: wfv1.ArtifactLocation{
 									S3: &wfv1.S3Artifact{
 										// S3 is a configured artifact repo, so does not need key
@@ -263,7 +263,7 @@ func newServer() *ArtifactServer {
 								},
 							},
 							{
-								Name: "my-s3-artifact-2-template-2",
+								Name: "my-s3-artifact-bucket-2",
 								ArtifactLocation: wfv1.ArtifactLocation{
 									S3: &wfv1.S3Artifact{
 										// S3 is a configured artifact repo, so does not need key
