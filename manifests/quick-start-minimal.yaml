@@ -1759,14 +1759,6 @@ spec:
               - mkdir
               - -p
               - /data/my-bucket
-              - '&&'
-              - mkdir
-              - -p
-              - /data/my-bucket-2
-              - '&&'
-              - mkdir
-              - -p
-              - /data/my-bucket-3
         livenessProbe:
           httpGet:
             path: /minio/health/live
