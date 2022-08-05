@@ -2,8 +2,8 @@
 
 You have two options:
 
-1. If you're using VSCode, you use the [Dev-Container](/docs/running-locally.md#development-container). This takes about 7 minutes. 
-1. Install the [requirements](/docs/running-locally.md#requirements) on your computer manually. This takes about 1 hour. 
+1. If you're using VSCode, you use the [Dev-Container](#development-container). This takes about 7 minutes.
+1. Install the [requirements](#requirements) on your computer manually. This takes about 1 hour.
 
 ## Git Clone
 
@@ -123,7 +123,6 @@ make cli
 ```
 
 Although, note that this will be built automatically if you do: `make start API=true`.
-
 
 To test the workflow archive, use `PROFILE=mysql` or `PROFILE=postgres`:
 
