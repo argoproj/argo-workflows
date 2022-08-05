@@ -99,19 +99,6 @@ var AnyArtifactGCStrategy = map[ArtifactGCStrategy]bool{
 	ArtifactGCOnWorkflowDeletion:   true,
 }
 
-func (s ArtifactGCStrategy) AbbreviatedName() string {
-	switch s {
-	case ArtifactGCOnWorkflowCompletion:
-		return "wfcomp"
-	case ArtifactGCOnWorkflowDeletion:
-		return "wfdel"
-	case ArtifactGCNever:
-		return "never"
-	default:
-		return "unknown"
-	}
-}
-
 // PodGCStrategy is the strategy when to delete completed pods for GC.
 type PodGCStrategy string
 
@@ -232,6 +219,8 @@ func (w *Workflow) HasArtifactGC() bool {
 	return false
 }
 
+// return the ultimate ArtifactGCStrategy for the Artifact
+// (defined on the Workflow level but can be overridden on the Artifact level)
 func (w *Workflow) GetArtifactGCStrategy(a *Artifact) ArtifactGCStrategy {
 	artifactStrategy := a.GetArtifactGC().GetStrategy()
 	wfStrategy := w.Spec.GetArtifactGC().GetStrategy()

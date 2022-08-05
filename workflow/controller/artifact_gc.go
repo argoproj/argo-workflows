@@ -146,7 +146,10 @@ func (woc *wfOperationCtx) processArtifactGCStrategy(ctx context.Context, strate
 	for _, artifactSearchResult := range artifactSearchResults {
 		// get the permissions required for this artifact and create a unique Pod name from them
 		podAccessInfo = woc.getArtifactGCPodInfo(&artifactSearchResult.Artifact)
-		podName = woc.artGCPodName(strategy, podAccessInfo)
+		podName, err = woc.artGCPodName(strategy, podAccessInfo)
+		if err != nil {
+			return err
+		}
 		_, found := podNames[podName]
 		if !found {
 			podNames[podName] = podAccessInfo
@@ -224,7 +227,7 @@ type podInfo struct {
 
 // get Pod name
 // (we have a unique Pod for each Artifact GC Strategy and Service Account/Metadata requirement)
-func (woc *wfOperationCtx) artGCPodName(strategy wfv1.ArtifactGCStrategy, podAccessInfo podInfo) string {
+func (woc *wfOperationCtx) artGCPodName(strategy wfv1.ArtifactGCStrategy, podAccessInfo podInfo) (string, error) {
 	h := fnv.New32a()
 	_, _ = h.Write([]byte(podAccessInfo.serviceAccount))
 	// we should be able to always get the same result regardless of the order of our Labels or Annotations
@@ -245,7 +248,17 @@ func (woc *wfOperationCtx) artGCPodName(strategy wfv1.ArtifactGCStrategy, podAcc
 		_, _ = h.Write([]byte(annotationValue))
 	}
 
-	return fmt.Sprintf("%s-artgc-%s-%v", woc.wf.Name, strategy.AbbreviatedName(), h.Sum32())
+	abbreviatedName := ""
+	switch strategy {
+	case wfv1.ArtifactGCOnWorkflowCompletion:
+		abbreviatedName = "wfcomp"
+	case wfv1.ArtifactGCOnWorkflowDeletion:
+		abbreviatedName = "wfdel"
+	default:
+		return "", fmt.Errorf("ArtifactGCStrategy '%s' not valid", strategy)
+	}
+
+	return fmt.Sprintf("%s-artgc-%s-%v", woc.wf.Name, abbreviatedName, h.Sum32()), nil
 }
 
 func (woc *wfOperationCtx) artGCTaskName(podName string, taskIndex int) string {
