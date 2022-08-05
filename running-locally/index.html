@@ -3979,8 +3979,8 @@
 <h1 id="running-locally">Running Locally<a class="headerlink" href="#running-locally" title="Permanent link">&para;</a></h1>
 <p>You have two options:</p>
 <ol>
-<li>If you're using VSCode, you use the Dev-Container. This takes about 7 minutes. Pre-commit checks take about 4 minutes to run.</li>
-<li>Install the requirements on your computer manually. This takes about 1 hour. Pre-commit checks take about 3 minutes to run.</li>
+<li>If you're using VSCode, you use the <a href="#development-container">Dev-Container</a>. This takes about 7 minutes.</li>
+<li>Install the <a href="#requirements">requirements</a> on your computer manually. This takes about 1 hour.</li>
 </ol>
 <h2 id="git-clone">Git Clone<a class="headerlink" href="#git-clone" title="Permanent link">&para;</a></h2>
 <p>Close the Git repo into: <code>$(GOPATH)/src/github.com/argoproj/argo-workflows</code>. Any other path will mean the code
@@ -4051,24 +4051,27 @@ returns <code>allowed</code>).</p>
 <p>Run:</p>
 <div class="highlight"><pre><span></span><code>make start 
 </code></pre></div>
-<p>Make sure you don't see any errors in your terminal.</p>
+<p>Make sure you don't see any errors in your terminal. This runs the Workflow Controller locally on your machine (not in Docker/Kubernetes).</p>
 <p>You can submit a workflow for testing using <code>kubectl</code>:</p>
 <div class="highlight"><pre><span></span><code>kubectl create -f examples/hello-world.yaml 
 </code></pre></div>
+<p>We recommend running <code>make clean</code> before <code>make start</code> to ensure recompilation.</p>
 <p>If you made changes to the executor, you need to build the image:</p>
 <div class="highlight"><pre><span></span><code>make argoexec-image
 </code></pre></div>
 <p>To also start the API on <a href="http://localhost:2746">http://localhost:2746</a>:</p>
 <div class="highlight"><pre><span></span><code>make start <span class="nv">API</span><span class="o">=</span><span class="nb">true</span>
 </code></pre></div>
+<p>This runs the Argo Server (in addition to the Workflow Controller) locally on your machine.</p>
 <p>To also start the UI on <a href="http://localhost:8080">http://localhost:8080</a> (<code>UI=true</code> implies <code>API=true</code>):</p>
 <div class="highlight"><pre><span></span><code>make start <span class="nv">UI</span><span class="o">=</span><span class="nb">true</span>
 </code></pre></div>
 <p><img alt="diagram" src="../assets/make-start-UI-true.png" /></p>
-<p>If you are making change to the CLI, you can build it:</p>
+<p>If you are making change to the CLI (i.e. Argo Server), you can build it separately if you want:</p>
 <div class="highlight"><pre><span></span><code>make cli 
 ./dist/argo submit examples/hello-world.yaml <span class="p">;</span><span class="c1"># new CLI is created as `./dist/argo` </span>
 </code></pre></div>
+<p>Although, note that this will be built automatically if you do: <code>make start API=true</code>.</p>
 <p>To test the workflow archive, use <code>PROFILE=mysql</code> or <code>PROFILE=postgres</code>:</p>
 <div class="highlight"><pre><span></span><code>make start <span class="nv">PROFILE</span><span class="o">=</span>mysql
 </code></pre></div>
