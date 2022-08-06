@@ -5,7 +5,7 @@ import {useContext, useEffect, useRef, useState} from 'react';
 import {RouteComponentProps} from 'react-router';
 import {ArtifactRepository, execSpec, Link, NodeStatus, Parameter, Workflow} from '../../../../models';
 import {ANNOTATION_KEY_POD_NAME_VERSION} from '../../../shared/annotations';
-import {findArtifact} from '../../../shared/artifacts';
+import {findArtifact, artifactRepoHasLocation} from '../../../shared/artifacts';
 import {getResolvedTemplates} from '../../../shared/template-resolution';
 import {uiUrl} from '../../../shared/base';
 import {CostOptimisationNudge} from '../../../shared/components/cost-optimisation-nudge';
@@ -108,6 +108,9 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
     
         const template = getResolvedTemplates(workflow, selectedNode);
         const artifactRepo = template.archiveLocation
+        if (artifactRepo != undefined && artifactRepoHasLocation(artifactRepo)) {
+
+        }
 
         // need to do this:
        /* if !archiveLocation.HasLocation() {
