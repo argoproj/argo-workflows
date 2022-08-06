@@ -30,7 +30,7 @@ spec:
           lifecycle:
             postStart:
               exec:
-                command: ["mkdir", "-p", "/data/my-bucket"]
+                command: [mkdir, -p, /data/my-bucket]
           readinessProbe:
             httpGet:
               path: /minio/health/ready
