@@ -41,6 +41,24 @@ export const artifactURN = <A extends Artifact>(a: A, ar: ArtifactRepository) =>
     return 'artifact:unknown';
 };
 
+export const artifactRepoHasLocation = (ar: ArtifactRepository) => {
+    if (ar.gcs) {
+        return ar.gcs.bucket != "" && ar.gcs.key != "";
+    } else if (ar.git) {
+        return ar.git.repo != "";
+    } else if (ar.http) {
+        return ar.http.url != "";
+    } else if (ar.s3) {
+        return ar.s3.endpoint != "" && ar.s3.bucket != "" && ar.s3.key != "";
+    } else if (ar.oss) {
+        return ar.oss.bucket != "" && ar.oss.endpoint != "" && ar.oss.key != "";
+    } else if (ar.raw) {
+        return true;
+    } else if (ar.azure) {
+        return ar.azure.container != "" && ar.azure.blob != ""
+    }
+}
+
 export const artifactKey = <A extends Artifact>(a: A) => {
     if (a.gcs) {
         return a.gcs.key;

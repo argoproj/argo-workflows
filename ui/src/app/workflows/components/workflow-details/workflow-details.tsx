@@ -3,9 +3,10 @@ import * as classNames from 'classnames';
 import * as React from 'react';
 import {useContext, useEffect, useRef, useState} from 'react';
 import {RouteComponentProps} from 'react-router';
-import {execSpec, Link, NodeStatus, Parameter, Workflow} from '../../../../models';
+import {ArtifactRepository, execSpec, Link, NodeStatus, Parameter, Workflow} from '../../../../models';
 import {ANNOTATION_KEY_POD_NAME_VERSION} from '../../../shared/annotations';
 import {findArtifact} from '../../../shared/artifacts';
+import {getResolvedTemplates} from '../../../shared/template-resolution';
 import {uiUrl} from '../../../shared/base';
 import {CostOptimisationNudge} from '../../../shared/components/cost-optimisation-nudge';
 import {ErrorNotice} from '../../../shared/components/error-notice';
@@ -68,6 +69,7 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
     const [error, setError] = useState<Error>();
     const selectedNode = workflow && workflow.status && workflow.status.nodes && workflow.status.nodes[nodeId];
     const selectedArtifact = workflow && workflow.status && findArtifact(workflow.status, nodeId);
+    const [artifactRepository, setArtifactRepository] = useState<ArtifactRepository>()
     const isSidePanelExpanded = !!(selectedNode || selectedArtifact);
     const isSidePanelAnimating = useTransition(isSidePanelExpanded, ANIMATION_MS + ANIMATION_BUFFER_MS);
     const {width: sidePanelWidth, dragHandleProps: sidePanelDragHandleProps} = useResizableWidth({
@@ -77,6 +79,7 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
         minWidth: INITIAL_SIDE_PANEL_WIDTH,
         resizedElementRef: sidePanelRef
     });
+
 
     useEffect(
         useQueryParams(history, p => {
@@ -100,6 +103,24 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
             }) || []
         );
     };
+
+    useEffect(() => {
+    
+        const template = getResolvedTemplates(workflow, selectedNode);
+        const artifactRepo = template.archiveLocation
+
+        // need to do this:
+       /* if !archiveLocation.HasLocation() {
+            ar, err := a.artifactRepositories.Get(ctx, wf.Status.ArtifactRepositoryRef) // this should handle cases 2 and 3
+            if err != nil {
+                return art, nil, err
+            }
+            archiveLocation = ar.ToArtifactLocation()
+        }*/
+
+        setArtifactRepository(artifactRepo)
+        
+    }, [selectedArtifact, selectedNode]);
 
     useEffect(() => {
         history.push(historyUrl('workflows/{namespace}/{name}', {namespace, name, tab, nodeId, nodePanelView, sidePanel}));
@@ -380,6 +401,7 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
     };
 
     const podName = ensurePodName(workflow, selectedNode, nodeId);
+
 
     return (
         <Page
