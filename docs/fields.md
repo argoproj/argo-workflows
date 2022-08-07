@@ -2367,8 +2367,6 @@ ArtifactLocation describes a location for a single or multiple artifacts. It is 
 <br>
 
 - [`archive-location.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/archive-location.yaml)
-
-- [`artifact-gc-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/artifact-gc-workflow.yaml)
 </details>
 
 ### Fields
