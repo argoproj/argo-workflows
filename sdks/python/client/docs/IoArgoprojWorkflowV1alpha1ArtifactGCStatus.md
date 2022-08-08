@@ -1,6 +1,6 @@
-# IoArgoprojWorkflowV1alpha1ArtifactGCSStatus
+# IoArgoprojWorkflowV1alpha1ArtifactGCStatus
 
-ArtifactGCSStatus describes the result of the deletion
+ArtifactGCStatus describes the result of the deletion
 
 ## Properties
 Name | Type | Description | Notes

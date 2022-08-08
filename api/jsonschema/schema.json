@@ -3324,6 +3324,30 @@
       },
       "type": "object"
     },
+    "io.argoproj.workflow.v1alpha1.ArtGCStatus": {
+      "description": "ArtGCStatus maintains state related to ArtifactGC",
+      "properties": {
+        "notSpecified": {
+          "description": "if this is true, we already checked to see if we need to do it and we don't",
+          "type": "boolean"
+        },
+        "podsRecouped": {
+          "additionalProperties": {
+            "type": "boolean"
+          },
+          "description": "have completed Pods been processed? (mapped by Pod name) used to prevent re-processing the Status of a Pod more than once",
+          "type": "object"
+        },
+        "strategiesProcessed": {
+          "additionalProperties": {
+            "type": "boolean"
+          },
+          "description": "have Pods been started to perform this strategy? (enables us not to re-process what we've already done)",
+          "type": "object"
+        }
+      },
+      "type": "object"
+    },
     "io.argoproj.workflow.v1alpha1.Artifact": {
       "description": "Artifact indicates an artifact to place at a specified path",
       "properties": {
@@ -3424,22 +3448,17 @@
     "io.argoproj.workflow.v1alpha1.ArtifactGC": {
       "description": "ArtifactGC describes how to delete artifacts from completed Workflows",
       "properties": {
-        "strategy": {
-          "description": "Strategy is the strategy to use. One of \"OnWorkflowCompletion\", \"OnWorkflowDeletion\"",
+        "podMetadata": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Metadata",
+          "description": "PodMetadata is an optional field for specifying the Labels and Annotations that should be assigned to the Pod doing the deletion"
+        },
+        "serviceAccountName": {
+          "description": "ServiceAccountName is an optional field for specifying the Service Account that should be assigned to the Pod doing the deletion",
           "type": "string"
-        }
-      },
-      "type": "object"
-    },
-    "io.argoproj.workflow.v1alpha1.ArtifactGCSStatus": {
-      "description": "ArtifactGCSStatus describes the result of the deletion",
-      "properties": {
-        "artifactResultsByNode": {
-          "additionalProperties": {
-            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactResultNodeStatus"
-          },
-          "description": "ArtifactResultsByNode maps Node name to result",
-          "type": "object"
+        },
+        "strategy": {
+          "description": "Strategy is the strategy to use.",
+          "type": "string"
         }
       },
       "type": "object"
@@ -3452,6 +3471,19 @@
             "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactNodeSpec"
           },
           "description": "ArtifactsByNode maps Node name to information pertaining to Artifacts on that Node",
+          "type": "object"
+        }
+      },
+      "type": "object"
+    },
+    "io.argoproj.workflow.v1alpha1.ArtifactGCStatus": {
+      "description": "ArtifactGCStatus describes the result of the deletion",
+      "properties": {
+        "artifactResultsByNode": {
+          "additionalProperties": {
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactResultNodeStatus"
+          },
+          "description": "ArtifactResultsByNode maps Node name to result",
           "type": "object"
         }
       },
@@ -7250,6 +7282,10 @@
     "io.argoproj.workflow.v1alpha1.WorkflowStatus": {
       "description": "WorkflowStatus contains overall status information about a workflow",
       "properties": {
+        "artifactGCStatus": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtGCStatus",
+          "description": "ArtifactGCStatus maintains the status of Artifact Garbage Collection"
+        },
         "artifactRepositoryRef": {
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactRepositoryRefStatus",
           "description": "ArtifactRepositoryRef is used to cache the repository to use so we do not need to determine it everytime we reconcile."

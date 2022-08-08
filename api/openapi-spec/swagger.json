@@ -7240,6 +7240,30 @@
         }
       }
     },
+    "io.argoproj.workflow.v1alpha1.ArtGCStatus": {
+      "description": "ArtGCStatus maintains state related to ArtifactGC",
+      "type": "object",
+      "properties": {
+        "notSpecified": {
+          "description": "if this is true, we already checked to see if we need to do it and we don't",
+          "type": "boolean"
+        },
+        "podsRecouped": {
+          "description": "have completed Pods been processed? (mapped by Pod name) used to prevent re-processing the Status of a Pod more than once",
+          "type": "object",
+          "additionalProperties": {
+            "type": "boolean"
+          }
+        },
+        "strategiesProcessed": {
+          "description": "have Pods been started to perform this strategy? (enables us not to re-process what we've already done)",
+          "type": "object",
+          "additionalProperties": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
     "io.argoproj.workflow.v1alpha1.Artifact": {
       "description": "Artifact indicates an artifact to place at a specified path",
       "type": "object",
@@ -7341,22 +7365,17 @@
       "description": "ArtifactGC describes how to delete artifacts from completed Workflows",
       "type": "object",
       "properties": {
-        "strategy": {
-          "description": "Strategy is the strategy to use. One of \"OnWorkflowCompletion\", \"OnWorkflowDeletion\"",
+        "podMetadata": {
+          "description": "PodMetadata is an optional field for specifying the Labels and Annotations that should be assigned to the Pod doing the deletion",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Metadata"
+        },
+        "serviceAccountName": {
+          "description": "ServiceAccountName is an optional field for specifying the Service Account that should be assigned to the Pod doing the deletion",
           "type": "string"
-        }
-      }
-    },
-    "io.argoproj.workflow.v1alpha1.ArtifactGCSStatus": {
-      "description": "ArtifactGCSStatus describes the result of the deletion",
-      "type": "object",
-      "properties": {
-        "artifactResultsByNode": {
-          "description": "ArtifactResultsByNode maps Node name to result",
-          "type": "object",
-          "additionalProperties": {
-            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactResultNodeStatus"
-          }
+        },
+        "strategy": {
+          "description": "Strategy is the strategy to use.",
+          "type": "string"
         }
       }
     },
@@ -7369,6 +7388,19 @@
           "type": "object",
           "additionalProperties": {
             "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactNodeSpec"
+          }
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.ArtifactGCStatus": {
+      "description": "ArtifactGCStatus describes the result of the deletion",
+      "type": "object",
+      "properties": {
+        "artifactResultsByNode": {
+          "description": "ArtifactResultsByNode maps Node name to result",
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactResultNodeStatus"
           }
         }
       }
@@ -11131,6 +11163,10 @@
       "description": "WorkflowStatus contains overall status information about a workflow",
       "type": "object",
       "properties": {
+        "artifactGCStatus": {
+          "description": "ArtifactGCStatus maintains the status of Artifact Garbage Collection",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtGCStatus"
+        },
         "artifactRepositoryRef": {
           "description": "ArtifactRepositoryRef is used to cache the repository to use so we do not need to determine it everytime we reconcile.",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactRepositoryRefStatus"

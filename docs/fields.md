@@ -18,6 +18,8 @@ Workflow is the definition of a workflow resource
 
 - [`artifact-disable-archive.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/artifact-disable-archive.yaml)
 
+- [`artifact-gc-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/artifact-gc-workflow.yaml)
+
 - [`artifact-passing-subpath.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/artifact-passing-subpath.yaml)
 
 - [`artifact-passing.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/artifact-passing.yaml)
@@ -437,6 +439,8 @@ WorkflowSpec is the specification of a Workflow.
 
 - [`artifact-disable-archive.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/artifact-disable-archive.yaml)
 
+- [`artifact-gc-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/artifact-gc-workflow.yaml)
+
 - [`artifact-passing-subpath.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/artifact-passing-subpath.yaml)
 
 - [`artifact-passing.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/artifact-passing.yaml)
@@ -831,6 +835,7 @@ WorkflowStatus contains overall status information about a workflow
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
+|`artifactGCStatus`|[`ArtGCStatus`](#artgcstatus)|ArtifactGCStatus maintains the status of Artifact Garbage Collection|
 |`artifactRepositoryRef`|[`ArtifactRepositoryRefStatus`](#artifactrepositoryrefstatus)|ArtifactRepositoryRef is used to cache the repository to use so we do not need to determine it everytime we reconcile.|
 |`compressedNodes`|`string`|Compressed and base64 decoded Nodes map|
 |`conditions`|`Array<`[`Condition`](#condition)`>`|Conditions is a list of conditions the Workflow may have|
@@ -866,6 +871,8 @@ CronWorkflowSpec is the specification of a CronWorkflow
 - [`arguments-parameters.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/arguments-parameters.yaml)
 
 - [`artifact-disable-archive.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/artifact-disable-archive.yaml)
+
+- [`artifact-gc-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/artifact-gc-workflow.yaml)
 
 - [`artifact-passing-subpath.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/artifact-passing-subpath.yaml)
 
@@ -1427,10 +1434,19 @@ Arguments to a template
 
 ArtifactGC describes how to delete artifacts from completed Workflows
 
+<details>
+<summary>Examples with this field (click to open)</summary>
+<br>
+
+- [`artifact-gc-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/artifact-gc-workflow.yaml)
+</details>
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`strategy`|`string`|Strategy is the strategy to use. One of "OnWorkflowCompletion", "OnWorkflowDeletion"|
+|`podMetadata`|[`Metadata`](#metadata)|PodMetadata is an optional field for specifying the Labels and Annotations that should be assigned to the Pod doing the deletion|
+|`serviceAccountName`|`string`|ServiceAccountName is an optional field for specifying the Service Account that should be assigned to the Pod doing the deletion|
+|`strategy`|`string`|Strategy is the strategy to use.|
 
 ## ArtifactRepositoryRef
 
@@ -1739,6 +1755,17 @@ WorkflowTemplateRef is a reference to a WorkflowTemplate resource.
 |`clusterScope`|`boolean`|ClusterScope indicates the referred template is cluster scoped (i.e. a ClusterWorkflowTemplate).|
 |`name`|`string`|Name is the resource name of the workflow template.|
 
+## ArtGCStatus
+
+ArtGCStatus maintains state related to ArtifactGC
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`notSpecified`|`boolean`|if this is true, we already checked to see if we need to do it and we don't|
+|`podsRecouped`|`Map< boolean , string >`|have completed Pods been processed? (mapped by Pod name) used to prevent re-processing the Status of a Pod more than once|
+|`strategiesProcessed`|`Map< boolean , string >`|have Pods been started to perform this strategy? (enables us not to re-process what we've already done)|
+
 ## ArtifactRepositoryRefStatus
 
 _No description available_
@@ -1811,6 +1838,8 @@ Outputs hold parameters, artifacts, and results from a step
 <br>
 
 - [`artifact-disable-archive.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/artifact-disable-archive.yaml)
+
+- [`artifact-gc-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/artifact-gc-workflow.yaml)
 
 - [`artifact-passing-subpath.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/artifact-passing-subpath.yaml)
 
@@ -1927,6 +1956,8 @@ Artifact indicates an artifact to place at a specified path
 - [`arguments-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/arguments-artifacts.yaml)
 
 - [`artifact-disable-archive.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/artifact-disable-archive.yaml)
+
+- [`artifact-gc-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/artifact-gc-workflow.yaml)
 
 - [`artifact-passing-subpath.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/artifact-passing-subpath.yaml)
 
@@ -4500,6 +4531,8 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 
 - [`artifact-disable-archive.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/artifact-disable-archive.yaml)
 
+- [`artifact-gc-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/artifact-gc-workflow.yaml)
+
 - [`artifact-passing-subpath.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/artifact-passing-subpath.yaml)
 
 - [`artifact-passing.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/artifact-passing.yaml)
@@ -5143,6 +5176,8 @@ A single application container that you want to run within a pod.
 - [`arguments-parameters.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/arguments-parameters.yaml)
 
 - [`artifact-disable-archive.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/artifact-disable-archive.yaml)
+
+- [`artifact-gc-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/artifact-gc-workflow.yaml)
 
 - [`artifact-passing-subpath.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/artifact-passing-subpath.yaml)
 
@@ -5816,6 +5851,8 @@ PersistentVolumeClaimSpec describes the common attributes of storage devices and
 - [`arguments-parameters.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/arguments-parameters.yaml)
 
 - [`artifact-disable-archive.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/artifact-disable-archive.yaml)
+
+- [`artifact-gc-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/artifact-gc-workflow.yaml)
 
 - [`artifact-passing-subpath.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/artifact-passing-subpath.yaml)
 

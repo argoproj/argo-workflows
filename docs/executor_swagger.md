@@ -239,6 +239,8 @@ set when loading input artifacts. |  |
 
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
+| podMetadata | [Metadata](#metadata)| `Metadata` |  | |  |  |
+| serviceAccountName | string| `string` |  | | ServiceAccountName is an optional field for specifying the Service Account that should be assigned to the Pod doing the deletion |  |
 | strategy | [ArtifactGCStrategy](#artifact-g-c-strategy)| `ArtifactGCStrategy` |  | |  |  |
 
 
