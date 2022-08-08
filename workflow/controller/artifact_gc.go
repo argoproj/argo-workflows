@@ -150,12 +150,10 @@ func (woc *wfOperationCtx) processArtifactGCStrategy(ctx context.Context, strate
 		if err != nil {
 			return err
 		}
-		_, found := podNames[podName]
-		if !found {
+		if _, found := podNames[podName]; !found {
 			podNames[podName] = podAccessInfo
 		}
-		_, found = groupedByPod[podName]
-		if !found {
+		if _, found := groupedByPod[podName]; !found {
 			groupedByPod[podName] = make(templatesToArtifacts)
 		}
 		// get the Template for the Artifact
@@ -179,8 +177,7 @@ func (woc *wfOperationCtx) processArtifactGCStrategy(ctx context.Context, strate
 			templatesByName[templateName] = template
 		}
 
-		_, found = groupedByPod[podName][template.Name]
-		if !found {
+		if _, found := groupedByPod[podName][template.Name]; !found {
 			groupedByPod[podName][template.Name] = make(wfv1.ArtifactSearchResults, 0)
 		}
 
