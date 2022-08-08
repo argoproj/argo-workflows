@@ -2154,9 +2154,9 @@ type ArtifactoryArtifact struct {
 	ArtifactoryAuth `json:",inline" protobuf:"bytes,2,opt,name=artifactoryAuth"`
 }
 
-//func (a *ArtifactoryArtifact) String() string {
-//	return a.URL
-//}
+//	func (a *ArtifactoryArtifact) String() string {
+//		return a.URL
+//	}
 func (a *ArtifactoryArtifact) GetKey() (string, error) {
 	u, err := url.Parse(a.URL)
 	if err != nil {

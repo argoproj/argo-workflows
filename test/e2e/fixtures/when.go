@@ -237,8 +237,9 @@ var ToBeWaitingOnAMutex Condition = func(wf *wfv1.Workflow) (bool, string) {
 // Options:
 // * `time.Duration` - change the timeout - 30s by default
 // * `string` - either:
-//    * the workflow's name (not spaces)
-//    * or a new message (if it contain spaces) - default "to finish"
+//   - the workflow's name (not spaces)
+//   - or a new message (if it contain spaces) - default "to finish"
+//
 // * `Condition` - a condition - `ToFinish` by default
 func (w *When) WaitForWorkflow(options ...interface{}) *When {
 	w.t.Helper()
