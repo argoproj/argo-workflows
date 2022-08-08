@@ -78,3 +78,9 @@ func MustUnmarshalWorkflowTemplate(text interface{}) *WorkflowTemplate {
 	MustUnmarshal(text, &x)
 	return x
 }
+
+func MustUnmarshalWorkflowArtifactGCTask(text interface{}) *WorkflowArtifactGCTask {
+	x := &WorkflowArtifactGCTask{}
+	MustUnmarshal(text, &x)
+	return x
+}

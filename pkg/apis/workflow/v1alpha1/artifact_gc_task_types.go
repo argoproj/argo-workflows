@@ -12,8 +12,8 @@ import (
 type WorkflowArtifactGCTask struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata" protobuf:"bytes,1,opt,name=metadata"`
-	Spec              ArtifactGCSpec    `json:"spec" protobuf:"bytes,2,opt,name=spec"`
-	Status            ArtifactGCSStatus `json:"status,omitempty" protobuf:"bytes,3,opt,name=status"`
+	Spec              ArtifactGCSpec   `json:"spec" protobuf:"bytes,2,opt,name=spec"`
+	Status            ArtifactGCStatus `json:"status,omitempty" protobuf:"bytes,3,opt,name=status"`
 }
 
 // ArtifactGCSpec specifies the Artifacts that need to be deleted
@@ -30,8 +30,8 @@ type ArtifactNodeSpec struct {
 	Artifacts map[string]Artifact `json:"artifacts,omitempty" protobuf:"bytes,2,rep,name=artifacts"`
 }
 
-// ArtifactGCSStatus describes the result of the deletion
-type ArtifactGCSStatus struct {
+// ArtifactGCStatus describes the result of the deletion
+type ArtifactGCStatus struct {
 	// ArtifactResultsByNode maps Node name to result
 	ArtifactResultsByNode map[string]ArtifactResultNodeStatus `json:"artifactResultsByNode,omitempty" protobuf:"bytes,1,rep,name=artifactResultsByNode"`
 }
