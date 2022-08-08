@@ -384,12 +384,28 @@ func (a *ArtifactServer) getArtifactAndDriver(ctx context.Context, nodeId, artif
 		return nil, nil, fmt.Errorf("artifact not found: %s", artifactName)
 	}
 
-	ar, err := a.artifactRepositories.Get(ctx, wf.Status.ArtifactRepositoryRef)
-	if err != nil {
-		return art, nil, err
+	// Artifact Location can be defined in various places:
+	// 1. In the Artifact itself
+	// 2. Defined by Controller configmap
+	// 3. Workflow spec defines artifactRepositoryRef which is a ConfigMap which defines the location
+	// 4. Template defines ArchiveLocation
+
+	templateName := wf.Status.Nodes[nodeId].TemplateName
+	template := wf.GetTemplateByName(templateName)
+	if template == nil {
+		return nil, nil, fmt.Errorf("no template found by the name of '%s' (which is the template associated with nodeId '%s'??", templateName, nodeId)
 	}
-	l := ar.ToArtifactLocation()
-	err = art.Relocate(l)
+
+	archiveLocation := template.ArchiveLocation // this is case 4
+	if !archiveLocation.HasLocation() {
+		ar, err := a.artifactRepositories.Get(ctx, wf.Status.ArtifactRepositoryRef) // this should handle cases 2 and 3
+		if err != nil {
+			return art, nil, err
+		}
+		archiveLocation = ar.ToArtifactLocation()
+	}
+
+	err := art.Relocate(archiveLocation) // if the Artifact defines the location (case 1), it will be used; otherwise whatever archiveLocation is set to
 	if err != nil {
 		return art, nil, err
 	}
