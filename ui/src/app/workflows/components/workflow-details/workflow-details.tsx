@@ -109,21 +109,12 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
         const template = getResolvedTemplates(workflow, selectedNode);
         const artifactRepo = template.archiveLocation
         if (artifactRepo != undefined && artifactRepoHasLocation(artifactRepo)) {
-
+            setArtifactRepository(artifactRepo);
+        } else {
+            setArtifactRepository(workflow.status.artifactRepositoryRef.artifactRepository);
         }
 
-        // need to do this:
-       /* if !archiveLocation.HasLocation() {
-            ar, err := a.artifactRepositories.Get(ctx, wf.Status.ArtifactRepositoryRef) // this should handle cases 2 and 3
-            if err != nil {
-                return art, nil, err
-            }
-            archiveLocation = ar.ToArtifactLocation()
-        }*/
-
-        setArtifactRepository(artifactRepo)
-        
-    }, [selectedArtifact, selectedNode]);
+    }, [workflow, selectedNode]);
 
     useEffect(() => {
         history.push(historyUrl('workflows/{namespace}/{name}', {namespace, name, tab, nodeId, nodePanelView, sidePanel}));
@@ -476,7 +467,7 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
                                     />
                                 )}
                                 {selectedArtifact && (
-                                    <ArtifactPanel workflow={workflow} artifact={selectedArtifact} artifactRepository={workflow.status.artifactRepositoryRef.artifactRepository} />
+                                    <ArtifactPanel workflow={workflow} artifact={selectedArtifact} artifactRepository={artifactRepository} />
                                 )}
                             </div>
                         </div>
