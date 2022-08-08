@@ -44,6 +44,8 @@ func addKnownTypes(scheme *runtime.Scheme) error {
 		&ClusterWorkflowTemplateList{},
 		&WorkflowTaskSet{},
 		&WorkflowTaskSetList{},
+		&WorkflowArtifactGCTask{},
+		&WorkflowArtifactGCTaskList{},
 		&WorkflowTaskResult{},
 		&WorkflowTaskResultList{},
 		&WorkflowArtifactGCTask{},

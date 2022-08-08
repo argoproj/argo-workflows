@@ -43,6 +43,19 @@ message Arguments {
   repeated Artifact artifacts = 2;
 }
 
+// ArtGCStatus maintains state related to ArtifactGC
+message ArtGCStatus {
+  // have Pods been started to perform this strategy? (enables us not to re-process what we've already done)
+  map<string, bool> strategiesProcessed = 1;
+
+  // have completed Pods been processed? (mapped by Pod name)
+  // used to prevent re-processing the Status of a Pod more than once
+  map<string, bool> podsRecouped = 2;
+
+  // if this is true, we already checked to see if we need to do it and we don't
+  optional bool notSpecified = 3;
+}
+
 // Artifact indicates an artifact to place at a specified path
 message Artifact {
   // name of the artifact. must be unique within a template's inputs/outputs.
@@ -89,21 +102,27 @@ message Artifact {
 
 // ArtifactGC describes how to delete artifacts from completed Workflows
 message ArtifactGC {
-  // Strategy is the strategy to use. One of "OnWorkflowCompletion", "OnWorkflowDeletion"
-  // +kubebuilder:validation:Enum="";OnWorkflowCompletion;OnWorkflowDeletion
+  // Strategy is the strategy to use.
+  // +kubebuilder:validation:Enum="";OnWorkflowCompletion;OnWorkflowDeletion;Never
   optional string strategy = 1;
-}
 
-// ArtifactGCSStatus describes the result of the deletion
-message ArtifactGCSStatus {
-  // ArtifactResultsByNode maps Node name to result
-  map<string, ArtifactResultNodeStatus> artifactResultsByNode = 1;
+  // PodMetadata is an optional field for specifying the Labels and Annotations that should be assigned to the Pod doing the deletion
+  optional Metadata podMetadata = 2;
+
+  // ServiceAccountName is an optional field for specifying the Service Account that should be assigned to the Pod doing the deletion
+  optional string serviceAccountName = 3;
 }
 
 // ArtifactGCSpec specifies the Artifacts that need to be deleted
 message ArtifactGCSpec {
   // ArtifactsByNode maps Node name to information pertaining to Artifacts on that Node
   map<string, ArtifactNodeSpec> artifactsByNode = 1;
+}
+
+// ArtifactGCStatus describes the result of the deletion
+message ArtifactGCStatus {
+  // ArtifactResultsByNode maps Node name to result
+  map<string, ArtifactResultNodeStatus> artifactResultsByNode = 1;
 }
 
 // ArtifactLocation describes a location for a single or multiple artifacts.
@@ -230,6 +249,10 @@ message ArtifactSearchQuery {
   optional string templateName = 3;
 
   optional string nodeId = 4;
+
+  optional bool deleted = 5;
+
+  map<string, bool> nodeTypes = 6;
 }
 
 message ArtifactSearchResult {
@@ -1742,7 +1765,7 @@ message WorkflowArtifactGCTask {
 
   optional ArtifactGCSpec spec = 2;
 
-  optional ArtifactGCSStatus status = 3;
+  optional ArtifactGCStatus status = 3;
 }
 
 // WorkflowArtifactGCTaskList is list of WorkflowArtifactGCTask resources
@@ -2026,6 +2049,9 @@ message WorkflowStatus {
 
   // ArtifactRepositoryRef is used to cache the repository to use so we do not need to determine it everytime we reconcile.
   optional ArtifactRepositoryRefStatus artifactRepositoryRef = 18;
+
+  // ArtifactGCStatus maintains the status of Artifact Garbage Collection
+  optional ArtGCStatus artifactGCStatus = 19;
 }
 
 // WorkflowStep is a reference to a template to execute in a series of step

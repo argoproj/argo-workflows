@@ -379,6 +379,15 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 ),
                                 archive_logs=True,
                                 artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                    pod_metadata=IoArgoprojWorkflowV1alpha1Metadata(
+                                        annotations={
+                                            "key": "key_example",
+                                        },
+                                        labels={
+                                            "key": "key_example",
+                                        },
+                                    ),
+                                    service_account_name="service_account_name_example",
                                     strategy="strategy_example",
                                 ),
                                 artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
@@ -625,6 +634,15 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         ],
                     ),
                     artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                        pod_metadata=IoArgoprojWorkflowV1alpha1Metadata(
+                            annotations={
+                                "key": "key_example",
+                            },
+                            labels={
+                                "key": "key_example",
+                            },
+                        ),
+                        service_account_name="service_account_name_example",
                         strategy="strategy_example",
                     ),
                     artifact_repository_ref=IoArgoprojWorkflowV1alpha1ArtifactRepositoryRef(
@@ -665,6 +683,15 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ),
                                         archive_logs=True,
                                         artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                            pod_metadata=IoArgoprojWorkflowV1alpha1Metadata(
+                                                annotations={
+                                                    "key": "key_example",
+                                                },
+                                                labels={
+                                                    "key": "key_example",
+                                                },
+                                            ),
+                                            service_account_name="service_account_name_example",
                                             strategy="strategy_example",
                                         ),
                                         artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
@@ -2069,6 +2096,15 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 ),
                                                 archive_logs=True,
                                                 artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                                    pod_metadata=IoArgoprojWorkflowV1alpha1Metadata(
+                                                        annotations={
+                                                            "key": "key_example",
+                                                        },
+                                                        labels={
+                                                            "key": "key_example",
+                                                        },
+                                                    ),
+                                                    service_account_name="service_account_name_example",
                                                     strategy="strategy_example",
                                                 ),
                                                 artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
@@ -2336,6 +2372,15 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         ),
                                                         archive_logs=True,
                                                         artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                                            pod_metadata=IoArgoprojWorkflowV1alpha1Metadata(
+                                                                annotations={
+                                                                    "key": "key_example",
+                                                                },
+                                                                labels={
+                                                                    "key": "key_example",
+                                                                },
+                                                            ),
+                                                            service_account_name="service_account_name_example",
                                                             strategy="strategy_example",
                                                         ),
                                                         artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
@@ -2625,6 +2670,15 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     ),
                                     archive_logs=True,
                                     artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                        pod_metadata=IoArgoprojWorkflowV1alpha1Metadata(
+                                            annotations={
+                                                "key": "key_example",
+                                            },
+                                            labels={
+                                                "key": "key_example",
+                                            },
+                                        ),
+                                        service_account_name="service_account_name_example",
                                         strategy="strategy_example",
                                     ),
                                     artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
@@ -3169,6 +3223,15 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     ),
                                     archive_logs=True,
                                     artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                        pod_metadata=IoArgoprojWorkflowV1alpha1Metadata(
+                                            annotations={
+                                                "key": "key_example",
+                                            },
+                                            labels={
+                                                "key": "key_example",
+                                            },
+                                        ),
+                                        service_account_name="service_account_name_example",
                                         strategy="strategy_example",
                                     ),
                                     artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
@@ -3477,6 +3540,15 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     ),
                                     archive_logs=True,
                                     artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                        pod_metadata=IoArgoprojWorkflowV1alpha1Metadata(
+                                            annotations={
+                                                "key": "key_example",
+                                            },
+                                            labels={
+                                                "key": "key_example",
+                                            },
+                                        ),
+                                        service_account_name="service_account_name_example",
                                         strategy="strategy_example",
                                     ),
                                     artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
@@ -3747,6 +3819,15 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     ),
                                     archive_logs=True,
                                     artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                        pod_metadata=IoArgoprojWorkflowV1alpha1Metadata(
+                                            annotations={
+                                                "key": "key_example",
+                                            },
+                                            labels={
+                                                "key": "key_example",
+                                            },
+                                        ),
+                                        service_account_name="service_account_name_example",
                                         strategy="strategy_example",
                                     ),
                                     artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
@@ -4574,6 +4655,15 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 ),
                                                 archive_logs=True,
                                                 artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                                    pod_metadata=IoArgoprojWorkflowV1alpha1Metadata(
+                                                        annotations={
+                                                            "key": "key_example",
+                                                        },
+                                                        labels={
+                                                            "key": "key_example",
+                                                        },
+                                                    ),
+                                                    service_account_name="service_account_name_example",
                                                     strategy="strategy_example",
                                                 ),
                                                 artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
@@ -4837,6 +4927,15 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         ),
                                                         archive_logs=True,
                                                         artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                                            pod_metadata=IoArgoprojWorkflowV1alpha1Metadata(
+                                                                annotations={
+                                                                    "key": "key_example",
+                                                                },
+                                                                labels={
+                                                                    "key": "key_example",
+                                                                },
+                                                            ),
+                                                            service_account_name="service_account_name_example",
                                                             strategy="strategy_example",
                                                         ),
                                                         artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
@@ -6507,6 +6606,15 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                     ),
                                                     archive_logs=True,
                                                     artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                                        pod_metadata=IoArgoprojWorkflowV1alpha1Metadata(
+                                                            annotations={
+                                                                "key": "key_example",
+                                                            },
+                                                            labels={
+                                                                "key": "key_example",
+                                                            },
+                                                        ),
+                                                        service_account_name="service_account_name_example",
                                                         strategy="strategy_example",
                                                     ),
                                                     artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
@@ -6774,6 +6882,15 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             ),
                                                             archive_logs=True,
                                                             artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                                                pod_metadata=IoArgoprojWorkflowV1alpha1Metadata(
+                                                                    annotations={
+                                                                        "key": "key_example",
+                                                                    },
+                                                                    labels={
+                                                                        "key": "key_example",
+                                                                    },
+                                                                ),
+                                                                service_account_name="service_account_name_example",
                                                                 strategy="strategy_example",
                                                             ),
                                                             artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
@@ -7063,6 +7180,15 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ),
                                         archive_logs=True,
                                         artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                            pod_metadata=IoArgoprojWorkflowV1alpha1Metadata(
+                                                annotations={
+                                                    "key": "key_example",
+                                                },
+                                                labels={
+                                                    "key": "key_example",
+                                                },
+                                            ),
+                                            service_account_name="service_account_name_example",
                                             strategy="strategy_example",
                                         ),
                                         artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
@@ -7607,6 +7733,15 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ),
                                         archive_logs=True,
                                         artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                            pod_metadata=IoArgoprojWorkflowV1alpha1Metadata(
+                                                annotations={
+                                                    "key": "key_example",
+                                                },
+                                                labels={
+                                                    "key": "key_example",
+                                                },
+                                            ),
+                                            service_account_name="service_account_name_example",
                                             strategy="strategy_example",
                                         ),
                                         artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
@@ -7915,6 +8050,15 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ),
                                         archive_logs=True,
                                         artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                            pod_metadata=IoArgoprojWorkflowV1alpha1Metadata(
+                                                annotations={
+                                                    "key": "key_example",
+                                                },
+                                                labels={
+                                                    "key": "key_example",
+                                                },
+                                            ),
+                                            service_account_name="service_account_name_example",
                                             strategy="strategy_example",
                                         ),
                                         artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
@@ -8185,6 +8329,15 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ),
                                         archive_logs=True,
                                         artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                            pod_metadata=IoArgoprojWorkflowV1alpha1Metadata(
+                                                annotations={
+                                                    "key": "key_example",
+                                                },
+                                                labels={
+                                                    "key": "key_example",
+                                                },
+                                            ),
+                                            service_account_name="service_account_name_example",
                                             strategy="strategy_example",
                                         ),
                                         artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
@@ -9012,6 +9165,15 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                     ),
                                                     archive_logs=True,
                                                     artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                                        pod_metadata=IoArgoprojWorkflowV1alpha1Metadata(
+                                                            annotations={
+                                                                "key": "key_example",
+                                                            },
+                                                            labels={
+                                                                "key": "key_example",
+                                                            },
+                                                        ),
+                                                        service_account_name="service_account_name_example",
                                                         strategy="strategy_example",
                                                     ),
                                                     artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
@@ -9275,6 +9437,15 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             ),
                                                             archive_logs=True,
                                                             artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                                                pod_metadata=IoArgoprojWorkflowV1alpha1Metadata(
+                                                                    annotations={
+                                                                        "key": "key_example",
+                                                                    },
+                                                                    labels={
+                                                                        "key": "key_example",
+                                                                    },
+                                                                ),
+                                                                service_account_name="service_account_name_example",
                                                                 strategy="strategy_example",
                                                             ),
                                                             artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
@@ -11075,6 +11246,15 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 ),
                                 archive_logs=True,
                                 artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                    pod_metadata=IoArgoprojWorkflowV1alpha1Metadata(
+                                        annotations={
+                                            "key": "key_example",
+                                        },
+                                        labels={
+                                            "key": "key_example",
+                                        },
+                                    ),
+                                    service_account_name="service_account_name_example",
                                     strategy="strategy_example",
                                 ),
                                 artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
@@ -11321,6 +11501,15 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         ],
                     ),
                     artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                        pod_metadata=IoArgoprojWorkflowV1alpha1Metadata(
+                            annotations={
+                                "key": "key_example",
+                            },
+                            labels={
+                                "key": "key_example",
+                            },
+                        ),
+                        service_account_name="service_account_name_example",
                         strategy="strategy_example",
                     ),
                     artifact_repository_ref=IoArgoprojWorkflowV1alpha1ArtifactRepositoryRef(
@@ -11361,6 +11550,15 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ),
                                         archive_logs=True,
                                         artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                            pod_metadata=IoArgoprojWorkflowV1alpha1Metadata(
+                                                annotations={
+                                                    "key": "key_example",
+                                                },
+                                                labels={
+                                                    "key": "key_example",
+                                                },
+                                            ),
+                                            service_account_name="service_account_name_example",
                                             strategy="strategy_example",
                                         ),
                                         artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
@@ -12765,6 +12963,15 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 ),
                                                 archive_logs=True,
                                                 artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                                    pod_metadata=IoArgoprojWorkflowV1alpha1Metadata(
+                                                        annotations={
+                                                            "key": "key_example",
+                                                        },
+                                                        labels={
+                                                            "key": "key_example",
+                                                        },
+                                                    ),
+                                                    service_account_name="service_account_name_example",
                                                     strategy="strategy_example",
                                                 ),
                                                 artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
@@ -13032,6 +13239,15 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         ),
                                                         archive_logs=True,
                                                         artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                                            pod_metadata=IoArgoprojWorkflowV1alpha1Metadata(
+                                                                annotations={
+                                                                    "key": "key_example",
+                                                                },
+                                                                labels={
+                                                                    "key": "key_example",
+                                                                },
+                                                            ),
+                                                            service_account_name="service_account_name_example",
                                                             strategy="strategy_example",
                                                         ),
                                                         artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
@@ -13321,6 +13537,15 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     ),
                                     archive_logs=True,
                                     artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                        pod_metadata=IoArgoprojWorkflowV1alpha1Metadata(
+                                            annotations={
+                                                "key": "key_example",
+                                            },
+                                            labels={
+                                                "key": "key_example",
+                                            },
+                                        ),
+                                        service_account_name="service_account_name_example",
                                         strategy="strategy_example",
                                     ),
                                     artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
@@ -13865,6 +14090,15 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     ),
                                     archive_logs=True,
                                     artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                        pod_metadata=IoArgoprojWorkflowV1alpha1Metadata(
+                                            annotations={
+                                                "key": "key_example",
+                                            },
+                                            labels={
+                                                "key": "key_example",
+                                            },
+                                        ),
+                                        service_account_name="service_account_name_example",
                                         strategy="strategy_example",
                                     ),
                                     artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
@@ -14173,6 +14407,15 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     ),
                                     archive_logs=True,
                                     artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                        pod_metadata=IoArgoprojWorkflowV1alpha1Metadata(
+                                            annotations={
+                                                "key": "key_example",
+                                            },
+                                            labels={
+                                                "key": "key_example",
+                                            },
+                                        ),
+                                        service_account_name="service_account_name_example",
                                         strategy="strategy_example",
                                     ),
                                     artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
@@ -14443,6 +14686,15 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     ),
                                     archive_logs=True,
                                     artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                        pod_metadata=IoArgoprojWorkflowV1alpha1Metadata(
+                                            annotations={
+                                                "key": "key_example",
+                                            },
+                                            labels={
+                                                "key": "key_example",
+                                            },
+                                        ),
+                                        service_account_name="service_account_name_example",
                                         strategy="strategy_example",
                                     ),
                                     artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
@@ -15270,6 +15522,15 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 ),
                                                 archive_logs=True,
                                                 artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                                    pod_metadata=IoArgoprojWorkflowV1alpha1Metadata(
+                                                        annotations={
+                                                            "key": "key_example",
+                                                        },
+                                                        labels={
+                                                            "key": "key_example",
+                                                        },
+                                                    ),
+                                                    service_account_name="service_account_name_example",
                                                     strategy="strategy_example",
                                                 ),
                                                 artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
@@ -15533,6 +15794,15 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         ),
                                                         archive_logs=True,
                                                         artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                                            pod_metadata=IoArgoprojWorkflowV1alpha1Metadata(
+                                                                annotations={
+                                                                    "key": "key_example",
+                                                                },
+                                                                labels={
+                                                                    "key": "key_example",
+                                                                },
+                                                            ),
+                                                            service_account_name="service_account_name_example",
                                                             strategy="strategy_example",
                                                         ),
                                                         artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
@@ -17203,6 +17473,15 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                     ),
                                                     archive_logs=True,
                                                     artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                                        pod_metadata=IoArgoprojWorkflowV1alpha1Metadata(
+                                                            annotations={
+                                                                "key": "key_example",
+                                                            },
+                                                            labels={
+                                                                "key": "key_example",
+                                                            },
+                                                        ),
+                                                        service_account_name="service_account_name_example",
                                                         strategy="strategy_example",
                                                     ),
                                                     artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
@@ -17470,6 +17749,15 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             ),
                                                             archive_logs=True,
                                                             artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                                                pod_metadata=IoArgoprojWorkflowV1alpha1Metadata(
+                                                                    annotations={
+                                                                        "key": "key_example",
+                                                                    },
+                                                                    labels={
+                                                                        "key": "key_example",
+                                                                    },
+                                                                ),
+                                                                service_account_name="service_account_name_example",
                                                                 strategy="strategy_example",
                                                             ),
                                                             artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
@@ -17759,6 +18047,15 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ),
                                         archive_logs=True,
                                         artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                            pod_metadata=IoArgoprojWorkflowV1alpha1Metadata(
+                                                annotations={
+                                                    "key": "key_example",
+                                                },
+                                                labels={
+                                                    "key": "key_example",
+                                                },
+                                            ),
+                                            service_account_name="service_account_name_example",
                                             strategy="strategy_example",
                                         ),
                                         artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
@@ -18303,6 +18600,15 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ),
                                         archive_logs=True,
                                         artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                            pod_metadata=IoArgoprojWorkflowV1alpha1Metadata(
+                                                annotations={
+                                                    "key": "key_example",
+                                                },
+                                                labels={
+                                                    "key": "key_example",
+                                                },
+                                            ),
+                                            service_account_name="service_account_name_example",
                                             strategy="strategy_example",
                                         ),
                                         artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
@@ -18611,6 +18917,15 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ),
                                         archive_logs=True,
                                         artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                            pod_metadata=IoArgoprojWorkflowV1alpha1Metadata(
+                                                annotations={
+                                                    "key": "key_example",
+                                                },
+                                                labels={
+                                                    "key": "key_example",
+                                                },
+                                            ),
+                                            service_account_name="service_account_name_example",
                                             strategy="strategy_example",
                                         ),
                                         artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
@@ -18881,6 +19196,15 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ),
                                         archive_logs=True,
                                         artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                            pod_metadata=IoArgoprojWorkflowV1alpha1Metadata(
+                                                annotations={
+                                                    "key": "key_example",
+                                                },
+                                                labels={
+                                                    "key": "key_example",
+                                                },
+                                            ),
+                                            service_account_name="service_account_name_example",
                                             strategy="strategy_example",
                                         ),
                                         artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
@@ -19708,6 +20032,15 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                     ),
                                                     archive_logs=True,
                                                     artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                                        pod_metadata=IoArgoprojWorkflowV1alpha1Metadata(
+                                                            annotations={
+                                                                "key": "key_example",
+                                                            },
+                                                            labels={
+                                                                "key": "key_example",
+                                                            },
+                                                        ),
+                                                        service_account_name="service_account_name_example",
                                                         strategy="strategy_example",
                                                     ),
                                                     artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
@@ -19971,6 +20304,15 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             ),
                                                             archive_logs=True,
                                                             artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                                                pod_metadata=IoArgoprojWorkflowV1alpha1Metadata(
+                                                                    annotations={
+                                                                        "key": "key_example",
+                                                                    },
+                                                                    labels={
+                                                                        "key": "key_example",
+                                                                    },
+                                                                ),
+                                                                service_account_name="service_account_name_example",
                                                                 strategy="strategy_example",
                                                             ),
                                                             artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
@@ -21854,6 +22196,15 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 ),
                                 archive_logs=True,
                                 artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                    pod_metadata=IoArgoprojWorkflowV1alpha1Metadata(
+                                        annotations={
+                                            "key": "key_example",
+                                        },
+                                        labels={
+                                            "key": "key_example",
+                                        },
+                                    ),
+                                    service_account_name="service_account_name_example",
                                     strategy="strategy_example",
                                 ),
                                 artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
@@ -22100,6 +22451,15 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         ],
                     ),
                     artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                        pod_metadata=IoArgoprojWorkflowV1alpha1Metadata(
+                            annotations={
+                                "key": "key_example",
+                            },
+                            labels={
+                                "key": "key_example",
+                            },
+                        ),
+                        service_account_name="service_account_name_example",
                         strategy="strategy_example",
                     ),
                     artifact_repository_ref=IoArgoprojWorkflowV1alpha1ArtifactRepositoryRef(
@@ -22140,6 +22500,15 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ),
                                         archive_logs=True,
                                         artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                            pod_metadata=IoArgoprojWorkflowV1alpha1Metadata(
+                                                annotations={
+                                                    "key": "key_example",
+                                                },
+                                                labels={
+                                                    "key": "key_example",
+                                                },
+                                            ),
+                                            service_account_name="service_account_name_example",
                                             strategy="strategy_example",
                                         ),
                                         artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
@@ -23544,6 +23913,15 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 ),
                                                 archive_logs=True,
                                                 artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                                    pod_metadata=IoArgoprojWorkflowV1alpha1Metadata(
+                                                        annotations={
+                                                            "key": "key_example",
+                                                        },
+                                                        labels={
+                                                            "key": "key_example",
+                                                        },
+                                                    ),
+                                                    service_account_name="service_account_name_example",
                                                     strategy="strategy_example",
                                                 ),
                                                 artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
@@ -23811,6 +24189,15 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         ),
                                                         archive_logs=True,
                                                         artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                                            pod_metadata=IoArgoprojWorkflowV1alpha1Metadata(
+                                                                annotations={
+                                                                    "key": "key_example",
+                                                                },
+                                                                labels={
+                                                                    "key": "key_example",
+                                                                },
+                                                            ),
+                                                            service_account_name="service_account_name_example",
                                                             strategy="strategy_example",
                                                         ),
                                                         artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
@@ -24100,6 +24487,15 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     ),
                                     archive_logs=True,
                                     artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                        pod_metadata=IoArgoprojWorkflowV1alpha1Metadata(
+                                            annotations={
+                                                "key": "key_example",
+                                            },
+                                            labels={
+                                                "key": "key_example",
+                                            },
+                                        ),
+                                        service_account_name="service_account_name_example",
                                         strategy="strategy_example",
                                     ),
                                     artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
@@ -24644,6 +25040,15 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     ),
                                     archive_logs=True,
                                     artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                        pod_metadata=IoArgoprojWorkflowV1alpha1Metadata(
+                                            annotations={
+                                                "key": "key_example",
+                                            },
+                                            labels={
+                                                "key": "key_example",
+                                            },
+                                        ),
+                                        service_account_name="service_account_name_example",
                                         strategy="strategy_example",
                                     ),
                                     artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
@@ -24952,6 +25357,15 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     ),
                                     archive_logs=True,
                                     artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                        pod_metadata=IoArgoprojWorkflowV1alpha1Metadata(
+                                            annotations={
+                                                "key": "key_example",
+                                            },
+                                            labels={
+                                                "key": "key_example",
+                                            },
+                                        ),
+                                        service_account_name="service_account_name_example",
                                         strategy="strategy_example",
                                     ),
                                     artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
@@ -25222,6 +25636,15 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     ),
                                     archive_logs=True,
                                     artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                        pod_metadata=IoArgoprojWorkflowV1alpha1Metadata(
+                                            annotations={
+                                                "key": "key_example",
+                                            },
+                                            labels={
+                                                "key": "key_example",
+                                            },
+                                        ),
+                                        service_account_name="service_account_name_example",
                                         strategy="strategy_example",
                                     ),
                                     artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
@@ -26049,6 +26472,15 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 ),
                                                 archive_logs=True,
                                                 artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                                    pod_metadata=IoArgoprojWorkflowV1alpha1Metadata(
+                                                        annotations={
+                                                            "key": "key_example",
+                                                        },
+                                                        labels={
+                                                            "key": "key_example",
+                                                        },
+                                                    ),
+                                                    service_account_name="service_account_name_example",
                                                     strategy="strategy_example",
                                                 ),
                                                 artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
@@ -26312,6 +26744,15 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         ),
                                                         archive_logs=True,
                                                         artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                                            pod_metadata=IoArgoprojWorkflowV1alpha1Metadata(
+                                                                annotations={
+                                                                    "key": "key_example",
+                                                                },
+                                                                labels={
+                                                                    "key": "key_example",
+                                                                },
+                                                            ),
+                                                            service_account_name="service_account_name_example",
                                                             strategy="strategy_example",
                                                         ),
                                                         artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
@@ -27982,6 +28423,15 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                     ),
                                                     archive_logs=True,
                                                     artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                                        pod_metadata=IoArgoprojWorkflowV1alpha1Metadata(
+                                                            annotations={
+                                                                "key": "key_example",
+                                                            },
+                                                            labels={
+                                                                "key": "key_example",
+                                                            },
+                                                        ),
+                                                        service_account_name="service_account_name_example",
                                                         strategy="strategy_example",
                                                     ),
                                                     artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
@@ -28249,6 +28699,15 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             ),
                                                             archive_logs=True,
                                                             artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                                                pod_metadata=IoArgoprojWorkflowV1alpha1Metadata(
+                                                                    annotations={
+                                                                        "key": "key_example",
+                                                                    },
+                                                                    labels={
+                                                                        "key": "key_example",
+                                                                    },
+                                                                ),
+                                                                service_account_name="service_account_name_example",
                                                                 strategy="strategy_example",
                                                             ),
                                                             artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
@@ -28538,6 +28997,15 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ),
                                         archive_logs=True,
                                         artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                            pod_metadata=IoArgoprojWorkflowV1alpha1Metadata(
+                                                annotations={
+                                                    "key": "key_example",
+                                                },
+                                                labels={
+                                                    "key": "key_example",
+                                                },
+                                            ),
+                                            service_account_name="service_account_name_example",
                                             strategy="strategy_example",
                                         ),
                                         artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
@@ -29082,6 +29550,15 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ),
                                         archive_logs=True,
                                         artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                            pod_metadata=IoArgoprojWorkflowV1alpha1Metadata(
+                                                annotations={
+                                                    "key": "key_example",
+                                                },
+                                                labels={
+                                                    "key": "key_example",
+                                                },
+                                            ),
+                                            service_account_name="service_account_name_example",
                                             strategy="strategy_example",
                                         ),
                                         artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
@@ -29390,6 +29867,15 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ),
                                         archive_logs=True,
                                         artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                            pod_metadata=IoArgoprojWorkflowV1alpha1Metadata(
+                                                annotations={
+                                                    "key": "key_example",
+                                                },
+                                                labels={
+                                                    "key": "key_example",
+                                                },
+                                            ),
+                                            service_account_name="service_account_name_example",
                                             strategy="strategy_example",
                                         ),
                                         artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
@@ -29660,6 +30146,15 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         ),
                                         archive_logs=True,
                                         artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                            pod_metadata=IoArgoprojWorkflowV1alpha1Metadata(
+                                                annotations={
+                                                    "key": "key_example",
+                                                },
+                                                labels={
+                                                    "key": "key_example",
+                                                },
+                                            ),
+                                            service_account_name="service_account_name_example",
                                             strategy="strategy_example",
                                         ),
                                         artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
@@ -30487,6 +30982,15 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                     ),
                                                     archive_logs=True,
                                                     artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                                        pod_metadata=IoArgoprojWorkflowV1alpha1Metadata(
+                                                            annotations={
+                                                                "key": "key_example",
+                                                            },
+                                                            labels={
+                                                                "key": "key_example",
+                                                            },
+                                                        ),
+                                                        service_account_name="service_account_name_example",
                                                         strategy="strategy_example",
                                                     ),
                                                     artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(
@@ -30750,6 +31254,15 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             ),
                                                             archive_logs=True,
                                                             artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                                                                pod_metadata=IoArgoprojWorkflowV1alpha1Metadata(
+                                                                    annotations={
+                                                                        "key": "key_example",
+                                                                    },
+                                                                    labels={
+                                                                        "key": "key_example",
+                                                                    },
+                                                                ),
+                                                                service_account_name="service_account_name_example",
                                                                 strategy="strategy_example",
                                                             ),
                                                             artifactory=IoArgoprojWorkflowV1alpha1ArtifactoryArtifact(

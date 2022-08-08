@@ -156,6 +156,12 @@ definitions:
   ArtifactGC:
     description: ArtifactGC describes how to delete artifacts from completed Workflows
     properties:
+      podMetadata:
+        $ref: '#/definitions/Metadata'
+      serviceAccountName:
+        description: ServiceAccountName is an optional field for specifying the Service
+          Account that should be assigned to the Pod doing the deletion
+        type: string
       strategy:
         $ref: '#/definitions/ArtifactGCStrategy'
     type: object
