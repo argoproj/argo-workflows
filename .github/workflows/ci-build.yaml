@@ -84,8 +84,10 @@ jobs:
             containerRuntimeExecutor: emissary
             profile: plugins
           - test: test-executor
+            containerRuntimeExecutor: emissary
             profile: minimal
           - test: test-corefunctional
+            containerRuntimeExecutor: emissary
             profile: minimal
           - test: test-functional
             containerRuntimeExecutor: emissary
