@@ -27,6 +27,7 @@ argo delete [--dry-run] [WORKFLOW...|[--all] [--older] [--completed] [--resubmit
       --completed               Delete completed workflows
       --dry-run                 Do not delete the workflow, only print what would happen
       --field-selector string   Selector (field query) to filter on, supports '=', '==', and '!='.(e.g. --field-selectorkey1=value1,key2=value2). The server only supports a limited number of field queries per type.
+      --force                   Force delete workflows by removing finalizers
   -h, --help                    help for delete
       --older string            Delete completed workflows finished before the specified duration (e.g. 10m, 3h, 1d)
       --prefix string           Delete workflows by prefix

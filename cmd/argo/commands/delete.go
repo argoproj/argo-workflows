@@ -9,10 +9,12 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
 	workflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflow"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	workflow "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
 )
 
 // NewDeleteCommand returns a new instance of an `argo delete` command
@@ -22,6 +24,7 @@ func NewDeleteCommand() *cobra.Command {
 		all           bool
 		allNamespaces bool
 		dryRun        bool
+		force         bool
 	)
 	command := &cobra.Command{
 		Use:   "delete [--dry-run] [WORKFLOW...|[--all] [--older] [--completed] [--resubmitted] [--prefix PREFIX] [--selector SELECTOR]]",
@@ -38,6 +41,14 @@ func NewDeleteCommand() *cobra.Command {
 			if len(args) == 0 && !(all || allNamespaces || flags.completed || flags.resubmitted || flags.prefix != "" || flags.labels != "" || flags.fields != "" || flags.finishedAfter != "") {
 				cmd.HelpFunc()(cmd, args)
 				os.Exit(1)
+			}
+
+			var workflowClientset *workflow.Clientset
+			if force {
+				clientConfig := client.GetConfig()
+				config, err := clientConfig.ClientConfig()
+				errors.CheckError(err)
+				workflowClientset = workflow.NewForConfigOrDie(config)
 			}
 
 			ctx, apiClient := client.NewAPIClient(cmd.Context())
@@ -64,6 +75,11 @@ func NewDeleteCommand() *cobra.Command {
 
 			for _, wf := range workflows {
 				if !dryRun {
+					if force {
+						workflowInterface := workflowClientset.ArgoprojV1alpha1().Workflows(wf.Namespace)
+						_, err := workflowInterface.Patch(ctx, wf.Name, types.MergePatchType, []byte("{\"metadata\":{\"finalizers\":null}}"), metav1.PatchOptions{})
+						errors.CheckError(err)
+					}
 					_, err := serviceClient.DeleteWorkflow(ctx, &workflowpkg.WorkflowDeleteRequest{Name: wf.Name, Namespace: wf.Namespace})
 					if err != nil && status.Code(err) == codes.NotFound {
 						fmt.Printf("Workflow '%s' not found\n", wf.Name)
@@ -87,5 +103,6 @@ func NewDeleteCommand() *cobra.Command {
 	command.Flags().StringVarP(&flags.labels, "selector", "l", "", "Selector (label query) to filter on, not including uninitialized ones, supports '=', '==', and '!='.(e.g. -l key1=value1,key2=value2)")
 	command.Flags().StringVar(&flags.fields, "field-selector", "", "Selector (field query) to filter on, supports '=', '==', and '!='.(e.g. --field-selectorkey1=value1,key2=value2). The server only supports a limited number of field queries per type.")
 	command.Flags().BoolVar(&dryRun, "dry-run", false, "Do not delete the workflow, only print what would happen")
+	command.Flags().BoolVar(&force, "force", false, "Force delete workflows by removing finalizers")
 	return command
 }
