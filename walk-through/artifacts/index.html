@@ -578,9 +578,67 @@
         
       
       
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          Artifacts
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
       <a href="./" class="md-nav__link md-nav__link--active">
         Artifacts
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#artifact-garbage-collection" class="md-nav__link">
+    Artifact Garbage Collection
+  </a>
+  
+    <nav class="md-nav" aria-label="Artifact Garbage Collection">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#artifact-naming" class="md-nav__link">
+    Artifact Naming
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#service-accounts-and-annotations" class="md-nav__link">
+    Service Accounts and Annotations
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-happens-if-garbage-collection-fails" class="md-nav__link">
+    What happens if Garbage Collection fails?
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
       
     </li>
   
@@ -3752,6 +3810,48 @@
     
   
   
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#artifact-garbage-collection" class="md-nav__link">
+    Artifact Garbage Collection
+  </a>
+  
+    <nav class="md-nav" aria-label="Artifact Garbage Collection">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#artifact-naming" class="md-nav__link">
+    Artifact Naming
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#service-accounts-and-annotations" class="md-nav__link">
+    Service Accounts and Annotations
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-happens-if-garbage-collection-fails" class="md-nav__link">
+    What happens if Garbage Collection fails?
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
 </nav>
                   </div>
                 </div>
@@ -3846,6 +3946,105 @@ The <code>artifact-example</code> template passes the <code>hello-art</code> art
 <span class="w">            </span><span class="c1"># no compression (also accepts the standard gzip 1 to 9 values)</span><span class="w"></span>
 <span class="w">            </span><span class="nt">compressionLevel</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0</span><span class="w"></span>
 <span class="l l-Scalar l-Scalar-Plain">&lt;... snipped ...&gt;</span><span class="w"></span>
+</code></pre></div>
+<h2 id="artifact-garbage-collection">Artifact Garbage Collection<a class="headerlink" href="#artifact-garbage-collection" title="Permanent link">&para;</a></h2>
+<p>As of version 3.4 you can configure your Workflow to automatically delete Artifacts that you don't need (presuming you're using S3 - other storage engines still need to be implemented).</p>
+<p>Artifacts can be deleted <code>OnWorkflowCompletion</code> or <code>OnWorkflowDeletion</code>. You can specify your Garbage Collection strategy on both the Workflow level and the Artifact level, so for example, you may have temporary artifacts that can be deleted right away but a final output that should be persisted:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span><span class="w"></span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Workflow</span><span class="w"></span>
+<span class="nt">metadata</span><span class="p">:</span><span class="w"></span>
+<span class="w">  </span><span class="nt">generateName</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">artifact-gc-</span><span class="w"></span>
+<span class="nt">spec</span><span class="p">:</span><span class="w"></span>
+<span class="w">  </span><span class="nt">entrypoint</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">main</span><span class="w"></span>
+<span class="w">  </span><span class="nt">artifactGC</span><span class="p">:</span><span class="w"></span>
+<span class="w">    </span><span class="nt">strategy</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">OnWorkflowDeletion</span><span class="w">  </span><span class="c1"># default Strategy set here applies to all Artifacts by default</span><span class="w"></span>
+<span class="w">  </span><span class="nt">templates</span><span class="p">:</span><span class="w"></span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">main</span><span class="w"></span>
+<span class="w">      </span><span class="nt">container</span><span class="p">:</span><span class="w"></span>
+<span class="w">        </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">argoproj/argosay:v2</span><span class="w"></span>
+<span class="w">        </span><span class="nt">command</span><span class="p">:</span><span class="w"></span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">sh</span><span class="w"></span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">-c</span><span class="w"></span>
+<span class="w">        </span><span class="nt">args</span><span class="p">:</span><span class="w"></span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">|</span><span class="w"></span>
+<span class="w">            </span><span class="no">echo &quot;can throw this away&quot; &gt; /tmp/temporary-artifact.txt</span><span class="w"></span>
+<span class="w">            </span><span class="no">echo &quot;keep this&quot; &gt; /tmp/keep-this.txt</span><span class="w"></span>
+<span class="w">      </span><span class="nt">outputs</span><span class="p">:</span><span class="w"></span>
+<span class="w">        </span><span class="nt">artifacts</span><span class="p">:</span><span class="w"></span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">temporary-artifact</span><span class="w"></span>
+<span class="w">            </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/tmp/temporary-artifact.txt</span><span class="w"></span>
+<span class="w">            </span><span class="nt">s3</span><span class="p">:</span><span class="w"></span>
+<span class="w">              </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">temporary-artifact.txt</span><span class="w"></span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">keep-this</span><span class="w"></span>
+<span class="w">            </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/tmp/keep-this.txt</span><span class="w"></span>
+<span class="w">            </span><span class="nt">s3</span><span class="p">:</span><span class="w"></span>
+<span class="w">              </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">keep-this.txt</span><span class="w"></span>
+<span class="w">            </span><span class="nt">artifactGC</span><span class="p">:</span><span class="w"></span>
+<span class="w">              </span><span class="nt">strategy</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Never</span><span class="w">   </span><span class="c1"># optional override for an Artifact</span><span class="w"></span>
+</code></pre></div>
+<h3 id="artifact-naming">Artifact Naming<a class="headerlink" href="#artifact-naming" title="Permanent link">&para;</a></h3>
+<p>Consider parameterizing your S3 keys by {{workflow.uid}}, etc (as shown in the example above) if there's a possibility that you could have concurrent Workflows of the same spec. This would be to avoid a scenario in which the artifact from one Workflow is being deleted while the same S3 key is being generated for a different Workflow.</p>
+<h3 id="service-accounts-and-annotations">Service Accounts and Annotations<a class="headerlink" href="#service-accounts-and-annotations" title="Permanent link">&para;</a></h3>
+<p>Does your S3 bucket require you to run with a special Service Account or IAM Role Annotation? You can either use the same ones you use for creating artifacts or generate new ones that are specific for deletion permission. Generally users will probably just have a single Service Account or IAM Role to apply to all artifacts for the Workflow, but you can also customize on the artifact level if you need that:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span><span class="w"></span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Workflow</span><span class="w"></span>
+<span class="nt">metadata</span><span class="p">:</span><span class="w"></span>
+<span class="w">  </span><span class="nt">generateName</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">artifact-gc-</span><span class="w"></span>
+<span class="nt">spec</span><span class="p">:</span><span class="w"></span>
+<span class="w">  </span><span class="nt">entrypoint</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">main</span><span class="w"></span>
+<span class="w">  </span><span class="nt">artifactGC</span><span class="p">:</span><span class="w"></span>
+<span class="w">    </span><span class="nt">strategy</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">OnWorkflowDeletion</span><span class="w"> </span>
+<span class="w">    </span><span class="c1">##############################################################################################</span><span class="w"></span>
+<span class="w">    </span><span class="c1">#    Workflow Level Service Account and Metadata</span><span class="w"></span>
+<span class="w">    </span><span class="c1">##############################################################################################</span><span class="w"></span>
+<span class="w">    </span><span class="nt">serviceAccountName</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-sa</span><span class="w"></span>
+<span class="w">    </span><span class="nt">podMetadata</span><span class="p">:</span><span class="w"></span>
+<span class="w">      </span><span class="nt">annotations</span><span class="p">:</span><span class="w"></span>
+<span class="w">        </span><span class="nt">eks.amazonaws.com/role-arn</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">arn:aws:iam::111122223333:role/my-iam-role</span><span class="w"></span>
+<span class="w">  </span><span class="nt">templates</span><span class="p">:</span><span class="w"></span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">main</span><span class="w"></span>
+<span class="w">      </span><span class="nt">container</span><span class="p">:</span><span class="w"></span>
+<span class="w">        </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">argoproj/argosay:v2</span><span class="w"></span>
+<span class="w">        </span><span class="nt">command</span><span class="p">:</span><span class="w"></span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">sh</span><span class="w"></span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">-c</span><span class="w"></span>
+<span class="w">        </span><span class="nt">args</span><span class="p">:</span><span class="w"></span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">|</span><span class="w"></span>
+<span class="w">            </span><span class="no">echo &quot;can throw this away&quot; &gt; /tmp/temporary-artifact.txt</span><span class="w"></span>
+<span class="w">            </span><span class="no">echo &quot;keep this&quot; &gt; /tmp/keep-this.txt</span><span class="w"></span>
+<span class="w">      </span><span class="nt">outputs</span><span class="p">:</span><span class="w"></span>
+<span class="w">        </span><span class="nt">artifacts</span><span class="p">:</span><span class="w"></span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">temporary-artifact</span><span class="w"></span>
+<span class="w">            </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/tmp/temporary-artifact.txt</span><span class="w"></span>
+<span class="w">            </span><span class="nt">s3</span><span class="p">:</span><span class="w"></span>
+<span class="w">              </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">temporary-artifact-{{workflow.uid}}.txt</span><span class="w"></span>
+<span class="w">            </span><span class="nt">artifactGC</span><span class="p">:</span><span class="w"></span>
+<span class="w">              </span><span class="c1">####################################################################################</span><span class="w"></span>
+<span class="w">              </span><span class="c1">#    Optional override capability</span><span class="w"></span>
+<span class="w">              </span><span class="c1">####################################################################################</span><span class="w"></span>
+<span class="w">              </span><span class="nt">serviceAccountName</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">artifact-specific-sa</span><span class="w"></span>
+<span class="w">              </span><span class="nt">podMetadata</span><span class="p">:</span><span class="w"></span>
+<span class="w">                </span><span class="nt">annotations</span><span class="p">:</span><span class="w"></span>
+<span class="w">                  </span><span class="nt">eks.amazonaws.com/role-arn</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">arn:aws:iam::111122223333:role/artifact-specific-iam-role</span><span class="w"></span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">keep-this</span><span class="w"></span>
+<span class="w">            </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/tmp/keep-this.txt</span><span class="w"></span>
+<span class="w">            </span><span class="nt">s3</span><span class="p">:</span><span class="w"></span>
+<span class="w">              </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">keep-this-{{workflow.uid}}.txt</span><span class="w"></span>
+<span class="w">            </span><span class="nt">artifactGC</span><span class="p">:</span><span class="w"></span>
+<span class="w">              </span><span class="nt">strategy</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Never</span><span class="w"></span>
+</code></pre></div>
+<p>If you do supply your own Service Account you will need to create a RoleBinding that binds it with the new <code>artifactgc</code> Role.</p>
+<h3 id="what-happens-if-garbage-collection-fails">What happens if Garbage Collection fails?<a class="headerlink" href="#what-happens-if-garbage-collection-fails" title="Permanent link">&para;</a></h3>
+<p>If deletion of the artifact fails for some reason (other than the Artifact already have been deleted which is not considered a failure), the Workflow's Status will be marked with a new Condition to indicate "Artifact GC Failure", a Kubernetes Event will be issued, and the Argo Server UI will also indicate the failure. In that case, if the user needs to delete the Workflow and its child CRD objects, the user will need to patch the Workflow to remove the finalizer preventing the deletion:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span><span class="w"></span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Workflow</span><span class="w"></span>
+<span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">finalizers</span><span class="p p-Indicator">:</span><span class="w"></span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">workflows.argoproj.io/artifact-gc</span><span class="w"></span>
+</code></pre></div>
+<p>The finalizer can be deleted by doing:</p>
+<div class="highlight"><pre><span></span><code>kubectl patch workflow my-wf <span class="se">\</span>
+    --type json <span class="se">\</span>
+    --patch<span class="o">=</span><span class="s1">&#39;[ { &quot;op&quot;: &quot;remove&quot;, &quot;path&quot;: &quot;/metadata/finalizers&quot; } ]&#39;</span>
 </code></pre></div>
 
               
