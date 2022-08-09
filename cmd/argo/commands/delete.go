@@ -9,12 +9,10 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
 	workflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflow"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	workflow "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
 )
 
 // NewDeleteCommand returns a new instance of an `argo delete` command
@@ -43,14 +41,6 @@ func NewDeleteCommand() *cobra.Command {
 				os.Exit(1)
 			}
 
-			var workflowClientset *workflow.Clientset
-			if force {
-				clientConfig := client.GetConfig()
-				config, err := clientConfig.ClientConfig()
-				errors.CheckError(err)
-				workflowClientset = workflow.NewForConfigOrDie(config)
-			}
-
 			ctx, apiClient := client.NewAPIClient(cmd.Context())
 			serviceClient := apiClient.NewWorkflowServiceClient()
 			var workflows wfv1.Workflows
@@ -75,12 +65,7 @@ func NewDeleteCommand() *cobra.Command {
 
 			for _, wf := range workflows {
 				if !dryRun {
-					if force {
-						workflowInterface := workflowClientset.ArgoprojV1alpha1().Workflows(wf.Namespace)
-						_, err := workflowInterface.Patch(ctx, wf.Name, types.MergePatchType, []byte("{\"metadata\":{\"finalizers\":null}}"), metav1.PatchOptions{})
-						errors.CheckError(err)
-					}
-					_, err := serviceClient.DeleteWorkflow(ctx, &workflowpkg.WorkflowDeleteRequest{Name: wf.Name, Namespace: wf.Namespace})
+					_, err := serviceClient.DeleteWorkflow(ctx, &workflowpkg.WorkflowDeleteRequest{Name: wf.Name, Namespace: wf.Namespace, Force: force})
 					if err != nil && status.Code(err) == codes.NotFound {
 						fmt.Printf("Workflow '%s' not found\n", wf.Name)
 						continue
