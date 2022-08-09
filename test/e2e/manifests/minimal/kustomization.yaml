@@ -13,6 +13,7 @@ patchesStrategicMerge:
 - ../mixins/workflow-controller-configmap.yaml
 - ../mixins/workflow-controller-deployment.yaml
 - ../mixins/cluster-workflow-template-rbac.yaml
+- ../mixins/minio-deployment.yaml
 
 commonLabels:
   app.kubernetes.io/part-of: argo
