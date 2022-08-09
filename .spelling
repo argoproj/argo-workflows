@@ -78,6 +78,9 @@ Node.JS.
 OAuth
 OAuth2
 Okta
+parameterize
+parameterized
+parameterizing
 PDBs
 PProf
 PVCs
@@ -85,6 +88,7 @@ Peixuan
 Ploomber
 Postgres
 Roadmap
+RoleBinding
 SDKs
 Sharding
 Singer.io
