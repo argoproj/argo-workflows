@@ -136,12 +136,12 @@ func (s *SignalsSuite) TestInjectedSidecar() {
 		WaitForWorkflow(fixtures.ToBeSucceeded, kill2xDuration)
 }
 
-func (s *SignalsSuite) TestSubProcess() {
+func (s *SignalsSuite) TestInjectedSidecarKillAnnotation() {
 	s.Given().
-		Workflow("@testdata/subprocess-workflow.yaml").
+		Workflow("@testdata/sidecar-injected-kill-annotation-workflow.yaml").
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow()
+		WaitForWorkflow(fixtures.ToBeSucceeded, kill2xDuration)
 }
 
 func TestSignalsSuite(t *testing.T) {
