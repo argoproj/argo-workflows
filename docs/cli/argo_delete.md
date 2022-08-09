@@ -3,7 +3,7 @@
 delete workflows
 
 ```
-argo delete [--dry-run] [WORKFLOW...|[--all] [--older] [--completed] [--resubmitted] [--prefix PREFIX] [--selector SELECTOR]] [flags]
+argo delete [--dry-run] [WORKFLOW...|[--all] [--older] [--completed] [--resubmitted] [--prefix PREFIX] [--selector SELECTOR] [--force] ] [flags]
 ```
 
 ### Examples
