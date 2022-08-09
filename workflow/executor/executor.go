@@ -407,6 +407,22 @@ func (we *WorkflowExecutor) stageArchiveFile(containerName string, art *wfv1.Art
 			}
 			return fileName, mountedArtPath, nil
 		}
+		if strategy.Zip != nil {
+			fileName := fmt.Sprintf("%s.zip", art.Name)
+			localArtPath := filepath.Join(tempOutArtDir, fileName)
+			f, err := os.Create(localArtPath)
+			if err != nil {
+				return "", "", argoerrs.InternalWrapError(err)
+			}
+			zw := zip.NewWriter(f)
+			defer zw.Close()
+			err = archive.ZipToWriter(mountedArtPath, zw)
+			if err != nil {
+				return "", "", err
+			}
+			log.Infof("Successfully staged %s from mirrored volume mount %s", art.Path, mountedArtPath)
+			return fileName, localArtPath, nil
+		}
 		fileName := fmt.Sprintf("%s.tgz", art.Name)
 		localArtPath := filepath.Join(tempOutArtDir, fileName)
 		f, err := os.Create(localArtPath)
@@ -465,6 +481,22 @@ func (we *WorkflowExecutor) stageArchiveFile(containerName string, art *wfv1.Art
 	}
 	// In the future, if we were to support other compression formats (e.g. bzip2) or options
 	// the logic would go here, and compression would be moved out of the executors
+	if strategy.Zip != nil {
+		fileName = fmt.Sprintf("%s.zip", art.Name)
+		localArtPath = filepath.Join(tempOutArtDir, fileName)
+		f, err := os.Create(localArtPath)
+		if err != nil {
+			return "", "", argoerrs.InternalWrapError(err)
+		}
+		zw := zip.NewWriter(f)
+		defer zw.Close()
+		err = archive.ZipToWriter(unarchivedArtPath, zw)
+		if err != nil {
+			return "", "", err
+		}
+		log.Infof("Successfully zipped %s to %s", unarchivedArtPath, localArtPath)
+		return fileName, localArtPath, nil
+	}
 	return fileName, localArtPath, nil
 }
 

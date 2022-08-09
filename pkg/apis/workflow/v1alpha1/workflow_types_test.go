@@ -207,6 +207,85 @@ func TestWorkflowHasArtifactGC(t *testing.T) {
 
 }
 
+func TestWorkflowGetArtifactGCStrategy(t *testing.T) {
+	tests := []struct {
+		name                      string
+		workflowArtGCStrategySpec string
+		artifactGCStrategySpec    string
+		expectedStrategy          ArtifactGCStrategy
+	}{
+		{
+			name: "WorkflowLevel",
+			workflowArtGCStrategySpec: `
+              artifactGC:
+                strategy: OnWorkflowCompletion`,
+			artifactGCStrategySpec: "",
+			expectedStrategy:       ArtifactGCOnWorkflowCompletion,
+		},
+		{
+			name: "ArtifactOverride",
+			workflowArtGCStrategySpec: `
+              artifactGC:
+                strategy: OnWorkflowCompletion`,
+			artifactGCStrategySpec: `
+                      artifactGC:
+                        strategy: Never`,
+			expectedStrategy: ArtifactGCNever,
+		},
+		{
+			name: "NotDefined",
+			workflowArtGCStrategySpec: `
+              artifactGC:`,
+			artifactGCStrategySpec: `
+                      artifactGC:`,
+			expectedStrategy: ArtifactGCNever,
+		},
+		{
+			name: "NotDefined2",
+			workflowArtGCStrategySpec: `
+              artifactGC:
+                strategy: ""`,
+			artifactGCStrategySpec: `
+                      artifactGC:
+                        strategy: ""`,
+			expectedStrategy: ArtifactGCNever,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			workflowSpec := fmt.Sprintf(`
+            apiVersion: argoproj.io/v1alpha1
+            kind: Workflow
+            metadata:
+              generateName: artifact-passing-
+            spec:
+              entrypoint: whalesay
+              %s
+              templates:
+              - name: whalesay
+                container:
+                  image: docker/whalesay:latest
+                  command: [sh, -c]
+                  args: ["sleep 1; cowsay hello world | tee /tmp/hello_world.txt"]
+                outputs:
+                  artifacts:
+                    - name: out
+                      path: /out
+                      s3:
+                        key: out
+                        %s`, tt.workflowArtGCStrategySpec, tt.artifactGCStrategySpec)
+
+			wf := MustUnmarshalWorkflow(workflowSpec)
+			a := wf.Spec.Templates[0].Outputs.Artifacts[0]
+			gcStrategy := wf.GetArtifactGCStrategy(&a)
+			assert.Equal(t, tt.expectedStrategy, gcStrategy)
+		})
+	}
+
+}
+
 func TestArtifact_ValidatePath(t *testing.T) {
 	t.Run("empty path fails", func(t *testing.T) {
 		a1 := Artifact{Name: "a1", Path: ""}
@@ -638,11 +717,11 @@ func TestArtifact_GetArchive(t *testing.T) {
 func TestArtifactGC_GetStrategy(t *testing.T) {
 	t.Run("Nil", func(t *testing.T) {
 		var artifactGC *ArtifactGC
-		assert.Equal(t, ArtifactGCNever, artifactGC.GetStrategy())
+		assert.Equal(t, ArtifactGCStrategyUndefined, artifactGC.GetStrategy())
 	})
 	t.Run("Unspecified", func(t *testing.T) {
 		var artifactGC = &ArtifactGC{}
-		assert.Equal(t, ArtifactGCNever, artifactGC.GetStrategy())
+		assert.Equal(t, ArtifactGCStrategyUndefined, artifactGC.GetStrategy())
 	})
 	t.Run("Specified", func(t *testing.T) {
 		var artifactGC = &ArtifactGC{Strategy: ArtifactGCOnWorkflowCompletion}
@@ -1046,7 +1125,7 @@ func TestWorkflowSpec_GetArtifactGC(t *testing.T) {
 	spec := WorkflowSpec{}
 
 	assert.NotNil(t, spec.GetArtifactGC())
-	assert.Equal(t, &ArtifactGC{Strategy: ArtifactGCNever}, spec.GetArtifactGC())
+	assert.Equal(t, &ArtifactGC{Strategy: ArtifactGCStrategyUndefined}, spec.GetArtifactGC())
 }
 
 func TestWorkflowSpec_GetVolumeGC(t *testing.T) {

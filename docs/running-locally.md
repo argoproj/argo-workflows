@@ -2,8 +2,8 @@
 
 You have two options:
 
-1. If you're using VSCode, you use the Dev-Container. This takes about 7 minutes. Pre-commit checks take about 4 minutes to run.
-1. Install the requirements on your computer manually. This takes about 1 hour. Pre-commit checks take about 3 minutes to run.
+1. If you're using VSCode, you use the [Dev-Container](#development-container). This takes about 7 minutes.
+1. Install the [requirements](#requirements) on your computer manually. This takes about 1 hour.
 
 ## Git Clone
 
@@ -83,13 +83,15 @@ Run:
 make start 
 ```
 
-Make sure you don't see any errors in your terminal.
+Make sure you don't see any errors in your terminal. This runs the Workflow Controller locally on your machine (not in Docker/Kubernetes).
 
 You can submit a workflow for testing using `kubectl`:
 
 ```bash
 kubectl create -f examples/hello-world.yaml 
 ```
+
+We recommend running `make clean` before `make start` to ensure recompilation.
 
 If you made changes to the executor, you need to build the image:
 
@@ -103,6 +105,8 @@ To also start the API on <http://localhost:2746>:
 make start API=true
 ```
 
+This runs the Argo Server (in addition to the Workflow Controller) locally on your machine.
+
 To also start the UI on <http://localhost:8080> (`UI=true` implies `API=true`):
 
 ```bash
@@ -111,12 +115,14 @@ make start UI=true
 
 ![diagram](assets/make-start-UI-true.png)
 
-If you are making change to the CLI, you can build it:
+If you are making change to the CLI (i.e. Argo Server), you can build it separately if you want:
 
 ```bash
 make cli 
 ./dist/argo submit examples/hello-world.yaml ;# new CLI is created as `./dist/argo` 
 ```
+
+Although, note that this will be built automatically if you do: `make start API=true`.
 
 To test the workflow archive, use `PROFILE=mysql` or `PROFILE=postgres`:
 
