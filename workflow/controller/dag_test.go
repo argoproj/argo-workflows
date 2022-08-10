@@ -3449,40 +3449,6 @@ func TestDagHttpChildrenAssigned(t *testing.T) {
 	}
 }
 
-<<<<<<< HEAD
-var tasksWithPriority = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: tasks-with-priority-
-spec:
-  entrypoint: main
-  templates:
-  - name: main
-    parallelism: 1
-    dag:
-      tasks:
-      - name: A
-        priority: 50
-        template: fail
-      - name: B
-        priority: 100
-        template: succeed
-        
-  - name: succeed
-    container:
-      image: alpine:3.7
-      command: [sh, -c, "exit 0"]
-     
-  - name: fail
-    container:
-      image: alpine:3.7
-      command: [sh, -c, "exit 1"]
-`
-
-func TestTasksWithPriority(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(tasksWithPriority)
-=======
 var retryTypeDagTaskRunExitNodeAfterCompleted = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -3597,22 +3563,11 @@ status:
 
 func TestRetryTypeDagTaskRunExitNodeAfterCompleted(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(retryTypeDagTaskRunExitNodeAfterCompleted)
->>>>>>> master
 	cancel, controller := newController(wf)
 	defer cancel()
 
 	ctx := context.Background()
 	woc := newWorkflowOperationCtx(wf, controller)
-<<<<<<< HEAD
-
-	woc.operate(ctx)
-	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
-
-	woc.operate(ctx)
-	// assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
-
-	woc.wf.Status.Nodes.FindByDisplayName("B").StartedAt.Before(&woc.wf.Status.Nodes.FindByDisplayName("A").StartedAt)
-=======
 	// retryTypeDAGTask completed
 	printAChild := woc.wf.Status.Nodes.FindByDisplayName("printA(0)")
 	assert.Equal(t, wfv1.NodeSucceeded, printAChild.Phase)
@@ -3634,5 +3589,4 @@ func TestRetryTypeDagTaskRunExitNodeAfterCompleted(t *testing.T) {
 	nextDAGTaskNode := woc.wf.Status.Nodes.FindByDisplayName("dependencyTesting")
 	assert.NotNil(t, nextDAGTaskNode)
 	assert.Equal(t, wfv1.NodeRunning, nextDAGTaskNode.Phase)
->>>>>>> master
 }
