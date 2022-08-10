@@ -429,11 +429,25 @@ spec:
                               type: boolean
                             artifactGC:
                               properties:
+                                podMetadata:
+                                  properties:
+                                    annotations:
+                                      additionalProperties:
+                                        type: string
+                                      type: object
+                                    labels:
+                                      additionalProperties:
+                                        type: string
+                                      type: object
+                                  type: object
+                                serviceAccountName:
+                                  type: string
                                 strategy:
                                   enum:
                                   - ""
                                   - OnWorkflowCompletion
                                   - OnWorkflowDeletion
+                                  - Never
                                   type: string
                               type: object
                             artifactory:
@@ -941,11 +955,25 @@ spec:
                     type: object
                   artifactGC:
                     properties:
+                      podMetadata:
+                        properties:
+                          annotations:
+                            additionalProperties:
+                              type: string
+                            type: object
+                          labels:
+                            additionalProperties:
+                              type: string
+                            type: object
+                        type: object
+                      serviceAccountName:
+                        type: string
                       strategy:
                         enum:
                         - ""
                         - OnWorkflowCompletion
                         - OnWorkflowDeletion
+                        - Never
                         type: string
                     type: object
                   artifactRepositoryRef:
@@ -1011,11 +1039,25 @@ spec:
                                     type: boolean
                                   artifactGC:
                                     properties:
+                                      podMetadata:
+                                        properties:
+                                          annotations:
+                                            additionalProperties:
+                                              type: string
+                                            type: object
+                                          labels:
+                                            additionalProperties:
+                                              type: string
+                                            type: object
+                                        type: object
+                                      serviceAccountName:
+                                        type: string
                                       strategy:
                                         enum:
                                         - ""
                                         - OnWorkflowCompletion
                                         - OnWorkflowDeletion
+                                        - Never
                                         type: string
                                     type: object
                                   artifactory:
@@ -3873,11 +3915,25 @@ spec:
                                             type: boolean
                                           artifactGC:
                                             properties:
+                                              podMetadata:
+                                                properties:
+                                                  annotations:
+                                                    additionalProperties:
+                                                      type: string
+                                                    type: object
+                                                  labels:
+                                                    additionalProperties:
+                                                      type: string
+                                                    type: object
+                                                type: object
+                                              serviceAccountName:
+                                                type: string
                                               strategy:
                                                 enum:
                                                 - ""
                                                 - OnWorkflowCompletion
                                                 - OnWorkflowDeletion
+                                                - Never
                                                 type: string
                                             type: object
                                           artifactory:
@@ -4421,11 +4477,25 @@ spec:
                                                   type: boolean
                                                 artifactGC:
                                                   properties:
+                                                    podMetadata:
+                                                      properties:
+                                                        annotations:
+                                                          additionalProperties:
+                                                            type: string
+                                                          type: object
+                                                        labels:
+                                                          additionalProperties:
+                                                            type: string
+                                                          type: object
+                                                      type: object
+                                                    serviceAccountName:
+                                                      type: string
                                                     strategy:
                                                       enum:
                                                       - ""
                                                       - OnWorkflowCompletion
                                                       - OnWorkflowDeletion
+                                                      - Never
                                                       type: string
                                                   type: object
                                                 artifactory:
@@ -5023,11 +5093,25 @@ spec:
                                     type: boolean
                                   artifactGC:
                                     properties:
+                                      podMetadata:
+                                        properties:
+                                          annotations:
+                                            additionalProperties:
+                                              type: string
+                                            type: object
+                                          labels:
+                                            additionalProperties:
+                                              type: string
+                                            type: object
+                                        type: object
+                                      serviceAccountName:
+                                        type: string
                                       strategy:
                                         enum:
                                         - ""
                                         - OnWorkflowCompletion
                                         - OnWorkflowDeletion
+                                        - Never
                                         type: string
                                     type: object
                                   artifactory:
@@ -6172,11 +6256,25 @@ spec:
                                   type: boolean
                                 artifactGC:
                                   properties:
+                                    podMetadata:
+                                      properties:
+                                        annotations:
+                                          additionalProperties:
+                                            type: string
+                                          type: object
+                                        labels:
+                                          additionalProperties:
+                                            type: string
+                                          type: object
+                                      type: object
+                                    serviceAccountName:
+                                      type: string
                                     strategy:
                                       enum:
                                       - ""
                                       - OnWorkflowCompletion
                                       - OnWorkflowDeletion
+                                      - Never
                                       type: string
                                   type: object
                                 artifactory:
@@ -6808,11 +6906,25 @@ spec:
                                   type: boolean
                                 artifactGC:
                                   properties:
+                                    podMetadata:
+                                      properties:
+                                        annotations:
+                                          additionalProperties:
+                                            type: string
+                                          type: object
+                                        labels:
+                                          additionalProperties:
+                                            type: string
+                                          type: object
+                                      type: object
+                                    serviceAccountName:
+                                      type: string
                                     strategy:
                                       enum:
                                       - ""
                                       - OnWorkflowCompletion
                                       - OnWorkflowDeletion
+                                      - Never
                                       type: string
                                   type: object
                                 artifactory:
@@ -7367,11 +7479,25 @@ spec:
                                     type: boolean
                                   artifactGC:
                                     properties:
+                                      podMetadata:
+                                        properties:
+                                          annotations:
+                                            additionalProperties:
+                                              type: string
+                                            type: object
+                                          labels:
+                                            additionalProperties:
+                                              type: string
+                                            type: object
+                                        type: object
+                                      serviceAccountName:
+                                        type: string
                                       strategy:
                                         enum:
                                         - ""
                                         - OnWorkflowCompletion
                                         - OnWorkflowDeletion
+                                        - Never
                                         type: string
                                     type: object
                                   artifactory:
@@ -11881,11 +12007,25 @@ spec:
                                               type: boolean
                                             artifactGC:
                                               properties:
+                                                podMetadata:
+                                                  properties:
+                                                    annotations:
+                                                      additionalProperties:
+                                                        type: string
+                                                      type: object
+                                                    labels:
+                                                      additionalProperties:
+                                                        type: string
+                                                      type: object
+                                                  type: object
+                                                serviceAccountName:
+                                                  type: string
                                                 strategy:
                                                   enum:
                                                   - ""
                                                   - OnWorkflowCompletion
                                                   - OnWorkflowDeletion
+                                                  - Never
                                                   type: string
                                               type: object
                                             artifactory:
@@ -12429,11 +12569,25 @@ spec:
                                                     type: boolean
                                                   artifactGC:
                                                     properties:
+                                                      podMetadata:
+                                                        properties:
+                                                          annotations:
+                                                            additionalProperties:
+                                                              type: string
+                                                            type: object
+                                                          labels:
+                                                            additionalProperties:
+                                                              type: string
+                                                            type: object
+                                                        type: object
+                                                      serviceAccountName:
+                                                        type: string
                                                       strategy:
                                                         enum:
                                                         - ""
                                                         - OnWorkflowCompletion
                                                         - OnWorkflowDeletion
+                                                        - Never
                                                         type: string
                                                     type: object
                                                   artifactory:
@@ -13031,11 +13185,25 @@ spec:
                                       type: boolean
                                     artifactGC:
                                       properties:
+                                        podMetadata:
+                                          properties:
+                                            annotations:
+                                              additionalProperties:
+                                                type: string
+                                              type: object
+                                            labels:
+                                              additionalProperties:
+                                                type: string
+                                              type: object
+                                          type: object
+                                        serviceAccountName:
+                                          type: string
                                         strategy:
                                           enum:
                                           - ""
                                           - OnWorkflowCompletion
                                           - OnWorkflowDeletion
+                                          - Never
                                           type: string
                                       type: object
                                     artifactory:
@@ -14180,11 +14348,25 @@ spec:
                                     type: boolean
                                   artifactGC:
                                     properties:
+                                      podMetadata:
+                                        properties:
+                                          annotations:
+                                            additionalProperties:
+                                              type: string
+                                            type: object
+                                          labels:
+                                            additionalProperties:
+                                              type: string
+                                            type: object
+                                        type: object
+                                      serviceAccountName:
+                                        type: string
                                       strategy:
                                         enum:
                                         - ""
                                         - OnWorkflowCompletion
                                         - OnWorkflowDeletion
+                                        - Never
                                         type: string
                                     type: object
                                   artifactory:
@@ -14816,11 +14998,25 @@ spec:
                                     type: boolean
                                   artifactGC:
                                     properties:
+                                      podMetadata:
+                                        properties:
+                                          annotations:
+                                            additionalProperties:
+                                              type: string
+                                            type: object
+                                          labels:
+                                            additionalProperties:
+                                              type: string
+                                            type: object
+                                        type: object
+                                      serviceAccountName:
+                                        type: string
                                       strategy:
                                         enum:
                                         - ""
                                         - OnWorkflowCompletion
                                         - OnWorkflowDeletion
+                                        - Never
                                         type: string
                                     type: object
                                   artifactory:
@@ -15375,11 +15571,25 @@ spec:
                                       type: boolean
                                     artifactGC:
                                       properties:
+                                        podMetadata:
+                                          properties:
+                                            annotations:
+                                              additionalProperties:
+                                                type: string
+                                              type: object
+                                            labels:
+                                              additionalProperties:
+                                                type: string
+                                              type: object
+                                          type: object
+                                        serviceAccountName:
+                                          type: string
                                         strategy:
                                           enum:
                                           - ""
                                           - OnWorkflowCompletion
                                           - OnWorkflowDeletion
+                                          - Never
                                           type: string
                                       type: object
                                     artifactory:

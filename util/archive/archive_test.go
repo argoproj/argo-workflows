@@ -1,6 +1,7 @@
 package archive
 
 import (
+	"archive/zip"
 	"bufio"
 	"compress/gzip"
 	"crypto/rand"
@@ -138,4 +139,69 @@ func TestTarFile(t *testing.T) {
 			assert.NoError(t, err)
 		})
 	}
+}
+
+func TestZipDirectory(t *testing.T) {
+	tests := []struct {
+		name    string
+		src     string
+		wantErr bool
+	}{
+		{
+			"dir_missing",
+			"./fake/dir",
+			true,
+		},
+		{
+			"dir_common",
+			"../../test/e2e",
+			false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			f, err := tempFile(os.TempDir()+"/argo-test", "dir-"+tt.name+"-", ".tgz")
+			assert.NoError(t, err)
+
+			log.Infof("Zipping to %s", f.Name())
+
+			err = ZipToWriter(tt.src, zip.NewWriter(f))
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+
+			err = os.Remove(f.Name())
+			assert.NoError(t, err)
+
+			err = f.Close()
+			assert.NoError(t, err)
+		})
+	}
+}
+
+func TestZipFile(t *testing.T) {
+	t.Run("test_zip_file", func(t *testing.T) {
+		data, err := tempFile(os.TempDir()+"/argo-test", "file-random-", "")
+		assert.NoError(t, err)
+		_, err = data.WriteString("hello world")
+		assert.NoError(t, err)
+		err = data.Close()
+		assert.NoError(t, err)
+
+		dataZipPath := data.Name() + ".zip"
+		f, err := os.Create(dataZipPath)
+		assert.NoError(t, err)
+
+		err = ZipToWriter(data.Name(), zip.NewWriter(f))
+		assert.NoError(t, err)
+
+		err = os.Remove(data.Name())
+		assert.NoError(t, err)
+		err = f.Close()
+		assert.NoError(t, err)
+		err = os.Remove(f.Name())
+		assert.NoError(t, err)
+	})
 }
