@@ -12,7 +12,7 @@ argo list [flags]
   -A, --all-namespaces          Show workflows from all namespaces
       --chunk-size int          Return large lists in chunks rather than all at once. Pass 0 to disable.
       --completed               Show completed workflows. Mutually exclusive with --running.
-      --field-selector string   Selector (field query) to filter on, supports '=', '==', and '!='.(e.g. --field-selectorkey1=value1,key2=value2). The server only supports a limited number of field queries per type.
+      --field-selector string   Selector (field query) to filter on, supports '=', '==', and '!='.(e.g. --field-selector key1=value1,key2=value2). The server only supports a limited number of field queries per type.
   -h, --help                    help for list
       --no-headers              Don't print headers (default print headers).
       --older string            List completed workflows finished before the specified duration (e.g. 10m, 3h, 1d)
