@@ -299,6 +299,9 @@ func (s *workflowServer) DeleteWorkflow(ctx context.Context, req *workflowpkg.Wo
 	if err != nil {
 		return nil, err
 	}
+	if wf.Finalizers != nil && !req.Force {
+		return nil, fmt.Errorf("%s has finalizer. Use argo delete --force to delete this workflow", wf.Name)
+	}
 	if req.Force {
 		_, err := auth.GetWfClient(ctx).ArgoprojV1alpha1().Workflows(wf.Namespace).Patch(ctx, wf.Name, types.MergePatchType, []byte("{\"metadata\":{\"finalizers\":null}}"), metav1.PatchOptions{})
 		if err != nil {
