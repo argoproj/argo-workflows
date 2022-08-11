@@ -337,7 +337,7 @@ func (s *gatekeeper) authorizationForServiceAccount(ctx context.Context, service
 }
 
 func (s *gatekeeper) checkToken(ctx context.Context, authorization string) error {
-	token := strings.TrimSpace(strings.TrimPrefix(authorization, "Bearer"))
+	token := strings.TrimSpace(strings.TrimPrefix(strings.TrimPrefix(authorization, "Bearer"), "Basic"))
 	// Check token itself
 	secret, err := s.cache.GetSecret(ctx, s.namespace, s.tokenSecret)
 	if err != nil {
