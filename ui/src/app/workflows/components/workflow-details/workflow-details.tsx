@@ -69,7 +69,7 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
     const [error, setError] = useState<Error>();
     const selectedNode = workflow && workflow.status && workflow.status.nodes && workflow.status.nodes[nodeId];
     const selectedArtifact = workflow && workflow.status && findArtifact(workflow.status, nodeId);
-    const [artifactRepository, setArtifactRepository] = useState<ArtifactRepository>()
+    const [selectedTemplateArtifactRepo, setSelectedTemplateArtifactRepo] = useState<ArtifactRepository>()
     const isSidePanelExpanded = !!(selectedNode || selectedArtifact);
     const isSidePanelAnimating = useTransition(isSidePanelExpanded, ANIMATION_MS + ANIMATION_BUFFER_MS);
     const {width: sidePanelWidth, dragHandleProps: sidePanelDragHandleProps} = useResizableWidth({
@@ -106,18 +106,19 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
 
     
     useEffect(() => {
-    
-        if (workflow == undefined || selectedArtifact == undefined) {
-            return;
+        // update the default Artifact Repository for the Template
+        // if there's an ArtifactLocation configured for the Template we use that
+        // otherwise we use the central one for the Workflow configured in workflow.status.artifactRepositoryRef.artifactRepository
+        // (Note that individual Artifacts may also override whatever this gets set to)
+        if (workflow && workflow.status && workflow.status.nodes && selectedArtifact) {
+            const template = getResolvedTemplates(workflow, workflow.status.nodes[selectedArtifact.nodeId]); 
+            const artifactRepo = template.archiveLocation
+            if (artifactRepo && artifactRepoHasLocation(artifactRepo)) {
+                setSelectedTemplateArtifactRepo(artifactRepo);
+            } else {
+                setSelectedTemplateArtifactRepo(workflow.status.artifactRepositoryRef.artifactRepository);
+            }
         }
-        const template = getResolvedTemplates(workflow, workflow.status.nodes[selectedArtifact.nodeId]); 
-        const artifactRepo = template.archiveLocation
-        if (artifactRepo != undefined && artifactRepoHasLocation(artifactRepo)) {
-            setArtifactRepository(artifactRepo);
-        } else {
-            setArtifactRepository(workflow.status.artifactRepositoryRef.artifactRepository);
-        }
-
     }, [workflow, selectedArtifact]);
 
     useEffect(() => {
@@ -471,7 +472,7 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
                                     />
                                 )}
                                 {selectedArtifact && (
-                                    <ArtifactPanel workflow={workflow} artifact={selectedArtifact} artifactRepository={artifactRepository} />
+                                    <ArtifactPanel workflow={workflow} artifact={selectedArtifact} artifactRepository={selectedTemplateArtifactRepo} />
                                 )}
                             </div>
                         </div>
