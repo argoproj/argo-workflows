@@ -104,9 +104,13 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
         );
     };
 
+    
     useEffect(() => {
     
-        const template = getResolvedTemplates(workflow, selectedNode);
+        if (workflow == undefined || selectedArtifact == undefined) {
+            return;
+        }
+        const template = getResolvedTemplates(workflow, workflow.status.nodes[selectedArtifact.nodeId]); //todo: need to pass in NodeStatus, not nodeId
         const artifactRepo = template.archiveLocation
         if (artifactRepo != undefined && artifactRepoHasLocation(artifactRepo)) {
             setArtifactRepository(artifactRepo);
@@ -114,7 +118,7 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
             setArtifactRepository(workflow.status.artifactRepositoryRef.artifactRepository);
         }
 
-    }, [workflow, selectedNode]);
+    }, [workflow, selectedArtifact]);
 
     useEffect(() => {
         history.push(historyUrl('workflows/{namespace}/{name}', {namespace, name, tab, nodeId, nodePanelView, sidePanel}));
