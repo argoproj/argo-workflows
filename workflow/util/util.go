@@ -754,6 +754,17 @@ func getDescendantNodeIDs(wf *wfv1.Workflow, node wfv1.NodeStatus) []string {
 	return descendantNodeIDs
 }
 
+func deletePodNodeDuringRetryWorkflow(wf *wfv1.Workflow, node wfv1.NodeStatus, deletedPods map[string]bool, podsToDelete []string) []string {
+	templateName := getTemplateFromNode(node)
+	version := GetWorkflowPodNameVersion(wf)
+	podName := PodName(wf.Name, node.Name, templateName, node.ID, version)
+	if _, ok := deletedPods[podName]; !ok {
+		deletedPods[podName] = true
+		podsToDelete = append(podsToDelete, podName)
+	}
+	return podsToDelete
+}
+
 // FormulateRetryWorkflow formulates a previous workflow to be retried, deleting all failed steps as well as the onExit node (and children)
 func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSuccessful bool, nodeFieldSelector string, parameters []string) (*wfv1.Workflow, []string, error) {
 
@@ -800,6 +811,7 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 
 	// Iterate the previous nodes. If it was successful Pod carry it forward
 	deletedNodes := make(map[string]bool)
+	deletedPods := make(map[string]bool)
 	var podsToDelete []string
 	for _, node := range wf.Status.Nodes {
 		doForceResetNode := false
@@ -853,22 +865,15 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 		}
 
 		if node.Type == wfv1.NodeTypePod {
-			templateName := getTemplateFromNode(node)
-			version := GetWorkflowPodNameVersion(wf)
-			podName := PodName(wf.Name, node.Name, templateName, node.ID, version)
-			podsToDelete = append(podsToDelete, podName)
-
 			deletedNodes[node.ID] = true
+			podsToDelete = deletePodNodeDuringRetryWorkflow(wf, node, deletedPods, podsToDelete)
 
 			descendantNodeIDs := getDescendantNodeIDs(wf, node)
 			for _, descendantNodeID := range descendantNodeIDs {
 				deletedNodes[descendantNodeID] = true
 				descendantNode := wf.Status.Nodes[descendantNodeID]
 				if descendantNode.Type == wfv1.NodeTypePod {
-					templateName := getTemplateFromNode(descendantNode)
-					version := GetWorkflowPodNameVersion(wf)
-					podName := PodName(wf.Name, descendantNode.Name, templateName, descendantNode.ID, version)
-					podsToDelete = append(podsToDelete, podName)
+					podsToDelete = deletePodNodeDuringRetryWorkflow(wf, node, deletedPods, podsToDelete)
 				}
 			}
 		} else if node.Name == wf.ObjectMeta.Name {

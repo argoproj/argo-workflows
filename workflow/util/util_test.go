@@ -926,8 +926,6 @@ func TestFormulateRetryWorkflow(t *testing.T) {
 				// These should all be running since the child node #3 belongs up to node #1.
 				assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["1"].Phase)
 				assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["2"].Phase)
-				//assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["3"].Phase)
-				//assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["4"].Phase)
 			}
 		}
 	})
@@ -959,7 +957,6 @@ func TestFormulateRetryWorkflow(t *testing.T) {
 				// This should be running since it's node #1's child node and node #1 is being retried.
 				assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["2"].Phase)
 				assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes["3"].Phase)
-				//assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["4"].Phase)
 			}
 		}
 	})
@@ -1055,113 +1052,45 @@ var retryWorkflowWithFailedNodeHasChildrenNodes = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  annotations:
-    workflows.argoproj.io/pod-name-format: v1
-  creationTimestamp: "2022-08-04T08:35:10Z"
-  generateName: test-pipeline-
-  generation: 10
   labels:
     workflows.argoproj.io/completed: "true"
     workflows.argoproj.io/phase: Failed
-    workflows.argoproj.io/resubmitted-from-workflow: test-pipeline-t5h77
-  managedFields:
-  - apiVersion: argoproj.io/v1alpha1
-    fieldsType: FieldsV1
-    fieldsV1:
-      f:metadata:
-        f:annotations:
-          .: {}
-          f:workflows.argoproj.io/pod-name-format: {}
-        f:generateName: {}
-        f:labels:
-          .: {}
-          f:workflows.argoproj.io/resubmitted-from-workflow: {}
-      f:spec: {}
-    manager: argo
-    operation: Update
-    time: "2022-08-04T08:35:10Z"
-  - apiVersion: argoproj.io/v1alpha1
-    fieldsType: FieldsV1
-    fieldsV1:
-      f:metadata:
-        f:labels:
-          f:workflows.argoproj.io/completed: {}
-          f:workflows.argoproj.io/phase: {}
-      f:status: {}
-    manager: workflow-controller
-    operation: Update
-    time: "2022-08-04T08:36:31Z"
   name: test-pipeline-bnzwv
   namespace: argo-system
-  resourceVersion: "2588589"
-  uid: 1ce08a8a-0d95-46a3-b7d8-b6e04a0e6136
 spec:
-  arguments: {}
   entrypoint: test-pipeline-dag
   templates:
   - dag:
       tasks:
-      - arguments: {}
-        name: t1
+      - name: t1
         template: succeeded
-      - arguments: {}
-        depends: t1
+      - depends: t1
         name: t2
         template: failed
-      - arguments: {}
-        depends: t2 || t2.Failed
+      - depends: t2 || t2.Failed
         name: t3
         template: succeeded
-      - arguments: {}
-        depends: t3
+      - depends: t3
         name: t4-1
         template: succeeded
-      - arguments: {}
-        depends: t3
+      - depends: t3
         name: t4-2
         template: succeeded
-      - arguments: {}
-        depends: t3
+      - depends: t3
         name: t4-3
         template: failed
-    inputs: {}
-    metadata: {}
     name: test-pipeline-dag
-    outputs: {}
   - container:
       command:
       - "true"
       image: alpine
-      name: ""
-      resources: {}
-    inputs: {}
-    metadata: {}
     name: succeeded
-    outputs: {}
   - container:
       command:
       - "false"
       image: alpine
-      name: ""
-      resources: {}
-    inputs: {}
-    metadata: {}
     name: failed
-    outputs: {}
 status:
-  artifactRepositoryRef:
-    artifactRepository:
-      s3:
-        accessKeySecret:
-          key: accessKey
-          name: minio-secret
-        bucket: argo-artifact
-        endpoint: minio-service.middleware-system.svc:9000
-        insecure: true
-        secretKeySecret:
-          key: secretKey
-          name: minio-secret
-    default: true
   conditions:
   - status: "False"
     type: PodRunning
@@ -1182,9 +1111,6 @@ status:
       - test-pipeline-bnzwv-782035594
       phase: Failed
       progress: 4/6
-      resourcesDuration:
-        cpu: 32
-        memory: 32
       startedAt: "2022-08-04T08:35:10Z"
       templateName: test-pipeline-dag
       templateScope: local/test-pipeline-bnzwv
@@ -1200,9 +1126,6 @@ status:
         exitCode: "0"
       phase: Succeeded
       progress: 1/1
-      resourcesDuration:
-        cpu: 5
-        memory: 5
       startedAt: "2022-08-04T08:36:11Z"
       templateName: succeeded
       templateScope: local/test-pipeline-bnzwv
@@ -1219,9 +1142,6 @@ status:
         exitCode: "1"
       phase: Failed
       progress: 0/1
-      resourcesDuration:
-        cpu: 4
-        memory: 4
       startedAt: "2022-08-04T08:36:11Z"
       templateName: failed
       templateScope: local/test-pipeline-bnzwv
@@ -1237,9 +1157,6 @@ status:
         exitCode: "0"
       phase: Succeeded
       progress: 1/1
-      resourcesDuration:
-        cpu: 8
-        memory: 8
       startedAt: "2022-08-04T08:36:11Z"
       templateName: succeeded
       templateScope: local/test-pipeline-bnzwv
@@ -1258,9 +1175,6 @@ status:
         exitCode: "1"
       phase: Failed
       progress: 0/1
-      resourcesDuration:
-        cpu: 5
-        memory: 5
       startedAt: "2022-08-04T08:35:30Z"
       templateName: failed
       templateScope: local/test-pipeline-bnzwv
@@ -1280,9 +1194,6 @@ status:
         exitCode: "0"
       phase: Succeeded
       progress: 1/1
-      resourcesDuration:
-        cpu: 5
-        memory: 5
       startedAt: "2022-08-04T08:35:50Z"
       templateName: succeeded
       templateScope: local/test-pipeline-bnzwv
@@ -1300,9 +1211,6 @@ status:
         exitCode: "0"
       phase: Succeeded
       progress: 1/1
-      resourcesDuration:
-        cpu: 5
-        memory: 5
       startedAt: "2022-08-04T08:35:10Z"
       templateName: succeeded
       templateScope: local/test-pipeline-bnzwv
