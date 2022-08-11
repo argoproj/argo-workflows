@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"golang.org/x/exp/slices"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -1226,12 +1227,26 @@ status:
 func TestRetryWorkflowWithFailedNodeHasChildrenNodes(t *testing.T) {
 	ctx := context.Background()
 	wf := wfv1.MustUnmarshalWorkflow(retryWorkflowWithFailedNodeHasChildrenNodes)
+	version := GetWorkflowPodNameVersion(wf)
+	needDeletedNodeNames := []string{"t2", "t3", "t4-1", "t4-2", "t4-3"}
+	needDeletedPodNames := make([]string, 5)
+	for i, nodeName := range needDeletedNodeNames {
+		node := wf.Status.Nodes.FindByDisplayName(nodeName)
+		templateName := getTemplateFromNode(*node)
+		podName := PodName(wf.Name, node.Name, templateName, node.ID, version)
+		needDeletedPodNames[i] = podName
+	}
+	slices.Sort(needDeletedPodNames)
 
-	wf, _, err := FormulateRetryWorkflow(ctx, wf, false, "", nil)
+	wf, podsToDelete, err := FormulateRetryWorkflow(ctx, wf, false, "", nil)
 	assert.NoError(t, err)
 	assert.Equal(t, 2, len(wf.Status.Nodes))
-	t2Node := wf.Status.Nodes.FindByDisplayName("t2")
-	assert.Nil(t, t2Node)
-	t3Node := wf.Status.Nodes.FindByDisplayName("t3")
-	assert.Nil(t, t3Node)
+	for _, nodeName := range needDeletedNodeNames {
+		node := wf.Status.Nodes.FindByDisplayName(nodeName)
+		assert.Nil(t, node)
+	}
+
+	assert.Equal(t, 5, len(podsToDelete))
+	slices.Sort(podsToDelete)
+	assert.Equal(t, needDeletedPodNames, podsToDelete)
 }

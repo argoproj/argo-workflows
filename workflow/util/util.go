@@ -873,7 +873,7 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 				deletedNodes[descendantNodeID] = true
 				descendantNode := wf.Status.Nodes[descendantNodeID]
 				if descendantNode.Type == wfv1.NodeTypePod {
-					podsToDelete = deletePodNodeDuringRetryWorkflow(wf, node, deletedPods, podsToDelete)
+					podsToDelete = deletePodNodeDuringRetryWorkflow(wf, descendantNode, deletedPods, podsToDelete)
 				}
 			}
 		} else if node.Name == wf.ObjectMeta.Name {
