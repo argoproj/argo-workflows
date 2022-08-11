@@ -754,7 +754,7 @@ func getDescendantNodeIDs(wf *wfv1.Workflow, node wfv1.NodeStatus) []string {
 	return descendantNodeIDs
 }
 
-func deletePodNodeDuringRetryWorkflow(wf *wfv1.Workflow, node wfv1.NodeStatus, deletedPods map[string]bool, podsToDelete []string) []string {
+func deletePodNodeDuringRetryWorkflow(wf *wfv1.Workflow, node wfv1.NodeStatus, deletedPods map[string]bool, podsToDelete []string) (map[string]bool, []string) {
 	templateName := getTemplateFromNode(node)
 	version := GetWorkflowPodNameVersion(wf)
 	podName := PodName(wf.Name, node.Name, templateName, node.ID, version)
@@ -762,7 +762,7 @@ func deletePodNodeDuringRetryWorkflow(wf *wfv1.Workflow, node wfv1.NodeStatus, d
 		deletedPods[podName] = true
 		podsToDelete = append(podsToDelete, podName)
 	}
-	return podsToDelete
+	return deletedPods, podsToDelete
 }
 
 // FormulateRetryWorkflow formulates a previous workflow to be retried, deleting all failed steps as well as the onExit node (and children)
@@ -866,14 +866,14 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 
 		if node.Type == wfv1.NodeTypePod {
 			deletedNodes[node.ID] = true
-			podsToDelete = deletePodNodeDuringRetryWorkflow(wf, node, deletedPods, podsToDelete)
+			deletedPods, podsToDelete = deletePodNodeDuringRetryWorkflow(wf, node, deletedPods, podsToDelete)
 
 			descendantNodeIDs := getDescendantNodeIDs(wf, node)
 			for _, descendantNodeID := range descendantNodeIDs {
 				deletedNodes[descendantNodeID] = true
 				descendantNode := wf.Status.Nodes[descendantNodeID]
 				if descendantNode.Type == wfv1.NodeTypePod {
-					podsToDelete = deletePodNodeDuringRetryWorkflow(wf, descendantNode, deletedPods, podsToDelete)
+					deletedPods, podsToDelete = deletePodNodeDuringRetryWorkflow(wf, descendantNode, deletedPods, podsToDelete)
 				}
 			}
 		} else if node.Name == wf.ObjectMeta.Name {
