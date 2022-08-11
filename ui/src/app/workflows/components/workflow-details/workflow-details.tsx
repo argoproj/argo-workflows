@@ -106,7 +106,7 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
 
     
     useEffect(() => {
-        // update the default Artifact Repository for the Template
+        // update the default Artifact Repository for the Template that corresponds to the selectedArtifact
         // if there's an ArtifactLocation configured for the Template we use that
         // otherwise we use the central one for the Workflow configured in workflow.status.artifactRepositoryRef.artifactRepository
         // (Note that individual Artifacts may also override whatever this gets set to)
