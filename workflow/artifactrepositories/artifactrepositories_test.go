@@ -17,6 +17,7 @@ func TestArtifactRepositories(t *testing.T) {
 		S3: &wfv1.S3ArtifactRepository{KeyFormat: "foo"},
 	}
 	defaultArtifactRepositoryRefStatus := &wfv1.ArtifactRepositoryRefStatus{
+		Namespace:          "my-ctrl-ns",
 		Default:            true,
 		ArtifactRepository: defaultArtifactRepository,
 	}
@@ -59,18 +60,9 @@ s3:
 		}, metav1.CreateOptions{})
 		assert.NoError(t, err)
 
-		ref, err := i.Resolve(ctx, &wfv1.ArtifactRepositoryRef{Key: "my-key"}, "my-wf-ns")
-		if assert.NoError(t, err) {
-			assert.Equal(t, "my-ctrl-ns", ref.Namespace)
-			assert.Equal(t, "artifact-repositories", ref.ConfigMap)
-			assert.Equal(t, "my-key", ref.Key)
-			assert.False(t, ref.Default)
-			assert.NotNil(t, ref.ArtifactRepository)
-		}
-		repo, err := i.Get(ctx, ref)
-		if assert.NoError(t, err) {
-			assert.Equal(t, &wfv1.ArtifactRepository{S3: &wfv1.S3ArtifactRepository{KeyFormat: "bar"}}, repo)
-		}
+		_, err = i.Resolve(ctx, &wfv1.ArtifactRepositoryRef{Key: "my-key"}, "my-wf-ns")
+		assert.Error(t, err)
+
 		err = k.CoreV1().ConfigMaps("my-ctrl-ns").Delete(ctx, "artifact-repositories", metav1.DeleteOptions{})
 		assert.NoError(t, err)
 	})
@@ -132,7 +124,8 @@ s3:
 
 		ref, err := i.Resolve(ctx, nil, "my-wf-ns")
 		if assert.NoError(t, err) {
-			assert.Equal(t, defaultArtifactRepositoryRefStatus, ref)
+			assert.True(t, ref.Default)
+			assert.Nil(t, ref.ArtifactRepository)
 		}
 		err = k.CoreV1().ConfigMaps("my-wf-ns").Delete(ctx, "artifact-repositories", metav1.DeleteOptions{})
 		assert.NoError(t, err)
@@ -140,6 +133,15 @@ s3:
 	t.Run("Default", func(t *testing.T) {
 		ctx := context.Background()
 		ref, err := i.Resolve(ctx, nil, "my-wf-ns")
+		assert.NoError(t, err)
+		if assert.NoError(t, err) {
+			assert.True(t, ref.Default)
+			assert.Nil(t, ref.ArtifactRepository)
+		}
+	})
+	t.Run("DefaultInCtrlNamespace", func(t *testing.T) {
+		ctx := context.Background()
+		ref, err := i.Resolve(ctx, nil, "my-ctrl-ns")
 		assert.NoError(t, err)
 		assert.Equal(t, defaultArtifactRepositoryRefStatus, ref)
 	})

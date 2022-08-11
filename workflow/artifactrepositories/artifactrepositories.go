@@ -42,12 +42,11 @@ func (s *artifactRepositories) Resolve(ctx context.Context, ref *wfv1.ArtifactRe
 	if ref != nil {
 		refs = []*wfv1.ArtifactRepositoryRefStatus{
 			{Namespace: workflowNamespace, ArtifactRepositoryRef: wfv1.ArtifactRepositoryRef{ConfigMap: ref.ConfigMap, Key: ref.Key}},
-			{Namespace: s.namespace, ArtifactRepositoryRef: wfv1.ArtifactRepositoryRef{ConfigMap: ref.ConfigMap, Key: ref.Key}},
 		}
 	} else {
 		refs = []*wfv1.ArtifactRepositoryRefStatus{
 			{Namespace: workflowNamespace},
-			{Default: true},
+			{Namespace: workflowNamespace, Default: true},
 		}
 	}
 	for _, r := range refs {
@@ -77,12 +76,16 @@ func (s *artifactRepositories) get(ctx context.Context, ref *wfv1.ArtifactReposi
 		return ref, nil
 	}
 	if ref.Default {
-		return &wfv1.ArtifactRepositoryRefStatus{
+		status := &wfv1.ArtifactRepositoryRefStatus{
 			ArtifactRepositoryRef: ref.ArtifactRepositoryRef,
 			Namespace:             ref.Namespace,
 			Default:               true,
-			ArtifactRepository:    s.defaultArtifactRepository,
-		}, nil
+			ArtifactRepository:    nil,
+		}
+		if ref.Namespace == s.namespace {
+			status.ArtifactRepository = s.defaultArtifactRepository
+		}
+		return status, nil
 	}
 	var cm *v1.ConfigMap
 	namespace := ref.Namespace
