@@ -90,8 +90,14 @@ type ArtifactGCStrategy string
 const (
 	ArtifactGCOnWorkflowCompletion ArtifactGCStrategy = "OnWorkflowCompletion"
 	ArtifactGCOnWorkflowDeletion   ArtifactGCStrategy = "OnWorkflowDeletion"
-	ArtifactGCNever                ArtifactGCStrategy = ""
+	ArtifactGCNever                ArtifactGCStrategy = "Never"
+	ArtifactGCStrategyUndefined    ArtifactGCStrategy = ""
 )
+
+var AnyArtifactGCStrategy = map[ArtifactGCStrategy]bool{
+	ArtifactGCOnWorkflowCompletion: true,
+	ArtifactGCOnWorkflowDeletion:   true,
+}
 
 // PodGCStrategy is the strategy when to delete completed pods for GC.
 type PodGCStrategy string
@@ -197,16 +203,35 @@ func (w *Workflow) GetExecSpec() *WorkflowSpec {
 }
 
 func (w *Workflow) HasArtifactGC() bool {
+
+	if w.Spec.ArtifactGC != nil && w.Spec.ArtifactGC.Strategy != ArtifactGCNever && w.Spec.ArtifactGC.Strategy != ArtifactGCStrategyUndefined {
+		return true
+	}
+
 	// either it's defined by an Output Artifact or by the WorkflowSpec itself, or both
-	for _, template := range w.Spec.Templates {
+	for _, template := range w.GetTemplates() {
 		for _, artifact := range template.Outputs.Artifacts {
-			if artifact.GetArtifactGC().Strategy != ArtifactGCNever {
+			if artifact.GetArtifactGC().Strategy != ArtifactGCNever && artifact.GetArtifactGC().Strategy != ArtifactGCStrategyUndefined {
 				return true
 			}
 		}
 	}
+	return false
+}
 
-	return (w.Spec.ArtifactGC != nil && w.Spec.ArtifactGC.Strategy != ArtifactGCNever)
+// return the ultimate ArtifactGCStrategy for the Artifact
+// (defined on the Workflow level but can be overridden on the Artifact level)
+func (w *Workflow) GetArtifactGCStrategy(a *Artifact) ArtifactGCStrategy {
+	artifactStrategy := a.GetArtifactGC().GetStrategy()
+	wfStrategy := w.Spec.GetArtifactGC().GetStrategy()
+	strategy := wfStrategy
+	if artifactStrategy != ArtifactGCStrategyUndefined {
+		strategy = artifactStrategy
+	}
+	if strategy == ArtifactGCStrategyUndefined {
+		return ArtifactGCNever
+	}
+	return strategy
 }
 
 var (
@@ -464,7 +489,7 @@ func (wfs WorkflowSpec) GetVolumeClaimGC() *VolumeClaimGC {
 // ArtifactGC returns the ArtifactGC that was defined in the workflow spec.  If none was provided, a default value is returned.
 func (wfs WorkflowSpec) GetArtifactGC() *ArtifactGC {
 	if wfs.ArtifactGC == nil {
-		return &ArtifactGC{Strategy: ArtifactGCNever}
+		return &ArtifactGC{Strategy: ArtifactGCStrategyUndefined}
 	}
 
 	return wfs.ArtifactGC
@@ -799,6 +824,13 @@ func (tmpl *Template) HasParallelism() bool {
 	return tmpl.Parallelism != nil && *tmpl.Parallelism > 0
 }
 
+func (tmpl *Template) GetOutputs() *Outputs {
+	if tmpl != nil {
+		return &tmpl.Outputs
+	}
+	return nil
+}
+
 type Artifacts []Artifact
 
 func (a Artifacts) GetArtifactByName(name string) *Artifact {
@@ -954,7 +986,7 @@ type Artifact struct {
 // ArtifactGC returns the ArtifactGC that was defined by the artifact.  If none was provided, a default value is returned.
 func (a *Artifact) GetArtifactGC() *ArtifactGC {
 	if a.ArtifactGC == nil {
-		return &ArtifactGC{Strategy: ArtifactGCNever}
+		return &ArtifactGC{Strategy: ArtifactGCStrategyUndefined}
 	}
 
 	return a.ArtifactGC
@@ -1019,9 +1051,15 @@ func (podGC *PodGC) GetStrategy() PodGCStrategy {
 
 // ArtifactGC describes how to delete artifacts from completed Workflows
 type ArtifactGC struct {
-	// Strategy is the strategy to use. One of "OnWorkflowCompletion", "OnWorkflowDeletion"
-	// +kubebuilder:validation:Enum="";OnWorkflowCompletion;OnWorkflowDeletion
+	// Strategy is the strategy to use.
+	// +kubebuilder:validation:Enum="";OnWorkflowCompletion;OnWorkflowDeletion;Never
 	Strategy ArtifactGCStrategy `json:"strategy,omitempty" protobuf:"bytes,1,opt,name=strategy,casttype=ArtifactGCStategy"`
+
+	// PodMetadata is an optional field for specifying the Labels and Annotations that should be assigned to the Pod doing the deletion
+	PodMetadata *Metadata `json:"podMetadata,omitempty" protobuf:"bytes,2,opt,name=podMetadata"`
+
+	// ServiceAccountName is an optional field for specifying the Service Account that should be assigned to the Pod doing the deletion
+	ServiceAccountName string `json:"serviceAccountName,omitempty" protobuf:"bytes,3,opt,name=serviceAccountName"`
 }
 
 // GetStrategy returns the VolumeClaimGCStrategy to use for the workflow
@@ -1029,7 +1067,7 @@ func (agc *ArtifactGC) GetStrategy() ArtifactGCStrategy {
 	if agc != nil {
 		return agc.Strategy
 	}
-	return ArtifactGCNever
+	return ArtifactGCStrategyUndefined
 }
 
 // VolumeClaimGC describes how to delete volumes from completed Workflows
@@ -1280,6 +1318,52 @@ type ArtifactSearchQuery struct {
 	ArtifactName         string                      `json:"artifactName,omitempty" protobuf:"bytes,2,rep,name=artifactName"`
 	TemplateName         string                      `json:"templateName,omitempty" protobuf:"bytes,3,rep,name=templateName"`
 	NodeId               string                      `json:"nodeId,omitempty" protobuf:"bytes,4,rep,name=nodeId"`
+	Deleted              *bool                       `json:"deleted,omitempty" protobuf:"varint,5,opt,name=deleted"`
+	NodeTypes            map[NodeType]bool           `json:"nodeTypes,omitempty" protobuf:"bytes,6,opt,name=nodeTypes"`
+}
+
+// ArtGCStatus maintains state related to ArtifactGC
+type ArtGCStatus struct {
+
+	// have Pods been started to perform this strategy? (enables us not to re-process what we've already done)
+	StrategiesProcessed map[ArtifactGCStrategy]bool `json:"strategiesProcessed,omitempty" protobuf:"bytes,1,opt,name=strategiesProcessed"`
+
+	// have completed Pods been processed? (mapped by Pod name)
+	// used to prevent re-processing the Status of a Pod more than once
+	PodsRecouped map[string]bool `json:"podsRecouped,omitempty" protobuf:"bytes,2,opt,name=podsRecouped"`
+
+	// if this is true, we already checked to see if we need to do it and we don't
+	NotSpecified bool `json:"notSpecified,omitempty" protobuf:"varint,3,opt,name=notSpecified"`
+}
+
+func (gcStatus *ArtGCStatus) SetArtifactGCStrategyProcessed(strategy ArtifactGCStrategy, processed bool) {
+	if gcStatus.StrategiesProcessed == nil {
+		gcStatus.StrategiesProcessed = make(map[ArtifactGCStrategy]bool)
+	}
+	gcStatus.StrategiesProcessed[strategy] = processed
+}
+
+func (gcStatus *ArtGCStatus) IsArtifactGCStrategyProcessed(strategy ArtifactGCStrategy) bool {
+	if gcStatus.StrategiesProcessed != nil {
+		processed := gcStatus.StrategiesProcessed[strategy]
+		return processed
+	}
+	return false
+}
+
+func (gcStatus *ArtGCStatus) SetArtifactGCPodRecouped(podName string, recouped bool) {
+	if gcStatus.PodsRecouped == nil {
+		gcStatus.PodsRecouped = make(map[string]bool)
+	}
+	gcStatus.PodsRecouped[podName] = recouped
+}
+
+func (gcStatus *ArtGCStatus) IsArtifactGCPodRecouped(podName string) bool {
+	if gcStatus.PodsRecouped != nil {
+		recouped := gcStatus.PodsRecouped[podName]
+		return recouped
+	}
+	return false
 }
 
 type ArtifactSearchResult struct {
@@ -1288,6 +1372,14 @@ type ArtifactSearchResult struct {
 }
 
 type ArtifactSearchResults []ArtifactSearchResult
+
+func (asr ArtifactSearchResults) GetArtifacts() []Artifact {
+	artifacts := make([]Artifact, len(asr))
+	for i, result := range asr {
+		artifacts[i] = result.Artifact
+	}
+	return artifacts
+}
 
 func NewArtifactSearchQuery() *ArtifactSearchQuery {
 	var q ArtifactSearchQuery
@@ -1309,26 +1401,29 @@ func (w *Workflow) SearchArtifacts(q *ArtifactSearchQuery) ArtifactSearchResults
 	var results ArtifactSearchResults
 
 	for _, n := range w.Status.Nodes {
+		if q.TemplateName != "" && n.TemplateName != q.TemplateName {
+			continue
+		}
+		if q.NodeId != "" && n.ID != q.NodeId {
+			continue
+		}
+		if q.NodeTypes != nil && !q.NodeTypes[n.Type] {
+			continue
+		}
 		for _, a := range n.GetOutputs().GetArtifacts() {
 			match := true
 			if q.anyArtifactGCStrategy() {
-				artifactStrategy := a.GetArtifactGC().GetStrategy()
-				wfStrategy := w.Spec.GetArtifactGC().GetStrategy()
-				strategy := wfStrategy
-				if artifactStrategy != ArtifactGCNever {
-					strategy = artifactStrategy
-				}
-				if !q.ArtifactGCStrategies[strategy] {
+				// artifact strategy is either based on overall Workflow ArtifactGC Strategy, or
+				// if it's specified on the individual artifact level that takes priority
+				artifactStrategy := w.GetArtifactGCStrategy(&a)
+				if !q.ArtifactGCStrategies[artifactStrategy] {
 					match = false
 				}
 			}
 			if q.ArtifactName != "" && a.Name != q.ArtifactName {
 				match = false
 			}
-			if q.TemplateName != "" && n.TemplateName != q.TemplateName {
-				match = false
-			}
-			if q.NodeId != "" && n.ID != q.NodeId {
+			if q.Deleted != nil && a.Deleted != *q.Deleted {
 				match = false
 			}
 			if match {
@@ -1722,6 +1817,9 @@ type WorkflowStatus struct {
 
 	// ArtifactRepositoryRef is used to cache the repository to use so we do not need to determine it everytime we reconcile.
 	ArtifactRepositoryRef *ArtifactRepositoryRefStatus `json:"artifactRepositoryRef,omitempty" protobuf:"bytes,18,opt,name=artifactRepositoryRef"`
+
+	// ArtifactGCStatus maintains the status of Artifact Garbage Collection
+	ArtifactGCStatus *ArtGCStatus `json:"artifactGCStatus,omitempty" protobuf:"bytes,19,opt,name=artifactGCStatus"`
 }
 
 func (ws *WorkflowStatus) IsOffloadNodeStatus() bool {
@@ -1730,6 +1828,14 @@ func (ws *WorkflowStatus) IsOffloadNodeStatus() bool {
 
 func (ws *WorkflowStatus) GetOffloadNodeStatusVersion() string {
 	return ws.OffloadNodeStatusVersion
+}
+
+func (ws *WorkflowStatus) GetStoredTemplates() []Template {
+	var out []Template
+	for _, t := range ws.StoredTemplates {
+		out = append(out, t)
+	}
+	return out
 }
 
 func (wf *Workflow) GetOffloadNodeStatusVersion() string {
@@ -1766,7 +1872,8 @@ type RetryAffinity struct {
 
 // RetryStrategy provides controls on how to retry a workflow step
 type RetryStrategy struct {
-	// Limit is the maximum number of attempts when retrying a container
+	// Limit is the maximum number of retry attempts when retrying a container. It does not include the original
+	// container; the maximum number of total attempts will be `limit + 1`.
 	Limit *intstr.IntOrString `json:"limit,omitempty" protobuf:"varint,1,opt,name=limit"`
 
 	// RetryPolicy is a policy of NodePhase statuses that will be retried
@@ -3038,6 +3145,13 @@ func (wf *Workflow) GetTemplateByName(name string) *Template {
 		}
 	}
 	return nil
+}
+
+func (w *Workflow) GetTemplates() []Template {
+	return append(
+		w.GetExecSpec().Templates,
+		w.Status.GetStoredTemplates()...,
+	)
 }
 
 func (wf *Workflow) GetNodeByName(nodeName string) *NodeStatus {
