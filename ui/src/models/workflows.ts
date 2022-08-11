@@ -463,7 +463,7 @@ export interface Template {
     sidecars?: UserContainer[];
     /**
      * archiveLocation is the location in which all files related to the step will be stored (logs, artifacts, etc...).
-	   Can be overridden by individual items in outputs. If omitted, will use the default
+	 * Can be overridden by individual items in outputs. If omitted, will use the default
      */
     archiveLocation?: ArtifactRepository;
     /**
