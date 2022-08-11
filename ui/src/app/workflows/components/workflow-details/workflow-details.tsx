@@ -5,8 +5,7 @@ import {useContext, useEffect, useRef, useState} from 'react';
 import {RouteComponentProps} from 'react-router';
 import {ArtifactRepository, execSpec, Link, NodeStatus, Parameter, Workflow} from '../../../../models';
 import {ANNOTATION_KEY_POD_NAME_VERSION} from '../../../shared/annotations';
-import {findArtifact, artifactRepoHasLocation} from '../../../shared/artifacts';
-import {getResolvedTemplates} from '../../../shared/template-resolution';
+import {artifactRepoHasLocation, findArtifact} from '../../../shared/artifacts';
 import {uiUrl} from '../../../shared/base';
 import {CostOptimisationNudge} from '../../../shared/components/cost-optimisation-nudge';
 import {ErrorNotice} from '../../../shared/components/error-notice';
@@ -19,6 +18,7 @@ import {historyUrl} from '../../../shared/history';
 import {getPodName, getTemplateNameFromNode} from '../../../shared/pod-name';
 import {RetryWatch} from '../../../shared/retry-watch';
 import {services} from '../../../shared/services';
+import {getResolvedTemplates} from '../../../shared/template-resolution';
 import {useQueryParams} from '../../../shared/use-query-params';
 import {useResizableWidth} from '../../../shared/use-resizable-width';
 import {useTransition} from '../../../shared/use-transition';
@@ -69,7 +69,7 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
     const [error, setError] = useState<Error>();
     const selectedNode = workflow && workflow.status && workflow.status.nodes && workflow.status.nodes[nodeId];
     const selectedArtifact = workflow && workflow.status && findArtifact(workflow.status, nodeId);
-    const [selectedTemplateArtifactRepo, setSelectedTemplateArtifactRepo] = useState<ArtifactRepository>()
+    const [selectedTemplateArtifactRepo, setSelectedTemplateArtifactRepo] = useState<ArtifactRepository>();
     const isSidePanelExpanded = !!(selectedNode || selectedArtifact);
     const isSidePanelAnimating = useTransition(isSidePanelExpanded, ANIMATION_MS + ANIMATION_BUFFER_MS);
     const {width: sidePanelWidth, dragHandleProps: sidePanelDragHandleProps} = useResizableWidth({
@@ -79,7 +79,6 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
         minWidth: INITIAL_SIDE_PANEL_WIDTH,
         resizedElementRef: sidePanelRef
     });
-
 
     useEffect(
         useQueryParams(history, p => {
@@ -104,15 +103,14 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
         );
     };
 
-    
     useEffect(() => {
         // update the default Artifact Repository for the Template that corresponds to the selectedArtifact
         // if there's an ArtifactLocation configured for the Template we use that
         // otherwise we use the central one for the Workflow configured in workflow.status.artifactRepositoryRef.artifactRepository
         // (Note that individual Artifacts may also override whatever this gets set to)
         if (workflow && workflow.status && workflow.status.nodes && selectedArtifact) {
-            const template = getResolvedTemplates(workflow, workflow.status.nodes[selectedArtifact.nodeId]); 
-            const artifactRepo = template.archiveLocation
+            const template = getResolvedTemplates(workflow, workflow.status.nodes[selectedArtifact.nodeId]);
+            const artifactRepo = template.archiveLocation;
             if (artifactRepo && artifactRepoHasLocation(artifactRepo)) {
                 setSelectedTemplateArtifactRepo(artifactRepo);
             } else {
@@ -401,7 +399,6 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
 
     const podName = ensurePodName(workflow, selectedNode, nodeId);
 
-
     return (
         <Page
             title={'Workflow Details'}
@@ -471,9 +468,7 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
                                         onResume={() => renderResumePopup()}
                                     />
                                 )}
-                                {selectedArtifact && (
-                                    <ArtifactPanel workflow={workflow} artifact={selectedArtifact} artifactRepository={selectedTemplateArtifactRepo} />
-                                )}
+                                {selectedArtifact && <ArtifactPanel workflow={workflow} artifact={selectedArtifact} artifactRepository={selectedTemplateArtifactRepo} />}
                             </div>
                         </div>
                     ))}
