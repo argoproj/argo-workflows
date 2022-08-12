@@ -137,6 +137,7 @@ func (s *ArtifactsSuite) TestArtifactGC() {
 
 		then := when.Then()
 
+		// verify that the artifacts that should have been deleted at completion time were
 		for _, expectedArtifact := range tt.expectedArtifacts {
 			if expectedArtifact.deletedAtWFCompletion {
 				fmt.Printf("verifying artifact %s is deleted at completion time\n", expectedArtifact.key)
@@ -162,7 +163,11 @@ func (s *ArtifactsSuite) TestArtifactGC() {
 		then = when.Then()
 
 		for _, expectedArtifact := range tt.expectedArtifacts {
-			if expectedArtifact.deletedAtWFDeletion || expectedArtifact.deletedAtWFCompletion {
+
+			if expectedArtifact.deletedAtWFDeletion {
+				continue
+			}
+			if expectedArtifact.deletedAtWFCompletion {
 				fmt.Printf("verifying artifact %s is deleted\n", expectedArtifact.key)
 				then.ExpectArtifactByKey(expectedArtifact.key, expectedArtifact.bucketName, func(t *testing.T, object minio.ObjectInfo, err error) {
 					assert.NotNil(t, err)
