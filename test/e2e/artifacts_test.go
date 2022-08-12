@@ -6,7 +6,6 @@ package e2e
 import (
 	"fmt"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
@@ -72,11 +71,13 @@ func (s *ArtifactsSuite) TestArtifactGC() {
 		CreateWorkflowTemplates()
 
 	for _, tt := range []struct {
-		workflowFile      string
-		expectedArtifacts []artifactState
+		workflowFile                 string
+		expectedArtifacts            []artifactState
+		expectedGCPodsOnWFCompletion int
 	}{
 		{
-			workflowFile: "@testdata/artifactgc/artgc-multi-strategy-multi-anno.yaml",
+			workflowFile:                 "@testdata/artifactgc/artgc-multi-strategy-multi-anno.yaml",
+			expectedGCPodsOnWFCompletion: 2,
 			expectedArtifacts: []artifactState{
 				artifactState{"first-on-completion-1", "my-bucket-2", true, false},
 				artifactState{"first-on-completion-2", "my-bucket-3", true, false},
@@ -86,14 +87,16 @@ func (s *ArtifactsSuite) TestArtifactGC() {
 			},
 		},
 		{
-			workflowFile: "@testdata/artifactgc/artgc-from-template.yaml",
+			workflowFile:                 "@testdata/artifactgc/artgc-from-template.yaml",
+			expectedGCPodsOnWFCompletion: 1,
 			expectedArtifacts: []artifactState{
 				artifactState{"on-completion", "my-bucket-2", true, false},
 				artifactState{"on-deletion", "my-bucket-2", false, true},
 			},
 		},
 		{
-			workflowFile: "@testdata/artifactgc/artgc-step-wf-tmpl.yaml",
+			workflowFile:                 "@testdata/artifactgc/artgc-step-wf-tmpl.yaml",
+			expectedGCPodsOnWFCompletion: 1,
 			expectedArtifacts: []artifactState{
 				artifactState{"on-completion", "my-bucket-2", true, false},
 				artifactState{"on-deletion", "my-bucket-2", false, true},
@@ -119,9 +122,16 @@ func (s *ArtifactsSuite) TestArtifactGC() {
 				assert.Contains(t, objectMeta.Finalizers, common.FinalizerArtifactGC)
 			})
 
-		then := when.Then()
+		// wait for all pods to have started and been completed and recouped
+		when.
+			WaitForWorkflow(
+				fixtures.WorkflowCompletionOkay(true),
+				fixtures.Condition(func(wf *wfv1.Workflow) (bool, string) {
+					return len(wf.Status.ArtifactGCStatus.PodsRecouped) >= tt.expectedGCPodsOnWFCompletion,
+						fmt.Sprintf("for all %d pods to have been recouped", tt.expectedGCPodsOnWFCompletion)
+				}))
 
-		time.Sleep(5 * time.Second) // todo: do we want to do this or not? better if we could wait for Artifact GC strategy processed...
+		then := when.Then()
 
 		for _, expectedArtifact := range tt.expectedArtifacts {
 			if expectedArtifact.deletedAtWFCompletion {
