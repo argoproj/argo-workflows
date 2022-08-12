@@ -92,6 +92,8 @@ func (s *ArtifactsSuite) TestArtifactGC() {
 			expectedArtifacts: []artifactState{
 				artifactState{"on-completion", "my-bucket-2", true, false},
 				artifactState{"on-deletion", "my-bucket-2", false, true},
+				artifactState{"success-or-deletion", "my-bucket-2", true, false},
+				artifactState{"failure-or-deletion", "my-bucket-2", false, true},
 			},
 		},
 		{
@@ -100,6 +102,8 @@ func (s *ArtifactsSuite) TestArtifactGC() {
 			expectedArtifacts: []artifactState{
 				artifactState{"on-completion", "my-bucket-2", true, false},
 				artifactState{"on-deletion", "my-bucket-2", false, true},
+				artifactState{"success-or-deletion", "my-bucket-2", true, false},
+				artifactState{"failure-or-deletion", "my-bucket-2", false, true},
 			},
 		},
 	} {

@@ -425,6 +425,8 @@ spec:
                               - ""
                               - OnWorkflowCompletion
                               - OnWorkflowDeletion
+                              - OnWorkflowSuccessOrDeletion
+                              - OnWorkflowFailureOrDeletion
                               - Never
                               type: string
                           type: object
@@ -951,6 +953,8 @@ spec:
                     - ""
                     - OnWorkflowCompletion
                     - OnWorkflowDeletion
+                    - OnWorkflowSuccessOrDeletion
+                    - OnWorkflowFailureOrDeletion
                     - Never
                     type: string
                 type: object
@@ -1035,6 +1039,8 @@ spec:
                                     - ""
                                     - OnWorkflowCompletion
                                     - OnWorkflowDeletion
+                                    - OnWorkflowSuccessOrDeletion
+                                    - OnWorkflowFailureOrDeletion
                                     - Never
                                     type: string
                                 type: object
@@ -3911,6 +3917,8 @@ spec:
                                             - ""
                                             - OnWorkflowCompletion
                                             - OnWorkflowDeletion
+                                            - OnWorkflowSuccessOrDeletion
+                                            - OnWorkflowFailureOrDeletion
                                             - Never
                                             type: string
                                         type: object
@@ -4473,6 +4481,8 @@ spec:
                                                   - ""
                                                   - OnWorkflowCompletion
                                                   - OnWorkflowDeletion
+                                                  - OnWorkflowSuccessOrDeletion
+                                                  - OnWorkflowFailureOrDeletion
                                                   - Never
                                                   type: string
                                               type: object
@@ -5086,6 +5096,8 @@ spec:
                                     - ""
                                     - OnWorkflowCompletion
                                     - OnWorkflowDeletion
+                                    - OnWorkflowSuccessOrDeletion
+                                    - OnWorkflowFailureOrDeletion
                                     - Never
                                     type: string
                                 type: object
@@ -6249,6 +6261,8 @@ spec:
                                   - ""
                                   - OnWorkflowCompletion
                                   - OnWorkflowDeletion
+                                  - OnWorkflowSuccessOrDeletion
+                                  - OnWorkflowFailureOrDeletion
                                   - Never
                                   type: string
                               type: object
@@ -6899,6 +6913,8 @@ spec:
                                   - ""
                                   - OnWorkflowCompletion
                                   - OnWorkflowDeletion
+                                  - OnWorkflowSuccessOrDeletion
+                                  - OnWorkflowFailureOrDeletion
                                   - Never
                                   type: string
                               type: object
@@ -7472,6 +7488,8 @@ spec:
                                     - ""
                                     - OnWorkflowCompletion
                                     - OnWorkflowDeletion
+                                    - OnWorkflowSuccessOrDeletion
+                                    - OnWorkflowFailureOrDeletion
                                     - Never
                                     type: string
                                 type: object
@@ -12000,6 +12018,8 @@ spec:
                                               - ""
                                               - OnWorkflowCompletion
                                               - OnWorkflowDeletion
+                                              - OnWorkflowSuccessOrDeletion
+                                              - OnWorkflowFailureOrDeletion
                                               - Never
                                               type: string
                                           type: object
@@ -12562,6 +12582,8 @@ spec:
                                                     - ""
                                                     - OnWorkflowCompletion
                                                     - OnWorkflowDeletion
+                                                    - OnWorkflowSuccessOrDeletion
+                                                    - OnWorkflowFailureOrDeletion
                                                     - Never
                                                     type: string
                                                 type: object
@@ -13175,6 +13197,8 @@ spec:
                                       - ""
                                       - OnWorkflowCompletion
                                       - OnWorkflowDeletion
+                                      - OnWorkflowSuccessOrDeletion
+                                      - OnWorkflowFailureOrDeletion
                                       - Never
                                       type: string
                                   type: object
@@ -14338,6 +14362,8 @@ spec:
                                     - ""
                                     - OnWorkflowCompletion
                                     - OnWorkflowDeletion
+                                    - OnWorkflowSuccessOrDeletion
+                                    - OnWorkflowFailureOrDeletion
                                     - Never
                                     type: string
                                 type: object
@@ -14988,6 +15014,8 @@ spec:
                                     - ""
                                     - OnWorkflowCompletion
                                     - OnWorkflowDeletion
+                                    - OnWorkflowSuccessOrDeletion
+                                    - OnWorkflowFailureOrDeletion
                                     - Never
                                     type: string
                                 type: object
@@ -15561,6 +15589,8 @@ spec:
                                       - ""
                                       - OnWorkflowCompletion
                                       - OnWorkflowDeletion
+                                      - OnWorkflowSuccessOrDeletion
+                                      - OnWorkflowFailureOrDeletion
                                       - Never
                                       type: string
                                   type: object

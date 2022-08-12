@@ -64,6 +64,8 @@ spec:
                           - ""
                           - OnWorkflowCompletion
                           - OnWorkflowDeletion
+                          - OnWorkflowSuccessOrDeletion
+                          - OnWorkflowFailureOrDeletion
                           - Never
                           type: string
                       type: object
