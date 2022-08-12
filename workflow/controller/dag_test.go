@@ -3590,3 +3590,49 @@ func TestRetryTypeDagTaskRunExitNodeAfterCompleted(t *testing.T) {
 	assert.NotNil(t, nextDAGTaskNode)
 	assert.Equal(t, wfv1.NodeRunning, nextDAGTaskNode.Phase)
 }
+
+var tasksWithPriority = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: tasks-with-priority-
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    parallelism: 1
+    dag:
+      tasks:
+      - name: A
+        priority: 50
+        template: fail
+      - name: B
+        priority: 100
+        template: succeed
+        
+  - name: succeed
+    container:
+      image: alpine:3.7
+      command: [sh, -c, "exit 0"]
+           
+  - name: fail
+    container:
+      image: alpine:3.7
+      command: [sh, -c, "exit 1"]
+`
+
+func TestTasksWithPriority(t *testing.T) {
+
+	wf := wfv1.MustUnmarshalWorkflow(tasksWithPriority)
+	cancel, controller := newController(wf)
+	defer cancel()
+
+	ctx := context.Background()
+	woc := newWorkflowOperationCtx(wf, controller)
+
+	woc.operate(ctx)
+	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
+	woc.operate(ctx)
+
+	woc.wf.Status.Nodes.FindByDisplayName("B").StartedAt.Before(&woc.wf.Status.Nodes.FindByDisplayName("A").StartedAt)
+}
