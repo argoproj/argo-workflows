@@ -45,8 +45,8 @@ type TemplateReferenceHolder interface {
 }
 
 func CompareByPriority(a, b TemplateReferenceHolder) bool {
-	if a.GetPriority() > b.GetPriority() {
-		return true
+	if a.GetPriority() > 0 || b.GetPriority() > 0 {
+		return a.GetPriority() > b.GetPriority()
 	}
 	return strings.Compare(a.GetName(), b.GetName()) > 0
 }
