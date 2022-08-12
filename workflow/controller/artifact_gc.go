@@ -75,28 +75,32 @@ func (woc *wfOperationCtx) garbageCollectArtifacts(ctx context.Context) error {
 func (woc *wfOperationCtx) artifactGCStrategiesReady() map[wfv1.ArtifactGCStrategy]struct{} {
 	strategies := map[wfv1.ArtifactGCStrategy]struct{}{} // essentially a Set
 
-	if woc.wf.Labels[common.LabelKeyCompleted] == "true" || woc.wf.DeletionTimestamp != nil {
-		if !woc.wf.Status.ArtifactGCStatus.IsArtifactGCStrategyProcessed(wfv1.ArtifactGCOnWorkflowCompletion) {
-			strategies[wfv1.ArtifactGCOnWorkflowCompletion] = struct{}{}
-		}
+	// Workflow completed:
+	if woc.wf.Labels[common.LabelKeyCompleted] == "true" || woc.wf.DeletionTimestamp != nil { // the test for DeletionTimestamp is an extra paranoid measure
+		strategies[wfv1.ArtifactGCOnWorkflowCompletion] = struct{}{}
 	}
+	// Workflow deleted:
 	if woc.wf.DeletionTimestamp != nil {
-		if !woc.wf.Status.ArtifactGCStatus.IsArtifactGCStrategyProcessed(wfv1.ArtifactGCOnWorkflowDeletion) {
-			strategies[wfv1.ArtifactGCOnWorkflowDeletion] = struct{}{}
+		strategies[wfv1.ArtifactGCOnWorkflowDeletion] = struct{}{}
+		strategies[wfv1.ArtifactGCOnWorkflowSuccessOrDeletion] = struct{}{}
+		strategies[wfv1.ArtifactGCOnWorkflowFailureOrDeletion] = struct{}{}
+	}
+
+	// Workflow success:
+	if woc.wf.Status.Successful() {
+		strategies[wfv1.ArtifactGCOnWorkflowSuccessOrDeletion] = struct{}{}
+	}
+	// Worklow failure:
+	if woc.wf.Status.Failed() {
+		strategies[wfv1.ArtifactGCOnWorkflowFailureOrDeletion] = struct{}{}
+	}
+
+	// for any strategies we've already processed (searched for artifacts with/started pods for), remove them from our map:
+	for strategy, _ := range strategies {
+		if woc.wf.Status.ArtifactGCStatus.IsArtifactGCStrategyProcessed(strategy) {
+			delete(strategies, strategy)
 		}
 	}
-	// todo: look at implementing "OnWorkflowSuccessOrDeletion" and "OnWorkflowFailureOrDeletion" instead of these:
-	/*
-		if woc.wf.Status.Successful() {
-			if !woc.wf.Status.ArtifactGCStatus.IsArtifactGCStrategyProcessed(wfv1.ArtifactGCOnWorkflowSuccess) {
-				strategies[wfv1.ArtifactGCOnWorkflowSuccess] = struct{}{}
-			}
-		}
-		if woc.wf.Status.Failed() {
-			if !woc.wf.Status.ArtifactGCStatus.IsArtifactGCStrategyProcessed(wfv1.ArtifactGCOnWorkflowFailure) {
-				strategies[wfv1.ArtifactGCOnWorkflowFailure] = struct{}{}
-			}
-		}*/
 
 	return strategies
 }
@@ -251,6 +255,10 @@ func (woc *wfOperationCtx) artGCPodName(strategy wfv1.ArtifactGCStrategy, podAcc
 		abbreviatedName = "wfcomp"
 	case wfv1.ArtifactGCOnWorkflowDeletion:
 		abbreviatedName = "wfdel"
+	case wfv1.ArtifactGCOnWorkflowFailureOrDeletion:
+		abbreviatedName = "wffaildel"
+	case wfv1.ArtifactGCOnWorkflowSuccessOrDeletion:
+		abbreviatedName = "wfsuccdel"
 	default:
 		return "", fmt.Errorf("ArtifactGCStrategy '%s' not valid", strategy)
 	}

@@ -88,15 +88,19 @@ type ArtifactGCStrategy string
 
 // ArtifactGCStrategy
 const (
-	ArtifactGCOnWorkflowCompletion ArtifactGCStrategy = "OnWorkflowCompletion"
-	ArtifactGCOnWorkflowDeletion   ArtifactGCStrategy = "OnWorkflowDeletion"
-	ArtifactGCNever                ArtifactGCStrategy = "Never"
-	ArtifactGCStrategyUndefined    ArtifactGCStrategy = ""
+	ArtifactGCOnWorkflowCompletion        ArtifactGCStrategy = "OnWorkflowCompletion"
+	ArtifactGCOnWorkflowDeletion          ArtifactGCStrategy = "OnWorkflowDeletion"
+	ArtifactGCOnWorkflowSuccessOrDeletion ArtifactGCStrategy = "OnWorkflowSuccessOrDeletion"
+	ArtifactGCOnWorkflowFailureOrDeletion ArtifactGCStrategy = "OnWorkflowFailureOrDeletion"
+	ArtifactGCNever                       ArtifactGCStrategy = "Never"
+	ArtifactGCStrategyUndefined           ArtifactGCStrategy = ""
 )
 
 var AnyArtifactGCStrategy = map[ArtifactGCStrategy]bool{
-	ArtifactGCOnWorkflowCompletion: true,
-	ArtifactGCOnWorkflowDeletion:   true,
+	ArtifactGCOnWorkflowCompletion:        true,
+	ArtifactGCOnWorkflowDeletion:          true,
+	ArtifactGCOnWorkflowSuccessOrDeletion: true,
+	ArtifactGCOnWorkflowFailureOrDeletion: true,
 }
 
 // PodGCStrategy is the strategy when to delete completed pods for GC.
@@ -1052,7 +1056,7 @@ func (podGC *PodGC) GetStrategy() PodGCStrategy {
 // ArtifactGC describes how to delete artifacts from completed Workflows
 type ArtifactGC struct {
 	// Strategy is the strategy to use.
-	// +kubebuilder:validation:Enum="";OnWorkflowCompletion;OnWorkflowDeletion;Never
+	// +kubebuilder:validation:Enum="";OnWorkflowCompletion;OnWorkflowDeletion;OnWorkflowSuccessOrDeletion;OnWorkflowFailureOrDeletion;Never
 	Strategy ArtifactGCStrategy `json:"strategy,omitempty" protobuf:"bytes,1,opt,name=strategy,casttype=ArtifactGCStategy"`
 
 	// PodMetadata is an optional field for specifying the Labels and Annotations that should be assigned to the Pod doing the deletion
