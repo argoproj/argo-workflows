@@ -96,7 +96,7 @@ func (woc *wfOperationCtx) artifactGCStrategiesReady() map[wfv1.ArtifactGCStrate
 	}
 
 	// for any strategies we've already processed (searched for artifacts with/started pods for), remove them from our map:
-	for strategy, _ := range strategies {
+	for strategy := range strategies {
 		if woc.wf.Status.ArtifactGCStatus.IsArtifactGCStrategyProcessed(strategy) {
 			delete(strategies, strategy)
 		}
