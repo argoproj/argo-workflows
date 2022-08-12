@@ -76,24 +76,24 @@ func (s *ArtifactsSuite) TestArtifactGC() {
 		{
 			workflowFile: "@testdata/artifactgc/artgc-multi-strategy-multi-anno.yaml",
 			expectedArtifacts: []artifactState{
-				artifactState{"first-on-success-1", "my-bucket-2", true},
-				artifactState{"first-on-success-2", "my-bucket-3", true},
+				artifactState{"first-on-completion-1", "my-bucket-2", true},
+				artifactState{"first-on-completion-2", "my-bucket-3", true},
 				artifactState{"first-no-deletion", "my-bucket-3", false},
 				artifactState{"second-on-deletion", "my-bucket-3", true},
-				artifactState{"second-on-success", "my-bucket-2", true},
+				artifactState{"second-on-completion", "my-bucket-2", true},
 			},
 		},
 		{
 			workflowFile: "@testdata/artifactgc/artgc-from-template.yaml",
 			expectedArtifacts: []artifactState{
-				artifactState{"on-success", "my-bucket-2", true},
+				artifactState{"on-completion", "my-bucket-2", true},
 				artifactState{"on-deletion", "my-bucket-2", true},
 			},
 		},
 		{
 			workflowFile: "@testdata/artifactgc/artgc-step-wf-tmpl.yaml",
 			expectedArtifacts: []artifactState{
-				artifactState{"on-success", "my-bucket-2", true},
+				artifactState{"on-completion", "my-bucket-2", true},
 				artifactState{"on-deletion", "my-bucket-2", true},
 			},
 		},
