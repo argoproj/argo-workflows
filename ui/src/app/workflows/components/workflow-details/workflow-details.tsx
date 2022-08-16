@@ -276,7 +276,7 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
                 if (e.type === 'DELETED') {
                     setError(new Error('Workflow deleted'));
                 } else {
-                    if (e.object.status.conditions && hasArtifactGCError(e.object.status.conditions)) {
+                    if (hasArtifactGCError(e.object.status.conditions)) {
                         setError(new Error('Artifact garbage collection failed'));
                     }
                     setWorkflow(e.object);
