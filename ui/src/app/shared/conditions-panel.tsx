@@ -24,7 +24,7 @@ export function hasWarningConditionBadge(conditions: Condition[]): boolean {
 
 export function hasArtifactGCError(conditions: Condition[]): boolean {
     for (const condition of conditions) {
-        if (condition.type === 'ArtifactGCError') {
+        if (condition && condition.type === 'ArtifactGCError') {
             return true;
         }
     }
