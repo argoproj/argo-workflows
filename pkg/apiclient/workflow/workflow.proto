@@ -94,6 +94,7 @@ message WorkflowDeleteRequest {
   string name = 1;
   string namespace = 2;
   k8s.io.apimachinery.pkg.apis.meta.v1.DeleteOptions deleteOptions = 3;
+  bool force = 4;
 }
 
 message WorkflowDeleteResponse {
