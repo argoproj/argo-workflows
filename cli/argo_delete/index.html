@@ -3880,7 +3880,7 @@
 
 <h2 id="argo-delete">argo delete<a class="headerlink" href="#argo-delete" title="Permanent link">&para;</a></h2>
 <p>delete workflows</p>
-<div class="highlight"><pre><span></span><code>argo delete [--dry-run] [WORKFLOW...|[--all] [--older] [--completed] [--resubmitted] [--prefix PREFIX] [--selector SELECTOR]] [flags]
+<div class="highlight"><pre><span></span><code>argo delete [--dry-run] [WORKFLOW...|[--all] [--older] [--completed] [--resubmitted] [--prefix PREFIX] [--selector SELECTOR] [--force] ] [flags]
 </code></pre></div>
 <h3 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code># Delete a workflow:
@@ -3897,6 +3897,7 @@
       --completed               Delete completed workflows
       --dry-run                 Do not delete the workflow, only print what would happen
       --field-selector string   Selector (field query) to filter on, supports &#39;=&#39;, &#39;==&#39;, and &#39;!=&#39;.(e.g. --field-selector key1=value1,key2=value2). The server only supports a limited number of field queries per type.
+      --force                   Force delete workflows by removing finalizers
   -h, --help                    help for delete
       --older string            Delete completed workflows finished before the specified duration (e.g. 10m, 3h, 1d)
       --prefix string           Delete workflows by prefix
