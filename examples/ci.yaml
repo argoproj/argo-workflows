@@ -5,7 +5,7 @@ metadata:
 spec:
   # entrypoint is the name of the template used as the starting point of the workflow
   entrypoint: ci-example
-  # the 'ci-example' template accepts an parameter 'revision', with a default of 'cfe12d6'.
+  # the 'ci-example' template accepts a parameter 'revision', with a default of 'cfe12d6'.
   # this can be overridden via argo CLI (e.g. `argo submit ci.yaml -p revision=0dea2d0`)
   arguments:
     parameters:

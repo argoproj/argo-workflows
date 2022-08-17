@@ -205,6 +205,7 @@ class WorkflowServiceApi(object):
                 delete_options_orphan_dependents (bool): Deprecated: please use the PropagationPolicy, this field will be deprecated in 1.7. Should the dependent objects be orphaned. If true/false, the \"orphan\" finalizer will be added to/removed from the object's finalizers list. Either this field or PropagationPolicy may be set, but not both. +optional.. [optional]
                 delete_options_propagation_policy (str): Whether and how garbage collection will be performed. Either this field or OrphanDependents may be set, but not both. The default policy is decided by the existing finalizer set in the metadata.finalizers and the resource-specific default policy. Acceptable values are: 'Orphan' - orphan the dependents; 'Background' - allow the garbage collector to delete the dependents in the background; 'Foreground' - a cascading policy that deletes all dependents in the foreground. +optional.. [optional]
                 delete_options_dry_run ([str]): When present, indicates that modifications should not be persisted. An invalid or unrecognized dryRun directive will result in an error response and no further processing of the request. Valid values are: - All: all dry run stages will be processed +optional.. [optional]
+                force (bool): [optional]
                 _return_http_data_only (bool): response data without head status
                     code and headers. Default is True.
                 _preload_content (bool): if False, the urllib3.HTTPResponse object
@@ -276,6 +277,7 @@ class WorkflowServiceApi(object):
                     'delete_options_orphan_dependents',
                     'delete_options_propagation_policy',
                     'delete_options_dry_run',
+                    'force',
                 ],
                 'required': [
                     'namespace',
@@ -310,6 +312,8 @@ class WorkflowServiceApi(object):
                         (str,),
                     'delete_options_dry_run':
                         ([str],),
+                    'force':
+                        (bool,),
                 },
                 'attribute_map': {
                     'namespace': 'namespace',
@@ -320,6 +324,7 @@ class WorkflowServiceApi(object):
                     'delete_options_orphan_dependents': 'deleteOptions.orphanDependents',
                     'delete_options_propagation_policy': 'deleteOptions.propagationPolicy',
                     'delete_options_dry_run': 'deleteOptions.dryRun',
+                    'force': 'force',
                 },
                 'location_map': {
                     'namespace': 'path',
@@ -330,6 +335,7 @@ class WorkflowServiceApi(object):
                     'delete_options_orphan_dependents': 'query',
                     'delete_options_propagation_policy': 'query',
                     'delete_options_dry_run': 'query',
+                    'force': 'query',
                 },
                 'collection_format_map': {
                     'delete_options_dry_run': 'multi',
