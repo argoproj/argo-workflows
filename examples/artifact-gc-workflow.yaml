@@ -1,0 +1,36 @@
+# This example shows how you can configure Artifact Garbage Collection for your Workflow.
+# Here there are two artifacts - one is automatically deleted when the Workflow completes, and the other
+# is deleted when the Workflow gets deleted.
+# In this case, "OnWorkflowDeletion" is defined for all artifacts by default, but the "on-completion" artifact
+# overrides that default strategy.
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: artifact-gc-
+spec:
+  entrypoint: main
+  artifactGC:
+    strategy: OnWorkflowDeletion # the overall strategy, which can be overridden
+  templates:
+    - name: main
+      container:
+        image: argoproj/argosay:v2
+        command:
+          - sh
+          - -c
+        args:
+          - |
+            echo "hello world" > /tmp/on-completion.txt
+            echo "hello world" > /tmp/on-deletion.txt
+      outputs:
+        artifacts:
+          - name: on-completion
+            path: /tmp/on-completion.txt
+            s3:
+              key: on-completion.txt
+            artifactGC:
+              strategy: OnWorkflowCompletion # overriding the default strategy for this artifact
+          - name: on-deletion
+            path: /tmp/on-deletion.txt
+            s3:
+              key: on-deletion.txt

@@ -22,6 +22,7 @@ import (
 
 	"github.com/argoproj/argo-workflows/v3/errors"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	errutil "github.com/argoproj/argo-workflows/v3/util/errors"
 	waitutil "github.com/argoproj/argo-workflows/v3/util/wait"
 	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/common"
 )
@@ -38,7 +39,7 @@ var (
 
 // from https://github.com/googleapis/google-cloud-go/blob/master/storage/go110.go
 func isTransientGCSErr(err error) bool {
-	if err == io.ErrUnexpectedEOF {
+	if err == io.ErrUnexpectedEOF || errutil.IsTransientErr(err) {
 		return true
 	}
 	switch e := err.(type) {
@@ -79,11 +80,11 @@ func newGCSClientWithCredential(serviceAccountJSON string) (*storage.Client, err
 	ctx := context.Background()
 	creds, err := google.CredentialsFromJSON(ctx, []byte(serviceAccountJSON), storage.ScopeReadWrite)
 	if err != nil {
-		return nil, fmt.Errorf("GCS client CredentialsFromJSON: %v", err)
+		return nil, fmt.Errorf("GCS client CredentialsFromJSON: %w", err)
 	}
 	client, err := storage.NewClient(ctx, option.WithCredentials(creds))
 	if err != nil {
-		return nil, fmt.Errorf("GCS storage.NewClient with credential: %v", err)
+		return nil, fmt.Errorf("GCS storage.NewClient with credential: %w", err)
 	}
 	return client, nil
 }
@@ -92,7 +93,7 @@ func newGCSClientDefault() (*storage.Client, error) {
 	ctx := context.Background()
 	client, err := storage.NewClient(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("GCS storage.NewClient: %v", err)
+		return nil, fmt.Errorf("GCS storage.NewClient: %w", err)
 	}
 	return client, nil
 }
@@ -149,7 +150,7 @@ func downloadObject(client *storage.Client, bucket, key, objName, path string) e
 	objectDir, _ := filepath.Split(localPath)
 	if objectDir != "" {
 		if err := os.MkdirAll(objectDir, 0o700); err != nil {
-			return fmt.Errorf("mkdir %s: %v", objectDir, err)
+			return fmt.Errorf("mkdir %s: %w", objectDir, err)
 		}
 	}
 	ctx := context.Background()
@@ -158,12 +159,12 @@ func downloadObject(client *storage.Client, bucket, key, objName, path string) e
 		if err == storage.ErrObjectNotExist {
 			return errors.New(errors.CodeNotFound, err.Error())
 		}
-		return fmt.Errorf("new bucket reader: %v", err)
+		return fmt.Errorf("new bucket reader: %w", err)
 	}
 	defer rc.Close()
 	out, err := os.Create(localPath)
 	if err != nil {
-		return fmt.Errorf("os create %s: %v", localPath, err)
+		return fmt.Errorf("os create %s: %w", localPath, err)
 	}
 	defer func() {
 		if err := out.Close(); err != nil {
@@ -172,7 +173,7 @@ func downloadObject(client *storage.Client, bucket, key, objName, path string) e
 	}()
 	_, err = io.Copy(out, rc)
 	if err != nil {
-		return fmt.Errorf("io copy: %v", err)
+		return fmt.Errorf("io copy: %w", err)
 	}
 	return nil
 }
@@ -251,7 +252,7 @@ func listFileRelPaths(path string, relPath string) ([]string, error) {
 func uploadObjects(client *storage.Client, bucket, key, path string) error {
 	isDir, err := file.IsDirectory(path)
 	if err != nil {
-		return fmt.Errorf("test if %s is a dir: %v", path, err)
+		return fmt.Errorf("test if %s is a dir: %w", path, err)
 	}
 	if isDir {
 		dirName := filepath.Clean(path) + string(os.PathSeparator)
@@ -268,7 +269,7 @@ func uploadObjects(client *storage.Client, bucket, key, path string) error {
 
 			err = uploadObject(client, bucket, fullKey, dirName+relPath)
 			if err != nil {
-				return fmt.Errorf("upload %s: %v", dirName+relPath, err)
+				return fmt.Errorf("upload %s: %w", dirName+relPath, err)
 			}
 		}
 	} else {
@@ -278,7 +279,7 @@ func uploadObjects(client *storage.Client, bucket, key, path string) error {
 		}
 		err = uploadObject(client, bucket, objectKey, path)
 		if err != nil {
-			return fmt.Errorf("upload %s: %v", path, err)
+			return fmt.Errorf("upload %s: %w", path, err)
 		}
 	}
 	return nil
@@ -288,7 +289,7 @@ func uploadObjects(client *storage.Client, bucket, key, path string) error {
 func uploadObject(client *storage.Client, bucket, key, localPath string) error {
 	f, err := os.Open(filepath.Clean(localPath))
 	if err != nil {
-		return fmt.Errorf("os open: %v", err)
+		return fmt.Errorf("os open: %w", err)
 	}
 	defer func() {
 		if err := f.Close(); err != nil {
@@ -298,10 +299,10 @@ func uploadObject(client *storage.Client, bucket, key, localPath string) error {
 	ctx := context.Background()
 	wc := client.Bucket(bucket).Object(key).NewWriter(ctx)
 	if _, err = io.Copy(wc, f); err != nil {
-		return fmt.Errorf("io copy: %v", err)
+		return fmt.Errorf("io copy: %w", err)
 	}
 	if err := wc.Close(); err != nil {
-		return fmt.Errorf("writer close: %v", err)
+		return fmt.Errorf("writer close: %w", err)
 	}
 	return nil
 }

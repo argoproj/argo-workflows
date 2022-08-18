@@ -510,7 +510,7 @@ func (woc *wfOperationCtx) executeDAGTask(ctx context.Context, dagCtx *dagContex
 		}
 
 		// Finally execute the template
-		_, err = woc.executeTemplate(ctx, taskNodeName, &t, dagCtx.tmplCtx, t.Arguments, &executeTemplateOpts{boundaryID: dagCtx.boundaryID, onExitTemplate: dagCtx.onExitTemplate})
+		node, err = woc.executeTemplate(ctx, taskNodeName, &t, dagCtx.tmplCtx, t.Arguments, &executeTemplateOpts{boundaryID: dagCtx.boundaryID, onExitTemplate: dagCtx.onExitTemplate})
 		if err != nil {
 			switch err {
 			case ErrDeadlineExceeded:
@@ -521,6 +521,18 @@ func (woc *wfOperationCtx) executeDAGTask(ctx context.Context, dagCtx *dagContex
 				return
 			default:
 				_ = woc.markNodeError(taskNodeName, fmt.Errorf("task '%s' errored: %v", taskNodeName, err))
+				return
+			}
+		}
+		// Some scenario, Node will be nil e.g: when parallelism reached.
+		if node == nil {
+			return
+		}
+		if node.Completed() {
+			// if the node type is NodeTypeRetry, and its last child is completed, it will be completed after woc.executeTemplate;
+			hasOnExitNode, onExitNode, err := woc.runOnExitNode(ctx, task.GetExitHook(woc.execWf.Spec.Arguments), node, dagCtx.boundaryID, dagCtx.tmplCtx, "tasks."+taskName)
+			if hasOnExitNode && (onExitNode == nil || !onExitNode.Fulfilled() || err != nil) {
+				// The onExit node is either not complete or has errored out, return.
 				return
 			}
 		}
