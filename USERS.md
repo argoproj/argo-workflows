@@ -187,6 +187,7 @@ In addition, the following projects are **officially** using Argo Workflows:
 1. [Couler](https://github.com/couler-proj/couler)
 1. [Hera Workflows](https://github.com/argoproj-labs/hera-workflows)
 1. [Kubeflow](https://www.kubeflow.org/)
+1. [Metaflow](https://www.metaflow.org)
 1. [Onepanel](https://github.com/onepanelio/onepanel)
 1. [SQLFlow](https://github.com/sql-machine-learning/sqlflow)
 1. [BisQue](https://github.com/UCSB-VRL/bisqueUCSB)

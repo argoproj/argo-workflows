@@ -22,9 +22,10 @@ func NewDeleteCommand() *cobra.Command {
 		all           bool
 		allNamespaces bool
 		dryRun        bool
+		force         bool
 	)
 	command := &cobra.Command{
-		Use:   "delete [--dry-run] [WORKFLOW...|[--all] [--older] [--completed] [--resubmitted] [--prefix PREFIX] [--selector SELECTOR]]",
+		Use:   "delete [--dry-run] [WORKFLOW...|[--all] [--older] [--completed] [--resubmitted] [--prefix PREFIX] [--selector SELECTOR] [--force] ]",
 		Short: "delete workflows",
 		Example: `# Delete a workflow:
 
@@ -64,7 +65,7 @@ func NewDeleteCommand() *cobra.Command {
 
 			for _, wf := range workflows {
 				if !dryRun {
-					_, err := serviceClient.DeleteWorkflow(ctx, &workflowpkg.WorkflowDeleteRequest{Name: wf.Name, Namespace: wf.Namespace})
+					_, err := serviceClient.DeleteWorkflow(ctx, &workflowpkg.WorkflowDeleteRequest{Name: wf.Name, Namespace: wf.Namespace, Force: force})
 					if err != nil && status.Code(err) == codes.NotFound {
 						fmt.Printf("Workflow '%s' not found\n", wf.Name)
 						continue
@@ -87,5 +88,6 @@ func NewDeleteCommand() *cobra.Command {
 	command.Flags().StringVarP(&flags.labels, "selector", "l", "", "Selector (label query) to filter on, not including uninitialized ones, supports '=', '==', and '!='.(e.g. -l key1=value1,key2=value2)")
 	command.Flags().StringVar(&flags.fields, "field-selector", "", "Selector (field query) to filter on, supports '=', '==', and '!='.(e.g. --field-selector key1=value1,key2=value2). The server only supports a limited number of field queries per type.")
 	command.Flags().BoolVar(&dryRun, "dry-run", false, "Do not delete the workflow, only print what would happen")
+	command.Flags().BoolVar(&force, "force", false, "Force delete workflows by removing finalizers")
 	return command
 }
