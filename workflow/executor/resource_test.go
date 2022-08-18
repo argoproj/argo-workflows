@@ -174,6 +174,15 @@ func TestInferSelfLink(t *testing.T) {
 		Kind:    "Duty",
 	})
 	assert.Equal(t, "apis/test.group/v1/namespaces/test-namespace/duties/test-name", inferObjectSelfLink(obj))
+
+	obj.SetNamespace("")
+	obj.SetGroupVersionKind(schema.GroupVersionKind{
+		Group:   "",
+		Version: "v1",
+		Kind:    "Namespace",
+	})
+	assert.Equal(t, "api/v1/namespaces/test-name", inferObjectSelfLink(obj))
+
 }
 
 // TestResourceExecRetry tests whether Exec retries transitive errors

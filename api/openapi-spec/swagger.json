@@ -3081,6 +3081,11 @@
             "description": "When present, indicates that modifications should not be\npersisted. An invalid or unrecognized dryRun directive will\nresult in an error response and no further processing of the\nrequest. Valid values are:\n- All: all dry run stages will be processed\n+optional.",
             "name": "deleteOptions.dryRun",
             "in": "query"
+          },
+          {
+            "type": "boolean",
+            "name": "force",
+            "in": "query"
           }
         ],
         "responses": {

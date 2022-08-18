@@ -524,6 +524,10 @@ func (woc *wfOperationCtx) executeDAGTask(ctx context.Context, dagCtx *dagContex
 				return
 			}
 		}
+		// Some scenario, Node will be nil e.g: when parallelism reached.
+		if node == nil {
+			return
+		}
 		if node.Completed() {
 			// if the node type is NodeTypeRetry, and its last child is completed, it will be completed after woc.executeTemplate;
 			hasOnExitNode, onExitNode, err := woc.runOnExitNode(ctx, task.GetExitHook(woc.execWf.Spec.Arguments), node, dagCtx.boundaryID, dagCtx.tmplCtx, "tasks."+taskName)
