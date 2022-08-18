@@ -16,7 +16,7 @@ Recommended:
 <dependency>
     <groupId>io.argoproj.workflow</groupId>
     <artifactId>argo-client-java</artifactId>
-    <version>3.3.0</version>
+    <version>v3.3.8</version>
 </dependency>
 ```
 

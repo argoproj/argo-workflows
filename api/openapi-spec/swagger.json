@@ -7240,6 +7240,30 @@
         }
       }
     },
+    "io.argoproj.workflow.v1alpha1.ArtGCStatus": {
+      "description": "ArtGCStatus maintains state related to ArtifactGC",
+      "type": "object",
+      "properties": {
+        "notSpecified": {
+          "description": "if this is true, we already checked to see if we need to do it and we don't",
+          "type": "boolean"
+        },
+        "podsRecouped": {
+          "description": "have completed Pods been processed? (mapped by Pod name) used to prevent re-processing the Status of a Pod more than once",
+          "type": "object",
+          "additionalProperties": {
+            "type": "boolean"
+          }
+        },
+        "strategiesProcessed": {
+          "description": "have Pods been started to perform this strategy? (enables us not to re-process what we've already done)",
+          "type": "object",
+          "additionalProperties": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
     "io.argoproj.workflow.v1alpha1.Artifact": {
       "description": "Artifact indicates an artifact to place at a specified path",
       "type": "object",
@@ -7341,22 +7365,17 @@
       "description": "ArtifactGC describes how to delete artifacts from completed Workflows",
       "type": "object",
       "properties": {
-        "strategy": {
-          "description": "Strategy is the strategy to use. One of \"OnWorkflowCompletion\", \"OnWorkflowDeletion\"",
+        "podMetadata": {
+          "description": "PodMetadata is an optional field for specifying the Labels and Annotations that should be assigned to the Pod doing the deletion",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Metadata"
+        },
+        "serviceAccountName": {
+          "description": "ServiceAccountName is an optional field for specifying the Service Account that should be assigned to the Pod doing the deletion",
           "type": "string"
-        }
-      }
-    },
-    "io.argoproj.workflow.v1alpha1.ArtifactGCSStatus": {
-      "description": "ArtifactGCSStatus describes the result of the deletion",
-      "type": "object",
-      "properties": {
-        "artifactResultsByNode": {
-          "description": "ArtifactResultsByNode maps Node name to result",
-          "type": "object",
-          "additionalProperties": {
-            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactResultNodeStatus"
-          }
+        },
+        "strategy": {
+          "description": "Strategy is the strategy to use.",
+          "type": "string"
         }
       }
     },
@@ -7369,6 +7388,19 @@
           "type": "object",
           "additionalProperties": {
             "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactNodeSpec"
+          }
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.ArtifactGCStatus": {
+      "description": "ArtifactGCStatus describes the result of the deletion",
+      "type": "object",
+      "properties": {
+        "artifactResultsByNode": {
+          "description": "ArtifactResultsByNode maps Node name to result",
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactResultNodeStatus"
           }
         }
       }
@@ -7919,14 +7951,14 @@
       ],
       "properties": {
         "args": {
-          "description": "Arguments to the entrypoint. The docker image's CMD is used if this is not provided. Variable references $(VAR_NAME) are expanded using the container's environment. If a variable cannot be resolved, the reference in the input string will be unchanged. Double $$ are reduced to a single $, which allows for escaping the $(VAR_NAME) syntax: i.e. \"$$(VAR_NAME)\" will produce the string literal \"$(VAR_NAME)\". Escaped references will never be expanded, regardless of whether the variable exists or not. Cannot be updated. More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell",
+          "description": "Arguments to the entrypoint. The container image's CMD is used if this is not provided. Variable references $(VAR_NAME) are expanded using the container's environment. If a variable cannot be resolved, the reference in the input string will be unchanged. Double $$ are reduced to a single $, which allows for escaping the $(VAR_NAME) syntax: i.e. \"$$(VAR_NAME)\" will produce the string literal \"$(VAR_NAME)\". Escaped references will never be expanded, regardless of whether the variable exists or not. Cannot be updated. More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell",
           "type": "array",
           "items": {
             "type": "string"
           }
         },
         "command": {
-          "description": "Entrypoint array. Not executed within a shell. The docker image's ENTRYPOINT is used if this is not provided. Variable references $(VAR_NAME) are expanded using the container's environment. If a variable cannot be resolved, the reference in the input string will be unchanged. Double $$ are reduced to a single $, which allows for escaping the $(VAR_NAME) syntax: i.e. \"$$(VAR_NAME)\" will produce the string literal \"$(VAR_NAME)\". Escaped references will never be expanded, regardless of whether the variable exists or not. Cannot be updated. More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell",
+          "description": "Entrypoint array. Not executed within a shell. The container image's ENTRYPOINT is used if this is not provided. Variable references $(VAR_NAME) are expanded using the container's environment. If a variable cannot be resolved, the reference in the input string will be unchanged. Double $$ are reduced to a single $, which allows for escaping the $(VAR_NAME) syntax: i.e. \"$$(VAR_NAME)\" will produce the string literal \"$(VAR_NAME)\". Escaped references will never be expanded, regardless of whether the variable exists or not. Cannot be updated. More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell",
           "type": "array",
           "items": {
             "type": "string"
@@ -7955,7 +7987,7 @@
           }
         },
         "image": {
-          "description": "Docker image name. More info: https://kubernetes.io/docs/concepts/containers/images This field is optional to allow higher level config management to default or override container images in workload controllers like Deployments and StatefulSets.",
+          "description": "Container image name. More info: https://kubernetes.io/docs/concepts/containers/images This field is optional to allow higher level config management to default or override container images in workload controllers like Deployments and StatefulSets.",
           "type": "string"
         },
         "imagePullPolicy": {
@@ -9711,7 +9743,7 @@
           "type": "string"
         },
         "limit": {
-          "description": "Limit is the maximum number of attempts when retrying a container",
+          "description": "Limit is the maximum number of retry attempts when retrying a container. It does not include the original container; the maximum number of total attempts will be `limit + 1`.",
           "$ref": "#/definitions/io.k8s.apimachinery.pkg.util.intstr.IntOrString"
         },
         "retryPolicy": {
@@ -9853,14 +9885,14 @@
       ],
       "properties": {
         "args": {
-          "description": "Arguments to the entrypoint. The docker image's CMD is used if this is not provided. Variable references $(VAR_NAME) are expanded using the container's environment. If a variable cannot be resolved, the reference in the input string will be unchanged. Double $$ are reduced to a single $, which allows for escaping the $(VAR_NAME) syntax: i.e. \"$$(VAR_NAME)\" will produce the string literal \"$(VAR_NAME)\". Escaped references will never be expanded, regardless of whether the variable exists or not. Cannot be updated. More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell",
+          "description": "Arguments to the entrypoint. The container image's CMD is used if this is not provided. Variable references $(VAR_NAME) are expanded using the container's environment. If a variable cannot be resolved, the reference in the input string will be unchanged. Double $$ are reduced to a single $, which allows for escaping the $(VAR_NAME) syntax: i.e. \"$$(VAR_NAME)\" will produce the string literal \"$(VAR_NAME)\". Escaped references will never be expanded, regardless of whether the variable exists or not. Cannot be updated. More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell",
           "type": "array",
           "items": {
             "type": "string"
           }
         },
         "command": {
-          "description": "Entrypoint array. Not executed within a shell. The docker image's ENTRYPOINT is used if this is not provided. Variable references $(VAR_NAME) are expanded using the container's environment. If a variable cannot be resolved, the reference in the input string will be unchanged. Double $$ are reduced to a single $, which allows for escaping the $(VAR_NAME) syntax: i.e. \"$$(VAR_NAME)\" will produce the string literal \"$(VAR_NAME)\". Escaped references will never be expanded, regardless of whether the variable exists or not. Cannot be updated. More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell",
+          "description": "Entrypoint array. Not executed within a shell. The container image's ENTRYPOINT is used if this is not provided. Variable references $(VAR_NAME) are expanded using the container's environment. If a variable cannot be resolved, the reference in the input string will be unchanged. Double $$ are reduced to a single $, which allows for escaping the $(VAR_NAME) syntax: i.e. \"$$(VAR_NAME)\" will produce the string literal \"$(VAR_NAME)\". Escaped references will never be expanded, regardless of whether the variable exists or not. Cannot be updated. More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell",
           "type": "array",
           "items": {
             "type": "string"
@@ -9883,7 +9915,7 @@
           }
         },
         "image": {
-          "description": "Docker image name. More info: https://kubernetes.io/docs/concepts/containers/images This field is optional to allow higher level config management to default or override container images in workload controllers like Deployments and StatefulSets.",
+          "description": "Container image name. More info: https://kubernetes.io/docs/concepts/containers/images This field is optional to allow higher level config management to default or override container images in workload controllers like Deployments and StatefulSets.",
           "type": "string"
         },
         "imagePullPolicy": {
@@ -10441,14 +10473,14 @@
       ],
       "properties": {
         "args": {
-          "description": "Arguments to the entrypoint. The docker image's CMD is used if this is not provided. Variable references $(VAR_NAME) are expanded using the container's environment. If a variable cannot be resolved, the reference in the input string will be unchanged. Double $$ are reduced to a single $, which allows for escaping the $(VAR_NAME) syntax: i.e. \"$$(VAR_NAME)\" will produce the string literal \"$(VAR_NAME)\". Escaped references will never be expanded, regardless of whether the variable exists or not. Cannot be updated. More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell",
+          "description": "Arguments to the entrypoint. The container image's CMD is used if this is not provided. Variable references $(VAR_NAME) are expanded using the container's environment. If a variable cannot be resolved, the reference in the input string will be unchanged. Double $$ are reduced to a single $, which allows for escaping the $(VAR_NAME) syntax: i.e. \"$$(VAR_NAME)\" will produce the string literal \"$(VAR_NAME)\". Escaped references will never be expanded, regardless of whether the variable exists or not. Cannot be updated. More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell",
           "type": "array",
           "items": {
             "type": "string"
           }
         },
         "command": {
-          "description": "Entrypoint array. Not executed within a shell. The docker image's ENTRYPOINT is used if this is not provided. Variable references $(VAR_NAME) are expanded using the container's environment. If a variable cannot be resolved, the reference in the input string will be unchanged. Double $$ are reduced to a single $, which allows for escaping the $(VAR_NAME) syntax: i.e. \"$$(VAR_NAME)\" will produce the string literal \"$(VAR_NAME)\". Escaped references will never be expanded, regardless of whether the variable exists or not. Cannot be updated. More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell",
+          "description": "Entrypoint array. Not executed within a shell. The container image's ENTRYPOINT is used if this is not provided. Variable references $(VAR_NAME) are expanded using the container's environment. If a variable cannot be resolved, the reference in the input string will be unchanged. Double $$ are reduced to a single $, which allows for escaping the $(VAR_NAME) syntax: i.e. \"$$(VAR_NAME)\" will produce the string literal \"$(VAR_NAME)\". Escaped references will never be expanded, regardless of whether the variable exists or not. Cannot be updated. More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell",
           "type": "array",
           "items": {
             "type": "string"
@@ -10471,7 +10503,7 @@
           }
         },
         "image": {
-          "description": "Docker image name. More info: https://kubernetes.io/docs/concepts/containers/images This field is optional to allow higher level config management to default or override container images in workload controllers like Deployments and StatefulSets.",
+          "description": "Container image name. More info: https://kubernetes.io/docs/concepts/containers/images This field is optional to allow higher level config management to default or override container images in workload controllers like Deployments and StatefulSets.",
           "type": "string"
         },
         "imagePullPolicy": {
@@ -11131,6 +11163,10 @@
       "description": "WorkflowStatus contains overall status information about a workflow",
       "type": "object",
       "properties": {
+        "artifactGCStatus": {
+          "description": "ArtifactGCStatus maintains the status of Artifact Garbage Collection",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtGCStatus"
+        },
         "artifactRepositoryRef": {
           "description": "ArtifactRepositoryRef is used to cache the repository to use so we do not need to determine it everytime we reconcile.",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactRepositoryRefStatus"
@@ -14069,7 +14105,7 @@
         },
         "fieldValidation": {
           "type": "string",
-          "title": "fieldValidation determines how the server should respond to\nunknown/duplicate fields in the object in the request.\nIntroduced as alpha in 1.23, older servers or servers with the\n`ServerSideFieldValidation` feature disabled will discard valid values\nspecified in  this param and not perform any server side field validation.\nValid values are:\n- Ignore: ignores unknown/duplicate fields.\n- Warn: responds with a warning for each\nunknown/duplicate field, but successfully serves the request.\n- Strict: fails the request on unknown/duplicate fields.\n+optional"
+          "title": "fieldValidation instructs the server on how to handle\nobjects in the request (POST/PUT/PATCH) containing unknown\nor duplicate fields, provided that the `ServerSideFieldValidation`\nfeature gate is also enabled. Valid values are:\n- Ignore: This will ignore any unknown fields that are silently\ndropped from the object, and will ignore all but the last duplicate\nfield that the decoder encounters. This is the default behavior\nprior to v1.23 and is the default behavior when the\n`ServerSideFieldValidation` feature gate is disabled.\n- Warn: This will send a warning via the standard warning response\nheader for each unknown field that is dropped from the object, and\nfor each duplicate field that is encountered. The request will\nstill succeed if there are no other errors, and will only persist\nthe last of any duplicate fields. This is the default when the\n`ServerSideFieldValidation` feature gate is enabled.\n- Strict: This will fail the request with a BadRequest error if\nany unknown fields would be dropped from the object, or if any\nduplicate fields are present. The error returned from the server\nwill contain all unknown and duplicate fields encountered.\n+optional"
         }
       }
     },
