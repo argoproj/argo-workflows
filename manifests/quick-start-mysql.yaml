@@ -1655,26 +1655,6 @@ spec:
   selector:
     app: mysql
 ---
-apiVersion: v1
-kind: Service
-metadata:
-  annotations:
-    workflows.argoproj.io/description: |
-      This service is deprecated. It will be removed in v3.4.
-
-      https://github.com/argoproj/argo-workflows/issues/8441
-  labels:
-    app: workflow-controller
-  name: workflow-controller-metrics
-spec:
-  ports:
-  - name: metrics
-    port: 9090
-    protocol: TCP
-    targetPort: 9090
-  selector:
-    app: workflow-controller
----
 apiVersion: scheduling.k8s.io/v1
 kind: PriorityClass
 metadata:
