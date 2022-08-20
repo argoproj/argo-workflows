@@ -7177,7 +7177,7 @@
           "description": "PodMetadata defines additional metadata that should be applied to workflow pods"
         },
         "podPriority": {
-          "description": "Priority to apply to workflow pods.",
+          "description": "Priority to apply to workflow pods. DEPRECATED: Use PodPriorityClassName instead.",
           "type": "integer"
         },
         "podPriorityClassName": {
