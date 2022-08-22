@@ -27,19 +27,37 @@ export interface Arguments {
 export interface AzureArtifactRepository {
     endpoint: string;
     container: string;
+    blob: string;
 }
 export interface GCSArtifactRepository {
     endpoint: string;
     bucket: string;
+    key: string;
 }
 export interface S3ArtifactRepository {
     endpoint: string;
     bucket: string;
+    key: string;
 }
 
 export interface OSSArtifactRepository {
     endpoint: string;
     bucket: string;
+    key: string;
+}
+
+export interface GitArtifactRepository {
+    repo?: string;
+    endpoint?: string;
+    bucket?: string;
+}
+
+export interface HTTPArtifactRepository {
+    url: string;
+}
+
+export interface RawArtifactRepository {
+    data: string;
 }
 
 export interface ArtifactRepository {
@@ -47,6 +65,9 @@ export interface ArtifactRepository {
     s3?: S3ArtifactRepository;
     oss?: OSSArtifactRepository;
     azure?: AzureArtifactRepository;
+    git?: GitArtifactRepository;
+    http?: HTTPArtifactRepository;
+    raw?: RawArtifactRepository;
 }
 export interface ArtifactRepositoryRefStatus {
     artifactRepository: ArtifactRepository;
@@ -440,6 +461,11 @@ export interface Template {
      * Sidecars is a list of containers which run alongside the main container Sidecars are automatically killed when the main container completes
      */
     sidecars?: UserContainer[];
+    /**
+     * archiveLocation is the location in which all files related to the step will be stored (logs, artifacts, etc...).
+     * Can be overridden by individual items in outputs. If omitted, will use the default
+     */
+    archiveLocation?: ArtifactRepository;
     /**
      * InitContainers is a list of containers which run before the main container.
      */
