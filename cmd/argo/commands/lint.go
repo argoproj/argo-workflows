@@ -23,7 +23,7 @@ func NewLintCommand() *cobra.Command {
 	allKinds := []string{wf.WorkflowPlural, wf.WorkflowTemplatePlural, wf.CronWorkflowPlural, wf.ClusterWorkflowTemplatePlural}
 
 	command := &cobra.Command{
-		Use:   "lint FILE...",
+		Use:   "lint (DIRECTORY | FILE)",
 		Short: "validate files or directories of manifests",
 		Example: `
 # Lint all manifests in a specified directory:
