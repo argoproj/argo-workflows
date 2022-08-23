@@ -1935,6 +1935,7 @@ message WorkflowSpec {
   optional string podPriorityClassName = 23;
 
   // Priority to apply to workflow pods.
+  // DEPRECATED: Use PodPriorityClassName instead.
   optional int32 podPriority = 24;
 
   // +patchStrategy=merge

@@ -7344,7 +7344,7 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowSpec(ref common.ReferenceCallback
 					},
 					"podPriority": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Priority to apply to workflow pods.",
+							Description: "Priority to apply to workflow pods. DEPRECATED: Use PodPriorityClassName instead.",
 							Type:        []string{"integer"},
 							Format:      "int32",
 						},
