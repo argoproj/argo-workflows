@@ -679,11 +679,13 @@ func (ctx *templateValidationCtx) validateLeaf(scope map[string]interface{}, tmp
 				return errors.Errorf(errors.CodeBadRequest, "templates.%s.resource.action must be one of: get, create, apply, delete, replace, patch", tmpl.Name)
 			}
 		}
-		if tmpl.Resource.Manifest == "" && tmpl.Resource.ManifestFrom == nil {
-			return errors.Errorf(errors.CodeBadRequest, "either templates.%s.resource.manifest or templates.%s.resource.manifestFrom must be specified", tmpl.Name, tmpl.Name)
-		}
-		if tmpl.Resource.Manifest != "" && tmpl.Resource.ManifestFrom != nil {
-			return errors.Errorf(errors.CodeBadRequest, "shouldn't have both `manifest` and `manifestFrom` specified in `Manifest` for resource template")
+		if tmpl.Resource.Action != "delete" && tmpl.Resource.Action != "get" {
+			if tmpl.Resource.Manifest == "" && tmpl.Resource.ManifestFrom == nil {
+				return errors.Errorf(errors.CodeBadRequest, "either templates.%s.resource.manifest or templates.%s.resource.manifestFrom must be specified", tmpl.Name, tmpl.Name)
+			}
+			if tmpl.Resource.Manifest != "" && tmpl.Resource.ManifestFrom != nil {
+				return errors.Errorf(errors.CodeBadRequest, "shouldn't have both `manifest` and `manifestFrom` specified in `Manifest` for resource template")
+			}
 		}
 		if tmpl.Resource.ManifestFrom != nil && tmpl.Resource.ManifestFrom.Artifact != nil {
 			var found bool
