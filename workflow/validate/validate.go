@@ -9,10 +9,9 @@ import (
 	"strings"
 	"time"
 
-	"golang.org/x/exp/maps"
-
 	"github.com/robfig/cron/v3"
 	"github.com/sirupsen/logrus"
+	"golang.org/x/exp/maps"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	apivalidation "k8s.io/apimachinery/pkg/util/validation"
 	"sigs.k8s.io/yaml"
@@ -686,25 +685,25 @@ func (ctx *templateValidationCtx) validateLeaf(scope map[string]interface{}, tmp
 			if tmpl.Resource.Manifest != "" && tmpl.Resource.ManifestFrom != nil {
 				return errors.Errorf(errors.CodeBadRequest, "shouldn't have both `manifest` and `manifestFrom` specified in `Manifest` for resource template")
 			}
-		}
-		if tmpl.Resource.ManifestFrom != nil && tmpl.Resource.ManifestFrom.Artifact != nil {
-			var found bool
-			for _, art := range tmpl.Inputs.Artifacts {
-				if tmpl.Resource.ManifestFrom.Artifact.Name == art.Name {
-					found = true
-					break
+			if tmpl.Resource.ManifestFrom != nil && tmpl.Resource.ManifestFrom.Artifact != nil {
+				var found bool
+				for _, art := range tmpl.Inputs.Artifacts {
+					if tmpl.Resource.ManifestFrom.Artifact.Name == art.Name {
+						found = true
+						break
+					}
+				}
+				if !found {
+					return errors.Errorf(errors.CodeBadRequest, "artifact %s in `manifestFrom` refer to a non-exist artifact", tmpl.Resource.ManifestFrom.Artifact.Name)
 				}
 			}
-			if !found {
-				return errors.Errorf(errors.CodeBadRequest, "artifact %s in `manifestFrom` refer to a non-exist artifact", tmpl.Resource.ManifestFrom.Artifact.Name)
-			}
-		}
-		if tmpl.Resource.Manifest != "" && !placeholderGenerator.IsPlaceholder(tmpl.Resource.Manifest) {
-			// Try to unmarshal the given manifest, just ensuring it's a valid YAML.
-			var obj interface{}
-			err := yaml.Unmarshal([]byte(tmpl.Resource.Manifest), &obj)
-			if err != nil {
-				return errors.Errorf(errors.CodeBadRequest, "templates.%s.resource.manifest must be a valid yaml", tmpl.Name)
+			if tmpl.Resource.Manifest != "" && !placeholderGenerator.IsPlaceholder(tmpl.Resource.Manifest) {
+				// Try to unmarshal the given manifest, just ensuring it's a valid YAML.
+				var obj interface{}
+				err := yaml.Unmarshal([]byte(tmpl.Resource.Manifest), &obj)
+				if err != nil {
+					return errors.Errorf(errors.CodeBadRequest, "templates.%s.resource.manifest must be a valid yaml", tmpl.Name)
+				}
 			}
 		}
 	}
