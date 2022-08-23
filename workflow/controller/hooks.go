@@ -24,11 +24,15 @@ func (woc *wfOperationCtx) executeWfLifeCycleHook(ctx context.Context, tmplCtx *
 		if execute {
 			hookNodeName := generateLifeHookNodeName(woc.wf.ObjectMeta.Name, string(hookName))
 			woc.log.WithField("lifeCycleHook", hookName).WithField("node", hookNodeName).Infof("Running workflow level hooks")
-			_, err := woc.executeTemplate(ctx, hookNodeName, &wfv1.WorkflowStep{Template: hook.Template, TemplateRef: hook.TemplateRef}, tmplCtx, hook.Arguments, &executeTemplateOpts{})
+			hookNode, err := woc.executeTemplate(ctx, hookNodeName, &wfv1.WorkflowStep{Template: hook.Template, TemplateRef: hook.TemplateRef}, tmplCtx, hook.Arguments, &executeTemplateOpts{})
 			if err != nil {
 				return err
 			}
 			woc.addChildNode(woc.wf.Name, hookNodeName)
+			// If the hookNode node is HTTP template, it requires HTTP reconciliation, do it here
+			if hookNode != nil && woc.nodeRequiresTaskSetReconciliation(hookNode.Name) {
+				woc.taskSetReconciliation(ctx)
+			}
 		}
 	}
 
