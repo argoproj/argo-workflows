@@ -387,6 +387,7 @@ type WorkflowSpec struct {
 	PodPriorityClassName string `json:"podPriorityClassName,omitempty" protobuf:"bytes,23,opt,name=podPriorityClassName"`
 
 	// Priority to apply to workflow pods.
+	// DEPRECATED: Use PodPriorityClassName instead.
 	PodPriority *int32 `json:"podPriority,omitempty" protobuf:"bytes,24,opt,name=podPriority"`
 
 	// +patchStrategy=merge

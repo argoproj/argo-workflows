@@ -807,7 +807,7 @@ WorkflowSpec is the specification of a Workflow.
 |`podDisruptionBudget`|[`PodDisruptionBudgetSpec`](#poddisruptionbudgetspec)|PodDisruptionBudget holds the number of concurrent disruptions that you allow for Workflow's Pods. Controller will automatically add the selector with workflow name, if selector is empty. Optional: Defaults to empty.|
 |`podGC`|[`PodGC`](#podgc)|PodGC describes the strategy to use when deleting completed pods|
 |`podMetadata`|[`Metadata`](#metadata)|PodMetadata defines additional metadata that should be applied to workflow pods|
-|`podPriority`|`integer`|Priority to apply to workflow pods.|
+|~`podPriority`~|~`integer`~|~Priority to apply to workflow pods.~ DEPRECATED: Use PodPriorityClassName instead.|
 |`podPriorityClassName`|`string`|PriorityClassName to apply to workflow pods.|
 |`podSpecPatch`|`string`|PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of container fields which are not strings (e.g. resource limits).|
 |`priority`|`integer`|Priority is used if controller is configured to process limited number of workflows in parallel. Workflows with higher priority are processed first.|

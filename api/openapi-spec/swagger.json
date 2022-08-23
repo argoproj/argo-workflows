@@ -11063,7 +11063,7 @@
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Metadata"
         },
         "podPriority": {
-          "description": "Priority to apply to workflow pods.",
+          "description": "Priority to apply to workflow pods. DEPRECATED: Use PodPriorityClassName instead.",
           "type": "integer"
         },
         "podPriorityClassName": {
