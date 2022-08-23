@@ -12,7 +12,7 @@ Method | HTTP request | Description
 
 
 # **get_artifact_file**
-> file_type get_artifact_file(namespace, id_discriminator, id, node_id, artifact_name, artifact_name2)
+> file_type get_artifact_file(namespace, id_discriminator, id, node_id, artifact_name, )
 
 Get an artifact.
 
@@ -51,12 +51,11 @@ with argo_workflows.ApiClient(configuration) as api_client:
     id = "id_example" # str | 
     node_id = "nodeId_example" # str | 
     artifact_name = "artifactName_example" # str | 
-    artifact_name2 = "artifactName_example" # str | 
 
     # example passing only required values which don't have defaults set
     try:
         # Get an artifact.
-        api_response = api_instance.get_artifact_file(namespace, id_discriminator, id, node_id, artifact_name, artifact_name2)
+        api_response = api_instance.get_artifact_file(namespace, id_discriminator, id, node_id, artifact_name, )
         pprint(api_response)
     except argo_workflows.ApiException as e:
         print("Exception when calling ArtifactServiceApi->get_artifact_file: %s\n" % e)
@@ -72,7 +71,6 @@ Name | Type | Description  | Notes
  **id** | **str**|  |
  **node_id** | **str**|  |
  **artifact_name** | **str**|  |
- **artifact_name2** | **str**|  |
  **artifact_discriminator** | **str**|  | defaults to "outputs"
 
 ### Return type
@@ -98,7 +96,7 @@ Name | Type | Description  | Notes
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **get_input_artifact**
-> get_input_artifact(namespace, name, node_id, artifact_name)
+> file_type get_input_artifact(namespace, name, node_id, artifact_name)
 
 Get an input artifact.
 
@@ -140,7 +138,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
     # example passing only required values which don't have defaults set
     try:
         # Get an input artifact.
-        api_instance.get_input_artifact(namespace, name, node_id, artifact_name)
+        api_response = api_instance.get_input_artifact(namespace, name, node_id, artifact_name)
+        pprint(api_response)
     except argo_workflows.ApiException as e:
         print("Exception when calling ArtifactServiceApi->get_input_artifact: %s\n" % e)
 ```
@@ -157,7 +156,7 @@ Name | Type | Description  | Notes
 
 ### Return type
 
-void (empty response body)
+**file_type**
 
 ### Authorization
 
@@ -178,7 +177,7 @@ void (empty response body)
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **get_input_artifact_by_uid**
-> file_type get_input_artifact_by_uid(namespace, uid, node_id, artifact_name)
+> file_type get_input_artifact_by_uid(uid, node_id, artifact_name)
 
 Get an input artifact by UID.
 
@@ -212,7 +211,6 @@ configuration.api_key['BearerToken'] = 'YOUR_API_KEY'
 with argo_workflows.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = artifact_service_api.ArtifactServiceApi(api_client)
-    namespace = "namespace_example" # str | 
     uid = "uid_example" # str | 
     node_id = "nodeId_example" # str | 
     artifact_name = "artifactName_example" # str | 
@@ -220,7 +218,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
     # example passing only required values which don't have defaults set
     try:
         # Get an input artifact by UID.
-        api_response = api_instance.get_input_artifact_by_uid(namespace, uid, node_id, artifact_name)
+        api_response = api_instance.get_input_artifact_by_uid(uid, node_id, artifact_name)
         pprint(api_response)
     except argo_workflows.ApiException as e:
         print("Exception when calling ArtifactServiceApi->get_input_artifact_by_uid: %s\n" % e)
@@ -231,7 +229,6 @@ with argo_workflows.ApiClient(configuration) as api_client:
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **namespace** | **str**|  |
  **uid** | **str**|  |
  **node_id** | **str**|  |
  **artifact_name** | **str**|  |
@@ -340,7 +337,7 @@ Name | Type | Description  | Notes
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **get_output_artifact_by_uid**
-> get_output_artifact_by_uid(uid, node_id, artifact_name)
+> file_type get_output_artifact_by_uid(uid, node_id, artifact_name)
 
 Get an output artifact by UID.
 
@@ -381,7 +378,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
     # example passing only required values which don't have defaults set
     try:
         # Get an output artifact by UID.
-        api_instance.get_output_artifact_by_uid(uid, node_id, artifact_name)
+        api_response = api_instance.get_output_artifact_by_uid(uid, node_id, artifact_name)
+        pprint(api_response)
     except argo_workflows.ApiException as e:
         print("Exception when calling ArtifactServiceApi->get_output_artifact_by_uid: %s\n" % e)
 ```
@@ -397,7 +395,7 @@ Name | Type | Description  | Notes
 
 ### Return type
 
-void (empty response body)
+**file_type**
 
 ### Authorization
 

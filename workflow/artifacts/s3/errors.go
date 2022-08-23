@@ -17,6 +17,7 @@ var s3TransientErrorCodes = []string{
 	"RequestThrottled",
 	"InternalError",
 	"SlowDown",
+	"ServiceUnavailable",
 }
 
 // isTransientS3Err checks if an minio.ErrorResponse error is transient (retryable)

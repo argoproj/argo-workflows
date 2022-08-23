@@ -80,12 +80,6 @@
             "enum": [
               "outputs"
             ]
-          },
-          {
-            "type": "string",
-            "name": "artifactName",
-            "in": "path",
-            "required": true
           }
         ],
         "responses": {
@@ -191,11 +185,9 @@
         "responses": {
           "200": {
             "description": "An artifact file.",
-            "content": {
-              "schema": {
-                "type": "string",
-                "format": "binary"
-              }
+            "schema": {
+              "type": "string",
+              "format": "binary"
             }
           },
           "default": {
@@ -237,11 +229,9 @@
         "responses": {
           "200": {
             "description": "An artifact file.",
-            "content": {
-              "schema": {
-                "type": "string",
-                "format": "binary"
-              }
+            "schema": {
+              "type": "string",
+              "format": "binary"
             }
           },
           "default": {
@@ -261,12 +251,6 @@
         "summary": "Get an input artifact by UID.",
         "operationId": "ArtifactService_GetInputArtifactByUID",
         "parameters": [
-          {
-            "type": "string",
-            "name": "namespace",
-            "in": "path",
-            "required": true
-          },
           {
             "type": "string",
             "name": "uid",
@@ -312,6 +296,38 @@
       "type": "array",
       "items": {
         "$ref": "#/definitions/github.com.argoproj.argo_workflows.v3.pkg.apis.workflow.v1alpha1.WorkflowStep"
+      }
+    },
+    "google.protobuf.Any": {
+      "type": "object",
+      "properties": {
+        "type_url": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string",
+          "format": "byte"
+        }
+      }
+    },
+    "grpc.gateway.runtime.Error": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/google.protobuf.Any"
+          }
+        },
+        "error": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        }
       }
     }
   }

@@ -57,11 +57,25 @@ spec:
                               type: boolean
                             artifactGC:
                               properties:
+                                podMetadata:
+                                  properties:
+                                    annotations:
+                                      additionalProperties:
+                                        type: string
+                                      type: object
+                                    labels:
+                                      additionalProperties:
+                                        type: string
+                                      type: object
+                                  type: object
+                                serviceAccountName:
+                                  type: string
                                 strategy:
                                   enum:
                                   - ""
                                   - OnWorkflowCompletion
                                   - OnWorkflowDeletion
+                                  - Never
                                   type: string
                               type: object
                             artifactory:
@@ -93,6 +107,34 @@ spec:
                               required:
                               - url
                               type: object
+                            azure:
+                              properties:
+                                accountKeySecret:
+                                  properties:
+                                    key:
+                                      type: string
+                                    name:
+                                      type: string
+                                    optional:
+                                      type: boolean
+                                  required:
+                                  - key
+                                  type: object
+                                blob:
+                                  type: string
+                                container:
+                                  type: string
+                                endpoint:
+                                  type: string
+                                useSDKCreds:
+                                  type: boolean
+                              required:
+                              - blob
+                              - container
+                              - endpoint
+                              type: object
+                            deleted:
+                              type: boolean
                             from:
                               type: string
                             fromExpression:

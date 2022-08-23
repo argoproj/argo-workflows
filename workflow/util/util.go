@@ -177,7 +177,7 @@ func SubmitWorkflow(ctx context.Context, wfIf v1alpha1.WorkflowInterface, wfClie
 	wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(wfClientset.ArgoprojV1alpha1().WorkflowTemplates(namespace))
 	cwftmplGetter := templateresolution.WrapClusterWorkflowTemplateInterface(wfClientset.ArgoprojV1alpha1().ClusterWorkflowTemplates())
 
-	_, err = validate.ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, validate.ValidateOpts{Submit: true})
+	err = validate.ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, validate.ValidateOpts{Submit: true})
 	if err != nil {
 		return nil, err
 	}
@@ -275,10 +275,27 @@ func ApplySubmitOpts(wf *wfv1.Workflow, opts *wfv1.SubmitOpts) error {
 		}
 	}
 	wf.SetAnnotations(wfAnnotations)
-	if len(opts.Parameters) > 0 {
+	err := overrideParameters(wf, opts.Parameters)
+	if err != nil {
+		return err
+	}
+	if opts.GenerateName != "" {
+		wf.ObjectMeta.GenerateName = opts.GenerateName
+	}
+	if opts.Name != "" {
+		wf.ObjectMeta.Name = opts.Name
+	}
+	if opts.OwnerReference != nil {
+		wf.SetOwnerReferences(append(wf.GetOwnerReferences(), *opts.OwnerReference))
+	}
+	return nil
+}
+
+func overrideParameters(wf *wfv1.Workflow, parameters []string) error {
+	if len(parameters) > 0 {
 		newParams := make([]wfv1.Parameter, 0)
 		passedParams := make(map[string]bool)
-		for _, paramStr := range opts.Parameters {
+		for _, paramStr := range parameters {
 			parts := strings.SplitN(paramStr, "=", 2)
 			if len(parts) != 2 {
 				return fmt.Errorf("expected parameter of the form: NAME=VALUE. Received: %s", paramStr)
@@ -295,15 +312,6 @@ func ApplySubmitOpts(wf *wfv1.Workflow, opts *wfv1.SubmitOpts) error {
 			newParams = append(newParams, param)
 		}
 		wf.Spec.Arguments.Parameters = newParams
-	}
-	if opts.GenerateName != "" {
-		wf.ObjectMeta.GenerateName = opts.GenerateName
-	}
-	if opts.Name != "" {
-		wf.ObjectMeta.Name = opts.Name
-	}
-	if opts.OwnerReference != nil {
-		wf.SetOwnerReferences(append(wf.GetOwnerReferences(), *opts.OwnerReference))
 	}
 	return nil
 }
@@ -600,7 +608,7 @@ func RandSuffix() string {
 }
 
 // FormulateResubmitWorkflow formulate a new workflow from a previous workflow, optionally re-using successful nodes
-func FormulateResubmitWorkflow(wf *wfv1.Workflow, memoized bool) (*wfv1.Workflow, error) {
+func FormulateResubmitWorkflow(wf *wfv1.Workflow, memoized bool, parameters []string) (*wfv1.Workflow, error) {
 	newWF := wfv1.Workflow{}
 	newWF.TypeMeta = wf.TypeMeta
 
@@ -656,6 +664,17 @@ func FormulateResubmitWorkflow(wf *wfv1.Workflow, memoized bool) (*wfv1.Workflow
 
 	// Setting OwnerReference from original Workflow
 	newWF.OwnerReferences = append(newWF.OwnerReferences, wf.OwnerReferences...)
+
+	// Override parameters
+	if parameters != nil {
+		if _, ok := wf.ObjectMeta.Labels[common.LabelKeyPreviousWorkflowName]; ok || memoized {
+			log.Warnln("Overriding parameters on memoized or resubmitted workflows may have unexpected results")
+		}
+		err := overrideParameters(&newWF, parameters)
+		if err != nil {
+			return nil, err
+		}
+	}
 
 	if !memoized {
 		return &newWF, nil
@@ -726,8 +745,28 @@ func convertNodeID(newWf *wfv1.Workflow, regex *regexp.Regexp, oldNodeID string,
 	return newWf.NodeID(newNodeName)
 }
 
+func getDescendantNodeIDs(wf *wfv1.Workflow, node wfv1.NodeStatus) []string {
+	var descendantNodeIDs []string
+	descendantNodeIDs = append(descendantNodeIDs, node.Children...)
+	for _, child := range node.Children {
+		descendantNodeIDs = append(descendantNodeIDs, getDescendantNodeIDs(wf, wf.Status.Nodes[child])...)
+	}
+	return descendantNodeIDs
+}
+
+func deletePodNodeDuringRetryWorkflow(wf *wfv1.Workflow, node wfv1.NodeStatus, deletedPods map[string]bool, podsToDelete []string) (map[string]bool, []string) {
+	templateName := getTemplateFromNode(node)
+	version := GetWorkflowPodNameVersion(wf)
+	podName := PodName(wf.Name, node.Name, templateName, node.ID, version)
+	if _, ok := deletedPods[podName]; !ok {
+		deletedPods[podName] = true
+		podsToDelete = append(podsToDelete, podName)
+	}
+	return deletedPods, podsToDelete
+}
+
 // FormulateRetryWorkflow formulates a previous workflow to be retried, deleting all failed steps as well as the onExit node (and children)
-func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSuccessful bool, nodeFieldSelector string) (*wfv1.Workflow, []string, error) {
+func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSuccessful bool, nodeFieldSelector string, parameters []string) (*wfv1.Workflow, []string, error) {
 
 	switch wf.Status.Phase {
 	case wfv1.WorkflowFailed, wfv1.WorkflowError:
@@ -752,6 +791,16 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 		// if it was terminated, unset the deadline
 		newWF.Spec.ActiveDeadlineSeconds = nil
 	}
+	// Override parameters
+	if parameters != nil {
+		if _, ok := wf.ObjectMeta.Labels[common.LabelKeyPreviousWorkflowName]; ok {
+			log.Warnln("Overriding parameters on resubmitted workflows may have unexpected results")
+		}
+		err := overrideParameters(newWF, parameters)
+		if err != nil {
+			return nil, nil, err
+		}
+	}
 
 	onExitNodeName := wf.ObjectMeta.Name + ".onExit"
 	// Get all children of nodes that match filter
@@ -762,6 +811,7 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 
 	// Iterate the previous nodes. If it was successful Pod carry it forward
 	deletedNodes := make(map[string]bool)
+	deletedPods := make(map[string]bool)
 	var podsToDelete []string
 	for _, node := range wf.Status.Nodes {
 		doForceResetNode := false
@@ -772,17 +822,38 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 		switch node.Phase {
 		case wfv1.NodeSucceeded, wfv1.NodeSkipped:
 			if !strings.HasPrefix(node.Name, onExitNodeName) && !doForceResetNode {
-				newWF.Status.Nodes[node.ID] = node
+				// Reset parent node if this node is a step/task group or DAG.
+				if (node.Type == wfv1.NodeTypeDAG || node.Type == wfv1.NodeTypeTaskGroup || node.Type == wfv1.NodeTypeStepGroup) && node.BoundaryID != "" {
+					parentNodeID := node.BoundaryID
+					if parentNodeID != wf.ObjectMeta.Name { // Skip root node
+						for _, tmplNode := range wf.Status.Nodes {
+							// Reset the parent node
+							if tmplNode.ID == parentNodeID {
+								log.Debugln(fmt.Sprintf("Resetting parent node %s", parentNodeID))
+								newParentNode := tmplNode.DeepCopy()
+								newWF.Status.Nodes[tmplNode.ID] = resetNode(*newParentNode)
+							}
+							// If the node belongs to a node group that needs to be retried, reset its status
+							if tmplNode.BoundaryID == parentNodeID {
+								log.Debugln(fmt.Sprintf("Resetting child node %s since its parent node %s is being retried", tmplNode.ID, parentNodeID))
+								newChildNode := tmplNode.DeepCopy()
+								newWF.Status.Nodes[tmplNode.ID] = resetNode(*newChildNode)
+							}
+						}
+					}
+				} else {
+					newWF.Status.Nodes[node.ID] = node
+				}
 				continue
+			}
+			if doForceResetNode {
+				newNode := node.DeepCopy()
+				newWF.Status.Nodes[newNode.ID] = resetNode(*newNode)
 			}
 		case wfv1.NodeError, wfv1.NodeFailed, wfv1.NodeOmitted:
 			if !strings.HasPrefix(node.Name, onExitNodeName) && (node.Type == wfv1.NodeTypeDAG || node.Type == wfv1.NodeTypeTaskGroup || node.Type == wfv1.NodeTypeStepGroup) {
 				newNode := node.DeepCopy()
-				newNode.Phase = wfv1.NodeRunning
-				newNode.Message = ""
-				newNode.StartedAt = metav1.Time{Time: time.Now().UTC()}
-				newNode.FinishedAt = metav1.Time{}
-				newWF.Status.Nodes[newNode.ID] = *newNode
+				newWF.Status.Nodes[newNode.ID] = resetNode(*newNode)
 				continue
 			} else {
 				deletedNodes[node.ID] = true
@@ -794,23 +865,31 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 		}
 
 		if node.Type == wfv1.NodeTypePod {
-			templateName := getTemplateFromNode(node)
-			version := GetWorkflowPodNameVersion(wf)
-			podName := PodName(wf.Name, node.Name, templateName, node.ID, version)
-			podsToDelete = append(podsToDelete, podName)
+			deletedNodes[node.ID] = true
+			deletedPods, podsToDelete = deletePodNodeDuringRetryWorkflow(wf, node, deletedPods, podsToDelete)
+
+			descendantNodeIDs := getDescendantNodeIDs(wf, node)
+			for _, descendantNodeID := range descendantNodeIDs {
+				deletedNodes[descendantNodeID] = true
+				descendantNode := wf.Status.Nodes[descendantNodeID]
+				if descendantNode.Type == wfv1.NodeTypePod {
+					deletedPods, podsToDelete = deletePodNodeDuringRetryWorkflow(wf, descendantNode, deletedPods, podsToDelete)
+				}
+			}
 		} else if node.Name == wf.ObjectMeta.Name {
 			newNode := node.DeepCopy()
-			newNode.Phase = wfv1.NodeRunning
-			newNode.Message = ""
-			newNode.StartedAt = metav1.Time{Time: time.Now().UTC()}
-			newNode.FinishedAt = metav1.Time{}
-			newWF.Status.Nodes[newNode.ID] = *newNode
+			newWF.Status.Nodes[newNode.ID] = resetNode(*newNode)
 			continue
 		}
 	}
 
 	if len(deletedNodes) > 0 {
 		for _, node := range newWF.Status.Nodes {
+			if deletedNodes[node.ID] {
+				delete(newWF.Status.Nodes, node.ID)
+				continue
+			}
+
 			var newChildren []string
 			for _, child := range node.Children {
 				if !deletedNodes[child] {
@@ -837,6 +916,14 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 	}
 
 	return newWF, podsToDelete, nil
+}
+
+func resetNode(node wfv1.NodeStatus) wfv1.NodeStatus {
+	node.Phase = wfv1.NodeRunning
+	node.Message = ""
+	node.StartedAt = metav1.Time{Time: time.Now().UTC()}
+	node.FinishedAt = metav1.Time{}
+	return node
 }
 
 func getTemplateFromNode(node wfv1.NodeStatus) string {

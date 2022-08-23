@@ -5,6 +5,11 @@ the [conventional commits](https://www.conventionalcommits.org/en/v1.0.0/#summar
 
 ## Upgrading to v3.4
 
+### chore!: Remove dataflow pipelines from codebase. (#9071)
+
+You are affected if you are using [dataflow pipelines](https://github.com/argoproj-labs/argo-dataflow) in the UI or via the `/pipelines` endpoint.
+We no longer support dataflow pipelines and all relevant code has been removed.
+
 ### feat!: Add entrypoint lookup. Fixes #8344
 
 Affected if:
@@ -49,6 +54,10 @@ mis-configuration.
 ```text
 Failed to register watch for controller config map: error unmarshaling JSON: while decoding JSON: json: unknown field \"args\"
 ```
+
+## feat: add indexes for improve archived workflow performance. (#8860)
+
+This PR adds indexes to archived workflow tables. This change may cause a long time to upgrade if the user has a large table.
 
 ## Upgrading to v3.3
 

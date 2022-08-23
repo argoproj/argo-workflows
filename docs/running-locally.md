@@ -2,12 +2,12 @@
 
 You have two options:
 
-1. If you're using VSCode, you use the Dev-Container. This takes about 7 minutes. Pre-commit checks take about 4 minutes to run.
-1. Install the requirements on your computer manually. This takes about 1 hour. Pre-commit checks take about 3 minutes to run.
+1. If you're using VSCode, you use the [Dev-Container](#development-container). This takes about 7 minutes.
+1. Install the [requirements](#requirements) on your computer manually. This takes about 1 hour.
 
 ## Git Clone
 
-Close the Git repo into: `$(GOPATH)/src/github.com/argoproj/argo-workflows`. Any other path will mean the code
+Clone the Git repo into: `$(GOPATH)/src/github.com/argoproj/argo-workflows`. Any other path will mean the code
 generation does not work.
 
 ## Development Container
@@ -69,6 +69,7 @@ Add the following to your `/etc/hosts`:
 127.0.0.1 minio
 127.0.0.1 postgres
 127.0.0.1 mysql
+127.0.0.1 azurite
 ```
 
 To start:
@@ -82,7 +83,7 @@ Run:
 make start 
 ```
 
-Make sure you don't see any errors in your terminal.
+Make sure you don't see any errors in your terminal. This runs the Workflow Controller locally on your machine (not in Docker/Kubernetes).
 
 You can submit a workflow for testing using `kubectl`:
 
@@ -90,17 +91,21 @@ You can submit a workflow for testing using `kubectl`:
 kubectl create -f examples/hello-world.yaml 
 ```
 
+We recommend running `make clean` before `make start` to ensure recompilation.
+
 If you made changes to the executor, you need to build the image:
 
 ```bash
 make argoexec-image
 ```
 
-To also start the API on <https://localhost:2746>:
+To also start the API on <http://localhost:2746>:
 
 ```bash
 make start API=true
 ```
+
+This runs the Argo Server (in addition to the Workflow Controller) locally on your machine.
 
 To also start the UI on <http://localhost:8080> (`UI=true` implies `API=true`):
 
@@ -108,12 +113,16 @@ To also start the UI on <http://localhost:8080> (`UI=true` implies `API=true`):
 make start UI=true
 ```
 
-If you are making change to the CLI, you can build it:
+![diagram](assets/make-start-UI-true.png)
+
+If you are making change to the CLI (i.e. Argo Server), you can build it separately if you want:
 
 ```bash
 make cli 
 ./dist/argo submit examples/hello-world.yaml ;# new CLI is created as `./dist/argo` 
 ```
+
+Although, note that this will be built automatically if you do: `make start API=true`.
 
 To test the workflow archive, use `PROFILE=mysql` or `PROFILE=postgres`:
 
@@ -140,6 +149,12 @@ Start up Argo Workflows using the following:
 make start PROFILE=mysql AUTH_MODE=client STATIC_FILES=false API=true 
 ```
 
+If you want to run Azure tests against a local Azurite, add `AZURE=true`:
+
+```bash
+make start PROFILE=mysql AUTH_MODE=client STATIC_FILES=false API=true AZURE=true
+```
+
 #### Running One Test
 
 In most cases, you want to run the test that relates to your changes locally. You should not run all the tests suites.
@@ -149,6 +164,12 @@ Find the test that you want to run in `test/e2e`
 
 ```bash
 make TestArtifactServer  
+```
+
+If you wish to include tests against Azure Storage, define `AZURE=true`:
+
+```bash
+make AZURE=true TestArtifactServer
 ```
 
 #### Running A Set Of Tests

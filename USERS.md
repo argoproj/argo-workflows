@@ -1,6 +1,6 @@
 ## Argo Workflows User Community Surveys & Feedback
 
-Please find [here](https://github.com/argoproj/argoproj/blob/master/community/user_surveys/ArgoWorkflows2020SurveySummary.pdf) Argo Workflows user community 2020 survey results.
+Please find [here](https://github.com/argoproj/argoproj/blob/master/community/user_surveys/ArgoWorkflows2020SurveySummary.pdf) Argo Workflows user community 2020 survey results and the 2021 results [here](https://blog.argoproj.io/argo-workflows-2021-survey-results-d6fa890030ee?gi=857daaa1faa9).
 
 ## Who uses Argo Workflows?
 
@@ -25,6 +25,7 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [AppDirect](https://www.appdirect.com/)
 1. [Arabesque](https://www.arabesque.com/)
 1. [Argonaut](https://www.argonaut.dev/)
+1. [ArthurAI](https://arthur.ai/) 
 1. [Astraea](https://astraea.earth/)
 1. [BasisAI](https://basis-ai.com/)
 1. [BEI.RE](https://www.bei.re/)
@@ -65,6 +66,7 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [DLR](https://www.dlr.de/eoc/)
 1. [Dyno Therapeutics](https://dynotx.com)
 1. [EBSCO Information Services](https://www.ebsco.com/)
+1. [Enso Finance](https://enso.finance/)
 1. [Equinor](https://www.equinor.com/)
 1. [Fairwinds](https://fairwinds.com/)
 1. [FOLIO](http://corp.folio-sec.com/)
@@ -83,6 +85,7 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [H2O.ai](https://h2o.ai/)
 1. [Habx](https://www.habx.com/)
 1. [Helio](https://helio.exchange)
+1. [Hemisphere Digital](https://hemisphere.digital)
 1. [HOVER](https://hover.to)
 1. [HSBC](https://hsbc.com)
 1. [IBM](https://ibm.com)
@@ -121,6 +124,7 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [Oracle](https://www.oracle.com/)
 1. [Orchest](https://www.orchest.io/)
 1. [OVH](https://www.ovh.com/)
+1. [PathAI](https://www.pathai.com)
 1. [PDOK](https://www.pdok.nl/)
 1. [Peak AI](https://www.peak.ai/)
 1. [Pipekit](https://pipeit.io)
@@ -131,9 +135,11 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [Promaton](https://www.promaton.com/)
 1. [Prudential](https://www.prudential.com.sg/)
 1. [Quantibio](http://quantibio.com/us/en/)
+1. [QuantumBlack](https://quantumblack.com/)
 1. [Raccoon Digital Marketing](https://raccoon.ag/)
 1. [Ramboll Shair](https://ramboll-shair.com/)
 1. [Ravelin](https://www.ravelin.com/)
+1. [Reco](https://reco.ai)
 1. [Red Hat](https://www.redhat.com/en)
 1. [Reserved AI](https://reserved.ai/)
 1. [Riskified](https://www.riskified.com)
@@ -181,5 +187,7 @@ In addition, the following projects are **officially** using Argo Workflows:
 1. [Couler](https://github.com/couler-proj/couler)
 1. [Hera Workflows](https://github.com/argoproj-labs/hera-workflows)
 1. [Kubeflow](https://www.kubeflow.org/)
+1. [Metaflow](https://www.metaflow.org)
 1. [Onepanel](https://github.com/onepanelio/onepanel)
 1. [SQLFlow](https://github.com/sql-machine-learning/sqlflow)
+1. [BisQue](https://github.com/UCSB-VRL/bisqueUCSB)

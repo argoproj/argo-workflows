@@ -85,8 +85,14 @@ func inferObjectSelfLink(obj unstructured.Unstructured) string {
 		selfLinkPrefix = "apis"
 	}
 	// We cannot use `obj.GetSelfLink()` directly since it is deprecated and will be removed after Kubernetes 1.21: https://github.com/kubernetes/enhancements/tree/master/keps/sig-api-machinery/1164-remove-selflink
-	return fmt.Sprintf("%s/%s/namespaces/%s/%s/%s",
-		selfLinkPrefix, obj.GetAPIVersion(), obj.GetNamespace(), pluralGVR.Resource, obj.GetName())
+	var selfLink string
+	if obj.GetNamespace() == "" {
+		selfLink = fmt.Sprintf("%s/%s/%s/%s", selfLinkPrefix, obj.GetAPIVersion(), pluralGVR.Resource, obj.GetName())
+	} else {
+		selfLink = fmt.Sprintf("%s/%s/namespaces/%s/%s/%s",
+			selfLinkPrefix, obj.GetAPIVersion(), obj.GetNamespace(), pluralGVR.Resource, obj.GetName())
+	}
+	return selfLink
 }
 
 func (we *WorkflowExecutor) getKubectlArguments(action string, manifestPath string, flags []string) ([]string, error) {

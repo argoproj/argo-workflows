@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"golang.org/x/exp/slices"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -67,7 +68,7 @@ func TestResubmitWorkflowWithOnExit(t *testing.T) {
 		Name:  onExitName,
 		Phase: wfv1.NodeSucceeded,
 	}
-	newWF, err := FormulateResubmitWorkflow(&wf, true)
+	newWF, err := FormulateResubmitWorkflow(&wf, true, nil)
 	assert.NoError(t, err)
 	newWFOnExitName := newWF.ObjectMeta.Name + ".onExit"
 	newWFOneExitID := newWF.NodeID(newWFOnExitName)
@@ -633,7 +634,7 @@ func TestFormulateResubmitWorkflow(t *testing.T) {
 				},
 			},
 		}
-		wf, err := FormulateResubmitWorkflow(wf, false)
+		wf, err := FormulateResubmitWorkflow(wf, false, nil)
 		if assert.NoError(t, err) {
 			assert.Contains(t, wf.GetLabels(), common.LabelKeyControllerInstanceID)
 			assert.Contains(t, wf.GetLabels(), common.LabelKeyClusterWorkflowTemplate)
@@ -647,6 +648,19 @@ func TestFormulateResubmitWorkflow(t *testing.T) {
 			assert.Equal(t, 1, len(wf.OwnerReferences))
 			assert.Equal(t, "test", wf.OwnerReferences[0].APIVersion)
 			assert.Equal(t, "testObj", wf.OwnerReferences[0].Name)
+		}
+	})
+	t.Run("OverrideParams", func(t *testing.T) {
+		wf := &wfv1.Workflow{
+			Spec: wfv1.WorkflowSpec{Arguments: wfv1.Arguments{
+				Parameters: []wfv1.Parameter{
+					{Name: "message", Value: wfv1.AnyStringPtr("default")},
+				},
+			}},
+		}
+		wf, err := FormulateResubmitWorkflow(wf, false, []string{"message=modified"})
+		if assert.NoError(t, err) {
+			assert.Equal(t, "modified", wf.Spec.Arguments.Parameters[0].Value.String())
 		}
 	})
 }
@@ -809,7 +823,7 @@ func TestDeepDeleteNodes(t *testing.T) {
 	ctx := context.Background()
 	wf, err := wfIf.Create(ctx, origWf, metav1.CreateOptions{})
 	if assert.NoError(t, err) {
-		newWf, _, err := FormulateRetryWorkflow(ctx, wf, false, "")
+		newWf, _, err := FormulateRetryWorkflow(ctx, wf, false, "", nil)
 		assert.NoError(t, err)
 		newWfBytes, err := yaml.Marshal(newWf)
 		assert.NoError(t, err)
@@ -842,7 +856,7 @@ func TestFormulateRetryWorkflow(t *testing.T) {
 		}
 		_, err := wfClient.Create(ctx, wf, metav1.CreateOptions{})
 		assert.NoError(t, err)
-		wf, _, err = FormulateRetryWorkflow(ctx, wf, false, "")
+		wf, _, err = FormulateRetryWorkflow(ctx, wf, false, "", nil)
 		if assert.NoError(t, err) {
 			assert.Equal(t, wfv1.WorkflowRunning, wf.Status.Phase)
 			assert.Equal(t, metav1.Time{}, wf.Status.FinishedAt)
@@ -879,12 +893,94 @@ func TestFormulateRetryWorkflow(t *testing.T) {
 		}
 		_, err := wfClient.Create(ctx, wf, metav1.CreateOptions{})
 		assert.NoError(t, err)
-		wf, _, err = FormulateRetryWorkflow(ctx, wf, false, "")
+		wf, _, err = FormulateRetryWorkflow(ctx, wf, false, "", nil)
 		if assert.NoError(t, err) {
 			if assert.Len(t, wf.Status.Nodes, 1) {
 				assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes[""].Phase)
 			}
 
+		}
+	})
+	t.Run("Nested DAG with Non-group Node Selected", func(t *testing.T) {
+		wf := &wfv1.Workflow{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:   "my-nested-dag-1",
+				Labels: map[string]string{},
+			},
+			Status: wfv1.WorkflowStatus{
+				Phase: wfv1.WorkflowFailed,
+				Nodes: map[string]wfv1.NodeStatus{
+					"my-nested-dag-1": {ID: "my-nested-dag-1", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypeTaskGroup},
+					"1":               {ID: "1", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypeTaskGroup, BoundaryID: "my-nested-dag-1"},
+					"2":               {ID: "2", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypeTaskGroup, BoundaryID: "1"},
+					"3":               {ID: "3", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypePod, BoundaryID: "2"},
+					"4":               {ID: "4", Phase: wfv1.NodeFailed, Type: wfv1.NodeTypePod, BoundaryID: "1"}},
+			},
+		}
+		_, err := wfClient.Create(ctx, wf, metav1.CreateOptions{})
+		assert.NoError(t, err)
+		wf, _, err = FormulateRetryWorkflow(ctx, wf, true, "id=3", nil)
+		if assert.NoError(t, err) {
+			// node #3 & node #4 are deleted and will be recreated. so only 3 nodes in wf.Status.Nodes
+			if assert.Len(t, wf.Status.Nodes, 3) {
+				assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes["my-nested-dag-1"].Phase)
+				// These should all be running since the child node #3 belongs up to node #1.
+				assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["1"].Phase)
+				assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["2"].Phase)
+			}
+		}
+	})
+	t.Run("Nested DAG without Node Selected", func(t *testing.T) {
+		wf := &wfv1.Workflow{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:   "my-nested-dag-2",
+				Labels: map[string]string{},
+			},
+			Status: wfv1.WorkflowStatus{
+				Phase: wfv1.WorkflowFailed,
+				Nodes: map[string]wfv1.NodeStatus{
+					"my-nested-dag-2": {ID: "my-nested-dag-2", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypeTaskGroup},
+					"1":               {ID: "1", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypeTaskGroup, BoundaryID: "my-nested-dag-2"},
+					"2":               {ID: "2", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypeTaskGroup, BoundaryID: "1"},
+					"3":               {ID: "3", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypePod, BoundaryID: "2"},
+					"4":               {ID: "4", Phase: wfv1.NodeFailed, Type: wfv1.NodeTypePod, BoundaryID: "1"}},
+			},
+		}
+		_, err := wfClient.Create(ctx, wf, metav1.CreateOptions{})
+		assert.NoError(t, err)
+		wf, _, err = FormulateRetryWorkflow(ctx, wf, true, "", nil)
+		if assert.NoError(t, err) {
+			// node #4 is deleted and will be recreated. so only 4 nodes in wf.Status.Nodes
+			if assert.Len(t, wf.Status.Nodes, 4) {
+				assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes["my-nested-dag-2"].Phase)
+				// This should be running since it's node #4's parent node.
+				assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["1"].Phase)
+				// This should be running since it's node #1's child node and node #1 is being retried.
+				assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["2"].Phase)
+				assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes["3"].Phase)
+			}
+		}
+	})
+	t.Run("OverrideParams", func(t *testing.T) {
+		wf := &wfv1.Workflow{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:   "override-param-wf",
+				Labels: map[string]string{},
+			},
+			Spec: wfv1.WorkflowSpec{Arguments: wfv1.Arguments{
+				Parameters: []wfv1.Parameter{
+					{Name: "message", Value: wfv1.AnyStringPtr("default")},
+				},
+			}},
+			Status: wfv1.WorkflowStatus{
+				Phase: wfv1.WorkflowFailed,
+				Nodes: map[string]wfv1.NodeStatus{
+					"1": {ID: "1", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypeTaskGroup},
+				}},
+		}
+		wf, _, err := FormulateRetryWorkflow(context.Background(), wf, false, "", []string{"message=modified"})
+		if assert.NoError(t, err) {
+			assert.Equal(t, "modified", wf.Spec.Arguments.Parameters[0].Value.String())
 		}
 	})
 }
@@ -951,4 +1047,206 @@ func TestGetTemplateFromNode(t *testing.T) {
 		actual := getTemplateFromNode(tc.inputNode)
 		assert.Equal(t, tc.expectedTemplateName, actual)
 	}
+}
+
+var retryWorkflowWithFailedNodeHasChildrenNodes = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  labels:
+    workflows.argoproj.io/completed: "true"
+    workflows.argoproj.io/phase: Failed
+  name: test-pipeline-bnzwv
+  namespace: argo-system
+spec:
+  entrypoint: test-pipeline-dag
+  templates:
+  - dag:
+      tasks:
+      - name: t1
+        template: succeeded
+      - depends: t1
+        name: t2
+        template: failed
+      - depends: t2 || t2.Failed
+        name: t3
+        template: succeeded
+      - depends: t3
+        name: t4-1
+        template: succeeded
+      - depends: t3
+        name: t4-2
+        template: succeeded
+      - depends: t3
+        name: t4-3
+        template: failed
+    name: test-pipeline-dag
+  - container:
+      command:
+      - "true"
+      image: alpine
+    name: succeeded
+  - container:
+      command:
+      - "false"
+      image: alpine
+    name: failed
+status:
+  conditions:
+  - status: "False"
+    type: PodRunning
+  - status: "True"
+    type: Completed
+  finishedAt: "2022-08-04T08:36:31Z"
+  nodes:
+    test-pipeline-bnzwv:
+      children:
+      - test-pipeline-bnzwv-929756297
+      displayName: test-pipeline-bnzwv
+      finishedAt: "2022-08-04T08:36:31Z"
+      id: test-pipeline-bnzwv
+      name: test-pipeline-bnzwv
+      outboundNodes:
+      - test-pipeline-bnzwv-748480356
+      - test-pipeline-bnzwv-798813213
+      - test-pipeline-bnzwv-782035594
+      phase: Failed
+      progress: 4/6
+      startedAt: "2022-08-04T08:35:10Z"
+      templateName: test-pipeline-dag
+      templateScope: local/test-pipeline-bnzwv
+      type: DAG
+    test-pipeline-bnzwv-748480356:
+      boundaryID: test-pipeline-bnzwv
+      displayName: t4-1
+      finishedAt: "2022-08-04T08:36:19Z"
+      hostNodeName: node2
+      id: test-pipeline-bnzwv-748480356
+      name: test-pipeline-bnzwv.t4-1
+      outputs:
+        exitCode: "0"
+      phase: Succeeded
+      progress: 1/1
+      startedAt: "2022-08-04T08:36:11Z"
+      templateName: succeeded
+      templateScope: local/test-pipeline-bnzwv
+      type: Pod
+    test-pipeline-bnzwv-782035594:
+      boundaryID: test-pipeline-bnzwv
+      displayName: t4-3
+      finishedAt: "2022-08-04T08:36:16Z"
+      hostNodeName: node1
+      id: test-pipeline-bnzwv-782035594
+      message: Error (exit code 1)
+      name: test-pipeline-bnzwv.t4-3
+      outputs:
+        exitCode: "1"
+      phase: Failed
+      progress: 0/1
+      startedAt: "2022-08-04T08:36:11Z"
+      templateName: failed
+      templateScope: local/test-pipeline-bnzwv
+      type: Pod
+    test-pipeline-bnzwv-798813213:
+      boundaryID: test-pipeline-bnzwv
+      displayName: t4-2
+      finishedAt: "2022-08-04T08:36:19Z"
+      hostNodeName: node1
+      id: test-pipeline-bnzwv-798813213
+      name: test-pipeline-bnzwv.t4-2
+      outputs:
+        exitCode: "0"
+      phase: Succeeded
+      progress: 1/1
+      startedAt: "2022-08-04T08:36:11Z"
+      templateName: succeeded
+      templateScope: local/test-pipeline-bnzwv
+      type: Pod
+    test-pipeline-bnzwv-879423440:
+      boundaryID: test-pipeline-bnzwv
+      children:
+      - test-pipeline-bnzwv-896201059
+      displayName: t2
+      finishedAt: "2022-08-04T08:35:39Z"
+      hostNodeName: node2
+      id: test-pipeline-bnzwv-879423440
+      message: Error (exit code 1)
+      name: test-pipeline-bnzwv.t2
+      outputs:
+        exitCode: "1"
+      phase: Failed
+      progress: 0/1
+      startedAt: "2022-08-04T08:35:30Z"
+      templateName: failed
+      templateScope: local/test-pipeline-bnzwv
+      type: Pod
+    test-pipeline-bnzwv-896201059:
+      boundaryID: test-pipeline-bnzwv
+      children:
+      - test-pipeline-bnzwv-748480356
+      - test-pipeline-bnzwv-798813213
+      - test-pipeline-bnzwv-782035594
+      displayName: t3
+      finishedAt: "2022-08-04T08:36:00Z"
+      hostNodeName: node2
+      id: test-pipeline-bnzwv-896201059
+      name: test-pipeline-bnzwv.t3
+      outputs:
+        exitCode: "0"
+      phase: Succeeded
+      progress: 1/1
+      startedAt: "2022-08-04T08:35:50Z"
+      templateName: succeeded
+      templateScope: local/test-pipeline-bnzwv
+      type: Pod
+    test-pipeline-bnzwv-929756297:
+      boundaryID: test-pipeline-bnzwv
+      children:
+      - test-pipeline-bnzwv-879423440
+      displayName: t1
+      finishedAt: "2022-08-04T08:35:18Z"
+      hostNodeName: node2
+      id: test-pipeline-bnzwv-929756297
+      name: test-pipeline-bnzwv.t1
+      outputs:
+        exitCode: "0"
+      phase: Succeeded
+      progress: 1/1
+      startedAt: "2022-08-04T08:35:10Z"
+      templateName: succeeded
+      templateScope: local/test-pipeline-bnzwv
+      type: Pod
+  phase: Failed
+  progress: 4/6
+  resourcesDuration:
+    cpu: 32
+    memory: 32
+  startedAt: "2022-08-04T08:35:10Z"
+`
+
+func TestRetryWorkflowWithFailedNodeHasChildrenNodes(t *testing.T) {
+	ctx := context.Background()
+	wf := wfv1.MustUnmarshalWorkflow(retryWorkflowWithFailedNodeHasChildrenNodes)
+	version := GetWorkflowPodNameVersion(wf)
+	needDeletedNodeNames := []string{"t2", "t3", "t4-1", "t4-2", "t4-3"}
+	needDeletedPodNames := make([]string, 5)
+	for i, nodeName := range needDeletedNodeNames {
+		node := wf.Status.Nodes.FindByDisplayName(nodeName)
+		templateName := getTemplateFromNode(*node)
+		podName := PodName(wf.Name, node.Name, templateName, node.ID, version)
+		needDeletedPodNames[i] = podName
+	}
+	slices.Sort(needDeletedPodNames)
+
+	wf, podsToDelete, err := FormulateRetryWorkflow(ctx, wf, false, "", nil)
+	assert.NoError(t, err)
+	assert.Equal(t, 2, len(wf.Status.Nodes))
+	for _, nodeName := range needDeletedNodeNames {
+		node := wf.Status.Nodes.FindByDisplayName(nodeName)
+		assert.Nil(t, node)
+	}
+
+	assert.Equal(t, 5, len(podsToDelete))
+	slices.Sort(podsToDelete)
+	assert.Equal(t, needDeletedPodNames, podsToDelete)
 }

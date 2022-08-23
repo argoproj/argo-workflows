@@ -1,0 +1,22 @@
+# https://argoproj.github.io/argo-workflows/workflow-rbac/
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: artifactgc
+  annotations:
+    workflows.argoproj.io/description: |
+      This is the minimum recommended permissions needed if you want to use artifact GC.
+rules:
+  - apiGroups:
+      - argoproj.io
+    resources:
+      - workflowartifactgctasks
+    verbs:
+      - list
+      - watch
+  - apiGroups:
+      - argoproj.io
+    resources:
+      - workflowartifactgctasks/status
+    verbs:
+      - patch
