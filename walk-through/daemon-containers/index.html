@@ -3821,6 +3821,8 @@
 <span class="w">      </span><span class="nt">limit</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10</span><span class="w">                         </span><span class="c1"># retry container if it fails</span><span class="w"></span>
 <span class="w">    </span><span class="nt">container</span><span class="p">:</span><span class="w"></span>
 <span class="w">      </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">influxdb:1.2</span><span class="w"></span>
+<span class="w">      </span><span class="nt">command</span><span class="p">:</span><span class="w"></span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">influxd</span><span class="w"></span>
 <span class="w">      </span><span class="nt">readinessProbe</span><span class="p">:</span><span class="w">                   </span><span class="c1"># wait for readinessProbe to succeed</span><span class="w"></span>
 <span class="w">        </span><span class="nt">httpGet</span><span class="p">:</span><span class="w"></span>
 <span class="w">          </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/ping</span><span class="w"></span>
