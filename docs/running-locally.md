@@ -7,7 +7,7 @@ You have two options:
 
 ## Git Clone
 
-Close the Git repo into: `$(GOPATH)/src/github.com/argoproj/argo-workflows`. Any other path will mean the code
+Clone the Git repo into: `$(GOPATH)/src/github.com/argoproj/argo-workflows`. Any other path will mean the code
 generation does not work.
 
 ## Development Container
