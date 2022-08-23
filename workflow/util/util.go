@@ -822,6 +822,7 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 		switch node.Phase {
 		case wfv1.NodeSucceeded, wfv1.NodeSkipped:
 			if !strings.HasPrefix(node.Name, onExitNodeName) && !doForceResetNode {
+				// TODO: If a node's parent is a suspend node, remove this node from the node statuses instead of setting it to running.
 				// Reset parent node if this node is a step/task group or DAG.
 				if (node.Type == wfv1.NodeTypeDAG || node.Type == wfv1.NodeTypeTaskGroup || node.Type == wfv1.NodeTypeStepGroup) && node.BoundaryID != "" {
 					parentNodeID := node.BoundaryID
@@ -919,6 +920,18 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 }
 
 func resetNode(node wfv1.NodeStatus) wfv1.NodeStatus {
+	if node.Type == wfv1.NodeTypeSuspend {
+		if node.Outputs != nil {
+			for i, param := range node.Outputs.Parameters {
+				node.Outputs.Parameters[i].Value = nil
+				node.Outputs.Parameters[i] = wfv1.Parameter{
+					Name:      param.Name,
+					Value:     nil,
+					ValueFrom: &wfv1.ValueFrom{Supplied: &wfv1.SuppliedValueFrom{}},
+				}
+			}
+		}
+	}
 	node.Phase = wfv1.NodeRunning
 	node.Message = ""
 	node.StartedAt = metav1.Time{Time: time.Now().UTC()}
