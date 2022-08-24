@@ -12,7 +12,7 @@ If you just want to try out Argo Workflows in a non-production environment (incl
 
 To install Argo Workflows, navigate to the [releases page](https://github.com/argoproj/argo-workflows/releases/latest) and find the release you wish to use (the latest full release is preferred). Scroll down to the `Controller and Server` section and execute the `kubectl` commands.
 
-You can use Kustomize to patch your preferred configuration on top of the base manifest.
+You can use Kustomize to patch your preferred [configurations](managed-namespace.md) on top of the base manifest.
 
 ⚠️ If you are using GitOps, never use Kustomize remote base: this is dangerous. Instead, copy the manifests into your Git repo.
 
