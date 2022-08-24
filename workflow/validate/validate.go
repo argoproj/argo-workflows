@@ -679,30 +679,32 @@ func (ctx *templateValidationCtx) validateLeaf(scope map[string]interface{}, tmp
 				return errors.Errorf(errors.CodeBadRequest, "templates.%s.resource.action must be one of: get, create, apply, delete, replace, patch", tmpl.Name)
 			}
 		}
-		if tmpl.Resource.Manifest == "" && tmpl.Resource.ManifestFrom == nil {
-			return errors.Errorf(errors.CodeBadRequest, "either templates.%s.resource.manifest or templates.%s.resource.manifestFrom must be specified", tmpl.Name, tmpl.Name)
-		}
-		if tmpl.Resource.Manifest != "" && tmpl.Resource.ManifestFrom != nil {
-			return errors.Errorf(errors.CodeBadRequest, "shouldn't have both `manifest` and `manifestFrom` specified in `Manifest` for resource template")
-		}
-		if tmpl.Resource.ManifestFrom != nil && tmpl.Resource.ManifestFrom.Artifact != nil {
-			var found bool
-			for _, art := range tmpl.Inputs.Artifacts {
-				if tmpl.Resource.ManifestFrom.Artifact.Name == art.Name {
-					found = true
-					break
+		if tmpl.Resource.Action != "delete" && tmpl.Resource.Action != "get" {
+			if tmpl.Resource.Manifest == "" && tmpl.Resource.ManifestFrom == nil {
+				return errors.Errorf(errors.CodeBadRequest, "either templates.%s.resource.manifest or templates.%s.resource.manifestFrom must be specified", tmpl.Name, tmpl.Name)
+			}
+			if tmpl.Resource.Manifest != "" && tmpl.Resource.ManifestFrom != nil {
+				return errors.Errorf(errors.CodeBadRequest, "shouldn't have both `manifest` and `manifestFrom` specified in `Manifest` for resource template")
+			}
+			if tmpl.Resource.ManifestFrom != nil && tmpl.Resource.ManifestFrom.Artifact != nil {
+				var found bool
+				for _, art := range tmpl.Inputs.Artifacts {
+					if tmpl.Resource.ManifestFrom.Artifact.Name == art.Name {
+						found = true
+						break
+					}
+				}
+				if !found {
+					return errors.Errorf(errors.CodeBadRequest, "artifact %s in `manifestFrom` refer to a non-exist artifact", tmpl.Resource.ManifestFrom.Artifact.Name)
 				}
 			}
-			if !found {
-				return errors.Errorf(errors.CodeBadRequest, "artifact %s in `manifestFrom` refer to a non-exist artifact", tmpl.Resource.ManifestFrom.Artifact.Name)
-			}
-		}
-		if tmpl.Resource.Manifest != "" && !placeholderGenerator.IsPlaceholder(tmpl.Resource.Manifest) {
-			// Try to unmarshal the given manifest, just ensuring it's a valid YAML.
-			var obj interface{}
-			err := yaml.Unmarshal([]byte(tmpl.Resource.Manifest), &obj)
-			if err != nil {
-				return errors.Errorf(errors.CodeBadRequest, "templates.%s.resource.manifest must be a valid yaml", tmpl.Name)
+			if tmpl.Resource.Manifest != "" && !placeholderGenerator.IsPlaceholder(tmpl.Resource.Manifest) {
+				// Try to unmarshal the given manifest, just ensuring it's a valid YAML.
+				var obj interface{}
+				err := yaml.Unmarshal([]byte(tmpl.Resource.Manifest), &obj)
+				if err != nil {
+					return errors.Errorf(errors.CodeBadRequest, "templates.%s.resource.manifest must be a valid yaml", tmpl.Name)
+				}
 			}
 		}
 	}
