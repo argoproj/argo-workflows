@@ -1,10 +1,10 @@
 # Installation
 
-## Argo Workflows non-production
+## Non-production installation
 
 If you just want to try out Argo Workflows in a non-production environment (including on desktop via minikube/kind/k3d etc) follow the [quick-start guide](quick-start.md).
 
-## Argo Workflows in Production
+## Production installation
 
 ### Installation Methods
 
