@@ -822,22 +822,7 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 		switch node.Phase {
 		case wfv1.NodeSucceeded, wfv1.NodeSkipped:
 			if !strings.HasPrefix(node.Name, onExitNodeName) && !doForceResetNode {
-				if node.Phase == wfv1.NodeSkipped {
-					//newWF.Status.Nodes[node.ID].Phase = wfv1.NodeSkipped
-					deletedNodes[node.ID] = true
-					// TODO: If a node's parent is a suspend node, remove this node from the node statuses instead of setting it to running.
-				} else if node.Type == wfv1.NodeTypeSuspend {
-					for _, childId := range node.Children {
-						deletedNodes[childId] = true
-					}
-					//for _, n := range wf.Status.Nodes {
-					//	for _, childId := range node.Children {
-					//		if n.ID == childId {
-					//			deletedNodes[node.ID] = true
-					//		}
-					//	}
-					//}
-				} else if (node.Type == wfv1.NodeTypeDAG || node.Type == wfv1.NodeTypeTaskGroup || node.Type == wfv1.NodeTypeStepGroup) && node.BoundaryID != "" {
+				if (node.Type == wfv1.NodeTypeDAG || node.Type == wfv1.NodeTypeTaskGroup || node.Type == wfv1.NodeTypeStepGroup) && node.BoundaryID != "" {
 					// Reset parent node if this node is a step/task group or DAG.
 					parentNodeID := node.BoundaryID
 					if parentNodeID != wf.ObjectMeta.Name { // Skip root node
