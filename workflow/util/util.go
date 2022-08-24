@@ -822,24 +822,22 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 		switch node.Phase {
 		case wfv1.NodeSucceeded, wfv1.NodeSkipped:
 			if !strings.HasPrefix(node.Name, onExitNodeName) && !doForceResetNode {
+				// Reset parent node if this node is a step/task group or DAG.
 				if (node.Type == wfv1.NodeTypeDAG || node.Type == wfv1.NodeTypeTaskGroup || node.Type == wfv1.NodeTypeStepGroup) && node.BoundaryID != "" {
-					// Reset parent node if this node is a step/task group or DAG.
 					parentNodeID := node.BoundaryID
 					if parentNodeID != wf.ObjectMeta.Name { // Skip root node
 						for _, tmplNode := range wf.Status.Nodes {
-							if wf.Status.Nodes[parentNodeID].Type != wfv1.NodeTypeSuspend {
-								// Reset the parent node
-								if tmplNode.ID == parentNodeID {
-									log.Debugln(fmt.Sprintf("Resetting parent node %s", parentNodeID))
-									newParentNode := tmplNode.DeepCopy()
-									newWF.Status.Nodes[tmplNode.ID] = resetNode(*newParentNode)
-								}
-								// If the node belongs to a node group that needs to be retried, reset its status
-								if tmplNode.BoundaryID == parentNodeID {
-									log.Debugln(fmt.Sprintf("Resetting child node %s since its parent node %s is being retried", tmplNode.ID, parentNodeID))
-									newChildNode := tmplNode.DeepCopy()
-									newWF.Status.Nodes[tmplNode.ID] = resetNode(*newChildNode)
-								}
+							// Reset the parent node
+							if tmplNode.ID == parentNodeID {
+								log.Debugln(fmt.Sprintf("Resetting parent node %s", parentNodeID))
+								newParentNode := tmplNode.DeepCopy()
+								newWF.Status.Nodes[tmplNode.ID] = resetNode(*newParentNode)
+							}
+							// If the node belongs to a node group that needs to be retried, reset its status
+							if tmplNode.BoundaryID == parentNodeID {
+								log.Debugln(fmt.Sprintf("Resetting child node %s since its parent node %s is being retried", tmplNode.ID, parentNodeID))
+								newChildNode := tmplNode.DeepCopy()
+								newWF.Status.Nodes[tmplNode.ID] = resetNode(*newChildNode)
 							}
 						}
 					}
