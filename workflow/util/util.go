@@ -923,7 +923,6 @@ func resetNode(node wfv1.NodeStatus) wfv1.NodeStatus {
 	if node.Type == wfv1.NodeTypeSuspend {
 		if node.Outputs != nil {
 			for i, param := range node.Outputs.Parameters {
-				node.Outputs.Parameters[i].Value = nil
 				node.Outputs.Parameters[i] = wfv1.Parameter{
 					Name:      param.Name,
 					Value:     nil,
