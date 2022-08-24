@@ -822,23 +822,39 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 		switch node.Phase {
 		case wfv1.NodeSucceeded, wfv1.NodeSkipped:
 			if !strings.HasPrefix(node.Name, onExitNodeName) && !doForceResetNode {
-				// TODO: If a node's parent is a suspend node, remove this node from the node statuses instead of setting it to running.
-				// Reset parent node if this node is a step/task group or DAG.
-				if (node.Type == wfv1.NodeTypeDAG || node.Type == wfv1.NodeTypeTaskGroup || node.Type == wfv1.NodeTypeStepGroup) && node.BoundaryID != "" {
+				if node.Phase == wfv1.NodeSkipped {
+					//newWF.Status.Nodes[node.ID].Phase = wfv1.NodeSkipped
+					deletedNodes[node.ID] = true
+					// TODO: If a node's parent is a suspend node, remove this node from the node statuses instead of setting it to running.
+				} else if node.Type == wfv1.NodeTypeSuspend {
+					for _, childId := range node.Children {
+						deletedNodes[childId] = true
+					}
+					//for _, n := range wf.Status.Nodes {
+					//	for _, childId := range node.Children {
+					//		if n.ID == childId {
+					//			deletedNodes[node.ID] = true
+					//		}
+					//	}
+					//}
+				} else if (node.Type == wfv1.NodeTypeDAG || node.Type == wfv1.NodeTypeTaskGroup || node.Type == wfv1.NodeTypeStepGroup) && node.BoundaryID != "" {
+					// Reset parent node if this node is a step/task group or DAG.
 					parentNodeID := node.BoundaryID
 					if parentNodeID != wf.ObjectMeta.Name { // Skip root node
 						for _, tmplNode := range wf.Status.Nodes {
-							// Reset the parent node
-							if tmplNode.ID == parentNodeID {
-								log.Debugln(fmt.Sprintf("Resetting parent node %s", parentNodeID))
-								newParentNode := tmplNode.DeepCopy()
-								newWF.Status.Nodes[tmplNode.ID] = resetNode(*newParentNode)
-							}
-							// If the node belongs to a node group that needs to be retried, reset its status
-							if tmplNode.BoundaryID == parentNodeID {
-								log.Debugln(fmt.Sprintf("Resetting child node %s since its parent node %s is being retried", tmplNode.ID, parentNodeID))
-								newChildNode := tmplNode.DeepCopy()
-								newWF.Status.Nodes[tmplNode.ID] = resetNode(*newChildNode)
+							if wf.Status.Nodes[parentNodeID].Type != wfv1.NodeTypeSuspend {
+								// Reset the parent node
+								if tmplNode.ID == parentNodeID {
+									log.Debugln(fmt.Sprintf("Resetting parent node %s", parentNodeID))
+									newParentNode := tmplNode.DeepCopy()
+									newWF.Status.Nodes[tmplNode.ID] = resetNode(*newParentNode)
+								}
+								// If the node belongs to a node group that needs to be retried, reset its status
+								if tmplNode.BoundaryID == parentNodeID {
+									log.Debugln(fmt.Sprintf("Resetting child node %s since its parent node %s is being retried", tmplNode.ID, parentNodeID))
+									newChildNode := tmplNode.DeepCopy()
+									newWF.Status.Nodes[tmplNode.ID] = resetNode(*newChildNode)
+								}
 							}
 						}
 					}
@@ -932,7 +948,11 @@ func resetNode(node wfv1.NodeStatus) wfv1.NodeStatus {
 			}
 		}
 	}
-	node.Phase = wfv1.NodeRunning
+	if node.Phase == wfv1.NodeSkipped {
+		node.Phase = wfv1.NodeSkipped
+	} else {
+		node.Phase = wfv1.NodeRunning
+	}
 	node.Message = ""
 	node.StartedAt = metav1.Time{Time: time.Now().UTC()}
 	node.FinishedAt = metav1.Time{}
