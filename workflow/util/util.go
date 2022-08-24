@@ -919,6 +919,7 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 }
 
 func resetNode(node wfv1.NodeStatus) wfv1.NodeStatus {
+	// The previously supplied parameters needed to be reset. Otherwise, `argo node reset` would not work as expected.
 	if node.Type == wfv1.NodeTypeSuspend {
 		if node.Outputs != nil {
 			for i, param := range node.Outputs.Parameters {
@@ -932,6 +933,7 @@ func resetNode(node wfv1.NodeStatus) wfv1.NodeStatus {
 		}
 	}
 	if node.Phase == wfv1.NodeSkipped {
+		// The skipped nodes need to be kept as skipped. Otherwise, the workflow will be stuck on running.
 		node.Phase = wfv1.NodeSkipped
 	} else {
 		node.Phase = wfv1.NodeRunning
