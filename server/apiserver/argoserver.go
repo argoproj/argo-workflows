@@ -334,7 +334,10 @@ func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServe
 		grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(MaxGRPCMessageSize)),
 	}
 	if as.tlsConfig != nil {
-		dialOpts = append(dialOpts, grpc.WithTransportCredentials(credentials.NewTLS(as.tlsConfig)))
+		tlsConfig := as.tlsConfig
+		tlsConfig.InsecureSkipVerify = true
+		dCreds := credentials.NewTLS(tlsConfig)
+		dialOpts = append(dialOpts, grpc.WithTransportCredentials(dCreds))
 	} else {
 		dialOpts = append(dialOpts, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	}
