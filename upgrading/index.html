@@ -3064,6 +3064,13 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#non-emissary-executors-are-removed-7829" class="md-nav__link">
+    Non-Emissary executors are removed. (#7829)
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#chore-remove-dataflow-pipelines-from-codebase-9071" class="md-nav__link">
     chore!: Remove dataflow pipelines from codebase. (#9071)
   </a>
@@ -4021,6 +4028,13 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#non-emissary-executors-are-removed-7829" class="md-nav__link">
+    Non-Emissary executors are removed. (#7829)
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#chore-remove-dataflow-pipelines-from-codebase-9071" class="md-nav__link">
     chore!: Remove dataflow pipelines from codebase. (#9071)
   </a>
@@ -4266,6 +4280,10 @@
 <p>Breaking changes  typically (sometimes we don't realise they are breaking) have "!" in the commit message, as per
 the <a href="https://www.conventionalcommits.org/en/v1.0.0/#summary">conventional commits</a>.</p>
 <h2 id="upgrading-to-v34">Upgrading to v3.4<a class="headerlink" href="#upgrading-to-v34" title="Permanent link">&para;</a></h2>
+<h3 id="non-emissary-executors-are-removed-7829">Non-Emissary executors are removed. (<a href="https://github.com/argoproj/argo-workflows/issues/7829">#7829</a>)<a class="headerlink" href="#non-emissary-executors-are-removed-7829" title="Permanent link">&para;</a></h3>
+<p>Emissary executor is now the only supported executor. If you are using other executors, e.g. docker, k8sapi, pns, and kubelet, you need to
+remove your <code>containerRuntimeExecutors</code> and <code>containerRuntimeExecutor</code> from your controller's configmap. If you have workflows that use different
+executors with the label <code>workflows.argoproj.io/container-runtime-executor</code>, this is no longer supported and will not be effective.</p>
 <h3 id="chore-remove-dataflow-pipelines-from-codebase-9071">chore!: Remove dataflow pipelines from codebase. (#9071)<a class="headerlink" href="#chore-remove-dataflow-pipelines-from-codebase-9071" title="Permanent link">&para;</a></h3>
 <p>You are affected if you are using <a href="https://github.com/argoproj-labs/argo-dataflow">dataflow pipelines</a> in the UI or via the <code>/pipelines</code> endpoint.
 We no longer support dataflow pipelines and all relevant code has been removed.</p>
