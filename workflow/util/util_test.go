@@ -901,6 +901,40 @@ func TestFormulateRetryWorkflow(t *testing.T) {
 
 		}
 	})
+	t.Run("Skipped and Suspended Nodes", func(t *testing.T) {
+		wf := &wfv1.Workflow{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:   "wf-with-skipped-and-suspended-nodes",
+				Labels: map[string]string{},
+			},
+			Status: wfv1.WorkflowStatus{
+				Phase: wfv1.WorkflowFailed,
+				Nodes: map[string]wfv1.NodeStatus{
+					"my-nested-dag-1": {ID: "my-nested-dag-1", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypeTaskGroup},
+					"suspended": {ID: "suspended", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypeSuspend, BoundaryID: "my-nested-dag-1", Outputs: &wfv1.Outputs{Parameters: []wfv1.Parameter{{
+						Name:      "param-1",
+						Value:     wfv1.AnyStringPtr("3"),
+						ValueFrom: &wfv1.ValueFrom{Supplied: &wfv1.SuppliedValueFrom{}},
+					}}}},
+					"skipped": {ID: "skipped", Phase: wfv1.NodeSkipped, Type: wfv1.NodeTypeSkipped, BoundaryID: "suspended"},
+				}},
+		}
+		_, err := wfClient.Create(ctx, wf, metav1.CreateOptions{})
+		assert.NoError(t, err)
+		wf, _, err = FormulateRetryWorkflow(ctx, wf, true, "id=suspended", nil)
+		if assert.NoError(t, err) {
+			if assert.Len(t, wf.Status.Nodes, 3) {
+				assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes["my-nested-dag-1"].Phase)
+				assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["suspended"].Phase)
+				assert.Equal(t, wfv1.Parameter{
+					Name:      "param-1",
+					Value:     nil,
+					ValueFrom: &wfv1.ValueFrom{Supplied: &wfv1.SuppliedValueFrom{}},
+				}, wf.Status.Nodes["suspended"].Outputs.Parameters[0])
+				assert.Equal(t, wfv1.NodeSkipped, wf.Status.Nodes["skipped"].Phase)
+			}
+		}
+	})
 	t.Run("Nested DAG with Non-group Node Selected", func(t *testing.T) {
 		wf := &wfv1.Workflow{
 			ObjectMeta: metav1.ObjectMeta{
