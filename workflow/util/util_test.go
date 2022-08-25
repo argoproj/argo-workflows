@@ -910,13 +910,20 @@ func TestFormulateRetryWorkflow(t *testing.T) {
 			Status: wfv1.WorkflowStatus{
 				Phase: wfv1.WorkflowFailed,
 				Nodes: map[string]wfv1.NodeStatus{
-					"my-nested-dag-1": {ID: "my-nested-dag-1", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypeTaskGroup},
-					"suspended": {ID: "suspended", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypeSuspend, BoundaryID: "my-nested-dag-1", Outputs: &wfv1.Outputs{Parameters: []wfv1.Parameter{{
-						Name:      "param-1",
-						Value:     wfv1.AnyStringPtr("3"),
-						ValueFrom: &wfv1.ValueFrom{Supplied: &wfv1.SuppliedValueFrom{}},
-					}}}},
-					"skipped": {ID: "skipped", Phase: wfv1.NodeSkipped, Type: wfv1.NodeTypeSkipped, BoundaryID: "suspended"},
+					"entrypoint": {ID: "entrypoint", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypeTaskGroup, Children: []string{"suspended", "skipped"}},
+					"suspended": {
+						ID:         "suspended",
+						Phase:      wfv1.NodeSucceeded,
+						Type:       wfv1.NodeTypeSuspend,
+						BoundaryID: "entrypoint",
+						Children:   []string{"child"},
+						Outputs: &wfv1.Outputs{Parameters: []wfv1.Parameter{{
+							Name:      "param-1",
+							Value:     wfv1.AnyStringPtr("3"),
+							ValueFrom: &wfv1.ValueFrom{Supplied: &wfv1.SuppliedValueFrom{}},
+						}}}},
+					"child":   {ID: "child", Phase: wfv1.NodeSkipped, Type: wfv1.NodeTypeSkipped, BoundaryID: "suspended"},
+					"skipped": {ID: "skipped", Phase: wfv1.NodeSkipped, Type: wfv1.NodeTypeSkipped, BoundaryID: "entrypoint"},
 				}},
 		}
 		_, err := wfClient.Create(ctx, wf, metav1.CreateOptions{})
@@ -924,7 +931,7 @@ func TestFormulateRetryWorkflow(t *testing.T) {
 		wf, _, err = FormulateRetryWorkflow(ctx, wf, true, "id=suspended", nil)
 		if assert.NoError(t, err) {
 			if assert.Len(t, wf.Status.Nodes, 3) {
-				assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes["my-nested-dag-1"].Phase)
+				assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes["entrypoint"].Phase)
 				assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["suspended"].Phase)
 				assert.Equal(t, wfv1.Parameter{
 					Name:      "param-1",
