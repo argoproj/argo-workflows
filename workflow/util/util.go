@@ -864,9 +864,14 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 			return nil, nil, errors.InternalErrorf("Workflow cannot be retried with node %s in %s phase", node.Name, node.Phase)
 		}
 
-		if node.Type == wfv1.NodeTypePod {
-			deletedNodes[node.ID] = true
-			deletedPods, podsToDelete = deletePodNodeDuringRetryWorkflow(wf, node, deletedPods, podsToDelete)
+		if node.Type == wfv1.NodeTypePod || node.Type == wfv1.NodeTypeSuspend {
+			// Only remove the descendants of a suspended node but not the suspended node itself. The descendants
+			// of a suspended node need to be removed since because the conditions should be re-evaluated based on
+			// the modified supplied parameter values.
+			if node.Type != wfv1.NodeTypeSuspend {
+				deletedNodes[node.ID] = true
+				deletedPods, podsToDelete = deletePodNodeDuringRetryWorkflow(wf, node, deletedPods, podsToDelete)
+			}
 
 			descendantNodeIDs := getDescendantNodeIDs(wf, node)
 			for _, descendantNodeID := range descendantNodeIDs {
