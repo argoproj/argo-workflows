@@ -175,6 +175,13 @@ func TestInferSelfLink(t *testing.T) {
 	})
 	assert.Equal(t, "apis/test.group/v1/namespaces/test-namespace/duties/test-name", inferObjectSelfLink(obj))
 
+	obj.SetGroupVersionKind(schema.GroupVersionKind{
+		Group:   "test.group",
+		Version: "v1",
+		Kind:    "IngressGateway",
+	})
+	assert.Equal(t, "apis/test.group/v1/namespaces/test-namespace/ingressgateways/test-name", inferObjectSelfLink(obj))
+
 	obj.SetNamespace("")
 	obj.SetGroupVersionKind(schema.GroupVersionKind{
 		Group:   "",
