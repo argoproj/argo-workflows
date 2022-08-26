@@ -26,9 +26,7 @@ kubectl apply -n argo -f https://github.com/argoproj/argo-workflows/releases/dow
 
 ### Patch argo-server authentication
 
-By default, the argo-server (and thus the UI) defaults to client auth, which requires clients to provide their Kubernetes bearer token to authenticate. For more information, refer to the [Argo Server Auth Mode documentation](argo-server-auth-mode.md).
-
-In order to bypass this, and switch to server mode for the sake of getting started quickly, we will path the argo-server deployment:
+The argo-server (and thus the UI) defaults to client authentication, which requires clients to provide their Kubernetes bearer token in order to authenticate. For more information, refer to the [Argo Server Auth Mode documentation](argo-server-auth-mode.md). We will switch the authentication mode to `server` so that we can bypass the UI login for now:
 
 ```bash
 kubectl patch deployment \
