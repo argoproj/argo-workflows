@@ -141,6 +141,7 @@ instantiator
 instantiators
 jenkins
 k3d
+k3s
 k8s-jobs
 kube
 kubelet
@@ -151,6 +152,7 @@ memoized
 memoizing
 mentee
 mentees
+minikube
 mutex
 namespace
 namespaces
