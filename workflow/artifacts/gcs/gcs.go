@@ -22,6 +22,7 @@ import (
 
 	"github.com/argoproj/argo-workflows/v3/errors"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	errutil "github.com/argoproj/argo-workflows/v3/util/errors"
 	waitutil "github.com/argoproj/argo-workflows/v3/util/wait"
 	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/common"
 )
@@ -38,7 +39,7 @@ var (
 
 // from https://github.com/googleapis/google-cloud-go/blob/master/storage/go110.go
 func isTransientGCSErr(err error) bool {
-	if err == io.ErrUnexpectedEOF {
+	if err == io.ErrUnexpectedEOF || errutil.IsTransientErr(err) {
 		return true
 	}
 	switch e := err.(type) {

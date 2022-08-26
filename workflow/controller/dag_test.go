@@ -3590,3 +3590,50 @@ func TestRetryTypeDagTaskRunExitNodeAfterCompleted(t *testing.T) {
 	assert.NotNil(t, nextDAGTaskNode)
 	assert.Equal(t, wfv1.NodeRunning, nextDAGTaskNode.Phase)
 }
+
+func TestDagParallelism(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(`apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: test-parallelism
+  namespace: argo
+spec:
+  entrypoint: main
+  parallelism: 1
+  templates:
+    - name: main
+      dag:
+        tasks:
+          - name: do-it-once
+            template: do-it
+            arguments:
+              parameters:
+                - name: thing
+                  value: 1
+          - name: do-it-twice
+            template: do-it
+            arguments:
+              parameters:
+                - name: thing
+                  value: 2
+          - name: do-it-thrice
+            template: do-it
+            arguments:
+              parameters:
+                - name: thing
+                  value: 3
+    - name: do-it
+      inputs:
+        parameters:
+          - name: thing
+      container:
+        image: docker/whalesay:latest
+        command: [cowsay]
+        args: ["I have a {{inputs.parameters.thing}}"]`)
+	woc := newWoc(*wf)
+	ctx := context.Background()
+	woc.operate(ctx)
+	woc1 := newWoc(*woc.wf)
+	woc1.operate(ctx)
+	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
+}

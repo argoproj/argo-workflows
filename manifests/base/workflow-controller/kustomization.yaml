@@ -5,5 +5,4 @@ resources:
 - workflow-controller-configmap.yaml
 - workflow-controller-deployment.yaml
 - workflow-controller-sa.yaml
-- workflow-controller-metrics-service.yaml
 - workflow-controller-priorityclass.yaml

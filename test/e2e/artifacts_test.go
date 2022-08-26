@@ -90,16 +90,26 @@ func (s *ArtifactsSuite) TestArtifactGC() {
 			workflowFile:                 "@testdata/artifactgc/artgc-from-template.yaml",
 			expectedGCPodsOnWFCompletion: 1,
 			expectedArtifacts: []artifactState{
+<<<<<<< HEAD
 				artifactState{"on-completion", "my-bucket-2", true, false},
 				artifactState{"on-deletion", "my-bucket-2", false, true},
+=======
+				artifactState{"on-completion", "my-bucket-2", true},
+				artifactState{"on-deletion", "my-bucket-2", true},
+>>>>>>> master
 			},
 		},
 		{
 			workflowFile:                 "@testdata/artifactgc/artgc-step-wf-tmpl.yaml",
 			expectedGCPodsOnWFCompletion: 1,
 			expectedArtifacts: []artifactState{
+<<<<<<< HEAD
 				artifactState{"on-completion", "my-bucket-2", true, false},
 				artifactState{"on-deletion", "my-bucket-2", false, true},
+=======
+				artifactState{"on-completion", "my-bucket-2", true},
+				artifactState{"on-deletion", "my-bucket-2", true},
+>>>>>>> master
 			},
 		},
 	} {
