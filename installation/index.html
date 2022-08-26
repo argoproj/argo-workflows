@@ -3028,15 +3028,62 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#argo-on-desktop" class="md-nav__link">
-    Argo on Desktop
+  <a href="#non-production-installation" class="md-nav__link">
+    Non-production installation
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#argo-in-production" class="md-nav__link">
-    Argo in Production
+  <a href="#production-installation" class="md-nav__link">
+    Production installation
+  </a>
+  
+    <nav class="md-nav" aria-label="Production installation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#installation-methods" class="md-nav__link">
+    Installation Methods
+  </a>
+  
+    <nav class="md-nav" aria-label="Installation Methods">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#official-release-manifests" class="md-nav__link">
+    Official release manifests
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#argo-workflows-helm-chart" class="md-nav__link">
+    Argo Workflows Helm Chart
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#installation-options" class="md-nav__link">
+    Installation options
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#additional-installation-considerations" class="md-nav__link">
+    Additional installation considerations
   </a>
   
 </li>
@@ -3795,15 +3842,62 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#argo-on-desktop" class="md-nav__link">
-    Argo on Desktop
+  <a href="#non-production-installation" class="md-nav__link">
+    Non-production installation
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#argo-in-production" class="md-nav__link">
-    Argo in Production
+  <a href="#production-installation" class="md-nav__link">
+    Production installation
+  </a>
+  
+    <nav class="md-nav" aria-label="Production installation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#installation-methods" class="md-nav__link">
+    Installation Methods
+  </a>
+  
+    <nav class="md-nav" aria-label="Installation Methods">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#official-release-manifests" class="md-nav__link">
+    Official release manifests
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#argo-workflows-helm-chart" class="md-nav__link">
+    Argo Workflows Helm Chart
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#installation-options" class="md-nav__link">
+    Installation options
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#additional-installation-considerations" class="md-nav__link">
+    Additional installation considerations
   </a>
   
 </li>
@@ -3827,18 +3921,25 @@
 
 
 <h1 id="installation">Installation<a class="headerlink" href="#installation" title="Permanent link">&para;</a></h1>
-<h2 id="argo-on-desktop">Argo on Desktop<a class="headerlink" href="#argo-on-desktop" title="Permanent link">&para;</a></h2>
-<p>Use the <a href="../quick-start/">quick-start manifests</a>.</p>
-<h2 id="argo-in-production">Argo in Production<a class="headerlink" href="#argo-in-production" title="Permanent link">&para;</a></h2>
+<h2 id="non-production-installation">Non-production installation<a class="headerlink" href="#non-production-installation" title="Permanent link">&para;</a></h2>
+<p>If you just want to try out Argo Workflows in a non-production environment (including on desktop via minikube/kind/k3d etc) follow the <a href="../quick-start/">quick-start guide</a>.</p>
+<h2 id="production-installation">Production installation<a class="headerlink" href="#production-installation" title="Permanent link">&para;</a></h2>
+<h3 id="installation-methods">Installation Methods<a class="headerlink" href="#installation-methods" title="Permanent link">&para;</a></h3>
+<h4 id="official-release-manifests">Official release manifests<a class="headerlink" href="#official-release-manifests" title="Permanent link">&para;</a></h4>
+<p>To install Argo Workflows, navigate to the <a href="https://github.com/argoproj/argo-workflows/releases/latest">releases page</a> and find the release you wish to use (the latest full release is preferred). Scroll down to the <code>Controller and Server</code> section and execute the <code>kubectl</code> commands.</p>
+<p>You can use Kustomize to patch your preferred <a href="../managed-namespace/">configurations</a> on top of the base manifest.</p>
+<p>⚠️ If you are using GitOps, never use Kustomize remote base: this is dangerous. Instead, copy the manifests into your Git repo.</p>
+<p>⚠️ <code>latest</code> is tip, not stable. Never run it in production.</p>
+<h4 id="argo-workflows-helm-chart">Argo Workflows Helm Chart<a class="headerlink" href="#argo-workflows-helm-chart" title="Permanent link">&para;</a></h4>
+<p>You can install Argo Workflows using the community maintained <a href="https://github.com/argoproj/argo-helm">Helm charts</a>.</p>
+<h2 id="installation-options">Installation options<a class="headerlink" href="#installation-options" title="Permanent link">&para;</a></h2>
 <p>Determine your base installation option.</p>
 <ul>
-<li>A <strong>cluster install</strong> will watch and execute workflows in all namespaces.</li>
-<li>A <strong>namespace install</strong> only executes workflows in the namespace it is installed in (typically <code>argo</code>).</li>
+<li>A <strong>cluster install</strong> will watch and execute workflows in all namespaces. This is the default installation option when installing using the official release manifests.</li>
+<li>A <strong>namespace install</strong> only executes workflows in the namespace it is installed in (typically <code>argo</code>). Look for <code>namespace-install.yaml</code> in the <a href="https://github.com/argoproj/argo-workflows/releases/latest">release assets</a>.</li>
 <li>A <strong>managed namespace install</strong>: only executes workflows in a specific namespace (<a href="../managed-namespace/">learn more</a>).</li>
 </ul>
-<p>⚠️ <code>latest</code> is tip, not stable. Never run it. Make sure you're using the manifests attached to each Github release. See <a href="https://github.com/argoproj/argo-workflows/releases/latest">this link</a> for the most recent manifests.</p>
-<p>⚠️ Double-check you have the right version of your executor configured, it's easy to miss.</p>
-<p>⚠️ If you are using GitOps, never use Kustomize remote base: this is dangerous. Instead, copy the manifests into your Git repo.</p>
+<h2 id="additional-installation-considerations">Additional installation considerations<a class="headerlink" href="#additional-installation-considerations" title="Permanent link">&para;</a></h2>
 <p>Review the following:</p>
 <ul>
 <li><a href="../security/">Security</a>.</li>
@@ -3846,7 +3947,6 @@
 <li><a href="../high-availability/">High-availability</a></li>
 <li><a href="../disaster-recovery/">Disaster recovery</a></li>
 </ul>
-<p>Read the <a href="../releases/">release guide</a> before any major upgrade to be aware of breaking changes.</p>
 
               
 

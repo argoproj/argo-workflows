@@ -467,6 +467,67 @@
     Install Argo Workflows
   </a>
   
+    <nav class="md-nav" aria-label="Install Argo Workflows">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#patch-argo-server-authentication" class="md-nav__link">
+    Patch argo-server authentication
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#port-forward-the-ui" class="md-nav__link">
+    Port-forward the UI
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#install-the-argo-workflows-cli" class="md-nav__link">
+    Install the Argo Workflows CLI
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#submitting-an-example-workflow" class="md-nav__link">
+    Submitting an example workflow
+  </a>
+  
+    <nav class="md-nav" aria-label="Submitting an example workflow">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#submit-an-example-workflow-cli" class="md-nav__link">
+    Submit an example workflow (CLI)
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#submit-an-example-workflow-gui" class="md-nav__link">
+    Submit an example workflow (GUI)
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#trying-workflows-without-a-kubernetes-cluster" class="md-nav__link">
+    Trying Workflows without a Kubernetes cluster
+  </a>
+  
 </li>
       
     </ul>
@@ -3792,6 +3853,67 @@
     Install Argo Workflows
   </a>
   
+    <nav class="md-nav" aria-label="Install Argo Workflows">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#patch-argo-server-authentication" class="md-nav__link">
+    Patch argo-server authentication
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#port-forward-the-ui" class="md-nav__link">
+    Port-forward the UI
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#install-the-argo-workflows-cli" class="md-nav__link">
+    Install the Argo Workflows CLI
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#submitting-an-example-workflow" class="md-nav__link">
+    Submitting an example workflow
+  </a>
+  
+    <nav class="md-nav" aria-label="Submitting an example workflow">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#submit-an-example-workflow-cli" class="md-nav__link">
+    Submit an example workflow (CLI)
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#submit-an-example-workflow-gui" class="md-nav__link">
+    Submit an example workflow (GUI)
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#trying-workflows-without-a-kubernetes-cluster" class="md-nav__link">
+    Trying Workflows without a Kubernetes cluster
+  </a>
+  
 </li>
       
     </ul>
@@ -3813,20 +3935,42 @@
 
 
 <h1 id="quick-start">Quick Start<a class="headerlink" href="#quick-start" title="Permanent link">&para;</a></h1>
-<p>To see how Argo Workflows work, you can install it and run examples of simple workflows and workflows that use artifacts.</p>
-<p>Before you start you need a Kubernetes cluster and <code>kubectl</code> set-up</p>
+<p>To see how Argo Workflows work, you can install it and run examples of simple workflows.</p>
+<p>Before you start you need a Kubernetes cluster and <code>kubectl</code> set up to be able to access that cluster. For the purposes of getting up and running, a local cluster is fine. You could consider the following local Kubernetes cluster options:</p>
+<ul>
+<li><a href="https://minikube.sigs.k8s.io/docs/">minikube</a></li>
+<li><a href="https://kind.sigs.k8s.io/">kind</a></li>
+<li><a href="https://k3s.io/">k3s</a> or <a href="https://k3d.io/">k3d</a></li>
+<li><a href="https://www.docker.com/products/docker-desktop/">Docker Desktop</a></li>
+</ul>
+<p>⚠️ These instructions are intended to help you get started quickly. They are not suitable in production. For production installs, please refer to <a href="../installation/">the installation documentation</a> ⚠️</p>
 <h2 id="install-argo-workflows">Install Argo Workflows<a class="headerlink" href="#install-argo-workflows" title="Permanent link">&para;</a></h2>
-<p>To get started quickly, you can use the quick start manifest which will install Argo Workflows as well as some commonly used components:</p>
-<p>⚠️ These manifests are intended to help you get started quickly. They are not suitable in production. They contain hard-coded passwords that are publicly available.</p>
-<div class="highlight"><pre><span></span><code>kubectl create ns argo
-kubectl apply -n argo -f https://raw.githubusercontent.com/argoproj/argo-workflows/master/manifests/quick-start-postgres.yaml
+<p>To install Argo Workflows, navigate to the <a href="https://github.com/argoproj/argo-workflows/releases/latest">releases page</a> and find the release you wish to use (the latest full release is preferred).</p>
+<p>Scroll down to the <code>Controller and Server</code> section and execute the <code>kubectl</code> commands.</p>
+<p>Below is an example of the install commands, ensure that you update the command to install the correct version number:</p>
+<div class="highlight"><pre><span></span><code><span class="l l-Scalar l-Scalar-Plain">kubectl create namespace argo</span><span class="w"></span>
+<span class="l l-Scalar l-Scalar-Plain">kubectl apply -n argo -f https://github.com/argoproj/argo-workflows/releases/download/v&lt;&lt;ARGO_WORKFLOWS_VERSION&gt;&gt;/install.yaml</span><span class="w"></span>
 </code></pre></div>
+<h3 id="patch-argo-server-authentication">Patch argo-server authentication<a class="headerlink" href="#patch-argo-server-authentication" title="Permanent link">&para;</a></h3>
+<p>The argo-server (and thus the UI) defaults to client authentication, which requires clients to provide their Kubernetes bearer token in order to authenticate. For more information, refer to the <a href="../argo-server-auth-mode/">Argo Server Auth Mode documentation</a>. We will switch the authentication mode to <code>server</code> so that we can bypass the UI login for now:</p>
+<div class="highlight"><pre><span></span><code>kubectl patch deployment <span class="se">\</span>
+  argo-server <span class="se">\</span>
+  --namespace argo <span class="se">\</span>
+  --type<span class="o">=</span><span class="s1">&#39;json&#39;</span> <span class="se">\</span>
+  -p<span class="o">=</span><span class="s1">&#39;[{&quot;op&quot;: &quot;replace&quot;, &quot;path&quot;: &quot;/spec/template/spec/containers/0/args&quot;, &quot;value&quot;: [</span>
+<span class="s1">  &quot;server&quot;,</span>
+<span class="s1">  &quot;--auth-mode=server&quot;</span>
+<span class="s1">]}]&#39;</span>
+</code></pre></div>
+<h3 id="port-forward-the-ui">Port-forward the UI<a class="headerlink" href="#port-forward-the-ui" title="Permanent link">&para;</a></h3>
 <p>Open a port-forward so you can access the UI:</p>
 <div class="highlight"><pre><span></span><code>kubectl -n argo port-forward deployment/argo-server <span class="m">2746</span>:2746
 </code></pre></div>
-<p>This will serve the UI on <a href="https://localhost:2746">https://localhost:2746</a></p>
-<p>Next, Download the latest Argo CLI from our <a href="https://github.com/argoproj/argo-workflows/releases/latest">releases page</a>.</p>
-<p>Finally, submit an example workflow:  </p>
+<p>This will serve the UI on <a href="https://localhost:2746">https://localhost:2746</a>. Due to the self-signed certificate, you will receive a TLS error which you will need to manually approve.</p>
+<h2 id="install-the-argo-workflows-cli">Install the Argo Workflows CLI<a class="headerlink" href="#install-the-argo-workflows-cli" title="Permanent link">&para;</a></h2>
+<p>Next, Download the latest Argo CLI from the same <a href="https://github.com/argoproj/argo-workflows/releases/latest">releases page</a>.</p>
+<h2 id="submitting-an-example-workflow">Submitting an example workflow<a class="headerlink" href="#submitting-an-example-workflow" title="Permanent link">&para;</a></h2>
+<h3 id="submit-an-example-workflow-cli">Submit an example workflow (CLI)<a class="headerlink" href="#submit-an-example-workflow-cli" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code>argo submit -n argo --watch https://raw.githubusercontent.com/argoproj/argo-workflows/master/examples/hello-world.yaml
 </code></pre></div>
 <p>The <code>--watch</code> flag used above will allow you to observe the workflow as it runs and the status of whether it succeeds.
@@ -3845,6 +3989,24 @@ be the same as the information shown as when you submitted the Workflow:</p>
 <p>You can also observe the logs of the Workflow run by running the following:</p>
 <div class="highlight"><pre><span></span><code>argo logs -n argo @latest
 </code></pre></div>
+<h3 id="submit-an-example-workflow-gui">Submit an example workflow (GUI)<a class="headerlink" href="#submit-an-example-workflow-gui" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Open a port-forward so you can access the UI:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>kubectl -n argo port-forward deployment/argo-server <span class="m">2746</span>:2746
+</code></pre></div>
+<ul>
+<li>
+<p>Navigate your browser to <a href="https://localhost:2746">https://localhost:2746</a>.</p>
+</li>
+<li>
+<p>Click <code>+ Submit New Workflow</code> and then <code>Edit using full workflow options</code></p>
+</li>
+<li>
+<p>You can find an example workflow already in the text field. Press <code>+ Create</code> to start the workflow.</p>
+</li>
+</ul>
+<h2 id="trying-workflows-without-a-kubernetes-cluster">Trying Workflows without a Kubernetes cluster<a class="headerlink" href="#trying-workflows-without-a-kubernetes-cluster" title="Permanent link">&para;</a></h2>
 <p>💡 If you want to try out Argo Workflows and don't want to set up a Kubernetes cluster, the community is working on a replacement for the old Katacoda course since
 Katacoda was shut down. Please give a thumbs up or comment on <a href="https://github.com/argoproj/argo-workflows/issues/8899">this issue</a> with your support and feedback.</p>
 
