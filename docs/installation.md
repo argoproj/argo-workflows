@@ -1,22 +1,36 @@
 # Installation
 
-## Argo on Desktop
+## Non-production installation
 
-Use the [quick-start manifests](quick-start.md).
+If you just want to try out Argo Workflows in a non-production environment (including on desktop via minikube/kind/k3d etc) follow the [quick-start guide](quick-start.md).
 
-## Argo in Production
+## Production installation
+
+### Installation Methods
+
+#### Official release manifests
+
+To install Argo Workflows, navigate to the [releases page](https://github.com/argoproj/argo-workflows/releases/latest) and find the release you wish to use (the latest full release is preferred). Scroll down to the `Controller and Server` section and execute the `kubectl` commands.
+
+You can use Kustomize to patch your preferred [configurations](managed-namespace.md) on top of the base manifest.
+
+⚠️ If you are using GitOps, never use Kustomize remote base: this is dangerous. Instead, copy the manifests into your Git repo.
+
+⚠️ `latest` is tip, not stable. Never run it in production.
+
+#### Argo Workflows Helm Chart
+
+You can install Argo Workflows using the community maintained [Helm charts](https://github.com/argoproj/argo-helm).
+
+## Installation options
 
 Determine your base installation option.
 
-* A **cluster install** will watch and execute workflows in all namespaces.
-* A **namespace install** only executes workflows in the namespace it is installed in (typically `argo`).
+* A **cluster install** will watch and execute workflows in all namespaces. This is the default installation option when installing using the official release manifests.
+* A **namespace install** only executes workflows in the namespace it is installed in (typically `argo`). Look for `namespace-install.yaml` in the [release assets](https://github.com/argoproj/argo-workflows/releases/latest).
 * A **managed namespace install**: only executes workflows in a specific namespace ([learn more](managed-namespace.md)).
 
-⚠️ `latest` is tip, not stable. Never run it. Make sure you're using the manifests attached to each Github release. See [this link](https://github.com/argoproj/argo-workflows/releases/latest) for the most recent manifests.
-
-⚠️ Double-check you have the right version of your executor configured, it's easy to miss.
-
-⚠️ If you are using GitOps, never use Kustomize remote base: this is dangerous. Instead, copy the manifests into your Git repo.
+## Additional installation considerations
 
 Review the following:
 
@@ -24,5 +38,3 @@ Review the following:
 * [Scaling](scaling.md) and [running at massive scale](running-at-massive-scale.md).
 * [High-availability](high-availability.md)
 * [Disaster recovery](disaster-recovery.md)
-
-Read the [release guide](releases.md) before any major upgrade to be aware of breaking changes.
