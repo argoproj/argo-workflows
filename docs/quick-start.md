@@ -2,7 +2,12 @@
 
 To see how Argo Workflows work, you can install it and run examples of simple workflows.
 
-Before you start you need a Kubernetes cluster and `kubectl` set-up to be able to access that cluster.
+Before you start you need a Kubernetes cluster and `kubectl` set up to be able to access that cluster. For the purposes of getting up and running, a local cluster is fine. You could consider the following local Kubernetes cluster options:
+
+* [minikube](https://minikube.sigs.k8s.io/docs/)
+* [kind](https://kind.sigs.k8s.io/)
+* [k3s](https://k3s.io/) or [k3d](https://k3d.io/)
+* [Docker Desktop](https://www.docker.com/products/docker-desktop/)
 
 ⚠️ These instructions are intended to help you get started quickly. They are not suitable in production. For production installs, please refer to [the installation documentation](installation.md) ⚠️
 
@@ -11,6 +16,13 @@ Before you start you need a Kubernetes cluster and `kubectl` set-up to be able t
 To install Argo Workflows, navigate to the [releases page](https://github.com/argoproj/argo-workflows/releases/latest) and find the release you wish to use (the latest full release is preferred).
 
 Scroll down to the `Controller and Server` section and execute the `kubectl` commands.
+
+Below is an example of the install commands, ensure that you update the command to install the correct version number:
+
+```yaml
+kubectl create namespace argo
+kubectl apply -n argo -f https://github.com/argoproj/argo-workflows/releases/download/v<<ARGO_WORKFLOWS_VERSION>>/install.yaml
+```
 
 ### Patch argo-server authentication
 
