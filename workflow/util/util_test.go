@@ -951,9 +951,9 @@ func TestFormulateRetryWorkflow(t *testing.T) {
 			Status: wfv1.WorkflowStatus{
 				Phase: wfv1.WorkflowFailed,
 				Nodes: map[string]wfv1.NodeStatus{
-					"my-nested-dag-1": {ID: "my-nested-dag-1", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypeTaskGroup},
-					"1":               {ID: "1", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypeTaskGroup, BoundaryID: "my-nested-dag-1"},
-					"2":               {ID: "2", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypeTaskGroup, BoundaryID: "1"},
+					"my-nested-dag-1": {ID: "my-nested-dag-1", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypeTaskGroup, Children: []string{"1"}},
+					"1":               {ID: "1", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypeTaskGroup, BoundaryID: "my-nested-dag-1", Children: []string{"2", "4"}},
+					"2":               {ID: "2", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypeTaskGroup, BoundaryID: "1", Children: []string{"3"}},
 					"3":               {ID: "3", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypePod, BoundaryID: "2"},
 					"4":               {ID: "4", Phase: wfv1.NodeFailed, Type: wfv1.NodeTypePod, BoundaryID: "1"}},
 			},
@@ -962,12 +962,11 @@ func TestFormulateRetryWorkflow(t *testing.T) {
 		assert.NoError(t, err)
 		wf, _, err = FormulateRetryWorkflow(ctx, wf, true, "id=3", nil)
 		if assert.NoError(t, err) {
-			// node #3 & node #4 are deleted and will be recreated. so only 3 nodes in wf.Status.Nodes
-			if assert.Len(t, wf.Status.Nodes, 3) {
+			// Node #2, #3, #4 are deleted and will be recreated so only 2 nodes left in wf.Status.Nodes
+			if assert.Len(t, wf.Status.Nodes, 2) {
 				assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes["my-nested-dag-1"].Phase)
-				// These should all be running since the child node #3 belongs up to node #1.
+				// The parent group node should be running.
 				assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["1"].Phase)
-				assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["2"].Phase)
 			}
 		}
 	})
@@ -980,9 +979,9 @@ func TestFormulateRetryWorkflow(t *testing.T) {
 			Status: wfv1.WorkflowStatus{
 				Phase: wfv1.WorkflowFailed,
 				Nodes: map[string]wfv1.NodeStatus{
-					"my-nested-dag-2": {ID: "my-nested-dag-2", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypeTaskGroup},
-					"1":               {ID: "1", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypeTaskGroup, BoundaryID: "my-nested-dag-2"},
-					"2":               {ID: "2", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypeTaskGroup, BoundaryID: "1"},
+					"my-nested-dag-2": {ID: "my-nested-dag-2", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypeTaskGroup, Children: []string{"1"}},
+					"1":               {ID: "1", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypeTaskGroup, BoundaryID: "my-nested-dag-2", Children: []string{"2", "4"}},
+					"2":               {ID: "2", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypeTaskGroup, BoundaryID: "1", Children: []string{"3"}},
 					"3":               {ID: "3", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypePod, BoundaryID: "2"},
 					"4":               {ID: "4", Phase: wfv1.NodeFailed, Type: wfv1.NodeTypePod, BoundaryID: "1"}},
 			},
@@ -991,14 +990,11 @@ func TestFormulateRetryWorkflow(t *testing.T) {
 		assert.NoError(t, err)
 		wf, _, err = FormulateRetryWorkflow(ctx, wf, true, "", nil)
 		if assert.NoError(t, err) {
-			// node #4 is deleted and will be recreated. so only 4 nodes in wf.Status.Nodes
-			if assert.Len(t, wf.Status.Nodes, 4) {
+			// Node #2, #3, and #4 are deleted and will be recreated so only 2 nodes left in wf.Status.Nodes
+			if assert.Len(t, wf.Status.Nodes, 2) {
 				assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes["my-nested-dag-2"].Phase)
-				// This should be running since it's node #4's parent node.
+				// This parent group node should be running.
 				assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["1"].Phase)
-				// This should be running since it's node #1's child node and node #1 is being retried.
-				assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["2"].Phase)
-				assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes["3"].Phase)
 			}
 		}
 	})
