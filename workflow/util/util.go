@@ -823,19 +823,16 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 		case wfv1.NodeSucceeded, wfv1.NodeSkipped:
 			if !strings.HasPrefix(node.Name, onExitNodeName) && !doForceResetNode {
 				// Reset parent node if this node is a step/task group or DAG.
-				log.Infof("here1 node: %s", node.DisplayName)
 				if (node.Type == wfv1.NodeTypeDAG || node.Type == wfv1.NodeTypeTaskGroup || node.Type == wfv1.NodeTypeStepGroup) && node.BoundaryID != "" {
 					parentNodeID := node.ID
-					log.Infof("here2 node: %s", node.DisplayName)
 					if parentNodeID != wf.ObjectMeta.Name { // Skip root node
-						log.Infof("here3 node: %s", node.DisplayName)
-						log.Infoln(fmt.Sprintf("Resetting parent node %s", parentNodeID))
+						log.Debugln(fmt.Sprintf("Resetting parent node %s", parentNodeID))
 						parentNode := wf.Status.Nodes[parentNodeID]
 						newWF.Status.Nodes[parentNodeID] = resetNode(*parentNode.DeepCopy())
 						descendantNodeIDs := getDescendantNodeIDs(wf, node)
 						for _, descendantNodeID := range descendantNodeIDs {
 							if _, present := nodeIDsToReset[descendantNodeID]; present {
-								log.Infoln(fmt.Sprintf("Removing child node %s since its parent node %s is being retried", descendantNodeID, parentNodeID))
+								log.Debugln(fmt.Sprintf("Removing child node %s since its parent node %s is being retried", descendantNodeID, parentNodeID))
 								deletedNodes[descendantNodeID] = true
 								descendantNode := wf.Status.Nodes[descendantNodeID]
 								if descendantNode.Type == wfv1.NodeTypePod {
@@ -845,13 +842,11 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 						}
 					}
 				} else {
-					log.Infof("here4 node: %s", node.DisplayName)
 					newWF.Status.Nodes[node.ID] = node
 				}
 				continue
 			}
 			if doForceResetNode {
-				log.Infof("here5 node: %s", node.DisplayName)
 				newNode := node.DeepCopy()
 				newWF.Status.Nodes[newNode.ID] = resetNode(*newNode)
 			}

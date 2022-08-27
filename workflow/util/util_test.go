@@ -965,7 +965,7 @@ func TestFormulateRetryWorkflow(t *testing.T) {
 			// Node #3, #4 are deleted and will be recreated so only 3 nodes left in wf.Status.Nodes
 			if assert.Len(t, wf.Status.Nodes, 3) {
 				assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes["my-nested-dag-1"].Phase)
-				// The parent group node should be running.
+				// The parent group nodes should be running.
 				assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["1"].Phase)
 				assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["2"].Phase)
 			}
@@ -994,11 +994,10 @@ func TestFormulateRetryWorkflow(t *testing.T) {
 			// Node #2, #3, and #4 are deleted and will be recreated so only 2 nodes left in wf.Status.Nodes
 			if assert.Len(t, wf.Status.Nodes, 4) {
 				assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes["my-nested-dag-2"].Phase)
-				// This parent group node should be running.
+				// This parent group nodes should be running.
 				assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["1"].Phase)
 				assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["2"].Phase)
 				assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes["3"].Phase)
-				// TODO: Look into why the status is missing
 				assert.Equal(t, "", string(wf.Status.Nodes["4"].Phase))
 			}
 		}
