@@ -822,31 +822,48 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 		switch node.Phase {
 		case wfv1.NodeSucceeded, wfv1.NodeSkipped:
 			if !strings.HasPrefix(node.Name, onExitNodeName) && !doForceResetNode {
+				log.Infof("here1 node: %s", node.DisplayName)
 				// Reset parent node if this node is a step/task group or DAG.
 				if (node.Type == wfv1.NodeTypeDAG || node.Type == wfv1.NodeTypeTaskGroup || node.Type == wfv1.NodeTypeStepGroup) && node.BoundaryID != "" {
 					parentNodeID := node.ID
+					log.Infof("here2 node: %s", node.DisplayName)
 					if parentNodeID != wf.ObjectMeta.Name { // Skip root node
-						log.Debugln(fmt.Sprintf("Resetting parent node %s", parentNodeID))
-						parentNode := wf.Status.Nodes[parentNodeID]
-						newWF.Status.Nodes[parentNodeID] = resetNode(*parentNode.DeepCopy())
+						log.Infof("here3 node: %s", node.DisplayName)
 						descendantNodeIDs := getDescendantNodeIDs(wf, node)
-						for _, descendantNodeID := range descendantNodeIDs {
-							if _, present := nodeIDsToReset[descendantNodeID]; present {
-								log.Debugln(fmt.Sprintf("Removing child node %s since its parent node %s is being retried", descendantNodeID, parentNodeID))
-								deletedNodes[descendantNodeID] = true
-								descendantNode := wf.Status.Nodes[descendantNodeID]
-								if descendantNode.Type == wfv1.NodeTypePod {
-									deletedPods, podsToDelete = deletePodNodeDuringRetryWorkflow(wf, descendantNode, deletedPods, podsToDelete)
+						var nodeGroupNeedsReset bool
+						for _, child := range descendantNodeIDs {
+							childNode := wf.Status.Nodes[child]
+							log.Infoln(fmt.Sprintf("Checking child node %s for parent node %s, phase %s", childNode.DisplayName, node.DisplayName, childNode.Phase))
+							if childNode.Phase == wfv1.NodeError || childNode.Phase == wfv1.NodeFailed || childNode.Phase == wfv1.NodeOmitted {
+								log.Infof("DAG node %s needs to reset since its child %s is not successful", node.DisplayName, childNode.DisplayName)
+								nodeGroupNeedsReset = true
+								break
+							}
+						}
+						if nodeGroupNeedsReset {
+							log.Infoln(fmt.Sprintf("Resetting parent node %s", node.DisplayName))
+							parentNode := wf.Status.Nodes[parentNodeID]
+							newWF.Status.Nodes[parentNodeID] = resetNode(*parentNode.DeepCopy())
+							for _, descendantNodeID := range descendantNodeIDs {
+								if _, present := nodeIDsToReset[descendantNodeID]; present {
+									descendantNode := wf.Status.Nodes[descendantNodeID]
+									log.Infoln(fmt.Sprintf("Removing child node %s since its parent node %s is being retried", descendantNode.DisplayName, node.DisplayName))
+									deletedNodes[descendantNodeID] = true
+									if descendantNode.Type == wfv1.NodeTypePod {
+										deletedPods, podsToDelete = deletePodNodeDuringRetryWorkflow(wf, descendantNode, deletedPods, podsToDelete)
+									}
 								}
 							}
 						}
 					}
 				} else {
+					log.Infof("here4 node: %s", node.DisplayName)
 					newWF.Status.Nodes[node.ID] = node
 				}
 				continue
 			}
 			if doForceResetNode {
+				log.Infof("here5 node: %s", node.DisplayName)
 				newNode := node.DeepCopy()
 				newWF.Status.Nodes[newNode.ID] = resetNode(*newNode)
 			}
