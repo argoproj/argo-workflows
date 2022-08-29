@@ -26,8 +26,9 @@ function identity<T>(value: T) {
     return () => value;
 }
 
-export const WorkflowLogsViewer = ({workflow, nodeId, initialPodName, container, archived}: WorkflowLogsViewerProps) => {
+export const WorkflowLogsViewer = ({workflow, nodeId: initialNodeId, initialPodName, container, archived}: WorkflowLogsViewerProps) => {
     const [podName, setPodName] = useState(initialPodName || '');
+    const [nodeId, setNodeId] = useState(initialNodeId || '')
     const [selectedContainer, setContainer] = useState(container);
     const [grep, setGrep] = useState('');
     const [error, setError] = useState<Error>();
@@ -37,7 +38,7 @@ export const WorkflowLogsViewer = ({workflow, nodeId, initialPodName, container,
     useEffect(() => {
         setError(null);
         setLoaded(false);
-        const source = services.workflows.getContainerLogs(workflow, podName, nodeId, selectedContainer, grep, archived).pipe(
+        const source = services.workflows.getContainerLogs(workflow, podName, initialNodeId, selectedContainer, grep, archived).pipe(
             map(e => (!podName ? e.podName + ': ' : '') + e.content + '\n'),
             // this next line highlights the search term in bold with a yellow background, white text
             map(x => {
@@ -71,6 +72,8 @@ export const WorkflowLogsViewer = ({workflow, nodeId, initialPodName, container,
     }
     const podNameVersion = annotations[ANNOTATION_KEY_POD_NAME_VERSION];
 
+    const podNamesToNodeNames = new Map<string,string>();
+
     const podNames = [{value: '', label: 'All'}].concat(
         Object.values(workflow.status.nodes || {})
             .filter(x => x.type === 'Pod')
@@ -78,11 +81,13 @@ export const WorkflowLogsViewer = ({workflow, nodeId, initialPodName, container,
                 const {name, id, displayName} = targetNode;
                 const templateName = getTemplateNameFromNode(targetNode);
                 const targetPodName = getPodName(workflow.metadata.name, name, templateName, id, podNameVersion);
+                podNamesToNodeNames.set(targetPodName,id);
                 return {value: targetPodName, label: (displayName || name) + ' (' + targetPodName + ')'};
             })
     );
 
-    const node = workflow.status.nodes[nodeId];
+    
+    const node = workflow.status.nodes[initialNodeId];
     const templates = execSpec(workflow).templates.filter(t => !node || t.name === node.templateName);
 
     const containers = [
@@ -106,7 +111,7 @@ export const WorkflowLogsViewer = ({workflow, nodeId, initialPodName, container,
             )}
             <div style={{marginBottom: 10}}>
                 <i className='fa fa-box' />{' '}
-                <Autocomplete items={podNames} value={(podNames.find(x => x.value === podName) || {label: ''}).label} onSelect={(_, item) => setPodName(item.value)} /> /{' '}
+                <Autocomplete items={podNames} value={(podNames.find(x => x.value[0] === podName) || {label: ''}).label} onSelect={(_, item) => {setPodName(item.value)}} /> /{' '}
                 <Autocomplete items={containers} value={selectedContainer} onSelect={setContainer} />
                 <span className='fa-pull-right'>
                     <i className='fa fa-filter' /> <input type='search' defaultValue={logFilter} onChange={v => setLogFilter(v.target.value)} placeholder='Filter (regexp)...' />
@@ -141,7 +146,7 @@ export const WorkflowLogsViewer = ({workflow, nodeId, initialPodName, container,
                 {podName && (
                     <>
                         Still waiting for data or an error? Try getting{' '}
-                        <a href={services.workflows.getArtifactLogsPath(workflow, podName, selectedContainer, archived)}>logs from the artifacts</a>.
+                        <a href={services.workflows.getArtifactLogsPath(workflow, podNamesToNodeNames.get(podName), selectedContainer, archived)}>logs from the artifacts</a>.
                     </>
                 )}
                 {execSpec(workflow).podGC && (
