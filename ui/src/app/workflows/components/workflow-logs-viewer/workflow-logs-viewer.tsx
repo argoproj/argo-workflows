@@ -26,9 +26,8 @@ function identity<T>(value: T) {
     return () => value;
 }
 
-export const WorkflowLogsViewer = ({workflow, nodeId: initialNodeId, initialPodName, container, archived}: WorkflowLogsViewerProps) => {
+export const WorkflowLogsViewer = ({workflow, nodeId, initialPodName, container, archived}: WorkflowLogsViewerProps) => {
     const [podName, setPodName] = useState(initialPodName || '');
-    const [nodeId, setNodeId] = useState(initialNodeId || '')
     const [selectedContainer, setContainer] = useState(container);
     const [grep, setGrep] = useState('');
     const [error, setError] = useState<Error>();
@@ -38,7 +37,7 @@ export const WorkflowLogsViewer = ({workflow, nodeId: initialNodeId, initialPodN
     useEffect(() => {
         setError(null);
         setLoaded(false);
-        const source = services.workflows.getContainerLogs(workflow, podName, initialNodeId, selectedContainer, grep, archived).pipe(
+        const source = services.workflows.getContainerLogs(workflow, podName, nodeId, selectedContainer, grep, archived).pipe(
             map(e => (!podName ? e.podName + ': ' : '') + e.content + '\n'),
             // this next line highlights the search term in bold with a yellow background, white text
             map(x => {
@@ -87,7 +86,7 @@ export const WorkflowLogsViewer = ({workflow, nodeId: initialNodeId, initialPodN
     );
 
     
-    const node = workflow.status.nodes[initialNodeId];
+    const node = workflow.status.nodes[nodeId];
     const templates = execSpec(workflow).templates.filter(t => !node || t.name === node.templateName);
 
     const containers = [
