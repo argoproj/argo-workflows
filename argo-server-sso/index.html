@@ -4037,7 +4037,7 @@ To enable the feature, set env variable <code>SSO_DELEGATE_RBAC_TO_NAMESPACE=tru
 <span class="w">    </span><span class="nt">workflows.argoproj.io/rbac-rule</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;true&quot;</span><span class="w"></span>
 <span class="w">    </span><span class="nt">workflows.argoproj.io/rbac-rule-precedence</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;0&quot;</span><span class="w"></span>
 </code></pre></div>
-<p>Now, for the the namespace that you own, configure a service account which would allow members of your team to perform operations in your namespace.
+<p>Now, for the namespace that you own, configure a service account which would allow members of your team to perform operations in your namespace.
 Make sure that the precedence of the namespace service account is higher than the precedence of the login service account. Create appropriate role that you want to grant to this service account and bind it with a role-binding.</p>
 <div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1</span><span class="w"></span>
 <span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ServiceAccount</span><span class="w"></span>
