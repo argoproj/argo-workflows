@@ -132,7 +132,7 @@ metadata:
     workflows.argoproj.io/rbac-rule-precedence: "0"
 ```
 
-Now, for the the namespace that you own, configure a service account which would allow members of your team to perform operations in your namespace.
+Now, for the namespace that you own, configure a service account which would allow members of your team to perform operations in your namespace.
 Make sure that the precedence of the namespace service account is higher than the precedence of the login service account. Create appropriate role that you want to grant to this service account and bind it with a role-binding.
 
 ```yaml
