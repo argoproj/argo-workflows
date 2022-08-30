@@ -103,8 +103,3 @@ kubectl -n argo port-forward deployment/argo-server 2746:2746
 * Click `+ Submit New Workflow` and then `Edit using full workflow options`
 
 * You can find an example workflow already in the text field. Press `+ Create` to start the workflow.
-
-## Trying Workflows without a Kubernetes cluster
-
-💡 If you want to try out Argo Workflows and don't want to set up a Kubernetes cluster, the community is working on a replacement for the old Katacoda course since
-Katacoda was shut down. Please give a thumbs up or comment on [this issue](https://github.com/argoproj/argo-workflows/issues/8899) with your support and feedback.
