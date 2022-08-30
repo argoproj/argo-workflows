@@ -148,7 +148,7 @@ export const WorkflowLogsViewer = ({workflow, nodeId, initialPodName, container,
                         <InfoIcon /> Wait containers logs are useful when debugging output artifact problems.
                     </>
                 )}
-                {podName && (
+                {podName && podNamesToNodeIDs.get(podName) && (
                     <>
                         Still waiting for data or an error? Try getting{' '}
                         <a href={services.workflows.getArtifactLogsPath(workflow, podNamesToNodeIDs.get(podName), selectedContainer, archived)}>logs from the artifacts</a>.
