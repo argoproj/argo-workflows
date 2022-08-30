@@ -44,3 +44,18 @@ spec:
 ```
 
 DAG templates use the tasks prefix to refer to another task, for example `{{tasks.generate-parameter.outputs.parameters.hello-param}}`.
+
+## `result` output parameter
+
+The `result` output parameter captures standard output.
+It is accessible from the `outputs` map: `outputs.result`.
+Only 256 kb of the standard output stream will be captured.
+
+### Scripts
+
+Outputs of a `script` are assigned to standard output and captured in the `result` parameter. More details [here](scripts-and-results.md).
+
+### Containers
+
+Container steps and tasks also have their standard output captured in the `result` parameter.
+Given a `task`, called `log-int`, `result` would then be accessible as `{{ tasks.log-int.outputs.result }}`. If using [steps](steps.md), substitute `tasks` for `steps`: `{{ steps.log-int.outputs.result }}`.
