@@ -71,6 +71,9 @@ export const WorkflowLogsViewer = ({workflow, nodeId, initialPodName, container,
     }
     const podNameVersion = annotations[ANNOTATION_KEY_POD_NAME_VERSION];
 
+    // map pod names to corresponding node IDs
+    const podNamesToNodeIDs = new Map<string, string>();
+
     const podNames = [{value: '', label: 'All'}].concat(
         Object.values(workflow.status.nodes || {})
             .filter(x => x.type === 'Pod')
@@ -78,6 +81,7 @@ export const WorkflowLogsViewer = ({workflow, nodeId, initialPodName, container,
                 const {name, id, displayName} = targetNode;
                 const templateName = getTemplateNameFromNode(targetNode);
                 const targetPodName = getPodName(workflow.metadata.name, name, templateName, id, podNameVersion);
+                podNamesToNodeIDs.set(targetPodName, id);
                 return {value: targetPodName, label: (displayName || name) + ' (' + targetPodName + ')'};
             })
     );
@@ -106,8 +110,14 @@ export const WorkflowLogsViewer = ({workflow, nodeId, initialPodName, container,
             )}
             <div style={{marginBottom: 10}}>
                 <i className='fa fa-box' />{' '}
-                <Autocomplete items={podNames} value={(podNames.find(x => x.value === podName) || {label: ''}).label} onSelect={(_, item) => setPodName(item.value)} /> /{' '}
-                <Autocomplete items={containers} value={selectedContainer} onSelect={setContainer} />
+                <Autocomplete
+                    items={podNames}
+                    value={(podNames.find(x => x.value[0] === podName) || {label: ''}).label}
+                    onSelect={(_, item) => {
+                        setPodName(item.value);
+                    }}
+                />{' '}
+                / <Autocomplete items={containers} value={selectedContainer} onSelect={setContainer} />
                 <span className='fa-pull-right'>
                     <i className='fa fa-filter' /> <input type='search' defaultValue={logFilter} onChange={v => setLogFilter(v.target.value)} placeholder='Filter (regexp)...' />
                 </span>
@@ -138,10 +148,10 @@ export const WorkflowLogsViewer = ({workflow, nodeId, initialPodName, container,
                         <InfoIcon /> Wait containers logs are useful when debugging output artifact problems.
                     </>
                 )}
-                {podName && (
+                {podName && podNamesToNodeIDs.get(podName) && (
                     <>
                         Still waiting for data or an error? Try getting{' '}
-                        <a href={services.workflows.getArtifactLogsPath(workflow, podName, selectedContainer, archived)}>logs from the artifacts</a>.
+                        <a href={services.workflows.getArtifactLogsPath(workflow, podNamesToNodeIDs.get(podName), selectedContainer, archived)}>logs from the artifacts</a>.
                     </>
                 )}
                 {execSpec(workflow).podGC && (
