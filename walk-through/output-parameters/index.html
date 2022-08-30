@@ -634,9 +634,60 @@
         
       
       
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          Output Parameters
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
       <a href="./" class="md-nav__link md-nav__link--active">
         Output Parameters
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#result-output-parameter" class="md-nav__link">
+    result output parameter
+  </a>
+  
+    <nav class="md-nav" aria-label="result output parameter">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#scripts" class="md-nav__link">
+    Scripts
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#containers" class="md-nav__link">
+    Containers
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
       
     </li>
   
@@ -3752,6 +3803,41 @@
     
   
   
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#result-output-parameter" class="md-nav__link">
+    result output parameter
+  </a>
+  
+    <nav class="md-nav" aria-label="result output parameter">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#scripts" class="md-nav__link">
+    Scripts
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#containers" class="md-nav__link">
+    Containers
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
 </nav>
                   </div>
                 </div>
@@ -3810,6 +3896,15 @@
 <span class="w">      </span><span class="nt">args</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;{{inputs.parameters.message}}&quot;</span><span class="p p-Indicator">]</span><span class="w"></span>
 </code></pre></div>
 <p>DAG templates use the tasks prefix to refer to another task, for example <code>{{tasks.generate-parameter.outputs.parameters.hello-param}}</code>.</p>
+<h2 id="result-output-parameter"><code>result</code> output parameter<a class="headerlink" href="#result-output-parameter" title="Permanent link">&para;</a></h2>
+<p>The <code>result</code> output parameter captures standard output.
+It is accessible from the <code>outputs</code> map: <code>outputs.result</code>.
+Only 256 kb of the standard output stream will be captured.</p>
+<h3 id="scripts">Scripts<a class="headerlink" href="#scripts" title="Permanent link">&para;</a></h3>
+<p>Outputs of a <code>script</code> are assigned to standard output and captured in the <code>result</code> parameter. More details <a href="../scripts-and-results/">here</a>.</p>
+<h3 id="containers">Containers<a class="headerlink" href="#containers" title="Permanent link">&para;</a></h3>
+<p>Container steps and tasks also have their standard output captured in the <code>result</code> parameter.
+Given a <code>task</code>, called <code>log-int</code>, <code>result</code> would then be accessible as <code>{{ tasks.log-int.outputs.result }}</code>. If using <a href="../steps/">steps</a>, substitute <code>tasks</code> for <code>steps</code>: <code>{{ steps.log-int.outputs.result }}</code>.</p>
 
               
 
