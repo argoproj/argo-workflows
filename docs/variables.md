@@ -135,6 +135,7 @@ returns `0`. Please review the Sprig documentation to understand which functions
 
 | Variable | Description|
 |----------|------------|
+| `steps.name` | Name of the step |
 | `steps.<STEPNAME>.id` | unique id of container step |
 | `steps.<STEPNAME>.ip` | IP address of a previous daemon container step |
 | `steps.<STEPNAME>.status` | Phase status of any previous step |

@@ -1513,6 +1513,9 @@ func (step *WorkflowStep) GetName() string {
 func (step *WorkflowStep) IsDAGTask() bool {
 	return false
 }
+func (step *WorkflowStep) IsWorkflowStep() bool {
+	return true
+}
 
 type LifecycleEvent string
 
@@ -2131,6 +2134,10 @@ func (n *NodeStatus) GetName() string {
 }
 
 func (n *NodeStatus) IsDAGTask() bool {
+	return false
+}
+
+func (n *NodeStatus) IsWorkflowStep() bool {
 	return false
 }
 
@@ -3006,6 +3013,10 @@ func (t *DAGTask) GetName() string {
 
 func (t *DAGTask) IsDAGTask() bool {
 	return true
+}
+
+func (t *DAGTask) IsWorkflowStep() bool {
+	return false
 }
 
 var _ TemplateReferenceHolder = &DAGTask{}

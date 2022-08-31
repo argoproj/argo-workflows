@@ -40,6 +40,8 @@ type TemplateReferenceHolder interface {
 	GetName() string
 	// IsDAGTask returns true if the template reference is a DAGTask.
 	IsDAGTask() bool
+	// IsWorkflowStep returns true if the template reference is a WorkflowStep.
+	IsWorkflowStep() bool
 }
 
 // SubmitOpts are workflow submission options

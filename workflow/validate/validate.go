@@ -606,6 +606,7 @@ func resolveAllVariables(scope map[string]interface{}, globalParams map[string]s
 				// Allow runtime resolution for "scheduledTime" which will pass from CronWorkflow
 			} else if strings.HasPrefix(tag, common.GlobalVarWorkflowDuration) {
 			} else if strings.HasPrefix(tag, "tasks.name") {
+			} else if strings.HasPrefix(tag, "steps.name") {
 			} else {
 				return fmt.Errorf("failed to resolve {{%s}}", tag)
 			}

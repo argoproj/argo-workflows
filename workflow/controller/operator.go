@@ -1675,6 +1675,9 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 	if orgTmpl.IsDAGTask() {
 		localParams["tasks.name"] = orgTmpl.GetName()
 	}
+	if orgTmpl.IsWorkflowStep() {
+		localParams["steps.name"] = orgTmpl.GetName()
+	}
 	// Merge Template defaults to template
 	err = woc.mergedTemplateDefaultsInto(resolvedTmpl)
 	if err != nil {
