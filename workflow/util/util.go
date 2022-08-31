@@ -815,7 +815,7 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 
 	// Iterate the previous nodes. If it was successful Pod carry it forward
 	deletedNodes := make(map[string]bool)
-	//deletedPods := make(map[string]bool)
+	deletedPods := make(map[string]bool)
 	var podsToDelete []string
 	for _, node := range wf.Status.Nodes {
 		doForceResetNode := false
@@ -855,10 +855,9 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 									log.Infoln(fmt.Sprintf("Removing child node %s since its parent node %s is being retried", descendantNode.Name, node.Name))
 									newNode := descendantNode.DeepCopy()
 									newWF.Status.Nodes[newNode.ID] = resetNode(*newNode)
-									//deletedNodes[descendantNodeID] = true
-									//if descendantNode.Type == wfv1.NodeTypePod {
-									//	deletedPods, podsToDelete = deletePodNodeDuringRetryWorkflow(wf, descendantNode, deletedPods, podsToDelete)
-									//}
+									if descendantNode.Type == wfv1.NodeTypePod {
+										deletedPods, podsToDelete = deletePodNodeDuringRetryWorkflow(wf, descendantNode, deletedPods, podsToDelete)
+									}
 								}
 							}
 						}
