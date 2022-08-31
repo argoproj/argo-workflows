@@ -150,6 +150,7 @@ returns `0`. Please review the Sprig documentation to understand which functions
 
 | Variable | Description|
 |----------|------------|
+| `tasks.name` | Name of the task |
 | `tasks.<TASKNAME>.id` | unique id of container task |
 | `tasks.<TASKNAME>.ip` | IP address of a previous daemon container task |
 | `tasks.<TASKNAME>.status` | Phase status of any previous task |
