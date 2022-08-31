@@ -868,8 +868,7 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 				}
 			} else {
 				log.Infof("here5 node: %s", node.DisplayName)
-				newNode := node.DeepCopy()
-				newWF.Status.Nodes[node.ID] = *newNode
+				newWF.Status.Nodes[node.ID] = node
 			}
 		case wfv1.NodeError, wfv1.NodeFailed, wfv1.NodeOmitted:
 			if !strings.HasPrefix(node.Name, onExitNodeName) && (node.Type == wfv1.NodeTypeDAG || node.Type == wfv1.NodeTypeTaskGroup || node.Type == wfv1.NodeTypeStepGroup) {
@@ -885,7 +884,7 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 			return nil, nil, errors.InternalErrorf("Workflow cannot be retried with node %s in %s phase", node.Name, node.Phase)
 		}
 
-		if node.Type == wfv1.NodeTypePod || node.Type == wfv1.NodeTypeSuspend {
+		if node.Type == wfv1.NodeTypePod || (node.Type == wfv1.NodeTypeSuspend && doForceResetNode) {
 			log.Infof("here6 node: %s", node.DisplayName)
 			if node.Phase == wfv1.NodeError || node.Phase == wfv1.NodeFailed || node.Phase == wfv1.NodeOmitted || node.Type == wfv1.NodeTypeSuspend {
 				log.Infof("here7 node: %s", node.DisplayName)
