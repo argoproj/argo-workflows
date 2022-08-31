@@ -808,6 +808,10 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 	if err != nil {
 		return nil, nil, err
 	}
+	log.Infof("nodeIDsToReset: %v", nodeIDsToReset)
+	for id := range nodeIDsToReset {
+		log.Infof("%s", wf.Status.Nodes[id].DisplayName)
+	}
 
 	// Iterate the previous nodes. If it was successful Pod carry it forward
 	deletedNodes := make(map[string]bool)
@@ -831,11 +835,17 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 						log.Infof("here3 node: %s", node.DisplayName)
 						descendantNodeIDs := getDescendantNodeIDs(wf, node)
 						var nodeGroupNeedsReset bool
+						// TODO: Only reset DAG that's in the same branch as the nodeIDsToReset
 						for _, child := range descendantNodeIDs {
 							childNode := wf.Status.Nodes[child]
 							log.Infoln(fmt.Sprintf("Checking child node %s for parent node %s, phase %s", childNode.DisplayName, node.DisplayName, childNode.Phase))
-							if childNode.Phase == wfv1.NodeError || childNode.Phase == wfv1.NodeFailed || childNode.Phase == wfv1.NodeOmitted {
-								log.Infof("DAG node %s needs to reset since its child %s is not successful", node.DisplayName, childNode.DisplayName)
+							//if childNode.Phase == wfv1.NodeError || childNode.Phase == wfv1.NodeFailed || childNode.Phase == wfv1.NodeOmitted {
+							//	log.Infof("DAG node %s needs to reset since its child %s is not successful", node.DisplayName, childNode.DisplayName)
+							//	nodeGroupNeedsReset = true
+							//	break
+							//}
+							if _, present := nodeIDsToReset[child]; present {
+								log.Infof("DAG node %s needs to reset since its child %s belongs to nodeIDsToResetNoChidren", node.DisplayName, childNode.DisplayName)
 								nodeGroupNeedsReset = true
 								break
 							}
@@ -997,6 +1007,25 @@ func getNodeIDsToReset(restartSuccessful bool, nodeFieldSelector string, nodes w
 					}
 					queue = queue[1:]
 				}
+			}
+		}
+	}
+	return nodeIDsToReset, nil
+}
+
+func getNodeIDsToResetNoChildren(restartSuccessful bool, nodeFieldSelector string, nodes wfv1.Nodes) (map[string]bool, error) {
+	nodeIDsToReset := make(map[string]bool)
+	if !restartSuccessful || len(nodeFieldSelector) == 0 {
+		return nodeIDsToReset, nil
+	}
+
+	selector, err := fields.ParseSelector(nodeFieldSelector)
+	if err != nil {
+		return nil, err
+	} else {
+		for _, node := range nodes {
+			if SelectorMatchesNode(selector, node) {
+				nodeIDsToReset[node.ID] = true
 			}
 		}
 	}
