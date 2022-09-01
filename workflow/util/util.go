@@ -817,6 +817,7 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 	deletedNodes := make(map[string]bool)
 	deletedPods := make(map[string]bool)
 	var podsToDelete []string
+	var resettedDAGNodes []string
 	for _, node := range wf.Status.Nodes {
 		doForceResetNode := false
 		if _, present := nodeIDsToReset[node.ID]; present {
@@ -849,6 +850,24 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 							log.Infoln(fmt.Sprintf("Resetting parent node %s", node.Name))
 							parentNode := wf.Status.Nodes[parentNodeID]
 							newWF.Status.Nodes[parentNodeID] = resetNode(*parentNode.DeepCopy())
+
+							// Also need to reset its associated DAG parent
+							currentNode := node
+							//for {
+							if currentNode.BoundaryID != "" && currentNode.BoundaryID != wf.ObjectMeta.Name {
+								grandParentNode := wf.Status.Nodes[currentNode.BoundaryID]
+								if grandParentNode.Type == wfv1.NodeTypeDAG || grandParentNode.Type == wfv1.NodeTypeTaskGroup || grandParentNode.Type == wfv1.NodeTypeStepGroup {
+									// TODO: This is infinite loop. Check whether it exists before insert and reset
+									log.Infoln(fmt.Sprintf("Resetting grand-parent node %s", grandParentNode.Name))
+									newWF.Status.Nodes[grandParentNode.ID] = resetNode(*grandParentNode.DeepCopy())
+									resettedDAGNodes = append(resettedDAGNodes, grandParentNode.ID)
+								}
+							}
+							//	else {
+							//		break
+							//	}
+							//}
+
 							//for _, descendantNodeID := range descendantNodeIDs {
 							//	if _, present := nodeIDsToReset[descendantNodeID]; present {
 							//		descendantNode := wf.Status.Nodes[descendantNodeID]
@@ -892,7 +911,16 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 				}
 			} else {
 				log.Infof("here5 node: %s", node.Name)
-				newWF.Status.Nodes[node.ID] = node
+				needsReset := true
+				for _, v := range resettedDAGNodes {
+					if v == node.ID {
+						needsReset = false
+					}
+				}
+				if needsReset {
+					log.Infof("reset from here5 node: %s", node.Name)
+					newWF.Status.Nodes[node.ID] = node
+				}
 			}
 		case wfv1.NodeError, wfv1.NodeFailed, wfv1.NodeOmitted:
 			if !strings.HasPrefix(node.Name, onExitNodeName) && (node.Type == wfv1.NodeTypeDAG || node.Type == wfv1.NodeTypeTaskGroup || node.Type == wfv1.NodeTypeStepGroup) {
