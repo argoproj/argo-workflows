@@ -4,8 +4,8 @@
 
 ## Introduction
 
-`ClusterWorkflowTemplates` are cluster scoped `WorkflowTemplates`. `ClusterWorkflowTemplate` 
-can be created cluster scoped like `ClusterRole` and can be accessed all namespaces in the cluster. 
+`ClusterWorkflowTemplates` are cluster scoped `WorkflowTemplates`. `ClusterWorkflowTemplate`
+can be created cluster scoped like `ClusterRole` and can be accessed across all namespaces in the cluster.
 
 `WorkflowTemplates` documentation [link](./workflow-templates.md)
 
@@ -30,11 +30,11 @@ spec:
 
 ## Referencing other `ClusterWorkflowTemplates`
 
-You can reference `templates` from another `ClusterWorkflowTemplates` using a `templateRef` field with `clusterScope: true` .
+You can reference `templates` from other `ClusterWorkflowTemplates` using a `templateRef` field with `clusterScope: true` .
 Just as how you reference other `templates` within the same `Workflow`, you should do so from a `steps` or `dag` template.
 
 Here is an example:
-More examples []()
+
 ```yaml
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -55,18 +55,22 @@ spec:
             - name: message
               value: "hello world"
 ```
+
 > 2.9 and after
-#### Create `Workflow` from `ClusterWorkflowTemplate` Spec
-You can create `Workflow` from `ClusterWorkflowTemplate` spec using `workflowTemplateRef` with `clusterScope: true`. If you pass the arguments to created `Workflow`, it will be merged with ClusterWorkflowTemplate arguments 
+
+### Create `Workflow` from `ClusterWorkflowTemplate` Spec
+
+You can create `Workflow` from `ClusterWorkflowTemplate` spec using `workflowTemplateRef` with `clusterScope: true`. If you pass the arguments to created `Workflow`, it will be merged with cluster workflow template arguments
 
 Here is an example for `ClusterWorkflowTemplate` with `entrypoint` and `arguments`
+
 ```yaml
 apiVersion: argoproj.io/v1alpha1
 kind: ClusterWorkflowTemplate
 metadata:
   name: cluster-workflow-template-submittable
 spec:
-  entryPoint: whalesay-template
+  entrypoint: whalesay-template
   arguments:
     parameters:
       - name: message
@@ -82,7 +86,9 @@ spec:
         args: ["{{inputs.parameters.message}}"]
 
 ```
+
 Here is an example for creating `ClusterWorkflowTemplate` as Workflow with passing `entrypoint` and `arguments` to `ClusterWorkflowTemplate`
+
 ```yaml
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -100,6 +106,7 @@ spec:
 ```  
 
 Here is an example of a creating `WorkflowTemplate` as Workflow and using `WorkflowTemplates`'s `entrypoint` and `Workflow Arguments`
+
 ```yaml
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -112,28 +119,27 @@ spec:
 
 ```
 
-
-
 ## Managing `ClusterWorkflowTemplates`
 
 ### CLI
 
 You can create some example templates as follows:
 
-```
+```bash
 argo cluster-template create https://raw.githubusercontent.com/argoproj/argo-workflows/master/examples/cluster-workflow-template/clustertemplates.yaml
 ```
 
 The submit a workflow using one of those templates:
 
-```
+```bash
 argo submit https://raw.githubusercontent.com/argoproj/argo-workflows/master/examples/cluster-workflow-template/cluster-wftmpl-dag.yaml
 ```
 
 > 2.7 and after
 >
 The submit a `ClusterWorkflowTemplate` as a `Workflow`:
-```sh
+
+```bash
 argo submit --from clusterworkflowtemplate/workflow-template-submittable
 ```
 

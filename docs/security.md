@@ -1,6 +1,8 @@
 # Security
 
-See [SECURITY.md](https://github.com/argoproj/argo-workflows/blob/master/SECURITY.md).
+[To report security issues](https://github.com/argoproj/argo-workflows/blob/master/SECURITY.md).
+
+💡 Read [Practical Argo Workflows Hardening](https://blog.argoproj.io/practical-argo-workflows-hardening-dd8429acc1ce).
 
 ## Workflow Controller Security
 
@@ -14,7 +16,7 @@ The controller has permission (via Kubernetes RBAC + its config map) with either
 * Create/get/delete pods, PVCs, and PDBs.
 * List/get template, config maps, service accounts, and secrets.
 
-See [workflow-controller-clusterrole.yaml](https://raw.githubusercontent.com/argoproj/argo-workflows/master/manifests/cluster-install/workflow-controller-rbac/workflow-controller-clusterrole.yaml) or [workflow-controller-role.yaml](https://raw.githubusercontent.com/argoproj/argo-workflows/master/manifests/namespace-install/workflow-controller-rbac/workflow-controller-role.yaml)
+See [workflow controller cluster-role](https://raw.githubusercontent.com/argoproj/argo-workflows/master/manifests/cluster-install/workflow-controller-rbac/workflow-controller-clusterrole.yaml) or [workflow-controller-role.yaml](https://raw.githubusercontent.com/argoproj/argo-workflows/master/manifests/namespace-install/workflow-controller-rbac/workflow-controller-role.yaml)
 
 ### User Permissions
 
@@ -42,7 +44,7 @@ This service account typically needs [permissions](workflow-rbac.md).
 
 Different service accounts should be used if a workflow pod needs to have elevated permissions, e.g. to create other resources.
 
-The main container will have the service account token mounted , allowing the main container to patch pods (amongst other permissions). Set `automountServiceAccountToken` to false to prevent this. See [fields](fields.md).
+The main container will have the service account token mounted , allowing the main container to patch pods (among other permissions). Set `automountServiceAccountToken` to false to prevent this. See [fields](fields.md).
 
 By default, workflows pods run as `root`. To further secure workflow pods, set the [workflow pod security context](workflow-pod-security-context.md).
 
@@ -66,17 +68,17 @@ You can achieve this by configuring the `argo-server` role ([example](https://gi
 
 ## Network Security
 
-Argo Workflows requires various levels of network access depending on configuration and the features enabled. The following describes the different workflow components and their network access needs, to help provide guidance on how to configure the argo namespace in a secure manner (e.g. NetworkPolicies).
+Argo Workflows requires various levels of network access depending on configuration and the features enabled. The following describes the different workflow components and their network access needs, to help provide guidance on how to configure the argo namespace in a secure manner (e.g. `NetworkPolicy`).
 
 ### Argo Server
 
-The argo server is commonly exposed to end-users to provide users with a user interface for visualizing and managing their workflows. It must also be exposed if leveraging [webhooks](webhooks.md) to trigger workflows. Both of these use cases require that the argo-server Service to be exposed for ingress traffic (e.g. with an Ingress object or load balancer). Note that the Argo UI is also available to be accessed by running the server locally (i.e. `argo server`) using local kubeconfig credentials, and visiting the UI over https://localhost:2746.
+The Argo Server is commonly exposed to end-users to provide users with a UI for visualizing and managing their workflows. It must also be exposed if leveraging [webhooks](webhooks.md) to trigger workflows. Both of these use cases require that the argo-server Service to be exposed for ingress traffic (e.g. with an Ingress object or load balancer). Note that the Argo UI is also available to be accessed by running the server locally (i.e. `argo server`) using local KUBECONFIG credentials, and visiting the UI over <https://localhost:2746>.
 
-The argo server additionally has a feature to allow downloading of artifacts through the user interface. This feature requires that the argo-server be given egress access to the underlying artifact provider (e.g. S3, GCS, MinIO, Artifactory) in order to download and stream the artifact.
+The Argo Server additionally has a feature to allow downloading of artifacts through the UI. This feature requires that the argo-server be given egress access to the underlying artifact provider (e.g. S3, GCS, MinIO, Artifactory, Azure Blob Storage) in order to download and stream the artifact.
 
 ### Workflow Controller
 
-The workflow-controller Deployment exposes a Prometheus metrics endpoint (workflow-controller-metrics:9090) so that a Prometheus server can periodically scrape for controller level metrics. Since prometheus is typically running in a separate namespace, the argo namespace should be configured to allow cross-namespace ingress access to the workflow-controller-metrics Service.
+The workflow-controller Deployment exposes a Prometheus metrics endpoint (workflow-controller-metrics:9090) so that a Prometheus server can periodically scrape for controller level metrics. Since Prometheus is typically running in a separate namespace, the argo namespace should be configured to allow cross-namespace ingress access to the workflow-controller-metrics Service.
 
 ### Database access
 

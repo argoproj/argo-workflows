@@ -3,12 +3,14 @@ package s3
 import (
 	"context"
 	"fmt"
+	"io"
 	"os"
 
 	"github.com/argoproj/pkg/file"
 	argos3 "github.com/argoproj/pkg/s3"
 	"github.com/minio/minio-go/v7"
 	log "github.com/sirupsen/logrus"
+	"k8s.io/client-go/util/retry"
 
 	"github.com/argoproj/argo-workflows/v3/errors"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
@@ -87,7 +89,7 @@ func loadS3Artifact(s3cli argos3.S3Client, inputArtifact *wfv1.Artifact, path st
 	if !argos3.IsS3ErrCode(origErr, "NoSuchKey") {
 		return !isTransientS3Err(origErr), fmt.Errorf("failed to get file: %v", origErr)
 	}
-	// If we get here, the error was a NoSuchKey. The key might be a s3 "directory"
+	// If we get here, the error was a NoSuchKey. The key might be an s3 "directory"
 	isDir, err := s3cli.IsDirectory(inputArtifact.S3.Bucket, inputArtifact.S3.Key)
 	if err != nil {
 		return !isTransientS3Err(err), fmt.Errorf("failed to test if %s is a directory: %v", inputArtifact.S3.Key, err)
@@ -101,6 +103,40 @@ func loadS3Artifact(s3cli argos3.S3Client, inputArtifact *wfv1.Artifact, path st
 		return !isTransientS3Err(err), fmt.Errorf("failed to get directory: %v", err)
 	}
 	return true, nil
+}
+
+// OpenStream opens a stream reader for an artifact from S3 compliant storage
+func (s3Driver *ArtifactDriver) OpenStream(inputArtifact *wfv1.Artifact) (io.ReadCloser, error) {
+	log.Infof("S3 OpenStream: key: %s", inputArtifact.S3.Key)
+	s3cli, err := s3Driver.newS3Client(context.TODO())
+	if err != nil {
+		return nil, fmt.Errorf("failed to create new S3 client: %v", err)
+	}
+
+	return streamS3Artifact(s3cli, inputArtifact)
+
+}
+
+func streamS3Artifact(s3cli argos3.S3Client, inputArtifact *wfv1.Artifact) (io.ReadCloser, error) {
+	stream, origErr := s3cli.OpenFile(inputArtifact.S3.Bucket, inputArtifact.S3.Key)
+	if origErr == nil {
+		return stream, nil
+	}
+	if !argos3.IsS3ErrCode(origErr, "NoSuchKey") {
+		return nil, fmt.Errorf("failed to get file: %v", origErr)
+	}
+	// If we get here, the error was a NoSuchKey. The key might be an s3 "directory"
+	isDir, err := s3cli.IsDirectory(inputArtifact.S3.Bucket, inputArtifact.S3.Key)
+	if err != nil {
+		return nil, fmt.Errorf("failed to test if %s is a directory: %v", inputArtifact.S3.Key, err)
+	}
+	if !isDir {
+		// It's neither a file, nor a directory. Return the original NoSuchKey error
+		return nil, errors.New(errors.CodeNotFound, origErr.Error())
+	}
+	// directory case:
+	// todo: make a .tgz file which can be streamed to user
+	return nil, errors.New(errors.CodeNotImplemented, "Directory Stream capability currently unimplemented for S3")
 }
 
 // Save saves an artifact to S3 compliant storage
@@ -117,6 +153,23 @@ func (s3Driver *ArtifactDriver) Save(path string, outputArtifact *wfv1.Artifact)
 			}
 			return saveS3Artifact(s3cli, path, outputArtifact)
 		})
+	return err
+}
+
+// Delete deletes an artifact from an S3 compliant storage
+func (s3Driver *ArtifactDriver) Delete(artifact *wfv1.Artifact) error {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	err := retry.OnError(retry.DefaultBackoff, isTransientS3Err, func() error {
+		log.Infof("S3 Delete artifact: key: %s", artifact.S3.Key)
+		s3cli, err := s3Driver.newS3Client(ctx)
+		if err != nil {
+			return err
+		}
+		return s3cli.Delete(artifact.S3.Bucket, artifact.S3.Key)
+	})
+
 	return err
 }
 
@@ -153,23 +206,53 @@ func saveS3Artifact(s3cli argos3.S3Client, path string, outputArtifact *wfv1.Art
 	return true, nil
 }
 
+// ListObjects returns the files inside the directory represented by the Artifact
 func (s3Driver *ArtifactDriver) ListObjects(artifact *wfv1.Artifact) ([]string, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	var files []string
+	var done bool
 	err := waitutil.Backoff(executorretry.ExecutorRetry,
 		func() (bool, error) {
 			s3cli, err := s3Driver.newS3Client(ctx)
 			if err != nil {
 				return !isTransientS3Err(err), fmt.Errorf("failed to create new S3 client: %v", err)
 			}
-			files, err = s3cli.ListDirectory(artifact.S3.Bucket, artifact.S3.Key)
-			if err != nil {
-				return !isTransientS3Err(err), fmt.Errorf("failed to list directory: %v", err)
-			}
-			return true, nil
+			done, files, err = listObjects(s3cli, artifact)
+			return done, err
 		})
 
 	return files, err
+}
+
+// listObjects returns the files inside the directory represented by the Artifact
+// returns true if success or can't be retried (non-transient error)
+// returns false if it can be retried (transient error)
+func listObjects(s3cli argos3.S3Client, artifact *wfv1.Artifact) (bool, []string, error) {
+	var files []string
+	files, err := s3cli.ListDirectory(artifact.S3.Bucket, artifact.S3.Key)
+	if err != nil {
+		return !isTransientS3Err(err), files, fmt.Errorf("failed to list directory: %v", err)
+	}
+	log.Debugf("successfully listing S3 directory associated with bucket: %s and key %s: %v", artifact.S3.Bucket, artifact.S3.Key, files)
+
+	if len(files) == 0 {
+		directoryExists, err := s3cli.KeyExists(artifact.S3.Bucket, artifact.S3.Key)
+		if err != nil {
+			return !isTransientS3Err(err), files, fmt.Errorf("failed to check if key %s exists from bucket %s: %v", artifact.S3.Key, artifact.S3.Bucket, err)
+		}
+		if !directoryExists {
+			return true, files, errors.New(errors.CodeNotFound, fmt.Sprintf("no key found of name %s", artifact.S3.Key))
+		}
+	}
+	return true, files, nil
+}
+
+func (s3Driver *ArtifactDriver) IsDirectory(artifact *wfv1.Artifact) (bool, error) {
+	s3cli, err := s3Driver.newS3Client(context.TODO())
+	if err != nil {
+		return false, err
+	}
+	return s3cli.IsDirectory(artifact.S3.Bucket, artifact.S3.Key)
 }

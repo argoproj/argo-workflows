@@ -13,13 +13,11 @@ import (
 	"io/fs"
 	"io/ioutil"
 	"os"
-	"os/signal"
 	"path"
 	"path/filepath"
 	"runtime/debug"
 	"strconv"
 	"strings"
-	"syscall"
 	"time"
 
 	"github.com/argoproj/argo-workflows/v3/util/file"
@@ -107,9 +105,6 @@ type ContainerRuntimeExecutor interface {
 
 	// Kill a list of containers first with a SIGTERM then with a SIGKILL after a grace period
 	Kill(ctx context.Context, containerNames []string, terminationGracePeriodDuration time.Duration) error
-
-	// List all the containers the executor is aware of, including any injected sidecars.
-	ListContainerNames(ctx context.Context) ([]string, error)
 }
 
 // NewExecutor instantiates a new workflow executor
@@ -270,6 +265,10 @@ func (we *WorkflowExecutor) StageFiles() error {
 		filePath = common.ExecutorScriptSourcePath
 		body = []byte(we.Template.Script.Source)
 	case wfv1.TemplateTypeResource:
+		if we.Template.Resource.ManifestFrom != nil && we.Template.Resource.ManifestFrom.Artifact != nil {
+			log.Infof("manifest %s already staged", we.Template.Resource.ManifestFrom.Artifact.Name)
+			return nil
+		}
 		log.Infof("Loading manifest to %s", common.ExecutorResourceManifestPath)
 		filePath = common.ExecutorResourceManifestPath
 		body = []byte(we.Template.Resource.Manifest)
@@ -408,6 +407,22 @@ func (we *WorkflowExecutor) stageArchiveFile(containerName string, art *wfv1.Art
 			}
 			return fileName, mountedArtPath, nil
 		}
+		if strategy.Zip != nil {
+			fileName := fmt.Sprintf("%s.zip", art.Name)
+			localArtPath := filepath.Join(tempOutArtDir, fileName)
+			f, err := os.Create(localArtPath)
+			if err != nil {
+				return "", "", argoerrs.InternalWrapError(err)
+			}
+			zw := zip.NewWriter(f)
+			defer zw.Close()
+			err = archive.ZipToWriter(mountedArtPath, zw)
+			if err != nil {
+				return "", "", err
+			}
+			log.Infof("Successfully staged %s from mirrored volume mount %s", art.Path, mountedArtPath)
+			return fileName, localArtPath, nil
+		}
 		fileName := fmt.Sprintf("%s.tgz", art.Name)
 		localArtPath := filepath.Join(tempOutArtDir, fileName)
 		f, err := os.Create(localArtPath)
@@ -466,6 +481,22 @@ func (we *WorkflowExecutor) stageArchiveFile(containerName string, art *wfv1.Art
 	}
 	// In the future, if we were to support other compression formats (e.g. bzip2) or options
 	// the logic would go here, and compression would be moved out of the executors
+	if strategy.Zip != nil {
+		fileName = fmt.Sprintf("%s.zip", art.Name)
+		localArtPath = filepath.Join(tempOutArtDir, fileName)
+		f, err := os.Create(localArtPath)
+		if err != nil {
+			return "", "", argoerrs.InternalWrapError(err)
+		}
+		zw := zip.NewWriter(f)
+		defer zw.Close()
+		err = archive.ZipToWriter(unarchivedArtPath, zw)
+		if err != nil {
+			return "", "", err
+		}
+		log.Infof("Successfully zipped %s to %s", unarchivedArtPath, localArtPath)
+		return fileName, localArtPath, nil
+	}
 	return fileName, localArtPath, nil
 }
 
@@ -546,28 +577,52 @@ func (we *WorkflowExecutor) SaveParameters(ctx context.Context) error {
 	return nil
 }
 
-// SaveLogs saves logs
-func (we *WorkflowExecutor) SaveLogs(ctx context.Context) (*wfv1.Artifact, error) {
-	if !we.Template.SaveLogsAsArtifact() {
-		return nil, nil
-	}
-	log.Infof("Saving logs")
+func (we *WorkflowExecutor) SaveLogs(ctx context.Context) {
+	var logArtifacts []wfv1.Artifact
 	tempLogsDir := "/tmp/argo/outputs/logs"
-	err := os.MkdirAll(tempLogsDir, os.ModePerm)
-	if err != nil {
-		return nil, argoerrs.InternalWrapError(err)
+
+	if we.Template.SaveLogsAsArtifact() {
+		err := os.MkdirAll(tempLogsDir, os.ModePerm)
+		if err != nil {
+			we.AddError(argoerrs.InternalWrapError(err))
+		}
+
+		containerNames := we.Template.GetMainContainerNames()
+		logArtifacts = make([]wfv1.Artifact, 0)
+
+		for _, containerName := range containerNames {
+			// Saving logs
+			art, err := we.saveContainerLogs(ctx, tempLogsDir, containerName)
+			if err != nil {
+				we.AddError(err)
+			} else {
+				logArtifacts = append(logArtifacts, *art)
+			}
+		}
 	}
-	fileName := "main.log"
-	mainLog := path.Join(tempLogsDir, fileName)
-	err = we.saveLogToFile(ctx, common.MainContainerName, mainLog)
+
+	// Annotating pod with output
+	err := we.reportOutputs(ctx, logArtifacts)
+	if err != nil {
+		we.AddError(err)
+	}
+}
+
+// saveContainerLogs saves a single container's log into a file
+func (we *WorkflowExecutor) saveContainerLogs(ctx context.Context, tempLogsDir, containerName string) (*wfv1.Artifact, error) {
+	fileName := containerName + ".log"
+	filePath := path.Join(tempLogsDir, fileName)
+	err := we.saveLogToFile(ctx, containerName, filePath)
 	if err != nil {
 		return nil, err
 	}
-	art := &wfv1.Artifact{Name: wfv1.MainLogsArtifactName}
-	err = we.saveArtifactFromFile(ctx, art, fileName, mainLog)
+
+	art := &wfv1.Artifact{Name: containerName + "-logs"}
+	err = we.saveArtifactFromFile(ctx, art, fileName, filePath)
 	if err != nil {
 		return nil, err
 	}
+
 	return art, nil
 }
 
@@ -718,12 +773,10 @@ func (we *WorkflowExecutor) CaptureScriptResult(ctx context.Context) error {
 	return nil
 }
 
-// ReportOutputs annotation to the pod indicating all the outputs.
-func (we *WorkflowExecutor) ReportOutputs(ctx context.Context, logArt *wfv1.Artifact) error {
+// reportOutputs updates the WorkflowTaskResult (or falls back to annotate the Pod)
+func (we *WorkflowExecutor) reportOutputs(ctx context.Context, logArtifacts []wfv1.Artifact) error {
 	outputs := we.Template.Outputs.DeepCopy()
-	if logArt != nil {
-		outputs.Artifacts = append(outputs.Artifacts, *logArt)
-	}
+	outputs.Artifacts = append(outputs.Artifacts, logArtifacts...)
 	return we.reportResult(ctx, wfv1.NodeResult{Outputs: outputs})
 }
 
@@ -746,12 +799,14 @@ func (we *WorkflowExecutor) reportResult(ctx context.Context, result wfv1.NodeRe
 				if err != nil {
 					return err
 				}
+
 				return we.AddAnnotation(ctx, common.AnnotationKeyOutputs, string(value))
 			}
 			if result.Progress.IsValid() { // this may result in occasionally two patches
 				return we.AddAnnotation(ctx, common.AnnotationKeyProgress, string(result.Progress))
 			}
 		}
+
 		return err
 	})
 }
@@ -1002,14 +1057,16 @@ func (we *WorkflowExecutor) Wait(ctx context.Context) error {
 	}
 
 	go we.monitorDeadline(ctx, containerNames)
-	err := waitutil.Backoff(executorretry.ExecutorRetry, func() (bool, error) {
-		err := we.RuntimeExecutor.Wait(ctx, containerNames)
-		return err == nil, err
+
+	err := retryutil.OnError(executorretry.ExecutorRetry, errorsutil.IsTransientErr, func() error {
+		return we.RuntimeExecutor.Wait(ctx, containerNames)
 	})
-	if err != nil {
+
+	log.WithError(err).Info("Main container completed")
+
+	if err != nil && err != context.Canceled {
 		return fmt.Errorf("failed to wait for main container to complete: %w", err)
 	}
-	log.Infof("Main container completed")
 	return nil
 }
 
@@ -1068,8 +1125,6 @@ func (we *WorkflowExecutor) monitorProgress(ctx context.Context, progressFile st
 // monitorDeadline checks to see if we exceeded the deadline for the step and
 // terminates the main container if we did
 func (we *WorkflowExecutor) monitorDeadline(ctx context.Context, containerNames []string) {
-	terminate := make(chan os.Signal, 1)
-	signal.Notify(terminate, syscall.SIGTERM)
 
 	deadlineExceeded := make(chan bool, 1)
 	if !we.Deadline.IsZero() {
@@ -1087,8 +1142,6 @@ func (we *WorkflowExecutor) monitorDeadline(ctx context.Context, containerNames 
 		return
 	case <-deadlineExceeded:
 		message = "Step exceeded its deadline"
-	case <-terminate:
-		message = "Step terminated"
 	}
 	log.Info(message)
 	util.WriteTerminateMessage(message)
@@ -1101,26 +1154,6 @@ func (we *WorkflowExecutor) killContainers(ctx context.Context, containerNames [
 	if err := we.RuntimeExecutor.Kill(ctx, containerNames, terminationGracePeriodDuration); err != nil {
 		log.Warnf("Failed to kill %q: %v", containerNames, err)
 	}
-}
-
-// KillSidecars kills any sidecars to the main container
-func (we *WorkflowExecutor) KillSidecars(ctx context.Context) error {
-	containerNames, err := we.RuntimeExecutor.ListContainerNames(ctx)
-	if err != nil {
-		return err
-	}
-	var sidecarNames []string
-	for _, n := range containerNames {
-		if n != common.WaitContainerName && !we.Template.IsMainContainerName(n) {
-			sidecarNames = append(sidecarNames, n)
-		}
-	}
-	log.Infof("Killing sidecars %q", sidecarNames)
-	if len(sidecarNames) == 0 {
-		return nil // exit early as GetTerminationGracePeriodDuration performs `get pod`
-	}
-	terminationGracePeriodDuration := getTerminationGracePeriodDuration()
-	return we.RuntimeExecutor.Kill(ctx, sidecarNames, terminationGracePeriodDuration)
 }
 
 func (we *WorkflowExecutor) Init() error {

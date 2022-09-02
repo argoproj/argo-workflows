@@ -16,6 +16,7 @@ import {Node} from '../../../shared/components/graph/types';
 import {Links} from '../../../shared/components/links';
 import {NamespaceFilter} from '../../../shared/components/namespace-filter';
 import {ResourceEditor} from '../../../shared/components/resource-editor/resource-editor';
+import {useCollectEvent} from '../../../shared/components/use-collect-event';
 import {ZeroState} from '../../../shared/components/zero-state';
 import {Context} from '../../../shared/context';
 import {Footnote} from '../../../shared/footnote';
@@ -193,6 +194,7 @@ export const EventFlowPage = ({history, location, match}: RouteComponentProps<an
         ro.start();
         return () => ro.stop();
     }, [namespace, showFlow]);
+    useCollectEvent('openedEventFlow');
 
     const graph = buildGraph(eventSources, sensors, workflows, flow, expanded);
 

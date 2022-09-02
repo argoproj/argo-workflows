@@ -7,7 +7,6 @@ import {Artifact, NodeStatus, Workflow} from '../../../../models';
 import {ANNOTATION_KEY_POD_NAME_VERSION} from '../../../shared/annotations';
 import {Button} from '../../../shared/components/button';
 import {ClipboardText} from '../../../shared/components/clipboard-text';
-import {DropDownButton} from '../../../shared/components/drop-down-button';
 import {DurationPanel} from '../../../shared/components/duration-panel';
 import {InlineTable} from '../../../shared/components/inline-table/inline-table';
 import {Links} from '../../../shared/components/links';
@@ -67,15 +66,13 @@ interface Props {
 }
 
 const AttributeRow = (attr: {title: string; value: any}) => (
-    <div className='row white-box__details-row' key={attr.title}>
-        <div className='columns small-4'>{attr.title}</div>
-        <div className='columns columns--narrower-height small-8' style={{whiteSpace: 'pre-wrap'}}>
-            {attr.value}
-        </div>
-    </div>
+    <React.Fragment key={attr.title}>
+        <div>{attr.title}</div>
+        <div style={{overflow: 'auto hidden'}}>{attr.value}</div>
+    </React.Fragment>
 );
 const AttributeRows = (props: {attributes: {title: string; value: any}[]}) => (
-    <div>
+    <div className='workflow-details__attribute-grid'>
         {props.attributes.map(attr => (
             <AttributeRow key={attr.title} {...attr} />
         ))}
@@ -168,23 +165,24 @@ const WorkflowNodeSummary = (props: Props) => {
     const showLogs = (x = 'main') => props.onShowContainerLogs(props.node.id, x);
     return (
         <div className='white-box'>
-            <div className='white-box__details'>{<AttributeRows attributes={attributes} />}</div>
+            <div className='white-box__details' style={{paddingBottom: '8px'}}>
+                {<AttributeRows attributes={attributes} />}
+            </div>
             <div>
                 {props.node.type === 'Suspend' && props.onResume && (
                     <Button icon='play' onClick={() => props.onResume()}>
                         RESUME
                     </Button>
                 )}{' '}
-                {props.node.type !== 'Container' && props.onShowYaml && <Button onClick={() => props.onShowYaml(props.node.id)}>MANIFEST</Button>}{' '}
+                {props.node.type !== 'Container' && props.onShowYaml && (
+                    <Button icon='file-code' onClick={() => props.onShowYaml(props.node.id)}>
+                        MANIFEST
+                    </Button>
+                )}{' '}
                 {props.node.type === 'Pod' && props.onShowContainerLogs && (
-                    <DropDownButton
-                        onClick={() => showLogs()}
-                        items={[
-                            {onClick: () => showLogs('init'), value: 'init logs'},
-                            {onClick: () => showLogs('wait'), value: 'wait logs'}
-                        ]}>
-                        <i className='fa fa-bars' /> main logs
-                    </DropDownButton>
+                    <Button onClick={() => showLogs()} icon='bars'>
+                        LOGS
+                    </Button>
                 )}{' '}
                 {props.node.type === 'Pod' && props.onShowEvents && (
                     <Button icon='bell' onClick={() => props.onShowEvents()}>
@@ -428,7 +426,7 @@ const WorkflowNodeArtifacts = (props: {workflow: Workflow; node: NodeStatus; arc
                     <div className='columns small-1'>
                         <a href={artifact.downloadUrl}>
                             {' '}
-                            <i className='icon argo-icon-artifact' />
+                            <i className='fa fa-download' />
                         </a>
                     </div>
                     <div className='columns small-11'>

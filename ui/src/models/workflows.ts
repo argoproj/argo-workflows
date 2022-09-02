@@ -4,6 +4,8 @@ export const labels = {
     clusterWorkflowTemplate: 'workflows.argoproj.io/cluster-workflow-template',
     completed: 'workflows.argoproj.io/completed',
     creator: 'workflows.argoproj.io/creator',
+    creatorEmail: 'workflows.argoproj.io/creator-email',
+    creatorPreferredUsername: 'workflows.argoproj.io/creator-preferred-username',
     cronWorkflow: 'workflows.argoproj.io/cron-workflow',
     workflowTemplate: 'workflows.argoproj.io/workflow-template'
 };
@@ -20,6 +22,93 @@ export interface Arguments {
      * Parameters is the list of parameters to pass to the template or workflow
      */
     parameters?: Parameter[];
+}
+
+export interface AzureArtifactRepository {
+    endpoint: string;
+    container: string;
+    blob: string;
+}
+export interface GCSArtifactRepository {
+    endpoint: string;
+    bucket: string;
+    key: string;
+}
+export interface S3ArtifactRepository {
+    endpoint: string;
+    bucket: string;
+    key: string;
+}
+
+export interface OSSArtifactRepository {
+    endpoint: string;
+    bucket: string;
+    key: string;
+}
+
+export interface GitArtifactRepository {
+    repo?: string;
+    endpoint?: string;
+    bucket?: string;
+}
+
+export interface HTTPArtifactRepository {
+    url: string;
+}
+
+export interface RawArtifactRepository {
+    data: string;
+}
+
+export interface ArtifactRepository {
+    gcs?: GCSArtifactRepository;
+    s3?: S3ArtifactRepository;
+    oss?: OSSArtifactRepository;
+    azure?: AzureArtifactRepository;
+    git?: GitArtifactRepository;
+    http?: HTTPArtifactRepository;
+    raw?: RawArtifactRepository;
+}
+export interface ArtifactRepositoryRefStatus {
+    artifactRepository: ArtifactRepository;
+}
+
+export interface AzureArtifact {
+    endpoint?: string;
+    container?: string;
+    blob?: string;
+}
+
+export interface GCSArtifact {
+    endpoint?: string;
+    bucket?: string;
+    key: string;
+}
+
+export interface GitArtifact {
+    repo: string;
+    branch?: string;
+    revision?: string;
+}
+
+export interface HTTPArtifact {
+    url: string;
+}
+
+export interface OSSArtifact {
+    endpoint?: string;
+    bucket?: string;
+    key: string;
+}
+
+export interface RawArtifact {
+    data: string;
+}
+
+export interface S3Artifact {
+    endpoint?: string;
+    bucket?: string;
+    key: string;
 }
 
 /**
@@ -42,6 +131,20 @@ export interface Artifact {
      * Path is the container path to the artifact
      */
     path?: string;
+    gcs?: GCSArtifact;
+    git?: GitArtifact;
+    http?: HTTPArtifact;
+    oss?: OSSArtifact;
+    raw?: RawArtifact;
+    s3?: S3Artifact;
+    azure?: AzureArtifact;
+    archive?: {
+        none?: {};
+    };
+    artifactGC?: {
+        strategy?: 'OnWorkflowCompletion' | 'OnWorkflowDeletion';
+    };
+    deleted?: boolean;
 }
 
 /**
@@ -359,6 +462,11 @@ export interface Template {
      */
     sidecars?: UserContainer[];
     /**
+     * archiveLocation is the location in which all files related to the step will be stored (logs, artifacts, etc...).
+     * Can be overridden by individual items in outputs. If omitted, will use the default
+     */
+    archiveLocation?: ArtifactRepository;
+    /**
      * InitContainers is a list of containers which run before the main container.
      */
     initContainers?: UserContainer[];
@@ -637,6 +745,8 @@ export interface WorkflowStatus {
      * StoredWorkflowTemplateSpec is a Workflow Spec of top level WorkflowTemplate.
      */
     storedWorkflowTemplateSpec?: WorkflowSpec;
+
+    artifactRepositoryRef?: ArtifactRepositoryRefStatus;
 }
 
 export interface Condition {
@@ -645,7 +755,7 @@ export interface Condition {
     message: string;
 }
 
-export type ConditionType = 'Completed' | 'SpecWarning' | 'MetricsError' | 'SubmissionError' | 'SpecError';
+export type ConditionType = 'Completed' | 'SpecWarning' | 'MetricsError' | 'SubmissionError' | 'SpecError' | 'ArtifactGCError';
 export type ConditionStatus = 'True' | 'False' | 'Unknown';
 
 /**
@@ -676,6 +786,11 @@ export interface WorkflowSpec {
      * terminate a Running workflow
      */
     activeDeadlineSeconds?: number;
+
+    artifactGC?: {
+        strategy?: 'OnWorkflowCompletion' | 'OnWorkflowDeletion';
+    };
+
     /**
      * TTLStrategy limits the lifetime of a Workflow that has finished execution depending on if it
      * Succeeded or Failed. If this struct is set, once the Workflow finishes, it will be

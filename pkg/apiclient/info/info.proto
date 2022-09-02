@@ -30,6 +30,14 @@ message GetUserInfoResponse {
   string email = 4;
   bool emailVerified = 5;
   string serviceAccountName = 6;
+  string serviceAccountNamespace = 7;
+}
+
+message CollectEventRequest {
+  string name = 1;
+}
+
+message CollectEventResponse {
 }
 
 service InfoService {
@@ -41,5 +49,11 @@ service InfoService {
   }
   rpc GetUserInfo(GetUserInfoRequest) returns (GetUserInfoResponse) {
     option (google.api.http).get = "/api/v1/userinfo";
+  }
+  rpc CollectEvent(CollectEventRequest) returns (CollectEventResponse) {
+    option (google.api.http) = {
+      post : "/api/v1/tracking/event"
+      body : "*"
+    };
   }
 }

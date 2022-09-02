@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/TwinProduction/go-color"
+	"github.com/TwiN/go-color"
 	"github.com/stretchr/testify/suite"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -36,7 +36,8 @@ const (
 	Label     = workflow.WorkflowFullName + "/test" // mark this workflow as a test
 )
 
-var defaultTimeout = env.LookupEnvDurationOr("E2E_TIMEOUT", 30*time.Second)
+var defaultTimeout = env.LookupEnvDurationOr("E2E_WAIT_TIMEOUT", 60*time.Second)
+var EnvFactor = env.LookupEnvIntOr("E2E_ENV_FACTOR", 1)
 
 type E2ESuite struct {
 	suite.Suite
@@ -79,6 +80,9 @@ func (s *E2ESuite) TearDownSuite() {
 	s.Persistence.Close()
 	for _, x := range s.slowTests {
 		_, _ = fmt.Println(color.Ize(color.Yellow, fmt.Sprintf("=== SLOW TEST:  %s", x)))
+	}
+	if s.T().Failed() {
+		s.T().Log("to learn how to diagnose failed tests: https://argoproj.github.io/argo-workflows/running-locally/#running-e2e-tests-locally")
 	}
 }
 

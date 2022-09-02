@@ -1,7 +1,5 @@
 # Enhanced Depends Logic
 
-![GA](assets/ga.svg)
-
 > v2.9 and after
 
 ## Introduction
@@ -24,38 +22,39 @@ available task results is as follows:
 | `.Failed` | Task Failed | Task exited with a non-0 exit code |
 | `.Errored` | Task Errored | Task had an error other than a non-0 exit code |
 | `.Skipped` | Task Skipped | Task was skipped |
+| `.Omitted` | Task Omitted | Task was omitted |
 | `.Daemoned` | Task is Daemoned and is not Pending | |
 
 For convenience, if an omitted task result is equivalent to `(task.Succeeded || task.Skipped || task.Daemoned)`.
 
 For example:
 
-```
+```yaml
 depends: "task || task-2.Failed"
 ```
 
 is equivalent to:
 
-```
+```yaml
 depends: (task.Succeeded || task.Skipped || task.Daemoned) || task-2.Failed
 ```
 
 Full boolean logic is also available. Operators include:
 
- * `&&`
- * `||`
- * `!`
+* `&&`
+* `||`
+* `!`
 
  Example:
 
-```
+```yaml
 depends: "(task-2.Succeeded || task-2.Skipped) && !task-3.Failed"
 ```
 
-In the case that you're depending on a task that uses withItems, you can depend on
-whether any of the item tasks are successful or all have failed using .AnySucceeded and .AllFailed, for example:
+In the case that you're depending on a task that uses `withItems`, you can depend on
+whether any of the item tasks are successful or all have failed using `.AnySucceeded` and `.AllFailed`, for example:
 
-```
+```yaml
 depends: "task-1.AnySucceeded || task-2.AllFailed"
 ```
 
@@ -65,13 +64,13 @@ This feature is fully compatible with `dependencies` and conversion is easy.
 
 To convert simply join your `dependencies` with `&&`:
 
-```
+```yaml
 dependencies: ["A", "B", "C"]
 ```
 
 is equivalent to:
 
-```
+```yaml
 depends: "A && B && C"
 ```
 

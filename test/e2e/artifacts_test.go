@@ -4,11 +4,16 @@
 package e2e
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/argoproj/argo-workflows/v3/workflow/common"
+
+	"github.com/minio/minio-go/v7"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/test/e2e/fixtures"
@@ -49,6 +54,128 @@ func (s *ArtifactsSuite) TestArtifactPassing() {
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeSucceeded)
+}
+
+type artifactState struct {
+	key                   string
+	bucketName            string
+	deletedAtWFCompletion bool
+	deletedAtWFDeletion   bool
+}
+
+func (s *ArtifactsSuite) TestArtifactGC() {
+
+	s.Given().
+		WorkflowTemplate("@testdata/artifactgc/artgc-template.yaml").
+		When().
+		CreateWorkflowTemplates()
+
+	for _, tt := range []struct {
+		workflowFile                 string
+		expectedArtifacts            []artifactState
+		expectedGCPodsOnWFCompletion int
+	}{
+		{
+			workflowFile:                 "@testdata/artifactgc/artgc-multi-strategy-multi-anno.yaml",
+			expectedGCPodsOnWFCompletion: 2,
+			expectedArtifacts: []artifactState{
+				artifactState{"first-on-completion-1", "my-bucket-2", true, false},
+				artifactState{"first-on-completion-2", "my-bucket-3", true, false},
+				artifactState{"first-no-deletion", "my-bucket-3", false, false},
+				artifactState{"second-on-deletion", "my-bucket-3", false, true},
+				artifactState{"second-on-completion", "my-bucket-2", true, false},
+			},
+		},
+		{
+			workflowFile:                 "@testdata/artifactgc/artgc-from-template.yaml",
+			expectedGCPodsOnWFCompletion: 1,
+			expectedArtifacts: []artifactState{
+				artifactState{"on-completion", "my-bucket-2", true, false},
+				artifactState{"on-deletion", "my-bucket-2", false, true},
+			},
+		},
+		{
+			workflowFile:                 "@testdata/artifactgc/artgc-step-wf-tmpl.yaml",
+			expectedGCPodsOnWFCompletion: 1,
+			expectedArtifacts: []artifactState{
+				artifactState{"on-completion", "my-bucket-2", true, false},
+				artifactState{"on-deletion", "my-bucket-2", false, true},
+			},
+		},
+	} {
+		// for each test make sure that:
+		// 1. the finalizer gets added
+		// 2. the artifacts are deleted at the right time
+		// 3. the finalizer gets removed after all artifacts are deleted
+		// (note that in order to verify that the finalizer has been added once the Workflow's been submitted,
+		// we need it to still be there after being submitted, so each of the following tests includes at least one
+		// 'OnWorkflowDeletion' strategy)
+
+		when := s.Given().
+			Workflow(tt.workflowFile).
+			When().
+			SubmitWorkflow()
+		when.
+			WaitForWorkflow(fixtures.ToBeCompleted).
+			Then().
+			ExpectWorkflow(func(t *testing.T, objectMeta *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+				assert.Contains(t, objectMeta.Finalizers, common.FinalizerArtifactGC)
+			})
+
+		// wait for all pods to have started and been completed and recouped
+		when.
+			WaitForWorkflow(
+				fixtures.WorkflowCompletionOkay(true),
+				fixtures.Condition(func(wf *wfv1.Workflow) (bool, string) {
+					return len(wf.Status.ArtifactGCStatus.PodsRecouped) >= tt.expectedGCPodsOnWFCompletion,
+						fmt.Sprintf("for all %d pods to have been recouped", tt.expectedGCPodsOnWFCompletion)
+				}))
+
+		then := when.Then()
+
+		// verify that the artifacts that should have been deleted at completion time were
+		for _, expectedArtifact := range tt.expectedArtifacts {
+			if expectedArtifact.deletedAtWFCompletion {
+				fmt.Printf("verifying artifact %s is deleted at completion time\n", expectedArtifact.key)
+				then.ExpectArtifactByKey(expectedArtifact.key, expectedArtifact.bucketName, func(t *testing.T, object minio.ObjectInfo, err error) {
+					assert.NotNil(t, err)
+				})
+			} else {
+				fmt.Printf("verifying artifact %s is not deleted at completion time\n", expectedArtifact.key)
+				then.ExpectArtifactByKey(expectedArtifact.key, expectedArtifact.bucketName, func(t *testing.T, object minio.ObjectInfo, err error) {
+					assert.Nil(t, err)
+				})
+			}
+		}
+
+		fmt.Println("deleting workflow; verifying that Artifact GC finalizer gets removed")
+
+		when.
+			DeleteWorkflow().
+			WaitForWorkflowDeletion()
+
+		when = when.RemoveFinalizers(false) // just in case - if the above test failed we need to forcibly remove the finalizer for Artifact GC
+
+		then = when.Then()
+
+		for _, expectedArtifact := range tt.expectedArtifacts {
+
+			if expectedArtifact.deletedAtWFCompletion { // already checked this
+				continue
+			}
+			if expectedArtifact.deletedAtWFDeletion {
+				fmt.Printf("verifying artifact %s is deleted\n", expectedArtifact.key)
+				then.ExpectArtifactByKey(expectedArtifact.key, expectedArtifact.bucketName, func(t *testing.T, object minio.ObjectInfo, err error) {
+					assert.NotNil(t, err)
+				})
+			} else {
+				fmt.Printf("verifying artifact %s is not deleted\n", expectedArtifact.key)
+				then.ExpectArtifactByKey(expectedArtifact.key, expectedArtifact.bucketName, func(t *testing.T, object minio.ObjectInfo, err error) {
+					assert.Nil(t, err)
+				})
+			}
+		}
+	}
 }
 
 func (s *ArtifactsSuite) TestDefaultParameterOutputs() {
@@ -135,11 +262,8 @@ func (s *ArtifactsSuite) TestMainLog() {
 			SubmitWorkflow().
 			WaitForWorkflow(fixtures.ToBeSucceeded).
 			Then().
-			ExpectWorkflow(func(t *testing.T, m *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-				n := status.Nodes[m.Name]
-				if assert.NotNil(t, n) {
-					assert.Len(t, n.Outputs.Artifacts, 1)
-				}
+			ExpectArtifact("-", "main-logs", "my-bucket", func(t *testing.T, object minio.ObjectInfo, err error) {
+				assert.NoError(t, err)
 			})
 	})
 	s.Run("ActiveDeadlineSeconds", func() {
@@ -149,10 +273,59 @@ func (s *ArtifactsSuite) TestMainLog() {
 			SubmitWorkflow().
 			WaitForWorkflow(fixtures.ToBeFailed).
 			Then().
+			ExpectArtifact("-", "main-logs", "my-bucket", func(t *testing.T, object minio.ObjectInfo, err error) {
+				assert.NoError(t, err)
+			})
+	})
+}
+
+func (s *ArtifactsSuite) TestContainersetLogs() {
+	s.Run("Basic", func() {
+		s.Given().
+			Workflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: containerset-logs-
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      containerSet:
+        containers:
+          - name: a
+            image: argoproj/argosay:v2
+          - name: b
+            image: argoproj/argosay:v2
+`).
+			When().
+			SubmitWorkflow().
+			WaitForWorkflow(fixtures.ToBeSucceeded).
+			Then().
 			ExpectWorkflow(func(t *testing.T, m *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 				n := status.Nodes[m.Name]
-				if assert.NotNil(t, n.Outputs) {
-					assert.Len(t, n.Outputs.Artifacts, 1)
+				expectedOutputs := &wfv1.Outputs{
+					Artifacts: wfv1.Artifacts{
+						{
+							Name: "a-logs",
+							ArtifactLocation: wfv1.ArtifactLocation{
+								S3: &wfv1.S3Artifact{
+									Key: fmt.Sprintf("%s/%s/a.log", m.Name, m.Name),
+								},
+							},
+						},
+						{
+							Name: "b-logs",
+							ArtifactLocation: wfv1.ArtifactLocation{
+								S3: &wfv1.S3Artifact{
+									Key: fmt.Sprintf("%s/%s/b.log", m.Name, m.Name),
+								},
+							},
+						},
+					},
+				}
+				if assert.NotNil(t, n) {
+					assert.Equal(t, n.Outputs, expectedOutputs)
 				}
 			})
 	})

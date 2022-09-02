@@ -3,14 +3,26 @@ updates:
   - package-ecosystem: "gomod"
     directory: "/"
     schedule:
-      interval: "daily"
+      interval: "weekly"
+      day: "saturday"
     ignore:
     - dependency-name: k8s.io/*
     - dependency-name: github.com/grpc-ecosystem/*
     - dependency-name: google.golang.org/grpc
-    open-pull-requests-limit: 2
+    open-pull-requests-limit: 10
 
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
-      interval: "daily"
+      interval: "weekly"
+      day: "saturday"
+
+  - package-ecosystem: "npm"
+    directory: "/ui"
+    schedule:
+      interval: "weekly"
+      day: "saturday"
+    ignore:
+      - dependency-name: raw-loader
+      - dependency-name: style-loader
+    open-pull-requests-limit: 10

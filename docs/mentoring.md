@@ -9,7 +9,7 @@ Mentors will help you with things like:
 * Understand key concepts and learn your way around the source code
 * Getting your first pull request with a code contribution created, reviewed and merged.
 
-Mentors and mentees must abide by the [code of conduct](https://github.com/cncf/foundation/blob/master/code-of-conduct.md).
+Mentors and mentees must abide by the [code of conduct](https://github.com/cncf/foundation/blob/main/code-of-conduct.md).
 
 ## How To Get A Mentor
 
@@ -21,7 +21,7 @@ To set expectations:
 2. A mentor will comment offering to mentor you. It may take a few days for a mentor to respond.
 3. You comment to accept or decline the offer.
 4. If you accept, then your new mentor will assign the issue to themself.
-5. The mentor may suggest resources to learn Golang or React, or discus the changes that'll fix your bug or enhancement needs.
+5. The mentor may suggest resources to learn Golang or React, or discus the changes that will fix your bug or enhancement needs.
 6. Work together the create, approve, and merge your pull request.
 7. Once the PR is closed, then the issues is closed. The relationship ends. Congratulations!
 

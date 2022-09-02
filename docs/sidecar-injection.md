@@ -11,8 +11,7 @@ You will minimize problems by not using Istio with Argo Workflows.
 
 See [#1282](https://github.com/argoproj/argo-workflows/issues/1282).
 
-
-### Support Matrix
+## Support Matrix
 
 Key:
 
@@ -20,13 +19,13 @@ Key:
 * Any - we can kill any image
 * KubectlExec - we kill images by running `kubectl exec`
 
-| Executor | Sidecar | Injected Sidecar | 
-|---|---|---| 
-| `docker` | Any | Unsupported | 
-| `emissary` | Any | KubectlExec | 
-| `k8sapi` | Shell | KubectlExec | 
-| `kubelet` | Shell | KubectlExec | 
-| `pns` | Any | Any | 
+| Executor | Sidecar | Injected Sidecar |
+|---|---|---|
+| `docker` | Any | Unsupported |
+| `emissary` | Any | KubectlExec |
+| `k8sapi` | Shell | KubectlExec |
+| `kubelet` | Shell | KubectlExec |
+| `pns` | Any | Any |
 
 ## How We Kill Sidecars Using `kubectl exec`
 
@@ -35,7 +34,7 @@ Key:
 Kubernetes does not provide a way to kill a single container. You can delete a pod, but this kills all containers, and loses all information
 and logs of that pod.
 
-Instead, try to mimic the Kubernetes termination behaviour, which is:
+Instead, try to mimic the Kubernetes termination behavior, which is:
 
 1. SIGTERM PID 1
 1. Wait for the pod's `terminateGracePeriodSeconds` (30s by default).

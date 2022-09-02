@@ -7,6 +7,7 @@ import {WorkflowTemplate} from '../../../../models';
 import {uiUrl} from '../../../shared/base';
 import {ErrorNotice} from '../../../shared/components/error-notice';
 import {Loading} from '../../../shared/components/loading';
+import {useCollectEvent} from '../../../shared/components/use-collect-event';
 import {Context} from '../../../shared/context';
 import {historyUrl} from '../../../shared/history';
 import {services} from '../../../shared/services';
@@ -61,6 +62,8 @@ export const WorkflowTemplateDetails = ({history, location, match}: RouteCompone
             .then(() => setError(null))
             .catch(setError);
     }, [name, namespace]);
+
+    useCollectEvent('openedWorkflowTemplateDetails');
 
     return (
         <Page

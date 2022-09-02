@@ -1,4 +1,4 @@
-import {Autocomplete, Page, SlidingPanel} from 'argo-ui';
+import {Page, SlidingPanel} from 'argo-ui';
 import * as React from 'react';
 import {RouteComponentProps} from 'react-router-dom';
 import * as models from '../../../../models';
@@ -10,9 +10,9 @@ import {BasePage} from '../../../shared/components/base-page';
 import {CostOptimisationNudge} from '../../../shared/components/cost-optimisation-nudge';
 import {ErrorNotice} from '../../../shared/components/error-notice';
 import {ExampleManifests} from '../../../shared/components/example-manifests';
+import {FirstTimeUserPanel} from '../../../shared/components/first-time-user-panel';
 import {Loading} from '../../../shared/components/loading';
 import {PaginationPanel} from '../../../shared/components/pagination-panel';
-import {Query} from '../../../shared/components/query';
 import {ZeroState} from '../../../shared/components/zero-state';
 import {Consumer} from '../../../shared/context';
 import {ListWatch, sortByYouth} from '../../../shared/list-watch';
@@ -33,6 +33,8 @@ interface State {
     pagination: Pagination;
     selectedPhases: WorkflowPhase[];
     selectedLabels: string[];
+    minStartedAt?: Date;
+    maxStartedAt?: Date;
     selectedWorkflows: Map<string, models.Workflow>;
     workflows?: Workflow[];
     resourceVersion?: string;
@@ -114,6 +116,8 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
             namespace: Utils.getNamespace(this.props.match.params.namespace) || '',
             selectedPhases: phaseQueryParam.length > 0 ? (phaseQueryParam as WorkflowPhase[]) : savedOptions.selectedPhases,
             selectedLabels: labelQueryParam.length > 0 ? (labelQueryParam as string[]) : savedOptions.selectedLabels,
+            minStartedAt: this.lastMonth(),
+            maxStartedAt: this.nextDay(),
             selectedWorkflows: new Map<string, models.Workflow>(),
             batchActionDisabled: {...allBatchActionsEnabled}
         };
@@ -121,8 +125,16 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
 
     public componentDidMount(): void {
         this.setState({selectedWorkflows: new Map<string, models.Workflow>()}, () => {
-            this.fetchWorkflows(this.state.namespace, this.state.selectedPhases, this.state.selectedLabels, this.state.pagination);
+            this.fetchWorkflows(
+                this.state.namespace,
+                this.state.selectedPhases,
+                this.state.selectedLabels,
+                this.state.minStartedAt,
+                this.state.maxStartedAt,
+                this.state.pagination
+            );
         });
+        services.info.collectEvent('openedWorkflowList').then();
     }
 
     public componentWillUnmount(): void {
@@ -153,53 +165,91 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                                 ]
                             }
                         }}>
-                        <WorkflowsToolbar
-                            selectedWorkflows={this.state.selectedWorkflows}
-                            clearSelection={() => this.setState({selectedWorkflows: new Map<string, models.Workflow>()})}
-                            loadWorkflows={() => {
-                                this.setState({selectedWorkflows: new Map<string, models.Workflow>()});
-                                this.changeFilters(this.state.namespace, this.state.selectedPhases, this.state.selectedLabels, {limit: this.state.pagination.limit});
-                            }}
-                            isDisabled={this.state.batchActionDisabled}
-                        />
-                        <div className='row'>
-                            <div className='columns small-12 xlarge-2'>
-                                {this.renderQuery(ctx)}
-                                <div>
-                                    <WorkflowFilters
-                                        workflows={this.state.workflows || []}
-                                        namespace={this.state.namespace}
-                                        phaseItems={WorkflowPhases}
-                                        selectedPhases={this.state.selectedPhases}
-                                        selectedLabels={this.state.selectedLabels}
-                                        onChange={(namespace, selectedPhases, selectedLabels) =>
-                                            this.changeFilters(namespace, selectedPhases, selectedLabels, {limit: this.state.pagination.limit})
-                                        }
-                                    />
-                                </div>
-                            </div>
-                            <div className='columns small-12 xlarge-10'>{this.renderWorkflows()}</div>
-                        </div>
-                        <SlidingPanel isShown={!!this.sidePanel} onClose={() => ctx.navigation.goto('.', {sidePanel: null})}>
-                            {this.sidePanel === 'submit-new-workflow' && (
-                                <WorkflowCreator
-                                    namespace={Utils.getNamespaceWithDefault(this.state.namespace)}
-                                    onCreate={wf => ctx.navigation.goto(uiUrl(`workflows/${wf.metadata.namespace}/${wf.metadata.name}`))}
+                        <FirstTimeUserPanel
+                            id='WorkflowListPanel'
+                            explanation={
+                                'This page shows a list of your workflows. You can filter by namespace, label and now date and time. ' +
+                                'By default, only the last months workflows are shown.'
+                            }
+                            style={{margin: 20}}>
+                            <>
+                                <WorkflowsToolbar
+                                    selectedWorkflows={this.state.selectedWorkflows}
+                                    clearSelection={() => this.setState({selectedWorkflows: new Map<string, models.Workflow>()})}
+                                    loadWorkflows={() => {
+                                        this.setState({selectedWorkflows: new Map<string, models.Workflow>()});
+                                        this.changeFilters(
+                                            this.state.namespace,
+                                            this.state.selectedPhases,
+                                            this.state.selectedLabels,
+                                            this.state.minStartedAt,
+                                            this.state.maxStartedAt,
+                                            {
+                                                limit: this.state.pagination.limit
+                                            }
+                                        );
+                                    }}
+                                    isDisabled={this.state.batchActionDisabled}
                                 />
-                            )}
-                        </SlidingPanel>
+                                <div className='row'>
+                                    <div className='columns small-12 xlarge-2'>
+                                        <div>
+                                            <WorkflowFilters
+                                                workflows={this.state.workflows || []}
+                                                namespace={this.state.namespace}
+                                                phaseItems={WorkflowPhases}
+                                                selectedPhases={this.state.selectedPhases}
+                                                selectedLabels={this.state.selectedLabels}
+                                                minStartedAt={this.state.minStartedAt}
+                                                maxStartedAt={this.state.maxStartedAt}
+                                                onChange={(namespace, selectedPhases, selectedLabels, minStartedAt, maxStartedAt) =>
+                                                    this.changeFilters(namespace, selectedPhases, selectedLabels, minStartedAt, maxStartedAt, {limit: this.state.pagination.limit})
+                                                }
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className='columns small-12 xlarge-10'>{this.renderWorkflows()}</div>
+                                </div>
+                                <SlidingPanel isShown={!!this.sidePanel} onClose={() => ctx.navigation.goto('.', {sidePanel: null})}>
+                                    {this.sidePanel === 'submit-new-workflow' && (
+                                        <WorkflowCreator
+                                            namespace={Utils.getNamespaceWithDefault(this.state.namespace)}
+                                            onCreate={wf => ctx.navigation.goto(uiUrl(`workflows/${wf.metadata.namespace}/${wf.metadata.name}`))}
+                                        />
+                                    )}
+                                </SlidingPanel>
+                            </>
+                        </FirstTimeUserPanel>
                     </Page>
                 )}
             </Consumer>
         );
     }
 
-    private fetchWorkflows(namespace: string, selectedPhases: WorkflowPhase[], selectedLabels: string[], pagination: Pagination): void {
+    private lastMonth() {
+        const dt = new Date();
+        dt.setMonth(dt.getMonth() - 1);
+        dt.setHours(0, 0, 0, 0);
+        return dt;
+    }
+
+    private nextDay() {
+        const dt = new Date();
+        dt.setDate(dt.getDate() + 1);
+        dt.setHours(0, 0, 0, 0);
+        return dt;
+    }
+
+    private fetchWorkflows(namespace: string, selectedPhases: WorkflowPhase[], selectedLabels: string[], minStartedAt: Date, maxStartedAt: Date, pagination: Pagination): void {
         if (this.listWatch) {
             this.listWatch.stop();
         }
         this.listWatch = new ListWatch(
-            () => services.workflows.list(namespace, selectedPhases, selectedLabels, pagination),
+            () =>
+                services.workflows.list(namespace, selectedPhases, selectedLabels, pagination).then(x => {
+                    x.items = x.items && x.items.filter(w => new Date(w.status.startedAt) > minStartedAt && new Date(w.status.startedAt) < maxStartedAt);
+                    return x;
+                }),
             (resourceVersion: string) => services.workflows.watchFields({namespace, phases: selectedPhases, labels: selectedLabels, resourceVersion}),
             metadata =>
                 this.setState(
@@ -209,6 +259,8 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                         pagination: {offset: pagination.offset, limit: pagination.limit, nextOffset: metadata.continue},
                         selectedPhases,
                         selectedLabels,
+                        minStartedAt,
+                        maxStartedAt,
                         selectedWorkflows: new Map<string, models.Workflow>()
                     },
                     this.saveHistory
@@ -221,8 +273,8 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
         this.listWatch.start();
     }
 
-    private changeFilters(namespace: string, selectedPhases: WorkflowPhase[], selectedLabels: string[], pagination: Pagination) {
-        this.fetchWorkflows(namespace, selectedPhases, selectedLabels, pagination);
+    private changeFilters(namespace: string, selectedPhases: WorkflowPhase[], selectedLabels: string[], minStartedAt: Date, maxStartedAt: Date, pagination: Pagination) {
+        this.fetchWorkflows(namespace, selectedPhases, selectedLabels, minStartedAt, maxStartedAt, pagination);
     }
 
     private saveHistory() {
@@ -316,7 +368,14 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                                                 newTags = this.state.selectedLabels.concat(value);
                                                 this.setState({selectedLabels: newTags});
                                             }
-                                            this.changeFilters(this.state.namespace, this.state.selectedPhases, newTags, this.state.pagination);
+                                            this.changeFilters(
+                                                this.state.namespace,
+                                                this.state.selectedPhases,
+                                                newTags,
+                                                this.state.minStartedAt,
+                                                this.state.maxStartedAt,
+                                                this.state.pagination
+                                            );
                                         }}
                                         select={subWf => {
                                             const wfUID = subWf.metadata.uid;
@@ -336,7 +395,16 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                             })}
                         </div>
                         <PaginationPanel
-                            onChange={pagination => this.changeFilters(this.state.namespace, this.state.selectedPhases, this.state.selectedLabels, pagination)}
+                            onChange={pagination =>
+                                this.changeFilters(
+                                    this.state.namespace,
+                                    this.state.selectedPhases,
+                                    this.state.selectedLabels,
+                                    this.state.minStartedAt,
+                                    this.state.maxStartedAt,
+                                    pagination
+                                )
+                            }
                             pagination={this.state.pagination}
                             numRecords={(this.state.workflows || []).length}
                         />
@@ -355,53 +423,5 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
             }
         }
         this.setState({batchActionDisabled: nowDisabled, selectedWorkflows: new Map<string, models.Workflow>(newSelectedWorkflows)});
-    }
-
-    private renderQuery(ctx: any) {
-        return (
-            <Query>
-                {q => (
-                    <div>
-                        <i className='fa fa-search' />
-                        {q.get('search') && (
-                            <i
-                                className='fa fa-times'
-                                onClick={() => {
-                                    ctx.navigation.goto('.', {search: null}, {replace: true});
-                                }}
-                            />
-                        )}
-                        <Autocomplete
-                            filterSuggestions={true}
-                            renderInput={inputProps => (
-                                <input
-                                    {...inputProps}
-                                    onFocus={e => {
-                                        e.target.select();
-                                        if (inputProps.onFocus) {
-                                            inputProps.onFocus(e);
-                                        }
-                                    }}
-                                    className='argo-field'
-                                />
-                            )}
-                            renderItem={item => (
-                                <React.Fragment>
-                                    <i className='icon argo-icon-workflow' /> {item.label}
-                                </React.Fragment>
-                            )}
-                            onSelect={val => {
-                                ctx.navigation.goto(uiUrl(`workflows/${val}`));
-                            }}
-                            onChange={e => {
-                                ctx.navigation.goto('.', {search: e.target.value}, {replace: true});
-                            }}
-                            value={q.get('search') || ''}
-                            items={(this.state.workflows || []).map(wf => wf.metadata.namespace + '/' + wf.metadata.name)}
-                        />
-                    </div>
-                )}
-            </Query>
-        );
     }
 }

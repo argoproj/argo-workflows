@@ -2,12 +2,13 @@
 
 To run Argo workflows that use artifacts, you must configure and use an artifact
 repository. Argo supports any S3 compatible artifact repository such as AWS, GCS
-and Minio. This section shows how to configure the artifact repository.
+and MinIO. This section shows how to configure the artifact repository.
 Subsequent sections will show how to use it.
 
 | Name | Inputs | Outputs | Usage (Feb 2020) |
 |---|---|---|---|
 | Artifactory | Yes | Yes | 11% |
+| Azure Blob | Yes | Yes | - |
 | GCS | Yes | Yes | - |
 | Git | Yes | No | - |
 | HDFS | Yes | Yes | 3% |
@@ -19,40 +20,41 @@ Subsequent sections will show how to use it.
 The actual repository used by a workflow is chosen by the following rules:
 
 1. Anything explicitly configured using [Artifact Repository Ref](artifact-repository-ref.md). This is the most flexible, safe, and secure option.
-2. From a config map named `artifact-repositories` if it has the `workflows.argoproj.io/default-artifact-repository` annotation in the workflow's namespace.                                        
-3. From a workflow controller configmap.
+2. From a config map named `artifact-repositories` if it has the `workflows.argoproj.io/default-artifact-repository` annotation in the workflow's namespace.
+3. From a workflow controller config-map.
 
-## Configuring Minio
-NOTE: Minio is already included in the [quick-start manifests](quick-start.md).
+## Configuring MinIO
 
+NOTE: MinIO is already included in the [quick-start manifests](quick-start.md).
+
+```bash
+brew install helm # mac, helm 3.x
+helm repo add minio https://helm.min.io/ # official minio Helm charts
+helm repo update
+helm install argo-artifacts minio/minio --set service.type=LoadBalancer --set fullnameOverride=argo-artifacts
 ```
-$ brew install helm # mac, helm 3.x
-$ helm repo add minio https://helm.min.io/ # official minio Helm charts
-$ helm repo update
-$ helm install argo-artifacts minio/minio --set service.type=LoadBalancer --set fullnameOverride=argo-artifacts
-```
 
-Login to the Minio UI using a web browser (port 9000) after obtaining the
+Login to the MinIO UI using a web browser (port 9000) after obtaining the
 external IP using `kubectl`.
 
-```
-$ kubectl get service argo-artifacts
+```bash
+kubectl get service argo-artifacts
 ```
 
 On Minikube:
 
-```
-$ minikube service --url argo-artifacts
+```bash
+minikube service --url argo-artifacts
 ```
 
-NOTE: When minio is installed via Helm, it generates
+NOTE: When MinIO is installed via Helm, it generates
 credentials, which you will use to login to the UI:
 Use the commands shown below to see the credentials
 
-- AccessKey: kubectl get secret argo-artifacts -o jsonpath='{.data.accesskey}' | base64 --decode
-- SecretKey: kubectl get secret argo-artifacts -o jsonpath='{.data.secretkey}' | base64 --decode
+- `AccessKey`: `kubectl get secret argo-artifacts -o jsonpath='{.data.accesskey}' | base64 --decode`
+- `SecretKey`: `kubectl get secret argo-artifacts -o jsonpath='{.data.secretkey}' | base64 --decode`
 
-Create a bucket named `my-bucket` from the Minio UI.
+Create a bucket named `my-bucket` from the MinIO UI.
 
 ## Configuring AWS S3
 
@@ -63,7 +65,7 @@ an access key, you will need to create a user with just the permissions you want
 to associate with the access key. Otherwise, you can just create an access key
 using your existing user account.
 
-```
+```bash
 $ export mybucket=bucket249
 $ cat > policy.json <<EOF
 {
@@ -90,8 +92,7 @@ NOTE: if you want argo to figure out which region your buckets belong in, you
 must additionally set the following statement policy. Otherwise, you must
 specify a bucket region in your workflow configuration.
 
-```
-    ...
+```json
       {
          "Effect":"Allow",
          "Action":[
@@ -105,7 +106,7 @@ specify a bucket region in your workflow configuration.
 ## Configuring GCS (Google Cloud Storage)
 
 Create a bucket from the GCP Console
-(https://console.cloud.google.com/storage/browser).
+(<https://console.cloud.google.com/storage/browser>).
 
 There are 2 ways to configure a Google Cloud Storage.
 
@@ -136,10 +137,10 @@ artifacts:
 ```
 
 If it's a GKE cluster, and Workload Identity is configured, there's no need to
-create the Service Account key and store it as a K8s secret,
+create the service account key and store it as a Kubernetes secret,
 `serviceAccountKeySecret` is also not needed in this case. Please follow the
 link to configure Workload Identity
-(https://cloud.google.com/kubernetes-engine/docs/how-to/workload-identity).
+(<https://cloud.google.com/kubernetes-engine/docs/how-to/workload-identity>).
 
 ### Use S3 APIs
 
@@ -147,7 +148,7 @@ Enable S3 compatible access and create an access key. Note that S3 compatible
 access is on a per project rather than per bucket basis.
 
 - Navigate to Storage > Settings
-  (https://console.cloud.google.com/storage/settings).
+  (<https://console.cloud.google.com/storage/settings>).
 - Enable interoperability access if needed.
 - Create a new key if needed.
 - Configure `s3` artifact as following example.
@@ -205,30 +206,85 @@ artifacts:
 
 You can also set `createBucketIfNotPresent` to `true` to tell the artifact driver to automatically create the OSS bucket if it doesn't exist yet when saving artifacts. Note that you'll need to set additional permission for your OSS account to create new buckets.
 
-# Configure the Default Artifact Repository
+## Configuring Azure Blob Storage
+
+Create an Azure Storage account and a container within that account. There are a number of
+ways to accomplish this, including the [Azure Portal](https://portal.azure.com) or the
+[CLI](https://docs.microsoft.com/en-us/cli/azure/).
+
+1. Retrieve the blob service endpoint for the storage account. For example:
+
+   ```bash
+   az storage account show -n mystorageaccountname --query 'primaryEndpoints.blob' -otsv
+   ```
+
+2. Retrieve the access key for the storage account. For example:
+
+   ```bash
+   az storage account keys list -n mystorageaccountname --query '[0].value' -otsv
+   ```
+
+3. Create a kubernetes secret to hold the storage account key. For example:
+
+   ```bash
+   kubectl create secret generic my-azure-storage-credentials \
+     --from-literal "account-access-key=$(az storage account keys list -n mystorageaccountname --query '[0].value' -otsv)"
+   ```
+
+4. Configure `azure` artifact as following in the yaml.
+
+```yaml
+artifacts:
+  - name: message
+    path: /tmp/message
+    azure:
+      endpoint: https://mystorageaccountname.blob.core.windows.net
+      container: my-container-name
+      blob: path/in/container
+      # accountKeySecret is a secret selector.
+      # It references the k8s secret named 'my-azure-storage-credentials'.
+      # This secret is expected to have have the key 'account-access-key',
+      # containing the base64 encoded credentials to the storage account.
+      #
+      # If a managed identity has been assigned to the machines running the
+      # workflow (e.g., https://docs.microsoft.com/en-us/azure/aks/use-managed-identity)
+      # then accountKeySecret is not needed, and useSDKCreds should be
+      # set to true instead:
+      # useSDKCreds: true
+      accountKeySecret:
+        name: my-azure-storage-credentials
+        key: account-access-key     
+```
+
+If `useSDKCreds` is set to `true`, then the `accountKeySecret` value is not
+used and authentication with Azure will be attempted using a
+[`DefaultAzureCredential`](https://docs.microsoft.com/en-us/azure/developer/go/azure-sdk-authentication)
+instead.
+
+## Configure the Default Artifact Repository
 
 In order for Argo to use your artifact repository, you can configure it as the
 default repository. Edit the workflow-controller config map with the correct
 endpoint and access/secret keys for your repository.
 
-## S3 compatible artifact repository bucket (such as AWS, GCS, Minio, and Alibaba Cloud OSS)
+### S3 compatible artifact repository bucket (such as AWS, GCS, MinIO, and Alibaba Cloud OSS)
 
 Use the `endpoint` corresponding to your provider:
 
-- AWS: s3.amazonaws.com
-- GCS: storage.googleapis.com
-- Minio: my-minio-endpoint.default:9000
-- Alibaba Cloud OSS: oss-cn-hangzhou-zmf.aliyuncs.com
+- AWS: `s3.amazonaws.com`
+- GCS: `storage.googleapis.com`
+- MinIO: `my-minio-endpoint.default:9000`
+- Alibaba Cloud OSS: `oss-cn-hangzhou-zmf.aliyuncs.com`
 
 The `key` is name of the object in the `bucket` The `accessKeySecret` and
 `secretKeySecret` are secret selectors that reference the specified kubernetes
-secret. The secret is expected to have the keys 'accessKey' and 'secretKey',
-containing the base64 encoded credentials to the bucket.
+secret. The secret is expected to have the keys `accessKey` and `secretKey`,
+containing the `base64` encoded credentials to the bucket.
 
 For AWS, the `accessKeySecret` and `secretKeySecret` correspond to
 `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` respectively.
 
-EC2 provides a metadata API via which applications using the AWS SDK may assume
+EC2 provides a meta-data API via which applications using the AWS SDK may assume
 IAM roles associated with the instance. If you are running argo on EC2 and the
 instance role allows access to your S3 bucket, you can configure the workflow
 step pods to assume the role. To do so, simply omit the `accessKeySecret` and
@@ -239,20 +295,20 @@ can be obtained from the GCP Console. Note that S3 compatible access is on a per
 project rather than per bucket basis.
 
 - Navigate to Storage > Settings
-  (https://console.cloud.google.com/storage/settings).
+  (<https://console.cloud.google.com/storage/settings>).
 - Enable interoperability access if needed.
 - Create a new key if needed.
 
-For Minio, the `accessKeySecret` and `secretKeySecret` naturally correspond the
-AccessKey and SecretKey.
+For MinIO, the `accessKeySecret` and `secretKeySecret` naturally correspond the
+`AccessKey` and `SecretKey`.
 
 For Alibaba Cloud OSS, the `accessKeySecret` and `secretKeySecret` corresponds to
 `accessKeyID` `and accessKeySecret` respectively.
 
 Example:
 
-```
-$ kubectl edit configmap workflow-controller-configmap -n argo		# assumes argo was installed in the argo namespace
+```bash
+$ kubectl edit configmap workflow-controller-configmap -n argo  # assumes argo was installed in the argo namespace
 ...
 data:
   artifactRepository: |
@@ -273,16 +329,16 @@ data:
 The secrets are retrieved from the namespace you use to run your workflows. Note
 that you can specify a `keyFormat`.
 
-## Google Cloud Storage (GCS)
+### Google Cloud Storage (GCS)
 
 Argo also can use native GCS APIs to access a Google Cloud Storage bucket.
 
-`serviceAccountKeySecret` references to a k8 secret which stores a Google Cloud
+`serviceAccountKeySecret` references to a Kubernetes secret which stores a Google Cloud
 service account key to access the bucket.
 
 Example:
 
-```
+```bash
 $ kubectl edit configmap workflow-controller-configmap -n argo  # assumes argo was installed in the argo namespace
 ...
 data:
@@ -295,7 +351,7 @@ data:
         key: serviceAccountKey
 ```
 
-# Accessing Non-Default Artifact Repositories
+## Accessing Non-Default Artifact Repositories
 
 This section shows how to access artifacts from non-default artifact
 repositories.
@@ -303,7 +359,7 @@ repositories.
 The `endpoint`, `accessKeySecret` and `secretKeySecret` are the same as for
 configuring the default artifact repository described previously.
 
-```
+```yaml
   templates:
   - name: artifact-example
     inputs:

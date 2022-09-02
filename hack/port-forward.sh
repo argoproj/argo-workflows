@@ -20,6 +20,7 @@ wait-for() {
 
 wait-for minio
 pf minio 9000
+pf minio 9001
 
 dex=$(kubectl -n argo get pod -l app=dex -o name)
 if [[ "$dex" != "" ]]; then
@@ -55,4 +56,10 @@ fi
 if [[ "$(kubectl -n argo get pod -l app=prometheus -o name)" != "" ]]; then
   wait-for prometheus
   pf prometheus 9091 9090
+fi
+
+azurite=$(kubectl -n argo get pod -l app=azurite -o name)
+if [[ "$azurite" != "" ]]; then
+  wait-for azurite
+  pf azurite 10000
 fi

@@ -24,6 +24,8 @@ import {WorkflowYamlViewer} from '../../../workflows/components/workflow-yaml-vi
 
 require('../../../workflows/components/workflow-details/workflow-details.scss');
 
+const STEP_GRAPH_CONTAINER_MIN_WIDTH = 490;
+
 interface State {
     workflow?: Workflow;
     links?: Link[];
@@ -85,6 +87,7 @@ export class ArchivedWorkflowDetails extends BasePage<RouteComponentProps<any>, 
                 )
             )
             .catch(error => this.setState({error}));
+        services.info.collectEvent('openedArchivedWorkflowDetails').then();
     }
 
     public render() {
@@ -186,7 +189,7 @@ export class ArchivedWorkflowDetails extends BasePage<RouteComponentProps<any>, 
                     </div>
                 ) : (
                     <div>
-                        <div className='workflow-details__graph-container'>
+                        <div className='workflow-details__graph-container-wrapper' style={{minWidth: STEP_GRAPH_CONTAINER_MIN_WIDTH, width: '100%'}}>
                             {this.tab === 'workflow' ? (
                                 <WorkflowPanel
                                     workflowMetadata={this.state.workflow.metadata}
@@ -199,7 +202,7 @@ export class ArchivedWorkflowDetails extends BasePage<RouteComponentProps<any>, 
                             )}
                         </div>
                         {this.nodeId && (
-                            <div className='workflow-details__step-info'>
+                            <div className='workflow-details__step-info' style={{minWidth: STEP_GRAPH_CONTAINER_MIN_WIDTH, float: 'right'}}>
                                 <button className='workflow-details__step-info-close' onClick={() => (this.nodeId = null)}>
                                     <i className='argo-icon-close' />
                                 </button>

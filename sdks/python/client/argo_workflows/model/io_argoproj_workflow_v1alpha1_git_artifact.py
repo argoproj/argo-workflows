@@ -88,12 +88,14 @@ class IoArgoprojWorkflowV1alpha1GitArtifact(ModelNormal):
         lazy_import()
         return {
             'repo': (str,),  # noqa: E501
+            'branch': (str,),  # noqa: E501
             'depth': (int,),  # noqa: E501
             'disable_submodules': (bool,),  # noqa: E501
             'fetch': ([str],),  # noqa: E501
             'insecure_ignore_host_key': (bool,),  # noqa: E501
             'password_secret': (SecretKeySelector,),  # noqa: E501
             'revision': (str,),  # noqa: E501
+            'single_branch': (bool,),  # noqa: E501
             'ssh_private_key_secret': (SecretKeySelector,),  # noqa: E501
             'username_secret': (SecretKeySelector,),  # noqa: E501
         }
@@ -105,12 +107,14 @@ class IoArgoprojWorkflowV1alpha1GitArtifact(ModelNormal):
 
     attribute_map = {
         'repo': 'repo',  # noqa: E501
+        'branch': 'branch',  # noqa: E501
         'depth': 'depth',  # noqa: E501
         'disable_submodules': 'disableSubmodules',  # noqa: E501
         'fetch': 'fetch',  # noqa: E501
         'insecure_ignore_host_key': 'insecureIgnoreHostKey',  # noqa: E501
         'password_secret': 'passwordSecret',  # noqa: E501
         'revision': 'revision',  # noqa: E501
+        'single_branch': 'singleBranch',  # noqa: E501
         'ssh_private_key_secret': 'sshPrivateKeySecret',  # noqa: E501
         'username_secret': 'usernameSecret',  # noqa: E501
     }
@@ -159,12 +163,14 @@ class IoArgoprojWorkflowV1alpha1GitArtifact(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
+            branch (str): Branch is the branch to fetch when `SingleBranch` is enabled. [optional]  # noqa: E501
             depth (int): Depth specifies clones/fetches should be shallow and include the given number of commits from the branch tip. [optional]  # noqa: E501
             disable_submodules (bool): DisableSubmodules disables submodules during git clone. [optional]  # noqa: E501
             fetch ([str]): Fetch specifies a number of refs that should be fetched before checkout. [optional]  # noqa: E501
             insecure_ignore_host_key (bool): InsecureIgnoreHostKey disables SSH strict host key checking during git clone. [optional]  # noqa: E501
             password_secret (SecretKeySelector): [optional]  # noqa: E501
             revision (str): Revision is the git commit, tag, branch to checkout. [optional]  # noqa: E501
+            single_branch (bool): SingleBranch enables single branch clone, using the `branch` parameter. [optional]  # noqa: E501
             ssh_private_key_secret (SecretKeySelector): [optional]  # noqa: E501
             username_secret (SecretKeySelector): [optional]  # noqa: E501
         """
@@ -252,12 +258,14 @@ class IoArgoprojWorkflowV1alpha1GitArtifact(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
+            branch (str): Branch is the branch to fetch when `SingleBranch` is enabled. [optional]  # noqa: E501
             depth (int): Depth specifies clones/fetches should be shallow and include the given number of commits from the branch tip. [optional]  # noqa: E501
             disable_submodules (bool): DisableSubmodules disables submodules during git clone. [optional]  # noqa: E501
             fetch ([str]): Fetch specifies a number of refs that should be fetched before checkout. [optional]  # noqa: E501
             insecure_ignore_host_key (bool): InsecureIgnoreHostKey disables SSH strict host key checking during git clone. [optional]  # noqa: E501
             password_secret (SecretKeySelector): [optional]  # noqa: E501
             revision (str): Revision is the git commit, tag, branch to checkout. [optional]  # noqa: E501
+            single_branch (bool): SingleBranch enables single branch clone, using the `branch` parameter. [optional]  # noqa: E501
             ssh_private_key_secret (SecretKeySelector): [optional]  # noqa: E501
             username_secret (SecretKeySelector): [optional]  # noqa: E501
         """

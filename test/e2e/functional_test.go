@@ -1,5 +1,5 @@
-//go:build functional
-// +build functional
+//go:build corefunctional
+// +build corefunctional
 
 package e2e
 
@@ -44,7 +44,7 @@ func (s *FunctionalSuite) TestDeletingPendingPod() {
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToStart).
 		Exec("kubectl", []string{"-n", "argo", "delete", "pod", "-l", "workflows.argoproj.io/workflow"}, fixtures.OutputRegexp(`pod "pending-.*" deleted`)).
-		Wait(3*time.Second). // allow 3s for reconciliation, we'll create a new pod
+		Wait(time.Duration(3*fixtures.EnvFactor)*time.Second). // allow 3s for reconciliation, we'll create a new pod
 		Exec("kubectl", []string{"-n", "argo", "get", "pod", "-l", "workflows.argoproj.io/workflow"}, fixtures.OutputRegexp(`pending-.*Pending`))
 }
 
@@ -335,29 +335,6 @@ func (s *FunctionalSuite) TestEventOnWorkflowSuccess() {
 						assert.Fail(t, e.Reason)
 					}
 				}
-			},
-		)
-}
-
-func (s *FunctionalSuite) TestLargeWorkflowFailure() {
-	var uid types.UID
-	s.Given().
-		Workflow("@expectedfailures/large-workflow.yaml").
-		When().
-		SubmitWorkflow().
-		WaitForWorkflow(120*time.Second).
-		Then().
-		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			uid = metadata.UID
-		}).
-		ExpectAuditEvents(
-			fixtures.HasInvolvedObject(workflow.WorkflowKind, uid),
-			2,
-			func(t *testing.T, e []apiv1.Event) {
-				assert.Equal(t, "WorkflowRunning", e[0].Reason)
-
-				assert.Equal(t, "WorkflowFailed", e[1].Reason)
-				assert.Contains(t, e[1].Message, "workflow templates are limited to 128KB, this workflow is 128001 bytes")
 			},
 		)
 }
@@ -698,7 +675,7 @@ spec:
 `).
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow().
+		WaitForWorkflow(10 * time.Second).
 		Then().
 		ExpectWorkflow(func(t *testing.T, md *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.WorkflowFailed, status.Phase)

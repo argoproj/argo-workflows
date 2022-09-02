@@ -2,6 +2,8 @@ package commands
 
 import (
 	"context"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/argoproj/pkg/stats"
@@ -30,27 +32,24 @@ func waitContainer(ctx context.Context) error {
 	defer stats.LogStats()
 	stats.StartStatsTicker(5 * time.Minute)
 
-	defer func() {
-		if err := wfExecutor.KillSidecars(ctx); err != nil {
+	// use a block to constrain the scope of ctx
+	{
+		// this allows us to gracefully shutdown, capturing artifacts
+		ctx, cancel := signal.NotifyContext(ctx, syscall.SIGTERM)
+		defer cancel()
+
+		// Wait for main container to complete
+		err := wfExecutor.Wait(ctx)
+		if err != nil {
 			wfExecutor.AddError(err)
 		}
-	}()
-
-	// Wait for main container to complete
-	err := wfExecutor.Wait(ctx)
-	if err != nil {
-		wfExecutor.AddError(err)
 	}
 	// Capture output script result
-	err = wfExecutor.CaptureScriptResult(ctx)
+	err := wfExecutor.CaptureScriptResult(ctx)
 	if err != nil {
 		wfExecutor.AddError(err)
 	}
-	// Saving logs
-	logArt, err := wfExecutor.SaveLogs(ctx)
-	if err != nil {
-		wfExecutor.AddError(err)
-	}
+
 	// Saving output parameters
 	err = wfExecutor.SaveParameters(ctx)
 	if err != nil {
@@ -61,11 +60,7 @@ func waitContainer(ctx context.Context) error {
 	if err != nil {
 		wfExecutor.AddError(err)
 	}
-	// Annotating pod with output
-	err = wfExecutor.ReportOutputs(ctx, logArt)
-	if err != nil {
-		wfExecutor.AddError(err)
-	}
 
+	wfExecutor.SaveLogs(ctx)
 	return wfExecutor.HasError()
 }

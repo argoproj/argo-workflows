@@ -8,6 +8,7 @@ import {uiUrl} from '../../../shared/base';
 import {ErrorNotice} from '../../../shared/components/error-notice';
 import {Node} from '../../../shared/components/graph/types';
 import {Loading} from '../../../shared/components/loading';
+import {useCollectEvent} from '../../../shared/components/use-collect-event';
 import {Context} from '../../../shared/context';
 import {historyUrl} from '../../../shared/history';
 import {services} from '../../../shared/services';
@@ -62,6 +63,8 @@ export const SensorDetails = ({match, location, history}: RouteComponentProps<an
     }, [namespace, name]);
 
     useEffect(() => setEdited(true), [sensor]);
+
+    useCollectEvent('openedSensorDetails');
 
     const selected = (() => {
         if (!selectedLogNode) {

@@ -89,9 +89,9 @@ class IoArgoprojWorkflowV1alpha1LifecycleHook(ModelNormal):
         """
         lazy_import()
         return {
-            'template': (str,),  # noqa: E501
             'arguments': (IoArgoprojWorkflowV1alpha1Arguments,),  # noqa: E501
             'expression': (str,),  # noqa: E501
+            'template': (str,),  # noqa: E501
             'template_ref': (IoArgoprojWorkflowV1alpha1TemplateRef,),  # noqa: E501
         }
 
@@ -101,9 +101,9 @@ class IoArgoprojWorkflowV1alpha1LifecycleHook(ModelNormal):
 
 
     attribute_map = {
-        'template': 'template',  # noqa: E501
         'arguments': 'arguments',  # noqa: E501
         'expression': 'expression',  # noqa: E501
+        'template': 'template',  # noqa: E501
         'template_ref': 'templateRef',  # noqa: E501
     }
 
@@ -114,11 +114,8 @@ class IoArgoprojWorkflowV1alpha1LifecycleHook(ModelNormal):
 
     @classmethod
     @convert_js_args_to_python_args
-    def _from_openapi_data(cls, template, *args, **kwargs):  # noqa: E501
+    def _from_openapi_data(cls, *args, **kwargs):  # noqa: E501
         """IoArgoprojWorkflowV1alpha1LifecycleHook - a model defined in OpenAPI
-
-        Args:
-            template (str): Template is the name of the template to execute by the hook
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
@@ -153,6 +150,7 @@ class IoArgoprojWorkflowV1alpha1LifecycleHook(ModelNormal):
                                 _visited_composed_classes = (Animal,)
             arguments (IoArgoprojWorkflowV1alpha1Arguments): [optional]  # noqa: E501
             expression (str): Expression is a condition expression for when a node will be retried. If it evaluates to false, the node will not be retried and the retry strategy will be ignored. [optional]  # noqa: E501
+            template (str): Template is the name of the template to execute by the hook. [optional]  # noqa: E501
             template_ref (IoArgoprojWorkflowV1alpha1TemplateRef): [optional]  # noqa: E501
         """
 
@@ -181,7 +179,6 @@ class IoArgoprojWorkflowV1alpha1LifecycleHook(ModelNormal):
         self._configuration = _configuration
         self._visited_composed_classes = _visited_composed_classes + (self.__class__,)
 
-        self.template = template
         for var_name, var_value in kwargs.items():
             if var_name not in self.attribute_map and \
                         self._configuration is not None and \
@@ -202,11 +199,8 @@ class IoArgoprojWorkflowV1alpha1LifecycleHook(ModelNormal):
     ])
 
     @convert_js_args_to_python_args
-    def __init__(self, template, *args, **kwargs):  # noqa: E501
+    def __init__(self, *args, **kwargs):  # noqa: E501
         """IoArgoprojWorkflowV1alpha1LifecycleHook - a model defined in OpenAPI
-
-        Args:
-            template (str): Template is the name of the template to execute by the hook
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
@@ -241,6 +235,7 @@ class IoArgoprojWorkflowV1alpha1LifecycleHook(ModelNormal):
                                 _visited_composed_classes = (Animal,)
             arguments (IoArgoprojWorkflowV1alpha1Arguments): [optional]  # noqa: E501
             expression (str): Expression is a condition expression for when a node will be retried. If it evaluates to false, the node will not be retried and the retry strategy will be ignored. [optional]  # noqa: E501
+            template (str): Template is the name of the template to execute by the hook. [optional]  # noqa: E501
             template_ref (IoArgoprojWorkflowV1alpha1TemplateRef): [optional]  # noqa: E501
         """
 
@@ -267,7 +262,6 @@ class IoArgoprojWorkflowV1alpha1LifecycleHook(ModelNormal):
         self._configuration = _configuration
         self._visited_composed_classes = _visited_composed_classes + (self.__class__,)
 
-        self.template = template
         for var_name, var_value in kwargs.items():
             if var_name not in self.attribute_map and \
                         self._configuration is not None and \

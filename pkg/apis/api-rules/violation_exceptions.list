@@ -9,6 +9,7 @@ API rule violation: list_type_missing,github.com/argoproj/argo-workflows/v3/pkg/
 API rule violation: list_type_missing,github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1,GitArtifact,Fetch
 API rule violation: list_type_missing,github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1,HDFSConfig,Addresses
 API rule violation: list_type_missing,github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1,HTTPArtifact,Headers
+API rule violation: list_type_missing,github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1,HTTPBodySource,Bytes
 API rule violation: list_type_missing,github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1,Histogram,Buckets
 API rule violation: list_type_missing,github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1,Inputs,Parameters
 API rule violation: list_type_missing,github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1,LabelKeys,Items
@@ -16,6 +17,8 @@ API rule violation: list_type_missing,github.com/argoproj/argo-workflows/v3/pkg/
 API rule violation: list_type_missing,github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1,Metrics,Prometheus
 API rule violation: list_type_missing,github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1,NodeStatus,Children
 API rule violation: list_type_missing,github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1,NodeStatus,OutboundNodes
+API rule violation: list_type_missing,github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1,OAuth2Auth,EndpointParams
+API rule violation: list_type_missing,github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1,OAuth2Auth,Scopes
 API rule violation: list_type_missing,github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1,Outputs,Parameters
 API rule violation: list_type_missing,github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1,ParallelSteps,Steps
 API rule violation: list_type_missing,github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1,Parameter,Enum
@@ -38,5 +41,8 @@ API rule violation: list_type_missing,github.com/argoproj/argo-workflows/v3/pkg/
 API rule violation: list_type_missing,github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1,WorkflowSpec,Volumes
 API rule violation: list_type_missing,github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1,WorkflowStatus,PersistentVolumeClaims
 API rule violation: list_type_missing,github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1,WorkflowStep,WithItems
+API rule violation: names_match,github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1,ArtifactSearchResult,Artifact
+API rule violation: names_match,github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1,ArtifactSearchResult,NodeID
+API rule violation: names_match,github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1,HTTPAuth,OAuth2
 API rule violation: names_match,github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1,SubmitOpts,Entrypoint
 API rule violation: names_match,github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1,WorkflowStatus,StoredWorkflowSpec

@@ -16,6 +16,7 @@ import (
 type ArtifactDriver struct {
 	Username string
 	Password string
+	Client   *http.Client
 }
 
 var _ common.ArtifactDriver = &ArtifactDriver{}
@@ -52,7 +53,7 @@ func (h *ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) error {
 		}
 	}
 
-	res, err := (&http.Client{}).Do(req)
+	res, err := h.Client.Do(req)
 	if err != nil {
 		return err
 	}
@@ -63,7 +64,7 @@ func (h *ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) error {
 		return errors.New(errors.CodeNotFound, res.Status)
 	}
 	if res.StatusCode < 200 || res.StatusCode >= 300 {
-		return errors.InternalErrorf("loading file from %s failed with reason:%s", url, res.Status)
+		return errors.InternalErrorf("loading file from %s failed with reason: %s", url, res.Status)
 	}
 
 	_, err = io.Copy(lf, res.Body)
@@ -71,9 +72,15 @@ func (h *ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) error {
 	return err
 }
 
+func (h *ArtifactDriver) OpenStream(a *wfv1.Artifact) (io.ReadCloser, error) {
+	// todo: this is a temporary implementation which loads file to disk first
+	return common.LoadToStream(a, h)
+}
+
 // Save writes the artifact to the URL
 func (h *ArtifactDriver) Save(path string, outputArtifact *wfv1.Artifact) error {
-	f, err := os.Open(filepath.Clean(path))
+	cleanPath := filepath.Clean(path)
+	f, err := os.Open(cleanPath)
 	if err != nil {
 		return err
 	}
@@ -99,7 +106,12 @@ func (h *ArtifactDriver) Save(path string, outputArtifact *wfv1.Artifact) error 
 			req.SetBasicAuth(h.Username, h.Password)
 		}
 	}
-	res, err := (&http.Client{}).Do(req)
+	// we set the GetBody func of the request in order to enable following 307 POST/PUT redirects, needed e.g. for webHDFS
+	req.GetBody = func() (io.ReadCloser, error) {
+		return os.Open(cleanPath)
+	}
+
+	res, err := h.Client.Do(req)
 	if err != nil {
 		return err
 	}
@@ -107,11 +119,20 @@ func (h *ArtifactDriver) Save(path string, outputArtifact *wfv1.Artifact) error 
 		_ = res.Body.Close()
 	}()
 	if res.StatusCode < 200 || res.StatusCode >= 300 {
-		return errors.InternalErrorf("saving file %s to %s failed with reason:%s", path, url, res.Status)
+		return errors.InternalErrorf("saving file %s to %s failed with reason: %s", path, url, res.Status)
 	}
 	return nil
 }
 
+// Delete is unsupported for the http artifacts
+func (h *ArtifactDriver) Delete(s *wfv1.Artifact) error {
+	return common.ErrDeleteNotSupported
+}
+
 func (h *ArtifactDriver) ListObjects(artifact *wfv1.Artifact) ([]string, error) {
 	return nil, fmt.Errorf("ListObjects is currently not supported for this artifact type, but it will be in a future version")
+}
+
+func (g *ArtifactDriver) IsDirectory(artifact *wfv1.Artifact) (bool, error) {
+	return false, errors.New(errors.CodeNotImplemented, "IsDirectory currently unimplemented for http")
 }

@@ -13,6 +13,7 @@ import (
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/strategicpatch"
+	"k8s.io/utils/pointer"
 
 	"github.com/argoproj/argo-workflows/v3/errors"
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
@@ -36,6 +37,12 @@ var (
 	volumeMountVarArgo = apiv1.VolumeMount{
 		Name:      volumeVarArgo.Name,
 		MountPath: common.VarRunArgoPath,
+	}
+	volumeTmpDir = apiv1.Volume{
+		Name: "tmp-dir-argo",
+		VolumeSource: apiv1.VolumeSource{
+			EmptyDir: &apiv1.EmptyDirVolumeSource{},
+		},
 	}
 )
 
@@ -152,7 +159,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 
 	pod := &apiv1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      util.PodName(woc.wf.Name, nodeName, tmpl.Name, nodeID, util.GetPodNameVersion()),
+			Name:      util.PodName(woc.wf.Name, nodeName, tmpl.Name, nodeID, util.GetWorkflowPodNameVersion(woc.wf)),
 			Namespace: woc.wf.ObjectMeta.Namespace,
 			Labels: map[string]string{
 				common.LabelKeyWorkflow:  woc.wf.ObjectMeta.Name, // Allows filtering by pods related to specific workflow
@@ -260,11 +267,6 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 	}
 
 	envVarTemplateValue := wfv1.MustMarshallJSON(tmpl)
-	templateSize := len(envVarTemplateValue)
-	if templateSize > 128000 {
-		err = fmt.Errorf("workflow templates are limited to 128KB, this workflow is %d bytes", templateSize)
-		return nil, err
-	}
 
 	// Add standard environment variables, making pod spec larger
 	envVars := []apiv1.EnvVar{
@@ -385,6 +387,14 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 			}
 			c.Command = append([]string{common.VarRunArgoPath + "/argoexec", "emissary", "--"}, c.Command...)
 		}
+		if c.Image == woc.controller.executorImage() {
+			// mount tmp dir to wait container
+			c.VolumeMounts = append(c.VolumeMounts, apiv1.VolumeMount{
+				Name:      volumeTmpDir.Name,
+				MountPath: "/tmp",
+				SubPath:   strconv.Itoa(i),
+			})
+		}
 		c.VolumeMounts = append(c.VolumeMounts, volumeMountVarArgo)
 		if x := pod.Spec.TerminationGracePeriodSeconds; x != nil && c.Name == common.WaitContainerName {
 			c.Env = append(c.Env, apiv1.EnvVar{Name: common.EnvVarTerminationGracePeriodSeconds, Value: fmt.Sprint(*x)})
@@ -496,13 +506,13 @@ func substitutePodParams(pod *apiv1.Pod, globalParams common.Parameters, tmpl *w
 
 func (woc *wfOperationCtx) newInitContainer(tmpl *wfv1.Template) apiv1.Container {
 	ctr := woc.newExecContainer(common.InitContainerName, tmpl)
-	ctr.Command = []string{"argoexec", "init", "--loglevel", getExecutorLogLevel()}
+	ctr.Command = []string{"argoexec", "init", "--loglevel", getExecutorLogLevel(), "--log-format", woc.controller.executorLogFormat()}
 	return *ctr
 }
 
 func (woc *wfOperationCtx) newWaitContainer(tmpl *wfv1.Template) *apiv1.Container {
 	ctr := woc.newExecContainer(common.WaitContainerName, tmpl)
-	ctr.Command = []string{"argoexec", "wait", "--loglevel", getExecutorLogLevel()}
+	ctr.Command = []string{"argoexec", "wait", "--loglevel", getExecutorLogLevel(), "--log-format", woc.controller.executorLogFormat()}
 	return ctr
 }
 
@@ -571,7 +581,7 @@ func (woc *wfOperationCtx) createVolumes(tmpl *wfv1.Template) []apiv1.Volume {
 		})
 	}
 
-	volumes = append(volumes, volumeVarArgo)
+	volumes = append(volumes, volumeVarArgo, volumeTmpDir)
 	volumes = append(volumes, tmpl.Volumes...)
 	return volumes
 }
@@ -584,6 +594,20 @@ func (woc *wfOperationCtx) newExecContainer(name string, tmpl *wfv1.Template) *a
 		Env:             woc.createEnvVars(),
 		Resources:       woc.controller.Config.GetExecutor().Resources,
 		SecurityContext: woc.controller.Config.GetExecutor().SecurityContext,
+	}
+	// lock down resource pods by default
+	if tmpl.GetType() == wfv1.TemplateTypeResource && exec.SecurityContext == nil {
+		exec.SecurityContext = &apiv1.SecurityContext{
+			Capabilities: &apiv1.Capabilities{
+				Drop: []apiv1.Capability{"ALL"},
+			},
+			RunAsNonRoot:             pointer.BoolPtr(true),
+			RunAsUser:                pointer.Int64Ptr(8737),
+			AllowPrivilegeEscalation: pointer.BoolPtr(false),
+		}
+		if exec.Name != common.InitContainerName && exec.Name != common.WaitContainerName {
+			exec.SecurityContext.ReadOnlyRootFilesystem = pointer.BoolPtr(true)
+		}
 	}
 	if woc.controller.Config.KubeConfig != nil {
 		path := woc.controller.Config.KubeConfig.MountPath
@@ -695,7 +719,7 @@ func addSchedulingConstraints(pod *apiv1.Pod, wfSpec *wfv1.WorkflowSpec, tmpl *w
 // These are either specified in the workflow.spec.volumes or the workflow.spec.volumeClaimTemplate section
 func addVolumeReferences(pod *apiv1.Pod, vols []apiv1.Volume, tmpl *wfv1.Template, pvcs []apiv1.Volume) error {
 	switch tmpl.GetType() {
-	case wfv1.TemplateTypeContainer, wfv1.TemplateTypeContainerSet, wfv1.TemplateTypeScript, wfv1.TemplateTypeData:
+	case wfv1.TemplateTypeContainer, wfv1.TemplateTypeContainerSet, wfv1.TemplateTypeScript, wfv1.TemplateTypeResource, wfv1.TemplateTypeData:
 	default:
 		return nil
 	}
@@ -765,7 +789,7 @@ func addVolumeReferences(pod *apiv1.Pod, vols []apiv1.Volume, tmpl *wfv1.Templat
 		}
 	}
 
-	volumes, volumeMounts := createSecretVolumes(tmpl)
+	volumes, volumeMounts := createSecretVolumesAndMounts(tmpl)
 	pod.Spec.Volumes = append(pod.Spec.Volumes, volumes...)
 
 	for idx, container := range pod.Spec.Containers {
@@ -1072,8 +1096,8 @@ func verifyResolvedVariables(obj interface{}) error {
 	})
 }
 
-// createSecretVolumes will retrieve and create Volumes and Volumemount object for Pod
-func createSecretVolumes(tmpl *wfv1.Template) ([]apiv1.Volume, []apiv1.VolumeMount) {
+// createSecretVolumesAndMounts will retrieve and create Volumes and Volumemount object for Pod
+func createSecretVolumesAndMounts(tmpl *wfv1.Template) ([]apiv1.Volume, []apiv1.VolumeMount) {
 	allVolumesMap := make(map[string]apiv1.Volume)
 	uniqueKeyMap := make(map[string]bool)
 	var secretVolumes []apiv1.Volume
@@ -1110,46 +1134,67 @@ func createArchiveLocationSecret(tmpl *wfv1.Template, volMap map[string]apiv1.Vo
 	if tmpl.ArchiveLocation == nil {
 		return
 	}
-	if s3ArtRepo := tmpl.ArchiveLocation.S3; s3ArtRepo != nil {
-		createSecretVal(volMap, s3ArtRepo.AccessKeySecret, uniqueKeyMap)
-		createSecretVal(volMap, s3ArtRepo.SecretKeySecret, uniqueKeyMap)
-	} else if hdfsArtRepo := tmpl.ArchiveLocation.HDFS; hdfsArtRepo != nil {
-		createSecretVal(volMap, hdfsArtRepo.KrbKeytabSecret, uniqueKeyMap)
-		createSecretVal(volMap, hdfsArtRepo.KrbCCacheSecret, uniqueKeyMap)
-	} else if artRepo := tmpl.ArchiveLocation.Artifactory; artRepo != nil {
-		createSecretVal(volMap, artRepo.UsernameSecret, uniqueKeyMap)
-		createSecretVal(volMap, artRepo.PasswordSecret, uniqueKeyMap)
-	} else if gitRepo := tmpl.ArchiveLocation.Git; gitRepo != nil {
-		createSecretVal(volMap, gitRepo.UsernameSecret, uniqueKeyMap)
-		createSecretVal(volMap, gitRepo.PasswordSecret, uniqueKeyMap)
-		createSecretVal(volMap, gitRepo.SSHPrivateKeySecret, uniqueKeyMap)
-	} else if ossRepo := tmpl.ArchiveLocation.OSS; ossRepo != nil {
-		createSecretVal(volMap, ossRepo.AccessKeySecret, uniqueKeyMap)
-		createSecretVal(volMap, ossRepo.SecretKeySecret, uniqueKeyMap)
-	} else if gcsRepo := tmpl.ArchiveLocation.GCS; gcsRepo != nil {
-		createSecretVal(volMap, gcsRepo.ServiceAccountKeySecret, uniqueKeyMap)
-	}
+	createSecretVolumesFromArtifactLocations(volMap, []*wfv1.ArtifactLocation{tmpl.ArchiveLocation}, uniqueKeyMap)
 }
 
 func createSecretVolume(volMap map[string]apiv1.Volume, art wfv1.Artifact, keyMap map[string]bool) {
-	if art.S3 != nil {
-		createSecretVal(volMap, art.S3.AccessKeySecret, keyMap)
-		createSecretVal(volMap, art.S3.SecretKeySecret, keyMap)
-	} else if art.Git != nil {
-		createSecretVal(volMap, art.Git.UsernameSecret, keyMap)
-		createSecretVal(volMap, art.Git.PasswordSecret, keyMap)
-		createSecretVal(volMap, art.Git.SSHPrivateKeySecret, keyMap)
-	} else if art.Artifactory != nil {
-		createSecretVal(volMap, art.Artifactory.UsernameSecret, keyMap)
-		createSecretVal(volMap, art.Artifactory.PasswordSecret, keyMap)
-	} else if art.HDFS != nil {
-		createSecretVal(volMap, art.HDFS.KrbCCacheSecret, keyMap)
-		createSecretVal(volMap, art.HDFS.KrbKeytabSecret, keyMap)
-	} else if art.OSS != nil {
-		createSecretVal(volMap, art.OSS.AccessKeySecret, keyMap)
-		createSecretVal(volMap, art.OSS.SecretKeySecret, keyMap)
-	} else if art.GCS != nil {
-		createSecretVal(volMap, art.GCS.ServiceAccountKeySecret, keyMap)
+	createSecretVolumesFromArtifactLocations(volMap, []*wfv1.ArtifactLocation{&art.ArtifactLocation}, keyMap)
+}
+
+func createSecretVolumesAndMountsFromArtifactLocations(artifactLocations []*wfv1.ArtifactLocation) ([]apiv1.Volume, []apiv1.VolumeMount) {
+	allVolumesMap := make(map[string]apiv1.Volume)
+	uniqueKeyMap := make(map[string]bool)
+	var secretVolumes []apiv1.Volume
+	var secretVolMounts []apiv1.VolumeMount
+
+	createSecretVolumesFromArtifactLocations(allVolumesMap, artifactLocations, uniqueKeyMap)
+
+	for volMountName, val := range allVolumesMap {
+		secretVolumes = append(secretVolumes, val)
+		secretVolMounts = append(secretVolMounts, apiv1.VolumeMount{
+			Name:      volMountName,
+			MountPath: common.SecretVolMountPath + "/" + val.Name,
+			ReadOnly:  true,
+		})
+	}
+
+	return secretVolumes, secretVolMounts
+}
+
+func createSecretVolumesFromArtifactLocations(volMap map[string]apiv1.Volume, artifactLocations []*wfv1.ArtifactLocation, keyMap map[string]bool) {
+	for _, artifactLocation := range artifactLocations {
+		if artifactLocation == nil {
+			continue
+		}
+		if artifactLocation.S3 != nil {
+			createSecretVal(volMap, artifactLocation.S3.AccessKeySecret, keyMap)
+			createSecretVal(volMap, artifactLocation.S3.SecretKeySecret, keyMap)
+		} else if artifactLocation.Git != nil {
+			createSecretVal(volMap, artifactLocation.Git.UsernameSecret, keyMap)
+			createSecretVal(volMap, artifactLocation.Git.PasswordSecret, keyMap)
+			createSecretVal(volMap, artifactLocation.Git.SSHPrivateKeySecret, keyMap)
+		} else if artifactLocation.Artifactory != nil {
+			createSecretVal(volMap, artifactLocation.Artifactory.UsernameSecret, keyMap)
+			createSecretVal(volMap, artifactLocation.Artifactory.PasswordSecret, keyMap)
+		} else if artifactLocation.HDFS != nil {
+			createSecretVal(volMap, artifactLocation.HDFS.KrbCCacheSecret, keyMap)
+			createSecretVal(volMap, artifactLocation.HDFS.KrbKeytabSecret, keyMap)
+		} else if artifactLocation.OSS != nil {
+			createSecretVal(volMap, artifactLocation.OSS.AccessKeySecret, keyMap)
+			createSecretVal(volMap, artifactLocation.OSS.SecretKeySecret, keyMap)
+		} else if artifactLocation.GCS != nil {
+			createSecretVal(volMap, artifactLocation.GCS.ServiceAccountKeySecret, keyMap)
+		} else if artifactLocation.HTTP != nil && artifactLocation.HTTP.Auth != nil {
+			createSecretVal(volMap, artifactLocation.HTTP.Auth.BasicAuth.UsernameSecret, keyMap)
+			createSecretVal(volMap, artifactLocation.HTTP.Auth.BasicAuth.PasswordSecret, keyMap)
+			createSecretVal(volMap, artifactLocation.HTTP.Auth.ClientCert.ClientCertSecret, keyMap)
+			createSecretVal(volMap, artifactLocation.HTTP.Auth.ClientCert.ClientKeySecret, keyMap)
+			createSecretVal(volMap, artifactLocation.HTTP.Auth.OAuth2.ClientIDSecret, keyMap)
+			createSecretVal(volMap, artifactLocation.HTTP.Auth.OAuth2.ClientSecretSecret, keyMap)
+			createSecretVal(volMap, artifactLocation.HTTP.Auth.OAuth2.TokenURLSecret, keyMap)
+		} else if artifactLocation.Azure != nil {
+			createSecretVal(volMap, artifactLocation.Azure.AccountKeySecret, keyMap)
+		}
 	}
 }
 

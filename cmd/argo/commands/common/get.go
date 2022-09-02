@@ -118,6 +118,8 @@ func PrintWorkflowHelper(wf *wfv1.Workflow, getArgs GetFlags) string {
 					out += fmt.Sprintf(fmtStr, "  "+art.Name+":", art.S3.String())
 				} else if art.Artifactory != nil {
 					out += fmt.Sprintf(fmtStr, "  "+art.Name+":", art.Artifactory.String())
+				} else if art.Azure != nil {
+					out += fmt.Sprintf(fmtStr, "  "+art.Name+":", art.Azure.String())
 				}
 			}
 		}
@@ -164,7 +166,6 @@ func PrintWorkflowHelper(wf *wfv1.Workflow, getArgs GetFlags) string {
 		}
 	}
 	writerBuffer := new(bytes.Buffer)
-	printer.PrintSecurityNudges(*wf, writerBuffer)
 	out += writerBuffer.String()
 	return out
 }

@@ -25,3 +25,8 @@ func (h InfoServiceClient) GetUserInfo(_ context.Context, in *infopkg.GetUserInf
 	out := &infopkg.GetUserInfoResponse{}
 	return out, h.Get(in, out, "/api/v1/userinfo")
 }
+
+func (h InfoServiceClient) CollectEvent(_ context.Context, in *infopkg.CollectEventRequest, _ ...grpc.CallOption) (*infopkg.CollectEventResponse, error) {
+	out := &infopkg.CollectEventResponse{}
+	return out, h.Post(in, out, "/api/v1/tracking/event")
+}

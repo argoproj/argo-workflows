@@ -3,6 +3,7 @@ import {catchError, filter, map, mergeMap, switchMap} from 'rxjs/operators';
 import * as models from '../../../models';
 import {Event, LogEntry, NodeStatus, Workflow, WorkflowList, WorkflowPhase} from '../../../models';
 import {SubmitOpts} from '../../../models/submit-opts';
+import {uiUrl} from '../base';
 import {Pagination} from '../pagination';
 import {Utils} from '../utils';
 import requests from './requests';
@@ -108,6 +109,13 @@ export class WorkflowsService {
         return requests.put(`api/v1/workflows/${namespace}/${name}/suspend`).then(res => res.body as Workflow);
     }
 
+    public set(name: string, namespace: string, nodeFieldSelector: string, outputParameters: string) {
+        return requests
+            .put(`api/v1/workflows/${namespace}/${name}/set`)
+            .send({nodeFieldSelector, outputParameters})
+            .then(res => res.body as Workflow);
+    }
+
     public resume(name: string, namespace: string, nodeFieldSelector: string) {
         return requests
             .put(`api/v1/workflows/${namespace}/${name}/resume`)
@@ -137,7 +145,9 @@ export class WorkflowsService {
     public getContainerLogsFromCluster(workflow: Workflow, podName: string, container: string, grep: string): Observable<LogEntry> {
         const namespace = workflow.metadata.namespace;
         const name = workflow.metadata.name;
-        const podLogsURL = `api/v1/workflows/${namespace}/${name}/log?logOptions.container=${container}&grep=${grep}&logOptions.follow=true${podName ? `&podName=${podName}` : ''}`;
+        const podLogsURL = uiUrl(
+            `api/v1/workflows/${namespace}/${name}/log?logOptions.container=${container}&grep=${grep}&logOptions.follow=true${podName ? `&podName=${podName}` : ''}`
+        );
         return requests.loadEventSource(podLogsURL).pipe(
             filter(line => !!line),
             map(line => JSON.parse(line).result as LogEntry),
@@ -180,7 +190,7 @@ export class WorkflowsService {
                     throw new Error('no artifact logs are available');
                 }
 
-                return from(requests.get(this.getArtifactLogsUrl(workflow, nodeId, container, archived)));
+                return from(requests.get(this.getArtifactLogsPath(workflow, nodeId, container, archived)));
             }),
             mergeMap(r => r.text.split('\n')),
             map(content => ({content} as LogEntry)),
@@ -197,27 +207,26 @@ export class WorkflowsService {
             return getLogsFromArtifact();
         }
         // return archived log if main container is finished and has artifact
-        return from(this.isWorkflowNodePendingOrRunning(workflow, nodeId)).pipe(
-            switchMap(isPendingOrRunning => {
-                if (!isPendingOrRunning && this.hasArtifactLogs(workflow, nodeId, container) && container === 'main') {
-                    return getLogsFromArtifact();
-                }
-                return this.getContainerLogsFromCluster(workflow, podName, container, grep).pipe(catchError(getLogsFromArtifact));
-            })
-        );
+        return this.getContainerLogsFromCluster(workflow, podName, container, grep).pipe(catchError(getLogsFromArtifact));
     }
 
-    public getArtifactLogsUrl(workflow: Workflow, nodeId: string, container: string, archived: boolean) {
-        return this.getArtifactDownloadUrl(workflow, nodeId, container + '-logs', archived, false);
+    public getArtifactLogsPath(workflow: Workflow, nodeId: string, container: string, archived: boolean) {
+        return this.artifactPath(workflow, nodeId, container + '-logs', archived, false);
     }
 
     public getArtifactDownloadUrl(workflow: Workflow, nodeId: string, artifactName: string, archived: boolean, isInput: boolean) {
-        if (archived) {
-            const endpoint = isInput ? 'input-artifacts-by-uid' : 'artifacts-by-uid';
-            return `${endpoint}/${workflow.metadata.uid}/${nodeId}/${encodeURIComponent(artifactName)}`;
+        return uiUrl(this.artifactPath(workflow, nodeId, artifactName, archived, isInput));
+    }
+
+    public artifactPath(workflow: Workflow, nodeId: string, artifactName: string, archived: boolean, isInput: boolean) {
+        if (!isInput) {
+            return `artifact-files/${workflow.metadata.namespace}/${archived ? 'archived-workflows' : 'workflows'}/${
+                archived ? workflow.metadata.uid : workflow.metadata.name
+            }/${nodeId}/outputs/${artifactName}`;
+        } else if (archived) {
+            return `input-artifacts-by-uid/${workflow.metadata.uid}/${nodeId}/${encodeURIComponent(artifactName)}`;
         } else {
-            const endpoint = isInput ? 'input-artifacts' : 'artifacts';
-            return `${endpoint}/${workflow.metadata.namespace}/${workflow.metadata.name}/${nodeId}/${encodeURIComponent(artifactName)}`;
+            return `input-artifacts/${workflow.metadata.namespace}/${workflow.metadata.name}/${nodeId}/${encodeURIComponent(artifactName)}`;
         }
     }
 

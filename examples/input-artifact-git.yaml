@@ -47,6 +47,11 @@ spec:
           # the refspec format.
           # fetch: refs/meta/*
           # fetch: refs/changes/*
+          #
+          # Single branch mode can be specified by providing a `singleBranch` and `branch` This mode 
+          # is faster than passing in a revision, as it will only fetch the references to the given branch.
+          # singleBranch: true
+          # branch: my-branch
     container:
       image: golang:1.10
       command: [sh, -c]

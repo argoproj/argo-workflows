@@ -17,6 +17,7 @@ SRC                   := $(GOPATH)/src/github.com/argoproj/argo-workflows
 
 GREP_LOGS             := ""
 
+
 # docker image publishing options
 IMAGE_NAMESPACE       ?= quay.io/argoproj
 DEV_IMAGE             ?= $(shell [ `uname -s` = Darwin ] && echo true || echo false)
@@ -27,6 +28,12 @@ K3D_CLUSTER_NAME      ?= k3s-default
 # The name of the namespace where Kubernetes resources/RBAC will be installed
 KUBE_NAMESPACE        ?= argo
 MANAGED_NAMESPACE     ?= $(KUBE_NAMESPACE)
+
+# Timeout for wait conditions
+E2E_WAIT_TIMEOUT      ?= 1m
+
+E2E_PARALLEL          ?= 20
+E2E_SUITE_TIMEOUT     ?= 15m
 
 VERSION               := latest
 DOCKER_PUSH           := false
@@ -44,10 +51,15 @@ else
 STATIC_FILES          ?= $(shell [ $(DEV_BRANCH) = true ] && echo false || echo true)
 endif
 
-UI                    ?= false
+# start the Controller
+CTRL                  ?= true
+# tail logs
+LOGS                  ?= $(CTRL)
+# start the UI
+UI                    ?= $(shell [ $(CTRL) = true ] && echo false || echo true)
 # start the Argo Server
 API                   ?= $(UI)
-GOTEST                ?= go test -v
+GOTEST                ?= go test -v -p 20
 PROFILE               ?= minimal
 PLUGINS               ?= $(shell [ $PROFILE = plugins ] && echo false || echo true)
 # by keeping this short we speed up the tests
@@ -58,6 +70,8 @@ AUTH_MODE             := hybrid
 ifeq ($(PROFILE),sso)
 AUTH_MODE             := sso
 endif
+# whether or not to start the Azurite test service for Azure Blob Storage
+AZURE                 := false
 
 # Which mode to run in:
 # * `local` run the workflow–controller and argo-server as single replicas on the local machine (default)
@@ -80,7 +94,7 @@ ALWAYS_OFFLOAD_NODE_STATUS := false
 
 $(info GIT_COMMIT=$(GIT_COMMIT) GIT_BRANCH=$(GIT_BRANCH) GIT_TAG=$(GIT_TAG) GIT_TREE_STATE=$(GIT_TREE_STATE) RELEASE_TAG=$(RELEASE_TAG) DEV_BRANCH=$(DEV_BRANCH) VERSION=$(VERSION))
 $(info KUBECTX=$(KUBECTX) DOCKER_DESKTOP=$(DOCKER_DESKTOP) K3D=$(K3D) DOCKER_PUSH=$(DOCKER_PUSH))
-$(info RUN_MODE=$(RUN_MODE) PROFILE=$(PROFILE) AUTH_MODE=$(AUTH_MODE) SECURE=$(SECURE) STATIC_FILES=$(STATIC_FILES) ALWAYS_OFFLOAD_NODE_STATUS=$(ALWAYS_OFFLOAD_NODE_STATUS) UPPERIO_DB_DEBUG=$(UPPERIO_DB_DEBUG) LOG_LEVEL=$(LOG_LEVEL) NAMESPACED=$(NAMESPACED))
+$(info RUN_MODE=$(RUN_MODE) PROFILE=$(PROFILE) AUTH_MODE=$(AUTH_MODE) SECURE=$(SECURE) STATIC_FILES=$(STATIC_FILES) ALWAYS_OFFLOAD_NODE_STATUS=$(ALWAYS_OFFLOAD_NODE_STATUS) UPPERIO_DB_DEBUG=$(UPPERIO_DB_DEBUG) LOG_LEVEL=$(LOG_LEVEL) NAMESPACED=$(NAMESPACED) AZURE=$(AZURE))
 
 override LDFLAGS += \
   -X github.com/argoproj/argo-workflows/v3.version=$(VERSION) \
@@ -109,7 +123,6 @@ SWAGGER_FILES := pkg/apiclient/_.primary.swagger.json \
 	pkg/apiclient/event/event.swagger.json \
 	pkg/apiclient/eventsource/eventsource.swagger.json \
 	pkg/apiclient/info/info.swagger.json \
-	pkg/apiclient/pipeline/pipeline.swagger.json \
 	pkg/apiclient/sensor/sensor.swagger.json \
 	pkg/apiclient/workflow/workflow.swagger.json \
 	pkg/apiclient/workflowarchive/workflow-archive.swagger.json \
@@ -134,12 +147,6 @@ define protoc
      perl -i -pe 's|argoproj/argo-workflows/|argoproj/argo-workflows/v3/|g' `echo "$(1)" | sed 's/proto/pb.go/g'`
 
 endef
-
-.PHONY: build
-build: clis images
-
-.PHONY: images
-images: argocli-image argoexec-image workflow-controller-image
 
 # cli
 
@@ -177,20 +184,20 @@ dist/argo-windows-%.gz: dist/argo-windows-%
 	gzip --force --keep dist/argo-windows-$*.exe
 
 dist/argo-windows-%: server/static/files.go $(CLI_PKGS) go.sum
-	CGO_ENABLED=0 $(GOARGS) go build -v -ldflags '${LDFLAGS} -extldflags -static' -o $@.exe ./cmd/argo
+	CGO_ENABLED=0 $(GOARGS) go build -v -gcflags '${GCFLAGS}' -ldflags '${LDFLAGS} -extldflags -static' -o $@.exe ./cmd/argo
 
 dist/argo-%.gz: dist/argo-%
 	gzip --force --keep dist/argo-$*
 
 dist/argo-%: server/static/files.go $(CLI_PKGS) go.sum
-	CGO_ENABLED=0 $(GOARGS) go build -v -ldflags '${LDFLAGS} -extldflags -static' -o $@ ./cmd/argo
+	CGO_ENABLED=0 $(GOARGS) go build -v -gcflags '${GCFLAGS}' -ldflags '${LDFLAGS} -extldflags -static' -o $@ ./cmd/argo
 
 dist/argo: server/static/files.go $(CLI_PKGS) go.sum
 ifeq ($(shell uname -s),Darwin)
 	# if local, then build fast: use CGO and dynamic-linking
-	go build -v -ldflags '${LDFLAGS}' -o $@ ./cmd/argo
+	go build -v -gcflags '${GCFLAGS}' -ldflags '${LDFLAGS}' -o $@ ./cmd/argo
 else
-	CGO_ENABLED=0 go build -v -ldflags '${LDFLAGS} -extldflags -static' -o $@ ./cmd/argo
+	CGO_ENABLED=0 go build -gcflags '${GCFLAGS}' -v -ldflags '${LDFLAGS} -extldflags -static' -o $@ ./cmd/argo
 endif
 
 argocli-image:
@@ -206,9 +213,9 @@ controller: dist/workflow-controller
 dist/workflow-controller: $(CONTROLLER_PKGS) go.sum
 ifeq ($(shell uname -s),Darwin)
 	# if local, then build fast: use CGO and dynamic-linking
-	go build -v -ldflags '${LDFLAGS}' -o $@ ./cmd/workflow-controller
+	go build -gcflags '${GCFLAGS}' -v -ldflags '${LDFLAGS}' -o $@ ./cmd/workflow-controller
 else
-	CGO_ENABLED=0 go build -v -ldflags '${LDFLAGS} -extldflags -static' -o $@ ./cmd/workflow-controller
+	CGO_ENABLED=0 go build -gcflags '${GCFLAGS}' -v -ldflags '${LDFLAGS} -extldflags -static' -o $@ ./cmd/workflow-controller
 endif
 
 workflow-controller-image:
@@ -217,9 +224,9 @@ workflow-controller-image:
 
 dist/argoexec: $(ARGOEXEC_PKGS) go.sum
 ifeq ($(shell uname -s),Darwin)
-	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -v -ldflags '${LDFLAGS} -extldflags -static' -o $@ ./cmd/argoexec
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -gcflags '${GCFLAGS}' -v -ldflags '${LDFLAGS} -extldflags -static' -o $@ ./cmd/argoexec
 else
-	CGO_ENABLED=0 go build -v -ldflags '${LDFLAGS} -extldflags -static' -o $@ ./cmd/argoexec
+	CGO_ENABLED=0 go build -v -gcflags '${GCFLAGS}' -ldflags '${LDFLAGS} -extldflags -static' -o $@ ./cmd/argoexec
 endif
 
 argoexec-image:
@@ -236,7 +243,8 @@ argoexec-image:
 	if [ $(DOCKER_PUSH) = true ] && [ $(IMAGE_NAMESPACE) != argoproj ] ; then docker push $(IMAGE_NAMESPACE)/$*:$(VERSION) ; fi
 
 .PHONY: codegen
-codegen: types swagger docs manifests
+codegen: types swagger manifests $(GOPATH)/bin/mockery docs/fields.md docs/cli/argo.md
+	go generate ./...
 	make --directory sdks/java generate
 	make --directory sdks/python generate
 
@@ -258,7 +266,6 @@ swagger: \
 	pkg/apiclient/eventsource/eventsource.swagger.json \
 	pkg/apiclient/info/info.swagger.json \
 	pkg/apiclient/sensor/sensor.swagger.json \
-	pkg/apiclient/pipeline/pipeline.swagger.json \
 	pkg/apiclient/workflow/workflow.swagger.json \
 	pkg/apiclient/workflowarchive/workflow-archive.swagger.json \
 	pkg/apiclient/workflowtemplate/workflow-template.swagger.json \
@@ -267,16 +274,6 @@ swagger: \
 	api/openapi-spec/swagger.json \
 	api/jsonschema/schema.json
 
-.PHONY: docs
-docs: \
-	docs/fields.md \
-	docs/cli/argo.md \
-	$(GOPATH)/bin/mockery
-	rm -Rf vendor v3
-	go mod tidy
-	# `go generate ./...` takes around 10s, so we only run on specific packages.
-	go generate ./persist/sqldb ./pkg/plugins ./pkg/apiclient/workflow ./server/auth ./server/auth/sso ./workflow/executor
-	./hack/check-env-doc.sh
 
 $(GOPATH)/bin/mockery:
 	go install github.com/vektra/mockery/v2@v2.10.0
@@ -343,9 +340,6 @@ pkg/apiclient/info/info.swagger.json: $(PROTO_BINARIES) $(TYPES) pkg/apiclient/i
 pkg/apiclient/sensor/sensor.swagger.json: $(PROTO_BINARIES) $(TYPES) pkg/apiclient/sensor/sensor.proto
 	$(call protoc,pkg/apiclient/sensor/sensor.proto)
 
-pkg/apiclient/pipeline/pipeline.swagger.json: $(PROTO_BINARIES) $(TYPES) pkg/apiclient/pipeline/pipeline.proto
-	$(call protoc,pkg/apiclient/pipeline/pipeline.proto)
-
 pkg/apiclient/workflow/workflow.swagger.json: $(PROTO_BINARIES) $(TYPES) pkg/apiclient/workflow/workflow.proto
 	$(call protoc,pkg/apiclient/workflow/workflow.proto)
 
@@ -399,7 +393,7 @@ dist/manifests/%: manifests/%
 # lint/test/etc
 
 $(GOPATH)/bin/golangci-lint:
-	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b `go env GOPATH`/bin
+	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b `go env GOPATH`/bin v1.47.1
 
 .PHONY: lint
 lint: server/static/files.go $(GOPATH)/bin/golangci-lint
@@ -412,12 +406,17 @@ lint: server/static/files.go $(GOPATH)/bin/golangci-lint
 	go mod tidy
 	# Lint Go files
 	$(GOPATH)/bin/golangci-lint run --fix --verbose
+	# Lint the UI
+	if [ -e ui/node_modules ]; then yarn --cwd ui lint ; fi
 
 # for local we have a faster target that prints to stdout, does not use json, and can cache because it has no coverage
 .PHONY: test
-test: server/static/files.go dist/argosay
+test: server/static/files.go
 	go build ./...
 	env KUBECONFIG=/dev/null $(GOTEST) ./...
+	# marker file, based on it's modification time, we know how long ago this target was run
+	@mkdir -p dist
+	touch dist/test
 
 .PHONY: install
 install: githooks
@@ -431,6 +430,9 @@ endif
 ifeq ($(RUN_MODE),kubernetes)
 	kubectl -n $(KUBE_NAMESPACE) scale deploy/workflow-controller --replicas 1
 	kubectl -n $(KUBE_NAMESPACE) scale deploy/argo-server --replicas 1
+endif
+ifeq ($(AZURE),true)
+	kubectl -n $(KUBE_NAMESPACE) apply -f test/e2e/azure/deploy-azurite.yaml
 endif
 
 .PHONY: argosay
@@ -447,17 +449,8 @@ dist/argosay:
 	mkdir -p dist
 	cp test/e2e/images/argosay/v2/argosay dist/
 
-.PHONY: pull-images
-pull-images:
-	docker pull golang:1.18
-	docker pull debian:10.7-slim
-	docker pull mysql:8
-	docker pull argoproj/argosay:v1
-	docker pull argoproj/argosay:v2
-	docker pull python:alpine3.6
-
 $(GOPATH)/bin/goreman:
-	go install github.com/mattn/goreman@v0.3.7
+	go install github.com/mattn/goreman@v0.3.11
 
 .PHONY: start
 ifeq ($(RUN_MODE),local)
@@ -469,7 +462,13 @@ endif
 else
 start: install
 endif
-	@echo "starting STATIC_FILES=$(STATIC_FILES) (DEV_BRANCH=$(DEV_BRANCH), GIT_BRANCH=$(GIT_BRANCH)), AUTH_MODE=$(AUTH_MODE), RUN_MODE=$(RUN_MODE), MANAGED_NAMESPACE=$(MANAGED_NAMESPACE)"
+	@echo "starting STATIC_FILES=$(STATIC_FILES) (DEV_BRANCH=$(DEV_BRANCH), GIT_BRANCH=$(GIT_BRANCH)), AUTH_MODE=$(AUTH_MODE), RUN_MODE=$(RUN_MODE), MANAGED_NAMESPACE=$(MANAGED_NAMESPACE), AZURE=$(AZURE)"
+ifneq ($(CTRL),true)
+	@echo "⚠️️  not starting controller. If you want to test the controller, use 'make start CTRL=true' to start it"
+endif
+ifneq ($(LOGS),true)
+	@echo "⚠️️  not starting logs. If you want to tail logs, use 'make start LOGS=true' to start it"
+endif
 ifneq ($(API),true)
 	@echo "⚠️️  not starting API. If you want to test the API, use 'make start API=true' to start it"
 endif
@@ -483,20 +482,23 @@ endif
 ifeq ($(AUTH_MODE),sso)
 	grep '127.0.0.1.*dex' /etc/hosts
 endif
+ifeq ($(AZURE),true)
+	grep '127.0.0.1.*azurite' /etc/hosts
+endif
 	grep '127.0.0.1.*minio' /etc/hosts
 	grep '127.0.0.1.*postgres' /etc/hosts
 	grep '127.0.0.1.*mysql' /etc/hosts
 	./hack/port-forward.sh
 ifeq ($(RUN_MODE),local)
-	env DEFAULT_REQUEUE_TIME=$(DEFAULT_REQUEUE_TIME) SECURE=$(SECURE) ALWAYS_OFFLOAD_NODE_STATUS=$(ALWAYS_OFFLOAD_NODE_STATUS) LOG_LEVEL=$(LOG_LEVEL) UPPERIO_DB_DEBUG=$(UPPERIO_DB_DEBUG) IMAGE_NAMESPACE=$(IMAGE_NAMESPACE) VERSION=$(VERSION) AUTH_MODE=$(AUTH_MODE) NAMESPACED=$(NAMESPACED) NAMESPACE=$(KUBE_NAMESPACE) MANAGED_NAMESPACE=$(MANAGED_NAMESPACE) UI=$(UI) API=$(API) PLUGINS=$(PLUGINS) $(GOPATH)/bin/goreman -set-ports=false -logtime=false start $(shell if [ -z $GREP_LOGS ]; then echo; else echo "| grep \"$(GREP_LOGS)\""; fi)
+	env DEFAULT_REQUEUE_TIME=$(DEFAULT_REQUEUE_TIME) SECURE=$(SECURE) ALWAYS_OFFLOAD_NODE_STATUS=$(ALWAYS_OFFLOAD_NODE_STATUS) LOG_LEVEL=$(LOG_LEVEL) UPPERIO_DB_DEBUG=$(UPPERIO_DB_DEBUG) IMAGE_NAMESPACE=$(IMAGE_NAMESPACE) VERSION=$(VERSION) AUTH_MODE=$(AUTH_MODE) NAMESPACED=$(NAMESPACED) NAMESPACE=$(KUBE_NAMESPACE) MANAGED_NAMESPACE=$(MANAGED_NAMESPACE) CTRL=$(CTRL) LOGS=$(LOGS) UI=$(UI) API=$(API) PLUGINS=$(PLUGINS) $(GOPATH)/bin/goreman -set-ports=false -logtime=false start $(shell if [ -z $GREP_LOGS ]; then echo; else echo "| grep \"$(GREP_LOGS)\""; fi)
 endif
 
 $(GOPATH)/bin/stern:
-	./hack/recurl.sh $(GOPATH)/bin/stern https://github.com/wercker/stern/releases/download/1.11.0/stern_`uname -s|tr '[:upper:]' '[:lower:]'`_amd64
+	go install github.com/stern/stern@latest
 
 .PHONY: logs
 logs: $(GOPATH)/bin/stern
-	stern -l workflows.argoproj.io/workflow 2>&1
+	$(GOPATH)/bin/stern -l workflows.argoproj.io/workflow 2>&1
 
 .PHONY: wait
 wait:
@@ -518,7 +520,7 @@ mysql-cli:
 test-cli: ./dist/argo
 
 test-%:
-	go test -v -timeout 15m -count 1 --tags $* -parallel 10 ./test/e2e
+	go test -failfast -v -timeout $(E2E_SUITE_TIMEOUT) -count 1 --tags $* -parallel $(E2E_PARALLEL) ./test/e2e
 
 .PHONY: test-examples
 test-examples:
@@ -527,6 +529,10 @@ test-examples:
 .PHONY: test-%-sdk
 test-%-sdk:
 	make --directory sdks/$* install test -B
+
+Test%:
+	go test -failfast -v -timeout $(E2E_SUITE_TIMEOUT) -count 1 --tags api,cli,cron,executor,examples,corefunctional,functional,plugins -parallel $(E2E_PARALLEL) ./test/e2e  -run='.*/$*'
+
 
 # clean
 
@@ -606,23 +612,73 @@ docs/fields.md: api/openapi-spec/swagger.json $(shell find examples -type f) hac
 docs/cli/argo.md: $(CLI_PKGS) go.sum server/static/files.go hack/cli/main.go
 	go run ./hack/cli
 
-# pre-push
+# docs
 
-.git/hooks/commit-msg: hack/git/hooks/commit-msg
-	cp -v hack/git/hooks/commit-msg .git/hooks/commit-msg
+/usr/local/bin/mdspell:
+	npm i -g markdown-spellcheck
+
+.PHONY: docs-spellcheck
+docs-spellcheck: /usr/local/bin/mdspell
+	# check docs for spelling mistakes
+	mdspell --ignore-numbers --ignore-acronyms --en-us --no-suggestions --report $(shell find docs -name '*.md' -not -name upgrading.md -not -name fields.md -not -name upgrading.md -not -name executor_swagger.md -not -path '*/cli/*')
+
+/usr/local/bin/markdown-link-check:
+	npm i -g markdown-link-check
+
+.PHONY: docs-linkcheck
+docs-linkcheck: /usr/local/bin/markdown-link-check
+	# check docs for broken links
+	markdown-link-check -q -c .mlc_config.json $(shell find docs -name '*.md' -not -name fields.md -not -name executor_swagger.md)
+
+/usr/local/bin/markdownlint:
+	npm i -g  markdownlint-cli
+
+.PHONY: docs-lint
+docs-lint: /usr/local/bin/markdownlint
+	# lint docs
+	markdownlint docs --fix --ignore docs/fields.md --ignore docs/executor_swagger.md --ignore docs/cli --ignore docs/walk-through/the-structure-of-workflow-specs.md
+
+/usr/local/bin/mkdocs:
+	python -m pip install mkdocs==1.2.4 mkdocs_material==8.1.9  mkdocs-spellcheck==0.2.1
+
+.PHONY: docs
+docs: /usr/local/bin/mkdocs \
+	docs-spellcheck \
+	docs-lint \
+	docs-linkcheck
+	# check environment-variables.md contains all variables mentioned in the code
+	./hack/check-env-doc.sh
+	# check all docs are listed in mkdocs.yml
+	./hack/check-mkdocs.sh
+	# build the docs
+	mkdocs build
+	# fix the fields.md document
+	go run -tags fields ./hack parseexamples
+	# tell the user the fastest way to edit docs
+	@echo "ℹ️ If you want to preview you docs, open site/index.html. If you want to edit them with hot-reload, run 'make docs-serve' to start mkdocs on port 8000"
+
+.PHONY: docs-serve
+docs-serve: docs
+	mkdocs serve
+
+# pre-commit checks
+
+.git/hooks/%: hack/git/hooks/%
+	@mkdir -p .git/hooks
+	cp hack/git/hooks/$* .git/hooks/$*
 
 .PHONY: githooks
-githooks: .git/hooks/commit-msg
+githooks: .git/hooks/pre-commit .git/hooks/commit-msg
 
 .PHONY: pre-commit
-pre-commit: githooks codegen lint
+pre-commit: codegen lint docs
+	# marker file, based on it's modification time, we know how long ago this target was run
+	touch dist/pre-commit
+
+# release
 
 release-notes: /dev/null
 	version=$(VERSION) envsubst < hack/release-notes.md > release-notes
-
-.PHONY: parse-examples
-parse-examples:
-	go run -tags fields ./hack parseexamples
 
 .PHONY: checksums
 checksums:

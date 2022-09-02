@@ -16,7 +16,7 @@ If you did not do this, reset all your commit and replace them with a single com
 
 ```
 git reset HEAD~1 ;# change 1 to how many commits you made
-git commit --sign-off -m 'feat: my feat. Fixes #1234'
+git commit --signoff -m 'feat: my feat. Fixes #1234'
 ```
 
 When creating your PR: 

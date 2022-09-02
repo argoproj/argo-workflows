@@ -293,8 +293,8 @@ func TestWFLevelExecutorServiceAccountName(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, pods.Items, 1)
 	pod := pods.Items[0]
-	assert.Equal(t, "exec-sa-token", pod.Spec.Volumes[1].Name)
-	assert.Equal(t, "foo-token", pod.Spec.Volumes[1].VolumeSource.Secret.SecretName)
+	assert.Equal(t, "exec-sa-token", pod.Spec.Volumes[2].Name)
+	assert.Equal(t, "foo-token", pod.Spec.Volumes[2].VolumeSource.Secret.SecretName)
 
 	waitCtr := pod.Spec.Containers[0]
 	verifyServiceAccountTokenVolumeMount(t, waitCtr, "exec-sa-token", "/var/run/secrets/kubernetes.io/serviceaccount")
@@ -320,8 +320,8 @@ func TestTmplLevelExecutorServiceAccountName(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, pods.Items, 1)
 	pod := pods.Items[0]
-	assert.Equal(t, "exec-sa-token", pod.Spec.Volumes[1].Name)
-	assert.Equal(t, "tmpl-token", pod.Spec.Volumes[1].VolumeSource.Secret.SecretName)
+	assert.Equal(t, "exec-sa-token", pod.Spec.Volumes[2].Name)
+	assert.Equal(t, "tmpl-token", pod.Spec.Volumes[2].VolumeSource.Secret.SecretName)
 
 	waitCtr := pod.Spec.Containers[0]
 	verifyServiceAccountTokenVolumeMount(t, waitCtr, "exec-sa-token", "/var/run/secrets/kubernetes.io/serviceaccount")
@@ -725,9 +725,10 @@ func TestVolumeAndVolumeMounts(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Len(t, pods.Items, 1)
 		pod := pods.Items[0]
-		if assert.Len(t, pod.Spec.Volumes, 2) {
+		if assert.Len(t, pod.Spec.Volumes, 3) {
 			assert.Equal(t, "var-run-argo", pod.Spec.Volumes[0].Name)
-			assert.Equal(t, "volume-name", pod.Spec.Volumes[1].Name)
+			assert.Equal(t, "tmp-dir-argo", pod.Spec.Volumes[1].Name)
+			assert.Equal(t, "volume-name", pod.Spec.Volumes[2].Name)
 		}
 		if assert.Len(t, pod.Spec.InitContainers, 1) {
 			init := pod.Spec.InitContainers[0]
@@ -738,9 +739,10 @@ func TestVolumeAndVolumeMounts(t *testing.T) {
 		containers := pod.Spec.Containers
 		if assert.Len(t, containers, 2) {
 			wait := containers[0]
-			if assert.Len(t, wait.VolumeMounts, 2) {
+			if assert.Len(t, wait.VolumeMounts, 3) {
 				assert.Equal(t, "volume-name", wait.VolumeMounts[0].Name)
-				assert.Equal(t, "var-run-argo", wait.VolumeMounts[1].Name)
+				assert.Equal(t, "tmp-dir-argo", wait.VolumeMounts[1].Name)
+				assert.Equal(t, "var-run-argo", wait.VolumeMounts[2].Name)
 			}
 			main := containers[1]
 			assert.Equal(t, []string{"/var/run/argo/argoexec", "emissary", "--", "cowsay"}, main.Command)
@@ -790,11 +792,11 @@ func TestVolumesPodSubstitution(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, pods.Items, 1)
 	pod := pods.Items[0]
-	assert.Equal(t, 2, len(pod.Spec.Volumes))
-	assert.Equal(t, "volume-name", pod.Spec.Volumes[1].Name)
-	assert.Equal(t, "test-name", pod.Spec.Volumes[1].PersistentVolumeClaim.ClaimName)
+	assert.Equal(t, 3, len(pod.Spec.Volumes))
+	assert.Equal(t, "volume-name", pod.Spec.Volumes[2].Name)
+	assert.Equal(t, "test-name", pod.Spec.Volumes[2].PersistentVolumeClaim.ClaimName)
 	assert.Equal(t, 2, len(pod.Spec.Containers[1].VolumeMounts))
-	assert.Equal(t, "volume-name", pod.Spec.Containers[1].VolumeMounts[0].Name)
+	assert.Equal(t, "volume-name", pod.Spec.Containers[0].VolumeMounts[0].Name)
 }
 
 func TestOutOfCluster(t *testing.T) {

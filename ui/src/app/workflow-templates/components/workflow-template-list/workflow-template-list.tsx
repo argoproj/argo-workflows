@@ -10,6 +10,7 @@ import {InfoIcon} from '../../../shared/components/fa-icons';
 import {Loading} from '../../../shared/components/loading';
 import {PaginationPanel} from '../../../shared/components/pagination-panel';
 import {Timestamp} from '../../../shared/components/timestamp';
+import {useCollectEvent} from '../../../shared/components/use-collect-event';
 import {ZeroState} from '../../../shared/components/zero-state';
 import {Context} from '../../../shared/context';
 import {Footnote} from '../../../shared/footnote';
@@ -78,6 +79,8 @@ export const WorkflowTemplateList = ({match, location, history}: RouteComponentP
     useEffect(() => {
         storage.setItem('paginationLimit', pagination.limit, 0);
     }, [pagination.limit, labels]);
+
+    useCollectEvent('openedWorkflowTemplateList');
 
     return (
         <Page

@@ -31,9 +31,9 @@ from argo_workflows.exceptions import ApiAttributeError
 
 def lazy_import():
     from argo_workflows.model.io_argoproj_workflow_v1alpha1_header import IoArgoprojWorkflowV1alpha1Header
-    from argo_workflows.model.secret_key_selector import SecretKeySelector
+    from argo_workflows.model.io_argoproj_workflow_v1alpha1_http_auth import IoArgoprojWorkflowV1alpha1HTTPAuth
+    globals()['IoArgoprojWorkflowV1alpha1HTTPAuth'] = IoArgoprojWorkflowV1alpha1HTTPAuth
     globals()['IoArgoprojWorkflowV1alpha1Header'] = IoArgoprojWorkflowV1alpha1Header
-    globals()['SecretKeySelector'] = SecretKeySelector
 
 
 class IoArgoprojWorkflowV1alpha1HTTPArtifact(ModelNormal):
@@ -90,9 +90,8 @@ class IoArgoprojWorkflowV1alpha1HTTPArtifact(ModelNormal):
         lazy_import()
         return {
             'url': (str,),  # noqa: E501
+            'auth': (IoArgoprojWorkflowV1alpha1HTTPAuth,),  # noqa: E501
             'headers': ([IoArgoprojWorkflowV1alpha1Header],),  # noqa: E501
-            'password_secret': (SecretKeySelector,),  # noqa: E501
-            'username_secret': (SecretKeySelector,),  # noqa: E501
         }
 
     @cached_property
@@ -102,9 +101,8 @@ class IoArgoprojWorkflowV1alpha1HTTPArtifact(ModelNormal):
 
     attribute_map = {
         'url': 'url',  # noqa: E501
+        'auth': 'auth',  # noqa: E501
         'headers': 'headers',  # noqa: E501
-        'password_secret': 'passwordSecret',  # noqa: E501
-        'username_secret': 'usernameSecret',  # noqa: E501
     }
 
     read_only_vars = {
@@ -151,9 +149,8 @@ class IoArgoprojWorkflowV1alpha1HTTPArtifact(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
+            auth (IoArgoprojWorkflowV1alpha1HTTPAuth): [optional]  # noqa: E501
             headers ([IoArgoprojWorkflowV1alpha1Header]): Headers are an optional list of headers to send with HTTP requests for artifacts. [optional]  # noqa: E501
-            password_secret (SecretKeySelector): [optional]  # noqa: E501
-            username_secret (SecretKeySelector): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -239,9 +236,8 @@ class IoArgoprojWorkflowV1alpha1HTTPArtifact(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
+            auth (IoArgoprojWorkflowV1alpha1HTTPAuth): [optional]  # noqa: E501
             headers ([IoArgoprojWorkflowV1alpha1Header]): Headers are an optional list of headers to send with HTTP requests for artifacts. [optional]  # noqa: E501
-            password_secret (SecretKeySelector): [optional]  # noqa: E501
-            username_secret (SecretKeySelector): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)

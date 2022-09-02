@@ -2,7 +2,7 @@
 
 Argo Workflows offers a range of options for retrying failed steps.
 
-## Configuring `retryStrategy` in WorkflowSpec
+## Configuring `retryStrategy` in `WorkflowSpec`
 
 ```yaml
 apiVersion: argoproj.io/v1alpha1
@@ -26,10 +26,10 @@ spec:
 
 Use `retryPolicy` to choose which failures to retry:
 
-- Always: Retry all failed steps
-- OnFailure: Retry steps whose main container is marked as failed in Kubernetes
-- OnError: Retry steps that encounter Argo controller errors, or whose init or wait containers fail
-- OnTransientError: Retry steps that encounter errors [defined as transient](https://github.com/argoproj/argo-workflows/blob/master/util/errors/errors.go), or errors matching the TRANSIENT_ERROR_PATTERN [environment variable](https://argoproj.github.io/argo-workflows/environment-variables/). Available in version 3.0 and later.
+- `Always`: Retry all failed steps
+- `OnFailure`: Retry steps whose main container is marked as failed in Kubernetes (this is the default)
+- `OnError`: Retry steps that encounter Argo controller errors, or whose init or wait containers fail
+- `OnTransientError`: Retry steps that encounter errors [defined as transient](https://github.com/argoproj/argo-workflows/blob/master/util/errors/errors.go), or errors matching the `TRANSIENT_ERROR_PATTERN` [environment variable](https://argoproj.github.io/argo-workflows/environment-variables/). Available in version 3.0 and later.
 
 For example:
 
@@ -68,6 +68,6 @@ If `expression` evaluates to false, the step will not be retried.
 
 See [example](https://raw.githubusercontent.com/argoproj/argo-workflows/master/examples/retry-conditional.yaml) for usage.
 
-## Backoff
+## Back-Off
 
 You can configure the delay between retries with `backoff`. See [example](https://raw.githubusercontent.com/argoproj/argo-workflows/master/examples/retry-backoff.yaml) for usage.

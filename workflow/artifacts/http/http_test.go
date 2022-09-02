@@ -1,7 +1,12 @@
 package http
 
 import (
+	"bytes"
+	"io/ioutil"
+	"net/http"
+	"net/http/httptest"
 	"os"
+	"path"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -11,7 +16,7 @@ import (
 )
 
 func TestHTTPArtifactDriver_Load(t *testing.T) {
-	driver := &ArtifactDriver{}
+	driver := &ArtifactDriver{Client: http.DefaultClient}
 	a := &wfv1.HTTPArtifact{
 		URL: "https://github.com/argoproj/argo-workflows",
 	}
@@ -53,7 +58,7 @@ func TestHTTPArtifactDriver_Load(t *testing.T) {
 }
 
 func TestArtifactoryArtifactDriver_Load(t *testing.T) {
-	driver := &ArtifactDriver{}
+	driver := &ArtifactDriver{Client: http.DefaultClient}
 	t.Run("NotFound", func(t *testing.T) {
 		err := driver.Load(&wfv1.Artifact{
 			ArtifactLocation: wfv1.ArtifactLocation{
@@ -78,4 +83,54 @@ func TestArtifactoryArtifactDriver_Load(t *testing.T) {
 			assert.NoError(t, err)
 		}
 	})
+}
+
+func TestSaveHTTPArtifactRedirect(t *testing.T) {
+	tempDir, err := ioutil.TempDir("", "webhdfs-test")
+	if err != nil {
+		panic(err)
+	}
+	defer os.RemoveAll(tempDir) // clean up
+
+	tempFile := path.Join(tempDir, "tmpfile")
+	content := "temporary file's content"
+	if err := ioutil.WriteFile(tempFile, []byte(content), 0o600); err != nil {
+		panic(err)
+	}
+
+	firstRequest := true
+	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if firstRequest {
+			// first response sends out only the 307
+			w.Header().Add("Location", r.RequestURI)
+			w.WriteHeader(http.StatusTemporaryRedirect)
+			firstRequest = false
+		} else {
+			// check that content is really there
+			buf := new(bytes.Buffer)
+			_, err = buf.ReadFrom(r.Body)
+			assert.NoError(t, err)
+			assert.Equal(t, content, buf.String())
+
+			w.WriteHeader(http.StatusCreated)
+		}
+
+	}))
+	defer svr.Close()
+
+	t.Run("SaveHTTPArtifactRedirect", func(t *testing.T) {
+		driver := ArtifactDriver{
+			Client: &http.Client{},
+		}
+		art := wfv1.Artifact{
+			ArtifactLocation: wfv1.ArtifactLocation{
+				HTTP: &wfv1.HTTPArtifact{
+					URL: svr.URL,
+				},
+			},
+		}
+		err := driver.Save(tempFile, &art)
+		assert.Nil(t, err)
+	})
+
 }

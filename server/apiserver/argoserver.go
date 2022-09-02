@@ -34,7 +34,6 @@ import (
 	eventpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/event"
 	eventsourcepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/eventsource"
 	infopkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/info"
-	pipelinepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/pipeline"
 	sensorpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/sensor"
 	workflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflow"
 	workflowarchivepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowarchive"
@@ -51,7 +50,6 @@ import (
 	"github.com/argoproj/argo-workflows/v3/server/event"
 	"github.com/argoproj/argo-workflows/v3/server/eventsource"
 	"github.com/argoproj/argo-workflows/v3/server/info"
-	pipeline "github.com/argoproj/argo-workflows/v3/server/pipeline"
 	"github.com/argoproj/argo-workflows/v3/server/sensor"
 	"github.com/argoproj/argo-workflows/v3/server/static"
 	"github.com/argoproj/argo-workflows/v3/server/types"
@@ -64,6 +62,10 @@ import (
 	"github.com/argoproj/argo-workflows/v3/workflow/artifactrepositories"
 	"github.com/argoproj/argo-workflows/v3/workflow/events"
 	"github.com/argoproj/argo-workflows/v3/workflow/hydrator"
+
+	limiter "github.com/sethvargo/go-limiter"
+	"github.com/sethvargo/go-limiter/httplimit"
+	"github.com/sethvargo/go-limiter/memorystore"
 )
 
 var MaxGRPCMessageSize int
@@ -85,6 +87,8 @@ type argoServer struct {
 	eventAsyncDispatch       bool
 	xframeOptions            string
 	accessControlAllowOrigin string
+	apiRateLimiter           limiter.Store
+	allowedLinkProtocol      []string
 	cache                    *cache.ResourceCache
 }
 
@@ -99,13 +103,15 @@ type ArgoServerOpts struct {
 	// config map name
 	ConfigName               string
 	ManagedNamespace         string
-	SSONameSpace             string
+	SSONamespace             string
 	HSTS                     bool
 	EventOperationQueueSize  int
 	EventWorkerCount         int
 	EventAsyncDispatch       bool
 	XFrameOptions            string
 	AccessControlAllowOrigin string
+	APIRateLimit             uint64
+	AllowedLinkProtocol      []string
 }
 
 func init() {
@@ -117,8 +123,8 @@ func init() {
 }
 
 func getResourceCacheNamespace(opts ArgoServerOpts) string {
-	if opts.Namespaced {
-		return opts.SSONameSpace
+	if opts.ManagedNamespace != "" {
+		return opts.ManagedNamespace
 	}
 	return v1.NamespaceAll
 }
@@ -136,15 +142,24 @@ func NewArgoServer(ctx context.Context, opts ArgoServerOpts) (*argoServer, error
 		if err != nil {
 			return nil, err
 		}
-		resourceCache = cache.NewResourceCache(opts.Clients.Kubernetes, ctx, getResourceCacheNamespace(opts))
+		resourceCache = cache.NewResourceCache(opts.Clients.Kubernetes, getResourceCacheNamespace(opts))
+		resourceCache.Run(ctx.Done())
 		log.Info("SSO enabled")
 	} else {
 		log.Info("SSO disabled")
 	}
-	gatekeeper, err := auth.NewGatekeeper(opts.AuthModes, opts.Clients, opts.RestConfig, ssoIf, auth.DefaultClientForAuthorization, opts.Namespace, opts.SSONameSpace, opts.Namespaced, resourceCache)
+	gatekeeper, err := auth.NewGatekeeper(opts.AuthModes, opts.Clients, opts.RestConfig, ssoIf, auth.DefaultClientForAuthorization, opts.Namespace, opts.SSONamespace, opts.Namespaced, resourceCache)
 	if err != nil {
 		return nil, err
 	}
+	store, err := memorystore.New(&memorystore.Config{
+		Tokens:   opts.APIRateLimit,
+		Interval: time.Second,
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	return &argoServer{
 		baseHRef:                 opts.BaseHRef,
 		tlsConfig:                opts.TLSConfig,
@@ -161,6 +176,8 @@ func NewArgoServer(ctx context.Context, opts ArgoServerOpts) (*argoServer, error
 		eventAsyncDispatch:       opts.EventAsyncDispatch,
 		xframeOptions:            opts.XFrameOptions,
 		accessControlAllowOrigin: opts.AccessControlAllowOrigin,
+		apiRateLimiter:           store,
+		allowedLinkProtocol:      opts.AllowedLinkProtocol,
 		cache:                    resourceCache,
 	}, nil
 }
@@ -174,6 +191,10 @@ var backoff = wait.Backoff{
 
 func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(string)) {
 	config, err := as.configController.Get(ctx)
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = config.Sanitize(as.allowedLinkProtocol)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -266,6 +287,7 @@ func (as *argoServer) newGRPCServer(instanceIDService instanceid.Service, offloa
 			grpcutil.PanicLoggerUnaryServerInterceptor(serverLog),
 			grpcutil.ErrorTranslationUnaryServerInterceptor,
 			as.gatekeeper.UnaryServerInterceptor(),
+			grpcutil.RatelimitUnaryServerInterceptor(as.apiRateLimiter),
 		)),
 		grpc.StreamInterceptor(grpc_middleware.ChainStreamServer(
 			grpc_prometheus.StreamServerInterceptor,
@@ -273,6 +295,7 @@ func (as *argoServer) newGRPCServer(instanceIDService instanceid.Service, offloa
 			grpcutil.PanicLoggerStreamServerInterceptor(serverLog),
 			grpcutil.ErrorTranslationStreamServerInterceptor,
 			as.gatekeeper.StreamServerInterceptor(),
+			grpcutil.RatelimitStreamServerInterceptor(as.apiRateLimiter),
 		)),
 	}
 
@@ -281,7 +304,6 @@ func (as *argoServer) newGRPCServer(instanceIDService instanceid.Service, offloa
 	infopkg.RegisterInfoServiceServer(grpcServer, info.NewInfoServer(as.managedNamespace, links, navColor))
 	eventpkg.RegisterEventServiceServer(grpcServer, eventServer)
 	eventsourcepkg.RegisterEventSourceServiceServer(grpcServer, eventsource.NewEventSourceServer())
-	pipelinepkg.RegisterPipelineServiceServer(grpcServer, pipeline.NewPipelineServer())
 	sensorpkg.RegisterSensorServiceServer(grpcServer, sensor.NewSensorServer())
 	workflowpkg.RegisterWorkflowServiceServer(grpcServer, workflow.NewWorkflowServer(instanceIDService, offloadNodeStatusRepo))
 	workflowtemplatepkg.RegisterWorkflowTemplateServiceServer(grpcServer, workflowtemplate.NewWorkflowTemplateServer(instanceIDService))
@@ -297,10 +319,15 @@ func (as *argoServer) newGRPCServer(instanceIDService instanceid.Service, offloa
 func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServer *artifacts.ArtifactServer) *http.Server {
 	endpoint := fmt.Sprintf("localhost:%d", port)
 
+	ratelimit_middleware, err := httplimit.NewMiddleware(as.apiRateLimiter, httplimit.IPKeyFunc())
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	mux := http.NewServeMux()
 	httpServer := http.Server{
 		Addr:      endpoint,
-		Handler:   accesslog.Interceptor(mux),
+		Handler:   ratelimit_middleware.Handle(accesslog.Interceptor(mux)),
 		TLSConfig: as.tlsConfig,
 	}
 	dialOpts := []grpc.DialOption{
@@ -329,7 +356,6 @@ func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServe
 	mustRegisterGWHandler(eventpkg.RegisterEventServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
 	mustRegisterGWHandler(eventsourcepkg.RegisterEventSourceServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
 	mustRegisterGWHandler(sensorpkg.RegisterSensorServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
-	mustRegisterGWHandler(pipelinepkg.RegisterPipelineServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
 	mustRegisterGWHandler(workflowpkg.RegisterWorkflowServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
 	mustRegisterGWHandler(workflowtemplatepkg.RegisterWorkflowTemplateServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
 	mustRegisterGWHandler(cronworkflowpkg.RegisterCronWorkflowServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
@@ -341,10 +367,15 @@ func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServe
 		r.Header.Del("Connection")
 		webhookInterceptor(w, r, gwmux)
 	})
-	mux.HandleFunc("/artifacts/", artifactServer.GetOutputArtifact)
-	mux.HandleFunc("/input-artifacts/", artifactServer.GetInputArtifact)
-	mux.HandleFunc("/artifacts-by-uid/", artifactServer.GetOutputArtifactByUID)
-	mux.HandleFunc("/input-artifacts-by-uid/", artifactServer.GetInputArtifactByUID)
+
+	// emergency environment variable that allows you to disable the artifact service in case of problems
+	if os.Getenv("ARGO_ARTIFACT_SERVER") != "false" {
+		mux.HandleFunc("/artifacts/", artifactServer.GetOutputArtifact)
+		mux.HandleFunc("/input-artifacts/", artifactServer.GetInputArtifact)
+		mux.HandleFunc("/artifacts-by-uid/", artifactServer.GetOutputArtifactByUID)
+		mux.HandleFunc("/input-artifacts-by-uid/", artifactServer.GetInputArtifactByUID)
+		mux.HandleFunc("/artifact-files/", artifactServer.GetArtifactFile)
+	}
 	mux.Handle("/oauth2/redirect", handlers.ProxyHeaders(http.HandlerFunc(as.oAuth2Service.HandleRedirect)))
 	mux.Handle("/oauth2/callback", handlers.ProxyHeaders(http.HandlerFunc(as.oAuth2Service.HandleCallback)))
 	mux.HandleFunc("/metrics", func(w http.ResponseWriter, r *http.Request) {

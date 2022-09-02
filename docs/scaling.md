@@ -10,7 +10,7 @@ You cannot horizontally scale the controller.
 
 You can scale the controller vertically:
 
-- If you have many workflows, increase `--workflow-workers` and `--workflow-ttl-workers`. 
+- If you have many workflows, increase `--workflow-workers` and `--workflow-ttl-workers`.
 - Increase both `--qps` and `--burst`.
 
 You will need to increase the controller's memory and CPU.
@@ -23,13 +23,13 @@ Rather than running a single installation in your cluster, run one per namespace
 
 ### Instance ID
 
-Within a cluster can use instance ID to run N Argo instances within a cluster. 
+Within a cluster can use instance ID to run N Argo instances within a cluster.
 
 Create one namespace for each Argo, e.g. `argo-i1`, `argo-i2`:.
 
 Edit [workflow-controller-configmap.yaml](workflow-controller-configmap.yaml) for each namespace to set an instance ID.
 
-```
+```yaml
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -42,7 +42,7 @@ data:
 
 You may need to pass the instance ID to the CLI:
 
-```
+```bash
 argo --instanceid i1 submit my-wf.yaml
 ```
 

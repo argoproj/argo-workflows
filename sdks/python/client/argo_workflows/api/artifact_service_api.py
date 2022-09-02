@@ -36,6 +36,185 @@ class ArtifactServiceApi(object):
             api_client = ApiClient()
         self.api_client = api_client
 
+        def __get_artifact_file(
+            self,
+            namespace,
+            id_discriminator,
+            id,
+            node_id,
+            artifact_name,
+            artifact_discriminator="outputs",
+            **kwargs
+        ):
+            """Get an artifact.  # noqa: E501
+
+            This method makes a synchronous HTTP request by default. To make an
+            asynchronous HTTP request, please pass async_req=True
+
+            >>> thread = api.get_artifact_file(namespace, id_discriminator, id, node_id, artifact_name, artifact_discriminator="outputs", async_req=True)
+            >>> result = thread.get()
+
+            Args:
+                namespace (str):
+                id_discriminator (str):
+                id (str):
+                node_id (str):
+                artifact_name (str):
+                artifact_discriminator (str): defaults to "outputs", must be one of ["outputs"]
+
+            Keyword Args:
+                _return_http_data_only (bool): response data without head status
+                    code and headers. Default is True.
+                _preload_content (bool): if False, the urllib3.HTTPResponse object
+                    will be returned without reading/decoding response data.
+                    Default is True.
+                _request_timeout (int/float/tuple): timeout setting for this request. If
+                    one number provided, it will be total request timeout. It can also
+                    be a pair (tuple) of (connection, read) timeouts.
+                    Default is None.
+                _check_input_type (bool): specifies if type checking
+                    should be done one the data sent to the server.
+                    Default is True.
+                _check_return_type (bool): specifies if type checking
+                    should be done one the data received from the server.
+                    Default is True.
+                _host_index (int/None): specifies the index of the server
+                    that we want to use.
+                    Default is read from the configuration.
+                async_req (bool): execute request asynchronously
+
+            Returns:
+                file_type
+                    If the method is called asynchronously, returns the request
+                    thread.
+            """
+            kwargs['async_req'] = kwargs.get(
+                'async_req', False
+            )
+            kwargs['_return_http_data_only'] = kwargs.get(
+                '_return_http_data_only', True
+            )
+            kwargs['_preload_content'] = kwargs.get(
+                '_preload_content', True
+            )
+            kwargs['_request_timeout'] = kwargs.get(
+                '_request_timeout', None
+            )
+            kwargs['_check_input_type'] = kwargs.get(
+                '_check_input_type', True
+            )
+            kwargs['_check_return_type'] = kwargs.get(
+                '_check_return_type', True
+            )
+            kwargs['_host_index'] = kwargs.get('_host_index')
+            kwargs['namespace'] = \
+                namespace
+            kwargs['id_discriminator'] = \
+                id_discriminator
+            kwargs['id'] = \
+                id
+            kwargs['node_id'] = \
+                node_id
+            kwargs['artifact_name'] = \
+                artifact_name
+            kwargs['artifact_discriminator'] = \
+                artifact_discriminator
+            return self.call_with_http_info(**kwargs)
+
+        self.get_artifact_file = _Endpoint(
+            settings={
+                'response_type': (file_type,),
+                'auth': [
+                    'BearerToken'
+                ],
+                'endpoint_path': '/artifact-files/{namespace}/{idDiscriminator}/{id}/{nodeId}/{artifactDiscriminator}/{artifactName}',
+                'operation_id': 'get_artifact_file',
+                'http_method': 'GET',
+                'servers': None,
+            },
+            params_map={
+                'all': [
+                    'namespace',
+                    'id_discriminator',
+                    'id',
+                    'node_id',
+                    'artifact_name',
+                    'artifact_discriminator',
+                ],
+                'required': [
+                    'namespace',
+                    'id_discriminator',
+                    'id',
+                    'node_id',
+                    'artifact_name',
+                    'artifact_discriminator',
+                ],
+                'nullable': [
+                ],
+                'enum': [
+                    'id_discriminator',
+                    'artifact_discriminator',
+                ],
+                'validation': [
+                ]
+            },
+            root_map={
+                'validations': {
+                },
+                'allowed_values': {
+                    ('id_discriminator',): {
+
+                        "WORKFLOW": "workflow",
+                        "ARCHIVED-WORKFLOWS_": "archived-workflows "
+                    },
+                    ('artifact_discriminator',): {
+
+                        "OUTPUTS": "outputs"
+                    },
+                },
+                'openapi_types': {
+                    'namespace':
+                        (str,),
+                    'id_discriminator':
+                        (str,),
+                    'id':
+                        (str,),
+                    'node_id':
+                        (str,),
+                    'artifact_name':
+                        (str,),
+                    'artifact_discriminator':
+                        (str,),
+                },
+                'attribute_map': {
+                    'namespace': 'namespace',
+                    'id_discriminator': 'idDiscriminator',
+                    'id': 'id',
+                    'node_id': 'nodeId',
+                    'artifact_name': 'artifactName',
+                    'artifact_discriminator': 'artifactDiscriminator',
+                },
+                'location_map': {
+                    'namespace': 'path',
+                    'id_discriminator': 'path',
+                    'id': 'path',
+                    'node_id': 'path',
+                    'artifact_name': 'path',
+                    'artifact_discriminator': 'path',
+                },
+                'collection_format_map': {
+                }
+            },
+            headers_map={
+                'accept': [
+                    'application/json'
+                ],
+                'content_type': [],
+            },
+            api_client=api_client,
+            callable=__get_artifact_file
+        )
+
         def __get_input_artifact(
             self,
             namespace,
@@ -80,7 +259,7 @@ class ArtifactServiceApi(object):
                 async_req (bool): execute request asynchronously
 
             Returns:
-                None
+                file_type
                     If the method is called asynchronously, returns the request
                     thread.
             """
@@ -115,7 +294,7 @@ class ArtifactServiceApi(object):
 
         self.get_input_artifact = _Endpoint(
             settings={
-                'response_type': None,
+                'response_type': (file_type,),
                 'auth': [
                     'BearerToken'
                 ],
@@ -186,7 +365,6 @@ class ArtifactServiceApi(object):
 
         def __get_input_artifact_by_uid(
             self,
-            namespace,
             uid,
             node_id,
             artifact_name,
@@ -197,11 +375,10 @@ class ArtifactServiceApi(object):
             This method makes a synchronous HTTP request by default. To make an
             asynchronous HTTP request, please pass async_req=True
 
-            >>> thread = api.get_input_artifact_by_uid(namespace, uid, node_id, artifact_name, async_req=True)
+            >>> thread = api.get_input_artifact_by_uid(uid, node_id, artifact_name, async_req=True)
             >>> result = thread.get()
 
             Args:
-                namespace (str):
                 uid (str):
                 node_id (str):
                 artifact_name (str):
@@ -251,8 +428,6 @@ class ArtifactServiceApi(object):
                 '_check_return_type', True
             )
             kwargs['_host_index'] = kwargs.get('_host_index')
-            kwargs['namespace'] = \
-                namespace
             kwargs['uid'] = \
                 uid
             kwargs['node_id'] = \
@@ -274,13 +449,11 @@ class ArtifactServiceApi(object):
             },
             params_map={
                 'all': [
-                    'namespace',
                     'uid',
                     'node_id',
                     'artifact_name',
                 ],
                 'required': [
-                    'namespace',
                     'uid',
                     'node_id',
                     'artifact_name',
@@ -298,8 +471,6 @@ class ArtifactServiceApi(object):
                 'allowed_values': {
                 },
                 'openapi_types': {
-                    'namespace':
-                        (str,),
                     'uid':
                         (str,),
                     'node_id':
@@ -308,13 +479,11 @@ class ArtifactServiceApi(object):
                         (str,),
                 },
                 'attribute_map': {
-                    'namespace': 'namespace',
                     'uid': 'uid',
                     'node_id': 'nodeId',
                     'artifact_name': 'artifactName',
                 },
                 'location_map': {
-                    'namespace': 'path',
                     'uid': 'path',
                     'node_id': 'path',
                     'artifact_name': 'path',
@@ -522,7 +691,7 @@ class ArtifactServiceApi(object):
                 async_req (bool): execute request asynchronously
 
             Returns:
-                None
+                file_type
                     If the method is called asynchronously, returns the request
                     thread.
             """
@@ -555,7 +724,7 @@ class ArtifactServiceApi(object):
 
         self.get_output_artifact_by_uid = _Endpoint(
             settings={
-                'response_type': None,
+                'response_type': (file_type,),
                 'auth': [
                     'BearerToken'
                 ],

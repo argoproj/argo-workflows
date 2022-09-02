@@ -4,6 +4,7 @@ import (
 	"context"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -331,5 +332,82 @@ func TestNonHTTPTemplateScenario(t *testing.T) {
 		woc.operate(ctx)
 		err := woc.removeCompletedTaskSetStatus(ctx)
 		assert.NoError(t, err)
+	})
+}
+
+func TestReconcileTaskSetWithMemoization(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(`apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: http-template-1
+  namespace: default
+spec:
+  entrypoint: main
+  templates: 
+    - name: main
+      http:
+       url: "http://localhost"
+      memoize:
+        key: cache-demo-1
+        maxAge: "10s"
+        cache:
+          configMap:
+            name: cache-demo-1
+status:
+  nodes:
+    http-template-fqgsf-2338098285:
+      boundaryID: http-template-fqgsf
+      displayName: main
+      id: http-template-fqgsf-2338098285
+      name: http-template-fqgsf[0].main
+      memoizationStatus:
+        hit: false
+        key: cache-demo-1
+        cacheName: cache-demo-1
+      outputs:
+        parameters:
+        - name: result
+          value: |
+            { demo }
+      phase: Succeeded
+      templateName: http
+      type: HTTP
+  phase: Running
+`)
+	ctx := context.Background()
+	var ts wfv1.WorkflowTaskSet
+	wfv1.MustUnmarshal(`apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTaskSet
+metadata:
+  name: http-template-1
+  namespace: default
+spec:
+  tasks:
+    http-template-fqgsf-2338098285:
+      http:
+        url: http://localhost
+      name: http
+status:
+  nodes:
+    http-template-fqgsf-2338098285:
+      outputs:
+        parameters:
+        - name: result
+          value: |
+            { demo }
+      phase: Succeeded
+    `, &ts)
+	t.Run("MemoizeOnTaskSetSucceeded", func(t *testing.T) {
+		cancel, controller := newController(wf, ts)
+		defer cancel()
+		_, err := controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskSets("default").Create(ctx, &ts, v1.CreateOptions{})
+		assert.NoError(t, err)
+		woc := newWorkflowOperationCtx(wf, controller)
+		time.Sleep(1 * time.Second)
+		err = woc.reconcileTaskSet(ctx)
+		assert.NoError(t, err)
+		memo, err := controller.kubeclientset.CoreV1().ConfigMaps("default").Get(ctx, "cache-demo-1", v1.GetOptions{})
+		assert.NoError(t, err)
+		assert.NotEmpty(t, memo.Data["cache-demo-1"])
 	})
 }

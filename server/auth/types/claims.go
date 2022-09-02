@@ -10,12 +10,13 @@ import (
 
 type Claims struct {
 	jwt.Claims
-	Groups             []string               `json:"groups,omitempty"`
-	Email              string                 `json:"email,omitempty"`
-	EmailVerified      bool                   `json:"email_verified,omitempty"`
-	ServiceAccountName string                 `json:"service_account_name,omitempty"`
-	PreferredUsername  string                 `json:"preferred_username,omitempty"`
-	RawClaim           map[string]interface{} `json:"-"`
+	Groups                  []string               `json:"groups,omitempty"`
+	Email                   string                 `json:"email,omitempty"`
+	EmailVerified           bool                   `json:"email_verified,omitempty"`
+	ServiceAccountName      string                 `json:"service_account_name,omitempty"`
+	ServiceAccountNamespace string                 `json:"service_account_namespace,omitempty"`
+	PreferredUsername       string                 `json:"preferred_username,omitempty"`
+	RawClaim                map[string]interface{} `json:"-"`
 }
 
 type UserInfo struct {

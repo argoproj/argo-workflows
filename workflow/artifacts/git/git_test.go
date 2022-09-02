@@ -1,6 +1,7 @@
 package git
 
 import (
+	"io/ioutil"
 	"os"
 	"testing"
 
@@ -116,9 +117,66 @@ func TestGitArtifactDriver_Load(t *testing.T) {
 			assert.FileExists(t, path+"/test-repo/README.md")
 		})
 	})
+
+	t.Run("SingleBranch", func(t *testing.T) {
+		driver := &ArtifactDriver{}
+		t.Run("LocalBranch", func(t *testing.T) {
+			assert.NoError(t, load(driver, &wfv1.GitArtifact{
+				Repo:         "https://github.com/argoproj-labs/test-repo.git",
+				Branch:       "my-branch",
+				SingleBranch: true,
+			}))
+			assert.FileExists(t, path+"/my-branch")
+			assertOnlyFile(t, path+"/.git/refs/heads", "my-branch")
+		})
+		t.Run("Revision", func(t *testing.T) {
+			assert.NoError(t, load(driver, &wfv1.GitArtifact{
+				Repo:         "https://github.com/argoproj-labs/test-repo.git",
+				Branch:       "my-branch",
+				SingleBranch: true,
+				Revision:     "6093d6a",
+			}))
+			assert.NoFileExists(t, path+"/my-branch")
+			assertOnlyFile(t, path+"/.git/refs/heads", "my-branch")
+		})
+		t.Run("Depth", func(t *testing.T) {
+			var depth uint64 = 1
+			assert.NoError(t, load(driver, &wfv1.GitArtifact{
+				Repo:         "https://github.com/argoproj-labs/test-repo.git",
+				Branch:       "my-branch",
+				SingleBranch: true,
+				Depth:        &depth,
+			}))
+			assert.FileExists(t, path+"/my-branch")
+			assertOnlyFile(t, path+"/.git/refs/heads", "my-branch")
+		})
+		t.Run("NoBranchSpecified", func(t *testing.T) {
+			assert.Error(t, load(driver, &wfv1.GitArtifact{
+				Repo:         "https://github.com/argoproj-labs/test-repo.git",
+				Branch:       "",
+				SingleBranch: true,
+			}))
+		})
+		t.Run("Garbage", func(t *testing.T) {
+			assert.Error(t, load(driver, &wfv1.GitArtifact{
+				Repo:         "https://github.com/argoproj-labs/test-repo.git",
+				Branch:       "garbage",
+				SingleBranch: true,
+			}))
+		})
+	})
 }
 
 const path = "/tmp/repo"
+
+func assertOnlyFile(t *testing.T, dir string, file string) {
+	files, err := ioutil.ReadDir(dir)
+	assert.NoError(t, err)
+
+	for _, f := range files {
+		assert.Equal(t, file, f.Name())
+	}
+}
 
 func load(driver *ArtifactDriver, git *wfv1.GitArtifact) error {
 	_ = os.RemoveAll(path)

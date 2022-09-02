@@ -222,6 +222,7 @@ func newController(options ...interface{}) (context.CancelFunc, *WorkflowControl
 	{
 		wfc.wfInformer = util.NewWorkflowInformer(dynamicClient, "", 0, wfc.tweakListOptions, indexers)
 		wfc.wfTaskSetInformer = informerFactory.Argoproj().V1alpha1().WorkflowTaskSets()
+		wfc.artGCTaskInformer = informerFactory.Argoproj().V1alpha1().WorkflowArtifactGCTasks()
 		wfc.taskResultInformer = wfc.newWorkflowTaskResultInformer()
 		wfc.wftmplInformer = informerFactory.Argoproj().V1alpha1().WorkflowTemplates()
 		wfc.addWorkflowInformerHandlers(ctx)
@@ -234,6 +235,7 @@ func newController(options ...interface{}) (context.CancelFunc, *WorkflowControl
 		go wfc.wftmplInformer.Informer().Run(ctx.Done())
 		go wfc.podInformer.Run(ctx.Done())
 		go wfc.wfTaskSetInformer.Informer().Run(ctx.Done())
+		go wfc.artGCTaskInformer.Informer().Run(ctx.Done())
 		go wfc.taskResultInformer.Run(ctx.Done())
 		wfc.cwftmplInformer = informerFactory.Argoproj().V1alpha1().ClusterWorkflowTemplates()
 		go wfc.cwftmplInformer.Informer().Run(ctx.Done())
@@ -244,6 +246,7 @@ func newController(options ...interface{}) (context.CancelFunc, *WorkflowControl
 			wfc.podInformer,
 			wfc.cwftmplInformer.Informer(),
 			wfc.wfTaskSetInformer.Informer(),
+			wfc.artGCTaskInformer.Informer(),
 			wfc.taskResultInformer,
 		} {
 			for !c.HasSynced() {

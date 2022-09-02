@@ -1,5 +1,4 @@
 import {Page} from 'argo-ui';
-
 import * as React from 'react';
 import {Link, RouteComponentProps} from 'react-router-dom';
 import * as models from '../../../../models';
@@ -30,6 +29,7 @@ interface State {
     maxStartedAt?: Date;
     workflows?: Workflow[];
     error?: Error;
+    deep: boolean;
 }
 
 const defaultPaginationLimit = 10;
@@ -55,7 +55,8 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
             selectedPhases: phaseQueryParam.length > 0 ? phaseQueryParam : savedOptions.selectedPhases,
             selectedLabels: labelQueryParam.length > 0 ? labelQueryParam : savedOptions.selectedLabels,
             minStartedAt: this.parseTime(this.queryParam('minStartedAt')) || this.lastMonth(),
-            maxStartedAt: this.parseTime(this.queryParam('maxStartedAt')) || this.nextDay()
+            maxStartedAt: this.parseTime(this.queryParam('maxStartedAt')) || this.nextDay(),
+            deep: this.queryParam('deep') === 'true'
         };
     }
 
@@ -70,6 +71,15 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
             this.state.maxStartedAt,
             this.state.pagination
         );
+        services.info.collectEvent('openedArchivedWorkflowList').then();
+    }
+
+    public componentDidUpdate(): void {
+        if (this.state.deep === true && this.state.workflows && this.state.workflows.length === 1) {
+            const workflow = this.state.workflows[0];
+            const url = '/archived-workflows/' + workflow.metadata.namespace + '/' + (workflow.metadata.uid || '');
+            this.props.history.push(url);
+        }
     }
 
     public render() {

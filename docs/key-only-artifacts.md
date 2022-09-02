@@ -1,18 +1,17 @@
 # Key-Only Artifacts
 
-
 > v3.0 and after
 
 A key-only artifact is an input or output artifact where you only specific the key, omitting the bucket, secrets etc. When these are omitted, the bucket/secrets from the configured artifact repository is used.
 
 This allows you to move the configuration of the artifact repository out of the workflow specification.
 
-This is closely related to [artifact repository ref](artifact-repository-ref.md). You'll want to use them together for maximum benefit. 
+This is closely related to [artifact repository ref](artifact-repository-ref.md). You'll want to use them together for maximum benefit.
 
 This should probably be your default if you're using v3.0:
 
 * Reduces the size of workflows (improved performance).
-* User owned artifact repository set-up configuration (simplified management).   
+* User owned artifact repository set-up configuration (simplified management).
 * Decouples the artifact location configuration from the workflow. Allowing you to re-configure the artifact repository without changing your workflows or templates.
 
 Example:

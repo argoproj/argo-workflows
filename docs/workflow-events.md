@@ -1,8 +1,8 @@
 # Workflow Events
 
-![GA](assets/ga.svg)
-
 > v2.7.2
+
+⚠️ Do not use Kubernetes events for automation. Events maybe lost or rolled-up.
 
 We emit Kubernetes events on certain events.
 
@@ -19,7 +19,6 @@ Node state change:
 * `WorkflowNodeSucceeded`
 * `WorkflowNodeFailed`
 * `WorkflowNodeError`
-
 
 The involved object is the workflow in both cases. Additionally, for node state change events, annotations indicate the name and type of the involved node:
 

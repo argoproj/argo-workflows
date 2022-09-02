@@ -16,6 +16,13 @@ import (
 	argoerrs "github.com/argoproj/argo-workflows/v3/errors"
 )
 
+func IgnoreContainerNotFoundErr(err error) error {
+	if err != nil && strings.Contains(err.Error(), "container not found") {
+		return nil
+	}
+	return err
+}
+
 func IsTransientErr(err error) bool {
 	if err == nil {
 		return false
@@ -72,6 +79,9 @@ func isTransientNetworkErr(err error) bool {
 		return true
 	} else if strings.Contains(errorString, "connection timed out") {
 		// If err is a net.Dial timeout, retry.
+		return true
+	} else if strings.Contains(errorString, "connection reset by peer") {
+		// If err is a ECONNRESET, retry.
 		return true
 	}
 

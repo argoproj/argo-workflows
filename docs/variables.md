@@ -25,10 +25,10 @@ spec:
       container:
         image: docker/whalesay
         command: [ cowsay ]
-        args: [ "{{inputs.parameters.message}}" ] 
+        args: [ "{{inputs.parameters.message}}" ]
 ```
 
-The following variables are made available to reference various metadata of a workflow:
+The following variables are made available to reference various meta-data of a workflow:
 
 ## Template Tag Kinds
 
@@ -41,7 +41,7 @@ There are two kinds of template tag:
 
 The tag is substituted with the variable that has a name the same as the tag.
 
-Simple tags **may** have whitespace between the brackets and variable.
+Simple tags **may** have white-space between the brackets and variable as seen below. However, there is a known issue where variables may fail to interpolate with white-space, so it is recommended to avoid using white-space until this issue is resolved. [Please report](https://github.com/argoproj/argo-workflows/issues/8960) unexpected behavior with reproducible examples.
 
 ```yaml
 args: [ "{{ inputs.parameters.message }}" ]  
@@ -62,19 +62,19 @@ indexing into the parameter or step map, e.g. `inputs.parameters['my-param']` or
 
 Plain list:
 
-```
+```text
 [1, 2]
 ```
 
 Filter a list:
 
-```
+```text
 filter([1, 2], { # > 1})
 ```
 
 Map a list:
 
-```
+```text
 map([1, 2], { # * 2 })
 ```
 
@@ -82,31 +82,31 @@ We provide some core functions:
 
 Cast to int:
 
-```
+```text
 asInt(inputs.parameters['my-int-param'])
 ```
 
 Cast to float:
 
-```
+```text
 asFloat(inputs.parameters['my-float-param'])
 ```
 
 Cast to string:
 
-```
+```text
 string(1)
 ```
 
 Convert to a JSON string (needed for `withParam`):
 
-```
+```text
 toJson([1, 2])
 ```
 
 Extract data from JSON:
 
-```
+```text
 jsonpath(inputs.parameters.json, '$.some.path')
 ```
 
@@ -114,7 +114,7 @@ You can also use [Sprig functions](http://masterminds.github.io/sprig/):
 
 Trim a string:
 
-```
+```text
 sprig.trim(inputs.parameters['my-string-param'])
 ```
 
@@ -139,11 +139,11 @@ returns `0`. Please review the Sprig documentation to understand which functions
 | `steps.<STEPNAME>.ip` | IP address of a previous daemon container step |
 | `steps.<STEPNAME>.status` | Phase status of any previous step |
 | `steps.<STEPNAME>.exitCode` | Exit code of any previous script or container step |
-| `steps.<STEPNAME>.startedAt` | Timestamp when the step started |
-| `steps.<STEPNAME>.finishedAt` | Timestamp when the step finished |
+| `steps.<STEPNAME>.startedAt` | Time-stamp when the step started |
+| `steps.<STEPNAME>.finishedAt` | Time-stamp when the step finished |
 | `steps.<STEPNAME>.outputs.result` | Output result of any previous container or script step |
-| `steps.<STEPNAME>.outputs.parameters` | When the previous step uses 'withItems' or 'withParams', this contains a JSON array of the output parameter maps of each invocation |
-| `steps.<STEPNAME>.outputs.parameters.<NAME>` | Output parameter of any previous step. When the previous step uses 'withItems' or 'withParams', this contains a JSON array of the output parameter values of each invocation |
+| `steps.<STEPNAME>.outputs.parameters` | When the previous step uses `withItems` or `withParams`, this contains a JSON array of the output parameter maps of each invocation |
+| `steps.<STEPNAME>.outputs.parameters.<NAME>` | Output parameter of any previous step. When the previous step uses `withItems` or `withParams`, this contains a JSON array of the output parameter values of each invocation |
 | `steps.<STEPNAME>.outputs.artifacts.<NAME>` | Output artifact of any previous step |
 
 ### DAG Templates
@@ -154,11 +154,11 @@ returns `0`. Please review the Sprig documentation to understand which functions
 | `tasks.<TASKNAME>.ip` | IP address of a previous daemon container task |
 | `tasks.<TASKNAME>.status` | Phase status of any previous task |
 | `tasks.<TASKNAME>.exitCode` | Exit code of any previous script or container task |
-| `tasks.<TASKNAME>.startedAt` | Timestamp when the task started |
-| `tasks.<TASKNAME>.finishedAt` | Timestamp when the task finished |
+| `tasks.<TASKNAME>.startedAt` | Time-stamp when the task started |
+| `tasks.<TASKNAME>.finishedAt` | Time-stamp when the task finished |
 | `tasks.<TASKNAME>.outputs.result` | Output result of any previous container or script task |
-| `tasks.<TASKNAME>.outputs.parameters` | When the previous task uses 'withItems' or 'withParams', this contains a JSON array of the output parameter maps of each invocation |
-| `tasks.<TASKNAME>.outputs.parameters.<NAME>` | Output parameter of any previous task. When the previous task uses 'withItems' or 'withParams', this contains a JSON array of the output parameter values of each invocation |
+| `tasks.<TASKNAME>.outputs.parameters` | When the previous task uses `withItems` or `withParams`, this contains a JSON array of the output parameter maps of each invocation |
+| `tasks.<TASKNAME>.outputs.parameters.<NAME>` | Output parameter of any previous task. When the previous task uses `withItems` or `withParams`, this contains a JSON array of the output parameter values of each invocation |
 | `tasks.<TASKNAME>.outputs.artifacts.<NAME>` | Output artifact of any previous task |
 
 ### HTTP Templates
@@ -177,7 +177,7 @@ Only available for `successCondition`
 | `response.body` | Response body (`string`) |
 | `response.headers` | Response headers (`map[string][]string`) |
 
-### RetryStrategy
+### `RetryStrategy`
 
 When using the `expression` field within `retryStrategy`, special variables are available.
 
@@ -194,12 +194,12 @@ Note: These variables evaluate to a string type. If using advanced expressions, 
 | Variable | Description|
 |----------|------------|
 | `pod.name` | Pod name of the container/script |
-| `retries` | The retry number of the container/script if retryStrategy is specified |
+| `retries` | The retry number of the container/script if `retryStrategy` is specified |
 | `inputs.artifacts.<NAME>.path` | Local path of the input artifact |
 | `outputs.artifacts.<NAME>.path` | Local path of the output artifact |
 | `outputs.parameters.<NAME>.path` | Local path of the output parameter |
 
-### Loops (withItems / withParam)
+### Loops (`withItems` / `withParam`)
 
 | Variable | Description|
 |----------|------------|
@@ -221,9 +221,9 @@ step.
 | `outputs.result` | Output result of the metric-emitting template |
 | `resourcesDuration.{cpu,memory}` | Resources duration **in seconds**. Must be one of `resourcesDuration.cpu` or `resourcesDuration.memory`, if available. For more info, see the [Resource Duration](resource-duration.md) doc.|
 
-### Realtime Metrics
+### Real-Time Metrics
 
-Some variables can be emitted in realtime (as opposed to just when the step/task completes). To emit these variables in
+Some variables can be emitted in real-time (as opposed to just when the step/task completes). To emit these variables in
 real time, set `realtime: true` under `gauge` (note: only Gauge metrics allow for real time variable emission). Metrics
 currently available for real time emission:
 
@@ -249,12 +249,12 @@ For `Template`-level metrics:
 | `workflow.outputs.artifacts.<NAME>` | Global artifact in the workflow |
 | `workflow.annotations.<NAME>` | Workflow annotations |
 | `workflow.labels.<NAME>` | Workflow labels |
-| `workflow.creationTimestamp` | Workflow creation timestamp formatted in RFC 3339  (e.g. `2018-08-23T05:42:49Z`) |
-| `workflow.creationTimestamp.<STRFTIMECHAR>` | Creation timestamp formatted with a [strftime](http://strftime.org) format character. |
-| `workflow.creationTimestamp.RFC3339` | Creation timestamp formatted with in RFC 3339. |
+| `workflow.creationTimestamp` | Workflow creation time-stamp formatted in RFC 3339  (e.g. `2018-08-23T05:42:49Z`) |
+| `workflow.creationTimestamp.<STRFTIMECHAR>` | Creation time-stamp formatted with a [`strftime`](http://strftime.org) format character. |
+| `workflow.creationTimestamp.RFC3339` | Creation time-stamp formatted with in RFC 3339. |
 | `workflow.priority` | Workflow priority |
 | `workflow.duration` | Workflow duration estimate, may differ from actual duration by a couple of seconds |
-| `workflow.scheduledTime` | Scheduled runtime formatted in RFC 3339 (only available for CronWorkflows) |
+| `workflow.scheduledTime` | Scheduled runtime formatted in RFC 3339 (only available for `CronWorkflow`) |
 
 ### Exit Handler
 
