@@ -889,6 +889,16 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 						// Only remove the descendants of a suspended node but not the suspended node itself. The descendants
 						// of a suspended node need to be removed since because the conditions should be re-evaluated based on
 						// the modified supplied parameter values.
+						currentNode := node
+						if currentNode.BoundaryID != "" && currentNode.BoundaryID != wf.ObjectMeta.Name {
+							grandParentNode := wf.Status.Nodes[currentNode.BoundaryID]
+							if grandParentNode.Type == wfv1.NodeTypeDAG || grandParentNode.Type == wfv1.NodeTypeTaskGroup || grandParentNode.Type == wfv1.NodeTypeStepGroup {
+								// TODO: This is infinite loop. Check whether it exists before insert and reset
+								log.Infoln(fmt.Sprintf("Resetting grand-parent node %s", grandParentNode.Name))
+								newWF.Status.Nodes[grandParentNode.ID] = resetNode(*grandParentNode.DeepCopy())
+								resettedDAGNodes = append(resettedDAGNodes, grandParentNode.ID)
+							}
+						}
 						if node.Type != wfv1.NodeTypeSuspend {
 							deletedNodes[node.ID] = true
 							deletedPods, podsToDelete = deletePodNodeDuringRetryWorkflow(wf, node, deletedPods, podsToDelete)
@@ -899,6 +909,16 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 							deletedNodes[descendantNodeID] = true
 							descendantNode := wf.Status.Nodes[descendantNodeID]
 							if descendantNode.Type == wfv1.NodeTypePod {
+								currentNode := node
+								if currentNode.BoundaryID != "" && currentNode.BoundaryID != wf.ObjectMeta.Name {
+									grandParentNode := wf.Status.Nodes[currentNode.BoundaryID]
+									if grandParentNode.Type == wfv1.NodeTypeDAG || grandParentNode.Type == wfv1.NodeTypeTaskGroup || grandParentNode.Type == wfv1.NodeTypeStepGroup {
+										// TODO: This is infinite loop. Check whether it exists before insert and reset
+										log.Infoln(fmt.Sprintf("Resetting grand-parent node %s", grandParentNode.Name))
+										newWF.Status.Nodes[grandParentNode.ID] = resetNode(*grandParentNode.DeepCopy())
+										resettedDAGNodes = append(resettedDAGNodes, grandParentNode.ID)
+									}
+								}
 								deletedPods, podsToDelete = deletePodNodeDuringRetryWorkflow(wf, descendantNode, deletedPods, podsToDelete)
 							}
 						}
