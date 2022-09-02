@@ -186,6 +186,7 @@ func newController(options ...interface{}) (context.CancelFunc, *WorkflowControl
 				S3Bucket: wfv1.S3Bucket{Endpoint: "my-endpoint", Bucket: "my-bucket"},
 			},
 		}),
+		cliExecutorLogFormat:      "text",
 		kubeclientset:             kube,
 		dynamicInterface:          dynamicClient,
 		wfclientset:               wfclientset,
