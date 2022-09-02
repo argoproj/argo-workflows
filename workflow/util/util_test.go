@@ -1291,3 +1291,514 @@ func TestRetryWorkflowWithFailedNodeHasChildrenNodes(t *testing.T) {
 	slices.Sort(podsToDelete)
 	assert.Equal(t, needDeletedPodNames, podsToDelete)
 }
+
+var retryWorkflowWithNestedDAGs = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  annotations:
+    workflows.argoproj.io/pod-name-format: v2
+  creationTimestamp: "2022-09-02T14:52:10Z"
+  generation: 37
+  labels:
+    workflows.argoproj.io/completed: "true"
+    workflows.argoproj.io/phase: Failed
+  name: fail-two-nested-dag-suspend
+  namespace: argo
+  resourceVersion: "218451"
+  uid: ba03145e-b4db-46c9-96e6-8cc15bf81a79
+spec:
+  arguments: {}
+  entrypoint: outer-dag
+  templates:
+  - dag:
+      tasks:
+      - arguments: {}
+        name: dag1-step1
+        template: gen-random-int-javascript
+      - arguments: {}
+        dependencies:
+        - dag1-step1
+        name: dag1-step2
+        template: approve
+      - arguments: {}
+        dependencies:
+        - dag1-step2
+        name: dag1-step3-middle1
+        template: middle-dag1
+      - arguments: {}
+        dependencies:
+        - dag1-step2
+        name: dag1-step3-middle2
+        template: middle-dag2
+      - arguments: {}
+        dependencies:
+        - dag1-step3-middle1
+        - dag1-step3-middle2
+        name: dag1-step4
+        template: approve
+      - arguments: {}
+        dependencies:
+        - dag1-step4
+        name: dag1-step5-tofail
+        template: node-to-fail
+    inputs: {}
+    metadata: {}
+    name: outer-dag
+    outputs: {}
+  - dag:
+      tasks:
+      - arguments: {}
+        name: dag2-branch1-step1
+        template: approve
+      - arguments: {}
+        dependencies:
+        - dag2-branch1-step1
+        name: dag2-branch1-step2
+        template: inner-dag-1
+    inputs: {}
+    metadata: {}
+    name: middle-dag1
+    outputs: {}
+  - dag:
+      tasks:
+      - arguments: {}
+        name: dag2-branch2-step1
+        template: inner-dag-1
+      - arguments: {}
+        dependencies:
+        - dag2-branch2-step1
+        name: dag2-branch2-step2
+        template: approve
+    inputs: {}
+    metadata: {}
+    name: middle-dag2
+    outputs: {}
+  - dag:
+      tasks:
+      - arguments: {}
+        name: dag3-step1
+        template: approve
+      - arguments: {}
+        dependencies:
+        - dag3-step1
+        name: dag3-step2
+        template: gen-random-int-javascript
+      - arguments: {}
+        dependencies:
+        - dag3-step2
+        name: dag3-step3
+        template: gen-random-int-javascript
+    inputs: {}
+    metadata: {}
+    name: inner-dag-1
+    outputs: {}
+  - inputs: {}
+    metadata: {}
+    name: gen-random-int-javascript
+    outputs: {}
+    script:
+      command:
+      - node
+      image: node:9.1-alpine
+      name: ""
+      resources: {}
+      source: |
+        var rand = Math.floor(Math.random() * 100);
+        console.log(rand);
+  - container:
+      args:
+      - exit 1
+      command:
+      - sh
+      - -c
+      image: alpine:latest
+      name: ""
+      resources: {}
+    inputs: {}
+    metadata: {}
+    name: node-to-fail
+    outputs: {}
+  - inputs: {}
+    metadata: {}
+    name: approve
+    outputs: {}
+    suspend:
+      duration: "1"
+status:
+  artifactGCStatus:
+    notSpecified: true
+  artifactRepositoryRef:
+    artifactRepository: {}
+    default: true
+  conditions:
+  - status: "False"
+    type: PodRunning
+  - status: "True"
+    type: Completed
+  finishedAt: "2022-09-02T14:56:56Z"
+  nodes:
+    fail-two-nested-dag-suspend:
+      children:
+      - fail-two-nested-dag-suspend-1199792179
+      displayName: fail-two-nested-dag-suspend
+      finishedAt: "2022-09-02T14:56:56Z"
+      id: fail-two-nested-dag-suspend
+      name: fail-two-nested-dag-suspend
+      outboundNodes:
+      - fail-two-nested-dag-suspend-2528852583
+      phase: Failed
+      progress: 11/12
+      resourcesDuration:
+        cpu: 18
+        memory: 18
+      startedAt: "2022-09-02T14:56:23Z"
+      templateName: outer-dag
+      templateScope: local/fail-two-nested-dag-suspend
+      type: DAG
+    fail-two-nested-dag-suspend-437639056:
+      boundaryID: fail-two-nested-dag-suspend-1841799687
+      children:
+      - fail-two-nested-dag-suspend-1250125036
+      displayName: dag3-step3
+      finishedAt: "2022-09-02T14:53:32Z"
+      hostNodeName: k3d-k3s-default-server-0
+      id: fail-two-nested-dag-suspend-437639056
+      name: fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step2.dag3-step3
+      outputs:
+        exitCode: "0"
+      phase: Succeeded
+      progress: 1/1
+      resourcesDuration:
+        cpu: 3
+        memory: 3
+      startedAt: "2022-09-02T14:53:29Z"
+      templateName: gen-random-int-javascript
+      templateScope: local/fail-two-nested-dag-suspend
+      type: Pod
+    fail-two-nested-dag-suspend-454416675:
+      boundaryID: fail-two-nested-dag-suspend-1841799687
+      children:
+      - fail-two-nested-dag-suspend-437639056
+      displayName: dag3-step2
+      finishedAt: "2022-09-02T14:53:22Z"
+      hostNodeName: k3d-k3s-default-server-0
+      id: fail-two-nested-dag-suspend-454416675
+      name: fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step2.dag3-step2
+      outputs:
+        exitCode: "0"
+      phase: Succeeded
+      progress: 1/1
+      resourcesDuration:
+        cpu: 3
+        memory: 3
+      startedAt: "2022-09-02T14:53:19Z"
+      templateName: gen-random-int-javascript
+      templateScope: local/fail-two-nested-dag-suspend
+      type: Pod
+    fail-two-nested-dag-suspend-471194294:
+      boundaryID: fail-two-nested-dag-suspend-1841799687
+      children:
+      - fail-two-nested-dag-suspend-454416675
+      displayName: dag3-step1
+      finishedAt: "2022-09-02T14:53:19Z"
+      id: fail-two-nested-dag-suspend-471194294
+      name: fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step2.dag3-step1
+      phase: Succeeded
+      progress: 1/1
+      resourcesDuration:
+        cpu: 9
+        memory: 9
+      startedAt: "2022-09-02T14:53:18Z"
+      templateName: approve
+      templateScope: local/fail-two-nested-dag-suspend
+      type: Suspend
+    fail-two-nested-dag-suspend-476458868:
+      boundaryID: fail-two-nested-dag-suspend-2864264609
+      children:
+      - fail-two-nested-dag-suspend-2781431063
+      displayName: dag2-branch2-step1
+      finishedAt: "2022-09-02T14:56:44Z"
+      id: fail-two-nested-dag-suspend-476458868
+      name: fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step1
+      outboundNodes:
+      - fail-two-nested-dag-suspend-2814986301
+      phase: Succeeded
+      progress: 5/6
+      resourcesDuration:
+        cpu: 9
+        memory: 9
+      startedAt: "2022-09-02T14:56:23Z"
+      templateName: inner-dag-1
+      templateScope: local/fail-two-nested-dag-suspend
+      type: DAG
+    fail-two-nested-dag-suspend-526791725:
+      boundaryID: fail-two-nested-dag-suspend-2864264609
+      children:
+      - fail-two-nested-dag-suspend-1250125036
+      displayName: dag2-branch2-step2
+      finishedAt: "2022-09-02T14:56:45Z"
+      id: fail-two-nested-dag-suspend-526791725
+      name: fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step2
+      phase: Succeeded
+      progress: 1/1
+      resourcesDuration:
+        cpu: 3
+        memory: 3
+      startedAt: "2022-09-02T14:56:44Z"
+      templateName: approve
+      templateScope: local/fail-two-nested-dag-suspend
+      type: Suspend
+    fail-two-nested-dag-suspend-1199792179:
+      boundaryID: fail-two-nested-dag-suspend
+      children:
+      - fail-two-nested-dag-suspend-1216569798
+      displayName: dag1-step1
+      finishedAt: "2022-09-02T14:52:14Z"
+      hostNodeName: k3d-k3s-default-server-0
+      id: fail-two-nested-dag-suspend-1199792179
+      name: fail-two-nested-dag-suspend.dag1-step1
+      outputs:
+        exitCode: "0"
+      phase: Succeeded
+      progress: 1/1
+      resourcesDuration:
+        cpu: 3
+        memory: 3
+      startedAt: "2022-09-02T14:52:10Z"
+      templateName: gen-random-int-javascript
+      templateScope: local/fail-two-nested-dag-suspend
+      type: Pod
+    fail-two-nested-dag-suspend-1216569798:
+      boundaryID: fail-two-nested-dag-suspend
+      children:
+      - fail-two-nested-dag-suspend-2813931752
+      - fail-two-nested-dag-suspend-2864264609
+      displayName: dag1-step2
+      finishedAt: "2022-09-02T14:52:21Z"
+      id: fail-two-nested-dag-suspend-1216569798
+      name: fail-two-nested-dag-suspend.dag1-step2
+      phase: Succeeded
+      progress: 1/1
+      resourcesDuration:
+        cpu: 15
+        memory: 15
+      startedAt: "2022-09-02T14:52:20Z"
+      templateName: approve
+      templateScope: local/fail-two-nested-dag-suspend
+      type: Suspend
+    fail-two-nested-dag-suspend-1250125036:
+      boundaryID: fail-two-nested-dag-suspend
+      children:
+      - fail-two-nested-dag-suspend-2528852583
+      displayName: dag1-step4
+      finishedAt: "2022-09-02T14:56:46Z"
+      id: fail-two-nested-dag-suspend-1250125036
+      name: fail-two-nested-dag-suspend.dag1-step4
+      phase: Succeeded
+      progress: 1/1
+      resourcesDuration:
+        cpu: 3
+        memory: 3
+      startedAt: "2022-09-02T14:56:45Z"
+      templateName: approve
+      templateScope: local/fail-two-nested-dag-suspend
+      type: Suspend
+    fail-two-nested-dag-suspend-1841799687:
+      boundaryID: fail-two-nested-dag-suspend-2813931752
+      children:
+      - fail-two-nested-dag-suspend-471194294
+      displayName: dag2-branch1-step2
+      finishedAt: "2022-09-02T14:53:39Z"
+      id: fail-two-nested-dag-suspend-1841799687
+      name: fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step2
+      outboundNodes:
+      - fail-two-nested-dag-suspend-437639056
+      phase: Succeeded
+      progress: 4/5
+      resourcesDuration:
+        cpu: 9
+        memory: 9
+      startedAt: "2022-09-02T14:53:18Z"
+      templateName: inner-dag-1
+      templateScope: local/fail-two-nested-dag-suspend
+      type: DAG
+    fail-two-nested-dag-suspend-1858577306:
+      boundaryID: fail-two-nested-dag-suspend-2813931752
+      children:
+      - fail-two-nested-dag-suspend-1841799687
+      displayName: dag2-branch1-step1
+      finishedAt: "2022-09-02T14:52:22Z"
+      id: fail-two-nested-dag-suspend-1858577306
+      name: fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step1
+      phase: Succeeded
+      progress: 1/1
+      resourcesDuration:
+        cpu: 9
+        memory: 9
+      startedAt: "2022-09-02T14:52:21Z"
+      templateName: approve
+      templateScope: local/fail-two-nested-dag-suspend
+      type: Suspend
+    fail-two-nested-dag-suspend-2528852583:
+      boundaryID: fail-two-nested-dag-suspend
+      displayName: dag1-step5-tofail
+      finishedAt: "2022-09-02T14:56:48Z"
+      hostNodeName: k3d-k3s-default-server-0
+      id: fail-two-nested-dag-suspend-2528852583
+      message: Error (exit code 1)
+      name: fail-two-nested-dag-suspend.dag1-step5-tofail
+      outputs:
+        exitCode: "1"
+      phase: Failed
+      progress: 0/1
+      resourcesDuration:
+        cpu: 3
+        memory: 3
+      startedAt: "2022-09-02T14:56:46Z"
+      templateName: node-to-fail
+      templateScope: local/fail-two-nested-dag-suspend
+      type: Pod
+    fail-two-nested-dag-suspend-2781431063:
+      boundaryID: fail-two-nested-dag-suspend-476458868
+      children:
+      - fail-two-nested-dag-suspend-2798208682
+      displayName: dag3-step1
+      finishedAt: "2022-09-02T14:56:24Z"
+      id: fail-two-nested-dag-suspend-2781431063
+      name: fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step1.dag3-step1
+      phase: Succeeded
+      progress: 1/1
+      resourcesDuration:
+        cpu: 9
+        memory: 9
+      startedAt: "2022-09-02T14:56:23Z"
+      templateName: approve
+      templateScope: local/fail-two-nested-dag-suspend
+      type: Suspend
+    fail-two-nested-dag-suspend-2798208682:
+      boundaryID: fail-two-nested-dag-suspend-476458868
+      children:
+      - fail-two-nested-dag-suspend-2814986301
+      displayName: dag3-step2
+      finishedAt: "2022-09-02T14:56:27Z"
+      hostNodeName: k3d-k3s-default-server-0
+      id: fail-two-nested-dag-suspend-2798208682
+      name: fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step1.dag3-step2
+      outputs:
+        exitCode: "0"
+      phase: Succeeded
+      progress: 1/1
+      resourcesDuration:
+        cpu: 3
+        memory: 3
+      startedAt: "2022-09-02T14:56:24Z"
+      templateName: gen-random-int-javascript
+      templateScope: local/fail-two-nested-dag-suspend
+      type: Pod
+    fail-two-nested-dag-suspend-2813931752:
+      boundaryID: fail-two-nested-dag-suspend
+      children:
+      - fail-two-nested-dag-suspend-1858577306
+      displayName: dag1-step3-middle1
+      finishedAt: "2022-09-02T14:53:39Z"
+      id: fail-two-nested-dag-suspend-2813931752
+      name: fail-two-nested-dag-suspend.dag1-step3-middle1
+      outboundNodes:
+      - fail-two-nested-dag-suspend-437639056
+      phase: Succeeded
+      progress: 5/6
+      resourcesDuration:
+        cpu: 9
+        memory: 9
+      startedAt: "2022-09-02T14:53:18Z"
+      templateName: middle-dag1
+      templateScope: local/fail-two-nested-dag-suspend
+      type: DAG
+    fail-two-nested-dag-suspend-2814986301:
+      boundaryID: fail-two-nested-dag-suspend-476458868
+      children:
+      - fail-two-nested-dag-suspend-526791725
+      displayName: dag3-step3
+      finishedAt: "2022-09-02T14:56:36Z"
+      hostNodeName: k3d-k3s-default-server-0
+      id: fail-two-nested-dag-suspend-2814986301
+      name: fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step1.dag3-step3
+      outputs:
+        exitCode: "0"
+      phase: Succeeded
+      progress: 1/1
+      resourcesDuration:
+        cpu: 3
+        memory: 3
+      startedAt: "2022-09-02T14:56:34Z"
+      templateName: gen-random-int-javascript
+      templateScope: local/fail-two-nested-dag-suspend
+      type: Pod
+    fail-two-nested-dag-suspend-2864264609:
+      boundaryID: fail-two-nested-dag-suspend
+      children:
+      - fail-two-nested-dag-suspend-476458868
+      displayName: dag1-step3-middle2
+      finishedAt: "2022-09-02T14:56:45Z"
+      id: fail-two-nested-dag-suspend-2864264609
+      name: fail-two-nested-dag-suspend.dag1-step3-middle2
+      outboundNodes:
+      - fail-two-nested-dag-suspend-526791725
+      phase: Succeeded
+      progress: 5/6
+      resourcesDuration:
+        cpu: 9
+        memory: 9
+      startedAt: "2022-09-02T14:56:23Z"
+      templateName: middle-dag2
+      templateScope: local/fail-two-nested-dag-suspend
+      type: DAG
+  phase: Failed
+  progress: 11/12
+  resourcesDuration:
+    cpu: 18
+    memory: 18
+  startedAt: "2022-09-02T14:56:23Z"
+`
+
+func TestRetryWorkflowWithNestedDAGs(t *testing.T) {
+	ctx := context.Background()
+	wf := wfv1.MustUnmarshalWorkflow(retryWorkflowWithNestedDAGs)
+
+	// Retry top individual pod node
+	wf, podsToDelete, err := FormulateRetryWorkflow(ctx, wf, true, "name=fail-two-nested-dag-suspend.dag1-step1", nil)
+	assert.NoError(t, err)
+	assert.Equal(t, 1, len(wf.Status.Nodes))
+	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["fail-two-nested-dag-suspend"].Phase)
+	assert.Equal(t, 6, len(podsToDelete))
+
+	// Retry top individual suspend node
+	wf = wfv1.MustUnmarshalWorkflow(retryWorkflowWithNestedDAGs)
+	wf, podsToDelete, err = FormulateRetryWorkflow(ctx, wf, true, "name=fail-two-nested-dag-suspend.dag1-step2", nil)
+	assert.NoError(t, err)
+	assert.Equal(t, 3, len(wf.Status.Nodes))
+	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["fail-two-nested-dag-suspend"].Phase)
+	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step1").Phase)
+	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step2").Phase)
+	assert.Equal(t, 5, len(podsToDelete))
+
+	// Retry the starting on one of the branches
+	wf = wfv1.MustUnmarshalWorkflow(retryWorkflowWithNestedDAGs)
+	wf, podsToDelete, err = FormulateRetryWorkflow(ctx, wf, true, "name=fail-two-nested-dag-suspend.dag1-step3-middle2", nil)
+	assert.NoError(t, err)
+	assert.Equal(t, 12, len(wf.Status.Nodes))
+	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["fail-two-nested-dag-suspend"].Phase)
+	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step1").Phase)
+	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step2").Phase)
+	// All nodes in the other branch remains succeeded
+	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1").Phase)
+	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step1").Phase)
+	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step2").Phase)
+	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step2.dag3-step1").Phase)
+	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step2.dag3-step2").Phase)
+	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step2.dag3-step3").Phase)
+	// The nodes in the retrying branch are reset
+	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2").Phase)
+	assert.Equal(t, 3, len(podsToDelete))
+}
