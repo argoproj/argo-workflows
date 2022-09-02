@@ -774,6 +774,27 @@ func containsNode(nodes []string, node string) bool {
 	return false
 }
 
+func resetConnectedParentDAGs(oldWF *wfv1.Workflow, newWF *wfv1.Workflow, currentNode wfv1.NodeStatus, resettedDAGNodes []string) (*wfv1.Workflow, []string) {
+	currentNodeID := currentNode.ID
+	for {
+		currentNode := oldWF.Status.Nodes[currentNodeID]
+		if !containsNode(resettedDAGNodes, currentNodeID) {
+			newWF.Status.Nodes[currentNodeID] = resetNode(*currentNode.DeepCopy())
+			resettedDAGNodes = append(resettedDAGNodes, currentNodeID)
+			log.Infoln(fmt.Sprintf("Resetting connected group node %s", currentNode.Name))
+		}
+		if currentNode.BoundaryID != "" && currentNode.BoundaryID != oldWF.ObjectMeta.Name {
+			parentNode := oldWF.Status.Nodes[currentNode.BoundaryID]
+			if parentNode.Type == wfv1.NodeTypeDAG || parentNode.Type == wfv1.NodeTypeTaskGroup || parentNode.Type == wfv1.NodeTypeStepGroup {
+				currentNodeID = parentNode.ID
+			}
+		} else {
+			break
+		}
+	}
+	return newWF, resettedDAGNodes
+}
+
 // FormulateRetryWorkflow formulates a previous workflow to be retried, deleting all failed steps as well as the onExit node (and children)
 func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSuccessful bool, nodeFieldSelector string, parameters []string) (*wfv1.Workflow, []string, error) {
 
@@ -855,45 +876,13 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 							}
 						}
 						if nodeGroupNeedsReset {
-							currentNodeID := node.ID
-							for {
-								currentNode := wf.Status.Nodes[currentNodeID]
-								if !containsNode(resettedDAGNodes, currentNodeID) {
-									newWF.Status.Nodes[currentNodeID] = resetNode(*currentNode.DeepCopy())
-									resettedDAGNodes = append(resettedDAGNodes, currentNodeID)
-									log.Infoln(fmt.Sprintf("Resetting connected group node %s", node.Name))
-								}
-								if currentNode.BoundaryID != "" && currentNode.BoundaryID != wf.ObjectMeta.Name {
-									parentNode := wf.Status.Nodes[currentNode.BoundaryID]
-									if parentNode.Type == wfv1.NodeTypeDAG || parentNode.Type == wfv1.NodeTypeTaskGroup || parentNode.Type == wfv1.NodeTypeStepGroup {
-										currentNodeID = parentNode.ID
-									}
-								} else {
-									break
-								}
-							}
+							newWF, resettedDAGNodes = resetConnectedParentDAGs(wf, newWF, node, resettedDAGNodes)
 						}
 					}
 				} else {
 					log.Infof("here4 node: %s", node.Name)
 					if node.Type == wfv1.NodeTypePod || node.Type == wfv1.NodeTypeSuspend {
-						currentNodeID := node.ID
-						for {
-							currentNode := wf.Status.Nodes[currentNodeID]
-							if !containsNode(resettedDAGNodes, currentNodeID) {
-								newWF.Status.Nodes[currentNodeID] = resetNode(*currentNode.DeepCopy())
-								resettedDAGNodes = append(resettedDAGNodes, currentNodeID)
-								log.Infoln(fmt.Sprintf("Resetting connected group node %s", node.Name))
-							}
-							if currentNode.BoundaryID != "" && currentNode.BoundaryID != wf.ObjectMeta.Name {
-								parentNode := wf.Status.Nodes[currentNode.BoundaryID]
-								if parentNode.Type == wfv1.NodeTypeDAG || parentNode.Type == wfv1.NodeTypeTaskGroup || parentNode.Type == wfv1.NodeTypeStepGroup {
-									currentNodeID = parentNode.ID
-								}
-							} else {
-								break
-							}
-						}
+						newWF, resettedDAGNodes = resetConnectedParentDAGs(wf, newWF, node, resettedDAGNodes)
 						// Only remove the descendants of a suspended node but not the suspended node itself. The descendants
 						// of a suspended node need to be removed since because the conditions should be re-evaluated based on
 						// the modified supplied parameter values.
@@ -907,23 +896,7 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 							deletedNodes[descendantNodeID] = true
 							descendantNode := wf.Status.Nodes[descendantNodeID]
 							if descendantNode.Type == wfv1.NodeTypePod {
-								currentNodeID := node.ID
-								for {
-									currentNode := wf.Status.Nodes[currentNodeID]
-									if !containsNode(resettedDAGNodes, currentNodeID) {
-										newWF.Status.Nodes[currentNodeID] = resetNode(*currentNode.DeepCopy())
-										resettedDAGNodes = append(resettedDAGNodes, currentNodeID)
-										log.Infoln(fmt.Sprintf("Resetting connected group node %s", node.Name))
-									}
-									if currentNode.BoundaryID != "" && currentNode.BoundaryID != wf.ObjectMeta.Name {
-										parentNode := wf.Status.Nodes[currentNode.BoundaryID]
-										if parentNode.Type == wfv1.NodeTypeDAG || parentNode.Type == wfv1.NodeTypeTaskGroup || parentNode.Type == wfv1.NodeTypeStepGroup {
-											currentNodeID = parentNode.ID
-										}
-									} else {
-										break
-									}
-								}
+								newWF, resettedDAGNodes = resetConnectedParentDAGs(wf, newWF, node, resettedDAGNodes)
 								deletedPods, podsToDelete = deletePodNodeDuringRetryWorkflow(wf, descendantNode, deletedPods, podsToDelete)
 							}
 						}
