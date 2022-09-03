@@ -112,7 +112,7 @@ export const WorkflowLogsViewer = ({workflow, nodeId, initialPodName, container,
                 <i className='fa fa-box' />{' '}
                 <Autocomplete
                     items={podNames}
-                    value={(podNames.find(x => x.value[0] === podName) || {label: ''}).label}
+                    value={(podNames.find(x => x.value === podName) || {label: ''}).label}
                     onSelect={(_, item) => {
                         setPodName(item.value);
                     }}
