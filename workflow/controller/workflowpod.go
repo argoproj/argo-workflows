@@ -385,7 +385,9 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 					c.Args = x.Cmd
 				}
 			}
-			c.Command = append([]string{common.VarRunArgoPath + "/argoexec", "emissary", "--"}, c.Command...)
+			c.Command = append([]string{common.VarRunArgoPath + "/argoexec", "emissary",
+				"--loglevel", getExecutorLogLevel(), "--log-format", woc.controller.executorLogFormat(),
+				"--"}, c.Command...)
 		}
 		if c.Image == woc.controller.executorImage() {
 			// mount tmp dir to wait container
