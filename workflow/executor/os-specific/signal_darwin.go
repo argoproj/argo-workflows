@@ -1,7 +1,6 @@
 package os_specific
 
 import (
-	log "github.com/sirupsen/logrus"
 	"os"
 	"syscall"
 	"time"
@@ -35,7 +34,6 @@ func Wait(process *os.Process) error {
 	// Instead, we can reap it to get the exit code
 	pid := process.Pid
 	if err := process.Release(); err != nil {
-		log.WithError(err).Info("ALEX release")
 		return err
 	}
 
