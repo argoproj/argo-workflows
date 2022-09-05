@@ -1,11 +1,10 @@
 package os_specific
 
 import (
+	"github.com/argoproj/argo-workflows/v3/util/errors"
 	"os"
 	"syscall"
 	"time"
-
-	"github.com/argoproj/argo-workflows/v3/util/errors"
 )
 
 func IsSIGCHLD(s os.Signal) bool { return s == syscall.SIGCHLD }
