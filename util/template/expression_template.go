@@ -9,6 +9,7 @@ import (
 	"github.com/antonmedv/expr"
 	"github.com/antonmedv/expr/file"
 	"github.com/antonmedv/expr/parser/lexer"
+	log "github.com/sirupsen/logrus"
 )
 
 func init() {
@@ -22,6 +23,7 @@ func expressionReplace(w io.Writer, expression string, env map[string]interface{
 	var unmarshalledExpression string
 	err := json.Unmarshal([]byte(fmt.Sprintf(`"%s"`, expression)), &unmarshalledExpression)
 	if err != nil && allowUnresolved {
+		log.WithError(err).Debug("unresolved is allowed ")
 		return w.Write([]byte(fmt.Sprintf("{{%s%s}}", kindExpression, expression)))
 	}
 	if err != nil {
@@ -31,10 +33,13 @@ func expressionReplace(w io.Writer, expression string, env map[string]interface{
 	if _, ok := env["retries"]; !ok && hasRetries(unmarshalledExpression) && allowUnresolved {
 		// this is to make sure expressions like `sprig.int(retries)` don't get resolved to 0 when `retries` don't exist in the env
 		// See https://github.com/argoproj/argo-workflows/issues/5388
+		log.WithError(err).Debug("unresolved is allowed ")
 		return w.Write([]byte(fmt.Sprintf("{{%s%s}}", kindExpression, expression)))
 	}
 	result, err := expr.Eval(unmarshalledExpression, env)
-	if (err != nil || result == nil) && allowUnresolved { //  <nil> result is also un-resolved, and any error can be unresolved
+	if (err != nil || result == nil) && allowUnresolved {
+		//  <nil> result is also un-resolved, and any error can be unresolved
+		log.WithError(err).Debug("unresolved is allowed ")
 		return w.Write([]byte(fmt.Sprintf("{{%s%s}}", kindExpression, expression)))
 	}
 	if err != nil {
@@ -45,6 +50,7 @@ func expressionReplace(w io.Writer, expression string, env map[string]interface{
 	}
 	resultMarshaled, err := json.Marshal(fmt.Sprintf("%v", result))
 	if (err != nil || resultMarshaled == nil) && allowUnresolved {
+		log.WithError(err).Debug("unresolved is allowed ")
 		return w.Write([]byte(fmt.Sprintf("{{%s%s}}", kindExpression, expression)))
 	}
 	if err != nil {
