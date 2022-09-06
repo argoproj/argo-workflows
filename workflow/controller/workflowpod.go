@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	exprenv "github.com/argoproj/argo-workflows/v3/util/expr/env"
 	"path/filepath"
 	"strconv"
 	"time"
@@ -428,6 +429,8 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 		return nil, ErrResourceRateLimitReached
 	}
 
+	pod = woc.mustEval(pod).(*apiv1.Pod)
+
 	woc.log.Debugf("Creating Pod: %s (%s)", nodeName, pod.Name)
 
 	created, err := woc.controller.kubeclientset.CoreV1().Pods(woc.wf.ObjectMeta.Namespace).Create(ctx, pod, metav1.CreateOptions{})
@@ -447,6 +450,14 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 	woc.log.Infof("Created pod: %s (%s)", nodeName, created.Name)
 	woc.activePods++
 	return created, nil
+}
+
+func (woc *wfOperationCtx) mustEval(x any) any {
+	y, err := template.Eval(x, exprenv.GetFuncMap(template.EnvMap(woc.globalParams)))
+	if err != nil {
+		panic(err)
+	}
+	return y
 }
 
 func (woc *wfOperationCtx) podExists(nodeID string) (existing *apiv1.Pod, exists bool, err error) {
