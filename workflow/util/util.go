@@ -774,6 +774,10 @@ func containsNode(nodes []string, node string) bool {
 	return false
 }
 
+func isGroupNode(node wfv1.NodeStatus) bool {
+	return node.Type == wfv1.NodeTypeDAG || node.Type == wfv1.NodeTypeTaskGroup || node.Type == wfv1.NodeTypeStepGroup || node.Type == wfv1.NodeTypeSteps
+}
+
 func resetConnectedParentGroupNodes(oldWF *wfv1.Workflow, newWF *wfv1.Workflow, currentNode wfv1.NodeStatus, resettedParentGroupNodes []string) (*wfv1.Workflow, []string) {
 	currentNodeID := currentNode.ID
 	for {
@@ -785,7 +789,7 @@ func resetConnectedParentGroupNodes(oldWF *wfv1.Workflow, newWF *wfv1.Workflow, 
 		}
 		if currentNode.BoundaryID != "" && currentNode.BoundaryID != oldWF.ObjectMeta.Name {
 			parentNode := oldWF.Status.Nodes[currentNode.BoundaryID]
-			if parentNode.Type == wfv1.NodeTypeDAG || parentNode.Type == wfv1.NodeTypeTaskGroup || parentNode.Type == wfv1.NodeTypeStepGroup {
+			if isGroupNode(parentNode) {
 				currentNodeID = parentNode.ID
 			}
 		} else {
@@ -855,7 +859,7 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 			if doForceResetNode {
 				log.Debugf("Force reset for node: %s", node.Name)
 				// Reset parent node if this node is a step/task group or DAG.
-				if (node.Type == wfv1.NodeTypeDAG || node.Type == wfv1.NodeTypeTaskGroup || node.Type == wfv1.NodeTypeStepGroup) && node.BoundaryID != "" {
+				if isGroupNode(node) && node.BoundaryID != "" {
 					if node.ID != wf.ObjectMeta.Name { // Skip root node
 						descendantNodeIDs := getDescendantNodeIDs(wf, node)
 						var nodeGroupNeedsReset bool
@@ -907,7 +911,7 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 				}
 			}
 		case wfv1.NodeError, wfv1.NodeFailed, wfv1.NodeOmitted:
-			if !strings.HasPrefix(node.Name, onExitNodeName) && (node.Type == wfv1.NodeTypeDAG || node.Type == wfv1.NodeTypeTaskGroup || node.Type == wfv1.NodeTypeStepGroup) {
+			if !strings.HasPrefix(node.Name, onExitNodeName) && isGroupNode(node) {
 				newNode := node.DeepCopy()
 				newWF.Status.Nodes[newNode.ID] = resetNode(*newNode)
 				continue
