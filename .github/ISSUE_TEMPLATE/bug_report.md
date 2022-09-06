@@ -1,5 +1,5 @@
 ---
-name: Reproducible bug report 
+name: Reproducible bug report
 about: Create a reproducible bug report. Not for support requests.
 labels: ['bug']
 ---
@@ -12,7 +12,9 @@ labels: ['bug']
 
 * [ ] Double-checked my configuration.
 * [ ] Tested using `:latest` images.
-* [ ] Used the Emissary executor.
+* [ ] Attached the smallest workflow that reproduces the issue.
+* [ ] Attached logs from the workflow controller.
+* [ ] Attached logs from the wait container.
 
 ## Summary
 
@@ -28,15 +30,12 @@ Paste the smallest workflow that reproduces the bug. We must be able to run the 
 
 ```
 
-```bash
+```
 # Logs from the workflow controller:
 kubectl logs -n argo deploy/workflow-controller | grep ${workflow} 
+```
 
-# If the workflow's pods have not been created, you can skip the rest of the diagnostics.
-
-# The workflow's pods that are problematic:
-kubectl get pod -o yaml -l workflows.argoproj.io/workflow=${workflow},workflow.argoproj.io/phase!=Succeeded
-
+```
 # Logs from in your workflow's wait container, something like:
 kubectl logs -c wait -l workflows.argoproj.io/workflow=${workflow},workflow.argoproj.io/phase!=Succeeded
 ```

@@ -1,22 +1,23 @@
 ---
 name: Regression report
 about: Create a regression report. Not for support requests.
-labels: ['bug', 'regression', 'triage']
+labels: ['bug', 'regression']
 ---
 ## Checklist
 
 <!-- Do NOT open an issue until you have: --> 
 
 * [ ] Double-checked my configuration.
-* [ ] Tested using the latest version.
-* [ ] Used the Emissary executor.
+* [ ] Tested using `:latest` images.
+* [ ] Attached the smallest workflow that reproduces the issue.
+* [ ] Attached logs from the workflow controller.
+* [ ] Attached logs from the wait container.
 
 ## Summary
 
 What happened/what you expected to happen?
 
 What version are you running?
-
 
 ## Diagnostics
 
@@ -26,15 +27,12 @@ Paste the smallest workflow that reproduces the bug. We must be able to run the 
 
 ```
 
-```bash
+```
 # Logs from the workflow controller:
-kubectl logs -n argo deploy/workflow-controller | grep ${workflow}
+kubectl logs -n argo deploy/workflow-controller | grep ${workflow} 
+```
 
-# If the workflow's pods have not been created, you can skip the rest of the diagnostics.
-
-# The workflow's pods that are problematic:
-kubectl get pod -o yaml -l workflows.argoproj.io/workflow=${workflow},workflow.argoproj.io/phase!=Succeeded
-
+```
 # Logs from in your workflow's wait container, something like:
 kubectl logs -c wait -l workflows.argoproj.io/workflow=${workflow},workflow.argoproj.io/phase!=Succeeded
 ```
