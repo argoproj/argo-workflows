@@ -93,6 +93,7 @@ const WorkflowNodeSummary = (props: Props) => {
 
     const attributes = [
         {title: 'NAME', value: <ClipboardText text={props.node.name} />},
+        {title: 'ID', value: <ClipboardText text={props.node.id} />},
         {title: 'TYPE', value: props.node.type},
         {
             title: 'PHASE',

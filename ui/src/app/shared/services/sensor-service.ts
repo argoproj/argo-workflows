@@ -33,8 +33,8 @@ export class SensorService {
         return requests.loadEventSource(`api/v1/stream/sensors/${namespace}`).pipe(map(line => line && (JSON.parse(line).result as SensorWatchEvent)));
     }
 
-    public sensorsLogs(namespace: string, name = '', triggerName = '', grep = '', tailLines = -1) {
-        const params = ['podLogOptions.follow=true'];
+    public sensorsLogs(namespace: string, name = '', triggerName = '', grep = '', tailLines = -1, container = 'main') {
+        const params = ['podLogOptions.follow=true', `podLogOptions.container=${container}`];
         if (name) {
             params.push('name=' + name);
         }

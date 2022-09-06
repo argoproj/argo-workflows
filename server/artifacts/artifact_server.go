@@ -381,7 +381,7 @@ func (a *ArtifactServer) getArtifactAndDriver(ctx context.Context, nodeId, artif
 		art = wf.Status.Nodes[nodeId].Outputs.GetArtifactByName(artifactName)
 	}
 	if art == nil {
-		return nil, nil, fmt.Errorf("artifact not found: %s", artifactName)
+		return nil, nil, fmt.Errorf("artifact not found: %s, isInput=%t, Workflow Status=%+v", artifactName, isInput, wf.Status)
 	}
 
 	// Artifact Location can be defined in various places:
