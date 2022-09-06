@@ -145,6 +145,7 @@ func (s *SignalsSuite) TestSignaled() {
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.WorkflowFailed, status.Phase)
+			assert.Equal(t, "Error (exit code 143)", status.Message)
 		})
 }
 
