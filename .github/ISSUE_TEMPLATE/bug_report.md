@@ -1,7 +1,7 @@
 ---
 name: Reproducible bug report 
 about: Create a reproducible bug report. Not for support requests.
-labels: ['bug', 'triage']
+labels: ['bug']
 ---
 
 <!-- If this is a regression, please open a regression report instead. -->
@@ -11,7 +11,7 @@ labels: ['bug', 'triage']
 <!-- Do NOT open an issue until you have: --> 
 
 * [ ] Double-checked my configuration.
-* [ ] Tested using the latest version.
+* [ ] Tested using `:latest` images.
 * [ ] Used the Emissary executor.
 
 ## Summary
