@@ -1672,7 +1672,12 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 	if resolvedTmpl.IsPodType() && woc.retryStrategy(resolvedTmpl) == nil {
 		localParams[common.LocalVarPodName] = woc.getPodName(nodeName, resolvedTmpl.Name)
 	}
-
+	if orgTmpl.IsDAGTask() {
+		localParams["tasks.name"] = orgTmpl.GetName()
+	}
+	if orgTmpl.IsWorkflowStep() {
+		localParams["steps.name"] = orgTmpl.GetName()
+	}
 	// Merge Template defaults to template
 	err = woc.mergedTemplateDefaultsInto(resolvedTmpl)
 	if err != nil {
