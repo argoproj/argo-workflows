@@ -136,6 +136,19 @@ func (s *SignalsSuite) TestSubProcess() {
 		WaitForWorkflow()
 }
 
+func (s *SignalsSuite) TestSignaled() {
+	s.Given().
+		Workflow("@testdata/signaled-workflow.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow().
+		Then().
+		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.WorkflowFailed, status.Phase)
+			assert.Equal(t, "Error (exit code 143)", status.Message)
+		})
+}
+
 func TestSignalsSuite(t *testing.T) {
 	suite.Run(t, new(SignalsSuite))
 }

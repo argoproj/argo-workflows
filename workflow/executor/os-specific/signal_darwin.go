@@ -44,7 +44,11 @@ func Wait(process *os.Process) error {
 			return err
 		}
 		if wpid == pid {
-			return errors.NewExitErr(s.ExitStatus())
+			if s.Exited() {
+				return errors.NewExitErr(s.ExitStatus())
+			} else if s.Signaled() {
+				return errors.NewExitErr(128 + int(s.Signal()))
+			}
 		}
 		time.Sleep(time.Second)
 	}
