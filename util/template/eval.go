@@ -8,13 +8,13 @@ import (
 )
 
 func Eval(x any, env any) (any, error) {
-	return mapper.Map(x, func(g any) (any, error) {
-		s, ok := g.(string)
-		if ok {
+	m := func(v any) (any, error) {
+		if s, ok := v.(string); ok {
 			return eval(s, env)
 		}
-		return g, nil
-	})
+		return v, nil
+	}
+	return mapper.Map(x, m)
 }
 
 func eval(s string, env any) (string, error) {

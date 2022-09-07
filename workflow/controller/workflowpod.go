@@ -102,7 +102,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 	}
 
 	tmpl = tmpl.DeepCopy()
-	wfSpec := woc.execWf.Spec.DeepCopy()
+	spec := woc.mustEval(woc.execWf.Spec).(wfv1.WorkflowSpec)
 
 	for i, c := range mainCtrs {
 		if c.Name == "" || tmpl.GetType() != wfv1.TemplateTypeContainerSet {
@@ -178,7 +178,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 			RestartPolicy:         apiv1.RestartPolicyNever,
 			Volumes:               woc.createVolumes(tmpl),
 			ActiveDeadlineSeconds: activeDeadlineSeconds,
-			ImagePullSecrets:      woc.execWf.Spec.ImagePullSecrets,
+			ImagePullSecrets:      spec.ImagePullSecrets,
 		},
 	}
 
@@ -187,16 +187,16 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 		pod.ObjectMeta.Labels[common.LabelKeyOnExit] = "true"
 	}
 
-	if woc.execWf.Spec.HostNetwork != nil {
-		pod.Spec.HostNetwork = *woc.execWf.Spec.HostNetwork
+	if spec.HostNetwork != nil {
+		pod.Spec.HostNetwork = *spec.HostNetwork
 	}
 
-	if woc.execWf.Spec.DNSPolicy != nil {
-		pod.Spec.DNSPolicy = *woc.execWf.Spec.DNSPolicy
+	if spec.DNSPolicy != nil {
+		pod.Spec.DNSPolicy = *spec.DNSPolicy
 	}
 
-	if woc.execWf.Spec.DNSConfig != nil {
-		pod.Spec.DNSConfig = woc.execWf.Spec.DNSConfig
+	if spec.DNSConfig != nil {
+		pod.Spec.DNSConfig = spec.DNSConfig
 	}
 
 	if woc.controller.Config.InstanceID != "" {
@@ -239,7 +239,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 	initCtr := woc.newInitContainer(tmpl)
 	pod.Spec.InitContainers = []apiv1.Container{initCtr}
 
-	addSchedulingConstraints(pod, wfSpec, tmpl)
+	addSchedulingConstraints(pod, &spec, tmpl)
 	woc.addMetadata(pod, tmpl)
 
 	err = addVolumeReferences(pod, woc.volumes, tmpl, woc.wf.Status.PersistentVolumeClaims)
@@ -376,7 +376,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 			// https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#notes
 			if len(c.Command) == 0 {
 				x, err := woc.controller.entrypoint.Lookup(ctx, c.Image, entrypoint.Options{
-					Namespace: woc.wf.Namespace, ServiceAccountName: woc.execWf.Spec.ServiceAccountName, ImagePullSecrets: woc.execWf.Spec.ImagePullSecrets,
+					Namespace: woc.wf.Namespace, ServiceAccountName: spec.ServiceAccountName, ImagePullSecrets: spec.ImagePullSecrets,
 				})
 				if err != nil {
 					return nil, fmt.Errorf("failed to look-up entrypoint/cmd for image %q, you must either explicitly specify the command, or list the image's command in the index: https://argoproj.github.io/argo-workflows/workflow-executors/#emissary-emissary: %w", c.Image, err)

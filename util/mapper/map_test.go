@@ -3,14 +3,16 @@ package mapper
 import (
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/stretchr/testify/assert"
+	"k8s.io/utils/pointer"
 	"testing"
 )
 
 type s struct {
-	String string
+	Exported   string
+	unexported string
 }
 
-func TestVisit(t *testing.T) {
+func TestMap(t *testing.T) {
 	v := func(x any) (any, error) {
 		s, ok := x.(string)
 		if ok && s == "foo" {
@@ -23,10 +25,15 @@ func TestVisit(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, "bar", x)
 	})
-	t.Run("Struct", func(t *testing.T) {
-		x, err := Map(s{String: "foo"}, v)
+	t.Run("struct", func(t *testing.T) {
+		x, err := Map(s{Exported: "foo"}, v)
 		assert.NoError(t, err)
-		assert.Equal(t, "bar", x.(s).String)
+		assert.Equal(t, s{Exported: "bar"}, x)
+	})
+	t.Run("*struct", func(t *testing.T) {
+		x, err := Map(&s{Exported: "foo"}, v)
+		assert.NoError(t, err)
+		assert.Equal(t, &s{Exported: "bar"}, x)
 	})
 	t.Run("array", func(t *testing.T) {
 		x, err := Map([]string{"foo"}, v)
@@ -45,9 +52,21 @@ func TestVisit(t *testing.T) {
 	})
 	t.Run("*WorkflowSpec", func(t *testing.T) {
 		y, err := Map(&wfv1.WorkflowSpec{
-			Entrypoint: "foo",
+			Templates:    []wfv1.Template{{Name: "foo"}},
+			Entrypoint:   "foo",
+			Arguments:    wfv1.Arguments{},
+			Priority:     pointer.Int32(1),
+			Executor:     &wfv1.ExecutorConfig{},
+			NodeSelector: map[string]string{"foo": "foo"},
 		}, v)
 		assert.NoError(t, err)
-		assert.Equal(t, &wfv1.WorkflowSpec{Entrypoint: "bar"}, y)
+		assert.Equal(t, &wfv1.WorkflowSpec{
+			Templates:    []wfv1.Template{{Name: "bar"}},
+			Entrypoint:   "bar",
+			Arguments:    wfv1.Arguments{},
+			Priority:     pointer.Int32(1),
+			Executor:     &wfv1.ExecutorConfig{},
+			NodeSelector: map[string]string{"foo": "bar"},
+		}, y)
 	})
 }
