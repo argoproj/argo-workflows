@@ -18,8 +18,8 @@ func TestSanitize(t *testing.T) {
 		c   Config
 		err string
 	}{
-		{Config{Links: []*wfv1.Link{{URL: "javascript:foo"}}}, "detect javascript link: javascript:foo"},
-		{Config{Links: []*wfv1.Link{{URL: "javASCRipt: //foo"}}}, "detect javascript link: javASCRipt: //foo"},
+		{Config{Links: []*wfv1.Link{{URL: "javascript:foo"}}}, "protocol javascript is not allowed"},
+		{Config{Links: []*wfv1.Link{{URL: "javASCRipt: //foo"}}}, "protocol javascript is not allowed"},
 		{Config{Links: []*wfv1.Link{{URL: "http://foo.bar/?foo=<script>abc</script>bar"}}}, ""},
 	}
 	for _, tt := range tests {
