@@ -175,12 +175,12 @@ artifacts:
 
 ## Configuring Alibaba Cloud OSS (Object Storage Service)
 
-Create your bucket and access key for the bucket. Suggest to limit the permission 
-for the access key, you will need to create a user with just the permissions you 
+Create your bucket and access key for the bucket. Suggest to limit the permission
+for the access key, you will need to create a user with just the permissions you
 want to associate with the access key. Otherwise, you can just create an access key
 using your existing user account.
 
-Setup [Alibaba Cloud CLI](https://www.alibabacloud.com/help/en/alibaba-cloud-cli/latest/product-introduction) 
+Setup [Alibaba Cloud CLI](https://www.alibabacloud.com/help/en/alibaba-cloud-cli/latest/product-introduction)
 and follow the steps to configure the artifact storage for your workflow:
 
 ```bash
