@@ -68,7 +68,7 @@ spec:
 func TestLintFile(t *testing.T) {
 	file, err := ioutil.TempFile("", "*.yaml")
 	assert.NoError(t, err)
-	err = ioutil.WriteFile(file.Name(), lintFileData, 0o600)
+	err = os.WriteFile(file.Name(), lintFileData, 0o600)
 	assert.NoError(t, err)
 	defer os.Remove(file.Name())
 
@@ -97,7 +97,7 @@ func TestLintFile(t *testing.T) {
 func TestLintMultipleKinds(t *testing.T) {
 	file, err := ioutil.TempFile("", "*.yaml")
 	assert.NoError(t, err)
-	err = ioutil.WriteFile(file.Name(), lintFileData, 0o600)
+	err = os.WriteFile(file.Name(), lintFileData, 0o600)
 	assert.NoError(t, err)
 	defer os.Remove(file.Name())
 
@@ -129,7 +129,7 @@ func TestLintMultipleKinds(t *testing.T) {
 func TestLintWithOutput(t *testing.T) {
 	file, err := ioutil.TempFile("", "*.yaml")
 	assert.NoError(t, err)
-	err = ioutil.WriteFile(file.Name(), lintFileData, 0o600)
+	err = os.WriteFile(file.Name(), lintFileData, 0o600)
 	assert.NoError(t, err)
 	defer os.Remove(file.Name())
 
@@ -217,7 +217,7 @@ func TestLintDeviceFile(t *testing.T) {
 	file, err := ioutil.TempFile("", "*.yaml")
 	fd := file.Fd()
 	assert.NoError(t, err)
-	err = ioutil.WriteFile(file.Name(), lintFileData, 0o600)
+	err = os.WriteFile(file.Name(), lintFileData, 0o600)
 	assert.NoError(t, err)
 	defer os.Remove(file.Name())
 

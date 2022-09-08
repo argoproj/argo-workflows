@@ -20,7 +20,7 @@ func TestEmissary(t *testing.T) {
 	varRunArgo = tmp
 	includeScriptOutput = true
 
-	err := ioutil.WriteFile(varRunArgo+"/template", []byte(`{}`), 0o600)
+	err := os.WriteFile(varRunArgo+"/template", []byte(`{}`), 0o600)
 	assert.NoError(t, err)
 
 	t.Run("Exit0", func(t *testing.T) {
@@ -57,7 +57,7 @@ func TestEmissary(t *testing.T) {
 			syscall.SIGTERM: "terminated",
 			syscall.SIGKILL: "killed",
 		} {
-			err := ioutil.WriteFile(varRunArgo+"/ctr/main/signal", []byte(strconv.Itoa(int(signal))), 0o600)
+			err := os.WriteFile(varRunArgo+"/ctr/main/signal", []byte(strconv.Itoa(int(signal))), 0o600)
 			assert.NoError(t, err)
 			var wg sync.WaitGroup
 			wg.Add(1)
@@ -70,7 +70,7 @@ func TestEmissary(t *testing.T) {
 		}
 	})
 	t.Run("Artifact", func(t *testing.T) {
-		err = ioutil.WriteFile(varRunArgo+"/template", []byte(`
+		err = os.WriteFile(varRunArgo+"/template", []byte(`
 {
 	"outputs": {
 		"artifacts": [
@@ -87,7 +87,7 @@ func TestEmissary(t *testing.T) {
 		assert.NotEmpty(t, string(data)) // data is tgz format
 	})
 	t.Run("ArtifactWithTrailingAndLeadingSlash", func(t *testing.T) {
-		err = ioutil.WriteFile(varRunArgo+"/template", []byte(`
+		err = os.WriteFile(varRunArgo+"/template", []byte(`
 {
 	"outputs": {
 		"artifacts": [
@@ -104,7 +104,7 @@ func TestEmissary(t *testing.T) {
 		assert.NotEmpty(t, string(data)) // data is tgz format
 	})
 	t.Run("Parameter", func(t *testing.T) {
-		err = ioutil.WriteFile(varRunArgo+"/template", []byte(`
+		err = os.WriteFile(varRunArgo+"/template", []byte(`
 {
 	"outputs": {
 		"parameters": [
@@ -123,7 +123,7 @@ func TestEmissary(t *testing.T) {
 		assert.Contains(t, string(data), "hello")
 	})
 	t.Run("RetryContainerSetFail", func(t *testing.T) {
-		err = ioutil.WriteFile(varRunArgo+"/template", []byte(`
+		err = os.WriteFile(varRunArgo+"/template", []byte(`
 {
 	"outputs": {
 		"artifacts": [
@@ -153,7 +153,7 @@ func TestEmissary(t *testing.T) {
 		assert.NotEmpty(t, string(data)) // data is tgz format
 	})
 	t.Run("RetryContainerSetSuccess", func(t *testing.T) {
-		err = ioutil.WriteFile(varRunArgo+"/template", []byte(`
+		err = os.WriteFile(varRunArgo+"/template", []byte(`
 {
 	"outputs": {
 		"artifacts": [

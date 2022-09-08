@@ -54,7 +54,7 @@ func (g *ArtifactDriver) auth(sshUser string) (func(), transport.AuthMethod, err
 		if err != nil {
 			return nil, nil, err
 		}
-		err = ioutil.WriteFile(privateKeyFile.Name(), []byte(g.SSHPrivateKey), 0o600)
+		err = os.WriteFile(privateKeyFile.Name(), []byte(g.SSHPrivateKey), 0o600)
 		if err != nil {
 			return nil, nil, err
 		}

@@ -43,7 +43,6 @@ If the container is named `main` it also copies base-layer artifacts to the shar
 The wait container can create one file itself, used for terminating the sub-process:
 
 * `/var/run/argo/ctr/${containerName}/signal` The emissary binary listens to changes in this file, and signals the sub-process with the value found in this file.
-
 */
 type emissary struct{}
 
@@ -67,7 +66,7 @@ func (e emissary) writeTemplate(t wfv1.Template) error {
 	if err != nil {
 		return err
 	}
-	return ioutil.WriteFile(common.VarRunArgoPath+"/template", data, 0o444) // chmod -r--r--r--
+	return os.WriteFile(common.VarRunArgoPath+"/template", data, 0o444) // chmod -r--r--r--
 }
 
 func (e emissary) GetFileContents(_ string, sourcePath string) (string, error) {
@@ -139,7 +138,7 @@ func (e emissary) Kill(ctx context.Context, containerNames []string, termination
 	for _, containerName := range containerNames {
 		// allow write-access by other users, because other containers
 		// should delete the signal after receiving it
-		if err := ioutil.WriteFile(filepath.Join(common.VarRunArgoPath, "ctr", containerName, "signal"), []byte(strconv.Itoa(int(syscall.SIGTERM))), 0o666); err != nil { //nolint:gosec
+		if err := os.WriteFile(filepath.Join(common.VarRunArgoPath, "ctr", containerName, "signal"), []byte(strconv.Itoa(int(syscall.SIGTERM))), 0o666); err != nil { //nolint:gosec
 			return err
 		}
 	}
@@ -152,7 +151,7 @@ func (e emissary) Kill(ctx context.Context, containerNames []string, termination
 	for _, containerName := range containerNames {
 		// allow write-access by other users, because other containers
 		// should delete the signal after receiving it
-		if err := ioutil.WriteFile(filepath.Join(common.VarRunArgoPath, "ctr", containerName, "signal"), []byte(strconv.Itoa(int(syscall.SIGKILL))), 0o666); err != nil { //nolint:gosec
+		if err := os.WriteFile(filepath.Join(common.VarRunArgoPath, "ctr", containerName, "signal"), []byte(strconv.Itoa(int(syscall.SIGKILL))), 0o666); err != nil { //nolint:gosec
 			return err
 		}
 	}

@@ -94,7 +94,7 @@ func TestSaveHTTPArtifactRedirect(t *testing.T) {
 
 	tempFile := path.Join(tempDir, "tmpfile")
 	content := "temporary file's content"
-	if err := ioutil.WriteFile(tempFile, []byte(content), 0o600); err != nil {
+	if err := os.WriteFile(tempFile, []byte(content), 0o600); err != nil {
 		panic(err)
 	}
 
