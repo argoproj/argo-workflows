@@ -2,7 +2,6 @@ package config
 
 import (
 	"fmt"
-	"html"
 	"math"
 	"net/url"
 	"time"
@@ -132,33 +131,28 @@ func (c Config) GetPodGCDeleteDelayDuration() time.Duration {
 	return c.PodGCDeleteDelayDuration.Duration
 }
 
-func (c Config) ValidateProtocol(inputURL string, allowedProtocol []string) error {
-	u, err := url.Parse(inputURL)
-	if err != nil {
-		return err
-	}
+func (c Config) ValidateProtocol(inputProtocol string, allowedProtocol []string) error {
 	for _, protocol := range allowedProtocol {
-		if u.Scheme == protocol {
+		if inputProtocol == protocol {
 			return nil
 		}
 	}
-	return fmt.Errorf("detect javascript link: %s", inputURL)
-}
-
-func (c Config) HTMLEscape(unescaped string) string {
-	return html.EscapeString(unescaped)
+	return fmt.Errorf("protocol %s is not allowed", inputProtocol)
 }
 
 func (c *Config) Sanitize(allowedProtocol []string) error {
 	links := c.Links
 
 	for _, link := range links {
-		err := c.ValidateProtocol(link.URL, allowedProtocol)
+		u, err := url.Parse(link.URL)
 		if err != nil {
 			return err
-		} else {
-			link.URL = c.HTMLEscape(link.URL)
 		}
+		err = c.ValidateProtocol(u.Scheme, allowedProtocol)
+		if err != nil {
+			return err
+		}
+		link.URL = u.String() // reassembles the URL into a valid URL string
 	}
 	return nil
 }
