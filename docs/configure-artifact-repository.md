@@ -175,33 +175,79 @@ artifacts:
 
 ## Configuring Alibaba Cloud OSS (Object Storage Service)
 
-To configure artifact storage for Alibaba Cloud OSS, please first follow
-the [official documentation](https://www.alibabacloud.com/product/oss) to set up
-an OSS account and bucket.
+Create your bucket and access key for the bucket. Suggest to limit the permission
+for the access key, you will need to create a user with just the permissions you
+want to associate with the access key. Otherwise, you can just create an access key
+using your existing user account.
 
-Once it's set up, you can find endpoint and bucket
-information on your OSS dashboard and then use them like the following to
-configure the artifact storage for your workflow:
+Setup [Alibaba Cloud CLI](https://www.alibabacloud.com/help/en/alibaba-cloud-cli/latest/product-introduction)
+and follow the steps to configure the artifact storage for your workflow:
 
-```yaml
-artifacts:
-  - name: my-art
-    path: /my-artifact
+```bash
+$ export mybucket=bucket-workflow-artifect
+$ export myregion=cn-zhangjiakou
+$ # limit permission to read/write the bucket.
+$ cat > policy.json <<EOF
+{
+    "Version": "1",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [
+              "oss:PutObject",
+              "oss:GetObject"
+            ],
+            "Resource": "acs:oss:*:*:$mybucket/*"
+        }
+    ]
+}
+EOF
+$ # create bucket.
+$ aliyun oss mb oss://$mybucket --region $myregion
+$ # show endpoint of bucket.
+$ aliyun oss stat oss://$mybucket
+$ #create a ram user to access bucket.
+$ aliyun ram CreateUser --UserName $mybucket-user
+$ # create ram policy with the limit permission.
+$ aliyun ram CreatePolicy --PolicyName $mybucket-policy --PolicyDocument "$(cat policy.json)"
+$ # attch ram policy to the ram user.
+$ aliyun ram AttachPolicyToUser --UserName $mybucket-user --PolicyName $mybucket-policy --PolicyType Custom
+$ # create access key and secret key for the ram user.
+$ aliyun ram CreateAccessKey --UserName $mybucket-user > access-key.json
+$ # create secret in demo namespace, replace demo with your namespace.
+$ kubectl create secret generic $mybucket-credentials -n demo\
+  --from-literal "accessKey=$(cat access-key.json | jq -r .AccessKey.AccessKeyId)" \
+  --from-literal "secretKey=$(cat access-key.json | jq -r .AccessKey.AccessKeySecret)"
+$ # create configmap to config default artifact for a namespace.
+$ cat > default-artifact-repository.yaml << EOF
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  # If you want to use this config map by default, name it "artifact-repositories". Otherwise, you can provide a reference to a
+  # different config map in `artifactRepositoryRef.configMap`.
+  name: artifact-repositories
+  annotations:
+    # v3.0 and after - if you want to use a specific key, put that key into this annotation.
+    workflows.argoproj.io/default-artifact-repository: default-oss-artifact-repository
+data:
+  default-oss-artifact-repository: |
     oss:
-      endpoint: http://oss-cn-hangzhou-zmf.aliyuncs.com
-      bucket: test-bucket-name
-      key: test/mydirectory/ # this is path in the bucket
+      endpoint: http://oss-cn-zhangjiakou-internal.aliyuncs.com
+      bucket: $mybucket
       # accessKeySecret and secretKeySecret are secret selectors.
-      # It references the k8s secret named 'my-oss-credentials'.
+      # It references the k8s secret named 'bucket-workflow-artifect-credentials'.
       # This secret is expected to have have the keys 'accessKey'
       # and 'secretKey', containing the base64 encoded credentials
       # to the bucket.
       accessKeySecret:
-        name: my-oss-credentials
+        name: $mybucket-credentials
         key: accessKey
       secretKeySecret:
-        name: my-oss-credentials
+        name: $mybucket-credentials
         key: secretKey
+EOF
+# create cm in demo namespace, replace demo with your namespace.
+$ k apply -f default-artifact-repository.yaml -n demo
 ```
 
 You can also set `createBucketIfNotPresent` to `true` to tell the artifact driver to automatically create the OSS bucket if it doesn't exist yet when saving artifacts. Note that you'll need to set additional permission for your OSS account to create new buckets.
