@@ -105,7 +105,6 @@ specify a bucket region in your workflow configuration.
       }
     ...
 ```
- 
 
 ## Configuring GCS (Google Cloud Storage)
 
