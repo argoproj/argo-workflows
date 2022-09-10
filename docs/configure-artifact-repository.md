@@ -75,7 +75,8 @@ $ cat > policy.json <<EOF
          "Effect":"Allow",
          "Action":[
             "s3:PutObject",
-            "s3:GetObject"
+            "s3:GetObject",
+            "s3:ListBucket"
          ],
          "Resource":"arn:aws:s3:::$mybucket/*"
       }
@@ -87,6 +88,8 @@ $ aws iam create-user --user-name $mybucket-user
 $ aws iam put-user-policy --user-name $mybucket-user --policy-name $mybucket-policy --policy-document file://policy.json
 $ aws iam create-access-key --user-name $mybucket-user > access-key.json
 ```
+
+If you have Artifact Garbage Collection configured, you should also add "s3:DeleteObject" to the list of Actions above.
 
 NOTE: if you want argo to figure out which region your buckets belong in, you
 must additionally set the following statement policy. Otherwise, you must

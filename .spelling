@@ -38,6 +38,7 @@ Breitgand
 Couler
 DataDog
 Dataflow
+DeleteObject
 DevOps
 Dex
 EtcD
@@ -89,6 +90,7 @@ Ploomber
 Postgres
 Roadmap
 RoleBinding
+s3
 SDKs
 Sharding
 Singer.io
