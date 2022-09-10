@@ -67,7 +67,7 @@ This PR adds indexes to archived workflow tables. This change may cause a long t
 
 ## feat: enhance artifact visualization (#8655)
 
-For AWS users using S3: visualizing artifacts in the UI and downloading them now requires an additional "Action" to be configured in your S3 bucket policy: "ListBucket". 
+For AWS users using S3: visualizing artifacts in the UI and downloading them now requires an additional "Action" to be configured in your S3 bucket policy: "ListBucket".
 
 ## Upgrading to v3.3
 
