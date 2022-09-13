@@ -16,6 +16,9 @@ defaults:
   run:
     shell: bash
 
+permissions:
+  contents: read
+
 jobs:
   build-linux-amd64:
     name: Build & push linux/amd64
@@ -317,6 +320,8 @@ jobs:
           done
 
   publish-release:
+    permissions:
+      contents: write  # for softprops/action-gh-release to create GitHub release
     runs-on: ubuntu-latest
     if: github.repository == 'argoproj/argo-workflows'
     needs: [ push-images, test-images-linux-amd64, test-images-windows ]
