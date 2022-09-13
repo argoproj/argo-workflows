@@ -1,5 +1,49 @@
 # Changelog
 
+## v3.4.0-rc4 (2022-09-10)
+
+ * [dee4ea5b0](https://github.com/argoproj/argo-workflows/commit/dee4ea5b0be2408e13af7745db910d0130e578f2) chore(deps-dev): bump @babel/core from 7.18.13 to 7.19.0 in /ui (#9566)
+ * [8172b493d](https://github.com/argoproj/argo-workflows/commit/8172b493d649c20b0b72ae56cf5b69bd2fa5ed8d) chore(deps-dev): bump sass from 1.54.8 to 1.54.9 in /ui (#9565)
+ * [68a793586](https://github.com/argoproj/argo-workflows/commit/68a793586ed8154f71d156e9daa8055e7ea8492e) chore(deps-dev): bump @babel/preset-env from 7.18.10 to 7.19.0 in /ui (#9562)
+ * [e1d8387fa](https://github.com/argoproj/argo-workflows/commit/e1d8387fa7a9c0648c548e2809f61eb77a802537) chore(deps-dev): bump babel-jest from 29.0.1 to 29.0.2 in /ui (#9564)
+ * [3950f8c1c](https://github.com/argoproj/argo-workflows/commit/3950f8c1c12ff7451b3e1be96b2ba108025a9677) chore(deps): bump google.golang.org/api from 0.94.0 to 0.95.0 (#9561)
+ * [8310bdbc9](https://github.com/argoproj/argo-workflows/commit/8310bdbc9d07f87640d944b949e465a044148368) chore(deps): bump github.com/coreos/go-oidc/v3 from 3.3.0 to 3.4.0 (#9560)
+ * [baaa8d0a9](https://github.com/argoproj/argo-workflows/commit/baaa8d0a9e90f5234ce7d02cbc33f8756a3ad4da) chore(deps): bump github.com/minio/minio-go/v7 from 7.0.35 to 7.0.36 (#9558)
+ * [aab923452](https://github.com/argoproj/argo-workflows/commit/aab92345267e9e0562ee8495f49ac6d80e06ae28) chore(deps): bump github.com/spf13/viper from 1.12.0 to 1.13.0 (#9559)
+ * [ec7c210c9](https://github.com/argoproj/argo-workflows/commit/ec7c210c9743d8f85d528d5593bc7390d73ff534) fix: use urlencode instead of htmlencode to sanitize url (#9538)
+ * [3a3f15997](https://github.com/argoproj/argo-workflows/commit/3a3f1599718453ca79800cfc28f6631ee780911b) fix: enable workflow-aggregate-roles to treat workflowtaskresults. Fixes #9545 (#9546)
+ * [9d66b69f0](https://github.com/argoproj/argo-workflows/commit/9d66b69f0bca92d7ef0c9aa67e87a2e334797530) fix: for pod that's been GC'ed we need to get the log from the artifact (#9540)
+ * [34a4e48c3](https://github.com/argoproj/argo-workflows/commit/34a4e48c3f412ba89cd0491469d13a14fdaf51b3) chore(deps): bump github.com/minio/minio-go/v7 from 7.0.34 to 7.0.35 (#9502)
+ * [ef6bd5710](https://github.com/argoproj/argo-workflows/commit/ef6bd5710e5780afe40321f4d384471d9e02197c) fix: Capture exit code of signaled containers. Fixes #9415 (#9523)
+ * [6e2f15f9e](https://github.com/argoproj/argo-workflows/commit/6e2f15f9eea82f1344f139800869f9e7fd255b04) feat: added support for DAG task name as variables in workflow templates (#9387)
+ * [f27475feb](https://github.com/argoproj/argo-workflows/commit/f27475feb850dc43e07c3c5215cc9638947f0859) fix: default to 'main' container in Sensor logs. Fixes #9459 (#9438)
+ * [c00fbf88f](https://github.com/argoproj/argo-workflows/commit/c00fbf88f15104673b05ba5e109a72fed84dd38e) feat: Add node ID to node info panel (#9500)
+ * [2a80a2c1a](https://github.com/argoproj/argo-workflows/commit/2a80a2c1a9b0a2370f547492ef9168ee583077f5) fix: revert accidental commit in UI logs viewer (#9515)
+ * [b9d02cfd5](https://github.com/argoproj/argo-workflows/commit/b9d02cfd59c72b2bc8e437e6591ca4a145a3eb9b) chore(deps): bump cloud.google.com/go/storage from 1.25.0 to 1.26.0 (#9506)
+ * [bd9fc66c5](https://github.com/argoproj/argo-workflows/commit/bd9fc66c52c8e14123e5d7a4a7829023a072da9f) chore(deps-dev): bump @fortawesome/fontawesome-free from 6.1.2 to 6.2.0 in /ui (#9513)
+ * [9004f5e26](https://github.com/argoproj/argo-workflows/commit/9004f5e263a4ead8a5be4a4a09db03064eb1d453) chore(deps): bump google.golang.org/api from 0.93.0 to 0.94.0 (#9505)
+ * [605b0a0eb](https://github.com/argoproj/argo-workflows/commit/605b0a0eb3413107e2e87d6f3399d6b5f2778727) chore(deps-dev): bump sass from 1.54.5 to 1.54.8 in /ui (#9514)
+ * [6af53eff3](https://github.com/argoproj/argo-workflows/commit/6af53eff34180d9d238ba0fd0cb5a5b9b57b15a5) chore(deps-dev): bump babel-jest from 28.1.3 to 29.0.1 in /ui (#9512)
+ * [a2c20d70e](https://github.com/argoproj/argo-workflows/commit/a2c20d70e8885937532055b8c2791799020057ec) chore(deps): bump react-monaco-editor from 0.49.0 to 0.50.1 in /ui (#9509)
+ * [041d1382d](https://github.com/argoproj/argo-workflows/commit/041d1382d0a22a8bb88e88486f79c6b4bb6dfc8d) chore(deps-dev): bump webpack-dev-server from 4.10.0 to 4.10.1 in /ui (#9510)
+ * [7f9a15e77](https://github.com/argoproj/argo-workflows/commit/7f9a15e77eaa84d7f5474d28e30e52a77ca76b2e) chore(deps-dev): bump @babel/core from 7.18.10 to 7.18.13 in /ui (#9507)
+ * [08963c468](https://github.com/argoproj/argo-workflows/commit/08963c4680353a0b4e0abf16f0590a66b8dd4b3e) chore(deps-dev): bump @types/dagre from 0.7.47 to 0.7.48 in /ui (#9508)
+ * [1b09c8641](https://github.com/argoproj/argo-workflows/commit/1b09c8641ad11680b90dba582b3eae98dcee01c3) chore(deps): bump github.com/coreos/go-oidc/v3 from 3.2.0 to 3.3.0 (#9504)
+ * [4053ddf08](https://github.com/argoproj/argo-workflows/commit/4053ddf081755df8819a4a33ce558c92235ea81d) chore(deps): bump github.com/aliyun/aliyun-oss-go-sdk from 2.2.4+incompatible to 2.2.5+incompatible (#9503)
+ * [06d295752](https://github.com/argoproj/argo-workflows/commit/06d29575210d7b61ca7c7f2fb8e28fdd6c3d5637) feat: log format option for main containers (#9468)
+
+### Contributors
+
+ * Alex Collins
+ * Julie Vogelman
+ * Rohan Kumar
+ * Takao Shibata
+ * Thomas Bonfort
+ * Tianchu Zhao
+ * Yuan Tang
+ * dependabot[bot]
+ * jsvk
+
 ## v3.4.0-rc3 (2022-08-31)
 
  * [b941fbcab](https://github.com/argoproj/argo-workflows/commit/b941fbcaba087d5c5569573d1ef1a027313174ce) feat: improve e2e test for ArtifactGC (#9448)
