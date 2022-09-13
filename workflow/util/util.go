@@ -914,8 +914,12 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 			if !strings.HasPrefix(node.Name, onExitNodeName) && isGroupNode(node) {
 				newNode := node.DeepCopy()
 				newWF.Status.Nodes[newNode.ID] = resetNode(*newNode)
+				log.Debugf("Reset %s node %s since it's a group node", node.Name, string(node.Phase))
 				continue
 			} else {
+				log.Debugf("Deleted %s node %s since it's not a group node", node.Name, string(node.Phase))
+				deletedPods, podsToDelete = deletePodNodeDuringRetryWorkflow(wf, node, deletedPods, podsToDelete)
+				log.Debugf("Deleted pod node: %s", node.Name)
 				deletedNodes[node.ID] = true
 			}
 			// do not add this status to the node. pretend as if this node never existed.
