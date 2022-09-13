@@ -26,7 +26,7 @@ Note:
 
     ```json
     "features": {
-      "buildkit": false
+      "buildkit": true
     },
     ```
 
@@ -79,7 +79,7 @@ To start:
 Run:
 
 ```bash
-make start 
+make start
 ```
 
 Make sure you don't see any errors in your terminal.
@@ -87,7 +87,7 @@ Make sure you don't see any errors in your terminal.
 You can submit a workflow for testing using `kubectl`:
 
 ```bash
-kubectl create -f examples/hello-world.yaml 
+kubectl create -f examples/hello-world.yaml
 ```
 
 If you made changes to the executor, you need to build the image:
@@ -113,8 +113,8 @@ make start UI=true
 If you are making change to the CLI, you can build it:
 
 ```bash
-make cli 
-./dist/argo submit examples/hello-world.yaml ;# new CLI is created as `./dist/argo` 
+make cli
+./dist/argo submit examples/hello-world.yaml ;# new CLI is created as `./dist/argo`
 ```
 
 To test the workflow archive, use `PROFILE=mysql` or `PROFILE=postgres`:
@@ -139,7 +139,7 @@ make start UI=true PROFILE=sso
 Start up Argo Workflows using the following:
 
 ```bash
-make start PROFILE=mysql AUTH_MODE=client STATIC_FILES=false API=true 
+make start PROFILE=mysql AUTH_MODE=client STATIC_FILES=false API=true
 ```
 
 #### Running One Test
@@ -150,7 +150,7 @@ Our CI will run those concurrently when you create a PR, which will give you fee
 Find the test that you want to run in `test/e2e`
 
 ```bash
-make TestArtifactServer  
+make TestArtifactServer
 ```
 
 #### Running A Set Of Tests
