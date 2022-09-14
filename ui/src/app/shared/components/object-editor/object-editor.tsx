@@ -81,7 +81,7 @@ export const ObjectEditor = <T extends any>({type, value, buttons, onChange}: Pr
                         icon='caret-right'
                         outline={true}
                         onClick={() => {
-                            // Attempt to move the the correct section of the document. Ideally, we'd have the line at the top of the
+                            // Attempt to move the correct section of the document. Ideally, we'd have the line at the top of the
                             // editor, but Monaco editor does not have method for this (e.g. `revealLineAtTop`).
 
                             // find the line for the section in either YAML or JSON

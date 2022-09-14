@@ -54,6 +54,7 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [CoreWeave Cloud](https://www.coreweave.com)
 1. [Cratejoy](https://www.cratejoy.com/)
 1. [Cruise](https://getcruise.com/)
+1. [CVision AI](https://www.cvisionai.com)
 1. [CyberAgent](https://www.cyberagent.co.jp/en/)
 1. [Cyrus Biotechnology](https://cyrusbio.com/)
 1. [Data4Risk](https://www.data4risk.com/)
@@ -191,3 +192,4 @@ In addition, the following projects are **officially** using Argo Workflows:
 1. [Onepanel](https://github.com/onepanelio/onepanel)
 1. [SQLFlow](https://github.com/sql-machine-learning/sqlflow)
 1. [BisQue](https://github.com/UCSB-VRL/bisqueUCSB)
+1. [Tator](https://www.tator.io)
