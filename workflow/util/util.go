@@ -778,25 +778,27 @@ func isGroupNode(node wfv1.NodeStatus) bool {
 	return node.Type == wfv1.NodeTypeDAG || node.Type == wfv1.NodeTypeTaskGroup || node.Type == wfv1.NodeTypeStepGroup || node.Type == wfv1.NodeTypeSteps
 }
 
-func resetConnectedParentGroupNodes(oldWF *wfv1.Workflow, newWF *wfv1.Workflow, currentNode wfv1.NodeStatus, resettedParentGroupNodes []string) (*wfv1.Workflow, []string) {
+func resetConnectedParentGroupNodes(oldWF *wfv1.Workflow, newWF *wfv1.Workflow, currentNode wfv1.NodeStatus, resetParentGroupNodes []string) (*wfv1.Workflow, []string) {
 	currentNodeID := currentNode.ID
 	for {
 		currentNode := oldWF.Status.Nodes[currentNodeID]
-		if !containsNode(resettedParentGroupNodes, currentNodeID) {
+		if !containsNode(resetParentGroupNodes, currentNodeID) {
 			newWF.Status.Nodes[currentNodeID] = resetNode(*currentNode.DeepCopy())
-			resettedParentGroupNodes = append(resettedParentGroupNodes, currentNodeID)
-			log.Debugf("Resetting connected group node %s", currentNode.Name)
+			resetParentGroupNodes = append(resetParentGroupNodes, currentNodeID)
+			log.Debugf("Reset connected group node %s", currentNode.Name)
 		}
 		if currentNode.BoundaryID != "" && currentNode.BoundaryID != oldWF.ObjectMeta.Name {
 			parentNode := oldWF.Status.Nodes[currentNode.BoundaryID]
 			if isGroupNode(parentNode) {
 				currentNodeID = parentNode.ID
+			} else {
+				break
 			}
 		} else {
 			break
 		}
 	}
-	return newWF, resettedParentGroupNodes
+	return newWF, resetParentGroupNodes
 }
 
 // FormulateRetryWorkflow formulates a previous workflow to be retried, deleting all failed steps as well as the onExit node (and children)
@@ -847,7 +849,7 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 	deletedNodes := make(map[string]bool)
 	deletedPods := make(map[string]bool)
 	var podsToDelete []string
-	var resettedParentGroupNodes []string
+	var resetParentGroupNodes []string
 	for _, node := range wf.Status.Nodes {
 		doForceResetNode := false
 		if _, present := nodeIDsToReset[node.ID]; present {
@@ -867,20 +869,20 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 						for _, child := range descendantNodeIDs {
 							childNode := wf.Status.Nodes[child]
 							if _, present := nodeIDsToReset[child]; present {
-								log.Debugf("Group node %s needs to reset since its child %s is in the force resetting path", node.Name, childNode.Name)
+								log.Debugf("Group node %s needs to reset since its child %s is in the force reset path", node.Name, childNode.Name)
 								nodeGroupNeedsReset = true
 								break
 							}
 						}
 						if nodeGroupNeedsReset {
-							newWF, resettedParentGroupNodes = resetConnectedParentGroupNodes(wf, newWF, node, resettedParentGroupNodes)
+							newWF, resetParentGroupNodes = resetConnectedParentGroupNodes(wf, newWF, node, resetParentGroupNodes)
 						}
 					}
 				} else {
 					if node.Type == wfv1.NodeTypePod || node.Type == wfv1.NodeTypeSuspend {
-						newWF, resettedParentGroupNodes = resetConnectedParentGroupNodes(wf, newWF, node, resettedParentGroupNodes)
+						newWF, resetParentGroupNodes = resetConnectedParentGroupNodes(wf, newWF, node, resetParentGroupNodes)
 						// Only remove the descendants of a suspended node but not the suspended node itself. The descendants
-						// of a suspended node need to be removed since because the conditions should be re-evaluated based on
+						// of a suspended node need to be removed since the conditions should be re-evaluated based on
 						// the modified supplied parameter values.
 						if node.Type != wfv1.NodeTypeSuspend {
 							deletedNodes[node.ID] = true
@@ -893,7 +895,7 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 							deletedNodes[descendantNodeID] = true
 							descendantNode := wf.Status.Nodes[descendantNodeID]
 							if descendantNode.Type == wfv1.NodeTypePod {
-								newWF, resettedParentGroupNodes = resetConnectedParentGroupNodes(wf, newWF, node, resettedParentGroupNodes)
+								newWF, resetParentGroupNodes = resetConnectedParentGroupNodes(wf, newWF, node, resetParentGroupNodes)
 								deletedPods, podsToDelete = deletePodNodeDuringRetryWorkflow(wf, descendantNode, deletedPods, podsToDelete)
 								log.Debugf("Deleted pod node %s since it belongs to node %s", descendantNode.Name, node.Name)
 							}
@@ -905,7 +907,7 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 					}
 				}
 			} else {
-				if !containsNode(resettedParentGroupNodes, node.ID) {
+				if !containsNode(resetParentGroupNodes, node.ID) {
 					log.Debugf("Node %s remains as is", node.Name)
 					newWF.Status.Nodes[node.ID] = node
 				}
