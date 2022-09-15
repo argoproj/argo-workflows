@@ -69,8 +69,14 @@ func NewClientFromOpts(opts Opts) (context.Context, Client, error) {
 		return nil, nil, fmt.Errorf("cannot use instance ID with Argo Server")
 	}
 	if opts.ArgoServerOpts.HTTP1 {
+		if opts.AuthSupplier == nil {
+			return nil, nil, fmt.Errorf("AuthSupplier cannot be empty when connecting to Argo Server")
+		}
 		return newHTTP1Client(opts.ArgoServerOpts.GetURL(), opts.AuthSupplier(), opts.ArgoServerOpts.InsecureSkipVerify, opts.ArgoServerOpts.Headers)
 	} else if opts.ArgoServerOpts.URL != "" {
+		if opts.AuthSupplier == nil {
+			return nil, nil, fmt.Errorf("AuthSupplier cannot be empty when connecting to Argo Server")
+		}
 		return newArgoServerClient(opts.ArgoServerOpts, opts.AuthSupplier())
 	} else {
 		if opts.ClientConfigSupplier != nil {
