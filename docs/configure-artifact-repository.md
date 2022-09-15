@@ -400,6 +400,28 @@ data:
         key: serviceAccountKey
 ```
 
+### Azure Blob Storage
+
+Argo can use native Azure APIs to access a Azure Blob Storage container.
+
+`accountKeySecret` references to a Kubernetes secret which stores an Azure Blob
+Storage account shared key to access the container.
+
+Example:
+
+```bash
+$ kubectl edit configmap workflow-controller-configmap -n argo  # assumes argo was installed in the argo namespace
+...
+data:
+  artifactRepository: |
+    azure:
+      container: my-container
+      blobNameFormat: prefix/in/container     #optional, it could reference workflow variables, such as "{{workflow.name}}/{{pod.name}}"
+      accountKeySecret:
+        name: my-azure-storage-credentials
+        key: account-access-key
+```
+
 ## Accessing Non-Default Artifact Repositories
 
 This section shows how to access artifacts from non-default artifact
