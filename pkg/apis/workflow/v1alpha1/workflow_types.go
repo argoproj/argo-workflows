@@ -1704,6 +1704,10 @@ func (n Nodes) FindByDisplayName(name string) *NodeStatus {
 	return n.Find(NodeWithDisplayName(name))
 }
 
+func (n Nodes) FindByName(name string) *NodeStatus {
+	return n.Find(NodeWithName(name))
+}
+
 func (in Nodes) Any(f func(NodeStatus) bool) bool {
 	return in.Find(f) != nil
 }
@@ -1715,6 +1719,10 @@ func (n Nodes) Find(f func(NodeStatus) bool) *NodeStatus {
 		}
 	}
 	return nil
+}
+
+func NodeWithName(name string) func(n NodeStatus) bool {
+	return func(n NodeStatus) bool { return n.Name == name }
 }
 
 func NodeWithDisplayName(name string) func(n NodeStatus) bool {
