@@ -57,6 +57,7 @@ spec:
 }
 
 func (s *HooksSuite) TestTemplateLevelHooks() {
+	t.Skip("https://github.com/argoproj/argo-workflows/issues/9591")
 	s.Given().
 		Workflow(`apiVersion: argoproj.io/v1alpha1
 kind: Workflow
