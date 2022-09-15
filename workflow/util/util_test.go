@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"golang.org/x/exp/slices"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -931,7 +930,7 @@ func TestFormulateRetryWorkflow(t *testing.T) {
 		wf, _, err = FormulateRetryWorkflow(ctx, wf, true, "id=suspended", nil)
 		if assert.NoError(t, err) {
 			if assert.Len(t, wf.Status.Nodes, 3) {
-				assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes["entrypoint"].Phase)
+				assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["entrypoint"].Phase)
 				assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["suspended"].Phase)
 				assert.Equal(t, wfv1.Parameter{
 					Name:      "param-1",
@@ -951,9 +950,9 @@ func TestFormulateRetryWorkflow(t *testing.T) {
 			Status: wfv1.WorkflowStatus{
 				Phase: wfv1.WorkflowFailed,
 				Nodes: map[string]wfv1.NodeStatus{
-					"my-nested-dag-1": {ID: "my-nested-dag-1", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypeTaskGroup},
-					"1":               {ID: "1", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypeTaskGroup, BoundaryID: "my-nested-dag-1"},
-					"2":               {ID: "2", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypeTaskGroup, BoundaryID: "1"},
+					"my-nested-dag-1": {ID: "my-nested-dag-1", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypeTaskGroup, Children: []string{"1"}},
+					"1":               {ID: "1", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypeTaskGroup, BoundaryID: "my-nested-dag-1", Children: []string{"2", "4"}},
+					"2":               {ID: "2", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypeTaskGroup, BoundaryID: "1", Children: []string{"3"}},
 					"3":               {ID: "3", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypePod, BoundaryID: "2"},
 					"4":               {ID: "4", Phase: wfv1.NodeFailed, Type: wfv1.NodeTypePod, BoundaryID: "1"}},
 			},
@@ -962,10 +961,10 @@ func TestFormulateRetryWorkflow(t *testing.T) {
 		assert.NoError(t, err)
 		wf, _, err = FormulateRetryWorkflow(ctx, wf, true, "id=3", nil)
 		if assert.NoError(t, err) {
-			// node #3 & node #4 are deleted and will be recreated. so only 3 nodes in wf.Status.Nodes
+			// Node #3, #4 are deleted and will be recreated so only 3 nodes left in wf.Status.Nodes
 			if assert.Len(t, wf.Status.Nodes, 3) {
 				assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes["my-nested-dag-1"].Phase)
-				// These should all be running since the child node #3 belongs up to node #1.
+				// The parent group nodes should be running.
 				assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["1"].Phase)
 				assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["2"].Phase)
 			}
@@ -980,9 +979,9 @@ func TestFormulateRetryWorkflow(t *testing.T) {
 			Status: wfv1.WorkflowStatus{
 				Phase: wfv1.WorkflowFailed,
 				Nodes: map[string]wfv1.NodeStatus{
-					"my-nested-dag-2": {ID: "my-nested-dag-2", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypeTaskGroup},
-					"1":               {ID: "1", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypeTaskGroup, BoundaryID: "my-nested-dag-2"},
-					"2":               {ID: "2", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypeTaskGroup, BoundaryID: "1"},
+					"my-nested-dag-2": {ID: "my-nested-dag-2", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypeTaskGroup, Children: []string{"1"}},
+					"1":               {ID: "1", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypeTaskGroup, BoundaryID: "my-nested-dag-2", Children: []string{"2", "4"}},
+					"2":               {ID: "2", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypeTaskGroup, BoundaryID: "1", Children: []string{"3"}},
 					"3":               {ID: "3", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypePod, BoundaryID: "2"},
 					"4":               {ID: "4", Phase: wfv1.NodeFailed, Type: wfv1.NodeTypePod, BoundaryID: "1"}},
 			},
@@ -991,14 +990,13 @@ func TestFormulateRetryWorkflow(t *testing.T) {
 		assert.NoError(t, err)
 		wf, _, err = FormulateRetryWorkflow(ctx, wf, true, "", nil)
 		if assert.NoError(t, err) {
-			// node #4 is deleted and will be recreated. so only 4 nodes in wf.Status.Nodes
+			// Node #2, #3, and #4 are deleted and will be recreated so only 2 nodes left in wf.Status.Nodes
 			if assert.Len(t, wf.Status.Nodes, 4) {
 				assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes["my-nested-dag-2"].Phase)
-				// This should be running since it's node #4's parent node.
-				assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["1"].Phase)
-				// This should be running since it's node #1's child node and node #1 is being retried.
-				assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["2"].Phase)
+				assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes["1"].Phase)
+				assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes["2"].Phase)
 				assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes["3"].Phase)
+				assert.Equal(t, "", string(wf.Status.Nodes["4"].Phase))
 			}
 		}
 	})
@@ -1090,204 +1088,672 @@ func TestGetTemplateFromNode(t *testing.T) {
 	}
 }
 
-var retryWorkflowWithFailedNodeHasChildrenNodes = `
+var retryWorkflowWithNestedDAGsWithSuspendNodes = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
+  annotations:
+    workflows.argoproj.io/pod-name-format: v2
+  creationTimestamp: "2022-09-02T14:52:10Z"
+  generation: 37
   labels:
     workflows.argoproj.io/completed: "true"
     workflows.argoproj.io/phase: Failed
-  name: test-pipeline-bnzwv
-  namespace: argo-system
+  name: fail-two-nested-dag-suspend
+  namespace: argo
+  resourceVersion: "218451"
+  uid: ba03145e-b4db-46c9-96e6-8cc15bf81a79
 spec:
-  entrypoint: test-pipeline-dag
+  arguments: {}
+  entrypoint: outer-dag
   templates:
   - dag:
       tasks:
-      - name: t1
-        template: succeeded
-      - depends: t1
-        name: t2
-        template: failed
-      - depends: t2 || t2.Failed
-        name: t3
-        template: succeeded
-      - depends: t3
-        name: t4-1
-        template: succeeded
-      - depends: t3
-        name: t4-2
-        template: succeeded
-      - depends: t3
-        name: t4-3
-        template: failed
-    name: test-pipeline-dag
-  - container:
+      - arguments: {}
+        name: dag1-step1
+        template: gen-random-int-javascript
+      - arguments: {}
+        dependencies:
+        - dag1-step1
+        name: dag1-step2
+        template: approve
+      - arguments: {}
+        dependencies:
+        - dag1-step2
+        name: dag1-step3-middle1
+        template: middle-dag1
+      - arguments: {}
+        dependencies:
+        - dag1-step2
+        name: dag1-step3-middle2
+        template: middle-dag2
+      - arguments: {}
+        dependencies:
+        - dag1-step3-middle1
+        - dag1-step3-middle2
+        name: dag1-step4
+        template: approve
+      - arguments: {}
+        dependencies:
+        - dag1-step4
+        name: dag1-step5-tofail
+        template: node-to-fail
+    inputs: {}
+    metadata: {}
+    name: outer-dag
+    outputs: {}
+  - dag:
+      tasks:
+      - arguments: {}
+        name: dag2-branch1-step1
+        template: approve
+      - arguments: {}
+        dependencies:
+        - dag2-branch1-step1
+        name: dag2-branch1-step2
+        template: inner-dag-1
+    inputs: {}
+    metadata: {}
+    name: middle-dag1
+    outputs: {}
+  - dag:
+      tasks:
+      - arguments: {}
+        name: dag2-branch2-step1
+        template: inner-dag-1
+      - arguments: {}
+        dependencies:
+        - dag2-branch2-step1
+        name: dag2-branch2-step2
+        template: approve
+    inputs: {}
+    metadata: {}
+    name: middle-dag2
+    outputs: {}
+  - dag:
+      tasks:
+      - arguments: {}
+        name: dag3-step1
+        template: approve
+      - arguments: {}
+        dependencies:
+        - dag3-step1
+        name: dag3-step2
+        template: gen-random-int-javascript
+      - arguments: {}
+        dependencies:
+        - dag3-step2
+        name: dag3-step3
+        template: gen-random-int-javascript
+    inputs: {}
+    metadata: {}
+    name: inner-dag-1
+    outputs: {}
+  - inputs: {}
+    metadata: {}
+    name: gen-random-int-javascript
+    outputs: {}
+    script:
       command:
-      - "true"
-      image: alpine
-    name: succeeded
+      - node
+      image: node:9.1-alpine
+      name: ""
+      resources: {}
+      source: |
+        var rand = Math.floor(Math.random() * 100);
+        console.log(rand);
   - container:
+      args:
+      - exit 1
       command:
-      - "false"
-      image: alpine
-    name: failed
+      - sh
+      - -c
+      image: alpine:latest
+      name: ""
+      resources: {}
+    inputs: {}
+    metadata: {}
+    name: node-to-fail
+    outputs: {}
+  - inputs: {}
+    metadata: {}
+    name: approve
+    outputs: {}
+    suspend:
+      duration: "1"
 status:
+  artifactGCStatus:
+    notSpecified: true
+  artifactRepositoryRef:
+    artifactRepository: {}
+    default: true
   conditions:
   - status: "False"
     type: PodRunning
   - status: "True"
     type: Completed
-  finishedAt: "2022-08-04T08:36:31Z"
+  finishedAt: "2022-09-02T14:56:56Z"
   nodes:
-    test-pipeline-bnzwv:
+    fail-two-nested-dag-suspend:
       children:
-      - test-pipeline-bnzwv-929756297
-      displayName: test-pipeline-bnzwv
-      finishedAt: "2022-08-04T08:36:31Z"
-      id: test-pipeline-bnzwv
-      name: test-pipeline-bnzwv
+      - fail-two-nested-dag-suspend-1199792179
+      displayName: fail-two-nested-dag-suspend
+      finishedAt: "2022-09-02T14:56:56Z"
+      id: fail-two-nested-dag-suspend
+      name: fail-two-nested-dag-suspend
       outboundNodes:
-      - test-pipeline-bnzwv-748480356
-      - test-pipeline-bnzwv-798813213
-      - test-pipeline-bnzwv-782035594
+      - fail-two-nested-dag-suspend-2528852583
       phase: Failed
-      progress: 4/6
-      startedAt: "2022-08-04T08:35:10Z"
-      templateName: test-pipeline-dag
-      templateScope: local/test-pipeline-bnzwv
+      progress: 11/12
+      resourcesDuration:
+        cpu: 18
+        memory: 18
+      startedAt: "2022-09-02T14:56:23Z"
+      templateName: outer-dag
+      templateScope: local/fail-two-nested-dag-suspend
       type: DAG
-    test-pipeline-bnzwv-748480356:
-      boundaryID: test-pipeline-bnzwv
-      displayName: t4-1
-      finishedAt: "2022-08-04T08:36:19Z"
-      hostNodeName: node2
-      id: test-pipeline-bnzwv-748480356
-      name: test-pipeline-bnzwv.t4-1
+    fail-two-nested-dag-suspend-437639056:
+      boundaryID: fail-two-nested-dag-suspend-1841799687
+      children:
+      - fail-two-nested-dag-suspend-1250125036
+      displayName: dag3-step3
+      finishedAt: "2022-09-02T14:53:32Z"
+      hostNodeName: k3d-k3s-default-server-0
+      id: fail-two-nested-dag-suspend-437639056
+      name: fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step2.dag3-step3
       outputs:
         exitCode: "0"
       phase: Succeeded
       progress: 1/1
-      startedAt: "2022-08-04T08:36:11Z"
-      templateName: succeeded
-      templateScope: local/test-pipeline-bnzwv
+      resourcesDuration:
+        cpu: 3
+        memory: 3
+      startedAt: "2022-09-02T14:53:29Z"
+      templateName: gen-random-int-javascript
+      templateScope: local/fail-two-nested-dag-suspend
       type: Pod
-    test-pipeline-bnzwv-782035594:
-      boundaryID: test-pipeline-bnzwv
-      displayName: t4-3
-      finishedAt: "2022-08-04T08:36:16Z"
-      hostNodeName: node1
-      id: test-pipeline-bnzwv-782035594
+    fail-two-nested-dag-suspend-454416675:
+      boundaryID: fail-two-nested-dag-suspend-1841799687
+      children:
+      - fail-two-nested-dag-suspend-437639056
+      displayName: dag3-step2
+      finishedAt: "2022-09-02T14:53:22Z"
+      hostNodeName: k3d-k3s-default-server-0
+      id: fail-two-nested-dag-suspend-454416675
+      name: fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step2.dag3-step2
+      outputs:
+        exitCode: "0"
+      phase: Succeeded
+      progress: 1/1
+      resourcesDuration:
+        cpu: 3
+        memory: 3
+      startedAt: "2022-09-02T14:53:19Z"
+      templateName: gen-random-int-javascript
+      templateScope: local/fail-two-nested-dag-suspend
+      type: Pod
+    fail-two-nested-dag-suspend-471194294:
+      boundaryID: fail-two-nested-dag-suspend-1841799687
+      children:
+      - fail-two-nested-dag-suspend-454416675
+      displayName: dag3-step1
+      finishedAt: "2022-09-02T14:53:19Z"
+      id: fail-two-nested-dag-suspend-471194294
+      name: fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step2.dag3-step1
+      phase: Succeeded
+      progress: 1/1
+      resourcesDuration:
+        cpu: 9
+        memory: 9
+      startedAt: "2022-09-02T14:53:18Z"
+      templateName: approve
+      templateScope: local/fail-two-nested-dag-suspend
+      type: Suspend
+    fail-two-nested-dag-suspend-476458868:
+      boundaryID: fail-two-nested-dag-suspend-2864264609
+      children:
+      - fail-two-nested-dag-suspend-2781431063
+      displayName: dag2-branch2-step1
+      finishedAt: "2022-09-02T14:56:44Z"
+      id: fail-two-nested-dag-suspend-476458868
+      name: fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step1
+      outboundNodes:
+      - fail-two-nested-dag-suspend-2814986301
+      phase: Succeeded
+      progress: 5/6
+      resourcesDuration:
+        cpu: 9
+        memory: 9
+      startedAt: "2022-09-02T14:56:23Z"
+      templateName: inner-dag-1
+      templateScope: local/fail-two-nested-dag-suspend
+      type: DAG
+    fail-two-nested-dag-suspend-526791725:
+      boundaryID: fail-two-nested-dag-suspend-2864264609
+      children:
+      - fail-two-nested-dag-suspend-1250125036
+      displayName: dag2-branch2-step2
+      finishedAt: "2022-09-02T14:56:45Z"
+      id: fail-two-nested-dag-suspend-526791725
+      name: fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step2
+      phase: Succeeded
+      progress: 1/1
+      resourcesDuration:
+        cpu: 3
+        memory: 3
+      startedAt: "2022-09-02T14:56:44Z"
+      templateName: approve
+      templateScope: local/fail-two-nested-dag-suspend
+      type: Suspend
+    fail-two-nested-dag-suspend-1199792179:
+      boundaryID: fail-two-nested-dag-suspend
+      children:
+      - fail-two-nested-dag-suspend-1216569798
+      displayName: dag1-step1
+      finishedAt: "2022-09-02T14:52:14Z"
+      hostNodeName: k3d-k3s-default-server-0
+      id: fail-two-nested-dag-suspend-1199792179
+      name: fail-two-nested-dag-suspend.dag1-step1
+      outputs:
+        exitCode: "0"
+      phase: Succeeded
+      progress: 1/1
+      resourcesDuration:
+        cpu: 3
+        memory: 3
+      startedAt: "2022-09-02T14:52:10Z"
+      templateName: gen-random-int-javascript
+      templateScope: local/fail-two-nested-dag-suspend
+      type: Pod
+    fail-two-nested-dag-suspend-1216569798:
+      boundaryID: fail-two-nested-dag-suspend
+      children:
+      - fail-two-nested-dag-suspend-2813931752
+      - fail-two-nested-dag-suspend-2864264609
+      displayName: dag1-step2
+      finishedAt: "2022-09-02T14:52:21Z"
+      id: fail-two-nested-dag-suspend-1216569798
+      name: fail-two-nested-dag-suspend.dag1-step2
+      phase: Succeeded
+      progress: 1/1
+      resourcesDuration:
+        cpu: 15
+        memory: 15
+      startedAt: "2022-09-02T14:52:20Z"
+      templateName: approve
+      templateScope: local/fail-two-nested-dag-suspend
+      type: Suspend
+    fail-two-nested-dag-suspend-1250125036:
+      boundaryID: fail-two-nested-dag-suspend
+      children:
+      - fail-two-nested-dag-suspend-2528852583
+      displayName: dag1-step4
+      finishedAt: "2022-09-02T14:56:46Z"
+      id: fail-two-nested-dag-suspend-1250125036
+      name: fail-two-nested-dag-suspend.dag1-step4
+      phase: Succeeded
+      progress: 1/1
+      resourcesDuration:
+        cpu: 3
+        memory: 3
+      startedAt: "2022-09-02T14:56:45Z"
+      templateName: approve
+      templateScope: local/fail-two-nested-dag-suspend
+      type: Suspend
+    fail-two-nested-dag-suspend-1841799687:
+      boundaryID: fail-two-nested-dag-suspend-2813931752
+      children:
+      - fail-two-nested-dag-suspend-471194294
+      displayName: dag2-branch1-step2
+      finishedAt: "2022-09-02T14:53:39Z"
+      id: fail-two-nested-dag-suspend-1841799687
+      name: fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step2
+      outboundNodes:
+      - fail-two-nested-dag-suspend-437639056
+      phase: Succeeded
+      progress: 4/5
+      resourcesDuration:
+        cpu: 9
+        memory: 9
+      startedAt: "2022-09-02T14:53:18Z"
+      templateName: inner-dag-1
+      templateScope: local/fail-two-nested-dag-suspend
+      type: DAG
+    fail-two-nested-dag-suspend-1858577306:
+      boundaryID: fail-two-nested-dag-suspend-2813931752
+      children:
+      - fail-two-nested-dag-suspend-1841799687
+      displayName: dag2-branch1-step1
+      finishedAt: "2022-09-02T14:52:22Z"
+      id: fail-two-nested-dag-suspend-1858577306
+      name: fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step1
+      phase: Succeeded
+      progress: 1/1
+      resourcesDuration:
+        cpu: 9
+        memory: 9
+      startedAt: "2022-09-02T14:52:21Z"
+      templateName: approve
+      templateScope: local/fail-two-nested-dag-suspend
+      type: Suspend
+    fail-two-nested-dag-suspend-2528852583:
+      boundaryID: fail-two-nested-dag-suspend
+      displayName: dag1-step5-tofail
+      finishedAt: "2022-09-02T14:56:48Z"
+      hostNodeName: k3d-k3s-default-server-0
+      id: fail-two-nested-dag-suspend-2528852583
       message: Error (exit code 1)
-      name: test-pipeline-bnzwv.t4-3
+      name: fail-two-nested-dag-suspend.dag1-step5-tofail
       outputs:
         exitCode: "1"
       phase: Failed
       progress: 0/1
-      startedAt: "2022-08-04T08:36:11Z"
-      templateName: failed
-      templateScope: local/test-pipeline-bnzwv
+      resourcesDuration:
+        cpu: 3
+        memory: 3
+      startedAt: "2022-09-02T14:56:46Z"
+      templateName: node-to-fail
+      templateScope: local/fail-two-nested-dag-suspend
       type: Pod
-    test-pipeline-bnzwv-798813213:
-      boundaryID: test-pipeline-bnzwv
-      displayName: t4-2
-      finishedAt: "2022-08-04T08:36:19Z"
-      hostNodeName: node1
-      id: test-pipeline-bnzwv-798813213
-      name: test-pipeline-bnzwv.t4-2
+    fail-two-nested-dag-suspend-2781431063:
+      boundaryID: fail-two-nested-dag-suspend-476458868
+      children:
+      - fail-two-nested-dag-suspend-2798208682
+      displayName: dag3-step1
+      finishedAt: "2022-09-02T14:56:24Z"
+      id: fail-two-nested-dag-suspend-2781431063
+      name: fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step1.dag3-step1
+      phase: Succeeded
+      progress: 1/1
+      resourcesDuration:
+        cpu: 9
+        memory: 9
+      startedAt: "2022-09-02T14:56:23Z"
+      templateName: approve
+      templateScope: local/fail-two-nested-dag-suspend
+      type: Suspend
+    fail-two-nested-dag-suspend-2798208682:
+      boundaryID: fail-two-nested-dag-suspend-476458868
+      children:
+      - fail-two-nested-dag-suspend-2814986301
+      displayName: dag3-step2
+      finishedAt: "2022-09-02T14:56:27Z"
+      hostNodeName: k3d-k3s-default-server-0
+      id: fail-two-nested-dag-suspend-2798208682
+      name: fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step1.dag3-step2
       outputs:
         exitCode: "0"
       phase: Succeeded
       progress: 1/1
-      startedAt: "2022-08-04T08:36:11Z"
-      templateName: succeeded
-      templateScope: local/test-pipeline-bnzwv
+      resourcesDuration:
+        cpu: 3
+        memory: 3
+      startedAt: "2022-09-02T14:56:24Z"
+      templateName: gen-random-int-javascript
+      templateScope: local/fail-two-nested-dag-suspend
       type: Pod
-    test-pipeline-bnzwv-879423440:
-      boundaryID: test-pipeline-bnzwv
+    fail-two-nested-dag-suspend-2813931752:
+      boundaryID: fail-two-nested-dag-suspend
       children:
-      - test-pipeline-bnzwv-896201059
-      displayName: t2
-      finishedAt: "2022-08-04T08:35:39Z"
-      hostNodeName: node2
-      id: test-pipeline-bnzwv-879423440
-      message: Error (exit code 1)
-      name: test-pipeline-bnzwv.t2
-      outputs:
-        exitCode: "1"
-      phase: Failed
-      progress: 0/1
-      startedAt: "2022-08-04T08:35:30Z"
-      templateName: failed
-      templateScope: local/test-pipeline-bnzwv
-      type: Pod
-    test-pipeline-bnzwv-896201059:
-      boundaryID: test-pipeline-bnzwv
+      - fail-two-nested-dag-suspend-1858577306
+      displayName: dag1-step3-middle1
+      finishedAt: "2022-09-02T14:53:39Z"
+      id: fail-two-nested-dag-suspend-2813931752
+      name: fail-two-nested-dag-suspend.dag1-step3-middle1
+      outboundNodes:
+      - fail-two-nested-dag-suspend-437639056
+      phase: Succeeded
+      progress: 5/6
+      resourcesDuration:
+        cpu: 9
+        memory: 9
+      startedAt: "2022-09-02T14:53:18Z"
+      templateName: middle-dag1
+      templateScope: local/fail-two-nested-dag-suspend
+      type: DAG
+    fail-two-nested-dag-suspend-2814986301:
+      boundaryID: fail-two-nested-dag-suspend-476458868
       children:
-      - test-pipeline-bnzwv-748480356
-      - test-pipeline-bnzwv-798813213
-      - test-pipeline-bnzwv-782035594
-      displayName: t3
-      finishedAt: "2022-08-04T08:36:00Z"
-      hostNodeName: node2
-      id: test-pipeline-bnzwv-896201059
-      name: test-pipeline-bnzwv.t3
+      - fail-two-nested-dag-suspend-526791725
+      displayName: dag3-step3
+      finishedAt: "2022-09-02T14:56:36Z"
+      hostNodeName: k3d-k3s-default-server-0
+      id: fail-two-nested-dag-suspend-2814986301
+      name: fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step1.dag3-step3
       outputs:
         exitCode: "0"
       phase: Succeeded
       progress: 1/1
-      startedAt: "2022-08-04T08:35:50Z"
-      templateName: succeeded
-      templateScope: local/test-pipeline-bnzwv
+      resourcesDuration:
+        cpu: 3
+        memory: 3
+      startedAt: "2022-09-02T14:56:34Z"
+      templateName: gen-random-int-javascript
+      templateScope: local/fail-two-nested-dag-suspend
       type: Pod
-    test-pipeline-bnzwv-929756297:
-      boundaryID: test-pipeline-bnzwv
+    fail-two-nested-dag-suspend-2864264609:
+      boundaryID: fail-two-nested-dag-suspend
       children:
-      - test-pipeline-bnzwv-879423440
-      displayName: t1
-      finishedAt: "2022-08-04T08:35:18Z"
-      hostNodeName: node2
-      id: test-pipeline-bnzwv-929756297
-      name: test-pipeline-bnzwv.t1
-      outputs:
-        exitCode: "0"
+      - fail-two-nested-dag-suspend-476458868
+      displayName: dag1-step3-middle2
+      finishedAt: "2022-09-02T14:56:45Z"
+      id: fail-two-nested-dag-suspend-2864264609
+      name: fail-two-nested-dag-suspend.dag1-step3-middle2
+      outboundNodes:
+      - fail-two-nested-dag-suspend-526791725
       phase: Succeeded
-      progress: 1/1
-      startedAt: "2022-08-04T08:35:10Z"
-      templateName: succeeded
-      templateScope: local/test-pipeline-bnzwv
-      type: Pod
+      progress: 5/6
+      resourcesDuration:
+        cpu: 9
+        memory: 9
+      startedAt: "2022-09-02T14:56:23Z"
+      templateName: middle-dag2
+      templateScope: local/fail-two-nested-dag-suspend
+      type: DAG
   phase: Failed
-  progress: 4/6
+  progress: 11/12
   resourcesDuration:
-    cpu: 32
-    memory: 32
-  startedAt: "2022-08-04T08:35:10Z"
+    cpu: 18
+    memory: 18
+  startedAt: "2022-09-02T14:56:23Z"
 `
 
-func TestRetryWorkflowWithFailedNodeHasChildrenNodes(t *testing.T) {
+func TestRetryWorkflowWithNestedDAGsWithSuspendNodes(t *testing.T) {
 	ctx := context.Background()
-	wf := wfv1.MustUnmarshalWorkflow(retryWorkflowWithFailedNodeHasChildrenNodes)
-	version := GetWorkflowPodNameVersion(wf)
-	needDeletedNodeNames := []string{"t2", "t3", "t4-1", "t4-2", "t4-3"}
-	needDeletedPodNames := make([]string, 5)
-	for i, nodeName := range needDeletedNodeNames {
-		node := wf.Status.Nodes.FindByDisplayName(nodeName)
-		templateName := getTemplateFromNode(*node)
-		podName := PodName(wf.Name, node.Name, templateName, node.ID, version)
-		needDeletedPodNames[i] = podName
-	}
-	slices.Sort(needDeletedPodNames)
+	wf := wfv1.MustUnmarshalWorkflow(retryWorkflowWithNestedDAGsWithSuspendNodes)
 
-	wf, podsToDelete, err := FormulateRetryWorkflow(ctx, wf, false, "", nil)
+	// Retry top individual pod node
+	wf, podsToDelete, err := FormulateRetryWorkflow(ctx, wf, true, "name=fail-two-nested-dag-suspend.dag1-step1", nil)
 	assert.NoError(t, err)
-	assert.Equal(t, 2, len(wf.Status.Nodes))
-	for _, nodeName := range needDeletedNodeNames {
-		node := wf.Status.Nodes.FindByDisplayName(nodeName)
-		assert.Nil(t, node)
-	}
+	assert.Equal(t, 1, len(wf.Status.Nodes))
+	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["fail-two-nested-dag-suspend"].Phase)
+	assert.Equal(t, 6, len(podsToDelete))
 
+	// Retry top individual suspend node
+	wf = wfv1.MustUnmarshalWorkflow(retryWorkflowWithNestedDAGsWithSuspendNodes)
+	wf, podsToDelete, err = FormulateRetryWorkflow(ctx, wf, true, "name=fail-two-nested-dag-suspend.dag1-step2", nil)
+	assert.NoError(t, err)
+	assert.Equal(t, 3, len(wf.Status.Nodes))
+	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["fail-two-nested-dag-suspend"].Phase)
+	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step1").Phase)
+	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step2").Phase)
 	assert.Equal(t, 5, len(podsToDelete))
-	slices.Sort(podsToDelete)
-	assert.Equal(t, needDeletedPodNames, podsToDelete)
+
+	// Retry the starting on first DAG in one of the branches
+	wf = wfv1.MustUnmarshalWorkflow(retryWorkflowWithNestedDAGsWithSuspendNodes)
+	wf, podsToDelete, err = FormulateRetryWorkflow(ctx, wf, true, "name=fail-two-nested-dag-suspend.dag1-step3-middle2", nil)
+	assert.NoError(t, err)
+	assert.Equal(t, 12, len(wf.Status.Nodes))
+	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["fail-two-nested-dag-suspend"].Phase)
+	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step1").Phase)
+	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step2").Phase)
+	// All nodes in the other branch remains succeeded
+	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1").Phase)
+	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step1").Phase)
+	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step2").Phase)
+	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step2.dag3-step1").Phase)
+	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step2.dag3-step2").Phase)
+	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step2.dag3-step3").Phase)
+	// The nodes in the retrying branch are reset
+	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2").Phase)
+	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step1").Phase)
+	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step1.dag3-step1").Phase)
+	assert.Equal(t, 3, len(podsToDelete))
+
+	// Retry the starting on second DAG in one of the branches
+	wf = wfv1.MustUnmarshalWorkflow(retryWorkflowWithNestedDAGsWithSuspendNodes)
+	wf, podsToDelete, err = FormulateRetryWorkflow(ctx, wf, true, "name=fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step1", nil)
+	assert.NoError(t, err)
+	assert.Equal(t, 12, len(wf.Status.Nodes))
+	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["fail-two-nested-dag-suspend"].Phase)
+	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step1").Phase)
+	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step2").Phase)
+	// All nodes in the other branch remains succeeded
+	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1").Phase)
+	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step1").Phase)
+	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step2").Phase)
+	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step2.dag3-step1").Phase)
+	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step2.dag3-step2").Phase)
+	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step2.dag3-step3").Phase)
+	// The nodes in the retrying branch are reset
+	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2").Phase)
+	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step1").Phase)
+	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step1.dag3-step1").Phase)
+	assert.Equal(t, 3, len(podsToDelete))
+
+	// Retry the first individual node (suspended node) connecting to the second DAG in one of the branches
+	wf = wfv1.MustUnmarshalWorkflow(retryWorkflowWithNestedDAGsWithSuspendNodes)
+	wf, podsToDelete, err = FormulateRetryWorkflow(ctx, wf, true, "name=fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step1.dag3-step1", nil)
+	assert.NoError(t, err)
+	assert.Equal(t, 12, len(wf.Status.Nodes))
+	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["fail-two-nested-dag-suspend"].Phase)
+	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step1").Phase)
+	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step2").Phase)
+	// All nodes in the other branch remains succeeded
+	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1").Phase)
+	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step1").Phase)
+	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step2").Phase)
+	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step2.dag3-step1").Phase)
+	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step2.dag3-step2").Phase)
+	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step2.dag3-step3").Phase)
+	// The nodes in the retrying branch are reset (parent DAGs are marked as running)
+	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2").Phase)
+	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step1").Phase)
+	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step1.dag3-step1").Phase)
+	assert.Equal(t, 3, len(podsToDelete))
+
+	// Retry the second individual node (pod node) connecting to the second DAG in one of the branches
+	wf = wfv1.MustUnmarshalWorkflow(retryWorkflowWithNestedDAGsWithSuspendNodes)
+	wf, podsToDelete, err = FormulateRetryWorkflow(ctx, wf, true, "name=fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step1.dag3-step2", nil)
+	assert.NoError(t, err)
+	assert.Equal(t, 12, len(wf.Status.Nodes))
+	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["fail-two-nested-dag-suspend"].Phase)
+	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step1").Phase)
+	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step2").Phase)
+	// All nodes in the other branch remains succeeded
+	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1").Phase)
+	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step1").Phase)
+	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step2").Phase)
+	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step2.dag3-step1").Phase)
+	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step2.dag3-step2").Phase)
+	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step2.dag3-step3").Phase)
+	// The nodes in the retrying branch are reset (parent DAGs are marked as running)
+	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2").Phase)
+	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step1").Phase)
+	// The suspended node remains succeeded
+	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step1.dag3-step1").Phase)
+	assert.Equal(t, 3, len(podsToDelete))
+
+	// Retry the third individual node (pod node) connecting to the second DAG in one of the branches
+	wf = wfv1.MustUnmarshalWorkflow(retryWorkflowWithNestedDAGsWithSuspendNodes)
+	wf, podsToDelete, err = FormulateRetryWorkflow(ctx, wf, true, "name=fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step1.dag3-step3", nil)
+	assert.NoError(t, err)
+	assert.Equal(t, 13, len(wf.Status.Nodes))
+	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["fail-two-nested-dag-suspend"].Phase)
+	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step1").Phase)
+	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step2").Phase)
+	// All nodes in the other branch remains succeeded
+	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1").Phase)
+	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step1").Phase)
+	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step2").Phase)
+	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step2.dag3-step1").Phase)
+	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step2.dag3-step2").Phase)
+	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step2.dag3-step3").Phase)
+	// The nodes in the retrying branch are reset (parent DAGs are marked as running)
+	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2").Phase)
+	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step1").Phase)
+	// The suspended node remains succeeded
+	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step1.dag3-step1").Phase)
+	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step1.dag3-step2").Phase)
+	assert.Equal(t, 2, len(podsToDelete))
+
+	// Retry the last individual node (suspend node) connecting to the second DAG in one of the branches
+	wf = wfv1.MustUnmarshalWorkflow(retryWorkflowWithNestedDAGsWithSuspendNodes)
+	wf, podsToDelete, err = FormulateRetryWorkflow(ctx, wf, true, "name=fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step2", nil)
+	assert.NoError(t, err)
+	assert.Equal(t, 15, len(wf.Status.Nodes))
+	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["fail-two-nested-dag-suspend"].Phase)
+	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step1").Phase)
+	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step2").Phase)
+	// All nodes in the other branch remains succeeded
+	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1").Phase)
+	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step1").Phase)
+	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step2").Phase)
+	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step2.dag3-step1").Phase)
+	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step2.dag3-step2").Phase)
+	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step2.dag3-step3").Phase)
+	// The nodes in the retrying branch are reset (parent DAGs are marked as running)
+	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2").Phase)
+	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step1").Phase)
+	// The suspended node remains succeeded
+	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step1.dag3-step1").Phase)
+	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step1.dag3-step2").Phase)
+	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step2").Phase)
+	assert.Equal(t, 1, len(podsToDelete))
+
+	// Retry the node that connects the two branches
+	wf = wfv1.MustUnmarshalWorkflow(retryWorkflowWithNestedDAGsWithSuspendNodes)
+	wf, podsToDelete, err = FormulateRetryWorkflow(ctx, wf, true, "name=fail-two-nested-dag-suspend.dag1-step4", nil)
+	assert.NoError(t, err)
+	assert.Equal(t, 16, len(wf.Status.Nodes))
+	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["fail-two-nested-dag-suspend"].Phase)
+	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step1").Phase)
+	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step2").Phase)
+	// All nodes in two branches remains succeeded
+	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1").Phase)
+	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step1").Phase)
+	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step2").Phase)
+	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step2.dag3-step1").Phase)
+	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step2.dag3-step2").Phase)
+	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step2.dag3-step3").Phase)
+	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2").Phase)
+	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step1").Phase)
+	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step1.dag3-step1").Phase)
+	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step1.dag3-step2").Phase)
+	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step2").Phase)
+	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step4").Phase)
+	assert.Equal(t, 1, len(podsToDelete))
+
+	// Retry the last node (failing node)
+	wf = wfv1.MustUnmarshalWorkflow(retryWorkflowWithNestedDAGsWithSuspendNodes)
+	wf, podsToDelete, err = FormulateRetryWorkflow(ctx, wf, true, "name=fail-two-nested-dag-suspend.dag1-step5-tofail", nil)
+	assert.NoError(t, err)
+	assert.Equal(t, 16, len(wf.Status.Nodes))
+	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["fail-two-nested-dag-suspend"].Phase)
+	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step1").Phase)
+	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step2").Phase)
+	// All nodes in two branches remains succeeded
+	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1").Phase)
+	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step1").Phase)
+	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step2").Phase)
+	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step2.dag3-step1").Phase)
+	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step2.dag3-step2").Phase)
+	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle1.dag2-branch1-step2.dag3-step3").Phase)
+	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2").Phase)
+	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step1").Phase)
+	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step1.dag3-step1").Phase)
+	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step1.dag3-step2").Phase)
+	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step3-middle2.dag2-branch2-step2").Phase)
+	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByName("fail-two-nested-dag-suspend.dag1-step4").Phase)
+	assert.Equal(t, 1, len(podsToDelete))
 }
