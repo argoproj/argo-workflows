@@ -3216,6 +3216,13 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#azure-blob-storage" class="md-nav__link">
+    Azure Blob Storage
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -3948,6 +3955,13 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#azure-blob-storage" class="md-nav__link">
+    Azure Blob Storage
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -4093,7 +4107,8 @@ $ cat &gt; policy.json <span class="s">&lt;&lt;EOF</span>
 <span class="s">         &quot;Effect&quot;:&quot;Allow&quot;,</span>
 <span class="s">         &quot;Action&quot;:[</span>
 <span class="s">            &quot;s3:PutObject&quot;,</span>
-<span class="s">            &quot;s3:GetObject&quot;</span>
+<span class="s">            &quot;s3:GetObject&quot;,</span>
+<span class="s">            &quot;s3:ListBucket&quot;</span>
 <span class="s">         ],</span>
 <span class="s">         &quot;Resource&quot;:&quot;arn:aws:s3:::$mybucket/*&quot;</span>
 <span class="s">      }</span>
@@ -4105,6 +4120,7 @@ $ aws iam create-user --user-name <span class="nv">$mybucket</span>-user
 $ aws iam put-user-policy --user-name <span class="nv">$mybucket</span>-user --policy-name <span class="nv">$mybucket</span>-policy --policy-document file://policy.json
 $ aws iam create-access-key --user-name <span class="nv">$mybucket</span>-user &gt; access-key.json
 </code></pre></div>
+<p>If you have Artifact Garbage Collection configured, you should also add "s3:DeleteObject" to the list of Actions above.</p>
 <p>NOTE: if you want argo to figure out which region your buckets belong in, you
 must additionally set the following statement policy. Otherwise, you must
 specify a bucket region in your workflow configuration.</p>
@@ -4179,30 +4195,76 @@ access is on a per project rather than per bucket basis.</p>
 <span class="w">        </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">secretKey</span><span class="w"></span>
 </code></pre></div>
 <h2 id="configuring-alibaba-cloud-oss-object-storage-service">Configuring Alibaba Cloud OSS (Object Storage Service)<a class="headerlink" href="#configuring-alibaba-cloud-oss-object-storage-service" title="Permanent link">&para;</a></h2>
-<p>To configure artifact storage for Alibaba Cloud OSS, please first follow
-the <a href="https://www.alibabacloud.com/product/oss">official documentation</a> to set up
-an OSS account and bucket.</p>
-<p>Once it's set up, you can find endpoint and bucket
-information on your OSS dashboard and then use them like the following to
-configure the artifact storage for your workflow:</p>
-<div class="highlight"><pre><span></span><code><span class="nt">artifacts</span><span class="p">:</span><span class="w"></span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-art</span><span class="w"></span>
-<span class="w">    </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/my-artifact</span><span class="w"></span>
-<span class="w">    </span><span class="nt">oss</span><span class="p">:</span><span class="w"></span>
-<span class="w">      </span><span class="nt">endpoint</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">http://oss-cn-hangzhou-zmf.aliyuncs.com</span><span class="w"></span>
-<span class="w">      </span><span class="nt">bucket</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">test-bucket-name</span><span class="w"></span>
-<span class="w">      </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">test/mydirectory/</span><span class="w"> </span><span class="c1"># this is path in the bucket</span><span class="w"></span>
-<span class="w">      </span><span class="c1"># accessKeySecret and secretKeySecret are secret selectors.</span><span class="w"></span>
-<span class="w">      </span><span class="c1"># It references the k8s secret named &#39;my-oss-credentials&#39;.</span><span class="w"></span>
-<span class="w">      </span><span class="c1"># This secret is expected to have have the keys &#39;accessKey&#39;</span><span class="w"></span>
-<span class="w">      </span><span class="c1"># and &#39;secretKey&#39;, containing the base64 encoded credentials</span><span class="w"></span>
-<span class="w">      </span><span class="c1"># to the bucket.</span><span class="w"></span>
-<span class="w">      </span><span class="nt">accessKeySecret</span><span class="p">:</span><span class="w"></span>
-<span class="w">        </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-oss-credentials</span><span class="w"></span>
-<span class="w">        </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">accessKey</span><span class="w"></span>
-<span class="w">      </span><span class="nt">secretKeySecret</span><span class="p">:</span><span class="w"></span>
-<span class="w">        </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-oss-credentials</span><span class="w"></span>
-<span class="w">        </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">secretKey</span><span class="w"></span>
+<p>Create your bucket and access key for the bucket. Suggest to limit the permission
+for the access key, you will need to create a user with just the permissions you
+want to associate with the access key. Otherwise, you can just create an access key
+using your existing user account.</p>
+<p>Setup <a href="https://www.alibabacloud.com/help/en/alibaba-cloud-cli/latest/product-introduction">Alibaba Cloud CLI</a>
+and follow the steps to configure the artifact storage for your workflow:</p>
+<div class="highlight"><pre><span></span><code>$ <span class="nb">export</span> <span class="nv">mybucket</span><span class="o">=</span>bucket-workflow-artifect
+$ <span class="nb">export</span> <span class="nv">myregion</span><span class="o">=</span>cn-zhangjiakou
+$ <span class="c1"># limit permission to read/write the bucket.</span>
+$ cat &gt; policy.json <span class="s">&lt;&lt;EOF</span>
+<span class="s">{</span>
+<span class="s">    &quot;Version&quot;: &quot;1&quot;,</span>
+<span class="s">    &quot;Statement&quot;: [</span>
+<span class="s">        {</span>
+<span class="s">            &quot;Effect&quot;: &quot;Allow&quot;,</span>
+<span class="s">            &quot;Action&quot;: [</span>
+<span class="s">              &quot;oss:PutObject&quot;,</span>
+<span class="s">              &quot;oss:GetObject&quot;</span>
+<span class="s">            ],</span>
+<span class="s">            &quot;Resource&quot;: &quot;acs:oss:*:*:$mybucket/*&quot;</span>
+<span class="s">        }</span>
+<span class="s">    ]</span>
+<span class="s">}</span>
+<span class="s">EOF</span>
+$ <span class="c1"># create bucket.</span>
+$ aliyun oss mb oss://<span class="nv">$mybucket</span> --region <span class="nv">$myregion</span>
+$ <span class="c1"># show endpoint of bucket.</span>
+$ aliyun oss stat oss://<span class="nv">$mybucket</span>
+$ <span class="c1">#create a ram user to access bucket.</span>
+$ aliyun ram CreateUser --UserName <span class="nv">$mybucket</span>-user
+$ <span class="c1"># create ram policy with the limit permission.</span>
+$ aliyun ram CreatePolicy --PolicyName <span class="nv">$mybucket</span>-policy --PolicyDocument <span class="s2">&quot;</span><span class="k">$(</span>cat policy.json<span class="k">)</span><span class="s2">&quot;</span>
+$ <span class="c1"># attch ram policy to the ram user.</span>
+$ aliyun ram AttachPolicyToUser --UserName <span class="nv">$mybucket</span>-user --PolicyName <span class="nv">$mybucket</span>-policy --PolicyType Custom
+$ <span class="c1"># create access key and secret key for the ram user.</span>
+$ aliyun ram CreateAccessKey --UserName <span class="nv">$mybucket</span>-user &gt; access-key.json
+$ <span class="c1"># create secret in demo namespace, replace demo with your namespace.</span>
+$ kubectl create secret generic <span class="nv">$mybucket</span>-credentials -n demo<span class="se">\</span>
+  --from-literal <span class="s2">&quot;accessKey=</span><span class="k">$(</span>cat access-key.json <span class="p">|</span> jq -r .AccessKey.AccessKeyId<span class="k">)</span><span class="s2">&quot;</span> <span class="se">\</span>
+  --from-literal <span class="s2">&quot;secretKey=</span><span class="k">$(</span>cat access-key.json <span class="p">|</span> jq -r .AccessKey.AccessKeySecret<span class="k">)</span><span class="s2">&quot;</span>
+$ <span class="c1"># create configmap to config default artifact for a namespace.</span>
+$ cat &gt; default-artifact-repository.yaml <span class="s">&lt;&lt; EOF</span>
+<span class="s">apiVersion: v1</span>
+<span class="s">kind: ConfigMap</span>
+<span class="s">metadata:</span>
+<span class="s">  # If you want to use this config map by default, name it &quot;artifact-repositories&quot;. Otherwise, you can provide a reference to a</span>
+<span class="s">  # different config map in `artifactRepositoryRef.configMap`.</span>
+<span class="s">  name: artifact-repositories</span>
+<span class="s">  annotations:</span>
+<span class="s">    # v3.0 and after - if you want to use a specific key, put that key into this annotation.</span>
+<span class="s">    workflows.argoproj.io/default-artifact-repository: default-oss-artifact-repository</span>
+<span class="s">data:</span>
+<span class="s">  default-oss-artifact-repository: |</span>
+<span class="s">    oss:</span>
+<span class="s">      endpoint: http://oss-cn-zhangjiakou-internal.aliyuncs.com</span>
+<span class="s">      bucket: $mybucket</span>
+<span class="s">      # accessKeySecret and secretKeySecret are secret selectors.</span>
+<span class="s">      # It references the k8s secret named &#39;bucket-workflow-artifect-credentials&#39;.</span>
+<span class="s">      # This secret is expected to have have the keys &#39;accessKey&#39;</span>
+<span class="s">      # and &#39;secretKey&#39;, containing the base64 encoded credentials</span>
+<span class="s">      # to the bucket.</span>
+<span class="s">      accessKeySecret:</span>
+<span class="s">        name: $mybucket-credentials</span>
+<span class="s">        key: accessKey</span>
+<span class="s">      secretKeySecret:</span>
+<span class="s">        name: $mybucket-credentials</span>
+<span class="s">        key: secretKey</span>
+<span class="s">EOF</span>
+<span class="c1"># create cm in demo namespace, replace demo with your namespace.</span>
+$ k apply -f default-artifact-repository.yaml -n demo
 </code></pre></div>
 <p>You can also set <code>createBucketIfNotPresent</code> to <code>true</code> to tell the artifact driver to automatically create the OSS bucket if it doesn't exist yet when saving artifacts. Note that you'll need to set additional permission for your OSS account to create new buckets.</p>
 <h2 id="configuring-azure-blob-storage">Configuring Azure Blob Storage<a class="headerlink" href="#configuring-azure-blob-storage" title="Permanent link">&para;</a></h2>
@@ -4324,6 +4386,22 @@ data:
       serviceAccountKeySecret:
         name: my-gcs-credentials
         key: serviceAccountKey
+</code></pre></div>
+<h3 id="azure-blob-storage">Azure Blob Storage<a class="headerlink" href="#azure-blob-storage" title="Permanent link">&para;</a></h3>
+<p>Argo can use native Azure APIs to access a Azure Blob Storage container.</p>
+<p><code>accountKeySecret</code> references to a Kubernetes secret which stores an Azure Blob
+Storage account shared key to access the container.</p>
+<p>Example:</p>
+<div class="highlight"><pre><span></span><code>$ kubectl edit configmap workflow-controller-configmap -n argo  <span class="c1"># assumes argo was installed in the argo namespace</span>
+...
+data:
+  artifactRepository: <span class="p">|</span>
+    azure:
+      container: my-container
+      blobNameFormat: prefix/in/container     <span class="c1">#optional, it could reference workflow variables, such as &quot;{{workflow.name}}/{{pod.name}}&quot;</span>
+      accountKeySecret:
+        name: my-azure-storage-credentials
+        key: account-access-key
 </code></pre></div>
 <h2 id="accessing-non-default-artifact-repositories">Accessing Non-Default Artifact Repositories<a class="headerlink" href="#accessing-non-default-artifact-repositories" title="Permanent link">&para;</a></h2>
 <p>This section shows how to access artifacts from non-default artifact

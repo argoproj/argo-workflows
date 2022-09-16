@@ -3117,6 +3117,13 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#feat-enhance-artifact-visualization-8655" class="md-nav__link">
+    feat: enhance artifact visualization (#8655)
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#upgrading-to-v33" class="md-nav__link">
     Upgrading to v3.3
   </a>
@@ -4081,6 +4088,13 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#feat-enhance-artifact-visualization-8655" class="md-nav__link">
+    feat: enhance artifact visualization (#8655)
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#upgrading-to-v33" class="md-nav__link">
     Upgrading to v3.3
   </a>
@@ -4320,6 +4334,8 @@ mis-configuration.</p>
 </code></pre></div>
 <h2 id="feat-add-indexes-for-improve-archived-workflow-performance-8860">feat: add indexes for improve archived workflow performance. (#8860)<a class="headerlink" href="#feat-add-indexes-for-improve-archived-workflow-performance-8860" title="Permanent link">&para;</a></h2>
 <p>This PR adds indexes to archived workflow tables. This change may cause a long time to upgrade if the user has a large table.</p>
+<h2 id="feat-enhance-artifact-visualization-8655">feat: enhance artifact visualization (#8655)<a class="headerlink" href="#feat-enhance-artifact-visualization-8655" title="Permanent link">&para;</a></h2>
+<p>For AWS users using S3: visualizing artifacts in the UI and downloading them now requires an additional "Action" to be configured in your S3 bucket policy: "ListBucket".</p>
 <h2 id="upgrading-to-v33">Upgrading to v3.3<a class="headerlink" href="#upgrading-to-v33" title="Permanent link">&para;</a></h2>
 <h3 id="662a7295b-feat-replace-patch-pod-with-create-workflowtaskresult-fixes-3961-8000"><a href="https://github.com/argoproj/argo-workflows/commit/662a7295b">662a7295b</a> feat: Replace <code>patch pod</code> with <code>create workflowtaskresult</code>. Fixes #3961 (#8000)<a class="headerlink" href="#662a7295b-feat-replace-patch-pod-with-create-workflowtaskresult-fixes-3961-8000" title="Permanent link">&para;</a></h3>
 <p>The PR changes the permissions that can be used by a workflow to remove the <code>pod patch</code> permission.</p>

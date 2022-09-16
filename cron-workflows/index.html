@@ -1021,6 +1021,13 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#cron-schedule-syntax" class="md-nav__link">
+    Cron Schedule Syntax
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#crash-recovery" class="md-nav__link">
     Crash Recovery
   </a>
@@ -3914,6 +3921,13 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#cron-schedule-syntax" class="md-nav__link">
+    Cron Schedule Syntax
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#crash-recovery" class="md-nav__link">
     Crash Recovery
   </a>
@@ -4080,6 +4094,9 @@
 </tr>
 </tbody>
 </table>
+<h3 id="cron-schedule-syntax">Cron Schedule Syntax<a class="headerlink" href="#cron-schedule-syntax" title="Permanent link">&para;</a></h3>
+<p>The cron scheduler uses the standard cron syntax, as <a href="https://en.wikipedia.org/wiki/Cron">documented on Wikipedia</a>.</p>
+<p>More detailed documentation for the specific library used is <a href="https://pkg.go.dev/github.com/robfig/cron#hdr-CRON_Expression_Format">documented here</a>.</p>
 <h3 id="crash-recovery">Crash Recovery<a class="headerlink" href="#crash-recovery" title="Permanent link">&para;</a></h3>
 <p>If the <code>workflow-controller</code> crashes (and hence the <code>CronWorkflow</code> controller), there are some options you can set to ensure that <code>CronWorkflows</code> that would have been scheduled while the controller was down can still run. Mainly <code>startingDeadlineSeconds</code> can be set to specify the maximum number of seconds past the last successful run of a <code>CronWorkflow</code> during which a missed run will still be executed.</p>
 <p>For example, if a <code>CronWorkflow</code> that runs every minute is last run at 12:05:00, and the controller crashes between 12:05:55 and 12:06:05, then the expected execution time of 12:06:00 would be missed. However, if <code>startingDeadlineSeconds</code> is set to a value greater than 65 (the amount of time passing between the last scheduled run time of 12:05:00 and the current controller restart time of 12:06:05), then a single instance of the <code>CronWorkflow</code> will be executed exactly at 12:06:05.</p>

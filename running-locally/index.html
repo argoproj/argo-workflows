@@ -3999,7 +3999,7 @@ generation does not work.</p>
 <li>Configure Docker Desktop to use BuildKit:</li>
 </ul>
 <div class="highlight"><pre><span></span><code><span class="nt">&quot;features&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">  </span><span class="nt">&quot;buildkit&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="w"></span>
+<span class="w">  </span><span class="nt">&quot;buildkit&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w"></span>
 <span class="p">},</span><span class="w"></span>
 </code></pre></div>
 </li>
@@ -4049,11 +4049,11 @@ returns <code>allowed</code>).</p>
 <li>MinIO (<a href="http://localhost:9000">http://localhost:9000</a>, use admin/password) so you can use artifacts:</li>
 </ul>
 <p>Run:</p>
-<div class="highlight"><pre><span></span><code>make start 
+<div class="highlight"><pre><span></span><code>make start
 </code></pre></div>
 <p>Make sure you don't see any errors in your terminal. This runs the Workflow Controller locally on your machine (not in Docker/Kubernetes).</p>
 <p>You can submit a workflow for testing using <code>kubectl</code>:</p>
-<div class="highlight"><pre><span></span><code>kubectl create -f examples/hello-world.yaml 
+<div class="highlight"><pre><span></span><code>kubectl create -f examples/hello-world.yaml
 </code></pre></div>
 <p>We recommend running <code>make clean</code> before <code>make start</code> to ensure recompilation.</p>
 <p>If you made changes to the executor, you need to build the image:</p>
@@ -4068,8 +4068,8 @@ returns <code>allowed</code>).</p>
 </code></pre></div>
 <p><img alt="diagram" src="../assets/make-start-UI-true.png" /></p>
 <p>If you are making change to the CLI (i.e. Argo Server), you can build it separately if you want:</p>
-<div class="highlight"><pre><span></span><code>make cli 
-./dist/argo submit examples/hello-world.yaml <span class="p">;</span><span class="c1"># new CLI is created as `./dist/argo` </span>
+<div class="highlight"><pre><span></span><code>make cli
+./dist/argo submit examples/hello-world.yaml <span class="p">;</span><span class="c1"># new CLI is created as `./dist/argo`</span>
 </code></pre></div>
 <p>Although, note that this will be built automatically if you do: <code>make start API=true</code>.</p>
 <p>To test the workflow archive, use <code>PROFILE=mysql</code> or <code>PROFILE=postgres</code>:</p>
@@ -4085,7 +4085,7 @@ returns <code>allowed</code>).</p>
 </code></pre></div>
 <h3 id="running-e2e-tests-locally">Running E2E tests locally<a class="headerlink" href="#running-e2e-tests-locally" title="Permanent link">&para;</a></h3>
 <p>Start up Argo Workflows using the following:</p>
-<div class="highlight"><pre><span></span><code>make start <span class="nv">PROFILE</span><span class="o">=</span>mysql <span class="nv">AUTH_MODE</span><span class="o">=</span>client <span class="nv">STATIC_FILES</span><span class="o">=</span><span class="nb">false</span> <span class="nv">API</span><span class="o">=</span><span class="nb">true</span> 
+<div class="highlight"><pre><span></span><code>make start <span class="nv">PROFILE</span><span class="o">=</span>mysql <span class="nv">AUTH_MODE</span><span class="o">=</span>client <span class="nv">STATIC_FILES</span><span class="o">=</span><span class="nb">false</span> <span class="nv">API</span><span class="o">=</span><span class="nb">true</span>
 </code></pre></div>
 <p>If you want to run Azure tests against a local Azurite, add <code>AZURE=true</code>:</p>
 <div class="highlight"><pre><span></span><code>make start <span class="nv">PROFILE</span><span class="o">=</span>mysql <span class="nv">AUTH_MODE</span><span class="o">=</span>client <span class="nv">STATIC_FILES</span><span class="o">=</span><span class="nb">false</span> <span class="nv">API</span><span class="o">=</span><span class="nb">true</span> <span class="nv">AZURE</span><span class="o">=</span><span class="nb">true</span>
@@ -4094,7 +4094,7 @@ returns <code>allowed</code>).</p>
 <p>In most cases, you want to run the test that relates to your changes locally. You should not run all the tests suites.
 Our CI will run those concurrently when you create a PR, which will give you feedback much faster.</p>
 <p>Find the test that you want to run in <code>test/e2e</code></p>
-<div class="highlight"><pre><span></span><code>make TestArtifactServer  
+<div class="highlight"><pre><span></span><code>make TestArtifactServer
 </code></pre></div>
 <p>If you wish to include tests against Azure Storage, define <code>AZURE=true</code>:</p>
 <div class="highlight"><pre><span></span><code>make <span class="nv">AZURE</span><span class="o">=</span><span class="nb">true</span> TestArtifactServer
