@@ -8,7 +8,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/suite"
 	apiv1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -57,7 +56,6 @@ spec:
 }
 
 func (s *HooksSuite) TestTemplateLevelHooks() {
-	t.Skip("https://github.com/argoproj/argo-workflows/issues/9591")
 	s.Given().
 		Workflow(`apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -93,5 +91,6 @@ spec:
 }
 
 func TestHooksSuite(t *testing.T) {
-	suite.Run(t, new(HooksSuite))
+	// TODO: Tests are temporarily disabled: "https://github.com/argoproj/argo-workflows/issues/9591"
+	//suite.Run(t, new(HooksSuite))
 }
