@@ -158,6 +158,9 @@ jobs:
       - run: make wait
         timeout-minutes: 4
       - run: make ${{matrix.test}} E2E_SUITE_TIMEOUT=20m STATIC_FILES=false AZURE=true
+        uses: nick-fields/retry@v2.8.1
+        with:
+          max_attempts: 2
       - if: ${{ failure() }}
         run: |
           [ -e /tmp/argo.log ] && cat /tmp/argo.log
