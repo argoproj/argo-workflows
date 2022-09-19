@@ -26,21 +26,23 @@ body:
     validations:
       required: true
   - type: textarea
-    id: version
+    id: failing-workflow
     attributes:
       label: Paste a small workflow that reproduces the issue. We must be able to run the workflow; don't enter a workflows that uses private images.
       render: YAML
     validations:
       required: true
   - type: textarea
-    id: version
+    id: controller-logs
     attributes:
       label: Logs from the workflow controller
       placeholder: kubectl logs -n argo deploy/workflow-controller | grep ${workflow}
     validations:
       required: true
   - type: textarea
-    id: version
+    id:  wait-logs
     attributes:
       label: Logs from in your workflow's wait container
       placeholder: kubectl logs -c wait -l workflows.argoproj.io/workflow=${workflow},workflow.argoproj.io/phase!=Succeeded
+    validations:
+      required: true
