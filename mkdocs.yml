@@ -215,6 +215,7 @@ nav:
           - workflow-executors.md
           - workflow-restrictions.md
           - sidecar-injection.md
+          - manually-create-secrets.md
       - Argo Server:
           - argo-server.md
           - argo-server-auth-mode.md
