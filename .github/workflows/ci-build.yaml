@@ -157,10 +157,11 @@ jobs:
       - run: make start PROFILE=${{matrix.profile}} AUTH_MODE=client STATIC_FILES=false LOG_LEVEL=info API=${{matrix.test == 'test-api' || matrix.test == 'test-cli' || matrix.test == 'test-java-sdk' || matrix.test == 'test-python-sdk'}} UI=false AZURE=true > /tmp/argo.log 2>&1 &
       - run: make wait
         timeout-minutes: 4
-      - run: make ${{matrix.test}} E2E_SUITE_TIMEOUT=20m STATIC_FILES=false AZURE=true
+      - name: make ${{matrix.test}}
         uses: nick-fields/retry@v2.8.1
         with:
           max_attempts: 2
+          command: make ${{matrix.test}} E2E_SUITE_TIMEOUT=20m STATIC_FILES=false AZURE=true
       - if: ${{ failure() }}
         run: |
           [ -e /tmp/argo.log ] && cat /tmp/argo.log
