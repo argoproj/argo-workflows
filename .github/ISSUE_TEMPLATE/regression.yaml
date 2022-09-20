@@ -1,6 +1,7 @@
-name: Reproducible bug report
-description: Create a reproducible bug report. Not for support requests.
-labels: [ bug ]
+name: Regression report
+description: Create a regression report. Not for support requests.
+labels: [ bug, regression ]
+
 body:
   - type: checkboxes
     id: terms
