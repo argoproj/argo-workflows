@@ -222,7 +222,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     optional=True,
                                 ),
                             ),
-                            token=SecretKeySelector(
+                            oauth_token=SecretKeySelector(
                                 key="key_example",
                                 name="name_example",
                                 optional=True,
@@ -240,6 +240,12 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         },
                         owner="owner_example",
                         project_key="project_key_example",
+                        repositories=[
+                            IoArgoprojEventsV1alpha1BitbucketRepository(
+                                owner="owner_example",
+                                repository_slug="repository_slug_example",
+                            ),
+                        ],
                         repository_slug="repository_slug_example",
                         webhook=IoArgoprojEventsV1alpha1WebhookContext(
                             auth_secret=SecretKeySelector(
@@ -248,6 +254,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 optional=True,
                             ),
                             endpoint="endpoint_example",
+                            max_payload_size="max_payload_size_example",
                             metadata={
                                 "key": "key_example",
                             },
@@ -300,6 +307,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 optional=True,
                             ),
                             endpoint="endpoint_example",
+                            max_payload_size="max_payload_size_example",
                             metadata={
                                 "key": "key_example",
                             },
@@ -495,6 +503,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 optional=True,
                             ),
                             endpoint="endpoint_example",
+                            max_payload_size="max_payload_size_example",
                             metadata={
                                 "key": "key_example",
                             },
@@ -554,6 +563,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 optional=True,
                             ),
                             endpoint="endpoint_example",
+                            max_payload_size="max_payload_size_example",
                             metadata={
                                 "key": "key_example",
                             },
@@ -614,6 +624,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                 },
                 kafka={
                     "key": IoArgoprojEventsV1alpha1KafkaEventSource(
+                        config="config_example",
                         connection_backoff=IoArgoprojEventsV1alpha1Backoff(
                             duration=IoArgoprojEventsV1alpha1Int64OrString(
                                 int64_val="int64_val_example",
@@ -966,6 +977,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             expression="expression_example",
                         ),
                         host_address="host_address_example",
+                        json_body=True,
                         metadata={
                             "key": "key_example",
                         },
@@ -993,6 +1005,48 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             ),
                             insecure_skip_verify=True,
                         ),
+                        username="username_example",
+                    ),
+                },
+                redis_stream={
+                    "key": IoArgoprojEventsV1alpha1RedisStreamEventSource(
+                        consumer_group="consumer_group_example",
+                        db=1,
+                        filter=IoArgoprojEventsV1alpha1EventSourceFilter(
+                            expression="expression_example",
+                        ),
+                        host_address="host_address_example",
+                        max_msg_count_per_read=1,
+                        metadata={
+                            "key": "key_example",
+                        },
+                        password=SecretKeySelector(
+                            key="key_example",
+                            name="name_example",
+                            optional=True,
+                        ),
+                        streams=[
+                            "streams_example",
+                        ],
+                        tls=IoArgoprojEventsV1alpha1TLSConfig(
+                            ca_cert_secret=SecretKeySelector(
+                                key="key_example",
+                                name="name_example",
+                                optional=True,
+                            ),
+                            client_cert_secret=SecretKeySelector(
+                                key="key_example",
+                                name="name_example",
+                                optional=True,
+                            ),
+                            client_key_secret=SecretKeySelector(
+                                key="key_example",
+                                name="name_example",
+                                optional=True,
+                            ),
+                            insecure_skip_verify=True,
+                        ),
+                        username="username_example",
                     ),
                 },
                 replicas=1,
@@ -1069,6 +1123,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 optional=True,
                             ),
                             endpoint="endpoint_example",
+                            max_payload_size="max_payload_size_example",
                             metadata={
                                 "key": "key_example",
                             },
@@ -1095,6 +1150,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             name="name_example",
                             optional=True,
                         ),
+                        endpoint="endpoint_example",
                         filter=IoArgoprojEventsV1alpha1EventSourceFilter(
                             expression="expression_example",
                         ),
@@ -1117,6 +1173,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 optional=True,
                             ),
                             endpoint="endpoint_example",
+                            max_payload_size="max_payload_size_example",
                             metadata={
                                 "key": "key_example",
                             },
@@ -1161,6 +1218,11 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             name="name_example",
                             optional=True,
                         ),
+                        session_token=SecretKeySelector(
+                            key="key_example",
+                            name="name_example",
+                            optional=True,
+                        ),
                         wait_time_seconds="wait_time_seconds_example",
                     ),
                 },
@@ -1192,6 +1254,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 optional=True,
                             ),
                             endpoint="endpoint_example",
+                            max_payload_size="max_payload_size_example",
                             metadata={
                                 "key": "key_example",
                             },
@@ -1232,6 +1295,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 optional=True,
                             ),
                             endpoint="endpoint_example",
+                            max_payload_size="max_payload_size_example",
                             metadata={
                                 "key": "key_example",
                             },
@@ -2162,29 +2226,35 @@ with argo_workflows.ApiClient(configuration) as api_client:
                     ],
                 ),
                 webhook={
-                    "key": IoArgoprojEventsV1alpha1WebhookContext(
-                        auth_secret=SecretKeySelector(
-                            key="key_example",
-                            name="name_example",
-                            optional=True,
+                    "key": IoArgoprojEventsV1alpha1WebhookEventSource(
+                        filter=IoArgoprojEventsV1alpha1EventSourceFilter(
+                            expression="expression_example",
                         ),
-                        endpoint="endpoint_example",
-                        metadata={
-                            "key": "key_example",
-                        },
-                        method="method_example",
-                        port="port_example",
-                        server_cert_secret=SecretKeySelector(
-                            key="key_example",
-                            name="name_example",
-                            optional=True,
+                        webhook_context=IoArgoprojEventsV1alpha1WebhookContext(
+                            auth_secret=SecretKeySelector(
+                                key="key_example",
+                                name="name_example",
+                                optional=True,
+                            ),
+                            endpoint="endpoint_example",
+                            max_payload_size="max_payload_size_example",
+                            metadata={
+                                "key": "key_example",
+                            },
+                            method="method_example",
+                            port="port_example",
+                            server_cert_secret=SecretKeySelector(
+                                key="key_example",
+                                name="name_example",
+                                optional=True,
+                            ),
+                            server_key_secret=SecretKeySelector(
+                                key="key_example",
+                                name="name_example",
+                                optional=True,
+                            ),
+                            url="url_example",
                         ),
-                        server_key_secret=SecretKeySelector(
-                            key="key_example",
-                            name="name_example",
-                            optional=True,
-                        ),
-                        url="url_example",
                     ),
                 },
             ),
@@ -2840,7 +2910,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     optional=True,
                                 ),
                             ),
-                            token=SecretKeySelector(
+                            oauth_token=SecretKeySelector(
                                 key="key_example",
                                 name="name_example",
                                 optional=True,
@@ -2858,6 +2928,12 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         },
                         owner="owner_example",
                         project_key="project_key_example",
+                        repositories=[
+                            IoArgoprojEventsV1alpha1BitbucketRepository(
+                                owner="owner_example",
+                                repository_slug="repository_slug_example",
+                            ),
+                        ],
                         repository_slug="repository_slug_example",
                         webhook=IoArgoprojEventsV1alpha1WebhookContext(
                             auth_secret=SecretKeySelector(
@@ -2866,6 +2942,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 optional=True,
                             ),
                             endpoint="endpoint_example",
+                            max_payload_size="max_payload_size_example",
                             metadata={
                                 "key": "key_example",
                             },
@@ -2918,6 +2995,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 optional=True,
                             ),
                             endpoint="endpoint_example",
+                            max_payload_size="max_payload_size_example",
                             metadata={
                                 "key": "key_example",
                             },
@@ -3113,6 +3191,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 optional=True,
                             ),
                             endpoint="endpoint_example",
+                            max_payload_size="max_payload_size_example",
                             metadata={
                                 "key": "key_example",
                             },
@@ -3172,6 +3251,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 optional=True,
                             ),
                             endpoint="endpoint_example",
+                            max_payload_size="max_payload_size_example",
                             metadata={
                                 "key": "key_example",
                             },
@@ -3232,6 +3312,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                 },
                 kafka={
                     "key": IoArgoprojEventsV1alpha1KafkaEventSource(
+                        config="config_example",
                         connection_backoff=IoArgoprojEventsV1alpha1Backoff(
                             duration=IoArgoprojEventsV1alpha1Int64OrString(
                                 int64_val="int64_val_example",
@@ -3584,6 +3665,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             expression="expression_example",
                         ),
                         host_address="host_address_example",
+                        json_body=True,
                         metadata={
                             "key": "key_example",
                         },
@@ -3611,6 +3693,48 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             ),
                             insecure_skip_verify=True,
                         ),
+                        username="username_example",
+                    ),
+                },
+                redis_stream={
+                    "key": IoArgoprojEventsV1alpha1RedisStreamEventSource(
+                        consumer_group="consumer_group_example",
+                        db=1,
+                        filter=IoArgoprojEventsV1alpha1EventSourceFilter(
+                            expression="expression_example",
+                        ),
+                        host_address="host_address_example",
+                        max_msg_count_per_read=1,
+                        metadata={
+                            "key": "key_example",
+                        },
+                        password=SecretKeySelector(
+                            key="key_example",
+                            name="name_example",
+                            optional=True,
+                        ),
+                        streams=[
+                            "streams_example",
+                        ],
+                        tls=IoArgoprojEventsV1alpha1TLSConfig(
+                            ca_cert_secret=SecretKeySelector(
+                                key="key_example",
+                                name="name_example",
+                                optional=True,
+                            ),
+                            client_cert_secret=SecretKeySelector(
+                                key="key_example",
+                                name="name_example",
+                                optional=True,
+                            ),
+                            client_key_secret=SecretKeySelector(
+                                key="key_example",
+                                name="name_example",
+                                optional=True,
+                            ),
+                            insecure_skip_verify=True,
+                        ),
+                        username="username_example",
                     ),
                 },
                 replicas=1,
@@ -3687,6 +3811,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 optional=True,
                             ),
                             endpoint="endpoint_example",
+                            max_payload_size="max_payload_size_example",
                             metadata={
                                 "key": "key_example",
                             },
@@ -3713,6 +3838,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             name="name_example",
                             optional=True,
                         ),
+                        endpoint="endpoint_example",
                         filter=IoArgoprojEventsV1alpha1EventSourceFilter(
                             expression="expression_example",
                         ),
@@ -3735,6 +3861,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 optional=True,
                             ),
                             endpoint="endpoint_example",
+                            max_payload_size="max_payload_size_example",
                             metadata={
                                 "key": "key_example",
                             },
@@ -3779,6 +3906,11 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             name="name_example",
                             optional=True,
                         ),
+                        session_token=SecretKeySelector(
+                            key="key_example",
+                            name="name_example",
+                            optional=True,
+                        ),
                         wait_time_seconds="wait_time_seconds_example",
                     ),
                 },
@@ -3810,6 +3942,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 optional=True,
                             ),
                             endpoint="endpoint_example",
+                            max_payload_size="max_payload_size_example",
                             metadata={
                                 "key": "key_example",
                             },
@@ -3850,6 +3983,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 optional=True,
                             ),
                             endpoint="endpoint_example",
+                            max_payload_size="max_payload_size_example",
                             metadata={
                                 "key": "key_example",
                             },
@@ -4780,29 +4914,35 @@ with argo_workflows.ApiClient(configuration) as api_client:
                     ],
                 ),
                 webhook={
-                    "key": IoArgoprojEventsV1alpha1WebhookContext(
-                        auth_secret=SecretKeySelector(
-                            key="key_example",
-                            name="name_example",
-                            optional=True,
+                    "key": IoArgoprojEventsV1alpha1WebhookEventSource(
+                        filter=IoArgoprojEventsV1alpha1EventSourceFilter(
+                            expression="expression_example",
                         ),
-                        endpoint="endpoint_example",
-                        metadata={
-                            "key": "key_example",
-                        },
-                        method="method_example",
-                        port="port_example",
-                        server_cert_secret=SecretKeySelector(
-                            key="key_example",
-                            name="name_example",
-                            optional=True,
+                        webhook_context=IoArgoprojEventsV1alpha1WebhookContext(
+                            auth_secret=SecretKeySelector(
+                                key="key_example",
+                                name="name_example",
+                                optional=True,
+                            ),
+                            endpoint="endpoint_example",
+                            max_payload_size="max_payload_size_example",
+                            metadata={
+                                "key": "key_example",
+                            },
+                            method="method_example",
+                            port="port_example",
+                            server_cert_secret=SecretKeySelector(
+                                key="key_example",
+                                name="name_example",
+                                optional=True,
+                            ),
+                            server_key_secret=SecretKeySelector(
+                                key="key_example",
+                                name="name_example",
+                                optional=True,
+                            ),
+                            url="url_example",
                         ),
-                        server_key_secret=SecretKeySelector(
-                            key="key_example",
-                            name="name_example",
-                            optional=True,
-                        ),
-                        url="url_example",
                     ),
                 },
             ),
