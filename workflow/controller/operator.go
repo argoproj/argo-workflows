@@ -1672,7 +1672,7 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 	if resolvedTmpl.IsPodType() && woc.retryStrategy(resolvedTmpl) == nil {
 		localParams[common.LocalVarPodName] = woc.getPodName(nodeName, resolvedTmpl.Name)
 	}
-	if !localParams["call-stack"] {
+	if localParams["call-stack"] == nil {
 		localParams["call-stack"] = ""
 	}
 
