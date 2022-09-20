@@ -130,7 +130,7 @@ returns `0`. Please review the Sprig documentation to understand which functions
 | `inputs.parameters.<NAME>`| Input parameter to a template |
 | `inputs.parameters`| All input parameters to a template as a JSON string |
 | `inputs.artifacts.<NAME>` | Input artifact to a template |
-
+| `call-stack` | Returns step/dag trace to this point in the workflow |
 ### Steps Templates
 
 | Variable | Description|

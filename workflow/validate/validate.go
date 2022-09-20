@@ -607,6 +607,7 @@ func resolveAllVariables(scope map[string]interface{}, globalParams map[string]s
 			} else if strings.HasPrefix(tag, common.GlobalVarWorkflowDuration) {
 			} else if strings.HasPrefix(tag, "tasks.name") {
 			} else if strings.HasPrefix(tag, "steps.name") {
+			} else if strings.HasPrefix(tag, "call-stack") {
 			} else {
 				return fmt.Errorf("failed to resolve {{%s}}", tag)
 			}
