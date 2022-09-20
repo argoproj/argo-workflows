@@ -57,9 +57,11 @@ func (a *ArtifactServer) GetInputArtifact(w http.ResponseWriter, r *http.Request
 
 // single endpoint to be able to handle serving directories as well as files, both those that have been archived and those that haven't
 // Valid requests:
-//  /artifact-files/{namespace}/[archived-workflows|workflows]/{id}/{nodeId}/outputs/{artifactName}
-//  /artifact-files/{namespace}/[archived-workflows|workflows]/{id}/{nodeId}/outputs/{artifactName}/{fileName}
-//  /artifact-files/{namespace}/[archived-workflows|workflows]/{id}/{nodeId}/outputs/{artifactName}/{fileDir}/.../{fileName}
+//
+//	/artifact-files/{namespace}/[archived-workflows|workflows]/{id}/{nodeId}/outputs/{artifactName}
+//	/artifact-files/{namespace}/[archived-workflows|workflows]/{id}/{nodeId}/outputs/{artifactName}/{fileName}
+//	/artifact-files/{namespace}/[archived-workflows|workflows]/{id}/{nodeId}/outputs/{artifactName}/{fileDir}/.../{fileName}
+//
 // 'id' field represents 'uid' for archived workflows and 'name' for non-archived
 func (a *ArtifactServer) GetArtifactFile(w http.ResponseWriter, r *http.Request) {
 

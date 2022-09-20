@@ -43,7 +43,6 @@ If the container is named `main` it also copies base-layer artifacts to the shar
 The wait container can create one file itself, used for terminating the sub-process:
 
 * `/var/run/argo/ctr/${containerName}/signal` The emissary binary listens to changes in this file, and signals the sub-process with the value found in this file.
-
 */
 type emissary struct{}
 
