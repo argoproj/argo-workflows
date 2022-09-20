@@ -1675,7 +1675,9 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 	if callStack, err := localParams["call-stack"]; err {
 		localParams["call-stack"] = ""
 	} else {
-		localParams["call-stack"] = callStack + "." + orgTmpl.GetName()
+		if orgTmpl.IsDAGTask() || orgTmpl.IsWorkflowStep() {
+			localParams["call-stack"] = callStack + "." + orgTmpl.GetName()
+		}
 	}
 
 	if orgTmpl.IsDAGTask() {
