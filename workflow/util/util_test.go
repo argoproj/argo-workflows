@@ -1083,7 +1083,7 @@ func TestGetTemplateFromNode(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		actual := getTemplateFromNode(tc.inputNode)
+		actual := GetTemplateFromNode(tc.inputNode)
 		assert.Equal(t, tc.expectedTemplateName, actual)
 	}
 }
