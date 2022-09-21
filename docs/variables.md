@@ -130,6 +130,7 @@ returns `0`. Please review the Sprig documentation to understand which functions
 | `inputs.parameters.<NAME>`| Input parameter to a template |
 | `inputs.parameters`| All input parameters to a template as a JSON string |
 | `inputs.artifacts.<NAME>` | Input artifact to a template |
+| `node.name` | Full name of the node |
 
 ### Steps Templates
 
