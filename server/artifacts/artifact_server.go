@@ -391,6 +391,10 @@ func (a *ArtifactServer) getArtifactAndDriver(ctx context.Context, nodeId, artif
 	// 4. Template defines ArchiveLocation
 
 	templateName := wf.Status.Nodes[nodeId].TemplateName
+	templateRef := wf.Status.Nodes[nodeId].TemplateRef
+	if templateName == "" && templateRef != nil {
+		templateName = templateRef.Template
+	}
 	template := wf.GetTemplateByName(templateName)
 	if template == nil {
 		return nil, nil, fmt.Errorf("no template found by the name of '%s' (which is the template associated with nodeId '%s'??", templateName, nodeId)
