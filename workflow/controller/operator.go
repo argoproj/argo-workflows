@@ -489,14 +489,12 @@ func (woc *wfOperationCtx) updateWorkflowMetadata() error {
 		}
 		for n, v := range md.Labels {
 			woc.wf.Labels[n] = v
-			woc.globalParams["workflow.labels."+n] = v
 		}
 		if woc.wf.ObjectMeta.Annotations == nil {
 			woc.wf.ObjectMeta.Annotations = make(map[string]string)
 		}
 		for n, v := range md.Annotations {
 			woc.wf.Annotations[n] = v
-			woc.globalParams["workflow.annotations."+n] = v
 		}
 		env := env.GetFuncMap(template.EnvMap(woc.globalParams))
 		for n, f := range md.LabelsFrom {
@@ -509,7 +507,26 @@ func (woc *wfOperationCtx) updateWorkflowMetadata() error {
 				return fmt.Errorf("failed to evaluate label %q expression %q evaluted to %T but must be a string", n, f.Expression, r)
 			}
 			woc.wf.Labels[n] = v
+		}
+		woc.updated = true
+	}
+	return nil
+}
+
+func (woc *wfOperationCtx) updateWorkflowMetadataGlobalParams() error {
+	if md := woc.execWf.Spec.WorkflowMetadata; md != nil {
+		for n, v := range md.Labels {
 			woc.globalParams["workflow.labels."+n] = v
+		}
+		if woc.wf.ObjectMeta.Annotations == nil {
+			woc.wf.ObjectMeta.Annotations = make(map[string]string)
+		}
+		for n, v := range md.Annotations {
+			woc.globalParams["workflow.annotations."+n] = v
+		}
+
+		for n, f := range md.LabelsFrom {
+			woc.globalParams["workflow.labels."+n] = f.Expression
 		}
 		woc.updated = true
 	}
