@@ -1506,6 +1506,17 @@ type WorkflowStep struct {
 	Hooks LifecycleHooks `json:"hooks,omitempty" protobuf:"bytes,12,opt,name=hooks"`
 }
 
+func (step *WorkflowStep) GetName() string {
+	return step.Name
+}
+
+func (step *WorkflowStep) IsDAGTask() bool {
+	return false
+}
+func (step *WorkflowStep) IsWorkflowStep() bool {
+	return true
+}
+
 type LifecycleEvent string
 
 const (
@@ -1693,6 +1704,10 @@ func (n Nodes) FindByDisplayName(name string) *NodeStatus {
 	return n.Find(NodeWithDisplayName(name))
 }
 
+func (n Nodes) FindByName(name string) *NodeStatus {
+	return n.Find(NodeWithName(name))
+}
+
 func (in Nodes) Any(f func(NodeStatus) bool) bool {
 	return in.Find(f) != nil
 }
@@ -1704,6 +1719,10 @@ func (n Nodes) Find(f func(NodeStatus) bool) *NodeStatus {
 		}
 	}
 	return nil
+}
+
+func NodeWithName(name string) func(n NodeStatus) bool {
+	return func(n NodeStatus) bool { return n.Name == name }
 }
 
 func NodeWithDisplayName(name string) func(n NodeStatus) bool {
@@ -2118,6 +2137,18 @@ type NodeStatus struct {
 	SynchronizationStatus *NodeSynchronizationStatus `json:"synchronizationStatus,omitempty" protobuf:"bytes,25,opt,name=synchronizationStatus"`
 }
 
+func (n *NodeStatus) GetName() string {
+	return n.Name
+}
+
+func (n *NodeStatus) IsDAGTask() bool {
+	return false
+}
+
+func (n *NodeStatus) IsWorkflowStep() bool {
+	return false
+}
+
 // Fulfilled returns whether a phase is fulfilled, i.e. it completed execution or was skipped or omitted
 func (phase NodePhase) Fulfilled() bool {
 	return phase.Completed() || phase == NodeSkipped || phase == NodeOmitted
@@ -2422,9 +2453,9 @@ type ArtifactoryArtifact struct {
 	ArtifactoryAuth `json:",inline" protobuf:"bytes,2,opt,name=artifactoryAuth"`
 }
 
-// func (a *ArtifactoryArtifact) String() string {
-//	return a.URL
-// }
+//	func (a *ArtifactoryArtifact) String() string {
+//		return a.URL
+//	}
 func (a *ArtifactoryArtifact) GetKey() (string, error) {
 	u, err := url.Parse(a.URL)
 	if err != nil {
@@ -2982,6 +3013,18 @@ type DAGTask struct {
 	// Hooks hold the lifecycle hook which is invoked at lifecycle of
 	// task, irrespective of the success, failure, or error status of the primary task
 	Hooks LifecycleHooks `json:"hooks,omitempty" protobuf:"bytes,13,opt,name=hooks"`
+}
+
+func (t *DAGTask) GetName() string {
+	return t.Name
+}
+
+func (t *DAGTask) IsDAGTask() bool {
+	return true
+}
+
+func (t *DAGTask) IsWorkflowStep() bool {
+	return false
 }
 
 var _ TemplateReferenceHolder = &DAGTask{}
