@@ -513,26 +513,6 @@ func (woc *wfOperationCtx) updateWorkflowMetadata() error {
 	return nil
 }
 
-func (woc *wfOperationCtx) updateWorkflowMetadataGlobalParams() error {
-	if md := woc.execWf.Spec.WorkflowMetadata; md != nil {
-		for n, v := range md.Labels {
-			woc.globalParams["workflow.labels."+n] = v
-		}
-		if woc.wf.ObjectMeta.Annotations == nil {
-			woc.wf.ObjectMeta.Annotations = make(map[string]string)
-		}
-		for n, v := range md.Annotations {
-			woc.globalParams["workflow.annotations."+n] = v
-		}
-
-		for n, f := range md.LabelsFrom {
-			woc.globalParams["workflow.labels."+n] = f.Expression
-		}
-		woc.updated = true
-	}
-	return nil
-}
-
 func (woc *wfOperationCtx) getWorkflowDeadline() *time.Time {
 	if woc.execWf.Spec.ActiveDeadlineSeconds == nil {
 		return nil
@@ -606,6 +586,20 @@ func (woc *wfOperationCtx) setGlobalParameters(executionParameters wfv1.Argument
 			}
 		}
 	}
+
+	if md := woc.execWf.Spec.WorkflowMetadata; md != nil {
+		for n, v := range md.Labels {
+			woc.globalParams["workflow.labels."+n] = v
+		}
+		for n, v := range md.Annotations {
+			woc.globalParams["workflow.annotations."+n] = v
+		}
+
+		for n, f := range md.LabelsFrom {
+			woc.globalParams["workflow.labels."+n] = f.Expression
+		}
+	}
+
 	return nil
 }
 
@@ -3549,12 +3543,7 @@ func (woc *wfOperationCtx) setExecWorkflow(ctx context.Context) error {
 		woc.markWorkflowFailed(ctx, fmt.Sprintf("failed to set global parameters: %s", err.Error()))
 		return err
 	}
-	if woc.wf.Status.Phase == wfv1.WorkflowUnknown {
-		if err := woc.updateWorkflowMetadataGlobalParams(); err != nil {
-			woc.markWorkflowError(ctx, err)
-			return err
-		}
-	}
+
 	err = woc.substituteGlobalVariables()
 	if err != nil {
 		return err
