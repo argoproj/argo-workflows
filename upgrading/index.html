@@ -4320,12 +4320,10 @@ allowed you to specify <code>args</code> but not <code>entrypoint</code>). <code
 <p>For v1 manifests (e.g. docker/whalesay:latest):</p>
 <div class="highlight"><pre><span></span><code>% docker image inspect -f <span class="s1">&#39;{{.Config.Entrypoint}} {{.Config.Cmd}}&#39;</span> docker/whalesay:latest
 <span class="o">[]</span> <span class="o">[</span>/bin/bash<span class="o">]</span>
-<span class="sb">````</span>
-
-<span class="sb">```</span>yaml
-images:
-  docker/whalesay:latest:
-    cmd: <span class="o">[</span>/bin/bash<span class="o">]</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="nt">images</span><span class="p">:</span><span class="w"></span>
+<span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">docker/whalesay:latest</span><span class="p p-Indicator">:</span><span class="w"></span>
+<span class="w">    </span><span class="nt">cmd</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">/bin/bash</span><span class="p p-Indicator">]</span><span class="w"></span>
 </code></pre></div>
 <h2 id="feat-fail-on-invalid-config-8295">feat: Fail on invalid config. (#8295)<a class="headerlink" href="#feat-fail-on-invalid-config-8295" title="Permanent link">&para;</a></h2>
 <p>The workflow controller will error on start-up if incorrectly configured, rather than silently ignoring
