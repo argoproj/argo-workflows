@@ -3533,7 +3533,7 @@ func (woc *wfOperationCtx) setExecWorkflow(ctx context.Context) error {
 		return err
 	}
 	if woc.wf.Status.Phase == wfv1.WorkflowUnknown {
-		if err := woc.updateWorkflowMetadata(); err != nil {
+		if err := woc.updateWorkflowMetadataGlobalParams(); err != nil {
 			woc.markWorkflowError(ctx, err)
 			return err
 		}
@@ -3541,6 +3541,12 @@ func (woc *wfOperationCtx) setExecWorkflow(ctx context.Context) error {
 	err = woc.substituteGlobalVariables()
 	if err != nil {
 		return err
+	}
+	if woc.wf.Status.Phase == wfv1.WorkflowUnknown {
+		if err := woc.updateWorkflowMetadata(); err != nil {
+			woc.markWorkflowError(ctx, err)
+			return err
+		}
 	}
 
 	// runtime value will be set after the substitution, otherwise will not be reflected from stored wf spec
