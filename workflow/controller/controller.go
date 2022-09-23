@@ -140,7 +140,18 @@ const (
 	workflowTaskSetResyncPeriod         = 20 * time.Minute
 )
 
-var cacheGCPeriod = env.LookupEnvDurationOr("CACHE_GC_PERIOD", 0)
+var (
+	cacheGCPeriod = env.LookupEnvDurationOr("CACHE_GC_PERIOD", 0)
+
+	// semaphoreNotifyDelay is a slight delay when notifying/enqueueing workflows to the workqueue
+	// that are waiting on a semaphore. This value is passed to AddAfter(). We delay adding the next
+	// workflow because if we add immediately with AddRateLimited(), the next workflow will likely
+	// be reconciled at a point in time before we have finished the current workflow reconciliation
+	// as well as incrementing the semaphore counter availability, and so the next workflow will
+	// believe it cannot run. By delaying for 1s, we would have finished the semaphore counter
+	// updates, and the next workflow will see the updated availability.
+	semaphoreNotifyDelay = env.LookupEnvDurationOr("SEMAPHORE_NOTIFY_DELAY", time.Second)
+)
 
 func init() {
 	if cacheGCPeriod != 0 {
@@ -333,13 +344,7 @@ func (wfc *WorkflowController) createSynchronizationManager(ctx context.Context)
 	}
 
 	nextWorkflow := func(key string) {
-		// We now use AddAfter(1s) instead of AddRateLimited() because if we add immediately,
-		// the next workflow will likely be reconciled before we have finished reconciling
-		// *this* workflow. If we reconcile the next workflow too soon, we will do so before
-		// we have finished incrementing the semaphore counters as part of this workflow, and
-		// so the next workflow will believe it cannot run. By delaying for 1s, we will reconcile
-		// the next workflow at a point in time when semaphore counters have been updated.
-		wfc.wfQueue.AddAfter(key, 1*time.Second)
+		wfc.wfQueue.AddAfter(key, semaphoreNotifyDelay)
 	}
 
 	isWFDeleted := func(key string) bool {

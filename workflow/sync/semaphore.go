@@ -97,24 +97,36 @@ func (s *PrioritySemaphore) release(key string) bool {
 		availableLocks := s.limit - len(s.lockHolder)
 		s.log.Infof("Lock has been released by %s. Available locks: %d", key, availableLocks)
 		if s.pending.Len() > 0 {
-			triggerCount := availableLocks
-			if s.pending.Len() < triggerCount {
-				triggerCount = s.pending.Len()
-			}
-			for idx := 0; idx < triggerCount; idx++ {
-				item := s.pending.items[idx]
-				keyStr := fmt.Sprint(item.key)
-				items := strings.Split(keyStr, "/")
-				workflowKey := keyStr
-				if len(items) == 3 {
-					workflowKey = fmt.Sprintf("%s/%s", items[0], items[1])
-				}
-				s.log.Debugf("Enqueue the workflow %s", workflowKey)
-				s.nextWorkflow(workflowKey)
-			}
+			s.notifyWaiters()
 		}
 	}
 	return true
+}
+
+// notifyWaiters enqueues the next N workflows who are waiting for the semaphore to the workqueue,
+// where N is the availability of the semaphore. If semaphore is out of capacity, this does nothing.
+func (s *PrioritySemaphore) notifyWaiters() {
+	triggerCount := s.limit - len(s.lockHolder)
+	if s.pending.Len() < triggerCount {
+		triggerCount = s.pending.Len()
+	}
+	for idx := 0; idx < triggerCount; idx++ {
+		item := s.pending.items[idx]
+		wfKey := workflowKey(item)
+		s.log.Debugf("Enqueue the workflow %s", wfKey)
+		s.nextWorkflow(wfKey)
+	}
+}
+
+// workflowKey formulates the proper workqueue key given a semaphore queue item
+func workflowKey(i *item) string {
+	parts := strings.Split(i.key, "/")
+	if len(parts) == 3 {
+		// the item is template semaphore (namespace/workflow-name/node-id) and so key must be
+		// truncated to just: namespace/workflow-name
+		return fmt.Sprintf("%s/%s", parts[0], parts[1])
+	}
+	return i.key
 }
 
 // addToQueue adds the holderkey into priority queue that maintains the priority order to acquire the lock.
@@ -168,18 +180,17 @@ func (s *PrioritySemaphore) tryAcquire(holderKey string) (bool, string) {
 	}
 	var nextKey string
 
-	waitingMsg := fmt.Sprintf("Waiting for %s lock. Lock status: %d/%d ", s.name, s.limit-len(s.lockHolder), s.limit)
+	waitingMsg := fmt.Sprintf("Waiting for %s lock. Lock status: %d/%d", s.name, s.limit-len(s.lockHolder), s.limit)
 
 	// Check whether requested holdkey is in front of priority queue.
 	// If it is in front position, it will allow to acquire lock.
 	// If it is not a front key, it needs to wait for its turn.
 	if s.pending.Len() > 0 {
 		item := s.pending.peek()
-		nextKey = fmt.Sprintf("%v", item.key)
-		if holderKey != nextKey && !isSameWorkflowNodeKeys(holderKey, nextKey) {
+		if holderKey != nextKey && !isSameWorkflowNodeKeys(holderKey, item.key) {
 			// Enqueue the front workflow if lock is available
 			if len(s.lockHolder) < s.limit {
-				s.nextWorkflow(nextKey)
+				s.nextWorkflow(workflowKey(item))
 			}
 			return false, waitingMsg
 		}
@@ -187,12 +198,8 @@ func (s *PrioritySemaphore) tryAcquire(holderKey string) (bool, string) {
 
 	if s.acquire(holderKey) {
 		s.pending.pop()
-		s.log.Infof("%s acquired by %s ", s.name, nextKey)
-		if s.pending.Len() > 0 && len(s.lockHolder) < s.limit {
-			// We just acquired the semaphore but others are waiting and there is room for the
-			// next one. Enqueue the next workflow in line.
-			s.nextWorkflow(s.pending.peek().key)
-		}
+		s.log.Infof("%s acquired by %s. Lock availability: %d/%d", s.name, holderKey, s.limit-len(s.lockHolder), s.limit)
+		s.notifyWaiters()
 		return true, ""
 	}
 	s.log.Debugf("Current semaphore Holders. %v", s.lockHolder)
