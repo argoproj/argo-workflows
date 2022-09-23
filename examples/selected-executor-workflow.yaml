@@ -3,8 +3,6 @@ kind: Workflow
 metadata:
   generateName: selected-executor-
   labels:
-    # run this workflow as a part of our test suite
-    workflows.argoproj.io/test: "true"
     # use the pns executor, rather than the default (typically emissary)
     workflows.argoproj.io/container-runtime-executor: pns
   annotations:
@@ -17,7 +15,7 @@ metadata:
       e.g. have a certain labels use certain executors.
 
     # this workflow will only run on workflows version v3.0.0
-    workflows.argoproj.io/version: ">= 3.0.0"
+    workflows.argoproj.io/version: ">= 3.0.0 < 3.4.0"
 spec:
   entrypoint: main
   templates:

@@ -1,7 +1,5 @@
 # Argo Server
 
-![GA](assets/ga.svg)
-
 > v2.5 and after
 
 !!! Warning "HTTP vs HTTPS"
@@ -31,12 +29,11 @@ Use this mode if:
 
 To run locally:
 
-```
+```bash
 argo server
 ```
 
-This will start a server on port 2746 which you can view at [https://localhost:2746](https://localhost:2746).
-
+This will start a server on port 2746 which you [can view](https://localhost:2746).
 
 ## Options
 
@@ -48,10 +45,10 @@ See [auth](argo-server-auth-mode.md).
 
 See [managed namespace](managed-namespace.md).
 
-### Base href
+### Base HREF
 
-If the server is running behind reverse proxy with a subpath different from `/` (for example, 
-`/argo`), you can set an alternative subpath with the `--base-href` flag or the `BASE_HREF` 
+If the server is running behind reverse proxy with a sub-path different from `/` (for example,
+`/argo`), you can set an alternative sub-path with the `--base-href` flag or the `BASE_HREF`
 environment variable.
 
 You probably now should [read how to set-up an ingress](#ingress)
@@ -60,9 +57,9 @@ You probably now should [read how to set-up an ingress](#ingress)
 
 See [TLS](tls.md).
 
-### SSO 
+### SSO
 
-See [SSO](argo-server-sso.md). See [here](argo-server-sso-argocd.md) about sharing ArgoCD's Dex with ArgoWorkflows.
+See [SSO](argo-server-sso.md). See [here](argo-server-sso-argocd.md) about sharing Argo CD's Dex with Argo Workflows.
 
 ## Access the Argo Workflows UI
 
@@ -71,27 +68,27 @@ following:
 
 ### `kubectl port-forward`
 
-```sh
+```bash
 kubectl -n argo port-forward svc/argo-server 2746:2746
 ```
 
-Then visit: https://127.0.0.1:2746
-
+Then visit: <https://localhost:2746>
 
 ### Expose a `LoadBalancer`
 
 Update the service to be of type `LoadBalancer`.
 
-```sh
+```bash
 kubectl patch svc argo-server -n argo -p '{"spec": {"type": "LoadBalancer"}}'
 ```
 
 Then wait for the external IP to be made available:
 
-```sh
+```bash
 kubectl get svc argo-server -n argo
 ```
-```sh
+
+```bash
 NAME          TYPE           CLUSTER-IP     EXTERNAL-IP   PORT(S)          AGE
 argo-server   LoadBalancer   10.43.43.130   172.18.0.2    2746:30008/TCP   18h
 ```
@@ -101,7 +98,6 @@ argo-server   LoadBalancer   10.43.43.130   172.18.0.2    2746:30008/TCP   18h
 You can get ingress working as follows:
 
 Add `BASE_HREF` as environment variable to `deployment/argo-server`. Do not forget to add a trailing '/' character.
-
 
 ```yaml
 ---
@@ -133,7 +129,7 @@ Create a ingress, with the annotation `ingress.kubernetes.io/rewrite-target: /`:
 
 >If TLS is enabled (default in v3.0 and after), the ingress controller must be told
 >that the backend uses HTTPS. The method depends on the ingress controller, e.g.
->Traefik expects an `ingress.kubernetes.io/protocol` annotation, while ingress-nginx
+>Traefik expects an `ingress.kubernetes.io/protocol` annotation, while `ingress-nginx`
 >uses `nginx.ingress.kubernetes.io/backend-protocol`
 
 ```yaml
@@ -157,15 +153,25 @@ spec:
 
 [Learn more](https://github.com/argoproj/argo-workflows/issues/3080)
 
-
 ## Security
 
 Users should consider the following in their set-up of the Argo Server:
 
 ### API Authentication Rate Limiting
 
-Argo Server does not perform authenticatinon directly. It delegates this to either the Kubernetes API Server (when `--auth-mode=client`) and the OAuth provider (when `--auth-mode=sso`). In each case, it is recommended that the delegate implements any authentication rate limiting you need. 
+Argo Server does not perform authentication directly. It delegates this to either the Kubernetes API Server (when `--auth-mode=client`) and the OAuth provider (when `--auth-mode=sso`). In each case, it is recommended that the delegate implements any authentication rate limiting you need.
 
 ### IP Address Logging
 
 Argo Server does not log the IP addresses of API requests. We recommend you put the Argo Server behind a load balancer, and that load balancer is configured to log the IP addresses of requests that return authentication or authorization errors.
+
+### Rate Limiting
+
+> v3.4 and after
+
+Argo Server by default rate limits to 1000 per IP per minute, you can configure it through `--api-rate-limit`. You can access additional information through the following headers.
+
+* `X-Rate-Limit-Limit` - the rate limit ceiling that is applicable for the current request.
+* `X-Rate-Limit-Remaining` - the number of requests left for the current rate-limit window.
+* `X-Rate-Limit-Reset` - the time at which the rate limit resets, specified in UTC time.
+* `Retry-After` - indicate when a client should retry requests (when the rate limit expires), in UTC time.

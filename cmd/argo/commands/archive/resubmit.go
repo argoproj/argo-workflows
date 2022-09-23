@@ -45,27 +45,27 @@ func NewResubmitCommand() *cobra.Command {
 
 # Resubmit multiple workflows:
 
-  argo resubmit uid another-uid
+  argo archive resubmit uid another-uid
 
 # Resubmit multiple workflows by label selector:
 
-  argo resubmit -l workflows.argoproj.io/test=true
+  argo archive resubmit -l workflows.argoproj.io/test=true
 
 # Resubmit multiple workflows by field selector:
 
-  argo resubmit --field-selector metadata.namespace=argo
+  argo archive resubmit --field-selector metadata.namespace=argo
 
 # Resubmit and wait for completion:
 
-  argo resubmit --wait uid
+  argo archive resubmit --wait uid
 
 # Resubmit and watch until completion:
 
-  argo resubmit --watch uid
+  argo archive resubmit --watch uid
 
 # Resubmit and tail logs until completion:
 
-  argo resubmit --log uid
+  argo archive resubmit --log uid
 `,
 		Run: func(cmd *cobra.Command, args []string) {
 			if cmd.Flag("priority").Changed {
@@ -82,6 +82,7 @@ func NewResubmitCommand() *cobra.Command {
 		},
 	}
 
+	command.Flags().StringArrayVarP(&cliSubmitOpts.Parameters, "parameter", "p", []string{}, "input parameter to override on the original workflow spec")
 	command.Flags().Int32Var(&resubmitOpts.priority, "priority", 0, "workflow priority")
 	command.Flags().StringVarP(&cliSubmitOpts.Output, "output", "o", "", "Output format. One of: name|json|yaml|wide")
 	command.Flags().BoolVarP(&cliSubmitOpts.Wait, "wait", "w", false, "wait for the workflow to complete, only works when a single workflow is resubmitted")
@@ -127,10 +128,11 @@ func resubmitArchivedWorkflows(ctx context.Context, archiveServiceClient workflo
 		resubmittedUids[string(wf.UID)] = true
 
 		lastResubmitted, err = archiveServiceClient.ResubmitArchivedWorkflow(ctx, &workflowarchivepkg.ResubmitArchivedWorkflowRequest{
-			Uid:       string(wf.UID),
-			Namespace: wf.Namespace,
-			Name:      wf.Name,
-			Memoized:  resubmitOpts.memoized,
+			Uid:        string(wf.UID),
+			Namespace:  wf.Namespace,
+			Name:       wf.Name,
+			Memoized:   resubmitOpts.memoized,
+			Parameters: cliSubmitOpts.Parameters,
 		})
 		if err != nil {
 			return err

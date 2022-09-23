@@ -8,7 +8,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/suite"
 	apiv1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -52,7 +51,6 @@ spec:
 		}).ExpectWorkflowNode(func(status v1alpha1.NodeStatus) bool {
 		return strings.Contains(status.Name, "hook")
 	}, func(t *testing.T, status *v1alpha1.NodeStatus, pod *apiv1.Pod) {
-
 		assert.Equal(t, v1alpha1.NodeSucceeded, status.Phase)
 	})
 }
@@ -71,7 +69,6 @@ spec:
         - - name: step-1
             hooks:
               exit:
-                expression: steps["step-1"].status == "Running"
                 template: http
               success:
                 expression: steps["step-1"].status == "Succeeded"
@@ -85,15 +82,15 @@ spec:
 		WaitForWorkflow(fixtures.ToBeSucceeded).
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *v1.ObjectMeta, status *v1alpha1.WorkflowStatus) {
-			assert.Equal(t, status.Phase, v1alpha1.WorkflowSucceeded)
+			assert.Equal(t, v1alpha1.WorkflowSucceeded, status.Phase)
 		}).ExpectWorkflowNode(func(status v1alpha1.NodeStatus) bool {
 		return strings.Contains(status.Name, "hook")
 	}, func(t *testing.T, status *v1alpha1.NodeStatus, pod *apiv1.Pod) {
-
 		assert.Equal(t, v1alpha1.NodeSucceeded, status.Phase)
 	})
 }
 
 func TestHooksSuite(t *testing.T) {
-	suite.Run(t, new(HooksSuite))
+	// TODO: Tests are temporarily disabled: "https://github.com/argoproj/argo-workflows/issues/9591"
+	//suite.Run(t, new(HooksSuite))
 }

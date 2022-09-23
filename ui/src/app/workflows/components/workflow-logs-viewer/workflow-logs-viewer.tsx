@@ -71,6 +71,9 @@ export const WorkflowLogsViewer = ({workflow, nodeId, initialPodName, container,
     }
     const podNameVersion = annotations[ANNOTATION_KEY_POD_NAME_VERSION];
 
+    // map pod names to corresponding node IDs
+    const podNamesToNodeIDs = new Map<string, string>();
+
     const podNames = [{value: '', label: 'All'}].concat(
         Object.values(workflow.status.nodes || {})
             .filter(x => x.type === 'Pod')
@@ -78,6 +81,7 @@ export const WorkflowLogsViewer = ({workflow, nodeId, initialPodName, container,
                 const {name, id, displayName} = targetNode;
                 const templateName = getTemplateNameFromNode(targetNode);
                 const targetPodName = getPodName(workflow.metadata.name, name, templateName, id, podNameVersion);
+                podNamesToNodeIDs.set(targetPodName, id);
                 return {value: targetPodName, label: (displayName || name) + ' (' + targetPodName + ')'};
             })
     );
@@ -85,12 +89,16 @@ export const WorkflowLogsViewer = ({workflow, nodeId, initialPodName, container,
     const node = workflow.status.nodes[nodeId];
     const templates = execSpec(workflow).templates.filter(t => !node || t.name === node.templateName);
 
-    const containers = ['init', 'wait'].concat(
-        templates
-            .map(t => ((t.containerSet && t.containerSet.containers) || [{name: 'main'}]).concat(t.sidecars || []).concat(t.initContainers || []))
-            .reduce((a, v) => a.concat(v), [])
-            .map(c => c.name)
-    );
+    const containers = [
+        ...new Set(
+            ['init', 'wait'].concat(
+                templates
+                    .map(t => ((t.containerSet && t.containerSet.containers) || [{name: 'main'}]).concat(t.sidecars || []).concat(t.initContainers || []))
+                    .reduce((a, v) => a.concat(v), [])
+                    .map(c => c.name)
+            )
+        )
+    ];
 
     return (
         <div className='workflow-logs-viewer'>
@@ -100,26 +108,21 @@ export const WorkflowLogsViewer = ({workflow, nodeId, initialPodName, container,
                     <i className='fa fa-exclamation-triangle' /> Logs for archived workflows may be overwritten by a more recent workflow with the same name.
                 </p>
             )}
-            <div>
+            <div style={{marginBottom: 10}}>
                 <i className='fa fa-box' />{' '}
-                <Autocomplete items={podNames} value={(podNames.find(x => x.value === podName) || {label: ''}).label} onSelect={(_, item) => setPodName(item.value)} /> /{' '}
-                <Autocomplete items={containers} value={selectedContainer} onSelect={setContainer} />
+                <Autocomplete
+                    items={podNames}
+                    value={(podNames.find(x => x.value === podName) || {label: ''}).label}
+                    onSelect={(_, item) => {
+                        setPodName(item.value);
+                    }}
+                />{' '}
+                / <Autocomplete items={containers} value={selectedContainer} onSelect={setContainer} />
                 <span className='fa-pull-right'>
                     <i className='fa fa-filter' /> <input type='search' defaultValue={logFilter} onChange={v => setLogFilter(v.target.value)} placeholder='Filter (regexp)...' />
                 </span>
             </div>
             <ErrorNotice error={error} />
-            {selectedContainer === 'init' && (
-                <p>
-                    <InfoIcon /> Init containers logs are usually only useful when debugging input artifact problems. The init container is only run if there were input artifacts.
-                </p>
-            )}
-            {selectedContainer === 'wait' && (
-                <p>
-                    <InfoIcon /> Wait containers logs are usually only useful when debugging output artifact problems. The wait container is only run if there were output artifacts
-                    (including archived logs).
-                </p>
-            )}
             {!loaded ? (
                 <p className='white-box'>
                     <i className='fa fa-circle-notch fa-spin' /> Waiting for data...
@@ -134,20 +137,29 @@ export const WorkflowLogsViewer = ({workflow, nodeId, initialPodName, container,
                 />
             )}
             <p>
-                {podName && (
+                {selectedContainer === 'init' && (
                     <>
-                        Still waiting for data or an error? Try getting{' '}
-                        <a href={services.workflows.getArtifactLogsUrl(workflow, podName, selectedContainer, archived)}>logs from the artifacts</a>.
+                        <InfoIcon /> Init containers logs are useful when debugging input artifact problems.
                     </>
                 )}
-            </p>
-            <p>
+                {selectedContainer === 'wait' && (
+                    <>
+                        {' '}
+                        <InfoIcon /> Wait containers logs are useful when debugging output artifact problems.
+                    </>
+                )}
+                {podName && podNamesToNodeIDs.get(podName) && (
+                    <>
+                        Still waiting for data or an error? Try getting{' '}
+                        <a href={services.workflows.getArtifactLogsPath(workflow, podNamesToNodeIDs.get(podName), selectedContainer, archived)}>logs from the artifacts</a>.
+                    </>
+                )}
                 {execSpec(workflow).podGC && (
                     <>
                         <WarningIcon /> Your pod GC settings will delete pods and their logs immediately on completion.
                     </>
                 )}{' '}
-                Logs do not appear for pods that are deleted.{' '}
+                Logs may not appear for pods that are deleted.{' '}
                 {podName ? (
                     <Links
                         object={{

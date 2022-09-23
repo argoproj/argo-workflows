@@ -109,7 +109,9 @@ class ClusterWorkflowTemplateServiceApi(object):
         self.create_cluster_workflow_template = _Endpoint(
             settings={
                 'response_type': (IoArgoprojWorkflowV1alpha1ClusterWorkflowTemplate,),
-                'auth': [],
+                'auth': [
+                    'BearerToken'
+                ],
                 'endpoint_path': '/api/v1/cluster-workflow-templates',
                 'operation_id': 'create_cluster_workflow_template',
                 'http_method': 'POST',
@@ -232,7 +234,9 @@ class ClusterWorkflowTemplateServiceApi(object):
         self.delete_cluster_workflow_template = _Endpoint(
             settings={
                 'response_type': (bool, date, datetime, dict, float, int, list, str, none_type,),
-                'auth': [],
+                'auth': [
+                    'BearerToken'
+                ],
                 'endpoint_path': '/api/v1/cluster-workflow-templates/{name}',
                 'operation_id': 'delete_cluster_workflow_template',
                 'http_method': 'DELETE',
@@ -380,7 +384,9 @@ class ClusterWorkflowTemplateServiceApi(object):
         self.get_cluster_workflow_template = _Endpoint(
             settings={
                 'response_type': (IoArgoprojWorkflowV1alpha1ClusterWorkflowTemplate,),
-                'auth': [],
+                'auth': [
+                    'BearerToken'
+                ],
                 'endpoint_path': '/api/v1/cluster-workflow-templates/{name}',
                 'operation_id': 'get_cluster_workflow_template',
                 'http_method': 'GET',
@@ -501,7 +507,9 @@ class ClusterWorkflowTemplateServiceApi(object):
         self.lint_cluster_workflow_template = _Endpoint(
             settings={
                 'response_type': (IoArgoprojWorkflowV1alpha1ClusterWorkflowTemplate,),
-                'auth': [],
+                'auth': [
+                    'BearerToken'
+                ],
                 'endpoint_path': '/api/v1/cluster-workflow-templates/lint',
                 'operation_id': 'lint_cluster_workflow_template',
                 'http_method': 'POST',
@@ -622,7 +630,9 @@ class ClusterWorkflowTemplateServiceApi(object):
         self.list_cluster_workflow_templates = _Endpoint(
             settings={
                 'response_type': (IoArgoprojWorkflowV1alpha1ClusterWorkflowTemplateList,),
-                'auth': [],
+                'auth': [
+                    'BearerToken'
+                ],
                 'endpoint_path': '/api/v1/cluster-workflow-templates',
                 'operation_id': 'list_cluster_workflow_templates',
                 'http_method': 'GET',
@@ -780,7 +790,9 @@ class ClusterWorkflowTemplateServiceApi(object):
         self.update_cluster_workflow_template = _Endpoint(
             settings={
                 'response_type': (IoArgoprojWorkflowV1alpha1ClusterWorkflowTemplate,),
-                'auth': [],
+                'auth': [
+                    'BearerToken'
+                ],
                 'endpoint_path': '/api/v1/cluster-workflow-templates/{name}',
                 'operation_id': 'update_cluster_workflow_template',
                 'http_method': 'PUT',

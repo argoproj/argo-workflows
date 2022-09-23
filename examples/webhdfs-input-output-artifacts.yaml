@@ -1,0 +1,74 @@
+# This example demonstrates the usage of an input or output artifact via a webhdfs endpoint. 
+# The different providers support different ways of authentication. For Azure datalake, for example, this is done via an oauth2 token. 
+# On the other hand, SAP Hana datalake uses client authentication via certificates.
+# Right now, authentication via certificates and via OAuth2 is supported. The input artifact shows an example for OAuth2 while the output artifact shows an example for using certificates.
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: input-output-artifact-webhdfs-
+spec:
+  entrypoint: input-output-artifact-webhdfs-example
+  templates:
+  - name: input-output-artifact-webhdfs-example
+    inputs:
+      artifacts:
+      - name: my-art
+        path: /my-artifact
+        http:
+          # webHDFS artifacts are accessed via an HTTP artifact
+          # below is an example on how to use authentication via oauth2
+          # url: has to consist of the full webhdfs URL, including the operation and any desired query params
+          # oauth2.clientID: points to a kubernetes secret named oauth-sec with a data entry of "clientID"
+          # oauth2.clientSecret: points to a kubernetes secret named oauth-sec with a data entry of "clientSecret"
+          # oauth2.TokenURL: points to a kubernetes secret named oauth-sec with a data entry of "tokenURL"
+          # oauth2.scopes: necessary scopes for the oauth request
+          url: https://mywebhdfsprovider.com/webhdfs/v1/file.txt?op=OPEN
+          auth:
+            oauth2:
+              clientIDSecret:
+                name: oauth-sec
+                key: clientID
+              clientSecretSecret:
+                name: oauth-sec
+                key: clientSecret
+              tokenURLSecret:
+                name: oauth-sec
+                key: tokenURL
+              scopes:
+              - some
+              - scopes
+              # endpointParams can hold additional fields that may be needed in the oauth request
+              endpointParams:
+              - key: customkey
+                value: customvalue
+          # optional: headers which should be sent in the HTTP requests
+          headers:
+           - name: CustomHeader
+             value: CustomValue
+    outputs:
+      artifacts:
+      - name: my-art2
+        path: /my-artifact
+        overwrite: true
+        http:
+          # below is an example on how to use authentication via certificates
+          # clientCert.clientCertSecret: points to a kubernetes secret named cert-sec with a data entry of "certificate.pem"
+          # clientCert.clientKeySecret: points to a kubernetes secret named cert-sec with a data entry of "key.pem"
+          #   clientCertSecret and clientKeySecret secrets should contain the raw PEM contents of the tls certificate pair
+          url: https://mywebhdfsprovider.com/webhdfs/v1/file.txt?op=CREATE&overwrite=true
+          auth:
+            clientCert:
+              clientCertSecret:
+                name: cert-sec
+                key: certificate.pem
+              clientKeySecret:
+                name: cert-sec
+                key: key.pem
+          # optional: headers which should be sent in the HTTP requests
+          headers:
+           - name: CustomHeader
+             value: CustomValue
+    container:
+      image: debian:latest
+      command: [sh, -c]
+      args: ["cat /my-artifact"]

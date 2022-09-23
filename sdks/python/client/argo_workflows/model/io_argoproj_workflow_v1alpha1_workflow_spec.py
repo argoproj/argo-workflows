@@ -33,6 +33,7 @@ def lazy_import():
     from argo_workflows.model.affinity import Affinity
     from argo_workflows.model.host_alias import HostAlias
     from argo_workflows.model.io_argoproj_workflow_v1alpha1_arguments import IoArgoprojWorkflowV1alpha1Arguments
+    from argo_workflows.model.io_argoproj_workflow_v1alpha1_artifact_gc import IoArgoprojWorkflowV1alpha1ArtifactGC
     from argo_workflows.model.io_argoproj_workflow_v1alpha1_artifact_repository_ref import IoArgoprojWorkflowV1alpha1ArtifactRepositoryRef
     from argo_workflows.model.io_argoproj_workflow_v1alpha1_executor_config import IoArgoprojWorkflowV1alpha1ExecutorConfig
     from argo_workflows.model.io_argoproj_workflow_v1alpha1_lifecycle_hook import IoArgoprojWorkflowV1alpha1LifecycleHook
@@ -56,6 +57,7 @@ def lazy_import():
     globals()['Affinity'] = Affinity
     globals()['HostAlias'] = HostAlias
     globals()['IoArgoprojWorkflowV1alpha1Arguments'] = IoArgoprojWorkflowV1alpha1Arguments
+    globals()['IoArgoprojWorkflowV1alpha1ArtifactGC'] = IoArgoprojWorkflowV1alpha1ArtifactGC
     globals()['IoArgoprojWorkflowV1alpha1ArtifactRepositoryRef'] = IoArgoprojWorkflowV1alpha1ArtifactRepositoryRef
     globals()['IoArgoprojWorkflowV1alpha1ExecutorConfig'] = IoArgoprojWorkflowV1alpha1ExecutorConfig
     globals()['IoArgoprojWorkflowV1alpha1LifecycleHook'] = IoArgoprojWorkflowV1alpha1LifecycleHook
@@ -135,6 +137,7 @@ class IoArgoprojWorkflowV1alpha1WorkflowSpec(ModelNormal):
             'affinity': (Affinity,),  # noqa: E501
             'archive_logs': (bool,),  # noqa: E501
             'arguments': (IoArgoprojWorkflowV1alpha1Arguments,),  # noqa: E501
+            'artifact_gc': (IoArgoprojWorkflowV1alpha1ArtifactGC,),  # noqa: E501
             'artifact_repository_ref': (IoArgoprojWorkflowV1alpha1ArtifactRepositoryRef,),  # noqa: E501
             'automount_service_account_token': (bool,),  # noqa: E501
             'dns_config': (PodDNSConfig,),  # noqa: E501
@@ -184,6 +187,7 @@ class IoArgoprojWorkflowV1alpha1WorkflowSpec(ModelNormal):
         'affinity': 'affinity',  # noqa: E501
         'archive_logs': 'archiveLogs',  # noqa: E501
         'arguments': 'arguments',  # noqa: E501
+        'artifact_gc': 'artifactGC',  # noqa: E501
         'artifact_repository_ref': 'artifactRepositoryRef',  # noqa: E501
         'automount_service_account_token': 'automountServiceAccountToken',  # noqa: E501
         'dns_config': 'dnsConfig',  # noqa: E501
@@ -268,6 +272,7 @@ class IoArgoprojWorkflowV1alpha1WorkflowSpec(ModelNormal):
             affinity (Affinity): [optional]  # noqa: E501
             archive_logs (bool): ArchiveLogs indicates if the container logs should be archived. [optional]  # noqa: E501
             arguments (IoArgoprojWorkflowV1alpha1Arguments): [optional]  # noqa: E501
+            artifact_gc (IoArgoprojWorkflowV1alpha1ArtifactGC): [optional]  # noqa: E501
             artifact_repository_ref (IoArgoprojWorkflowV1alpha1ArtifactRepositoryRef): [optional]  # noqa: E501
             automount_service_account_token (bool): AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods. ServiceAccountName of ExecutorConfig must be specified if this value is false.. [optional]  # noqa: E501
             dns_config (PodDNSConfig): [optional]  # noqa: E501
@@ -285,7 +290,7 @@ class IoArgoprojWorkflowV1alpha1WorkflowSpec(ModelNormal):
             pod_disruption_budget (IoK8sApiPolicyV1beta1PodDisruptionBudgetSpec): [optional]  # noqa: E501
             pod_gc (IoArgoprojWorkflowV1alpha1PodGC): [optional]  # noqa: E501
             pod_metadata (IoArgoprojWorkflowV1alpha1Metadata): [optional]  # noqa: E501
-            pod_priority (int): Priority to apply to workflow pods.. [optional]  # noqa: E501
+            pod_priority (int): Priority to apply to workflow pods. DEPRECATED: Use PodPriorityClassName instead.. [optional]  # noqa: E501
             pod_priority_class_name (str): PriorityClassName to apply to workflow pods.. [optional]  # noqa: E501
             pod_spec_patch (str): PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of container fields which are not strings (e.g. resource limits).. [optional]  # noqa: E501
             priority (int): Priority is used if controller is configured to process limited number of workflows in parallel. Workflows with higher priority are processed first.. [optional]  # noqa: E501
@@ -390,6 +395,7 @@ class IoArgoprojWorkflowV1alpha1WorkflowSpec(ModelNormal):
             affinity (Affinity): [optional]  # noqa: E501
             archive_logs (bool): ArchiveLogs indicates if the container logs should be archived. [optional]  # noqa: E501
             arguments (IoArgoprojWorkflowV1alpha1Arguments): [optional]  # noqa: E501
+            artifact_gc (IoArgoprojWorkflowV1alpha1ArtifactGC): [optional]  # noqa: E501
             artifact_repository_ref (IoArgoprojWorkflowV1alpha1ArtifactRepositoryRef): [optional]  # noqa: E501
             automount_service_account_token (bool): AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods. ServiceAccountName of ExecutorConfig must be specified if this value is false.. [optional]  # noqa: E501
             dns_config (PodDNSConfig): [optional]  # noqa: E501
@@ -407,7 +413,7 @@ class IoArgoprojWorkflowV1alpha1WorkflowSpec(ModelNormal):
             pod_disruption_budget (IoK8sApiPolicyV1beta1PodDisruptionBudgetSpec): [optional]  # noqa: E501
             pod_gc (IoArgoprojWorkflowV1alpha1PodGC): [optional]  # noqa: E501
             pod_metadata (IoArgoprojWorkflowV1alpha1Metadata): [optional]  # noqa: E501
-            pod_priority (int): Priority to apply to workflow pods.. [optional]  # noqa: E501
+            pod_priority (int): Priority to apply to workflow pods. DEPRECATED: Use PodPriorityClassName instead.. [optional]  # noqa: E501
             pod_priority_class_name (str): PriorityClassName to apply to workflow pods.. [optional]  # noqa: E501
             pod_spec_patch (str): PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of container fields which are not strings (e.g. resource limits).. [optional]  # noqa: E501
             priority (int): Priority is used if controller is configured to process limited number of workflows in parallel. Workflows with higher priority are processed first.. [optional]  # noqa: E501

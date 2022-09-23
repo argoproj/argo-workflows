@@ -5,24 +5,9 @@ data:
       requests:
         cpu: 10m
         memory: 64Mi
-  containerRuntimeExecutors: |
-    - name: emissary
-      selector:
-        matchLabels:
-          workflows.argoproj.io/container-runtime-executor: emissary
-    - name: pns
-      selector:
-        matchLabels:
-          workflows.argoproj.io/container-runtime-executor: pns
   images: |
-    argoproj/argosay:v1:
-      command: [cowsay]
-    argoproj/argosay:v2:
-      command: [/argosay]
     docker/whalesay:latest:
-       command: [cowsay]
-    python:alpine3.6:
-       command: [python3]
+       cmd: [cowsay]
   artifactRepository: |
     s3:
       bucket: my-bucket

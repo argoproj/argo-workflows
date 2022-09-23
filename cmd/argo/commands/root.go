@@ -103,6 +103,7 @@ If your server is behind an ingress with a path (you'll be running "argo server 
 	command.AddCommand(auth.NewAuthCommand())
 	command.AddCommand(NewWaitCommand())
 	command.AddCommand(NewWatchCommand())
+	command.AddCommand(NewCpCommand())
 	command.AddCommand(NewStopCommand())
 	command.AddCommand(NewNodeCommand())
 	command.AddCommand(NewTerminateCommand())

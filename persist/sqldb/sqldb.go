@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"time"
 
-	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/kubernetes"
 	"upper.io/db.v3/lib/sqlbuilder"
 	"upper.io/db.v3/mysql"
@@ -21,8 +20,6 @@ func CreateDBSession(kubectlConfig kubernetes.Interface, namespace string, persi
 	if persistConfig == nil {
 		return nil, "", errors.InternalError("Persistence config is not found")
 	}
-
-	log.Info("Creating DB session")
 
 	if persistConfig.PostgreSQL != nil {
 		return CreatePostGresDBSession(kubectlConfig, namespace, persistConfig.PostgreSQL, persistConfig.ConnectionPool)

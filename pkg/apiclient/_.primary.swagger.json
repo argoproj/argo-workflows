@@ -20,16 +20,86 @@
     "BearerToken": {
       "description": "Bearer Token authentication",
       "type": "apiKey",
-      "name": "authorization",
+      "name": "Authorization",
       "in": "header"
-    },
-    "HTTPBasic": {
-      "description": "HTTP Basic authentication",
-      "type": "basic"
     }
   },
+  "security": [
+    {
+      "BearerToken": []
+    }
+  ],
   "paths": {
-    "/artifacts/{namespace}/{name}/{podName}/{artifactName}": {
+    "/artifact-files/{namespace}/{idDiscriminator}/{id}/{nodeId}/{artifactDiscriminator}/{artifactName}": {
+      "get": {
+        "tags": [
+          "ArtifactService"
+        ],
+        "summary": "Get an artifact.",
+        "operationId": "ArtifactService_GetArtifactFile",
+        "parameters": [
+          {
+            "type": "string",
+            "name": "namespace",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "string",
+            "name": "idDiscriminator",
+            "in": "path",
+            "required": true,
+            "enum": [
+              "workflow",
+              "archived-workflows "
+            ]
+          },
+          {
+            "type": "string",
+            "name": "id",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "string",
+            "name": "nodeId",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "string",
+            "name": "artifactName",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "string",
+            "name": "artifactDiscriminator",
+            "in": "path",
+            "required": true,
+            "enum": [
+              "outputs"
+            ]
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "An artifact file.",
+            "schema": {
+              "type": "string",
+              "format": "binary"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
+          }
+        }
+      }
+    },
+    "/artifacts/{namespace}/{name}/{nodeId}/{artifactName}": {
       "get": {
         "tags": [
           "ArtifactService"
@@ -51,7 +121,7 @@
           },
           {
             "type": "string",
-            "name": "podName",
+            "name": "nodeId",
             "in": "path",
             "required": true
           },
@@ -65,12 +135,9 @@
         "responses": {
           "200": {
             "description": "An artifact file.",
-            "content": {
-              "text/plain": {
-                "schema": {
-                  "type": "string"
-                }
-              }
+            "schema": {
+              "type": "string",
+              "format": "binary"
             }
           },
           "default": {
@@ -82,7 +149,7 @@
         }
       }
     },
-    "/input-artifacts/{namespace}/{name}/{podName}/{artifactName}": {
+    "/input-artifacts/{namespace}/{name}/{nodeId}/{artifactName}": {
       "get": {
         "tags": [
           "ArtifactService"
@@ -104,7 +171,7 @@
           },
           {
             "type": "string",
-            "name": "podName",
+            "name": "nodeId",
             "in": "path",
             "required": true
           },
@@ -118,12 +185,9 @@
         "responses": {
           "200": {
             "description": "An artifact file.",
-            "content": {
-              "text/plain": {
-                "schema": {
-                  "type": "string"
-                }
-              }
+            "schema": {
+              "type": "string",
+              "format": "binary"
             }
           },
           "default": {
@@ -135,7 +199,7 @@
         }
       }
     },
-    "/artifacts-by-uid/{uid}/{podName}/{artifactName}": {
+    "/artifacts-by-uid/{uid}/{nodeId}/{artifactName}": {
       "get": {
         "tags": [
           "ArtifactService"
@@ -151,7 +215,7 @@
           },
           {
             "type": "string",
-            "name": "podName",
+            "name": "nodeId",
             "in": "path",
             "required": true
           },
@@ -165,12 +229,9 @@
         "responses": {
           "200": {
             "description": "An artifact file.",
-            "content": {
-              "text/plain": {
-                "schema": {
-                  "type": "string"
-                }
-              }
+            "schema": {
+              "type": "string",
+              "format": "binary"
             }
           },
           "default": {
@@ -182,7 +243,7 @@
         }
       }
     },
-    "/input-artifacts-by-uid/{uid}/{podName}/{artifactName}": {
+    "/input-artifacts-by-uid/{uid}/{nodeId}/{artifactName}": {
       "get": {
         "tags": [
           "ArtifactService"
@@ -192,19 +253,13 @@
         "parameters": [
           {
             "type": "string",
-            "name": "namespace",
-            "in": "path",
-            "required": true
-          },
-          {
-            "type": "string",
             "name": "uid",
             "in": "path",
             "required": true
           },
           {
             "type": "string",
-            "name": "podName",
+            "name": "nodeId",
             "in": "path",
             "required": true
           },
@@ -218,12 +273,9 @@
         "responses": {
           "200": {
             "description": "An artifact file.",
-            "content": {
-              "text/plain": {
-                "schema": {
-                  "type": "string"
-                }
-              }
+            "schema": {
+              "type": "string",
+              "format": "binary"
             }
           },
           "default": {
@@ -244,6 +296,38 @@
       "type": "array",
       "items": {
         "$ref": "#/definitions/github.com.argoproj.argo_workflows.v3.pkg.apis.workflow.v1alpha1.WorkflowStep"
+      }
+    },
+    "google.protobuf.Any": {
+      "type": "object",
+      "properties": {
+        "type_url": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string",
+          "format": "byte"
+        }
+      }
+    },
+    "grpc.gateway.runtime.Error": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/google.protobuf.Any"
+          }
+        },
+        "error": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        }
       }
     }
   }

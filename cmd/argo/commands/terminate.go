@@ -103,7 +103,7 @@ func NewTerminateCommand() *cobra.Command {
 	}
 
 	command.Flags().StringVarP(&t.labels, "selector", "l", "", "Selector (label query) to filter on, not including uninitialized ones, supports '=', '==', and '!='.(e.g. -l key1=value1,key2=value2)")
-	command.Flags().StringVar(&t.fields, "field-selector", "", "Selector (field query) to filter on, supports '=', '==', and '!='.(e.g. --field-selectorkey1=value1,key2=value2). The server only supports a limited number of field queries per type.")
+	command.Flags().StringVar(&t.fields, "field-selector", "", "Selector (field query) to filter on, supports '=', '==', and '!='.(e.g. --field-selector key1=value1,key2=value2). The server only supports a limited number of field queries per type.")
 	command.Flags().BoolVar(&t.dryRun, "dry-run", false, "Do not terminate the workflow, only print what would happen")
 	return command
 }

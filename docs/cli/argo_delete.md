@@ -3,7 +3,7 @@
 delete workflows
 
 ```
-argo delete [--dry-run] [WORKFLOW...|[--all] [--older] [--completed] [--resubmitted] [--prefix PREFIX] [--selector SELECTOR]] [flags]
+argo delete [--dry-run] [WORKFLOW...|[--all] [--older] [--completed] [--resubmitted] [--prefix PREFIX] [--selector SELECTOR] [--force] ] [flags]
 ```
 
 ### Examples
@@ -26,7 +26,8 @@ argo delete [--dry-run] [WORKFLOW...|[--all] [--older] [--completed] [--resubmit
   -A, --all-namespaces          Delete workflows from all namespaces
       --completed               Delete completed workflows
       --dry-run                 Do not delete the workflow, only print what would happen
-      --field-selector string   Selector (field query) to filter on, supports '=', '==', and '!='.(e.g. --field-selectorkey1=value1,key2=value2). The server only supports a limited number of field queries per type.
+      --field-selector string   Selector (field query) to filter on, supports '=', '==', and '!='.(e.g. --field-selector key1=value1,key2=value2). The server only supports a limited number of field queries per type.
+      --force                   Force delete workflows by removing finalizers
   -h, --help                    help for delete
       --older string            Delete completed workflows finished before the specified duration (e.g. 10m, 3h, 1d)
       --prefix string           Delete workflows by prefix
@@ -57,6 +58,7 @@ argo delete [--dry-run] [WORKFLOW...|[--all] [--older] [--completed] [--resubmit
       --loglevel string                Set the logging level. One of: debug|info|warn|error (default "info")
   -n, --namespace string               If present, the namespace scope for this CLI request
       --password string                Password for basic authentication to the API server
+      --proxy-url string               If provided, this URL will be used to connect via proxy
       --request-timeout string         The length of time to wait before giving up on a single server request. Non-zero values should contain a corresponding time unit (e.g. 1s, 2m, 3h). A value of zero means don't timeout requests. (default "0")
   -e, --secure                         Whether or not the server is using TLS with the Argo Server. Defaults to the ARGO_SECURE environment variable. (default true)
       --server string                  The address and port of the Kubernetes API server

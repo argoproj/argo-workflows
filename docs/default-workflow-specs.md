@@ -1,7 +1,5 @@
 # Default Workflow Spec
 
-![GA](assets/ga.svg)
-
 > v2.7 and after
 
 ## Introduction
@@ -12,7 +10,7 @@ If a Workflow has a value that also has a default value set in the config map, t
 ## Setting Default Workflow Values
 
 Default Workflow values can be specified by adding them under the `workflowDefaults` key in the [`workflow-controller-configmap`](./workflow-controller-configmap.yaml).
-Values can be added as the would under the `Workflow.spec` tag.
+Values can be added as they would under the `Workflow.spec` tag.
 
 For example, to specify default values that would partially produce the following `Workflow`:
 

@@ -33,8 +33,9 @@ import yaml
 
 import argo_workflows
 from argo_workflows.api import workflow_service_api
-from argo_workflows.model.io_argoproj_workflow_v1alpha1_workflow_create_request import \
-    IoArgoprojWorkflowV1alpha1WorkflowCreateRequest
+from argo_workflows.model.io_argoproj_workflow_v1alpha1_workflow_create_request import (
+    IoArgoprojWorkflowV1alpha1WorkflowCreateRequest,
+)
 
 configuration = argo_workflows.Configuration(host="https://127.0.0.1:2746")
 configuration.verify_ssl = False
@@ -65,10 +66,12 @@ from argo_workflows.api import workflow_service_api
 from argo_workflows.model.container import Container
 from argo_workflows.model.io_argoproj_workflow_v1alpha1_template import IoArgoprojWorkflowV1alpha1Template
 from argo_workflows.model.io_argoproj_workflow_v1alpha1_workflow import IoArgoprojWorkflowV1alpha1Workflow
-from argo_workflows.model.io_argoproj_workflow_v1alpha1_workflow_create_request import
-    IoArgoprojWorkflowV1alpha1WorkflowCreateRequest
-from argo_workflows.model.io_argoproj_workflow_v1alpha1_workflow_spec import
-    IoArgoprojWorkflowV1alpha1WorkflowSpec
+from argo_workflows.model.io_argoproj_workflow_v1alpha1_workflow_create_request import (
+    IoArgoprojWorkflowV1alpha1WorkflowCreateRequest,
+)
+from argo_workflows.model.io_argoproj_workflow_v1alpha1_workflow_spec import (
+    IoArgoprojWorkflowV1alpha1WorkflowSpec,
+)
 from argo_workflows.model.object_meta import ObjectMeta
 
 configuration = argo_workflows.Configuration(host="https://127.0.0.1:2746")
@@ -98,7 +101,7 @@ if __name__ == '__main__':
 
 ## Examples
 
-You can find additional examples [here](examples).
+You can find additional examples [here](tests).
 
 ## API Reference
 

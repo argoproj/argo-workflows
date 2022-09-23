@@ -2,6 +2,7 @@ package oss
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -15,6 +16,7 @@ import (
 
 	"github.com/argoproj/argo-workflows/v3/errors"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	errutil "github.com/argoproj/argo-workflows/v3/util/errors"
 	waitutil "github.com/argoproj/argo-workflows/v3/util/wait"
 	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/common"
 	wfcommon "github.com/argoproj/argo-workflows/v3/workflow/common"
@@ -93,6 +95,11 @@ func (ossDriver *ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string)
 	return err
 }
 
+func (ossDriver *ArtifactDriver) OpenStream(a *wfv1.Artifact) (io.ReadCloser, error) {
+	// todo: this is a temporary implementation which loads file to disk first
+	return common.LoadToStream(a, ossDriver)
+}
+
 // Save stores an artifact to OSS compliant storage, e.g., uploading a local file to OSS bucket
 func (ossDriver *ArtifactDriver) Save(path string, outputArtifact *wfv1.Artifact) error {
 	err := waitutil.Backoff(defaultRetry,
@@ -148,6 +155,11 @@ func (ossDriver *ArtifactDriver) Save(path string, outputArtifact *wfv1.Artifact
 			return true, nil
 		})
 	return err
+}
+
+// Delete is unsupported for the oss artifacts
+func (ossDriver *ArtifactDriver) Delete(s *wfv1.Artifact) error {
+	return common.ErrDeleteNotSupported
 }
 
 func (ossDriver *ArtifactDriver) ListObjects(artifact *wfv1.Artifact) ([]string, error) {
@@ -238,6 +250,9 @@ func setBucketLifecycleRule(client *oss.Client, ossArtifact *wfv1.OSSArtifact) e
 func isTransientOSSErr(err error) bool {
 	if err == nil {
 		return false
+	}
+	if errutil.IsTransientErr(err) {
+		return true
 	}
 	if ossErr, ok := err.(oss.ServiceError); ok {
 		for _, transientErrCode := range ossTransientErrorCodes {
@@ -377,4 +392,8 @@ func ListOssDirectory(bucket *oss.Bucket, objectKey string) (files []string, err
 		}
 	}
 	return files, nil
+}
+
+func (g *ArtifactDriver) IsDirectory(artifact *wfv1.Artifact) (bool, error) {
+	return false, errors.New(errors.CodeNotImplemented, "IsDirectory currently unimplemented for OSS")
 }

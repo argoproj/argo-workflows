@@ -3,15 +3,19 @@ package executor
 import (
 	"context"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	mock "github.com/stretchr/testify/mock"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
+	"k8s.io/utils/pointer"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	argofake "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/fake"
@@ -22,7 +26,7 @@ import (
 const (
 	fakePodName       = "fake-test-pod-1234567890"
 	fakeWorkflow      = "my-wf"
-	fakeWorkflowUID   = "my-wf-uid"
+	fakePodUID        = "my-pod-uid"
 	fakeNodeID        = "my-node-id"
 	fakeNamespace     = "default"
 	fakeContainerName = "main"
@@ -363,21 +367,92 @@ func TestSaveArtifacts(t *testing.T) {
 			},
 		},
 	}
-	we := WorkflowExecutor{
-		PodName:         fakePodName,
-		Template:        templateWithOutParam,
-		ClientSet:       fakeClientset,
-		Namespace:       fakeNamespace,
-		RuntimeExecutor: &mockRuntimeExecutor,
+	templateOptionFalse := wfv1.Template{
+		Inputs: wfv1.Inputs{
+			Artifacts: []wfv1.Artifact{
+				{
+					Name: "samedir",
+					Path: "/samedir",
+				},
+			},
+		},
+		Outputs: wfv1.Outputs{
+			Artifacts: []wfv1.Artifact{
+				{
+					Name:     "samedir",
+					Path:     "/samedir",
+					Optional: false,
+				},
+			},
+		},
+	}
+	templateZipArchive := wfv1.Template{
+		Inputs: wfv1.Inputs{
+			Artifacts: []wfv1.Artifact{
+				{
+					Name: "samedir",
+					Path: "/samedir",
+				},
+			},
+		},
+		Outputs: wfv1.Outputs{
+			Artifacts: []wfv1.Artifact{
+				{
+					Name:     "samedir",
+					Path:     "/samedir",
+					Optional: true,
+					Archive: &wfv1.ArchiveStrategy{
+						Zip: &wfv1.ZipStrategy{},
+					},
+				},
+			},
+		},
+	}
+	tests := []struct {
+		workflowExecutor WorkflowExecutor
+		expectError      bool
+	}{
+		{
+			workflowExecutor: WorkflowExecutor{
+				PodName:         fakePodName,
+				Template:        templateWithOutParam,
+				ClientSet:       fakeClientset,
+				Namespace:       fakeNamespace,
+				RuntimeExecutor: &mockRuntimeExecutor,
+			},
+			expectError: false,
+		},
+		{
+			workflowExecutor: WorkflowExecutor{
+				PodName:         fakePodName,
+				Template:        templateOptionFalse,
+				ClientSet:       fakeClientset,
+				Namespace:       fakeNamespace,
+				RuntimeExecutor: &mockRuntimeExecutor,
+			},
+			expectError: true,
+		},
+		{
+			workflowExecutor: WorkflowExecutor{
+				PodName:         fakePodName,
+				Template:        templateZipArchive,
+				ClientSet:       fakeClientset,
+				Namespace:       fakeNamespace,
+				RuntimeExecutor: &mockRuntimeExecutor,
+			},
+			expectError: false,
+		},
 	}
 
-	ctx := context.Background()
-	err := we.SaveArtifacts(ctx)
-	assert.NoError(t, err)
-
-	we.Template.Outputs.Artifacts[0].Optional = false
-	err = we.SaveArtifacts(ctx)
-	assert.Error(t, err)
+	for _, tt := range tests {
+		ctx := context.Background()
+		err := tt.workflowExecutor.SaveArtifacts(ctx)
+		if err != nil {
+			assert.Equal(t, tt.expectError, true)
+			continue
+		}
+		assert.Equal(t, tt.expectError, false)
+	}
 }
 
 func TestMonitorProgress(t *testing.T) {
@@ -399,10 +474,10 @@ func TestMonitorProgress(t *testing.T) {
 		taskResults,
 		nil,
 		fakePodName,
+		fakePodUID,
 		fakeWorkflow,
 		fakeNodeID,
 		fakeNamespace,
-		fakeWorkflowUID,
 		&mocks.ContainerRuntimeExecutor{},
 		wfv1.Template{},
 		false,
@@ -424,4 +499,25 @@ func TestMonitorProgress(t *testing.T) {
 		assert.Len(t, result.OwnerReferences, 1)
 		assert.Equal(t, wfv1.Progress("100/100"), result.Progress)
 	}
+}
+
+func TestSaveLogs(t *testing.T) {
+	const artStorageError = "You need to configure artifact storage. More information on how to do this can be found in the docs: https://argoproj.github.io/argo-workflows/configure-artifact-repository/"
+	mockRuntimeExecutor := mocks.ContainerRuntimeExecutor{}
+	mockRuntimeExecutor.On("GetOutputStream", mock.Anything, mock.AnythingOfType("string"), true).Return(io.NopCloser(strings.NewReader("hello world")), nil)
+	t.Run("Simple Pod node", func(t *testing.T) {
+		templateWithArchiveLogs := wfv1.Template{
+			ArchiveLocation: &wfv1.ArtifactLocation{
+				ArchiveLogs: pointer.BoolPtr(true),
+			},
+		}
+		we := WorkflowExecutor{
+			Template:        templateWithArchiveLogs,
+			RuntimeExecutor: &mockRuntimeExecutor,
+		}
+
+		ctx := context.Background()
+		we.SaveLogs(ctx)
+		assert.EqualError(t, we.errors[0], artStorageError)
+	})
 }

@@ -17,4 +17,4 @@ spec:
         image: argoproj/argosay:v2
         command: ["/bin/sh", "-c"]
         args:
-          - /argosay echo 50/100 $ARGO_PROGRESS_FILE && /argosay sleep 10s
+          - /argosay echo 50/100 $ARGO_PROGRESS_FILE && /argosay sleep 1m

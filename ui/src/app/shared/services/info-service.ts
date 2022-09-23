@@ -20,4 +20,8 @@ export class InfoService {
     public getUserInfo() {
         return requests.get(`api/v1/userinfo`).then(res => res.body as GetUserInfoResponse);
     }
+
+    public collectEvent(name: string) {
+        return requests.post(`api/v1/tracking/event`).send({name});
+    }
 }

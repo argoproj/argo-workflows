@@ -158,15 +158,3 @@ func (e emissary) Kill(ctx context.Context, containerNames []string, termination
 	}
 	return e.Wait(ctx, containerNames)
 }
-
-func (e emissary) ListContainerNames(ctx context.Context) ([]string, error) {
-	var containerNames []string
-	dir, err := ioutil.ReadDir(filepath.Join(common.VarRunArgoPath, "ctr"))
-	if err != nil {
-		return nil, err
-	}
-	for _, n := range dir {
-		containerNames = append(containerNames, n.Name())
-	}
-	return containerNames, nil
-}

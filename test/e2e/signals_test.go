@@ -24,12 +24,6 @@ type SignalsSuite struct {
 	fixtures.E2ESuite
 }
 
-func (s *SignalsSuite) SetupSuite() {
-	s.E2ESuite.SetupSuite()
-	// Because k8ssapi and kubelet execute `sh -c 'kill 15 1'` to they do not work.
-	s.Need(fixtures.None(fixtures.Kubelet))
-}
-
 func (s *SignalsSuite) TestStopBehavior() {
 	s.Given().
 		Workflow("@functional/stop-terminate.yaml").
@@ -50,6 +44,24 @@ func (s *SignalsSuite) TestStopBehavior() {
 				assert.Equal(t, wfv1.NodeSucceeded, nodeStatus.Phase)
 			}
 			nodeStatus = status.Nodes.FindByDisplayName(m.Name + ".onExit")
+			if assert.NotNil(t, nodeStatus) {
+				assert.Equal(t, wfv1.NodeSucceeded, nodeStatus.Phase)
+			}
+		})
+}
+
+func (s *SignalsSuite) TestStopBehaviorWithDaemon() {
+	s.Given().
+		Workflow("@functional/stop-terminate-daemon.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToHaveRunningPod, kill2xDuration).
+		ShutdownWorkflow(wfv1.ShutdownStrategyStop).
+		WaitForWorkflow(kill2xDuration).
+		Then().
+		ExpectWorkflow(func(t *testing.T, m *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Contains(t, []wfv1.WorkflowPhase{wfv1.WorkflowFailed, wfv1.WorkflowError}, status.Phase)
+			nodeStatus := status.Nodes.FindByDisplayName("Daemon")
 			if assert.NotNil(t, nodeStatus) {
 				assert.Equal(t, wfv1.NodeSucceeded, nodeStatus.Phase)
 			}
@@ -80,7 +92,6 @@ func (s *SignalsSuite) TestTerminateBehavior() {
 
 // Tests that new pods are never created once a stop shutdown strategy has been added
 func (s *SignalsSuite) TestDoNotCreatePodsUnderStopBehavior() {
-	s.Need(fixtures.None(fixtures.Docker))
 	s.Given().
 		Workflow("@functional/stop-terminate-2.yaml").
 		When().
@@ -110,7 +121,6 @@ func (s *SignalsSuite) TestSidecars() {
 
 // make sure Istio/Anthos and other sidecar injectors will work
 func (s *SignalsSuite) TestInjectedSidecar() {
-	s.Need(fixtures.None(fixtures.Emissary)) // emissary cannot kill this
 	s.Given().
 		Workflow("@testdata/sidecar-injected-workflow.yaml").
 		When().
@@ -118,12 +128,25 @@ func (s *SignalsSuite) TestInjectedSidecar() {
 		WaitForWorkflow(fixtures.ToBeSucceeded, kill2xDuration)
 }
 
-func (s *SignalsSuite) TestInjectedSidecarKillAnnotation() {
+func (s *SignalsSuite) TestSubProcess() {
 	s.Given().
-		Workflow("@testdata/sidecar-injected-kill-annotation-workflow.yaml").
+		Workflow("@testdata/subprocess-workflow.yaml").
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(fixtures.ToBeSucceeded, kill2xDuration)
+		WaitForWorkflow()
+}
+
+func (s *SignalsSuite) TestSignaled() {
+	s.Given().
+		Workflow("@testdata/signaled-workflow.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow().
+		Then().
+		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.WorkflowFailed, status.Phase)
+			assert.Equal(t, "Error (exit code 143)", status.Message)
+		})
 }
 
 func TestSignalsSuite(t *testing.T) {

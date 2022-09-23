@@ -3,6 +3,7 @@ package signal
 import (
 	"encoding/json"
 	"fmt"
+	"path/filepath"
 	"strings"
 	"syscall"
 
@@ -15,8 +16,16 @@ import (
 
 func SignalContainer(restConfig *rest.Config, pod *corev1.Pod, container string, s syscall.Signal) error {
 	command := []string{"/bin/sh", "-c", "kill -%d 1"}
-	if container == common.WaitContainerName {
-		command = []string{"/bin/sh", "-c", "kill -%d $(pidof argoexec)"}
+
+	// If the container has the /var/run/argo volume mounted, this it will have access to `argoexec`.
+	for _, c := range pod.Spec.Containers {
+		if c.Name == container {
+			for _, m := range c.VolumeMounts {
+				if m.MountPath == common.VarRunArgoPath {
+					command = []string{filepath.Join(common.VarRunArgoPath, "argoexec"), "kill", "%d", "1"}
+				}
+			}
+		}
 	}
 
 	if v, ok := pod.Annotations[common.AnnotationKeyKillCmd(container)]; ok {

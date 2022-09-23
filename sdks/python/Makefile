@@ -41,3 +41,10 @@ generate:
 		--generate-alias-as-model
 	# https://vsupalov.com/docker-shared-permissions/#set-the-docker-user-when-running-your-container
 	$(CHOWN) $(WD) || sudo $(CHOWN) $(WD)
+
+install:
+	pip3 install ./client
+
+test:
+	../../hack/access-token.sh init
+	env ARGO_TOKEN="`../../hack/access-token.sh get`" python3 tests/*.py

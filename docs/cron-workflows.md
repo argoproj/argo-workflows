@@ -1,12 +1,10 @@
 # Cron Workflows
 
-![GA](assets/ga.svg)
-
 > v2.5 and after
 
 ## Introduction
 
-`CronWorkflow` are workflows that run on a preset schedule. They are designed to be converted from `Workflow` easily and to mimick the same options as Kubernetes `CronJob`. In essence, `CronWorkflow` = `Workflow` + some specific cron options.
+`CronWorkflow` are workflows that run on a preset schedule. They are designed to be converted from `Workflow` easily and to mimic the same options as Kubernetes `CronJob`. In essence, `CronWorkflow` = `Workflow` + some specific cron options.
 
 ## `CronWorkflow` Spec
 
@@ -35,7 +33,7 @@ spec:
 
 `CronWorkflow.spec.workflowSpec` is the same type as `Workflow.spec` and serves as a template for `Workflow` objects that are created from it. Everything under this spec will be converted to a `Workflow`.
 
-The resuling `Workflow` name will be a generated name based on the `CronWorkflow` name. In this example it could be something like `test-cron-wf-tj6fe`.
+The resulting `Workflow` name will be a generated name based on the `CronWorkflow` name. In this example it could be something like `test-cron-wf-tj6fe`.
 
 `CronWorkflow.spec.workflowMetadata` can be used to add `labels` and `annotations`.
 
@@ -43,13 +41,19 @@ The resuling `Workflow` name will be a generated name based on the `CronWorkflow
 
 |          Option Name         |      Default Value     | Description                                                                                                                                                                                                                             |
 |:----------------------------:|:----------------------:|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-|          `schedule`          | None, must be provided | Schedule at which the `Workflow` will be run. E.g. `5 4 * * * `                                                                                                                                                                         |
+|          `schedule`          | None, must be provided | Schedule at which the `Workflow` will be run. E.g. `5 4 * * *`                                                                                                                                                                         |
 |          `timezone`          |    Machine timezone    | Timezone during which the Workflow will be run from the IANA timezone standard, e.g. `America/Los_Angeles`                                                                                                                              |
 |           `suspend`          |         `false`        | If `true` Workflow scheduling will not occur. Can be set from the CLI, GitOps, or directly                                                                                                                                              |
 |      `concurrencyPolicy`     |         `Allow`        | Policy that determines what to do if multiple `Workflows` are scheduled at the same time. Available options: `Allow`: allow all, `Replace`: remove all old before scheduling a new, `Forbid`: do not allow any new while there are old  |
 | `startingDeadlineSeconds`    |           `0`          | Number of seconds after the last successful run during which a missed `Workflow` will be run                                                                                                                                            |
 | `successfulJobsHistoryLimit` |           `3`          | Number of successful `Workflows` that will be persisted at a time                                                                                                                                                                       |
 | `failedJobsHistoryLimit`     | `1`                    | Number of failed `Workflows` that will be persisted at a time                                                                                                                                                                           |
+
+### Cron Schedule Syntax
+
+The cron scheduler uses the standard cron syntax, as [documented on Wikipedia](https://en.wikipedia.org/wiki/Cron).
+
+More detailed documentation for the specific library used is [documented here](https://pkg.go.dev/github.com/robfig/cron#hdr-CRON_Expression_Format).
 
 ### Crash Recovery
 
@@ -65,7 +69,7 @@ This setting can also be configured in tandem with `concurrencyPolicy` to achiev
 
 Daylight Saving (DST) is taken into account when using timezone. This means that, depending on the local time of the scheduled job, argo will schedule the workflow once, twice, or not at all when the clock moves forward or back.
 
-For example, with timezone set at `America/Los_Angeles`, we have daylight saving 
+For example, with timezone set at `America/Los_Angeles`, we have daylight saving
 
 - +1 hour (DST start) at 2020-03-08 02:00:00:
 
@@ -73,13 +77,13 @@ For example, with timezone set at `America/Los_Angeles`, we have daylight saving
 
     | cron       | sequence | workflow execution time       |
     |------------|----------|-------------------------------|
-    | 59 1 * * * | 1        | 2020-03-08 01:59:00 -0800 PST |
+    | 59 1 ** * | 1        | 2020-03-08 01:59:00 -0800 PST |
     |            | 2        | 2020-03-09 01:59:00 -0700 PDT |
     |            | 3        | 2020-03-10 01:59:00 -0700 PDT |
-    | 0 2 * * *  | 1        | 2020-03-09 02:00:00 -0700 PDT |
+    | 0 2 ** *  | 1        | 2020-03-09 02:00:00 -0700 PDT |
     |            | 2        | 2020-03-10 02:00:00 -0700 PDT |
     |            | 3        | 2020-03-11 02:00:00 -0700 PDT |
-    | 1 2 * * *  | 1        | 2020-03-09 02:01:00 -0700 PDT |
+    | 1 2 ** *  | 1        | 2020-03-09 02:01:00 -0700 PDT |
     |            | 2        | 2020-03-10 02:01:00 -0700 PDT |
     |            | 3        | 2020-03-11 02:01:00 -0700 PDT |
 
@@ -89,13 +93,13 @@ For example, with timezone set at `America/Los_Angeles`, we have daylight saving
 
     | cron       | sequence | workflow execution time       |
     |------------|----------|-------------------------------|
-    | 59 1 * * * | 1        | 2020-11-01 01:59:00 -0700 PDT |
+    | 59 1 ** * | 1        | 2020-11-01 01:59:00 -0700 PDT |
     |            | 2        | 2020-11-01 01:59:00 -0800 PST |
     |            | 3        | 2020-11-02 01:59:00 -0800 PST |
-    | 0 2 * * *  | 1        | 2020-11-01 02:00:00 -0800 PST |
+    | 0 2 ** *  | 1        | 2020-11-01 02:00:00 -0800 PST |
     |            | 2        | 2020-11-02 02:00:00 -0800 PST |
     |            | 3        | 2020-11-03 02:00:00 -0800 PST |
-    | 1 2 * * *  | 1        | 2020-11-01 02:01:00 -0800 PST |
+    | 1 2 ** *  | 1        | 2020-11-01 02:01:00 -0800 PST |
     |            | 2        | 2020-11-02 02:01:00 -0800 PST |
     |            | 3        | 2020-11-03 02:01:00 -0800 PST |
 
@@ -105,7 +109,7 @@ For example, with timezone set at `America/Los_Angeles`, we have daylight saving
 
 `CronWorkflow` can be created from the CLI by using basic commands:
 
-```sh
+```bash
 $ argo cron create cron.yaml
 Name:                          test-cron-wf
 Namespace:                     argo
@@ -144,7 +148,7 @@ Active Workflows:              test-cron-wf-rt4nf
 
 Using `kubectl apply -f` and `kubectl get cwf`
 
-## Backfilling Days
+## Back-Filling Days
 
 See [cron backfill](cron-backfill.md).
 

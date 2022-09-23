@@ -16,6 +16,7 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 
 	"github.com/argoproj/argo-workflows/v3"
+	"github.com/argoproj/argo-workflows/v3/cmd/argoexec/commands/artifact"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo-workflows/v3/util"
@@ -23,10 +24,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/util/logs"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/executor"
-	"github.com/argoproj/argo-workflows/v3/workflow/executor/docker"
 	"github.com/argoproj/argo-workflows/v3/workflow/executor/emissary"
-	"github.com/argoproj/argo-workflows/v3/workflow/executor/kubelet"
-	"github.com/argoproj/argo-workflows/v3/workflow/executor/pns"
 )
 
 const (
@@ -63,10 +61,12 @@ func NewRootCommand() *cobra.Command {
 	command.AddCommand(NewAgentCommand())
 	command.AddCommand(NewEmissaryCommand())
 	command.AddCommand(NewInitCommand())
+	command.AddCommand(NewKillCommand())
 	command.AddCommand(NewResourceCommand())
 	command.AddCommand(NewWaitCommand())
 	command.AddCommand(NewDataCommand())
 	command.AddCommand(cmd.NewVersionCmd(CLIName))
+	command.AddCommand(artifact.NewArtifactCommand())
 
 	clientConfig = kubecli.AddKubectlFlagsToCmd(&command)
 	command.PersistentFlags().StringVar(&logLevel, "loglevel", "info", "Set the logging level. One of: debug|info|warn|error")
@@ -78,11 +78,10 @@ func NewRootCommand() *cobra.Command {
 
 func initExecutor() *executor.WorkflowExecutor {
 	version := argo.GetVersion()
-	executorType := os.Getenv(common.EnvVarContainerRuntimeExecutor)
-	log.WithFields(log.Fields{"version": version.Version, "executorType": executorType}).Info("Starting Workflow Executor")
+	log.WithFields(log.Fields{"version": version.Version}).Info("Starting Workflow Executor")
 	config, err := clientConfig.ClientConfig()
 	checkErr(err)
-	config = restclient.AddUserAgent(config, fmt.Sprintf("argo-workflows/%s argo-executor/%s", version.Version, executorType))
+	config = restclient.AddUserAgent(config, fmt.Sprintf("argo-workflows/%s argo-executor", version.Version))
 
 	logs.AddK8SLogTransportWrapper(config) // lets log all request as we should typically do < 5 per pod, so this is will show up problems
 
@@ -110,18 +109,7 @@ func initExecutor() *executor.WorkflowExecutor {
 	annotationPatchTickDuration, _ := time.ParseDuration(os.Getenv(common.EnvVarProgressPatchTickDuration))
 	progressFileTickDuration, _ := time.ParseDuration(os.Getenv(common.EnvVarProgressFileTickDuration))
 
-	var cre executor.ContainerRuntimeExecutor
-	log.Infof("Creating a %s executor", executorType)
-	switch executorType {
-	case common.ContainerRuntimeExecutorKubelet:
-		cre, err = kubelet.NewKubeletExecutor(namespace, podName)
-	case common.ContainerRuntimeExecutorPNS:
-		cre, err = pns.NewPNSExecutor(clientset, podName, namespace)
-	case common.ContainerRuntimeExecutorDocker:
-		cre, err = docker.NewDockerExecutor(namespace, podName)
-	default:
-		cre, err = emissary.New()
-	}
+	cre, err := emissary.New()
 	checkErr(err)
 
 	wfExecutor := executor.NewExecutor(
@@ -129,10 +117,10 @@ func initExecutor() *executor.WorkflowExecutor {
 		versioned.NewForConfigOrDie(config).ArgoprojV1alpha1().WorkflowTaskResults(namespace),
 		restClient,
 		podName,
+		types.UID(os.Getenv(common.EnvVarPodUID)),
 		os.Getenv(common.EnvVarWorkflowName),
 		os.Getenv(common.EnvVarNodeID),
 		namespace,
-		types.UID(os.Getenv(common.EnvVarWorkflowUID)),
 		cre,
 		*tmpl,
 		includeScriptOutput,

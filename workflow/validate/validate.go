@@ -9,6 +9,8 @@ import (
 	"strings"
 	"time"
 
+	"golang.org/x/exp/maps"
+
 	"github.com/robfig/cron/v3"
 	"github.com/sirupsen/logrus"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -33,11 +35,6 @@ type ValidateOpts struct {
 	// skip some validations which is permissible during linting but not submission (e.g. missing
 	// input parameters to the workflow)
 	Lint bool
-
-	// ContainerRuntimeExecutor will trigger additional validation checks specific to different
-	// types of executors. For example, the inability of kubelet/k8s executors to copy artifacts
-	// out of the base image layer. If unspecified, will use docker executor validation
-	ContainerRuntimeExecutor string
 
 	// IgnoreEntrypoint indicates to skip/ignore the EntryPoint validation on workflow spec.
 	// Entrypoint is optional for WorkflowTemplate and ClusterWorkflowTemplate
@@ -109,8 +106,7 @@ func (args *FakeArguments) GetArtifactByName(name string) *wfv1.Artifact {
 var _ wfv1.ArgumentsProvider = &FakeArguments{}
 
 // ValidateWorkflow accepts a workflow and performs validation against it.
-func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespacedGetter, cwftmplGetter templateresolution.ClusterWorkflowTemplateGetter, wf *wfv1.Workflow, opts ValidateOpts) (*wfv1.Conditions, error) {
-	wfConditions := &wfv1.Conditions{}
+func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespacedGetter, cwftmplGetter templateresolution.ClusterWorkflowTemplateGetter, wf *wfv1.Workflow, opts ValidateOpts) error {
 	ctx := newTemplateValidationCtx(wf, opts)
 	tmplCtx := templateresolution.NewContext(wftmplGetter, cwftmplGetter, wf, wf)
 	var wfSpecHolder wfv1.WorkflowSpecHolder
@@ -118,7 +114,7 @@ func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 	var err error
 
 	if len(wf.Name) > maxCharsInObjectName {
-		return nil, fmt.Errorf("workflow name %q must not be more than 63 characters long (currently %d)", wf.Name, len(wf.Name))
+		return fmt.Errorf("workflow name %q must not be more than 63 characters long (currently %d)", wf.Name, len(wf.Name))
 	}
 
 	entrypoint := wf.Spec.Entrypoint
@@ -128,7 +124,7 @@ func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 	if hasWorkflowTemplateRef {
 		err := ValidateWorkflowTemplateRefFields(wf.Spec)
 		if err != nil {
-			return nil, err
+			return err
 		}
 		if wf.Spec.WorkflowTemplateRef.ClusterScope {
 			wfSpecHolder, err = cwftmplGetter.Get(wf.Spec.WorkflowTemplateRef.Name)
@@ -136,7 +132,7 @@ func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 			wfSpecHolder, err = wftmplGetter.Get(wf.Spec.WorkflowTemplateRef.Name)
 		}
 		if err != nil {
-			return nil, err
+			return err
 		}
 		if entrypoint == "" {
 			entrypoint = wfSpecHolder.GetWorkflowSpec().Entrypoint
@@ -152,7 +148,7 @@ func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 		wfArgs.Artifacts = util.MergeArtifacts(wfArgs.Artifacts, wfSpecHolder.GetWorkflowSpec().Arguments.Artifacts)
 	}
 	if err != nil {
-		return nil, errors.Errorf(errors.CodeBadRequest, "spec.templates%s", err.Error())
+		return errors.Errorf(errors.CodeBadRequest, "spec.templates%s", err.Error())
 	}
 
 	// if we are linting, we don't care if spec.arguments.parameters.XXX doesn't have an
@@ -161,7 +157,7 @@ func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 	allowEmptyValues := ctx.Lint || (ctx.WorkflowTemplateValidation && !ctx.Submit)
 	err = validateArguments("spec.arguments.", wfArgs, allowEmptyValues)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	if len(wfArgs.Parameters) > 0 {
 		ctx.globalParams[common.GlobalVarWorkflowParameters] = placeholderGenerator.NextPlaceholder()
@@ -177,12 +173,25 @@ func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 		}
 	}
 
-	for k := range wf.ObjectMeta.Annotations {
+	annotationSources := [][]string{maps.Keys(wf.ObjectMeta.Annotations)}
+	labelSources := [][]string{maps.Keys(wf.ObjectMeta.Labels)}
+	if wf.Spec.WorkflowMetadata != nil {
+		annotationSources = append(annotationSources, maps.Keys(wf.Spec.WorkflowMetadata.Annotations))
+		labelSources = append(labelSources, maps.Keys(wf.Spec.WorkflowMetadata.Labels), maps.Keys(wf.Spec.WorkflowMetadata.LabelsFrom))
+	}
+	if wf.Spec.WorkflowTemplateRef != nil && wfSpecHolder.GetWorkflowSpec().WorkflowMetadata != nil {
+		annotationSources = append(annotationSources, maps.Keys(wfSpecHolder.GetWorkflowSpec().WorkflowMetadata.Annotations))
+		labelSources = append(labelSources, maps.Keys(wfSpecHolder.GetWorkflowSpec().WorkflowMetadata.Labels), maps.Keys(wfSpecHolder.GetWorkflowSpec().WorkflowMetadata.LabelsFrom))
+	}
+	mergedAnnotations := getUniqueKeys(annotationSources...)
+	mergedLabels := getUniqueKeys(labelSources...)
+
+	for k := range mergedAnnotations {
 		ctx.globalParams["workflow.annotations."+k] = placeholderGenerator.NextPlaceholder()
 	}
 	ctx.globalParams[common.GlobalVarWorkflowAnnotations] = placeholderGenerator.NextPlaceholder()
 
-	for k := range wf.ObjectMeta.Labels {
+	for k := range mergedLabels {
 		ctx.globalParams["workflow.labels."+k] = placeholderGenerator.NextPlaceholder()
 	}
 	ctx.globalParams[common.GlobalVarWorkflowLabels] = placeholderGenerator.NextPlaceholder()
@@ -193,7 +202,7 @@ func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 	ctx.globalParams[common.GlobalVarWorkflowStatus] = placeholderGenerator.NextPlaceholder()
 
 	if !opts.IgnoreEntrypoint && entrypoint == "" {
-		return nil, errors.New(errors.CodeBadRequest, "spec.entrypoint is required")
+		return errors.New(errors.CodeBadRequest, "spec.entrypoint is required")
 	}
 
 	if !opts.IgnoreEntrypoint {
@@ -208,32 +217,43 @@ func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 		}
 		_, err = ctx.validateTemplateHolder(tmpl, tmplCtx, args)
 		if err != nil {
-			return nil, err
+			return err
 		}
 	}
 	if wf.Spec.OnExit != "" {
 		ctx.globalParams[common.GlobalVarWorkflowFailures] = placeholderGenerator.NextPlaceholder()
 		_, err = ctx.validateTemplateHolder(&wfv1.WorkflowStep{Template: wf.Spec.OnExit}, tmplCtx, &wf.Spec.Arguments)
 		if err != nil {
-			return nil, err
+			return err
 		}
 	}
 
 	if !wf.Spec.PodGC.GetStrategy().IsValid() {
-		return nil, errors.Errorf(errors.CodeBadRequest, "podGC.strategy unknown strategy '%s'", wf.Spec.PodGC.Strategy)
+		return errors.Errorf(errors.CodeBadRequest, "podGC.strategy unknown strategy '%s'", wf.Spec.PodGC.Strategy)
 	}
 	if _, err := wf.Spec.PodGC.GetLabelSelector(); err != nil {
-		return nil, errors.Errorf(errors.CodeBadRequest, "podGC.labelSelector invalid: %v", err)
+		return errors.Errorf(errors.CodeBadRequest, "podGC.labelSelector invalid: %v", err)
 	}
 
 	// Check if all templates can be resolved.
 	for _, template := range wf.Spec.Templates {
 		_, err := ctx.validateTemplateHolder(&wfv1.WorkflowStep{Template: template.Name}, tmplCtx, &FakeArguments{})
 		if err != nil {
-			return nil, errors.Errorf(errors.CodeBadRequest, "templates.%s %s", template.Name, err.Error())
+			return errors.Errorf(errors.CodeBadRequest, "templates.%s %s", template.Name, err.Error())
 		}
 	}
-	return wfConditions, nil
+	return nil
+}
+
+// construct a Set of unique keys
+func getUniqueKeys(labelSources ...[]string) map[string]struct{} {
+	uniqueKeys := make(map[string]struct{})
+	for _, labelSource := range labelSources {
+		for _, label := range labelSource {
+			uniqueKeys[label] = struct{}{} // dummy value
+		}
+	}
+	return uniqueKeys
 }
 
 func ValidateWorkflowTemplateRefFields(wfSpec wfv1.WorkflowSpec) error {
@@ -244,9 +264,9 @@ func ValidateWorkflowTemplateRefFields(wfSpec wfv1.WorkflowSpec) error {
 }
 
 // ValidateWorkflowTemplate accepts a workflow template and performs validation against it.
-func ValidateWorkflowTemplate(wftmplGetter templateresolution.WorkflowTemplateNamespacedGetter, cwftmplGetter templateresolution.ClusterWorkflowTemplateGetter, wftmpl *wfv1.WorkflowTemplate, opts ValidateOpts) (*wfv1.Conditions, error) {
+func ValidateWorkflowTemplate(wftmplGetter templateresolution.WorkflowTemplateNamespacedGetter, cwftmplGetter templateresolution.ClusterWorkflowTemplateGetter, wftmpl *wfv1.WorkflowTemplate, opts ValidateOpts) error {
 	if len(wftmpl.Name) > maxCharsInObjectName {
-		return nil, fmt.Errorf("workflow template name %q must not be more than 63 characters long (currently %d)", wftmpl.Name, len(wftmpl.Name))
+		return fmt.Errorf("workflow template name %q must not be more than 63 characters long (currently %d)", wftmpl.Name, len(wftmpl.Name))
 	}
 
 	wf := &wfv1.Workflow{
@@ -262,9 +282,9 @@ func ValidateWorkflowTemplate(wftmplGetter templateresolution.WorkflowTemplateNa
 }
 
 // ValidateClusterWorkflowTemplate accepts a cluster workflow template and performs validation against it.
-func ValidateClusterWorkflowTemplate(wftmplGetter templateresolution.WorkflowTemplateNamespacedGetter, cwftmplGetter templateresolution.ClusterWorkflowTemplateGetter, cwftmpl *wfv1.ClusterWorkflowTemplate, opts ValidateOpts) (*wfv1.Conditions, error) {
+func ValidateClusterWorkflowTemplate(wftmplGetter templateresolution.WorkflowTemplateNamespacedGetter, cwftmplGetter templateresolution.ClusterWorkflowTemplateGetter, cwftmpl *wfv1.ClusterWorkflowTemplate, opts ValidateOpts) error {
 	if len(cwftmpl.Name) > maxCharsInObjectName {
-		return nil, fmt.Errorf("cluster workflow template name %q must not be more than 63 characters long (currently %d)", cwftmpl.Name, len(cwftmpl.Name))
+		return fmt.Errorf("cluster workflow template name %q must not be more than 63 characters long (currently %d)", cwftmpl.Name, len(cwftmpl.Name))
 	}
 
 	wf := &wfv1.Workflow{
@@ -305,7 +325,7 @@ func ValidateCronWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamesp
 
 	wf := common.ConvertCronWorkflowToWorkflow(cronWf)
 
-	_, err := ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{})
+	err := ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{})
 	if err != nil {
 		return errors.Errorf(errors.CodeBadRequest, "cannot validate Workflow: %s", err)
 	}
@@ -403,10 +423,6 @@ func (ctx *templateValidationCtx) validateTemplate(tmpl *wfv1.Template, tmplCtx 
 		return err
 	}
 	err = validateOutputs(scope, ctx.globalParams, newTmpl)
-	if err != nil {
-		return err
-	}
-	err = ctx.validateBaseImageOutputs(newTmpl)
 	if err != nil {
 		return err
 	}
@@ -589,6 +605,8 @@ func resolveAllVariables(scope map[string]interface{}, globalParams map[string]s
 			} else if strings.HasPrefix(tag, common.GlobalVarWorkflowCronScheduleTime) {
 				// Allow runtime resolution for "scheduledTime" which will pass from CronWorkflow
 			} else if strings.HasPrefix(tag, common.GlobalVarWorkflowDuration) {
+			} else if strings.HasPrefix(tag, "tasks.name") {
+			} else if strings.HasPrefix(tag, "steps.name") {
 			} else {
 				return fmt.Errorf("failed to resolve {{%s}}", tag)
 			}
@@ -663,12 +681,32 @@ func (ctx *templateValidationCtx) validateLeaf(scope map[string]interface{}, tmp
 				return errors.Errorf(errors.CodeBadRequest, "templates.%s.resource.action must be one of: get, create, apply, delete, replace, patch", tmpl.Name)
 			}
 		}
-		if !placeholderGenerator.IsPlaceholder(tmpl.Resource.Manifest) {
-			// Try to unmarshal the given manifest, just ensuring it's a valid YAML.
-			var obj interface{}
-			err := yaml.Unmarshal([]byte(tmpl.Resource.Manifest), &obj)
-			if err != nil {
-				return errors.Errorf(errors.CodeBadRequest, "templates.%s.resource.manifest must be a valid yaml", tmpl.Name)
+		if tmpl.Resource.Action != "delete" && tmpl.Resource.Action != "get" {
+			if tmpl.Resource.Manifest == "" && tmpl.Resource.ManifestFrom == nil {
+				return errors.Errorf(errors.CodeBadRequest, "either templates.%s.resource.manifest or templates.%s.resource.manifestFrom must be specified", tmpl.Name, tmpl.Name)
+			}
+			if tmpl.Resource.Manifest != "" && tmpl.Resource.ManifestFrom != nil {
+				return errors.Errorf(errors.CodeBadRequest, "shouldn't have both `manifest` and `manifestFrom` specified in `Manifest` for resource template")
+			}
+			if tmpl.Resource.ManifestFrom != nil && tmpl.Resource.ManifestFrom.Artifact != nil {
+				var found bool
+				for _, art := range tmpl.Inputs.Artifacts {
+					if tmpl.Resource.ManifestFrom.Artifact.Name == art.Name {
+						found = true
+						break
+					}
+				}
+				if !found {
+					return errors.Errorf(errors.CodeBadRequest, "artifact %s in `manifestFrom` refer to a non-exist artifact", tmpl.Resource.ManifestFrom.Artifact.Name)
+				}
+			}
+			if tmpl.Resource.Manifest != "" && !placeholderGenerator.IsPlaceholder(tmpl.Resource.Manifest) {
+				// Try to unmarshal the given manifest, just ensuring it's a valid YAML.
+				var obj interface{}
+				err := yaml.Unmarshal([]byte(tmpl.Resource.Manifest), &obj)
+				if err != nil {
+					return errors.Errorf(errors.CodeBadRequest, "templates.%s.resource.manifest must be a valid yaml", tmpl.Name)
+				}
 			}
 		}
 	}
@@ -985,48 +1023,6 @@ func validateOutputs(scope map[string]interface{}, globalParams map[string]strin
 			errs := isValidParamOrArtifactName(param.GlobalName)
 			if len(errs) > 0 {
 				return errors.Errorf(errors.CodeBadRequest, "%s.globalName: %s", paramRef, errs[0])
-			}
-		}
-	}
-	return nil
-}
-
-// validateBaseImageOutputs detects if the template contains an valid output from base image layer
-func (ctx *templateValidationCtx) validateBaseImageOutputs(tmpl *wfv1.Template) error {
-	// This validation is not applicable for DAG and Step Template types
-	if tmpl.GetType() == wfv1.TemplateTypeDAG || tmpl.GetType() == wfv1.TemplateTypeSteps {
-		return nil
-	}
-	switch ctx.ContainerRuntimeExecutor {
-	case common.ContainerRuntimeExecutorPNS:
-		// pns supports copying from the base image, but only if there is no volume mount underneath it
-		errMsg := "pns executor does not support outputs from base image layer with volume mounts. Use an emptyDir: https://argoproj.github.io/argo-workflows/empty-dir/"
-		for _, out := range tmpl.Outputs.Artifacts {
-			if common.FindOverlappingVolume(tmpl, out.Path) == nil {
-				// output is in the base image layer. need to verify there are no volume mounts under it
-				for _, volMnt := range tmpl.GetVolumeMounts() {
-					if strings.HasPrefix(volMnt.MountPath, out.Path+"/") {
-						return errors.Errorf(errors.CodeBadRequest, "templates.%s.outputs.artifacts.%s: %s", tmpl.Name, out.Name, errMsg)
-					}
-				}
-			}
-		}
-	case common.ContainerRuntimeExecutorKubelet:
-		// for kubelet/k8s fail validation if we detect artifact is copied from base image layer
-		errMsg := fmt.Sprintf("%s executor does not support outputs from base image layer.  Use an emptyDir: https://argoproj.github.io/argo-workflows/empty-dir/", ctx.ContainerRuntimeExecutor)
-		for _, out := range tmpl.Outputs.Artifacts {
-			if common.FindOverlappingVolume(tmpl, out.Path) == nil {
-				return errors.Errorf(errors.CodeBadRequest, "templates.%s.outputs.artifacts.%s: %s", tmpl.Name, out.Name, errMsg)
-			}
-		}
-		for _, out := range tmpl.Outputs.Parameters {
-			if out.ValueFrom == nil {
-				continue
-			}
-			if out.ValueFrom.Path != "" {
-				if common.FindOverlappingVolume(tmpl, out.ValueFrom.Path) == nil {
-					return errors.Errorf(errors.CodeBadRequest, "templates.%s.outputs.parameters.%s: %s", tmpl.Name, out.Name, errMsg)
-				}
 			}
 		}
 	}

@@ -8,6 +8,7 @@ import {ID} from '../../../event-flow/components/event-flow-details/id';
 import {uiUrl} from '../../../shared/base';
 import {ErrorNotice} from '../../../shared/components/error-notice';
 import {Loading} from '../../../shared/components/loading';
+import {useCollectEvent} from '../../../shared/components/use-collect-event';
 import {Context} from '../../../shared/context';
 import {historyUrl} from '../../../shared/history';
 import {services} from '../../../shared/services';
@@ -71,6 +72,8 @@ export const EventSourceDetails = ({history, location, match}: RouteComponentPro
     }, [name, namespace]);
 
     useEffect(() => setEdited(true), [eventSource]);
+
+    useCollectEvent('openedEventSourceDetails');
 
     return (
         <Page

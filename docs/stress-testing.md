@@ -27,12 +27,12 @@ argo submit examples/hello-world.yaml --watch
 
 Checks
 
-* Open http://localhost:2746/workflows and check it loads and that you can run a workflow.
-* Open http://localhost:9090/metrics and check you can see the Prometheus metrics.
-* Open http://localhost:9091/graph and check you can see a Prometheus graph. You can
+* Open <http://localhost:2746/workflows> and check it loads and that you can run a workflow.
+* Open <http://localhost:9090/metrics> and check you can see the Prometheus metrics.
+* Open <http://localhost:9091/graph> and check you can see a Prometheus graph. You can
   use [this Tab Auto Refresh Chrome extension](https://chrome.google.com/webstore/detail/tab-auto-refresh/oomoeacogjkolheacgdkkkhbjipaomkn)
   to auto-refresh the page.
-* Open http://localhost:6060/debug/pprof and check you can access pprof.
+* Open <http://localhost:6060/debug/pprof> and check you can access `pprof`.
 
 Run `go run ./test/stress/tool -n 10000` to run a large number of workflows.
 

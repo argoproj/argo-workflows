@@ -4,6 +4,8 @@ import (
 	apiv1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/labels"
 
+	"github.com/argoproj/argo-workflows/v3/workflow/common"
+
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/workflow/controller/indexes"
 )
@@ -17,8 +19,11 @@ func (woc *wfOperationCtx) queuePodsForCleanup() {
 	objs, _ := woc.controller.podInformer.GetIndexer().ByIndex(indexes.WorkflowIndex, woc.wf.Namespace+"/"+woc.wf.Name)
 	for _, obj := range objs {
 		pod := obj.(*apiv1.Pod)
+		if _, ok := pod.Labels[common.LabelKeyComponent]; ok { // for these types we don't want to do PodGC
+			continue
+		}
 		nodeID := woc.nodeID(pod)
-		if !woc.execWf.Status.Nodes[nodeID].Fulfilled() {
+		if !woc.wf.Status.Nodes[nodeID].Phase.Fulfilled() {
 			continue
 		}
 		switch determinePodCleanupAction(selector, pod.Labels, strategy, workflowPhase, pod.Status.Phase) {

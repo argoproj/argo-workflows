@@ -33,7 +33,7 @@ under step/DAG level output parameter. Both use the
 
 ## Conditional Parameters
 
-```yaml   
+```yaml
     - name: coinflip
       steps:
         - - name: flip-coin
@@ -61,12 +61,12 @@ Convenient functions added to support more use cases:
 1. `asInt`    - convert the string to integer (e.g: `asInt('1')`)
 2. `asFloat`  - convert the string to Float (e.g: `asFloat('1.23')`)
 3. `string`   - convert the int/float to string (e.g: `string(1)`)
-4. `jsonpath` - Extract the element from Json using jsonpath (
+4. `jsonpath` - Extract the element from JSON using JSON Path (
    e.g: `jsonpath('{"employee":{"name":"sonoo","salary":56000,"married":true}}", "$.employee.name" )` )
 5. [Sprig](http://masterminds.github.io/sprig/) - Support all `sprig` functions
 
 * [Advanced example: fibonacci Sequence](https://raw.githubusercontent.com/argoproj/argo-workflows/master/examples/fibonacci-seq-conditional-param.yaml)
 
-!!! NOTE 
+!!! NOTE
     Expressions will decode the `-` as operator if template name has `-`, it will fail the expression. So here solution
     for template name which has `-` in its name. `step['one-two-three'].outputs.artifacts`

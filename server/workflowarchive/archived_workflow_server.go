@@ -56,6 +56,7 @@ func (w *archivedWorkflowServer) ListArchivedWorkflows(ctx context.Context, req 
 	name := ""
 	minStartedAt := time.Time{}
 	maxStartedAt := time.Time{}
+	showRemainingItemCount := false
 	for _, selector := range strings.Split(options.FieldSelector, ",") {
 		if len(selector) == 0 {
 			continue
@@ -71,6 +72,11 @@ func (w *archivedWorkflowServer) ListArchivedWorkflows(ctx context.Context, req 
 			}
 		} else if strings.HasPrefix(selector, "spec.startedAt<") {
 			maxStartedAt, err = time.Parse(time.RFC3339, strings.TrimPrefix(selector, "spec.startedAt<"))
+			if err != nil {
+				return nil, err
+			}
+		} else if strings.HasPrefix(selector, "ext.showRemainingItemCount") {
+			showRemainingItemCount, err = strconv.ParseBool(strings.TrimPrefix(selector, "ext.showRemainingItemCount="))
 			if err != nil {
 				return nil, err
 			}
@@ -108,6 +114,21 @@ func (w *archivedWorkflowServer) ListArchivedWorkflows(ctx context.Context, req 
 	}
 
 	meta := metav1.ListMeta{}
+
+	if showRemainingItemCount && !loadAll {
+		total, err := w.wfArchive.CountWorkflows(namespace, name, namePrefix, minStartedAt, maxStartedAt, requirements)
+		if err != nil {
+			return nil, err
+		}
+		var count = total - int64(offset) - int64(items.Len())
+		if len(items) > limit {
+			count = count + 1
+		}
+		if count < 0 {
+			count = 0
+		}
+		meta.RemainingItemCount = &count
+	}
 
 	if !loadAll && len(items) > limit {
 		items = items[0:limit]
@@ -200,7 +221,7 @@ func (w *archivedWorkflowServer) ResubmitArchivedWorkflow(ctx context.Context, r
 		return nil, err
 	}
 
-	newWF, err := util.FormulateResubmitWorkflow(wf, req.Memoized)
+	newWF, err := util.FormulateResubmitWorkflow(wf, req.Memoized, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -221,27 +242,35 @@ func (w *archivedWorkflowServer) RetryArchivedWorkflow(ctx context.Context, req 
 		return nil, err
 	}
 
-	wf, podsToDelete, err := util.FormulateRetryWorkflow(ctx, wf, req.RestartSuccessful, req.NodeFieldSelector)
-	if err != nil {
-		return nil, err
-	}
-
-	for _, podName := range podsToDelete {
-		log.WithFields(log.Fields{"podDeleted": podName}).Info("Deleting pod")
-		err := kubeClient.CoreV1().Pods(wf.Namespace).Delete(ctx, podName, metav1.DeleteOptions{})
-		if err != nil && !apierr.IsNotFound(err) {
-			return nil, err
-		}
-	}
-
-	wf, err = wfClient.ArgoprojV1alpha1().Workflows(req.Namespace).Update(ctx, wf, metav1.UpdateOptions{})
+	_, err = wfClient.ArgoprojV1alpha1().Workflows(req.Namespace).Get(ctx, wf.Name, metav1.GetOptions{})
 	if apierr.IsNotFound(err) {
-		wf.ObjectMeta.ResourceVersion = ""
-		wf, err = wfClient.ArgoprojV1alpha1().Workflows(req.Namespace).Create(ctx, wf, metav1.CreateOptions{})
+
+		wf, podsToDelete, err := util.FormulateRetryWorkflow(ctx, wf, req.RestartSuccessful, req.NodeFieldSelector, nil)
 		if err != nil {
 			return nil, err
 		}
+
+		for _, podName := range podsToDelete {
+			log.WithFields(log.Fields{"podDeleted": podName}).Info("Deleting pod")
+			err := kubeClient.CoreV1().Pods(wf.Namespace).Delete(ctx, podName, metav1.DeleteOptions{})
+			if err != nil && !apierr.IsNotFound(err) {
+				return nil, err
+			}
+		}
+
+		wf.ObjectMeta.ResourceVersion = ""
+		wf.ObjectMeta.UID = ""
+		result, err := wfClient.ArgoprojV1alpha1().Workflows(req.Namespace).Create(ctx, wf, metav1.CreateOptions{})
+		if err != nil {
+			return nil, err
+		}
+
+		return result, nil
 	}
 
-	return wf, nil
+	if err == nil {
+		return nil, status.Error(codes.AlreadyExists, "Workflow already exists on cluster, use argo retry {name} instead")
+	}
+
+	return nil, err
 }

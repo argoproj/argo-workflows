@@ -24,4 +24,18 @@ export class ArchivedWorkflowsService {
     public listLabelValues(key: string) {
         return requests.get(`api/v1/archived-workflows-label-values?listOptions.labelSelector=${key}`).then(res => res.body as models.Labels);
     }
+
+    public resubmit(uid: string, namespace: string) {
+        return requests
+            .put(`api/v1/archived-workflows/${uid}/resubmit`)
+            .send({namespace})
+            .then(res => res.body as models.Workflow);
+    }
+
+    public retry(uid: string, namespace: string) {
+        return requests
+            .put(`api/v1/archived-workflows/${uid}/retry`)
+            .send({namespace})
+            .then(res => res.body as models.Workflow);
+    }
 }

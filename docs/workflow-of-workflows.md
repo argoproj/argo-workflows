@@ -3,10 +3,13 @@
 > v2.9 and after
 
 ## Introduction
-The Workflow of Workflows pattern involves a parent workflow triggering one or more child workflows, managing them, and acting their results.
- 
+
+The Workflow of Workflows pattern involves a parent workflow triggering one or more child workflows, managing them, and acting on their results.
+
 ## Examples
+
 You can use `workflowTemplateRef` to trigger a workflow inline.  
+
 1. Define your workflow as a `workflowtemplate`.
 
 ```yaml
@@ -30,11 +33,13 @@ spec:
         command: [cowsay]
         args: ["{{inputs.parameters.message}}"]
 ```
-2. Create the `Workflowtemplate` in cluster using `argo template create <yaml>`
-3. Define the workflow of workflows. 
+
+1. Create the `Workflowtemplate` in cluster using `argo template create <yaml>`
+2. Define the workflow of workflows.
+
 ```yaml
 # This template demonstrates a workflow of workflows.
-# Workflow triggers one or more workflow and manage it.
+# Workflow triggers one or more workflows and manages them.
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:

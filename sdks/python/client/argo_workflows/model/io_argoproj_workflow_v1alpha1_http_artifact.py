@@ -31,6 +31,8 @@ from argo_workflows.exceptions import ApiAttributeError
 
 def lazy_import():
     from argo_workflows.model.io_argoproj_workflow_v1alpha1_header import IoArgoprojWorkflowV1alpha1Header
+    from argo_workflows.model.io_argoproj_workflow_v1alpha1_http_auth import IoArgoprojWorkflowV1alpha1HTTPAuth
+    globals()['IoArgoprojWorkflowV1alpha1HTTPAuth'] = IoArgoprojWorkflowV1alpha1HTTPAuth
     globals()['IoArgoprojWorkflowV1alpha1Header'] = IoArgoprojWorkflowV1alpha1Header
 
 
@@ -88,6 +90,7 @@ class IoArgoprojWorkflowV1alpha1HTTPArtifact(ModelNormal):
         lazy_import()
         return {
             'url': (str,),  # noqa: E501
+            'auth': (IoArgoprojWorkflowV1alpha1HTTPAuth,),  # noqa: E501
             'headers': ([IoArgoprojWorkflowV1alpha1Header],),  # noqa: E501
         }
 
@@ -98,6 +101,7 @@ class IoArgoprojWorkflowV1alpha1HTTPArtifact(ModelNormal):
 
     attribute_map = {
         'url': 'url',  # noqa: E501
+        'auth': 'auth',  # noqa: E501
         'headers': 'headers',  # noqa: E501
     }
 
@@ -145,6 +149,7 @@ class IoArgoprojWorkflowV1alpha1HTTPArtifact(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
+            auth (IoArgoprojWorkflowV1alpha1HTTPAuth): [optional]  # noqa: E501
             headers ([IoArgoprojWorkflowV1alpha1Header]): Headers are an optional list of headers to send with HTTP requests for artifacts. [optional]  # noqa: E501
         """
 
@@ -231,6 +236,7 @@ class IoArgoprojWorkflowV1alpha1HTTPArtifact(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
+            auth (IoArgoprojWorkflowV1alpha1HTTPAuth): [optional]  # noqa: E501
             headers ([IoArgoprojWorkflowV1alpha1Header]): Headers are an optional list of headers to send with HTTP requests for artifacts. [optional]  # noqa: E501
         """
 

@@ -4,7 +4,8 @@
 
   overflow-y: hidden;
 
-  &, & > .row {
+  &,
+  &>.row {
     height: calc(100vh - 2 * #{$top-bar-height});
   }
 
@@ -43,11 +44,14 @@
     overflow: auto;
   }
 
+  &__graph-container-wrapper {
+    display: flex;
+  }
+
   &__graph-container {
+    flex: 1;
     position: relative;
     height: calc(100vh - 2 * #{$top-bar-height});
-    width: 100%;
-    transition: width 0.2s;
     float: left;
     overflow: auto;
 
@@ -63,17 +67,16 @@
   &__step-info {
     min-height: calc(100vh - 2 * #{$top-bar-height});
     border-left: 1px solid $argo-color-gray-4;
-    width: 0;
     transition: width 0.2s;
-    float: right
+    position: relative;
   }
 
   &__step-info-close {
-    display: block;
+    display: none;
     position: absolute;
     cursor: pointer;
     top: 1em;
-    right: -1em;
+    right: 1em;
     z-index: 8;
     border-radius: 50%;
     color: $argo-color-gray-5;
@@ -89,18 +92,46 @@
     }
   }
 
-  &--step-node-expanded &__graph-container {
-    width: calc(100% - 570px);
+  &__step-info-drag-handle {
+    left: -6px;
+    height: 100%;
+    position: absolute;
+    width: 12px;
+    z-index: 1;
+
+    &:hover {
+      cursor: ew-resize;
+    }
   }
 
-  &--step-node-expanded &__step-info {
-    width: 570px;
+  &__attribute-grid {
+    color: $argo-color-gray-8;
+    display: grid;
+    grid-template-columns: auto minmax(50%, 1fr);
+
+    & > * {
+      align-items: center;
+      display: flex;
+      min-height: 50px;
+      padding: 14px 0;
+    }
+
+    & > *:nth-child(odd) {
+      padding-right: 4em;
+    }
+
+    & > *:not(:nth-last-child(-n+2)) {
+      border-bottom: 1px solid $argo-color-gray-3;
+    }
+
+    pre {
+      overflow: unset;
+    }
   }
 
   &--step-node-expanded &__step-info-close {
-    right: 1em;
+    display: block;
   }
-
 }
 
 .badge {

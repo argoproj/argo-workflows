@@ -114,7 +114,9 @@ class EventSourceServiceApi(object):
         self.create_event_source = _Endpoint(
             settings={
                 'response_type': (IoArgoprojEventsV1alpha1EventSource,),
-                'auth': [],
+                'auth': [
+                    'BearerToken'
+                ],
                 'endpoint_path': '/api/v1/event-sources/{namespace}',
                 'operation_id': 'create_event_source',
                 'http_method': 'POST',
@@ -247,7 +249,9 @@ class EventSourceServiceApi(object):
         self.delete_event_source = _Endpoint(
             settings={
                 'response_type': (bool, date, datetime, dict, float, int, list, str, none_type,),
-                'auth': [],
+                'auth': [
+                    'BearerToken'
+                ],
                 'endpoint_path': '/api/v1/event-sources/{namespace}/{name}',
                 'operation_id': 'delete_event_source',
                 'http_method': 'DELETE',
@@ -414,7 +418,9 @@ class EventSourceServiceApi(object):
         self.event_sources_logs = _Endpoint(
             settings={
                 'response_type': (StreamResultOfEventsourceLogEntry,),
-                'auth': [],
+                'auth': [
+                    'BearerToken'
+                ],
                 'endpoint_path': '/api/v1/stream/event-sources/{namespace}/logs',
                 'operation_id': 'event_sources_logs',
                 'http_method': 'GET',
@@ -604,7 +610,9 @@ class EventSourceServiceApi(object):
         self.get_event_source = _Endpoint(
             settings={
                 'response_type': (IoArgoprojEventsV1alpha1EventSource,),
-                'auth': [],
+                'auth': [
+                    'BearerToken'
+                ],
                 'endpoint_path': '/api/v1/event-sources/{namespace}/{name}',
                 'operation_id': 'get_event_source',
                 'http_method': 'GET',
@@ -735,7 +743,9 @@ class EventSourceServiceApi(object):
         self.list_event_sources = _Endpoint(
             settings={
                 'response_type': (IoArgoprojEventsV1alpha1EventSourceList,),
-                'auth': [],
+                'auth': [
+                    'BearerToken'
+                ],
                 'endpoint_path': '/api/v1/event-sources/{namespace}',
                 'operation_id': 'list_event_sources',
                 'http_method': 'GET',
@@ -904,7 +914,9 @@ class EventSourceServiceApi(object):
         self.update_event_source = _Endpoint(
             settings={
                 'response_type': (IoArgoprojEventsV1alpha1EventSource,),
-                'auth': [],
+                'auth': [
+                    'BearerToken'
+                ],
                 'endpoint_path': '/api/v1/event-sources/{namespace}/{name}',
                 'operation_id': 'update_event_source',
                 'http_method': 'PUT',
@@ -1042,7 +1054,9 @@ class EventSourceServiceApi(object):
         self.watch_event_sources = _Endpoint(
             settings={
                 'response_type': (StreamResultOfEventsourceEventSourceWatchEvent,),
-                'auth': [],
+                'auth': [
+                    'BearerToken'
+                ],
                 'endpoint_path': '/api/v1/stream/event-sources/{namespace}',
                 'operation_id': 'watch_event_sources',
                 'http_method': 'GET',

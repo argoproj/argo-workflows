@@ -80,6 +80,48 @@ spec:
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
+  name: workflowartifactgctasks.argoproj.io
+spec:
+  group: argoproj.io
+  names:
+    kind: WorkflowArtifactGCTask
+    listKind: WorkflowArtifactGCTaskList
+    plural: workflowartifactgctasks
+    shortNames:
+    - wfat
+    singular: workflowartifactgctask
+  scope: Namespaced
+  versions:
+  - name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        properties:
+          apiVersion:
+            type: string
+          kind:
+            type: string
+          metadata:
+            type: object
+          spec:
+            type: object
+            x-kubernetes-map-type: atomic
+            x-kubernetes-preserve-unknown-fields: true
+          status:
+            type: object
+            x-kubernetes-map-type: atomic
+            x-kubernetes-preserve-unknown-fields: true
+        required:
+        - metadata
+        - spec
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
   name: workfloweventbindings.argoproj.io
 spec:
   group: argoproj.io
@@ -138,6 +180,11 @@ spec:
       jsonPath: .status.startedAt
       name: Age
       type: date
+    - description: Human readable message indicating details about why the workflow
+        is in this condition.
+      jsonPath: .status.message
+      name: Message
+      type: string
     name: v1alpha1
     schema:
       openAPIV3Schema:
@@ -209,6 +256,29 @@ spec:
                       type: object
                     archiveLogs:
                       type: boolean
+                    artifactGC:
+                      properties:
+                        podMetadata:
+                          properties:
+                            annotations:
+                              additionalProperties:
+                                type: string
+                              type: object
+                            labels:
+                              additionalProperties:
+                                type: string
+                              type: object
+                          type: object
+                        serviceAccountName:
+                          type: string
+                        strategy:
+                          enum:
+                          - ""
+                          - OnWorkflowCompletion
+                          - OnWorkflowDeletion
+                          - Never
+                          type: string
+                      type: object
                     artifactory:
                       properties:
                         passwordSecret:
@@ -238,6 +308,34 @@ spec:
                       required:
                       - url
                       type: object
+                    azure:
+                      properties:
+                        accountKeySecret:
+                          properties:
+                            key:
+                              type: string
+                            name:
+                              type: string
+                            optional:
+                              type: boolean
+                          required:
+                          - key
+                          type: object
+                        blob:
+                          type: string
+                        container:
+                          type: string
+                        endpoint:
+                          type: string
+                        useSDKCreds:
+                          type: boolean
+                      required:
+                      - blob
+                      - container
+                      - endpoint
+                      type: object
+                    deleted:
+                      type: boolean
                     from:
                       type: string
                     fromExpression:
@@ -264,6 +362,8 @@ spec:
                       type: object
                     git:
                       properties:
+                        branch:
+                          type: string
                         depth:
                           format: int64
                           type: integer
@@ -290,6 +390,8 @@ spec:
                           type: string
                         revision:
                           type: string
+                        singleBranch:
+                          type: boolean
                         sshPrivateKeySecret:
                           properties:
                             key:
@@ -373,6 +475,110 @@ spec:
                       type: object
                     http:
                       properties:
+                        auth:
+                          properties:
+                            basicAuth:
+                              properties:
+                                passwordSecret:
+                                  properties:
+                                    key:
+                                      type: string
+                                    name:
+                                      type: string
+                                    optional:
+                                      type: boolean
+                                  required:
+                                  - key
+                                  type: object
+                                usernameSecret:
+                                  properties:
+                                    key:
+                                      type: string
+                                    name:
+                                      type: string
+                                    optional:
+                                      type: boolean
+                                  required:
+                                  - key
+                                  type: object
+                              type: object
+                            clientCert:
+                              properties:
+                                clientCertSecret:
+                                  properties:
+                                    key:
+                                      type: string
+                                    name:
+                                      type: string
+                                    optional:
+                                      type: boolean
+                                  required:
+                                  - key
+                                  type: object
+                                clientKeySecret:
+                                  properties:
+                                    key:
+                                      type: string
+                                    name:
+                                      type: string
+                                    optional:
+                                      type: boolean
+                                  required:
+                                  - key
+                                  type: object
+                              type: object
+                            oauth2:
+                              properties:
+                                clientIDSecret:
+                                  properties:
+                                    key:
+                                      type: string
+                                    name:
+                                      type: string
+                                    optional:
+                                      type: boolean
+                                  required:
+                                  - key
+                                  type: object
+                                clientSecretSecret:
+                                  properties:
+                                    key:
+                                      type: string
+                                    name:
+                                      type: string
+                                    optional:
+                                      type: boolean
+                                  required:
+                                  - key
+                                  type: object
+                                endpointParams:
+                                  items:
+                                    properties:
+                                      key:
+                                        type: string
+                                      value:
+                                        type: string
+                                    required:
+                                    - key
+                                    type: object
+                                  type: array
+                                scopes:
+                                  items:
+                                    type: string
+                                  type: array
+                                tokenURLSecret:
+                                  properties:
+                                    key:
+                                      type: string
+                                    name:
+                                      type: string
+                                    optional:
+                                      type: boolean
+                                  required:
+                                  - key
+                                  type: object
+                              type: object
+                          type: object
                         headers:
                           items:
                             properties:
@@ -758,6 +964,7 @@ rules:
   - workflows/finalizers
   - workflowtasksets
   - workflowtasksets/finalizers
+  - workflowartifactgctasks
   verbs:
   - get
   - list
@@ -775,13 +982,6 @@ rules:
   - get
   - list
   - watch
-- apiGroups:
-  - ""
-  resources:
-  - serviceaccounts
-  verbs:
-  - get
-  - list
 - apiGroups:
   - argoproj.io
   resources:
@@ -851,8 +1051,6 @@ rules:
   verbs:
   - get
   - create
-  - list
-  - watch
 - apiGroups:
   - ""
   resources:
@@ -898,6 +1096,28 @@ rules:
   - update
   - patch
   - delete
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  annotations:
+    workflows.argoproj.io/description: |
+      This is the minimum recommended permissions needed if you want to use artifact GC.
+  name: artifactgc
+rules:
+- apiGroups:
+  - argoproj.io
+  resources:
+  - workflowartifactgctasks
+  verbs:
+  - list
+  - watch
+- apiGroups:
+  - argoproj.io
+  resources:
+  - workflowartifactgctasks/status
+  verbs:
+  - patch
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
@@ -1046,6 +1266,18 @@ subjects:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
+  name: artifactgc-default
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: artifactgc
+subjects:
+- kind: ServiceAccount
+  name: default
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
   name: executor-default
 roleRef:
   apiGroup: rbac.authorization.k8s.io
@@ -1164,29 +1396,14 @@ data:
       secretKeySecret:
         name: my-minio-cred
         key: secretkey
-  containerRuntimeExecutors: |
-    - name: emissary
-      selector:
-        matchLabels:
-          workflows.argoproj.io/container-runtime-executor: emissary
-    - name: pns
-      selector:
-        matchLabels:
-          workflows.argoproj.io/container-runtime-executor: pns
   executor: |
     resources:
       requests:
         cpu: 10m
         memory: 64Mi
   images: |
-    argoproj/argosay:v1:
-      command: [cowsay]
-    argoproj/argosay:v2:
-      command: [/argosay]
     docker/whalesay:latest:
-       command: [cowsay]
-    python:alpine3.6:
-       command: [python3]
+       cmd: [cowsay]
   links: |
     - name: Workflow Link
       scope: workflow
@@ -1276,6 +1493,101 @@ apiVersion: v1
 kind: Secret
 metadata:
   labels:
+    app: httpbin
+  name: my-httpbin-cred
+stringData:
+  cert.pem: |
+    -----BEGIN CERTIFICATE-----
+    MIIEmjCCAoICCQDQejieQSZTxzANBgkqhkiG9w0BAQsFADAPMQ0wCwYDVQQDDAR0
+    ZXN0MB4XDTIyMDQyNTEzNDc0MloXDTMyMDQyMjEzNDc0MlowDzENMAsGA1UEAwwE
+    dGVzdDCCAiIwDQYJKoZIhvcNAQEBBQADggIPADCCAgoCggIBAMHT/tfskuXizar1
+    5DDrSkaT1cuCdQhEO7b6haxfvfMJPY9sxaxR570bw5TWQzA0xdAeUzSCbRsvxw6b
+    fEyLD4NajdXtcKocYUUcLclzjgyogTDPqlzAfDVZD25ySOTZ150pQaBuIi6TgnqH
+    WdJEh9w5//5VZmKyMx49JZMW7ADb9qYxkKVPIan3aNEXOO4SxyjsSekUFefkZOld
+    /RVZ8nO8hnDQ7r5NXsIIWVh35A94CA8y6QpKL2qiEFW1fofRcr/Fe/Y/5ohBQ1Ur
+    NMcX87zm9kXX1y6wbp3wn5f1PUa1sCUPlxChmRmPPmr4yIqq0a8C1d71jOIbhkox
+    7A30HsP1D3rdxU6eb7KBYb7kShZge1batHRogRe5uX6hGO8iHBV/GdDE6jszoGPU
+    ejhfwblr6AeR6ImrWmrJ4rAx/jNqcHPuktnMRlLsBzdhqRwelwgnN13O5ZYiEJg4
+    X3YYp678kHnc58aOkhG2nM32cIGha4tkoGM/GpDnFAd0P0gyJVwKo2A2Wc4cMlzQ
+    7dokXbkkzK6lrHJnJjiOfzjD5yMB1Q1zQXKGHB2hJSWAMTjJ9f6qQd3ZaarYPTLx
+    vc4WTu+547Sx81Vlnes2xTSgt6pyFSBppHpS7KkOxb+wRF2oIpgLA3mQmsq2c60+
+    G8/ro91YAYN+cl+v7m1DyEpD9TW/AgMBAAEwDQYJKoZIhvcNAQELBQADggIBACO7
+    2hU2BSGU66FwpIOihgcaADH0SwokjrEJVXlnMv26JzG/Ja63gTNE5OyghufsJtUi
+    E7E1gOH+dH6lVOIEmQdgGZazGxye20diLlicBATa5W2IuaBzb8Bq7ap75jOB7/sH
+    Yh+ZV9w0CWgV7KgzJQsp6KPfpMUXn9aJkRkLlCToCj60tC1agw5wzQcokDhOMJaY
+    49FFVoKtVYwN6DfXL5Qi4GUmg7NwMUQAOGD6BQ8VLdbSJoWSHvgR2z5SDIubpdyy
+    XDe2V6lusdka8jdRsFH+TUKyGubs3c5YVq80A8itavxPXBUM/OJCHhUA1VpL3rvz
+    VgANVV7XFn5fN5TdTOrgJa2LBjflYBC3KiLf1jiW68ZT2rLDrC0yVdHFY0UJG/du
+    kWWQpZTfdpGbZOl1rQcYQ3BREWkr5kAv8Sh3sPliibVRvyFzwAqpEUDbpCz/Z3kZ
+    mRPU1Ukz8gjr5FBwzNn4x/l+80kgM22qXLMgxf7cqSLxH+dylmIieLGU0s1k7BqK
+    Dw77DP1QZe4G6WwrdGooxSYSBn4joKV4TI9sbyd34HJQnkMch0ugz9dlpZyT1P8Y
+    3xU8Qj1BIF8yoyRuzbOokd9cEjNC6N+Z4g5lLEKYM/j1f0r3tGEoZAu2p39UGLa8
+    aszMnFjeymK5OCkMUhg/KNr4WK58pc/3uFMhy8bn
+    -----END CERTIFICATE-----
+  clientID: admin
+  clientSecret: password
+  key.pem: |
+    -----BEGIN PRIVATE KEY-----
+    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
+    NuJLvtwCMGDCxhdYm7OrJ0aUfZzP6w==
+    -----END PRIVATE KEY-----
+  pass: password
+  tokenURL: http://httpbin:9100/response-headers?access_token=faketoken&token_type=Bearer
+  user: admin
+type: Opaque
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  labels:
     app: minio
   name: my-minio-cred
 stringData:
@@ -1299,13 +1611,33 @@ apiVersion: v1
 kind: Service
 metadata:
   labels:
+    app: httpbin
+  name: httpbin
+spec:
+  ports:
+  - name: api
+    port: 9100
+    protocol: TCP
+    targetPort: 80
+  selector:
+    app: httpbin
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
     app: minio
   name: minio
 spec:
   ports:
-  - port: 9000
+  - name: api
+    port: 9000
     protocol: TCP
     targetPort: 9000
+  - name: dashboard
+    port: 9001
+    protocol: TCP
+    targetPort: 9001
   selector:
     app: minio
 ---
@@ -1322,21 +1654,6 @@ spec:
     targetPort: 5432
   selector:
     app: postgres
----
-apiVersion: v1
-kind: Service
-metadata:
-  labels:
-    app: workflow-controller
-  name: workflow-controller-metrics
-spec:
-  ports:
-  - name: metrics
-    port: 9090
-    protocol: TCP
-    targetPort: 9090
-  selector:
-    app: workflow-controller
 ---
 apiVersion: scheduling.k8s.io/v1
 kind: PriorityClass
@@ -1379,9 +1696,12 @@ spec:
           initialDelaySeconds: 10
           periodSeconds: 20
         securityContext:
+          allowPrivilegeEscalation: false
           capabilities:
             drop:
             - ALL
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
         volumeMounts:
         - mountPath: /tmp
           name: tmp
@@ -1393,6 +1713,40 @@ spec:
       volumes:
       - emptyDir: {}
         name: tmp
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: httpbin
+  name: httpbin
+spec:
+  selector:
+    matchLabels:
+      app: httpbin
+  template:
+    metadata:
+      labels:
+        app: httpbin
+    spec:
+      containers:
+      - image: kennethreitz/httpbin:latest
+        livenessProbe:
+          httpGet:
+            path: /get
+            port: 80
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        name: main
+        ports:
+        - containerPort: 80
+          name: api
+        readinessProbe:
+          httpGet:
+            path: /get
+            port: 80
+          initialDelaySeconds: 5
+          periodSeconds: 10
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -1413,6 +1767,8 @@ spec:
       - command:
         - minio
         - server
+        - --console-address
+        - :9001
         - /data
         env:
         - name: MINIO_ACCESS_KEY
@@ -1436,6 +1792,9 @@ spec:
         name: main
         ports:
         - containerPort: 9000
+          name: api
+        - containerPort: 9001
+          name: dashboard
         readinessProbe:
           httpGet:
             path: /minio/health/ready

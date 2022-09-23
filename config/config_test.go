@@ -4,8 +4,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/labels"
+
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
 
 func TestDatabaseConfig(t *testing.T) {
@@ -13,30 +13,21 @@ func TestDatabaseConfig(t *testing.T) {
 	assert.Equal(t, "my-host:1234", DatabaseConfig{Host: "my-host", Port: 1234}.GetHostname())
 }
 
-func TestContainerRuntimeExecutor(t *testing.T) {
-	t.Run("Default", func(t *testing.T) {
-		c := Config{ContainerRuntimeExecutor: "foo"}
-		executor, err := c.GetContainerRuntimeExecutor(labels.Set{})
-		assert.NoError(t, err)
-		assert.Equal(t, "foo", executor)
-	})
-	t.Run("Error", func(t *testing.T) {
-		c := Config{ContainerRuntimeExecutor: "foo", ContainerRuntimeExecutors: ContainerRuntimeExecutors{
-			{Name: "bar", Selector: metav1.LabelSelector{
-				MatchLabels: map[string]string{"!": "!"},
-			}},
-		}}
-		_, err := c.GetContainerRuntimeExecutor(labels.Set{})
-		assert.Error(t, err)
-	})
-	t.Run("NoError", func(t *testing.T) {
-		c := Config{ContainerRuntimeExecutor: "foo", ContainerRuntimeExecutors: ContainerRuntimeExecutors{
-			{Name: "bar", Selector: metav1.LabelSelector{
-				MatchLabels: map[string]string{"baz": "qux"},
-			}},
-		}}
-		executor, err := c.GetContainerRuntimeExecutor(labels.Set(map[string]string{"baz": "qux"}))
-		assert.NoError(t, err)
-		assert.Equal(t, "bar", executor)
-	})
+func TestSanitize(t *testing.T) {
+	tests := []struct {
+		c   Config
+		err string
+	}{
+		{Config{Links: []*wfv1.Link{{URL: "javascript:foo"}}}, "protocol javascript is not allowed"},
+		{Config{Links: []*wfv1.Link{{URL: "javASCRipt: //foo"}}}, "protocol javascript is not allowed"},
+		{Config{Links: []*wfv1.Link{{URL: "http://foo.bar/?foo=<script>abc</script>bar"}}}, ""},
+	}
+	for _, tt := range tests {
+		err := tt.c.Sanitize([]string{"http", "https"})
+		if tt.err != "" {
+			assert.Equal(t, err.Error(), tt.err)
+		} else {
+			assert.Nil(t, err)
+		}
+	}
 }

@@ -35,6 +35,7 @@ argo archive [flags]
       --loglevel string                Set the logging level. One of: debug|info|warn|error (default "info")
   -n, --namespace string               If present, the namespace scope for this CLI request
       --password string                Password for basic authentication to the API server
+      --proxy-url string               If provided, this URL will be used to connect via proxy
       --request-timeout string         The length of time to wait before giving up on a single server request. Non-zero values should contain a corresponding time unit (e.g. 1s, 2m, 3h). A value of zero means don't timeout requests. (default "0")
   -e, --secure                         Whether or not the server is using TLS with the Argo Server. Defaults to the ARGO_SECURE environment variable. (default true)
       --server string                  The address and port of the Kubernetes API server
@@ -54,4 +55,5 @@ argo archive [flags]
 * [argo archive list-label-keys](argo_archive_list-label-keys.md)	 - list workflows label keys in the archive
 * [argo archive list-label-values](argo_archive_list-label-values.md)	 - get workflow label values in the archive
 * [argo archive resubmit](argo_archive_resubmit.md)	 - resubmit one or more workflows
+* [argo archive retry](argo_archive_retry.md)	 - retry zero or more workflows
 

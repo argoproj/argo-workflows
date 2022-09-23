@@ -2,22 +2,22 @@
 
 > v3.1 and after
 
-#### Development
-
 We have intentionally made this feature available with only bare-bones functionality. Our hope is that we are able to build this feature with our community's feedback. If you have ideas and use cases for this feature, please open an [enhancement proposal](https://github.com/argoproj/argo-workflows/issues/new?assignees=&labels=enhancement&template=enhancement_proposal.md) on GitHub.
 
 Additionally, please take a look at our current ideas at the bottom of this document.
 
 ## Introduction
+
 Users often source and transform data as part of their workflows. The `data` template provides first-class support for these common operations.
 
 `data` templates can best be understood by looking at a common data sourcing and transformation operation in `bash`:
 
 ```bash
-$ find -r . | grep ".pdf" | sed "s/foo/foo.ready/"
+find -r . | grep ".pdf" | sed "s/foo/foo.ready/"
 ```
 
 Such operations consist of two main parts:
+
 * A "source" of data: `find -r .`
 * A series of "transformations" which transform the output of the source serially: `| grep ".pdf" | sed "s/foo/foo.ready/"`
 

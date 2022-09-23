@@ -1,7 +1,5 @@
 # Prometheus Metrics
 
-![GA](assets/ga.svg)
-
 > v2.7 and after
 
 ## Introduction
@@ -9,7 +7,7 @@
 Argo emits a certain number of controller metrics that inform on the state of the controller at any given time. Furthermore,
 users can also define their own custom metrics to inform on the state of their Workflows.
 
-Custom prometheus metrics can be defined to be emitted on a `Workflow`- and `Template`-level basis. These can be useful
+Custom Prometheus metrics can be defined to be emitted on a `Workflow`- and `Template`-level basis. These can be useful
 for many cases; some examples:
 
 - Keeping track of the duration of a `Workflow` or `Template` over time, and setting an alert if it goes beyond a threshold
@@ -23,12 +21,13 @@ best way to define metrics in Argo to avoid problems such as [cardinality explos
 
 There are two kinds of metrics emitted by Argo: **controller metrics** and **custom metrics**.
 
-#### Controller metrics 
+### Controller metrics
+
 Metrics that inform on the state of the controller; i.e., they answer the question "What is the state of the controller right now?"
 Default controller metrics can be scraped from service ```workflow-controller-metrics``` at the endpoint ```<host>:9090/metrics```
- 
 
-#### Custom metrics 
+### Custom metrics
+
 Metrics that inform on the state of a Workflow, or a series of Workflows. These custom metrics are defined by the user in the Workflow spec.
 
 Emitting custom metrics is the responsibility of the emitter owner. Since the user defines Workflows in Argo, the user is responsible
@@ -63,61 +62,61 @@ a way to view and analyze historical data, consider the [workflow archive](workf
 
 Metrics for the Four Golden Signals are:
 
-* Latency: `argo_workflows_queue_latency`
-* Traffic: `argo_workflows_count` and `argo_workflows_queue_depth_count`
-* Errors: `argo_workflows_count` and `argo_workflows_error_count`
-* Saturation: `argo_workflows_workers_busy` and `argo_workflows_workflow_condition`
+- Latency: `argo_workflows_queue_latency`
+- Traffic: `argo_workflows_count` and `argo_workflows_queue_depth_count`
+- Errors: `argo_workflows_count` and `argo_workflows_error_count`
+- Saturation: `argo_workflows_workers_busy` and `argo_workflows_workflow_condition`
 
 <!-- titles should be the exact metric name for deep-linking, alphabetical ordered -->
 
-#### argo_pod_missing
+#### `argo_pod_missing`
 
 Pods were not seen. E.g. by being deleted by Kubernetes. You should only see this under high load.
 
 !!! NOTE
     This metric's name starts with `argo_` not `argo_workflows_`.
 
-#### argo_workflows_count
+#### `argo_workflows_count`
 
 Number of workflow in each phase. The `Running` count does not mean that a workflows pods are running, just that the controller has scheduled them. A workflow can be stuck in `Running` with pending pods for a long time.
 
-#### argo_workflows_error_count
+#### `argo_workflows_error_count`
 
 A count of certain errors incurred by the controller.
 
-#### argo_workflows_k8s_request_total
+#### `argo_workflows_k8s_request_total`
 
 Number of API requests sent to the Kubernetes API.
 
-#### argo_workflows_operation_duration_seconds
+#### `argo_workflows_operation_duration_seconds`
 
 A histogram of durations of operations.
 
-#### argo_workflows_pods_count
+#### `argo_workflows_pods_count`
 
-It is possible for a workflow to start, but no pods be running (e.g. cluster is too busy to run them). This metric sheds light on actual work being done. 
+It is possible for a workflow to start, but no pods be running (e.g. cluster is too busy to run them). This metric sheds light on actual work being done.
 
-#### argo_workflows_queue_adds_count
+#### `argo_workflows_queue_adds_count`
 
 The number of additions to the queue of workflows or cron workflows.
 
-#### argo_workflows_queue_depth_count
+#### `argo_workflows_queue_depth_count`
 
 The depth of the queue of workflows or cron workflows to be processed by the controller.
 
-#### argo_workflows_queue_latency
+#### `argo_workflows_queue_latency`
 
 The time workflows or cron workflows spend in the queue waiting to be processed.
 
-#### argo_workflows_workers_busy
+#### `argo_workflows_workers_busy`
 
 The number of workers that are busy.
 
-#### argo_workflows_workflow_condition
+#### `argo_workflows_workflow_condition`
 
 The number of workflow with different conditions. This will tell you the number of workflows with running pods.
 
-#### argo_workflows_workflows_processed_count
+#### `argo_workflows_workflows_processed_count`
 
 A count of all Workflow updates processed by the controller.
 
@@ -131,7 +130,7 @@ In order to analyze the behavior of a workflow over time, we need to be able to 
 (i.e. individual executions) of a workflow together into a "series" for the purposes of emitting metrics. We do so by linking them together
 with the same metric descriptor.
 
-In prometheus, a metric descriptor is defined as a metric's name and its key-value labels. For example, for a metric 
+In Prometheus, a metric descriptor is defined as a metric's name and its key-value labels. For example, for a metric
 tracking the duration of model execution over time, a metric descriptor could be:
 
 `argo_workflows_model_exec_time{model_name="model_a",phase="validation"}`
@@ -155,7 +154,7 @@ Please see the [Argo Workflows metrics](https://grafana.com/grafana/dashboards/1
 ## Defining metrics
 
 Metrics are defined in-place on the Workflow/Step/Task where they are emitted from. Metrics are always processed _after_
-the Workflow/Step/Task completes, with the exception of [realtime metrics](#realtime-metrics).
+the Workflow/Step/Task completes, with the exception of [real-time metrics](#real-time-metrics).
 
 Metric definitions **must** include a `name` and a `help` doc string. They can also include any number of `labels` (when
 defining labels avoid cardinality explosion). Metrics with the same `name` **must always** use the same exact `help` string,
@@ -279,16 +278,15 @@ Finally, an example of a `Template`-level Histogram metric that tracks an intern
 ...
 ```
 
-### Realtime metrics
+### Real-Time Metrics
 
-Argo supports a limited number of real-time metrics. These metrics are emitted in realtime, beginning when the step execution starts
-and ending when it completes. Realtime metrics are only available on Gauge type metrics and with a [limited number of variables](variables.md#realtime-metrics).
+Argo supports a limited number of real-time metrics. These metrics are emitted in real-time, beginning when the step execution starts
+and ending when it completes. Real-time metrics are only available on Gauge type metrics and with a [limited number of variables](variables.md#realtime-metrics).
 
-To define a realtime metric simply add `realtime: true` to a gauge metric with a valid realtime variable. For example:
+To define a real-time metric simply add `realtime: true` to a gauge metric with a valid real-time variable. For example:
 
 ```yaml
   gauge:
     realtime: true
     value: "{{duration}}"
 ```
-

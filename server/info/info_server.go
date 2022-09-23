@@ -4,6 +4,8 @@ import (
 	"context"
 	"os"
 
+	log "github.com/sirupsen/logrus"
+
 	"github.com/argoproj/argo-workflows/v3"
 	infopkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/info"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
@@ -20,12 +22,13 @@ func (i *infoServer) GetUserInfo(ctx context.Context, _ *infopkg.GetUserInfoRequ
 	claims := auth.GetClaims(ctx)
 	if claims != nil {
 		return &infopkg.GetUserInfoResponse{
-			Subject:            claims.Subject,
-			Issuer:             claims.Issuer,
-			Groups:             claims.Groups,
-			Email:              claims.Email,
-			EmailVerified:      claims.EmailVerified,
-			ServiceAccountName: claims.ServiceAccountName,
+			Subject:                 claims.Subject,
+			Issuer:                  claims.Issuer,
+			Groups:                  claims.Groups,
+			Email:                   claims.Email,
+			EmailVerified:           claims.EmailVerified,
+			ServiceAccountName:      claims.ServiceAccountName,
+			ServiceAccountNamespace: claims.ServiceAccountNamespace,
 		}, nil
 	}
 	return &infopkg.GetUserInfoResponse{}, nil
@@ -48,6 +51,22 @@ func (i *infoServer) GetInfo(context.Context, *infopkg.GetInfoRequest) (*infopkg
 func (i *infoServer) GetVersion(context.Context, *infopkg.GetVersionRequest) (*wfv1.Version, error) {
 	version := argo.GetVersion()
 	return &version, nil
+}
+
+func (i *infoServer) CollectEvent(ctx context.Context, req *infopkg.CollectEventRequest) (*infopkg.CollectEventResponse, error) {
+	logFields := log.Fields{}
+
+	claims := auth.GetClaims(ctx)
+	if claims != nil {
+		logFields["subject"] = claims.Subject
+		logFields["email"] = claims.Email
+	}
+
+	logFields["name"] = req.Name
+
+	log.WithFields(logFields).Info("tracking UI usage️️")
+
+	return &infopkg.CollectEventResponse{}, nil
 }
 
 func NewInfoServer(managedNamespace string, links []*wfv1.Link, navColor string) infopkg.InfoServiceServer {

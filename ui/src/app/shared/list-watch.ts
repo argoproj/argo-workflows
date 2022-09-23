@@ -12,8 +12,6 @@ type Sorter = (a: Resource, b: Resource) => number;
 // put the youngest at the start of the list
 export const sortByYouth: Sorter = (a: Resource, b: Resource) => b.metadata.creationTimestamp.localeCompare(a.metadata.creationTimestamp);
 
-const reconnectAfterMs = 3000;
-
 /**
  * ListWatch allows you to start watching for changes, automatically reconnecting on error.
  */
@@ -26,6 +24,7 @@ export class ListWatch<T extends Resource> {
     private items: T[];
     private retryWatch: RetryWatch<T>;
     private timeout: any;
+    private reconnectAfterMs = 3000;
 
     constructor(
         list: () => Promise<{metadata: kubernetes.ListMeta; items: T[]}>,
@@ -66,7 +65,7 @@ export class ListWatch<T extends Resource> {
             .catch(e => {
                 this.stop();
                 this.onError(e);
-                this.timeout = setTimeout(() => this.start(), reconnectAfterMs);
+                this.reconnect();
             });
     }
 
@@ -76,6 +75,11 @@ export class ListWatch<T extends Resource> {
     public stop() {
         clearTimeout(this.timeout);
         this.retryWatch.stop();
+    }
+
+    private reconnect() {
+        this.timeout = setTimeout(() => this.start(), this.reconnectAfterMs);
+        this.reconnectAfterMs = Math.min(this.reconnectAfterMs * 1.5, 60000);
     }
 }
 

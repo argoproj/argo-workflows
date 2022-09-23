@@ -1,86 +1,10 @@
-# Workflow Controller Configmap
+# Workflow Controller Config Map
 
 ## Introduction
 
-The Workflow Controller Configmap is used to set controller-wide settings.
+The Workflow Controller Config Map is used to set controller-wide settings.
 
 For a detailed example, please see [`workflow-controller-configmap.yaml`](./workflow-controller-configmap.yaml).
-
-## Setting the Configmap
-
-The configmap should be saved as a K8s Configmap on the cluster in the same namespace as the `workflow-controller`.
-It should then be referenced by the `workflow-controller` and `argo-server` as a command argument:
-
-```yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: workflow-controller
-spec:
-  selector:
-    matchLabels:
-      app: workflow-controller
-  template:
-    metadata:
-      labels:
-        app: workflow-controller
-    spec:
-      containers:
-      - args:
-        - --configmap
-        - workflow-controller-configmap   # Set configmap name here
-        - --executor-image
-        - argoproj/argoexec:latest
-        - --namespaced
-        command:
-        - workflow-controller
-        image: argoproj/workflow-controller:latest
-        name: workflow-controller
-      serviceAccountName: argo
-      nodeSelector:
-              kubernetes.io/os: linux
-```
-```yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: argo-server
-spec:
-  selector:
-    matchLabels:
-      app: argo-server
-  template:
-    metadata:
-      labels:
-        app: argo-server
-    spec:
-      containers:
-      - args:
-        - server
-        - --configmap
-        - workflow-controller-configmap   # Set configmap name here
-        image: argoproj/argocli:latest
-        name: argo-server
-        ports:
-        - containerPort: 2746
-          name: web
-        readinessProbe:
-          httpGet:
-            path: /
-            port: 2746
-            scheme: HTTP
-          initialDelaySeconds: 10
-          periodSeconds: 20
-        securityContext:
-          capabilities:
-            drop:
-            - ALL
-        volumeMounts:
-        - mountPath: /tmp
-          name: tmp
-      nodeSelector:
-        kubernetes.io/os: linux
-```
 
 ## Alternate Structure
 

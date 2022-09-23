@@ -1,0 +1,135 @@
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: artifacts
+  annotations:
+    workflows.argoproj.io/description: |
+      This example shows how to produce different types of artifact.
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      volumes:
+        - name: in
+          emptyDir: { }
+        - name: out
+          emptyDir: { }
+      inputs:
+        artifacts:
+          - name: temps
+            path: /in/annual.csv
+            http:
+              url: https://datahub.io/core/global-temp/r/annual.csv
+      containerSet:
+        volumeMounts:
+          - mountPath: /in
+            name: in
+          - mountPath: /out
+            name: out
+        containers:
+          - name: setup
+            image: argoproj/argosay:v2
+            command:
+              - sh
+              - -c
+            args:
+              - |
+                mkdir -p /out/assets
+          - name: gnuplot
+            image: remuslazar/gnuplot
+            dependencies:
+              - setup
+            args:
+              - -e
+              - |
+                set xlabel 'Year'; set ylabel 'Mean';
+                set grid;
+                set datafile separator ',';
+                set term png size 600,400;
+                set output '/out/assets/global-temp.png';
+                plot '/in/annual.csv' every 2::0 skip 1 using 2:3 title 'Global Temperature' with lines linewidth 2;
+          - name: main
+            image: argoproj/argosay:v2
+            dependencies:
+              - setup
+            command:
+              - sh
+              - -c
+            args:
+              - |
+                cowsay "hello world" > /out/hello.txt
+
+                cat > /out/hello.json <<EOF
+                {"hello": {"world": true}} 
+                EOF
+                
+                echo '* {font-family: sans-serif}' > /out/assets/styles.css
+                
+                cat > /out/index.html <<EOF
+                <html>
+                  <head>
+                    <link rel='stylesheet' href='assets/styles.css' type='text/css'/>
+                  </head>
+                  <body>
+                    <h1>Global Temperature</h1>
+                    <img src='assets/global-temp.png'/>
+                  </body>
+                </html>
+                EOF
+                
+                cat > /out/malicious.html <<EOF
+                <html>
+                  <body>
+                    <script>alert(1)</script>
+                    <p>This page attempts to run a script that shows an alert, but the Argo Server UI Content-Security-Policy will prevent that.</p>
+                    <p>To check, open your Web Console and see that "Blocked script execution ... because the document's frame is sandboxed." (or similar) is printed.</p>
+                  </body>
+                </html>
+                EOF
+      outputs:
+        artifacts:
+          # saving single files
+          - name: text-file
+            path: /out/hello.txt
+            s3:
+              key: hello.txt
+            archive:
+              none: { }
+          # JSON files are shown with syntax highlighting.
+          - name: json-file
+            path: /out/hello.json
+            s3:
+              key: hello.json
+            archive:
+              none: { }
+          # CSS in not considered a known file type
+          - name: css-file
+            path: /out/assets/styles.css
+            s3:
+              key: styles.css
+            archive:
+              none: { }
+          # this artifact tries to run JavaScript
+          - name: malicious-file
+            path: /out/malicious.html
+            s3:
+              key: malicious.html
+            archive:
+              none: { }
+          # save a whole directory
+          - name: report
+            path: /out
+            s3:
+              key: report/
+            archive:
+              none: { }
+          # this will be a tgz with a single file
+          - name: tgz-file
+            path: /out/hello.txt
+            s3:
+              key: file.tgz
+          # this will be a tgz with two entries, one dir and one file
+          - name: tgz-dir
+            path: /out
+            s3:
+              key: dir.tgz

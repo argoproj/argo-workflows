@@ -2,6 +2,7 @@ package raw_test
 
 import (
 	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
 	"testing"
@@ -32,6 +33,22 @@ func TestLoad(t *testing.T) {
 	assert.NoError(t, err)
 
 	dat, err := ioutil.ReadFile(lf.Name())
+	assert.NoError(t, err)
+	assert.Equal(t, content, string(dat))
+}
+
+func TestOpenStream(t *testing.T) {
+	content := fmt.Sprintf("time: %v", time.Now().UnixNano())
+	art := &wfv1.Artifact{}
+	art.Raw = &wfv1.RawArtifact{
+		Data: content,
+	}
+	driver := &raw.ArtifactDriver{}
+	rc, err := driver.OpenStream(art)
+	assert.NoError(t, err)
+	defer rc.Close()
+
+	dat, err := io.ReadAll(rc)
 	assert.NoError(t, err)
 	assert.Equal(t, content, string(dat))
 }

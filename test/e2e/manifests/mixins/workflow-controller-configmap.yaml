@@ -6,12 +6,10 @@ data:
   workflowDefaults: |
     spec:
       activeDeadlineSeconds: 300
-      ttlStrategy:
-        secondsAfterCompletion: 600
       podSpecPatch: |
         terminationGracePeriodSeconds: 3
   executor: |
-    imagePullPolicy: Never
+    imagePullPolicy: IfNotPresent
     resources:
       requests:
         cpu: 0.1
@@ -23,4 +21,3 @@ data:
     completed: 10
     failed: 2
     errored: 2
-  kubeletInsecure: "true"

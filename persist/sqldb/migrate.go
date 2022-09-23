@@ -255,6 +255,9 @@ func (m migrate) Exec(ctx context.Context) (err error) {
 		ansiSQLChange(`create index argo_archived_workflows_i2 on argo_archived_workflows (clustername,instanceid,finishedat)`),
 		// add argo_archived_workflows name index for prefix searching performance
 		ansiSQLChange(`create index argo_archived_workflows_i3 on argo_archived_workflows (clustername,instanceid,name)`),
+		// add indexes for list archived workflow performance. #8836
+		ansiSQLChange(`create index argo_archived_workflows_i4 on argo_archived_workflows (startedat)`),
+		ansiSQLChange(`create index argo_archived_workflows_labels_i1 on argo_archived_workflows_labels (name,value)`),
 	} {
 		err := m.applyChange(ctx, changeSchemaVersion, change)
 		if err != nil {

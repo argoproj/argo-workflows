@@ -12,6 +12,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/argoproj/argo-workflows/v3/config"
+
 	pkgrand "github.com/argoproj/pkg/rand"
 	"github.com/coreos/go-oidc/v3/oidc"
 	"github.com/go-jose/go-jose/v3"
@@ -23,7 +25,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 
-	"github.com/argoproj/argo-workflows/v3/server/auth/rbac"
 	"github.com/argoproj/argo-workflows/v3/server/auth/types"
 )
 
@@ -45,6 +46,8 @@ type Interface interface {
 
 var _ Interface = &sso{}
 
+type Config = config.SSOConfig
+
 type sso struct {
 	config          *oauth2.Config
 	issuer          string
@@ -54,7 +57,7 @@ type sso struct {
 	secure          bool
 	privateKey      crypto.PrivateKey
 	encrypter       jose.Encrypter
-	rbacConfig      *rbac.Config
+	rbacConfig      *config.RBACConfig
 	expiry          time.Duration
 	customClaimName string
 	userInfoPath    string
@@ -62,29 +65,6 @@ type sso struct {
 
 func (s *sso) IsRBACEnabled() bool {
 	return s.rbacConfig.IsEnabled()
-}
-
-type Config struct {
-	Issuer       string                  `json:"issuer"`
-	IssuerAlias  string                  `json:"issuerAlias,omitempty"`
-	ClientID     apiv1.SecretKeySelector `json:"clientId"`
-	ClientSecret apiv1.SecretKeySelector `json:"clientSecret"`
-	RedirectURL  string                  `json:"redirectUrl"`
-	RBAC         *rbac.Config            `json:"rbac,omitempty"`
-	// additional scopes (on top of "openid")
-	Scopes        []string        `json:"scopes,omitempty"`
-	SessionExpiry metav1.Duration `json:"sessionExpiry,omitempty"`
-	// customGroupClaimName will override the groups claim name
-	CustomGroupClaimName string `json:"customGroupClaimName,omitempty"`
-	UserInfoPath         string `json:"userInfoPath,omitempty"`
-	InsecureSkipVerify   bool   `json:"insecureSkipVerify,omitempty"`
-}
-
-func (c Config) GetSessionExpiry() time.Duration {
-	if c.SessionExpiry.Duration > 0 {
-		return c.SessionExpiry.Duration
-	}
-	return 10 * time.Hour
 }
 
 // Abstract methods of oidc.Provider that our code uses into an interface. That
@@ -243,7 +223,6 @@ func (s *sso) HandleCallback(w http.ResponseWriter, r *http.Request) {
 	http.SetCookie(w, &http.Cookie{Name: state, MaxAge: 0})
 	if err != nil {
 		w.WriteHeader(400)
-		_, _ = w.Write([]byte(fmt.Sprintf("invalid state: %v", err)))
 		return
 	}
 	redirectOption := oauth2.SetAuthURLParam("redirect_uri", s.getRedirectUrl(r))
@@ -252,25 +231,21 @@ func (s *sso) HandleCallback(w http.ResponseWriter, r *http.Request) {
 	oauth2Token, err := s.config.Exchange(oauth2Context, r.URL.Query().Get("code"), redirectOption)
 	if err != nil {
 		w.WriteHeader(401)
-		_, _ = w.Write([]byte(fmt.Sprintf("failed to exchange token: %v", err)))
 		return
 	}
 	rawIDToken, ok := oauth2Token.Extra("id_token").(string)
 	if !ok {
 		w.WriteHeader(401)
-		_, _ = w.Write([]byte("failed to get id_token"))
 		return
 	}
 	idToken, err := s.idTokenVerifier.Verify(ctx, rawIDToken)
 	if err != nil {
 		w.WriteHeader(401)
-		_, _ = w.Write([]byte(fmt.Sprintf("failed to verify token: %v", err)))
 		return
 	}
 	c := &types.Claims{}
 	if err := idToken.Claims(c); err != nil {
 		w.WriteHeader(401)
-		_, _ = w.Write([]byte(fmt.Sprintf("failed to get claims: %v", err)))
 		return
 	}
 
@@ -281,7 +256,6 @@ func (s *sso) HandleCallback(w http.ResponseWriter, r *http.Request) {
 		groups, err = c.GetCustomGroup(s.customClaimName)
 		if err != nil {
 			w.WriteHeader(401)
-			_, _ = w.Write([]byte(fmt.Sprintf("failed to get custom claim: %v", err)))
 			return
 		}
 	}
@@ -292,7 +266,6 @@ func (s *sso) HandleCallback(w http.ResponseWriter, r *http.Request) {
 		groups, err = c.GetUserInfoGroups(oauth2Token.AccessToken, s.issuer, s.userInfoPath)
 		if err != nil {
 			w.WriteHeader(401)
-			_, _ = w.Write([]byte(fmt.Sprintf("failed to get groups claim: %v", err)))
 			return
 		}
 	}
@@ -303,18 +276,18 @@ func (s *sso) HandleCallback(w http.ResponseWriter, r *http.Request) {
 			Subject: c.Subject,
 			Expiry:  jwt.NewNumericDate(time.Now().Add(s.expiry)),
 		},
-		Groups:             groups,
-		RawClaim:           c.RawClaim,
-		Email:              c.Email,
-		EmailVerified:      c.EmailVerified,
-		ServiceAccountName: c.ServiceAccountName,
-		PreferredUsername:  c.PreferredUsername,
+		Groups:                  groups,
+		RawClaim:                c.RawClaim,
+		Email:                   c.Email,
+		EmailVerified:           c.EmailVerified,
+		ServiceAccountName:      c.ServiceAccountName,
+		PreferredUsername:       c.PreferredUsername,
+		ServiceAccountNamespace: c.ServiceAccountNamespace,
 	}
 
 	raw, err := jwt.Encrypted(s.encrypter).Claims(argoClaims).CompactSerialize()
 	if err != nil {
 		w.WriteHeader(401)
-		_, _ = w.Write([]byte(fmt.Sprintf("failed to encode claims: %v", err)))
 		return
 	}
 	value := Prefix + raw

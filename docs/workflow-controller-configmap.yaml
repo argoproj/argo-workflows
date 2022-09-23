@@ -146,6 +146,7 @@ data:
   # Specifies the container runtime interface to use (default: emissary)
   # must be one of: docker, kubelet, k8sapi, pns, emissary
   # It has lower precedence than either `--container-runtime-executor` and `containerRuntimeExecutors`.
+  # (removed in v3.4)
   containerRuntimeExecutor: emissary
 
   # Specifies the executor to use.
@@ -158,6 +159,7 @@ data:
   #
   # The list is in order of precedence; the first matching executor is used.
   # This has precedence over `containerRuntimeExecutor`.
+  # (removed in v3.4)
   containerRuntimeExecutors: |
     - name: emissary
       selector:
@@ -169,26 +171,24 @@ data:
           workflows.argoproj.io/container-runtime-executor: pns
 
   # Specifies the location of docker.sock on the host for docker executor (default: /var/run/docker.sock)
-  # (available since Argo v2.4)
+  # (available v2.4-v3.3)
   dockerSockPath: /var/someplace/else/docker.sock
 
-  # kubelet port when using kubelet executor (default: 10250)
+  # kubelet port when using kubelet executor (default: 10250) (kubelet executor will be deprecated use emissary instead)
+  # (removed in v3.4)
   kubeletPort: 10250
 
   # disable the TLS verification of the kubelet executor (default: false)
+  # (removed in v3.4)
   kubeletInsecure: false
 
   # The command/args for each image, needed when the command is not specified and the emissary executor is used.
   # https://argoproj.github.io/argo-workflows/workflow-executors/#emissary-emissary
   images: |
-    argoproj/argosay:v1:
-      command: [cowsay]
     argoproj/argosay:v2:
-      command: [/argosay]
+      cmd: [/argosay]
     docker/whalesay:latest:
-      command: [cowsay]
-    python:alpine3.6:
-      command: [python3]
+      cmd: [/bin/bash]
 
   # Defaults for main containers. These can be overridden by the template.
   # <= v3.3 only `resources` are supported.

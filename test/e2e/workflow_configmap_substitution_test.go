@@ -138,6 +138,50 @@ spec:
 		WaitForWorkflow(fixtures.ToBeErrored)
 }
 
+func (s *WorkflowConfigMapSelectorSubstitutionSuite) TestDefaultParamValueWhenNotFound() {
+	s.Given().
+		Workflow(`apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: workflow-template-configmapkeyselector-wf-default-param-
+  label:
+    workflows.argoproj.io/test: "true"
+spec:
+  entrypoint: whalesay
+  arguments:
+    parameters:
+    - name: message
+      value: msg
+  templates:
+  - name: whalesay
+    inputs:
+      parameters:
+      - name: message
+        valueFrom:
+          default: "default-val"
+          configMapKeyRef:
+            name: cmref-parameters
+            key: not-existing-key
+    container:
+      image: argoproj/argosay:v2
+      args:
+        - echo
+        - "{{inputs.parameters.message}}"
+`).
+		When().
+		CreateConfigMap(
+			"cmref-parameters",
+			map[string]string{"msg": "hello world"},
+			map[string]string{"workflows.argoproj.io/configmap-type": "Parameter"}).
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeSucceeded).
+		DeleteConfigMap("cmref-parameters").
+		Then().
+		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
+		})
+}
+
 func TestConfigMapKeySelectorSubstitutionSuite(t *testing.T) {
 	suite.Run(t, new(WorkflowConfigMapSelectorSubstitutionSuite))
 }

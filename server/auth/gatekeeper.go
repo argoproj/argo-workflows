@@ -207,7 +207,7 @@ func (s gatekeeper) getClients(ctx context.Context, req interface{}) (*servertyp
 			return nil, nil, status.Error(codes.Unauthenticated, err.Error())
 		}
 		if s.ssoIf.IsRBACEnabled() {
-			clients, err := s.rbacAuthorization(claims, req)
+			clients, err := s.rbacAuthorization(ctx, claims, req)
 			if err != nil {
 				log.WithError(err).Error("failed to perform RBAC authorization")
 				return nil, nil, status.Error(codes.PermissionDenied, "not allowed")
@@ -279,8 +279,8 @@ func (s *gatekeeper) canDelegateRBACToRequestNamespace(req interface{}) bool {
 	return len(namespace) != 0 && s.ssoNamespace != namespace
 }
 
-func (s *gatekeeper) getClientsForServiceAccount(claims *types.Claims, serviceAccount *corev1.ServiceAccount) (*servertypes.Clients, error) {
-	authorization, err := s.authorizationForServiceAccount(serviceAccount)
+func (s *gatekeeper) getClientsForServiceAccount(ctx context.Context, claims *types.Claims, serviceAccount *corev1.ServiceAccount) (*servertypes.Clients, error) {
+	authorization, err := s.authorizationForServiceAccount(ctx, serviceAccount)
 	if err != nil {
 		return nil, err
 	}
@@ -289,10 +289,11 @@ func (s *gatekeeper) getClientsForServiceAccount(claims *types.Claims, serviceAc
 		return nil, err
 	}
 	claims.ServiceAccountName = serviceAccount.Name
+	claims.ServiceAccountNamespace = serviceAccount.Namespace
 	return clients, nil
 }
 
-func (s *gatekeeper) rbacAuthorization(claims *types.Claims, req interface{}) (*servertypes.Clients, error) {
+func (s *gatekeeper) rbacAuthorization(ctx context.Context, claims *types.Claims, req interface{}) (*servertypes.Clients, error) {
 	ssoDelegationAllowed, ssoDelegated := false, false
 	loginAccount, err := s.getServiceAccount(claims, s.ssoNamespace)
 	if err != nil {
@@ -311,14 +312,14 @@ func (s *gatekeeper) rbacAuthorization(claims *types.Claims, req interface{}) (*
 	}
 	// important! write an audit entry (i.e. log entry) so we know which user performed an operation
 	log.WithFields(log.Fields{"serviceAccount": delegatedAccount.Name, "loginServiceAccount": loginAccount.Name, "subject": claims.Subject, "email": claims.Email, "ssoDelegationAllowed": ssoDelegationAllowed, "ssoDelegated": ssoDelegated}).Info("selected SSO RBAC service account for user")
-	return s.getClientsForServiceAccount(claims, delegatedAccount)
+	return s.getClientsForServiceAccount(ctx, claims, delegatedAccount)
 }
 
-func (s *gatekeeper) authorizationForServiceAccount(serviceAccount *corev1.ServiceAccount) (string, error) {
+func (s *gatekeeper) authorizationForServiceAccount(ctx context.Context, serviceAccount *corev1.ServiceAccount) (string, error) {
 	if len(serviceAccount.Secrets) == 0 {
 		return "", fmt.Errorf("expected at least one secret for SSO RBAC service account: %s", serviceAccount.GetName())
 	}
-	secret, err := s.cache.SecretLister.Secrets(serviceAccount.GetNamespace()).Get(serviceAccount.Secrets[0].Name)
+	secret, err := s.cache.GetSecret(ctx, serviceAccount.GetNamespace(), serviceAccount.Secrets[0].Name)
 	if err != nil {
 		return "", fmt.Errorf("failed to get service account secret: %w", err)
 	}

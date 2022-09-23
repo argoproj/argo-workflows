@@ -1,11 +1,10 @@
-//go:build functional
-// +build functional
+//go:build corefunctional
+// +build corefunctional
 
 package e2e
 
 import (
 	"context"
-	"strings"
 	"testing"
 	"time"
 
@@ -25,7 +24,6 @@ type FunctionalSuite struct {
 }
 
 func (s *FunctionalSuite) TestArchiveStrategies() {
-	s.Need(fixtures.BaseLayerArtifacts)
 	s.Given().
 		Workflow(`@testdata/archive-strategies.yaml`).
 		When().
@@ -46,7 +44,7 @@ func (s *FunctionalSuite) TestDeletingPendingPod() {
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToStart).
 		Exec("kubectl", []string{"-n", "argo", "delete", "pod", "-l", "workflows.argoproj.io/workflow"}, fixtures.OutputRegexp(`pod "pending-.*" deleted`)).
-		Wait(3*time.Second). // allow 3s for reconciliation, we'll create a new pod
+		Wait(time.Duration(3*fixtures.EnvFactor)*time.Second). // allow 3s for reconciliation, we'll create a new pod
 		Exec("kubectl", []string{"-n", "argo", "get", "pod", "-l", "workflows.argoproj.io/workflow"}, fixtures.OutputRegexp(`pending-.*Pending`))
 }
 
@@ -270,84 +268,6 @@ func (s *FunctionalSuite) TestVolumeClaimTemplate() {
 		})
 }
 
-func (s *FunctionalSuite) TestEventOnNodeFailSentAsPod() {
-	// Test whether an WorkflowFailed event (with appropriate message) is emitted in case of node failure
-	var uid types.UID
-	var nodeId types.UID
-	var nodeName string
-	// Update controller config map to set nodeEvents.sendAsPod to true
-	ctx := context.Background()
-	configMap, err := s.KubeClient.CoreV1().ConfigMaps(fixtures.Namespace).Get(
-		ctx,
-		"workflow-controller-configmap",
-		metav1.GetOptions{},
-	)
-	if err != nil {
-		s.T().Fatal(err)
-	}
-	originalData := make(map[string]string)
-	for key, value := range configMap.Data {
-		originalData[key] = value
-	}
-	configMap.Data["nodeEvents"] = "\n  sendAsPod: true"
-	s.Given().
-		Workflow("@expectedfailures/failed-step-event.yaml").
-		When().
-		UpdateConfigMap(
-			"workflow-controller-configmap",
-			configMap.Data,
-			map[string]string{}).
-		// Give controller enough time to update from config map change
-		Wait(5*time.Second).
-		SubmitWorkflow().
-		WaitForWorkflow().
-		Then().
-		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			uid = metadata.UID
-		}).
-		ExpectWorkflowNode(func(status wfv1.NodeStatus) bool {
-			return strings.HasPrefix(status.Name, "failed-step-event-")
-		}, func(t *testing.T, status *wfv1.NodeStatus, pod *apiv1.Pod) {
-			nodeId = pod.UID
-			nodeName = status.Name
-		}).
-		ExpectAuditEvents(
-			func(event apiv1.Event) bool {
-				return (event.InvolvedObject.Kind == workflow.WorkflowKind && event.InvolvedObject.UID == uid) || (event.InvolvedObject.Kind == "Pod" && event.InvolvedObject.UID == nodeId && strings.HasPrefix(event.Reason, "Workflow"))
-			},
-			4,
-			func(t *testing.T, es []apiv1.Event) {
-				for _, e := range es {
-					switch e.Reason {
-					case "WorkflowNodeRunning":
-						assert.Equal(t, e.InvolvedObject.Kind, "Pod")
-						assert.Contains(t, e.Message, "Running node failed-step-event-")
-						assert.Equal(t, e.Annotations["workflows.argoproj.io/node-name"], nodeName)
-						assert.Equal(t, e.Annotations["workflows.argoproj.io/workflow-uid"], string(uid))
-						assert.Contains(t, e.Annotations["workflows.argoproj.io/workflow-name"], "failed-step-event-")
-					case "WorkflowRunning":
-					case "WorkflowNodeFailed":
-						assert.Equal(t, e.InvolvedObject.Kind, "Pod")
-						assert.Contains(t, e.Message, "Failed node failed-step-event-")
-						assert.Equal(t, e.Annotations["workflows.argoproj.io/node-type"], "Pod")
-						assert.Equal(t, e.Annotations["workflows.argoproj.io/node-name"], nodeName)
-						assert.Contains(t, e.Annotations["workflows.argoproj.io/workflow-name"], "failed-step-event-")
-						assert.Equal(t, e.Annotations["workflows.argoproj.io/workflow-uid"], string(uid))
-					case "WorkflowFailed":
-						assert.Contains(t, e.Message, "exit code 1")
-					default:
-						assert.Fail(t, e.Reason)
-					}
-				}
-			},
-		).
-		When().
-		// Reset config map to original settings
-		UpdateConfigMap("workflow-controller-configmap", originalData, map[string]string{}).
-		// Give controller enough time to update from config map change
-		Wait(5 * time.Second)
-}
-
 func (s *FunctionalSuite) TestEventOnNodeFail() {
 	// Test whether an WorkflowFailed event (with appropriate message) is emitted in case of node failure
 	var uid types.UID
@@ -419,29 +339,6 @@ func (s *FunctionalSuite) TestEventOnWorkflowSuccess() {
 		)
 }
 
-func (s *FunctionalSuite) TestLargeWorkflowFailure() {
-	var uid types.UID
-	s.Given().
-		Workflow("@expectedfailures/large-workflow.yaml").
-		When().
-		SubmitWorkflow().
-		WaitForWorkflow(120*time.Second).
-		Then().
-		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			uid = metadata.UID
-		}).
-		ExpectAuditEvents(
-			fixtures.HasInvolvedObject(workflow.WorkflowKind, uid),
-			2,
-			func(t *testing.T, e []apiv1.Event) {
-				assert.Equal(t, "WorkflowRunning", e[0].Reason)
-
-				assert.Equal(t, "WorkflowFailed", e[1].Reason)
-				assert.Contains(t, e[1].Message, "workflow templates are limited to 128KB, this workflow is 128001 bytes")
-			},
-		)
-}
-
 func (s *FunctionalSuite) TestEventOnPVCFail() {
 	//  Test whether an WorkflowFailed event (with appropriate message) is emitted in case of error in creating the PVC
 	var uid types.UID
@@ -467,7 +364,6 @@ func (s *FunctionalSuite) TestEventOnPVCFail() {
 }
 
 func (s *FunctionalSuite) TestArtifactRepositoryRef() {
-	s.Need(fixtures.BaseLayerArtifacts)
 	s.Given().
 		Workflow("@testdata/artifact-repository-ref.yaml").
 		When().
@@ -615,7 +511,6 @@ spec:
 }
 
 func (s *FunctionalSuite) TestParameterAggregation() {
-	s.Need(fixtures.BaseLayerArtifacts)
 	s.Given().
 		Workflow("@functional/param-aggregation.yaml").
 		When().
@@ -780,7 +675,7 @@ spec:
 `).
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow().
+		WaitForWorkflow(10 * time.Second).
 		Then().
 		ExpectWorkflow(func(t *testing.T, md *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.WorkflowFailed, status.Phase)
@@ -939,7 +834,6 @@ spec:
 }
 
 func (s *FunctionalSuite) TestOutputArtifactS3BucketCreationEnabled() {
-	s.Need(fixtures.BaseLayerArtifacts)
 	s.Given().
 		Workflow("@testdata/output-artifact-with-s3-bucket-creation-enabled.yaml").
 		When().

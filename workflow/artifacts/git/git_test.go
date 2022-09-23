@@ -5,12 +5,12 @@ import (
 	"os"
 	"testing"
 
+	"k8s.io/client-go/util/homedir"
+
 	"github.com/stretchr/testify/assert"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
-
-var d = uint64(1)
 
 func TestGitArtifactDriver_Save(t *testing.T) {
 	driver := &ArtifactDriver{}
@@ -18,88 +18,169 @@ func TestGitArtifactDriver_Save(t *testing.T) {
 	assert.Error(t, err)
 }
 
-func TestGitArtifactDriverLoad_HTTPS(t *testing.T) {
-	for _, tt := range []struct {
-		url string
-	}{
-		{"https://github.com/argoproj/empty.git"},
-	} {
-		if os.Getenv("GITHUB_TOKEN") == "" {
-			t.Skip("not running an GITHUB_TOKEN not set")
-		}
-		_ = os.Remove("git-ask-pass.sh")
-		tmp := t.TempDir()
-		driver := &ArtifactDriver{Username: os.Getenv("GITHUB_TOKEN")}
-		assert.NotEmpty(t, driver.Username)
-		err := driver.Load(&wfv1.Artifact{
-			ArtifactLocation: wfv1.ArtifactLocation{
-				Git: &wfv1.GitArtifact{
-					Repo:     tt.url,
-					Fetch:    []string{"+refs/heads/*:refs/remotes/origin/*"},
-					Revision: "HEAD",
-					Depth:    &d,
-				},
-			},
-		}, tmp)
-		assert.NoError(t, err)
-		println(tmp)
-	}
-}
-
-func TestGitArtifactDriverLoad_SSL(t *testing.T) {
-	t.SkipNow()
-	for _, tt := range []struct {
-		name     string
-		insecure bool
-		url      string
-	}{
-		{"Insecure", true, "https://github.com/argoproj/argo-workflows.git"},
-		{"Secure", false, "https://github.com/argoproj/argo-workflows.git"},
-		{"Insecure", true, "https://github.com/argoproj/empty.git"},
-		{"Secure", false, "https://github.com/argoproj/empty.git"},
-	} {
-		t.Run(tt.name, func(t *testing.T) {
-			_ = os.Remove("git-ask-pass.sh")
-			key := os.Getenv("HOME") + "/.ssh/id_rsa"
-			data, err := ioutil.ReadFile(key)
-			if err != nil && os.IsNotExist(err) {
-				t.Skip(key + " does not exist")
+func TestGitArtifactDriver_Load(t *testing.T) {
+	t.Run("EmptyRepo", func(t *testing.T) {
+		driver := &ArtifactDriver{}
+		assert.NoError(t, load(driver, &wfv1.GitArtifact{Repo: "https://github.com/argoproj-labs/empty-test-repo.git"}))
+		assert.DirExists(t, path)
+	})
+	t.Run("PrivateRepo", func(t *testing.T) {
+		t.Run("SSH", func(t *testing.T) {
+			if os.Getenv("CI") == "true" {
+				t.SkipNow()
 			}
+			privateKey, err := os.ReadFile(homedir.HomeDir() + "/.ssh/id_rsa")
 			assert.NoError(t, err)
-			tmp := t.TempDir()
-			println(tmp)
-			driver := &ArtifactDriver{SSHPrivateKey: string(data)}
-			err = driver.Load(&wfv1.Artifact{
-				ArtifactLocation: wfv1.ArtifactLocation{
-					Git: &wfv1.GitArtifact{
-						Repo:                  tt.url,
-						Fetch:                 []string{"+refs/heads/*:refs/remotes/origin/*"},
-						Revision:              "HEAD",
-						InsecureIgnoreHostKey: tt.insecure,
-						Depth:                 &d,
-					},
-				},
-			}, tmp)
-			assert.NoError(t, err)
+			driver := &ArtifactDriver{SSHPrivateKey: string(privateKey)}
+			assert.NoError(t, load(driver, &wfv1.GitArtifact{Repo: "git@github.com:argoproj-labs/private-test-repo.git"}))
+			assert.FileExists(t, path+"/README.md")
 		})
+		t.Run("HTTPS", func(t *testing.T) {
+			token := os.Getenv("PERSONAL_ACCESS_TOKEN")
+			if token == "" {
+				t.SkipNow()
+			}
+			driver := &ArtifactDriver{Username: "alexec", Password: token}
+			assert.NoError(t, load(driver, &wfv1.GitArtifact{Repo: "https://github.com/argoproj-labs/private-test-repo.git"}))
+			assert.FileExists(t, path+"/README.md")
+		})
+	})
+	t.Run("PublicRepo", func(t *testing.T) {
+		driver := &ArtifactDriver{}
+		assert.NoError(t, load(driver, &wfv1.GitArtifact{Repo: "https://github.com/argoproj-labs/test-repo.git"}))
+		assert.FileExists(t, path+"/README.md")
+	})
+	t.Run("Depth", func(t *testing.T) {
+		driver := &ArtifactDriver{}
+		var depth uint64 = 1
+		assert.NoError(t, load(driver, &wfv1.GitArtifact{Repo: "https://github.com/argoproj-labs/test-repo.git", Depth: &depth}))
+		assert.FileExists(t, path+"/README.md")
+	})
+	t.Run("FetchRefs", func(t *testing.T) {
+		driver := &ArtifactDriver{}
+		t.Run("Garbage", func(t *testing.T) {
+			assert.Error(t, load(driver, &wfv1.GitArtifact{
+				Repo:  "https://github.com/argoproj-labs/test-repo.git",
+				Fetch: []string{"garbage"},
+			}))
+		})
+		t.Run("Valid", func(t *testing.T) {
+			assert.NoError(t, load(driver, &wfv1.GitArtifact{
+				Repo:  "https://github.com/argoproj-labs/test-repo.git",
+				Fetch: []string{"+refs/heads/*:refs/remotes/origin/*"},
+			}))
+			assert.FileExists(t, path+"/README.md")
+		})
+	})
+	t.Run("Revision", func(t *testing.T) {
+		driver := &ArtifactDriver{}
+		t.Run("Garbage", func(t *testing.T) {
+			assert.Error(t, load(driver, &wfv1.GitArtifact{Repo: "https://github.com/argoproj-labs/test-repo.git", Revision: "garbage"}))
+		})
+		t.Run("Hash", func(t *testing.T) {
+			assert.NoError(t, load(driver, &wfv1.GitArtifact{Repo: "https://github.com/argoproj-labs/test-repo.git", Revision: "6093d6a"}))
+			assert.FileExists(t, path+"/README.md")
+		})
+		t.Run("HEAD", func(t *testing.T) {
+			assert.NoError(t, load(driver, &wfv1.GitArtifact{Repo: "https://github.com/argoproj-labs/test-repo.git", Revision: "HEAD"}))
+			assert.FileExists(t, path+"/README.md")
+		})
+		t.Run("HEAD~1", func(t *testing.T) {
+			assert.NoError(t, load(driver, &wfv1.GitArtifact{Repo: "https://github.com/argoproj-labs/test-repo.git", Revision: "HEAD~1"}))
+			assert.FileExists(t, path+"/README.md")
+		})
+		t.Run("Main", func(t *testing.T) {
+			assert.NoError(t, load(driver, &wfv1.GitArtifact{Repo: "https://github.com/argoproj-labs/test-repo.git", Revision: "main"}))
+			assert.FileExists(t, path+"/README.md")
+		})
+		t.Run("RemoteBranch", func(t *testing.T) {
+			assert.NoError(t, load(driver, &wfv1.GitArtifact{Repo: "https://github.com/argoproj-labs/test-repo.git", Revision: "origin/my-branch"}))
+			assert.FileExists(t, path+"/my-branch")
+		})
+		t.Run("LocalBranch", func(t *testing.T) {
+			assert.NoError(t, load(driver, &wfv1.GitArtifact{Repo: "https://github.com/argoproj-labs/test-repo.git", Revision: "my-branch"}))
+			assert.FileExists(t, path+"/my-branch")
+		})
+		t.Run("Tag", func(t *testing.T) {
+			assert.NoError(t, load(driver, &wfv1.GitArtifact{Repo: "https://github.com/argoproj-labs/test-repo.git", Revision: "v0.0.0"}))
+			assert.FileExists(t, path+"/README.md")
+		})
+	})
+	t.Run("Submodules", func(t *testing.T) {
+		driver := &ArtifactDriver{}
+		t.Run("Disabled", func(t *testing.T) {
+			assert.NoError(t, load(driver, &wfv1.GitArtifact{Repo: "https://github.com/argoproj-labs/test-repo-w-submodule.git", DisableSubmodules: true}))
+			assert.FileExists(t, path+"/README.md")
+		})
+		t.Run("Enabled", func(t *testing.T) {
+			assert.NoError(t, load(driver, &wfv1.GitArtifact{Repo: "https://github.com/argoproj-labs/test-repo-w-submodule.git"}))
+			assert.FileExists(t, path+"/test-repo/README.md")
+		})
+	})
+
+	t.Run("SingleBranch", func(t *testing.T) {
+		driver := &ArtifactDriver{}
+		t.Run("LocalBranch", func(t *testing.T) {
+			assert.NoError(t, load(driver, &wfv1.GitArtifact{
+				Repo:         "https://github.com/argoproj-labs/test-repo.git",
+				Branch:       "my-branch",
+				SingleBranch: true,
+			}))
+			assert.FileExists(t, path+"/my-branch")
+			assertOnlyFile(t, path+"/.git/refs/heads", "my-branch")
+		})
+		t.Run("Revision", func(t *testing.T) {
+			assert.NoError(t, load(driver, &wfv1.GitArtifact{
+				Repo:         "https://github.com/argoproj-labs/test-repo.git",
+				Branch:       "my-branch",
+				SingleBranch: true,
+				Revision:     "6093d6a",
+			}))
+			assert.NoFileExists(t, path+"/my-branch")
+			assertOnlyFile(t, path+"/.git/refs/heads", "my-branch")
+		})
+		t.Run("Depth", func(t *testing.T) {
+			var depth uint64 = 1
+			assert.NoError(t, load(driver, &wfv1.GitArtifact{
+				Repo:         "https://github.com/argoproj-labs/test-repo.git",
+				Branch:       "my-branch",
+				SingleBranch: true,
+				Depth:        &depth,
+			}))
+			assert.FileExists(t, path+"/my-branch")
+			assertOnlyFile(t, path+"/.git/refs/heads", "my-branch")
+		})
+		t.Run("NoBranchSpecified", func(t *testing.T) {
+			assert.Error(t, load(driver, &wfv1.GitArtifact{
+				Repo:         "https://github.com/argoproj-labs/test-repo.git",
+				Branch:       "",
+				SingleBranch: true,
+			}))
+		})
+		t.Run("Garbage", func(t *testing.T) {
+			assert.Error(t, load(driver, &wfv1.GitArtifact{
+				Repo:         "https://github.com/argoproj-labs/test-repo.git",
+				Branch:       "garbage",
+				SingleBranch: true,
+			}))
+		})
+	})
+}
+
+const path = "/tmp/repo"
+
+func assertOnlyFile(t *testing.T, dir string, file string) {
+	files, err := ioutil.ReadDir(dir)
+	assert.NoError(t, err)
+
+	for _, f := range files {
+		assert.Equal(t, file, f.Name())
 	}
 }
 
-func TestGetCheckoutRevision(t *testing.T) {
-	for _, tt := range []struct {
-		in       string
-		expected string
-	}{
-		{"my-branch", "my-branch"},
-		{"refs/heads/my-branch", "my-branch"},
-		{"refs/tags/1.0.0", "refs/tags/1.0.0"},
-		{"ae7b5432cfa15577d4740fb047762254be3652db", "ae7b5432cfa15577d4740fb047762254be3652db"},
-	} {
-		t.Run(tt.in, func(t *testing.T) {
-			result := getRevisionForCheckout(tt.in)
-			assert.Equal(t, result, tt.expected)
-		})
-	}
+func load(driver *ArtifactDriver, git *wfv1.GitArtifact) error {
+	_ = os.RemoveAll(path)
+	return driver.Load(&wfv1.Artifact{ArtifactLocation: wfv1.ArtifactLocation{Git: git}}, path)
 }
 
 func TestGetUser(t *testing.T) {

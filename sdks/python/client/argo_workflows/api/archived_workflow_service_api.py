@@ -110,7 +110,9 @@ class ArchivedWorkflowServiceApi(object):
         self.delete_archived_workflow = _Endpoint(
             settings={
                 'response_type': (bool, date, datetime, dict, float, int, list, str, none_type,),
-                'auth': [],
+                'auth': [
+                    'BearerToken'
+                ],
                 'endpoint_path': '/api/v1/archived-workflows/{uid}',
                 'operation_id': 'delete_archived_workflow',
                 'http_method': 'DELETE',
@@ -226,7 +228,9 @@ class ArchivedWorkflowServiceApi(object):
         self.get_archived_workflow = _Endpoint(
             settings={
                 'response_type': (IoArgoprojWorkflowV1alpha1Workflow,),
-                'auth': [],
+                'auth': [
+                    'BearerToken'
+                ],
                 'endpoint_path': '/api/v1/archived-workflows/{uid}',
                 'operation_id': 'get_archived_workflow',
                 'http_method': 'GET',
@@ -337,7 +341,9 @@ class ArchivedWorkflowServiceApi(object):
         self.list_archived_workflow_label_keys = _Endpoint(
             settings={
                 'response_type': (IoArgoprojWorkflowV1alpha1LabelKeys,),
-                'auth': [],
+                'auth': [
+                    'BearerToken'
+                ],
                 'endpoint_path': '/api/v1/archived-workflows-label-keys',
                 'operation_id': 'list_archived_workflow_label_keys',
                 'http_method': 'GET',
@@ -450,7 +456,9 @@ class ArchivedWorkflowServiceApi(object):
         self.list_archived_workflow_label_values = _Endpoint(
             settings={
                 'response_type': (IoArgoprojWorkflowV1alpha1LabelValues,),
-                'auth': [],
+                'auth': [
+                    'BearerToken'
+                ],
                 'endpoint_path': '/api/v1/archived-workflows-label-values',
                 'operation_id': 'list_archived_workflow_label_values',
                 'http_method': 'GET',
@@ -609,7 +617,9 @@ class ArchivedWorkflowServiceApi(object):
         self.list_archived_workflows = _Endpoint(
             settings={
                 'response_type': (IoArgoprojWorkflowV1alpha1WorkflowList,),
-                'auth': [],
+                'auth': [
+                    'BearerToken'
+                ],
                 'endpoint_path': '/api/v1/archived-workflows',
                 'operation_id': 'list_archived_workflows',
                 'http_method': 'GET',
@@ -772,7 +782,9 @@ class ArchivedWorkflowServiceApi(object):
         self.resubmit_archived_workflow = _Endpoint(
             settings={
                 'response_type': (IoArgoprojWorkflowV1alpha1Workflow,),
-                'auth': [],
+                'auth': [
+                    'BearerToken'
+                ],
                 'endpoint_path': '/api/v1/archived-workflows/{uid}/resubmit',
                 'operation_id': 'resubmit_archived_workflow',
                 'http_method': 'PUT',
@@ -899,7 +911,9 @@ class ArchivedWorkflowServiceApi(object):
         self.retry_archived_workflow = _Endpoint(
             settings={
                 'response_type': (IoArgoprojWorkflowV1alpha1Workflow,),
-                'auth': [],
+                'auth': [
+                    'BearerToken'
+                ],
                 'endpoint_path': '/api/v1/archived-workflows/{uid}/retry',
                 'operation_id': 'retry_archived_workflow',
                 'http_method': 'PUT',

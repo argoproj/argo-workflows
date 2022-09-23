@@ -36,6 +36,12 @@ type TemplateReferenceHolder interface {
 	GetTemplateRef() *TemplateRef
 	// GetTemplateName returns the template name. This maybe empty. This is last precedence.
 	GetTemplateName() string
+	// GetName returns the name of the template reference holder.
+	GetName() string
+	// IsDAGTask returns true if the template reference is a DAGTask.
+	IsDAGTask() bool
+	// IsWorkflowStep returns true if the template reference is a WorkflowStep.
+	IsWorkflowStep() bool
 }
 
 // SubmitOpts are workflow submission options

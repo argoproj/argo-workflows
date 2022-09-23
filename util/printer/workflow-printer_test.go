@@ -40,6 +40,7 @@ func TestPrintWorkflows(t *testing.T) {
 					"n4": {Phase: wfv1.NodeFailed, Type: wfv1.NodeTypePod, TemplateName: "t0"},
 					"n5": {Phase: wfv1.NodeError, Type: wfv1.NodeTypePod, TemplateName: "t0"},
 				},
+				Message: "test-message",
 			},
 		},
 	}
@@ -54,28 +55,28 @@ func TestPrintWorkflows(t *testing.T) {
 	t.Run("Default", func(t *testing.T) {
 		var b bytes.Buffer
 		assert.NoError(t, PrintWorkflows(workflows, &b, PrintOpts{}))
-		assert.Equal(t, `NAME    STATUS    AGE   DURATION   PRIORITY
-my-wf   Running   0s    3s         2
+		assert.Equal(t, `NAME    STATUS    AGE   DURATION   PRIORITY   MESSAGE
+my-wf   Running   0s    3s         2          test-message
 `, b.String())
 	})
 	t.Run("NoHeader", func(t *testing.T) {
 		var b bytes.Buffer
 		assert.NoError(t, PrintWorkflows(workflows, &b, PrintOpts{NoHeaders: true}))
-		assert.Equal(t, `my-wf   Running   0s   3s   2
+		assert.Equal(t, `my-wf   Running   0s   3s   2   test-message
 `, b.String())
 	})
 	t.Run("Namespace", func(t *testing.T) {
 		var b bytes.Buffer
 		assert.NoError(t, PrintWorkflows(workflows, &b, PrintOpts{Namespace: true}))
-		assert.Equal(t, `NAMESPACE   NAME    STATUS    AGE   DURATION   PRIORITY
-my-ns       my-wf   Running   0s    3s         2
+		assert.Equal(t, `NAMESPACE   NAME    STATUS    AGE   DURATION   PRIORITY   MESSAGE
+my-ns       my-wf   Running   0s    3s         2          test-message
 `, b.String())
 	})
 	t.Run("Wide", func(t *testing.T) {
 		var b bytes.Buffer
 		assert.NoError(t, PrintWorkflows(workflows, &b, PrintOpts{Output: "wide"}))
-		assert.Equal(t, `NAME    STATUS    AGE   DURATION   PRIORITY   P/R/C   PARAMETERS
-my-wf   Running   0s    3s         2          1/2/3   my-param=my-value
+		assert.Equal(t, `NAME    STATUS    AGE   DURATION   PRIORITY   MESSAGE        P/R/C   PARAMETERS
+my-wf   Running   0s    3s         2          test-message   1/2/3   my-param=my-value
 `, b.String())
 	})
 	t.Run("Name", func(t *testing.T) {
@@ -137,29 +138,5 @@ func TestPrintWorkflowCostOptimizationNudges(t *testing.T) {
 		assert.Contains(t, b.String(), "\nYou have at least 101 incomplete and 101 completed workflows. "+
 			"Reducing the total number of workflows will reduce your costs."+
 			"\nLearn more at https://argoproj.github.io/argo-workflows/cost-optimisation/\n")
-	})
-}
-
-func TestPrintWorkflowSecurityNudges(t *testing.T) {
-	secureWorkflow := wfv1.Workflow{
-		Spec: wfv1.WorkflowSpec{
-			SecurityContext: &corev1.PodSecurityContext{},
-		},
-	}
-	insecureWorkflow := wfv1.Workflow{
-		Spec: wfv1.WorkflowSpec{},
-	}
-
-	t.Run("SecurityNudgesForSingleInsecureWorkflow", func(t *testing.T) {
-		var b bytes.Buffer
-		PrintSecurityNudges(insecureWorkflow, &b)
-		assert.Contains(t, b.String(), "\nThis workflow does not have security context set. "+
-			"You can run your workflow pods more securely by setting it.\n"+
-			"Learn more at https://argoproj.github.io/argo-workflows/workflow-pod-security-context/\n")
-	})
-	t.Run("NoSecurityNudgesForSecureWorkflow", func(t *testing.T) {
-		var b bytes.Buffer
-		PrintSecurityNudges(secureWorkflow, &b)
-		assert.NotContains(t, b.String(), "security context")
 	})
 }

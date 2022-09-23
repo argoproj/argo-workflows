@@ -2,13 +2,12 @@ import {NotificationType, Page, SlidingPanel} from 'argo-ui';
 import * as classNames from 'classnames';
 import * as React from 'react';
 import {RouteComponentProps} from 'react-router';
-import {execSpec, Link, Workflow} from '../../../../models';
+import {execSpec, Link, NodePhase, Workflow} from '../../../../models';
 import {uiUrl} from '../../../shared/base';
 import {BasePage} from '../../../shared/components/base-page';
 import {ErrorNotice} from '../../../shared/components/error-notice';
 import {ProcessURL} from '../../../shared/components/links';
 import {Loading} from '../../../shared/components/loading';
-import {ResourceEditor} from '../../../shared/components/resource-editor/resource-editor';
 import {services} from '../../../shared/services';
 import {WorkflowArtifacts} from '../../../workflows/components/workflow-artifacts';
 
@@ -24,6 +23,9 @@ import {WorkflowTimeline} from '../../../workflows/components/workflow-timeline/
 import {WorkflowYamlViewer} from '../../../workflows/components/workflow-yaml-viewer/workflow-yaml-viewer';
 
 require('../../../workflows/components/workflow-details/workflow-details.scss');
+
+const STEP_GRAPH_CONTAINER_MIN_WIDTH = 490;
+const STEP_INFO_WIDTH = 570;
 
 interface State {
     workflow?: Workflow;
@@ -86,18 +88,28 @@ export class ArchivedWorkflowDetails extends BasePage<RouteComponentProps<any>, 
                 )
             )
             .catch(error => this.setState({error}));
+        services.info.collectEvent('openedArchivedWorkflowDetails').then();
     }
 
     public render() {
+        const workflowPhase: NodePhase = this.state.workflow && this.state.workflow.status ? this.state.workflow.status.phase : undefined;
         const items = [
             {
+                title: 'Retry',
+                iconClassName: 'fa fa-undo',
+                disabled: workflowPhase === undefined || !(workflowPhase === 'Failed' || workflowPhase === 'Error'),
+                action: () => this.retryArchivedWorkflow()
+            },
+            {
                 title: 'Resubmit',
-                iconClassName: 'fa fa-redo',
-                action: () => (this.sidePanel = 'resubmit')
+                iconClassName: 'fa fa-plus-circle',
+                disabled: false,
+                action: () => this.resubmitArchivedWorkflow()
             },
             {
                 title: 'Delete',
                 iconClassName: 'fa fa-trash',
+                disabled: false,
                 action: () => this.deleteArchivedWorkflow()
             }
         ];
@@ -108,6 +120,7 @@ export class ArchivedWorkflowDetails extends BasePage<RouteComponentProps<any>, 
                     items.push({
                         title: link.name,
                         iconClassName: 'fa fa-external-link-alt',
+                        disabled: false,
                         action: () => this.openLink(link)
                     })
                 );
@@ -176,8 +189,8 @@ export class ArchivedWorkflowDetails extends BasePage<RouteComponentProps<any>, 
                         </div>
                     </div>
                 ) : (
-                    <div>
-                        <div className='workflow-details__graph-container'>
+                    <div className='workflow-details__graph-container-wrapper'>
+                        <div className='workflow-details__graph-container' style={{minWidth: STEP_GRAPH_CONTAINER_MIN_WIDTH, width: '100%'}}>
                             {this.tab === 'workflow' ? (
                                 <WorkflowPanel
                                     workflowMetadata={this.state.workflow.metadata}
@@ -190,7 +203,7 @@ export class ArchivedWorkflowDetails extends BasePage<RouteComponentProps<any>, 
                             )}
                         </div>
                         {this.nodeId && (
-                            <div className='workflow-details__step-info'>
+                            <div className='workflow-details__step-info' style={{width: STEP_INFO_WIDTH, float: 'right'}}>
                                 <button className='workflow-details__step-info-close' onClick={() => (this.nodeId = null)}>
                                     <i className='argo-icon-close' />
                                 </button>
@@ -221,25 +234,6 @@ export class ArchivedWorkflowDetails extends BasePage<RouteComponentProps<any>, 
                     {this.sidePanel === 'yaml' && <WorkflowYamlViewer workflow={this.state.workflow} selectedNode={this.node} />}
                     {this.sidePanel === 'logs' && (
                         <WorkflowLogsViewer workflow={this.state.workflow} initialPodName={this.podName} nodeId={this.nodeId} container={this.container} archived={true} />
-                    )}
-                    {this.sidePanel === 'resubmit' && (
-                        <ResourceEditor<Workflow>
-                            editing={true}
-                            title='Resubmit Archived Workflow'
-                            kind='Workflow'
-                            value={{
-                                metadata: {
-                                    namespace: this.state.workflow.metadata.namespace,
-                                    name: this.state.workflow.metadata.name
-                                },
-                                spec: this.state.workflow.spec
-                            }}
-                            onSubmit={(value: Workflow) =>
-                                services.workflows
-                                    .create(value, value.metadata.namespace)
-                                    .then(workflow => (document.location.href = uiUrl(`workflows/${workflow.metadata.namespace}/${workflow.metadata.name}`)))
-                            }
-                        />
                     )}
                 </SlidingPanel>
             </>
@@ -275,6 +269,36 @@ export class ArchivedWorkflowDetails extends BasePage<RouteComponentProps<any>, 
             .catch(e => {
                 this.appContext.apis.notifications.show({
                     content: 'Failed to delete archived workflow ' + e,
+                    type: NotificationType.Error
+                });
+            });
+    }
+
+    private resubmitArchivedWorkflow() {
+        if (!confirm('Are you sure you want to resubmit this archived workflow?')) {
+            return;
+        }
+        services.archivedWorkflows
+            .resubmit(this.state.workflow.metadata.uid, this.state.workflow.metadata.namespace)
+            .then(workflow => (document.location.href = uiUrl(`workflows/${workflow.metadata.namespace}/${workflow.metadata.name}`)))
+            .catch(e => {
+                this.appContext.apis.notifications.show({
+                    content: 'Failed to resubmit archived workflow ' + e,
+                    type: NotificationType.Error
+                });
+            });
+    }
+
+    private retryArchivedWorkflow() {
+        if (!confirm('Are you sure you want to retry this archived workflow?')) {
+            return;
+        }
+        services.archivedWorkflows
+            .retry(this.state.workflow.metadata.uid, this.state.workflow.metadata.namespace)
+            .then(workflow => (document.location.href = uiUrl(`workflows/${workflow.metadata.namespace}/${workflow.metadata.name}`)))
+            .catch(e => {
+                this.appContext.apis.notifications.show({
+                    content: 'Failed to retry archived workflow ' + e,
                     type: NotificationType.Error
                 });
             });

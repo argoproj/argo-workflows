@@ -462,6 +462,42 @@ func TestEvaluateDependsLogicWhenDaemonFailed(t *testing.T) {
 	assert.True(t, execute)
 }
 
+func TestEvaluateDependsLogicWhenTaskOmitted(t *testing.T) {
+	testTasks := []wfv1.DAGTask{
+		{
+			Name: "A",
+		},
+		{
+			Name:    "B",
+			Depends: "A.Omitted",
+		},
+	}
+
+	d := &dagContext{
+		boundaryName: "test",
+		tasks:        testTasks,
+		wf:           &wfv1.Workflow{ObjectMeta: metav1.ObjectMeta{Name: "test-wf"}},
+		dependencies: make(map[string][]string),
+		dependsLogic: make(map[string]string),
+	}
+
+	// Task A is running
+	d.wf = &wfv1.Workflow{
+		ObjectMeta: metav1.ObjectMeta{Name: "test-wf"},
+		Status: wfv1.WorkflowStatus{
+			Nodes: map[string]wfv1.NodeStatus{
+				d.taskNodeID("A"): {Phase: wfv1.NodeOmitted},
+			},
+		},
+	}
+
+	// Task B should proceed and execute
+	execute, proceed, err := d.evaluateDependsLogic("B")
+	assert.NoError(t, err)
+	assert.True(t, proceed)
+	assert.True(t, execute)
+}
+
 func TestAllEvaluateDependsLogic(t *testing.T) {
 	statusMap := map[common.TaskResult]wfv1.NodePhase{
 		common.TaskResultSucceeded: wfv1.NodeSucceeded,
@@ -3411,4 +3447,193 @@ func TestDagHttpChildrenAssigned(t *testing.T) {
 			assert.Equal(t, "http-template-nv52d-495103493", dagNode.Children[0])
 		}
 	}
+}
+
+var retryTypeDagTaskRunExitNodeAfterCompleted = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  labels:
+    workflows.argoproj.io/phase: Running
+  name: test-workflow-with-hang-cztfs
+  namespace: argo-system
+spec:
+  entrypoint: dag
+  templates:
+  - name: linuxExitHandler
+    steps:
+    - - name: printExit
+        template: printExit
+  - container:
+      args:
+      - echo
+      - exit
+      command:
+      - /argosay
+      image: argoproj/argosay:v2
+      name: ""
+    name: printExit
+  - container:
+      args:
+      - echo
+      - a
+      command:
+      - /argosay
+      image: argoproj/argosay:v2
+      name: ""
+    name: printA
+    retryStrategy:
+      limit: "3"
+      retryPolicy: OnError
+  - dag:
+      tasks:
+      - hooks:
+          exit:
+            template: linuxExitHandler
+        name: printA
+        template: printA
+      - depends: printA.Succeeded
+        hooks:
+          exit:
+            template: linuxExitHandler
+        name: dependencyTesting
+        template: printA
+    name: dag
+status:
+  nodes:
+    test-workflow-with-hang-cztfs:
+      children:
+      - test-workflow-with-hang-cztfs-1556528266
+      displayName: test-workflow-with-hang-cztfs
+      finishedAt: null
+      id: test-workflow-with-hang-cztfs
+      name: test-workflow-with-hang-cztfs
+      phase: Running
+      progress: 4/4
+      startedAt: "2022-08-04T02:28:38Z"
+      templateName: dag
+      templateScope: local/test-workflow-with-hang-cztfs
+      type: DAG
+    test-workflow-with-hang-cztfs-589413809:
+      boundaryID: test-workflow-with-hang-cztfs
+      children:
+      - test-workflow-with-hang-cztfs-527957059
+      displayName: printA(0)
+      finishedAt: "2022-08-04T02:28:43Z"
+      hostNodeName: node2
+      id: test-workflow-with-hang-cztfs-589413809
+      name: test-workflow-with-hang-cztfs.printA(0)
+      outputs:
+        exitCode: "0"
+      phase: Succeeded
+      progress: 1/1
+      resourcesDuration:
+        cpu: 2
+        memory: 2
+      startedAt: "2022-08-04T02:28:38Z"
+      templateName: printA
+      templateScope: local/test-workflow-with-hang-cztfs
+      type: Pod
+    test-workflow-with-hang-cztfs-1556528266:
+      boundaryID: test-workflow-with-hang-cztfs
+      children:
+      - test-workflow-with-hang-cztfs-589413809
+      displayName: printA
+      finishedAt: "2022-08-04T02:28:48Z"
+      id: test-workflow-with-hang-cztfs-1556528266
+      name: test-workflow-with-hang-cztfs.printA
+      outputs:
+        exitCode: "0"
+      phase: Succeeded
+      progress: 4/4
+      resourcesDuration:
+        cpu: 5
+        memory: 5
+      startedAt: "2022-08-04T02:28:38Z"
+      templateName: printA
+      templateScope: local/test-workflow-with-hang-cztfs
+      type: Retry
+  phase: Running
+  progress: 4/4
+  resourcesDuration:
+    cpu: 5
+    memory: 5
+  startedAt: "2022-08-04T02:28:38Z"
+`
+
+func TestRetryTypeDagTaskRunExitNodeAfterCompleted(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(retryTypeDagTaskRunExitNodeAfterCompleted)
+	cancel, controller := newController(wf)
+	defer cancel()
+
+	ctx := context.Background()
+	woc := newWorkflowOperationCtx(wf, controller)
+	// retryTypeDAGTask completed
+	printAChild := woc.wf.Status.Nodes.FindByDisplayName("printA(0)")
+	assert.Equal(t, wfv1.NodeSucceeded, printAChild.Phase)
+
+	// run ExitNode
+	woc.operate(ctx)
+	onExitNode := woc.wf.Status.Nodes.FindByDisplayName("printA.onExit")
+	assert.NotNil(t, onExitNode)
+	assert.Equal(t, wfv1.NodeRunning, onExitNode.Phase)
+
+	// exitNode succeeded
+	makePodsPhase(ctx, woc, v1.PodSucceeded)
+	woc.operate(ctx)
+	onExitNode = woc.wf.Status.Nodes.FindByDisplayName("printA.onExit")
+	assert.Equal(t, wfv1.NodeSucceeded, onExitNode.Phase)
+
+	// run next DAGTask
+	woc.operate(ctx)
+	nextDAGTaskNode := woc.wf.Status.Nodes.FindByDisplayName("dependencyTesting")
+	assert.NotNil(t, nextDAGTaskNode)
+	assert.Equal(t, wfv1.NodeRunning, nextDAGTaskNode.Phase)
+}
+
+func TestDagParallelism(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(`apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: test-parallelism
+  namespace: argo
+spec:
+  entrypoint: main
+  parallelism: 1
+  templates:
+    - name: main
+      dag:
+        tasks:
+          - name: do-it-once
+            template: do-it
+            arguments:
+              parameters:
+                - name: thing
+                  value: 1
+          - name: do-it-twice
+            template: do-it
+            arguments:
+              parameters:
+                - name: thing
+                  value: 2
+          - name: do-it-thrice
+            template: do-it
+            arguments:
+              parameters:
+                - name: thing
+                  value: 3
+    - name: do-it
+      inputs:
+        parameters:
+          - name: thing
+      container:
+        image: docker/whalesay:latest
+        command: [cowsay]
+        args: ["I have a {{inputs.parameters.thing}}"]`)
+	woc := newWoc(*wf)
+	ctx := context.Background()
+	woc.operate(ctx)
+	woc1 := newWoc(*woc.wf)
+	woc1.operate(ctx)
+	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
 }

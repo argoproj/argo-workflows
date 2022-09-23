@@ -51,7 +51,7 @@ const merge = (a: {[key: string]: boolean}, b: {[key: string]: boolean}) => b &&
 export const GraphPanel = (props: Props) => {
     const storage = new ScopedLocalStorage('graph/' + props.storageScope);
     const [nodeSize, setNodeSize] = React.useState<number>(storage.getItem('nodeSize', props.nodeSize));
-    const [horizontal, setHorizontal] = React.useState<boolean>(storage.getItem('horizontal', props.horizontal));
+    const [horizontal, setHorizontal] = React.useState<boolean>(storage.getItem('horizontal', !!props.horizontal));
     const [fast, setFast] = React.useState<boolean>(storage.getItem('fast', false));
     const [nodeGenres, setNodeGenres] = React.useState<NodeGenres>(storage.getItem('nodeGenres', props.nodeGenres));
     const [nodeClassNames, setNodeClassNames] = React.useState<NodeClassNames>(storage.getItem('nodeClassNames', props.nodeClassNames));

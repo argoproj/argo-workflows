@@ -19,5 +19,6 @@ func NewArchiveCommand() *cobra.Command {
 	command.AddCommand(NewListLabelKeyCommand())
 	command.AddCommand(NewListLabelValueCommand())
 	command.AddCommand(NewResubmitCommand())
+	command.AddCommand(NewRetryCommand())
 	return command
 }

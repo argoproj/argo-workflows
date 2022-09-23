@@ -16,7 +16,6 @@ type RunAsNonRootSuite struct {
 }
 
 func (s *RunAsNonRootSuite) TestRunAsNonRootWorkflow() {
-	s.Need(fixtures.None(fixtures.Docker))
 	s.Given().
 		Workflow("@smoke/runasnonroot-workflow.yaml").
 		When().
@@ -25,7 +24,6 @@ func (s *RunAsNonRootSuite) TestRunAsNonRootWorkflow() {
 }
 
 func (s *RunAsNonRootSuite) TestRunAsNonRootWithOutputParams() {
-	s.Need(fixtures.None(fixtures.Docker, fixtures.Kubelet))
 	s.Given().
 		Workflow("@smoke/runasnonroot-output-params-pipeline.yaml").
 		When().

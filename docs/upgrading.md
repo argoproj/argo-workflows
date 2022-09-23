@@ -1,14 +1,79 @@
-
-# Upgrading
+# Upgrading Guide
 
 Breaking changes  typically (sometimes we don't realise they are breaking) have "!" in the commit message, as per
 the [conventional commits](https://www.conventionalcommits.org/en/v1.0.0/#summary).
+
+## Upgrading to v3.4
+
+### Non-Emissary executors are removed. ([#7829](https://github.com/argoproj/argo-workflows/issues/7829))
+
+Emissary executor is now the only supported executor. If you are using other executors, e.g. docker, k8sapi, pns, and kubelet, you need to
+remove your `containerRuntimeExecutors` and `containerRuntimeExecutor` from your controller's configmap. If you have workflows that use different
+executors with the label `workflows.argoproj.io/container-runtime-executor`, this is no longer supported and will not be effective.
+
+### chore!: Remove dataflow pipelines from codebase. (#9071)
+
+You are affected if you are using [dataflow pipelines](https://github.com/argoproj-labs/argo-dataflow) in the UI or via the `/pipelines` endpoint.
+We no longer support dataflow pipelines and all relevant code has been removed.
+
+### feat!: Add entrypoint lookup. Fixes #8344
+
+Affected if:
+
+* Using the Emissary executor.
+* Used the `args` field for any entry in `images`.
+
+This PR automatically looks up the command and entrypoint. The implementation for config look-up was incorrect (it
+allowed you to specify `args` but not `entrypoint`). `args` has been removed to correct the behaviour.
+
+If you are incorrectly configured, the workflow controller will error on start-up.
+
+#### Actions
+
+You don't need to configure images that use v2 manifests anymore. You can just remove them (e.g. argoproj/argosay:v2):
+
+```bash
+% docker manifest inspect argoproj/argosay:v2
+...
+"schemaVersion": 2,
+...
+```
+
+For v1 manifests (e.g. docker/whalesay:latest):
+
+```bash
+% docker image inspect -f '{{.Config.Entrypoint}} {{.Config.Cmd}}' docker/whalesay:latest
+[] [/bin/bash]
+```
+
+```yaml
+images:
+  docker/whalesay:latest:
+    cmd: [/bin/bash]
+```
+
+## feat: Fail on invalid config. (#8295)
+
+The workflow controller will error on start-up if incorrectly configured, rather than silently ignoring
+mis-configuration.
+
+```text
+Failed to register watch for controller config map: error unmarshaling JSON: while decoding JSON: json: unknown field \"args\"
+```
+
+## feat: add indexes for improve archived workflow performance. (#8860)
+
+This PR adds indexes to archived workflow tables. This change may cause a long time to upgrade if the user has a large table.
+
+## feat: enhance artifact visualization (#8655)
+
+For AWS users using S3: visualizing artifacts in the UI and downloading them now requires an additional "Action" to be configured in your S3 bucket policy: "ListBucket".
 
 ## Upgrading to v3.3
 
 ### [662a7295b](https://github.com/argoproj/argo-workflows/commit/662a7295b) feat: Replace `patch pod` with `create workflowtaskresult`. Fixes #3961 (#8000)
 
-The PR changes the permissions that can be used by a workflow to remove the `pod patch` permission. 
+The PR changes the permissions that can be used by a workflow to remove the `pod patch` permission.
 
 See [workflow RBAC](workflow-rbac.md) and [#8013](https://github.com/argoproj/argo-workflows/issues/3961).
 
@@ -38,7 +103,7 @@ See [#8013](https://github.com/argoproj/argo-workflows/issues/8013).
 
 This PR removes the following configmap items -
 
-- executorImage (use executor.image in configmap instead)
+* executorImage (use executor.image in configmap instead)
   e.g.
   Workflow controller configmap similar to the following one given below won't be valid anymore:
 
@@ -67,7 +132,7 @@ This PR removes the following configmap items -
     ...
   ```
 
-- executorImagePullPolicy (use executor.imagePullPolicy in configmap instead)
+* executorImagePullPolicy (use executor.imagePullPolicy in configmap instead)
   e.g.
   Workflow controller configmap similar to the following one given below won't be valid anymore:
 
@@ -88,7 +153,7 @@ This PR removes the following configmap items -
     ...
   ```
 
-- executorResources (use executor.resources in configmap instead)
+* executorResources (use executor.resources in configmap instead)
   e.g.
   Workflow controller configmap similar to the following one given below won't be valid anymore:
 
@@ -123,7 +188,7 @@ This PR removes the following configmap items -
 
 ### [fce82d572](https://github.com/argoproj/argo-workflows/commit/fce82d5727b89cfe49e8e3568fff40725bd43734) feat: Remove pod workers (#7837)
 
-This PR removes pod workers from the code, the pod informer directly writes into the workflow queue. As a result the `--pod-workers` flag has been removed. 
+This PR removes pod workers from the code, the pod informer directly writes into the workflow queue. As a result the `--pod-workers` flag has been removed.
 
 ### [93c11a24ff](https://github.com/argoproj/argo-workflows/commit/93c11a24ff06049c2197149acd787f702e5c1f9b) feat: Add TLS to Metrics and Telemetry servers (#7041)
 
@@ -146,7 +211,7 @@ HTTPArtifact without a scheme will now defaults to https instead of http
 
 user need to explicitly include a http prefix if they want to retrieve HTTPArtifact through http
 
-### chore!: Remove the hidden flag `--verify` from `argo submit`.
+### chore!: Remove the hidden flag `--verify` from `argo submit`
 
 The hidden flag `--verify` has been removed from `argo submit`. This is a internal testing flag we don't need anymore.
 
@@ -154,7 +219,7 @@ The hidden flag `--verify` has been removed from `argo submit`. This is a intern
 
 ### [e5b131a33](https://github.com/argoproj/argo-workflows/commit/e5b131a33) feat: Add template node to pod name. Fixes #1319 (#6712)
 
-This add the template name to the pod name, to make it easier to understand which pod ran which step. This behaviour can be reverted by setting `POD_NAMES=v1` on the workflow controller. 
+This add the template name to the pod name, to make it easier to understand which pod ran which step. This behaviour can be reverted by setting `POD_NAMES=v1` on the workflow controller.
 
 ### [be63efe89](https://github.com/argoproj/argo-workflows/commit/be63efe89) feat(executor)!: Change `argoexec` base image to alpine. Closes #5720 (#6006)
 
@@ -204,7 +269,7 @@ always play nicely with the `when` condition syntax (Goevaluate).
 
 This can be resolved using a single quote in your when expression:
 
-```
+```yaml
 when: "'{{inputs.parameters.should-print}}' != '2021-01-01'"
 ```
 

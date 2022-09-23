@@ -5,6 +5,7 @@ metadata:
   annotations:
     workflows.argoproj.io/description: |
       Recomended minimum permissions for `pns` executor.
+    workflows.argoproj.io/version: "< 3.4.0"
 rules:
   - apiGroups:
       - argoproj.io
