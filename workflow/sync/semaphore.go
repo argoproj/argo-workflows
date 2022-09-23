@@ -188,6 +188,11 @@ func (s *PrioritySemaphore) tryAcquire(holderKey string) (bool, string) {
 	if s.acquire(holderKey) {
 		s.pending.pop()
 		s.log.Infof("%s acquired by %s ", s.name, nextKey)
+		if s.pending.Len() > 0 && len(s.lockHolder) < s.limit {
+			// We just acquired the semaphore but others are waiting and there is room for the
+			// next one. Enqueue the next workflow in line.
+			s.nextWorkflow(s.pending.peek().key)
+		}
 		return true, ""
 	}
 	s.log.Debugf("Current semaphore Holders. %v", s.lockHolder)
