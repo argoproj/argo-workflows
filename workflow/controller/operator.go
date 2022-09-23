@@ -497,6 +497,8 @@ func (woc *wfOperationCtx) updateWorkflowMetadata() error {
 		for n, v := range md.Annotations {
 			woc.wf.Annotations[n] = v
 		}
+
+		labelsParams := make(common.Parameters)
 		env := env.GetFuncMap(template.EnvMap(woc.globalParams))
 		for n, f := range md.LabelsFrom {
 			r, err := expr.Eval(f.Expression, env)
@@ -509,12 +511,12 @@ func (woc *wfOperationCtx) updateWorkflowMetadata() error {
 			}
 			woc.wf.Labels[n] = v
 			woc.globalParams["workflow.labels."+n] = v
+			labelsParams["workflow.labels."+n] = v
 		}
 		woc.updated = true
 
 		// Now we need to do any substitution that involves these labels
-		err := woc.substituteGlobalVariables() // todo: maybe just substitute with globalParams["workflow.labels"]
-		/// todo: also need to worry about substituting in the containers
+		err := woc.substituteGlobalVariables(true, labelsParams) // todo: maybe just substitute with globalParams["workflow.labels"]
 		if err != nil {
 			return err
 		}
@@ -3567,7 +3569,7 @@ func (woc *wfOperationCtx) setExecWorkflow(ctx context.Context) error {
 		return err
 	}
 
-	err = woc.substituteGlobalVariables()
+	err = woc.substituteGlobalVariables(false, woc.globalParams)
 	if err != nil {
 		return err
 	}
@@ -3682,19 +3684,21 @@ func (woc *wfOperationCtx) mergedTemplateDefaultsInto(originalTmpl *wfv1.Templat
 	return nil
 }
 
-func (woc *wfOperationCtx) substituteGlobalVariables() error {
+func (woc *wfOperationCtx) substituteGlobalVariables(includeTemplates bool, params common.Parameters) error {
 	execWfSpec := woc.execWf.Spec
 
 	// To Avoid the stale Global parameter value substitution to templates.
 	// Updated Global parameter values will be substituted in 'executetemplate' for templates.
-	execWfSpec.Templates = nil
+	if !includeTemplates { // todo: need to determine if it's okay to do this
+		execWfSpec.Templates = nil
+	}
 
 	wfSpec, err := json.Marshal(execWfSpec)
 	if err != nil {
 		return err
 	}
 
-	resolveSpec, err := template.Replace(string(wfSpec), woc.globalParams, true)
+	resolveSpec, err := template.Replace(string(wfSpec), params, true)
 	if err != nil {
 		return err
 	}
