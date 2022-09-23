@@ -59,6 +59,8 @@ linters-settings:
       - G601
 issues:
   exclude:
+    # We are leaving io/ioutil for now to making backports easier
+    # https://github.com/argoproj/argo-workflows/pull/6964#issuecomment-946827019
     - "SA1019: \"io/ioutil\" has been deprecated since Go 1.16"
   exclude-rules:
     - path: server/artifacts/artifact_server_test.go
