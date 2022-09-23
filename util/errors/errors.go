@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"net/url"
 	"os"
 	"os/exec"
 	"regexp"
@@ -86,7 +87,7 @@ func isTransientNetworkErr(err error) bool {
 	} else if strings.Contains(errorString, "connection reset by peer") {
 		// If err is a ECONNRESET, retry.
 		return true
-	} else if strings.Contains(errorString, "EOF") {
+	} else if _, ok := err.(*url.Error); ok && strings.Contains(errorString, "EOF") {
 		// If err is EOF, retry.
 		return true
 	}
