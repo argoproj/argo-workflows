@@ -489,6 +489,7 @@ func (woc *wfOperationCtx) updateWorkflowMetadata() error {
 		}
 		for n, v := range md.Labels {
 			woc.wf.Labels[n] = v
+
 		}
 		if woc.wf.ObjectMeta.Annotations == nil {
 			woc.wf.ObjectMeta.Annotations = make(map[string]string)
@@ -507,8 +508,17 @@ func (woc *wfOperationCtx) updateWorkflowMetadata() error {
 				return fmt.Errorf("failed to evaluate label %q expression %q evaluted to %T but must be a string", n, f.Expression, r)
 			}
 			woc.wf.Labels[n] = v
+			woc.globalParams["workflow.labels."+n] = v
 		}
 		woc.updated = true
+
+		// Now we need to do any substitution that involves these labels
+		err := woc.substituteGlobalVariables() // todo: maybe just substitute with globalParams["workflow.labels"]
+		/// todo: also need to worry about substituting in the containers
+		if err != nil {
+			return err
+		}
+
 	}
 	return nil
 }
@@ -567,6 +577,9 @@ func (woc *wfOperationCtx) setGlobalParameters(executionParameters wfv1.Argument
 			woc.globalParams["workflow.parameters."+param.Name] = param.Value.String()
 		}
 	}
+
+	md := woc.execWf.Spec.WorkflowMetadata
+
 	if workflowAnnotations, err := json.Marshal(woc.wf.ObjectMeta.Annotations); err == nil {
 		woc.globalParams[common.GlobalVarWorkflowAnnotations] = string(workflowAnnotations)
 	}
@@ -577,7 +590,14 @@ func (woc *wfOperationCtx) setGlobalParameters(executionParameters wfv1.Argument
 		woc.globalParams[common.GlobalVarWorkflowLabels] = string(workflowLabels)
 	}
 	for k, v := range woc.wf.ObjectMeta.Labels {
-		woc.globalParams["workflow.labels."+k] = v
+		if md != nil {
+			_, existsLabelsFrom := md.LabelsFrom[k]
+			if !existsLabelsFrom {
+				woc.globalParams["workflow.labels."+k] = v
+			}
+		} else {
+			woc.globalParams["workflow.labels."+k] = v
+		}
 	}
 	if woc.wf.Status.Outputs != nil {
 		for _, param := range woc.wf.Status.Outputs.Parameters {
@@ -587,17 +607,20 @@ func (woc *wfOperationCtx) setGlobalParameters(executionParameters wfv1.Argument
 		}
 	}
 
-	if md := woc.execWf.Spec.WorkflowMetadata; md != nil {
+	if md != nil {
 		for n, v := range md.Labels {
-			woc.globalParams["workflow.labels."+n] = v
+			_, existsLabelsFrom := md.LabelsFrom[n]
+			if !existsLabelsFrom {
+				woc.globalParams["workflow.labels."+n] = v
+			}
 		}
 		for n, v := range md.Annotations {
 			woc.globalParams["workflow.annotations."+n] = v
 		}
 
-		for n, f := range md.LabelsFrom {
-			woc.globalParams["workflow.labels."+n] = f.Expression
-		}
+		/*for n, f := range md.LabelsFrom {
+			woc.globalParams["workflow.labels."+n] =
+		}*/
 	}
 
 	return nil
