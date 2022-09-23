@@ -516,7 +516,7 @@ func (woc *wfOperationCtx) updateWorkflowMetadata() error {
 		woc.updated = true
 
 		// Now we need to do any substitution that involves these labels
-		err := woc.substituteGlobalVariables(true, labelsParams) // todo: maybe just substitute with globalParams["workflow.labels"]
+		err := woc.substituteGlobalVariables(labelsParams)
 		if err != nil {
 			return err
 		}
@@ -3569,7 +3569,7 @@ func (woc *wfOperationCtx) setExecWorkflow(ctx context.Context) error {
 		return err
 	}
 
-	err = woc.substituteGlobalVariables(false, woc.globalParams)
+	err = woc.substituteGlobalVariables(woc.globalParams)
 	if err != nil {
 		return err
 	}
@@ -3684,14 +3684,12 @@ func (woc *wfOperationCtx) mergedTemplateDefaultsInto(originalTmpl *wfv1.Templat
 	return nil
 }
 
-func (woc *wfOperationCtx) substituteGlobalVariables(includeTemplates bool, params common.Parameters) error {
+func (woc *wfOperationCtx) substituteGlobalVariables(params common.Parameters) error {
 	execWfSpec := woc.execWf.Spec
 
 	// To Avoid the stale Global parameter value substitution to templates.
 	// Updated Global parameter values will be substituted in 'executetemplate' for templates.
-	if !includeTemplates { // todo: need to determine if it's okay to do this
-		execWfSpec.Templates = nil
-	}
+	execWfSpec.Templates = nil
 
 	wfSpec, err := json.Marshal(execWfSpec)
 	if err != nil {
