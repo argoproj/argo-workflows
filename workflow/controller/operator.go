@@ -494,14 +494,15 @@ func (woc *wfOperationCtx) updateWorkflowMetadata() error {
 		}
 		for n, v := range md.Labels {
 			woc.wf.Labels[n] = v
+			woc.globalParams["workflow.labels."+n] = v
 			updatedParams["workflow.labels."+n] = v
-
 		}
 		if woc.wf.Annotations == nil {
 			woc.wf.Annotations = make(map[string]string)
 		}
 		for n, v := range md.Annotations {
 			woc.wf.Annotations[n] = v
+			woc.globalParams["workflow.labels."+n] = v
 			updatedParams["workflow.annotations."+n] = v
 		}
 
