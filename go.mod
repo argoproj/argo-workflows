@@ -3,7 +3,7 @@ module github.com/argoproj/argo-workflows/v3
 go 1.18
 
 require (
-	cloud.google.com/go/storage v1.26.0
+	cloud.google.com/go/storage v1.27.0
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.1.0
 	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v0.4.1
 	github.com/Knetic/govaluate v3.0.1-0.20171022003610-9aa49832a739+incompatible
@@ -53,12 +53,12 @@ require (
 	golang.org/x/crypto v0.0.0-20220722155217-630584e8d5aa
 	golang.org/x/exp v0.0.0-20220602145555-4a0574d9293f
 	golang.org/x/net v0.0.0-20220909164309-bea034e7d591
-	golang.org/x/oauth2 v0.0.0-20220822191816-0ebed06d0094
+	golang.org/x/oauth2 v0.0.0-20220909003341-f21342109be1
 	golang.org/x/sync v0.0.0-20220601150217-0de741cfad7f
 	golang.org/x/time v0.0.0-20220224211638-0e9765cccd65
-	google.golang.org/api v0.96.0
-	google.golang.org/genproto v0.0.0-20220810155839-1856144b1d9c
-	google.golang.org/grpc v1.48.0
+	google.golang.org/api v0.97.0
+	google.golang.org/genproto v0.0.0-20220920201722-2b89144ce006
+	google.golang.org/grpc v1.49.0
 	gopkg.in/go-playground/webhooks.v5 v5.17.0
 	gopkg.in/jcmturner/gokrb5.v5 v5.3.0
 	k8s.io/api v0.24.3
@@ -73,7 +73,7 @@ require (
 )
 
 require (
-	cloud.google.com/go v0.102.1 // indirect
+	cloud.google.com/go v0.104.0 // indirect
 	cloud.google.com/go/compute v1.7.0 // indirect
 	cloud.google.com/go/iam v0.3.0 // indirect
 	github.com/Azure/azure-sdk-for-go v62.0.0+incompatible // indirect
@@ -142,7 +142,7 @@ require (
 	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.1.0 // indirect
-	github.com/googleapis/gax-go/v2 v2.4.0 // indirect
+	github.com/googleapis/gax-go/v2 v2.5.1 // indirect
 	github.com/hashicorp/go-uuid v1.0.2 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/huandu/xstrings v1.3.2 // indirect
