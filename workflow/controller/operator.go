@@ -489,18 +489,17 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 func (woc *wfOperationCtx) updateWorkflowMetadata() error {
 	updatedParams := make(common.Parameters)
 	if md := woc.execWf.Spec.WorkflowMetadata; md != nil {
-		// todo: why did I have this here before and is it needed?
-		/*if woc.wf.ObjectMeta.Labels == nil {
-			woc.wf.ObjectMeta.Labels = make(map[string]string)
-		}*/
+		if woc.wf.Labels == nil {
+			woc.wf.Labels = make(map[string]string)
+		}
 		for n, v := range md.Labels {
 			woc.wf.Labels[n] = v
 			updatedParams["workflow.labels."+n] = v
 
 		}
-		/*if woc.wf.ObjectMeta.Annotations == nil {
-			woc.wf.ObjectMeta.Annotations = make(map[string]string)
-		}*/
+		if woc.wf.Annotations == nil {
+			woc.wf.Annotations = make(map[string]string)
+		}
 		for n, v := range md.Annotations {
 			woc.wf.Annotations[n] = v
 			updatedParams["workflow.annotations."+n] = v
