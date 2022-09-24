@@ -484,7 +484,7 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 
 // set Labels and Annotations for the Workflow
 // Also, since we're setting Labels and Annotations we need to find any
-// parameters formatted as "workflow.labels.<val>" or "workflow.annotations.<val>"
+// parameters formatted as "workflow.labels.<param>" or "workflow.annotations.<param>"
 // and perform substitution
 func (woc *wfOperationCtx) updateWorkflowMetadata() error {
 	updatedParams := make(common.Parameters)
