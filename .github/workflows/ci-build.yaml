@@ -160,14 +160,14 @@ jobs:
         uses: nick-fields/retry@v2.8.1
         with:
           timeout_minutes: 4
-          max_attempts: 2
+          max_attempts: 4
           command: make wait
       - name: make ${{matrix.test}}
         # https://github.com/marketplace/actions/retry-step
         uses: nick-fields/retry@v2.8.1
         with:
           timeout_minutes: 20
-          max_attempts: 2
+          max_attempts: 4
           command: make ${{matrix.test}} E2E_SUITE_TIMEOUT=20m STATIC_FILES=false AZURE=true
       - if: ${{ failure() }}
         run: |
