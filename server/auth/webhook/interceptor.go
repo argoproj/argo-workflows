@@ -3,10 +3,11 @@ package webhook
 import (
 	"bytes"
 	"fmt"
-	"github.com/argoproj/argo-workflows/v3/util/secrets"
 	"io/ioutil"
 	"net/http"
 	"strings"
+
+	"github.com/argoproj/argo-workflows/v3/util/secrets"
 
 	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
