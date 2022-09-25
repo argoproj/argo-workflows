@@ -155,7 +155,7 @@ jobs:
       - run: make cli STATIC_FILES=false
         if: ${{matrix.test == 'test-api' || matrix.test == 'test-cli' || matrix.test == 'test-java-sdk' || matrix.test == 'test-python-sdk'}}
       - run: make start PROFILE=${{matrix.profile}} AUTH_MODE=client STATIC_FILES=false LOG_LEVEL=info API=${{matrix.test == 'test-api' || matrix.test == 'test-cli' || matrix.test == 'test-java-sdk' || matrix.test == 'test-python-sdk'}} UI=false AZURE=true > /tmp/argo.log 2>&1 &
-      - run: make wait
+      - name: make wait
         # https://github.com/marketplace/actions/retry-step
         uses: nick-fields/retry@v2.8.1
         with:
