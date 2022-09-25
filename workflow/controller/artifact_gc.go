@@ -337,7 +337,7 @@ func (woc *wfOperationCtx) getArtifactTask(taskName string) (*wfv1.WorkflowArtif
 	return task.(*wfv1.WorkflowArtifactGCTask), nil
 }
 
-//	create WorkflowArtifactGCTask CRD object
+// create WorkflowArtifactGCTask CRD object
 func (woc *wfOperationCtx) createWorkflowArtifactGCTask(ctx context.Context, task *wfv1.WorkflowArtifactGCTask) (*wfv1.WorkflowArtifactGCTask, error) {
 
 	// first make sure it doesn't already exist

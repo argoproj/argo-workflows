@@ -755,7 +755,7 @@ func getDescendantNodeIDs(wf *wfv1.Workflow, node wfv1.NodeStatus) []string {
 }
 
 func deletePodNodeDuringRetryWorkflow(wf *wfv1.Workflow, node wfv1.NodeStatus, deletedPods map[string]bool, podsToDelete []string) (map[string]bool, []string) {
-	templateName := getTemplateFromNode(node)
+	templateName := GetTemplateFromNode(node)
 	version := GetWorkflowPodNameVersion(wf)
 	podName := PodName(wf.Name, node.Name, templateName, node.ID, version)
 	if _, ok := deletedPods[podName]; !ok {
@@ -999,7 +999,7 @@ func resetNode(node wfv1.NodeStatus) wfv1.NodeStatus {
 	return node
 }
 
-func getTemplateFromNode(node wfv1.NodeStatus) string {
+func GetTemplateFromNode(node wfv1.NodeStatus) string {
 	if node.TemplateRef != nil {
 		return node.TemplateRef.Template
 	}
