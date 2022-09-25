@@ -9,10 +9,18 @@ case $1 in
     kubectl create sa jenkins
     kubectl delete rolebinding jenkins --ignore-not-found
     kubectl create rolebinding jenkins --role=jenkins --serviceaccount=argo:jenkins
+    kubectl apply -f - <<EOF
+    apiVersion: v1
+    kind: Secret
+    metadata:
+      name: jenkins-secret
+      annotations:
+        kubernetes.io/service-account.name: jenkins
+    type: kubernetes.io/service-account-token
+EOF
     ;;
   get)
-    SECRET=$(kubectl get sa jenkins -o=jsonpath='{.secrets[0].name}')
-    ARGO_TOKEN="Bearer $(kubectl get secret $SECRET -o=jsonpath='{.data.token}' | base64 --decode)"
+    ARGO_TOKEN="Bearer $(kubectl get secret jenkins-secret -o=jsonpath='{.data.token}' | base64 --decode)"
 
     curl -s http://localhost:2746/api/v1/workflows/argo -H "Authorization: $ARGO_TOKEN" > /dev/null
 
