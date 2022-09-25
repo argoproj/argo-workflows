@@ -25,7 +25,6 @@ run:
 linters:
   enable:
     - bodyclose
-    - deadcode
     - errcheck
     - goimports
     # only minor issues
@@ -41,11 +40,9 @@ linters:
     - rowserrcheck
     - sqlclosecheck
     - staticcheck
-    - structcheck
     - typecheck
     - unparam
     - unused
-    - varcheck
 linters-settings:
   goimports:
     local-prefixes: github.com/argoproj/argo-workflows/
@@ -60,3 +57,11 @@ linters-settings:
       - G402
       # G601: Implicit memory aliasing in for loop.
       - G601
+issues:
+  exclude:
+    # We are leaving io/ioutil for now to make backports easier
+    # https://github.com/argoproj/argo-workflows/pull/6964#issuecomment-946827019
+    - "SA1019: \"io/ioutil\" has been deprecated since Go 1.16"
+  exclude-rules:
+    - path: server/artifacts/artifact_server_test.go
+      text: "response body must be closed"
