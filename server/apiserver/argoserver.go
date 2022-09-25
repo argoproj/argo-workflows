@@ -380,8 +380,12 @@ func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServe
 	mux.Handle("/oauth2/callback", handlers.ProxyHeaders(http.HandlerFunc(as.oAuth2Service.HandleCallback)))
 	mux.HandleFunc("/metrics", func(w http.ResponseWriter, r *http.Request) {
 		if os.Getenv("ARGO_SERVER_METRICS_AUTH") != "false" {
-			header := metadata.New(map[string]string{"authorization": r.Header.Get("Authorization")})
-			ctx := metadata.NewIncomingContext(context.Background(), header)
+			md := metadata.New(map[string]string{"authorization": r.Header.Get("Authorization")})
+			cookie, err := r.Cookie("authorization")
+			if err == nil {
+				md.Set("authorization", cookie.Value)
+			}
+			ctx := metadata.NewIncomingContext(context.Background(), md)
 			if _, err := as.gatekeeper.Context(ctx); err != nil {
 				log.WithError(err).Error("failed to authenticate /metrics endpoint")
 				w.WriteHeader(403)
