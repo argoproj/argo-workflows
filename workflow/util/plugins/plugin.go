@@ -15,6 +15,7 @@ import (
 	"k8s.io/client-go/util/retry"
 
 	"github.com/argoproj/argo-workflows/v3/util/errors"
+	errorsutil "github.com/argoproj/argo-workflows/v3/util/errors"
 )
 
 type Client struct {
@@ -54,7 +55,7 @@ func (p *Client) Call(ctx context.Context, method string, args interface{}, repl
 				return true
 			}
 		}
-		return strings.Contains(err.Error(), "connection refused")
+		return strings.Contains(err.Error(), "connection refused") || errorsutil.IsTransientErr(err)
 	}, func() error {
 		log.Debug("Calling plugin")
 		req, err := http.NewRequestWithContext(ctx, "POST", fmt.Sprintf("%s/api/v1/%s", p.address, method), bytes.NewBuffer(body))
