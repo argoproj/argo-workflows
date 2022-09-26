@@ -38,13 +38,6 @@ func IsTransientErr(err error) bool {
 	return isTransient
 }
 
-func IsTransientNetworkErr(err error) bool {
-	if err == nil {
-		return false
-	}
-	return isTransientNetworkErr(err)
-}
-
 func matchTransientErrPattern(err error) bool {
 	// TRANSIENT_ERROR_PATTERN allows to specify the pattern to match for errors that can be seen as transient
 	// and retryable.
