@@ -109,8 +109,8 @@ const (
 
 	// Various environment variables containing pod information exposed to the executor container(s)
 
-	// EnvVarArtifactPodHash is applied as a Label on the WorkflowTaskSets read by the Artifact GC Pod, so that the Pod can find them
-	EnvVarArtifactPodHash = "ARGO_ARTIFACT_POD_NAME"
+	// EnvVarArtifactGCPodHash is applied as a Label on the WorkflowTaskSets read by the Artifact GC Pod, so that the Pod can find them
+	EnvVarArtifactGCPodHash = "ARGO_ARTIFACT_POD_NAME"
 	// EnvVarPodName contains the name of the pod (currently unused)
 	EnvVarPodName = "ARGO_POD_NAME"
 	// EnvVarPodUID is the workflow's UID

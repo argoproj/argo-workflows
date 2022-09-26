@@ -29,7 +29,7 @@ func NewArtifactDeleteCommand() *cobra.Command {
 			namespace := client.Namespace()
 			clientConfig := client.GetConfig()
 
-			if podName, ok := os.LookupEnv(common.EnvVarArtifactPodHash); ok {
+			if podName, ok := os.LookupEnv(common.EnvVarArtifactGCPodHash); ok {
 
 				config, err := clientConfig.ClientConfig()
 				workflowInterface := workflow.NewForConfigOrDie(config)
