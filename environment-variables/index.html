@@ -4098,6 +4098,12 @@ most users. Environment variables may be removed at any time.</p>
 <td><code>5m</code></td>
 <td>The periodicity for GC of workflows.</td>
 </tr>
+<tr>
+<td><code>SEMAPHORE_NOTIFY_DELAY</code></td>
+<td><code>time.Duration</code></td>
+<td><code>1s</code></td>
+<td>Tuning Delay when notifying semaphore waiters about availability in the semaphore</td>
+</tr>
 </tbody>
 </table>
 <p>CLI parameters of the <code>argo-server</code> and <code>workflow-controller</code> can be specified as environment variables with the <code>ARGO_</code>
