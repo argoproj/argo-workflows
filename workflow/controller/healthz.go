@@ -30,7 +30,8 @@ func (wfc *WorkflowController) Healthz(w http.ResponseWriter, r *http.Request) {
 	labelSelector := "!" + common.LabelKeyPhase + "," + instanceIDSelector
 	err := func() error {
 		// avoid problems with informers, but directly querying the API
-		list, err := wfc.wfclientset.ArgoprojV1alpha1().Workflows(wfc.managedNamespace).List(ctx, metav1.ListOptions{LabelSelector: labelSelector})
+		limit := int64(env.LookupEnvIntOr("LIST_LIMIT", 200))
+		list, err := wfc.wfclientset.ArgoprojV1alpha1().Workflows(wfc.managedNamespace).List(ctx, metav1.ListOptions{LabelSelector: labelSelector, Limit: limit})
 		if err != nil {
 			return err
 		}
