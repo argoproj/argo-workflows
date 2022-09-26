@@ -29,7 +29,7 @@ func NewArtifactDeleteCommand() *cobra.Command {
 			namespace := client.Namespace()
 			clientConfig := client.GetConfig()
 
-			if podName, ok := os.LookupEnv(common.EnvVarArtifactPodName); ok {
+			if podName, ok := os.LookupEnv(common.EnvVarArtifactPodHash); ok {
 
 				config, err := clientConfig.ClientConfig()
 				workflowInterface := workflow.NewForConfigOrDie(config)
@@ -38,7 +38,7 @@ func NewArtifactDeleteCommand() *cobra.Command {
 				}
 
 				artifactGCTaskInterface := workflowInterface.ArgoprojV1alpha1().WorkflowArtifactGCTasks(namespace)
-				labelSelector := fmt.Sprintf("%s = %s", common.LabelKeyArtifactGCPodName, podName)
+				labelSelector := fmt.Sprintf("%s = %s", common.LabelKeyArtifactGCPodHash, podName)
 
 				err = deleteArtifacts(labelSelector, cmd.Context(), artifactGCTaskInterface)
 				if err != nil {
