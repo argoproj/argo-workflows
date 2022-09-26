@@ -520,6 +520,7 @@ mysql-cli:
 test-cli: ./dist/argo
 
 test-%:
+	kubectl apply -f examples/secrets
 	go test -failfast -v -timeout $(E2E_SUITE_TIMEOUT) -count 1 --tags $* -parallel $(E2E_PARALLEL) ./test/e2e
 
 .PHONY: test-examples
