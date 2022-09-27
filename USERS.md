@@ -162,6 +162,7 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [Stillwater Supercomputing, Inc](http://www.stillwater-sc.com/)
 1. [strongDM](https://www.strongdm.com/)
 1. [Styra](https://www.styra.com/)
+1. [Splunk](https://www.splunk.com/)
 1. [Sutpc](http://www.sutpc.com/)
 1. [Threekit](https://www.threekit.com/)
 1. [Tiger Analytics](https://www.tigeranalytics.com/)
