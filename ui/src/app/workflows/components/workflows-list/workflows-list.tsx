@@ -24,6 +24,7 @@ import * as Actions from '../../../shared/workflow-operations-map';
 import {WorkflowCreator} from '../workflow-creator';
 import {WorkflowFilters} from '../workflow-filters/workflow-filters';
 import {WorkflowsRow} from '../workflows-row/workflows-row';
+import {WorkflowsSummaryContainer} from '../workflows-summary-container/workflows-summary-container';
 import {WorkflowsToolbar} from '../workflows-toolbar/workflows-toolbar';
 
 require('./workflows-list.scss');
@@ -193,6 +194,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                                 />
                                 <div className='row'>
                                     <div className='columns small-12 xlarge-2'>
+                                        <WorkflowsSummaryContainer workflows={this.state.workflows} />
                                         <div>
                                             <WorkflowFilters
                                                 workflows={this.state.workflows || []}
