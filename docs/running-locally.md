@@ -7,7 +7,7 @@ You have two options:
 
 ## Git Clone
 
-Close the Git repo into: `$(GOPATH)/src/github.com/argoproj/argo-workflows`. Any other path will mean the code
+Clone the Git repo into: `$(GOPATH)/src/github.com/argoproj/argo-workflows`. Any other path will mean the code
 generation does not work.
 
 ## Development Container
@@ -26,7 +26,7 @@ Note:
 
     ```json
     "features": {
-      "buildkit": false
+      "buildkit": true
     },
     ```
 
@@ -80,7 +80,7 @@ To start:
 Run:
 
 ```bash
-make start 
+make start
 ```
 
 Make sure you don't see any errors in your terminal. This runs the Workflow Controller locally on your machine (not in Docker/Kubernetes).
@@ -88,7 +88,7 @@ Make sure you don't see any errors in your terminal. This runs the Workflow Cont
 You can submit a workflow for testing using `kubectl`:
 
 ```bash
-kubectl create -f examples/hello-world.yaml 
+kubectl create -f examples/hello-world.yaml
 ```
 
 We recommend running `make clean` before `make start` to ensure recompilation.
@@ -118,8 +118,8 @@ make start UI=true
 If you are making change to the CLI (i.e. Argo Server), you can build it separately if you want:
 
 ```bash
-make cli 
-./dist/argo submit examples/hello-world.yaml ;# new CLI is created as `./dist/argo` 
+make cli
+./dist/argo submit examples/hello-world.yaml ;# new CLI is created as `./dist/argo`
 ```
 
 Although, note that this will be built automatically if you do: `make start API=true`.
@@ -146,7 +146,7 @@ make start UI=true PROFILE=sso
 Start up Argo Workflows using the following:
 
 ```bash
-make start PROFILE=mysql AUTH_MODE=client STATIC_FILES=false API=true 
+make start PROFILE=mysql AUTH_MODE=client STATIC_FILES=false API=true
 ```
 
 If you want to run Azure tests against a local Azurite, add `AZURE=true`:
@@ -163,7 +163,7 @@ Our CI will run those concurrently when you create a PR, which will give you fee
 Find the test that you want to run in `test/e2e`
 
 ```bash
-make TestArtifactServer  
+make TestArtifactServer
 ```
 
 If you wish to include tests against Azure Storage, define `AZURE=true`:

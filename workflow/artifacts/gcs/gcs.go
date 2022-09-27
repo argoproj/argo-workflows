@@ -307,9 +307,33 @@ func uploadObject(client *storage.Client, bucket, key, localPath string) error {
 	return nil
 }
 
-// Delete is unsupported for the gcp artifacts
+// delete an object from GCS
+func deleteObject(client *storage.Client, bucket, key string) error {
+	ctx := context.Background()
+	err := client.Bucket(bucket).Object(key).Delete(ctx)
+	if err != nil {
+		return fmt.Errorf("delete %s: %v", key, err)
+	}
+	return nil
+}
+
+// Delete deletes an artifact from GCS
 func (h *ArtifactDriver) Delete(s *wfv1.Artifact) error {
-	return common.ErrDeleteNotSupported
+	err := waitutil.Backoff(defaultRetry,
+		func() (bool, error) {
+			client, err := h.newGCSClient()
+			if err != nil {
+				return !isTransientGCSErr(err), err
+			}
+			defer client.Close()
+			err = deleteObject(client, s.GCS.Bucket, s.GCS.Key)
+			if err != nil {
+				return !isTransientGCSErr(err), err
+			}
+			return true, nil
+		},
+	)
+	return err
 }
 
 func (g *ArtifactDriver) ListObjects(artifact *wfv1.Artifact) ([]string, error) {

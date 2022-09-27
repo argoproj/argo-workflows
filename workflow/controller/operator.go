@@ -1672,7 +1672,12 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 	if resolvedTmpl.IsPodType() && woc.retryStrategy(resolvedTmpl) == nil {
 		localParams[common.LocalVarPodName] = woc.getPodName(nodeName, resolvedTmpl.Name)
 	}
-
+	if orgTmpl.IsDAGTask() {
+		localParams["tasks.name"] = orgTmpl.GetName()
+	}
+	if orgTmpl.IsWorkflowStep() {
+		localParams["steps.name"] = orgTmpl.GetName()
+	}
 	// Merge Template defaults to template
 	err = woc.mergedTemplateDefaultsInto(resolvedTmpl)
 	if err != nil {
@@ -1944,13 +1949,14 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 		}
 	}
 
-	node = woc.wf.GetNodeByName(node.Name)
-	if node == nil {
+	retrieveNode := woc.wf.GetNodeByName(node.Name)
+	if retrieveNode == nil {
 		err := fmt.Errorf("no Node found by the name of %s;  wf.Status.Nodes=%+v", node.Name, woc.wf.Status.Nodes)
 		woc.log.Error(err)
 		woc.markWorkflowError(ctx, err)
 		return node, err
 	}
+	node = retrieveNode
 
 	// Swap the node back to retry node
 	if retryNodeName != "" {

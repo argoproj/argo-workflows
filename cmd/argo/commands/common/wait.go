@@ -69,7 +69,7 @@ func waitOnOne(serviceClient workflowpkg.WorkflowServiceClient, ctx context.Cont
 			continue
 		}
 		wf := event.Object
-		if !wf.Status.FinishedAt.IsZero() {
+		if wf != nil && !wf.Status.FinishedAt.IsZero() {
 			if !quiet {
 				fmt.Printf("%s %s at %v\n", wfName, wf.Status.Phase, wf.Status.FinishedAt)
 			}

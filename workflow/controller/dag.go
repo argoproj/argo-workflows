@@ -666,7 +666,7 @@ func (woc *wfOperationCtx) resolveDependencyReferences(dagCtx *dagContext, task 
 }
 
 // findLeafTaskNames finds the names of all tasks whom no other nodes depend on.
-// This list of tasks is used as the the default list of targets when dag.targets is omitted.
+// This list of tasks is used as the default list of targets when dag.targets is omitted.
 func (d *dagContext) findLeafTaskNames(tasks []wfv1.DAGTask) []string {
 	taskIsLeaf := make(map[string]bool)
 	for _, task := range tasks {

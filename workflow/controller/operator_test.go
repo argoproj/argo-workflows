@@ -2818,7 +2818,9 @@ func TestResolveIOPathPlaceholders(t *testing.T) {
 	assert.NoError(t, err)
 	assert.True(t, len(pods.Items) > 0, "pod was not created successfully")
 
-	assert.Equal(t, []string{"/var/run/argo/argoexec", "emissary", "--", "sh", "-c", "head -n 3 <\"/inputs/text/data\" | tee \"/outputs/text/data\" | wc -l > \"/outputs/actual-lines-count/data\""}, pods.Items[0].Spec.Containers[1].Command)
+	assert.Equal(t, []string{"/var/run/argo/argoexec", "emissary",
+		"--loglevel", getExecutorLogLevel(), "--log-format", woc.controller.cliExecutorLogFormat,
+		"--", "sh", "-c", "head -n 3 <\"/inputs/text/data\" | tee \"/outputs/text/data\" | wc -l > \"/outputs/actual-lines-count/data\""}, pods.Items[0].Spec.Containers[1].Command)
 }
 
 var outputValuePlaceholders = `
@@ -3778,7 +3780,7 @@ func TestNestedOptionalOutputArtifacts(t *testing.T) {
 	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
 }
 
-//  TestPodSpecLogForFailedPods tests PodSpec logging configuration
+// TestPodSpecLogForFailedPods tests PodSpec logging configuration
 func TestPodSpecLogForFailedPods(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(helloWorldWf)
 	cancel, controller := newController(wf)
@@ -3796,7 +3798,7 @@ func TestPodSpecLogForFailedPods(t *testing.T) {
 	}
 }
 
-//  TestPodSpecLogForAllPods tests  PodSpec logging configuration
+// TestPodSpecLogForAllPods tests  PodSpec logging configuration
 func TestPodSpecLogForAllPods(t *testing.T) {
 	cancel, controller := newController()
 	defer cancel()
