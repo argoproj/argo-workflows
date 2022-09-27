@@ -307,7 +307,7 @@ func (we *WorkflowExecutor) SaveResourceParameters(ctx context.Context, resource
 				resArgs = append(resArgs, "-n", resourceNamespace)
 			}
 			cmdStr := fmt.Sprintf("kubectl get %s -o json | jq -rc '%s'", strings.Join(resArgs, " "), param.ValueFrom.JQFilter)
-			cmd = exec.Command("sh", "-c", cmdStr)
+			cmd = exec.Command(cmdStr)
 		} else {
 			continue
 		}
