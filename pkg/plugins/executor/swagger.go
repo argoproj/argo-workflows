@@ -1,15 +1,16 @@
 // Package executor The API for an executor plugin.
 //
-//     Schemes: http
-//     Host: localhost
-//     BasePath: /api/v1
-//     Version: 0.0.1
+//	Schemes: http
+//	Host: localhost
+//	BasePath: /api/v1
+//	Version: 0.0.1
 //
-//     Consumes:
-//     - application/json
+//	Consumes:
+//	- application/json
 //
-//     Produces:
-//     - application/json
+//	Produces:
+//	- application/json
+//
 // swagger:meta
 package executor
 
