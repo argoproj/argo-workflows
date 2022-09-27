@@ -1,5 +1,22 @@
 # Changelog
 
+## v3.4.0 (2022-09-18)
+
+ * [047952afd](https://github.com/argoproj/argo-workflows/commit/047952afd539d06cae2fd6ba0b608b19c1194bba) fix: SDK workflow file
+ * [97328f1ed](https://github.com/argoproj/argo-workflows/commit/97328f1ed3885663b780f43e6b553208ecba4d3c) chore(deps): bump classnames and @types/classnames in /ui (#9603)
+ * [2dac194a5](https://github.com/argoproj/argo-workflows/commit/2dac194a52acb46c5535e5f552fdf7fd520d0f4e) chore(deps-dev): bump @babel/core from 7.19.0 to 7.19.1 in /ui (#9602)
+ * [47544cc02](https://github.com/argoproj/argo-workflows/commit/47544cc02a8663b5b69e4c213a382ff156deb63e) feat: Support retrying complex workflows with nested group nodes (#9499)
+ * [30bd96b4c](https://github.com/argoproj/argo-workflows/commit/30bd96b4c030fb728a3da78e0045982bf778d554) fix: Error message if cronworkflow failed to update (#9583)
+ * [fc5e11cd3](https://github.com/argoproj/argo-workflows/commit/fc5e11cd37f51e36517f7699c23afabac4f08528) chore(deps-dev): bump webpack-dev-server from 4.10.1 to 4.11.0 in /ui (#9567)
+ * [ace179804](https://github.com/argoproj/argo-workflows/commit/ace179804996edc0d356bff257a980e60b9bc5a0) docs(dev-container): Fix buildkit doc for local dev (#9580)
+
+### Contributors
+
+ * JM
+ * Saravanan Balasubramanian
+ * Yuan Tang
+ * dependabot[bot]
+
 ## v3.4.0-rc4 (2022-09-10)
 
  * [dee4ea5b0](https://github.com/argoproj/argo-workflows/commit/dee4ea5b0be2408e13af7745db910d0130e578f2) chore(deps-dev): bump @babel/core from 7.18.13 to 7.19.0 in /ui (#9566)

@@ -44,7 +44,7 @@ For v1 manifests (e.g. docker/whalesay:latest):
 ```bash
 % docker image inspect -f '{{.Config.Entrypoint}} {{.Config.Cmd}}' docker/whalesay:latest
 [] [/bin/bash]
-````
+```
 
 ```yaml
 images:
