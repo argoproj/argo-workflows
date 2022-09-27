@@ -22,7 +22,7 @@ export const WorkflowsSummaryContainer = (props: {workflows: Workflow[]}) => {
             <p className='wf-summary-container__title'>Workflows Summary</p>
             <div className='row'>
                 <div className='columns small-12 xlarge-12'>
-                    <span className='wf-summary-container__text'>Running Jobs &nbsp;</span>
+                    <span className='wf-summary-container__text'>Running workflows &nbsp;</span>
                     <span className='wf-summary-container__running'>{wfSummary && wfSummary.Running ? wfSummary.Running : 0}</span>
                 </div>
             </div>
