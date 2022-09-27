@@ -266,6 +266,9 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 		pod.Spec.InitContainers[i] = c
 	}
 
+	// We don't need to store these, which could lead to large pod spec that exceeds etcd limit when the parameters are large.
+	tmpl.Inputs = wfv1.Inputs{}
+	tmpl.Outputs = wfv1.Outputs{}
 	envVarTemplateValue := wfv1.MustMarshallJSON(tmpl)
 
 	// Add standard environment variables, making pod spec larger
