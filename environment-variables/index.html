@@ -3997,6 +3997,12 @@ most users. Environment variables may be removed at any time.</p>
 <td>How old a un-reconciled workflow is to report unhealthy.</td>
 </tr>
 <tr>
+<td><code>HEALTHZ_LIST_LIMIT</code></td>
+<td><code>int</code></td>
+<td><code>200</code></td>
+<td>The maximum number of responses to return for a list call on workflows for liveness check.</td>
+</tr>
+<tr>
 <td><code>INDEX_WORKFLOW_SEMAPHORE_KEYS</code></td>
 <td><code>bool</code></td>
 <td><code>true</code></td>
@@ -4031,6 +4037,12 @@ most users. Environment variables may be removed at any time.</p>
 <td><code>time.Duration</code></td>
 <td><code>5s</code></td>
 <td>The duration that the leader election clients should wait between tries of actions.</td>
+</tr>
+<tr>
+<td><code>LIST_LIMIT</code></td>
+<td><code>int</code></td>
+<td><code>200</code></td>
+<td>The maximum number of responses to return for a list call on workflows for workflow informer.</td>
 </tr>
 <tr>
 <td><code>MAX_OPERATION_TIME</code></td>
