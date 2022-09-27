@@ -19,16 +19,31 @@ func (n netError) Error() string   { return string(n) }
 func (n netError) Timeout() bool   { return false }
 func (n netError) Temporary() bool { return false }
 
+func urlError(errString string) *url.Error {
+	return &url.Error{
+		Op:  "Get",
+		URL: "https://argoproj.github.io",
+		Err: errors.New(errString),
+	}
+}
+
 var (
 	tlsHandshakeTimeoutErr net.Error = netError("net/http: TLS handshake timeout")
 	ioTimeoutErr           net.Error = netError("i/o timeout")
-	connectionTimedout     net.Error = netError("connection timed out")
-	connectionReset        net.Error = netError("connection reset by peer")
+	connectionTimedoutErr  net.Error = netError("connection timed out")
+	connectionResetErr     net.Error = netError("connection reset by peer")
 	transientErr           net.Error = netError("this error is transient")
 	transientExitErr                 = exec.ExitError{
 		ProcessState: &os.ProcessState{},
 		Stderr:       []byte("this error is transient"),
 	}
+
+	connectionClosedUErr    *url.Error = urlError("Connection closed by foreign host")
+	tlsHandshakeTimeoutUErr *url.Error = urlError("net/http: TLS handshake timeout")
+	ioTimeoutUErr           *url.Error = urlError("i/o timeout")
+	connectionTimedoutUErr  *url.Error = urlError("connection timed out")
+	connectionResetUErr     *url.Error = urlError("connection reset by peer")
+	EOFUErr                 *url.Error = urlError("EOF")
 )
 
 const transientEnvVarKey = "TRANSIENT_ERROR_PATTERN"
@@ -57,10 +72,6 @@ func TestIsTransientErr(t *testing.T) {
 	t.Run("UnknownNetworkError", func(t *testing.T) {
 		assert.True(t, IsTransientErr(net.UnknownNetworkError("")))
 	})
-	t.Run("ConnectionClosedErr", func(t *testing.T) {
-		assert.False(t, IsTransientErr(&url.Error{Err: errors.New("")}))
-		assert.True(t, IsTransientErr(&url.Error{Err: errors.New("Connection closed by foreign host")}))
-	})
 	t.Run("TLSHandshakeTimeout", func(t *testing.T) {
 		assert.True(t, IsTransientErr(tlsHandshakeTimeoutErr))
 	})
@@ -68,10 +79,10 @@ func TestIsTransientErr(t *testing.T) {
 		assert.True(t, IsTransientErr(ioTimeoutErr))
 	})
 	t.Run("ConnectionTimeout", func(t *testing.T) {
-		assert.True(t, IsTransientErr(connectionTimedout))
+		assert.True(t, IsTransientErr(connectionTimedoutErr))
 	})
 	t.Run("ConnectionReset", func(t *testing.T) {
-		assert.True(t, IsTransientErr(connectionReset))
+		assert.True(t, IsTransientErr(connectionResetErr))
 	})
 	t.Run("TransientErrorPattern", func(t *testing.T) {
 		_ = os.Setenv(transientEnvVarKey, "this error is transient")
@@ -89,5 +100,29 @@ func TestIsTransientErr(t *testing.T) {
 	})
 	t.Run("ExplicitTransientErr", func(t *testing.T) {
 		assert.True(t, IsTransientErr(NewErrTransient("")))
+	})
+}
+
+func TestIsTransientUErr(t *testing.T) {
+	t.Run("NonExceptionalUErr", func(t *testing.T) {
+		assert.False(t, IsTransientErr(&url.Error{Err: errors.New("")}))
+	})
+	t.Run("ConnectionClosedUErr", func(t *testing.T) {
+		assert.True(t, IsTransientErr(connectionClosedUErr))
+	})
+	t.Run("TLSHandshakeTimeoutUErr", func(t *testing.T) {
+		assert.True(t, IsTransientErr(tlsHandshakeTimeoutUErr))
+	})
+	t.Run("IOHandshakeTimeoutUErr", func(t *testing.T) {
+		assert.True(t, IsTransientErr(ioTimeoutUErr))
+	})
+	t.Run("ConnectionTimeoutUErr", func(t *testing.T) {
+		assert.True(t, IsTransientErr(connectionTimedoutUErr))
+	})
+	t.Run("ConnectionResetUErr", func(t *testing.T) {
+		assert.True(t, IsTransientErr(connectionResetUErr))
+	})
+	t.Run("EOFUErr", func(t *testing.T) {
+		assert.True(t, IsTransientErr(EOFUErr))
 	})
 }

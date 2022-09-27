@@ -210,6 +210,8 @@ Workflow is the definition of a workflow resource
 
 - [`life-cycle-hooks-wf-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/life-cycle-hooks-wf-level.yaml)
 
+- [`loops-arbitrary-sequential-steps.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/loops-arbitrary-sequential-steps.yaml)
+
 - [`loops-dag.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/loops-dag.yaml)
 
 - [`loops-maps.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/loops-maps.yaml)
@@ -634,6 +636,8 @@ WorkflowSpec is the specification of a Workflow.
 - [`life-cycle-hooks-tmpl-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/life-cycle-hooks-tmpl-level.yaml)
 
 - [`life-cycle-hooks-wf-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/life-cycle-hooks-wf-level.yaml)
+
+- [`loops-arbitrary-sequential-steps.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/loops-arbitrary-sequential-steps.yaml)
 
 - [`loops-dag.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/loops-dag.yaml)
 
@@ -1068,6 +1072,8 @@ CronWorkflowSpec is the specification of a CronWorkflow
 
 - [`life-cycle-hooks-wf-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/life-cycle-hooks-wf-level.yaml)
 
+- [`loops-arbitrary-sequential-steps.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/loops-arbitrary-sequential-steps.yaml)
+
 - [`loops-dag.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/loops-dag.yaml)
 
 - [`loops-maps.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/loops-maps.yaml)
@@ -1344,6 +1350,8 @@ Arguments to a template
 - [`k8s-wait-wf.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-wait-wf.yaml)
 
 - [`label-value-from-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/label-value-from-workflow.yaml)
+
+- [`loops-arbitrary-sequential-steps.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/loops-arbitrary-sequential-steps.yaml)
 
 - [`loops-dag.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/loops-dag.yaml)
 
@@ -2156,6 +2164,8 @@ Parameter indicate a passed string parameter to a service template with an optio
 
 - [`label-value-from-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/label-value-from-workflow.yaml)
 
+- [`loops-arbitrary-sequential-steps.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/loops-arbitrary-sequential-steps.yaml)
+
 - [`loops-dag.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/loops-dag.yaml)
 
 - [`loops-maps.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/loops-maps.yaml)
@@ -2719,6 +2729,8 @@ Inputs are the mechanism for passing parameters, artifacts, volumes from one tem
 
 - [`key-only-artifact.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/key-only-artifact.yaml)
 
+- [`loops-arbitrary-sequential-steps.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/loops-arbitrary-sequential-steps.yaml)
+
 - [`loops-dag.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/loops-dag.yaml)
 
 - [`loops-maps.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/loops-maps.yaml)
@@ -3022,6 +3034,8 @@ WorkflowStep is a reference to a template to execute in a series of step
 - [`life-cycle-hooks-tmpl-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/life-cycle-hooks-tmpl-level.yaml)
 
 - [`life-cycle-hooks-wf-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/life-cycle-hooks-wf-level.yaml)
+
+- [`loops-arbitrary-sequential-steps.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/loops-arbitrary-sequential-steps.yaml)
 
 - [`loops-maps.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/loops-maps.yaml)
 
@@ -4725,6 +4739,8 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 
 - [`life-cycle-hooks-wf-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/life-cycle-hooks-wf-level.yaml)
 
+- [`loops-arbitrary-sequential-steps.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/loops-arbitrary-sequential-steps.yaml)
+
 - [`loops-dag.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/loops-dag.yaml)
 
 - [`loops-maps.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/loops-maps.yaml)
@@ -5324,6 +5340,8 @@ A single application container that you want to run within a pod.
 - [`life-cycle-hooks-tmpl-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/life-cycle-hooks-tmpl-level.yaml)
 
 - [`life-cycle-hooks-wf-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/life-cycle-hooks-wf-level.yaml)
+
+- [`loops-arbitrary-sequential-steps.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/loops-arbitrary-sequential-steps.yaml)
 
 - [`loops-dag.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/loops-dag.yaml)
 
@@ -6045,6 +6063,8 @@ PersistentVolumeClaimSpec describes the common attributes of storage devices and
 - [`life-cycle-hooks-tmpl-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/life-cycle-hooks-tmpl-level.yaml)
 
 - [`life-cycle-hooks-wf-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/life-cycle-hooks-wf-level.yaml)
+
+- [`loops-arbitrary-sequential-steps.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/loops-arbitrary-sequential-steps.yaml)
 
 - [`loops-dag.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/loops-dag.yaml)
 
