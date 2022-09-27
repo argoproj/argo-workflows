@@ -22,7 +22,9 @@ spec:
             capabilities:
               drop:
                 - ALL
-          args: [ server ]
+          args:
+            - server
+            - --tls-certificate-secret-name=argo-server-tls
           env: []
           ports:
             - name: web

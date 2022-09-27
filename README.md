@@ -70,6 +70,7 @@ The following commands install Argo Workflows as well as some commmonly used com
 
 ```bash
 kubectl create ns argo
+kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.9.1/cert-manager.yaml
 kubectl apply -n argo -f https://raw.githubusercontent.com/argoproj/argo-workflows/master/manifests/quick-start-postgres.yaml
 ```
 

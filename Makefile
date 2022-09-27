@@ -423,6 +423,9 @@ test: server/static/files.go
 .PHONY: install
 install: githooks
 	kubectl get ns $(KUBE_NAMESPACE) || kubectl create ns $(KUBE_NAMESPACE)
+	# install cert-manager if Certificate CRD is not available
+	kubectl get ns cert-manager || kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.9.1/cert-manager.yaml
+	kubectl wait --for=condition=Ready pods --all --namespace cert-manager
 	kubectl config set-context --current --namespace=$(KUBE_NAMESPACE)
 	@echo "installing PROFILE=$(PROFILE)"
 	kubectl kustomize --load-restrictor=LoadRestrictionsNone test/e2e/manifests/$(PROFILE) | sed 's|quay.io/argoproj/|$(IMAGE_NAMESPACE)/|' | sed 's/namespace: argo/namespace: $(KUBE_NAMESPACE)/' | kubectl -n $(KUBE_NAMESPACE) apply --prune -l app.kubernetes.io/part-of=argo -f -
