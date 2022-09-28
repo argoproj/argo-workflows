@@ -239,10 +239,12 @@ type WorkflowCompletionOkay bool
 // Options:
 // * `time.Duration` - change the timeout - 30s by default
 // * `string` - either:
-//    * the workflow's name (not spaces)
-//    * or a new message (if it contain spaces) - default "to finish"
-// * `WorkflowCompletionOkay`` (bool alias): if this is true, we won't stop checking for the other options
-//    * just because the Workflow completed
+//   - the workflow's name (not spaces)
+//   - or a new message (if it contain spaces) - default "to finish"
+//
+// * `WorkflowCompletionOkay“ (bool alias): if this is true, we won't stop checking for the other options
+//   - just because the Workflow completed
+//
 // * `Condition` - a condition - `ToFinish` by default
 func (w *When) WaitForWorkflow(options ...interface{}) *When {
 	w.t.Helper()

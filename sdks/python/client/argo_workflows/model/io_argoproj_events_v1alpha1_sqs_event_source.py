@@ -100,6 +100,7 @@ class IoArgoprojEventsV1alpha1SQSEventSource(ModelNormal):
             'region': (str,),  # noqa: E501
             'role_arn': (str,),  # noqa: E501
             'secret_key': (SecretKeySelector,),  # noqa: E501
+            'session_token': (SecretKeySelector,),  # noqa: E501
             'wait_time_seconds': (str,),  # noqa: E501
         }
 
@@ -120,6 +121,7 @@ class IoArgoprojEventsV1alpha1SQSEventSource(ModelNormal):
         'region': 'region',  # noqa: E501
         'role_arn': 'roleARN',  # noqa: E501
         'secret_key': 'secretKey',  # noqa: E501
+        'session_token': 'sessionToken',  # noqa: E501
         'wait_time_seconds': 'waitTimeSeconds',  # noqa: E501
     }
 
@@ -175,6 +177,7 @@ class IoArgoprojEventsV1alpha1SQSEventSource(ModelNormal):
             region (str): [optional]  # noqa: E501
             role_arn (str): [optional]  # noqa: E501
             secret_key (SecretKeySelector): [optional]  # noqa: E501
+            session_token (SecretKeySelector): [optional]  # noqa: E501
             wait_time_seconds (str): WaitTimeSeconds is The duration (in seconds) for which the call waits for a message to arrive in the queue before returning.. [optional]  # noqa: E501
         """
 
@@ -268,6 +271,7 @@ class IoArgoprojEventsV1alpha1SQSEventSource(ModelNormal):
             region (str): [optional]  # noqa: E501
             role_arn (str): [optional]  # noqa: E501
             secret_key (SecretKeySelector): [optional]  # noqa: E501
+            session_token (SecretKeySelector): [optional]  # noqa: E501
             wait_time_seconds (str): WaitTimeSeconds is The duration (in seconds) for which the call waits for a message to arrive in the queue before returning.. [optional]  # noqa: E501
         """
 
