@@ -143,6 +143,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     ],
                                 ),
                             ],
+                            script="script_example",
                             time=IoArgoprojEventsV1alpha1TimeFilter(
                                 start="start_example",
                                 stop="stop_example",
@@ -1132,6 +1133,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         ),
                         template=IoArgoprojEventsV1alpha1TriggerTemplate(
                             argo_workflow=IoArgoprojEventsV1alpha1ArgoWorkflowTrigger(
+                                args=[
+                                    "args_example",
+                                ],
                                 operation="operation_example",
                                 parameters=[
                                     IoArgoprojEventsV1alpha1TriggerParameter(
@@ -1172,6 +1176,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             ),
                                         ),
                                         file_path="file_path_example",
+                                        insecure_ignore_host_key=True,
                                         ref="ref_example",
                                         remote=IoArgoprojEventsV1alpha1GitRemoteConfig(
                                             name="name_example",
@@ -1488,6 +1493,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             ),
                                         ),
                                         file_path="file_path_example",
+                                        insecure_ignore_host_key=True,
                                         ref="ref_example",
                                         remote=IoArgoprojEventsV1alpha1GitRemoteConfig(
                                             name="name_example",
@@ -2381,6 +2387,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     ],
                                 ),
                             ],
+                            script="script_example",
                             time=IoArgoprojEventsV1alpha1TimeFilter(
                                 start="start_example",
                                 stop="stop_example",
@@ -3370,6 +3377,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         ),
                         template=IoArgoprojEventsV1alpha1TriggerTemplate(
                             argo_workflow=IoArgoprojEventsV1alpha1ArgoWorkflowTrigger(
+                                args=[
+                                    "args_example",
+                                ],
                                 operation="operation_example",
                                 parameters=[
                                     IoArgoprojEventsV1alpha1TriggerParameter(
@@ -3410,6 +3420,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             ),
                                         ),
                                         file_path="file_path_example",
+                                        insecure_ignore_host_key=True,
                                         ref="ref_example",
                                         remote=IoArgoprojEventsV1alpha1GitRemoteConfig(
                                             name="name_example",
@@ -3726,6 +3737,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             ),
                                         ),
                                         file_path="file_path_example",
+                                        insecure_ignore_host_key=True,
                                         ref="ref_example",
                                         remote=IoArgoprojEventsV1alpha1GitRemoteConfig(
                                             name="name_example",
