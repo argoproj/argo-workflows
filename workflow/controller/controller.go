@@ -803,7 +803,6 @@ func (wfc *WorkflowController) tweakListOptions(options *metav1.ListOptions) {
 	labelSelector := labels.NewSelector().
 		Add(util.InstanceIDRequirement(wfc.Config.InstanceID))
 	options.LabelSelector = labelSelector.String()
-	options.Limit = int64(env.LookupEnvIntOr("LIST_LIMIT", 200))
 }
 
 func getWfPriority(obj interface{}) (int32, time.Time) {
