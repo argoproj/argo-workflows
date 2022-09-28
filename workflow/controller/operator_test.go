@@ -7067,8 +7067,8 @@ func TestSubstituteGlobalVariablesLabelsAnnotations(t *testing.T) {
 			// entire template referenced; value not contained in WorkflowTemplate or Workflow
 			workflow:              "@testdata/workflow-sub-test-1.yaml",
 			workflowTemplate:      "@testdata/workflow-template-sub-test-1.yaml",
-			expectedMutexName:     "{{workflow.labels.mutex-name}}",
-			expectedSchedulerName: "{{workflow.annotations.scheduler-name}}",
+			expectedMutexName:     "{{workflow.labels.mutexName}}",
+			expectedSchedulerName: "{{workflow.annotations.schedulerName}}",
 		},
 		{
 			// entire template referenced; value is in Workflow.Labels
@@ -7105,6 +7105,14 @@ func TestSubstituteGlobalVariablesLabelsAnnotations(t *testing.T) {
 			workflowTemplate:      "@testdata/workflow-template-sub-test-4.yaml",
 			expectedMutexName:     "myMutex",
 			expectedSchedulerName: "myScheduler",
+		},
+		{
+			// this checks that we can use a sprig expression to set a label (using workflowMetadata.labelsFrom)
+			// and the result of that label can also be evaluated in the spec
+			workflow:              "@testdata/workflow-sub-test-6.yaml",
+			workflowTemplate:      "@testdata/workflow-template-sub-test-2.yaml",
+			expectedMutexName:     "wfMetadataScheduler",
+			expectedSchedulerName: "wfMetadataScheduler",
 		},
 	}
 
