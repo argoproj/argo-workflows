@@ -136,8 +136,8 @@ func (s *E2ESuite) DeleteResources() {
 		{Version: "v1", Resource: "resourcequotas"},
 		{Version: "v1", Resource: "configmaps"},
 	}
-
 	pods := s.KubeClient.CoreV1().Pods(Namespace)
+	time.Sleep(1 * time.Second)
 	podList, err := pods.List(ctx, metav1.ListOptions{LabelSelector: common.LabelKeyCompleted + "=false"})
 	s.CheckError(err)
 
