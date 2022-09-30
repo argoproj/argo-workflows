@@ -20,7 +20,10 @@ func (woc *wfOperationCtx) applyExecutionControl(pod *apiv1.Pod, wfNodesLock *sy
 	}
 
 	nodeID := woc.nodeID(pod)
-	node := woc.wf.Status.Nodes[nodeID]
+	node, ok := woc.wf.Status.Nodes[nodeID]
+	if !ok {
+		return
+	}
 	//node is already completed
 	if node.Fulfilled() {
 		return

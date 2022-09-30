@@ -368,9 +368,14 @@ func (woc *wfOperationCtx) executeDAGTask(ctx context.Context, dagCtx *dagContex
 			}
 		}
 
+		processedTmpl, err := common.ProcessArgs(tmpl, &task.Arguments, woc.globalParams, map[string]string{}, true, woc.wf.Namespace, woc.controller.configMapInformer)
+		if err != nil {
+			woc.markNodeError(node.Name, err)
+		}
+
 		// Release acquired lock completed task.
 		if tmpl != nil {
-			woc.controller.syncManager.Release(woc.wf, node.ID, tmpl.Synchronization)
+			woc.controller.syncManager.Release(woc.wf, node.ID, processedTmpl.Synchronization)
 		}
 
 		task := dagCtx.GetTask(taskName)
