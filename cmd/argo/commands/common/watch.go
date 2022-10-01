@@ -46,7 +46,7 @@ func WatchWorkflow(ctx context.Context, serviceClient workflowpkg.WorkflowServic
 	}()
 
 	var wf *wfv1.Workflow
-	ticker := time.NewTicker(time.Second)
+	ticker := time.NewTicker(100 * time.Millisecond)
 	for {
 		select {
 		case newWf := <-wfChan:
@@ -56,7 +56,7 @@ func WatchWorkflow(ctx context.Context, serviceClient workflowpkg.WorkflowServic
 			}
 			wf = newWf
 		case <-ticker.C:
-			// If we don't, refresh the workflow screen every second
+			// If we don't, refresh the workflow screen every 100ms
 		case <-ctx.Done():
 			// When the context gets canceled
 			return

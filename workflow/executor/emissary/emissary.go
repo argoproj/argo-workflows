@@ -119,7 +119,7 @@ func (e emissary) Wait(ctx context.Context, containerNames []string) error {
 			if e.isComplete(containerNames) {
 				return nil
 			}
-			time.Sleep(time.Second)
+			time.Sleep(100 * time.Millisecond)
 		}
 	}
 }

@@ -257,7 +257,7 @@ func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient 
 		defer close(doneSorting)
 		defer logCtx.Debug("Done sorting entries")
 		logCtx.Debug("Sorting entries")
-		ticker := time.NewTicker(1 * time.Second)
+		ticker := time.NewTicker(250 * time.Millisecond)
 		defer ticker.Stop()
 		entries := logEntries{}
 		// Ugly to have this func, but we use it in two places (normal operation and finishing up).

@@ -78,7 +78,7 @@ func NewEmissaryCommand() *cobra.Command {
 						for {
 							data, err := ioutil.ReadFile(filepath.Clean(varRunArgo + "/ctr/" + y + "/exitcode"))
 							if os.IsNotExist(err) {
-								time.Sleep(time.Second)
+								time.Sleep(100 * time.Millisecond)
 								continue
 							}
 							exitCode, err := strconv.Atoi(string(data))
@@ -105,7 +105,7 @@ func NewEmissaryCommand() *cobra.Command {
 					// in order to break out of the sleep and release the container from
 					// the debugging state.
 					if _, err := os.Stat(varRunArgo + "/ctr/" + containerName + "/before"); os.IsNotExist(err) {
-						time.Sleep(time.Second)
+						time.Sleep(100 * time.Millisecond)
 						continue
 					}
 					break
@@ -153,7 +153,7 @@ func NewEmissaryCommand() *cobra.Command {
 							if s > 0 {
 								_ = osspecific.Kill(pid, syscall.Signal(s))
 							}
-							time.Sleep(2 * time.Second)
+							time.Sleep(100 * time.Millisecond)
 						}
 					}
 				}()
@@ -168,7 +168,7 @@ func NewEmissaryCommand() *cobra.Command {
 					// in order to break out of the sleep and release the container from
 					// the debugging state.
 					if _, err := os.Stat(varRunArgo + "/ctr/" + containerName + "/after"); os.IsNotExist(err) {
-						time.Sleep(time.Second)
+						time.Sleep(100 * time.Millisecond)
 						continue
 					}
 					break

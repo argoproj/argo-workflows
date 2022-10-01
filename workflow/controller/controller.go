@@ -303,20 +303,20 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 	go wfc.metrics.RunServer(ctx)
 
 	for i := 0; i < podCleanupWorkers; i++ {
-		go wait.UntilWithContext(ctx, wfc.runPodCleanup, time.Second)
+		go wait.UntilWithContext(ctx, wfc.runPodCleanup, 250 * time.Millisecond)
 	}
 	go wfc.workflowGarbageCollector(ctx.Done())
 	go wfc.archivedWorkflowGarbageCollector(ctx.Done())
 
 	go wfc.runGCcontroller(ctx, workflowTTLWorkers)
 	go wfc.runCronController(ctx)
-	go wait.Until(wfc.syncWorkflowPhaseMetrics, 15*time.Second, ctx.Done())
-	go wait.Until(wfc.syncPodPhaseMetrics, 15*time.Second, ctx.Done())
+	go wait.Until(wfc.syncWorkflowPhaseMetrics, 5*time.Second, ctx.Done())
+	go wait.Until(wfc.syncPodPhaseMetrics, 5*time.Second, ctx.Done())
 
 	go wait.Until(wfc.syncManager.CheckWorkflowExistence, workflowExistenceCheckPeriod, ctx.Done())
 
 	for i := 0; i < wfWorkers; i++ {
-		go wait.Until(wfc.runWorker, time.Second, ctx.Done())
+		go wait.Until(wfc.runWorker, 250 * time.Millisecond, ctx.Done())
 	}
 	if cacheGCPeriod != 0 {
 		go wait.JitterUntilWithContext(ctx, wfc.syncAllCacheForGC, cacheGCPeriod, 0.0, true)

@@ -50,6 +50,6 @@ func Wait(process *os.Process) error {
 				return errors.NewExitErr(128 + int(s.Signal()))
 			}
 		}
-		time.Sleep(time.Second)
+		time.Sleep(100 * time.Millisecond)
 	}
 }
