@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	apierr "k8s.io/apimachinery/pkg/api/errors"
 	"os"
 	"time"
 
@@ -136,24 +137,25 @@ func (s *E2ESuite) DeleteResources() {
 		{Version: "v1", Resource: "resourcequotas"},
 		{Version: "v1", Resource: "configmaps"},
 	}
-	pods := s.KubeClient.CoreV1().Pods(Namespace)
-	time.Sleep(1 * time.Second)
-	podList, err := pods.List(ctx, metav1.ListOptions{LabelSelector: common.LabelKeyCompleted + "=false"})
-	s.CheckError(err)
-
-	for _, pod := range podList.Items {
-		patch, err := json.Marshal(map[string]interface{}{
-			"metadata": map[string]interface{}{
-				"finalizers": []string{},
-			},
-		})
-		s.CheckError(err)
-		_, err = pods.Patch(ctx, pod.Name, types.MergePatchType, patch, metav1.PatchOptions{})
-		s.CheckError(err)
-	}
 
 	for _, r := range resources {
 		for {
+			// remove finalizer from all the resources of the given GroupVersionResource
+			resourceInf := s.dynamicFor(r)
+			resourceList, err := resourceInf.List(ctx, metav1.ListOptions{LabelSelector: common.LabelKeyCompleted + "=false"})
+			s.CheckError(err)
+			for _, item := range resourceList.Items {
+				patch, err := json.Marshal(map[string]interface{}{
+					"metadata": map[string]interface{}{
+						"finalizers": []string{},
+					},
+				})
+				s.CheckError(err)
+				_, err = resourceInf.Patch(ctx, item.GetName(), types.MergePatchType, patch, metav1.PatchOptions{})
+				if err != nil && !apierr.IsNotFound(err) {
+					s.CheckError(err)
+				}
+			}
 			s.CheckError(s.dynamicFor(r).DeleteCollection(ctx, metav1.DeleteOptions{GracePeriodSeconds: pointer.Int64Ptr(2)}, metav1.ListOptions{LabelSelector: l(r)}))
 			ls, err := s.dynamicFor(r).List(ctx, metav1.ListOptions{LabelSelector: l(r)})
 			s.CheckError(err)
