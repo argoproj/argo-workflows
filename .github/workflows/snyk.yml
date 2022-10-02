@@ -2,6 +2,9 @@ name: Snyk
 on:
   schedule:
     - cron: "30 2 * * *"
+permissions:
+  contents: read
+
 jobs:
   # we do not scan images here, they're scanned here: https://app.snyk.io/org/argoproj/projects
 

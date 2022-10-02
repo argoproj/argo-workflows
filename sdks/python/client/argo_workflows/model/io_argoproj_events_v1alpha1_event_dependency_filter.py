@@ -98,6 +98,7 @@ class IoArgoprojEventsV1alpha1EventDependencyFilter(ModelNormal):
             'data_logical_operator': (str,),  # noqa: E501
             'expr_logical_operator': (str,),  # noqa: E501
             'exprs': ([IoArgoprojEventsV1alpha1ExprFilter],),  # noqa: E501
+            'script': (str,),  # noqa: E501
             'time': (IoArgoprojEventsV1alpha1TimeFilter,),  # noqa: E501
         }
 
@@ -112,6 +113,7 @@ class IoArgoprojEventsV1alpha1EventDependencyFilter(ModelNormal):
         'data_logical_operator': 'dataLogicalOperator',  # noqa: E501
         'expr_logical_operator': 'exprLogicalOperator',  # noqa: E501
         'exprs': 'exprs',  # noqa: E501
+        'script': 'script',  # noqa: E501
         'time': 'time',  # noqa: E501
     }
 
@@ -161,6 +163,7 @@ class IoArgoprojEventsV1alpha1EventDependencyFilter(ModelNormal):
             data_logical_operator (str): DataLogicalOperator defines how multiple Data filters (if defined) are evaluated together. Available values: and (&&), or (||) Is optional and if left blank treated as and (&&).. [optional]  # noqa: E501
             expr_logical_operator (str): ExprLogicalOperator defines how multiple Exprs filters (if defined) are evaluated together. Available values: and (&&), or (||) Is optional and if left blank treated as and (&&).. [optional]  # noqa: E501
             exprs ([IoArgoprojEventsV1alpha1ExprFilter]): Exprs contains the list of expressions evaluated against the event payload.. [optional]  # noqa: E501
+            script (str): Script refers to a Lua script evaluated to determine the validity of an io.argoproj.workflow.v1alpha1.. [optional]  # noqa: E501
             time (IoArgoprojEventsV1alpha1TimeFilter): [optional]  # noqa: E501
         """
 
@@ -248,6 +251,7 @@ class IoArgoprojEventsV1alpha1EventDependencyFilter(ModelNormal):
             data_logical_operator (str): DataLogicalOperator defines how multiple Data filters (if defined) are evaluated together. Available values: and (&&), or (||) Is optional and if left blank treated as and (&&).. [optional]  # noqa: E501
             expr_logical_operator (str): ExprLogicalOperator defines how multiple Exprs filters (if defined) are evaluated together. Available values: and (&&), or (||) Is optional and if left blank treated as and (&&).. [optional]  # noqa: E501
             exprs ([IoArgoprojEventsV1alpha1ExprFilter]): Exprs contains the list of expressions evaluated against the event payload.. [optional]  # noqa: E501
+            script (str): Script refers to a Lua script evaluated to determine the validity of an io.argoproj.workflow.v1alpha1.. [optional]  # noqa: E501
             time (IoArgoprojEventsV1alpha1TimeFilter): [optional]  # noqa: E501
         """
 

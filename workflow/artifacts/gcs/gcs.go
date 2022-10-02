@@ -22,6 +22,7 @@ import (
 
 	"github.com/argoproj/argo-workflows/v3/errors"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	errutil "github.com/argoproj/argo-workflows/v3/util/errors"
 	waitutil "github.com/argoproj/argo-workflows/v3/util/wait"
 	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/common"
 )
@@ -38,7 +39,7 @@ var (
 
 // from https://github.com/googleapis/google-cloud-go/blob/master/storage/go110.go
 func isTransientGCSErr(err error) bool {
-	if err == io.ErrUnexpectedEOF {
+	if err == io.ErrUnexpectedEOF || errutil.IsTransientErr(err) {
 		return true
 	}
 	switch e := err.(type) {
@@ -306,9 +307,33 @@ func uploadObject(client *storage.Client, bucket, key, localPath string) error {
 	return nil
 }
 
-// Delete is unsupported for the gcp artifacts
+// delete an object from GCS
+func deleteObject(client *storage.Client, bucket, key string) error {
+	ctx := context.Background()
+	err := client.Bucket(bucket).Object(key).Delete(ctx)
+	if err != nil {
+		return fmt.Errorf("delete %s: %v", key, err)
+	}
+	return nil
+}
+
+// Delete deletes an artifact from GCS
 func (h *ArtifactDriver) Delete(s *wfv1.Artifact) error {
-	return common.ErrDeleteNotSupported
+	err := waitutil.Backoff(defaultRetry,
+		func() (bool, error) {
+			client, err := h.newGCSClient()
+			if err != nil {
+				return !isTransientGCSErr(err), err
+			}
+			defer client.Close()
+			err = deleteObject(client, s.GCS.Bucket, s.GCS.Key)
+			if err != nil {
+				return !isTransientGCSErr(err), err
+			}
+			return true, nil
+		},
+	)
+	return err
 }
 
 func (g *ArtifactDriver) ListObjects(artifact *wfv1.Artifact) ([]string, error) {

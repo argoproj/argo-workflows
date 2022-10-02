@@ -54,7 +54,7 @@ func (a *fakeArtifactDriver) Load(_ *wfv1.Artifact, path string) error {
 }
 
 var bucketsOfKeys = map[string][]string{
-	"my-bucket": []string{
+	"my-bucket": {
 		"my-wf/my-node-1/my-s3-input-artifact.tgz",
 		"my-wf/my-node-1/my-s3-artifact-directory",
 		"my-wf/my-node-1/my-s3-artifact-directory/a.txt",
@@ -64,11 +64,14 @@ var bucketsOfKeys = map[string][]string{
 		"my-wf/my-node-1/my-oss-artifact.zip",
 		"my-wf/my-node-1/my-s3-artifact.tgz",
 	},
-	"my-bucket-2": []string{
+	"my-bucket-2": {
 		"my-wf/my-node-2/my-s3-artifact-bucket-2",
 	},
-	"my-bucket-3": []string{
+	"my-bucket-3": {
 		"my-wf/my-node-2/my-s3-artifact-bucket-3",
+	},
+	"my-bucket-4": {
+		"my-wf/my-node-3/my-s3-artifact.tgz",
 	},
 }
 
@@ -278,8 +281,45 @@ func newServer() *ArtifactServer {
 						},
 					},
 				},
+
+				"my-node-3": wfv1.NodeStatus{
+					TemplateRef: &wfv1.TemplateRef{
+						Name:     "my-template",
+						Template: "template-3",
+					},
+					Outputs: &wfv1.Outputs{
+						Artifacts: wfv1.Artifacts{
+							{
+								Name: "my-s3-artifact",
+								ArtifactLocation: wfv1.ArtifactLocation{
+									S3: &wfv1.S3Artifact{
+										// S3 is a configured artifact repo, so does not need key
+										Key: "my-wf/my-node-3/my-s3-artifact.tgz",
+										S3Bucket: wfv1.S3Bucket{
+											Bucket:   "my-bucket-4",
+											Endpoint: "minio:9000",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
 				// a node without input/output artifacts
 				"my-node-no-artifacts": wfv1.NodeStatus{},
+			},
+			StoredTemplates: map[string]wfv1.Template{
+				"namespaced/my-template/template-3": {
+					Name: "template-3",
+					Outputs: wfv1.Outputs{
+						Artifacts: wfv1.Artifacts{
+							{
+								Name: "my-s3-artifact",
+								Path: "my-s3-artifact.tgz",
+							},
+						},
+					},
+				},
 			},
 		},
 	}
@@ -433,6 +473,38 @@ func TestArtifactServer_GetOutputArtifact(t *testing.T) {
 		t.Run(tt.artifactName, func(t *testing.T) {
 			r := &http.Request{}
 			r.URL = mustParse(fmt.Sprintf("/artifacts/my-ns/my-wf/my-node-1/%s", tt.artifactName))
+			recorder := httptest.NewRecorder()
+
+			s.GetOutputArtifact(recorder, r)
+			if assert.Equal(t, 200, recorder.Result().StatusCode) {
+				assert.Equal(t, fmt.Sprintf(`filename="%s"`, tt.fileName), recorder.Header().Get("Content-Disposition"))
+				all, err := io.ReadAll(recorder.Result().Body)
+				if err != nil {
+					panic(fmt.Sprintf("failed to read http body: %v", err))
+				}
+				assert.Equal(t, "my-data", string(all))
+			}
+		})
+	}
+}
+
+func TestArtifactServer_GetOutputArtifactWithTemplate(t *testing.T) {
+	s := newServer()
+
+	tests := []struct {
+		fileName     string
+		artifactName string
+	}{
+		{
+			fileName:     "my-s3-artifact.tgz",
+			artifactName: "my-s3-artifact",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.artifactName, func(t *testing.T) {
+			r := &http.Request{}
+			r.URL = mustParse(fmt.Sprintf("/artifacts/my-ns/my-wf/my-node-3/%s", tt.artifactName))
 			recorder := httptest.NewRecorder()
 
 			s.GetOutputArtifact(recorder, r)

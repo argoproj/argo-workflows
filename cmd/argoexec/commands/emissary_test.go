@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 	"strconv"
@@ -63,7 +64,7 @@ func TestEmissary(t *testing.T) {
 			go func() {
 				defer wg.Done()
 				err := run("sleep 3")
-				assert.NoError(t, err)
+				assert.EqualError(t, err, fmt.Sprintf("exit status %d", 128+signal))
 			}()
 			wg.Wait()
 		}

@@ -986,4 +986,12 @@ spec:
 		woc.globalParams[common.GlobalVarWorkflowFailures],
 		`[{\"displayName\":\"hook-failures\",\"message\":\"Pod failed\",\"templateName\":\"intentional-fail\",\"phase\":\"Failed\",\"podName\":\"hook-failures\"`,
 	)
+	assert.Equal(t, wfv1.NodePending, node.Phase)
+	makePodsPhase(ctx, woc, apiv1.PodFailed)
+	woc = newWorkflowOperationCtx(woc.wf, controller)
+	err := woc.podReconciliation(ctx)
+	assert.NoError(t, err)
+	node = woc.wf.Status.Nodes.FindByDisplayName("hook-failures.hooks.failure")
+	assert.NotNil(t, node)
+	assert.Equal(t, wfv1.NodeFailed, node.Phase)
 }

@@ -1,0 +1,49 @@
+# This example demonstrates a workflow accepting a list of items (as JSON string)
+# as an input parameter, and using it for expanding a step into a sequential task
+# of arbitrary steps. When a step fails, the iteration will break, stopping
+# following steps from running.
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: loop-arbitrary-sequential-steps-
+spec:
+  entrypoint: loop-arbitrary-sequential-steps-example
+  arguments:
+    parameters:
+      - name: step_params
+        value: |
+          [
+            { "exit_code": 0, "message": "succeeds 1" },
+            { "exit_code": 0, "message": "succeeds 2" },
+            { "exit_code": 0, "message": "succeeds 3" },
+            { "exit_code": 1, "message": "will fail and stop here" },
+            { "exit_code": 0, "message": "will not run" },
+            { "exit_code": 0, "message": "will not run" }
+          ]
+  templates:
+    - name: loop-arbitrary-sequential-steps-example
+      inputs:
+        parameters:
+          - name: step_params
+      parallelism: 1
+      failFast: true
+      steps:
+        - - name: unit-step
+            template: unit-step-template
+            arguments:
+              parameters:
+                - name: exit_code
+                  value: "{{item.exit_code}}"
+                - name: message
+                  value: "{{item.message}}"
+            withParam: "{{inputs.parameters.step_params}}"
+
+    - name: unit-step-template
+      inputs:
+        parameters:
+          - name: exit_code
+          - name: message
+      container:
+        image: alpine
+        command: [ '/bin/sh', '-c' ]
+        args: [ "echo {{inputs.parameters.message}}; exit {{inputs.parameters.exit_code}}" ]

@@ -2,11 +2,11 @@ apiVersion: argoproj.io/v1alpha1
 kind: WorkflowTemplate
 metadata:
   name: workflow-template-submittable
-  namespace: test
+  namespace: argo
   labels:
-    mutex-name: myMutex
+    mutexName: myMutex
   annotations:
-    scheduler-name: myScheduler
+    schedulerName: myScheduler
 spec:
   arguments:
     parameters:
@@ -21,7 +21,7 @@ spec:
         args: ['hello']
   workflowMetadata:
     labelsFrom:
-      mutex-name:
+      mutexName:
         expression: workflow.parameters.mutex
     annotations:
-      scheduler-name: wfMetadataTemplateScheduler
+      schedulerName: wfMetadataTemplateScheduler

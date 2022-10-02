@@ -90,7 +90,7 @@ class IoArgoprojEventsV1alpha1BitbucketAuth(ModelNormal):
         lazy_import()
         return {
             'basic': (IoArgoprojEventsV1alpha1BitbucketBasicAuth,),  # noqa: E501
-            'token': (SecretKeySelector,),  # noqa: E501
+            'oauth_token': (SecretKeySelector,),  # noqa: E501
         }
 
     @cached_property
@@ -100,7 +100,7 @@ class IoArgoprojEventsV1alpha1BitbucketAuth(ModelNormal):
 
     attribute_map = {
         'basic': 'basic',  # noqa: E501
-        'token': 'token',  # noqa: E501
+        'oauth_token': 'oauthToken',  # noqa: E501
     }
 
     read_only_vars = {
@@ -145,7 +145,7 @@ class IoArgoprojEventsV1alpha1BitbucketAuth(ModelNormal):
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
             basic (IoArgoprojEventsV1alpha1BitbucketBasicAuth): [optional]  # noqa: E501
-            token (SecretKeySelector): [optional]  # noqa: E501
+            oauth_token (SecretKeySelector): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -228,7 +228,7 @@ class IoArgoprojEventsV1alpha1BitbucketAuth(ModelNormal):
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
             basic (IoArgoprojEventsV1alpha1BitbucketBasicAuth): [optional]  # noqa: E501
-            token (SecretKeySelector): [optional]  # noqa: E501
+            oauth_token (SecretKeySelector): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)

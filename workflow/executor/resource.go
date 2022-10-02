@@ -13,11 +13,12 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/tidwall/gjson"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/util/retry"
+	"k8s.io/gengo/namer"
+	gengotypes "k8s.io/gengo/types"
 
 	"github.com/argoproj/argo-workflows/v3/errors"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
@@ -77,7 +78,11 @@ func inferObjectSelfLink(obj unstructured.Unstructured) string {
 	gvk := obj.GroupVersionKind()
 	// This is the best guess we can do here and is what `kubectl` uses under the hood. Hopefully future versions of the
 	// REST client would remove the need to infer the plural name.
-	pluralGVR, _ := meta.UnsafeGuessKindToResource(gvk)
+	lowercaseNamer := namer.NewAllLowercasePluralNamer(map[string]string{})
+	pluralName := lowercaseNamer.Name(&gengotypes.Type{Name: gengotypes.Name{
+		Name: gvk.Kind,
+	}})
+
 	var selfLinkPrefix string
 	if gvk.Group == "" {
 		selfLinkPrefix = "api"
@@ -85,8 +90,14 @@ func inferObjectSelfLink(obj unstructured.Unstructured) string {
 		selfLinkPrefix = "apis"
 	}
 	// We cannot use `obj.GetSelfLink()` directly since it is deprecated and will be removed after Kubernetes 1.21: https://github.com/kubernetes/enhancements/tree/master/keps/sig-api-machinery/1164-remove-selflink
-	return fmt.Sprintf("%s/%s/namespaces/%s/%s/%s",
-		selfLinkPrefix, obj.GetAPIVersion(), obj.GetNamespace(), pluralGVR.Resource, obj.GetName())
+	var selfLink string
+	if obj.GetNamespace() == "" {
+		selfLink = fmt.Sprintf("%s/%s/%s/%s", selfLinkPrefix, obj.GetAPIVersion(), pluralName, obj.GetName())
+	} else {
+		selfLink = fmt.Sprintf("%s/%s/namespaces/%s/%s/%s",
+			selfLinkPrefix, obj.GetAPIVersion(), obj.GetNamespace(), pluralName, obj.GetName())
+	}
+	return selfLink
 }
 
 func (we *WorkflowExecutor) getKubectlArguments(action string, manifestPath string, flags []string) ([]string, error) {
@@ -296,7 +307,7 @@ func (we *WorkflowExecutor) SaveResourceParameters(ctx context.Context, resource
 				resArgs = append(resArgs, "-n", resourceNamespace)
 			}
 			cmdStr := fmt.Sprintf("kubectl get %s -o json | jq -rc '%s'", strings.Join(resArgs, " "), param.ValueFrom.JQFilter)
-			cmd = exec.Command("sh", "-c", cmdStr)
+			cmd = exec.Command(cmdStr)
 		} else {
 			continue
 		}

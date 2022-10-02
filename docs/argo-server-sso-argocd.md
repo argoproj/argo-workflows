@@ -130,7 +130,7 @@ data:
              secretEnv: ARGO_WORKFLOWS_SSO_CLIENT_SECRET
 ```
 
-`argo/values.yaml`:
+`argo-workflows/values.yaml`:
 
 ```yaml
      server:

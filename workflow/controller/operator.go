@@ -482,22 +482,30 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 	}
 }
 
+// set Labels and Annotations for the Workflow
+// Also, since we're setting Labels and Annotations we need to find any
+// parameters formatted as "workflow.labels.<param>" or "workflow.annotations.<param>"
+// and perform substitution
 func (woc *wfOperationCtx) updateWorkflowMetadata() error {
+	updatedParams := make(common.Parameters)
 	if md := woc.execWf.Spec.WorkflowMetadata; md != nil {
-		if woc.wf.ObjectMeta.Labels == nil {
-			woc.wf.ObjectMeta.Labels = make(map[string]string)
+		if woc.wf.Labels == nil {
+			woc.wf.Labels = make(map[string]string)
 		}
 		for n, v := range md.Labels {
 			woc.wf.Labels[n] = v
 			woc.globalParams["workflow.labels."+n] = v
+			updatedParams["workflow.labels."+n] = v
 		}
-		if woc.wf.ObjectMeta.Annotations == nil {
-			woc.wf.ObjectMeta.Annotations = make(map[string]string)
+		if woc.wf.Annotations == nil {
+			woc.wf.Annotations = make(map[string]string)
 		}
 		for n, v := range md.Annotations {
 			woc.wf.Annotations[n] = v
 			woc.globalParams["workflow.annotations."+n] = v
+			updatedParams["workflow.annotations."+n] = v
 		}
+
 		env := env.GetFuncMap(template.EnvMap(woc.globalParams))
 		for n, f := range md.LabelsFrom {
 			r, err := expr.Eval(f.Expression, env)
@@ -510,8 +518,16 @@ func (woc *wfOperationCtx) updateWorkflowMetadata() error {
 			}
 			woc.wf.Labels[n] = v
 			woc.globalParams["workflow.labels."+n] = v
+			updatedParams["workflow.labels."+n] = v
 		}
 		woc.updated = true
+
+		// Now we need to do any substitution that involves these labels
+		err := woc.substituteGlobalVariables(updatedParams)
+		if err != nil {
+			return err
+		}
+
 	}
 	return nil
 }
@@ -570,6 +586,23 @@ func (woc *wfOperationCtx) setGlobalParameters(executionParameters wfv1.Argument
 			woc.globalParams["workflow.parameters."+param.Name] = param.Value.String()
 		}
 	}
+	if woc.wf.Status.Outputs != nil {
+		for _, param := range woc.wf.Status.Outputs.Parameters {
+			if param.HasValue() {
+				woc.globalParams["workflow.outputs.parameters."+param.Name] = param.GetValue()
+			}
+		}
+	}
+
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// Set global parameters based on Labels and Annotations, both those that are defined in the execWf.ObjectMeta
+	// and those that are defined in the execWf.Spec.WorkflowMetadata
+	// Note: we no longer set globalParams based on LabelsFrom expressions here since they may themselves use parameters
+	// and thus will need to be evaluated later based on the evaluation of those parameters
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+	md := woc.execWf.Spec.WorkflowMetadata
+
 	if workflowAnnotations, err := json.Marshal(woc.wf.ObjectMeta.Annotations); err == nil {
 		woc.globalParams[common.GlobalVarWorkflowAnnotations] = string(workflowAnnotations)
 	}
@@ -580,15 +613,30 @@ func (woc *wfOperationCtx) setGlobalParameters(executionParameters wfv1.Argument
 		woc.globalParams[common.GlobalVarWorkflowLabels] = string(workflowLabels)
 	}
 	for k, v := range woc.wf.ObjectMeta.Labels {
-		woc.globalParams["workflow.labels."+k] = v
-	}
-	if woc.wf.Status.Outputs != nil {
-		for _, param := range woc.wf.Status.Outputs.Parameters {
-			if param.HasValue() {
-				woc.globalParams["workflow.outputs.parameters."+param.Name] = param.GetValue()
+		// if the Label will get overridden by a LabelsFrom expression later, don't set it now
+		if md != nil {
+			_, existsLabelsFrom := md.LabelsFrom[k]
+			if !existsLabelsFrom {
+				woc.globalParams["workflow.labels."+k] = v
 			}
+		} else {
+			woc.globalParams["workflow.labels."+k] = v
 		}
 	}
+
+	if md != nil {
+		for n, v := range md.Labels {
+			// if the Label will get overridden by a LabelsFrom expression later, don't set it now
+			_, existsLabelsFrom := md.LabelsFrom[n]
+			if !existsLabelsFrom {
+				woc.globalParams["workflow.labels."+n] = v
+			}
+		}
+		for n, v := range md.Annotations {
+			woc.globalParams["workflow.annotations."+n] = v
+		}
+	}
+
 	return nil
 }
 
@@ -1672,7 +1720,12 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 	if resolvedTmpl.IsPodType() && woc.retryStrategy(resolvedTmpl) == nil {
 		localParams[common.LocalVarPodName] = woc.getPodName(nodeName, resolvedTmpl.Name)
 	}
-
+	if orgTmpl.IsDAGTask() {
+		localParams["tasks.name"] = orgTmpl.GetName()
+	}
+	if orgTmpl.IsWorkflowStep() {
+		localParams["steps.name"] = orgTmpl.GetName()
+	}
 	// Merge Template defaults to template
 	err = woc.mergedTemplateDefaultsInto(resolvedTmpl)
 	if err != nil {
@@ -1944,13 +1997,14 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 		}
 	}
 
-	node = woc.wf.GetNodeByName(node.Name)
-	if node == nil {
+	retrieveNode := woc.wf.GetNodeByName(node.Name)
+	if retrieveNode == nil {
 		err := fmt.Errorf("no Node found by the name of %s;  wf.Status.Nodes=%+v", node.Name, woc.wf.Status.Nodes)
 		woc.log.Error(err)
 		woc.markWorkflowError(ctx, err)
 		return node, err
 	}
+	node = retrieveNode
 
 	// Swap the node back to retry node
 	if retryNodeName != "" {
@@ -3526,15 +3580,16 @@ func (woc *wfOperationCtx) setExecWorkflow(ctx context.Context) error {
 		woc.markWorkflowFailed(ctx, fmt.Sprintf("failed to set global parameters: %s", err.Error()))
 		return err
 	}
+
+	err = woc.substituteGlobalVariables(woc.globalParams)
+	if err != nil {
+		return err
+	}
 	if woc.wf.Status.Phase == wfv1.WorkflowUnknown {
 		if err := woc.updateWorkflowMetadata(); err != nil {
 			woc.markWorkflowError(ctx, err)
 			return err
 		}
-	}
-	err = woc.substituteGlobalVariables()
-	if err != nil {
-		return err
 	}
 
 	// runtime value will be set after the substitution, otherwise will not be reflected from stored wf spec
@@ -3641,7 +3696,7 @@ func (woc *wfOperationCtx) mergedTemplateDefaultsInto(originalTmpl *wfv1.Templat
 	return nil
 }
 
-func (woc *wfOperationCtx) substituteGlobalVariables() error {
+func (woc *wfOperationCtx) substituteGlobalVariables(params common.Parameters) error {
 	execWfSpec := woc.execWf.Spec
 
 	// To Avoid the stale Global parameter value substitution to templates.
@@ -3653,7 +3708,7 @@ func (woc *wfOperationCtx) substituteGlobalVariables() error {
 		return err
 	}
 
-	resolveSpec, err := template.Replace(string(wfSpec), woc.globalParams, true)
+	resolveSpec, err := template.Replace(string(wfSpec), params, true)
 	if err != nil {
 		return err
 	}

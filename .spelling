@@ -38,6 +38,7 @@ Breitgand
 Couler
 DataDog
 Dataflow
+DeleteObject
 DevOps
 Dex
 EtcD
@@ -89,6 +90,7 @@ Ploomber
 Postgres
 Roadmap
 RoleBinding
+s3
 SDKs
 Sharding
 Singer.io
@@ -141,16 +143,19 @@ instantiator
 instantiators
 jenkins
 k3d
+k3s
 k8s-jobs
 kube
 kubelet
 kubernetes
+liveness
 localhost
 memoization
 memoized
 memoizing
 mentee
 mentees
+minikube
 mutex
 namespace
 namespaces
