@@ -1239,3 +1239,13 @@ func FindWaitCtrIndex(pod *apiv1.Pod) (int, error) {
 	}
 	return waitCtrIndex, nil
 }
+
+// RemoveString removes a string from a slice of strings
+func RemoveString(slice []string, s string) []string {
+	for i, v := range slice {
+		if v == s {
+			return append(slice[:i], slice[i+1:]...)
+		}
+	}
+	return slice
+}
