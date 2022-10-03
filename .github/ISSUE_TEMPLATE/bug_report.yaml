@@ -43,6 +43,6 @@ body:
     id: wait-logs
     attributes:
       label: Logs from in your workflow's wait container
-      value: kubectl logs -c wait -l workflows.argoproj.io/workflow=${workflow},workflow.argoproj.io/phase!=Succeeded
+      value: kubectl logs -n argo -c wait -l workflows.argoproj.io/workflow=${workflow},workflow.argoproj.io/phase!=Succeeded
     validations:
       required: true
