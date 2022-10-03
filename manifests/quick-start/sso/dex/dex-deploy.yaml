@@ -16,7 +16,7 @@ spec:
       serviceAccountName: dex
       containers:
         - name: dex
-          image: quay.io/dexidp/dex:v2.23.0
+          image: quay.io/dexidp/dex:v2.35.0
           args:
             - serve
             - /data/config.yaml
