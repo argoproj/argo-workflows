@@ -3831,7 +3831,7 @@
 <h1 id="use-argo-cd-dex-for-authentication">Use Argo CD Dex for authentication<a class="headerlink" href="#use-argo-cd-dex-for-authentication" title="Permanent link">&para;</a></h1>
 <p>It is possible to have the Argo Workflows Server use the Argo CD Dex instance for authentication, for instance if you use Okta with SAML which cannot integrate with Argo Workflows directly. In order to make this happen, you will need the following:</p>
 <ul>
-<li>You must be using at least Dex <a href="https://github.com/dexidp/dex/releases/tag/v2.23.0">v2.23.0</a>, because that's when <code>staticClients[].secretEnv</code> was added. That means Argo CD 1.7.12 and above.</li>
+<li>You must be using at least Dex <a href="https://github.com/dexidp/dex/releases/tag/v2.35.0">v2.35.0</a>, because that's when <code>staticClients[].secretEnv</code> was added. That means Argo CD 1.7.12 and above.</li>
 <li>A secret containing two keys, <code>client-id</code> and <code>client-secret</code> to be used by both Dex and Argo Workflows Server. <code>client-id</code> is <code>argo-workflows-sso</code> in this example, <code>client-secret</code> can be any random string. If Argo CD and Argo Workflows are installed in different namespaces the secret must be present in both of them. Example:</li>
 </ul>
 <div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1</span><span class="w"></span>
@@ -3930,7 +3930,7 @@
 <p><code>argo-cd/values.yaml</code>:</p>
 <div class="highlight"><pre><span></span><code><span class="w">     </span><span class="nt">dex</span><span class="p">:</span><span class="w"></span>
 <span class="w">       </span><span class="nt">image</span><span class="p">:</span><span class="w"></span>
-<span class="w">         </span><span class="nt">tag</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v2.23.0</span><span class="w"></span>
+<span class="w">         </span><span class="nt">tag</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v2.35.0</span><span class="w"></span>
 <span class="w">       </span><span class="nt">env</span><span class="p">:</span><span class="w"></span>
 <span class="w">         </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ARGO_WORKFLOWS_SSO_CLIENT_SECRET</span><span class="w"></span>
 <span class="w">           </span><span class="nt">valueFrom</span><span class="p">:</span><span class="w"></span>
