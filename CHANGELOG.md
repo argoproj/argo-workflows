@@ -1,5 +1,50 @@
 # Changelog
 
+## v3.4.1 (2022-09-30)
+
+* [365b6df16](https://github.com/argoproj/argo-workflows/commit/365b6df1641217d1b21b77bb1c2fcb41115dd439) fix: Label on Artifact GC Task no longer exceeds max characters (#9686)
+* [0851c36d8](https://github.com/argoproj/argo-workflows/commit/0851c36d8638833b9ecfe0125564e5635641846f) fix: Workflow-controller panic when stop a wf using plugin. Fixes #9587 (#9690)
+* [2f5e7534c](https://github.com/argoproj/argo-workflows/commit/2f5e7534c44499a9efce51d12ff87f8c3f725a21) fix: ordering of functionality for setting and evaluating label expressions (#9661)
+* [4e34979e1](https://github.com/argoproj/argo-workflows/commit/4e34979e1b132439fe1101a23b46e24a62c0368d) chore(deps): bump argo-events to 1.7.2 (#9624)
+* [f0016e054](https://github.com/argoproj/argo-workflows/commit/f0016e054ec32505dcd7f7d610443ad380fc6651) fix: Remove LIST_LIMIT in workflow informer (#9700)
+* [e08524d2a](https://github.com/argoproj/argo-workflows/commit/e08524d2acbd474f232f958e711d04d8919681e8) fix: Avoid controller crashes when running large number of workflows (#9691)
+* [4158cf11a](https://github.com/argoproj/argo-workflows/commit/4158cf11ad2e5837a76d1194a99b38e6d66f7dd0) Adding Splunk as Argo Workflows User (#9697)
+* [d553c9186](https://github.com/argoproj/argo-workflows/commit/d553c9186c761da16a641885a6de8f7fdfb42592) chore(deps-dev): bump sass from 1.54.9 to 1.55.0 in /ui (#9675)
+* [ff6aab34e](https://github.com/argoproj/argo-workflows/commit/ff6aab34ecbb5c0de26e36108cd1201c1e1ae2f5) Add --tls-certificate-secret-name parameter to server command. Fixes #5582 (#9423)
+* [84c19ea90](https://github.com/argoproj/argo-workflows/commit/84c19ea909cbc5249f684133dcb5a8481a533dab) fix: render template vars in DAGTask before releasing lock.. Fixes #9395 (#9405)
+* [b214161b3](https://github.com/argoproj/argo-workflows/commit/b214161b38642da75a38a100548d3809731746ff) fix: add authorization from cookie to metadata (#9663)
+* [b219d85ab](https://github.com/argoproj/argo-workflows/commit/b219d85ab57092b37b0b26f9f7c4cfbf5a9bea9a) fix: retry ExecutorPlugin invocation on transient network errors Fixes: #9664 (#9665)
+* [b96d446d6](https://github.com/argoproj/argo-workflows/commit/b96d446d666f704ba102077404bf0b7c472c1494) fix: Improve semaphore concurrency performance (#9666)
+* [38b55e39c](https://github.com/argoproj/argo-workflows/commit/38b55e39cca03e54da1f38849b066b36e03ba240) fix: sh not available in scratch container but used in argoexec. Fixes #9654 (#9679)
+* [67fc0acab](https://github.com/argoproj/argo-workflows/commit/67fc0acabc4a03f374195246b362b177893866b1) chore(deps): bump golangci-lint to v1.49.0 (#9639)
+* [9d7450139](https://github.com/argoproj/argo-workflows/commit/9d74501395fd715e2eb364e9f011b0224545d9ce) chore(deps-dev): bump webpack-dev-server from 4.11.0 to 4.11.1 in /ui (#9677)
+* [56454d0c8](https://github.com/argoproj/argo-workflows/commit/56454d0c8d8d4909e23f0938e561ad2bdb02cef2) chore(deps): bump github.com/minio/minio-go/v7 from 7.0.36 to 7.0.37 (#9673)
+* [49c47cbad](https://github.com/argoproj/argo-workflows/commit/49c47cbad0408adaf1371da36c3ece340fdecd65) chore(deps): bump cloud.google.com/go/storage from 1.26.0 to 1.27.0 (#9672)
+* [e6eb02fb5](https://github.com/argoproj/argo-workflows/commit/e6eb02fb529b7952227dcef091853edcf20f8248) fix: broken archived workflows ui. Fixes #9614, #9433 (#9634)
+* [e556fe3eb](https://github.com/argoproj/argo-workflows/commit/e556fe3eb355bf9ef31a1ef8b057c680a5c24f06) fix: Fixed artifact retrieval when templateRef in use. Fixes #9631, #9644. (#9648)
+* [72d3599b9](https://github.com/argoproj/argo-workflows/commit/72d3599b9f75861414475a39950879bddbc4e154) fix: avoid panic when not passing AuthSupplier (#9586)
+* [4e430ecd8](https://github.com/argoproj/argo-workflows/commit/4e430ecd88d26c89b0fa38b7962d40dd09e9695e) chore(deps-dev): bump @babel/preset-env from 7.19.0 to 7.19.1 in /ui (#9605)
+* [4ab943528](https://github.com/argoproj/argo-workflows/commit/4ab943528c8e1b510549e9c860c03adb8893e96b) chore(deps): bump google.golang.org/api from 0.95.0 to 0.96.0 (#9600)
+* [7d3432899](https://github.com/argoproj/argo-workflows/commit/7d3432899890a84a2e745932a2f88ef53e75282a) chore(deps-dev): bump babel-jest from 29.0.2 to 29.0.3 in /ui (#9604)
+
+### Contributors
+
+* Adam
+* Brian Loss
+* Dakota Lillie
+* Jesse Suen
+* Julie Vogelman
+* Rohan Kumar
+* Seokju Hong
+* Takumi Sue
+* Vladimir Ivanov
+* William Van Hevelingen
+* Yuan Tang
+* chen yangxue
+* dependabot[bot]
+* emagana
+* jsvk
+
 ## v3.4.0 (2022-09-18)
 
  * [047952afd](https://github.com/argoproj/argo-workflows/commit/047952afd539d06cae2fd6ba0b608b19c1194bba) fix: SDK workflow file

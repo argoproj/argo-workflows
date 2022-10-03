@@ -397,6 +397,79 @@ func TestMutexInDAG(t *testing.T) {
 	})
 }
 
+var DAGWithInterpolatedMutex = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+ name: dag-mutex
+ namespace: default
+spec:
+ entrypoint: diamond
+ templates:
+ - name: diamond
+   dag:
+     tasks:
+     - name: A
+       template: mutex
+       arguments:
+         parameters:
+         - name: message
+           value: foo/bar
+
+     - name: B
+       depends: A
+       template: mutex
+       arguments:
+         parameters:
+         - name: message
+           value: foo/bar
+
+ - name: mutex
+   synchronization:
+     mutex:
+       name: '{{=sprig.replace("/", "-", inputs.parameters.message)}}'
+   inputs:
+     parameters:
+     - name: message
+   container:
+     image: alpine:3.7
+     command: [sh, -c, "echo {{inputs.parameters.message}}"]
+`
+
+func TestMutexInDAGWithInterpolation(t *testing.T) {
+	assert := assert.New(t)
+
+	cancel, controller := newController()
+	defer cancel()
+	ctx := context.Background()
+	controller.syncManager = sync.NewLockManager(GetSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
+	}, workflowExistenceFunc)
+	t.Run("InterpolatedMutexWithDAG", func(t *testing.T) {
+		wf := wfv1.MustUnmarshalWorkflow(DAGWithInterpolatedMutex)
+		wf, err := controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace).Create(ctx, wf, metav1.CreateOptions{})
+		assert.NoError(err)
+		woc := newWorkflowOperationCtx(wf, controller)
+		woc.operate(ctx)
+		for _, node := range woc.wf.Status.Nodes {
+			if node.Name == "dag-mutex.A" {
+				assert.Equal(wfv1.NodePending, node.Phase)
+			}
+		}
+		assert.Equal(wfv1.WorkflowRunning, woc.wf.Status.Phase)
+		makePodsPhase(ctx, woc, v1.PodSucceeded)
+
+		woc1 := newWorkflowOperationCtx(woc.wf, controller)
+		woc1.operate(ctx)
+		for _, node := range woc1.wf.Status.Nodes {
+			assert.NotEqual(wfv1.NodeError, node.Phase)
+			if node.Name == "dag-mutex.B" {
+				assert.Nil(node.SynchronizationStatus)
+				assert.Equal(wfv1.NodePending, node.Phase)
+			}
+		}
+	})
+}
+
 const RetryWfWithSemaphore = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow

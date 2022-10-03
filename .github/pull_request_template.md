@@ -27,6 +27,10 @@ When creating your PR:
 * Your PR needs to pass the required checks before it can be approved. 
 * Once required tests have passed, mark your PR "Ready for review".
 
+If the CI fails for an e2e test first check to see if it's caused by something you touched. 
+If not, sometimes tests can fail due to timing and you can issue an empty commit 
+(```git commit --allow-empty -s -m "fix: empty commit"```) to retry.
+
 If changes were requested, once you've made them, you MUST dismiss the review to get it reviewed again.
 
 -->
