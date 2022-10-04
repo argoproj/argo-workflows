@@ -33,6 +33,7 @@ export class WorkflowsService {
             'items.metadata.namespace',
             'items.metadata.creationTimestamp',
             'items.metadata.labels',
+            'items.metadata.annotations',
             'items.status.phase',
             'items.status.message',
             'items.status.finishedAt',
@@ -90,6 +91,7 @@ export class WorkflowsService {
             'result.object.status.progress',
             'result.type',
             'result.object.metadata.labels',
+            'result.object.metadata.annotations',
             'result.object.spec.suspend'
         ];
         params.push(`fields=${fields.join(',')}`);
