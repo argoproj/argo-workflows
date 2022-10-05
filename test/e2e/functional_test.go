@@ -89,6 +89,49 @@ spec:
 		})
 }
 
+func (s *FunctionalSuite) TestWhenExpressions() {
+	s.Given().
+		Workflow("@functional/conditionals.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeSucceeded, time.Minute).
+		Then().
+		ExpectWorkflowNode(wfv1.NodeWithDisplayName("printHello-govaluate"), func(t *testing.T, n *wfv1.NodeStatus, p *apiv1.Pod) {
+			assert.NotEqual(t, wfv1.NodeTypeSkipped, n.Type)
+		}).
+		ExpectWorkflowNode(wfv1.NodeWithDisplayName("printHello-expr"), func(t *testing.T, n *wfv1.NodeStatus, p *apiv1.Pod) {
+			assert.NotEqual(t, wfv1.NodeTypeSkipped, n.Type)
+		}).
+		ExpectWorkflowNode(wfv1.NodeWithDisplayName("printHello-expr-json"), func(t *testing.T, n *wfv1.NodeStatus, p *apiv1.Pod) {
+			assert.NotEqual(t, wfv1.NodeTypeSkipped, n.Type)
+		})
+}
+
+// todo: add a test here for this Workflow:
+/*
+	apiVersion: argoproj.io/v1alpha1
+	kind: Workflow
+	metadata:
+	generateName: expr-global-parameters-
+	labels:
+		myLabel: myLabelValue
+	annotations:
+		myAnnotation: myAnnotationValue
+	spec:
+	entrypoint: whalesay1
+	arguments:
+		parameters:
+		- name: myParam
+		value: myParamValue
+
+	templates:
+	- name: whalesay1
+		container:
+		image: docker/whalesay:latest
+		command: [cowsay]
+		args: ["{{=jsonpath(workflow.labels.json, '$.myLabel')}}", "{{=jsonpath(workflow.annotations.json, '$.myAnnotation')}}", "{{=jsonpath(workflow.parameters.json, '$.value')}}"]
+*/
+
 func (s *FunctionalSuite) TestWorkflowTTL() {
 	s.Given().
 		Workflow(`

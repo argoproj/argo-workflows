@@ -24,15 +24,18 @@ spec:
       parameters:
       - name: shouldPrint
     steps:
-    - - name: printHello
+    - - name: printHello-govaluate
         template: whalesay
-        when: "{{inputs.parameters.shouldPrint}} == true" #govaluate form
-    - - name: printHello-2
+        when: "{{inputs.parameters.shouldPrint}} == true" # govaluate form
+    - - name: printHello-expr
         template: whalesay
         when: "{{= inputs.parameters.shouldPrint == 'true'}}" # expr form
+    - - name: printHello-expr-json
+        template: whalesay
+        when: "{{=jsonpath(workflow.parameters.json, '$[0].value') == 'true'}}" # expr form
 
   - name: whalesay
     container:
-      image: docker/whalesay:latest
+      image: argoproj/argosay:v1
       command: [sh, -c]
       args: ["cowsay hello"]
