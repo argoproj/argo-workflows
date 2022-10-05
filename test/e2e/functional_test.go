@@ -94,7 +94,7 @@ func (s *FunctionalSuite) TestWhenExpressions() {
 		Workflow("@functional/conditionals.yaml").
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(fixtures.ToBeSucceeded, time.Minute).
+		WaitForWorkflow(fixtures.ToBeSucceeded, 2*time.Minute).
 		Then().
 		ExpectWorkflowNode(wfv1.NodeWithDisplayName("printHello-govaluate"), func(t *testing.T, n *wfv1.NodeStatus, p *apiv1.Pod) {
 			assert.NotEqual(t, wfv1.NodeTypeSkipped, n.Type)
@@ -107,30 +107,25 @@ func (s *FunctionalSuite) TestWhenExpressions() {
 		})
 }
 
-// todo: add a test here for this Workflow:
-/*
-	apiVersion: argoproj.io/v1alpha1
-	kind: Workflow
-	metadata:
-	generateName: expr-global-parameters-
-	labels:
-		myLabel: myLabelValue
-	annotations:
-		myAnnotation: myAnnotationValue
-	spec:
-	entrypoint: whalesay1
-	arguments:
-		parameters:
-		- name: myParam
-		value: myParamValue
+func (s *FunctionalSuite) TestJSONVariables() {
 
-	templates:
-	- name: whalesay1
-		container:
-		image: docker/whalesay:latest
-		command: [cowsay]
-		args: ["{{=jsonpath(workflow.labels.json, '$.myLabel')}}", "{{=jsonpath(workflow.annotations.json, '$.myAnnotation')}}", "{{=jsonpath(workflow.parameters.json, '$.value')}}"]
-*/
+	s.Given().
+		Workflow("@testdata/json-variables.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow().
+		Then().
+		ExpectWorkflowNode(wfv1.SucceededPodNode, func(t *testing.T, n *wfv1.NodeStatus, p *apiv1.Pod) {
+			for _, c := range p.Spec.Containers {
+				if c.Name == "main" {
+					assert.Equal(t, 3, len(c.Args))
+					assert.Equal(t, "myLabelValue", c.Args[0])
+					assert.Equal(t, "myAnnotationValue", c.Args[1])
+					assert.Equal(t, "myParamValue", c.Args[2])
+				}
+			}
+		})
+}
 
 func (s *FunctionalSuite) TestWorkflowTTL() {
 	s.Given().

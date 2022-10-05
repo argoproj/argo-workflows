@@ -25,16 +25,16 @@ spec:
       - name: shouldPrint
     steps:
     - - name: printHello-govaluate
-        template: whalesay
+        template: argosay
         when: "{{inputs.parameters.shouldPrint}} == true" # govaluate form
-    - - name: printHello-expr
-        template: whalesay
+      - name: printHello-expr
+        template: argosay
         when: "{{= inputs.parameters.shouldPrint == 'true'}}" # expr form
-    - - name: printHello-expr-json
-        template: whalesay
+      - name: printHello-expr-json
+        template: argosay
         when: "{{=jsonpath(workflow.parameters.json, '$[0].value') == 'true'}}" # expr form
 
-  - name: whalesay
+  - name: argosay
     container:
       image: argoproj/argosay:v1
       command: [sh, -c]
