@@ -177,15 +177,15 @@ const (
 	GlobalVarWorkflowDuration = "workflow.duration"
 	// GlobalVarWorkflowAnnotations is a JSON string containing all workflow annotations - which will be deprecated in favor of GlobalVarWorkflowAnnotationsJSON
 	GlobalVarWorkflowAnnotations = "workflow.annotations"
-	// GlobalVarWorkflowAnnotations is a JSON string containing all workflow annotations
+	// GlobalVarWorkflowAnnotationsJSON is a JSON string containing all workflow annotations
 	GlobalVarWorkflowAnnotationsJSON = "workflow.annotations.json"
 	// GlobalVarWorkflowLabels is a JSON string containing all workflow labels - which will be deprecated in favor of GlobalVarWorkflowLabelsJSON
 	GlobalVarWorkflowLabels = "workflow.labels"
-	// GlobalVarWorkflowLabels is a JSON string containing all workflow labels
+	// GlobalVarWorkflowLabelsJSON is a JSON string containing all workflow labels
 	GlobalVarWorkflowLabelsJSON = "workflow.labels.json"
 	// GlobalVarWorkflowParameters is a JSON string containing all workflow parameters - which will be deprecated in favor of GlobalVarWorkflowParametersJSON
 	GlobalVarWorkflowParameters = "workflow.parameters"
-	// GlobalVarWorkflowParameters is a JSON string containing all workflow parameters
+	// GlobalVarWorkflowParametersJSON is a JSON string containing all workflow parameters
 	GlobalVarWorkflowParametersJSON = "workflow.parameters.json"
 	// GlobalVarWorkflowCronScheduleTime is the scheduled timestamp of a Workflow started by a CronWorkflow
 	GlobalVarWorkflowCronScheduleTime = "workflow.scheduledTime"
