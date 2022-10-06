@@ -2494,6 +2494,38 @@ spec:
           - '{{inputs.parameters.message}}'
 `
 
+var workflowTeamplateWithEnumValuesWithoutValue = `
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  generateName: test-enum-1-
+  labels:
+    testLabel: foobar
+spec:
+  entrypoint: argosay
+  arguments:
+    parameters:
+      - name: message
+        enum:
+            - one
+            - two
+            - three
+  templates:
+    - name: argosay
+      inputs:
+        parameters:
+          - name: message
+            value: '{{workflow.parameters.message}}'
+      container:
+        name: main
+        image: 'argoproj/argosay:v2'
+        command:
+          - /argosay
+        args:
+          - echo
+          - '{{inputs.parameters.message}}'
+`
+
 func TestWorkflowTemplateWithEnumValue(t *testing.T) {
 	err := validateWorkflowTemplate(workflowTeamplateWithEnumValues, ValidateOpts{})
 	assert.NoError(t, err)
@@ -2519,6 +2551,15 @@ func TestWorkflowTemplateWithArgumentValueNotFromEnumList(t *testing.T) {
 	assert.EqualError(t, err, "spec.arguments.message.value should be present in spec.arguments.message.enum list")
 	err = validateWorkflowTemplate(workflowTemplateWithArgumentValueNotFromEnumList, ValidateOpts{Submit: true})
 	assert.EqualError(t, err, "spec.arguments.message.value should be present in spec.arguments.message.enum list")
+}
+
+func TestWorkflowTemplateWithEnumValueWithoutValue(t *testing.T) {
+	err := validateWorkflowTemplate(workflowTeamplateWithEnumValuesWithoutValue, ValidateOpts{})
+	assert.EqualError(t, err, "spec.arguments.message.value is required")
+	err = validateWorkflowTemplate(workflowTeamplateWithEnumValuesWithoutValue, ValidateOpts{Lint: true})
+	assert.EqualError(t, err, "spec.arguments.message.value is required")
+	err = validateWorkflowTemplate(workflowTeamplateWithEnumValuesWithoutValue, ValidateOpts{Submit: true})
+	assert.EqualError(t, err, "spec.arguments.message.value is required")
 }
 
 var validActiveDeadlineSecondsArgoVariable = `
