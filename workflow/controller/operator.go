@@ -613,7 +613,6 @@ func (woc *wfOperationCtx) setGlobalParameters(executionParameters wfv1.Argument
 	}
 	if workflowLabels, err := json.Marshal(woc.wf.ObjectMeta.Labels); err == nil {
 		woc.globalParams[common.GlobalVarWorkflowLabels] = string(workflowLabels)
-		fmt.Printf("deletethis: setting globalParams for workflow.labels.json to %s\n", string(workflowLabels))
 		woc.globalParams[common.GlobalVarWorkflowLabelsJSON] = string(workflowLabels)
 	}
 	for k, v := range woc.wf.ObjectMeta.Labels {
