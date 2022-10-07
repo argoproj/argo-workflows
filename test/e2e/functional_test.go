@@ -96,13 +96,13 @@ func (s *FunctionalSuite) TestWhenExpressions() {
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeSucceeded, 2*time.Minute).
 		Then().
-		ExpectWorkflowNode(wfv1.NodeWithDisplayName("printHello-govaluate"), func(t *testing.T, n *wfv1.NodeStatus, p *apiv1.Pod) {
+		ExpectWorkflowNode(wfv1.NodeWithDisplayName("print-hello-govaluate"), func(t *testing.T, n *wfv1.NodeStatus, p *apiv1.Pod) {
 			assert.NotEqual(t, wfv1.NodeTypeSkipped, n.Type)
 		}).
-		ExpectWorkflowNode(wfv1.NodeWithDisplayName("printHello-expr"), func(t *testing.T, n *wfv1.NodeStatus, p *apiv1.Pod) {
+		ExpectWorkflowNode(wfv1.NodeWithDisplayName("print-hello-expr"), func(t *testing.T, n *wfv1.NodeStatus, p *apiv1.Pod) {
 			assert.NotEqual(t, wfv1.NodeTypeSkipped, n.Type)
 		}).
-		ExpectWorkflowNode(wfv1.NodeWithDisplayName("printHello-expr-json"), func(t *testing.T, n *wfv1.NodeStatus, p *apiv1.Pod) {
+		ExpectWorkflowNode(wfv1.NodeWithDisplayName("print-hello-expr-json"), func(t *testing.T, n *wfv1.NodeStatus, p *apiv1.Pod) {
 			assert.NotEqual(t, wfv1.NodeTypeSkipped, n.Type)
 		})
 }
