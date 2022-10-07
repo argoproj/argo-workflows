@@ -1,4 +1,4 @@
-import { Tooltip } from 'argo-ui';
+import {Tooltip} from 'argo-ui';
 import * as React from 'react';
 import {useEffect, useState} from 'react';
 import {Workflow} from '../../../../models';
@@ -20,7 +20,12 @@ export const WorkflowsSummaryContainer = (props: {workflows: Workflow[]}) => {
 
     return (
         <div className='wf-summary-container'>
-            <p className='wf-summary-container__title'>Workflows Summary <Tooltip content="Only workflows in view are summarized"><i className='fa fa-info-circle'/></Tooltip></p>
+            <p className='wf-summary-container__title'>
+                Workflows Summary{' '}
+                <Tooltip content='Only workflows in view are summarized'>
+                    <i className='fa fa-info-circle' />
+                </Tooltip>
+            </p>
             <div className='row'>
                 <div className='columns small-12 xlarge-12'>
                     <span className='wf-summary-container__text'>Running workflows &nbsp;</span>
