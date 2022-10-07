@@ -77,6 +77,7 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [Fynd Trak](https://trak.fynd.com/)
 1. [Galixir](https://www.galixir.com/)
 1. [Gardener](https://gardener.cloud/)
+2. [Gepardec](https://gepardec.com/)
 1. [GitHub](https://github.com/)
 1. [Gitpod](https://www.gitpod.io/)
 1. [Gladly](https://gladly.com/)
