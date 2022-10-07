@@ -1730,7 +1730,7 @@ spec:
         app: httpbin
     spec:
       containers:
-      - image: kennethreitz/httpbin:latest
+      - image: kennethreitz/httpbin
         livenessProbe:
           httpGet:
             path: /get
@@ -1898,24 +1898,3 @@ spec:
       securityContext:
         runAsNonRoot: true
       serviceAccountName: argo
----
-apiVersion: cert-manager.io/v1
-kind: Certificate
-metadata:
-  name: argo-server-cert
-spec:
-  dnsNames:
-  - argo-server.argo.svc.cluster.local
-  - argo-server.argo.svc
-  - argo-server
-  issuerRef:
-    kind: Issuer
-    name: argo-workflows-issuer
-  secretName: argo-server-tls
----
-apiVersion: cert-manager.io/v1
-kind: Issuer
-metadata:
-  name: argo-workflows-issuer
-spec:
-  selfSigned: {}

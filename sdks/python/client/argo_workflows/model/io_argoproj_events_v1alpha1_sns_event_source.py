@@ -92,6 +92,7 @@ class IoArgoprojEventsV1alpha1SNSEventSource(ModelNormal):
         lazy_import()
         return {
             'access_key': (SecretKeySelector,),  # noqa: E501
+            'endpoint': (str,),  # noqa: E501
             'filter': (IoArgoprojEventsV1alpha1EventSourceFilter,),  # noqa: E501
             'metadata': ({str: (str,)},),  # noqa: E501
             'region': (str,),  # noqa: E501
@@ -109,6 +110,7 @@ class IoArgoprojEventsV1alpha1SNSEventSource(ModelNormal):
 
     attribute_map = {
         'access_key': 'accessKey',  # noqa: E501
+        'endpoint': 'endpoint',  # noqa: E501
         'filter': 'filter',  # noqa: E501
         'metadata': 'metadata',  # noqa: E501
         'region': 'region',  # noqa: E501
@@ -161,6 +163,7 @@ class IoArgoprojEventsV1alpha1SNSEventSource(ModelNormal):
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
             access_key (SecretKeySelector): [optional]  # noqa: E501
+            endpoint (str): [optional]  # noqa: E501
             filter (IoArgoprojEventsV1alpha1EventSourceFilter): [optional]  # noqa: E501
             metadata ({str: (str,)}): [optional]  # noqa: E501
             region (str): [optional]  # noqa: E501
@@ -251,6 +254,7 @@ class IoArgoprojEventsV1alpha1SNSEventSource(ModelNormal):
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
             access_key (SecretKeySelector): [optional]  # noqa: E501
+            endpoint (str): [optional]  # noqa: E501
             filter (IoArgoprojEventsV1alpha1EventSourceFilter): [optional]  # noqa: E501
             metadata ({str: (str,)}): [optional]  # noqa: E501
             region (str): [optional]  # noqa: E501

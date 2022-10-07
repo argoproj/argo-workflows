@@ -6,6 +6,7 @@ Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **auth_secret** | [**SecretKeySelector**](SecretKeySelector.md) |  | [optional] 
 **endpoint** | **str** |  | [optional] 
+**max_payload_size** | **str** |  | [optional] 
 **metadata** | **{str: (str,)}** |  | [optional] 
 **method** | **str** |  | [optional] 
 **port** | **str** | Port on which HTTP server is listening for incoming events. | [optional] 

@@ -85,7 +85,6 @@ type WorkflowController struct {
 
 	// cliExecutorImagePullPolicy is the executor imagePullPolicy as specified from the command line
 	cliExecutorImagePullPolicy string
-	containerRuntimeExecutor   string
 
 	// cliExecutorLogFormat is the format in which argoexec will log
 	// possible options are json/text
@@ -160,7 +159,7 @@ func init() {
 }
 
 // NewWorkflowController instantiates a new WorkflowController
-func NewWorkflowController(ctx context.Context, restConfig *rest.Config, kubeclientset kubernetes.Interface, wfclientset wfclientset.Interface, namespace, managedNamespace, executorImage, executorImagePullPolicy, executorLogFormat, containerRuntimeExecutor, configMap string, executorPlugins bool) (*WorkflowController, error) {
+func NewWorkflowController(ctx context.Context, restConfig *rest.Config, kubeclientset kubernetes.Interface, wfclientset wfclientset.Interface, namespace, managedNamespace, executorImage, executorImagePullPolicy, executorLogFormat, configMap string, executorPlugins bool) (*WorkflowController, error) {
 	dynamicInterface, err := dynamic.NewForConfig(restConfig)
 	if err != nil {
 		return nil, err
@@ -176,7 +175,6 @@ func NewWorkflowController(ctx context.Context, restConfig *rest.Config, kubecli
 		cliExecutorImage:           executorImage,
 		cliExecutorImagePullPolicy: executorImagePullPolicy,
 		cliExecutorLogFormat:       executorLogFormat,
-		containerRuntimeExecutor:   containerRuntimeExecutor,
 		configController:           config.NewController(namespace, configMap, kubeclientset),
 		workflowKeyLock:            syncpkg.NewKeyLock(),
 		cacheFactory:               controllercache.NewCacheFactory(kubeclientset, namespace),
@@ -803,7 +801,6 @@ func (wfc *WorkflowController) tweakListOptions(options *metav1.ListOptions) {
 	labelSelector := labels.NewSelector().
 		Add(util.InstanceIDRequirement(wfc.Config.InstanceID))
 	options.LabelSelector = labelSelector.String()
-	options.Limit = int64(env.LookupEnvIntOr("LIST_LIMIT", 200))
 }
 
 func getWfPriority(obj interface{}) (int32, time.Time) {

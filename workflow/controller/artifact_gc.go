@@ -85,18 +85,6 @@ func (woc *wfOperationCtx) artifactGCStrategiesReady() map[wfv1.ArtifactGCStrate
 			strategies[wfv1.ArtifactGCOnWorkflowDeletion] = struct{}{}
 		}
 	}
-	// todo: look at implementing "OnWorkflowSuccessOrDeletion" and "OnWorkflowFailureOrDeletion" instead of these:
-	/*
-		if woc.wf.Status.Successful() {
-			if !woc.wf.Status.ArtifactGCStatus.IsArtifactGCStrategyProcessed(wfv1.ArtifactGCOnWorkflowSuccess) {
-				strategies[wfv1.ArtifactGCOnWorkflowSuccess] = struct{}{}
-			}
-		}
-		if woc.wf.Status.Failed() {
-			if !woc.wf.Status.ArtifactGCStatus.IsArtifactGCStrategyProcessed(wfv1.ArtifactGCOnWorkflowFailure) {
-				strategies[wfv1.ArtifactGCOnWorkflowFailure] = struct{}{}
-			}
-		}*/
 
 	return strategies
 }
@@ -262,10 +250,17 @@ func (woc *wfOperationCtx) artGCTaskName(podName string, taskIndex int) string {
 	return fmt.Sprintf("%s-%d", podName, taskIndex)
 }
 
+func (woc *wfOperationCtx) artifactGCPodLabel(podName string) string {
+	hashedPod := fnv.New32a()
+	_, _ = hashedPod.Write([]byte(podName))
+	return fmt.Sprintf("%d", hashedPod.Sum32())
+}
+
 func (woc *wfOperationCtx) addTemplateArtifactsToTasks(podName string, tasks *[]*wfv1.WorkflowArtifactGCTask, template *wfv1.Template, artifactSearchResults wfv1.ArtifactSearchResults) {
 	if len(artifactSearchResults) == 0 {
 		return
 	}
+
 	if tasks == nil {
 		ts := make([]*wfv1.WorkflowArtifactGCTask, 0)
 		tasks = &ts
@@ -282,7 +277,7 @@ func (woc *wfOperationCtx) addTemplateArtifactsToTasks(podName string, tasks *[]
 			ObjectMeta: metav1.ObjectMeta{
 				Namespace: woc.wf.Namespace,
 				Name:      woc.artGCTaskName(podName, 0),
-				Labels:    map[string]string{common.LabelKeyArtifactGCPodName: podName},
+				Labels:    map[string]string{common.LabelKeyArtifactGCPodHash: woc.artifactGCPodLabel(podName)},
 				OwnerReferences: []metav1.OwnerReference{ // make sure we get deleted with the workflow
 					*metav1.NewControllerRef(woc.wf, wfv1.SchemeGroupVersion.WithKind(workflow.WorkflowKind)),
 				},
@@ -416,7 +411,7 @@ func (woc *wfOperationCtx) createArtifactGCPod(ctx context.Context, strategy wfv
 					ImagePullPolicy: woc.controller.executorImagePullPolicy(),
 					Args:            []string{"artifact", "delete", "--loglevel", getExecutorLogLevel()},
 					Env: []corev1.EnvVar{
-						{Name: common.EnvVarArtifactPodName, Value: podName},
+						{Name: common.EnvVarArtifactGCPodHash, Value: woc.artifactGCPodLabel(podName)},
 					},
 					// if this pod is breached by an attacker we:
 					// * prevent installation of any new packages
@@ -547,7 +542,7 @@ func (woc *wfOperationCtx) processCompletedArtifactGCPod(ctx context.Context, po
 	woc.log.Infof("processing completed Artifact GC Pod '%s'", pod.Name)
 
 	// get associated WorkflowArtifactGCTasks
-	labelSelector := fmt.Sprintf("%s = %s", common.LabelKeyArtifactGCPodName, pod.Name)
+	labelSelector := fmt.Sprintf("%s = %s", common.LabelKeyArtifactGCPodHash, woc.artifactGCPodLabel(pod.Name))
 	taskList, err := woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowArtifactGCTasks(woc.wf.Namespace).List(ctx, metav1.ListOptions{LabelSelector: labelSelector})
 	if err != nil {
 		return fmt.Errorf("failed to List WorkflowArtifactGCTasks: %w", err)
