@@ -148,6 +148,7 @@ k8s-jobs
 kube
 kubelet
 kubernetes
+liveness
 localhost
 memoization
 memoized
@@ -186,7 +187,7 @@ v2
 v2.10
 v2.11
 v2.12
-v2.23.0
+v2.35.0
 v2.4
 v2.5
 v2.6

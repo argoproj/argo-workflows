@@ -47,22 +47,21 @@ const (
 // NewRootCommand returns an new instance of the workflow-controller main entrypoint
 func NewRootCommand() *cobra.Command {
 	var (
-		clientConfig             clientcmd.ClientConfig
-		configMap                string // --configmap
-		executorImage            string // --executor-image
-		executorImagePullPolicy  string // --executor-image-pull-policy
-		containerRuntimeExecutor string
-		logLevel                 string // --loglevel
-		glogLevel                int    // --gloglevel
-		logFormat                string // --log-format
-		workflowWorkers          int    // --workflow-workers
-		workflowTTLWorkers       int    // --workflow-ttl-workers
-		podCleanupWorkers        int    // --pod-cleanup-workers
-		burst                    int
-		qps                      float32
-		namespaced               bool   // --namespaced
-		managedNamespace         string // --managed-namespace
-		executorPlugins          bool
+		clientConfig            clientcmd.ClientConfig
+		configMap               string // --configmap
+		executorImage           string // --executor-image
+		executorImagePullPolicy string // --executor-image-pull-policy
+		logLevel                string // --loglevel
+		glogLevel               int    // --gloglevel
+		logFormat               string // --log-format
+		workflowWorkers         int    // --workflow-workers
+		workflowTTLWorkers      int    // --workflow-ttl-workers
+		podCleanupWorkers       int    // --pod-cleanup-workers
+		burst                   int
+		qps                     float32
+		namespaced              bool   // --namespaced
+		managedNamespace        string // --managed-namespace
+		executorPlugins         bool
 	)
 
 	command := cobra.Command{
@@ -110,7 +109,7 @@ func NewRootCommand() *cobra.Command {
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
 
-			wfController, err := controller.NewWorkflowController(ctx, config, kubeclientset, wfclientset, namespace, managedNamespace, executorImage, executorImagePullPolicy, logFormat, containerRuntimeExecutor, configMap, executorPlugins)
+			wfController, err := controller.NewWorkflowController(ctx, config, kubeclientset, wfclientset, namespace, managedNamespace, executorImage, executorImagePullPolicy, logFormat, configMap, executorPlugins)
 			errors.CheckError(err)
 
 			leaderElectionOff := os.Getenv("LEADER_ELECTION_DISABLE")
@@ -169,7 +168,6 @@ func NewRootCommand() *cobra.Command {
 	command.Flags().StringVar(&configMap, "configmap", common.ConfigMapName, "Name of K8s configmap to retrieve workflow controller configuration")
 	command.Flags().StringVar(&executorImage, "executor-image", "", "Executor image to use (overrides value in configmap)")
 	command.Flags().StringVar(&executorImagePullPolicy, "executor-image-pull-policy", "", "Executor imagePullPolicy to use (overrides value in configmap)")
-	command.Flags().StringVar(&containerRuntimeExecutor, "container-runtime-executor", "", "Container runtime executor to use (overrides value in configmap)")
 	command.Flags().StringVar(&logLevel, "loglevel", "info", "Set the logging level. One of: debug|info|warn|error")
 	command.Flags().IntVar(&glogLevel, "gloglevel", 0, "Set the glog logging level")
 	command.Flags().StringVar(&logFormat, "log-format", "text", "The formatter to use for logs. One of: text|json")

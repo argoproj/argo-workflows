@@ -210,6 +210,8 @@ Workflow is the definition of a workflow resource
 
 - [`life-cycle-hooks-wf-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/life-cycle-hooks-wf-level.yaml)
 
+- [`loops-arbitrary-sequential-steps.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/loops-arbitrary-sequential-steps.yaml)
+
 - [`loops-dag.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/loops-dag.yaml)
 
 - [`loops-maps.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/loops-maps.yaml)
@@ -297,8 +299,6 @@ Workflow is the definition of a workflow resource
 - [`scripts-python.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/scripts-python.yaml)
 
 - [`secrets.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/secrets.yaml)
-
-- [`selected-executor-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/selected-executor-workflow.yaml)
 
 - [`sidecar-dind.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/sidecar-dind.yaml)
 
@@ -635,6 +635,8 @@ WorkflowSpec is the specification of a Workflow.
 
 - [`life-cycle-hooks-wf-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/life-cycle-hooks-wf-level.yaml)
 
+- [`loops-arbitrary-sequential-steps.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/loops-arbitrary-sequential-steps.yaml)
+
 - [`loops-dag.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/loops-dag.yaml)
 
 - [`loops-maps.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/loops-maps.yaml)
@@ -718,8 +720,6 @@ WorkflowSpec is the specification of a Workflow.
 - [`scripts-python.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/scripts-python.yaml)
 
 - [`secrets.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/secrets.yaml)
-
-- [`selected-executor-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/selected-executor-workflow.yaml)
 
 - [`sidecar-dind.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/sidecar-dind.yaml)
 
@@ -1068,6 +1068,8 @@ CronWorkflowSpec is the specification of a CronWorkflow
 
 - [`life-cycle-hooks-wf-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/life-cycle-hooks-wf-level.yaml)
 
+- [`loops-arbitrary-sequential-steps.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/loops-arbitrary-sequential-steps.yaml)
+
 - [`loops-dag.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/loops-dag.yaml)
 
 - [`loops-maps.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/loops-maps.yaml)
@@ -1151,8 +1153,6 @@ CronWorkflowSpec is the specification of a CronWorkflow
 - [`scripts-python.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/scripts-python.yaml)
 
 - [`secrets.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/secrets.yaml)
-
-- [`selected-executor-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/selected-executor-workflow.yaml)
 
 - [`sidecar-dind.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/sidecar-dind.yaml)
 
@@ -1345,6 +1345,8 @@ Arguments to a template
 
 - [`label-value-from-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/label-value-from-workflow.yaml)
 
+- [`loops-arbitrary-sequential-steps.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/loops-arbitrary-sequential-steps.yaml)
+
 - [`loops-dag.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/loops-dag.yaml)
 
 - [`loops-maps.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/loops-maps.yaml)
@@ -1468,21 +1470,6 @@ _No description available_
 ## ExecutorConfig
 
 ExecutorConfig holds configurations of an executor container.
-
-<details>
-<summary>Examples with this field (click to open)</summary>
-<br>
-
-- [`graph-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/container-set-template/graph-workflow.yaml)
-
-- [`outputs-result-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/container-set-template/outputs-result-workflow.yaml)
-
-- [`sequence-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/container-set-template/sequence-workflow.yaml)
-
-- [`workspace-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/container-set-template/workspace-workflow.yaml)
-
-- [`selected-executor-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/selected-executor-workflow.yaml)
-</details>
 
 ### Fields
 | Field Name | Field Type | Description   |
@@ -2156,6 +2143,8 @@ Parameter indicate a passed string parameter to a service template with an optio
 
 - [`label-value-from-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/label-value-from-workflow.yaml)
 
+- [`loops-arbitrary-sequential-steps.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/loops-arbitrary-sequential-steps.yaml)
+
 - [`loops-dag.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/loops-dag.yaml)
 
 - [`loops-maps.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/loops-maps.yaml)
@@ -2719,6 +2708,8 @@ Inputs are the mechanism for passing parameters, artifacts, volumes from one tem
 
 - [`key-only-artifact.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/key-only-artifact.yaml)
 
+- [`loops-arbitrary-sequential-steps.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/loops-arbitrary-sequential-steps.yaml)
+
 - [`loops-dag.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/loops-dag.yaml)
 
 - [`loops-maps.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/loops-maps.yaml)
@@ -3022,6 +3013,8 @@ WorkflowStep is a reference to a template to execute in a series of step
 - [`life-cycle-hooks-tmpl-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/life-cycle-hooks-tmpl-level.yaml)
 
 - [`life-cycle-hooks-wf-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/life-cycle-hooks-wf-level.yaml)
+
+- [`loops-arbitrary-sequential-steps.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/loops-arbitrary-sequential-steps.yaml)
 
 - [`loops-maps.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/loops-maps.yaml)
 
@@ -3658,8 +3651,6 @@ MetricLabel is a single label for a prometheus metric
 - [`pod-metadata-wf-field.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/pod-metadata-wf-field.yaml)
 
 - [`pod-metadata.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/pod-metadata.yaml)
-
-- [`selected-executor-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/selected-executor-workflow.yaml)
 
 - [`steps-inline-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/steps-inline-workflow.yaml)
 </details>
@@ -4725,6 +4716,8 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 
 - [`life-cycle-hooks-wf-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/life-cycle-hooks-wf-level.yaml)
 
+- [`loops-arbitrary-sequential-steps.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/loops-arbitrary-sequential-steps.yaml)
+
 - [`loops-dag.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/loops-dag.yaml)
 
 - [`loops-maps.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/loops-maps.yaml)
@@ -4808,8 +4801,6 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 - [`scripts-python.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/scripts-python.yaml)
 
 - [`secrets.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/secrets.yaml)
-
-- [`selected-executor-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/selected-executor-workflow.yaml)
 
 - [`sidecar-dind.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/sidecar-dind.yaml)
 
@@ -5325,6 +5316,8 @@ A single application container that you want to run within a pod.
 
 - [`life-cycle-hooks-wf-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/life-cycle-hooks-wf-level.yaml)
 
+- [`loops-arbitrary-sequential-steps.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/loops-arbitrary-sequential-steps.yaml)
+
 - [`loops-dag.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/loops-dag.yaml)
 
 - [`loops-maps.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/loops-maps.yaml)
@@ -5396,8 +5389,6 @@ A single application container that you want to run within a pod.
 - [`scripts-python.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/scripts-python.yaml)
 
 - [`secrets.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/secrets.yaml)
-
-- [`selected-executor-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/selected-executor-workflow.yaml)
 
 - [`sidecar-dind.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/sidecar-dind.yaml)
 
@@ -6046,6 +6037,8 @@ PersistentVolumeClaimSpec describes the common attributes of storage devices and
 
 - [`life-cycle-hooks-wf-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/life-cycle-hooks-wf-level.yaml)
 
+- [`loops-arbitrary-sequential-steps.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/loops-arbitrary-sequential-steps.yaml)
+
 - [`loops-dag.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/loops-dag.yaml)
 
 - [`loops-maps.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/loops-maps.yaml)
@@ -6129,8 +6122,6 @@ PersistentVolumeClaimSpec describes the common attributes of storage devices and
 - [`scripts-python.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/scripts-python.yaml)
 
 - [`secrets.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/secrets.yaml)
-
-- [`selected-executor-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/selected-executor-workflow.yaml)
 
 - [`sidecar-dind.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/sidecar-dind.yaml)
 
