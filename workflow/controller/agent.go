@@ -238,6 +238,8 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 		},
 	}
 
+	addSchedulingConstraints(pod, woc.execWf.Spec.DeepCopy(), &wfv1.Template{})
+
 	if woc.controller.Config.InstanceID != "" {
 		pod.ObjectMeta.Labels[common.LabelKeyControllerInstanceID] = woc.controller.Config.InstanceID
 	}
