@@ -20,7 +20,7 @@ import (
 type ClusterWorkflowTemplateServer struct {
 	instanceIDService instanceid.Service
 }
-a
+
 func NewClusterWorkflowTemplateServer(instanceID instanceid.Service) clusterwftmplpkg.ClusterWorkflowTemplateServiceServer {
 	return &ClusterWorkflowTemplateServer{instanceID}
 }
