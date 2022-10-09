@@ -80,10 +80,10 @@ func (s *workflowServer) CreateWorkflow(ctx context.Context, req *workflowpkg.Wo
 	if err != nil {
 		if apierr.IsServerTimeout(err) && req.Workflow.GenerateName != "" && req.Workflow.Name != "" {
 			errWithHint := fmt.Errorf(`create request failed due to timeout, but it's possible that workflow "%s" already exists. Original error: %w`, req.Workflow.Name, err)
-			log.Error(errWithHint)
+			log.WithError(errWithHint).Error(errWithHint.Error())
 			return nil, errWithHint
 		}
-		log.Errorf("Create request failed: %s", err)
+		log.WithError(err).Error("Create request failed")
 		return nil, err
 	}
 
@@ -395,7 +395,7 @@ func (s *workflowServer) ResumeWorkflow(ctx context.Context, req *workflowpkg.Wo
 
 	err = util.ResumeWorkflow(ctx, wfClient.ArgoprojV1alpha1().Workflows(req.Namespace), s.hydrator, wf.Name, req.NodeFieldSelector)
 	if err != nil {
-		log.Warnf("Failed to resume %s: %+v", wf.Name, err)
+		log.WithFields(log.Fields{"name": wf.Name}).WithError(err).Warn("Failed to resume")
 		return nil, err
 	}
 
