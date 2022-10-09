@@ -2,6 +2,7 @@ package executor
 
 import (
 	"context"
+	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -11,7 +12,7 @@ import (
 
 func TestUnsupportedTemplateTaskWorker(t *testing.T) {
 	ae := &AgentExecutor{
-		consideredTasks: map[string]bool{},
+		consideredTasks: &sync.Map{},
 	}
 	taskQueue := make(chan task)
 	defer close(taskQueue)
