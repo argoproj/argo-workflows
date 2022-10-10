@@ -37,6 +37,7 @@ import (
 type AgentExecutor struct {
 	log               *log.Entry
 	WorkflowName      string
+	WorkflowUID       string
 	ClientSet         kubernetes.Interface
 	WorkflowInterface workflow.Interface
 	RESTClient        rest.Interface
@@ -352,14 +353,10 @@ func (ae *AgentExecutor) executeHTTPTemplateRequest(ctx context.Context, httpTem
 func (ae *AgentExecutor) executePluginTemplate(ctx context.Context, tmpl wfv1.Template, result *wfv1.NodeResult) (time.Duration, error) {
 	args := executorplugins.ExecuteTemplateArgs{
 		Workflow: &executorplugins.Workflow{
-<<<<<<< HEAD
-			ObjectMeta: executorplugins.ObjectMeta{Name: ae.WorkflowName},
-=======
 			ObjectMeta: executorplugins.ObjectMeta{
 				Name: ae.WorkflowName,
-				Uid:  ae.WorkflowUid,
+				Uid:  ae.WorkflowUID,
 			},
->>>>>>> c8decb2d7 (fix: refactor)
 		},
 		Template: &tmpl,
 	}
