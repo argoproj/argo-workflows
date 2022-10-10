@@ -1518,6 +1518,24 @@ func TestWorkflowTemplate(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+var templateWithGlobalParams = `
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: template-ref-target
+spec:
+  templates:
+  - name: A
+    container:
+      image: alpine:latest
+      command: [echo, "{{workflow.parameters.something}}"]
+`
+
+func TestWorkflowTemplateWithGlobalParams(t *testing.T) {
+	err := validateWorkflowTemplate(templateWithGlobalParams, ValidateOpts{})
+	assert.NoError(t, err)
+}
+
 var templateRefNestedTarget = `
 apiVersion: argoproj.io/v1alpha1
 kind: WorkflowTemplate
@@ -2493,7 +2511,6 @@ spec:
           - echo
           - '{{inputs.parameters.message}}'
 `
-
 var workflowTeamplateWithEnumValuesWithoutValue = `
 apiVersion: argoproj.io/v1alpha1
 kind: WorkflowTemplate
