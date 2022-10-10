@@ -3,7 +3,7 @@
 validate files or directories of manifests
 
 ```
-argo lint FILE... [flags]
+argo lint (DIRECTORY | FILE) [flags]
 ```
 
 ### Examples
