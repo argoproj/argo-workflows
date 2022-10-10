@@ -109,8 +109,6 @@ jobs:
             profile: minimal
           - test: test-python-sdk
             profile: minimal
-          - test: test-secure
-            profile: secure
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-go@v3
