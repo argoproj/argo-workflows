@@ -181,6 +181,7 @@ func newDriver(ctx context.Context, art *wfv1.Artifact, ri resource.Interface) (
 		driver := http.ArtifactDriver{
 			Username: usernameBytes,
 			Password: passwordBytes,
+			Client:   &gohttp.Client{},
 		}
 		return &driver, nil
 

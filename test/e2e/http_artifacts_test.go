@@ -55,6 +55,14 @@ func (s *HttpArtifactsSuite) TestClientCertAuthArtifactHttp() {
 		WaitForWorkflow(fixtures.ToBeSucceeded)
 }
 
+func (s *HttpArtifactsSuite) TestArtifactoryArtifacts() {
+	s.Given().
+		Workflow("@testdata/http/artifactory-artifact.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeSucceeded)
+}
+
 func TestHttpArtifactsSuite(t *testing.T) {
 	suite.Run(t, new(HttpArtifactsSuite))
 }
