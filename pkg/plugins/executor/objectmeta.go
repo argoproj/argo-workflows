@@ -1,6 +1,7 @@
 package executor
 
 type ObjectMeta struct {
-	Name string `json:"name"`
-	Uid  string `json:"uid"`
+	Name      string `json:"name"`
+	Namespace string `json:"namespace"`
+	Uid       string `json:"uid"`
 }
