@@ -1084,7 +1084,7 @@ spec:
           - name: a
             image: argoproj/argosay:v2
             command: [sh, -c]
-            args: ['FILE=test.yml; EXITCODE=1; if test -f "$FILE"; then EXITCODE=0; else touch $FILE; fi; exit $EXITCODE']
+            args: ['FILE=/tmp/test.yml; EXITCODE=1; if test -f "$FILE"; then EXITCODE=0; else touch $FILE; fi; exit $EXITCODE']
         retryStrategy:
           retries: 2
           duration: "5s"
@@ -1110,7 +1110,7 @@ spec:
           - name: a
             image: argoproj/argosay:v2
             command: [sh, -c]
-            args: ['FILE=test.yml; EXITCODE=1; if test -f "$FILE"; then EXITCODE=0; else touch $FILE; fi; exit $EXITCODE']
+            args: ['FILE=/tmp/test.yml; EXITCODE=1; if test -f "$FILE"; then EXITCODE=0; else touch $FILE; fi; exit $EXITCODE']
 `).
 		When().
 		SubmitWorkflow().
