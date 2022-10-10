@@ -15,6 +15,33 @@ export const NewVersionModal = ({version, dismiss}: {version: string; dismiss: (
             <h4 className='new-version-modal-title'>
                 It looks like <b>{version}</b> has just been installed!
             </h4>
+            <h5>v3.4</h5>
+            <ul className='new-version-modal-bullets'>
+                <li>
+                    <a href='https://argoproj.github.io/argo-workflows/artifact-visualization/?utm_source=argo-ui' target='_blank'>
+                        Visualize artifact{' '}
+                    </a>
+                    in the UI
+                </li>
+                <li>
+                    Automated{' '}
+                    <a href='https://argoproj.github.io/argo-workflows/walk-through/artifacts/#artifact-garbage-collection?utm_source=argo-ui' target='_blank'>
+                        artifact garbage collection
+                    </a>
+                </li>
+                <li>
+                    Provide{' '}
+                    <a href='https://argoproj.github.io/argo-workflows/intermediate-inputs/?utm_source=argo-ui' target='_blank'>
+                        parameter input{' '}
+                    </a>
+                    in the middle of the workflow
+                </li>
+            </ul>
+            <p>
+                <a href='https://blog.argoproj.io/what-to-expect-in-argo-workflows-v3-4-711702ad88e9?utm_source=argo-ui' target='_blank'>
+                    Learn more
+                </a>
+            </p>
             <h5>v3.3</h5>
             <ul className='new-version-modal-bullets'>
                 <li>
