@@ -37,10 +37,8 @@ func (s *ExecutorPluginsSuite) TestTemplateExecutor() {
 				pod := pods[0]
 				spec := pod.Spec
 				assert.Equal(t, pointer.BoolPtr(false), spec.AutomountServiceAccountToken)
-				assert.Equal(t, &apiv1.PodSecurityContext{
-					RunAsUser:    pointer.Int64(8737),
-					RunAsNonRoot: pointer.BoolPtr(true),
-				}, spec.SecurityContext)
+				assert.Equal(t, pointer.Int64(8737), spec.SecurityContext.RunAsUser)
+				assert.Equal(t, pointer.BoolPtr(true), spec.SecurityContext.RunAsNonRoot)
 				if assert.Len(t, spec.Volumes, 4) {
 					assert.Contains(t, spec.Volumes[0].Name, "kube-api-access-")
 					assert.Equal(t, spec.Volumes[1].Name, "var-run-argo")

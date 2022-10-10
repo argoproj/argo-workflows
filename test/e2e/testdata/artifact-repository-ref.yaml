@@ -22,11 +22,11 @@ spec:
         args:
           - echo
           - hello
-          - /mnt/file
+          - /tmp/file
       outputs:
         artifacts:
           - name: file
-            path: /mnt/file
+            path: /tmp/file
             s3:
               key: my-file
     - name: consume

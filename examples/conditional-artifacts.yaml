@@ -6,9 +6,9 @@ metadata:
     workflows.argoproj.io/test: "true"
   annotations:
     workflows.argoproj.io/description: |
-      Conditional aartifacts provide a way to choose the output artifacts based on expression.
+      Conditional artifacts provide a way to choose the output artifacts based on expression.
 
-      In this example the main template has two steps which will run conditionall using `when` .
+      In this example the main template has two steps which will run conditionally using `when` .
 
       Based on the `when` condition one of step will not execute. The main template's output artifact named "result"
       will be set to the executed step's output.
@@ -44,21 +44,21 @@ spec:
         image: python:alpine3.6
         command: [ python ]
         source: |
-          with open("result.txt", "w") as f:
+          with open("/tmp/result.txt", "w") as f:
             f.write("it was heads")
       outputs:
         artifacts:
           - name: result
-            path: /result.txt
+            path: /tmp/result.txt
 
     - name: tails
       script:
         image: python:alpine3.6
         command: [ python ]
         source: |
-          with open("result.txt", "w") as f:
+          with open("/tmp/result.txt", "w") as f:
             f.write("it was tails")
       outputs:
         artifacts:
           - name: result
-            path: /result.txt
+            path: /tmp/result.txt

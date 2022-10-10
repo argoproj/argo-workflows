@@ -13,14 +13,14 @@ spec:
           - -c
         args: 
           - |
-            mkdir -p /out/subdirectory
-            echo ":) Hello Argo!" > /out/subdirectory/sub-file-1
-            echo ":) Hello Argo!" > /out/subdirectory/sub-file-2
+            mkdir -p /tmp/out/subdirectory
+            echo ":) Hello Argo!" > /tmp/out/subdirectory/sub-file-1
+            echo ":) Hello Argo!" > /tmp/out/subdirectory/sub-file-2
             echo ":) Hello Argo!" > /tmp/main-file
       outputs:
         artifacts:
           - name: out
-            path: /out
+            path: /tmp/out
             s3:
               key: out
             archive:
