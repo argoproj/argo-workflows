@@ -11,13 +11,13 @@ resources:
   - workflow-serviceaccount.yaml
   - executor-workflow-rolebinding.yaml
   - pod-manager-role.yaml
-  - pod-manager-default-rolebinding.yaml
+  - pod-manager-workflow-rolebinding.yaml
   - workflow-manager-role.yaml
-  - workflow-manager-default-rolebinding.yaml
+  - workflow-manager-workflow-rolebinding.yaml
   - agent-role.yaml
-  - agent-default-rolebinding.yaml
+  - agent-workflow-rolebinding.yaml
   - artifactgc-role.yaml
-  - artifactgc-default-rolebinding.yaml
+  - artifactgc-workflow-rolebinding.yaml
   - cluster-workflow-template-rbac.yaml
   - artifact-repositories-configmap.yaml
 

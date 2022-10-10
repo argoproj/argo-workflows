@@ -1,7 +1,7 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: kubelet-executor-default
+  name: kubelet-executor-workflow
   annotations:
     workflows.argoproj.io/version: "< 3.4.0"
 roleRef:
@@ -10,5 +10,5 @@ roleRef:
   name: kubelet-executor
 subjects:
   - kind: ServiceAccount
-    name: default
+    name: workflow
     namespace: argo

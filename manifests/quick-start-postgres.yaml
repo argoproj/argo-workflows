@@ -1235,14 +1235,14 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  name: agent-default
+  name: agent-workflow
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
   name: agent
 subjects:
 - kind: ServiceAccount
-  name: default
+  name: workflow
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
@@ -1271,14 +1271,26 @@ subjects:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  name: artifactgc-default
+  name: artifactgc-workflow
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
   name: artifactgc
 subjects:
 - kind: ServiceAccount
-  name: default
+  name: workflow
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: executor-workflow
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: executor
+subjects:
+- kind: ServiceAccount
+  name: workflow
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
@@ -1296,35 +1308,23 @@ subjects:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  name: pod-manager-default
+  name: pod-manager-workflow
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
   name: pod-manager
 subjects:
 - kind: ServiceAccount
-  name: default
+  name: workflow
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  name: workflow-manager-default
+  name: workflow-manager-workflow
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
   name: workflow-manager
-subjects:
-- kind: ServiceAccount
-  name: default
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: RoleBinding
-metadata:
-  name: workflow-workflow-binding
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: Role
-  name: executor
 subjects:
 - kind: ServiceAccount
   name: workflow

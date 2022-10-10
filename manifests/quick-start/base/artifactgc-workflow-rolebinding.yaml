@@ -1,11 +1,11 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  name: pod-manager-default
+  name: artifactgc-workflow
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
-  name: pod-manager
+  name: artifactgc
 subjects:
   - kind: ServiceAccount
-    name: default
+    name: workflow
