@@ -889,6 +889,11 @@ kind: ServiceAccount
 metadata:
   name: github.com
 ---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: workflow
+---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
@@ -1278,18 +1283,6 @@ subjects:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  name: executor-default
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: Role
-  name: executor
-subjects:
-- kind: ServiceAccount
-  name: default
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: RoleBinding
-metadata:
   name: github.com
 roleRef:
   apiGroup: rbac.authorization.k8s.io
@@ -1323,6 +1316,18 @@ roleRef:
 subjects:
 - kind: ServiceAccount
   name: default
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: workflow-workflow-binding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: executor
+subjects:
+- kind: ServiceAccount
+  name: workflow
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
@@ -1397,10 +1402,22 @@ data:
         name: my-minio-cred
         key: secretkey
   executor: |
+    imagePullPolicy: IfNotPresent
     resources:
       requests:
         cpu: 10m
         memory: 64Mi
+      limits:
+        cpu: 500m
+        memory: 128Mi
+    securityContext:
+      runAsNonRoot: true
+      runAsUser: 8737
+      runAsGroup: 8737
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop:
+          - ALL
   images: |
     docker/whalesay:latest:
        cmd: [cowsay]
@@ -1420,6 +1437,22 @@ data:
     - name: Sensor Logs Link
       scope: sensor-logs
       url: http://logging-facility?namespace=${metadata.namespace}&podName=${metadata.name}&startedAt=${status.startedAt}&finishedAt=${status.finishedAt}
+  mainContainer: |
+    resources:
+      requests:
+        cpu: 10m
+        memory: 64Mi
+      limits:
+        cpu: 500m
+        memory: 128Mi
+    securityContext:
+      runAsNonRoot: true
+      runAsUser: 8737
+      runAsGroup: 8737
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop:
+          - ALL
   metricsConfig: |
     enabled: true
     path: /metrics
@@ -1429,6 +1462,19 @@ data:
     completed: 10
     failed: 3
     errored: 3
+  workflowDefaults: |
+    spec:
+      activeDeadlineSeconds: 300
+      podSpecPatch: |
+        terminationGracePeriodSeconds: 3
+      executor:
+        serviceAccountName: workflow
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 8737
+        runAsGroup: 8737
+      serviceAccountName: workflow
+      automountServiceAccountToken: false
 kind: ConfigMap
 metadata:
   name: workflow-controller-configmap

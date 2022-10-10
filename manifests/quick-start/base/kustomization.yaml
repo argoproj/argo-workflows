@@ -8,7 +8,8 @@ resources:
   - webhooks
   - argo-server-sso-secret.yaml
   - executor/emissary/executor-role.yaml
-  - executor-default-rolebinding.yaml
+  - workflow-serviceaccount.yaml
+  - executor-workflow-rolebinding.yaml
   - pod-manager-role.yaml
   - pod-manager-default-rolebinding.yaml
   - workflow-manager-role.yaml
