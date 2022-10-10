@@ -578,10 +578,15 @@ func (woc *wfOperationCtx) setGlobalParameters(executionParameters wfv1.Argument
 		if param.ValueFrom != nil && param.ValueFrom.ConfigMapKeyRef != nil {
 			cmValue, err := common.GetConfigMapValue(woc.controller.configMapInformer, woc.wf.ObjectMeta.Namespace, param.ValueFrom.ConfigMapKeyRef.Name, param.ValueFrom.ConfigMapKeyRef.Key)
 			if err != nil {
-				return fmt.Errorf("failed to set global parameter %s from configmap with name %s and key %s: %w",
-					param.Name, param.ValueFrom.ConfigMapKeyRef.Name, param.ValueFrom.ConfigMapKeyRef.Key, err)
+				if param.ValueFrom.Default != nil {
+					woc.globalParams["workflow.parameters."+param.Name] = param.ValueFrom.Default.String()
+				} else {
+					return fmt.Errorf("failed to set global parameter %s from configmap with name %s and key %s: %w",
+						param.Name, param.ValueFrom.ConfigMapKeyRef.Name, param.ValueFrom.ConfigMapKeyRef.Key, err)
+				}
+			} else {
+				woc.globalParams["workflow.parameters."+param.Name] = cmValue
 			}
-			woc.globalParams["workflow.parameters."+param.Name] = cmValue
 		} else {
 			woc.globalParams["workflow.parameters."+param.Name] = param.Value.String()
 		}
