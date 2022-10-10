@@ -162,7 +162,7 @@ const (
 	FinalizerArtifactGC = workflow.WorkflowFullName + "/artifact-gc"
 
 	// Finalizer blocks deletion of pods until we're captured their status.
-	Finalizer = workflow.WorkflowFullName
+	Finalizer = workflow.WorkflowFullName + "/status"
 
 	// Variables that are added to the scope during template execution and can be referenced using {{}} syntax
 

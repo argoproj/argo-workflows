@@ -8,6 +8,8 @@ import (
 	"syscall"
 	"time"
 
+	slices2 "k8s.io/utils/strings/slices"
+
 	"github.com/argoproj/pkg/errors"
 	syncpkg "github.com/argoproj/pkg/sync"
 	log "github.com/sirupsen/logrus"
@@ -515,16 +517,35 @@ func (wfc *WorkflowController) processNextPodCleanupItem(ctx context.Context) bo
 				return err
 			}
 		case labelPodCompleted:
-
+			type Operation struct {
+				Operation string      `json:"op"`
+				Path      string      `json:"path"`
+				Value     interface{} `json:"value,omitempty"`
+			}
+			patch := []Operation{
+				{
+					Operation: "replace",
+					Path:      "/metadata/labels/workflows.argoproj.io~1completed",
+					Value:     "true",
+				},
+			}
+			obj, _, _ := wfc.podInformer.GetIndexer().GetByKey(namespace + "/" + podName)
+			if p, ok := obj.(*apiv1.Pod); ok {
+				i := slices2.Index(p.Finalizers, common.Finalizer)
+				if i >= 0 {
+					patch = append(patch, Operation{
+						Operation: "remove",
+						Path:      fmt.Sprintf("/metadata/finalizers/%d", i),
+					})
+				}
+			}
+			data, _ := json.Marshal(patch)
+			log.WithField("data", string(data)).Debug("patching pod")
 			_, err := pods.Patch(
 				ctx,
 				podName,
 				types.JSONPatchType,
-				[]byte(`[
- {"op": "test", "path": "/metadata/labels/workflows.argoproj.io~completed", "value": "false"},
- {"op": "remove", "path": "/metadata/finalizers/workflows.argoproj.io"}
- {"op": "replace", "path": "/metadata/labels/workflows.argoproj.io~completed", "value": "true"}
-]]`),
+				data,
 				metav1.PatchOptions{},
 			)
 			if err != nil {
