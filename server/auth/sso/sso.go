@@ -79,7 +79,8 @@ type providerInterface interface {
 type providerFactory func(ctx context.Context, issuer string) (providerInterface, error)
 
 func providerFactoryOIDC(ctx context.Context, issuer string) (providerInterface, error) {
-	return oidc.NewProvider(ctx, issuer)
+	oidcCtx := oidc.ClientContext(ctx, &http.Client{})
+	return oidc.NewProvider(oidcCtx, issuer)
 }
 
 func New(c Config, secretsIf corev1.SecretInterface, baseHRef string, secure bool) (Interface, error) {
