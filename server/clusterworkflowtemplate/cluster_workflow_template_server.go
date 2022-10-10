@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"sort"
 
-	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	clusterwftmplpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/clusterworkflowtemplate"
@@ -37,18 +36,12 @@ func (cwts *ClusterWorkflowTemplateServer) CreateClusterWorkflowTemplate(ctx con
 	if err != nil {
 		return nil, err
 	}
-	wfTemplate, err := wfClient.ArgoprojV1alpha1().ClusterWorkflowTemplates().Create(ctx, req.Template, v1.CreateOptions{})
-	if err != nil {
-		log.WithError(err).Error("Create Cluster workflow template error")
-		return nil, err
-	}
-	return wfTemplate, nil
+	return wfClient.ArgoprojV1alpha1().ClusterWorkflowTemplates().Create(ctx, req.Template, v1.CreateOptions{})
 }
 
 func (cwts *ClusterWorkflowTemplateServer) GetClusterWorkflowTemplate(ctx context.Context, req *clusterwftmplpkg.ClusterWorkflowTemplateGetRequest) (*v1alpha1.ClusterWorkflowTemplate, error) {
 	wfTmpl, err := cwts.getTemplateAndValidate(ctx, req.Name)
 	if err != nil {
-		log.WithField("name", req.Name).WithError(err).Error("Get Cluster workflow template error")
 		return nil, err
 	}
 	return wfTmpl, nil
@@ -76,7 +69,6 @@ func (cwts *ClusterWorkflowTemplateServer) ListClusterWorkflowTemplates(ctx cont
 	cwts.instanceIDService.With(options)
 	cwfList, err := wfClient.ArgoprojV1alpha1().ClusterWorkflowTemplates().List(ctx, *options)
 	if err != nil {
-		log.WithField("options", options).WithError(err).Error("List Cluster workflow template error")
 		return nil, err
 	}
 
@@ -93,7 +85,6 @@ func (cwts *ClusterWorkflowTemplateServer) DeleteClusterWorkflowTemplate(ctx con
 	}
 	err = wfClient.ArgoprojV1alpha1().ClusterWorkflowTemplates().Delete(ctx, req.Name, v1.DeleteOptions{})
 	if err != nil {
-		log.WithFields(log.Fields{"name": req.Name}).WithError(err).Error("Delete Cluster workflow template error")
 		return nil, err
 	}
 
@@ -108,7 +99,6 @@ func (cwts *ClusterWorkflowTemplateServer) LintClusterWorkflowTemplate(ctx conte
 
 	err := validate.ValidateClusterWorkflowTemplate(nil, cwftmplGetter, req.Template, validate.ValidateOpts{Lint: true})
 	if err != nil {
-		log.WithError(err).Error("Lint Cluster workflow template error")
 		return nil, err
 	}
 
@@ -132,9 +122,5 @@ func (cwts *ClusterWorkflowTemplateServer) UpdateClusterWorkflowTemplate(ctx con
 	}
 
 	res, err := wfClient.ArgoprojV1alpha1().ClusterWorkflowTemplates().Update(ctx, req.Template, v1.UpdateOptions{})
-	if err != nil {
-		log.WithError(err).Error("Update Cluster workflow template error")
-		return nil, err
-	}
-	return res, nil
+	return res, err
 }
