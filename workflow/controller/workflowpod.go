@@ -172,7 +172,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 			OwnerReferences: []metav1.OwnerReference{
 				*metav1.NewControllerRef(woc.wf, wfv1.SchemeGroupVersion.WithKind(workflow.WorkflowKind)),
 			},
-			Finalizers: []string{common.WorkflowFinalizer},
+			Finalizers: []string{common.Finalizer}, // be aware that other finalizers might be added by https://kubernetes.io/docs/reference/access-authn-authz/admission-controllers/#mutatingadmissionwebhook
 		},
 		Spec: apiv1.PodSpec{
 			RestartPolicy:         apiv1.RestartPolicyNever,

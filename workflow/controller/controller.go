@@ -515,61 +515,24 @@ func (wfc *WorkflowController) processNextPodCleanupItem(ctx context.Context) bo
 				return err
 			}
 		case labelPodCompleted:
-			// remove the argoproj.io/finalizer finalizer from the pod
-			p, err := wfc.getPod(namespace, podName)
-			if err != nil {
-				return err
-			}
-			finalizers := util.RemoveString(p.Finalizers, common.WorkflowFinalizer)
-			data, err := json.Marshal(map[string]interface{}{
-				"metadata": map[string]interface{}{
-					"labels": map[string]interface{}{
-						common.LabelKeyCompleted: "true",
-					},
-					"finalizers": finalizers,
-				},
-			})
-			if err != nil {
-				return err
-			}
 
-			_, err = pods.Patch(
+			_, err := pods.Patch(
 				ctx,
 				podName,
-				types.MergePatchType,
-				data,
+				types.JSONPatchType,
+				[]byte(`[
+ {"op": "test", "path": "/metadata/labels/workflows.argoproj.io~completed", "value": "false"},
+ {"op": "remove", "path": "/metadata/finalizers/workflows.argoproj.io"}
+ {"op": "replace", "path": "/metadata/labels/workflows.argoproj.io~completed", "value": "true"}
+]]`),
 				metav1.PatchOptions{},
 			)
 			if err != nil {
 				return err
 			}
 		case deletePod:
-			// remove the argoproj.io/finalizer finalizer from the pod
-			p, err := wfc.getPod(namespace, podName)
-			if err != nil {
-				return err
-			}
-			finalizers := util.RemoveString(p.Finalizers, common.WorkflowFinalizer)
-			data, err := json.Marshal(map[string]interface{}{
-				"metadata": map[string]interface{}{
-					"finalizers": finalizers,
-				},
-			})
-			if err != nil {
-				return err
-			}
-			_, err = pods.Patch(
-				ctx,
-				podName,
-				types.MergePatchType,
-				data,
-				metav1.PatchOptions{},
-			)
-			if err != nil {
-				return err
-			}
 			propagation := metav1.DeletePropagationBackground
-			err = pods.Delete(ctx, podName, metav1.DeleteOptions{
+			err := pods.Delete(ctx, podName, metav1.DeleteOptions{
 				PropagationPolicy:  &propagation,
 				GracePeriodSeconds: wfc.Config.PodGCGracePeriodSeconds,
 			})
