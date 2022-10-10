@@ -49,6 +49,12 @@ The resulting `Workflow` name will be a generated name based on the `CronWorkflo
 | `successfulJobsHistoryLimit` |           `3`          | Number of successful `Workflows` that will be persisted at a time                                                                                                                                                                       |
 | `failedJobsHistoryLimit`     | `1`                    | Number of failed `Workflows` that will be persisted at a time                                                                                                                                                                           |
 
+### Cron Schedule Syntax
+
+The cron scheduler uses the standard cron syntax, as [documented on Wikipedia](https://en.wikipedia.org/wiki/Cron).
+
+More detailed documentation for the specific library used is [documented here](https://pkg.go.dev/github.com/robfig/cron#hdr-CRON_Expression_Format).
+
 ### Crash Recovery
 
 If the `workflow-controller` crashes (and hence the `CronWorkflow` controller), there are some options you can set to ensure that `CronWorkflows` that would have been scheduled while the controller was down can still run. Mainly `startingDeadlineSeconds` can be set to specify the maximum number of seconds past the last successful run of a `CronWorkflow` during which a missed run will still be executed.

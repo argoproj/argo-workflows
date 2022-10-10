@@ -1,0 +1,48 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: retry-nested-dag
+spec:
+  entrypoint: outer-dag
+  templates:
+    - name: outer-dag
+      dag:
+        tasks:
+          - name: dag1-step1
+            template: node-to-succeed
+          - name: dag1-step2
+            dependencies: [dag1-step1]
+            template: middle-dag
+          - name: dag1-step3-tofail
+            dependencies: [dag1-step2]
+            template: node-to-fail
+
+    - name: middle-dag
+      dag:
+        tasks:
+          - name: dag2-step1
+            template: inner-dag
+
+    - name: inner-dag
+      dag:
+        tasks:
+          - name: dag3-step1
+            template: node-to-succeed
+          - name: dag3-step2
+            dependencies: [dag3-step1]
+            template: node-to-succeed
+          - name: dag3-step3
+            dependencies: [dag3-step2]
+            template: node-to-succeed
+
+    - name: node-to-succeed
+      container:
+        image: argoproj/argosay:v2
+        command: [ sh, -c ]
+        args: [ "exit 0" ]
+
+    - name: node-to-fail
+      container:
+        image: argoproj/argosay:v2
+        command: [sh, -c]
+        args: ["exit 1"]

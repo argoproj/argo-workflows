@@ -2,12 +2,12 @@
 
 You have two options:
 
-1. If you're using VSCode, you use the Dev-Container. This takes about 7 minutes. Pre-commit checks take about 4 minutes to run.
-1. Install the requirements on your computer manually. This takes about 1 hour. Pre-commit checks take about 3 minutes to run.
+1. If you're using VSCode, you use the [Dev-Container](#development-container). This takes about 7 minutes.
+1. Install the [requirements](#requirements) on your computer manually. This takes about 1 hour.
 
 ## Git Clone
 
-Close the Git repo into: `$(GOPATH)/src/github.com/argoproj/argo-workflows`. Any other path will mean the code
+Clone the Git repo into: `$(GOPATH)/src/github.com/argoproj/argo-workflows`. Any other path will mean the code
 generation does not work.
 
 ## Development Container
@@ -26,7 +26,7 @@ Note:
 
     ```json
     "features": {
-      "buildkit": false
+      "buildkit": true
     },
     ```
 
@@ -43,6 +43,7 @@ Note:
 * [Docker](https://docs.docker.com/get-docker/)
 * [`protoc`](http://google.github.io/proto-lens/installing-protoc.html)
 * [`jq`](https://stedolan.github.io/jq/download/)
+* [`node` >= 16](https://nodejs.org/download/release/latest-v16.x/) for running the UI
 * A local Kubernetes cluster ([`k3d`](https://k3d.io/), [`kind`](https://kind.sigs.k8s.io/docs/user/quick-start/#installation), or [`minikube`](https://minikube.sigs.k8s.io/docs/start/))
 
 We recommend using [K3D](https://k3d.io/) to set up the local Kubernetes cluster since this will allow you to test RBAC
@@ -68,6 +69,7 @@ Add the following to your `/etc/hosts`:
 127.0.0.1 minio
 127.0.0.1 postgres
 127.0.0.1 mysql
+127.0.0.1 azurite
 ```
 
 To start:
@@ -78,16 +80,18 @@ To start:
 Run:
 
 ```bash
-make start 
+make start
 ```
 
-Make sure you don't see any errors in your terminal.
+Make sure you don't see any errors in your terminal. This runs the Workflow Controller locally on your machine (not in Docker/Kubernetes).
 
 You can submit a workflow for testing using `kubectl`:
 
 ```bash
-kubectl create -f examples/hello-world.yaml 
+kubectl create -f examples/hello-world.yaml
 ```
+
+We recommend running `make clean` before `make start` to ensure recompilation.
 
 If you made changes to the executor, you need to build the image:
 
@@ -95,11 +99,13 @@ If you made changes to the executor, you need to build the image:
 make argoexec-image
 ```
 
-To also start the API on <https://localhost:2746>:
+To also start the API on <http://localhost:2746>:
 
 ```bash
 make start API=true
 ```
+
+This runs the Argo Server (in addition to the Workflow Controller) locally on your machine.
 
 To also start the UI on <http://localhost:8080> (`UI=true` implies `API=true`):
 
@@ -107,12 +113,16 @@ To also start the UI on <http://localhost:8080> (`UI=true` implies `API=true`):
 make start UI=true
 ```
 
-If you are making change to the CLI, you can build it:
+![diagram](assets/make-start-UI-true.png)
+
+If you are making change to the CLI (i.e. Argo Server), you can build it separately if you want:
 
 ```bash
-make cli 
-./dist/argo submit examples/hello-world.yaml ;# new CLI is created as `./dist/argo` 
+make cli
+./dist/argo submit examples/hello-world.yaml ;# new CLI is created as `./dist/argo`
 ```
+
+Although, note that this will be built automatically if you do: `make start API=true`.
 
 To test the workflow archive, use `PROFILE=mysql` or `PROFILE=postgres`:
 
@@ -136,7 +146,13 @@ make start UI=true PROFILE=sso
 Start up Argo Workflows using the following:
 
 ```bash
-make start PROFILE=mysql AUTH_MODE=client STATIC_FILES=false API=true 
+make start PROFILE=mysql AUTH_MODE=client STATIC_FILES=false API=true
+```
+
+If you want to run Azure tests against a local Azurite, add `AZURE=true`:
+
+```bash
+make start PROFILE=mysql AUTH_MODE=client STATIC_FILES=false API=true AZURE=true
 ```
 
 #### Running One Test
@@ -147,7 +163,13 @@ Our CI will run those concurrently when you create a PR, which will give you fee
 Find the test that you want to run in `test/e2e`
 
 ```bash
-make TestArtifactServer  
+make TestArtifactServer
+```
+
+If you wish to include tests against Azure Storage, define `AZURE=true`:
+
+```bash
+make AZURE=true TestArtifactServer
 ```
 
 #### Running A Set Of Tests

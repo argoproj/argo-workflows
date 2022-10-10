@@ -1,0 +1,18 @@
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: workflow-template-submittable
+spec:
+  entrypoint: whalesay-template
+  templates:
+    - name: whalesay-template
+      container:
+        image: 'argoproj/argosay:v2'
+        command:
+          - /argosay
+        args:
+          - echo
+          - '{{workflow.labels.arg-name}}'
+  workflowMetadata:
+    labels:
+      arg-name: myLabelArg

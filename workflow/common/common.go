@@ -21,8 +21,10 @@ const (
 	AnnotationKeyNodeID = workflow.WorkflowFullName + "/node-id"
 	// AnnotationKeyNodeName is the pod metadata annotation key containing the workflow node name
 	AnnotationKeyNodeName = workflow.WorkflowFullName + "/node-name"
-	// AnnotationKeyNodeName is the node's type
+	// AnnotationKeyNodeType is the node's type
 	AnnotationKeyNodeType = workflow.WorkflowFullName + "/node-type"
+	// AnnotationKeyNodeStartTime is the node's start timestamp.
+	AnnotationKeyNodeStartTime = workflow.WorkflowFullName + "/node-start-time"
 
 	// AnnotationKeyRBACRule is a rule to match the claims
 	AnnotationKeyRBACRule           = workflow.WorkflowFullName + "/rbac-rule"
@@ -44,6 +46,10 @@ const (
 
 	// AnnotationKeyProgress is N/M progress for the node
 	AnnotationKeyProgress = workflow.WorkflowFullName + "/progress"
+
+	// AnnotationKeyArtifactGCStrategy is listed as an annotation on the Artifact GC Pod to identify
+	// the strategy whose artifacts are being deleted
+	AnnotationKeyArtifactGCStrategy = workflow.WorkflowFullName + "/artifact-gc-strategy"
 
 	// LabelKeyControllerInstanceID is the label the controller will carry forward to workflows/pod labels
 	// for the purposes of workflow segregation
@@ -81,6 +87,8 @@ const (
 	LabelKeyClusterWorkflowTemplate = workflow.WorkflowFullName + "/cluster-workflow-template"
 	// LabelKeyOnExit is a label applied to Pods that are run from onExit nodes, so that they are not shut down when stopping a Workflow
 	LabelKeyOnExit = workflow.WorkflowFullName + "/on-exit"
+	// LabelKeyArtifactGCPodHash is a label applied to WorkflowTaskSets used by the Artifact Garbage Collection Pod
+	LabelKeyArtifactGCPodHash = workflow.WorkflowFullName + "/artifact-gc-pod"
 
 	// ExecutorArtifactBaseDir is the base directory in the init container in which artifacts will be copied to.
 	// Each artifact will be named according to its input name (e.g: /argo/inputs/artifacts/CODE)
@@ -101,6 +109,8 @@ const (
 
 	// Various environment variables containing pod information exposed to the executor container(s)
 
+	// EnvVarArtifactGCPodHash is applied as a Label on the WorkflowTaskSets read by the Artifact GC Pod, so that the Pod can find them
+	EnvVarArtifactGCPodHash = "ARGO_ARTIFACT_POD_NAME"
 	// EnvVarPodName contains the name of the pod (currently unused)
 	EnvVarPodName = "ARGO_POD_NAME"
 	// EnvVarPodUID is the workflow's UID

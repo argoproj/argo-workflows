@@ -16,6 +16,8 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/argoproj/argo-workflows/v3/util/errors"
+
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"k8s.io/client-go/util/retry"
@@ -59,18 +61,6 @@ func NewEmissaryCommand() *cobra.Command {
 			}
 
 			name, args := args[0], args[1:]
-
-			signals := make(chan os.Signal, 1)
-			defer close(signals)
-			signal.Notify(signals)
-			defer signal.Reset()
-			go func() {
-				for s := range signals {
-					if !osspecific.IsSIGCHLD(s) {
-						_ = osspecific.Kill(-os.Getpid(), s.(syscall.Signal))
-					}
-				}
-			}()
 
 			data, err := ioutil.ReadFile(varRunArgo + "/template")
 			if err != nil {
@@ -127,25 +117,28 @@ func NewEmissaryCommand() *cobra.Command {
 				return fmt.Errorf("failed to get retry strategy: %w", err)
 			}
 
-			var command *exec.Cmd
-			var stdout *os.File
-			var combined *os.File
 			cmdErr := retry.OnError(backoff, func(error) bool { return true }, func() error {
-				if stdout != nil {
-					stdout.Close()
-				}
-				if combined != nil {
-					combined.Close()
-				}
-				command, stdout, combined, err = createCommand(name, args, template)
+				command, stdout, combined, err := createCommand(name, args, template)
 				if err != nil {
 					return fmt.Errorf("failed to create command: %w", err)
 				}
-
+				defer stdout.Close()
+				defer combined.Close()
+				signals := make(chan os.Signal, 1)
+				defer close(signals)
+				signal.Notify(signals)
+				defer signal.Reset()
 				if err := command.Start(); err != nil {
 					return err
 				}
-
+				go func() {
+					for s := range signals {
+						if !osspecific.IsSIGCHLD(s) {
+							_ = osspecific.Kill(command.Process.Pid, s.(syscall.Signal))
+						}
+					}
+				}()
+				pid := command.Process.Pid
 				ctx, cancel := context.WithCancel(context.Background())
 				defer cancel()
 				go func() {
@@ -158,16 +151,16 @@ func NewEmissaryCommand() *cobra.Command {
 							_ = os.Remove(varRunArgo + "/ctr/" + containerName + "/signal")
 							s, _ := strconv.Atoi(string(data))
 							if s > 0 {
-								_ = osspecific.Kill(command.Process.Pid, syscall.Signal(s))
+								_ = osspecific.Kill(pid, syscall.Signal(s))
 							}
 							time.Sleep(2 * time.Second)
 						}
 					}
 				}()
-				return command.Wait()
+				return osspecific.Wait(command.Process)
+
 			})
-			defer stdout.Close()
-			defer combined.Close()
+			logger.WithError(err).Info("sub-process exited")
 
 			if _, ok := os.LookupEnv("ARGO_DEBUG_PAUSE_AFTER"); ok {
 				for {
@@ -184,7 +177,7 @@ func NewEmissaryCommand() *cobra.Command {
 
 			if cmdErr == nil {
 				exitCode = 0
-			} else if exitError, ok := cmdErr.(*exec.ExitError); ok {
+			} else if exitError, ok := cmdErr.(errors.Exited); ok {
 				if exitError.ExitCode() >= 0 {
 					exitCode = exitError.ExitCode()
 				} else {

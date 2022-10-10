@@ -1,24 +1,27 @@
 import {Page, SlidingPanel} from 'argo-ui';
 import * as classNames from 'classnames';
 import * as React from 'react';
-import {useContext, useEffect, useState} from 'react';
+import {useContext, useEffect, useRef, useState} from 'react';
 import {RouteComponentProps} from 'react-router';
-import {execSpec, Link, NodeStatus, Parameter, Workflow} from '../../../../models';
+import {ArtifactRepository, execSpec, Link, NodeStatus, Parameter, Workflow} from '../../../../models';
 import {ANNOTATION_KEY_POD_NAME_VERSION} from '../../../shared/annotations';
-import {findArtifact} from '../../../shared/artifacts';
+import {artifactRepoHasLocation, findArtifact} from '../../../shared/artifacts';
 import {uiUrl} from '../../../shared/base';
 import {CostOptimisationNudge} from '../../../shared/components/cost-optimisation-nudge';
 import {ErrorNotice} from '../../../shared/components/error-notice';
 import {ProcessURL} from '../../../shared/components/links';
 import {Loading} from '../../../shared/components/loading';
 import {SecurityNudge} from '../../../shared/components/security-nudge';
-import {hasWarningConditionBadge} from '../../../shared/conditions-panel';
+import {hasArtifactGCError, hasWarningConditionBadge} from '../../../shared/conditions-panel';
 import {Context} from '../../../shared/context';
 import {historyUrl} from '../../../shared/history';
 import {getPodName, getTemplateNameFromNode} from '../../../shared/pod-name';
 import {RetryWatch} from '../../../shared/retry-watch';
 import {services} from '../../../shared/services';
+import {getResolvedTemplates} from '../../../shared/template-resolution';
 import {useQueryParams} from '../../../shared/use-query-params';
+import {useResizableWidth} from '../../../shared/use-resizable-width';
+import {useTransition} from '../../../shared/use-transition';
 import * as Operations from '../../../shared/workflow-operations-map';
 import {WorkflowOperations} from '../../../shared/workflow-operations-map';
 import {WidgetGallery} from '../../../widgets/widget-gallery';
@@ -42,6 +45,12 @@ function parseSidePanelParam(param: string) {
     return {type, nodeId, container: container || 'main'};
 }
 
+const LEFT_NAV_WIDTH = 60;
+const GRAPH_CONTAINER_MIN_WIDTH = 490;
+const INITIAL_SIDE_PANEL_WIDTH = 570;
+const ANIMATION_MS = 200;
+const ANIMATION_BUFFER_MS = 20;
+
 export const WorkflowDetails = ({history, location, match}: RouteComponentProps<any>) => {
     // boiler-plate
     const {navigation, popup} = useContext(Context);
@@ -54,6 +63,22 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
     const [nodePanelView, setNodePanelView] = useState(queryParams.get('nodePanelView'));
     const [sidePanel, setSidePanel] = useState(queryParams.get('sidePanel'));
     const [parameters, setParameters] = useState<Parameter[]>([]);
+    const sidePanelRef = useRef<HTMLDivElement>(null);
+    const [workflow, setWorkflow] = useState<Workflow>();
+    const [links, setLinks] = useState<Link[]>();
+    const [error, setError] = useState<Error>();
+    const selectedNode = workflow && workflow.status && workflow.status.nodes && workflow.status.nodes[nodeId];
+    const selectedArtifact = workflow && workflow.status && findArtifact(workflow.status, nodeId);
+    const [selectedTemplateArtifactRepo, setSelectedTemplateArtifactRepo] = useState<ArtifactRepository>();
+    const isSidePanelExpanded = !!(selectedNode || selectedArtifact);
+    const isSidePanelAnimating = useTransition(isSidePanelExpanded, ANIMATION_MS + ANIMATION_BUFFER_MS);
+    const {width: sidePanelWidth, dragHandleProps: sidePanelDragHandleProps} = useResizableWidth({
+        disabled: isSidePanelAnimating || !isSidePanelExpanded,
+        initialWidth: INITIAL_SIDE_PANEL_WIDTH,
+        maxWidth: globalThis.innerWidth - LEFT_NAV_WIDTH - GRAPH_CONTAINER_MIN_WIDTH,
+        minWidth: INITIAL_SIDE_PANEL_WIDTH,
+        resizedElementRef: sidePanelRef
+    });
 
     useEffect(
         useQueryParams(history, p => {
@@ -79,12 +104,24 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
     };
 
     useEffect(() => {
+        // update the default Artifact Repository for the Template that corresponds to the selectedArtifact
+        // if there's an ArtifactLocation configured for the Template we use that
+        // otherwise we use the central one for the Workflow configured in workflow.status.artifactRepositoryRef.artifactRepository
+        // (Note that individual Artifacts may also override whatever this gets set to)
+        if (workflow && workflow.status && workflow.status.nodes && selectedArtifact) {
+            const template = getResolvedTemplates(workflow, workflow.status.nodes[selectedArtifact.nodeId]);
+            const artifactRepo = template.archiveLocation;
+            if (artifactRepo && artifactRepoHasLocation(artifactRepo)) {
+                setSelectedTemplateArtifactRepo(artifactRepo);
+            } else {
+                setSelectedTemplateArtifactRepo(workflow.status.artifactRepositoryRef.artifactRepository);
+            }
+        }
+    }, [workflow, selectedArtifact]);
+
+    useEffect(() => {
         history.push(historyUrl('workflows/{namespace}/{name}', {namespace, name, tab, nodeId, nodePanelView, sidePanel}));
     }, [namespace, name, tab, nodeId, nodePanelView, sidePanel]);
-
-    const [workflow, setWorkflow] = useState<Workflow>();
-    const [links, setLinks] = useState<Link[]>();
-    const [error, setError] = useState<Error>();
 
     useEffect(() => {
         services.info
@@ -257,10 +294,24 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
                 if (e.type === 'DELETED') {
                     setError(new Error('Workflow deleted'));
                 } else {
+                    if (hasArtifactGCError(e.object.status.conditions)) {
+                        setError(new Error('Artifact garbage collection failed'));
+                    }
                     setWorkflow(e.object);
                 }
             },
-            setError
+            err => {
+                services.workflows
+                    .get(namespace, name)
+                    .then()
+                    .catch(e => {
+                        if (e.status === 404) {
+                            navigation.goto(historyUrl('archived-workflows', {namespace, name, deep: true}));
+                        }
+                    });
+
+                setError(err);
+            }
         );
         retryWatch.start();
         return () => retryWatch.stop();
@@ -346,10 +397,7 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
         return nodeID;
     };
 
-    const selectedNode = workflow && workflow.status && workflow.status.nodes && workflow.status.nodes[nodeId];
     const podName = ensurePodName(workflow, selectedNode, nodeId);
-
-    const selectedArtifact = workflow && workflow.status && findArtifact(workflow.status, nodeId);
 
     return (
         <Page
@@ -381,12 +429,12 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
                     </div>
                 )
             }}>
-            <div className={classNames('workflow-details', {'workflow-details--step-node-expanded': selectedNode, 'workflow-details--artifact-expanded': selectedArtifact})}>
+            <div className={classNames('workflow-details', {'workflow-details--step-node-expanded': isSidePanelExpanded})}>
                 <ErrorNotice error={error} />
                 {(tab === 'summary' && renderSummaryTab()) ||
                     (workflow && (
-                        <div>
-                            <div className='workflow-details__graph-container'>
+                        <div className='workflow-details__graph-container-wrapper'>
+                            <div className='workflow-details__graph-container' style={{minWidth: GRAPH_CONTAINER_MIN_WIDTH}}>
                                 {(tab === 'workflow' && (
                                     <WorkflowPanel workflowMetadata={workflow.metadata} workflowStatus={workflow.status} selectedNodeId={nodeId} nodeClicked={setNodeId} />
                                 )) ||
@@ -394,10 +442,18 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
                                         <WorkflowTimeline workflow={workflow} selectedNodeId={nodeId} nodeClicked={node => setNodeId(node.id)} />
                                     )}
                             </div>
-                            <div className='workflow-details__step-info'>
+                            <div
+                                className='workflow-details__step-info'
+                                ref={sidePanelRef}
+                                style={{
+                                    minWidth: !isSidePanelExpanded || isSidePanelAnimating ? 0 : `${INITIAL_SIDE_PANEL_WIDTH}px`,
+                                    transition: isSidePanelAnimating ? `width ${ANIMATION_MS}ms` : 'unset',
+                                    width: isSidePanelExpanded ? `${sidePanelWidth}px` : 0
+                                }}>
                                 <button className='workflow-details__step-info-close' onClick={() => setNodeId(null)}>
                                     <i className='argo-icon-close' />
                                 </button>
+                                <div className='workflow-details__step-info-drag-handle' {...sidePanelDragHandleProps} />
                                 {selectedNode && (
                                     <WorkflowNodeInfo
                                         node={selectedNode}
@@ -412,9 +468,7 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
                                         onResume={() => renderResumePopup()}
                                     />
                                 )}
-                                {selectedArtifact && (
-                                    <ArtifactPanel workflow={workflow} artifact={selectedArtifact} artifactRepository={workflow.status.artifactRepositoryRef.artifactRepository} />
-                                )}
+                                {selectedArtifact && <ArtifactPanel workflow={workflow} artifact={selectedArtifact} artifactRepository={selectedTemplateArtifactRepo} />}
                             </div>
                         </div>
                     ))}

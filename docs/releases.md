@@ -12,7 +12,7 @@ contain bug fixes and minor features.
 
 For **stable**, use the latest patch version.
 
-⚠️ Read the [breaking changes](breaking-changes.md) to find out about breaking changes before any upgrade.
+⚠️ Read the [upgrading guide](upgrading.md) to find out about breaking changes before any upgrade.
 
 ## Supported Versions
 
@@ -20,7 +20,7 @@ We maintain release branches for the most recent two minor releases.
 
 Fixes may be back-ported to release branches, depending on severity, risk, and, feasibility.
 
-If a release contains breaking changes, or CVE fixes, this will documented in [breaking changes](breaking-changes.md).
+If a release contains breaking changes, or CVE fixes, this will documented in [upgrading guide](upgrading.md).
 
 ## Supported Version Skew
 

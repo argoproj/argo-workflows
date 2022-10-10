@@ -25,7 +25,7 @@ spec:
       container:
         image: docker/whalesay
         command: [ cowsay ]
-        args: [ "{{inputs.parameters.message}}" ] 
+        args: [ "{{inputs.parameters.message}}" ]
 ```
 
 The following variables are made available to reference various meta-data of a workflow:
@@ -41,7 +41,7 @@ There are two kinds of template tag:
 
 The tag is substituted with the variable that has a name the same as the tag.
 
-Simple tags **may** have white-space between the brackets and variable.
+Simple tags **may** have white-space between the brackets and variable as seen below. However, there is a known issue where variables may fail to interpolate with white-space, so it is recommended to avoid using white-space until this issue is resolved. [Please report](https://github.com/argoproj/argo-workflows/issues/8960) unexpected behavior with reproducible examples.
 
 ```yaml
 args: [ "{{ inputs.parameters.message }}" ]  
@@ -135,6 +135,7 @@ returns `0`. Please review the Sprig documentation to understand which functions
 
 | Variable | Description|
 |----------|------------|
+| `steps.name` | Name of the step |
 | `steps.<STEPNAME>.id` | unique id of container step |
 | `steps.<STEPNAME>.ip` | IP address of a previous daemon container step |
 | `steps.<STEPNAME>.status` | Phase status of any previous step |
@@ -150,6 +151,7 @@ returns `0`. Please review the Sprig documentation to understand which functions
 
 | Variable | Description|
 |----------|------------|
+| `tasks.name` | Name of the task |
 | `tasks.<TASKNAME>.id` | unique id of container task |
 | `tasks.<TASKNAME>.ip` | IP address of a previous daemon container task |
 | `tasks.<TASKNAME>.status` | Phase status of any previous task |

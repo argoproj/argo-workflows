@@ -10,6 +10,8 @@ grep -lR 'workflows.argoproj.io/test' examples/*  | while read f ; do
   test 0 == $(grep -o 'image: .*' $f | grep -cv 'argoproj/argosay:v2\|python:alpine3.6')
 done
 
+trap 'kubectl get wf' EXIT
+
 grep -lR 'workflows.argoproj.io/test' examples/* | while read f ; do
   kubectl delete workflow -l workflows.argoproj.io/test
   echo "Running $f..."

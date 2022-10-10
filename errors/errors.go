@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
 )
 
 // Externally visible error codes
@@ -22,6 +23,7 @@ const (
 type ArgoError interface {
 	Error() string
 	Code() string
+	HTTPCode() int
 	JSON() []byte
 }
 
@@ -82,9 +84,9 @@ func Wrap(err error, code string, message string) error {
 // An error value has a cause if it implements the following
 // interface:
 //
-//     type causer interface {
-//            Cause() error
-//     }
+//	type causer interface {
+//	       Cause() error
+//	}
 //
 // If the error does not implement Cause, the original error will
 // be returned. If the error is nil, nil will be returned without further
@@ -136,6 +138,25 @@ func (e argoerr) JSON() []byte {
 	eb := errBean{e.code, e.message}
 	j, _ := json.Marshal(eb)
 	return j
+}
+
+func (e argoerr) HTTPCode() int {
+	switch e.Code() {
+	case CodeUnauthorized:
+		return http.StatusUnauthorized
+	case CodeForbidden:
+		return http.StatusForbidden
+	case CodeNotFound:
+		return http.StatusNotFound
+	case CodeBadRequest:
+		return http.StatusBadRequest
+	case CodeNotImplemented:
+		return http.StatusNotImplemented
+	case CodeTimeout, CodeInternal:
+		return http.StatusInternalServerError
+	default:
+		return http.StatusInternalServerError
+	}
 }
 
 // IsCode is a helper to determine if the error is of a specific code

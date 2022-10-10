@@ -6,6 +6,7 @@ import {Loading} from '../../../shared/components/loading';
 import {ConditionsPanel} from '../../../shared/conditions-panel';
 import {formatDuration} from '../../../shared/duration';
 import {services} from '../../../shared/services';
+import {WorkflowCreatorInfo} from '../workflow-creator-info/workflow-creator-info';
 import {WorkflowFrom} from '../workflow-from';
 import {WorkflowLabels} from '../workflow-labels/workflow-labels';
 
@@ -98,6 +99,17 @@ export class WorkflowDrawer extends React.Component<WorkflowDrawerProps, Workflo
                     <div className='workflow-drawer__title'>LABELS</div>
                     <div className='workflow-drawer__labels--list'>
                         <WorkflowLabels
+                            workflow={wf}
+                            onChange={key => {
+                                this.props.onChange(key);
+                            }}
+                        />
+                    </div>
+                </div>
+                <div className='workflow-drawer__section workflow-drawer__labels'>
+                    <div className='workflow-drawer__title'>Creator</div>
+                    <div className='workflow-drawer__labels--list'>
+                        <WorkflowCreatorInfo
                             workflow={wf}
                             onChange={key => {
                                 this.props.onChange(key);

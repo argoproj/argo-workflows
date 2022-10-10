@@ -25,7 +25,7 @@ theme:
 extra:
   analytics:
     provider: google
-    property: UA-105170809-7
+    property: G-5Z1VTPDL73
 markdown_extensions:
   - codehilite
   - admonition
@@ -64,7 +64,7 @@ nav:
           - walk-through/kubernetes-resources.md
           - walk-through/docker-in-docker-using-sidecars.md
           - walk-through/custom-template-variable-reference.md
-          - walk-through/continuous-integration-example.md
+          - walk-through/continuous-integration-examples.md
   - User Guide:
       - workflow-concepts.md
       - Custom Resource Kinds:
@@ -104,6 +104,7 @@ nav:
           - cron-backfill.md
           - workflow-of-workflows.md
           - workflow-notifications.md
+          - work-avoidance.md
       - UI Features:
           - artifact-visualization.md
           - widgets.md
@@ -137,6 +138,7 @@ nav:
           - use-cases/machine-learning.md
           - use-cases/other.md
           - use-cases/stream-processing.md
+          - use-cases/webhdfs.md
       - FAQ: faq.md
       - kubectl.md
       - ide-setup.md
@@ -197,7 +199,7 @@ nav:
   - Operator Manual:
       - installation.md
       - releases.md
-      - breaking-changes.md
+      - upgrading.md
       - security.md
       - Configuration:
           - managed-namespace.md
@@ -240,3 +242,4 @@ nav:
   - Blog: https://blog.argoproj.io/
   - Slack: https://argoproj.github.io/community/join-slack
   - Twitter: https://twitter.com/argoproj
+  - LinkedIn: https://www.linkedin.com/company/argoproj/

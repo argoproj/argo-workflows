@@ -11,3 +11,4 @@
 | [Python](https://github.com/argoproj-labs/argo-workflows-python-executor-plugin) | Plugin for executing Python |
 | [Hermes](https://github.com/kjagiello/hermes) | Send notifications, e.g. Slack |
 | [WASM](https://github.com/Shark/wasm-workflows-plugin) | Run Web Assembly (WASM) tasks |
+| [Chaos Mesh Plugin](https://github.com/xlgao-zju/argo-chaos-mesh-plugin) | Run Chaos Mesh experiment |

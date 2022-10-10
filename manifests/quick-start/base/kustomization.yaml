@@ -4,6 +4,7 @@ kind: Kustomization
 resources:
   - ../../namespace-install
   - minio
+  - httpbin
   - webhooks
   - argo-server-sso-secret.yaml
   - executor/emissary/executor-role.yaml
@@ -14,6 +15,8 @@ resources:
   - workflow-manager-default-rolebinding.yaml
   - agent-role.yaml
   - agent-default-rolebinding.yaml
+  - artifactgc-role.yaml
+  - artifactgc-default-rolebinding.yaml
   - cluster-workflow-template-rbac.yaml
   - artifact-repositories-configmap.yaml
 

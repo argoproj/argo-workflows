@@ -270,7 +270,7 @@ func (woc *wfOperationCtx) executeStepGroup(ctx context.Context, stepGroup []wfv
 		childNode := woc.wf.Status.Nodes[childNodeID]
 		step := nodeSteps[childNode.Name]
 		stepsCtx.scope.addParamToScope(fmt.Sprintf("steps.%s.status", childNode.DisplayName), string(childNode.Phase))
-		hookCompleted, err := woc.executeTmplLifeCycleHook(ctx, woc.globalParams.Merge(stepsCtx.scope.getParameters()), step.Hooks, &childNode, stepsCtx.boundaryID, stepsCtx.tmplCtx, "steps."+step.Name)
+		hookCompleted, err := woc.executeTmplLifeCycleHook(ctx, stepsCtx.scope, step.Hooks, &childNode, stepsCtx.boundaryID, stepsCtx.tmplCtx, "steps."+step.Name)
 		if err != nil {
 			woc.markNodeError(node.Name, err)
 		}
@@ -282,7 +282,7 @@ func (woc *wfOperationCtx) executeStepGroup(ctx context.Context, stepGroup []wfv
 		if !childNode.Fulfilled() {
 			completed = false
 		} else if childNode.Completed() {
-			hasOnExitNode, onExitNode, err := woc.runOnExitNode(ctx, step.GetExitHook(woc.execWf.Spec.Arguments), &childNode, stepsCtx.boundaryID, stepsCtx.tmplCtx, "steps."+step.Name)
+			hasOnExitNode, onExitNode, err := woc.runOnExitNode(ctx, step.GetExitHook(woc.execWf.Spec.Arguments), &childNode, stepsCtx.boundaryID, stepsCtx.tmplCtx, "steps."+step.Name, stepsCtx.scope)
 			if hasOnExitNode && (onExitNode == nil || !onExitNode.Fulfilled() || err != nil) {
 				// The onExit node is either not complete or has errored out, return.
 				completed = false
@@ -513,6 +513,9 @@ func (woc *wfOperationCtx) prepareDefaultMetricScope() (map[string]string, map[s
 
 	var realTimeScope = map[string]func() float64{
 		common.GlobalVarWorkflowDuration: func() float64 {
+			if woc.wf.Status.Phase.Completed() {
+				return woc.wf.Status.FinishedAt.Time.Sub(woc.wf.Status.StartedAt.Time).Seconds()
+			}
 			return time.Since(woc.wf.Status.StartedAt.Time).Seconds()
 		},
 	}

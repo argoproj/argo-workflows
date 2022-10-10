@@ -16,6 +16,7 @@ import (
 
 	"github.com/argoproj/argo-workflows/v3/errors"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	errutil "github.com/argoproj/argo-workflows/v3/util/errors"
 	waitutil "github.com/argoproj/argo-workflows/v3/util/wait"
 	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/common"
 	wfcommon "github.com/argoproj/argo-workflows/v3/workflow/common"
@@ -249,6 +250,9 @@ func setBucketLifecycleRule(client *oss.Client, ossArtifact *wfv1.OSSArtifact) e
 func isTransientOSSErr(err error) bool {
 	if err == nil {
 		return false
+	}
+	if errutil.IsTransientErr(err) {
+		return true
 	}
 	if ossErr, ok := err.(oss.ServiceError); ok {
 		for _, transientErrCode := range ossTransientErrorCodes {
