@@ -37,19 +37,19 @@ spec:
         - - name: one
             template: http
             arguments:
-              parameters: [{name: url, value: "https://httpstat.us/200?sleep=5000"}]
+              parameters: [{name: url, value: "https://argoproj.github.io"}]
           - name: two
             template: http
             arguments:
-              parameters: [{name: url, value: "https://httpstat.us/200?sleep=5000"}]
+              parameters: [{name: url, value: "https://argoproj.github.io"}]
           - name: three
             template: http
             arguments:
-              parameters: [{name: url, value: "https://httpstat.us/200?sleep=5000"}]
+              parameters: [{name: url, value: "https://argoproj.github.io"}]
           - name: four
             template: http
             arguments:
-              parameters: [{name: url, value: "https://httpstat.us/200?sleep=5000"}]
+              parameters: [{name: url, value: "https://argoproj.github.io"}]
     - name: http
       inputs:
         parameters:
@@ -59,23 +59,20 @@ spec:
 `).
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(time.Minute).
+		WaitForWorkflow(fixtures.ToBeCompleted).
 		Then().
-		ExpectWorkflow(func(t *testing.T, meta *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			// Check ObjectMeta
-			assert.NotEmpty(t, meta.Name)
-			assert.NotEmpty(t, meta.Namespace)
-			assert.NotEmpty(t, meta.UID)
-
+		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
-			// Ensure that the workflow ran for less than 20 seconds (5 seconds per task, 4 tasks)
-			assert.True(t, status.FinishedAt.Sub(status.StartedAt.Time) < time.Duration(20)*time.Second)
+			// Ensure that the workflow ran for less than 10 seconds
+			assert.True(t, status.FinishedAt.Sub(status.StartedAt.Time) < time.Duration(10*fixtures.EnvFactor)*time.Second)
 
 			var finishedTimes []time.Time
+			var startTimes []time.Time
 			for _, node := range status.Nodes {
 				if node.Type != wfv1.NodeTypeHTTP {
 					continue
 				}
+				startTimes = append(startTimes, node.StartedAt.Time)
 				finishedTimes = append(finishedTimes, node.FinishedAt.Time)
 			}
 
@@ -83,9 +80,15 @@ spec:
 				sort.Slice(finishedTimes, func(i, j int) bool {
 					return finishedTimes[i].Before(finishedTimes[j])
 				})
-
 				// Everything finished with a two second tolerance window
 				assert.True(t, finishedTimes[3].Sub(finishedTimes[0]) < time.Duration(2)*time.Second)
+			}
+			if assert.Len(t, startTimes, 4) {
+				sort.Slice(startTimes, func(i, j int) bool {
+					return startTimes[i].Before(startTimes[j])
+				})
+				// Everything started with same time
+				assert.True(t, startTimes[3].Sub(startTimes[0]) == 0)
 			}
 		})
 }
@@ -139,12 +142,7 @@ spec:
 		SubmitWorkflow().
 		WaitForWorkflow(time.Minute).
 		Then().
-		ExpectWorkflow(func(t *testing.T, meta *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			// Check ObjectMeta
-			assert.NotEmpty(t, meta.Name)
-			assert.NotEmpty(t, meta.Namespace)
-			assert.NotEmpty(t, meta.UID)
-
+		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.WorkflowFailed, status.Phase)
 
 			containsFails := status.Nodes.FindByDisplayName("http-body-contains-google-fails")

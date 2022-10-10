@@ -344,9 +344,8 @@ func (ae *AgentExecutor) executePluginTemplate(ctx context.Context, tmpl wfv1.Te
 	args := executorplugins.ExecuteTemplateArgs{
 		Workflow: &executorplugins.Workflow{
 			ObjectMeta: executorplugins.ObjectMeta{
-				Name:      ae.WorkflowName,
-				Namespace: ae.Namespace,
-				Uid:       ae.WorkflowUid,
+				Name: ae.WorkflowName,
+				Uid:  ae.WorkflowUid,
 			},
 		},
 		Template: &tmpl,
