@@ -182,6 +182,47 @@ spec:
 		})
 }
 
+func (s *WorkflowConfigMapSelectorSubstitutionSuite) TestGlobalArgDefaultCMParamValueWhenNotFound() {
+	s.Given().
+		Workflow(`apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: workflow-template-cmkeyselector-wf-global-arg-default-param-
+  label:
+    workflows.argoproj.io/test: "true"
+spec:
+  serviceAccountName: argo
+  entrypoint: whalesay
+  arguments:
+    parameters:
+      - name: simple-global-param
+        valueFrom:
+          default: "default value"
+          configMapKeyRef:
+            name: not-existing-cm
+            key: not-existing-key
+  templates:
+    - name: whalesay
+      container:
+        image: argoproj/argosay:v2
+        command: [sh, -c]
+        args: ["sleep 1; echo -n {{workflow.parameters.simple-global-param}} > /tmp/message.txt"]
+      outputs:
+        parameters:
+         - name: message
+           valueFrom:
+             path: /tmp/message.txt
+`).
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeSucceeded).
+		Then().
+		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, "default value", status.Nodes[metadata.Name].Outputs.Parameters[0].Value.String())
+			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
+		})
+}
+
 func TestConfigMapKeySelectorSubstitutionSuite(t *testing.T) {
 	suite.Run(t, new(WorkflowConfigMapSelectorSubstitutionSuite))
 }
