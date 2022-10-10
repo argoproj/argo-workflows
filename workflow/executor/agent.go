@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"sync"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -40,7 +41,7 @@ type AgentExecutor struct {
 	WorkflowInterface workflow.Interface
 	RESTClient        rest.Interface
 	Namespace         string
-	consideredTasks   map[string]bool
+	consideredTasks   *sync.Map
 	plugins           []executorplugins.TemplateExecutor
 }
 
@@ -54,7 +55,7 @@ func NewAgentExecutor(clientSet kubernetes.Interface, restClient rest.Interface,
 		Namespace:         namespace,
 		WorkflowName:      workflowName,
 		WorkflowInterface: workflow.NewForConfigOrDie(config),
-		consideredTasks:   make(map[string]bool),
+		consideredTasks:   &sync.Map{},
 		plugins:           plugins,
 	}
 }
@@ -126,12 +127,10 @@ func (ae *AgentExecutor) taskWorker(ctx context.Context, taskQueue chan task, re
 
 		// Do not work on tasks that have already been considered once, to prevent calling an endpoint more
 		// than once unintentionally.
-		if _, ok := ae.consideredTasks[nodeID]; ok {
+		if _, ok := ae.consideredTasks.LoadOrStore(nodeID, true); ok {
 			log.Info("Task is already considered")
 			continue
 		}
-
-		ae.consideredTasks[nodeID] = true
 
 		log.Info("Processing task")
 		result, requeue, err := ae.processTask(ctx, tmpl)
@@ -155,7 +154,8 @@ func (ae *AgentExecutor) taskWorker(ctx context.Context, taskQueue chan task, re
 		}
 		if requeue > 0 {
 			time.AfterFunc(requeue, func() {
-				delete(ae.consideredTasks, nodeID)
+				ae.consideredTasks.Delete(nodeID)
+
 				taskQueue <- task
 			})
 		}
