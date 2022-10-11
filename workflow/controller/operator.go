@@ -573,18 +573,22 @@ func (woc *wfOperationCtx) setGlobalParameters(executionParameters wfv1.Argument
 		woc.globalParams[common.GlobalVarWorkflowParametersJSON] = string(workflowParameters)
 	}
 	for _, param := range executionParameters.Parameters {
-		if param.Value == nil && param.ValueFrom == nil {
-			return fmt.Errorf("either value or valueFrom must be specified in order to set global parameter %s", param.Name)
-		}
 		if param.ValueFrom != nil && param.ValueFrom.ConfigMapKeyRef != nil {
 			cmValue, err := common.GetConfigMapValue(woc.controller.configMapInformer, woc.wf.ObjectMeta.Namespace, param.ValueFrom.ConfigMapKeyRef.Name, param.ValueFrom.ConfigMapKeyRef.Key)
 			if err != nil {
-				return fmt.Errorf("failed to set global parameter %s from configmap with name %s and key %s: %w",
-					param.Name, param.ValueFrom.ConfigMapKeyRef.Name, param.ValueFrom.ConfigMapKeyRef.Key, err)
+				if param.ValueFrom.Default != nil {
+					woc.globalParams["workflow.parameters."+param.Name] = param.ValueFrom.Default.String()
+				} else {
+					return fmt.Errorf("failed to set global parameter %s from configmap with name %s and key %s: %w",
+						param.Name, param.ValueFrom.ConfigMapKeyRef.Name, param.ValueFrom.ConfigMapKeyRef.Key, err)
+				}
+			} else {
+				woc.globalParams["workflow.parameters."+param.Name] = cmValue
 			}
-			woc.globalParams["workflow.parameters."+param.Name] = cmValue
-		} else {
+		} else if param.Value != nil {
 			woc.globalParams["workflow.parameters."+param.Name] = param.Value.String()
+		} else {
+			return fmt.Errorf("either value or valueFrom must be specified in order to set global parameter %s", param.Name)
 		}
 	}
 	if woc.wf.Status.Outputs != nil {
@@ -3425,7 +3429,7 @@ func (woc *wfOperationCtx) createPDBResource(ctx context.Context) error {
 		return nil
 	}
 
-	pdb, err := woc.controller.kubeclientset.PolicyV1beta1().PodDisruptionBudgets(woc.wf.Namespace).Get(
+	pdb, err := woc.controller.kubeclientset.PolicyV1().PodDisruptionBudgets(woc.wf.Namespace).Get(
 		ctx,
 		woc.wf.Name,
 		metav1.GetOptions{},

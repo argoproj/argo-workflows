@@ -1686,7 +1686,7 @@ spec:
         app: httpbin
     spec:
       containers:
-      - image: kennethreitz/httpbin:latest
+      - image: kennethreitz/httpbin
         livenessProbe:
           httpGet:
             path: /get
