@@ -10,7 +10,7 @@ spec:
     outputs:
       artifacts:
       - name: my-art
-        path: /my-artifact
+        path: /tmp/my-artifact
         http:
           url: http://httpbin:9100/put
     container:

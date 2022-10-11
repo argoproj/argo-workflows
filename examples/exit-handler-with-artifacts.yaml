@@ -28,12 +28,12 @@ spec:
         image: python:alpine3.6
         command: [ python ]
         source: |
-          with open("result.txt", "w") as f:
+          with open("/tmp/result.txt", "w") as f:
             f.write("Welcome")
       outputs:
         artifacts:
           - name: result
-            path: /result.txt
+            path: /tmp/result.txt
 
     - name: exit
       inputs:

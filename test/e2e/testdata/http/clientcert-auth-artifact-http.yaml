@@ -10,7 +10,7 @@ spec:
     inputs:
         artifacts:
         - name: my-art
-          path: /my-artifact
+          path: /tmp/my-artifact
           http:
             url: http://httpbin:9100/get
             auth:
@@ -23,4 +23,4 @@ spec:
                   key: key.pem
     container:
       image: argoproj/argosay:v2
-      command: [cat, "/my-artifact"]
+      command: [cat, "/tmp/my-artifact"]

@@ -138,12 +138,12 @@ func (s *ArtifactsSuite) TestArtifactGC() {
 			if expectedArtifact.deletedAtWFCompletion {
 				fmt.Printf("verifying artifact %s is deleted at completion time\n", expectedArtifact.key)
 				then.ExpectArtifactByKey(expectedArtifact.key, expectedArtifact.bucketName, func(t *testing.T, object minio.ObjectInfo, err error) {
-					assert.NotNil(t, err)
+					assert.NoError(t, err)
 				})
 			} else {
 				fmt.Printf("verifying artifact %s is not deleted at completion time\n", expectedArtifact.key)
 				then.ExpectArtifactByKey(expectedArtifact.key, expectedArtifact.bucketName, func(t *testing.T, object minio.ObjectInfo, err error) {
-					assert.Nil(t, err)
+					assert.Error(t, err)
 				})
 			}
 		}
@@ -166,12 +166,12 @@ func (s *ArtifactsSuite) TestArtifactGC() {
 			if expectedArtifact.deletedAtWFDeletion {
 				fmt.Printf("verifying artifact %s is deleted\n", expectedArtifact.key)
 				then.ExpectArtifactByKey(expectedArtifact.key, expectedArtifact.bucketName, func(t *testing.T, object minio.ObjectInfo, err error) {
-					assert.NotNil(t, err)
+					assert.NoError(t, err)
 				})
 			} else {
 				fmt.Printf("verifying artifact %s is not deleted\n", expectedArtifact.key)
 				then.ExpectArtifactByKey(expectedArtifact.key, expectedArtifact.bucketName, func(t *testing.T, object minio.ObjectInfo, err error) {
-					assert.Nil(t, err)
+					assert.Error(t, err)
 				})
 			}
 		}

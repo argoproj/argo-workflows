@@ -46,11 +46,11 @@ spec:
         args:
           - echo
           - hello
-          - "/mnt/{{inputs.parameters.file-name}}"
+          - "/tmp/{{inputs.parameters.file-name}}"
       outputs:
         artifacts:
           - name: file
-            path: "/mnt/{{inputs.parameters.file-name}}"
+            path: "/tmp/{{inputs.parameters.file-name}}"
             s3:
               bucket: my-bucket
               key: "{{inputs.parameters.file-name}}"
