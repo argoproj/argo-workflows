@@ -437,7 +437,7 @@ func (a *ArtifactServer) returnArtifact(w http.ResponseWriter, art *wfv1.Artifac
 
 	defer func() {
 		if err := stream.Close(); err != nil {
-			log.Warningf("Error closing stream[%s]: %v", stream, err)
+			log.WithFields(log.Fields{"stream": stream}).WithError(err).Warning("Error closing stream")
 		}
 	}()
 

@@ -1,8 +1,8 @@
 # Workflow Executors
 
-A workflow executor is a process that conforms to a specific interface that allows Argo to perform certain actions like monitoring pod logs, collecting artifacts, managing container life-cycles, etc..
+A workflow executor is a process that conforms to a specific interface that allows Argo to perform certain actions like monitoring pod logs, collecting artifacts, managing container life-cycles, etc.
 
-The executor to be used in your workflows can be changed in [the config map](./workflow-controller-configmap.yaml) under the `containerRuntimeExecutor` key.
+The executor to be used in your workflows can be changed in [the config map](./workflow-controller-configmap.yaml) under the `containerRuntimeExecutor` key (removed in v3.4).
 
 ## Emissary (emissary)
 

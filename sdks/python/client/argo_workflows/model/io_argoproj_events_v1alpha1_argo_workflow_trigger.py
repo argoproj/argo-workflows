@@ -89,6 +89,7 @@ class IoArgoprojEventsV1alpha1ArgoWorkflowTrigger(ModelNormal):
         """
         lazy_import()
         return {
+            'args': ([str],),  # noqa: E501
             'operation': (str,),  # noqa: E501
             'parameters': ([IoArgoprojEventsV1alpha1TriggerParameter],),  # noqa: E501
             'source': (IoArgoprojEventsV1alpha1ArtifactLocation,),  # noqa: E501
@@ -100,6 +101,7 @@ class IoArgoprojEventsV1alpha1ArgoWorkflowTrigger(ModelNormal):
 
 
     attribute_map = {
+        'args': 'args',  # noqa: E501
         'operation': 'operation',  # noqa: E501
         'parameters': 'parameters',  # noqa: E501
         'source': 'source',  # noqa: E501
@@ -146,6 +148,7 @@ class IoArgoprojEventsV1alpha1ArgoWorkflowTrigger(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
+            args ([str]): [optional]  # noqa: E501
             operation (str): [optional]  # noqa: E501
             parameters ([IoArgoprojEventsV1alpha1TriggerParameter]): [optional]  # noqa: E501
             source (IoArgoprojEventsV1alpha1ArtifactLocation): [optional]  # noqa: E501
@@ -230,6 +233,7 @@ class IoArgoprojEventsV1alpha1ArgoWorkflowTrigger(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
+            args ([str]): [optional]  # noqa: E501
             operation (str): [optional]  # noqa: E501
             parameters ([IoArgoprojEventsV1alpha1TriggerParameter]): [optional]  # noqa: E501
             source (IoArgoprojEventsV1alpha1ArtifactLocation): [optional]  # noqa: E501

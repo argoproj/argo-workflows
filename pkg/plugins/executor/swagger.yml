@@ -2349,6 +2349,10 @@ definitions:
     properties:
       name:
         type: string
+      namespace:
+        type: string
+      uid:
+        type: string
     type: object
   Outputs:
     description: Outputs hold parameters, artifacts, and results from a step

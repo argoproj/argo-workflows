@@ -4,9 +4,9 @@ metadata:
   name: workflow-template-submittable
   namespace: test
   labels:
-    mutex-name: myMutex
+    mutexName: myMutex
   annotations:
-    scheduler-name: myScheduler
+    schedulerName: myScheduler
 spec:
   templates:
     - name: whalesay-template
@@ -16,6 +16,6 @@ spec:
         args: ['hello']
   workflowMetadata:
     labels:
-      mutex-name: wfMetadataTemplateMutex
+      mutexName: wfMetadataTemplateMutex
     annotations:
-      scheduler-name: wfMetadataTemplateScheduler
+      schedulerName: wfMetadataTemplateScheduler

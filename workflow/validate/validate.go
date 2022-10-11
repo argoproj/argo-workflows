@@ -215,14 +215,14 @@ func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 		if hasWorkflowTemplateRef {
 			tmpl = &wfv1.WorkflowStep{TemplateRef: wfTmplRef}
 		}
-		_, err = ctx.validateTemplateHolder(tmpl, tmplCtx, args)
+		_, err = ctx.validateTemplateHolder(tmpl, tmplCtx, args, opts.WorkflowTemplateValidation)
 		if err != nil {
 			return err
 		}
 	}
 	if wf.Spec.OnExit != "" {
 		ctx.globalParams[common.GlobalVarWorkflowFailures] = placeholderGenerator.NextPlaceholder()
-		_, err = ctx.validateTemplateHolder(&wfv1.WorkflowStep{Template: wf.Spec.OnExit}, tmplCtx, &wf.Spec.Arguments)
+		_, err = ctx.validateTemplateHolder(&wfv1.WorkflowStep{Template: wf.Spec.OnExit}, tmplCtx, &wf.Spec.Arguments, opts.WorkflowTemplateValidation)
 		if err != nil {
 			return err
 		}
@@ -237,7 +237,7 @@ func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 
 	// Check if all templates can be resolved.
 	for _, template := range wf.Spec.Templates {
-		_, err := ctx.validateTemplateHolder(&wfv1.WorkflowStep{Template: template.Name}, tmplCtx, &FakeArguments{})
+		_, err := ctx.validateTemplateHolder(&wfv1.WorkflowStep{Template: template.Name}, tmplCtx, &FakeArguments{}, opts.WorkflowTemplateValidation)
 		if err != nil {
 			return errors.Errorf(errors.CodeBadRequest, "templates.%s %s", template.Name, err.Error())
 		}
@@ -341,7 +341,7 @@ func (ctx *templateValidationCtx) validateInitContainers(containers []wfv1.UserC
 	return nil
 }
 
-func (ctx *templateValidationCtx) validateTemplate(tmpl *wfv1.Template, tmplCtx *templateresolution.Context, args wfv1.ArgumentsProvider) error {
+func (ctx *templateValidationCtx) validateTemplate(tmpl *wfv1.Template, tmplCtx *templateresolution.Context, args wfv1.ArgumentsProvider, workflowTemplateValidation bool) error {
 	if err := validateTemplateType(tmpl); err != nil {
 		return err
 	}
@@ -413,16 +413,16 @@ func (ctx *templateValidationCtx) validateTemplate(tmpl *wfv1.Template, tmplCtx 
 	}
 	switch newTmpl.GetType() {
 	case wfv1.TemplateTypeSteps:
-		err = ctx.validateSteps(scope, tmplCtx, newTmpl)
+		err = ctx.validateSteps(scope, tmplCtx, newTmpl, workflowTemplateValidation)
 	case wfv1.TemplateTypeDAG:
-		err = ctx.validateDAG(scope, tmplCtx, newTmpl)
+		err = ctx.validateDAG(scope, tmplCtx, newTmpl, workflowTemplateValidation)
 	default:
-		err = ctx.validateLeaf(scope, newTmpl)
+		err = ctx.validateLeaf(scope, newTmpl, workflowTemplateValidation)
 	}
 	if err != nil {
 		return err
 	}
-	err = validateOutputs(scope, ctx.globalParams, newTmpl)
+	err = validateOutputs(scope, ctx.globalParams, newTmpl, workflowTemplateValidation)
 	if err != nil {
 		return err
 	}
@@ -453,7 +453,7 @@ func (ctx *templateValidationCtx) validateTemplate(tmpl *wfv1.Template, tmplCtx 
 }
 
 // validateTemplateHolder validates a template holder and returns the validated template.
-func (ctx *templateValidationCtx) validateTemplateHolder(tmplHolder wfv1.TemplateReferenceHolder, tmplCtx *templateresolution.Context, args wfv1.ArgumentsProvider) (*wfv1.Template, error) {
+func (ctx *templateValidationCtx) validateTemplateHolder(tmplHolder wfv1.TemplateReferenceHolder, tmplCtx *templateresolution.Context, args wfv1.ArgumentsProvider, workflowTemplateValidation bool) (*wfv1.Template, error) {
 	tmplRef := tmplHolder.GetTemplateRef()
 	tmplName := tmplHolder.GetTemplateName()
 	if tmplRef != nil {
@@ -498,7 +498,7 @@ func (ctx *templateValidationCtx) validateTemplateHolder(tmplHolder wfv1.Templat
 		}
 	}
 
-	return resolvedTmpl, ctx.validateTemplate(resolvedTmpl, tmplCtx, args)
+	return resolvedTmpl, ctx.validateTemplate(resolvedTmpl, tmplCtx, args, workflowTemplateValidation)
 }
 
 // validateTemplateType validates that only one template type is defined
@@ -580,7 +580,7 @@ func validateArtifactLocation(errPrefix string, art wfv1.ArtifactLocation) error
 }
 
 // resolveAllVariables is a helper to ensure all {{variables}} are resolvable from current scope
-func resolveAllVariables(scope map[string]interface{}, globalParams map[string]string, tmplStr string) error {
+func resolveAllVariables(scope map[string]interface{}, globalParams map[string]string, tmplStr string, workflowTemplateValidation bool) error {
 	_, allowAllItemRefs := scope[anyItemMagicValue] // 'item.*' is a magic placeholder value set by addItemsToScope
 	_, allowAllWorkflowOutputParameterRefs := scope[anyWorkflowOutputParameterMagicValue]
 	_, allowAllWorkflowOutputArtifactRefs := scope[anyWorkflowOutputArtifactMagicValue]
@@ -608,6 +608,8 @@ func resolveAllVariables(scope map[string]interface{}, globalParams map[string]s
 			} else if strings.HasPrefix(tag, "tasks.name") {
 			} else if strings.HasPrefix(tag, "steps.name") {
 			} else if strings.HasPrefix(tag, "node.name") {
+			} else if strings.HasPrefix(tag, "workflow.parameters") && workflowTemplateValidation {
+				// If we are simply validating a WorkflowTemplate in isolation, some of the parameters may come from the Workflow that uses it
 			} else {
 				return fmt.Errorf("failed to resolve {{%s}}", tag)
 			}
@@ -633,12 +635,12 @@ func validateNonLeaf(tmpl *wfv1.Template) error {
 	return nil
 }
 
-func (ctx *templateValidationCtx) validateLeaf(scope map[string]interface{}, tmpl *wfv1.Template) error {
+func (ctx *templateValidationCtx) validateLeaf(scope map[string]interface{}, tmpl *wfv1.Template, workflowTemplateValidation bool) error {
 	tmplBytes, err := json.Marshal(tmpl)
 	if err != nil {
 		return errors.InternalWrapError(err)
 	}
-	err = resolveAllVariables(scope, ctx.globalParams, string(tmplBytes))
+	err = resolveAllVariables(scope, ctx.globalParams, string(tmplBytes), workflowTemplateValidation)
 	if err != nil {
 		return errors.Errorf(errors.CodeBadRequest, "templates.%s: %s", tmpl.Name, err.Error())
 	}
@@ -765,6 +767,9 @@ func validateArgumentsValues(prefix string, arguments wfv1.Arguments, allowEmpty
 			if len(param.Enum) == 0 {
 				return errors.Errorf(errors.CodeBadRequest, "%s%s.enum should contain at least one value", prefix, param.Name)
 			}
+			if param.Value == nil {
+				return errors.Errorf(errors.CodeBadRequest, "%s%s.value is required", prefix, param.Name)
+			}
 			valueSpecifiedInEnumList := false
 			for _, enum := range param.Enum {
 				if enum == *param.Value {
@@ -788,7 +793,7 @@ func validateArgumentsValues(prefix string, arguments wfv1.Arguments, allowEmpty
 	return nil
 }
 
-func (ctx *templateValidationCtx) validateSteps(scope map[string]interface{}, tmplCtx *templateresolution.Context, tmpl *wfv1.Template) error {
+func (ctx *templateValidationCtx) validateSteps(scope map[string]interface{}, tmplCtx *templateresolution.Context, tmpl *wfv1.Template, workflowTemplateValidation bool) error {
 	err := validateNonLeaf(tmpl)
 	if err != nil {
 		return err
@@ -818,7 +823,7 @@ func (ctx *templateValidationCtx) validateSteps(scope map[string]interface{}, tm
 			if err != nil {
 				return err
 			}
-			resolvedTmpl, err := ctx.validateTemplateHolder(&step, tmplCtx, &FakeArguments{})
+			resolvedTmpl, err := ctx.validateTemplateHolder(&step, tmplCtx, &FakeArguments{}, workflowTemplateValidation)
 			if err != nil {
 				return errors.Errorf(errors.CodeBadRequest, "templates.%s.steps[%d].%s %s", tmpl.Name, i, step.Name, err.Error())
 			}
@@ -837,7 +842,7 @@ func (ctx *templateValidationCtx) validateSteps(scope map[string]interface{}, tm
 		if err != nil {
 			return errors.InternalWrapError(err)
 		}
-		err = resolveAllVariables(scope, ctx.globalParams, string(stepBytes))
+		err = resolveAllVariables(scope, ctx.globalParams, string(stepBytes), workflowTemplateValidation)
 		if err != nil {
 			return errors.Errorf(errors.CodeBadRequest, "templates.%s.steps %s", tmpl.Name, err.Error())
 		}
@@ -848,7 +853,7 @@ func (ctx *templateValidationCtx) validateSteps(scope map[string]interface{}, tm
 			ctx.addOutputsToScope(resolvedTmpl, fmt.Sprintf("steps.%s", step.Name), scope, aggregate, false)
 
 			// Validate the template again with actual arguments.
-			_, err = ctx.validateTemplateHolder(&step, tmplCtx, &step.Arguments)
+			_, err = ctx.validateTemplateHolder(&step, tmplCtx, &step.Arguments, workflowTemplateValidation)
 			if err != nil {
 				return errors.Errorf(errors.CodeBadRequest, "templates.%s.steps[%d].%s %s", tmpl.Name, i, step.Name, err.Error())
 			}
@@ -957,7 +962,7 @@ func (ctx *templateValidationCtx) addOutputsToScope(tmpl *wfv1.Template, prefix 
 	}
 }
 
-func validateOutputs(scope map[string]interface{}, globalParams map[string]string, tmpl *wfv1.Template) error {
+func validateOutputs(scope map[string]interface{}, globalParams map[string]string, tmpl *wfv1.Template, workflowTemplateValidation bool) error {
 	err := validateWorkflowFieldNames(tmpl.Outputs.Parameters)
 	if err != nil {
 		return errors.Errorf(errors.CodeBadRequest, "templates.%s.outputs.parameters %s", tmpl.Name, err.Error())
@@ -970,7 +975,7 @@ func validateOutputs(scope map[string]interface{}, globalParams map[string]strin
 	if err != nil {
 		return errors.InternalWrapError(err)
 	}
-	err = resolveAllVariables(scope, globalParams, string(outputBytes))
+	err = resolveAllVariables(scope, globalParams, string(outputBytes), workflowTemplateValidation)
 	if err != nil {
 		return errors.Errorf(errors.CodeBadRequest, "templates.%s.outputs %s", tmpl.Name, err.Error())
 	}
@@ -1152,7 +1157,7 @@ func validateWhenExpression(when string) bool {
 	return !strings.HasPrefix(when, "{{=")
 }
 
-func (ctx *templateValidationCtx) validateDAG(scope map[string]interface{}, tmplCtx *templateresolution.Context, tmpl *wfv1.Template) error {
+func (ctx *templateValidationCtx) validateDAG(scope map[string]interface{}, tmplCtx *templateresolution.Context, tmpl *wfv1.Template, workflowTemplateValidation bool) error {
 	err := validateNonLeaf(tmpl)
 	if err != nil {
 		return err
@@ -1204,7 +1209,7 @@ func (ctx *templateValidationCtx) validateDAG(scope map[string]interface{}, tmpl
 			return errors.Errorf(errors.CodeBadRequest, "templates.%s when doesn't support 'expr' expression '{{='. 'When' expression is only support govaluate format {{", tmpl.Name)
 		}
 
-		resolvedTmpl, err := ctx.validateTemplateHolder(&task, tmplCtx, &FakeArguments{})
+		resolvedTmpl, err := ctx.validateTemplateHolder(&task, tmplCtx, &FakeArguments{}, workflowTemplateValidation)
 		if err != nil {
 			return errors.Errorf(errors.CodeBadRequest, "templates.%s.tasks.%s %s", tmpl.Name, task.Name, err.Error())
 		}
@@ -1237,7 +1242,7 @@ func (ctx *templateValidationCtx) validateDAG(scope map[string]interface{}, tmpl
 	if err = verifyNoCycles(tmpl, dagValidationCtx); err != nil {
 		return err
 	}
-	err = resolveAllVariables(scope, ctx.globalParams, tmpl.DAG.Target)
+	err = resolveAllVariables(scope, ctx.globalParams, tmpl.DAG.Target, workflowTemplateValidation)
 	if err != nil {
 		return errors.Errorf(errors.CodeBadRequest, "templates.%s.targets %s", tmpl.Name, err.Error())
 	}
@@ -1283,7 +1288,7 @@ func (ctx *templateValidationCtx) validateDAG(scope map[string]interface{}, tmpl
 		if err != nil {
 			return errors.Errorf(errors.CodeBadRequest, "templates.%s.tasks.%s %s", tmpl.Name, task.Name, err.Error())
 		}
-		err = resolveAllVariables(taskScope, ctx.globalParams, string(taskBytes))
+		err = resolveAllVariables(taskScope, ctx.globalParams, string(taskBytes), workflowTemplateValidation)
 		if err != nil {
 			return errors.Errorf(errors.CodeBadRequest, "templates.%s.tasks.%s %s", tmpl.Name, task.Name, err.Error())
 		}
@@ -1296,7 +1301,7 @@ func (ctx *templateValidationCtx) validateDAG(scope map[string]interface{}, tmpl
 			return errors.Errorf(errors.CodeBadRequest, "templates.%s.tasks.%s %s", tmpl.Name, task.Name, err.Error())
 		}
 		// Validate the template again with actual arguments.
-		_, err = ctx.validateTemplateHolder(&task, tmplCtx, &task.Arguments)
+		_, err = ctx.validateTemplateHolder(&task, tmplCtx, &task.Arguments, workflowTemplateValidation)
 		if err != nil {
 			return errors.Errorf(errors.CodeBadRequest, "templates.%s.tasks.%s %s", tmpl.Name, task.Name, err.Error())
 		}

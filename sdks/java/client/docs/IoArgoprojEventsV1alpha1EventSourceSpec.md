@@ -27,6 +27,7 @@ Name | Type | Description | Notes
 **pubSub** | [**Map&lt;String, IoArgoprojEventsV1alpha1PubSubEventSource&gt;**](IoArgoprojEventsV1alpha1PubSubEventSource.md) |  |  [optional]
 **pulsar** | [**Map&lt;String, IoArgoprojEventsV1alpha1PulsarEventSource&gt;**](IoArgoprojEventsV1alpha1PulsarEventSource.md) |  |  [optional]
 **redis** | [**Map&lt;String, IoArgoprojEventsV1alpha1RedisEventSource&gt;**](IoArgoprojEventsV1alpha1RedisEventSource.md) |  |  [optional]
+**redisStream** | [**Map&lt;String, IoArgoprojEventsV1alpha1RedisStreamEventSource&gt;**](IoArgoprojEventsV1alpha1RedisStreamEventSource.md) |  |  [optional]
 **replicas** | **Integer** |  |  [optional]
 **resource** | [**Map&lt;String, IoArgoprojEventsV1alpha1ResourceEventSource&gt;**](IoArgoprojEventsV1alpha1ResourceEventSource.md) |  |  [optional]
 **service** | [**IoArgoprojEventsV1alpha1Service**](IoArgoprojEventsV1alpha1Service.md) |  |  [optional]
@@ -36,7 +37,7 @@ Name | Type | Description | Notes
 **storageGrid** | [**Map&lt;String, IoArgoprojEventsV1alpha1StorageGridEventSource&gt;**](IoArgoprojEventsV1alpha1StorageGridEventSource.md) |  |  [optional]
 **stripe** | [**Map&lt;String, IoArgoprojEventsV1alpha1StripeEventSource&gt;**](IoArgoprojEventsV1alpha1StripeEventSource.md) |  |  [optional]
 **template** | [**IoArgoprojEventsV1alpha1Template**](IoArgoprojEventsV1alpha1Template.md) |  |  [optional]
-**webhook** | [**Map&lt;String, IoArgoprojEventsV1alpha1WebhookContext&gt;**](IoArgoprojEventsV1alpha1WebhookContext.md) |  |  [optional]
+**webhook** | [**Map&lt;String, IoArgoprojEventsV1alpha1WebhookEventSource&gt;**](IoArgoprojEventsV1alpha1WebhookEventSource.md) |  |  [optional]
 
 
 

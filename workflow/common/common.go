@@ -87,8 +87,8 @@ const (
 	LabelKeyClusterWorkflowTemplate = workflow.WorkflowFullName + "/cluster-workflow-template"
 	// LabelKeyOnExit is a label applied to Pods that are run from onExit nodes, so that they are not shut down when stopping a Workflow
 	LabelKeyOnExit = workflow.WorkflowFullName + "/on-exit"
-	// LabelKeyArtifactGCPodName is a label applied to WorkflowTaskSets used by the Artifact Garbage Collection Pod
-	LabelKeyArtifactGCPodName = workflow.WorkflowFullName + "/artifact-gc-pod"
+	// LabelKeyArtifactGCPodHash is a label applied to WorkflowTaskSets used by the Artifact Garbage Collection Pod
+	LabelKeyArtifactGCPodHash = workflow.WorkflowFullName + "/artifact-gc-pod"
 
 	// ExecutorArtifactBaseDir is the base directory in the init container in which artifacts will be copied to.
 	// Each artifact will be named according to its input name (e.g: /argo/inputs/artifacts/CODE)
@@ -109,8 +109,8 @@ const (
 
 	// Various environment variables containing pod information exposed to the executor container(s)
 
-	// EnvVarArtifactPodName is applied as a Label on the WorkflowTaskSets read by the Artifact GC Pod, so that the Pod can find them
-	EnvVarArtifactPodName = "ARGO_ARTIFACT_POD_NAME"
+	// EnvVarArtifactGCPodHash is applied as a Label on the WorkflowTaskSets read by the Artifact GC Pod, so that the Pod can find them
+	EnvVarArtifactGCPodHash = "ARGO_ARTIFACT_POD_NAME"
 	// EnvVarPodName contains the name of the pod (currently unused)
 	EnvVarPodName = "ARGO_POD_NAME"
 	// EnvVarPodUID is the workflow's UID
@@ -119,6 +119,8 @@ const (
 	EnvVarInstanceID = "ARGO_INSTANCE_ID"
 	// EnvVarWorkflowName is the name of the workflow for which the an agent is responsible for
 	EnvVarWorkflowName = "ARGO_WORKFLOW_NAME"
+	// EnvVarWorkflowUID is the workflow UUID
+	EnvVarWorkflowUID = "ARGO_WORKFLOW_UID"
 	// EnvVarNodeID is the node ID of the node.
 	EnvVarNodeID = "ARGO_NODE_ID"
 	// EnvVarPluginAddresses is a list of plugin addresses
