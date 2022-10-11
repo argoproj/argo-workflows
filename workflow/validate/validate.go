@@ -1151,15 +1151,7 @@ func (d *dagValidationContext) GetTaskFinishedAtTime(taskName string) time.Time 
 	return time.Now()
 }
 
-<<<<<<< HEAD
-func (ctx *templateValidationCtx) validateDAG(scope map[string]interface{}, tmplCtx *templateresolution.Context, tmpl *wfv1.Template) error {
-=======
-func validateWhenExpression(when string) bool {
-	return !strings.HasPrefix(when, "{{=")
-}
-
 func (ctx *templateValidationCtx) validateDAG(scope map[string]interface{}, tmplCtx *templateresolution.Context, tmpl *wfv1.Template, workflowTemplateValidation bool) error {
->>>>>>> upstream/master
 	err := validateNonLeaf(tmpl)
 	if err != nil {
 		return err
