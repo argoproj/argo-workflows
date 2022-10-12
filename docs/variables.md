@@ -247,11 +247,14 @@ For `Template`-level metrics:
 | `workflow.serviceAccountName` | Workflow service account name |
 | `workflow.uid` | Workflow UID. Useful for setting ownership reference to a resource, or a unique artifact location |
 | `workflow.parameters.<NAME>` | Input parameter to the workflow |
-| `workflow.parameters` | All input parameters to the workflow as a JSON string |
+| `workflow.parameters` | All input parameters to the workflow as a JSON string (this is deprecated in favor of `workflow.parameters.json` as this doesn't work with expression tags and that does) |
+| `workflow.parameters.json` | All input parameters to the workflow as a JSON string |
 | `workflow.outputs.parameters.<NAME>` | Global parameter in the workflow |
 | `workflow.outputs.artifacts.<NAME>` | Global artifact in the workflow |
 | `workflow.annotations.<NAME>` | Workflow annotations |
+| `workflow.annotations.json` | all Workflow annotations as a JSON string |
 | `workflow.labels.<NAME>` | Workflow labels |
+| `workflow.labels.json` | all Workflow labels as a JSON string |
 | `workflow.creationTimestamp` | Workflow creation time-stamp formatted in RFC 3339  (e.g. `2018-08-23T05:42:49Z`) |
 | `workflow.creationTimestamp.<STRFTIMECHAR>` | Creation time-stamp formatted with a [`strftime`](http://strftime.org) format character. |
 | `workflow.creationTimestamp.RFC3339` | Creation time-stamp formatted with in RFC 3339. |
