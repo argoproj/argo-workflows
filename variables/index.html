@@ -4486,6 +4486,10 @@ currently available for real time emission:</p>
 </tr>
 <tr>
 <td><code>workflow.parameters</code></td>
+<td>All input parameters to the workflow as a JSON string (this is deprecated in favor of <code>workflow.parameters.json</code> as this doesn't work with expression tags and that does)</td>
+</tr>
+<tr>
+<td><code>workflow.parameters.json</code></td>
 <td>All input parameters to the workflow as a JSON string</td>
 </tr>
 <tr>
@@ -4501,8 +4505,16 @@ currently available for real time emission:</p>
 <td>Workflow annotations</td>
 </tr>
 <tr>
+<td><code>workflow.annotations.json</code></td>
+<td>all Workflow annotations as a JSON string</td>
+</tr>
+<tr>
 <td><code>workflow.labels.&lt;NAME&gt;</code></td>
 <td>Workflow labels</td>
+</tr>
+<tr>
+<td><code>workflow.labels.json</code></td>
+<td>all Workflow labels as a JSON string</td>
 </tr>
 <tr>
 <td><code>workflow.creationTimestamp</code></td>
