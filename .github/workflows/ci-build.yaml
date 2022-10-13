@@ -207,6 +207,7 @@ jobs:
         with:
           node-version: "16"
           cache: 'npm'
+          cache-dependency-path: ui/yarn.json
       - run: yarn --cwd ui install
       - run: yarn --cwd ui build
       - run: yarn --cwd ui test
