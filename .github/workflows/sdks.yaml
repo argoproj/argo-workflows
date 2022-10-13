@@ -10,6 +10,7 @@ permissions:
 jobs:
   sdk:
     permissions:
+      contents: read
       packages: write # for publishing packages
       contents: write  # for creating releases
     if: github.repository == 'argoproj/argo-workflows'
