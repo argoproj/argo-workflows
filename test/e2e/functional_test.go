@@ -713,13 +713,13 @@ spec:
 `).
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(10 * time.Second).
+		WaitForWorkflow(10*time.Second).
 		Then().
 		ExpectWorkflow(func(t *testing.T, md *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.WorkflowFailed, status.Phase)
-			if node := status.Nodes.FindByDisplayName(md.Name); assert.NotNil(t, node) {
-				assert.Contains(t, node.Message, "Pod was active on the node longer than the specified deadline")
-			}
+		}).
+		ExpectWorkflowNode(wfv1.FailedPodNode, func(t *testing.T, n *wfv1.NodeStatus, p *apiv1.Pod) {
+			assert.Equal(t, *p.Spec.ActiveDeadlineSeconds, int64(5))
 		})
 }
 
