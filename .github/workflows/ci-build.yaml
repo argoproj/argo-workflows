@@ -26,15 +26,7 @@ jobs:
       - uses: actions/setup-go@v3
         with:
           go-version: "1.18"
-      # https://github.com/actions/cache/blob/main/examples.md#go---modules
-      - uses: actions/cache@v3
-        with:
-          path: |
-            ~/.cache/go-build
-            ~/go/pkg/mod
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-          restore-keys: |
-            ${{ runner.os }}-go-
+          cache: true
       - run: make test STATIC_FILES=false GOTEST='go test -p 20 -covermode=atomic -coverprofile=coverage.out'
       # engineers just ignore this in PRs, so lets not even run it
       - run: bash <(curl -s https://codecov.io/bash)
@@ -99,21 +91,16 @@ jobs:
       - uses: actions/setup-go@v3
         with:
           go-version: "1.18"
+          cache: true
       - uses: actions/setup-java@v3
         with:
           java-version: '8'
           distribution: adopt
+          cache: maven
       - uses: actions/setup-python@v4
         with:
           python-version: '3.x'
-      - uses: actions/cache@v3
-        with:
-          path: |
-            ~/.cache/go-build
-            ~/go/pkg/mod
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-          restore-keys: |
-            ${{ runner.os }}-go-
+          cache: pip
       - name: Install and start K3S
         run: |
           curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL=stable INSTALL_K3S_EXEC=--docker K3S_KUBECONFIG_MODE=644 sh -
@@ -173,14 +160,7 @@ jobs:
       - uses: actions/setup-go@v3
         with:
           go-version: "1.19"
-      - uses: actions/cache@v3
-        with:
-          path: |
-            ~/.cache/go-build
-            ~/go/pkg/mod
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-          restore-keys: |
-            ${{ runner.os }}-go-
+          cache: true
       - name: Install protoc
         run: |
           set -eux -o pipefail
@@ -211,14 +191,7 @@ jobs:
       - uses: actions/setup-go@v3
         with:
           go-version: "1.18"
-      - uses: actions/cache@v3
-        with:
-          path: |
-            ~/.cache/go-build
-            ~/go/pkg/mod
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-          restore-keys: |
-            ${{ runner.os }}-go-
+          cache: true
       - run: make lint STATIC_FILES=false
       - run: git diff --exit-code
 
@@ -233,10 +206,7 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version: "16"
-      - uses: actions/cache@v3
-        with:
-          path: ui/node_modules
-          key: ${{ runner.os }}-node-dep-v1-${{ hashFiles('**/yarn.lock') }}
+          cache: 'npm'
       - run: yarn --cwd ui install
       - run: yarn --cwd ui build
       - run: yarn --cwd ui test
