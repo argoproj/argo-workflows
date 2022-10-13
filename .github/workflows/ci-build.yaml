@@ -93,11 +93,13 @@ jobs:
           go-version: "1.18"
           cache: true
       - uses: actions/setup-java@v3
+        if: ${{matrix.test == 'test-java-sdk'}}
         with:
           java-version: '8'
           distribution: adopt
           cache: maven
       - uses: actions/setup-python@v4
+        if: ${{matrix.test == 'test-python-sdk'}}
         with:
           python-version: '3.x'
           cache: pip
@@ -206,8 +208,8 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version: "16"
-          cache: 'npm'
-          cache-dependency-path: ui/yarn.json
+          cache: yarn
+          cache-dependency-path: ui/yarn.lock
       - run: yarn --cwd ui install
       - run: yarn --cwd ui build
       - run: yarn --cwd ui test
