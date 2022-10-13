@@ -570,6 +570,7 @@ func (woc *wfOperationCtx) setGlobalParameters(executionParameters wfv1.Argument
 
 	if workflowParameters, err := json.Marshal(woc.execWf.Spec.Arguments.Parameters); err == nil {
 		woc.globalParams[common.GlobalVarWorkflowParameters] = string(workflowParameters)
+		woc.globalParams[common.GlobalVarWorkflowParametersJSON] = string(workflowParameters)
 	}
 	for _, param := range executionParameters.Parameters {
 		if param.ValueFrom != nil && param.ValueFrom.ConfigMapKeyRef != nil {
@@ -609,12 +610,14 @@ func (woc *wfOperationCtx) setGlobalParameters(executionParameters wfv1.Argument
 
 	if workflowAnnotations, err := json.Marshal(woc.wf.ObjectMeta.Annotations); err == nil {
 		woc.globalParams[common.GlobalVarWorkflowAnnotations] = string(workflowAnnotations)
+		woc.globalParams[common.GlobalVarWorkflowAnnotationsJSON] = string(workflowAnnotations)
 	}
 	for k, v := range woc.wf.ObjectMeta.Annotations {
 		woc.globalParams["workflow.annotations."+k] = v
 	}
 	if workflowLabels, err := json.Marshal(woc.wf.ObjectMeta.Labels); err == nil {
 		woc.globalParams[common.GlobalVarWorkflowLabels] = string(workflowLabels)
+		woc.globalParams[common.GlobalVarWorkflowLabelsJSON] = string(workflowLabels)
 	}
 	for k, v := range woc.wf.ObjectMeta.Labels {
 		// if the Label will get overridden by a LabelsFrom expression later, don't set it now

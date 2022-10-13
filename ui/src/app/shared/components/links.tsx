@@ -47,7 +47,7 @@ export const Links = ({scope, object, button}: {scope: string; object: {metadata
     }, []);
 
     const formatUrl = (url: string) => {
-        return ProcessURL(url, object);
+        return encodeURI(ProcessURL(decodeURI(url), object));
     };
 
     const openLink = (url: string) => {
