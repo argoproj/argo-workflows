@@ -1060,26 +1060,6 @@ func (s *ArgoServerSuite) TestArtifactServer() {
 	s.artifactServerRetrievalTests(name, uid)
 }
 
-func (s *ArgoServerSuite) TestArtifactServerAzure() {
-	if os.Getenv("AZURE") != "true" {
-		s.T().Skip("AZURE must be true to run Azure Storage e2e tests")
-	}
-	var uid types.UID
-	var name string
-	s.Given().
-		Workflow(`@testdata/artifact-workflow-azure.yaml`).
-		When().
-		SubmitWorkflow().
-		WaitForWorkflow(fixtures.ToBeArchived).
-		Then().
-		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			name = metadata.Name
-			uid = metadata.UID
-		})
-
-	s.artifactServerRetrievalTests(name, uid)
-}
-
 func (s *ArgoServerSuite) artifactServerRetrievalTests(name string, uid types.UID) {
 	s.Run("GetArtifact", func() {
 		resp := s.e().GET("/artifacts/argo/" + name + "/" + name + "/main-file").
