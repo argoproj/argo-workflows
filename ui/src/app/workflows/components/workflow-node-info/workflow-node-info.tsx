@@ -79,7 +79,7 @@ const AttributeRows = (props: {attributes: {title: string; value: any}[]}) => (
     </div>
 );
 
-const DisplayWorkflowTime = (props: {date: Date}) => {
+const DisplayWorkflowTime = (props: {date: Date | string | number}) => {
     const {date} = props;
     const getLocalDateTime = (utc: Date | string | number) => {
         return new Date(utc.toString()).toLocaleString();
