@@ -14,6 +14,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/argoproj/argo-workflows/v3/util/secrets"
+
 	"github.com/gavv/httpexpect/v2"
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
@@ -445,7 +447,7 @@ func (s *ArgoServerSuite) TestPermission() {
 	s.Run("GetGoodSAToken", func() {
 		sAccount, err := s.KubeClient.CoreV1().ServiceAccounts(nsName).Get(ctx, goodSaName, metav1.GetOptions{})
 		if assert.NoError(s.T(), err) {
-			secretName := sAccount.Secrets[0].Name
+			secretName := secrets.ServiceAccountTokenName(sAccount)
 			secret, err := s.KubeClient.CoreV1().Secrets(nsName).Get(ctx, secretName, metav1.GetOptions{})
 			assert.NoError(s.T(), err)
 			goodToken = string(secret.Data["token"])
@@ -457,7 +459,7 @@ func (s *ArgoServerSuite) TestPermission() {
 	s.Run("GetBadSAToken", func() {
 		sAccount, err := s.KubeClient.CoreV1().ServiceAccounts(nsName).Get(ctx, badSaName, metav1.GetOptions{})
 		assert.NoError(s.T(), err)
-		secretName := sAccount.Secrets[0].Name
+		secretName := secrets.ServiceAccountTokenName(sAccount)
 		secret, err := s.KubeClient.CoreV1().Secrets(nsName).Get(ctx, secretName, metav1.GetOptions{})
 		assert.NoError(s.T(), err)
 		badToken = string(secret.Data["token"])

@@ -15,6 +15,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/argoproj/argo-workflows/v3/util/secrets"
+
 	"github.com/antonmedv/expr"
 	"github.com/argoproj/pkg/humanize"
 	argokubeerr "github.com/argoproj/pkg/kube/errors"
@@ -3742,10 +3744,7 @@ func (woc *wfOperationCtx) getServiceAccountTokenName(ctx context.Context, name 
 	if err != nil {
 		return "", err
 	}
-	if len(account.Secrets) == 0 {
-		return "", fmt.Errorf("service account %s/%s does not have any secrets", account.Namespace, account.Name)
-	}
-	return account.Secrets[0].Name, nil
+	return secrets.ServiceAccountTokenName(account), nil
 }
 
 // setWfPodNamesAnnotation sets an annotation on a workflow with the pod naming
