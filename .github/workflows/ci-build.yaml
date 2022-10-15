@@ -26,15 +26,7 @@ jobs:
       - uses: actions/setup-go@v3
         with:
           go-version: "1.18"
-      # https://github.com/actions/cache/blob/main/examples.md#go---modules
-      - uses: actions/cache@v3
-        with:
-          path: |
-            ~/.cache/go-build
-            ~/go/pkg/mod
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-          restore-keys: |
-            ${{ runner.os }}-go-
+          cache: true
       - run: make test STATIC_FILES=false GOTEST='go test -p 20 -covermode=atomic -coverprofile=coverage.out'
       # engineers just ignore this in PRs, so lets not even run it
       - run: bash <(curl -s https://codecov.io/bash)
@@ -48,35 +40,20 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: docker/setup-buildx-action@v2
-      - name: Cache Docker layers
-        uses: actions/cache@v3
+      - name: Build and export
+        uses: docker/build-push-action@v3
         with:
-          path: /tmp/.buildx-cache
-          key: ${{ runner.os }}-single-buildx-${{ github.sha }}
-          restore-keys: |
-            ${{ runner.os }}-single-buildx
-      - name: build argoexec-image
-        run: |
-          docker buildx build \
-          	-t quay.io/argoproj/argoexec:latest \
-          	--target argoexec \
-          	--cache-from "type=local,src=/tmp/.buildx-cache" \
-          	--cache-to "type=local,dest=/tmp/.buildx-cache-new" \
-            --output=type=docker \
-            .
-      - run: docker save quay.io/argoproj/argoexec:latest > /tmp/argoexec_image.tar
+          context: .
+          tags: quay.io/argoproj/argoexec:latest
+          outputs: type=docker,dest=/tmp/argoexec_image.tar
+          target: argoexec
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
       - uses: actions/upload-artifact@v3
         with:
           name: argoexec
           path: /tmp/argoexec_image.tar
           if-no-files-found: error
-        # Temp fix
-        # https://github.com/docker/build-push-action/issues/252
-        # https://github.com/moby/buildkit/issues/1896
-      - name: Move cache
-        run: |
-          rm -rf /tmp/.buildx-cache
-          mv /tmp/.buildx-cache-new /tmp/.buildx-cache
 
   e2e-tests:
     name: E2E Tests
@@ -114,21 +91,18 @@ jobs:
       - uses: actions/setup-go@v3
         with:
           go-version: "1.18"
+          cache: true
       - uses: actions/setup-java@v3
+        if: ${{matrix.test == 'test-java-sdk'}}
         with:
           java-version: '8'
           distribution: adopt
+          cache: maven
       - uses: actions/setup-python@v4
+        if: ${{matrix.test == 'test-python-sdk'}}
         with:
           python-version: '3.x'
-      - uses: actions/cache@v3
-        with:
-          path: |
-            ~/.cache/go-build
-            ~/go/pkg/mod
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-          restore-keys: |
-            ${{ runner.os }}-go-
+          cache: pip
       - name: Install and start K3S
         run: |
           curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION=v1.21.2+k3s1 INSTALL_K3S_CHANNEL=stable INSTALL_K3S_EXEC=--docker K3S_KUBECONFIG_MODE=644 sh -
@@ -139,10 +113,12 @@ jobs:
           echo "    token: xxxxxx" >> $KUBECONFIG
           until kubectl cluster-info ; do sleep 10s ; done
       - uses: actions/download-artifact@v3
+        name: Download argoexec image
         with:
           name: argoexec
           path: /tmp
       - run: docker load < /tmp/argoexec_image.tar
+        name: Load argoexec image
       - name: Set-up /etc/hosts
         run: |
           echo '127.0.0.1 dex'      | sudo tee -a /etc/hosts
@@ -151,20 +127,26 @@ jobs:
           echo '127.0.0.1 mysql'    | sudo tee -a /etc/hosts
           echo '127.0.0.1 azurite'  | sudo tee -a /etc/hosts
       - run: make install PROFILE=${{matrix.profile}} STATIC_FILES=false
+        name: Install manifests
       - run: make controller $(go env GOPATH)/bin/goreman STATIC_FILES=false
+        name: Build controller
       - run: make cli STATIC_FILES=false
         if: ${{matrix.test == 'test-api' || matrix.test == 'test-cli' || matrix.test == 'test-java-sdk' || matrix.test == 'test-python-sdk'}}
-      - run: make start PROFILE=${{matrix.profile}} AUTH_MODE=client STATIC_FILES=false LOG_LEVEL=info API=${{matrix.test == 'test-api' || matrix.test == 'test-cli' || matrix.test == 'test-java-sdk' || matrix.test == 'test-python-sdk'}} UI=false AZURE=true > /tmp/argo.log 2>&1 &
+        name: Build CLI
+      - run: make start PROFILE=${{matrix.profile}} AUTH_MODE=client STATIC_FILES=false LOG_LEVEL=info API=${{matrix.test == 'test-api' || matrix.test == 'test-cli' || matrix.test == 'test-java-sdk' || matrix.test == 'test-python-sdk'}} UI=false LOGS=false > /tmp/argo.log 2>&1 &
+        name: Start controller/API
       - run: make wait
         timeout-minutes: 4
-      - name: make ${{matrix.test}}
+        name: Wait for MinIO/MySQL etc to be ready
+      - name: Run tests ${{matrix.test}}
         # https://github.com/marketplace/actions/retry-step
-        uses: nick-fields/retry@v2.8.1
+        uses: nick-fields/retry@v2.8.2
         with:
           timeout_minutes: 20
           max_attempts: 2
-          command: make ${{matrix.test}} E2E_SUITE_TIMEOUT=20m STATIC_FILES=false AZURE=true
+          command: make ${{matrix.test}} E2E_SUITE_TIMEOUT=20m STATIC_FILES=false
       - if: ${{ failure() }}
+        name: Controller/API logs
         run: |
           [ -e /tmp/argo.log ] && cat /tmp/argo.log
 
@@ -180,14 +162,7 @@ jobs:
       - uses: actions/setup-go@v3
         with:
           go-version: "1.19"
-      - uses: actions/cache@v3
-        with:
-          path: |
-            ~/.cache/go-build
-            ~/go/pkg/mod
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-          restore-keys: |
-            ${{ runner.os }}-go-
+          cache: true
       - name: Install protoc
         run: |
           set -eux -o pipefail
@@ -218,14 +193,7 @@ jobs:
       - uses: actions/setup-go@v3
         with:
           go-version: "1.18"
-      - uses: actions/cache@v3
-        with:
-          path: |
-            ~/.cache/go-build
-            ~/go/pkg/mod
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-          restore-keys: |
-            ${{ runner.os }}-go-
+          cache: true
       - run: make lint STATIC_FILES=false
       - run: git diff --exit-code
 
@@ -240,10 +208,8 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version: "16"
-      - uses: actions/cache@v3
-        with:
-          path: ui/node_modules
-          key: ${{ runner.os }}-node-dep-v1-${{ hashFiles('**/yarn.lock') }}
+          cache: yarn
+          cache-dependency-path: ui/yarn.lock
       - run: yarn --cwd ui install
       - run: yarn --cwd ui build
       - run: yarn --cwd ui test

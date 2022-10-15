@@ -165,7 +165,7 @@ export const CronWorkflowDetails = ({match, location, history}: RouteComponentPr
         if (cronWorkflow?.spec?.workflowSpec?.workflowTemplateRef) {
             const templateName = cronWorkflow.spec.workflowSpec.workflowTemplateRef.name;
             const clusterScope = cronWorkflow.spec.workflowSpec.workflowTemplateRef.clusterScope;
-            const url: string = clusterScope ? `/cluster-workflow-templates/${templateName}` : `/workflow-templates/${cronWorkflow.metadata.namespace}/${templateName}`;
+            const url: string = clusterScope ? uiUrl(`cluster-workflow-templates/${templateName}`) : uiUrl(`workflow-templates/${cronWorkflow.metadata.namespace}/${templateName}`);
             const icon: string = clusterScope ? 'fa fa-window-restore' : 'fa fa-window-maximize';
 
             const templateLink: Link = {
