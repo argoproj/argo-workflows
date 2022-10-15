@@ -191,7 +191,7 @@ const WorkflowNodeSummary = (props: Props) => {
                     </Button>
                 )}{' '}
                 {props.node.type === 'Container' && props.onShowContainerLogs && (
-                    <Button icon='bars' onClick={() => props.onShowContainerLogs(props.node.name.replace(/.[^.]*$/, ''), props.node.name.replace(/.*\./, ''))}>
+                    <Button icon='bars' onClick={() => props.onShowContainerLogs(props.node.name.replace(/(\([^)]*\))*.([^.]*$)/, ''), props.node.name.replace(/.*\./, ''))}>
                         logs
                     </Button>
                 )}{' '}
