@@ -34,7 +34,7 @@ kind: ServiceAccount
 metadata:
   name: default
   annotations:
-    kubernetes.io/service-account-token.name: my-token
+    workflows.argoproj.io/service-account-token.name: my-token
 ```
 
 This option is useful when the secret already exists, or the service account has a very long name.
