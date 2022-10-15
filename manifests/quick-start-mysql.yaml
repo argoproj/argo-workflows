@@ -1851,18 +1851,6 @@ spec:
         name: main
         ports:
         - containerPort: 3306
-        readinessProbe:
-          exec:
-            command:
-            - mysql
-            - -u
-            - mysql
-            - -ppassword
-            - argo
-            - -e
-            - SELECT 1
-          initialDelaySeconds: 60
-          periodSeconds: 10
       nodeSelector:
         kubernetes.io/os: linux
 ---
