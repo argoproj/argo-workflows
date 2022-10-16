@@ -8,8 +8,8 @@ ClientCertAuth holds necessary information for client authentication via certifi
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**clientCertSecret** | [**io.kubernetes.client.openapi.models.V1SecretKeySelector**](io.kubernetes.client.openapi.models.V1SecretKeySelector.md) |  |  [optional]
-**clientKeySecret** | [**io.kubernetes.client.openapi.models.V1SecretKeySelector**](io.kubernetes.client.openapi.models.V1SecretKeySelector.md) |  |  [optional]
+**clientCertSecret** | [**SecretKeySelector**](SecretKeySelector.md) |  |  [optional]
+**clientKeySecret** | [**SecretKeySelector**](SecretKeySelector.md) |  |  [optional]
 
 
 

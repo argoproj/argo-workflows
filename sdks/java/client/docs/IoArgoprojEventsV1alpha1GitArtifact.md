@@ -14,7 +14,7 @@ Name | Type | Description | Notes
 **insecureIgnoreHostKey** | **Boolean** |  |  [optional]
 **ref** | **String** |  |  [optional]
 **remote** | [**IoArgoprojEventsV1alpha1GitRemoteConfig**](IoArgoprojEventsV1alpha1GitRemoteConfig.md) |  |  [optional]
-**sshKeySecret** | [**io.kubernetes.client.openapi.models.V1SecretKeySelector**](io.kubernetes.client.openapi.models.V1SecretKeySelector.md) |  |  [optional]
+**sshKeySecret** | [**SecretKeySelector**](SecretKeySelector.md) |  |  [optional]
 **tag** | **String** |  |  [optional]
 **url** | **String** |  |  [optional]
 

@@ -54,6 +54,7 @@ public class ClientTest {
         );
         apiInstance.workflowServiceCreateWorkflow("argo",
                 req);
+        apiInstance.workflowServiceListWorkflows("argo");
 
     }
 }

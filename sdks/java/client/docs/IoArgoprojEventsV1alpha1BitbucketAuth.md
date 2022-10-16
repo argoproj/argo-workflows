@@ -8,7 +8,7 @@
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **basic** | [**IoArgoprojEventsV1alpha1BitbucketBasicAuth**](IoArgoprojEventsV1alpha1BitbucketBasicAuth.md) |  |  [optional]
-**oauthToken** | [**io.kubernetes.client.openapi.models.V1SecretKeySelector**](io.kubernetes.client.openapi.models.V1SecretKeySelector.md) |  |  [optional]
+**oauthToken** | [**SecretKeySelector**](SecretKeySelector.md) |  |  [optional]
 
 
 

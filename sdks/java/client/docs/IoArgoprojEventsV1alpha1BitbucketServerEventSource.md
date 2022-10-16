@@ -7,7 +7,7 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**accessToken** | [**io.kubernetes.client.openapi.models.V1SecretKeySelector**](io.kubernetes.client.openapi.models.V1SecretKeySelector.md) |  |  [optional]
+**accessToken** | [**SecretKeySelector**](SecretKeySelector.md) |  |  [optional]
 **bitbucketserverBaseURL** | **String** |  |  [optional]
 **deleteHookOnFinish** | **Boolean** |  |  [optional]
 **events** | **List&lt;String&gt;** |  |  [optional]
@@ -17,7 +17,7 @@ Name | Type | Description | Notes
 **repositories** | [**List&lt;IoArgoprojEventsV1alpha1BitbucketServerRepository&gt;**](IoArgoprojEventsV1alpha1BitbucketServerRepository.md) |  |  [optional]
 **repositorySlug** | **String** |  |  [optional]
 **webhook** | [**IoArgoprojEventsV1alpha1WebhookContext**](IoArgoprojEventsV1alpha1WebhookContext.md) |  |  [optional]
-**webhookSecret** | [**io.kubernetes.client.openapi.models.V1SecretKeySelector**](io.kubernetes.client.openapi.models.V1SecretKeySelector.md) |  |  [optional]
+**webhookSecret** | [**SecretKeySelector**](SecretKeySelector.md) |  |  [optional]
 
 
 

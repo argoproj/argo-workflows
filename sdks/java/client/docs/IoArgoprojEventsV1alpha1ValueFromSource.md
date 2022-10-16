@@ -7,8 +7,8 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**configMapKeyRef** | [**io.kubernetes.client.openapi.models.V1ConfigMapKeySelector**](io.kubernetes.client.openapi.models.V1ConfigMapKeySelector.md) |  |  [optional]
-**secretKeyRef** | [**io.kubernetes.client.openapi.models.V1SecretKeySelector**](io.kubernetes.client.openapi.models.V1SecretKeySelector.md) |  |  [optional]
+**configMapKeyRef** | [**ConfigMapKeySelector**](ConfigMapKeySelector.md) |  |  [optional]
+**secretKeyRef** | [**SecretKeySelector**](SecretKeySelector.md) |  |  [optional]
 
 
 

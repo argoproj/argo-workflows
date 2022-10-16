@@ -21,7 +21,7 @@ Name | Type | Description | Notes
 **routingKey** | **String** |  |  [optional]
 **tls** | [**IoArgoprojEventsV1alpha1TLSConfig**](IoArgoprojEventsV1alpha1TLSConfig.md) |  |  [optional]
 **url** | **String** |  |  [optional]
-**urlSecret** | [**io.kubernetes.client.openapi.models.V1SecretKeySelector**](io.kubernetes.client.openapi.models.V1SecretKeySelector.md) |  |  [optional]
+**urlSecret** | [**SecretKeySelector**](SecretKeySelector.md) |  |  [optional]
 
 
 

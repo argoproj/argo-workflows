@@ -8,7 +8,7 @@ PubSubEventSource refers to event-source for GCP PubSub related events.
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**credentialSecret** | [**io.kubernetes.client.openapi.models.V1SecretKeySelector**](io.kubernetes.client.openapi.models.V1SecretKeySelector.md) |  |  [optional]
+**credentialSecret** | [**SecretKeySelector**](SecretKeySelector.md) |  |  [optional]
 **deleteSubscriptionOnFinish** | **Boolean** |  |  [optional]
 **filter** | [**IoArgoprojEventsV1alpha1EventSourceFilter**](IoArgoprojEventsV1alpha1EventSourceFilter.md) |  |  [optional]
 **jsonBody** | **Boolean** |  |  [optional]

@@ -14,7 +14,7 @@ Name | Type | Description | Notes
 **calendar** | [**Map&lt;String, IoArgoprojEventsV1alpha1CalendarEventSource&gt;**](IoArgoprojEventsV1alpha1CalendarEventSource.md) |  |  [optional]
 **emitter** | [**Map&lt;String, IoArgoprojEventsV1alpha1EmitterEventSource&gt;**](IoArgoprojEventsV1alpha1EmitterEventSource.md) |  |  [optional]
 **eventBusName** | **String** |  |  [optional]
-**file** | [**Map&lt;String, IoArgoprojEventsV1alpha1FileEventSource&gt;**](IoArgoprojEventsV1alpha1FileEventSource.md) |  |  [optional]
+**_file** | [**Map&lt;String, IoArgoprojEventsV1alpha1FileEventSource&gt;**](IoArgoprojEventsV1alpha1FileEventSource.md) |  |  [optional]
 **generic** | [**Map&lt;String, IoArgoprojEventsV1alpha1GenericEventSource&gt;**](IoArgoprojEventsV1alpha1GenericEventSource.md) |  |  [optional]
 **github** | [**Map&lt;String, IoArgoprojEventsV1alpha1GithubEventSource&gt;**](IoArgoprojEventsV1alpha1GithubEventSource.md) |  |  [optional]
 **gitlab** | [**Map&lt;String, IoArgoprojEventsV1alpha1GitlabEventSource&gt;**](IoArgoprojEventsV1alpha1GitlabEventSource.md) |  |  [optional]

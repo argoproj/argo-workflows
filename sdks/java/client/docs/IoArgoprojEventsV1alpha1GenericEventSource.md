@@ -8,7 +8,7 @@ GenericEventSource refers to a generic event source. It can be used to implement
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**authSecret** | [**io.kubernetes.client.openapi.models.V1SecretKeySelector**](io.kubernetes.client.openapi.models.V1SecretKeySelector.md) |  |  [optional]
+**authSecret** | [**SecretKeySelector**](SecretKeySelector.md) |  |  [optional]
 **config** | **String** |  |  [optional]
 **filter** | [**IoArgoprojEventsV1alpha1EventSourceFilter**](IoArgoprojEventsV1alpha1EventSourceFilter.md) |  |  [optional]
 **insecure** | **Boolean** | Insecure determines the type of connection. |  [optional]

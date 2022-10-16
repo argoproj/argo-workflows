@@ -8,9 +8,9 @@ ArtifactoryArtifact is the location of an artifactory artifact
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**passwordSecret** | [**io.kubernetes.client.openapi.models.V1SecretKeySelector**](io.kubernetes.client.openapi.models.V1SecretKeySelector.md) |  |  [optional]
+**passwordSecret** | [**SecretKeySelector**](SecretKeySelector.md) |  |  [optional]
 **url** | **String** | URL of the artifact | 
-**usernameSecret** | [**io.kubernetes.client.openapi.models.V1SecretKeySelector**](io.kubernetes.client.openapi.models.V1SecretKeySelector.md) |  |  [optional]
+**usernameSecret** | [**SecretKeySelector**](SecretKeySelector.md) |  |  [optional]
 
 
 
