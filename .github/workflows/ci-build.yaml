@@ -62,31 +62,48 @@ jobs:
     needs: [ argoexec-image ]
     env:
       KUBECONFIG: /home/runner/.kubeconfig
+      PROFILE: minimal
+      API: "false"
+      INSTALL_K3S_VERSION: v1.25.2+k3s1
     strategy:
       fail-fast: false
       matrix:
+        test:
+          - test: test-executor
+          - test: test-corefunctional
+          - test: test-api
+          - test: test-cli
+          - test: test-plugins
+          - test: test-cron
+          - test: test-examples
+          - test: test-java-sdk
+          - test: test-python-sdk
         include:
           - test: test-executor
-            profile: minimal
-          - test: test-corefunctional
-            profile: minimal
+            k3s_version: v1.21.2+k3s1
           - test: test-functional
-            profile: minimal
-          - test: test-api
-            profile: mysql
-          - test: test-cli
-            profile: mysql
-          - test: test-cron
-            profile: minimal
-          - test: test-examples
-            profile: minimal
-          - test: test-plugins
-            profile: plugins
-          - test: test-java-sdk
-            profile: minimal
-          - test: test-python-sdk
-            profile: minimal
+            k3s_version: v1.21.2+k3s1
+          - test: test-corefunctional
+            k3s_version: v1.21.2+k3s1
     steps:
+      - name: Set-up env
+        run: |
+          set -eux
+          case "${{matrix.test}}" in
+            test-api|test-cli)
+              echo PROFILE=mysql >> $GITHUB_ENV
+              echo API=true >> $GITHUB_ENV
+              ;;
+            test-plugins)
+              echo PROFILE=plugins >> $GITHUB_ENV
+              ;;
+            test-java-sdk|test-python-sdk)
+              echo API=true >> $GITHUB_ENV
+              ;;
+          esac
+          if [ "${{matrix.k3s_version}}" != "" ]; then
+            echo=INSTALL_K3S_VERSION${{matrix.k3s_version}}  >> $GITHUB_ENV
+          fi
       - uses: actions/checkout@v3
       - uses: actions/setup-go@v3
         with:
@@ -105,7 +122,7 @@ jobs:
           cache: pip
       - name: Install and start K3S
         run: |
-          curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC=--docker K3S_KUBECONFIG_MODE=644 sh -
+          curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION=$INSTALL_K3S_VERSION INSTALL_K3S_CHANNEL=stable INSTALL_K3S_EXEC=--docker K3S_KUBECONFIG_MODE=644 sh -
           until kubectl --kubeconfig=/etc/rancher/k3s/k3s.yaml cluster-info ; do sleep 10s ; done
           cp /etc/rancher/k3s/k3s.yaml /home/runner/.kubeconfig
           echo "- name: fake_token_user" >> $KUBECONFIG
@@ -126,17 +143,17 @@ jobs:
           echo '127.0.0.1 postgres' | sudo tee -a /etc/hosts
           echo '127.0.0.1 mysql'    | sudo tee -a /etc/hosts
           echo '127.0.0.1 azurite'  | sudo tee -a /etc/hosts
-      - run: make install PROFILE=${{matrix.profile}} STATIC_FILES=false
+      - run: make install PROFILE=$PROFILE STATIC_FILES=false
         name: Install manifests
       - run: make controller $(go env GOPATH)/bin/goreman STATIC_FILES=false
         name: Build controller
       - run: make cli STATIC_FILES=false
-        if: ${{matrix.test == 'test-api' || matrix.test == 'test-cli' || matrix.test == 'test-java-sdk' || matrix.test == 'test-python-sdk'}}
+        if: ${{env.API}}
         name: Build CLI
-      - run: make start PROFILE=${{matrix.profile}} AUTH_MODE=client STATIC_FILES=false LOG_LEVEL=info API=${{matrix.test == 'test-api' || matrix.test == 'test-cli' || matrix.test == 'test-java-sdk' || matrix.test == 'test-python-sdk'}} UI=false LOGS=false > /tmp/argo.log 2>&1 &
+      - run: make start PROFILE=$PROFILE AUTH_MODE=client STATIC_FILES=false LOG_LEVEL=info API=$API UI=false LOGS=false > /tmp/argo.log 2>&1 &
         name: Start controller/API
       - run: make wait
-        timeout-minutes: 6
+        timeout-minutes: 4
         name: Wait for controller to be up
       - name: Run tests ${{matrix.test}}
         # https://github.com/marketplace/actions/retry-step
