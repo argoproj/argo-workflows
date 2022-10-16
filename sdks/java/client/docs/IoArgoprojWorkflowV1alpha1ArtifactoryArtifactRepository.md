@@ -8,9 +8,9 @@ ArtifactoryArtifactRepository defines the controller configuration for an artifa
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**passwordSecret** | [**SecretKeySelector**](SecretKeySelector.md) |  |  [optional]
+**passwordSecret** | [**io.kubernetes.client.openapi.models.V1SecretKeySelector**](io.kubernetes.client.openapi.models.V1SecretKeySelector.md) |  |  [optional]
 **repoURL** | **String** | RepoURL is the url for artifactory repo. |  [optional]
-**usernameSecret** | [**SecretKeySelector**](SecretKeySelector.md) |  |  [optional]
+**usernameSecret** | [**io.kubernetes.client.openapi.models.V1SecretKeySelector**](io.kubernetes.client.openapi.models.V1SecretKeySelector.md) |  |  [optional]
 
 
 

@@ -12,7 +12,7 @@ Name | Type | Description | Notes
 **source** | **String** | Source - A URI describing the event producer. |  [optional]
 **specversion** | **String** | SpecVersion - The version of the CloudEvents specification used by the io.argoproj.workflow.v1alpha1. |  [optional]
 **subject** | **String** |  |  [optional]
-**time** | **Time** |  |  [optional]
+**time** | **java.time.Instant** |  |  [optional]
 **type** | **String** | Type - The type of the occurrence which has happened. |  [optional]
 
 

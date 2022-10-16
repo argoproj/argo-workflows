@@ -8,10 +8,10 @@ EnvVarSource represents a source for the value of an EnvVar.
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**configMapKeyRef** | [**ConfigMapKeySelector**](ConfigMapKeySelector.md) |  |  [optional]
+**configMapKeyRef** | [**io.kubernetes.client.openapi.models.V1ConfigMapKeySelector**](io.kubernetes.client.openapi.models.V1ConfigMapKeySelector.md) |  |  [optional]
 **fieldRef** | [**ObjectFieldSelector**](ObjectFieldSelector.md) |  |  [optional]
 **resourceFieldRef** | [**ResourceFieldSelector**](ResourceFieldSelector.md) |  |  [optional]
-**secretKeyRef** | [**SecretKeySelector**](SecretKeySelector.md) |  |  [optional]
+**secretKeyRef** | [**io.kubernetes.client.openapi.models.V1SecretKeySelector**](io.kubernetes.client.openapi.models.V1SecretKeySelector.md) |  |  [optional]
 
 
 

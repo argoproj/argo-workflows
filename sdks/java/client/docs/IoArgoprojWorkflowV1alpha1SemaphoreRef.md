@@ -8,7 +8,7 @@ SemaphoreRef is a reference of Semaphore
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**configMapKeyRef** | [**ConfigMapKeySelector**](ConfigMapKeySelector.md) |  |  [optional]
+**configMapKeyRef** | [**io.kubernetes.client.openapi.models.V1ConfigMapKeySelector**](io.kubernetes.client.openapi.models.V1ConfigMapKeySelector.md) |  |  [optional]
 
 
 

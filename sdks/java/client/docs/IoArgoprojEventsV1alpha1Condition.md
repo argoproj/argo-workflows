@@ -7,7 +7,7 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**lastTransitionTime** | **Time** |  |  [optional]
+**lastTransitionTime** | **java.time.Instant** |  |  [optional]
 **message** | **String** |  |  [optional]
 **reason** | **String** |  |  [optional]
 **status** | **String** |  |  [optional]

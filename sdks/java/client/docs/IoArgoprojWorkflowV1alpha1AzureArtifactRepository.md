@@ -8,7 +8,7 @@ AzureArtifactRepository defines the controller configuration for an Azure Blob S
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**accountKeySecret** | [**SecretKeySelector**](SecretKeySelector.md) |  |  [optional]
+**accountKeySecret** | [**io.kubernetes.client.openapi.models.V1SecretKeySelector**](io.kubernetes.client.openapi.models.V1SecretKeySelector.md) |  |  [optional]
 **blobNameFormat** | **String** | BlobNameFormat is defines the format of how to store blob names. Can reference workflow variables |  [optional]
 **container** | **String** | Container is the container where resources will be stored | 
 **endpoint** | **String** | Endpoint is the service url associated with an account. It is most likely \&quot;https://&lt;ACCOUNT_NAME&gt;.blob.core.windows.net\&quot; | 

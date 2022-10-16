@@ -173,7 +173,9 @@ jobs:
           sudo find /usr/local/include -type f | xargs sudo chmod a+r
           sudo find /usr/local/include -type d | xargs sudo chmod a+rx
           ls /usr/local/include/google/protobuf/
-      - run: docker pull openapitools/openapi-generator-cli:v5.4.0 &
+      - run: |
+          docker pull openapitools/openapi-generator-cli:v5.4.0 &
+          docker pull openapitools/openapi-generator-cli:v5.2.1 &
       - name: Create links
         run: |
           mkdir -p /home/runner/go/src/github.com/argoproj

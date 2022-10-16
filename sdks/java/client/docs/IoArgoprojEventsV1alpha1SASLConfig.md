@@ -8,8 +8,8 @@
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **mechanism** | **String** |  |  [optional]
-**password** | [**SecretKeySelector**](SecretKeySelector.md) |  |  [optional]
-**user** | [**SecretKeySelector**](SecretKeySelector.md) |  |  [optional]
+**password** | [**io.kubernetes.client.openapi.models.V1SecretKeySelector**](io.kubernetes.client.openapi.models.V1SecretKeySelector.md) |  |  [optional]
+**user** | [**io.kubernetes.client.openapi.models.V1SecretKeySelector**](io.kubernetes.client.openapi.models.V1SecretKeySelector.md) |  |  [optional]
 
 
 

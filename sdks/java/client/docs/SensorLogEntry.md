@@ -13,7 +13,7 @@ Name | Type | Description | Notes
 **msg** | **String** |  |  [optional]
 **namespace** | **String** |  |  [optional]
 **sensorName** | **String** |  |  [optional]
-**time** | **Time** |  |  [optional]
+**time** | **java.time.Instant** |  |  [optional]
 **triggerName** | **String** |  |  [optional]
 
 

@@ -11,8 +11,8 @@ Name | Type | Description | Notes
 **hubName** | **String** |  |  [optional]
 **parameters** | [**List&lt;IoArgoprojEventsV1alpha1TriggerParameter&gt;**](IoArgoprojEventsV1alpha1TriggerParameter.md) |  |  [optional]
 **payload** | [**List&lt;IoArgoprojEventsV1alpha1TriggerParameter&gt;**](IoArgoprojEventsV1alpha1TriggerParameter.md) | Payload is the list of key-value extracted from an event payload to construct the request payload. |  [optional]
-**sharedAccessKey** | [**SecretKeySelector**](SecretKeySelector.md) |  |  [optional]
-**sharedAccessKeyName** | [**SecretKeySelector**](SecretKeySelector.md) |  |  [optional]
+**sharedAccessKey** | [**io.kubernetes.client.openapi.models.V1SecretKeySelector**](io.kubernetes.client.openapi.models.V1SecretKeySelector.md) |  |  [optional]
+**sharedAccessKeyName** | [**io.kubernetes.client.openapi.models.V1SecretKeySelector**](io.kubernetes.client.openapi.models.V1SecretKeySelector.md) |  |  [optional]
 
 
 

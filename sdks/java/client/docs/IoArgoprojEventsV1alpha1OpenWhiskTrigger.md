@@ -9,7 +9,7 @@ OpenWhiskTrigger refers to the specification of the OpenWhisk trigger.
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **actionName** | **String** | Name of the action/function. |  [optional]
-**authToken** | [**SecretKeySelector**](SecretKeySelector.md) |  |  [optional]
+**authToken** | [**io.kubernetes.client.openapi.models.V1SecretKeySelector**](io.kubernetes.client.openapi.models.V1SecretKeySelector.md) |  |  [optional]
 **host** | **String** | Host URL of the OpenWhisk. |  [optional]
 **namespace** | **String** | Namespace for the action. Defaults to \&quot;_\&quot;. +optional. |  [optional]
 **parameters** | [**List&lt;IoArgoprojEventsV1alpha1TriggerParameter&gt;**](IoArgoprojEventsV1alpha1TriggerParameter.md) |  |  [optional]

@@ -40,11 +40,11 @@ public class Example {
 
     ArtifactServiceApi apiInstance = new ArtifactServiceApi(defaultClient);
     String namespace = "namespace_example"; // String | 
-    String idDiscriminator = "workflow"; // String | 
+    String idDiscriminator = "idDiscriminator_example"; // String | 
     String id = "id_example"; // String | 
     String nodeId = "nodeId_example"; // String | 
     String artifactName = "artifactName_example"; // String | 
-    String artifactDiscriminator = "outputs"; // String | 
+    String artifactDiscriminator = "artifactDiscriminator_example"; // String | 
     try {
       File result = apiInstance.artifactServiceGetArtifactFile(namespace, idDiscriminator, id, nodeId, artifactName, artifactDiscriminator);
       System.out.println(result);

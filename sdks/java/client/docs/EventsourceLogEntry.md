@@ -13,7 +13,7 @@ Name | Type | Description | Notes
 **level** | **String** |  |  [optional]
 **msg** | **String** |  |  [optional]
 **namespace** | **String** |  |  [optional]
-**time** | **Time** |  |  [optional]
+**time** | **java.time.Instant** |  |  [optional]
 
 
 

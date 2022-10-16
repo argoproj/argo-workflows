@@ -10,7 +10,7 @@ Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **bucket** | **String** | Bucket is the name of the bucket |  [optional]
 **keyFormat** | **String** | KeyFormat is defines the format of how to store keys. Can reference workflow variables |  [optional]
-**serviceAccountKeySecret** | [**SecretKeySelector**](SecretKeySelector.md) |  |  [optional]
+**serviceAccountKeySecret** | [**io.kubernetes.client.openapi.models.V1SecretKeySelector**](io.kubernetes.client.openapi.models.V1SecretKeySelector.md) |  |  [optional]
 
 
 

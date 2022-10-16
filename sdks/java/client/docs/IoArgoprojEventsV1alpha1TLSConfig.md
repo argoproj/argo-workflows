@@ -8,9 +8,9 @@ TLSConfig refers to TLS configuration for a client.
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**caCertSecret** | [**SecretKeySelector**](SecretKeySelector.md) |  |  [optional]
-**clientCertSecret** | [**SecretKeySelector**](SecretKeySelector.md) |  |  [optional]
-**clientKeySecret** | [**SecretKeySelector**](SecretKeySelector.md) |  |  [optional]
+**caCertSecret** | [**io.kubernetes.client.openapi.models.V1SecretKeySelector**](io.kubernetes.client.openapi.models.V1SecretKeySelector.md) |  |  [optional]
+**clientCertSecret** | [**io.kubernetes.client.openapi.models.V1SecretKeySelector**](io.kubernetes.client.openapi.models.V1SecretKeySelector.md) |  |  [optional]
+**clientKeySecret** | [**io.kubernetes.client.openapi.models.V1SecretKeySelector**](io.kubernetes.client.openapi.models.V1SecretKeySelector.md) |  |  [optional]
 **insecureSkipVerify** | **Boolean** |  |  [optional]
 
 

@@ -7,7 +7,7 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**apiKey** | [**SecretKeySelector**](SecretKeySelector.md) |  |  [optional]
+**apiKey** | [**io.kubernetes.client.openapi.models.V1SecretKeySelector**](io.kubernetes.client.openapi.models.V1SecretKeySelector.md) |  |  [optional]
 **createWebhook** | **Boolean** |  |  [optional]
 **eventFilter** | **List&lt;String&gt;** |  |  [optional]
 **metadata** | **Map&lt;String, String&gt;** |  |  [optional]
