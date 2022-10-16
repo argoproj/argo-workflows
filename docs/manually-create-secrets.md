@@ -2,8 +2,8 @@
 
 As of Kubernetes v1.24, secrets are no longer automatically created for service accounts.
 
-You must create the
-manually. [Find out how to create these yourself manually](https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/#manually-create-a-service-account-api-token)
+You must create a secret
+manually: [Find out how to create these yourself manually](https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/#manually-create-a-service-account-api-token)
 .
 
 You must make the secret discoverable. You have two options:
