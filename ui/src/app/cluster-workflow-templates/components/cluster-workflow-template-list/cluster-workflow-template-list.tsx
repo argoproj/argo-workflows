@@ -11,13 +11,14 @@ import {Loading} from '../../../shared/components/loading';
 import {Timestamp} from '../../../shared/components/timestamp';
 import {ZeroState} from '../../../shared/components/zero-state';
 import {Context} from '../../../shared/context';
+import {useQueryParams} from '../../../shared/use-query-params';
 
 import {Footnote} from '../../../shared/footnote';
 import {services} from '../../../shared/services';
 import {ClusterWorkflowTemplateCreator} from '../cluster-workflow-template-creator';
 require('./cluster-workflow-template-list.scss');
 
-export const ClusterWorkflowTemplateList = ({}: RouteComponentProps<any>) => {
+export const ClusterWorkflowTemplateList = ({history, location}: RouteComponentProps<any>) => {
     const {navigation} = useContext(Context);
     const queryParams = new URLSearchParams(location.search);
     const [templates, setTemplates] = useState<models.ClusterWorkflowTemplate[]>();
@@ -31,6 +32,13 @@ export const ClusterWorkflowTemplateList = ({}: RouteComponentProps<any>) => {
             .then(() => setError(null))
             .catch(setError);
     };
+
+    useEffect(
+        useQueryParams(history, p => {
+            setSidePanel(p.get('sidePanel'));
+        }),
+        [history]
+    );
 
     useEffect(() => {
         fetchClusterWorkflowTemplates();
