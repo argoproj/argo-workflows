@@ -29,5 +29,10 @@ spec:
               value: "yes"
           ports:
             - containerPort: 3306
+          readinessProbe:
+            tcpSocket:
+              port: 3306
+            initialDelaySeconds: 30
+            periodSeconds: 10
       nodeSelector:
         kubernetes.io/os: linux

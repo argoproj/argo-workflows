@@ -1851,6 +1851,11 @@ spec:
         name: main
         ports:
         - containerPort: 3306
+        readinessProbe:
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          tcpSocket:
+            port: 3306
       nodeSelector:
         kubernetes.io/os: linux
 ---
