@@ -143,7 +143,7 @@ func (s *ArtifactsSuite) TestArtifactGC() {
 			} else {
 				fmt.Printf("verifying artifact %s is not deleted at completion time\n", expectedArtifact.key)
 				then.ExpectArtifactByKey(expectedArtifact.key, expectedArtifact.bucketName, func(t *testing.T, object minio.ObjectInfo, err error) {
-					assert.Nil(t, err)
+					assert.NoError(t, err)
 				})
 			}
 		}
