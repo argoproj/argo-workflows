@@ -3,7 +3,8 @@ import * as classNames from 'classnames';
 import * as React from 'react';
 import {useContext, useEffect, useState} from 'react';
 import {RouteComponentProps} from 'react-router';
-import {execSpec, Link, NodePhase, Workflow} from '../../../../models';
+import {ArtifactRepository, execSpec, Link, NodePhase, Workflow} from '../../../../models';
+import {artifactRepoHasLocation, findArtifact} from '../../../shared/artifacts';
 import {uiUrl} from '../../../shared/base';
 import {ErrorNotice} from '../../../shared/components/error-notice';
 import {ProcessURL} from '../../../shared/components/links';
@@ -15,6 +16,8 @@ import {WorkflowArtifacts} from '../../../workflows/components/workflow-artifact
 
 import {ANNOTATION_KEY_POD_NAME_VERSION} from '../../../shared/annotations';
 import {getPodName, getTemplateNameFromNode} from '../../../shared/pod-name';
+import {getResolvedTemplates} from '../../../shared/template-resolution';
+import {ArtifactPanel} from '../../../workflows/components/workflow-details/artifact-panel';
 import {WorkflowResourcePanel} from '../../../workflows/components/workflow-details/workflow-resource-panel';
 import {WorkflowLogsViewer} from '../../../workflows/components/workflow-logs-viewer/workflow-logs-viewer';
 import {WorkflowNodeInfo} from '../../../workflows/components/workflow-node-info/workflow-node-info';
@@ -42,6 +45,8 @@ export const ArchivedWorkflowDetails = ({history, location, match}: RouteCompone
     const [nodeId, setNodeId] = useState(queryParams.get('nodeId'));
     const [container, setContainer] = useState(queryParams.get('container') || 'main');
     const [sidePanel, setSidePanel] = useState(queryParams.get('sidePanel'));
+    const selectedArtifact = workflow && workflow.status && findArtifact(workflow.status, nodeId);
+    const [selectedTemplateArtifactRepo, setSelectedTemplateArtifactRepo] = useState<ArtifactRepository>();
     const node = nodeId && workflow.status.nodes[nodeId];
 
     const podName = () => {
@@ -79,6 +84,22 @@ export const ArchivedWorkflowDetails = ({history, location, match}: RouteCompone
             .catch(newError => setError(newError));
         services.info.collectEvent('openedArchivedWorkflowDetails').then();
     }, []);
+
+    useEffect(() => {
+        // update the default Artifact Repository for the Template that corresponds to the selectedArtifact
+        // if there's an ArtifactLocation configured for the Template we use that
+        // otherwise we use the central one for the Workflow configured in workflow.status.artifactRepositoryRef.artifactRepository
+        // (Note that individual Artifacts may also override whatever this gets set to)
+        if (workflow && workflow.status && workflow.status.nodes && selectedArtifact) {
+            const template = getResolvedTemplates(workflow, workflow.status.nodes[selectedArtifact.nodeId]);
+            const artifactRepo = template.archiveLocation;
+            if (artifactRepo && artifactRepoHasLocation(artifactRepo)) {
+                setSelectedTemplateArtifactRepo(artifactRepo);
+            } else {
+                setSelectedTemplateArtifactRepo(workflow.status.artifactRepositoryRef.artifactRepository);
+            }
+        }
+    }, [workflow, selectedArtifact]);
 
     const renderArchivedWorkflowDetails = () => {
         if (error) {
@@ -125,21 +146,24 @@ export const ArchivedWorkflowDetails = ({history, location, match}: RouteCompone
                                 <button className='workflow-details__step-info-close' onClick={() => setNodeId(null)}>
                                     <i className='argo-icon-close' />
                                 </button>
-                                <WorkflowNodeInfo
-                                    node={node}
-                                    workflow={workflow}
-                                    links={links}
-                                    onShowYaml={newNodeId => {
-                                        setSidePanel('yaml');
-                                        setNodeId(newNodeId);
-                                    }}
-                                    onShowContainerLogs={(newNodeId, newContainer) => {
-                                        setSidePanel('logs');
-                                        setNodeId(newNodeId);
-                                        setContainer(newContainer);
-                                    }}
-                                    archived={true}
-                                />
+                                {node && (
+                                    <WorkflowNodeInfo
+                                        node={node}
+                                        workflow={workflow}
+                                        links={links}
+                                        onShowYaml={newNodeId => {
+                                            setSidePanel('yaml');
+                                            setNodeId(newNodeId);
+                                        }}
+                                        onShowContainerLogs={(newNodeId, newContainer) => {
+                                            setSidePanel('logs');
+                                            setNodeId(newNodeId);
+                                            setContainer(newContainer);
+                                        }}
+                                        archived={true}
+                                    />
+                                )}
+                                {selectedArtifact && <ArtifactPanel workflow={workflow} artifact={selectedArtifact} artifactRepository={selectedTemplateArtifactRepo} />}
                             </div>
                         )}
                     </div>
