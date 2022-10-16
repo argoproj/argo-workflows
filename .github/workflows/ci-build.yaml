@@ -137,7 +137,7 @@ jobs:
         name: Start controller/API
       - run: make wait
         timeout-minutes: 6
-        name: Wait for MinIO/MySQL etc to be ready
+        name: Wait for controller to be up
       - name: Run tests ${{matrix.test}}
         # https://github.com/marketplace/actions/retry-step
         uses: nick-fields/retry@v2.8.2
