@@ -429,7 +429,7 @@ jobs:
         run: |
           cosign sign-blob --key env://COSIGN_PRIVATE_KEY ./dist/argocd-workflows-checksums.txt > ./dist/argocd-workflows-checksums.sig
           # Retrieves the public key to release as an asset
-          cosign public-key --key env://COSIGN_PRIVATE_KEY > ./dist/argo-rollouts-cosign.pub
+          cosign public-key --key env://COSIGN_PRIVATE_KEY > ./dist/argo-workflows-cosign.pub
 
       # https://github.com/softprops/action-gh-release
       # This will publish the release and upload assets.
@@ -445,7 +445,7 @@ jobs:
             dist/argo-*.gz
             dist/argo-workflows-checksums.txt
             dist/manifests/*.yaml
-            dist/argo-rollouts-cosign.pub
+            dist/argo-workflows-cosign.pub
             dist/sbom.tar.gz
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
