@@ -49,7 +49,7 @@ func PrintVersion(cliName string, version wfv1.Version, short bool) {
 func MustIsDir(filePath string) bool {
 	fileInfo, err := os.Stat(filePath)
 	if err != nil {
-		log.Fatal(err)
+		log.WithError(err).Fatal(err.Error())
 	}
 	return fileInfo.IsDir()
 }
