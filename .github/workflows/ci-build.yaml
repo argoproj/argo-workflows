@@ -96,7 +96,7 @@ jobs:
             install_k3s_version: v1.21.2+k3s1
             profile: minimal
     steps:
-      - run: apt-get -y install socat
+      - run: sudo apt-get -y install socat
       - uses: actions/checkout@v3
       - uses: actions/setup-go@v3
         with:
