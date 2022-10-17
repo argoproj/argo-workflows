@@ -43,7 +43,7 @@ Note:
 * [Docker](https://docs.docker.com/get-docker/)
 * [`protoc`](http://google.github.io/proto-lens/installing-protoc.html)
 * [`jq`](https://stedolan.github.io/jq/download/)
-* [`node` >= 16](https://nodejs.org/download/release/latest-v16.x/) for running the UI
+* [`node` >= 16.15.0](https://nodejs.org/download/release/latest-v16.x/) for running the UI
 * A local Kubernetes cluster ([`k3d`](https://k3d.io/), [`kind`](https://kind.sigs.k8s.io/docs/user/quick-start/#installation), or [`minikube`](https://minikube.sigs.k8s.io/docs/start/))
 
 We recommend using [K3D](https://k3d.io/) to set up the local Kubernetes cluster since this will allow you to test RBAC
