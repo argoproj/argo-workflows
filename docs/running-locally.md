@@ -3,7 +3,7 @@
 You have two options:
 
 1. If you're using VSCode, you use the [Dev-Container](#development-container). This takes about 7 minutes.
-1. Install the [requirements](#requirements) on your computer manually. This takes about 1 hour.
+2. Install the [requirements](#requirements) on your computer manually. This takes about 1 hour.
 
 ## Git Clone
 

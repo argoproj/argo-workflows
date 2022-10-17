@@ -7,7 +7,7 @@ This page serves as an introduction into the core concepts of Argo.
 The [`Workflow`](fields.md#workflow) is the most important resource in Argo and serves two important functions:
 
 1. It defines the workflow to be executed.
-1. It stores the state of the workflow.
+2. It stores the state of the workflow.
 
 Because of these dual responsibilities, a `Workflow` should be treated as a "live" object. It is not only a static definition, but is also an "instance" of said definition. (If it isn't clear what this means, it will be explained below).
 
