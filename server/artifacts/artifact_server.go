@@ -405,7 +405,7 @@ func (a *ArtifactServer) getArtifactAndDriver(ctx context.Context, nodeId, artif
 	}
 
 	if templateName == "" || !archiveLocation.HasLocation() {
-		ar, err := a.artifactRepositories.Get(ctx, wf.Status.ArtifactRepositoryRef) // this should handle cases 5
+		ar, err := a.artifactRepositories.Get(ctx, wf.Status.ArtifactRepositoryRef) // this should handle cases 2, 3 and 5
 		if err != nil {
 			return art, nil, err
 		}
