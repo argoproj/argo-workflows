@@ -383,14 +383,10 @@ func (s *ArgoServerSuite) createServiceAccount(name string) {
 	ctx := context.Background()
 	_, err := s.KubeClient.CoreV1().ServiceAccounts(fixtures.Namespace).Create(ctx, &corev1.ServiceAccount{ObjectMeta: metav1.ObjectMeta{Name: name}}, metav1.CreateOptions{})
 	assert.NoError(s.T(), err)
-	secretName := name + ".service-account-token"
-	_, err = s.KubeClient.CoreV1().Secrets(fixtures.Namespace).Create(ctx, &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{Name: secretName, Annotations: map[string]string{"kubernetes.io/service-account.name": name}},
-		Type:       "kubernetes.io/service-account-token",
-	}, metav1.CreateOptions{})
+	secret, err := s.KubeClient.CoreV1().Secrets(fixtures.Namespace).Create(ctx, secrets.NewTokenSecret(name), metav1.CreateOptions{})
 	assert.NoError(s.T(), err)
 	s.T().Cleanup(func() {
-		_ = s.KubeClient.CoreV1().Secrets(fixtures.Namespace).Delete(ctx, secretName, metav1.DeleteOptions{})
+		_ = s.KubeClient.CoreV1().Secrets(fixtures.Namespace).Delete(ctx, secret.Name, metav1.DeleteOptions{})
 		_ = s.KubeClient.CoreV1().ServiceAccounts(fixtures.Namespace).Delete(ctx, name, metav1.DeleteOptions{})
 	})
 }
@@ -445,7 +441,7 @@ func (s *ArgoServerSuite) TestPermission() {
 	s.Run("GetGoodSAToken", func() {
 		sAccount, err := s.KubeClient.CoreV1().ServiceAccounts(nsName).Get(ctx, goodSaName, metav1.GetOptions{})
 		if assert.NoError(s.T(), err) {
-			secretName := secrets.ServiceAccountTokenName(sAccount)
+			secretName := secrets.TokenNameForServiceAccount(sAccount)
 			secret, err := s.KubeClient.CoreV1().Secrets(nsName).Get(ctx, secretName, metav1.GetOptions{})
 			assert.NoError(s.T(), err)
 			goodToken = string(secret.Data["token"])
@@ -457,7 +453,7 @@ func (s *ArgoServerSuite) TestPermission() {
 	s.Run("GetBadSAToken", func() {
 		sAccount, err := s.KubeClient.CoreV1().ServiceAccounts(nsName).Get(ctx, badSaName, metav1.GetOptions{})
 		assert.NoError(s.T(), err)
-		secretName := secrets.ServiceAccountTokenName(sAccount)
+		secretName := secrets.TokenNameForServiceAccount(sAccount)
 		secret, err := s.KubeClient.CoreV1().Secrets(nsName).Get(ctx, secretName, metav1.GetOptions{})
 		assert.NoError(s.T(), err)
 		badToken = string(secret.Data["token"])

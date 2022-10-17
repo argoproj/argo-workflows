@@ -8,12 +8,17 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
-func ServiceAccountTokenName(sa *corev1.ServiceAccount) string {
+// TokenNameForServiceAccount returns the name of the secret container the access token for the service account
+func TokenNameForServiceAccount(sa *corev1.ServiceAccount) string {
 	if len(sa.Secrets) > 0 {
 		return sa.Secrets[0].Name
 	}
 	if v, ok := sa.Annotations[common.AnnotationKeyServiceAccountTokenName]; ok {
 		return v
 	}
-	return fmt.Sprintf("%s.service-account-token", sa.Name)
+	return TokenName(sa.Name)
+}
+
+func TokenName(name string) string {
+	return fmt.Sprintf("%s.service-account-token", name)
 }

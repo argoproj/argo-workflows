@@ -7,6 +7,8 @@ import (
 	"os"
 	"time"
 
+	"github.com/argoproj/argo-workflows/v3/util/secrets"
+
 	"github.com/TwiN/go-color"
 	"github.com/stretchr/testify/suite"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -188,7 +190,7 @@ func (s *E2ESuite) GetServiceAccountToken() (string, error) {
 	}
 
 	ctx := context.Background()
-	sec, err := clientset.CoreV1().Secrets("argo").Get(ctx, "argo-server.service-account-token", metav1.GetOptions{})
+	sec, err := clientset.CoreV1().Secrets(Namespace).Get(ctx, secrets.TokenName("argo-server"), metav1.GetOptions{})
 	if err != nil {
 		return "", err
 	}

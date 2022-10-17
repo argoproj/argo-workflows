@@ -3744,7 +3744,7 @@ func (woc *wfOperationCtx) getServiceAccountTokenName(ctx context.Context, name 
 	if err != nil {
 		return "", err
 	}
-	return secrets.ServiceAccountTokenName(account), nil
+	return secrets.TokenNameForServiceAccount(account), nil
 }
 
 // setWfPodNamesAnnotation sets an annotation on a workflow with the pod naming

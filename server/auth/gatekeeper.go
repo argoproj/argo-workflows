@@ -318,7 +318,7 @@ func (s *gatekeeper) rbacAuthorization(ctx context.Context, claims *types.Claims
 }
 
 func (s *gatekeeper) authorizationForServiceAccount(ctx context.Context, serviceAccount *corev1.ServiceAccount) (string, error) {
-	secretName := secrets.ServiceAccountTokenName(serviceAccount)
+	secretName := secrets.TokenNameForServiceAccount(serviceAccount)
 	secret, err := s.cache.GetSecret(ctx, serviceAccount.GetNamespace(), secretName)
 	if err != nil {
 		return "", fmt.Errorf("failed to get service account secret: %w", err)
