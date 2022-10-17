@@ -66,7 +66,7 @@ func NewAPIClient(ctx context.Context) (context.Context, apiclient.Client) {
 			Context:              ctx,
 		})
 	if err != nil {
-		log.Fatal(err)
+		log.WithError(err).Fatal(err.Error())
 	}
 	return ctx, client
 }
@@ -84,7 +84,7 @@ func Namespace() string {
 	}
 	namespace, _, err := GetConfig().Namespace()
 	if err != nil {
-		log.Fatal(err)
+		log.WithError(err).Fatal(err.Error())
 	}
 	return namespace
 }
@@ -96,13 +96,13 @@ func GetAuthString() string {
 	}
 	restConfig, err := GetConfig().ClientConfig()
 	if err != nil {
-		log.Fatal(err)
+		log.WithError(err).Fatal(err.Error())
 	}
 	version := argo.GetVersion()
 	restConfig = restclient.AddUserAgent(restConfig, fmt.Sprintf("argo-workflows/%s argo-cli", version.Version))
 	authString, err := kubeconfig.GetAuthString(restConfig, explicitPath)
 	if err != nil {
-		log.Fatal(err)
+		log.WithError(err).Fatal(err.Error())
 	}
 	return authString
 }
