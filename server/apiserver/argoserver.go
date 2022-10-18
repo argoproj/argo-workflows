@@ -157,7 +157,7 @@ func NewArgoServer(ctx context.Context, opts ArgoServerOpts) (*argoServer, error
 		Interval: time.Second,
 	})
 	if err != nil {
-		log.Fatal(err)
+		log.WithError(err).Fatal(err.Error())
 	}
 
 	return &argoServer{
@@ -192,11 +192,11 @@ var backoff = wait.Backoff{
 func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(string)) {
 	config, err := as.configController.Get(ctx)
 	if err != nil {
-		log.Fatal(err)
+		log.WithError(err).Fatal(err.Error())
 	}
 	err = config.Sanitize(as.allowedLinkProtocol)
 	if err != nil {
-		log.Fatal(err)
+		log.WithError(err).Fatal(err.Error())
 	}
 	log.WithFields(log.Fields{"version": argo.GetVersion().Version, "instanceID": config.InstanceID}).Info("Starting Argo Server")
 	instanceIDService := instanceid.NewService(config.InstanceID)
@@ -206,7 +206,7 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 	if persistence != nil {
 		session, tableName, err := sqldb.CreateDBSession(as.clients.Kubernetes, as.namespace, persistence)
 		if err != nil {
-			log.Fatal(err)
+			log.WithError(err).Fatal(err.Error())
 		}
 		// we always enable node offload, as this is read-only for the Argo Server, i.e. you can turn it off if you
 		// like and the controller won't offload newly created workflows, but you can still read them
@@ -321,7 +321,7 @@ func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServe
 
 	ratelimit_middleware, err := httplimit.NewMiddleware(as.apiRateLimiter, httplimit.IPKeyFunc())
 	if err != nil {
-		log.Fatal(err)
+		log.WithError(err).Fatal(err.Error())
 	}
 
 	mux := http.NewServeMux()

@@ -270,7 +270,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 	wfc.createSynchronizationManager(ctx)
 	// init managers: throttler and SynchronizationManager
 	if err := wfc.initManagers(ctx); err != nil {
-		log.Fatal(err)
+		log.WithError(err).Fatal(err.Error())
 	}
 
 	go wfc.runConfigMapWatcher(ctx.Done())

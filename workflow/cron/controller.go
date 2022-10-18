@@ -63,7 +63,7 @@ func init() {
 	// this make sure we support timezones
 	_, err := time.Parse(time.RFC822, "17 Oct 07 14:03 PST")
 	if err != nil {
-		log.Fatal(err)
+		log.WithError(err).Fatal(err.Error())
 	}
 	log.WithField("cronSyncPeriod", cronSyncPeriod).Info("cron config")
 }

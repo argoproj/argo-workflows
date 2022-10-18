@@ -95,7 +95,7 @@ func NewSubmitCommand() *cobra.Command {
 	// Only complete files with appropriate extension.
 	err := command.Flags().SetAnnotation("parameter-file", cobra.BashCompFilenameExt, []string{"json", "yaml", "yml"})
 	if err != nil {
-		log.Fatal(err)
+		log.WithError(err).Fatal(err.Error())
 	}
 	return command
 }

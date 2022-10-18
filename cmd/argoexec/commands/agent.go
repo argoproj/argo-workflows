@@ -41,11 +41,11 @@ func NewAgentInitCommand() *cobra.Command {
 					WithField("filename", filename).
 					Info("creating token file for plugin")
 				if err := os.Mkdir(filepath.Dir(filename), 0o770); err != nil {
-					log.Fatal(err)
+					log.WithError(err).Fatal(err.Error())
 				}
 				token := rand.String(32) // this could have 26^32 ~= 2 x 10^45  possible values, not guessable in reasonable time
 				if err := os.WriteFile(filename, []byte(token), 0o440); err != nil {
-					log.Fatal(err)
+					log.WithError(err).Fatal(err.Error())
 				}
 			}
 		},
@@ -59,7 +59,7 @@ func tokenFilename(name string) string {
 func getPluginNames() []string {
 	var names []string
 	if err := json.Unmarshal([]byte(os.Getenv(common.EnvVarPluginNames)), &names); err != nil {
-		log.Fatal(err)
+		log.WithError(err).Fatal(err.Error())
 	}
 	return names
 }
@@ -67,7 +67,7 @@ func getPluginNames() []string {
 func getPluginAddresses() []string {
 	var addresses []string
 	if err := json.Unmarshal([]byte(os.Getenv(common.EnvVarPluginAddresses)), &addresses); err != nil {
-		log.Fatal(err)
+		log.WithError(err).Fatal(err.Error())
 	}
 	return addresses
 }
@@ -119,7 +119,7 @@ func initAgentExecutor() *executor.AgentExecutor {
 			Info("loading token file for plugin")
 		data, err := os.ReadFile(filename)
 		if err != nil {
-			log.Fatal(err)
+			log.WithError(err).Fatal(err.Error())
 		}
 		plugins = append(plugins, rpc.New(address, string(data)))
 	}

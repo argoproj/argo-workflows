@@ -236,13 +236,13 @@ See %s`, help.ArgoServer),
 	viper.SetEnvPrefix("ARGO")
 	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_", ".", "_"))
 	if err := viper.BindPFlags(command.Flags()); err != nil {
-		log.Fatal(err)
+		log.WithError(err).Fatal(err.Error())
 	}
 	command.Flags().VisitAll(func(f *pflag.Flag) {
 		if !f.Changed && viper.IsSet(f.Name) {
 			val := viper.Get(f.Name)
 			if err := command.Flags().Set(f.Name, fmt.Sprintf("%v", val)); err != nil {
-				log.Fatal(err)
+				log.WithError(err).Fatal(err.Error())
 			}
 		}
 	})
