@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"fmt"
+	"os"
 	"regexp"
 	"sort"
 	"strings"
@@ -79,6 +80,14 @@ func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient 
 	logCtx := log.WithFields(log.Fields{"workflow": req.GetName(), "namespace": req.GetNamespace()})
 
 	var podListOptions metav1.ListOptions
+
+	// get env variable for pod logs redaction
+	enablePodLogRedaction := os.Getenv("ARGO_REDACT_POD_LOGS")
+	// get secrets for redaction
+	secrets, err := kubeClient.CoreV1().Secrets(req.GetNamespace()).List(ctx, metav1.ListOptions{})
+	if err != nil {
+		logCtx.WithField("err", err).Debugln("error in listing secrets")
+	}
 
 	// we add selector if cli specify the pod selector when using logs
 	if req.GetSelector() != "" {
@@ -165,6 +174,17 @@ func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient 
 						}
 						if rx.MatchString(content) { // this means we filter the lines in the server, but will still incur the cost of retrieving them from Kubernetes
 							logCtx.WithFields(log.Fields{"timestamp": timestamp, "content": content}).Debug("Log line")
+
+							// log redaction for secrets
+							if secrets != nil && enablePodLogRedaction == "true" {
+								for _, s := range secrets.Items {
+									for _, v := range s.Data {
+										if strings.Contains(content, string(v)) {
+											content = strings.Replace(content, string(v), "[ redacted ]", -1)
+										}
+									}
+								}
+							}
 							unsortedEntries <- logEntry{podName: podName, content: content, timestamp: timestamp}
 						}
 					}
