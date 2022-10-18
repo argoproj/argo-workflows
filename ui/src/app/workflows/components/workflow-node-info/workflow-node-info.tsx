@@ -191,7 +191,16 @@ const WorkflowNodeSummary = (props: Props) => {
                     </Button>
                 )}{' '}
                 {props.node.type === 'Container' && props.onShowContainerLogs && (
-                    <Button icon='bars' onClick={() => props.onShowContainerLogs(props.node.name.replace(/.[^.]*$/, ''), props.node.name.replace(/.*\./, ''))}>
+                    <Button
+                        icon='bars'
+                        onClick={() =>
+                            props.onShowContainerLogs(
+                                // find parent node id using node name,
+                                // in container set, the parent of the selected node id contains log output
+                                Object.keys(props.workflow.status.nodes).find(key => props.workflow.status.nodes[key].name === props.node.name.replace(/.[^.]*$/, '')),
+                                props.node.name.replace(/.*\./, '')
+                            )
+                        }>
                         logs
                     </Button>
                 )}{' '}
