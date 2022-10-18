@@ -56,18 +56,11 @@ jobs:
           username: ${{ secrets.QUAYIO_USERNAME }}
           password: ${{ secrets.QUAYIO_PASSWORD }}
 
-      - name: Install cosign
-        uses: sigstore/cosign-installer@main
-        with:
-          cosign-release: 'v1.13.0'
-
       - name: Docker Buildx
         env:
           DOCKERIO_ORG: ${{ secrets.DOCKERIO_ORG }}
           PLATFORM: ${{ matrix.platform }}
           TARGET: ${{ matrix.target }}
-          COSIGN_PRIVATE_KEY: ${{secrets.COSIGN_PRIVATE_KEY}}
-          COSIGN_PASSWORD: ${{secrets.COSIGN_PASSWORD}}
         run: |
           tag=$(basename $GITHUB_REF)
           if [ $tag = "master" ]; then
@@ -92,10 +85,6 @@ jobs:
             --platform="${PLATFORM}" \
             --target $TARGET \
             --tag quay.io/$image_name .
-
-          cosign sign --key env://COSIGN_PRIVATE_KEY quay.io/$image_name
-          # Displays the public key to share.
-          cosign public-key --key env://COSIGN_PRIVATE_KEY
 
   build-linux-arm64:
     name: Build & push linux/arm64
@@ -138,18 +127,11 @@ jobs:
           username: ${{ secrets.QUAYIO_USERNAME }}
           password: ${{ secrets.QUAYIO_PASSWORD }}
 
-      - name: Install cosign
-        uses: sigstore/cosign-installer@main
-        with:
-          cosign-release: 'v1.13.0'
-
       - name: Docker Buildx
         env:
           DOCKERIO_ORG: ${{ secrets.DOCKERIO_ORG }}
           PLATFORM: ${{ matrix.platform }}
           TARGET: ${{ matrix.target }}
-          COSIGN_PRIVATE_KEY: ${{secrets.COSIGN_PRIVATE_KEY}}
-          COSIGN_PASSWORD: ${{secrets.COSIGN_PASSWORD}}
         run: |
           tag=$(basename $GITHUB_REF)
           if [ $tag = "master" ]; then
@@ -175,10 +157,6 @@ jobs:
             --target $TARGET \
             --tag quay.io/$image_name .
 
-          cosign sign --key env://COSIGN_PRIVATE_KEY quay.io/$image_name
-          # Displays the public key to share.
-          cosign public-key --key env://COSIGN_PRIVATE_KEY
-
   build-windows:
     name: Build & push windows
     if: github.repository == 'argoproj/argo-workflows'
@@ -197,17 +175,10 @@ jobs:
           login-server: quay.io
           username: ${{ secrets.QUAYIO_USERNAME }}
           password: ${{ secrets.QUAYIO_PASSWORD }}
-
-      - name: Install cosign
-        uses: sigstore/cosign-installer@main
-        with:
-          cosign-release: 'v1.13.0'
-
+   
       - name: Build & Push Windows Docker Images
         env:
           DOCKERIO_ORG: ${{ secrets.DOCKERIO_ORG }}
-          COSIGN_PRIVATE_KEY: ${{secrets.COSIGN_PRIVATE_KEY}}
-          COSIGN_PASSWORD: ${{secrets.COSIGN_PASSWORD}}
         run: |
           docker_org=$DOCKERIO_ORG
 
@@ -225,9 +196,6 @@ jobs:
             docker tag $image_name quay.io/$image_name
             docker push quay.io/$image_name
 
-            cosign sign --key env://COSIGN_PRIVATE_KEY quay.io/$image_name
-            # Displays the public key to share.
-            cosign public-key --key env://COSIGN_PRIVATE_KEY
           done
 
   push-images:
@@ -427,7 +395,7 @@ jobs:
       - run: make checksums
       - name: Sign checksums and create public key for release assets
         run: |
-          cosign sign-blob --key env://COSIGN_PRIVATE_KEY ./dist/argocd-workflows-checksums.txt > ./dist/argocd-workflows-checksums.sig
+          cosign sign-blob --key env://COSIGN_PRIVATE_KEY ./dist/argo-workflows-cli-checksums.txt > ./dist/argo-workflows-cli-checksums.sig
           # Retrieves the public key to release as an asset
           cosign public-key --key env://COSIGN_PRIVATE_KEY > ./dist/argo-workflows-cosign.pub
 
@@ -443,7 +411,8 @@ jobs:
           body_path: release-notes
           files: |
             dist/argo-*.gz
-            dist/argo-workflows-checksums.txt
+            dist/argo-workflows-cli-checksums.txt
+            dist/argo-workflows-cli-checksums.sig
             dist/manifests/*.yaml
             dist/argo-workflows-cosign.pub
             dist/sbom.tar.gz
