@@ -3,7 +3,7 @@ import * as classNames from 'classnames';
 import * as React from 'react';
 import {useContext, useEffect, useState} from 'react';
 import {RouteComponentProps} from 'react-router';
-import {ArtifactRepository, execSpec, Link, NodePhase, Workflow} from '../../../../models';
+import {ArtifactRepository, execSpec, Link, Workflow} from '../../../../models';
 import {artifactRepoHasLocation, findArtifact} from '../../../shared/artifacts';
 import {uiUrl} from '../../../shared/base';
 import {ErrorNotice} from '../../../shared/components/error-notice';
