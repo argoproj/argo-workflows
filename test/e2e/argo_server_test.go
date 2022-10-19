@@ -1975,3 +1975,75 @@ func (s *ArgoServerSuite) TestRateLimitHeader() {
 func TestArgoServerSuite(t *testing.T) {
 	suite.Run(t, new(ArgoServerSuite))
 }
+
+func (s *ArgoServerSuite) TestWorkflowLogRedaction() {
+	nsName := fixtures.Namespace
+	// create secret if not present
+	secretName := "test-secret"
+	secretData := map[string][]byte{
+		"testpassword": []byte("S00perS3cretPa55word"),
+	}
+	secret := &corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: secretName}, Data: secretData}
+	ctx := context.Background()
+	s.Run("CreateSecret", func() {
+		_, e := s.KubeClient.CoreV1().Secrets(nsName).Create(ctx, secret, metav1.CreateOptions{})
+		assert.NoError(s.T(), e)
+	})
+	defer func() {
+		// Clean up created secret
+		_ = s.KubeClient.CoreV1().Secrets(nsName).Delete(ctx, secretName, metav1.DeleteOptions{})
+	}()
+
+	var name string
+	s.Given().
+		Workflow("@smoke/basic.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToStart).
+		Then().
+		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			name = metadata.Name
+		})
+
+	// lets check the logs
+	for _, tt := range []struct {
+		name string
+		path string
+	}{
+		{"PodLogs", "/" + name + "/log?logOptions.container=main"},
+		{"WorkflowLogs", "/log?podName=" + name + "&logOptions.container=main"},
+	} {
+		s.Run(tt.name, func() {
+			s.stream("/api/v1/workflows/argo/"+name+tt.path, func(t *testing.T, line string) (done bool) {
+				if strings.Contains(line, "data: ") {
+					assert.Contains(t, line, "secret from env: S00perS3cretPa55word")
+					return true
+				}
+				return false
+			})
+		})
+	}
+
+	// set pod log redaction to true
+	_ = os.Setenv("ARGO_REDACT_POD_LOGS", "true")
+	defer func() { _ = os.Unsetenv("ARGO_REDACT_POD_LOGS") }()
+
+	// lets check the logs
+	for _, tt := range []struct {
+		name string
+		path string
+	}{
+		{"PodLogs", "/" + name + "/log?logOptions.container=main"},
+		{"WorkflowLogs", "/log?podName=" + name + "&logOptions.container=main"},
+	} {
+		s.Run(tt.name, func() {
+			s.stream("/api/v1/workflows/argo/"+name+tt.path, func(t *testing.T, line string) (done bool) {
+				if strings.Contains(line, "data: ") {
+					assert.Contains(t, line, "secret from env: [ redacted ]")
+					return true
+				}
+				return false
+			})
+		})
+	}
+}
