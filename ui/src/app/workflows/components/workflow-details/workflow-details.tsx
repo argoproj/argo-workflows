@@ -110,11 +110,7 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
         // (Note that individual Artifacts may also override whatever this gets set to)
         if (workflow?.status?.nodes && selectedArtifact) {
             const template = getResolvedTemplates(workflow, workflow.status.nodes[selectedArtifact.nodeId]);
-            let artifactRepo;
-            if (template) {
-                artifactRepo = template.archiveLocation;
-            }
-
+            const artifactRepo = template?.archiveLocation;
             if (artifactRepo && artifactRepoHasLocation(artifactRepo)) {
                 setSelectedTemplateArtifactRepo(artifactRepo);
             } else {
