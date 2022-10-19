@@ -52,10 +52,7 @@ export const ArchivedWorkflowDetails = ({history, location, match}: RouteCompone
     const podName = () => {
         if (nodeId && workflow) {
             const workflowName = workflow.metadata.name;
-            let annotations: {[name: string]: string} = {};
-            if (typeof workflow.metadata.annotations !== 'undefined') {
-                annotations = workflow.metadata.annotations;
-            }
+            const annotations = workflow.metadata.annotations || {};
             const version = annotations[ANNOTATION_KEY_POD_NAME_VERSION];
             const templateName = getTemplateNameFromNode(node);
             return getPodName(workflowName, node.name, templateName, nodeId, version);
@@ -90,7 +87,7 @@ export const ArchivedWorkflowDetails = ({history, location, match}: RouteCompone
         // if there's an ArtifactLocation configured for the Template we use that
         // otherwise we use the central one for the Workflow configured in workflow.status.artifactRepositoryRef.artifactRepository
         // (Note that individual Artifacts may also override whatever this gets set to)
-        if (workflow && workflow.status && workflow.status.nodes && selectedArtifact) {
+        if (workflow?.status?.nodes && selectedArtifact) {
             const template = getResolvedTemplates(workflow, workflow.status.nodes[selectedArtifact.nodeId]);
             const artifactRepo = template.archiveLocation;
             if (artifactRepo && artifactRepoHasLocation(artifactRepo)) {
@@ -244,7 +241,7 @@ export const ArchivedWorkflowDetails = ({history, location, match}: RouteCompone
         }
     };
 
-    const workflowPhase: NodePhase = workflow && workflow.status ? workflow.status.phase : undefined;
+    const workflowPhase = workflow?.status?.phase;
     const items = [
         {
             title: 'Retry',

@@ -108,7 +108,7 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
         // if there's an ArtifactLocation configured for the Template we use that
         // otherwise we use the central one for the Workflow configured in workflow.status.artifactRepositoryRef.artifactRepository
         // (Note that individual Artifacts may also override whatever this gets set to)
-        if (workflow && workflow.status && workflow.status.nodes && selectedArtifact) {
+        if (workflow?.status?.nodes && selectedArtifact) {
             const template = getResolvedTemplates(workflow, workflow.status.nodes[selectedArtifact.nodeId]);
             let artifactRepo;
             if (template) {
@@ -389,10 +389,7 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
 
     const ensurePodName = (wf: Workflow, node: NodeStatus, nodeID: string): string => {
         if (workflow && node) {
-            let annotations: {[name: string]: string} = {};
-            if (typeof workflow.metadata.annotations !== 'undefined') {
-                annotations = workflow.metadata.annotations;
-            }
+            const annotations = workflow.metadata.annotations || {};
             const version = annotations[ANNOTATION_KEY_POD_NAME_VERSION];
             const templateName = getTemplateNameFromNode(node);
             return getPodName(wf.metadata.name, node.name, templateName, node.id, version);
