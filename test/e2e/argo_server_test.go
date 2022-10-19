@@ -1996,7 +1996,7 @@ func (s *ArgoServerSuite) TestWorkflowLogRedaction() {
 
 	var name string
 	s.Given().
-		Workflow("@smoke/basic.yaml").
+		Workflow("@smoke/workflow-with-secrets.yaml").
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToStart).
