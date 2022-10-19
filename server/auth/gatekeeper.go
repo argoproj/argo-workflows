@@ -8,6 +8,8 @@ import (
 	"sort"
 	"strconv"
 
+	"github.com/argoproj/argo-workflows/v3/util/secrets"
+
 	eventsource "github.com/argoproj/argo-events/pkg/client/eventsource/clientset/versioned"
 	sensor "github.com/argoproj/argo-events/pkg/client/sensor/clientset/versioned"
 	log "github.com/sirupsen/logrus"
@@ -316,10 +318,8 @@ func (s *gatekeeper) rbacAuthorization(ctx context.Context, claims *types.Claims
 }
 
 func (s *gatekeeper) authorizationForServiceAccount(ctx context.Context, serviceAccount *corev1.ServiceAccount) (string, error) {
-	if len(serviceAccount.Secrets) == 0 {
-		return "", fmt.Errorf("expected at least one secret for SSO RBAC service account: %s", serviceAccount.GetName())
-	}
-	secret, err := s.cache.GetSecret(ctx, serviceAccount.GetNamespace(), serviceAccount.Secrets[0].Name)
+	secretName := secrets.TokenNameForServiceAccount(serviceAccount)
+	secret, err := s.cache.GetSecret(ctx, serviceAccount.GetNamespace(), secretName)
 	if err != nil {
 		return "", fmt.Errorf("failed to get service account secret: %w", err)
 	}

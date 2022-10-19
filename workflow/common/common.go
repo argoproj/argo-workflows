@@ -15,6 +15,10 @@ const (
 	// AnnotationKeyDefaultContainer is the annotation that specify container that will be used by default in case of kubectl commands for example
 	AnnotationKeyDefaultContainer = "kubectl.kubernetes.io/default-container"
 
+	// AnnotationKeyServiceAccountTokenName is used to name the secret that containers the service account token name.
+	// It is intentially named similar to ` `kubernetes.io/service-account.name`.
+	AnnotationKeyServiceAccountTokenName = workflow.WorkflowFullName + "/service-account-token.name"
+
 	// AnnotationKeyNodeID is the ID of the node.
 	// Historically, the pod name was the same as the node ID.
 	// Therefore, if it does not exist, then the node ID is the pod name.
