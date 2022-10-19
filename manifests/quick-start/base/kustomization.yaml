@@ -6,6 +6,7 @@ resources:
   - minio
   - httpbin
   - webhooks
+  - default.service-account-token-secret.yaml
   - argo-server-sso-secret.yaml
   - executor/emissary/executor-role.yaml
   - executor-default-rolebinding.yaml

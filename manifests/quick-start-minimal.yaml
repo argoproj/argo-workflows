@@ -1462,6 +1462,22 @@ stringData:
 apiVersion: v1
 kind: Secret
 metadata:
+  annotations:
+    kubernetes.io/service-account.name: default
+  name: default.service-account-token
+type: kubernetes.io/service-account-token
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  annotations:
+    kubernetes.io/service-account.name: github.com
+  name: github.com.service-account-token
+type: kubernetes.io/service-account-token
+---
+apiVersion: v1
+kind: Secret
+metadata:
   labels:
     app: httpbin
   name: my-httpbin-cred
@@ -1685,6 +1701,7 @@ spec:
       labels:
         app: httpbin
     spec:
+      automountServiceAccountToken: false
       containers:
       - image: kennethreitz/httpbin
         livenessProbe:
@@ -1719,6 +1736,7 @@ spec:
       labels:
         app: minio
     spec:
+      automountServiceAccountToken: false
       containers:
       - command:
         - minio
