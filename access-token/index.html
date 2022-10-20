@@ -3363,6 +3363,20 @@
 
             
           
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../manually-create-secrets/" class="md-nav__link">
+        Kubernetes Secrets
+      </a>
+    </li>
+  
+
+            
+          
         </ul>
       </nav>
     </li>
@@ -3970,9 +3984,19 @@
 <div class="highlight"><pre><span></span><code>kubectl create rolebinding jenkins --role<span class="o">=</span>jenkins --serviceaccount<span class="o">=</span>argo:jenkins
 </code></pre></div>
 <h2 id="token-creation">Token Creation<a class="headerlink" href="#token-creation" title="Permanent link">&para;</a></h2>
-<p>You now need to get a token:</p>
-<div class="highlight"><pre><span></span><code><span class="nv">SECRET</span><span class="o">=</span><span class="k">$(</span>kubectl get sa jenkins -o<span class="o">=</span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">&#39;{.secrets[0].name}&#39;</span><span class="k">)</span>
-<span class="nv">ARGO_TOKEN</span><span class="o">=</span><span class="s2">&quot;Bearer </span><span class="k">$(</span>kubectl get secret <span class="nv">$SECRET</span> -o<span class="o">=</span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">&#39;{.data.token}&#39;</span> <span class="p">|</span> base64 --decode<span class="k">)</span><span class="s2">&quot;</span>
+<p>You now need to create a secret to hold your token:</p>
+<div class="highlight"><pre><span></span><code>    kubectl apply -f - <span class="s">&lt;&lt;EOF</span>
+<span class="s">apiVersion: v1</span>
+<span class="s">kind: Secret</span>
+<span class="s">metadata:</span>
+<span class="s">  name: jenkins.service-account-token</span>
+<span class="s">  annotations:</span>
+<span class="s">    kubernetes.io/service-account.name: jenkins</span>
+<span class="s">type: kubernetes.io/service-account-token</span>
+<span class="s">EOF</span>
+</code></pre></div>
+<p>Wait a few seconds:</p>
+<div class="highlight"><pre><span></span><code><span class="nv">ARGO_TOKEN</span><span class="o">=</span><span class="s2">&quot;Bearer </span><span class="k">$(</span>kubectl get secret jenkins.service-account-token -o<span class="o">=</span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">&#39;{.data.token}&#39;</span> <span class="p">|</span> base64 --decode<span class="k">)</span><span class="s2">&quot;</span>
 <span class="nb">echo</span> <span class="nv">$ARGO_TOKEN</span>
 Bearer ZXlKaGJHY2lPaUpTVXpJMU5pSXNJbXRwWkNJNkltS...
 </code></pre></div>
