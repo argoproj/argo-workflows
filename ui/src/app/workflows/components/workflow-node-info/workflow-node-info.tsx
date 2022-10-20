@@ -79,6 +79,24 @@ const AttributeRows = (props: {attributes: {title: string; value: any}[]}) => (
     </div>
 );
 
+const DisplayWorkflowTime = (props: {date: Date | string | number}) => {
+    const {date} = props;
+    const getLocalDateTime = (utc: Date | string | number) => {
+        return new Date(utc.toString()).toLocaleString();
+    };
+    return (
+        <div>
+            {date === null || date === undefined ? (
+                '-'
+            ) : (
+                <span>
+                    {getLocalDateTime(date)} (<Timestamp date={date} />)
+                </span>
+            )}
+        </div>
+    );
+};
+
 const WorkflowNodeSummary = (props: Props) => {
     const {workflow, node} = props;
 
@@ -107,8 +125,8 @@ const WorkflowNodeSummary = (props: Props) => {
                   }
               ]
             : []),
-        {title: 'START TIME', value: <Timestamp date={props.node.startedAt} />},
-        {title: 'END TIME', value: <Timestamp date={props.node.finishedAt} />},
+        {title: 'START TIME', value: <DisplayWorkflowTime date={props.node.startedAt} />},
+        {title: 'END TIME', value: <DisplayWorkflowTime date={props.node.finishedAt} />},
         {
             title: 'DURATION',
             value: <Ticker>{now => <DurationPanel duration={nodeDuration(props.node, now)} phase={props.node.phase} estimatedDuration={props.node.estimatedDuration} />}</Ticker>
@@ -191,7 +209,16 @@ const WorkflowNodeSummary = (props: Props) => {
                     </Button>
                 )}{' '}
                 {props.node.type === 'Container' && props.onShowContainerLogs && (
-                    <Button icon='bars' onClick={() => props.onShowContainerLogs(props.node.name.replace(/.[^.]*$/, ''), props.node.name.replace(/.*\./, ''))}>
+                    <Button
+                        icon='bars'
+                        onClick={() =>
+                            props.onShowContainerLogs(
+                                // find parent node id using node name,
+                                // in container set, the parent of the selected node id contains log output
+                                Object.keys(props.workflow.status.nodes).find(key => props.workflow.status.nodes[key].name === props.node.name.replace(/.[^.]*$/, '')),
+                                props.node.name.replace(/.*\./, '')
+                            )
+                        }>
                         logs
                     </Button>
                 )}{' '}

@@ -13,6 +13,7 @@ spec:
       labels:
         app: minio
     spec:
+      automountServiceAccountToken: false
       containers:
         - name: main
           image: minio/minio

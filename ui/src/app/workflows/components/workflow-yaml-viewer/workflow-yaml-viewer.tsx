@@ -25,12 +25,15 @@ export class WorkflowYamlViewer extends React.Component<WorkflowYamlViewerProps>
                 );
             }
 
-            contents.push(
-                <div key='current-node'>
-                    <h4>{this.props.selectedNode.name}</h4>
-                    <ObjectEditor type='io.argoproj.workflow.v1alpha1.Template' value={getResolvedTemplates(this.props.workflow, this.props.selectedNode)} />
-                </div>
-            );
+            const currentNodeTemplate = getResolvedTemplates(this.props.workflow, this.props.selectedNode);
+            if (currentNodeTemplate) {
+                contents.push(
+                    <div key='current-node'>
+                        <h4>{this.props.selectedNode.name}</h4>
+                        <ObjectEditor type='io.argoproj.workflow.v1alpha1.Template' value={currentNodeTemplate} />
+                    </div>
+                );
+            }
         }
         const templates = this.props.workflow.spec.templates;
         if (templates && Object.keys(templates).length) {
