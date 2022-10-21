@@ -2039,7 +2039,7 @@ func (s *ArgoServerSuite) TestWorkflowLogRedaction() {
 		s.Run(tt.name, func() {
 			s.stream("/api/v1/workflows/argo/"+name+tt.path, func(t *testing.T, line string) (done bool) {
 				if strings.Contains(line, "data: ") {
-					assert.Contains(t, line, "secret from env: [ redacted ]")
+					assert.Contains(t, line, "secret from env: [*********]")
 					return true
 				}
 				return false
