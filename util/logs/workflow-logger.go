@@ -180,7 +180,7 @@ func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient 
 								for _, s := range secrets.Items {
 									for _, v := range s.Data {
 										if strings.Contains(content, string(v)) {
-											content = strings.Replace(content, string(v), "[ redacted ]", -1)
+											content = strings.Replace(content, string(v), "[*********]", -1)
 										}
 									}
 								}
