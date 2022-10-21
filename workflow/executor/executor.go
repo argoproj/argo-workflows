@@ -224,8 +224,8 @@ func (we *WorkflowExecutor) LoadArtifacts(ctx context.Context) error {
 				isGzip, err = isgzip(tempArtPath)
 				if err != nil {
 					return err
-                }
-            }
+				}
+			}
 		} else if art.GetArchive().Zip != nil {
 			// explicitly a zip
 			isZip = true
