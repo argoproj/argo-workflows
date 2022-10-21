@@ -466,7 +466,7 @@ func (we *WorkflowExecutor) stageArchiveFile(containerName string, art *wfv1.Art
 	// localArtPath now points to a .tgz file, and the archive strategy is *not* tar. We need to untar it
 	log.Infof("Untaring %s archive before upload", localArtPath)
 	unarchivedArtPath := path.Join(filepath.Dir(localArtPath), art.Name)
-	err = untar(localArtPath, unarchivedArtPath)
+	err = ungzip(localArtPath, unarchivedArtPath)
 	if err != nil {
 		return "", "", err
 	}
