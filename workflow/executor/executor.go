@@ -211,28 +211,41 @@ func (we *WorkflowExecutor) LoadArtifacts(ctx context.Context) error {
 		}
 
 		isTar := false
+		isGzip := false
 		isZip := false
 		if art.GetArchive().None != nil {
 			// explicitly not a tar
 			isTar = false
 			isZip = false
 		} else if art.GetArchive().Tar != nil {
-			// explicitly a tar
-			isTar = true
+			// check if tar only or tar + gzip
+			isTar, err = istar(tempArtPath)
+			if !isTar {
+				isGzip, err = isgzip(tempArtPath)
+				if err != nil {
+					return err
+                }
+            }
 		} else if art.GetArchive().Zip != nil {
 			// explicitly a zip
 			isZip = true
 		} else {
 			// auto-detect if tarball
 			// (don't try to autodetect zip files for backwards compatibility)
-			isTar, err = isTarball(tempArtPath)
-			if err != nil {
-				return err
+			isTar, err = istar(tempArtPath)
+			if !isTar {
+				isGzip, err = isgzip(tempArtPath)
+				if err != nil {
+					return err
+				}
 			}
 		}
 
 		if isTar {
 			err = untar(tempArtPath, artPath)
+			_ = os.Remove(tempArtPath)
+		} else if isGzip {
+			err = ungzip(tempArtPath, artPath)
 			_ = os.Remove(tempArtPath)
 		} else if isZip {
 			err = unzip(tempArtPath, artPath)
@@ -840,9 +853,26 @@ func (we *WorkflowExecutor) AddAnnotation(ctx context.Context, key, value string
 
 }
 
-// isTarball returns whether or not the file is a tarball
-func isTarball(filePath string) (bool, error) {
+// istar returns whether or not the file is a tarball
+func istar(filePath string) (bool, error) {
 	log.Infof("Detecting if %s is a tarball", filePath)
+	f, err := os.Open(filepath.Clean(filePath))
+	if err != nil {
+		return false, err
+	}
+	defer func() {
+		if err := f.Close(); err != nil {
+			log.Fatalf("Error closing file[%s]: %v", filePath, err)
+		}
+	}()
+	tarr := tar.NewReader(f)
+	_, err = tarr.Next()
+	return err == nil, nil
+}
+
+// isgzip returns whether or not the file is a gzip
+func isgzip(filePath string) (bool, error) {
+	log.Infof("Detecting if %s is a gzip", filePath)
 	f, err := os.Open(filepath.Clean(filePath))
 	if err != nil {
 		return false, err
@@ -865,6 +895,49 @@ func isTarball(filePath string) (bool, error) {
 // untar extracts a tarball to a temporary directory,
 // renaming it to the desired location
 func untar(tarPath string, destPath string) error {
+	decompressor := func(src string, dest string) error {
+		f, err := os.Open(src)
+		if err != nil {
+			return err
+		}
+		defer f.Close()
+		tr := tar.NewReader(f)
+		for {
+			header, err := tr.Next()
+			switch {
+			case err == io.EOF:
+				return nil
+			case err != nil:
+				return err
+			case header == nil:
+				continue
+			}
+			target := filepath.Join(dest, filepath.Clean(header.Name))
+			if err := os.MkdirAll(filepath.Dir(target), 0o700); err != nil && os.IsExist(err) {
+				return err
+			}
+			switch header.Typeflag {
+			case tar.TypeReg:
+				f, err := os.OpenFile(target, os.O_CREATE|os.O_RDWR, os.FileMode(header.Mode))
+				if err != nil {
+					return err
+				}
+				if _, err := io.Copy(f, tr); err != nil {
+					return err
+				}
+				if err := f.Close(); err != nil {
+					return err
+				}
+			}
+		}
+	}
+
+	return unpack(tarPath, destPath, decompressor)
+}
+
+// ungzip decompresses and extracts a tarball to a temporary directory,
+// renaming it to the desired location
+func ungzip(tarPath string, destPath string) error {
 	decompressor := func(src string, dest string) error {
 		f, err := os.Open(src)
 		if err != nil {

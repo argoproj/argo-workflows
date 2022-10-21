@@ -231,10 +231,36 @@ func TestDefaultParametersEmptyString(t *testing.T) {
 	assert.Equal(t, "", we.Template.Outputs.Parameters[0].Value.String())
 }
 
-func TestIsTarball(t *testing.T) {
+func TestIstar(t *testing.T) {
 	tests := []struct {
 		path      string
-		isTarball bool
+		isTar     bool
+		expectErr bool
+	}{
+		{"testdata/file", false, false},
+		{"testdata/file.zip", false, false},
+		{"testdata/file.tar", true, false},
+		{"testdata/file.gz", false, false},
+		{"testdata/file.tar.gz", false, false},
+		{"testdata/file.tgz", false, false},
+		{"testdata/not-found", false, true},
+	}
+
+	for _, test := range tests {
+		ok, err := istar(test.path)
+		if test.expectErr {
+			assert.Error(t, err, test.path)
+		} else {
+			assert.NoError(t, err, test.path)
+		}
+		assert.Equal(t, test.isTar, ok, test.path)
+	}
+}
+
+func TestIsgzip(t *testing.T) {
+	tests := []struct {
+		path      string
+		isGzip    bool
 		expectErr bool
 	}{
 		{"testdata/file", false, false},
@@ -247,13 +273,13 @@ func TestIsTarball(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		ok, err := isTarball(test.path)
+		ok, err := isgzip(test.path)
 		if test.expectErr {
 			assert.Error(t, err, test.path)
 		} else {
 			assert.NoError(t, err, test.path)
 		}
-		assert.Equal(t, test.isTarball, ok, test.path)
+		assert.Equal(t, test.isGzip, ok, test.path)
 	}
 }
 
