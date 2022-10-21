@@ -157,6 +157,8 @@ const (
 	EnvAgentTaskWorkers = "ARGO_AGENT_TASK_WORKERS"
 	// EnvAgentPatchRate is the rate that the Argo Agent will patch the Workflow TaskSet
 	EnvAgentPatchRate = "ARGO_AGENT_PATCH_RATE"
+	// EnvVarWorkflowPodLimit is the limit for number of pods that can be created by workflow controller
+	EnvVarWorkflowPodLimit = "ARGO_WORKFLOW_CONTROLLER_POD_LIMIT"
 
 	// Finalizer to block deletion of the workflow if deletion of artifacts fail for some reason.
 	FinalizerArtifactGC = workflow.WorkflowFullName + "/artifact-gc"

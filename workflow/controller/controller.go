@@ -16,6 +16,7 @@ import (
 	apiv1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
@@ -128,6 +129,7 @@ type WorkflowController struct {
 	// Default is 3s and can be configured using the env var ARGO_PROGRESS_FILE_TICK_DURATION
 	progressFileTickDuration time.Duration
 	executorPlugins          map[string]map[string]*spec.Plugin // namespace -> name -> plugin
+	podLimit                 int
 }
 
 const (
@@ -181,6 +183,7 @@ func NewWorkflowController(ctx context.Context, restConfig *rest.Config, kubecli
 		eventRecorderManager:       events.NewEventRecorderManager(kubeclientset),
 		progressPatchTickDuration:  env.LookupEnvDurationOr(common.EnvVarProgressPatchTickDuration, 1*time.Minute),
 		progressFileTickDuration:   env.LookupEnvDurationOr(common.EnvVarProgressFileTickDuration, 3*time.Second),
+		podLimit:                   env.LookupEnvIntOr(common.EnvVarWorkflowPodLimit, 5000),
 	}
 
 	if executorPlugins {
@@ -266,6 +269,8 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 
 	wfc.configMapInformer = wfc.newConfigMapInformer()
 
+	// Create resource quota for pods created by controller
+	wfc.createResourceQuotaForPods(ctx)
 	// Create Synchronization Manager
 	wfc.createSynchronizationManager(ctx)
 	// init managers: throttler and SynchronizationManager
@@ -1244,4 +1249,31 @@ func (wfc *WorkflowController) newArtGCTaskInformer() wfextvv1alpha1.WorkflowArt
 			},
 		})
 	return informer
+}
+
+func (wfc *WorkflowController) createResourceQuotaForPods(ctx context.Context) {
+	// check if the resource quota exist
+	quotaName := "workflow-pods-quota"
+	_, err := wfc.kubeclientset.CoreV1().ResourceQuotas(wfc.namespace).Get(ctx, quotaName, metav1.GetOptions{})
+	if err != nil {
+		log.Errorf("failed to get resource quota. %v", err)
+	} else {
+		// resource quota already exist
+		err = wfc.kubeclientset.CoreV1().ResourceQuotas(wfc.namespace).Delete(ctx, quotaName, metav1.DeleteOptions{})
+		if err != nil {
+			log.Errorf("failed to delete resource quota. %v", err)
+			return
+		}
+	}
+	// create resource quota with podLimit
+	podQuota, err := wfc.kubeclientset.CoreV1().ResourceQuotas(wfc.namespace).Create(ctx, &apiv1.ResourceQuota{
+		ObjectMeta: metav1.ObjectMeta{Name: quotaName},
+		Spec:       apiv1.ResourceQuotaSpec{Hard: apiv1.ResourceList{"count/workflows.argoproj.io": resource.MustParse(strconv.Itoa(wfc.podLimit))}},
+	}, metav1.CreateOptions{})
+	if err != nil {
+		log.Errorf("failed to create resource quota. %v", err)
+		return
+	}
+
+	log.WithFields(log.Fields{"podQuota": podQuota, "podLimit": wfc.podLimit}).Info("created resource quota with provided pod limit")
 }
