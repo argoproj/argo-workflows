@@ -219,7 +219,7 @@ func (we *WorkflowExecutor) LoadArtifacts(ctx context.Context) error {
 			isZip = false
 		} else if art.GetArchive().Tar != nil {
 			// check if tar only or tar + gzip
-			isTar, err = istar(tempArtPath)
+			isTar, _ = istar(tempArtPath)
 			if !isTar {
 				isGzip, err = isgzip(tempArtPath)
 				if err != nil {
@@ -232,7 +232,7 @@ func (we *WorkflowExecutor) LoadArtifacts(ctx context.Context) error {
 		} else {
 			// auto-detect if tarball
 			// (don't try to autodetect zip files for backwards compatibility)
-			isTar, err = istar(tempArtPath)
+			isTar, _ = istar(tempArtPath)
 			if !isTar {
 				isGzip, err = isgzip(tempArtPath)
 				if err != nil {
