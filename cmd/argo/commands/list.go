@@ -49,6 +49,8 @@ func (f listFlags) displayFields() string {
 		return nameFields
 	case "json", "yaml":
 		return ""
+	case "wide":
+		return ""
 	default:
 		return defaultFields
 	}
