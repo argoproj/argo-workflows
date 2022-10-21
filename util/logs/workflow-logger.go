@@ -176,7 +176,7 @@ func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient 
 							logCtx.WithFields(log.Fields{"timestamp": timestamp, "content": content}).Debug("Log line")
 
 							// log redaction for secrets
-							if secrets != nil && enablePodLogRedaction == "true" {
+							if secrets != nil && enablePodLogRedaction != "false" {
 								for _, s := range secrets.Items {
 									for _, v := range s.Data {
 										if strings.Contains(content, string(v)) {
