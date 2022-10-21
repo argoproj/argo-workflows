@@ -20,6 +20,7 @@ Method | HTTP request | Description
 ### Example
 
 * Api Key Authentication (BearerToken):
+
 ```python
 import time
 import argo_workflows
@@ -10618,6 +10619,7 @@ Name | Type | Description  | Notes
 
 
 ### HTTP response details
+
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | A successful response. |  -  |
@@ -10633,6 +10635,7 @@ Name | Type | Description  | Notes
 ### Example
 
 * Api Key Authentication (BearerToken):
+
 ```python
 import time
 import argo_workflows
@@ -10714,6 +10717,7 @@ Name | Type | Description  | Notes
 
 
 ### HTTP response details
+
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | A successful response. |  -  |
@@ -10729,6 +10733,7 @@ Name | Type | Description  | Notes
 ### Example
 
 * Api Key Authentication (BearerToken):
+
 ```python
 import time
 import argo_workflows
@@ -10799,6 +10804,7 @@ Name | Type | Description  | Notes
 
 
 ### HTTP response details
+
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | A successful response. |  -  |
@@ -10814,6 +10820,7 @@ Name | Type | Description  | Notes
 ### Example
 
 * Api Key Authentication (BearerToken):
+
 ```python
 import time
 import argo_workflows
@@ -21412,6 +21419,7 @@ Name | Type | Description  | Notes
 
 
 ### HTTP response details
+
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | A successful response. |  -  |
@@ -21427,6 +21435,7 @@ Name | Type | Description  | Notes
 ### Example
 
 * Api Key Authentication (BearerToken):
+
 ```python
 import time
 import argo_workflows
@@ -21504,6 +21513,7 @@ Name | Type | Description  | Notes
 
 
 ### HTTP response details
+
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | A successful response. |  -  |
@@ -21519,6 +21529,7 @@ Name | Type | Description  | Notes
 ### Example
 
 * Api Key Authentication (BearerToken):
+
 ```python
 import time
 import argo_workflows
@@ -32113,6 +32124,7 @@ Name | Type | Description  | Notes
 
 
 ### HTTP response details
+
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | A successful response. |  -  |
