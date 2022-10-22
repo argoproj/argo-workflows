@@ -1,6 +1,10 @@
-#!/bin/sh
-set -eu
+#!/usr/bin/env bash
+set -eu -o pipefail
 
 port=$1
 
-lsof -s TCP:LISTEN -i ":$port" | grep -v PID | awk '{print $2}' | xargs -L 1 kill || true
+pids=$(lsof -t -s TCP:LISTEN -i ":$port" || true)
+
+if [ "$pids" != "" ]; then
+  kill $pids
+fi
