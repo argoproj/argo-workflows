@@ -1,4 +1,8 @@
-[![slack](https://img.shields.io/badge/slack-argoproj-brightgreen.svg?logo=slack)](https://argoproj.github.io/community/join-slack) [![CI](https://github.com/argoproj/argo-workflows/workflows/CI/badge.svg)](https://github.com/argoproj/argo-workflows/actions?query=event%3Apush+branch%3Amaster) [![CII Best Practices](https://bestpractices.coreinfrastructure.org/projects/3830/badge)](https://bestpractices.coreinfrastructure.org/projects/3830) [![Twitter Follow](https://img.shields.io/twitter/follow/argoproj?style=social)](https://twitter.com/argoproj)
+[![slack](https://img.shields.io/badge/slack-argoproj-brightgreen.svg?logo=slack)](https://argoproj.github.io/community/join-slack)
+[![CI](https://github.com/argoproj/argo-workflows/workflows/CI/badge.svg)](https://github.com/argoproj/argo-workflows/actions?query=event%3Apush+branch%3Amaster)
+[![CII Best Practices](https://bestpractices.coreinfrastructure.org/projects/3830/badge)](https://bestpractices.coreinfrastructure.org/projects/3830)
+[![Artifact HUB](https://img.shields.io/endpoint?url=https://artifacthub.io/badge/repository/argo-workflows)](https://artifacthub.io/packages/helm/argo/argo-workflows)
+[![Twitter Follow](https://img.shields.io/twitter/follow/argoproj?style=social)](https://twitter.com/argoproj)
 
 ## What is Argo Workflows?
 
@@ -70,7 +74,6 @@ The following commands install Argo Workflows as well as some commmonly used com
 
 ```bash
 kubectl create ns argo
-kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.9.1/cert-manager.yaml
 kubectl apply -n argo -f https://raw.githubusercontent.com/argoproj/argo-workflows/master/manifests/quick-start-postgres.yaml
 ```
 

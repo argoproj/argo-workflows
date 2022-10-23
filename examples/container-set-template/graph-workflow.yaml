@@ -4,7 +4,6 @@ metadata:
   generateName: graph-
   labels:
     workflows.argoproj.io/test: "true"
-    workflows.argoproj.io/container-runtime-executor: emissary
   annotations:
     workflows.argoproj.io/description: |
       This workflow demonstrates running a graph of tasks within containers in a single pod.

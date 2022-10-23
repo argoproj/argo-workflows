@@ -1492,6 +1492,22 @@ stringData:
 apiVersion: v1
 kind: Secret
 metadata:
+  annotations:
+    kubernetes.io/service-account.name: default
+  name: default.service-account-token
+type: kubernetes.io/service-account-token
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  annotations:
+    kubernetes.io/service-account.name: github.com
+  name: github.com.service-account-token
+type: kubernetes.io/service-account-token
+---
+apiVersion: v1
+kind: Secret
+metadata:
   labels:
     app: httpbin
   name: my-httpbin-cred
@@ -1729,8 +1745,9 @@ spec:
       labels:
         app: httpbin
     spec:
+      automountServiceAccountToken: false
       containers:
-      - image: kennethreitz/httpbin:latest
+      - image: kennethreitz/httpbin
         livenessProbe:
           httpGet:
             path: /get
@@ -1763,6 +1780,7 @@ spec:
       labels:
         app: minio
     spec:
+      automountServiceAccountToken: false
       containers:
       - command:
         - minio
@@ -1818,6 +1836,7 @@ spec:
         app: mysql
       name: mysql
     spec:
+      automountServiceAccountToken: false
       containers:
       - env:
         - name: MYSQL_USER
@@ -1833,17 +1852,10 @@ spec:
         ports:
         - containerPort: 3306
         readinessProbe:
-          exec:
-            command:
-            - mysql
-            - -u
-            - mysql
-            - -ppassword
-            - argo
-            - -e
-            - SELECT 1
-          initialDelaySeconds: 15
-          timeoutSeconds: 2
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          tcpSocket:
+            port: 3306
       nodeSelector:
         kubernetes.io/os: linux
 ---
@@ -1898,24 +1910,3 @@ spec:
       securityContext:
         runAsNonRoot: true
       serviceAccountName: argo
----
-apiVersion: cert-manager.io/v1
-kind: Certificate
-metadata:
-  name: argo-server-cert
-spec:
-  dnsNames:
-  - argo-server.argo.svc.cluster.local
-  - argo-server.argo.svc
-  - argo-server
-  issuerRef:
-    kind: Issuer
-    name: argo-workflows-issuer
-  secretName: argo-server-tls
----
-apiVersion: cert-manager.io/v1
-kind: Issuer
-metadata:
-  name: argo-workflows-issuer
-spec:
-  selfSigned: {}

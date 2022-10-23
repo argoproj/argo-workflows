@@ -76,10 +76,16 @@ $ cat > policy.json <<EOF
          "Action":[
             "s3:PutObject",
             "s3:GetObject",
-            "s3:ListBucket"
          ],
          "Resource":"arn:aws:s3:::$mybucket/*"
-      }
+      },
+      {
+         "Effect":"Allow",
+         "Action":[
+            "s3:ListBucket"
+         ],
+         "Resource":"arn:aws:s3:::$mybucket"
+      },
    ]
 }
 EOF

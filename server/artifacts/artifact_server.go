@@ -392,16 +392,20 @@ func (a *ArtifactServer) getArtifactAndDriver(ctx context.Context, nodeId, artif
 	// 2. Defined by Controller configmap
 	// 3. Workflow spec defines artifactRepositoryRef which is a ConfigMap which defines the location
 	// 4. Template defines ArchiveLocation
+	// 5. Inline Template
 
+	var archiveLocation *wfv1.ArtifactLocation
 	templateName := util.GetTemplateFromNode(wf.Status.Nodes[nodeId])
-	template := wf.GetTemplateByName(templateName)
-	if template == nil {
-		return nil, nil, fmt.Errorf("no template found by the name of '%s' (which is the template associated with nodeId '%s'??", templateName, nodeId)
+	if templateName != "" {
+		template := wf.GetTemplateByName(templateName)
+		if template == nil {
+			return nil, nil, fmt.Errorf("no template found by the name of '%s' (which is the template associated with nodeId '%s'??", templateName, nodeId)
+		}
+		archiveLocation = template.ArchiveLocation // this is case 4
 	}
 
-	archiveLocation := template.ArchiveLocation // this is case 4
-	if !archiveLocation.HasLocation() {
-		ar, err := a.artifactRepositories.Get(ctx, wf.Status.ArtifactRepositoryRef) // this should handle cases 2 and 3
+	if templateName == "" || !archiveLocation.HasLocation() {
+		ar, err := a.artifactRepositories.Get(ctx, wf.Status.ArtifactRepositoryRef) // this should handle cases 2, 3 and 5
 		if err != nil {
 			return art, nil, err
 		}
@@ -437,7 +441,7 @@ func (a *ArtifactServer) returnArtifact(w http.ResponseWriter, art *wfv1.Artifac
 
 	defer func() {
 		if err := stream.Close(); err != nil {
-			log.Warningf("Error closing stream[%s]: %v", stream, err)
+			log.WithFields(log.Fields{"stream": stream}).WithError(err).Warning("Error closing stream")
 		}
 	}()
 

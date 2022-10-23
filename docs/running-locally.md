@@ -43,7 +43,7 @@ Note:
 * [Docker](https://docs.docker.com/get-docker/)
 * [`protoc`](http://google.github.io/proto-lens/installing-protoc.html)
 * [`jq`](https://stedolan.github.io/jq/download/)
-* [`node` >= 16](https://nodejs.org/download/release/latest-v16.x/) for running the UI
+* [`node` >= 16.15.0](https://nodejs.org/download/release/latest-v16.x/) for running the UI
 * A local Kubernetes cluster ([`k3d`](https://k3d.io/), [`kind`](https://kind.sigs.k8s.io/docs/user/quick-start/#installation), or [`minikube`](https://minikube.sigs.k8s.io/docs/start/))
 
 We recommend using [K3D](https://k3d.io/) to set up the local Kubernetes cluster since this will allow you to test RBAC
@@ -149,10 +149,11 @@ Start up Argo Workflows using the following:
 make start PROFILE=mysql AUTH_MODE=client STATIC_FILES=false API=true
 ```
 
-If you want to run Azure tests against a local Azurite, add `AZURE=true`:
+If you want to run Azure tests against a local Azurite:
 
 ```bash
-make start PROFILE=mysql AUTH_MODE=client STATIC_FILES=false API=true AZURE=true
+kubectl -n $(KUBE_NAMESPACE) apply -f test/e2e/azure/deploy-azurite.yaml
+make start
 ```
 
 #### Running One Test
@@ -164,12 +165,6 @@ Find the test that you want to run in `test/e2e`
 
 ```bash
 make TestArtifactServer
-```
-
-If you wish to include tests against Azure Storage, define `AZURE=true`:
-
-```bash
-make AZURE=true TestArtifactServer
 ```
 
 #### Running A Set Of Tests

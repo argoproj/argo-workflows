@@ -1,0 +1,26 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+
+metadata:
+  generateName: json-variables-
+
+  labels:
+    myLabel: myLabelValue
+  annotations:
+    myAnnotation: myAnnotationValue
+spec:
+  entrypoint: argosay1
+  arguments:
+    parameters:
+    - name: myParam
+      value: myParamValue
+
+  templates:
+  - name: argosay1
+    container:
+      image: argoproj/argosay:v1
+      command: [echo]
+      args: 
+        - "{{=jsonpath(workflow.labels.json, '$.myLabel')}}"
+        - "{{=jsonpath(workflow.annotations.json, '$.myAnnotation')}}"
+        - "{{=jsonpath(workflow.parameters.json, '$[0].value')}}"

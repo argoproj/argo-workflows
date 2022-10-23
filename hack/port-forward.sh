@@ -8,7 +8,7 @@ pf() {
   dest_port=${3:-"$port"}
   ./hack/free-port.sh $port
   echo "port-forward $resource $port"
-  kubectl -n argo port-forward "svc/$resource" "$port:$dest_port" > /dev/null &
+  kubectl -n argo port-forward "svc/$resource" "$port:$dest_port" &
 	until lsof -i ":$port" > /dev/null ; do sleep 1 ; done
 }
 
