@@ -2755,6 +2755,8 @@ save/load the directory appropriately.
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
 | name | string| `string` |  | |  |  |
+| namespace | string| `string` |  | |  |  |
+| uid | string| `string` |  | |  |  |
 
 
 

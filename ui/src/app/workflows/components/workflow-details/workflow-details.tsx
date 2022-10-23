@@ -110,7 +110,11 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
         // (Note that individual Artifacts may also override whatever this gets set to)
         if (workflow && workflow.status && workflow.status.nodes && selectedArtifact) {
             const template = getResolvedTemplates(workflow, workflow.status.nodes[selectedArtifact.nodeId]);
-            const artifactRepo = template.archiveLocation;
+            let artifactRepo;
+            if (template) {
+                artifactRepo = template.archiveLocation;
+            }
+
             if (artifactRepo && artifactRepoHasLocation(artifactRepo)) {
                 setSelectedTemplateArtifactRepo(artifactRepo);
             } else {
@@ -211,7 +215,7 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
         if (workflow?.spec?.workflowTemplateRef) {
             const templateName: string = workflow.spec.workflowTemplateRef.name;
             const clusterScope: boolean = workflow.spec.workflowTemplateRef.clusterScope;
-            const url: string = clusterScope ? `/cluster-workflow-templates/${templateName}` : `/workflow-templates/${workflow.metadata.namespace}/${templateName}`;
+            const url: string = clusterScope ? uiUrl(`cluster-workflow-templates/${templateName}`) : uiUrl(`workflow-templates/${workflow.metadata.namespace}/${templateName}`);
             const icon: string = clusterScope ? 'fa fa-window-restore' : 'fa fa-window-maximize';
 
             const templateLink: Link = {

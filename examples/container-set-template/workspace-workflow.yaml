@@ -4,7 +4,6 @@ metadata:
   generateName: workspace-
   labels:
     workflows.argoproj.io/test: "true"
-    workflows.argoproj.io/container-runtime-executor: emissary
   annotations:
     workflows.argoproj.io/description: |
       This workflow demonstrates using a workspace to share files between containers. This also allows containers not

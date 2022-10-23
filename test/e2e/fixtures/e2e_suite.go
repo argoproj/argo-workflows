@@ -5,8 +5,9 @@ import (
 	"encoding/base64"
 	"fmt"
 	"os"
-	"strings"
 	"time"
+
+	"github.com/argoproj/argo-workflows/v3/util/secrets"
 
 	"github.com/TwiN/go-color"
 	"github.com/stretchr/testify/suite"
@@ -189,16 +190,11 @@ func (s *E2ESuite) GetServiceAccountToken() (string, error) {
 	}
 
 	ctx := context.Background()
-	secretList, err := clientset.CoreV1().Secrets("argo").List(ctx, metav1.ListOptions{})
+	sec, err := clientset.CoreV1().Secrets(Namespace).Get(ctx, secrets.TokenName("argo-server"), metav1.GetOptions{})
 	if err != nil {
 		return "", err
 	}
-	for _, sec := range secretList.Items {
-		if strings.HasPrefix(sec.Name, "argo-server-token") {
-			return string(sec.Data["token"]), nil
-		}
-	}
-	return "", nil
+	return string(sec.Data["token"]), nil
 }
 
 func (s *E2ESuite) Given() *Given {

@@ -118,7 +118,7 @@ func init() {
 	var err error
 	MaxGRPCMessageSize, err = env.GetInt("GRPC_MESSAGE_SIZE", 100*1024*1024)
 	if err != nil {
-		log.Fatalf("GRPC_MESSAGE_SIZE environment variable must be set as an integer: %v", err)
+		log.WithError(err).Fatal("GRPC_MESSAGE_SIZE environment variable must be set as an integer")
 	}
 }
 
@@ -212,7 +212,7 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 		// like and the controller won't offload newly created workflows, but you can still read them
 		offloadRepo, err = sqldb.NewOffloadNodeStatusRepo(session, persistence.GetClusterName(), tableName)
 		if err != nil {
-			log.Fatal(err)
+			log.WithError(err).Fatal(err.Error())
 		}
 		// we always enable the archive for the Argo Server, as the Argo Server does not write records, so you can
 		// disable the archiving - and still read old records
@@ -232,7 +232,7 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 	err = wait.ExponentialBackoff(backoff, func() (bool, error) {
 		conn, listerErr = net.Listen("tcp", address)
 		if listerErr != nil {
-			log.Warnf("failed to listen: %v", listerErr)
+			log.WithError(err).Warn("failed to listen")
 			return false, nil
 		}
 		return true, nil
@@ -262,7 +262,7 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 	log.WithFields(log.Fields{
 		"GRPC_MESSAGE_SIZE": MaxGRPCMessageSize,
 	}).Info("GRPC Server Max Message Size, MaxGRPCMessageSize, is set")
-	log.Infof("Argo Server started successfully on %s", url)
+	log.WithFields(log.Fields{"url": url}).Infof("Argo Server started successfully on %s", url)
 	browserOpenFunc(url)
 
 	<-as.stopCh
@@ -334,10 +334,7 @@ func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServe
 		grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(MaxGRPCMessageSize)),
 	}
 	if as.tlsConfig != nil {
-		tlsConfig := as.tlsConfig
-		tlsConfig.InsecureSkipVerify = true
-		dCreds := credentials.NewTLS(tlsConfig)
-		dialOpts = append(dialOpts, grpc.WithTransportCredentials(dCreds))
+		dialOpts = append(dialOpts, grpc.WithTransportCredentials(credentials.NewTLS(as.tlsConfig)))
 	} else {
 		dialOpts = append(dialOpts, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	}
@@ -416,14 +413,15 @@ func mustRegisterGWHandler(register registerFunc, ctx context.Context, mux *runt
 
 // checkServeErr checks the error from a .Serve() call to decide if it was a graceful shutdown
 func (as *argoServer) checkServeErr(name string, err error) {
+	nameField := log.Fields{"name": name}
 	if err != nil {
 		if as.stopCh == nil {
 			// a nil stopCh indicates a graceful shutdown
-			log.Infof("graceful shutdown %s: %v", name, err)
+			log.WithFields(nameField).WithError(err).Info("graceful shutdown with error")
 		} else {
-			log.Fatalf("%s: %v", name, err)
+			log.WithFields(nameField).WithError(err).Fatalf("%s: %v", name, err)
 		}
 	} else {
-		log.Infof("graceful shutdown %s", name)
+		log.WithFields(nameField).Info("graceful shutdown")
 	}
 }

@@ -13,9 +13,10 @@ spec:
       labels:
         app: httpbin
     spec:
+      automountServiceAccountToken: false
       containers:
         - name: main
-          image: kennethreitz/httpbin:latest
+          image: kennethreitz/httpbin
           ports:
             - containerPort: 80
               name: api
