@@ -33,10 +33,10 @@ require (
 	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0
 	github.com/grpc-ecosystem/grpc-gateway v1.16.0
 	github.com/klauspost/pgzip v1.2.5
-	github.com/minio/minio-go/v7 v7.0.41
+	github.com/minio/minio-go/v7 v7.0.42
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.13.0
-	github.com/prometheus/client_model v0.2.0
+	github.com/prometheus/client_model v0.3.0
 	github.com/prometheus/common v0.37.0
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/sethvargo/go-limiter v0.7.2
@@ -48,7 +48,7 @@ require (
 	github.com/spf13/viper v1.13.0
 	github.com/stretchr/testify v1.8.0
 	github.com/tidwall/gjson v1.14.3
-	github.com/valyala/fasttemplate v1.2.1
+	github.com/valyala/fasttemplate v1.2.2
 	github.com/xeipuuv/gojsonschema v1.2.0
 	golang.org/x/crypto v0.0.0-20220722155217-630584e8d5aa
 	golang.org/x/exp v0.0.0-20220602145555-4a0574d9293f
