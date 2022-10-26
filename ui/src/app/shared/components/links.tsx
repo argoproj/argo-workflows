@@ -22,16 +22,20 @@ const addEpochTimestamp = (jsonObject: {metadata: ObjectMeta; workflow?: Workflo
 };
 
 export const ProcessURL = (url: string, jsonObject: any) => {
+    /* decode url string to apply templating */
+    const decodedUrl = decodeURI(url);
     addEpochTimestamp(jsonObject);
     /* replace ${} from input url with corresponding elements from object
     return null if element is not found*/
-    return url.replace(/\${[^}]*}/g, x => {
-        const res = x
-            .replace(/[${}]+/g, '')
-            .split('.')
-            .reduce((p: any, c: string) => (p && p[c]) || null, jsonObject);
-        return res;
-    });
+    return encodeURI(
+        decodedUrl.replace(/\${[^}]*}/g, x => {
+            const res = x
+                .replace(/[${}]+/g, '')
+                .split('.')
+                .reduce((p: any, c: string) => (p && p[c]) || null, jsonObject);
+            return res;
+        })
+    );
 };
 
 export const Links = ({scope, object, button}: {scope: string; object: {metadata: ObjectMeta; workflow?: Workflow; status?: any}; button?: boolean}) => {
@@ -47,7 +51,7 @@ export const Links = ({scope, object, button}: {scope: string; object: {metadata
     }, []);
 
     const formatUrl = (url: string) => {
-        return encodeURI(ProcessURL(decodeURI(url), object));
+        return ProcessURL(url, object);
     };
 
     const openLink = (url: string) => {
