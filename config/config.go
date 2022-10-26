@@ -281,6 +281,14 @@ const (
 	TemplateReferencingSecure TemplateReferencing = "Secure"
 )
 
+// SemaphoreStrategy determines how locks are distributed to pending lock holders.
+type SemaphoreStrategy string
+
+const (
+	SemaphoreStrategyDefault    SemaphoreStrategy = "default"
+	SemaphoreStrategyRebalanced SemaphoreStrategy = "rebalanced"
+)
+
 func (req *WorkflowRestrictions) MustUseReference() bool {
 	if req == nil {
 		return false

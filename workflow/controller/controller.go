@@ -341,6 +341,33 @@ func (wfc *WorkflowController) createSynchronizationManager(ctx context.Context)
 		return strconv.Atoi(value)
 	}
 
+	getSemaphoreStrategy := func(lockKey string) (config.SemaphoreStrategy, error) {
+		lockName, err := sync.DecodeLockName(lockKey)
+		if err != nil {
+			return config.SemaphoreStrategyDefault, err
+		}
+		configMap, err := wfc.kubeclientset.CoreV1().ConfigMaps(lockName.Namespace).Get(ctx, lockName.ResourceName, metav1.GetOptions{})
+		if err != nil {
+			return config.SemaphoreStrategyDefault, err
+		}
+
+		// we chose to make *-strategy a reserved pattern because the alternatives seemed like they would require reconfiguring quite
+		// a few things, down to the way in which semaphore names are defined. Notice that in initializeSemaphore we pass along the
+		// held semaphore's name from the Workflow itself - it doesn't seem like the right moment to go about changing those mechanics.
+		value, found := configMap.Data[fmt.Sprintf("%s-strategy", lockName.Key)]
+		if !found {
+			return config.SemaphoreStrategyDefault, nil
+		}
+
+		if value == string(config.SemaphoreStrategyDefault) {
+			return config.SemaphoreStrategyDefault, nil
+		} else if value == string(config.SemaphoreStrategyRebalanced) {
+			return config.SemaphoreStrategyRebalanced, nil
+		} else {
+			return config.SemaphoreStrategyDefault, fmt.Errorf("unknown semaphore strategy '%s' for lock '%s'", value, lockName)
+		}
+	}
+
 	nextWorkflow := func(key string) {
 		wfc.wfQueue.AddAfter(key, semaphoreNotifyDelay)
 	}
@@ -354,7 +381,7 @@ func (wfc *WorkflowController) createSynchronizationManager(ctx context.Context)
 		return exists
 	}
 
-	wfc.syncManager = sync.NewLockManager(getSyncLimit, nextWorkflow, isWFDeleted)
+	wfc.syncManager = sync.NewLockManager(getSyncLimit, getSemaphoreStrategy, nextWorkflow, isWFDeleted)
 }
 
 // list all running workflows to initialize throttler and syncManager

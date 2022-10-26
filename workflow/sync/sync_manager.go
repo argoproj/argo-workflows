@@ -8,30 +8,34 @@ import (
 	log "github.com/sirupsen/logrus"
 	runtimeutil "k8s.io/apimachinery/pkg/util/runtime"
 
+	"github.com/argoproj/argo-workflows/v3/config"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
 
 type (
-	NextWorkflow      func(string)
-	GetSyncLimit      func(string) (int, error)
-	IsWorkflowDeleted func(string) bool
+	NextWorkflow          func(string)
+	GetSyncLimit          func(string) (int, error)
+	GetSemaphoreQueueType func(string) (config.SemaphoreStrategy, error)
+	IsWorkflowDeleted     func(string) bool
 )
 
 type Manager struct {
-	syncLockMap  map[string]Semaphore
-	lock         *sync.Mutex
-	nextWorkflow NextWorkflow
-	getSyncLimit GetSyncLimit
-	isWFDeleted  IsWorkflowDeleted
+	syncLockMap           map[string]Semaphore
+	lock                  *sync.Mutex
+	nextWorkflow          NextWorkflow
+	getSyncLimit          GetSyncLimit
+	getSemaphoreQueueType GetSemaphoreQueueType
+	isWFDeleted           IsWorkflowDeleted
 }
 
-func NewLockManager(getSyncLimit GetSyncLimit, nextWorkflow NextWorkflow, isWFDeleted IsWorkflowDeleted) *Manager {
+func NewLockManager(getSyncLimit GetSyncLimit, getSemaphoreQueueType GetSemaphoreQueueType, nextWorkflow NextWorkflow, isWFDeleted IsWorkflowDeleted) *Manager {
 	return &Manager{
-		syncLockMap:  make(map[string]Semaphore),
-		lock:         &sync.Mutex{},
-		nextWorkflow: nextWorkflow,
-		getSyncLimit: getSyncLimit,
-		isWFDeleted:  isWFDeleted,
+		syncLockMap:           make(map[string]Semaphore),
+		lock:                  &sync.Mutex{},
+		nextWorkflow:          nextWorkflow,
+		getSyncLimit:          getSyncLimit,
+		getSemaphoreQueueType: getSemaphoreQueueType,
+		isWFDeleted:           isWFDeleted,
 	}
 }
 
@@ -159,10 +163,11 @@ func (cm *Manager) TryAcquire(wf *wfv1.Workflow, nodeName string, syncLockRef *w
 		priority = 0
 	}
 	creationTime := wf.CreationTimestamp
-	lock.addToQueue(holderKey, priority, creationTime.Time)
+	lock.addToQueue(holderKey, priority, creationTime.Time, syncLockRef)
 
 	ensureInit(wf, syncLockRef.GetType())
 	currentHolders := cm.getCurrentLockHolders(lockKey)
+
 	acquired, msg := lock.tryAcquire(holderKey)
 	if acquired {
 		updated := wf.Status.Synchronization.GetStatus(syncLockRef.GetType()).LockAcquired(holderKey, lockKey, currentHolders)
@@ -170,6 +175,7 @@ func (cm *Manager) TryAcquire(wf *wfv1.Workflow, nodeName string, syncLockRef *w
 	}
 
 	updated := wf.Status.Synchronization.GetStatus(syncLockRef.GetType()).LockWaiting(holderKey, lockKey, currentHolders)
+
 	return false, updated, msg, nil
 }
 
@@ -316,7 +322,23 @@ func (cm *Manager) initializeSemaphore(semaphoreName string) (Semaphore, error) 
 	if err != nil {
 		return nil, err
 	}
-	return NewSemaphore(semaphoreName, limit, cm.nextWorkflow, "semaphore"), nil
+	semaphoreType, err := cm.getSemaphoreQueueType(semaphoreName)
+	if err != nil {
+		return nil, err
+	}
+	switch semaphoreType {
+	case config.SemaphoreStrategyRebalanced:
+		queue := NewRebalanceQueue()
+		s := NewSemaphore(semaphoreName, limit, cm.nextWorkflow, "semaphore", queue)
+		queue.setParentSemaphore(s) // queue needs reference so we must create sem first
+		log.Infof("Semaphore '%s' has been initialized and is using 'rebalanced' strategy.", semaphoreName)
+		return s, nil
+	default:
+		queue := &priorityQueue{itemByKey: make(map[string]*item)}
+		s := NewSemaphore(semaphoreName, limit, cm.nextWorkflow, "semaphore", queue)
+		log.Infof("Semaphore '%s' has been initialized and is using 'default' strategy.", semaphoreName)
+		return s, nil
+	}
 }
 
 func (cm *Manager) initializeMutex(mutexName string) Semaphore {

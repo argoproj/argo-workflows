@@ -3,6 +3,8 @@ package sync
 import (
 	"sync"
 	"time"
+
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
 
 type PriorityMutex struct {
@@ -24,7 +26,7 @@ func NewMutex(name string, nextWorkflow NextWorkflow) *PriorityMutex {
 	return &PriorityMutex{
 		name:  name,
 		lock:  &sync.Mutex{},
-		mutex: NewSemaphore(name, 1, nextWorkflow, "mutex"),
+		mutex: NewSemaphore(name, 1, nextWorkflow, "mutex", &priorityQueue{itemByKey: make(map[string]*item)}),
 	}
 }
 
@@ -56,10 +58,10 @@ func (m *PriorityMutex) acquire(holderKey string) bool {
 	return m.mutex.acquire(holderKey)
 }
 
-func (m *PriorityMutex) addToQueue(holderKey string, priority int32, creationTime time.Time) {
+func (m *PriorityMutex) addToQueue(holderKey string, priority int32, creationTime time.Time, syncLockRef *wfv1.Synchronization) {
 	m.lock.Lock()
 	defer m.lock.Unlock()
-	m.mutex.addToQueue(holderKey, priority, creationTime)
+	m.mutex.addToQueue(holderKey, priority, creationTime, syncLockRef)
 }
 
 func (m *PriorityMutex) removeFromQueue(holderKey string) {

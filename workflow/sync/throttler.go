@@ -95,7 +95,7 @@ func (t *throttler) Add(key Key, priority int32, creationTime time.Time) {
 	if _, ok := t.pending[bucketKey]; !ok {
 		t.pending[bucketKey] = &priorityQueue{itemByKey: make(map[string]*item)}
 	}
-	t.pending[bucketKey].add(key, priority, creationTime)
+	t.pending[bucketKey].add(key, priority, creationTime, nil)
 	t.queueThrottled(bucketKey)
 }
 
@@ -151,6 +151,10 @@ type priorityQueue struct {
 	itemByKey map[string]*item
 }
 
+// this is a no-op but helps us implement SemaphoreStrategyQueue
+func (pq *priorityQueue) onRelease(key Key) {
+}
+
 func (pq *priorityQueue) pop() *item {
 	return heap.Pop(pq).(*item)
 }
@@ -159,7 +163,7 @@ func (pq *priorityQueue) peek() *item {
 	return pq.items[0]
 }
 
-func (pq *priorityQueue) add(key Key, priority int32, creationTime time.Time) {
+func (pq *priorityQueue) add(key Key, priority int32, creationTime time.Time, _ *wfv1.Synchronization) {
 	if res, ok := pq.itemByKey[key]; ok {
 		if res.priority != priority {
 			res.priority = priority
@@ -168,6 +172,10 @@ func (pq *priorityQueue) add(key Key, priority int32, creationTime time.Time) {
 	} else {
 		heap.Push(pq, &item{key: key, priority: priority, creationTime: creationTime})
 	}
+}
+
+func (pq *priorityQueue) all() []*item {
+	return pq.items
 }
 
 func (pq *priorityQueue) remove(key Key) {

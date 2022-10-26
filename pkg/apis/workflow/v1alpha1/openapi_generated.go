@@ -5572,6 +5572,13 @@ func schema_pkg_apis_workflow_v1alpha1_SemaphoreRef(ref common.ReferenceCallback
 							Ref:         ref("k8s.io/api/core/v1.ConfigMapKeySelector"),
 						},
 					},
+					"rebalanceKey": {
+						SchemaProps: spec.SchemaProps{
+							Description: "RebalanceKey gives an equal share of locks to all resources that specify the same rebalance key",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
 				},
 			},
 		},

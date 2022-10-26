@@ -1,0 +1,88 @@
+# Suppose we have some semaphore with a limit of 4 that we want to share equally amongst lock requesters
+# with the same rebalanceKey (see below in this example)
+# 
+# We'd first set up the semaphore test-scale with a limit, as described in 
+# [synchronization](https://github.com/argoproj/argo-workflows/blob/master/docs/synchronization.md)
+# 
+# Next, configure the config map with rebalanced strategy:
+# 
+# ```
+# apiVersion: v1
+# kind: ConfigMap
+# metadata:
+#   name:  my-config
+# data:
+#   test-scale: "4"
+#   test-scale-strategy: "rebalanced"
+# ```
+# 
+# By setting `test-scale: "rebalanced"`, we're essentially telling the semaphore to continuously rebalance
+# the number of locks that can be distributed to each unique "rebalanceKey"
+# 
+# 
+# Next, kick off this example twice:
+#  - `argo submit examples/rebalance-key.yaml -p 'num=100' -p 'rebalanceKey=A'`
+#  - `argo submit examples/rebalance-key.yaml -p 'num=100' -p 'rebalanceKey=B'`
+# 
+# The initial node is responsible for creating "num" child nodes, so wait just a few seconds. You should see
+# that there are two workflows that each have access to 2 locks (in this case, `45js9` and `8h7g2`).
+# 
+# rebalance-key-demo-45js9-acquire-lock-2305596013        2/2     Running     0          15s
+# rebalance-key-demo-45js9-acquire-lock-1265891257        2/2     Running     0          15s
+# rebalance-key-demo-8h7g2-acquire-lock-1096570232        2/2     Running     0          6s
+# rebalance-key-demo-8h7g2-acquire-lock-3005783468        2/2     Running     0          7s
+# 
+# Experiment with different settings to see how this workflow strategy behaves in different scenarios.
+# 
+# If we do not wish to "rebalance", and use the default semaphore behavior instead, we can either specify
+# "default" or simply not include the lock name in "semaphoreStrategy".
+# 
+# Note that when "rebalanced" is used, all lock requesters with no rebalanceKey specified will all be
+# grouped together. Also note that priorities are currently ignored with semaphores using the rebalance
+# strategy. Also note that rebalance key works anywhere a semaphore can be used (e.g. workflow level or
+# virtual node (steps,dag) level)
+#---
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: rebalance-key-demo-
+spec:
+  activeDeadlineSeconds: 100000
+  entrypoint: synchronization-tmpl-level-example
+  serviceAccountName: argo
+  arguments:
+    parameters:
+      - name: num
+        value: 1
+      - name: rebalanceKey
+        value: "unset"
+  podGC:
+    strategy: OnPodSuccess
+  templates:
+  - name: synchronization-tmpl-level-example
+    steps:
+    - - name: generate
+        template: gen-number-list    
+    - - name: synchronization-acquire-lock
+        template: acquire-lock
+        withParam: "{{steps.generate.outputs.result}}"
+
+  - name: gen-number-list
+    script:
+      image: python:alpine3.6
+      command: [python]
+      source: |
+        import json
+        import sys
+        json.dump([i for i in range(0, {{workflow.parameters.num}})], sys.stdout)
+  - name: acquire-lock
+    synchronization:
+      semaphore:
+        configMapKeyRef:
+          name: scale-config
+          key: test-scale
+        rebalanceKey: "{{workflow.parameters.rebalanceKey}}"
+    container:
+      image: alpine:latest
+      command: [sh, -c]
+      args: ["echo acquired lock; sleep $((20 + RANDOM % 11));"]

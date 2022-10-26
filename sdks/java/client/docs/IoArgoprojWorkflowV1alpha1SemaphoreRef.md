@@ -9,6 +9,7 @@ SemaphoreRef is a reference of Semaphore
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **configMapKeyRef** | [**io.kubernetes.client.openapi.models.V1ConfigMapKeySelector**](io.kubernetes.client.openapi.models.V1ConfigMapKeySelector.md) |  |  [optional]
+**rebalanceKey** | **String** | RebalanceKey gives an equal share of locks to all resources that specify the same rebalance key |  [optional]
 
 
 

@@ -8,12 +8,14 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	sema "golang.org/x/sync/semaphore"
+
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
 
 type PrioritySemaphore struct {
 	name         string
 	limit        int
-	pending      *priorityQueue
+	pending      SemaphoreStrategyQueue
 	semaphore    *sema.Weighted
 	lockHolder   map[string]bool
 	lock         *sync.Mutex
@@ -23,11 +25,11 @@ type PrioritySemaphore struct {
 
 var _ Semaphore = &PrioritySemaphore{}
 
-func NewSemaphore(name string, limit int, nextWorkflow NextWorkflow, lockType string) *PrioritySemaphore {
+func NewSemaphore(name string, limit int, nextWorkflow NextWorkflow, lockType string, strategyQueue SemaphoreStrategyQueue) *PrioritySemaphore {
 	return &PrioritySemaphore{
 		name:         name,
 		limit:        limit,
-		pending:      &priorityQueue{itemByKey: make(map[string]*item)},
+		pending:      strategyQueue,
 		semaphore:    sema.NewWeighted(int64(limit)),
 		lockHolder:   make(map[string]bool),
 		lock:         &sync.Mutex{},
@@ -48,7 +50,7 @@ func (s *PrioritySemaphore) getLimit() int {
 
 func (s *PrioritySemaphore) getCurrentPending() []string {
 	var keys []string
-	for _, item := range s.pending.items {
+	for _, item := range s.pending.all() {
 		keys = append(keys, item.key)
 	}
 	return keys
@@ -85,6 +87,7 @@ func (s *PrioritySemaphore) resize(n int) bool {
 func (s *PrioritySemaphore) release(key string) bool {
 	s.lock.Lock()
 	defer s.lock.Unlock()
+
 	if _, ok := s.lockHolder[key]; ok {
 		delete(s.lockHolder, key)
 		// When semaphore resized downward
@@ -94,6 +97,8 @@ func (s *PrioritySemaphore) release(key string) bool {
 		}
 
 		s.semaphore.Release(1)
+		s.pending.onRelease(key)
+
 		availableLocks := s.limit - len(s.lockHolder)
 		s.log.Infof("Lock has been released by %s. Available locks: %d", key, availableLocks)
 		if s.pending.Len() > 0 {
@@ -110,8 +115,9 @@ func (s *PrioritySemaphore) notifyWaiters() {
 	if s.pending.Len() < triggerCount {
 		triggerCount = s.pending.Len()
 	}
+	all := s.pending.all()
 	for idx := 0; idx < triggerCount; idx++ {
-		item := s.pending.items[idx]
+		item := all[idx]
 		wfKey := workflowKey(item)
 		s.log.Debugf("Enqueue the workflow %s", wfKey)
 		s.nextWorkflow(wfKey)
@@ -130,7 +136,7 @@ func workflowKey(i *item) string {
 }
 
 // addToQueue adds the holderkey into priority queue that maintains the priority order to acquire the lock.
-func (s *PrioritySemaphore) addToQueue(holderKey string, priority int32, creationTime time.Time) {
+func (s *PrioritySemaphore) addToQueue(holderKey string, priority int32, creationTime time.Time, syncLockRef *wfv1.Synchronization) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
@@ -139,7 +145,7 @@ func (s *PrioritySemaphore) addToQueue(holderKey string, priority int32, creatio
 		return
 	}
 
-	s.pending.add(holderKey, priority, creationTime)
+	s.pending.add(holderKey, priority, creationTime, syncLockRef)
 	s.log.Debugf("Added into queue: %s", holderKey)
 }
 

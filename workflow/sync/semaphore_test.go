@@ -5,6 +5,8 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+
+	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
 
 func TestIsSameWorkflowNodeKeys(t *testing.T) {
@@ -25,12 +27,13 @@ func TestTryAcquire(t *testing.T) {
 	nextWorkflow := func(key string) {
 	}
 
-	s := NewSemaphore("foo", 2, nextWorkflow, "semaphore")
+	queue := &priorityQueue{itemByKey: make(map[string]*item)}
+	s := NewSemaphore("foo", 2, nextWorkflow, "semaphore", queue)
 	now := time.Now()
-	s.addToQueue("default/wf-01", 0, now)
-	s.addToQueue("default/wf-02", 0, now.Add(time.Second))
-	s.addToQueue("default/wf-03", 0, now.Add(2*time.Second))
-	s.addToQueue("default/wf-04", 0, now.Add(3*time.Second))
+	s.addToQueue("default/wf-01", 0, now, &v1alpha1.Synchronization{Semaphore: &v1alpha1.SemaphoreRef{}})
+	s.addToQueue("default/wf-02", 0, now.Add(time.Second), &v1alpha1.Synchronization{Semaphore: &v1alpha1.SemaphoreRef{}})
+	s.addToQueue("default/wf-03", 0, now.Add(2*time.Second), &v1alpha1.Synchronization{Semaphore: &v1alpha1.SemaphoreRef{}})
+	s.addToQueue("default/wf-04", 0, now.Add(3*time.Second), &v1alpha1.Synchronization{Semaphore: &v1alpha1.SemaphoreRef{}})
 
 	// verify only the first in line is allowed to acquired the semaphore
 	var acquired bool
@@ -58,13 +61,14 @@ func TestNotifyWaitersAcquire(t *testing.T) {
 		notified[key] = true
 	}
 
-	s := NewSemaphore("foo", 3, nextWorkflow, "semaphore")
+	queue := &priorityQueue{itemByKey: make(map[string]*item)}
+	s := NewSemaphore("foo", 3, nextWorkflow, "semaphore", queue)
 	now := time.Now()
-	s.addToQueue("default/wf-04", 0, now.Add(3*time.Second))
-	s.addToQueue("default/wf-02", 0, now.Add(time.Second))
-	s.addToQueue("default/wf-01", 0, now)
-	s.addToQueue("default/wf-05", 0, now.Add(4*time.Second))
-	s.addToQueue("default/wf-03", 0, now.Add(2*time.Second))
+	s.addToQueue("default/wf-04", 0, now.Add(3*time.Second), &v1alpha1.Synchronization{Semaphore: &v1alpha1.SemaphoreRef{}})
+	s.addToQueue("default/wf-02", 0, now.Add(time.Second), &v1alpha1.Synchronization{Semaphore: &v1alpha1.SemaphoreRef{}})
+	s.addToQueue("default/wf-01", 0, now, &v1alpha1.Synchronization{Semaphore: &v1alpha1.SemaphoreRef{}})
+	s.addToQueue("default/wf-05", 0, now.Add(4*time.Second), &v1alpha1.Synchronization{Semaphore: &v1alpha1.SemaphoreRef{}})
+	s.addToQueue("default/wf-03", 0, now.Add(2*time.Second), &v1alpha1.Synchronization{Semaphore: &v1alpha1.SemaphoreRef{}})
 
 	acquired, _ := s.tryAcquire("default/wf-01")
 	assert.True(t, acquired)
@@ -93,10 +97,11 @@ func TestNotifyWorkflowFromTemplateSemaphore(t *testing.T) {
 		notified[key] = true
 	}
 
-	s := NewSemaphore("foo", 2, nextWorkflow, "semaphore")
+	queue := &priorityQueue{itemByKey: make(map[string]*item)}
+	s := NewSemaphore("foo", 2, nextWorkflow, "semaphore", queue)
 	now := time.Now()
-	s.addToQueue("default/wf-01/nodeid-123", 0, now)
-	s.addToQueue("default/wf-02/nodeid-456", 0, now.Add(time.Second))
+	s.addToQueue("default/wf-01/nodeid-123", 0, now, &v1alpha1.Synchronization{Semaphore: &v1alpha1.SemaphoreRef{}})
+	s.addToQueue("default/wf-02/nodeid-456", 0, now.Add(time.Second), &v1alpha1.Synchronization{Semaphore: &v1alpha1.SemaphoreRef{}})
 
 	acquired, _ := s.tryAcquire("default/wf-01/nodeid-123")
 	assert.True(t, acquired)

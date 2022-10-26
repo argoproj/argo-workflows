@@ -3816,6 +3816,10 @@ definitions:
     properties:
       configMapKeyRef:
         $ref: '#/definitions/ConfigMapKeySelector'
+      rebalanceKey:
+        description: RebalanceKey gives an equal share of locks to all resources that
+          specify the same rebalance key
+        type: string
     type: object
   Sequence:
     description: Sequence expands a workflow step into numeric range

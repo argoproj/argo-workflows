@@ -4216,6 +4216,7 @@ Note that this field cannot be set when spec.os.name is windows.
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
 | configMapKeyRef | [ConfigMapKeySelector](#config-map-key-selector)| `ConfigMapKeySelector` |  | |  |  |
+| rebalanceKey | string| `string` |  | | RebalanceKey gives an equal share of locks to all resources that specify the same rebalance key |  |
 
 
 

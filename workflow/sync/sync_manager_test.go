@@ -14,6 +14,7 @@ import (
 	"k8s.io/client-go/kubernetes/fake"
 	"k8s.io/utils/pointer"
 
+	"github.com/argoproj/argo-workflows/v3/config"
 	argoErr "github.com/argoproj/argo-workflows/v3/errors"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	fakewfclientset "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/fake"
@@ -27,6 +28,8 @@ metadata:
 data:
  workflow: "1"
  template: "1"
+ rebalancedsem: "2"
+ rebalancedsem-strategy: "rebalanced"
 `
 
 const wfWithStatus = `
@@ -287,6 +290,238 @@ status:
   startedAt: "2020-06-04T19:55:11Z"
 `
 
+const wfWithTmplSemaphoreRebalanced = `
+# Please edit the object below. Lines beginning with a '#' will be ignored,
+# and an empty file will abort the edit. If an error occurs while saving this file will be
+# reopened with the relevant failures.
+#
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  annotations:
+    workflows.argoproj.io/pod-name-format: v1
+  creationTimestamp: "2022-11-03T20:57:30Z"
+  generateName: semaphore-rebalanced-
+  generation: 6
+  labels:
+    workflows.argoproj.io/phase: Running
+  name: semaphore-rebalanced-47qx6
+  namespace: default
+  resourceVersion: "78330"
+  uid: 37924354-4c9b-45e4-90c7-15036cab5339
+spec:
+  activeDeadlineSeconds: 100000
+  arguments:
+    parameters:
+    - name: num
+      value: "3"
+  entrypoint: synchronization-tmpl-level-example
+  podGC:
+    strategy: OnPodSuccess
+  podSpecPatch: |
+    terminationGracePeriodSeconds: 3
+  templates:
+  - inputs: {}
+    metadata: {}
+    name: synchronization-tmpl-level-example
+    outputs: {}
+    steps:
+    - - arguments: {}
+        name: generate
+        template: gen-number-list
+    - - arguments:
+          parameters:
+          - name: seconds
+            value: '{{item}}'
+        name: synchronization-acquire-lock
+        template: acquire-lock
+        withParam: '{{steps.generate.outputs.result}}'
+  - inputs: {}
+    metadata: {}
+    name: gen-number-list
+    outputs: {}
+    script:
+      command:
+      - python
+      image: python:alpine3.6
+      name: ""
+      resources: {}
+      source: |
+        import json
+        import sys
+        json.dump([i for i in range(0, {{workflow.parameters.num}})], sys.stdout)
+  - container:
+      args:
+      - sleep 45; echo acquired lock
+      command:
+      - sh
+      - -c
+      image: alpine:latest
+      name: ""
+      resources: {}
+    inputs: {}
+    metadata: {}
+    name: acquire-lock
+    outputs: {}
+    synchronization:
+      semaphore:
+        configMapKeyRef:
+          key: rebalancedsem
+          name: my-config
+        rebalanceKey: rebalance-key-a
+  ttlStrategy:
+    secondsAfterCompletion: 600
+status:
+  artifactRepositoryRef:
+    artifactRepository:
+      archiveLogs: true
+      s3:
+        accessKeySecret:
+          key: accesskey
+          name: my-minio-cred
+        bucket: my-bucket
+        endpoint: minio:9000
+        insecure: true
+        secretKeySecret:
+          key: secretkey
+          name: my-minio-cred
+    configMap: artifact-repositories
+    key: default-v1
+    namespace: argo
+  conditions:
+  - status: "False"
+    type: PodRunning
+  finishedAt: null
+  nodes:
+    semaphore-rebalanced-47qx6:
+      children:
+      - semaphore-rebalanced-47qx6-2522652688
+      displayName: semaphore-rebalanced-47qx6
+      finishedAt: null
+      id: semaphore-rebalanced-47qx6
+      name: semaphore-rebalanced-47qx6
+      phase: Running
+      progress: 1/4
+      startedAt: "2022-11-03T20:57:30Z"
+      templateName: synchronization-tmpl-level-example
+      templateScope: local/semaphore-rebalanced-47qx6
+      type: Steps
+    semaphore-rebalanced-47qx6-1515848453:
+      boundaryID: semaphore-rebalanced-47qx6
+      children:
+      - semaphore-rebalanced-47qx6-2332864919
+      - semaphore-rebalanced-47qx6-2782851707
+      - semaphore-rebalanced-47qx6-2426190623
+      displayName: '[1]'
+      finishedAt: null
+      id: semaphore-rebalanced-47qx6-1515848453
+      name: semaphore-rebalanced-47qx6[1]
+      phase: Running
+      progress: 0/3
+      startedAt: "2022-11-03T20:57:36Z"
+      templateScope: local/semaphore-rebalanced-47qx6
+      type: StepGroup
+    semaphore-rebalanced-47qx6-2332864919:
+      boundaryID: semaphore-rebalanced-47qx6
+      displayName: synchronization-acquire-lock(0:0)
+      finishedAt: null
+      id: semaphore-rebalanced-47qx6-2332864919
+      message: 'Waiting for argo/ConfigMap/workflow-controller-configmap/rebalancedsem
+        lock. Lock status: 0/0 '
+      name: semaphore-rebalanced-47qx6[1].synchronization-acquire-lock(0:0)
+      phase: Pending
+      progress: 0/1
+      startedAt: "2022-11-03T20:57:36Z"
+      synchronizationStatus:
+        waiting: argo/ConfigMap/workflow-controller-configmap/rebalancedsem
+      templateName: acquire-lock
+      templateScope: local/semaphore-rebalanced-47qx6
+      type: Pod
+    semaphore-rebalanced-47qx6-2426190623:
+      boundaryID: semaphore-rebalanced-47qx6
+      displayName: synchronization-acquire-lock(2:2)
+      finishedAt: null
+      id: semaphore-rebalanced-47qx6-2426190623
+      message: 'Waiting for argo/ConfigMap/workflow-controller-configmap/rebalancedsem
+        lock. Lock status: 0/0 '
+      name: semaphore-rebalanced-47qx6[1].synchronization-acquire-lock(2:2)
+      phase: Pending
+      progress: 0/1
+      startedAt: "2022-11-03T20:57:36Z"
+      synchronizationStatus:
+        waiting: argo/ConfigMap/workflow-controller-configmap/rebalancedsem
+      templateName: acquire-lock
+      templateScope: local/semaphore-rebalanced-47qx6
+      type: Pod
+    semaphore-rebalanced-47qx6-2522652688:
+      boundaryID: semaphore-rebalanced-47qx6
+      children:
+      - semaphore-rebalanced-47qx6-2749555789
+      displayName: '[0]'
+      finishedAt: "2022-11-03T20:57:36Z"
+      id: semaphore-rebalanced-47qx6-2522652688
+      name: semaphore-rebalanced-47qx6[0]
+      phase: Succeeded
+      progress: 1/4
+      resourcesDuration:
+        cpu: 1
+        memory: 0
+      startedAt: "2022-11-03T20:57:30Z"
+      templateScope: local/semaphore-rebalanced-47qx6
+      type: StepGroup
+    semaphore-rebalanced-47qx6-2749555789:
+      boundaryID: semaphore-rebalanced-47qx6
+      children:
+      - semaphore-rebalanced-47qx6-1515848453
+      displayName: generate
+      finishedAt: "2022-11-03T20:57:32Z"
+      hostNodeName: k3d-k3s-default-server-0
+      id: semaphore-rebalanced-47qx6-2749555789
+      name: semaphore-rebalanced-47qx6[0].generate
+      outputs:
+        artifacts:
+        - name: main-logs
+          s3:
+            key: semaphore-rebalanced-47qx6/semaphore-rebalanced-47qx6-2749555789/main.log
+        exitCode: "0"
+        result: '[0, 1, 2]'
+      phase: Succeeded
+      progress: 1/1
+      resourcesDuration:
+        cpu: 1
+        memory: 0
+      startedAt: "2022-11-03T20:57:30Z"
+      templateName: gen-number-list
+      templateScope: local/semaphore-rebalanced-47qx6
+      type: Pod
+    semaphore-rebalanced-47qx6-2782851707:
+      boundaryID: semaphore-rebalanced-47qx6
+      displayName: synchronization-acquire-lock(1:1)
+      finishedAt: null
+      id: semaphore-rebalanced-47qx6-2782851707
+      message: 'Waiting for argo/ConfigMap/workflow-controller-configmap/rebalancedsem
+        lock. Lock status: 0/0 '
+      name: semaphore-rebalanced-47qx6[1].synchronization-acquire-lock(1:1)
+      phase: Pending
+      progress: 0/1
+      startedAt: "2022-11-03T20:57:36Z"
+      synchronizationStatus:
+        waiting: argo/ConfigMap/workflow-controller-configmap/rebalancedsem
+      templateName: acquire-lock
+      templateScope: local/semaphore-rebalanced-47qx6
+      type: Pod
+  phase: Running
+  progress: 1/4
+  resourcesDuration:
+    cpu: 1
+    memory: 0
+  startedAt: "2022-11-03T20:57:30Z"
+  synchronization:
+    semaphore:
+      waiting:
+      - semaphore: argo/ConfigMap/workflow-controller-configmap/rebalancedsem
+`
+
 const wfWithMutex = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -305,6 +540,10 @@ spec:
      command: [cowsay]
      args: ["hello world"]
 `
+
+var GetSemaphoreQueTypeAlwaysDefault = func(s string) (config.SemaphoreStrategy, error) {
+	return config.SemaphoreStrategyDefault, nil
+}
 
 var WorkflowExistenceFunc = func(s string) bool {
 	return false
@@ -333,6 +572,36 @@ func GetSyncLimitFunc(kube *fake.Clientset) func(string) (int, error) {
 	return syncLimitConfig
 }
 
+func GetSemaphoreQueue(kube *fake.Clientset) func(string) (config.SemaphoreStrategy, error) {
+	syncLimitConfig := func(lockName string) (config.SemaphoreStrategy, error) {
+		items := strings.Split(lockName, "/")
+		if len(items) < 4 {
+			return config.SemaphoreStrategyDefault, argoErr.New(argoErr.CodeBadRequest, "Invalid Config Map Key")
+		}
+
+		ctx := context.Background()
+		configMap, err := kube.CoreV1().ConfigMaps(items[0]).Get(ctx, items[2], metav1.GetOptions{})
+		if err != nil {
+			return config.SemaphoreStrategyDefault, err
+		}
+
+		value, found := configMap.Data[items[3]+"-strategy"]
+
+		if !found {
+			return config.SemaphoreStrategyDefault, nil
+		}
+
+		if value == string(config.SemaphoreStrategyDefault) {
+			return config.SemaphoreStrategyDefault, nil
+		} else if value == string(config.SemaphoreStrategyRebalanced) {
+			return config.SemaphoreStrategyRebalanced, nil
+		} else {
+			return config.SemaphoreStrategyDefault, fmt.Errorf("unknown semaphore strategy '%s' for lock '%s'", value, lockName)
+		}
+	}
+	return syncLimitConfig
+}
+
 func TestSemaphoreWfLevel(t *testing.T) {
 	kube := fake.NewSimpleClientset()
 	var cm v1.ConfigMap
@@ -344,7 +613,7 @@ func TestSemaphoreWfLevel(t *testing.T) {
 
 	syncLimitFunc := GetSyncLimitFunc(kube)
 	t.Run("InitializeSynchronization", func(t *testing.T) {
-		concurrenyMgr := NewLockManager(syncLimitFunc, func(key string) {
+		concurrenyMgr := NewLockManager(syncLimitFunc, GetSemaphoreQueTypeAlwaysDefault, func(key string) {
 		}, WorkflowExistenceFunc)
 		wf := wfv1.MustUnmarshalWorkflow(wfWithStatus)
 		wfclientset := fakewfclientset.NewSimpleClientset(wf)
@@ -355,7 +624,7 @@ func TestSemaphoreWfLevel(t *testing.T) {
 		assert.Equal(t, 1, len(concurrenyMgr.syncLockMap))
 	})
 	t.Run("InitializeSynchronizationWithInvalid", func(t *testing.T) {
-		concurrenyMgr := NewLockManager(syncLimitFunc, func(key string) {
+		concurrenyMgr := NewLockManager(syncLimitFunc, GetSemaphoreQueTypeAlwaysDefault, func(key string) {
 		}, WorkflowExistenceFunc)
 		wf := wfv1.MustUnmarshalWorkflow(wfWithStatus)
 		invalidSync := []wfv1.SemaphoreHolding{{Semaphore: "default/configmap/my-config1/workflow", Holders: []string{"hello-world-vcrg5"}}}
@@ -369,7 +638,7 @@ func TestSemaphoreWfLevel(t *testing.T) {
 
 	t.Run("WfLevelAcquireAndRelease", func(t *testing.T) {
 		var nextKey string
-		concurrenyMgr := NewLockManager(syncLimitFunc, func(key string) {
+		concurrenyMgr := NewLockManager(syncLimitFunc, GetSemaphoreQueTypeAlwaysDefault, func(key string) {
 			nextKey = key
 		}, WorkflowExistenceFunc)
 		wf := wfv1.MustUnmarshalWorkflow(wfWithSemaphore)
@@ -443,11 +712,11 @@ func TestSemaphoreWfLevel(t *testing.T) {
 
 		sema := concurrenyMgr.syncLockMap["default/ConfigMap/my-config/workflow"].(*PrioritySemaphore)
 		assert.NotNil(t, sema)
-		assert.Len(t, sema.pending.items, 2)
+		assert.Len(t, sema.pending.all(), 2)
 		concurrenyMgr.ReleaseAll(wf1)
-		assert.Len(t, sema.pending.items, 1)
+		assert.Len(t, sema.pending.all(), 1)
 		concurrenyMgr.ReleaseAll(wf3)
-		assert.Len(t, sema.pending.items, 0)
+		assert.Len(t, sema.pending.all(), 0)
 	})
 }
 
@@ -462,7 +731,7 @@ func TestResizeSemaphoreSize(t *testing.T) {
 
 	syncLimitFunc := GetSyncLimitFunc(kube)
 	t.Run("WfLevelAcquireAndRelease", func(t *testing.T) {
-		concurrenyMgr := NewLockManager(syncLimitFunc, func(key string) {
+		concurrenyMgr := NewLockManager(syncLimitFunc, GetSemaphoreQueTypeAlwaysDefault, func(key string) {
 		}, WorkflowExistenceFunc)
 		wf := wfv1.MustUnmarshalWorkflow(wfWithSemaphore)
 		wf.CreationTimestamp = metav1.Time{Time: time.Now()}
@@ -528,9 +797,10 @@ func TestSemaphoreTmplLevel(t *testing.T) {
 	assert.NoError(t, err)
 
 	syncLimitFunc := GetSyncLimitFunc(kube)
+	getSemaphoreQueueType := GetSemaphoreQueue(kube)
 	t.Run("TemplateLevelAcquireAndRelease", func(t *testing.T) {
 		// var nextKey string
-		concurrenyMgr := NewLockManager(syncLimitFunc, func(key string) {
+		concurrenyMgr := NewLockManager(syncLimitFunc, GetSemaphoreQueTypeAlwaysDefault, func(key string) {
 			// nextKey = key
 		}, WorkflowExistenceFunc)
 		wf := wfv1.MustUnmarshalWorkflow(wfWithTmplSemaphore)
@@ -572,6 +842,85 @@ func TestSemaphoreTmplLevel(t *testing.T) {
 		assert.NotNil(t, wf.Status.Synchronization.Semaphore)
 		assert.Equal(t, "semaphore-tmpl-level-xjvln-1607747183", wf.Status.Synchronization.Semaphore.Holding[0].Holders[0])
 	})
+
+	t.Run("TemplateLevelRebalanced", func(t *testing.T) {
+		concurrenyMgr := NewLockManager(syncLimitFunc, getSemaphoreQueueType, func(key string) {
+		}, WorkflowExistenceFunc)
+		wfRebalanceKeyA := wfv1.MustUnmarshalWorkflow(wfWithTmplSemaphoreRebalanced)
+		wfRebalanceKeyASync := wfRebalanceKeyA.Spec.Templates[2]
+
+		iterTmpl := strings.ReplaceAll(wfWithTmplSemaphoreRebalanced, "semaphore-rebalanced-47qx6", "semaphore-rebalanced-90ab3")
+		iterTmpl = strings.ReplaceAll(iterTmpl, "rebalance-key-a", "rebalance-key-b")
+		wfRebalanceKeyB := wfv1.MustUnmarshalWorkflow(iterTmpl)
+		wfRebalanceKeyBSync := wfRebalanceKeyB.Spec.Templates[2]
+
+		// semaphore-rebalanced-47qx6-2332864919 (wfRebalanceKeyA) tries to acquire a lock and succeeds
+		status, wfUpdate, msg, err := concurrenyMgr.TryAcquire(wfRebalanceKeyA, "semaphore-rebalanced-47qx6-2332864919", wfRebalanceKeyASync.Synchronization)
+		assert.NoError(t, err)
+		assert.Empty(t, msg)
+		assert.True(t, status)
+		assert.True(t, wfUpdate)
+		assert.NotNil(t, wfRebalanceKeyA.Status.Synchronization)
+		assert.NotNil(t, wfRebalanceKeyA.Status.Synchronization.Semaphore)
+		assert.Equal(t, "semaphore-rebalanced-47qx6-2332864919", wfRebalanceKeyA.Status.Synchronization.Semaphore.Holding[0].Holders[0])
+
+		// semaphore-rebalanced-47qx6-2782851707 (wfRebalanceKeyA) tries to acquire a lock and succeeds
+		status, wfUpdate, msg, err = concurrenyMgr.TryAcquire(wfRebalanceKeyA, "semaphore-rebalanced-47qx6-2782851707", wfRebalanceKeyASync.Synchronization)
+		assert.NoError(t, err)
+		assert.Empty(t, msg)
+		assert.True(t, status)
+		assert.True(t, wfUpdate)
+		assert.NotNil(t, wfRebalanceKeyA.Status.Synchronization)
+		assert.NotNil(t, wfRebalanceKeyA.Status.Synchronization.Semaphore)
+		assert.Equal(t, "semaphore-rebalanced-47qx6-2782851707", wfRebalanceKeyA.Status.Synchronization.Semaphore.Holding[0].Holders[1])
+
+		// semaphore-rebalanced-47qx6-2426190623 (wfRebalanceKeyA) tries to acquire a lock and fails because we've reached limit
+		status, wfUpdate, msg, err = concurrenyMgr.TryAcquire(wfRebalanceKeyA, "semaphore-rebalanced-47qx6-2426190623", wfRebalanceKeyASync.Synchronization)
+		assert.NoError(t, err)
+		assert.Contains(t, msg, "Waiting for default/ConfigMap/my-config/rebalancedsem lock. Lock status: 0/2")
+		assert.False(t, status)
+		assert.True(t, wfUpdate)
+		assert.NotNil(t, wfRebalanceKeyA.Status.Synchronization)
+		assert.NotNil(t, wfRebalanceKeyA.Status.Synchronization.Semaphore)
+
+		// currently 2 lock holders, both from wfRebalanceKeyA
+		assert.Equal(t, len(wfRebalanceKeyA.Status.Synchronization.Semaphore.Holding[0].Holders), 2)
+
+		// semaphore-rebalanced-90ab3-2332864919 (wfRebalanceKeyB) tries to acquire a lock and fails because we've reached limit
+		status, wfUpdate, msg, err = concurrenyMgr.TryAcquire(wfRebalanceKeyB, "semaphore-rebalanced-90ab3-2332864919", wfRebalanceKeyBSync.Synchronization)
+		assert.NoError(t, err)
+		assert.Contains(t, msg, "Waiting for default/ConfigMap/my-config/rebalancedsem lock. Lock status: 0/2")
+		assert.False(t, status)
+		assert.True(t, wfUpdate)
+		assert.NotNil(t, wfRebalanceKeyB.Status.Synchronization)
+		assert.NotNil(t, wfRebalanceKeyB.Status.Synchronization.Semaphore)
+
+		// one node from wfRebalanceKeyA finishes
+		concurrenyMgr.Release(wfRebalanceKeyA, "semaphore-rebalanced-47qx6-2332864919", wfRebalanceKeyASync.Synchronization)
+		assert.NotNil(t, wfRebalanceKeyA.Status.Synchronization)
+		assert.NotNil(t, wfRebalanceKeyA.Status.Synchronization.Semaphore)
+		assert.Equal(t, len(wfRebalanceKeyA.Status.Synchronization.Semaphore.Holding[0].Holders), 1)
+
+		// semaphore-rebalanced-47qx6-2426190623 (wfRebalanceKeyA) tries to acquire a lock and STILL fails because there are two distinct rebalance keys
+		// in the list of waiting resources
+		status, wfUpdate, msg, err = concurrenyMgr.TryAcquire(wfRebalanceKeyA, "semaphore-rebalanced-47qx6-2426190623", wfRebalanceKeyASync.Synchronization)
+		assert.NoError(t, err)
+		assert.NotEmpty(t, msg)
+		// assert.Contains(t, msg, "Waiting for default/ConfigMap/my-config/rebalancedsem lock. Lock status: 0/2 ")
+		assert.False(t, status)
+		assert.True(t, wfUpdate)
+		assert.NotNil(t, wfRebalanceKeyA.Status.Synchronization)
+		assert.NotNil(t, wfRebalanceKeyA.Status.Synchronization.Semaphore)
+
+		// wfRebalanceKeyB tries to acquire 1 and succeeds because wfRebalanceKeyB currently has not acquired any keys
+		status, wfUpdate, msg, err = concurrenyMgr.TryAcquire(wfRebalanceKeyB, "semaphore-rebalanced-90ab3-2332864919", wfRebalanceKeyBSync.Synchronization)
+		assert.NoError(t, err)
+		assert.Empty(t, msg)
+		assert.True(t, status)
+		assert.True(t, wfUpdate)
+		assert.NotNil(t, wfRebalanceKeyB.Status.Synchronization)
+		assert.NotNil(t, wfRebalanceKeyB.Status.Synchronization.Semaphore)
+	})
 }
 
 func TestTriggerWFWithAvailableLock(t *testing.T) {
@@ -588,7 +937,7 @@ func TestTriggerWFWithAvailableLock(t *testing.T) {
 	syncLimitFunc := GetSyncLimitFunc(kube)
 	t.Run("TriggerWfsWithAvailableLocks", func(t *testing.T) {
 		triggerCount := 0
-		concurrenyMgr := NewLockManager(syncLimitFunc, func(key string) {
+		concurrenyMgr := NewLockManager(syncLimitFunc, GetSemaphoreQueTypeAlwaysDefault, func(key string) {
 			triggerCount++
 		}, WorkflowExistenceFunc)
 		var wfs []wfv1.Workflow
@@ -624,7 +973,7 @@ func TestMutexWfLevel(t *testing.T) {
 	syncLimitFunc := GetSyncLimitFunc(kube)
 	t.Run("WorkflowLevelMutexAcquireAndRelease", func(t *testing.T) {
 		// var nextKey string
-		concurrenyMgr := NewLockManager(syncLimitFunc, func(key string) {
+		concurrenyMgr := NewLockManager(syncLimitFunc, GetSemaphoreQueTypeAlwaysDefault, func(key string) {
 			// nextKey = key
 		}, WorkflowExistenceFunc)
 		wf := wfv1.MustUnmarshalWorkflow(wfWithMutex)
@@ -656,11 +1005,11 @@ func TestMutexWfLevel(t *testing.T) {
 
 		mutex := concurrenyMgr.syncLockMap["default/Mutex/my-mutex"].(*PriorityMutex)
 		assert.NotNil(t, mutex)
-		assert.Len(t, mutex.mutex.pending.items, 2)
+		assert.Len(t, mutex.mutex.pending.all(), 2)
 		concurrenyMgr.ReleaseAll(wf1)
-		assert.Len(t, mutex.mutex.pending.items, 1)
+		assert.Len(t, mutex.mutex.pending.all(), 1)
 		concurrenyMgr.ReleaseAll(wf2)
-		assert.Len(t, mutex.mutex.pending.items, 0)
+		assert.Len(t, mutex.mutex.pending.all(), 0)
 	})
 }
 
@@ -677,7 +1026,7 @@ func TestCheckWorkflowExistence(t *testing.T) {
 
 	syncLimitFunc := GetSyncLimitFunc(kube)
 	t.Run("WorkflowDeleted", func(t *testing.T) {
-		concurrenyMgr := NewLockManager(syncLimitFunc, func(key string) {
+		concurrenyMgr := NewLockManager(syncLimitFunc, GetSemaphoreQueTypeAlwaysDefault, func(key string) {
 			// nextKey = key
 		}, func(s string) bool {
 			return strings.Contains(s, "test1")
@@ -846,7 +1195,7 @@ status:
 `)
 	syncLimitFunc := GetSyncLimitFunc(kube)
 
-	concurrenyMgr := NewLockManager(syncLimitFunc, func(key string) {
+	concurrenyMgr := NewLockManager(syncLimitFunc, GetSemaphoreQueTypeAlwaysDefault, func(key string) {
 		// nextKey = key
 	}, WorkflowExistenceFunc)
 	t.Run("InitializeMutex", func(t *testing.T) {

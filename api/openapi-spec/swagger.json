@@ -10230,6 +10230,10 @@
         "configMapKeyRef": {
           "description": "ConfigMapKeyRef is configmap selector for Semaphore configuration",
           "$ref": "#/definitions/io.k8s.api.core.v1.ConfigMapKeySelector"
+        },
+        "rebalanceKey": {
+          "description": "RebalanceKey gives an equal share of locks to all resources that specify the same rebalance key",
+          "type": "string"
         }
       }
     },
