@@ -9,6 +9,9 @@ Before you start you need a Kubernetes cluster and `kubectl` set up to be able t
 * [k3s](https://k3s.io/) or [k3d](https://k3d.io/)
 * [Docker Desktop](https://www.docker.com/products/docker-desktop/)
 
+
+Alternateively, if you want to try out Argo Workflows and don't want to set up a Kubernetes cluster, try the [Killercoda course](training.md#hands-on).
+
 ⚠️ These instructions are intended to help you get started quickly. They are not suitable in production. For production installs, please refer to [the installation documentation](installation.md) ⚠️
 
 ## Install Argo Workflows
