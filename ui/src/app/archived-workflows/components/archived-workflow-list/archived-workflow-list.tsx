@@ -181,54 +181,25 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
         return params;
     }
 
-    private filterStateObject(state: State, whitelistedStates: string[], blacklistedStates: string[]) {
-        const filteredState: State = {} as State;
+    private filterOutStateObject(state: State, blacklistedStates: string[]) {
+        const filteredState: State = Object.assign({}, state);
+        let key: keyof typeof state;
 
-        if (whitelistedStates.includes('pagination') || !blacklistedStates.includes('pagination')) {
-            filteredState.pagination = state.pagination;
-        }
-
-        if (whitelistedStates.includes('namespace') || !blacklistedStates.includes('namespace')) {
-            filteredState.namespace = state.namespace;
-        }
-
-        if (whitelistedStates.includes('name') || !blacklistedStates.includes('name')) {
-            filteredState.name = state.name;
-        }
-
-        if (whitelistedStates.includes('namePrefix') || !blacklistedStates.includes('namePrefix')) {
-            filteredState.namePrefix = state.namePrefix;
-        }
-
-        if (whitelistedStates.includes('selectedPhases') || !blacklistedStates.includes('selectedPhases')) {
-            filteredState.selectedPhases = state.selectedPhases;
-        }
-
-        if (whitelistedStates.includes('selectedLabels') || !blacklistedStates.includes('selectedLabels')) {
-            filteredState.selectedLabels = state.selectedLabels;
-        }
-
-        if (whitelistedStates.includes('minStartedAt') || !blacklistedStates.includes('minStartedAt')) {
-            filteredState.minStartedAt = state.minStartedAt;
-        }
-
-        if (whitelistedStates.includes('maxStartedAt') || !blacklistedStates.includes('maxStartedAt')) {
-            filteredState.maxStartedAt = state.maxStartedAt;
-        }
-
-        if (whitelistedStates.includes('error') || !blacklistedStates.includes('error')) {
-            filteredState.error = state.error;
-        }
-
-        if (whitelistedStates.includes('deep') || !blacklistedStates.includes('deep')) {
-            filteredState.deep = state.deep;
+        for (key in state) {
+            if (blacklistedStates.includes(key)) {
+                delete filteredState[key];
+            }
         }
 
         return filteredState;
     }
 
+    private fetchBrowserStorageStateObject(state: State) {
+        return this.filterOutStateObject(state, ['workflows']);
+    }
+
     private saveHistory() {
-        this.storage.setItem('options', this.filterStateObject(this.state, [], ['workflows']), {} as State);
+        this.storage.setItem('options', this.fetchBrowserStorageStateObject(this.state), {} as State);
         const newNamespace = Utils.managedNamespace ? '' : this.state.namespace;
         this.url = uiUrl('archived-workflows' + (newNamespace ? '/' + newNamespace : '') + '?' + this.filterParams.toString());
         Utils.currentNamespace = this.state.namespace;
