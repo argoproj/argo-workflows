@@ -224,7 +224,7 @@ func TestTmplServiceAccount(t *testing.T) {
 func TestWFLevelAutomountServiceAccountToken(t *testing.T) {
 	woc := newWoc()
 	ctx := context.Background()
-	_, err := util.CreateServiceAccountWithToken(ctx, woc.controller.kubeclientset, "", "foo", "foo-token")
+	_, err := util.CreateServiceAccountWithToken(ctx, woc.controller.kubeclientset, "", "foo")
 	assert.NoError(t, err)
 
 	falseValue := false
@@ -246,7 +246,7 @@ func TestWFLevelAutomountServiceAccountToken(t *testing.T) {
 func TestTmplLevelAutomountServiceAccountToken(t *testing.T) {
 	woc := newWoc()
 	ctx := context.Background()
-	_, err := util.CreateServiceAccountWithToken(ctx, woc.controller.kubeclientset, "", "foo", "foo-token")
+	_, err := util.CreateServiceAccountWithToken(ctx, woc.controller.kubeclientset, "", "foo")
 	assert.NoError(t, err)
 
 	trueValue := true
@@ -280,7 +280,7 @@ func verifyServiceAccountTokenVolumeMount(t *testing.T, ctr apiv1.Container, vol
 func TestWFLevelExecutorServiceAccountName(t *testing.T) {
 	woc := newWoc()
 	ctx := context.Background()
-	_, err := util.CreateServiceAccountWithToken(ctx, woc.controller.kubeclientset, "", "foo", "foo-token")
+	_, err := util.CreateServiceAccountWithToken(ctx, woc.controller.kubeclientset, "", "foo")
 	assert.NoError(t, err)
 
 	woc.execWf.Spec.Executor = &wfv1.ExecutorConfig{ServiceAccountName: "foo"}
@@ -294,7 +294,6 @@ func TestWFLevelExecutorServiceAccountName(t *testing.T) {
 	assert.Len(t, pods.Items, 1)
 	pod := pods.Items[0]
 	assert.Equal(t, "exec-sa-token", pod.Spec.Volumes[2].Name)
-	assert.Equal(t, "foo-token", pod.Spec.Volumes[2].VolumeSource.Secret.SecretName)
 
 	waitCtr := pod.Spec.Containers[0]
 	verifyServiceAccountTokenVolumeMount(t, waitCtr, "exec-sa-token", "/var/run/secrets/kubernetes.io/serviceaccount")
@@ -304,9 +303,9 @@ func TestWFLevelExecutorServiceAccountName(t *testing.T) {
 func TestTmplLevelExecutorServiceAccountName(t *testing.T) {
 	woc := newWoc()
 	ctx := context.Background()
-	_, err := util.CreateServiceAccountWithToken(ctx, woc.controller.kubeclientset, "", "foo", "foo-token")
+	_, err := util.CreateServiceAccountWithToken(ctx, woc.controller.kubeclientset, "", "foo")
 	assert.NoError(t, err)
-	_, err = util.CreateServiceAccountWithToken(ctx, woc.controller.kubeclientset, "", "tmpl", "tmpl-token")
+	_, err = util.CreateServiceAccountWithToken(ctx, woc.controller.kubeclientset, "", "tmpl")
 	assert.NoError(t, err)
 
 	woc.execWf.Spec.Executor = &wfv1.ExecutorConfig{ServiceAccountName: "foo"}
@@ -321,7 +320,6 @@ func TestTmplLevelExecutorServiceAccountName(t *testing.T) {
 	assert.Len(t, pods.Items, 1)
 	pod := pods.Items[0]
 	assert.Equal(t, "exec-sa-token", pod.Spec.Volumes[2].Name)
-	assert.Equal(t, "tmpl-token", pod.Spec.Volumes[2].VolumeSource.Secret.SecretName)
 
 	waitCtr := pod.Spec.Containers[0]
 	verifyServiceAccountTokenVolumeMount(t, waitCtr, "exec-sa-token", "/var/run/secrets/kubernetes.io/serviceaccount")
@@ -332,9 +330,9 @@ func TestTmplLevelExecutorSecurityContext(t *testing.T) {
 	var user int64 = 1000
 	ctx := context.Background()
 	woc := newWoc()
-	_, err := util.CreateServiceAccountWithToken(ctx, woc.controller.kubeclientset, "", "foo", "foo-token")
+	_, err := util.CreateServiceAccountWithToken(ctx, woc.controller.kubeclientset, "", "foo")
 	assert.NoError(t, err)
-	_, err = util.CreateServiceAccountWithToken(ctx, woc.controller.kubeclientset, "", "tmpl", "tmpl-token")
+	_, err = util.CreateServiceAccountWithToken(ctx, woc.controller.kubeclientset, "", "tmpl")
 	assert.NoError(t, err)
 
 	woc.controller.Config.Executor = &apiv1.Container{SecurityContext: &apiv1.SecurityContext{RunAsUser: &user}}
