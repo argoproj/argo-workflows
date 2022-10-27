@@ -83,7 +83,9 @@ const (
 	anyItemMagicValue                    = "item.*"
 	anyWorkflowOutputParameterMagicValue = "workflow.outputs.parameters.*"
 	anyWorkflowOutputArtifactMagicValue  = "workflow.outputs.artifacts.*"
-	maxCharsInObjectName                 = 63
+	// The maximum length of maxCharsInObjectName is 63 characters because of the limitation of Kubernetes label
+	// For details, please refer to: https://stackoverflow.com/questions/50412837/kubernetes-label-name-63-character-limit
+	maxCharsInObjectName = 63
 	// CronWorkflows have fewer max chars allowed in their name because when workflows are created from them, they
 	// are appended with the unix timestamp (`-1615836720`). This lower character allowance allows for that timestamp
 	// to still fit within the 63 character maximum.
