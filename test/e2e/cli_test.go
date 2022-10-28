@@ -1359,14 +1359,6 @@ func (s *CLISuite) TestWorkflowCopyArtifact() {
 	s.workflowCopyArtifactTests("basic-artifact-workflow.yaml")
 }
 
-func (s *CLISuite) TestWorkflowCopyArtifactAzure() {
-	if os.Getenv("AZURE") != "true" {
-		s.T().Skip("AZURE must be true to run Azure Storage e2e tests")
-	}
-
-	s.workflowCopyArtifactTests("basic-artifact-workflow-azure.yaml")
-}
-
 func (s *CLISuite) workflowCopyArtifactTests(workflowFileName string) {
 	s.Given().
 		Workflow(fmt.Sprintf("@testdata/%s", workflowFileName)).

@@ -19,6 +19,7 @@ Get an artifact.
 ### Example
 
 * Api Key Authentication (BearerToken):
+
 ```python
 import time
 import argo_workflows
@@ -88,6 +89,7 @@ Name | Type | Description  | Notes
 
 
 ### HTTP response details
+
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | An artifact file. |  -  |
@@ -103,6 +105,7 @@ Get an input artifact.
 ### Example
 
 * Api Key Authentication (BearerToken):
+
 ```python
 import time
 import argo_workflows
@@ -169,6 +172,7 @@ Name | Type | Description  | Notes
 
 
 ### HTTP response details
+
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | An artifact file. |  -  |
@@ -184,6 +188,7 @@ Get an input artifact by UID.
 ### Example
 
 * Api Key Authentication (BearerToken):
+
 ```python
 import time
 import argo_workflows
@@ -248,6 +253,7 @@ Name | Type | Description  | Notes
 
 
 ### HTTP response details
+
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | An artifact file. |  -  |
@@ -263,6 +269,7 @@ Get an output artifact.
 ### Example
 
 * Api Key Authentication (BearerToken):
+
 ```python
 import time
 import argo_workflows
@@ -329,6 +336,7 @@ Name | Type | Description  | Notes
 
 
 ### HTTP response details
+
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | An artifact file. |  -  |
@@ -344,6 +352,7 @@ Get an output artifact by UID.
 ### Example
 
 * Api Key Authentication (BearerToken):
+
 ```python
 import time
 import argo_workflows
@@ -408,6 +417,7 @@ Name | Type | Description  | Notes
 
 
 ### HTTP response details
+
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | An artifact file. |  -  |

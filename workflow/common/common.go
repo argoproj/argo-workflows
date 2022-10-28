@@ -15,6 +15,10 @@ const (
 	// AnnotationKeyDefaultContainer is the annotation that specify container that will be used by default in case of kubectl commands for example
 	AnnotationKeyDefaultContainer = "kubectl.kubernetes.io/default-container"
 
+	// AnnotationKeyServiceAccountTokenName is used to name the secret that containers the service account token name.
+	// It is intentially named similar to ` `kubernetes.io/service-account.name`.
+	AnnotationKeyServiceAccountTokenName = workflow.WorkflowFullName + "/service-account-token.name"
+
 	// AnnotationKeyNodeID is the ID of the node.
 	// Historically, the pod name was the same as the node ID.
 	// Therefore, if it does not exist, then the node ID is the pod name.
@@ -177,12 +181,18 @@ const (
 	GlobalVarWorkflowFailures = "workflow.failures"
 	// GlobalVarWorkflowDuration is the current duration of this workflow
 	GlobalVarWorkflowDuration = "workflow.duration"
-	// GlobalVarWorkflowAnnotations is a JSON string containing all workflow annotations
+	// GlobalVarWorkflowAnnotations is a JSON string containing all workflow annotations - which will be deprecated in favor of GlobalVarWorkflowAnnotationsJSON
 	GlobalVarWorkflowAnnotations = "workflow.annotations"
-	// GlobalVarWorkflowLabels is a JSON string containing all workflow labels
+	// GlobalVarWorkflowAnnotationsJSON is a JSON string containing all workflow annotations
+	GlobalVarWorkflowAnnotationsJSON = "workflow.annotations.json"
+	// GlobalVarWorkflowLabels is a JSON string containing all workflow labels - which will be deprecated in favor of GlobalVarWorkflowLabelsJSON
 	GlobalVarWorkflowLabels = "workflow.labels"
-	// GlobalVarWorkflowParameters is a JSON string containing all workflow parameters
+	// GlobalVarWorkflowLabelsJSON is a JSON string containing all workflow labels
+	GlobalVarWorkflowLabelsJSON = "workflow.labels.json"
+	// GlobalVarWorkflowParameters is a JSON string containing all workflow parameters - which will be deprecated in favor of GlobalVarWorkflowParametersJSON
 	GlobalVarWorkflowParameters = "workflow.parameters"
+	// GlobalVarWorkflowParametersJSON is a JSON string containing all workflow parameters
+	GlobalVarWorkflowParametersJSON = "workflow.parameters.json"
 	// GlobalVarWorkflowCronScheduleTime is the scheduled timestamp of a Workflow started by a CronWorkflow
 	GlobalVarWorkflowCronScheduleTime = "workflow.scheduledTime"
 

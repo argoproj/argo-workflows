@@ -89,6 +89,44 @@ spec:
 		})
 }
 
+func (s *FunctionalSuite) TestWhenExpressions() {
+	s.Given().
+		Workflow("@functional/conditionals.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeSucceeded, 2*time.Minute).
+		Then().
+		ExpectWorkflowNode(wfv1.NodeWithDisplayName("print-hello-govaluate"), func(t *testing.T, n *wfv1.NodeStatus, p *apiv1.Pod) {
+			assert.NotEqual(t, wfv1.NodeTypeSkipped, n.Type)
+		}).
+		ExpectWorkflowNode(wfv1.NodeWithDisplayName("print-hello-expr"), func(t *testing.T, n *wfv1.NodeStatus, p *apiv1.Pod) {
+			assert.NotEqual(t, wfv1.NodeTypeSkipped, n.Type)
+		}).
+		ExpectWorkflowNode(wfv1.NodeWithDisplayName("print-hello-expr-json"), func(t *testing.T, n *wfv1.NodeStatus, p *apiv1.Pod) {
+			assert.NotEqual(t, wfv1.NodeTypeSkipped, n.Type)
+		})
+}
+
+func (s *FunctionalSuite) TestJSONVariables() {
+
+	s.Given().
+		Workflow("@testdata/json-variables.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow().
+		Then().
+		ExpectWorkflowNode(wfv1.SucceededPodNode, func(t *testing.T, n *wfv1.NodeStatus, p *apiv1.Pod) {
+			for _, c := range p.Spec.Containers {
+				if c.Name == "main" {
+					assert.Equal(t, 3, len(c.Args))
+					assert.Equal(t, "myLabelValue", c.Args[0])
+					assert.Equal(t, "myAnnotationValue", c.Args[1])
+					assert.Equal(t, "myParamValue", c.Args[2])
+				}
+			}
+		})
+}
+
 func (s *FunctionalSuite) TestWorkflowTTL() {
 	s.Given().
 		Workflow(`
@@ -675,13 +713,13 @@ spec:
 `).
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(10 * time.Second).
+		WaitForWorkflow(10*time.Second).
 		Then().
 		ExpectWorkflow(func(t *testing.T, md *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.WorkflowFailed, status.Phase)
-			if node := status.Nodes.FindByDisplayName(md.Name); assert.NotNil(t, node) {
-				assert.Contains(t, node.Message, "Pod was active on the node longer than the specified deadline")
-			}
+		}).
+		ExpectWorkflowNode(wfv1.FailedPodNode, func(t *testing.T, n *wfv1.NodeStatus, p *apiv1.Pod) {
+			assert.Equal(t, *p.Spec.ActiveDeadlineSeconds, int64(5))
 		})
 }
 
