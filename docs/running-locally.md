@@ -7,7 +7,7 @@ You have two options:
 
 ## Git Clone
 
-Clone the Git repo into: `$(GOPATH)/src/github.com/argoproj/argo-workflows`. Any other path will mean the code
+Clone the Git repo into: `$GOPATH/src/github.com/argoproj/argo-workflows`. Any other path will mean the code
 generation does not work.
 
 ## Development Container
@@ -152,7 +152,7 @@ make start PROFILE=mysql AUTH_MODE=client STATIC_FILES=false API=true
 If you want to run Azure tests against a local Azurite:
 
 ```bash
-kubectl -n $(KUBE_NAMESPACE) apply -f test/e2e/azure/deploy-azurite.yaml
+kubectl -n $KUBE_NAMESPACE apply -f test/e2e/azure/deploy-azurite.yaml
 make start
 ```
 
@@ -221,7 +221,7 @@ git commit --signoff -m 'feat: Added a new feature. Fixes #1234'
 
 * When running `make pre-commit -B`, if you encounter errors like
   `make: *** [pkg/apiclient/clusterworkflowtemplate/cluster-workflow-template.swagger.json] Error 1`, ensure that you
-  have checked out your code into `$(GOPATH)/src/github.com/argoproj/argo-workflows`.
+  have checked out your code into `$GOPATH/src/github.com/argoproj/argo-workflows`.
 * If you encounter "out of heap" issues when building UI through Docker, please validate resources allocated to Docker.
   Compilation may fail if allocated RAM is less than 4Gi.
 
