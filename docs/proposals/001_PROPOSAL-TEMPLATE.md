@@ -3,13 +3,12 @@ title: Neat-enhancement-idea
 authors:
 - "@sarabala" # Authors' github accounts here.
   sponsors:
-- TBD        # List all interested parties here.
+- "@sarabala"        # List all interested parties here.
   reviewers:
-- "@alexmt"
-- TBD
+- "@sarabala"
   approvers:
-- "@alexmt"
-- TBD
+- "@sarabala"
+
 
 creation-date: yyyy-mm-dd
 last-updated: yyyy-mm-dd
