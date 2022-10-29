@@ -3997,7 +3997,7 @@
 <li>Install the <a href="#requirements">requirements</a> on your computer manually. This takes about 1 hour.</li>
 </ol>
 <h2 id="git-clone">Git Clone<a class="headerlink" href="#git-clone" title="Permanent link">&para;</a></h2>
-<p>Clone the Git repo into: <code>$(GOPATH)/src/github.com/argoproj/argo-workflows</code>. Any other path will mean the code
+<p>Clone the Git repo into: <code>$GOPATH/src/github.com/argoproj/argo-workflows</code>. Any other path will mean the code
 generation does not work.</p>
 <h2 id="development-container">Development Container<a class="headerlink" href="#development-container" title="Permanent link">&para;</a></h2>
 <p>A development container is a running Docker container with a well-defined tool/runtime stack and its prerequisites.
@@ -4102,7 +4102,7 @@ returns <code>allowed</code>).</p>
 <div class="highlight"><pre><span></span><code>make start <span class="nv">PROFILE</span><span class="o">=</span>mysql <span class="nv">AUTH_MODE</span><span class="o">=</span>client <span class="nv">STATIC_FILES</span><span class="o">=</span><span class="nb">false</span> <span class="nv">API</span><span class="o">=</span><span class="nb">true</span>
 </code></pre></div>
 <p>If you want to run Azure tests against a local Azurite:</p>
-<div class="highlight"><pre><span></span><code>kubectl -n <span class="k">$(</span>KUBE_NAMESPACE<span class="k">)</span> apply -f test/e2e/azure/deploy-azurite.yaml
+<div class="highlight"><pre><span></span><code>kubectl -n <span class="nv">$KUBE_NAMESPACE</span> apply -f test/e2e/azure/deploy-azurite.yaml
 make start
 </code></pre></div>
 <h4 id="running-one-test">Running One Test<a class="headerlink" href="#running-one-test" title="Permanent link">&para;</a></h4>
@@ -4147,7 +4147,7 @@ Our CI will run those concurrently when you create a PR, which will give you fee
 <ul>
 <li>When running <code>make pre-commit -B</code>, if you encounter errors like
   <code>make: *** [pkg/apiclient/clusterworkflowtemplate/cluster-workflow-template.swagger.json] Error 1</code>, ensure that you
-  have checked out your code into <code>$(GOPATH)/src/github.com/argoproj/argo-workflows</code>.</li>
+  have checked out your code into <code>$GOPATH/src/github.com/argoproj/argo-workflows</code>.</li>
 <li>If you encounter "out of heap" issues when building UI through Docker, please validate resources allocated to Docker.
   Compilation may fail if allocated RAM is less than 4Gi.</li>
 </ul>
