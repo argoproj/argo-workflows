@@ -610,6 +610,7 @@ func resolveAllVariables(scope map[string]interface{}, globalParams map[string]s
 			} else if strings.HasPrefix(tag, common.GlobalVarWorkflowDuration) {
 			} else if strings.HasPrefix(tag, "tasks.name") {
 			} else if strings.HasPrefix(tag, "steps.name") {
+			} else if strings.HasPrefix(tag, "node.name") {
 			} else if strings.HasPrefix(tag, "workflow.parameters") && workflowTemplateValidation {
 				// If we are simply validating a WorkflowTemplate in isolation, some of the parameters may come from the Workflow that uses it
 			} else {
