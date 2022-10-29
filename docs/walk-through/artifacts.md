@@ -57,6 +57,31 @@ spec:
 The `whalesay` template uses the `cowsay` command to generate a file named `/tmp/hello-world.txt`. It then `outputs` this file as an artifact named `hello-art`. In general, the artifact's `path` may be a directory rather than just a file. The `print-message` template takes an input artifact named `message`, unpacks it at the `path` named `/tmp/message` and then prints the contents of `/tmp/message` using the `cat` command.
 The `artifact-example` template passes the `hello-art` artifact generated as an output of the `generate-artifact` step as the `message` input artifact to the `print-message` step. DAG templates use the tasks prefix to refer to another task, for example `{{tasks.generate-artifact.outputs.artifacts.hello-art}}`.
 
+Optionally, for large artifacts, you can set `podSpecPatch` in the workflow spec to increase the resource request for the init container and avoid any Out of memory issues.
+
+```yaml
+<... snipped ...>
+  - name: large-artifact
+    # below patch gets merged with the actual pod spec and increses the memory
+    # request of the init container.
+    podSpecPatch: |
+      initContainers:
+        - name: init
+          resources:
+            requests:
+              memory: 2Gi
+              cpu: 300m
+    inputs:
+      artifacts:
+      - name: data
+        path: /tmp/large-file
+    container:
+      image: alpine:latest
+      command: [sh, -c]
+      args: ["cat /tmp/large-file"]
+<... snipped ...>
+```
+
 Artifacts are packaged as Tarballs and gzipped by default. You may customize this behavior by specifying an archive strategy, using the `archive` field. For example:
 
 ```yaml
