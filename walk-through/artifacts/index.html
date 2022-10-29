@@ -3934,6 +3934,28 @@ You will need to configure an artifact repository to run this example.
 </code></pre></div>
 <p>The <code>whalesay</code> template uses the <code>cowsay</code> command to generate a file named <code>/tmp/hello-world.txt</code>. It then <code>outputs</code> this file as an artifact named <code>hello-art</code>. In general, the artifact's <code>path</code> may be a directory rather than just a file. The <code>print-message</code> template takes an input artifact named <code>message</code>, unpacks it at the <code>path</code> named <code>/tmp/message</code> and then prints the contents of <code>/tmp/message</code> using the <code>cat</code> command.
 The <code>artifact-example</code> template passes the <code>hello-art</code> artifact generated as an output of the <code>generate-artifact</code> step as the <code>message</code> input artifact to the <code>print-message</code> step. DAG templates use the tasks prefix to refer to another task, for example <code>{{tasks.generate-artifact.outputs.artifacts.hello-art}}</code>.</p>
+<p>Optionally, for large artifacts, you can set <code>podSpecPatch</code> in the workflow spec to increase the resource request for the init container and avoid any Out of memory issues.</p>
+<div class="highlight"><pre><span></span><code><span class="l l-Scalar l-Scalar-Plain">&lt;... snipped ...&gt;</span><span class="w"></span>
+<span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">- name</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">large-artifact</span><span class="w"></span>
+<span class="w">    </span><span class="l l-Scalar l-Scalar-Plain"># below patch gets merged with the actual pod spec and increses the memory</span><span class="w"></span>
+<span class="w">    </span><span class="l l-Scalar l-Scalar-Plain"># request of the init container.</span><span class="w"></span>
+<span class="w">    </span><span class="l l-Scalar l-Scalar-Plain">podSpecPatch</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="p p-Indicator">|</span><span class="w"></span>
+<span class="w">      </span><span class="no">initContainers:</span><span class="w"></span>
+<span class="w">        </span><span class="no">- name: init</span><span class="w"></span>
+<span class="w">          </span><span class="no">resources:</span><span class="w"></span>
+<span class="w">            </span><span class="no">requests:</span><span class="w"></span>
+<span class="w">              </span><span class="no">memory: 2Gi</span><span class="w"></span>
+<span class="w">              </span><span class="no">cpu: 300m</span><span class="w"></span>
+<span class="w">    </span><span class="nt">inputs</span><span class="p">:</span><span class="w"></span>
+<span class="w">      </span><span class="nt">artifacts</span><span class="p">:</span><span class="w"></span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">data</span><span class="w"></span>
+<span class="w">        </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/tmp/large-file</span><span class="w"></span>
+<span class="w">    </span><span class="nt">container</span><span class="p">:</span><span class="w"></span>
+<span class="w">      </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">alpine:latest</span><span class="w"></span>
+<span class="w">      </span><span class="nt">command</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">sh</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">-c</span><span class="p p-Indicator">]</span><span class="w"></span>
+<span class="w">      </span><span class="nt">args</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;cat</span><span class="nv"> </span><span class="s">/tmp/large-file&quot;</span><span class="p p-Indicator">]</span><span class="w"></span>
+<span class="l l-Scalar l-Scalar-Plain">&lt;... snipped ...&gt;</span><span class="w"></span>
+</code></pre></div>
 <p>Artifacts are packaged as Tarballs and gzipped by default. You may customize this behavior by specifying an archive strategy, using the <code>archive</code> field. For example:</p>
 <div class="highlight"><pre><span></span><code><span class="l l-Scalar l-Scalar-Plain">&lt;... snipped ...&gt;</span><span class="w"></span>
 <span class="w">    </span><span class="l l-Scalar l-Scalar-Plain">outputs</span><span class="p p-Indicator">:</span><span class="w"></span>
