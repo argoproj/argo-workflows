@@ -8,7 +8,9 @@ metadata:
   generateName: exit-handler-slack-
 spec:
   entrypoint: say-hello
-  onExit: exit-handler
+  hooks:
+  exit:
+    template: exit-handler
   templates:
   - name: say-hello
     container:
