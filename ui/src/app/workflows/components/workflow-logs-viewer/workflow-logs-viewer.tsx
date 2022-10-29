@@ -65,10 +65,7 @@ export const WorkflowLogsViewer = ({workflow, nodeId, initialPodName, container,
         return () => clearTimeout(x);
     }, [logFilter]);
 
-    let annotations: {[name: string]: string} = {};
-    if (typeof workflow.metadata.annotations !== 'undefined') {
-        annotations = workflow.metadata.annotations;
-    }
+    const annotations = workflow.metadata.annotations || {};
     const podNameVersion = annotations[ANNOTATION_KEY_POD_NAME_VERSION];
 
     // map pod names to corresponding node IDs
