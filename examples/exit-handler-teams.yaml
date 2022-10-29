@@ -9,8 +9,8 @@ metadata:
 spec:
   entrypoint: say-hello
   hooks:
-  exit:
-    template: exit-handler
+    exit:
+      template: exit-handler
   templates:
   - name: say-hello
     container:
