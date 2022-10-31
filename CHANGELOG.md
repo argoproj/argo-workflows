@@ -1,5 +1,27 @@
 # Changelog
 
+## v3.4.3 (2022-10-30)
+
+ * [23e3d4d6f](https://github.com/argoproj/argo-workflows/commit/23e3d4d6f646c413d66145ee3e2210ff71eef21d) fix(ui): Apply url encode and decode to a `ProcessURL`. Fixes #9791 (#9912)
+ * [d612d5d9b](https://github.com/argoproj/argo-workflows/commit/d612d5d9b983a3cc7436d1c9a94dedb4382f6a9a) feat(ui): view artifact in archiveworkflow. Fixes #9627 #9772 #9858 (#9836)
+ * [a31576576](https://github.com/argoproj/argo-workflows/commit/a315765769867a1e7528f253f7e94bbb5291df7b) refactor: ui, convert cluster workflow template to functional component (#9809)
+ * [30a6d5eb7](https://github.com/argoproj/argo-workflows/commit/30a6d5eb73f1197380df4b904eed2646dfb3b4aa) feat: Include node.name as a field for interpolation (#9641)
+ * [1c9965204](https://github.com/argoproj/argo-workflows/commit/1c996520411e6e47f1d3b42a3645c943348275af) chore(deps-dev): bump babel-jest from 29.2.0 to 29.2.2 in /ui (#9930)
+ * [1c41dc715](https://github.com/argoproj/argo-workflows/commit/1c41dc7154e947caae22615444cb363ae893ace9) chore(deps): bump google.golang.org/api from 0.99.0 to 0.101.0 (#9927)
+ * [b1c78de08](https://github.com/argoproj/argo-workflows/commit/b1c78de0868f5588b01122de08fd5d3bb24faa22) Remove wrong braces in documentation (#9903)
+ * [ff3133fb7](https://github.com/argoproj/argo-workflows/commit/ff3133fb7d049c3d239522ac37f153b69d76b028) Moved elevated permissions to job level (#9917)
+ * [6b086368f](https://github.com/argoproj/argo-workflows/commit/6b086368f6480a2de5e2d43eec73514de0ad01ac) fix: Mutex is not initialized when controller restart (#9873)
+
+### Contributors
+
+ * Andrii Chubatiuk
+ * Eddie Knight
+ * Max Görner
+ * Ryan Copley
+ * Saravanan Balasubramanian
+ * Tianchu Zhao
+ * dependabot[bot]
+
 ## v3.4.2 (2022-10-22)
 
  * [b00550f7b](https://github.com/argoproj/argo-workflows/commit/b00550f7bae3938d324ce2857019529d61382d84) chore(deps): bump github.com/prometheus/client_model from 0.2.0 to 0.3.0 (#9885)

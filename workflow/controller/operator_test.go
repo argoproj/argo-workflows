@@ -6608,6 +6608,58 @@ func TestWorkflowScheduledTimeVariable(t *testing.T) {
 	assert.Equal(t, "2006-01-02T15:04:05-07:00", woc.globalParams[common.GlobalVarWorkflowCronScheduleTime])
 }
 
+var wfNodeNameField = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: hello-world
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      dag:
+        tasks:
+          - name: this-is-part-1
+            template: main2
+    - name: main2
+      steps:
+        - - name: this-is-part-2
+            template: whalesay
+            arguments:
+                parameters:
+                  - name: message
+                    value: "{{node.name}}"
+    - name: whalesay
+      inputs:
+        parameters:
+          - name: message
+      container:
+        image: docker/whalesay:latest
+        command: [cowsay]
+        args: ["{{ inputs.parameters.message }}"]
+`
+
+func TestWorkflowInterpolatesNodeNameField(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(wfNodeNameField)
+	cancel, controller := newController(wf)
+	defer cancel()
+
+	ctx := context.Background()
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate(ctx)
+
+	foundPod := false
+	for _, element := range woc.wf.Status.Nodes {
+		if element.Type == "Pod" {
+			foundPod = true
+			assert.Equal(t, "hello-world.this-is-part-1", element.Inputs.Parameters[0].Value.String())
+		}
+	}
+
+	assert.True(t, foundPod)
+
+}
+
 func TestWorkflowShutdownStrategy(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(`
 apiVersion: argoproj.io/v1alpha1
