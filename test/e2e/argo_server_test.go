@@ -2016,29 +2016,6 @@ func (s *ArgoServerSuite) TestWorkflowLogRedaction() {
 		s.Run(tt.name, func() {
 			s.stream("/api/v1/workflows/argo/"+name+tt.path, func(t *testing.T, line string) (done bool) {
 				if strings.Contains(line, "data: ") {
-					assert.Contains(t, line, "secret from env: S00perS3cretPa55word")
-					return true
-				}
-				return false
-			})
-		})
-	}
-
-	// set pod log redaction to true
-	_ = os.Setenv("ARGO_REDACT_POD_LOGS", "true")
-	defer func() { _ = os.Unsetenv("ARGO_REDACT_POD_LOGS") }()
-
-	// lets check the logs
-	for _, tt := range []struct {
-		name string
-		path string
-	}{
-		{"PodLogs", "/" + name + "/log?logOptions.container=main"},
-		{"WorkflowLogs", "/log?podName=" + name + "&logOptions.container=main"},
-	} {
-		s.Run(tt.name, func() {
-			s.stream("/api/v1/workflows/argo/"+name+tt.path, func(t *testing.T, line string) (done bool) {
-				if strings.Contains(line, "data: ") {
 					assert.Contains(t, line, "secret from env: [*********]")
 					return true
 				}

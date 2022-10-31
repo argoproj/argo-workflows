@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"context"
 	"fmt"
-	"os"
 	"regexp"
 	"sort"
 	"strings"
@@ -81,8 +80,6 @@ func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient 
 
 	var podListOptions metav1.ListOptions
 
-	// get env variable for pod logs redaction
-	enablePodLogRedaction := os.Getenv("ARGO_REDACT_POD_LOGS")
 	// get secrets for redaction
 	secrets, err := kubeClient.CoreV1().Secrets(req.GetNamespace()).List(ctx, metav1.ListOptions{})
 	if err != nil {
@@ -176,7 +173,7 @@ func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient 
 							logCtx.WithFields(log.Fields{"timestamp": timestamp, "content": content}).Debug("Log line")
 
 							// log redaction for secrets
-							if secrets != nil && enablePodLogRedaction != "false" {
+							if secrets != nil {
 								for _, s := range secrets.Items {
 									for _, v := range s.Data {
 										if strings.Contains(content, string(v)) {
