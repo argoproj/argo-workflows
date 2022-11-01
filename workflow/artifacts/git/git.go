@@ -1,6 +1,7 @@
 package git
 
 import (
+	"crypto/x509"
 	"errors"
 	"fmt"
 	"io"
@@ -29,6 +30,8 @@ type ArtifactDriver struct {
 	SSHPrivateKey         string
 	InsecureIgnoreHostKey bool
 	DisableSubmodules     bool
+	InsecureSkipTLS       bool
+	CABundle              []byte
 }
 
 var _ common.ArtifactDriver = &ArtifactDriver{}
@@ -83,6 +86,16 @@ func (g *ArtifactDriver) Delete(s *wfv1.Artifact) error {
 	return common.ErrDeleteNotSupported
 }
 
+// Verify CA bundle is correct
+func verifyCert(rootPEM []byte) error {
+	roots := x509.NewCertPool()
+	ok := roots.AppendCertsFromPEM(rootPEM)
+	if !ok {
+		return fmt.Errorf("failed to parse root certificate")
+	}
+	return nil
+}
+
 func (g *ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) error {
 	a := inputArtifact.Git
 	sshUser := GetUser(a.Repo)
@@ -92,11 +105,19 @@ func (g *ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) error {
 	}
 	defer closer()
 	depth := a.GetDepth()
+	if len(g.CABundle) > 0 {
+		err := verifyCert(g.CABundle)
+		if err != nil {
+			return err
+		}
+	}
 	cloneOptions := &git.CloneOptions{
-		URL:          a.Repo,
-		Auth:         auth,
-		Depth:        depth,
-		SingleBranch: a.SingleBranch,
+		URL:             a.Repo,
+		Auth:            auth,
+		Depth:           depth,
+		SingleBranch:    a.SingleBranch,
+		InsecureSkipTLS: g.InsecureSkipTLS,
+		CABundle:        g.CABundle,
 	}
 	if a.SingleBranch && a.Branch == "" {
 		return errors.New("single branch mode without a branch specified")

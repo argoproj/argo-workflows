@@ -2416,6 +2416,12 @@ type GitArtifact struct {
 
 	// Branch is the branch to fetch when `SingleBranch` is enabled
 	Branch string `json:"branch,omitempty" protobuf:"bytes,11,opt,name=branch"`
+
+	// InsecureSkipTLS disables HTTP TLS checking during git clone
+	InsecureSkipTLS bool `json:"insecureSkipTLS,omitempty" protobuf:"varint,12,opt,name=insecureSkipTLS"`
+
+	// CABundleSecret is the secret selector to specify a ca bundle for https connection
+	CABundleSecret *apiv1.SecretKeySelector `json:"caBundleSecret,omitempty" protobuf:"bytes,13,opt,name=caBundleSecret"`
 }
 
 func (g *GitArtifact) HasLocation() bool {

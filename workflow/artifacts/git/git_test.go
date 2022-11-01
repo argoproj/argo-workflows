@@ -1,7 +1,9 @@
 package git
 
 import (
+	"io"
 	"io/ioutil"
+	"net/http"
 	"os"
 	"testing"
 
@@ -164,6 +166,69 @@ func TestGitArtifactDriver_Load(t *testing.T) {
 				SingleBranch: true,
 			}))
 		})
+	})
+
+	t.Run("InsecureSkipTLS", func(t *testing.T) {
+		driver := &ArtifactDriver{InsecureSkipTLS: true}
+
+		t.Run("OnGithub", func(t *testing.T) {
+			assert.NoError(t, load(driver, &wfv1.GitArtifact{
+				Repo: "https://github.com/argoproj-labs/test-repo.git",
+			}))
+		})
+
+		// @todo Found a self signed git host
+		t.Run("OnSelfSignedHTTPS", func(t *testing.T) {
+			assert.NoError(t, load(driver, &wfv1.GitArtifact{
+				Repo: "https://github.com/argoproj-labs/test-repo.git",
+			}))
+		})
+	})
+
+	t.Run("CABundle", func(t *testing.T) {
+		t.Run("WrongCA", func(t *testing.T) {
+			driver := &ArtifactDriver{CABundle: []byte("i am a wrong ca")}
+			assert.Error(t, load(driver, &wfv1.GitArtifact{
+				Repo: "https://github.com/argoproj-labs/test-repo.git",
+			}))
+		})
+
+		// @todo Found a self signed git host
+		t.Run("OnSelfSignedHTTPS", func(t *testing.T) {
+			resp, err := http.Get("https://cacerts.digicert.com/DigiCertTLSECCP384RootG5.crt.pem")
+			assert.Nil(t, err)
+			defer resp.Body.Close()
+
+			CABundleBytes, err := io.ReadAll(resp.Body)
+
+			assert.NotNil(t, err)
+
+			driver := &ArtifactDriver{CABundle: CABundleBytes}
+
+			assert.NoError(t, load(driver, &wfv1.GitArtifact{
+				Repo: "https://github.com/argoproj-labs/test-repo.git",
+			}))
+		})
+	})
+}
+
+func TestGitArtifactDriver_VerifyCert(t *testing.T) {
+	t.Run("Wrong", func(t *testing.T) {
+		str := "hello, i am not a good CA!"
+		err := verifyCert([]byte(str))
+		assert.Error(t, err)
+	})
+
+	t.Run("Good", func(t *testing.T) {
+		resp, err := http.Get("https://cacerts.digicert.com/DigiCertTLSECCP384RootG5.crt.pem")
+		assert.Nil(t, err)
+		defer resp.Body.Close()
+
+		CABundleBytes, err := io.ReadAll(resp.Body)
+		assert.Nil(t, err)
+
+		err = verifyCert(CABundleBytes)
+		assert.NoError(t, err)
 	})
 }
 

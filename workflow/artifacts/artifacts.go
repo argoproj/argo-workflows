@@ -144,6 +144,7 @@ func newDriver(ctx context.Context, art *wfv1.Artifact, ri resource.Interface) (
 		gitDriver := git.ArtifactDriver{
 			InsecureIgnoreHostKey: art.Git.InsecureIgnoreHostKey,
 			DisableSubmodules:     art.Git.DisableSubmodules,
+			InsecureSkipTLS:       art.Git.InsecureSkipTLS,
 		}
 		if art.Git.UsernameSecret != nil {
 			usernameBytes, err := ri.GetSecret(ctx, art.Git.UsernameSecret.Name, art.Git.UsernameSecret.Key)
@@ -165,6 +166,13 @@ func newDriver(ctx context.Context, art *wfv1.Artifact, ri resource.Interface) (
 				return nil, err
 			}
 			gitDriver.SSHPrivateKey = sshPrivateKeyBytes
+		}
+		if art.Git.CABundleSecret != nil {
+			caBundleBytes, err := ri.GetSecret(ctx, art.Git.CABundleSecret.Name, art.Git.CABundleSecret.Key)
+			if err != nil {
+				return nil, err
+			}
+			gitDriver.CABundle = []byte(caBundleBytes)
 		}
 
 		return &gitDriver, nil
