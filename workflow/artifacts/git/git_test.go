@@ -200,8 +200,7 @@ func TestGitArtifactDriver_Load(t *testing.T) {
 			defer resp.Body.Close()
 
 			CABundleBytes, err := io.ReadAll(resp.Body)
-
-			assert.NotNil(t, err)
+			assert.Nil(t, err)
 
 			driver := &ArtifactDriver{CABundle: CABundleBytes}
 
