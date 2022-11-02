@@ -20,4 +20,4 @@ spec:
     container:
       image: docker/whalesay:latest
       command: [cowsay]
-      args: ["{{inputs.parameters.message}}"]
+      args: ["{{workflow.parameters.message}}"]
