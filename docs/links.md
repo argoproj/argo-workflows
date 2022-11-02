@@ -35,7 +35,3 @@ For example, one may find it useful to define a custom label in the workflow and
 
 We can also access workflow fields in a pod link. For example, `${workflow.metadata.name}` returns
 the name of the workflow instead of the name of the pod.
-
-> v3.4 and after
-
-The links now undergo a encode -> decode -> encode process, make sure the links you provide do not include the encoded version of the reserved character `$&+,/:;=?@` to avoid bugs.
