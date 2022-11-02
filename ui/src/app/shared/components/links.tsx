@@ -23,7 +23,7 @@ const addEpochTimestamp = (jsonObject: {metadata: ObjectMeta; workflow?: Workflo
 
 export const ProcessURL = (url: string, jsonObject: any) => {
     addEpochTimestamp(jsonObject);
-    /* replace ${} from input url with corresponding elements from object
+    /* replace $%7B%7D (encoded ${}) from input url with corresponding elements from object
     return null if element is not found*/
     return url.replace(/\$\%7B(.*?)%7D/g, x => {
         const res = x
