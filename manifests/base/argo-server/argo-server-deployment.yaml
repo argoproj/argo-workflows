@@ -16,6 +16,7 @@ spec:
         - name: argo-server
           image: quay.io/argoproj/argocli:latest
           securityContext:
+            runAsUser: 8737
             readOnlyRootFilesystem: true
             runAsNonRoot: true
             allowPrivilegeEscalation: false

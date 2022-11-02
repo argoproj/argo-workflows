@@ -17,6 +17,7 @@ spec:
         - name: workflow-controller
           image: quay.io/argoproj/workflow-controller:latest
           securityContext:
+            runAsUser: 8737
             readOnlyRootFilesystem: true
             runAsNonRoot: true
             allowPrivilegeEscalation: false
