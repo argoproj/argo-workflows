@@ -60,7 +60,7 @@ func newDriver(ctx context.Context, art *wfv1.Artifact, ri resource.Interface) (
 					return nil, fmt.Errorf("serverSideCustomerKeySecret and kmsKeyId cannot be set together")
 				}
 
-				serverSideCustomerKeyBytes, err := ri.GetSecret(ctx, art.S3.EncryptionOptions.ServerSideCustomerKeySecret.Name, art.S3.SecretKeySecret.Key)
+				serverSideCustomerKeyBytes, err := ri.GetSecret(ctx, art.S3.EncryptionOptions.ServerSideCustomerKeySecret.Name, art.S3.EncryptionOptions.ServerSideCustomerKeySecret.Key)
 				if err != nil {
 					return nil, err
 				}
