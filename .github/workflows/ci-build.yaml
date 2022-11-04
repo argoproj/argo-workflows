@@ -37,16 +37,59 @@ jobs:
       - run: bash <(curl -s https://codecov.io/bash)
         if: github.ref == 'refs/heads/master'
 
+  argoexec-image:
+    name: argoexec-image
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # needs: [ lint ]
+    steps:
+      - uses: actions/checkout@v2
+      - uses: docker/setup-buildx-action@v1
+      - name: Cache Docker layers
+        uses: actions/cache@v2
+        with:
+          path: /tmp/.buildx-cache
+          key: ${{ runner.os }}-single-buildx-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-single-buildx
+      - name: build argoexec-image
+        run: |
+          docker buildx build \
+          	-t quay.io/argoproj/argoexec:latest \
+          	--target argoexec \
+          	--cache-from "type=local,src=/tmp/.buildx-cache" \
+          	--cache-to "type=local,dest=/tmp/.buildx-cache-new" \
+            --output=type=docker \
+            .
+      - run: docker save quay.io/argoproj/argoexec:latest > /tmp/argoexec_image.tar
+      - uses: actions/upload-artifact@v2
+        with:
+          name: argoexec
+          path: /tmp/argoexec_image.tar
+          if-no-files-found: error
+        # Temp fix
+        # https://github.com/docker/build-push-action/issues/252
+        # https://github.com/moby/buildkit/issues/1896
+      - name: Move cache
+        run: |
+          rm -rf /tmp/.buildx-cache
+          mv /tmp/.buildx-cache-new /tmp/.buildx-cache
+
   e2e-tests:
     name: E2E Tests
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    needs: [ tests, argoexec-image ]
     env:
       KUBECONFIG: /home/runner/.kubeconfig
     strategy:
       fail-fast: false
+      max-parallel: 4
       matrix:
         include:
+          - test: test-functional
+            containerRuntimeExecutor: emissary
+            profile: minimal
           - test: test-api
             containerRuntimeExecutor: docker
             profile: mysql
@@ -56,17 +99,14 @@ jobs:
           - test: test-cron
             containerRuntimeExecutor: emissary
             profile: minimal
-          - test: test-executor
+          - test: test-examples
             containerRuntimeExecutor: emissary
             profile: minimal
-          - test: test-functional
+          - test: test-executor
             containerRuntimeExecutor: emissary
             profile: minimal
           - test: test-executor
             containerRuntimeExecutor: docker
-            profile: minimal
-          - test: test-examples
-            containerRuntimeExecutor: emissary
             profile: minimal
           - test: test-executor
             containerRuntimeExecutor: k8sapi
@@ -84,36 +124,12 @@ jobs:
           go-version: "1.16"
       - uses: actions/cache@v2
         with:
-          path: /home/runner/.cache/go-build
-          key: GOCACHE-v2-${{ hashFiles('**/go.mod') }}
-      - uses: actions/cache@v2
-        with:
-          path: /home/runner/go/pkg/mod
-          key: GOMODCACHE-v2-${{ hashFiles('**/go.mod') }}
-      - uses: actions/cache@v2
-        with:
-          path: /home/runner/go/bin
-          key: go-bin-v1-${{ hashFiles('**/go.mod') }}
-      - name: Cache Docker layers
-        uses: actions/cache@v2
-        with:
-          path: /tmp/.buildx-cache
-          key: ${{ runner.os }}-buildx-${{ github.sha }}
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
           restore-keys: |
-            ${{ runner.os }}-buildx-
-      - uses: docker/setup-buildx-action@v1
-      - run: mkdir -p /tmp/log/argo-e2e
-      # we never want to pull images by accident on CI after we built them
-      # so imagePullPolicy=Never
-      # but, we can pull it if we don't need it
-      - run: docker pull quay.io/argoproj/argoexec:latest
-        if: ${{!(matrix.test == 'test-executor' || matrix.test == 'test-functional')}}
-      - name: make argoexec-image
-        if: ${{matrix.test == 'test-executor' || matrix.test == 'test-functional'}}
-        # retry this once, as it can be flakey
-        run: |
-          make argoexec-image STATIC_FILES=false || make argoexec-image STATIC_FILES=false
-          docker image prune -f
+            ${{ runner.os }}-go-
       - name: Install and start K3S
         run: |
           curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION=v1.21.2+k3s1 INSTALL_K3S_CHANNEL=stable INSTALL_K3S_EXEC=--docker K3S_KUBECONFIG_MODE=644 sh -
@@ -123,6 +139,11 @@ jobs:
           echo "  user:" >> $KUBECONFIG
           echo "    token: xxxxxx" >> $KUBECONFIG
           until kubectl cluster-info ; do sleep 10s ; done
+      - uses: actions/download-artifact@v2
+        with:
+          name: argoexec
+          path: /tmp
+      - run: docker load < /tmp/argoexec_image.tar
       - name: Set-up /etc/hosts
         run: |
           echo '127.0.0.1 dex'      | sudo tee -a /etc/hosts
@@ -130,7 +151,7 @@ jobs:
           echo '127.0.0.1 postgres' | sudo tee -a /etc/hosts
           echo '127.0.0.1 mysql'    | sudo tee -a /etc/hosts
       - run: make install controller cli $(go env GOPATH)/bin/goreman PROFILE=${{matrix.profile}} E2E_EXECUTOR=${{matrix.containerRuntimeExecutor}} AUTH_MODE=client STATIC_FILES=false LOG_LEVEL=info
-      - run: make start PROFILE=${{matrix.profile}} E2E_EXECUTOR=${{matrix.containerRuntimeExecutor}} AUTH_MODE=client STATIC_FILES=false LOG_LEVEL=info UI=false > /tmp/log/argo-e2e/e2e-${{matrix.test}}-${{matrix.containerRuntimeExecutor}}-${{matrix.profile}}.log 2>&1 &
+      - run: make start PROFILE=${{matrix.profile}} E2E_EXECUTOR=${{matrix.containerRuntimeExecutor}} AUTH_MODE=client STATIC_FILES=false LOG_LEVEL=info API=${{matrix.test == 'test-api' || matrix.test == 'test-cli'}} UI=false > /tmp/argo.log 2>&1 &
       - run: make wait
         timeout-minutes: 4
       - run: make ${{matrix.test}} E2E_TIMEOUT=1m STATIC_FILES=false
@@ -141,10 +162,7 @@ jobs:
           path: /tmp/log/argo-e2e/e2e-${{matrix.test}}-${{matrix.containerRuntimeExecutor}}-${{matrix.profile}}.log
       - name: show e2e results
         if: ${{ failure() }}
-        run: cat /tmp/log/argo-e2e/e2e-${{matrix.test}}-${{matrix.containerRuntimeExecutor}}-${{matrix.profile}}.log
-      - name: MinIO logs
-        if: ${{ failure() }}
-        run: kubectl -n argo logs deploy/minio
+        run: cat /tmp/log/argo-e2e/argo.log
   codegen:
     name: Codegen
     runs-on: ubuntu-latest
@@ -201,11 +219,20 @@ jobs:
     env:
       GOPATH: /home/runner/go
     steps:
-      - uses: actions/checkout@v2
-      - run: cp server/static/files.go.stub server/static/files.go
-      - uses: golangci/golangci-lint-action@v2
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v3
         with:
-          version: v1.42.0
+          go-version: "1.18"
+      - uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: release-3.2-${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            release-3.2-${{ runner.os }}-go-
+      - run: make lint STATIC_FILES=false
+      - run: git diff --exit-code
 
   ui:
     name: UI

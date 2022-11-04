@@ -318,13 +318,16 @@ func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServe
 	mustRegisterGWHandler(workflowarchivepkg.RegisterArchivedWorkflowServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
 	mustRegisterGWHandler(clusterwftemplatepkg.RegisterClusterWorkflowTemplateServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
 
-	mux.HandleFunc("/api/", func(w http.ResponseWriter, r *http.Request) { webhookInterceptor(w, r, gwmux) })
-	mux.HandleFunc("/artifacts/", artifactServer.GetOutputArtifact)
-	mux.HandleFunc("/input-artifacts/", artifactServer.GetInputArtifact)
-	mux.HandleFunc("/artifacts-by-uid/", artifactServer.GetOutputArtifactByUID)
-	mux.HandleFunc("/input-artifacts-by-uid/", artifactServer.GetInputArtifactByUID)
-	mux.HandleFunc("/artifacts-by-manifest/", artifactServer.GetOutputArtifactByManifest)
-	mux.HandleFunc("/input-artifacts-by-manifest/", artifactServer.GetInputArtifactByManifest)
+	// emergency environment variable that allows you to disable the artifact service in case of problems
+	if os.Getenv("ARGO_ARTIFACT_SERVER") != "false" {
+		mux.HandleFunc("/api/", func(w http.ResponseWriter, r *http.Request) { webhookInterceptor(w, r, gwmux) })
+		mux.HandleFunc("/artifacts/", artifactServer.GetOutputArtifact)
+		mux.HandleFunc("/input-artifacts/", artifactServer.GetInputArtifact)
+		mux.HandleFunc("/artifacts-by-uid/", artifactServer.GetOutputArtifactByUID)
+		mux.HandleFunc("/input-artifacts-by-uid/", artifactServer.GetInputArtifactByUID)
+		mux.HandleFunc("/artifacts-by-manifest/", artifactServer.GetOutputArtifactByManifest)
+		mux.HandleFunc("/input-artifacts-by-manifest/", artifactServer.GetInputArtifactByManifest)
+	}
 	mux.Handle("/oauth2/redirect", handlers.ProxyHeaders(http.HandlerFunc(as.oAuth2Service.HandleRedirect)))
 	mux.Handle("/oauth2/callback", handlers.ProxyHeaders(http.HandlerFunc(as.oAuth2Service.HandleCallback)))
 	mux.HandleFunc("/metrics", func(w http.ResponseWriter, r *http.Request) {

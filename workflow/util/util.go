@@ -787,7 +787,7 @@ func retryWorkflow(ctx context.Context, kubeClient kubernetes.Interface, hydrato
 				continue
 			}
 		case wfv1.NodeError, wfv1.NodeFailed, wfv1.NodeOmitted:
-			if !strings.HasPrefix(node.Name, onExitNodeName) && (node.Type == wfv1.NodeTypeDAG || node.Type == wfv1.NodeTypeStepGroup) {
+			if !strings.HasPrefix(node.Name, onExitNodeName) && (node.Type == wfv1.NodeTypeDAG || node.Type == wfv1.NodeTypeTaskGroup || node.Type == wfv1.NodeTypeStepGroup) {
 				newNode := node.DeepCopy()
 				newNode.Phase = wfv1.NodeRunning
 				newNode.Message = ""
@@ -805,7 +805,8 @@ func retryWorkflow(ctx context.Context, kubeClient kubernetes.Interface, hydrato
 		}
 		if node.Type == wfv1.NodeTypePod {
 			templateName := getTemplateFromNode(node)
-			podName := PodName(wf.Name, node.Name, templateName, node.ID)
+			version := GetWorkflowPodNameVersion(wf)
+			podName := PodName(wf.Name, node.Name, templateName, node.ID, version)
 			log.Infof("Deleting pod: %s", podName)
 			err := podIf.Delete(ctx, podName, metav1.DeleteOptions{})
 			if err != nil && !apierr.IsNotFound(err) {

@@ -18,6 +18,7 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/utils/env"
 
 	"github.com/argoproj/argo-workflows/v3/persist/sqldb"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
@@ -199,11 +200,7 @@ func (a *ArtifactServer) returnArtifact(ctx context.Context, w http.ResponseWrit
 		return fmt.Errorf("artifact not found")
 	}
 
-	ref, err := a.artifactRepositories.Resolve(ctx, wf.Spec.ArtifactRepositoryRef, wf.Namespace)
-	if err != nil {
-		return err
-	}
-	ar, err := a.artifactRepositories.Get(ctx, ref)
+	ar, err := a.artifactRepositories.Get(ctx, wf.Status.ArtifactRepositoryRef)
 	if err != nil {
 		return err
 	}
@@ -250,6 +247,8 @@ func (a *ArtifactServer) returnArtifact(ctx context.Context, w http.ResponseWrit
 
 	key, _ := art.GetKey()
 	w.Header().Add("Content-Disposition", fmt.Sprintf(`filename="%s"`, path.Base(key)))
+	w.Header().Add("Content-Security-Policy", env.GetString("ARGO_ARTIFACT_CONTENT_SECURITY_POLICY", "sandbox; base-uri 'none'; default-src 'none'; img-src 'self'; style-src 'self'"))
+	w.Header().Add("X-Frame-Options", env.GetString("ARGO_ARTIFACT_X_FRAME_OPTIONS", "SAMEORIGIN"))
 	w.WriteHeader(200)
 
 	http.ServeContent(w, r, "", time.Time{}, file)

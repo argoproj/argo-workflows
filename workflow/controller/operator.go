@@ -523,9 +523,10 @@ func (woc *wfOperationCtx) setGlobalParameters(executionParameters wfv1.Argument
 		woc.globalParams[common.GlobalVarWorkflowParameters] = string(workflowParameters)
 	}
 	for _, param := range executionParameters.Parameters {
-		if param.Value != nil {
-			woc.globalParams["workflow.parameters."+param.Name] = param.Value.String()
-		} else if param.ValueFrom != nil {
+		if param.Value == nil && param.ValueFrom == nil {
+			return fmt.Errorf("either value or valueFrom must be specified in order to set global parameter %s", param.Name)
+		}
+		if param.ValueFrom != nil {
 			if param.ValueFrom.ConfigMapKeyRef != nil {
 				cmValue, err := common.GetConfigMapValue(woc.controller.configMapInformer, woc.wf.ObjectMeta.Namespace, param.ValueFrom.ConfigMapKeyRef.Name, param.ValueFrom.ConfigMapKeyRef.Key)
 				if err != nil {
@@ -535,7 +536,7 @@ func (woc *wfOperationCtx) setGlobalParameters(executionParameters wfv1.Argument
 				woc.globalParams["workflow.parameters."+param.Name] = cmValue
 			}
 		} else {
-			return fmt.Errorf("either value or valueFrom must be specified in order to set global parameter %s", param.Name)
+			woc.globalParams["workflow.parameters."+param.Name] = param.Value.String()
 		}
 	}
 	for k, v := range woc.wf.ObjectMeta.Annotations {
@@ -1546,7 +1547,7 @@ func buildRetryStrategyLocalScope(node *wfv1.NodeStatus, nodes wfv1.Nodes) map[s
 	lastChildNode := getChildNodeIndex(node, nodes, -1)
 
 	exitCode := "-1"
-	if lastChildNode.Outputs != nil {
+	if lastChildNode.Outputs != nil && lastChildNode.Outputs.ExitCode != nil {
 		exitCode = *lastChildNode.Outputs.ExitCode
 	}
 	localScope[common.LocalVarRetriesLastExitCode] = exitCode
@@ -1590,7 +1591,7 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 	// Inject the pod name. If the pod has a retry strategy, the pod name will be changed and will be injected when it
 	// is determined
 	if resolvedTmpl.IsPodType() && woc.retryStrategy(resolvedTmpl) == nil {
-		localParams[common.LocalVarPodName] = wfutil.PodName(woc.wf.Name, nodeName, resolvedTmpl.Name, woc.wf.NodeID(nodeName))
+		localParams[common.LocalVarPodName] = woc.getPodName(nodeName, resolvedTmpl.Name)
 	}
 
 	// Merge Template defaults to template
@@ -1779,7 +1780,7 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 			localParams := make(map[string]string)
 			// Change the `pod.name` variable to the new retry node name
 			if processedTmpl.IsPodType() {
-				localParams[common.LocalVarPodName] = wfutil.PodName(woc.wf.Name, nodeName, processedTmpl.Name, woc.wf.NodeID(nodeName))
+				localParams[common.LocalVarPodName] = woc.getPodName(nodeName, processedTmpl.Name)
 			}
 			// Inject the retryAttempt number
 			localParams[common.LocalVarRetries] = strconv.Itoa(len(retryParentNode.Children))
@@ -2179,7 +2180,8 @@ func (woc *wfOperationCtx) getPodByNode(node *wfv1.NodeStatus) (*apiv1.Pod, erro
 	if node.Type != wfv1.NodeTypePod {
 		return nil, fmt.Errorf("Expected node type %s, got %s", wfv1.NodeTypePod, node.Type)
 	}
-	podName := wfutil.PodName(woc.wf.Name, node.Name, node.TemplateName, node.ID)
+
+	podName := woc.getPodName(node.Name, node.TemplateName)
 	return woc.controller.getPod(woc.wf.GetNamespace(), podName)
 }
 
@@ -2687,7 +2689,7 @@ func (woc *wfOperationCtx) processAggregateNodeOutputs(scope *wfScope, prefix st
 	outputParamValueLists := make(map[string][]string)
 	resultsList := make([]wfv1.Item, 0)
 	for _, node := range childNodes {
-		if node.Outputs == nil {
+		if node.Outputs == nil || node.Phase != wfv1.NodeSucceeded || node.Type == wfv1.NodeTypeRetry {
 			continue
 		}
 		if len(node.Outputs.Parameters) > 0 {
@@ -3503,6 +3505,12 @@ func (woc *wfOperationCtx) substituteGlobalVariables() error {
 		return err
 	}
 	return nil
+}
+
+// getPodName gets the appropriate pod name for a workflow based on the
+// POD_NAMES environment variable
+func (woc *wfOperationCtx) getPodName(nodeName, templateName string) string {
+	return wfutil.PodName(woc.wf.Name, nodeName, templateName, woc.wf.NodeID(nodeName), wfutil.GetPodNameVersion())
 }
 
 // setWfPodNamesAnnotation sets an annotation on a workflow with the pod naming

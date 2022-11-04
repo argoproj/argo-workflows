@@ -272,11 +272,14 @@ func (cm *Manager) ReleaseAll(wf *wfv1.Workflow) bool {
 }
 
 func ensureInit(wf *wfv1.Workflow, lockType wfv1.SynchronizationType) {
-	if lockType == wfv1.SynchronizationTypeSemaphore && (wf.Status.Synchronization == nil || wf.Status.Synchronization.Semaphore == nil) {
-		wf.Status.Synchronization = &wfv1.SynchronizationStatus{Semaphore: &wfv1.SemaphoreStatus{}}
+	if wf.Status.Synchronization == nil {
+		wf.Status.Synchronization = &wfv1.SynchronizationStatus{}
 	}
-	if lockType == wfv1.SynchronizationTypeMutex && (wf.Status.Synchronization == nil || wf.Status.Synchronization.Mutex == nil) {
-		wf.Status.Synchronization = &wfv1.SynchronizationStatus{Mutex: &wfv1.MutexStatus{}}
+	if lockType == wfv1.SynchronizationTypeSemaphore && wf.Status.Synchronization.Semaphore == nil {
+		wf.Status.Synchronization.Semaphore = &wfv1.SemaphoreStatus{}
+	}
+	if lockType == wfv1.SynchronizationTypeMutex && wf.Status.Synchronization.Mutex == nil {
+		wf.Status.Synchronization.Mutex = &wfv1.MutexStatus{}
 	}
 }
 

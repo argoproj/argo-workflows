@@ -4,6 +4,9 @@ import (
 	"fmt"
 	"hash/fnv"
 	"os"
+
+	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
 
 const (
@@ -42,8 +45,8 @@ func GetPodNameVersion() PodNameVersion {
 }
 
 // PodName return a deterministic pod name
-func PodName(workflowName, nodeName, templateName, nodeID string) string {
-	if GetPodNameVersion() == PodNameV1 {
+func PodName(workflowName, nodeName, templateName, nodeID string, version PodNameVersion) string {
+	if version == PodNameV1 {
 		return nodeID
 	}
 
@@ -67,4 +70,17 @@ func ensurePodNamePrefixLength(prefix string) string {
 	}
 
 	return prefix
+}
+
+// GetWorkflowPodNameVersion gets the pod name version from the annotation of a
+// given workflow
+func GetWorkflowPodNameVersion(wf *v1alpha1.Workflow) PodNameVersion {
+	annotations := wf.GetAnnotations()
+	version := annotations[common.AnnotationKeyPodNameVersion]
+
+	if version == PodNameV2.String() {
+		return PodNameV2
+	}
+
+	return PodNameV1
 }
