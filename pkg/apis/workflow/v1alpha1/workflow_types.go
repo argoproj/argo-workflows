@@ -2923,7 +2923,8 @@ func (tmpl *Template) GetVolumeMounts() []apiv1.VolumeMount {
 	return nil
 }
 
-// whether or not the template can and will have outputs (i.e. exit code and result)
+// HasOutput returns true if the template can and will have outputs (i.e. exit code and result).
+// In the case of a plugin, we assume it will have outputs because we cannot know at runtime.
 func (tmpl *Template) HasOutput() bool {
 	return tmpl.Container != nil || tmpl.ContainerSet.HasContainerNamed("main") || tmpl.Script != nil || tmpl.Data != nil || tmpl.HTTP != nil || tmpl.Plugin != nil
 }
