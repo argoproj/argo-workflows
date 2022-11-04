@@ -101,14 +101,15 @@ func newGCSClientDefault() (*storage.Client, error) {
 func (g *ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) error {
 	err := waitutil.Backoff(defaultRetry,
 		func() (bool, error) {
-			log.Infof("GCS Load path: %s, key: %s", path, inputArtifact.GCS.Key)
+			key := filepath.Clean(inputArtifact.GCS.Key)
+			log.Infof("GCS Load path: %s, key: %s", path, key)
 			gcsClient, err := g.newGCSClient()
 			if err != nil {
 				log.Warnf("Failed to create new GCS client: %v", err)
 				return !isTransientGCSErr(err), err
 			}
 			defer gcsClient.Close()
-			err = downloadObjects(gcsClient, inputArtifact.GCS.Bucket, inputArtifact.GCS.Key, path)
+			err = downloadObjects(gcsClient, inputArtifact.GCS.Bucket, key, path)
 			if err != nil {
 				log.Warnf("Failed to download objects from GCS: %v", err)
 				return !isTransientGCSErr(err), err
@@ -204,13 +205,14 @@ func listByPrefix(client *storage.Client, bucket, prefix, delim string) ([]strin
 func (g *ArtifactDriver) Save(path string, outputArtifact *wfv1.Artifact) error {
 	err := waitutil.Backoff(defaultRetry,
 		func() (bool, error) {
-			log.Infof("GCS Save path: %s, key: %s", path, outputArtifact.GCS.Key)
+			key := filepath.Clean(outputArtifact.GCS.Key)
+			log.Infof("GCS Save path: %s, key: %s", path, key)
 			client, err := g.newGCSClient()
 			if err != nil {
 				return !isTransientGCSErr(err), err
 			}
 			defer client.Close()
-			err = uploadObjects(client, outputArtifact.GCS.Bucket, outputArtifact.GCS.Key, path)
+			err = uploadObjects(client, outputArtifact.GCS.Bucket, key, path)
 			if err != nil {
 				return !isTransientGCSErr(err), err
 			}
