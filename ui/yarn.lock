@@ -1376,6 +1376,11 @@
   resolved "https://registry.yarnpkg.com/@leichtgewicht/ip-codec/-/ip-codec-2.0.4.tgz#b2ac626d6cb9c8718ab459166d4bb405b8ffa78b"
   integrity sha512-Hcv+nVC0kZnQ3tD9GVu5xSMR4VVYOteQIr/hwFPVEvPdlXqgGEuRjiheChHgdM+JyqdgNcmzZOX/tnl0JOiI7A==
 
+"@popperjs/core@^2.9.2":
+  version "2.11.6"
+  resolved "https://registry.yarnpkg.com/@popperjs/core/-/core-2.11.6.tgz#cee20bd55e68a1720bdab363ecf0c821ded4cd45"
+  integrity sha512-50/17A98tWUfQ176raKiOGXuYpLyyVMkxxG6oylzL3BPOlA6ADGdK7EYunSa4I064xerltq9TGXs8HmOk5E+vw==
+
 "@sinclair/typebox@^0.24.1":
   version "0.24.20"
   resolved "https://registry.yarnpkg.com/@sinclair/typebox/-/typebox-0.24.20.tgz#11a657875de6008622d53f56e063a6347c51a6dd"
@@ -1641,14 +1646,15 @@
   dependencies:
     "@types/react" "*"
 
-"@types/react-datepicker@^2.11.0":
-  version "2.11.0"
-  resolved "https://registry.yarnpkg.com/@types/react-datepicker/-/react-datepicker-2.11.0.tgz#aa6faa66de17b0ff96bc0af9d5d2506d5dd99703"
-  integrity sha512-eagG8BE3TFgPYyZb2/hG4+2delLH9z/4OWzT7wuTCKLHDDXIXgvkb2O2cW8q4/wuqnTnMxo+vl3vgPTENkofzw==
+"@types/react-datepicker@^4.8.0":
+  version "4.8.0"
+  resolved "https://registry.yarnpkg.com/@types/react-datepicker/-/react-datepicker-4.8.0.tgz#0221bd38725b7db64cd08a89f49a93d816c2f691"
+  integrity sha512-20uzZsIf4moPAjjHDfPvH8UaOHZBxrkiQZoLS3wgKq8Xhp+95gdercLEdoA7/I8nR9R5Jz2qQkdMIM+Lq4AS1A==
   dependencies:
+    "@popperjs/core" "^2.9.2"
     "@types/react" "*"
     date-fns "^2.0.1"
-    popper.js "^1.14.1"
+    react-popper "^2.2.5"
 
 "@types/react-dom@^16.8.2":
   version "16.8.2"
@@ -3406,14 +3412,6 @@ create-hmac@^1.1.0, create-hmac@^1.1.2, create-hmac@^1.1.4:
     safe-buffer "^5.0.1"
     sha.js "^2.4.8"
 
-create-react-context@^0.3.0:
-  version "0.3.0"
-  resolved "https://registry.yarnpkg.com/create-react-context/-/create-react-context-0.3.0.tgz#546dede9dc422def0d3fc2fe03afe0bc0f4f7d8c"
-  integrity sha512-dNldIoSuNSvlTJ7slIKC/ZFGKexBMBrrcc+TTe1NdmROnaASuLPvqpwj9v4XS4uXZ8+YPu0sNmShX2rXI5LNsw==
-  dependencies:
-    gud "^1.0.0"
-    warning "^4.0.3"
-
 create-require@^1.1.0:
   version "1.1.1"
   resolved "https://registry.yarnpkg.com/create-require/-/create-require-1.1.1.tgz#c1d7e8f1e5f6cfc9ff65f9cd352d37348756c333"
@@ -3559,15 +3557,10 @@ data-urls@^2.0.0:
     whatwg-mimetype "^2.3.0"
     whatwg-url "^8.0.0"
 
-date-fns@2.x:
-  version "2.28.0"
-  resolved "https://registry.yarnpkg.com/date-fns/-/date-fns-2.28.0.tgz#9570d656f5fc13143e50c975a3b6bbeb46cd08b2"
-  integrity sha512-8d35hViGYx/QH0icHYCeLmsLmMUheMmTyV9Fcm6gvNwdw31yXXH+O85sOBJ+OLnLQMKZowvpKb6FgMIQjcpvQw==
-
-date-fns@^2.0.1:
-  version "2.11.1"
-  resolved "https://registry.yarnpkg.com/date-fns/-/date-fns-2.11.1.tgz#197b8be1bbf5c5e6fe8bea817f0fe111820e7a12"
-  integrity sha512-3RdUoinZ43URd2MJcquzBbDQo+J87cSzB8NkXdZiN5ia1UNyep0oCyitfiL88+R7clGTeq/RniXAc16gWyAu1w==
+date-fns@2.x, date-fns@^2.0.1, date-fns@^2.24.0:
+  version "2.29.3"
+  resolved "https://registry.yarnpkg.com/date-fns/-/date-fns-2.29.3.tgz#27402d2fc67eb442b511b70bbdf98e6411cd68a8"
+  integrity sha512-dDCnyH2WnnKusqvZZ6+jA1O51Ibt8ZMRNkDZdyAyK4YfbDwa/cEmuztzG5pk6hqlp9aSBPYcjOlktquahGwGeA==
 
 date-now@^0.1.4:
   version "0.1.4"
@@ -3617,7 +3610,7 @@ deep-diff@^0.3.5:
   resolved "https://registry.yarnpkg.com/deep-diff/-/deep-diff-0.3.8.tgz#c01de63efb0eec9798801d40c7e0dae25b582c84"
   integrity sha1-wB3mPvsO7JeYgB1Ax+Da4ltYLIQ=
 
-deep-equal@^1.0.0, deep-equal@^1.1.1:
+deep-equal@^1.0.0:
   version "1.1.1"
   resolved "https://registry.yarnpkg.com/deep-equal/-/deep-equal-1.1.1.tgz#b5c98c942ceffaf7cb051e24e1434a25a2e6076a"
   integrity sha512-yd9c5AdiqVcR+JjcwUQb9DkhJc8ngNr0MahEBGvDiJw8puWab2yZlh+nkasOnZP+EGTAP6rRp2JzJhJZzvNF8g==
@@ -4708,11 +4701,6 @@ growly@^1.3.0:
   version "1.3.0"
   resolved "https://registry.yarnpkg.com/growly/-/growly-1.3.0.tgz#f10748cbe76af964b7c96c93c6bcc28af120c081"
   integrity sha1-8QdIy+dq+WS3yWyTxrzCivEgwIE=
-
-gud@^1.0.0:
-  version "1.0.0"
-  resolved "https://registry.yarnpkg.com/gud/-/gud-1.0.0.tgz#a489581b17e6a70beca9abe3ae57de7a499852c0"
-  integrity sha512-zGEOVKFM5sVPPrYs7J5/hYEw2Pof8KCyOwyhG8sAF26mCAeUFAcYPu1mwB7hhpIP29zOIBaDqwuHdLp0jvZXjw==
 
 handle-thing@^2.0.0:
   version "2.0.0"
@@ -7319,7 +7307,7 @@ pkg-dir@^4.1.0, pkg-dir@^4.2.0:
   dependencies:
     find-up "^4.0.0"
 
-popper.js@^1.14.1, popper.js@^1.14.4, popper.js@^1.14.7:
+popper.js@^1.14.7:
   version "1.16.1"
   resolved "https://registry.yarnpkg.com/popper.js/-/popper.js-1.16.1.tgz#2a223cb3dc7b6213d740e40372be40de43e65b1b"
   integrity sha512-Wb4p1J4zyFTbM+u6WuO4XstYx4Ky9Cewe4DWrel7B0w6VVICvPwdOpotjzcf6eD8TsckVnIMNONQyPIUFOUbCQ==
@@ -7957,16 +7945,17 @@ react-copy-to-clipboard@5.0.4:
     copy-to-clipboard "^3"
     prop-types "^15.5.8"
 
-react-datepicker@^2.16.0:
-  version "2.16.0"
-  resolved "https://registry.yarnpkg.com/react-datepicker/-/react-datepicker-2.16.0.tgz#6bd68de94f5fb38c8f6a4370f3c612837c700e4e"
-  integrity sha512-TvcmSY27rn0JKvuJuIXNNS+niGQNdgtuG/CsBttVYhPOA9KmSw7c2PvQBPVEvzkyV+QPNJ8jN/KVJNj9uvopqA==
+react-datepicker@^4.8.0:
+  version "4.8.0"
+  resolved "https://registry.yarnpkg.com/react-datepicker/-/react-datepicker-4.8.0.tgz#11b8918d085a1ce4781eee4c8e4641b3cd592010"
+  integrity sha512-u69zXGHMpxAa4LeYR83vucQoUCJQ6m/WBsSxmUMu/M8ahTSVMMyiyQzauHgZA2NUr9y0FUgOAix71hGYUb6tvg==
   dependencies:
+    "@popperjs/core" "^2.9.2"
     classnames "^2.2.6"
-    date-fns "^2.0.1"
+    date-fns "^2.24.0"
     prop-types "^15.7.2"
-    react-onclickoutside "^6.9.0"
-    react-popper "^1.3.4"
+    react-onclickoutside "^6.12.0"
+    react-popper "^2.2.5"
 
 react-debounce-input@=3.2.4:
   version "3.2.4"
@@ -7986,7 +7975,7 @@ react-dom@^16.14.0:
     prop-types "^15.6.2"
     scheduler "^0.19.1"
 
-react-fast-compare@^3.1.1:
+react-fast-compare@^3.0.1, react-fast-compare@^3.1.1:
   version "3.2.0"
   resolved "https://registry.yarnpkg.com/react-fast-compare/-/react-fast-compare-3.2.0.tgz#641a9da81b6a6320f270e89724fb45a0b39e43bb"
   integrity sha512-rtGImPZ0YyLrscKI9xTpV8psd6I8VAtjKCzQDlzyDvqJA8XOW78TXYQwNRNd8g8JZnDu8q9Fu/1v4HPAVwVdHA==
@@ -8082,22 +8071,17 @@ react-monaco-editor@^0.50.1:
   dependencies:
     prop-types "^15.8.1"
 
-react-onclickoutside@^6.9.0:
-  version "6.9.0"
-  resolved "https://registry.yarnpkg.com/react-onclickoutside/-/react-onclickoutside-6.9.0.tgz#a54bc317ae8cf6131a5d78acea55a11067f37a1f"
-  integrity sha512-8ltIY3bC7oGhj2nPAvWOGi+xGFybPNhJM0V1H8hY/whNcXgmDeaeoCMPPd8VatrpTsUWjb/vGzrmu6SrXVty3A==
+react-onclickoutside@^6.12.0:
+  version "6.12.2"
+  resolved "https://registry.yarnpkg.com/react-onclickoutside/-/react-onclickoutside-6.12.2.tgz#8e6cf80c7d17a79f2c908399918158a7b02dda01"
+  integrity sha512-NMXGa223OnsrGVp5dJHkuKxQ4czdLmXSp5jSV9OqiCky9LOpPATn3vLldc+q5fK3gKbEHvr7J1u0yhBh/xYkpA==
 
-react-popper@^1.3.4:
-  version "1.3.7"
-  resolved "https://registry.yarnpkg.com/react-popper/-/react-popper-1.3.7.tgz#f6a3471362ef1f0d10a4963673789de1baca2324"
-  integrity sha512-nmqYTx7QVjCm3WUZLeuOomna138R1luC4EqkW3hxJUrAe+3eNz3oFCLYdnPwILfn0mX1Ew2c3wctrjlUMYYUww==
+react-popper@^2.2.5:
+  version "2.3.0"
+  resolved "https://registry.yarnpkg.com/react-popper/-/react-popper-2.3.0.tgz#17891c620e1320dce318bad9fede46a5f71c70ba"
+  integrity sha512-e1hj8lL3uM+sgSR4Lxzn5h1GxBlpa4CQz0XLF8kx4MDrDRWY0Ena4c97PUeSX9i5W3UAfDP0z0FXCTQkoXUl3Q==
   dependencies:
-    "@babel/runtime" "^7.1.2"
-    create-react-context "^0.3.0"
-    deep-equal "^1.1.1"
-    popper.js "^1.14.4"
-    prop-types "^15.6.1"
-    typed-styles "^0.0.7"
+    react-fast-compare "^3.0.1"
     warning "^4.0.2"
 
 react-redux@^5.0.6:
@@ -9880,11 +9864,6 @@ type-is@~1.6.18:
     media-typer "0.3.0"
     mime-types "~2.1.24"
 
-typed-styles@^0.0.7:
-  version "0.0.7"
-  resolved "https://registry.yarnpkg.com/typed-styles/-/typed-styles-0.0.7.tgz#93392a008794c4595119ff62dde6809dbc40a3d9"
-  integrity sha512-pzP0PWoZUhsECYjABgCGQlRGL1n7tOHsgwYv3oIiEpJwGhFTuty/YNeduxQYzXXa3Ge5BdT6sHYIQYpl4uJ+5Q==
-
 typedarray-to-buffer@^3.1.5:
   version "3.1.5"
   resolved "https://registry.yarnpkg.com/typedarray-to-buffer/-/typedarray-to-buffer-3.1.5.tgz#a97ee7a9ff42691b9f783ff1bc5112fe3fca9080"
@@ -10161,7 +10140,7 @@ warning@^4.0.1:
   dependencies:
     loose-envify "^1.0.0"
 
-warning@^4.0.2, warning@^4.0.3:
+warning@^4.0.2:
   version "4.0.3"
   resolved "https://registry.yarnpkg.com/warning/-/warning-4.0.3.tgz#16e9e077eb8a86d6af7d64aa1e05fd85b4678ca3"
   integrity sha512-rpJyN222KWIvHJ/F53XSZv0Zl/accqHR8et1kpaMTD/fLCRxtV8iX8czMzY7sVZupTI3zcUTg8eycS2kNF9l6w==
