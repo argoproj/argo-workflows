@@ -76,7 +76,7 @@ func TestPrintNode(t *testing.T) {
 	node.HostNodeName = kubernetesNodeName
 	// derive expected pod name:
 	h := fnv.New32a()
-	_, _ = h.Write([]byte(fmt.Sprintf("%s %s", JobStatusIconMap[wfv1.NodeRunning], nodeName)))
+	_, _ = h.Write([]byte(nodeName))
 	expectedPodName := fmt.Sprintf("%s-%s-%v", workflowName, node.TemplateName, h.Sum32())
 	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t%s\t%s\t%s\t%s\t%s\n", JobStatusIconMap[wfv1.NodeRunning], nodeName, "", expectedPodName, "0s", nodeMessage, ""), node, getArgs)
 
@@ -398,19 +398,19 @@ status:
 
 		// derive expected pod name:
 		h := fnv.New32a()
-		_, _ = h.Write([]byte(fmt.Sprintf("%s %s", JobStatusIconMap[wfv1.NodeSucceeded], "sleep(9:nine)")))
+		_, _ = h.Write([]byte("many-items-z26lj[0].sleep(9:nine)"))
 		expectedPodName := fmt.Sprintf("many-items-z26lj-sleep-%v", h.Sum32())
-		assert.Contains(t, output, fmt.Sprintf("sleep(9:nine)     sleep           %s   19s", expectedPodName))
+		assert.Contains(t, output, fmt.Sprintf("sleep(9:nine)     sleep           %s  19s", expectedPodName))
 
 		h.Reset()
-		_, _ = h.Write([]byte(fmt.Sprintf("%s %s", JobStatusIconMap[wfv1.NodeSucceeded], "sleep(10:ten)")))
+		_, _ = h.Write([]byte("many-items-z26lj[0].sleep(10:ten)"))
 		expectedPodName = fmt.Sprintf("many-items-z26lj-sleep-%v", h.Sum32())
 		assert.Contains(t, output, fmt.Sprintf("sleep(10:ten)     sleep           %s  23s", expectedPodName))
 
 		h.Reset()
-		_, _ = h.Write([]byte(fmt.Sprintf("%s %s", JobStatusIconMap[wfv1.NodeSucceeded], "sleep(11:eleven)")))
+		_, _ = h.Write([]byte("many-items-z26lj[0].sleep(11:eleven)"))
 		expectedPodName = fmt.Sprintf("many-items-z26lj-sleep-%v", h.Sum32())
-		assert.Contains(t, output, fmt.Sprintf("sleep(11:eleven)  sleep           %s   22s", expectedPodName))
+		assert.Contains(t, output, fmt.Sprintf("sleep(11:eleven)  sleep           %s  22s", expectedPodName))
 	})
 }
 
