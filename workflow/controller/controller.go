@@ -552,8 +552,27 @@ func (wfc *WorkflowController) processNextPodCleanupItem(ctx context.Context) bo
 				return err
 			}
 		case deletePod:
+			// remove the finalizer to allow the pod to be deleted
+			data, err := json.Marshal(map[string]interface{}{
+				"metadata": map[string]interface{}{
+					"finalizers": []string{},
+				},
+			})
+			if err != nil {
+				return err
+			}
+			_, err = pods.Patch(
+				ctx,
+				podName,
+				types.MergePatchType,
+				data,
+				metav1.PatchOptions{},
+			)
+			if err != nil {
+				return err
+			}
 			propagation := metav1.DeletePropagationBackground
-			err := pods.Delete(ctx, podName, metav1.DeleteOptions{
+			err = pods.Delete(ctx, podName, metav1.DeleteOptions{
 				PropagationPolicy:  &propagation,
 				GracePeriodSeconds: wfc.Config.PodGCGracePeriodSeconds,
 			})
