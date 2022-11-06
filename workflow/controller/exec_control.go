@@ -20,7 +20,9 @@ func (woc *wfOperationCtx) applyExecutionControl(pod *apiv1.Pod, wfNodesLock *sy
 	}
 
 	nodeID := woc.nodeID(pod)
+	wfNodesLock.RLock()
 	node, ok := woc.wf.Status.Nodes[nodeID]
+	wfNodesLock.RUnlock()	
 	if !ok {
 		return
 	}
