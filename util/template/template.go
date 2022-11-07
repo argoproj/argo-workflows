@@ -2,6 +2,7 @@ package template
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"regexp"
 	"strconv"
@@ -9,7 +10,6 @@ import (
 	"text/template"
 
 	exprenv "github.com/argoproj/argo-workflows/v3/util/expr/env"
-	"github.com/pkg/errors"
 )
 
 const (
@@ -19,6 +19,10 @@ const (
 
 type Template interface {
 	Replace(replaceMap map[string]string, allowUnresolved bool) (string, error)
+}
+
+type impl struct {
+	*template.Template
 }
 
 func replaceTemplate(x string) string {
@@ -57,10 +61,6 @@ func execFunc(replaceMap map[string]string, allowUnresolved bool, tag string) (s
 		}
 		return w.String(), nil
 	}
-}
-
-type impl struct {
-	*template.Template
 }
 
 func (t *impl) Replace(replaceMap map[string]string, allowUnresolved bool) (string, error) {
