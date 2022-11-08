@@ -277,18 +277,30 @@ func TestUnzip(t *testing.T) {
 
 func TestUntar(t *testing.T) {
 	tarPath := "testdata/file.tar.gz"
-	destPath := "testdata/untarredFile"
+	destPath := "testdata/untarredDir"
+	filePath := "testdata/untarredDir/file"
+	linkPath := "testdata/untarredDir/link"
 
 	// test
 	err := untar(tarPath, destPath)
 	assert.NoError(t, err)
 
-	// check untarred file
+	// check untarred contents
 	fileInfo, err := os.Stat(destPath)
+	assert.NoError(t, err)
+	assert.True(t, fileInfo.Mode().IsDir())
+	fileInfo, err = os.Stat(filePath)
+	assert.NoError(t, err)
+	assert.True(t, fileInfo.Mode().IsRegular())
+	fileInfo, err = os.Stat(linkPath)
 	assert.NoError(t, err)
 	assert.True(t, fileInfo.Mode().IsRegular())
 
 	// cleanup
+	err = os.Remove(linkPath)
+	assert.NoError(t, err)
+	err = os.Remove(filePath)
+	assert.NoError(t, err)
 	err = os.Remove(destPath)
 	assert.NoError(t, err)
 }
