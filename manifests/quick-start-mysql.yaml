@@ -1712,13 +1712,13 @@ spec:
           initialDelaySeconds: 10
           periodSeconds: 20
         securityContext:
-          runAsUser: 8737
           allowPrivilegeEscalation: false
           capabilities:
             drop:
             - ALL
           readOnlyRootFilesystem: true
           runAsNonRoot: true
+          runAsUser: 8737
         volumeMounts:
         - mountPath: /tmp
           name: tmp
@@ -1899,13 +1899,13 @@ spec:
           name: metrics
         - containerPort: 6060
         securityContext:
-          runAsUser: 8737
           allowPrivilegeEscalation: false
           capabilities:
             drop:
             - ALL
           readOnlyRootFilesystem: true
           runAsNonRoot: true
+          runAsUser: 8737
       nodeSelector:
         kubernetes.io/os: linux
       priorityClassName: workflow-controller
