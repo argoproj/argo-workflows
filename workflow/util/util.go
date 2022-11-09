@@ -913,7 +913,7 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 				}
 			}
 		case wfv1.NodeError, wfv1.NodeFailed, wfv1.NodeOmitted:
-			if !strings.HasSuffix(node.Name, onExitNodeName) && isGroupNode(node) {
+			if isGroupNode(node) {
 				newNode := node.DeepCopy()
 				newWF.Status.Nodes[newNode.ID] = resetNode(*newNode)
 				log.Debugf("Reset %s node %s since it's a group node", node.Name, string(node.Phase))
