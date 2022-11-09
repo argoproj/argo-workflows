@@ -45,8 +45,8 @@ func GetPodNameVersion() PodNameVersion {
 	}
 }
 
-// PodName return a deterministic pod name
-func PodName(workflowName, nodeName, templateName, nodeID string, version PodNameVersion) string {
+// GeneratePodName return a deterministic pod name
+func GeneratePodName(workflowName, nodeName, templateName, nodeID string, version PodNameVersion) string {
 	if version == PodNameV1 {
 		return nodeID
 	}

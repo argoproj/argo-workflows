@@ -27,7 +27,7 @@ func TestPodNameV2(t *testing.T) {
 	_, _ = h.Write([]byte(nodeName))
 	expectedPodName := fmt.Sprintf("wfname-templatename-%v", h.Sum32())
 
-	name := PodName(shortWfName, nodeName, shortTemplateName, nodeID, PodNameV2)
+	name := GeneratePodName(shortWfName, nodeName, shortTemplateName, nodeID, PodNameV2)
 	assert.Equal(t, expectedPodName, name)
 
 	///////////////////////////////////////////////////////////////////////////////////////////
@@ -47,7 +47,7 @@ func TestPodNameV2(t *testing.T) {
 	longPrefix := fmt.Sprintf("%s-%s", longWfName, longTemplateName)
 	expectedPodName = fmt.Sprintf("%s-%v", longPrefix[0:maxK8sResourceNameLength-k8sNamingHashLength-1], h.Sum32())
 
-	name = PodName(longWfName, nodeName, longTemplateName, nodeID, PodNameV2)
+	name = GeneratePodName(longWfName, nodeName, longTemplateName, nodeID, PodNameV2)
 	assert.Equal(t, expectedPodName, name)
 
 }
