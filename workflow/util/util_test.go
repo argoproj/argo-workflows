@@ -830,6 +830,138 @@ func TestDeepDeleteNodes(t *testing.T) {
 	}
 }
 
+var exitHandler = `
+metadata:
+  name: retry-script-6xt68
+  generateName: retry-script-
+  uid: d0cb3766-6bbc-48f0-84c3-820ababfc8ff
+  resourceVersion: '9897789'
+  generation: 4
+  creationTimestamp: '2022-11-09T09:08:23Z'
+  labels:
+    workflows.argoproj.io/completed: 'true'
+    workflows.argoproj.io/phase: Failed
+spec:
+  templates:
+    - name: retry-script
+      inputs: {}
+      outputs: {}
+      metadata: {}
+      script:
+        name: ''
+        image: python:alpine3.6
+        command:
+          - python
+        resources: {}
+        source: |
+          import sys; 
+          exit_code = 1; 
+          sys.exit(exit_code)
+    - name: handler
+      inputs:
+        parameters:
+          - name: message
+      outputs: {}
+      metadata: {}
+      container:
+        name: ''
+        image: alpine:latest
+        command:
+          - sh
+          - '-c'
+        args:
+          - echo {{inputs.parameters.message}}
+        resources: {}
+  entrypoint: retry-script
+  arguments: {}
+  hooks:
+    exit:
+      template: handler
+      arguments:
+        parameters:
+          - name: message
+            value: '{{ workflow.status }}'
+status:
+  phase: Failed
+  startedAt: '2022-11-09T09:08:23Z'
+  finishedAt: '2022-11-09T09:08:43Z'
+  progress: 1/2
+  message: Error (exit code 1)
+  nodes:
+    retry-script-6xt68:
+      id: retry-script-6xt68
+      name: retry-script-6xt68
+      displayName: retry-script-6xt68
+      type: Pod
+      templateName: retry-script
+      templateScope: local/retry-script-6xt68
+      phase: Failed
+      message: Error (exit code 1)
+      startedAt: '2022-11-09T09:08:23Z'
+      finishedAt: '2022-11-09T09:08:28Z'
+      progress: 0/1
+      resourcesDuration:
+        cpu: 4
+        memory: 4
+      outputs:
+        artifacts:
+          - name: main-logs
+            s3:
+              key: retry-script-6xt68/retry-script-6xt68/main.log
+        exitCode: '1'
+      hostNodeName: minikube
+    retry-script-6xt68-3924170365:
+      id: retry-script-6xt68-3924170365
+      name: retry-script-6xt68.onExit
+      displayName: retry-script-6xt68.onExit
+      type: Pod
+      templateName: handler
+      templateScope: local/retry-script-6xt68
+      phase: Succeeded
+      startedAt: '2022-11-09T09:08:33Z'
+      finishedAt: '2022-11-09T09:08:38Z'
+      progress: 1/1
+      resourcesDuration:
+        cpu: 3
+        memory: 3
+      inputs:
+        parameters:
+          - name: message
+            value: Failed
+      outputs:
+        artifacts:
+          - name: main-logs
+            s3:
+              key: >-
+                retry-script-6xt68/retry-script-6xt68-handler-3924170365/main.log
+        exitCode: '0'
+      hostNodeName: minikube
+  conditions:
+    - type: PodRunning
+      status: 'False'
+    - type: Completed
+      status: 'True'
+  resourcesDuration:
+    cpu: 7
+    memory: 7
+`
+
+func TestRetryExitHandler(t *testing.T) {
+	wfIf := argofake.NewSimpleClientset().ArgoprojV1alpha1().Workflows("")
+	origWf := wfv1.MustUnmarshalWorkflow(exitHandler)
+
+	ctx := context.Background()
+	wf, err := wfIf.Create(ctx, origWf, metav1.CreateOptions{})
+	if assert.NoError(t, err) {
+		newWf, _, err := FormulateRetryWorkflow(ctx, wf, false, "", nil)
+		assert.NoError(t, err)
+		newWfBytes, err := yaml.Marshal(newWf)
+		assert.NoError(t, err)
+		t.Log(string(newWfBytes))
+		assert.NotContains(t, string(newWfBytes), "retry-script-6xt68-3924170365")
+	}
+}
+
 func TestFormulateRetryWorkflow(t *testing.T) {
 	ctx := context.Background()
 	wfClient := argofake.NewSimpleClientset().ArgoprojV1alpha1().Workflows("my-ns")
