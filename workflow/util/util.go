@@ -858,7 +858,7 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 		}
 		switch node.Phase {
 		case wfv1.NodeSucceeded, wfv1.NodeSkipped:
-			if doForceResetNode {
+			if strings.HasSuffix(node.Name, onExitNodeName) || doForceResetNode {
 				log.Debugf("Force reset for node: %s", node.Name)
 				// Reset parent node if this node is a step/task group or DAG.
 				if isGroupNode(node) && node.BoundaryID != "" {
@@ -913,7 +913,7 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 				}
 			}
 		case wfv1.NodeError, wfv1.NodeFailed, wfv1.NodeOmitted:
-			if !strings.HasPrefix(node.Name, onExitNodeName) && isGroupNode(node) {
+			if isGroupNode(node) {
 				newNode := node.DeepCopy()
 				newWF.Status.Nodes[newNode.ID] = resetNode(*newNode)
 				log.Debugf("Reset %s node %s since it's a group node", node.Name, string(node.Phase))
