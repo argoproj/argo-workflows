@@ -200,6 +200,8 @@ const (
 	LabelKeyConfigMapType = "workflows.argoproj.io/configmap-type"
 	// LabelValueTypeConfigMapCache is a key for configmaps that are memoization cache.
 	LabelValueTypeConfigMapCache = "Cache"
+	// LabelValueTypeConfigMapSyncManager is a ket for configmaps used to store sync metadata
+	LabelValueTypeConfigMapSyncManager = "SyncManager"
 	// LabelValueTypeConfigMapParameter is a key for configmaps that contains parameter values.
 	LabelValueTypeConfigMapParameter = "Parameter"
 	// LabelValueTypeConfigMapExecutorPlugin is a key for configmaps that contains an executor plugin.

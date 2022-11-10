@@ -17,6 +17,13 @@ type (
 	IsWorkflowDeleted func(string) bool
 )
 
+type SyncType int
+
+const (
+	WorkflowLevel SyncType = iota
+	TemplateLevel
+)
+
 type Manager struct {
 	syncLockMap  map[string]Semaphore
 	lock         *sync.Mutex
@@ -114,7 +121,7 @@ func (cm *Manager) Initialize(wfs []wfv1.Workflow) {
 
 // TryAcquire tries to acquire the lock from semaphore.
 // It returns status of acquiring a lock , status of Workflow status updated, waiting message if lock is not available and any error encountered
-func (cm *Manager) TryAcquire(wf *wfv1.Workflow, nodeName string, syncLockRef *wfv1.Synchronization) (bool, bool, string, error) {
+func (cm *Manager) TryAcquire(wf *wfv1.Workflow, nodeName string, syncLockRef *wfv1.Synchronization, syncType SyncType) (bool, bool, string, error) {
 	cm.lock.Lock()
 	defer cm.lock.Unlock()
 
