@@ -160,7 +160,7 @@ export const ArchivedWorkflowDetails = ({history, location, match}: RouteCompone
                                         archived={true}
                                     />
                                 )}
-                                {selectedArtifact && <ArtifactPanel workflow={workflow} artifact={selectedArtifact} artifactRepository={selectedTemplateArtifactRepo} />}
+                                {selectedArtifact && <ArtifactPanel workflow={workflow} artifact={selectedArtifact} archived={true} artifactRepository={selectedTemplateArtifactRepo} />}
                             </div>
                         )}
                     </div>
