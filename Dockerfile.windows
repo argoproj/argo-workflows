@@ -29,7 +29,7 @@ FROM mcr.microsoft.com/windows/nanoserver:${IMAGE_OS_VERSION} as argoexec-base
 COPY --from=builder /windows/system32/netapi32.dll /windows/system32/netapi32.dll
 
 # NOTE: kubectl version should be one minor version less than https://storage.googleapis.com/kubernetes-release/release/stable.txt
-ENV KUBECTL_VERSION=1.24.5
+ENV KUBECTL_VERSION=1.24.8
 ENV JQ_VERSION=1.6
 
 RUN mkdir C:\app && \

@@ -49,7 +49,7 @@ FROM builder as argoexec-build
 COPY hack/arch.sh hack/os.sh /bin/
 
 # NOTE: kubectl version should be one minor version less than https://storage.googleapis.com/kubernetes-release/release/stable.txt
-RUN curl -o /usr/local/bin/kubectl https://storage.googleapis.com/kubernetes-release/release/v1.24.5/bin/$(os.sh)/$(arch.sh)/kubectl && \
+RUN curl -o /usr/local/bin/kubectl https://storage.googleapis.com/kubernetes-release/release/v1.24.8/bin/$(os.sh)/$(arch.sh)/kubectl && \
     chmod +x /usr/local/bin/kubectl
 
 RUN curl -o /usr/local/bin/jq https://github.com/stedolan/jq/releases/download/jq-1.6/jq-linux64 && \
