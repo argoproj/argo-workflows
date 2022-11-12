@@ -1,6 +1,7 @@
 package executor
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -306,8 +307,13 @@ func (we *WorkflowExecutor) SaveResourceParameters(ctx context.Context, resource
 			if resourceNamespace != "" {
 				resArgs = append(resArgs, "-n", resourceNamespace)
 			}
-			cmdStr := fmt.Sprintf("kubectl get %s -o json | jq -rc '%s'", strings.Join(resArgs, " "), param.ValueFrom.JQFilter)
-			cmd = exec.Command(cmdStr)
+			// store the output of kubectl get in a variable
+			output := bytes.Buffer{}
+			cmd = exec.Command("kubectl get %s -o json", strings.Join(resArgs, " "))
+			cmd.Stdout = &output
+			// set the output of the previous command as the input to jq
+			cmd = exec.Command("jq -rc '%s'", param.ValueFrom.JQFilter)
+			cmd.Stdin = &output
 		} else {
 			continue
 		}

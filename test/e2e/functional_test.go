@@ -1154,3 +1154,34 @@ spec:
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeFailed)
 }
+
+func (s *FunctionalSuite) TestJQFilter() {
+	s.Given().
+		Workflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: jqfilter-
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      outputs:
+        parameters:
+          - name: output
+            valueFrom:
+              jqFilter: .
+      resource:
+        action: get
+        manifest: |
+          apiVersion: v1
+          kind: ConfigMap
+          metadata:
+            name: workflow-controller-configmap
+            namespace: argo
+  serviceAccountName: argo-server
+`).
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeSucceeded)
+}
