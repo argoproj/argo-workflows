@@ -541,18 +541,24 @@ func (woc *wfOperationCtx) allArtifactsDeleted() bool {
 func (woc *wfOperationCtx) processCompletedArtifactGCPod(ctx context.Context, pod *corev1.Pod) error {
 	woc.log.Infof("processing completed Artifact GC Pod '%s'", pod.Name)
 
+	strategyStr, found := pod.Annotations[common.AnnotationKeyArtifactGCStrategy]
+	if !found {
+		return fmt.Errorf("Artifact GC Pod '%s' doesn't have annotation '%s'?", pod.Name, common.AnnotationKeyArtifactGCStrategy)
+	}
+	strategy := wfv1.ArtifactGCStrategy(strategyStr)
+
+	if pod.Status.Phase == corev1.PodFailed {
+		errMsg := fmt.Sprintf("Artifact Garbage Collection failed for strategy %s, pod exited with non-zero exit code", strategy)
+		woc.addArtGCCondition(errMsg)
+		woc.addArtGCEvent(errMsg)
+	}
+
 	// get associated WorkflowArtifactGCTasks
 	labelSelector := fmt.Sprintf("%s = %s", common.LabelKeyArtifactGCPodHash, woc.artifactGCPodLabel(pod.Name))
 	taskList, err := woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowArtifactGCTasks(woc.wf.Namespace).List(ctx, metav1.ListOptions{LabelSelector: labelSelector})
 	if err != nil {
 		return fmt.Errorf("failed to List WorkflowArtifactGCTasks: %w", err)
 	}
-
-	strategyStr, found := pod.Annotations[common.AnnotationKeyArtifactGCStrategy]
-	if !found {
-		return fmt.Errorf("Artifact GC Pod '%s' doesn't have annotation '%s'?", pod.Name, common.AnnotationKeyArtifactGCStrategy)
-	}
-	strategy := wfv1.ArtifactGCStrategy(strategyStr)
 
 	for _, task := range taskList.Items {
 		err = woc.processCompletedWorkflowArtifactGCTask(ctx, &task, strategy)
@@ -588,17 +594,12 @@ func (woc *wfOperationCtx) processCompletedWorkflowArtifactGCTask(ctx context.Co
 			woc.wf.Status.Nodes[nodeName].Outputs.Artifacts[i].Deleted = artifactResult.Success
 
 			if artifactResult.Error != nil {
-				woc.wf.Status.Conditions.UpsertCondition(wfv1.Condition{
-					Type:    wfv1.ConditionTypeArtifactGCError,
-					Status:  metav1.ConditionTrue,
-					Message: fmt.Sprintf("%s (artifactGCTask: %s)", *artifactResult.Error, artifactGCTask.Name),
-				})
-				// issue an Event if there was an error - just do this one to prevent flooding the system with Events
+				woc.addArtGCCondition(fmt.Sprintf("%s (artifactGCTask: %s)", *artifactResult.Error, artifactGCTask.Name))
+				// issue an Event if there was an error - just do this once to prevent flooding the system with Events
 				if !foundGCFailure {
 					foundGCFailure = true
 					gcFailureMsg := *artifactResult.Error
-					woc.eventRecorder.Event(woc.wf, apiv1.EventTypeWarning, "ArtifactGCFailed",
-						fmt.Sprintf("Artifact Garbage Collection failed for strategy %s, err:%s", strategy, gcFailureMsg))
+					woc.addArtGCEvent(fmt.Sprintf("Artifact Garbage Collection failed for strategy %s, err:%s", strategy, gcFailureMsg))
 				}
 			}
 		}
@@ -614,6 +615,18 @@ func (woc *wfOperationCtx) processCompletedWorkflowArtifactGCTask(ctx context.Co
 		}
 	}
 	return nil
+}
+
+func (woc *wfOperationCtx) addArtGCCondition(msg string) {
+	woc.wf.Status.Conditions.UpsertCondition(wfv1.Condition{
+		Type:    wfv1.ConditionTypeArtifactGCError,
+		Status:  metav1.ConditionTrue,
+		Message: msg,
+	})
+}
+
+func (woc *wfOperationCtx) addArtGCEvent(msg string) {
+	woc.eventRecorder.Event(woc.wf, apiv1.EventTypeWarning, "ArtifactGCFailed", msg)
 }
 
 func (woc *wfOperationCtx) getArtifactGCPodInfo(artifact *wfv1.Artifact) podInfo {
