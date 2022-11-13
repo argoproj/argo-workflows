@@ -4,11 +4,13 @@
 package e2e
 
 import (
+	"context"
 	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
@@ -176,6 +178,59 @@ func (s *ArtifactsSuite) TestArtifactGC() {
 			}
 		}
 	}
+}
+
+func (s *ArtifactsSuite) TestArtifactGC_InsufficientRole() {
+	// create a ServiceAccount which won't be tied to the artifactgc role and attempt to use that service account in the GC Pod
+	s.KubeClient.CoreV1().ServiceAccounts(fixtures.Namespace).Create(context.Background(), &corev1.ServiceAccount{ObjectMeta: metav1.ObjectMeta{Name: "blah"}}, metav1.CreateOptions{})
+	//assert.NoError(s.T(), err)
+
+	s.Given().Workflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: art-gc-simple-
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    container:
+      image: argoproj/argosay:v2
+      command:
+        - sh
+        - -c
+      args:
+        - |
+          echo "can throw this away" > /tmp/temporary-artifact-on-completion.txt
+    outputs:
+      artifacts:
+        - name: temporary-artifact-on-completion
+          path: /tmp/temporary-artifact-on-completion.txt
+          s3:
+            key: temporary-artifact-on-completion.txt
+          artifactGC:
+            strategy: OnWorkflowCompletion
+            serviceAccountName: blah`).
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(
+			fixtures.WorkflowCompletionOkay(true),
+			fixtures.Condition(func(wf *wfv1.Workflow) (bool, string) {
+				return wf.Status.ArtifactGCStatus != nil &&
+					len(wf.Status.ArtifactGCStatus.PodsRecouped) == 1, "for pod to have been recouped"
+			})).
+		Then().
+		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			failCondition := false
+			for _, c := range status.Conditions {
+				if c.Type == wfv1.ConditionTypeArtifactGCError {
+					failCondition = true
+				}
+			}
+			assert.Equal(t, true, failCondition)
+		}).
+		When().
+		RemoveFinalizers(true)
 }
 
 func (s *ArtifactsSuite) TestDefaultParameterOutputs() {
