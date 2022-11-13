@@ -563,7 +563,7 @@ func TestProcessCompletedWorkflowArtifactGCTask(t *testing.T) {
 	// - Artifact.Deleted
 	// - Conditions
 
-	err := woc.processCompletedWorkflowArtifactGCTask(ctx, wfat, "OnWorkflowCompletion")
+	_, err := woc.processCompletedWorkflowArtifactGCTask(ctx, wfat, "OnWorkflowCompletion")
 	assert.Nil(t, err)
 
 	for _, expectedArtifact := range []struct {
