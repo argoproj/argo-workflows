@@ -147,7 +147,7 @@ func (woc *wfOperationCtx) processArtifactGCStrategy(ctx context.Context, strate
 		// get the Template for the Artifact
 		node, found := woc.wf.Status.Nodes[artifactSearchResult.NodeID]
 		if !found {
-			return fmt.Errorf("can't process Artifact GC Strategy %s: node ID '%s' not found in Status??", strategy, artifactSearchResult.NodeID)
+			return fmt.Errorf("can't process Artifact GC Strategy %s: node ID %q not found in Status??", strategy, artifactSearchResult.NodeID)
 		}
 		templateName := node.TemplateName
 		if templateName == "" && node.GetTemplateRef() != nil {
@@ -160,7 +160,7 @@ func (woc *wfOperationCtx) processArtifactGCStrategy(ctx context.Context, strate
 		if !found {
 			template = woc.wf.GetTemplateByName(templateName)
 			if template == nil {
-				return fmt.Errorf("can't process Artifact GC Strategy %s: template name '%s' belonging to node %+v not found??", strategy, node.TemplateName, node)
+				return fmt.Errorf("can't process Artifact GC Strategy %s: template name %q belonging to node %+v not found??", strategy, node.TemplateName, node)
 			}
 			templatesByName[templateName] = template
 		}
@@ -192,7 +192,7 @@ func (woc *wfOperationCtx) processArtifactGCStrategy(ctx context.Context, strate
 			// create the pod
 			podAccessInfo, found := podNames[podName]
 			if !found {
-				return fmt.Errorf("can't find podInfo for podName '%s'??", podName)
+				return fmt.Errorf("can't find podInfo for podName %q??", podName)
 			}
 
 			_, err := woc.createArtifactGCPod(ctx, strategy, tasks, podAccessInfo, podName, templatesToArtList, templatesByName)
@@ -240,7 +240,7 @@ func (woc *wfOperationCtx) artGCPodName(strategy wfv1.ArtifactGCStrategy, podAcc
 	case wfv1.ArtifactGCOnWorkflowDeletion:
 		abbreviatedName = "wfdel"
 	default:
-		return "", fmt.Errorf("ArtifactGCStrategy '%s' not valid", strategy)
+		return "", fmt.Errorf("ArtifactGCStrategy %q not valid", strategy)
 	}
 
 	return fmt.Sprintf("%s-artgc-%s-%v", woc.wf.Name, abbreviatedName, h.Sum32()), nil
@@ -315,7 +315,7 @@ func (woc *wfOperationCtx) addTemplateArtifactsToTasks(podName string, tasks *[]
 		artifactNodeSpec.Artifacts[artifactSearchResult.Name] = artifactSearchResult.Artifact
 
 	}
-	woc.log.Debugf("list of artifacts pertaining to template %s to WorkflowArtifactGCTask '%s': %+v", template.Name, currentTask.Name, artifactsByNode)
+	woc.log.Debugf("list of artifacts pertaining to template %s to WorkflowArtifactGCTask %q: %+v", template.Name, currentTask.Name, artifactsByNode)
 
 }
 
@@ -324,7 +324,7 @@ func (woc *wfOperationCtx) getArtifactTask(taskName string) (*wfv1.WorkflowArtif
 	key := woc.wf.Namespace + "/" + taskName
 	task, exists, err := woc.controller.artGCTaskInformer.Informer().GetIndexer().GetByKey(key)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get WorkflowArtifactGCTask by key '%s': %w", key, err)
+		return nil, fmt.Errorf("failed to get WorkflowArtifactGCTask by key %q: %w", key, err)
 	}
 	if !exists {
 		return nil, nil
@@ -347,7 +347,7 @@ func (woc *wfOperationCtx) createWorkflowArtifactGCTask(ctx context.Context, tas
 
 		task, err = woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowArtifactGCTasks(woc.wf.Namespace).Create(ctx, task, metav1.CreateOptions{})
 		if err != nil {
-			return nil, fmt.Errorf("failed to Create WorkflowArtifactGCTask '%s' for Garbage Collection: %w", task.Name, err)
+			return nil, fmt.Errorf("failed to Create WorkflowArtifactGCTask %q for Garbage Collection: %w", task.Name, err)
 		}
 	}
 	return task, nil
@@ -539,11 +539,11 @@ func (woc *wfOperationCtx) allArtifactsDeleted() bool {
 }
 
 func (woc *wfOperationCtx) processCompletedArtifactGCPod(ctx context.Context, pod *corev1.Pod) error {
-	woc.log.Infof("processing completed Artifact GC Pod '%s'", pod.Name)
+	woc.log.Infof("processing completed Artifact GC Pod %q", pod.Name)
 
 	strategyStr, found := pod.Annotations[common.AnnotationKeyArtifactGCStrategy]
 	if !found {
-		return fmt.Errorf("Artifact GC Pod '%s' doesn't have annotation '%s'?", pod.Name, common.AnnotationKeyArtifactGCStrategy)
+		return fmt.Errorf("Artifact GC Pod %q doesn't have annotation %q?", pod.Name, common.AnnotationKeyArtifactGCStrategy)
 	}
 	strategy := wfv1.ArtifactGCStrategy(strategyStr)
 
@@ -588,10 +588,10 @@ func (woc *wfOperationCtx) processCompletedWorkflowArtifactGCTask(artifactGCTask
 		// find this node result in the Workflow Status
 		wfNode, found := woc.wf.Status.Nodes[nodeName]
 		if !found {
-			return false, fmt.Errorf("node named '%s' returned by WorkflowArtifactGCTask '%s' wasn't found in Workflow '%s' Status", nodeName, artifactGCTask.Name, woc.wf.Name)
+			return false, fmt.Errorf("node named %q returned by WorkflowArtifactGCTask %q wasn't found in Workflow %q Status", nodeName, artifactGCTask.Name, woc.wf.Name)
 		}
 		if wfNode.Outputs == nil {
-			return false, fmt.Errorf("node named '%s' returned by WorkflowArtifactGCTask '%s' doesn't seem to have Outputs in Workflow Status", nodeName, artifactGCTask.Name)
+			return false, fmt.Errorf("node named %q returned by WorkflowArtifactGCTask %q doesn't seem to have Outputs in Workflow Status", nodeName, artifactGCTask.Name)
 		}
 		for i, wfArtifact := range wfNode.Outputs.Artifacts {
 			// find artifact in the WorkflowArtifactGCTask Status
