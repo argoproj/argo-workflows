@@ -580,7 +580,7 @@ func (woc *wfOperationCtx) processCompletedArtifactGCPod(ctx context.Context, po
 
 // process the Status in the WorkflowArtifactGCTask which was completed and reflect it in Workflow Status; then delete the Task CRD Object
 // return true if all artifacts succeeded, else false
-func (woc *wfOperationCtx) processCompletedWorkflowArtifactGCTask(ctx context.Context, artifactGCTask *wfv1.WorkflowArtifactGCTask, strategy wfv1.ArtifactGCStrategy) (bool, error) {
+func (woc *wfOperationCtx) processCompletedWorkflowArtifactGCTask(artifactGCTask *wfv1.WorkflowArtifactGCTask, strategy wfv1.ArtifactGCStrategy) (bool, error) {
 	woc.log.Debugf("processing WorkflowArtifactGCTask %s", artifactGCTask.Name)
 
 	foundGCFailure := false
