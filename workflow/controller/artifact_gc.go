@@ -493,7 +493,7 @@ func (woc *wfOperationCtx) processArtifactGCCompletion(ctx context.Context) erro
 
 		phase := pod.Status.Phase
 
-		// if Pod is done process the results
+		// if Pod is done processing the results
 		if phase == corev1.PodSucceeded || phase == corev1.PodFailed {
 			woc.log.WithField("pod", pod.Name).
 				WithField("phase", phase).
@@ -548,7 +548,7 @@ func (woc *wfOperationCtx) processCompletedArtifactGCPod(ctx context.Context, po
 	strategy := wfv1.ArtifactGCStrategy(strategyStr)
 
 	if pod.Status.Phase == corev1.PodFailed {
-		errMsg := fmt.Sprintf("Artifact Garbage Collection failed for strategy %s, pod exited with non-zero exit code", strategy)
+		errMsg := fmt.Sprintf("Artifact Garbage Collection failed for strategy %s, pod %s exited with non-zero exit code", pod.Name, strategy)
 		woc.addArtGCCondition(errMsg)
 		woc.addArtGCEvent(errMsg)
 	}
@@ -561,17 +561,26 @@ func (woc *wfOperationCtx) processCompletedArtifactGCPod(ctx context.Context, po
 	}
 
 	for _, task := range taskList.Items {
-		err = woc.processCompletedWorkflowArtifactGCTask(ctx, &task, strategy)
+		allArtifactsSucceeded, err := woc.processCompletedWorkflowArtifactGCTask(ctx, &task, strategy)
 		if err != nil {
 			return err
 		}
+		if allArtifactsSucceeded && pod.Status.Phase == corev1.PodSucceeded {
+			// now we can delete it, if it succeeded (otherwise we leave it up to be inspected)
+			woc.log.Debugf("deleting WorkflowArtifactGCTask: %s", task.Name)
+			err := woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowArtifactGCTasks(woc.wf.Namespace).Delete(ctx, task.Name, metav1.DeleteOptions{})
+			if err != nil {
+				woc.log.Errorf("error deleting WorkflowArtifactGCTask: %s: %v", task.Name, err)
+			}
+		}
+
 	}
 	return nil
 }
 
 // process the Status in the WorkflowArtifactGCTask which was completed and reflect it in Workflow Status; then delete the Task CRD Object
-// return first found error message if GC failed
-func (woc *wfOperationCtx) processCompletedWorkflowArtifactGCTask(ctx context.Context, artifactGCTask *wfv1.WorkflowArtifactGCTask, strategy wfv1.ArtifactGCStrategy) error {
+// return true if all artifacts succeeded, else false
+func (woc *wfOperationCtx) processCompletedWorkflowArtifactGCTask(ctx context.Context, artifactGCTask *wfv1.WorkflowArtifactGCTask, strategy wfv1.ArtifactGCStrategy) (bool, error) {
 	woc.log.Debugf("processing WorkflowArtifactGCTask %s", artifactGCTask.Name)
 
 	foundGCFailure := false
@@ -579,10 +588,10 @@ func (woc *wfOperationCtx) processCompletedWorkflowArtifactGCTask(ctx context.Co
 		// find this node result in the Workflow Status
 		wfNode, found := woc.wf.Status.Nodes[nodeName]
 		if !found {
-			return fmt.Errorf("node named '%s' returned by WorkflowArtifactGCTask '%s' wasn't found in Workflow '%s' Status", nodeName, artifactGCTask.Name, woc.wf.Name)
+			return false, fmt.Errorf("node named '%s' returned by WorkflowArtifactGCTask '%s' wasn't found in Workflow '%s' Status", nodeName, artifactGCTask.Name, woc.wf.Name)
 		}
 		if wfNode.Outputs == nil {
-			return fmt.Errorf("node named '%s' returned by WorkflowArtifactGCTask '%s' doesn't seem to have Outputs in Workflow Status", nodeName, artifactGCTask.Name)
+			return false, fmt.Errorf("node named '%s' returned by WorkflowArtifactGCTask '%s' doesn't seem to have Outputs in Workflow Status", nodeName, artifactGCTask.Name)
 		}
 		for i, wfArtifact := range wfNode.Outputs.Artifacts {
 			// find artifact in the WorkflowArtifactGCTask Status
@@ -606,15 +615,7 @@ func (woc *wfOperationCtx) processCompletedWorkflowArtifactGCTask(ctx context.Co
 
 	}
 
-	// now we can delete it, if it succeeded (otherwise we leave it up to be inspected)
-	if !foundGCFailure {
-		woc.log.Debugf("deleting WorkflowArtifactGCTask: %s", artifactGCTask.Name)
-		err := woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowArtifactGCTasks(woc.wf.Namespace).Delete(ctx, artifactGCTask.Name, metav1.DeleteOptions{})
-		if err != nil {
-			woc.log.Errorf("error deleting WorkflowArtifactGCTask: %s: %v", artifactGCTask.Name, err)
-		}
-	}
-	return nil
+	return !foundGCFailure, nil
 }
 
 func (woc *wfOperationCtx) addArtGCCondition(msg string) {
