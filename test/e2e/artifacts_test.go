@@ -184,7 +184,8 @@ func (s *ArtifactsSuite) TestArtifactGC() {
 // Want to verify that this causes the ArtifactGCError Condition in the Workflow
 func (s *ArtifactsSuite) TestArtifactGC_InsufficientRole() {
 	ctx := context.Background()
-	s.KubeClient.CoreV1().ServiceAccounts(fixtures.Namespace).Create(ctx, &corev1.ServiceAccount{ObjectMeta: metav1.ObjectMeta{Name: "artgc-role-test-sa"}}, metav1.CreateOptions{})
+	_, err := s.KubeClient.CoreV1().ServiceAccounts(fixtures.Namespace).Create(ctx, &corev1.ServiceAccount{ObjectMeta: metav1.ObjectMeta{Name: "artgc-role-test-sa"}}, metav1.CreateOptions{})
+	assert.NoError(s.T(), err)
 	s.T().Cleanup(func() {
 		_ = s.KubeClient.CoreV1().ServiceAccounts(fixtures.Namespace).Delete(ctx, "artgc-role-test-sa", metav1.DeleteOptions{})
 	})
