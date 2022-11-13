@@ -561,7 +561,7 @@ func (woc *wfOperationCtx) processCompletedArtifactGCPod(ctx context.Context, po
 	}
 
 	for _, task := range taskList.Items {
-		allArtifactsSucceeded, err := woc.processCompletedWorkflowArtifactGCTask(ctx, &task, strategy)
+		allArtifactsSucceeded, err := woc.processCompletedWorkflowArtifactGCTask(&task, strategy)
 		if err != nil {
 			return err
 		}
