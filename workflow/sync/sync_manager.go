@@ -176,9 +176,13 @@ func (cm *Manager) TryAcquire(wf *wfv1.Workflow, nodeName string, syncLockRef *w
 	currentHolders := cm.getCurrentLockHolders(lockKey)
 	acquired, msg := lock.tryAcquire(holderKey)
 	if acquired {
-		cm.syncStorage.Load(context.Background(), holderKey)
+		err = cm.syncStorage.Store(context.Background(), holderKey, syncType)
+		if err != nil {
+			cm.Release(wf, nodeName, syncLockRef)
+			acquired = false
+		}
 		updated := wf.Status.Synchronization.GetStatus(syncLockRef.GetType()).LockAcquired(holderKey, lockKey, currentHolders)
-		return true, updated, "", nil
+		return acquired, updated, "", nil
 	}
 
 	updated := wf.Status.Synchronization.GetStatus(syncLockRef.GetType()).LockWaiting(holderKey, lockKey, currentHolders)

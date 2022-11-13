@@ -127,3 +127,20 @@ func (c *syncManagerStorage) Store(ctx context.Context, key string, syncType Syn
 
 	return nil
 }
+
+func (c *syncManagerStorage) GetSyncType(ctx context.Context, key string) (*SyncType, error) {
+	meta, err := c.Load(ctx, key)
+	if err != nil {
+		return nil, err
+	}
+	switch meta.SyncTy {
+	case WorkflowLevel:
+		ty := WorkflowLevel
+		return &ty, nil
+	case TemplateLevel:
+		ty := TemplateLevel
+		return &ty, nil
+	default:
+		return nil, fmt.Errorf("Invalid integer received of %d", meta.SyncTy)
+	}
+}
