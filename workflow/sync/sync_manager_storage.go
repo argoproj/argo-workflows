@@ -38,7 +38,7 @@ var (
 	FailedtoCreateConfigMap SyncManagerStorageError = fmt.Errorf("Failed to create config map")
 )
 
-func NewSyncManagerStorage(ns string, ki kubernetes.Interface, name string) *syncManagerStorage {
+func newSyncManagerStorage(ns string, ki kubernetes.Interface, name string) *syncManagerStorage {
 	return &syncManagerStorage{
 		namespace:  ns,
 		name:       name,

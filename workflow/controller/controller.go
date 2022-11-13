@@ -353,8 +353,7 @@ func (wfc *WorkflowController) createSynchronizationManager(ctx context.Context)
 		}
 		return exists
 	}
-
-	wfc.syncManager = sync.NewLockManager(getSyncLimit, nextWorkflow, isWFDeleted)
+	wfc.syncManager = sync.NewLockManager(wfc.namespace, wfc.kubeclientset, getSyncLimit, nextWorkflow, isWFDeleted)
 }
 
 // list all running workflows to initialize throttler and syncManager

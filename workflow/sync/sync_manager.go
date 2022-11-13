@@ -1,12 +1,14 @@
 package sync
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"sync"
 
 	log "github.com/sirupsen/logrus"
 	runtimeutil "k8s.io/apimachinery/pkg/util/runtime"
+	"k8s.io/client-go/kubernetes"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
@@ -30,15 +32,17 @@ type Manager struct {
 	nextWorkflow NextWorkflow
 	getSyncLimit GetSyncLimit
 	isWFDeleted  IsWorkflowDeleted
+	syncStorage  syncManagerStorage
 }
 
-func NewLockManager(getSyncLimit GetSyncLimit, nextWorkflow NextWorkflow, isWFDeleted IsWorkflowDeleted) *Manager {
+func NewLockManager(ns string, ki kubernetes.Interface, getSyncLimit GetSyncLimit, nextWorkflow NextWorkflow, isWFDeleted IsWorkflowDeleted) *Manager {
 	return &Manager{
 		syncLockMap:  make(map[string]Semaphore),
 		lock:         &sync.Mutex{},
 		nextWorkflow: nextWorkflow,
 		getSyncLimit: getSyncLimit,
 		isWFDeleted:  isWFDeleted,
+		syncStorage:  *newSyncManagerStorage(ns, ki, "__argo_sync_storage"),
 	}
 }
 
@@ -172,6 +176,7 @@ func (cm *Manager) TryAcquire(wf *wfv1.Workflow, nodeName string, syncLockRef *w
 	currentHolders := cm.getCurrentLockHolders(lockKey)
 	acquired, msg := lock.tryAcquire(holderKey)
 	if acquired {
+		cm.syncStorage.Load(context.Background(), holderKey)
 		updated := wf.Status.Synchronization.GetStatus(syncLockRef.GetType()).LockAcquired(holderKey, lockKey, currentHolders)
 		return true, updated, "", nil
 	}
