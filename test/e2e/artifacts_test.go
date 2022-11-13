@@ -180,10 +180,14 @@ func (s *ArtifactsSuite) TestArtifactGC() {
 	}
 }
 
+// create a ServiceAccount which won't be tied to the artifactgc role and attempt to use that service account in the GC Pod
+// Want to verify that this causes the ArtifactGCError Condition in the Workflow
 func (s *ArtifactsSuite) TestArtifactGC_InsufficientRole() {
-	// create a ServiceAccount which won't be tied to the artifactgc role and attempt to use that service account in the GC Pod
-	s.KubeClient.CoreV1().ServiceAccounts(fixtures.Namespace).Create(context.Background(), &corev1.ServiceAccount{ObjectMeta: metav1.ObjectMeta{Name: "blah"}}, metav1.CreateOptions{})
-	//assert.NoError(s.T(), err)
+	ctx := context.Background()
+	s.KubeClient.CoreV1().ServiceAccounts(fixtures.Namespace).Create(ctx, &corev1.ServiceAccount{ObjectMeta: metav1.ObjectMeta{Name: "artgc-role-test-sa"}}, metav1.CreateOptions{})
+	s.T().Cleanup(func() {
+		_ = s.KubeClient.CoreV1().ServiceAccounts(fixtures.Namespace).Delete(ctx, "artgc-role-test-sa", metav1.DeleteOptions{})
+	})
 
 	s.Given().Workflow(`
 apiVersion: argoproj.io/v1alpha1
@@ -210,7 +214,7 @@ spec:
             key: temporary-artifact-on-completion.txt
           artifactGC:
             strategy: OnWorkflowCompletion
-            serviceAccountName: blah`).
+            serviceAccountName: artgc-role-test-sa`).
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow(
