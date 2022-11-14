@@ -25,6 +25,7 @@ type syncManagerStorage struct {
 
 type SyncMetadataEntry struct {
 	SyncTy SyncType `json:"syncType"`
+	Holder string   `json:"holder"`
 }
 
 type SyncManagerStorageError error

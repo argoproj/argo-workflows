@@ -87,6 +87,7 @@ func (cm *Manager) Initialize(wfs []wfv1.Workflow) {
 			for _, holding := range wf.Status.Synchronization.Semaphore.Holding {
 
 				semaphore := cm.syncLockMap[holding.Semaphore]
+				log.Debugln("HOLDING VALUE [Semaphore] IS ", holding.Semaphore)
 				if semaphore == nil {
 					semaphore, err := cm.initializeSemaphore(holding.Semaphore)
 					if err != nil {
@@ -107,12 +108,13 @@ func (cm *Manager) Initialize(wfs []wfv1.Workflow) {
 
 		if wf.Status.Synchronization.Mutex != nil {
 			for _, holding := range wf.Status.Synchronization.Mutex.Holding {
-
+				log.Debugln("HOLDING VALUE [Mutex] IS ", holding.Mutex)
 				mutex := cm.syncLockMap[holding.Mutex]
 				if mutex == nil {
 					mutex := cm.initializeMutex(holding.Mutex)
 					if holding.Holder != "" {
 						resourceKey := getResourceKey(wf.Namespace, wf.Name, holding.Holder)
+						log.Debugf("Resource Key: <%s> and Holder Key <%s>\n", &resourceKey, "")
 						mutex.acquire(resourceKey)
 					}
 					cm.syncLockMap[holding.Mutex] = mutex
@@ -139,6 +141,7 @@ func (cm *Manager) TryAcquire(wf *wfv1.Workflow, nodeName string, syncLockRef *w
 	}
 
 	lockKey := syncLockName.EncodeName()
+	log.Debugln("TryAcquire LockName is ", lockKey)
 	lock, found := cm.syncLockMap[lockKey]
 	if !found {
 		switch syncLockRef.GetType() {
@@ -153,6 +156,11 @@ func (cm *Manager) TryAcquire(wf *wfv1.Workflow, nodeName string, syncLockRef *w
 			return false, false, "", err
 		}
 		cm.syncLockMap[lockKey] = lock
+	}
+
+	err = cm.syncStorage.Store(context.Background(), lockKey, syncType)
+	if err != nil {
+		cm.Release(wf, nodeName, syncLockRef)
 	}
 
 	if syncLockRef.GetType() == wfv1.SynchronizationTypeSemaphore {
@@ -176,11 +184,6 @@ func (cm *Manager) TryAcquire(wf *wfv1.Workflow, nodeName string, syncLockRef *w
 	currentHolders := cm.getCurrentLockHolders(lockKey)
 	acquired, msg := lock.tryAcquire(holderKey)
 	if acquired {
-		err = cm.syncStorage.Store(context.Background(), holderKey, syncType)
-		if err != nil {
-			cm.Release(wf, nodeName, syncLockRef)
-			acquired = false
-		}
 		updated := wf.Status.Synchronization.GetStatus(syncLockRef.GetType()).LockAcquired(holderKey, lockKey, currentHolders)
 		return acquired, updated, "", nil
 	}
