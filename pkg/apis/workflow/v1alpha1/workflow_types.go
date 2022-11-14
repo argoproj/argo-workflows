@@ -83,6 +83,10 @@ const (
 	NodeTypePlugin    NodeType = "Plugin"
 )
 
+type WorkflowStatusResult struct { //todo: just temporary to get this to compile
+
+}
+
 // ArtifactGCStrategy is the strategy when to delete artifacts for GC.
 type ArtifactGCStrategy string
 

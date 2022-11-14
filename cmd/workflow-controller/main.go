@@ -37,6 +37,8 @@ import (
 	"github.com/argoproj/argo-workflows/v3/workflow/controller"
 	"github.com/argoproj/argo-workflows/v3/workflow/events"
 	"github.com/argoproj/argo-workflows/v3/workflow/metrics"
+	"github.com/argoproj/argo-workflows/v3/workflow/multicluster"
+	"github.com/argoproj/argo-workflows/v3/workflow/multicluster/ocm"
 )
 
 const (
@@ -62,6 +64,8 @@ func NewRootCommand() *cobra.Command {
 		namespaced              bool   // --namespaced
 		managedNamespace        string // --managed-namespace
 		executorPlugins         bool
+		clusterMode             string // --cluster-mode
+		multiClusterProvider    string // --multi-cluster-provider
 	)
 
 	command := cobra.Command{
@@ -105,11 +109,31 @@ func NewRootCommand() *cobra.Command {
 				managedNamespace = namespace
 			}
 
+			var parsedClusterMode controller.ClusterMode
+			//var parsedMultiClusterProvider controller.MultiClusterProvider
+			var multiclusterProcessor multicluster.MultiClusterProcessor
+			switch clusterMode {
+			case "single-cluster":
+				parsedClusterMode = controller.SingleClusterMode
+			case "multi-cluster":
+				parsedClusterMode = controller.MultiClusterMode
+
+				switch multiClusterProvider {
+				case "ocm":
+					//parsedMultiClusterProvider = controller.OCM
+					multiclusterProcessor = &ocm.OCMProcessor{}
+				default:
+					log.Fatal("invalid value for --multi-cluster-provider flag")
+				}
+			default:
+				log.Fatal("invalid value for --clusterMode flag")
+			}
+
 			// start a controller on instances of our custom resource
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
 
-			wfController, err := controller.NewWorkflowController(ctx, config, kubeclientset, wfclientset, namespace, managedNamespace, executorImage, executorImagePullPolicy, logFormat, configMap, executorPlugins)
+			wfController, err := controller.NewWorkflowController(ctx, config, kubeclientset, wfclientset, namespace, managedNamespace, executorImage, executorImagePullPolicy, logFormat, configMap, executorPlugins, parsedClusterMode, multiclusterProcessor)
 			errors.CheckError(err)
 
 			leaderElectionOff := os.Getenv("LEADER_ELECTION_DISABLE")
@@ -179,6 +203,8 @@ func NewRootCommand() *cobra.Command {
 	command.Flags().BoolVar(&namespaced, "namespaced", false, "run workflow-controller as namespaced mode")
 	command.Flags().StringVar(&managedNamespace, "managed-namespace", "", "namespace that workflow-controller watches, default to the installation namespace")
 	command.Flags().BoolVar(&executorPlugins, "executor-plugins", false, "enable executor plugins")
+	command.Flags().StringVar(&clusterMode, "clusterMode", "single-cluster", "One of: multi-cluster|single-cluster")
+	command.Flags().StringVar(&multiClusterProvider, "multiClusterProvider", "ocm", "currently only 'ocm' is supported")
 
 	viper.AutomaticEnv()
 	viper.SetEnvPrefix("ARGO")

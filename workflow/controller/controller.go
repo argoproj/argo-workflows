@@ -60,6 +60,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/workflow/gccontroller"
 	"github.com/argoproj/argo-workflows/v3/workflow/hydrator"
 	"github.com/argoproj/argo-workflows/v3/workflow/metrics"
+	"github.com/argoproj/argo-workflows/v3/workflow/multicluster"
 	"github.com/argoproj/argo-workflows/v3/workflow/signal"
 	"github.com/argoproj/argo-workflows/v3/workflow/sync"
 	"github.com/argoproj/argo-workflows/v3/workflow/util"
@@ -128,6 +129,9 @@ type WorkflowController struct {
 	// Default is 3s and can be configured using the env var ARGO_PROGRESS_FILE_TICK_DURATION
 	progressFileTickDuration time.Duration
 	executorPlugins          map[string]map[string]*spec.Plugin // namespace -> name -> plugin
+
+	clusterMode           ClusterMode
+	multiClusterProcessor multicluster.MultiClusterProcessor
 }
 
 const (
@@ -158,8 +162,21 @@ func init() {
 	}
 }
 
+type ClusterMode int
+
+const (
+	SingleClusterMode ClusterMode = 0
+	MultiClusterMode  ClusterMode = 1
+)
+
+type MultiClusterProvider int
+
+const (
+	OCM MultiClusterProvider = 0
+)
+
 // NewWorkflowController instantiates a new WorkflowController
-func NewWorkflowController(ctx context.Context, restConfig *rest.Config, kubeclientset kubernetes.Interface, wfclientset wfclientset.Interface, namespace, managedNamespace, executorImage, executorImagePullPolicy, executorLogFormat, configMap string, executorPlugins bool) (*WorkflowController, error) {
+func NewWorkflowController(ctx context.Context, restConfig *rest.Config, kubeclientset kubernetes.Interface, wfclientset wfclientset.Interface, namespace, managedNamespace, executorImage, executorImagePullPolicy, executorLogFormat, configMap string, executorPlugins bool, clusterMode ClusterMode, multiClusterProcessor multicluster.MultiClusterProcessor) (*WorkflowController, error) {
 	dynamicInterface, err := dynamic.NewForConfig(restConfig)
 	if err != nil {
 		return nil, err
@@ -181,6 +198,8 @@ func NewWorkflowController(ctx context.Context, restConfig *rest.Config, kubecli
 		eventRecorderManager:       events.NewEventRecorderManager(kubeclientset),
 		progressPatchTickDuration:  env.LookupEnvDurationOr(common.EnvVarProgressPatchTickDuration, 1*time.Minute),
 		progressFileTickDuration:   env.LookupEnvDurationOr(common.EnvVarProgressFileTickDuration, 3*time.Second),
+		clusterMode:                clusterMode,
+		multiClusterProcessor:      multiClusterProcessor,
 	}
 
 	if executorPlugins {
@@ -256,7 +275,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 
 	wfc.wfInformer = util.NewWorkflowInformer(wfc.dynamicInterface, wfc.GetManagedNamespace(), workflowResyncPeriod, wfc.tweakListOptions, indexers)
 	wfc.wftmplInformer = informer.NewTolerantWorkflowTemplateInformer(wfc.dynamicInterface, workflowTemplateResyncPeriod, wfc.managedNamespace)
-	wfc.wfTaskSetInformer = wfc.newWorkflowTaskSetInformer()
+	wfc.wfTaskSetInformer = wfc.newWorkflowTaskSetInformer() // todo: consider not doing this in multi-cluster mode
 	wfc.artGCTaskInformer = wfc.newArtGCTaskInformer()
 	wfc.taskResultInformer = wfc.newWorkflowTaskResultInformer()
 
@@ -723,10 +742,14 @@ func (wfc *WorkflowController) processNextItem(ctx context.Context) bool {
 	wf, err := util.FromUnstructured(un)
 	if err != nil {
 		log.WithFields(log.Fields{"key": key, "error": err}).Warn("Failed to unmarshal key to workflow object")
-		woc := newWorkflowOperationCtx(wf, wfc)
+		woc := newWorkflowOperationCtx(wf, wfc) // typically we don't use wfOperationCtx in multi-cluster mode, but it won't hurt to do this here if things fail regardless of cluster mode
 		woc.markWorkflowFailed(ctx, fmt.Sprintf("cannot unmarshall spec: %s", err.Error()))
 		woc.persistUpdates(ctx)
 		return true
+	}
+
+	if wfc.clusterMode == MultiClusterMode {
+		return wfc.multiClusterProcessor.ProcessWorkflow(wf) == nil
 	}
 
 	// this will ensure we process every incomplete workflow once every 20m
