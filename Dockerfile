@@ -81,6 +81,16 @@ RUN NODE_OPTIONS="--max-old-space-size=2048" JOBS=max yarn --cwd ui build
 
 FROM builder as argoexec-build
 
+COPY hack/arch.sh hack/os.sh /bin/
+
+# NOTE: kubectl version should be one minor version less than https://storage.googleapis.com/kubernetes-release/release/stable.txt
+RUN curl -o /usr/local/bin/kubectl https://storage.googleapis.com/kubernetes-release/release/v1.24.8/bin/$(os.sh)/$(arch.sh)/kubectl && \
+    chmod +x /usr/local/bin/kubectl
+
+RUN curl -o /usr/local/bin/jq https://github.com/stedolan/jq/releases/download/jq-1.6/jq-linux64 && \
+  chmod +x /usr/local/bin/jq
+
+
 # Tell git to forget about all of the files that were not included because of .dockerignore in order to ensure that
 # the git state is "clean" even though said .dockerignore files are not present
 RUN cat .dockerignore >> .gitignore
