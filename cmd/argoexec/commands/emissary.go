@@ -18,8 +18,10 @@ import (
 
 	"github.com/argoproj/argo-workflows/v3/util/errors"
 
+	"github.com/creack/pty"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"golang.org/x/term"
 	"k8s.io/client-go/util/retry"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
@@ -111,26 +113,24 @@ func NewEmissaryCommand() *cobra.Command {
 					break
 				}
 			}
-
 			backoff, err := template.GetRetryStrategy()
 			if err != nil {
 				return fmt.Errorf("failed to get retry strategy: %w", err)
 			}
 
 			cmdErr := retry.OnError(backoff, func(error) bool { return true }, func() error {
-				command, stdout, combined, err := createCommand(name, args, template)
-				if err != nil {
-					return fmt.Errorf("failed to create command: %w", err)
-				}
-				defer stdout.Close()
-				defer combined.Close()
+				// setup signal handlers
 				signals := make(chan os.Signal, 1)
 				defer close(signals)
 				signal.Notify(signals)
 				defer signal.Reset()
-				if err := command.Start(); err != nil {
-					return err
+
+				command, closer, err := startCommand(name, args, template)
+				if err != nil {
+					return fmt.Errorf("failed to start command: %w", err)
 				}
+				defer closer()
+
 				go func() {
 					for s := range signals {
 						if !osspecific.IsSIGCHLD(s) {
@@ -209,32 +209,96 @@ func NewEmissaryCommand() *cobra.Command {
 	}
 }
 
-func createCommand(name string, args []string, template *wfv1.Template) (*exec.Cmd, *os.File, *os.File, error) {
+func startCommand(name string, args []string, template *wfv1.Template) (*exec.Cmd, func(), error) {
+	tty := term.IsTerminal(int(os.Stdin.Fd()))
+
 	command := exec.Command(name, args...)
 	command.Env = os.Environ()
 	command.SysProcAttr = &syscall.SysProcAttr{}
-	osspecific.Setpgid(command.SysProcAttr)
-	command.Stdout = os.Stdout
-	command.Stderr = os.Stderr
+	if !tty {
+		// avoid the error "Inappropriate ioctl for device" when
+		// running in tty
+		//
+		// pty.Start uses setsid internally, which makes the process
+		// the group leader already
+		osspecific.Setpgid(command.SysProcAttr)
+	}
 
-	var stdout *os.File
-	var combined *os.File
-	var err error
+	var closer func() = func() {}
+	var stdout io.Writer = os.Stdout
+	var stderr io.Writer = os.Stderr
+
 	// this may not be that important an optimisation, except for very long logs we don't want to capture
 	if includeScriptOutput || template.SaveLogsAsArtifact() {
 		logger.Info("capturing logs")
-		stdout, err = os.OpenFile(varRunArgo+"/ctr/"+containerName+"/stdout", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+		stdoutf, err := os.OpenFile(varRunArgo+"/ctr/"+containerName+"/stdout", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
 		if err != nil {
-			return nil, nil, nil, fmt.Errorf("failed to open stdout: %w", err)
+			return nil, nil, fmt.Errorf("failed to open stdout: %w", err)
 		}
-		combined, err = os.OpenFile(varRunArgo+"/ctr/"+containerName+"/combined", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+		combinedf, err := os.OpenFile(varRunArgo+"/ctr/"+containerName+"/combined", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
 		if err != nil {
-			return nil, nil, nil, fmt.Errorf("failed to open combined: %w", err)
+			return nil, nil, fmt.Errorf("failed to open combined: %w", err)
 		}
-		command.Stdout = io.MultiWriter(os.Stdout, stdout, combined)
-		command.Stderr = io.MultiWriter(os.Stderr, combined)
+		stdout = io.MultiWriter(stdout, stdoutf, combinedf)
+		stderr = io.MultiWriter(stderr, combinedf)
+
+		closer = func() {
+			_ = stdoutf.Close()
+			_ = combinedf.Close()
+		}
 	}
-	return command, stdout, combined, nil
+
+	if tty {
+		logger.Info("container requested TTY")
+		ptmx, err := pty.Start(command)
+		if err != nil {
+			return nil, nil, err
+		}
+
+		// Handle pty size
+		sigWinchCh := make(chan os.Signal, 1)
+		signal.Notify(sigWinchCh, syscall.SIGWINCH)
+		go func() {
+			for range sigWinchCh {
+				if ierr := pty.InheritSize(os.Stdin, ptmx); ierr != nil {
+					logger.WithField("error", ierr).Warn("error resizing pty")
+				}
+			}
+		}()
+		// Initial resize
+		sigWinchCh <- syscall.SIGWINCH
+		// Set stdin in raw mode
+		oldState, err := term.MakeRaw(int(os.Stdin.Fd()))
+		if err != nil {
+			return nil, nil, err
+		}
+
+		// copy from stdin to the pty
+		go func() { _, _ = io.Copy(ptmx, os.Stdin) }()
+		// copy from pty to stdout
+		go func() { _, _ = io.Copy(stdout, ptmx) }()
+		// copy from pty to stderr
+		go func() { _, _ = io.Copy(stderr, ptmx) }()
+
+		origCloser := closer
+		closer = func() {
+			signal.Stop(sigWinchCh)
+			close(sigWinchCh)
+
+			_ = term.Restore(int(os.Stdin.Fd()), oldState)
+			_ = ptmx.Close()
+			origCloser()
+		}
+	} else {
+		command.Stdout = stdout
+		command.Stderr = stderr
+
+		if err := command.Start(); err != nil {
+			return nil, nil, err
+		}
+	}
+
+	return command, closer, nil
 }
 
 func saveArtifact(srcPath string) error {

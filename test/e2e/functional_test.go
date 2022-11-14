@@ -1154,3 +1154,11 @@ spec:
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeFailed)
 }
+
+func (s *FunctionalSuite) TestTTY() {
+	s.Given().
+		Workflow(`@functional/tty.yaml`).
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeSucceeded)
+}
