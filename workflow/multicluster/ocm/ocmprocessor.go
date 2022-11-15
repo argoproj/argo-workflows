@@ -3,6 +3,7 @@ package ocm
 import (
 	"context"
 	"fmt"
+	v1 "open-cluster-management.io/api/work/v1"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
@@ -23,7 +24,8 @@ type OCMProcessor struct {
 
 func NewOCMProcessor(wfInformer cache.SharedIndexInformer, kubeclient dynamic.Interface) *OCMProcessor {
 	ocm := &OCMProcessor{wfInformer: wfInformer}
-
+	mf := v1.ManifestWork{}
+	fmt.Println(mf)
 	// todo: construct wfStatusInformer and register processStatusUpdate() to be called when there's a Status Update
 
 	// todo: construct manifestWorkerInformer
