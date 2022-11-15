@@ -108,7 +108,6 @@ func NewRootCommand() *cobra.Command {
 			}
 
 			var parsedClusterMode controller.ClusterMode
-			//var parsedMultiClusterProvider controller.MultiClusterProvider
 			var multiclusterProvider controller.MultiClusterProvider
 			switch clusterMode {
 			case "single-cluster":
@@ -118,7 +117,6 @@ func NewRootCommand() *cobra.Command {
 
 				switch multiClusterProvider {
 				case "ocm":
-					//parsedMultiClusterProvider = controller.OCM
 					multiclusterProvider = controller.OCM
 					log.Info("using multi cluster provider OCM")
 				default:
