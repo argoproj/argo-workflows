@@ -288,14 +288,10 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 
 	wfc.wftmplInformer = informer.NewTolerantWorkflowTemplateInformer(wfc.dynamicInterface, workflowTemplateResyncPeriod, wfc.managedNamespace)
 
-	switch wfc.clusterMode {
-	case SingleClusterMode:
-		wfc.wfTaskSetInformer = wfc.newWorkflowTaskSetInformer() // todo: consider not doing this in multi-cluster mode
-		wfc.artGCTaskInformer = wfc.newArtGCTaskInformer()
-		wfc.taskResultInformer = wfc.newWorkflowTaskResultInformer()
-	case MultiClusterMode:
-
-	}
+	// todo: don't do all of these in multicluster mode
+	wfc.wfTaskSetInformer = wfc.newWorkflowTaskSetInformer()
+	wfc.artGCTaskInformer = wfc.newArtGCTaskInformer()
+	wfc.taskResultInformer = wfc.newWorkflowTaskResultInformer()
 
 	wfc.addWorkflowInformerHandlers(ctx)
 	wfc.podInformer = wfc.newPodInformer(ctx)
