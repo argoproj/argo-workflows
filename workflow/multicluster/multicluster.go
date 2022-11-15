@@ -7,5 +7,4 @@ import (
 type MultiClusterProcessor interface {
 	ProcessWorkflow(wf *wfv1.Workflow) error
 	ProcessWorkflowDeletion(wf *wfv1.Workflow) error
-	ProcessStatusUpdate(wfStatus *wfv1.WorkflowStatusResult) error
 }
