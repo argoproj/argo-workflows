@@ -7682,172 +7682,18 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowStatusResult(ref common.Reference
 							Ref:     ref("k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"),
 						},
 					},
-					"phase": {
+					"workflowStatus": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Phase a simple, high-level summary of where the workflow is in its lifecycle.",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"startedAt": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Time at which this workflow started",
-							Default:     map[string]interface{}{},
-							Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.Time"),
-						},
-					},
-					"finishedAt": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Time at which this workflow completed",
-							Default:     map[string]interface{}{},
-							Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.Time"),
-						},
-					},
-					"estimatedDuration": {
-						SchemaProps: spec.SchemaProps{
-							Description: "EstimatedDuration in seconds.",
-							Type:        []string{"integer"},
-							Format:      "int32",
-						},
-					},
-					"progress": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Progress to completion",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"message": {
-						SchemaProps: spec.SchemaProps{
-							Description: "A human readable message indicating details about why the workflow is in this condition.",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"compressedNodes": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Compressed and base64 decoded Nodes map",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"nodes": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Nodes is a mapping between a node ID and the node's status.",
-							Type:        []string{"object"},
-							AdditionalProperties: &spec.SchemaOrBool{
-								Allows: true,
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Default: map[string]interface{}{},
-										Ref:     ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.NodeStatus"),
-									},
-								},
-							},
-						},
-					},
-					"offloadNodeStatusVersion": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Whether on not node status has been offloaded to a database. If exists, then Nodes and CompressedNodes will be empty. This will actually be populated with a hash of the offloaded data.",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"storedTemplates": {
-						SchemaProps: spec.SchemaProps{
-							Description: "StoredTemplates is a mapping between a template ref and the node's status.",
-							Type:        []string{"object"},
-							AdditionalProperties: &spec.SchemaOrBool{
-								Allows: true,
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Default: map[string]interface{}{},
-										Ref:     ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Template"),
-									},
-								},
-							},
-						},
-					},
-					"persistentVolumeClaims": {
-						SchemaProps: spec.SchemaProps{
-							Description: "PersistentVolumeClaims tracks all PVCs that were created as part of the workflow. The contents of this list are drained at the end of the workflow.",
-							Type:        []string{"array"},
-							Items: &spec.SchemaOrArray{
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Default: map[string]interface{}{},
-										Ref:     ref("k8s.io/api/core/v1.Volume"),
-									},
-								},
-							},
-						},
-					},
-					"outputs": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Outputs captures output values and artifact locations produced by the workflow via global outputs",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Outputs"),
-						},
-					},
-					"conditions": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Conditions is a list of conditions the Workflow may have",
-							Type:        []string{"array"},
-							Items: &spec.SchemaOrArray{
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Default: map[string]interface{}{},
-										Ref:     ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Condition"),
-									},
-								},
-							},
-						},
-					},
-					"resourcesDuration": {
-						SchemaProps: spec.SchemaProps{
-							Description: "ResourcesDuration is the total for the workflow",
-							Type:        []string{"object"},
-							AdditionalProperties: &spec.SchemaOrBool{
-								Allows: true,
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Default: 0,
-										Type:    []string{"integer"},
-										Format:  "int64",
-									},
-								},
-							},
-						},
-					},
-					"storedWorkflowTemplateSpec": {
-						SchemaProps: spec.SchemaProps{
-							Description: "StoredWorkflowSpec stores the WorkflowTemplate spec for future execution.",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowSpec"),
-						},
-					},
-					"synchronization": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Synchronization stores the status of synchronization locks",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.SynchronizationStatus"),
-						},
-					},
-					"artifactRepositoryRef": {
-						SchemaProps: spec.SchemaProps{
-							Description: "ArtifactRepositoryRef is used to cache the repository to use so we do not need to determine it everytime we reconcile.",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactRepositoryRefStatus"),
-						},
-					},
-					"artifactGCStatus": {
-						SchemaProps: spec.SchemaProps{
-							Description: "ArtifactGCStatus maintains the status of Artifact Garbage Collection",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtGCStatus"),
+							Default: map[string]interface{}{},
+							Ref:     ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowStatus"),
 						},
 					},
 				},
-				Required: []string{"metadata"},
+				Required: []string{"metadata", "workflowStatus"},
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtGCStatus", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactRepositoryRefStatus", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Condition", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.NodeStatus", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Outputs", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.SynchronizationStatus", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Template", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowSpec", "k8s.io/api/core/v1.Volume", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta", "k8s.io/apimachinery/pkg/apis/meta/v1.Time"},
+			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
 	}
 }
 
