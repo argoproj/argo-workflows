@@ -51,8 +51,6 @@ func NewOCMProcessor(wfInformer cache.SharedIndexInformer, restConfig *rest.Conf
 
 	// todo: construct wfStatusInformer and register processStatusUpdate() to be called when there's a Status Update
 
-	// todo: construct manifestWorkerInformer
-
 	return ocm
 }
 
@@ -74,7 +72,7 @@ func (ocm *OCMProcessor) ProcessWorkflow(ctx context.Context, wf *wfv1.Workflow)
 	fmt.Printf("deletethis: generated Manifest Work in OCM Processor: %+v\n", manifestWork)
 
 	// attempt to create ManifestWork with this name/namespace
-	created, err := ocm.ocmworkclient.ManifestWorks("").Create(ctx, manifestWork, metav1.CreateOptions{})
+	created, err := ocm.ocmworkclient.ManifestWorks(mwNamespace).Create(ctx, manifestWork, metav1.CreateOptions{}) //todo: do I need mwNamespace here?
 	if err != nil {
 		if apierr.IsAlreadyExists(err) {
 		}
