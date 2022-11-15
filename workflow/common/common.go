@@ -96,6 +96,8 @@ const (
 	// LabelKeyCluster is a label applied to multi-cluster Workflows to identify which cluster they should be scheduled on
 	LabelKeyCluster = "/cluster"
 
+	LabelKeyHubWorkflowUID = "/workflow-uid"
+
 	// ExecutorArtifactBaseDir is the base directory in the init container in which artifacts will be copied to.
 	// Each artifact will be named according to its input name (e.g: /argo/inputs/artifacts/CODE)
 	ExecutorArtifactBaseDir = "/argo/inputs/artifacts"
