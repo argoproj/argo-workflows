@@ -12,6 +12,8 @@ type WorkflowArtifactGCTaskExpansion interface{}
 
 type WorkflowEventBindingExpansion interface{}
 
+type WorkflowStatusResultExpansion interface{}
+
 type WorkflowTaskResultExpansion interface{}
 
 type WorkflowTaskSetExpansion interface{}

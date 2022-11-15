@@ -2059,7 +2059,7 @@ message WorkflowStatus {
 // This is an internal type. Users should never create this resource directly, much like you would
 // never create a ReplicaSet directly.
 // +genclient
-// +k8s:deep-copy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 message WorkflowStatusResult {
   optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
 
