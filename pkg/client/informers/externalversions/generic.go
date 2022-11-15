@@ -47,6 +47,8 @@ func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Argoproj().V1alpha1().WorkflowArtifactGCTasks().Informer()}, nil
 	case v1alpha1.SchemeGroupVersion.WithResource("workfloweventbindings"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Argoproj().V1alpha1().WorkflowEventBindings().Informer()}, nil
+	case v1alpha1.SchemeGroupVersion.WithResource("workflowstatusresults"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Argoproj().V1alpha1().WorkflowStatusResults().Informer()}, nil
 	case v1alpha1.SchemeGroupVersion.WithResource("workflowtaskresults"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Argoproj().V1alpha1().WorkflowTaskResults().Informer()}, nil
 	case v1alpha1.SchemeGroupVersion.WithResource("workflowtasksets"):
