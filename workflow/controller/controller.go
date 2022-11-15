@@ -61,6 +61,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/workflow/hydrator"
 	"github.com/argoproj/argo-workflows/v3/workflow/metrics"
 	"github.com/argoproj/argo-workflows/v3/workflow/multicluster"
+	"github.com/argoproj/argo-workflows/v3/workflow/multicluster/ocm"
 	"github.com/argoproj/argo-workflows/v3/workflow/signal"
 	"github.com/argoproj/argo-workflows/v3/workflow/sync"
 	"github.com/argoproj/argo-workflows/v3/workflow/util"
@@ -131,6 +132,7 @@ type WorkflowController struct {
 	executorPlugins          map[string]map[string]*spec.Plugin // namespace -> name -> plugin
 
 	clusterMode           ClusterMode
+	multiClusterProvider  MultiClusterProvider
 	multiClusterProcessor multicluster.MultiClusterProcessor
 }
 
@@ -176,7 +178,7 @@ const (
 )
 
 // NewWorkflowController instantiates a new WorkflowController
-func NewWorkflowController(ctx context.Context, restConfig *rest.Config, kubeclientset kubernetes.Interface, wfclientset wfclientset.Interface, namespace, managedNamespace, executorImage, executorImagePullPolicy, executorLogFormat, configMap string, executorPlugins bool, clusterMode ClusterMode, multiClusterProcessor multicluster.MultiClusterProcessor) (*WorkflowController, error) {
+func NewWorkflowController(ctx context.Context, restConfig *rest.Config, kubeclientset kubernetes.Interface, wfclientset wfclientset.Interface, namespace, managedNamespace, executorImage, executorImagePullPolicy, executorLogFormat, configMap string, executorPlugins bool, clusterMode ClusterMode, multiClusterProvider MultiClusterProvider) (*WorkflowController, error) {
 	dynamicInterface, err := dynamic.NewForConfig(restConfig)
 	if err != nil {
 		return nil, err
@@ -199,7 +201,7 @@ func NewWorkflowController(ctx context.Context, restConfig *rest.Config, kubecli
 		progressPatchTickDuration:  env.LookupEnvDurationOr(common.EnvVarProgressPatchTickDuration, 1*time.Minute),
 		progressFileTickDuration:   env.LookupEnvDurationOr(common.EnvVarProgressFileTickDuration, 3*time.Second),
 		clusterMode:                clusterMode,
-		multiClusterProcessor:      multiClusterProcessor,
+		multiClusterProvider:       multiClusterProvider,
 	}
 
 	if executorPlugins {
@@ -274,10 +276,26 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 		Info("Current Worker Numbers")
 
 	wfc.wfInformer = util.NewWorkflowInformer(wfc.dynamicInterface, wfc.GetManagedNamespace(), workflowResyncPeriod, wfc.tweakListOptions, indexers)
+
+	if wfc.clusterMode == MultiClusterMode {
+		switch wfc.multiClusterProvider {
+		case OCM:
+			wfc.multiClusterProcessor = &ocm.OCMProcessor{WFInformer: wfc.wfInformer}
+		default:
+			log.Fatal("invalid multicluster provider")
+		}
+	}
+
 	wfc.wftmplInformer = informer.NewTolerantWorkflowTemplateInformer(wfc.dynamicInterface, workflowTemplateResyncPeriod, wfc.managedNamespace)
-	wfc.wfTaskSetInformer = wfc.newWorkflowTaskSetInformer() // todo: consider not doing this in multi-cluster mode
-	wfc.artGCTaskInformer = wfc.newArtGCTaskInformer()
-	wfc.taskResultInformer = wfc.newWorkflowTaskResultInformer()
+
+	switch wfc.clusterMode {
+	case SingleClusterMode:
+		wfc.wfTaskSetInformer = wfc.newWorkflowTaskSetInformer() // todo: consider not doing this in multi-cluster mode
+		wfc.artGCTaskInformer = wfc.newArtGCTaskInformer()
+		wfc.taskResultInformer = wfc.newWorkflowTaskResultInformer()
+	case MultiClusterMode:
+
+	}
 
 	wfc.addWorkflowInformerHandlers(ctx)
 	wfc.podInformer = wfc.newPodInformer(ctx)

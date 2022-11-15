@@ -37,8 +37,6 @@ import (
 	"github.com/argoproj/argo-workflows/v3/workflow/controller"
 	"github.com/argoproj/argo-workflows/v3/workflow/events"
 	"github.com/argoproj/argo-workflows/v3/workflow/metrics"
-	"github.com/argoproj/argo-workflows/v3/workflow/multicluster"
-	"github.com/argoproj/argo-workflows/v3/workflow/multicluster/ocm"
 )
 
 const (
@@ -111,7 +109,7 @@ func NewRootCommand() *cobra.Command {
 
 			var parsedClusterMode controller.ClusterMode
 			//var parsedMultiClusterProvider controller.MultiClusterProvider
-			var multiclusterProcessor multicluster.MultiClusterProcessor
+			var multiclusterProvider controller.MultiClusterProvider
 			switch clusterMode {
 			case "single-cluster":
 				parsedClusterMode = controller.SingleClusterMode
@@ -121,7 +119,7 @@ func NewRootCommand() *cobra.Command {
 				switch multiClusterProvider {
 				case "ocm":
 					//parsedMultiClusterProvider = controller.OCM
-					multiclusterProcessor = &ocm.OCMProcessor{}
+					multiclusterProvider = controller.OCM
 				default:
 					log.Fatal("invalid value for --multi-cluster-provider flag")
 				}
@@ -133,7 +131,7 @@ func NewRootCommand() *cobra.Command {
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
 
-			wfController, err := controller.NewWorkflowController(ctx, config, kubeclientset, wfclientset, namespace, managedNamespace, executorImage, executorImagePullPolicy, logFormat, configMap, executorPlugins, parsedClusterMode, multiclusterProcessor)
+			wfController, err := controller.NewWorkflowController(ctx, config, kubeclientset, wfclientset, namespace, managedNamespace, executorImage, executorImagePullPolicy, logFormat, configMap, executorPlugins, parsedClusterMode, multiclusterProvider)
 			errors.CheckError(err)
 
 			leaderElectionOff := os.Getenv("LEADER_ELECTION_DISABLE")
