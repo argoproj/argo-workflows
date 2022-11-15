@@ -9,8 +9,6 @@ spec:
     kind: WorkflowStatusResult
     listKind: WorkflowStatusResultList
     plural: workflowstatusresults
-    shortNames:
-    - wfsr
     singular: workflowstatusresult
   scope: Namespaced
   versions:
