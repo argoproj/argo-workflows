@@ -6,6 +6,7 @@ import (
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
+	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/tools/cache"
 )
 
@@ -13,9 +14,10 @@ type OCMProcessor struct {
 	wfInformer             cache.SharedIndexInformer // this one gets passed in
 	wfStatusInformer       cache.SharedIndexInformer // this one gets constructed locally
 	manifestWorkerInformer cache.SharedIndexInformer // this one gets constructed locally
+	kubeclient             dynamic.Interface
 }
 
-func NewOCMProcessor(wfInformer cache.SharedIndexInformer) *OCMProcessor {
+func NewOCMProcessor(wfInformer cache.SharedIndexInformer, kubeclient dynamic.Interface) *OCMProcessor {
 	ocm := &OCMProcessor{wfInformer: wfInformer}
 
 	// todo: construct wfStatusInformer and register processStatusUpdate() to be called when there's a Status Update
@@ -65,7 +67,25 @@ func (ocm *OCMProcessor) ProcessWorkflowDeletion(ctx context.Context, wf *wfv1.W
 }
 
 // find Workflow associated with WorkflowStatusResult and update it
-func (ocm *OCMProcessor) processStatusUpdate(ctx context.Context, wfStatus *wfv1.WorkflowStatusResult) error {
+/*func (ocm *OCMProcessor) processStatusUpdate(ctx context.Context, wfStatus *wfv1.WorkflowStatusResult) error {
 
 	return nil
-}
+}*/
+
+/*
+func (ocm *OCMProcessor) newManifestWorkfInformer(resource schema.GroupVersionResource, client dynamic.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers) cache.SharedIndexInformer {
+	ctx := context.Background()
+	return cache.NewSharedIndexInformer(
+		&cache.ListWatch{
+			ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
+				return client.Resource(resource).Namespace(namespace).List(ctx, options)
+			},
+			WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
+				return client.Resource(resource).Namespace(namespace).Watch(ctx, options)
+			},
+		},
+		&unstructured.Unstructured{},
+		resyncPeriod,
+		indexers,
+	)
+}*/
