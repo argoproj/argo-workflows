@@ -120,6 +120,7 @@ func NewRootCommand() *cobra.Command {
 				case "ocm":
 					//parsedMultiClusterProvider = controller.OCM
 					multiclusterProvider = controller.OCM
+					log.Info("using multi cluster provider OCM")
 				default:
 					log.Fatal("invalid value for --multi-cluster-provider flag")
 				}

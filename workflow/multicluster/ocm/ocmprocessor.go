@@ -2,8 +2,10 @@ package ocm
 
 import (
 	"context"
+	"fmt"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"k8s.io/client-go/tools/cache"
 )
 
@@ -18,6 +20,8 @@ func NewOCMProcessor(wfInformer cache.SharedIndexInformer) *OCMProcessor {
 
 	// todo: construct wfStatusInformer and register processStatusUpdate() to be called when there's a Status Update
 
+	// todo: construct manifestWorkerInformer
+
 	return ocm
 }
 
@@ -25,12 +29,27 @@ func NewOCMProcessor(wfInformer cache.SharedIndexInformer) *OCMProcessor {
 func (ocm *OCMProcessor) ProcessWorkflow(ctx context.Context, wf *wfv1.Workflow) error {
 
 	// locate the label which indicates the cluster name (which is the namespace that our Manifest Work will go)
+	mwNamespace, found := wf.Labels[common.LabelKeyCluster]
+	if !found {
+		return fmt.Errorf("In multicluster mode, the Workflow Controller requires all Workflows to contain label %s", mwNamespace)
+	}
 
 	// use the Workflow UUID to derive the ManifestWork name
+	mwName := string(wf.UID)
 
 	// see if a ManifestWork already exists with this name/namespace
+	_, exists, err := ocm.manifestWorkerInformer.GetStore().GetByKey(mwNamespace + "/" + mwName)
+	if err != nil {
+		return fmt.Errorf("error attempting to get ManifestWork: err=%v", err)
+	}
+
 	// if not, create it
-	// else update it (future work)
+	if !exists {
+
+	} else {
+		// update it (future work)
+
+	}
 
 	return nil
 }
