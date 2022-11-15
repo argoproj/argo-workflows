@@ -763,7 +763,7 @@ func (wfc *WorkflowController) processNextItem(ctx context.Context) bool {
 	}
 
 	if wfc.clusterMode == MultiClusterMode {
-		return wfc.multiClusterProcessor.ProcessWorkflow(wf) == nil
+		return wfc.multiClusterProcessor.ProcessWorkflow(ctx, wf) == nil
 	}
 
 	// this will ensure we process every incomplete workflow once every 20m
