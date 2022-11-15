@@ -3984,7 +3984,7 @@ The <code>artifact-example</code> template passes the <code>hello-art</code> art
 <span class="l l-Scalar l-Scalar-Plain">&lt;... snipped ...&gt;</span><span class="w"></span>
 </code></pre></div>
 <h2 id="artifact-garbage-collection">Artifact Garbage Collection<a class="headerlink" href="#artifact-garbage-collection" title="Permanent link">&para;</a></h2>
-<p>As of version 3.4 you can configure your Workflow to automatically delete Artifacts that you don't need (presuming you're using S3 - other storage engines still need to be implemented).</p>
+<p>As of version 3.4 you can configure your Workflow to automatically delete Artifacts that you don't need (visit <a href="https://argoproj.github.io/argo-workflows/configure-artifact-repository/">artifact repository capability</a> for the current supported store engine).</p>
 <p>Artifacts can be deleted <code>OnWorkflowCompletion</code> or <code>OnWorkflowDeletion</code>. You can specify your Garbage Collection strategy on both the Workflow level and the Artifact level, so for example, you may have temporary artifacts that can be deleted right away but a final output that should be persisted:</p>
 <div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span><span class="w"></span>
 <span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Workflow</span><span class="w"></span>
