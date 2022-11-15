@@ -68,6 +68,7 @@ require (
 	k8s.io/klog/v2 v2.60.1
 	k8s.io/kube-openapi v0.0.0-20220627174259-011e075b9cb8
 	k8s.io/utils v0.0.0-20220210201930-3a6ce19ff2f9
+	open-cluster-management.io/api v0.9.0
 	sigs.k8s.io/yaml v1.3.0
 	upper.io/db.v3 v3.8.0+incompatible
 )
@@ -174,7 +175,6 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/oliveagle/jsonpath v0.0.0-20180606110733-2e52cf6e6852 // indirect
-	github.com/onsi/ginkgo v1.16.5 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.0.3-0.20220114050600-8b9d41f48198 // indirect
 	github.com/pelletier/go-toml v1.9.5 // indirect
