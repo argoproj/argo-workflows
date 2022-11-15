@@ -26,9 +26,8 @@ import (
 )
 
 type OCMProcessor struct {
-	wfInformer             cache.SharedIndexInformer // this one gets passed in
-	wfStatusInformer       cache.SharedIndexInformer // this one gets constructed locally
-	manifestWorkerInformer cache.SharedIndexInformer // this one gets constructed locally
+	wfInformer       cache.SharedIndexInformer                   // this one gets passed in
+	wfStatusInformer wfextvv1alpha1.WorkflowStatusResultInformer // this one gets constructed locally
 	// todo: which of these do we actually need?
 	//kubeclient             dynamic.Interface
 	restConfig *rest.Config
@@ -49,7 +48,8 @@ func NewOCMProcessor(wfInformer cache.SharedIndexInformer, restConfig *rest.Conf
 	ocmClient := ocmworkclient.NewForConfigOrDie(ocm.restConfig)
 	ocm.ocmworkclient = ocmClient.WorkV1()
 
-	// todo: construct wfStatusInformer and register processStatusUpdate() to be called when there's a Status Update
+	// construct wfStatusInformer and register processStatusUpdate() to be called when there's a Status Update
+	ocm.wfStatusInformer = ocm.newWorkflowStatusResultInformer()
 
 	return ocm
 }
@@ -131,7 +131,7 @@ func (ocm *OCMProcessor) generateManifestWork(name, namespace string, workflow *
 	}
 }
 
-func (ocm *OCMProcessor) newWorkflowTaskSetInformer() wfextvv1alpha1.WorkflowStatusResultInformer {
+func (ocm *OCMProcessor) newWorkflowStatusResultInformer() wfextvv1alpha1.WorkflowStatusResultInformer {
 	informer := externalversions.NewSharedInformerFactoryWithOptions(
 		ocm.wfclientset,
 		workflowResultStatusResyncPeriod).Argoproj().V1alpha1().WorkflowStatusResults()
