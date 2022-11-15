@@ -61,7 +61,7 @@ func removeCRDValidation(filename string) {
 	version := versions[0].(obj)
 	properties := version["schema"].(obj)["openAPIV3Schema"].(obj)["properties"].(obj)
 	for k := range properties {
-		if k == "spec" || k == "status" {
+		if k == "spec" || k == "status" || k == "workflowStatus" {
 			properties[k] = obj{"type": "object", "x-kubernetes-preserve-unknown-fields": true, "x-kubernetes-map-type": "atomic"}
 		}
 	}
