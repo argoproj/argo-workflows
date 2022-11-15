@@ -8,13 +8,17 @@ import (
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/tools/cache"
+	ocmtypesv1 "github.com/open-cluster-management.io/api/work/v1"
 )
 
 type OCMProcessor struct {
 	wfInformer             cache.SharedIndexInformer // this one gets passed in
 	wfStatusInformer       cache.SharedIndexInformer // this one gets constructed locally
 	manifestWorkerInformer cache.SharedIndexInformer // this one gets constructed locally
-	kubeclient             dynamic.Interface
+	// todo: which of these do we actually need?
+	//kubeclient             dynamic.Interface
+	kubeclientset    kubernetes.Interface
+	wfclientset      wfclientset.Interface
 }
 
 func NewOCMProcessor(wfInformer cache.SharedIndexInformer, kubeclient dynamic.Interface) *OCMProcessor {
@@ -39,19 +43,20 @@ func (ocm *OCMProcessor) ProcessWorkflow(ctx context.Context, wf *wfv1.Workflow)
 	// use the Workflow UUID to derive the ManifestWork name
 	mwName := string(wf.UID)
 
-	// see if a ManifestWork already exists with this name/namespace
-	_, exists, err := ocm.manifestWorkerInformer.GetStore().GetByKey(mwNamespace + "/" + mwName)
+	var manifestWork &ocmtypesv1.ManifestWork
+
+	// attempt to create ManifestWork with this name/namespace
+	created, err := ocm.kubeclient.//CoreV1().Pods(woc.wf.ObjectMeta.Namespace).Create(ctx, pod, metav1.CreateOptions{})
+	if err != nil {
+		if apierr.IsAlreadyExists(err) {
+	/*_, exists, err := ocm.manifestWorkerInformer.GetStore().GetByKey(mwNamespace + "/" + mwName)
 	if err != nil {
 		return fmt.Errorf("error attempting to get ManifestWork: err=%v", err)
-	}
+	}*/
 
-	// if not, create it
-	if !exists {
+	// if we get an IsAlreadyExists error then update it (model workflowpod.go:433)
 
-	} else {
-		// update it (future work)
-
-	}
+	
 
 	return nil
 }
@@ -72,7 +77,7 @@ func (ocm *OCMProcessor) ProcessWorkflowDeletion(ctx context.Context, wf *wfv1.W
 	return nil
 }*/
 
-/*
+
 func (ocm *OCMProcessor) newManifestWorkfInformer(resource schema.GroupVersionResource, client dynamic.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers) cache.SharedIndexInformer {
 	ctx := context.Background()
 	return cache.NewSharedIndexInformer(
@@ -88,4 +93,4 @@ func (ocm *OCMProcessor) newManifestWorkfInformer(resource schema.GroupVersionRe
 		resyncPeriod,
 		indexers,
 	)
-}*/
+}
