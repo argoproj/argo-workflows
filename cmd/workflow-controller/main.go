@@ -62,7 +62,7 @@ func NewRootCommand() *cobra.Command {
 		namespaced              bool   // --namespaced
 		managedNamespace        string // --managed-namespace
 		executorPlugins         bool
-		clusterMode             string // --cluster-mode
+		runningMode             string // --cluster-mode
 		multiClusterProvider    string // --multi-cluster-provider
 	)
 
@@ -107,9 +107,9 @@ func NewRootCommand() *cobra.Command {
 				managedNamespace = namespace
 			}
 
-			var parsedClusterMode controller.ClusterMode
+			var parsedClusterMode controller.RunningMode
 			var multiclusterProvider controller.MultiClusterProvider
-			switch clusterMode {
+			switch runningMode {
 			case "single-cluster":
 				parsedClusterMode = controller.SingleClusterMode
 			case "multi-cluster":
@@ -123,7 +123,7 @@ func NewRootCommand() *cobra.Command {
 					log.Fatal("invalid value for --multi-cluster-provider flag")
 				}
 			default:
-				log.Fatal("invalid value for --clusterMode flag")
+				log.Fatal("invalid value for --running-mode flag")
 			}
 
 			// start a controller on instances of our custom resource
@@ -200,7 +200,7 @@ func NewRootCommand() *cobra.Command {
 	command.Flags().BoolVar(&namespaced, "namespaced", false, "run workflow-controller as namespaced mode")
 	command.Flags().StringVar(&managedNamespace, "managed-namespace", "", "namespace that workflow-controller watches, default to the installation namespace")
 	command.Flags().BoolVar(&executorPlugins, "executor-plugins", false, "enable executor plugins")
-	command.Flags().StringVar(&clusterMode, "cluster-mode", "single-cluster", "One of: multi-cluster|single-cluster")
+	command.Flags().StringVar(&runningMode, "running-mode", "single-cluster", "One of: multi-cluster|single-cluster")
 	command.Flags().StringVar(&multiClusterProvider, "multi-cluster-provider", "ocm", "currently only 'ocm' is supported")
 
 	viper.AutomaticEnv()

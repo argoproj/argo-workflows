@@ -131,7 +131,7 @@ type WorkflowController struct {
 	progressFileTickDuration time.Duration
 	executorPlugins          map[string]map[string]*spec.Plugin // namespace -> name -> plugin
 
-	clusterMode           ClusterMode
+	runningMode           RunningMode
 	multiClusterProvider  MultiClusterProvider
 	multiClusterProcessor multicluster.MultiClusterProcessor
 }
@@ -164,11 +164,11 @@ func init() {
 	}
 }
 
-type ClusterMode int
+type RunningMode int
 
 const (
-	SingleClusterMode ClusterMode = 0
-	MultiClusterMode  ClusterMode = 1
+	SingleClusterMode RunningMode = 0
+	MultiClusterMode  RunningMode = 1
 )
 
 type MultiClusterProvider int
@@ -178,7 +178,7 @@ const (
 )
 
 // NewWorkflowController instantiates a new WorkflowController
-func NewWorkflowController(ctx context.Context, restConfig *rest.Config, kubeclientset kubernetes.Interface, wfclientset wfclientset.Interface, namespace, managedNamespace, executorImage, executorImagePullPolicy, executorLogFormat, configMap string, executorPlugins bool, clusterMode ClusterMode, multiClusterProvider MultiClusterProvider) (*WorkflowController, error) {
+func NewWorkflowController(ctx context.Context, restConfig *rest.Config, kubeclientset kubernetes.Interface, wfclientset wfclientset.Interface, namespace, managedNamespace, executorImage, executorImagePullPolicy, executorLogFormat, configMap string, executorPlugins bool, runningMode RunningMode, multiClusterProvider MultiClusterProvider) (*WorkflowController, error) {
 	dynamicInterface, err := dynamic.NewForConfig(restConfig)
 	if err != nil {
 		return nil, err
@@ -200,7 +200,7 @@ func NewWorkflowController(ctx context.Context, restConfig *rest.Config, kubecli
 		eventRecorderManager:       events.NewEventRecorderManager(kubeclientset),
 		progressPatchTickDuration:  env.LookupEnvDurationOr(common.EnvVarProgressPatchTickDuration, 1*time.Minute),
 		progressFileTickDuration:   env.LookupEnvDurationOr(common.EnvVarProgressFileTickDuration, 3*time.Second),
-		clusterMode:                clusterMode,
+		runningMode:                runningMode,
 		multiClusterProvider:       multiClusterProvider,
 	}
 
@@ -277,7 +277,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 
 	wfc.wfInformer = util.NewWorkflowInformer(wfc.dynamicInterface, wfc.GetManagedNamespace(), workflowResyncPeriod, wfc.tweakListOptions, indexers)
 
-	if wfc.clusterMode == MultiClusterMode {
+	if wfc.runningMode == MultiClusterMode {
 		switch wfc.multiClusterProvider {
 		case OCM:
 			wfc.multiClusterProcessor = ocm.NewOCMProcessor(wfc.wfInformer, wfc.dynamicInterface)
@@ -762,7 +762,7 @@ func (wfc *WorkflowController) processNextItem(ctx context.Context) bool {
 		return true
 	}
 
-	if wfc.clusterMode == MultiClusterMode {
+	if wfc.runningMode == MultiClusterMode {
 		return wfc.multiClusterProcessor.ProcessWorkflow(ctx, wf) == nil
 	}
 
