@@ -14,22 +14,7 @@ spec:
     singular: workflowstatusresult
   scope: Namespaced
   versions:
-  - additionalPrinterColumns:
-    - description: Status of the workflow
-      jsonPath: .status.phase
-      name: Status
-      type: string
-    - description: When the workflow was started
-      format: date-time
-      jsonPath: .status.startedAt
-      name: Age
-      type: date
-    - description: Human readable message indicating details about why the workflow
-        is in this condition.
-      jsonPath: .status.message
-      name: Message
-      type: string
-    name: v1alpha1
+  - name: v1alpha1
     schema:
       openAPIV3Schema:
         properties:
@@ -29782,4 +29767,3 @@ spec:
         type: object
     served: true
     storage: true
-    subresources: {}
