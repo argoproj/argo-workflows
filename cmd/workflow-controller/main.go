@@ -201,8 +201,8 @@ func NewRootCommand() *cobra.Command {
 	command.Flags().BoolVar(&namespaced, "namespaced", false, "run workflow-controller as namespaced mode")
 	command.Flags().StringVar(&managedNamespace, "managed-namespace", "", "namespace that workflow-controller watches, default to the installation namespace")
 	command.Flags().BoolVar(&executorPlugins, "executor-plugins", false, "enable executor plugins")
-	command.Flags().StringVar(&clusterMode, "clusterMode", "single-cluster", "One of: multi-cluster|single-cluster")
-	command.Flags().StringVar(&multiClusterProvider, "multiClusterProvider", "ocm", "currently only 'ocm' is supported")
+	command.Flags().StringVar(&clusterMode, "cluster-mode", "single-cluster", "One of: multi-cluster|single-cluster")
+	command.Flags().StringVar(&multiClusterProvider, "multi-cluster-provider", "ocm", "currently only 'ocm' is supported")
 
 	viper.AutomaticEnv()
 	viper.SetEnvPrefix("ARGO")
