@@ -2055,6 +2055,24 @@ message WorkflowStatus {
   optional ArtGCStatus artifactGCStatus = 19;
 }
 
+// WorkflowStatusResult is a used to communicate workflow status back to the controller.
+// This is an internal type. Users should never create this resource directly, much like you would
+// never create a ReplicaSet directly.
+// +genclient
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+message WorkflowStatusResult {
+  optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
+
+  optional WorkflowStatus workflowStatus = 2;
+}
+
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+message WorkflowStatusResultList {
+  optional k8s.io.apimachinery.pkg.apis.meta.v1.ListMeta metadata = 1;
+
+  repeated WorkflowStatusResult items = 2;
+}
+
 // WorkflowStep is a reference to a template to execute in a series of step
 message WorkflowStep {
   // Name of the step
