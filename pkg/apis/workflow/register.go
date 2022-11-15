@@ -38,4 +38,8 @@ const (
 	WorkflowArtifactGCTaskPlural     string = "workflowartifactgctasks"
 	WorkflowArtifactGCTaskShortName  string = "wfat"
 	WorkflowArtifactGCTaskFullName   string = WorkflowArtifactGCTaskPlural + "." + Group
+
+	WorkflowStatusResultKind     string = "workflowStatusResult"
+	WorkflowStatusResultPlural   string = "workflowStatusResults"
+	WorkflowStatusResultFullName string = WorkflowStatusResultPlural + "." + Group
 )
