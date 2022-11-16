@@ -68,7 +68,9 @@ func (ocm *OCMProcessor) ProcessWorkflow(ctx context.Context, wf *wfv1.Workflow)
 
 	// use the Workflow UUID to derive the ManifestWork name
 	mwName := string(wf.UID)
-
+	wflabels := wf.GetLabels()
+	wflabels[common.LabelKeyHubWorkflowUID] = string(wf.UID)
+	wf.SetLabels(wflabels)
 	manifestWork := ocm.generateManifestWork(mwName, mwNamespace, wf)
 	log.Debugf("generated Manifest Work in OCM Processor: %+v\n", manifestWork)
 
