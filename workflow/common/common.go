@@ -96,7 +96,13 @@ const (
 
 	// LabelKeyCluster is a label applied to multi-cluster Workflows to identify which cluster they should be scheduled on
 	LabelKeyCluster = workflow.WorkflowFullName + "/cluster"
+	// LabelKeyPlacement is a label applied to multi-cluster Workflows to identify which managed cluster set they should be scheduled on
+	// specifically it identifies the name of the "Placement" CRD
+	LabelKeyPlacement = workflow.WorkflowFullName + "/placement"
+	// LabelKeyPlacementNamespace identifies the namespace of the "Placement" CRD
+	LabelKeyPlacementNamespace = workflow.WorkflowFullName + "/placement-namespace"
 
+	// LabelKeyHubWorkflowUID is used in multicluster mode and applied to a ManifestWork CRD to identify the dormant Workflow it's tied to
 	LabelKeyHubWorkflowUID = workflow.WorkflowFullName + "/hub-workflow-uid"
 
 	// ExecutorArtifactBaseDir is the base directory in the init container in which artifacts will be copied to.
