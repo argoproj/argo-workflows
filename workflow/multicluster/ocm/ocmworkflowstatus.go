@@ -3,11 +3,12 @@ package ocm
 import (
 	"context"
 
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/controller/indexes"
 	"github.com/argoproj/argo-workflows/v3/workflow/util"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
 func (ocm *OCMProcessor) processStatusUpdate(ctx context.Context, wfStatus *wfv1.WorkflowStatusResult) error {
@@ -25,14 +26,14 @@ func (ocm *OCMProcessor) processStatusUpdate(ctx context.Context, wfStatus *wfv1
 	}
 
 	// update wf status from wfStatus object
-	wf.Status = wfStatus.WorkflowStatus
+	wf.Status = *wfStatus.WorkflowStatus.DeepCopy()
 
 	// update wf labels from wfStatus object
 	wf.Labels["workflows.argoproj.io/archive-strategy"] = "false"
 	wf.Labels[common.LabelKeyCompleted] = "true"
-	wf.Labels[common.LabelKeyPhase] = "Succeeded"
+	wf.Labels[common.LabelKeyPhase] = string(wf.Status.Phase)
 
-	// delete object
+	// todo: delete object
 
 	return nil
 }

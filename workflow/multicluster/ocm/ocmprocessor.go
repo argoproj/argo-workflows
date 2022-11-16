@@ -3,12 +3,14 @@ package ocm
 import (
 	"context"
 	"fmt"
+
 	v1 "open-cluster-management.io/api/work/v1"
+
+	"k8s.io/client-go/dynamic"
+	"k8s.io/client-go/tools/cache"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
-	"k8s.io/client-go/dynamic"
-	"k8s.io/client-go/tools/cache"
 )
 
 type OCMProcessor struct {
