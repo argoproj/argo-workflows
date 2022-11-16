@@ -158,11 +158,6 @@ func (cm *Manager) TryAcquire(wf *wfv1.Workflow, nodeName string, syncLockRef *w
 		cm.syncLockMap[lockKey] = lock
 	}
 
-	err = cm.syncStorage.Store(context.Background(), lockKey, syncType)
-	if err != nil {
-		cm.Release(wf, nodeName, syncLockRef)
-	}
-
 	if syncLockRef.GetType() == wfv1.SynchronizationTypeSemaphore {
 		err := cm.checkAndUpdateSemaphoreSize(lock)
 		if err != nil {
@@ -184,6 +179,11 @@ func (cm *Manager) TryAcquire(wf *wfv1.Workflow, nodeName string, syncLockRef *w
 	currentHolders := cm.getCurrentLockHolders(lockKey)
 	acquired, msg := lock.tryAcquire(holderKey)
 	if acquired {
+
+		err = cm.syncStorage.Store(context.Background(), lockKey, syncType)
+		if err != nil {
+			cm.Release(wf, nodeName, syncLockRef)
+		}
 		updated := wf.Status.Synchronization.GetStatus(syncLockRef.GetType()).LockAcquired(holderKey, lockKey, currentHolders)
 		return acquired, updated, "", nil
 	}
