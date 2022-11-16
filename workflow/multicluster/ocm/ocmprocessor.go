@@ -161,6 +161,12 @@ func (ocm *OCMProcessor) newWorkflowStatusResultInformer() wfextvv1alpha1.Workfl
 				log.Infof("cast to WorkflowStatusResult: %+v\n", wfResult)
 				ocm.processStatusUpdate(context.Background(), wfResult)
 			},
+			UpdateFunc: func(oldobj interface{}, newObj interface{}) {
+				log.Info("noticed updated WorkflowStatusResult")
+				wfResult := newObj.(*wfv1.WorkflowStatusResult)
+				log.Infof("cast to WorkflowStatusResult: %+v\n", wfResult)
+				ocm.processStatusUpdate(context.Background(), wfResult)
+			},
 		})
 	return informer
 }
