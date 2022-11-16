@@ -94,9 +94,9 @@ const (
 	// LabelKeyArtifactGCPodHash is a label applied to WorkflowTaskSets used by the Artifact Garbage Collection Pod
 	LabelKeyArtifactGCPodHash = workflow.WorkflowFullName + "/artifact-gc-pod"
 	// LabelKeyCluster is a label applied to multi-cluster Workflows to identify which cluster they should be scheduled on
-	LabelKeyCluster = "/cluster"
+	LabelKeyCluster = workflow.WorkflowFullName + "/cluster"
 
-	LabelKeyHubWorkflowUID = "/workflow-uid"
+	LabelKeyHubWorkflowUID = workflow.WorkflowFullName + "/workflow-uid"
 
 	// ExecutorArtifactBaseDir is the base directory in the init container in which artifacts will be copied to.
 	// Each artifact will be named according to its input name (e.g: /argo/inputs/artifacts/CODE)
