@@ -280,7 +280,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 	if wfc.runningMode == MultiClusterMode {
 		switch wfc.multiClusterProvider {
 		case OCM:
-			wfc.multiClusterProcessor = ocm.NewOCMProcessor(wfc.wfInformer, wfc.restConfig, wfc.wfclientset)
+			wfc.multiClusterProcessor = ocm.NewOCMProcessor(ctx, wfc.wfInformer, wfc.restConfig, wfc.wfclientset)
 		default:
 			log.Fatal("invalid multicluster provider")
 		}

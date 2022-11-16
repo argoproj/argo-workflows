@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	//v1 "open-cluster-management.io/api/work/v1"
+	log "github.com/sirupsen/logrus"
 
 	"k8s.io/client-go/rest"
 
@@ -28,19 +28,16 @@ import (
 type OCMProcessor struct {
 	wfInformer       cache.SharedIndexInformer                   // this one gets passed in
 	wfStatusInformer wfextvv1alpha1.WorkflowStatusResultInformer // this one gets constructed locally
-	// todo: which of these do we actually need?
-	//kubeclient             dynamic.Interface
-	restConfig *rest.Config
-	//kubeclientset kubernetes.Interface
-	wfclientset   wfclientset.Interface
-	ocmworkclient ocmworkinterface.WorkV1Interface
+	restConfig       *rest.Config
+	wfclientset      wfclientset.Interface
+	ocmworkclient    ocmworkinterface.WorkV1Interface
 }
 
 var (
 	workflowResultStatusResyncPeriod = 1 * time.Minute
 )
 
-func NewOCMProcessor(wfInformer cache.SharedIndexInformer, restConfig *rest.Config, wfclientset wfclientset.Interface) *OCMProcessor {
+func NewOCMProcessor(ctx context.Context, wfInformer cache.SharedIndexInformer, restConfig *rest.Config, wfclientset wfclientset.Interface) *OCMProcessor {
 	ocm := &OCMProcessor{wfInformer: wfInformer,
 		restConfig:  restConfig,
 		wfclientset: wfclientset}
@@ -50,6 +47,7 @@ func NewOCMProcessor(wfInformer cache.SharedIndexInformer, restConfig *rest.Conf
 
 	// construct wfStatusInformer and register processStatusUpdate() to be called when there's a Status Update
 	ocm.wfStatusInformer = ocm.newWorkflowStatusResultInformer()
+	go ocm.wfStatusInformer.Informer().Run(ctx.Done())
 
 	return ocm
 }
@@ -57,7 +55,7 @@ func NewOCMProcessor(wfInformer cache.SharedIndexInformer, restConfig *rest.Conf
 // process Workflow additions and updates
 func (ocm *OCMProcessor) ProcessWorkflow(ctx context.Context, wf *wfv1.Workflow) error {
 
-	fmt.Printf("deletethis: processing Workflow in OCM Processor: %+v\n", wf)
+	log.Infof("processing Workflow in OCM Processor: %+v\n", wf)
 
 	// locate the label which indicates the cluster name (which is the namespace that our Manifest Work will go)
 	mwNamespace, found := wf.Labels[common.LabelKeyCluster]
@@ -72,7 +70,7 @@ func (ocm *OCMProcessor) ProcessWorkflow(ctx context.Context, wf *wfv1.Workflow)
 	mwName := string(wf.UID)
 
 	manifestWork := ocm.generateManifestWork(mwName, mwNamespace, wf)
-	fmt.Printf("deletethis: generated Manifest Work in OCM Processor: %+v\n", manifestWork)
+	log.Infof("generated Manifest Work in OCM Processor: %+v\n", manifestWork)
 
 	// attempt to create ManifestWork with this name/namespace
 	created, err := ocm.ocmworkclient.ManifestWorks(mwNamespace).Create(ctx, manifestWork, metav1.CreateOptions{}) //todo: do I need mwNamespace here?
@@ -80,7 +78,7 @@ func (ocm *OCMProcessor) ProcessWorkflow(ctx context.Context, wf *wfv1.Workflow)
 		if apierr.IsAlreadyExists(err) {
 		}
 	}
-	fmt.Printf("deletethis: result of generating Manifest Work in OCM Processor: %v, %v\n", created, err)
+	log.Infof("result of generating Manifest Work in OCM Processor: %v, %v\n", created, err)
 
 	return nil
 }
@@ -135,6 +133,7 @@ func (ocm *OCMProcessor) generateManifestWork(name, namespace string, workflow *
 }
 
 func (ocm *OCMProcessor) newWorkflowStatusResultInformer() wfextvv1alpha1.WorkflowStatusResultInformer {
+	log.Info("constructing WorkflowStatusResultInformer")
 	informer := externalversions.NewSharedInformerFactoryWithOptions(
 		ocm.wfclientset,
 		workflowResultStatusResyncPeriod).Argoproj().V1alpha1().WorkflowStatusResults()
@@ -142,23 +141,10 @@ func (ocm *OCMProcessor) newWorkflowStatusResultInformer() wfextvv1alpha1.Workfl
 		cache.ResourceEventHandlerFuncs{
 			AddFunc: func(obj interface{}) {
 
+				log.Info("noticed new WorkflowStatusResult")
 				wfResult := obj.(*wfv1.WorkflowStatusResult)
+				log.Infof("cast to WorkflowStatusResult: %+v\n", wfResult)
 				ocm.processStatusUpdate(context.Background(), wfResult)
-
-				// if this is unstructured, we can imitate cron/controller.go
-				/*un, ok := obj.(*unstructured.Unstructured)
-				if !ok {
-					logCtx.Errorf("malformed workflow status result: expected *unstructured.Unstructured, got %s", reflect.TypeOf(obj).Name())
-					return true
-				}
-
-				wfStatusResult := &v1alpha1.WorkflowStatusResult{}
-				err = util.FromUnstructuredObj(un, wfStatusResult)
-				if err != nil {
-					cc.eventRecorderManager.Get(un.GetNamespace()).Event(un, apiv1.EventTypeWarning, "Malformed", err.Error())
-					logCtx.WithError(err).Error("malformed cron workflow: could not convert from unstructured")
-					return true
-				}*/
 			},
 		})
 	return informer
