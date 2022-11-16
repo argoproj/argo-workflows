@@ -62,8 +62,11 @@ func (ocm *OCMProcessor) ProcessWorkflow(ctx context.Context, wf *wfv1.Workflow)
 	// locate the label which indicates the cluster name (which is the namespace that our Manifest Work will go)
 	mwNamespace, found := wf.Labels[common.LabelKeyCluster]
 	if !found {
+		fmt.Printf("Error: namespace %s not found\n", mwNamespace)
 		return fmt.Errorf("In multicluster mode, the Workflow Controller requires all Workflows to contain label %s", mwNamespace)
 	}
+
+	wf.ResourceVersion = "" //todo: why do I need to do this?
 
 	// use the Workflow UUID to derive the ManifestWork name
 	mwName := string(wf.UID)
