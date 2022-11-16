@@ -60,37 +60,49 @@ func (ocm *OCMProcessor) ProcessWorkflow(ctx context.Context, wf *wfv1.Workflow)
 	// locate the label which indicates the cluster name (which is the namespace that our Manifest Work will go)
 	mwNamespace, found := wf.Labels[common.LabelKeyCluster]
 	if !found {
-		fmt.Printf("Error: namespace %s not found\n", mwNamespace)
-		return fmt.Errorf("In multicluster mode, the Workflow Controller requires all Workflows to contain label %s", mwNamespace)
+		return fmt.Errorf("In multicluster mode, the Workflow Controller requires all Workflows to contain label %s", common.LabelKeyCluster)
 	}
 
 	wf.ResourceVersion = "" //todo: why do I need to do this?
+	wf.GenerateName = ""
 
 	// use the Workflow UUID to derive the ManifestWork name
 	mwName := string(wf.UID)
 
 	manifestWork := ocm.generateManifestWork(mwName, mwNamespace, wf)
-	log.Infof("generated Manifest Work in OCM Processor: %+v\n", manifestWork)
+	log.Debugf("generated Manifest Work in OCM Processor: %+v\n", manifestWork)
 
 	// attempt to create ManifestWork with this name/namespace
-	created, err := ocm.ocmworkclient.ManifestWorks(mwNamespace).Create(ctx, manifestWork, metav1.CreateOptions{}) //todo: do I need mwNamespace here?
+	_, err := ocm.ocmworkclient.ManifestWorks(mwNamespace).Create(ctx, manifestWork, metav1.CreateOptions{})
 	if err != nil {
 		if apierr.IsAlreadyExists(err) {
+			log.Infof("Found existing ManifestWork: name=%s, namespace=%s", mwName, mwNamespace)
+		} else {
+			return fmt.Errorf("Failed creating ManifestWork: %+v, err=%v", manifestWork, err)
 		}
+	} else {
+		log.Infof("successfully created Manifest Work: name=%s, namespace=%s", mwName, mwNamespace)
 	}
-	log.Infof("result of generating Manifest Work in OCM Processor: %v, %v\n", created, err)
 
 	return nil
 }
 
 func (ocm *OCMProcessor) ProcessWorkflowDeletion(ctx context.Context, wf *wfv1.Workflow) error {
+	log.Infof("processing Workflow Deletion in OCM Processor: %+v\n", wf)
+
 	// locate the label which indicates the cluster name (namespace of ManifestWork)
+	mwNamespace, found := wf.Labels[common.LabelKeyCluster]
+	if !found {
+		return fmt.Errorf("In multicluster mode, the Workflow Controller requires all Workflows to contain label %s", common.LabelKeyCluster)
+	}
 
 	// use the Workflow UUID to derive the ManifestWork name
+	mwName := string(wf.UID)
 
 	// delete the ManifestWork
+	err := ocm.ocmworkclient.ManifestWorks(mwNamespace).Delete(ctx, mwName, metav1.DeleteOptions{})
 
-	return nil
+	return err
 }
 
 // find Workflow associated with WorkflowStatusResult and update it
@@ -107,6 +119,7 @@ func (ocm *OCMProcessor) generateManifestWork(name, namespace string, workflow *
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: namespace,
+			Labels:    map[string]string{common.LabelKeyHubWorkflowUID: string(workflow.ObjectMeta.UID)},
 			//Labels:    map[string]string{LabelKeyEnableOCMStatusSync: strconv.FormatBool(true)}, // todo: why is Mike using this?
 			//Annotations: map[string]string{AnnotationKeyHubWorkflowNamespace: workflow.Namespace,
 			//	AnnotationKeyHubWorkflowName: workflow.Name},
