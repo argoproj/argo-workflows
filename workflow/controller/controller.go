@@ -763,7 +763,11 @@ func (wfc *WorkflowController) processNextItem(ctx context.Context) bool {
 	}
 
 	if wfc.runningMode == MultiClusterMode {
-		return wfc.multiClusterProcessor.ProcessWorkflow(ctx, wf) == nil
+		err = wfc.multiClusterProcessor.ProcessWorkflow(ctx, wf)
+		if err != nil {
+			log.Errorf("failed to process Workflow with multicluster processor: %v", err)
+		}
+		return err == nil
 	}
 
 	// this will ensure we process every incomplete workflow once every 20m
@@ -920,6 +924,14 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers(ctx context.Context) 
 			wf, ok := obj.(*unstructured.Unstructured)
 			if ok { // maybe cache.DeletedFinalStateUnknown
 				wfc.metrics.StopRealtimeMetricsForKey(string(wf.GetUID()))
+			}
+			if wfc.runningMode == MultiClusterMode {
+				wfCast, err := util.FromUnstructured(wf)
+				if err != nil {
+					log.WithFields(log.Fields{"error": err}).Warn("Got Delete callback for Workflow: Failed to unmarshal as workflow object")
+				} else {
+					wfc.multiClusterProcessor.ProcessWorkflowDeletion(context.Background(), wfCast)
+				}
 			}
 		},
 	})
