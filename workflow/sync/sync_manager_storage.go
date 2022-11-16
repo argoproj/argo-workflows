@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/kubernetes"
@@ -24,8 +25,8 @@ type syncManagerStorage struct {
 }
 
 type SyncMetadataEntry struct {
-	SyncTy SyncType `json:"syncType"`
-	Holder string   `json:"holder"`
+	LockTy  v1alpha1.SynchronizationType `json:"lockTy"`
+	Holders []string                     `json:"holders"`
 }
 
 type SyncManagerStorageError error
@@ -56,7 +57,7 @@ func (c *syncManagerStorage) logInfo(fields log.Fields, message string) {
 	log.WithFields(log.Fields{"namespace": c.namespace, "name": c.name}).WithFields(fields).Info(message)
 }
 
-func (c *syncManagerStorage) Load(ctx context.Context, key string) (*SyncMetadataEntry, error) {
+func (c *syncManagerStorage) Load(ctx context.Context, key string) (*SyncMetadataEntry, bool, error) {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 
@@ -64,10 +65,10 @@ func (c *syncManagerStorage) Load(ctx context.Context, key string) (*SyncMetadat
 	if err != nil {
 		if apierr.IsNotFound(err) {
 			c.logError(err, log.Fields{}, "config map does not exist")
-			return nil, ConfigMapNotFound
+			return nil, false, ConfigMapNotFound
 		}
 		c.logError(err, log.Fields{"key": key}, "Error loading sync storage")
-		return nil, ConfigMapNotFound
+		return nil, false, ConfigMapNotFound
 	}
 
 	c.logInfo(log.Fields{"key": key}, "config map loaded")
@@ -75,20 +76,20 @@ func (c *syncManagerStorage) Load(ctx context.Context, key string) (*SyncMetadat
 	rawEntry, ok := cm.Data[key]
 	if !ok {
 		c.logInfo(log.Fields{"key": key}, "sync storage key not found")
-		return nil, KeyNotFound
+		return nil, false, KeyNotFound
 	}
 
 	var entry SyncMetadataEntry
 	err = json.Unmarshal([]byte(rawEntry), &entry)
 	if err != nil {
 		c.logError(err, log.Fields{"key": key}, "Failed to unmarshal")
-		return nil, FailedtoUnMarshal
+		return nil, true, FailedtoUnMarshal
 	}
 
-	return &entry, nil
+	return &entry, true, nil
 }
 
-func (c *syncManagerStorage) Store(ctx context.Context, key string, syncType SyncType) error {
+func (c *syncManagerStorage) Store(ctx context.Context, key string, holders []string, syncTy v1alpha1.SynchronizationType) error {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 
@@ -108,7 +109,7 @@ func (c *syncManagerStorage) Store(ctx context.Context, key string, syncType Syn
 	}
 
 	db.SetLabels(map[string]string{common.LabelKeyConfigMapType: common.LabelValueTypeConfigMapSyncManager})
-	newEntry := SyncMetadataEntry{SyncTy: syncType}
+	newEntry := SyncMetadataEntry{Holders: holders, LockTy: syncTy}
 
 	entryJson, err := json.Marshal(newEntry)
 	if err != nil {
@@ -129,19 +130,33 @@ func (c *syncManagerStorage) Store(ctx context.Context, key string, syncType Syn
 	return nil
 }
 
-func (c *syncManagerStorage) GetSyncType(ctx context.Context, key string) (*SyncType, error) {
-	meta, err := c.Load(ctx, key)
+func (c *syncManagerStorage) DeleteLockHolder(ctx context.Context, key string, holder string) error {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+
+	db, err := c.kubeClient.CoreV1().ConfigMaps(c.namespace).Get(ctx, c.name, metav1.GetOptions{})
+
+	if err != nil || db == nil {
+		if apierr.IsNotFound(err) || db == nil {
+			db, err = c.kubeClient.CoreV1().ConfigMaps(c.namespace).Create(ctx, &apiv1.ConfigMap{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: c.name,
+				},
+			}, metav1.CreateOptions{})
+			if err != nil {
+				c.logError(err, log.Fields{"key": key}, "Failed to create config map")
+				return FailedtoCreateConfigMap
+			}
+		}
+	}
+
+	db.SetLabels(map[string]string{common.LabelKeyConfigMapType: common.LabelValueTypeConfigMapSyncManager})
+
+	_, err = c.kubeClient.CoreV1().ConfigMaps(c.namespace).Update(ctx, db, metav1.UpdateOptions{})
+
 	if err != nil {
-		return nil, err
+		c.logError(err, log.Fields{"key": key}, "Kubernetes error deleting db entry")
+		return FailedtoCreateEntry
 	}
-	switch meta.SyncTy {
-	case WorkflowLevel:
-		ty := WorkflowLevel
-		return &ty, nil
-	case TemplateLevel:
-		ty := TemplateLevel
-		return &ty, nil
-	default:
-		return nil, fmt.Errorf("Invalid integer received of %d", meta.SyncTy)
-	}
+	return nil
 }

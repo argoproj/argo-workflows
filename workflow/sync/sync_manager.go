@@ -10,6 +10,7 @@ import (
 	runtimeutil "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/kubernetes"
 
+	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
 
@@ -17,13 +18,6 @@ type (
 	NextWorkflow      func(string)
 	GetSyncLimit      func(string) (int, error)
 	IsWorkflowDeleted func(string) bool
-)
-
-type SyncType int
-
-const (
-	WorkflowLevel SyncType = iota
-	TemplateLevel
 )
 
 type Manager struct {
@@ -125,9 +119,80 @@ func (cm *Manager) Initialize(wfs []wfv1.Workflow) {
 	log.Infof("Manager initialized successfully")
 }
 
+func acquireMutexFromSync(cm *Manager, meta *SyncMetadataEntry, key string) error {
+	if meta == nil {
+		return fmt.Errorf("Internal Error: nil pointer was passed where it should not have been")
+	}
+	if len(meta.Holders) > 1 {
+		return fmt.Errorf("Internal Error: Multiple owners having access to lock %s is invalid behaviour for a mutex", key)
+	} else if len(meta.Holders) != 1 {
+		return fmt.Errorf("Internal Error: Cannot acquire again since %s has no Holders", key)
+	}
+	mutex := cm.syncLockMap[key]
+	if mutex == nil {
+		mutex = cm.initializeMutex(key)
+	}
+	mutex.acquire(meta.Holders[0])
+	cm.syncLockMap[key] = mutex
+	return nil
+}
+
+func acquireSemaphoreFromSync(cm *Manager, meta *SyncMetadataEntry, key string) error {
+	if meta == nil {
+		return fmt.Errorf("Internal Error: nil pointer was passed where it should not have been")
+	}
+
+	if len(meta.Holders) < 1 {
+		return fmt.Errorf("Internal Error: Cannot acquire when there are no holders for %s", key)
+	}
+	var err error
+	semaphore := cm.syncLockMap[key]
+	if semaphore == nil {
+		semaphore, err = cm.initializeSemaphore(key)
+		if err != nil {
+			return err
+		}
+	}
+	cm.syncLockMap[key] = semaphore
+
+	if len(meta.Holders) < 1 {
+		return fmt.Errorf("Internal Error: Cannot acquire again since %s has no Holders", key)
+	}
+
+	for _, holder := range meta.Holders {
+		semaphore.acquire(holder)
+	}
+
+	return nil
+}
+
+// Used in Initialize only to ensure acquire calls are followed
+// with storage calls
+func (cm *Manager) acquireFromSync(key string) error {
+	cm.lock.Lock()
+	defer cm.lock.Unlock()
+	meta, _, err := cm.syncStorage.Load(context.Background(), key)
+	if err != nil {
+		return err
+	}
+
+	switch meta.LockTy {
+	case v1alpha1.SynchronizationTypeMutex:
+		acquireMutexFromSync(cm, meta, key)
+		break
+	case v1alpha1.SynchronizationTypeSemaphore:
+		break
+	default:
+		return fmt.Errorf("Unsuported type given")
+
+	}
+	_ = meta
+	return nil
+}
+
 // TryAcquire tries to acquire the lock from semaphore.
 // It returns status of acquiring a lock , status of Workflow status updated, waiting message if lock is not available and any error encountered
-func (cm *Manager) TryAcquire(wf *wfv1.Workflow, nodeName string, syncLockRef *wfv1.Synchronization, syncType SyncType) (bool, bool, string, error) {
+func (cm *Manager) TryAcquire(wf *wfv1.Workflow, nodeName string, syncLockRef *wfv1.Synchronization) (bool, bool, string, error) {
 	cm.lock.Lock()
 	defer cm.lock.Unlock()
 
@@ -178,11 +243,37 @@ func (cm *Manager) TryAcquire(wf *wfv1.Workflow, nodeName string, syncLockRef *w
 	ensureInit(wf, syncLockRef.GetType())
 	currentHolders := cm.getCurrentLockHolders(lockKey)
 	acquired, msg := lock.tryAcquire(holderKey)
-	if acquired {
 
-		err = cm.syncStorage.Store(context.Background(), lockKey, syncType)
+	if acquired {
+		holders := []string{}
+		switch syncLockRef.GetType() {
+		case v1alpha1.SynchronizationTypeMutex:
+			holders = []string{holderKey}
+		case v1alpha1.SynchronizationTypeSemaphore:
+			var meta *SyncMetadataEntry
+			var found bool
+			meta, found, err = cm.syncStorage.Load(context.Background(), lockKey)
+			// entry was not present
+			if found && err == nil {
+				holders = append(meta.Holders, holderKey)
+			} else {
+				holders = []string{holderKey}
+			}
+			holders = []string{}
+		default:
+			err = fmt.Errorf("Unknown SynchronizationType of %s", syncLockRef.GetType())
+		}
+		// handle potential error from switch statement
 		if err != nil {
-			cm.Release(wf, nodeName, syncLockRef)
+			// be a bit cautious
+			release(cm, lockKey, []string{holderKey})
+			return false, false, "", err
+		}
+
+		err = cm.syncStorage.Store(context.Background(), lockKey, holders, syncLockRef.GetType())
+		if err != nil {
+			release(cm, lockKey, []string{holderKey})
+			return false, false, "", err
 		}
 		updated := wf.Status.Synchronization.GetStatus(syncLockRef.GetType()).LockAcquired(holderKey, lockKey, currentHolders)
 		return acquired, updated, "", nil
@@ -190,6 +281,24 @@ func (cm *Manager) TryAcquire(wf *wfv1.Workflow, nodeName string, syncLockRef *w
 
 	updated := wf.Status.Synchronization.GetStatus(syncLockRef.GetType()).LockWaiting(holderKey, lockKey, currentHolders)
 	return false, updated, msg, nil
+}
+
+// Always called inside another function with a mutex acquired
+func release(cm *Manager, key string, holders []string) {
+	lock := cm.syncLockMap[key]
+	lockCurrentHolders := make(map[string]bool)
+	for _, holder := range lock.getCurrentHolders() {
+		lockCurrentHolders[holder] = true
+	}
+
+	for _, holder := range holders {
+		_, ok := lockCurrentHolders[holder]
+		if !ok {
+			continue
+		}
+		cm.syncStorage.DeleteLock(context.Background(), "")
+	}
+
 }
 
 func (cm *Manager) Release(wf *wfv1.Workflow, nodeName string, syncRef *wfv1.Synchronization) {
