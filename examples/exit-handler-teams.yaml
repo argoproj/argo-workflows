@@ -1,7 +1,7 @@
-# This example shows how to hit a teams webhook on an exit handler.
-# In order to configure, create teams webhook url for it.
+# This example shows how to send a Microsoft Teams notification with an exit handler by hitting a Teams webhook.
+# In order to configure, create a Microsoft Teams webhook url for it.
 # The documentation to do so is here: https://learn.microsoft.com/en-us/microsoftteams/platform/webhooks-and-connectors/how-to/add-incoming-webhook
-# Replace TEAMS_WEBHOOK_URL_HERE on line 31 with that webhook url
+# Replace TEAMS_WEBHOOK_URL_HERE on line 33 with that webhook url
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
