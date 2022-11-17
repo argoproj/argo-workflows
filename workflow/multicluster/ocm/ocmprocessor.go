@@ -168,6 +168,10 @@ func (ocm *OCMProcessor) getTargetNamespace(ctx context.Context, wf *wfv1.Workfl
 func (ocm *OCMProcessor) createManifestWork(ctx context.Context, mwName string, mwNamespace string, wf *wfv1.Workflow) error {
 	wf.ResourceVersion = ""
 	wf.GenerateName = ""
+	// todo: we shouldn't need these lines
+	//wflabels := wf.GetLabels()
+	//wflabels[common.LabelKeyHubWorkflowUID] = string(wf.UID)
+	//wf.SetLabels(wflabels)
 
 	manifestWork := ocm.generateManifestWork(mwName, mwNamespace, wf)
 	log.Debugf("generated Manifest Work in OCM Processor: %+v\n", manifestWork)
@@ -261,6 +265,12 @@ func (ocm *OCMProcessor) newWorkflowStatusResultInformer() wfextvv1alpha1.Workfl
 				if err != nil {
 					log.Errorf("failed to process WorkflowStatusResult: err=%v", err)
 				}
+			},
+			UpdateFunc: func(oldobj interface{}, newObj interface{}) {
+				log.Info("noticed updated WorkflowStatusResult")
+				wfResult := newObj.(*wfv1.WorkflowStatusResult)
+				log.Infof("cast to WorkflowStatusResult: %+v\n", wfResult)
+				ocm.processStatusUpdate(context.Background(), wfResult)
 			},
 		})
 	return informer
