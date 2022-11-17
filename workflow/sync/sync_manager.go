@@ -284,21 +284,27 @@ func (cm *Manager) TryAcquire(wf *wfv1.Workflow, nodeName string, syncLockRef *w
 }
 
 // Always called inside another function with a mutex acquired
-func release(cm *Manager, key string, holders []string) {
+func release(cm *Manager, key string, holders []string) error {
 	lock := cm.syncLockMap[key]
 	lockCurrentHolders := make(map[string]bool)
 	for _, holder := range lock.getCurrentHolders() {
 		lockCurrentHolders[holder] = true
 	}
 
+	// Ensure all are valid holders, otherwise we fail
 	for _, holder := range holders {
 		_, ok := lockCurrentHolders[holder]
 		if !ok {
-			continue
+			return fmt.Errorf("%s is not a valid holder of %s", holder, key)
 		}
-		cm.syncStorage.DeleteLock(context.Background(), "")
 	}
 
+	for _, holder := range holders {
+		lock.release(holder)
+		lock.removeFromQueue(holder)
+	}
+
+	return cm.syncStorage.DeleteLockHolders(context.Background(), key, holders)
 }
 
 func (cm *Manager) Release(wf *wfv1.Workflow, nodeName string, syncRef *wfv1.Synchronization) {
