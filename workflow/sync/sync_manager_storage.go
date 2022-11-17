@@ -2,6 +2,7 @@ package sync
 
 import (
 	"context"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"sync"
@@ -21,7 +22,7 @@ type syncManagerStorage struct {
 	namespace  string
 	name       string
 	kubeClient kubernetes.Interface
-	lock       sync.RWMutex
+	lock       sync.Mutex
 }
 
 type SyncMetadataEntry struct {
@@ -41,11 +42,12 @@ var (
 )
 
 func newSyncManagerStorage(ns string, ki kubernetes.Interface, name string) *syncManagerStorage {
+	log.Infof("Creating new sync manager storage on namespace %s with name %s", ns, name)
 	return &syncManagerStorage{
 		namespace:  ns,
 		name:       name,
 		kubeClient: ki,
-		lock:       sync.RWMutex{},
+		lock:       sync.Mutex{},
 	}
 }
 
@@ -64,6 +66,8 @@ func (c *syncManagerStorage) Load(ctx context.Context, key string) (*SyncMetadat
 }
 
 func (c *syncManagerStorage) load(ctx context.Context, key string) (*SyncMetadataEntry, bool, error) {
+	hexKey := hex.EncodeToString([]byte(key))
+
 	cm, err := c.kubeClient.CoreV1().ConfigMaps(c.namespace).Get(ctx, c.name, metav1.GetOptions{})
 	if err != nil {
 		if apierr.IsNotFound(err) {
@@ -76,7 +80,7 @@ func (c *syncManagerStorage) load(ctx context.Context, key string) (*SyncMetadat
 
 	c.logInfo(log.Fields{"key": key}, "config map loaded")
 
-	rawEntry, ok := cm.Data[key]
+	rawEntry, ok := cm.Data[hexKey]
 	if !ok {
 		c.logInfo(log.Fields{"key": key}, "sync storage key not found")
 		return nil, false, KeyNotFound
@@ -99,6 +103,7 @@ func (c *syncManagerStorage) Store(ctx context.Context, key string, holders []st
 }
 
 func (c *syncManagerStorage) store(ctx context.Context, key string, holders []string, syncTy v1alpha1.SynchronizationType) error {
+	hexKey := hex.EncodeToString([]byte(key))
 	db, err := c.kubeClient.CoreV1().ConfigMaps(c.namespace).Get(ctx, c.name, metav1.GetOptions{})
 	if err != nil || db == nil {
 		if apierr.IsNotFound(err) || db == nil {
@@ -108,6 +113,7 @@ func (c *syncManagerStorage) store(ctx context.Context, key string, holders []st
 				},
 			}, metav1.CreateOptions{})
 			if err != nil {
+				log.Warnf("Failed to create config map for %s due to %s", key, err.Error())
 				c.logError(err, log.Fields{"key": key}, "Failed to create config map")
 				return FailedtoCreateConfigMap
 			}
@@ -125,7 +131,7 @@ func (c *syncManagerStorage) store(ctx context.Context, key string, holders []st
 		db.Data = make(map[string]string)
 	}
 
-	db.Data[key] = string(entryJson)
+	db.Data[hexKey] = string(entryJson)
 	_, err = c.kubeClient.CoreV1().ConfigMaps(c.namespace).Update(ctx, db, metav1.UpdateOptions{})
 
 	if err != nil {

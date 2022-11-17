@@ -36,7 +36,7 @@ func NewLockManager(ns string, ki kubernetes.Interface, getSyncLimit GetSyncLimi
 		nextWorkflow: nextWorkflow,
 		getSyncLimit: getSyncLimit,
 		isWFDeleted:  isWFDeleted,
-		syncStorage:  *newSyncManagerStorage(ns, ki, "__argo_sync_storage"),
+		syncStorage:  *newSyncManagerStorage(ns, ki, "argo-sync-storage"),
 	}
 }
 
@@ -266,7 +266,8 @@ func (cm *Manager) TryAcquire(wf *wfv1.Workflow, nodeName string, syncLockRef *w
 		// handle potential error from switch statement
 		if err != nil {
 			// be a bit cautious
-			release(cm, lockKey, []string{holderKey})
+			lock.release(holderKey)
+			lock.removeFromQueue(holderKey)
 			return false, false, "", err
 		}
 
