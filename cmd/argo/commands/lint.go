@@ -35,6 +35,7 @@ func NewLintCommand() *cobra.Command {
   cat manifests.yaml | argo lint --kinds=workflows,cronworkflows -`,
 		Run: func(cmd *cobra.Command, args []string) {
 			client.Offline = offline
+			client.OfflineFiles = args
 			ctx, apiClient := client.NewAPIClient(cmd.Context())
 			if len(args) == 0 {
 				cmd.HelpFunc()(cmd, args)
@@ -56,7 +57,7 @@ func NewLintCommand() *cobra.Command {
 	command.Flags().StringSliceVar(&lintKinds, "kinds", []string{"all"}, fmt.Sprintf("Which kinds will be linted. Can be: %s", strings.Join(allKinds, "|")))
 	command.Flags().StringVarP(&output, "output", "o", "pretty", "Linting results output format. One of: pretty|simple")
 	command.Flags().BoolVar(&strict, "strict", true, "Perform strict workflow validation")
-	command.Flags().BoolVar(&offline, "offline", false, "perform offline linting")
+	command.Flags().BoolVar(&offline, "offline", false, "perform offline linting. When using this mode, you should provide the entire list of Argo Workflows resources as arguments, in order to allow ref resolution.")
 
 	return command
 }
