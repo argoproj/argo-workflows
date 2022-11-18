@@ -40,6 +40,7 @@ var (
 	FailedtoMarshal         SyncManagerStorageError = fmt.Errorf("Could not marshal")
 	FailedtoUnMarshal       SyncManagerStorageError = fmt.Errorf("Could not unmarshal")
 	FailedtoCreateConfigMap SyncManagerStorageError = fmt.Errorf("Failed to create config map")
+	InvalidMutexHolders     SyncManagerStorageError = fmt.Errorf("A Mutex may not have more than 1 holder")
 )
 
 func newSyncManagerStorage(ns string, ki kubernetes.Interface, name string) *syncManagerStorage {
@@ -105,6 +106,10 @@ func (c *syncManagerStorage) store(ctx context.Context, key string, holders []st
 	if err != nil {
 		return err
 	}
+	if syncTy == v1alpha1.SynchronizationTypeMutex && len(holders) > 1 {
+		return InvalidMutexHolders
+	}
+
 	newEntry := SyncMetadataEntry{Key: key, Holders: holders, LockTy: syncTy}
 
 	entryJson, err := json.Marshal(newEntry)

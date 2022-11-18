@@ -78,8 +78,12 @@ func (cm *Manager) Initialize(wfs []wfv1.Workflow) {
 
 		if wf.Status.Synchronization.Semaphore != nil {
 			for _, holding := range wf.Status.Synchronization.Semaphore.Holding {
-
 				semaphore := cm.syncLockMap[holding.Semaphore]
+				entry, _, err := cm.syncStorage.Load(context.Background(), holding.Semaphore)
+				if err != nil || entry == nil {
+					continue
+				}
+
 				log.Debugln("HOLDING VALUE [Semaphore] IS ", holding.Semaphore)
 				if semaphore == nil {
 					semaphore, err := cm.initializeSemaphore(holding.Semaphore)
@@ -90,11 +94,9 @@ func (cm *Manager) Initialize(wfs []wfv1.Workflow) {
 					cm.syncLockMap[holding.Semaphore] = semaphore
 				}
 
-				for _, holders := range holding.Holders {
-					resourceKey := getResourceKey(wf.Namespace, wf.Name, holders)
-					if semaphore != nil && semaphore.acquire(resourceKey) {
-						log.Infof("Lock acquired by %s from %s", resourceKey, holding.Semaphore)
-					}
+				for _, holder := range entry.Holders {
+					semaphore.acquire(holder)
+					log.Infof("Lock acquired by %s from %s", holder, holding.Semaphore)
 				}
 			}
 		}
@@ -103,15 +105,15 @@ func (cm *Manager) Initialize(wfs []wfv1.Workflow) {
 			for _, holding := range wf.Status.Synchronization.Mutex.Holding {
 				log.Debugln("HOLDING VALUE [Mutex] IS ", holding.Mutex)
 				mutex := cm.syncLockMap[holding.Mutex]
+				entry, _, err := cm.syncStorage.Load(context.Background(), holding.Mutex)
+				if err != nil || entry == nil || len(entry.Holders) == 0 {
+					continue
+				}
 				if mutex == nil {
 					mutex := cm.initializeMutex(holding.Mutex)
-					if holding.Holder != "" {
-						resourceKey := getResourceKey(wf.Namespace, wf.Name, holding.Holder)
-						log.Debugf("Resource Key: <%s> and Holder Key <%s>\n", &resourceKey, "")
-						mutex.acquire(resourceKey)
-					}
 					cm.syncLockMap[holding.Mutex] = mutex
 				}
+				mutex.acquire(entry.Holders[0])
 			}
 		}
 	}
