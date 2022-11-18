@@ -55,7 +55,7 @@ func (cm *Manager) CheckWorkflowExistence() {
 	defer runtimeutil.HandleCrash(runtimeutil.PanicHandlers...)
 
 	log.Debug("Check the workflow existence")
-	for _, lock := range cm.syncLockMap {
+	for key, lock := range cm.syncLockMap {
 		keys := lock.getCurrentHolders()
 		keys = append(keys, lock.getCurrentPending()...)
 		for _, holderKeys := range keys {
@@ -64,8 +64,7 @@ func (cm *Manager) CheckWorkflowExistence() {
 				continue
 			}
 			if !cm.isWFDeleted(wfKey) {
-				lock.release(holderKeys)
-				lock.removeFromQueue(holderKeys)
+				release(cm, key, []string{holderKeys})
 			}
 		}
 	}
@@ -265,7 +264,6 @@ func (cm *Manager) TryAcquire(wf *wfv1.Workflow, nodeName string, syncLockRef *w
 		}
 		// handle potential error from switch statement
 		if err != nil {
-			// be a bit cautious
 			lock.release(holderKey)
 			lock.removeFromQueue(holderKey)
 			return false, false, "", err
@@ -323,6 +321,7 @@ func (cm *Manager) Release(wf *wfv1.Workflow, nodeName string, syncRef *wfv1.Syn
 	}
 
 	if syncLockHolder, ok := cm.syncLockMap[lockName.EncodeName()]; ok {
+		cm.syncStorage.DeleteLockHolders(context.Background(), lockName.EncodeName(), []string{holderKey})
 		syncLockHolder.release(holderKey)
 		syncLockHolder.removeFromQueue(holderKey)
 		log.Debugf("%s sync lock is released by %s", lockName.EncodeName(), holderKey)
@@ -331,6 +330,17 @@ func (cm *Manager) Release(wf *wfv1.Workflow, nodeName string, syncRef *wfv1.Syn
 			wf.Status.Synchronization.GetStatus(syncRef.GetType()).LockReleased(holderKey, lockKey)
 		}
 	}
+}
+
+func withRetries(numRetries int, fn func() error) error {
+	var err error
+	for i := 0; i < numRetries; i++ {
+		err = fn()
+		if err == nil {
+			return nil
+		}
+	}
+	return err
 }
 
 func (cm *Manager) ReleaseAll(wf *wfv1.Workflow) bool {

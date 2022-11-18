@@ -26,6 +26,7 @@ type syncManagerStorage struct {
 }
 
 type SyncMetadataEntry struct {
+	Key     string                       `json:"key"`
 	LockTy  v1alpha1.SynchronizationType `json:"lockTy"`
 	Holders []string                     `json:"holders"`
 }
@@ -68,12 +69,8 @@ func (c *syncManagerStorage) Load(ctx context.Context, key string) (*SyncMetadat
 func (c *syncManagerStorage) load(ctx context.Context, key string) (*SyncMetadataEntry, bool, error) {
 	hexKey := hex.EncodeToString([]byte(key))
 
-	cm, err := c.kubeClient.CoreV1().ConfigMaps(c.namespace).Get(ctx, c.name, metav1.GetOptions{})
+	cm, err := c.getDB(ctx)
 	if err != nil {
-		if apierr.IsNotFound(err) {
-			c.logError(err, log.Fields{}, "config map does not exist")
-			return nil, false, ConfigMapNotFound
-		}
 		c.logError(err, log.Fields{"key": key}, "Error loading sync storage")
 		return nil, false, ConfigMapNotFound
 	}
@@ -82,7 +79,7 @@ func (c *syncManagerStorage) load(ctx context.Context, key string) (*SyncMetadat
 
 	rawEntry, ok := cm.Data[hexKey]
 	if !ok {
-		c.logInfo(log.Fields{"key": key}, "sync storage key not found")
+		c.logInfo(log.Fields{"key": key, "hexKey": hexKey}, "sync storage key not found")
 		return nil, false, KeyNotFound
 	}
 
@@ -104,24 +101,11 @@ func (c *syncManagerStorage) Store(ctx context.Context, key string, holders []st
 
 func (c *syncManagerStorage) store(ctx context.Context, key string, holders []string, syncTy v1alpha1.SynchronizationType) error {
 	hexKey := hex.EncodeToString([]byte(key))
-	db, err := c.kubeClient.CoreV1().ConfigMaps(c.namespace).Get(ctx, c.name, metav1.GetOptions{})
-	if err != nil || db == nil {
-		if apierr.IsNotFound(err) || db == nil {
-			db, err = c.kubeClient.CoreV1().ConfigMaps(c.namespace).Create(ctx, &apiv1.ConfigMap{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: c.name,
-				},
-			}, metav1.CreateOptions{})
-			if err != nil {
-				log.Warnf("Failed to create config map for %s due to %s", key, err.Error())
-				c.logError(err, log.Fields{"key": key}, "Failed to create config map")
-				return FailedtoCreateConfigMap
-			}
-		}
+	db, err := c.getDB(ctx)
+	if err != nil {
+		return err
 	}
-
-	db.SetLabels(map[string]string{common.LabelKeyConfigMapType: common.LabelValueTypeConfigMapSyncManager})
-	newEntry := SyncMetadataEntry{Holders: holders, LockTy: syncTy}
+	newEntry := SyncMetadataEntry{Key: key, Holders: holders, LockTy: syncTy}
 
 	entryJson, err := json.Marshal(newEntry)
 	if err != nil {
@@ -164,11 +148,56 @@ func filterHolders(toFilter []string, fullSet []string) []string {
 	return newHolders
 }
 
-func (c *syncManagerStorage) deleteLockHolders(ctx context.Context, key string, holders []string) error {
-	entry, _, err := c.load(ctx, key)
+func (c *syncManagerStorage) getDB(ctx context.Context) (*apiv1.ConfigMap, error) {
+	db, err := c.kubeClient.CoreV1().ConfigMaps(c.namespace).Get(ctx, c.name, metav1.GetOptions{})
+	if err != nil || db == nil {
+		if apierr.IsNotFound(err) || db == nil {
+			db, err = c.kubeClient.CoreV1().ConfigMaps(c.namespace).Create(ctx, &apiv1.ConfigMap{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: c.name,
+				},
+			}, metav1.CreateOptions{})
+			if err != nil {
+				log.Warnf("Failed to create config map for due to %s", err.Error())
+				c.logError(err, log.Fields{}, "Failed to create config map")
+				return nil, FailedtoCreateConfigMap
+			}
+		}
+	}
+	db.SetLabels(map[string]string{common.LabelKeyConfigMapType: common.LabelValueTypeConfigMapSyncManager})
+	if db.Data == nil {
+		db.Data = make(map[string]string)
+	}
+	return db, nil
+}
+
+func (c *syncManagerStorage) deleteLock(ctx context.Context, key string) error {
+	hexKey := hex.EncodeToString([]byte(key))
+	db, err := c.getDB(ctx)
+	delete(db.Data, hexKey)
+
+	_, err = c.kubeClient.CoreV1().ConfigMaps(c.namespace).Update(ctx, db, metav1.UpdateOptions{})
+
 	if err != nil {
+		c.logError(err, log.Fields{"key": key}, "Kubernetes error creating new db entry")
+		return FailedtoUpdateMap
+	}
+
+	return nil
+}
+
+func (c *syncManagerStorage) deleteLockHolders(ctx context.Context, key string, holders []string) error {
+	c.logInfo(log.Fields{"key": key}, "Deleting holders")
+	entry, _, err := c.load(ctx, key)
+	if err != nil && err != KeyNotFound {
 		return err
 	}
+	if err == KeyNotFound {
+		return nil
+	}
 	newHolders := filterHolders(holders, entry.Holders)
+	if len(newHolders) == 0 {
+		return c.deleteLock(ctx, key)
+	}
 	return c.store(ctx, key, newHolders, entry.LockTy)
 }
