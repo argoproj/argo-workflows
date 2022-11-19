@@ -201,28 +201,6 @@ func (woc *wfOperationCtx) processArtifactGCStrategy(ctx context.Context, strate
 	return nil
 }
 
-func (woc *wfOperationCtx) findArtifactsToGC(strategy wfv1.ArtifactGCStrategy) wfv1.ArtifactSearchResults {
-
-	var results wfv1.ArtifactSearchResults
-
-	for _, n := range woc.wf.Status.Nodes {
-
-		if n.Type != wfv1.NodeTypePod {
-			continue
-		}
-		for _, a := range n.GetOutputs().GetArtifacts() {
-
-			// artifact strategy is either based on overall Workflow ArtifactGC Strategy, or
-			// if it's specified on the individual artifact level that takes priority
-			artifactStrategy := woc.execWf.GetArtifactGCStrategy(&a)
-			if artifactStrategy == strategy && !a.Deleted {
-				results = append(results, wfv1.ArtifactSearchResult{Artifact: a, NodeID: n.ID})
-			}
-		}
-	}
-	return results
-}
-
 type podInfo struct {
 	serviceAccount string
 	podMetadata    wfv1.Metadata
@@ -554,6 +532,28 @@ func (woc *wfOperationCtx) allArtifactsDeleted() bool {
 		}
 	}
 	return true
+}
+
+func (woc *wfOperationCtx) findArtifactsToGC(strategy wfv1.ArtifactGCStrategy) wfv1.ArtifactSearchResults {
+
+	var results wfv1.ArtifactSearchResults
+
+	for _, n := range woc.wf.Status.Nodes {
+
+		if n.Type != wfv1.NodeTypePod {
+			continue
+		}
+		for _, a := range n.GetOutputs().GetArtifacts() {
+
+			// artifact strategy is either based on overall Workflow ArtifactGC Strategy, or
+			// if it's specified on the individual artifact level that takes priority
+			artifactStrategy := woc.execWf.GetArtifactGCStrategy(&a)
+			if artifactStrategy == strategy && !a.Deleted {
+				results = append(results, wfv1.ArtifactSearchResult{Artifact: a, NodeID: n.ID})
+			}
+		}
+	}
+	return results
 }
 
 func (woc *wfOperationCtx) processCompletedArtifactGCPod(ctx context.Context, pod *corev1.Pod) error {

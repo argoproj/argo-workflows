@@ -67,6 +67,7 @@ func (s *ArtifactsSuite) TestArtifactGC() {
 
 	s.Given().
 		WorkflowTemplate("@testdata/artifactgc/artgc-template.yaml").
+		WorkflowTemplate("@testdata/artifactgc/artgc-template-2.yaml").
 		When().
 		CreateWorkflowTemplates()
 
@@ -88,6 +89,14 @@ func (s *ArtifactsSuite) TestArtifactGC() {
 		},
 		{
 			workflowFile:                 "@testdata/artifactgc/artgc-from-template.yaml",
+			expectedGCPodsOnWFCompletion: 1,
+			expectedArtifacts: []artifactState{
+				artifactState{"on-completion", "my-bucket-2", true, false},
+				artifactState{"on-deletion", "my-bucket-2", false, true},
+			},
+		},
+		{
+			workflowFile:                 "@testdata/artifactgc/artgc-from-template-2.yaml",
 			expectedGCPodsOnWFCompletion: 1,
 			expectedArtifacts: []artifactState{
 				artifactState{"on-completion", "my-bucket-2", true, false},
