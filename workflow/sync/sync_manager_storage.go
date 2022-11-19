@@ -91,6 +91,8 @@ func (c *syncManagerStorage) load(ctx context.Context, key string) (*SyncMetadat
 		return nil, true, FailedtoUnMarshal
 	}
 
+	c.logInfo(log.Fields{"key": key, "hexKey": hexKey}, "Loaded sync metadata")
+
 	return &entry, true, nil
 }
 

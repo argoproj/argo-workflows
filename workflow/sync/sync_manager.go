@@ -106,89 +106,30 @@ func (cm *Manager) Initialize(wfs []wfv1.Workflow) {
 				log.Debugln("HOLDING VALUE [Mutex] IS ", holding.Mutex)
 				mutex := cm.syncLockMap[holding.Mutex]
 				entry, _, err := cm.syncStorage.Load(context.Background(), holding.Mutex)
-				if err != nil || entry == nil || len(entry.Holders) == 0 {
+				if err != nil {
+					log.Errorf("Skipping acquiring mutex for %s duie to %s", holding.Mutex, err.Error())
 					continue
 				}
+				if entry == nil {
+					log.Errorf("Could not find entry for %s", holding.Mutex)
+					continue
+				}
+
+				if len(entry.Holders) != 1 {
+					log.Warnf("Expected 1 holder but got %d, skipping", len(entry.Holders))
+					continue
+				}
+
 				if mutex == nil {
-					mutex := cm.initializeMutex(holding.Mutex)
+					mutex = cm.initializeMutex(holding.Mutex)
 					cm.syncLockMap[holding.Mutex] = mutex
 				}
 				mutex.acquire(entry.Holders[0])
+				log.Infof("Lock acquired by %s from %s", entry.Holders[0], holding.Mutex)
 			}
 		}
 	}
 	log.Infof("Manager initialized successfully")
-}
-
-func acquireMutexFromSync(cm *Manager, meta *SyncMetadataEntry, key string) error {
-	if meta == nil {
-		return fmt.Errorf("Internal Error: nil pointer was passed where it should not have been")
-	}
-	if len(meta.Holders) > 1 {
-		return fmt.Errorf("Internal Error: Multiple owners having access to lock %s is invalid behaviour for a mutex", key)
-	} else if len(meta.Holders) != 1 {
-		return fmt.Errorf("Internal Error: Cannot acquire again since %s has no Holders", key)
-	}
-	mutex := cm.syncLockMap[key]
-	if mutex == nil {
-		mutex = cm.initializeMutex(key)
-	}
-	mutex.acquire(meta.Holders[0])
-	cm.syncLockMap[key] = mutex
-	return nil
-}
-
-func acquireSemaphoreFromSync(cm *Manager, meta *SyncMetadataEntry, key string) error {
-	if meta == nil {
-		return fmt.Errorf("Internal Error: nil pointer was passed where it should not have been")
-	}
-
-	if len(meta.Holders) < 1 {
-		return fmt.Errorf("Internal Error: Cannot acquire when there are no holders for %s", key)
-	}
-	var err error
-	semaphore := cm.syncLockMap[key]
-	if semaphore == nil {
-		semaphore, err = cm.initializeSemaphore(key)
-		if err != nil {
-			return err
-		}
-	}
-	cm.syncLockMap[key] = semaphore
-
-	if len(meta.Holders) < 1 {
-		return fmt.Errorf("Internal Error: Cannot acquire again since %s has no Holders", key)
-	}
-
-	for _, holder := range meta.Holders {
-		semaphore.acquire(holder)
-	}
-
-	return nil
-}
-
-// Used in Initialize only to ensure acquire calls are followed
-// with storage calls
-func (cm *Manager) acquireFromSync(key string) error {
-	cm.lock.Lock()
-	defer cm.lock.Unlock()
-	meta, _, err := cm.syncStorage.Load(context.Background(), key)
-	if err != nil {
-		return err
-	}
-
-	switch meta.LockTy {
-	case v1alpha1.SynchronizationTypeMutex:
-		acquireMutexFromSync(cm, meta, key)
-		break
-	case v1alpha1.SynchronizationTypeSemaphore:
-		break
-	default:
-		return fmt.Errorf("Unsuported type given")
-
-	}
-	_ = meta
-	return nil
 }
 
 // TryAcquire tries to acquire the lock from semaphore.
