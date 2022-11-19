@@ -479,7 +479,9 @@ func printNode(w *tabwriter.Writer, node wfv1.NodeStatus, wfName, nodePrefix str
 	var args []interface{}
 	duration := humanize.RelativeDurationShort(node.StartedAt.Time, node.FinishedAt.Time)
 	if node.Type == wfv1.NodeTypePod {
-		podName := util.PodName(wfName, nodeName, templateName, node.ID, podNameVersion)
+		// node.Name is used here because nodeName may contain additionally formatting.
+		// We want to use the original naming to ensure the correct hash is dervied
+		podName := util.GeneratePodName(wfName, node.Name, templateName, node.ID, podNameVersion)
 		args = []interface{}{nodePrefix, nodeName, templateName, podName, duration, node.Message, ""}
 	} else {
 		args = []interface{}{nodePrefix, nodeName, templateName, "", "", node.Message, ""}
