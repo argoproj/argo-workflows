@@ -147,7 +147,7 @@ func (woc *wfOperationCtx) processArtifactGCStrategy(ctx context.Context, strate
 		}
 		templateName := node.TemplateName
 		if templateName == "" && node.GetTemplateRef() != nil {
-			templateName = node.GetTemplateRef().Template //todo: will we have uniqueness with this?
+			templateName = node.GetTemplateRef().Template
 		}
 		if templateName == "" {
 			return fmt.Errorf("can't process Artifact GC Strategy %s: node %+v has an unnamed template", strategy, node)
