@@ -147,16 +147,16 @@ func (woc *wfOperationCtx) processArtifactGCStrategy(ctx context.Context, strate
 		}
 		templateName := node.TemplateName
 		if templateName == "" && node.GetTemplateRef() != nil {
-			templateName = node.GetTemplateRef().Name
+			templateName = node.GetTemplateRef().Template //todo: will we have uniqueness with this?
 		}
 		if templateName == "" {
 			return fmt.Errorf("can't process Artifact GC Strategy %s: node %+v has an unnamed template", strategy, node)
 		}
 		template, found := templatesByName[templateName]
 		if !found {
-			template = woc.wf.GetTemplateByName(templateName)
+			template = woc.execWf.GetTemplateByName(templateName)
 			if template == nil {
-				return fmt.Errorf("can't process Artifact GC Strategy %s: template name '%s' belonging to node %+v not found??", strategy, node.TemplateName, node)
+				return fmt.Errorf("can't process Artifact GC Strategy %s: template name '%s' belonging to node %+v not found??", strategy, templateName, node)
 			}
 			templatesByName[templateName] = template
 		}

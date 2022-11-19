@@ -111,6 +111,14 @@ func (s *ArtifactsSuite) TestArtifactGC() {
 				artifactState{"on-deletion", "my-bucket-2", false, true},
 			},
 		},
+		{
+			workflowFile:                 "@testdata/artifactgc/artgc-step-wf-tmpl-2.yaml",
+			expectedGCPodsOnWFCompletion: 1,
+			expectedArtifacts: []artifactState{
+				artifactState{"on-completion", "my-bucket-2", true, false},
+				artifactState{"on-deletion", "my-bucket-2", false, false},
+			},
+		},
 	} {
 		// for each test make sure that:
 		// 1. the finalizer gets added
