@@ -23,6 +23,7 @@ type syncManagerStorage struct {
 	name       string
 	kubeClient kubernetes.Interface
 	lock       sync.Mutex
+	pending    map[string](map[string]bool)
 }
 
 type SyncMetadataEntry struct {
@@ -50,6 +51,7 @@ func newSyncManagerStorage(ns string, ki kubernetes.Interface, name string) *syn
 		name:       name,
 		kubeClient: ki,
 		lock:       sync.Mutex{},
+		pending:    make(map[string]map[string]bool),
 	}
 }
 
@@ -178,6 +180,12 @@ func (c *syncManagerStorage) getDB(ctx context.Context) (*apiv1.ConfigMap, error
 	return db, nil
 }
 
+func (c *syncManagerStorage) DeleteLock(ctx context.Context, key string) error {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+	return c.deleteLock(ctx, key)
+}
+
 func (c *syncManagerStorage) deleteLock(ctx context.Context, key string) error {
 	hexKey := hex.EncodeToString([]byte(key))
 	db, err := c.getDB(ctx)
@@ -207,4 +215,12 @@ func (c *syncManagerStorage) deleteLockHolders(ctx context.Context, key string, 
 		return c.deleteLock(ctx, key)
 	}
 	return c.store(ctx, key, newHolders, entry.LockTy)
+}
+
+func (c *syncManagerStorage) AddToQueue(ctx context.Context, key string, holders []string) error {
+	return nil
+}
+
+func (c *syncManagerStorage) RemoveFromQueue(ctx context.Context, key string) (string, error) {
+	return "", nil
 }

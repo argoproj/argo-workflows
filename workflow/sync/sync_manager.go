@@ -86,7 +86,7 @@ func (cm *Manager) Initialize(wfs []wfv1.Workflow) {
 
 				log.Debugln("HOLDING VALUE [Semaphore] IS ", holding.Semaphore)
 				if semaphore == nil {
-					semaphore, err := cm.initializeSemaphore(holding.Semaphore)
+					semaphore, err = cm.initializeSemaphore(holding.Semaphore)
 					if err != nil {
 						log.Warnf("cannot initialize semaphore '%s': %v", holding.Semaphore, err)
 						continue
@@ -275,17 +275,6 @@ func (cm *Manager) Release(wf *wfv1.Workflow, nodeName string, syncRef *wfv1.Syn
 	}
 }
 
-func withRetries(numRetries int, fn func() error) error {
-	var err error
-	for i := 0; i < numRetries; i++ {
-		err = fn()
-		if err == nil {
-			return nil
-		}
-	}
-	return err
-}
-
 func (cm *Manager) ReleaseAll(wf *wfv1.Workflow) bool {
 	cm.lock.Lock()
 	defer cm.lock.Unlock()
@@ -301,26 +290,28 @@ func (cm *Manager) ReleaseAll(wf *wfv1.Workflow) bool {
 				continue
 			}
 
-			for _, holderKey := range holding.Holders {
-				resourceKey := getResourceKey(wf.Namespace, wf.Name, holderKey)
-				syncLockHolder.release(resourceKey)
-				wf.Status.Synchronization.Semaphore.LockReleased(holderKey, holding.Semaphore)
-				log.Infof("%s released a lock from %s", resourceKey, holding.Semaphore)
+			err := cm.syncStorage.DeleteLock(context.Background(), holding.Semaphore)
+			if err != nil {
+				continue
 			}
+			delete(cm.syncLockMap, holding.Semaphore)
 		}
-
 		// Remove the pending Workflow level semaphore keys
 		for _, waiting := range wf.Status.Synchronization.Semaphore.Waiting {
 			syncLockHolder := cm.syncLockMap[waiting.Semaphore]
 			if syncLockHolder == nil {
 				continue
 			}
-			resourceKey := getResourceKey(wf.Namespace, wf.Name, wf.Name)
-			syncLockHolder.removeFromQueue(resourceKey)
+			err := cm.syncStorage.DeleteLock(context.Background(), waiting.Semaphore)
+			if err == nil {
+				continue
+			}
+			delete(cm.syncLockMap, waiting.Semaphore)
 		}
 		wf.Status.Synchronization.Semaphore = nil
 	}
 
+	// TODO REST OF RELASING
 	if wf.Status.Synchronization.Mutex != nil {
 		for _, holding := range wf.Status.Synchronization.Mutex.Holding {
 			syncLockHolder := cm.syncLockMap[holding.Mutex]
