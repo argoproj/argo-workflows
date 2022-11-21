@@ -234,7 +234,7 @@ rules:
   - patch
 ```
 
-This is the `artifactgc` role if you installed using one of the quick-start manifest files. If you installed with the install.yaml file for the release then the same permissions are in the `argo-cluster-role`.
+This is the `artifactgc` role if you installed using one of the quick-start manifest files. If you installed with the `install.yaml` file for the release then the same permissions are in the `argo-cluster-role`.
 
 If you don't use your own `ServiceAccount` and are just using `default` ServiceAccount, then the role needs a RoleBinding or ClusterRoleBinding to `default` ServiceAccount.
 
