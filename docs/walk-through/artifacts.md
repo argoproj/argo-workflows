@@ -209,7 +209,34 @@ spec:
               strategy: Never
 ```
 
-If you do supply your own Service Account you will need to create a RoleBinding that binds it with the new `artifactgc` Role.
+If you do supply your own Service Account you will need to create a RoleBinding that binds it with a role like this:
+```yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  annotations:
+    workflows.argoproj.io/description: |
+      This is the minimum recommended permissions needed if you want to use artifact GC.
+  name: artifactgc
+rules:
+- apiGroups:
+  - argoproj.io
+  resources:
+  - workflowartifactgctasks
+  verbs:
+  - list
+  - watch
+- apiGroups:
+  - argoproj.io
+  resources:
+  - workflowartifactgctasks/status
+  verbs:
+  - patch
+```
+
+This is the `artifactgc` role if you installed using one of the quick-start manifest files. If you installed with the install.yaml file for the release then the same permissions are in the `argo-cluster-role`.
+
+If you don't use your own `ServiceAccount` and are just using `default` ServiceAccount, then the role needs a RoleBinding or ClusterRoleBinding to `default` ServiceAccount.
 
 ### What happens if Garbage Collection fails?
 
