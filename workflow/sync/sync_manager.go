@@ -201,15 +201,15 @@ func (cm *Manager) TryAcquire(wf *wfv1.Workflow, nodeName string, syncLockRef *w
 			// entry was not present
 			if found && err == nil {
 				holders = append(meta.Holders, holderKey)
-			} else if err == KeyNotFound {
+			} else if err == ErrorKeyNotFound {
 				holders = []string{holderKey}
 			}
 		default:
-			err = fmt.Errorf("Unknown SynchronizationType of %s", syncLockRef.GetType())
+			err = fmt.Errorf("unknown SynchronizationType of %s", syncLockRef.GetType())
 		}
 		// handle potential error from switch statement
 		// we let KeyNotFound errors pass through however
-		if err != nil && err != KeyNotFound {
+		if err != nil && err != ErrorKeyNotFound {
 			lock.release(holderKey)
 			lock.removeFromQueue(holderKey)
 			return false, false, "", err

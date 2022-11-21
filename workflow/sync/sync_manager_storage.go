@@ -36,13 +36,13 @@ type SyncMetadataEntry struct {
 type SyncManagerStorageError error
 
 var (
-	ConfigMapNotFound       SyncManagerStorageError = fmt.Errorf("Config map could not be found")
-	KeyNotFound             SyncManagerStorageError = fmt.Errorf("Could not find key")
-	FailedtoUpdateMap       SyncManagerStorageError = fmt.Errorf("Failed to create entry")
-	FailedtoMarshal         SyncManagerStorageError = fmt.Errorf("Could not marshal")
-	FailedtoUnMarshal       SyncManagerStorageError = fmt.Errorf("Could not unmarshal")
-	FailedtoCreateConfigMap SyncManagerStorageError = fmt.Errorf("Failed to create config map")
-	InvalidMutexHolders     SyncManagerStorageError = fmt.Errorf("A Mutex may not have more than 1 holder")
+	ErrorConfigMapNotFound       SyncManagerStorageError = fmt.Errorf("config map could not be found")
+	ErrorKeyNotFound             SyncManagerStorageError = fmt.Errorf("could not find key")
+	ErrorFailedtoUpdateMap       SyncManagerStorageError = fmt.Errorf("failed to create entry")
+	ErrorFailedtoMarshal         SyncManagerStorageError = fmt.Errorf("could not marshal")
+	ErrorFailedtoUnMarshal       SyncManagerStorageError = fmt.Errorf("could not unmarshal")
+	ErrorFailedtoCreateConfigMap SyncManagerStorageError = fmt.Errorf("failed to create config map")
+	ErrorInvalidMutexHolders     SyncManagerStorageError = fmt.Errorf("a Mutex may not have more than 1 holder")
 )
 
 func newSyncManagerStorage(ns string, ki kubernetes.Interface, name string) *syncManagerStorage {
@@ -76,7 +76,7 @@ func (c *syncManagerStorage) load(ctx context.Context, key string) (*SyncMetadat
 	cm, err := c.getDB(ctx)
 	if err != nil {
 		c.logError(err, log.Fields{"key": key}, "Error loading sync storage")
-		return nil, false, ConfigMapNotFound
+		return nil, false, ErrorConfigMapNotFound
 	}
 
 	c.logInfo(log.Fields{"key": key}, "config map loaded")
@@ -84,14 +84,14 @@ func (c *syncManagerStorage) load(ctx context.Context, key string) (*SyncMetadat
 	rawEntry, ok := cm.Data[hexKey]
 	if !ok {
 		c.logInfo(log.Fields{"key": key, "hexKey": hexKey}, "sync storage key not found")
-		return nil, false, KeyNotFound
+		return nil, false, ErrorKeyNotFound
 	}
 
 	var entry SyncMetadataEntry
 	err = json.Unmarshal([]byte(rawEntry), &entry)
 	if err != nil {
 		c.logError(err, log.Fields{"key": key}, "Failed to unmarshal")
-		return nil, true, FailedtoUnMarshal
+		return nil, true, ErrorFailedtoUnMarshal
 	}
 
 	c.logInfo(log.Fields{"key": key, "hexKey": hexKey}, "Loaded sync metadata")
@@ -112,7 +112,7 @@ func (c *syncManagerStorage) store(ctx context.Context, key string, holders []st
 		return err
 	}
 	if syncTy == v1alpha1.SynchronizationTypeMutex && len(holders) > 1 {
-		return InvalidMutexHolders
+		return ErrorInvalidMutexHolders
 	}
 
 	newEntry := SyncMetadataEntry{Key: key, Holders: holders, LockTy: syncTy}
@@ -130,7 +130,7 @@ func (c *syncManagerStorage) store(ctx context.Context, key string, holders []st
 
 	if err != nil {
 		c.logError(err, log.Fields{"key": key}, "Kubernetes error creating new db entry")
-		return FailedtoUpdateMap
+		return ErrorFailedtoUpdateMap
 	}
 
 	return nil
@@ -170,7 +170,7 @@ func (c *syncManagerStorage) getDB(ctx context.Context) (*apiv1.ConfigMap, error
 			if err != nil {
 				log.Warnf("Failed to create config map for due to %s", err.Error())
 				c.logError(err, log.Fields{}, "Failed to create config map")
-				return nil, FailedtoCreateConfigMap
+				return nil, ErrorFailedtoCreateConfigMap
 			}
 		}
 	}
@@ -200,7 +200,7 @@ func (c *syncManagerStorage) deleteLock(ctx context.Context, key string) error {
 
 	if err != nil {
 		c.logError(err, log.Fields{"key": key}, "Kubernetes error creating new db entry")
-		return FailedtoUpdateMap
+		return ErrorFailedtoUpdateMap
 	}
 
 	return nil
@@ -209,10 +209,10 @@ func (c *syncManagerStorage) deleteLock(ctx context.Context, key string) error {
 func (c *syncManagerStorage) deleteLockHolders(ctx context.Context, key string, holders []string) error {
 	c.logInfo(log.Fields{"key": key}, "Deleting holders")
 	entry, _, err := c.load(ctx, key)
-	if err != nil && err != KeyNotFound {
+	if err != nil && err != ErrorKeyNotFound {
 		return err
 	}
-	if err == KeyNotFound {
+	if err == ErrorKeyNotFound {
 		return nil
 	}
 	newHolders := filterHolders(holders, entry.Holders)
