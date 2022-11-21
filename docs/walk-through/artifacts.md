@@ -210,6 +210,7 @@ spec:
 ```
 
 If you do supply your own Service Account you will need to create a RoleBinding that binds it with a role like this:
+
 ```yaml
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
