@@ -7,10 +7,11 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/kubernetes"
+
+	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/workflow/common"
 
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -189,6 +190,10 @@ func (c *syncManagerStorage) DeleteLock(ctx context.Context, key string) error {
 func (c *syncManagerStorage) deleteLock(ctx context.Context, key string) error {
 	hexKey := hex.EncodeToString([]byte(key))
 	db, err := c.getDB(ctx)
+	if err != nil {
+		log.Warnf("Was unable to obtain the configmap due to %s, skipping deletion", err.Error())
+		return err
+	}
 	delete(db.Data, hexKey)
 
 	_, err = c.kubeClient.CoreV1().ConfigMaps(c.namespace).Update(ctx, db, metav1.UpdateOptions{})

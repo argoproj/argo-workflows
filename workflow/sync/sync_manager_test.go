@@ -344,7 +344,7 @@ func TestSemaphoreWfLevel(t *testing.T) {
 
 	syncLimitFunc := GetSyncLimitFunc(kube)
 	t.Run("InitializeSynchronization", func(t *testing.T) {
-		concurrenyMgr := NewLockManager(syncLimitFunc, func(key string) {
+		concurrenyMgr := NewLockManager(testNamespace, kube, syncLimitFunc, func(key string) {
 		}, WorkflowExistenceFunc)
 		wf := wfv1.MustUnmarshalWorkflow(wfWithStatus)
 		wfclientset := fakewfclientset.NewSimpleClientset(wf)
@@ -355,7 +355,7 @@ func TestSemaphoreWfLevel(t *testing.T) {
 		assert.Equal(t, 1, len(concurrenyMgr.syncLockMap))
 	})
 	t.Run("InitializeSynchronizationWithInvalid", func(t *testing.T) {
-		concurrenyMgr := NewLockManager(syncLimitFunc, func(key string) {
+		concurrenyMgr := NewLockManager(testNamespace, kube, syncLimitFunc, func(key string) {
 		}, WorkflowExistenceFunc)
 		wf := wfv1.MustUnmarshalWorkflow(wfWithStatus)
 		invalidSync := []wfv1.SemaphoreHolding{{Semaphore: "default/configmap/my-config1/workflow", Holders: []string{"hello-world-vcrg5"}}}
@@ -369,7 +369,7 @@ func TestSemaphoreWfLevel(t *testing.T) {
 
 	t.Run("WfLevelAcquireAndRelease", func(t *testing.T) {
 		var nextKey string
-		concurrenyMgr := NewLockManager(syncLimitFunc, func(key string) {
+		concurrenyMgr := NewLockManager(testNamespace, kube, syncLimitFunc, func(key string) {
 			nextKey = key
 		}, WorkflowExistenceFunc)
 		wf := wfv1.MustUnmarshalWorkflow(wfWithSemaphore)
@@ -462,7 +462,7 @@ func TestResizeSemaphoreSize(t *testing.T) {
 
 	syncLimitFunc := GetSyncLimitFunc(kube)
 	t.Run("WfLevelAcquireAndRelease", func(t *testing.T) {
-		concurrenyMgr := NewLockManager(syncLimitFunc, func(key string) {
+		concurrenyMgr := NewLockManager(testNamespace, kube, syncLimitFunc, func(key string) {
 		}, WorkflowExistenceFunc)
 		wf := wfv1.MustUnmarshalWorkflow(wfWithSemaphore)
 		wf.CreationTimestamp = metav1.Time{Time: time.Now()}
@@ -530,7 +530,7 @@ func TestSemaphoreTmplLevel(t *testing.T) {
 	syncLimitFunc := GetSyncLimitFunc(kube)
 	t.Run("TemplateLevelAcquireAndRelease", func(t *testing.T) {
 		// var nextKey string
-		concurrenyMgr := NewLockManager(syncLimitFunc, func(key string) {
+		concurrenyMgr := NewLockManager(testNamespace, kube, syncLimitFunc, func(key string) {
 			// nextKey = key
 		}, WorkflowExistenceFunc)
 		wf := wfv1.MustUnmarshalWorkflow(wfWithTmplSemaphore)
@@ -588,7 +588,7 @@ func TestTriggerWFWithAvailableLock(t *testing.T) {
 	syncLimitFunc := GetSyncLimitFunc(kube)
 	t.Run("TriggerWfsWithAvailableLocks", func(t *testing.T) {
 		triggerCount := 0
-		concurrenyMgr := NewLockManager(syncLimitFunc, func(key string) {
+		concurrenyMgr := NewLockManager(testNamespace, kube, syncLimitFunc, func(key string) {
 			triggerCount++
 		}, WorkflowExistenceFunc)
 		var wfs []wfv1.Workflow
@@ -624,7 +624,7 @@ func TestMutexWfLevel(t *testing.T) {
 	syncLimitFunc := GetSyncLimitFunc(kube)
 	t.Run("WorkflowLevelMutexAcquireAndRelease", func(t *testing.T) {
 		// var nextKey string
-		concurrenyMgr := NewLockManager(syncLimitFunc, func(key string) {
+		concurrenyMgr := NewLockManager(testNamespace, kube, syncLimitFunc, func(key string) {
 			// nextKey = key
 		}, WorkflowExistenceFunc)
 		wf := wfv1.MustUnmarshalWorkflow(wfWithMutex)
@@ -677,7 +677,7 @@ func TestCheckWorkflowExistence(t *testing.T) {
 
 	syncLimitFunc := GetSyncLimitFunc(kube)
 	t.Run("WorkflowDeleted", func(t *testing.T) {
-		concurrenyMgr := NewLockManager(syncLimitFunc, func(key string) {
+		concurrenyMgr := NewLockManager(testNamespace, kube, syncLimitFunc, func(key string) {
 			// nextKey = key
 		}, func(s string) bool {
 			return strings.Contains(s, "test1")
@@ -846,7 +846,7 @@ status:
 `)
 	syncLimitFunc := GetSyncLimitFunc(kube)
 
-	concurrenyMgr := NewLockManager(syncLimitFunc, func(key string) {
+	concurrenyMgr := NewLockManager(testNamespace, kube, syncLimitFunc, func(key string) {
 		// nextKey = key
 	}, WorkflowExistenceFunc)
 	t.Run("InitializeMutex", func(t *testing.T) {
@@ -869,5 +869,4 @@ status:
 		assert.NotNil(wf.Status.Synchronization)
 		assert.NotNil(wf.Status.Synchronization.Semaphore)
 	})
-
 }

@@ -2844,9 +2844,11 @@ func TestResolveIOPathPlaceholders(t *testing.T) {
 	assert.NoError(t, err)
 	assert.True(t, len(pods.Items) > 0, "pod was not created successfully")
 
-	assert.Equal(t, []string{"/var/run/argo/argoexec", "emissary",
+	assert.Equal(t, []string{
+		"/var/run/argo/argoexec", "emissary",
 		"--loglevel", getExecutorLogLevel(), "--log-format", woc.controller.cliExecutorLogFormat,
-		"--", "sh", "-c", "head -n 3 <\"/inputs/text/data\" | tee \"/outputs/text/data\" | wc -l > \"/outputs/actual-lines-count/data\""}, pods.Items[0].Spec.Containers[1].Command)
+		"--", "sh", "-c", "head -n 3 <\"/inputs/text/data\" | tee \"/outputs/text/data\" | wc -l > \"/outputs/actual-lines-count/data\"",
+	}, pods.Items[0].Spec.Containers[1].Command)
 }
 
 var outputValuePlaceholders = `
@@ -6446,7 +6448,9 @@ func TestPodHasContainerNeedingTermination(t *testing.T) {
 					Name:  common.MainContainerName,
 					State: apiv1.ContainerState{Terminated: &apiv1.ContainerStateTerminated{ExitCode: 1}},
 				},
-			}}}
+			},
+		},
+	}
 	tmpl := wfv1.Template{}
 	assert.True(t, podHasContainerNeedingTermination(&pod, tmpl))
 
@@ -6461,7 +6465,9 @@ func TestPodHasContainerNeedingTermination(t *testing.T) {
 					Name:  common.MainContainerName,
 					State: apiv1.ContainerState{Terminated: &apiv1.ContainerStateTerminated{ExitCode: 1}},
 				},
-			}}}
+			},
+		},
+	}
 	assert.True(t, podHasContainerNeedingTermination(&pod, tmpl))
 
 	pod = apiv1.Pod{
@@ -6475,7 +6481,9 @@ func TestPodHasContainerNeedingTermination(t *testing.T) {
 					Name:  common.MainContainerName,
 					State: apiv1.ContainerState{Running: &apiv1.ContainerStateRunning{}},
 				},
-			}}}
+			},
+		},
+	}
 	assert.False(t, podHasContainerNeedingTermination(&pod, tmpl))
 
 	pod = apiv1.Pod{
@@ -6485,7 +6493,9 @@ func TestPodHasContainerNeedingTermination(t *testing.T) {
 					Name:  common.MainContainerName,
 					State: apiv1.ContainerState{Running: &apiv1.ContainerStateRunning{}},
 				},
-			}}}
+			},
+		},
+	}
 	assert.False(t, podHasContainerNeedingTermination(&pod, tmpl))
 
 	pod = apiv1.Pod{
@@ -6495,7 +6505,9 @@ func TestPodHasContainerNeedingTermination(t *testing.T) {
 					Name:  common.MainContainerName,
 					State: apiv1.ContainerState{Terminated: &apiv1.ContainerStateTerminated{ExitCode: 1}},
 				},
-			}}}
+			},
+		},
+	}
 	assert.True(t, podHasContainerNeedingTermination(&pod, tmpl))
 }
 
@@ -6563,8 +6575,7 @@ func TestRetryOnDiffHost(t *testing.T) {
 	assert.NotNil(t, pod.Spec.Affinity)
 
 	// Verify if template's Affinity has the right value
-	targetNodeSelectorRequirement :=
-		pod.Spec.Affinity.NodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution.NodeSelectorTerms[0].MatchExpressions[0]
+	targetNodeSelectorRequirement := pod.Spec.Affinity.NodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution.NodeSelectorTerms[0].MatchExpressions[0]
 	sourceNodeSelectorRequirement := apiv1.NodeSelectorRequirement{
 		Key:      hostSelector,
 		Operator: apiv1.NodeSelectorOpNotIn,
@@ -6683,7 +6694,6 @@ func TestWorkflowInterpolatesNodeNameField(t *testing.T) {
 	}
 
 	assert.True(t, foundPod)
-
 }
 
 func TestWorkflowShutdownStrategy(t *testing.T) {
@@ -7133,7 +7143,6 @@ func TestSubstituteGlobalVariables(t *testing.T) {
 // - Workflow spec.workflowMetadata
 // - WorkflowTemplate spec.workflowMetadata
 func TestSubstituteGlobalVariablesLabelsAnnotations(t *testing.T) {
-
 	tests := []struct {
 		name                  string
 		workflow              string
@@ -7196,7 +7205,6 @@ func TestSubstituteGlobalVariablesLabelsAnnotations(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-
 			wf := wfv1.MustUnmarshalWorkflow(tt.workflow)
 			wftmpl := wfv1.MustUnmarshalWorkflowTemplate(tt.workflowTemplate)
 			cancel, controller := newController(wf, wftmpl)
@@ -7269,7 +7277,6 @@ func TestWfPendingWithNoPod(t *testing.T) {
 	pods, err := listPods(woc)
 	assert.NoError(t, err)
 	assert.Equal(t, 1, len(pods.Items))
-
 }
 
 var wfPendingWithSync = `apiVersion: argoproj.io/v1alpha1
@@ -7323,7 +7330,7 @@ func TestMutexWfPendingWithNoPod(t *testing.T) {
 	cancel, controller := newController(wf)
 	defer cancel()
 	ctx := context.Background()
-	controller.syncManager = sync.NewLockManager(GetSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
+	controller.syncManager = sync.NewLockManager(testNamespace, controller.kubeclientset, GetSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
 	}, workflowExistenceFunc)
 	_, _, _, err := controller.syncManager.TryAcquire(wf, "test", &wfv1.Synchronization{Mutex: &wfv1.Mutex{Name: "welcome"}})
 	assert.NoError(t, err)
@@ -7535,7 +7542,7 @@ func TestDagTwoChildrenWithNonExpectedNodeType(t *testing.T) {
 
 	sentNode := woc.wf.Status.Nodes.FindByDisplayName("sent")
 
-	//Ensure that both child tasks are labeled as children of the "sent" node
+	// Ensure that both child tasks are labeled as children of the "sent" node
 	assert.Len(t, sentNode.Children, 2)
 }
 
