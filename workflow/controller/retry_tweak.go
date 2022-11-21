@@ -11,13 +11,30 @@ import (
 // RetryTweak is a 2nd order function interface for tweaking the retry
 type RetryTweak = func(retryStrategy wfv1.RetryStrategy, nodes wfv1.Nodes, pod *apiv1.Pod)
 
-// FindRetryNode locates the closes retry node ancestor to nodeID
-func FindRetryNode(nodes wfv1.Nodes, nodeID string) *wfv1.NodeStatus {
+// FindRetryNode locates the closes retry node ancestor to nodeID.
+// If boundaryID is set on the node we get the template name of the boundary node and try to find a node of type retry with
+// the same template name
+// If boundaryID is no set we get the template of the node and try to find a node of type retry with the name name as the template
+func (woc *wfOperationCtx) FindRetryNode(nodes wfv1.Nodes, nodeID string) *wfv1.NodeStatus {
 	boundaryID := nodes[nodeID].BoundaryID
-	boundaryNode := nodes[boundaryID]
-	templateName := boundaryNode.TemplateName
+
+	if boundaryID != "" {
+		boundaryNode := nodes[boundaryID]
+		templateName := boundaryNode.TemplateName
+		for _, node := range nodes {
+			if node.Type == wfv1.NodeTypeRetry && node.TemplateName == templateName {
+				return &node
+			}
+		}
+	}
+	// if we can't find it with boundaryID try getting it from the node template
+	node := nodes[nodeID]
+	template, err := woc.GetNodeTemplate(&node)
+	if err != nil || template == nil {
+		return nil
+	}
 	for _, node := range nodes {
-		if node.Type == wfv1.NodeTypeRetry && node.TemplateName == templateName {
+		if node.Type == wfv1.NodeTypeRetry && node.TemplateName == template.Name {
 			return &node
 		}
 	}
