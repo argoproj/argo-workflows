@@ -2,17 +2,17 @@ package s3
 
 import (
 	"context"
+	"errors"
 	"fmt"
-	"io"
-	"os"
-
 	"github.com/argoproj/pkg/file"
 	argos3 "github.com/argoproj/pkg/s3"
 	"github.com/minio/minio-go/v7"
 	log "github.com/sirupsen/logrus"
+	"io"
 	"k8s.io/client-go/util/retry"
+	"os"
 
-	"github.com/argoproj/argo-workflows/v3/errors"
+	argoerrs "github.com/argoproj/argo-workflows/v3/errors"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	waitutil "github.com/argoproj/argo-workflows/v3/util/wait"
 	artifactscommon "github.com/argoproj/argo-workflows/v3/workflow/artifacts/common"
@@ -96,7 +96,7 @@ func loadS3Artifact(s3cli argos3.S3Client, inputArtifact *wfv1.Artifact, path st
 	}
 	if !isDir {
 		// It's neither a file, nor a directory. Return the original NoSuchKey error
-		return true, errors.New(errors.CodeNotFound, origErr.Error())
+		return true, argoerrs.New(argoerrs.CodeNotFound, origErr.Error())
 	}
 
 	if err = s3cli.GetDirectory(inputArtifact.S3.Bucket, inputArtifact.S3.Key, path); err != nil {
@@ -132,11 +132,11 @@ func streamS3Artifact(s3cli argos3.S3Client, inputArtifact *wfv1.Artifact) (io.R
 	}
 	if !isDir {
 		// It's neither a file, nor a directory. Return the original NoSuchKey error
-		return nil, errors.New(errors.CodeNotFound, origErr.Error())
+		return nil, argoerrs.New(argoerrs.CodeNotFound, origErr.Error())
 	}
 	// directory case:
 	// todo: make a .tgz file which can be streamed to user
-	return nil, errors.New(errors.CodeNotImplemented, "Directory Stream capability currently unimplemented for S3")
+	return nil, argoerrs.New(argoerrs.CodeNotImplemented, "Directory Stream capability currently unimplemented for S3")
 }
 
 // Save saves an artifact to S3 compliant storage
@@ -184,12 +184,17 @@ func saveS3Artifact(s3cli argos3.S3Client, path string, outputArtifact *wfv1.Art
 
 	createBucketIfNotPresent := outputArtifact.S3.CreateBucketIfNotPresent
 	if createBucketIfNotPresent != nil {
-		log.Infof("Trying to create bucket: %s", outputArtifact.S3.Bucket)
+		log.WithField("bucket", outputArtifact.S3.Bucket).Info("creating bucket")
 		err := s3cli.MakeBucket(outputArtifact.S3.Bucket, minio.MakeBucketOptions{
 			Region:        outputArtifact.S3.Region,
 			ObjectLocking: outputArtifact.S3.CreateBucketIfNotPresent.ObjectLocking,
 		})
-		if err != nil {
+		alreadyExists := bucketAlreadyExistsErr(err)
+		log.WithField("bucket", outputArtifact.S3.Bucket).
+			WithField("alreadyExists", alreadyExists).
+			WithError(err).
+			Info("create bucket failed")
+		if err != nil && !alreadyExists {
 			return !isTransientS3Err(err), fmt.Errorf("failed to create bucket %s: %v", outputArtifact.S3.Bucket, err)
 		}
 	}
@@ -204,6 +209,13 @@ func saveS3Artifact(s3cli argos3.S3Client, path string, outputArtifact *wfv1.Art
 		}
 	}
 	return true, nil
+}
+
+func bucketAlreadyExistsErr(err error) bool {
+	resp := &minio.ErrorResponse{}
+	// https://docs.aws.amazon.com/AmazonS3/latest/API/ErrorResponses.html
+	alreadyExistsCodes := map[string]bool{"BucketAlreadyExists": true, "BucketAlreadyOwnedByYou": true}
+	return errors.As(err, resp) && alreadyExistsCodes[resp.Code]
 }
 
 // ListObjects returns the files inside the directory represented by the Artifact
@@ -243,7 +255,7 @@ func listObjects(s3cli argos3.S3Client, artifact *wfv1.Artifact) (bool, []string
 			return !isTransientS3Err(err), files, fmt.Errorf("failed to check if key %s exists from bucket %s: %v", artifact.S3.Key, artifact.S3.Bucket, err)
 		}
 		if !directoryExists {
-			return true, files, errors.New(errors.CodeNotFound, fmt.Sprintf("no key found of name %s", artifact.S3.Key))
+			return true, files, argoerrs.New(argoerrs.CodeNotFound, fmt.Sprintf("no key found of name %s", artifact.S3.Key))
 		}
 	}
 	return true, files, nil
