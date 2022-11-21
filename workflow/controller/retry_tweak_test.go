@@ -3,8 +3,9 @@ package controller
 import (
 	"testing"
 
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/stretchr/testify/assert"
+
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
 
 func TestFindRetryNodeWithTemplate(t *testing.T) {
