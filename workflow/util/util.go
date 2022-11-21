@@ -1079,7 +1079,14 @@ func patchShutdownStrategy(ctx context.Context, wfClient v1alpha1.WorkflowInterf
 		return errors.InternalWrapError(err)
 	}
 	err = waitutil.Backoff(retry.DefaultRetry, func() (bool, error) {
-		_, err := wfClient.Patch(ctx, name, types.MergePatchType, patch, metav1.PatchOptions{})
+		wf, err := wfClient.Get(ctx, name, metav1.GetOptions{})
+		if err != nil {
+			return !errorsutil.IsTransientErr(err), err
+		}
+		if wf.Status.Fulfilled() {
+			return true, fmt.Errorf("cannot shutdown a completed workflow")
+		}
+		_, err = wfClient.Patch(ctx, name, types.MergePatchType, patch, metav1.PatchOptions{})
 		if apierr.IsConflict(err) {
 			return false, nil
 		}
