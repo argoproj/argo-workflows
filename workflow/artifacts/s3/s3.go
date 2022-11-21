@@ -4,13 +4,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
+	"os"
+
 	"github.com/argoproj/pkg/file"
 	argos3 "github.com/argoproj/pkg/s3"
 	"github.com/minio/minio-go/v7"
 	log "github.com/sirupsen/logrus"
-	"io"
 	"k8s.io/client-go/util/retry"
-	"os"
 
 	argoerrs "github.com/argoproj/argo-workflows/v3/errors"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
