@@ -18,10 +18,8 @@ import (
 
 	"github.com/argoproj/argo-workflows/v3/util/errors"
 
-	"github.com/creack/pty"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	"golang.org/x/term"
 	"k8s.io/client-go/util/retry"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
@@ -210,19 +208,8 @@ func NewEmissaryCommand() *cobra.Command {
 }
 
 func startCommand(name string, args []string, template *wfv1.Template) (*exec.Cmd, func(), error) {
-	tty := term.IsTerminal(int(os.Stdin.Fd()))
-
 	command := exec.Command(name, args...)
 	command.Env = os.Environ()
-	command.SysProcAttr = &syscall.SysProcAttr{}
-	if !tty {
-		// avoid the error "Inappropriate ioctl for device" when
-		// running in tty
-		//
-		// pty.Start uses setsid internally, which makes the process
-		// the group leader already
-		osspecific.Setpgid(command.SysProcAttr)
-	}
 
 	var closer func() = func() {}
 	var stdout io.Writer = os.Stdout
@@ -248,57 +235,19 @@ func startCommand(name string, args []string, template *wfv1.Template) (*exec.Cm
 		}
 	}
 
-	if tty {
-		logger.Info("container requested TTY")
-		ptmx, err := pty.Start(command)
-		if err != nil {
-			return nil, nil, err
-		}
-
-		// Handle pty size
-		sigWinchCh := make(chan os.Signal, 1)
-		signal.Notify(sigWinchCh, syscall.SIGWINCH)
-		go func() {
-			for range sigWinchCh {
-				if ierr := pty.InheritSize(os.Stdin, ptmx); ierr != nil {
-					logger.WithField("error", ierr).Warn("error resizing pty")
-				}
-			}
-		}()
-		// Initial resize
-		sigWinchCh <- syscall.SIGWINCH
-		// Set stdin in raw mode
-		oldState, err := term.MakeRaw(int(os.Stdin.Fd()))
-		if err != nil {
-			return nil, nil, err
-		}
-
-		// copy from stdin to the pty
-		go func() { _, _ = io.Copy(ptmx, os.Stdin) }()
-		// copy from pty to stdout
-		go func() { _, _ = io.Copy(stdout, ptmx) }()
-		// copy from pty to stderr
-		go func() { _, _ = io.Copy(stderr, ptmx) }()
-
-		origCloser := closer
-		closer = func() {
-			signal.Stop(sigWinchCh)
-			close(sigWinchCh)
-
-			_ = term.Restore(int(os.Stdin.Fd()), oldState)
-			_ = ptmx.Close()
-			origCloser()
-		}
-	} else {
-		command.Stdout = stdout
-		command.Stderr = stderr
-
-		if err := command.Start(); err != nil {
-			return nil, nil, err
-		}
+	cmdCloser, err := osspecific.StartCommand(command, os.Stdin, stdout, stderr)
+	if err != nil {
+		return nil, nil, err
 	}
 
-	return command, closer, nil
+	origCloser := closer
+
+	closer = func() {
+		cmdCloser()
+		origCloser()
+	}
+
+	return command, cmdCloser, nil
 }
 
 func saveArtifact(srcPath string) error {
