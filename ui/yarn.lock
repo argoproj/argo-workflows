@@ -3414,17 +3414,17 @@ create-require@^1.1.0:
   resolved "https://registry.yarnpkg.com/create-require/-/create-require-1.1.1.tgz#c1d7e8f1e5f6cfc9ff65f9cd352d37348756c333"
   integrity sha512-dcKFX3jn0MpIaXjisoRvexIJVEKzaq7z2rZKxf+MSr9TkdmHmsU4m2lcLojrj/FHl8mk5VxMmYA+ftRkP/3oKQ==
 
-cron-parser@^4.6.0:
-  version "4.6.0"
-  resolved "https://registry.yarnpkg.com/cron-parser/-/cron-parser-4.6.0.tgz#404c3fdbff10ae80eef6b709555d577ef2fd2e0d"
-  integrity sha512-guZNLMGUgg6z4+eGhmHGw7ft+v6OQeuHzd1gcLxCo9Yg/qoxmG3nindp2/uwGCLizEisf2H0ptqeVXeoCpP6FA==
+cron-parser@^4.7.0:
+  version "4.7.0"
+  resolved "https://registry.yarnpkg.com/cron-parser/-/cron-parser-4.7.0.tgz#184eac151f810e7bf2b32ad37b4dd4a711797cdc"
+  integrity sha512-BdAELR+MCT2ZWsIBhZKDuUqIUCBjHHulPJnm53OfdRLA4EWBjva3R+KM5NeidJuGsNXdEcZkjC7SCnkW5rAFSA==
   dependencies:
-    luxon "^3.0.1"
+    luxon "^3.1.0"
 
-cronstrue@^2.14.0:
-  version "2.14.0"
-  resolved "https://registry.yarnpkg.com/cronstrue/-/cronstrue-2.14.0.tgz#7dcbebc9befc6fbc584403cc9c52b10772308a1e"
-  integrity sha512-rUTXOwOYrw7o4iV+Wg7fUXjMXDuqAMnhU007LrvaGbfVx73aiZz2e5SYjsAt6Q7ML2/z7Gq3qTncy3GKO9MLSQ==
+cronstrue@^2.15.0:
+  version "2.15.0"
+  resolved "https://registry.yarnpkg.com/cronstrue/-/cronstrue-2.15.0.tgz#e6005707c098dcf696be20543c9f1081df0c3584"
+  integrity sha512-m6UxN/c3gqTnbEl0vRBiN0hocf8U6E1GYyPkH45wLC39UGiuDORBEt7GsQtOJPasP0P6TwoL8X2wHMyHOx6J4Q==
 
 cross-fetch@^3.1.5:
   version "3.1.5"
@@ -6273,10 +6273,10 @@ lru-cache@^6.0.0:
   dependencies:
     yallist "^4.0.0"
 
-luxon@^3.0.1:
-  version "3.0.1"
-  resolved "https://registry.yarnpkg.com/luxon/-/luxon-3.0.1.tgz#6901111d10ad06fd267ad4e4128a84bef8a77299"
-  integrity sha512-hF3kv0e5gwHQZKz4wtm4c+inDtyc7elkanAsBq+fundaCdUBNJB1dHEGUZIM6SfSBUlbVFduPwEtNjFK8wLtcw==
+luxon@^3.1.0:
+  version "3.1.0"
+  resolved "https://registry.yarnpkg.com/luxon/-/luxon-3.1.0.tgz#9ac33d7142b7ea18d4ec8583cdeb0b079abef60d"
+  integrity sha512-7w6hmKC0/aoWnEsmPCu5Br54BmbmUp5GfcqBxQngRcXJ+q5fdfjEzn7dxmJh2YdDhgW8PccYtlWKSv4tQkrTQg==
 
 make-dir@^2.0.0:
   version "2.1.0"
