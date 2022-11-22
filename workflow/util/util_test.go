@@ -312,6 +312,13 @@ func TestStopWorkflowByNodeName(t *testing.T) {
 	wf, err = wfIf.Get(ctx, "suspend", metav1.GetOptions{})
 	assert.NoError(t, err)
 	assert.Equal(t, wfv1.NodeFailed, wf.Status.Nodes.FindByDisplayName("approve").Phase)
+
+	origWf.Status = wfv1.WorkflowStatus{Phase: wfv1.WorkflowSucceeded}
+	origWf.Name = "succeeded-wf"
+	_, err = wfIf.Create(ctx, origWf, metav1.CreateOptions{})
+	assert.NoError(t, err)
+	err = StopWorkflow(ctx, wfIf, hydratorfake.Noop, "succeeded-wf", "", "")
+	assert.EqualError(t, err, "cannot shutdown a completed workflow")
 }
 
 // Regression test for #6478
