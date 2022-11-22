@@ -90,9 +90,8 @@ func deleteArtifacts(labelSelector string, ctx context.Context, artifactGCTaskIn
 						errString := err.Error()
 						artResultNodeStatus.ArtifactResults[artifact.Name] = v1alpha1.ArtifactResult{Name: artifact.Name, Success: false, Error: &errString}
 						return false, err
-					} else {
-						artResultNodeStatus.ArtifactResults[artifact.Name] = v1alpha1.ArtifactResult{Name: artifact.Name, Success: true, Error: nil}
 					}
+					artResultNodeStatus.ArtifactResults[artifact.Name] = v1alpha1.ArtifactResult{Name: artifact.Name, Success: true, Error: nil}
 					return true, err
 				})
 			}
