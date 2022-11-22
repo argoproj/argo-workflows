@@ -18,7 +18,7 @@ import {services} from '../../../shared/services';
 import {Utils} from '../../../shared/utils';
 import {ArchivedWorkflowFilters} from '../archived-workflow-filters/archived-workflow-filters';
 
-interface State {
+interface BrowserStorageOptions {
     pagination: Pagination;
     namespace: string;
     name: string;
@@ -27,9 +27,12 @@ interface State {
     selectedLabels: string[];
     minStartedAt?: Date;
     maxStartedAt?: Date;
-    workflows?: Workflow[];
     error?: Error;
     deep: boolean;
+}
+
+interface State extends BrowserStorageOptions {
+    workflows?: Workflow[];
 }
 
 const defaultPaginationLimit = 10;
@@ -181,25 +184,23 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
         return params;
     }
 
-    private filterOutStateObject(state: State, blacklistedStates: string[]) {
-        const filteredState: State = Object.assign({}, state);
-        let key: keyof typeof state;
-
-        for (key in state) {
-            if (blacklistedStates.includes(key)) {
-                delete filteredState[key];
-            }
-        }
-
-        return filteredState;
-    }
-
-    private fetchBrowserStorageStateObject(state: State) {
-        return this.filterOutStateObject(state, ['workflows']);
+    private fetchBrowserStorageStateObject(state: State): BrowserStorageOptions {
+        const browserStorageOptions: BrowserStorageOptions = {} as BrowserStorageOptions;
+        browserStorageOptions.deep = state.deep;
+        browserStorageOptions.error = state.error;
+        browserStorageOptions.maxStartedAt = state.maxStartedAt;
+        browserStorageOptions.minStartedAt = state.minStartedAt;
+        browserStorageOptions.name = state.name;
+        browserStorageOptions.namePrefix = state.namePrefix;
+        browserStorageOptions.namespace = state.namespace;
+        browserStorageOptions.pagination = state.pagination;
+        browserStorageOptions.selectedLabels = state.selectedLabels;
+        browserStorageOptions.selectedPhases = state.selectedPhases;
+        return browserStorageOptions;
     }
 
     private saveHistory() {
-        this.storage.setItem('options', this.fetchBrowserStorageStateObject(this.state), {} as State);
+        this.storage.setItem('options', this.fetchBrowserStorageStateObject(this.state), {} as BrowserStorageOptions);
         const newNamespace = Utils.managedNamespace ? '' : this.state.namespace;
         this.url = uiUrl('archived-workflows' + (newNamespace ? '/' + newNamespace : '') + '?' + this.filterParams.toString());
         Utils.currentNamespace = this.state.namespace;
