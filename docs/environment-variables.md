@@ -148,9 +148,10 @@ data:
 
 ## Argo Server
 
-| Name                    | Type     | Default | Description                                                                                                                  |
-|-------------------------|----------|---------|------------------------------------------------------------------------------------------------------------------------------|
-| `FIRST_TIME_USER_MODAL` | `bool`   | `true`  | Show this modal.                                                                                                             |
-| `FEEDBACK_MODAL`        | `bool`   | `true`  | Show this modal.                                                                                                             |
-| `NEW_VERSION_MODAL`     | `bool`   | `true`  | Show this modal.                                                                                                             |
-| `POD_NAMES`             | `string` | `v2`    | Whether to have pod names contain the template name (v2) or be the node id (v1) - should be set the same for Controller      |
+| Name                                       | Type     | Default | Description                                                                                                             |
+|--------------------------------------------|----------|---------|-------------------------------------------------------------------------------------------------------------------------|
+| `DISABLE_VALUE_LIST_RETRIEVAL_KEY_PATTERN` | `string` | `""`    | Disable the retrieval of the list of label values for keys based on this regular expression.                            |
+| `FIRST_TIME_USER_MODAL`                    | `bool`   | `true`  | Show this modal.                                                                                                        |
+| `FEEDBACK_MODAL`                           | `bool`   | `true`  | Show this modal.                                                                                                        |
+| `NEW_VERSION_MODAL`                        | `bool`   | `true`  | Show this modal.                                                                                                        |
+| `POD_NAMES`                                | `string` | `v2`    | Whether to have pod names contain the template name (v2) or be the node id (v1) - should be set the same for Controller |
