@@ -50,6 +50,8 @@ func NewOperation(ctx context.Context, instanceIDService instanceid.Service, eve
 	}, nil
 }
 
+// not to be converted with sutils, parent calling function should handle this
+// responsibility
 func (o *Operation) Dispatch(ctx context.Context) error {
 	log.Debug("Executing event dispatch")
 
