@@ -8,7 +8,7 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v0.4.1
 	github.com/Knetic/govaluate v3.0.1-0.20171022003610-9aa49832a739+incompatible
 	github.com/Masterminds/sprig/v3 v3.2.2
-	github.com/TwiN/go-color v1.2.0
+	github.com/TwiN/go-color v1.4.0
 	github.com/aliyun/aliyun-oss-go-sdk v2.2.6+incompatible
 	github.com/antonmedv/expr v1.9.0
 	github.com/argoproj/argo-events v1.7.3
@@ -18,7 +18,7 @@ require (
 	github.com/coreos/go-oidc/v3 v3.4.0
 	github.com/doublerebel/bellows v0.0.0-20160303004610-f177d92a03d3
 	github.com/evanphx/json-patch v5.6.0+incompatible
-	github.com/gavv/httpexpect/v2 v2.4.1
+	github.com/gavv/httpexpect/v2 v2.6.1
 	github.com/go-git/go-git/v5 v5.4.2
 	github.com/go-jose/go-jose/v3 v3.0.0
 	github.com/go-openapi/jsonreference v0.20.0
@@ -33,7 +33,7 @@ require (
 	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0
 	github.com/grpc-ecosystem/grpc-gateway v1.16.0
 	github.com/klauspost/pgzip v1.2.5
-	github.com/minio/minio-go/v7 v7.0.43
+	github.com/minio/minio-go/v7 v7.0.44
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.14.0
 	github.com/prometheus/client_model v0.3.0
@@ -47,7 +47,7 @@ require (
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.14.0
 	github.com/stretchr/testify v1.8.1
-	github.com/tidwall/gjson v1.14.3
+	github.com/tidwall/gjson v1.14.4
 	github.com/valyala/fasttemplate v1.2.2
 	github.com/xeipuuv/gojsonschema v1.2.0
 	golang.org/x/crypto v0.0.0-20220722155217-630584e8d5aa
@@ -167,6 +167,7 @@ require (
 	github.com/minio/sha256-simd v1.0.0 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
+	github.com/mitchellh/go-wordwrap v1.0.1 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/moby/spdystream v0.2.0 // indirect
@@ -184,6 +185,7 @@ require (
 	github.com/prometheus/procfs v0.8.0 // indirect
 	github.com/rs/xid v1.4.0 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
+	github.com/sanity-io/litter v1.5.5 // indirect
 	github.com/sergi/go-diff v1.1.0 // indirect
 	github.com/shopspring/decimal v1.2.0 // indirect
 	github.com/spf13/afero v1.9.2 // indirect
