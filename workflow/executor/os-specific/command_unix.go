@@ -1,6 +1,6 @@
-//go:build !windows
-package os_specific
+//go:build linux || darwin
 
+package os_specific
 
 import (
 	"io"
@@ -27,14 +27,7 @@ func StartCommand(cmd *exec.Cmd, stdin *os.File, stdout io.Writer, stderr io.Wri
 		// the group leader already
 		Setpgid(cmd.SysProcAttr)
 
-		cmd.Stdout = stdout
-		cmd.Stderr = stderr
-
-		if err := cmd.Start(); err != nil {
-			return nil, err
-		}
-
-		return closer, nil
+		return simpleStart(cmd, stdout, stderr)
 	}
 
 	ptmx, err := pty.Start(cmd)

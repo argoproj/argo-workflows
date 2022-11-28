@@ -1,21 +1,19 @@
-//go:build windows
 package os_specific
 
 import (
+	"io"
 	"os"
 	"os/exec"
-	"io"
+
+	log "github.com/sirupsen/logrus"
+	"golang.org/x/term"
 )
 
+var logger = log.WithField("argo", true)
+
 func StartCommand(cmd *exec.Cmd, stdin *os.File, stdout io.Writer, stderr io.Writer) (func(), error) {
-	closer := func() {}
-
-	cmd.Stdout = stdout
-	cmd.Stderr = stderr
-
-	if err := cmd.Start(); err != nil {
-		return nil, err
+	if term.IsTerminal(int(stdin.Fd())) {
+		logger.Warn("TTY detected but is not supported on windows")
 	}
-
-	return closer, nil
+	return simpleStart(cmd, stdout, stderr)
 }

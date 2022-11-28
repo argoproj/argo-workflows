@@ -247,7 +247,7 @@ func startCommand(name string, args []string, template *wfv1.Template) (*exec.Cm
 		origCloser()
 	}
 
-	return command, cmdCloser, nil
+	return command, closer, nil
 }
 
 func saveArtifact(srcPath string) error {
