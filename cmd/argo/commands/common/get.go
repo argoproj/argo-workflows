@@ -116,8 +116,20 @@ func PrintWorkflowHelper(wf *wfv1.Workflow, getArgs GetFlags) string {
 			for _, art := range wf.Status.Outputs.Artifacts {
 				if art.S3 != nil {
 					out += fmt.Sprintf(fmtStr, "  "+art.Name+":", art.S3.String())
+				} else if art.Git != nil {
+					out += fmt.Sprintf(fmtStr, "  "+art.Name+":", art.Git.String())
+				} else if art.HTTP != nil {
+					out += fmt.Sprintf(fmtStr, "  "+art.Name+":", art.HTTP.String())
 				} else if art.Artifactory != nil {
 					out += fmt.Sprintf(fmtStr, "  "+art.Name+":", art.Artifactory.String())
+				} else if art.HDFS != nil {
+					out += fmt.Sprintf(fmtStr, "  "+art.Name+":", art.HDFS.String())
+				} else if art.Raw != nil {
+					out += fmt.Sprintf(fmtStr, "  "+art.Name+":", art.Raw.String())
+				} else if art.OSS != nil {
+					out += fmt.Sprintf(fmtStr, "  "+art.Name+":", art.OSS.String())
+				} else if art.GCS != nil {
+					out += fmt.Sprintf(fmtStr, "  "+art.Name+":", art.GCS.String())
 				} else if art.Azure != nil {
 					out += fmt.Sprintf(fmtStr, "  "+art.Name+":", art.Azure.String())
 				}
