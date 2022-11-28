@@ -181,6 +181,8 @@ github.com/antihax/optional v1.0.0/go.mod h1:uupD/76wgC+ih3iEmQUL+0Ugr19nfwCT1kd
 github.com/antonmedv/expr v1.9.0 h1:j4HI3NHEdgDnN9p6oI6Ndr0G5QryMY0FNxT4ONrFDGU=
 github.com/antonmedv/expr v1.9.0/go.mod h1:5qsM3oLGDND7sDmQGDXHkYfkjYMUX14qsgqmHhwGEk8=
 github.com/aokoli/goutils v1.0.1/go.mod h1:SijmP0QR8LtwsmDs8Yii5Z/S4trXFGFC2oO5g9DP+DQ=
+github.com/argoproj-labs/go-git/v5 v5.4.5 h1:0npa09sswRtlCW5RZD+OVSp3bmf03XcebepeTo1orgA=
+github.com/argoproj-labs/go-git/v5 v5.4.5/go.mod h1:Lv1K45bcCda9jDMEZCGCVuXSGdBaSGAXUvptnVtaEsA=
 github.com/argoproj/argo-events v1.7.3 h1:XiGnKCzRRQCI7sFCKw3RoeFUOR6IupfAJI9uUK7pnG8=
 github.com/argoproj/argo-events v1.7.3/go.mod h1:YxDOXrveW52SDAeeTI93Wagkr4jt5DK0dA0juIdWDRw=
 github.com/argoproj/pkg v0.13.6 h1:36WPD9MNYECHcO1/R1pj6teYspiK7uMQLCgLGft2abM=
@@ -1027,8 +1029,6 @@ github.com/rogpeppe/fastuuid v1.2.0/go.mod h1:jVj6XXZzXRy/MSR5jhDC/2q6DgLz+nrA6L
 github.com/rogpeppe/go-internal v1.3.0/go.mod h1:M8bDsm7K2OlrFYOpmOWEs/qY81heoFRclV5y23lUDJ4=
 github.com/rogpeppe/go-internal v1.6.2/go.mod h1:xXDCJY+GAPziupqXw64V24skbSoqbTEfhy4qGm1nDQc=
 github.com/rogpeppe/go-internal v1.8.1 h1:geMPLpDpQOgVyCg5z5GoRwLHepNdb71NXb67XFkP+Eg=
-github.com/rohankmr414/go-git/v5 v5.4.7 h1:u6zmSOjIX3rWx/b+pBGODU0fvTMIyVLV+G4AtiIClhc=
-github.com/rohankmr414/go-git/v5 v5.4.7/go.mod h1:Lv1K45bcCda9jDMEZCGCVuXSGdBaSGAXUvptnVtaEsA=
 github.com/rs/cors v1.7.0/go.mod h1:gFx+x8UowdsKA9AchylcLynDq+nNFfI8FkUZdN/jGCU=
 github.com/rs/xid v1.2.1/go.mod h1:+uKXf+4Djp6Md1KODXJxgGQPKngRmWyn10oCKFzNHOQ=
 github.com/rs/xid v1.4.0 h1:qd7wPTDkN6KQx2VmMBLrpHkiyQwgFXRnkOLacUiaSNY=
