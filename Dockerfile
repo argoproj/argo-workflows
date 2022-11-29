@@ -1,37 +1,27 @@
 #syntax=docker/dockerfile:1.2
 
-FROM golang:1.18 as builder
+FROM golang:1.19-alpine3.16 as builder
 
-RUN apt-get update && apt-get --no-install-recommends install -y \
+RUN apk update && apk add \
     git \
     make \
-    apt-utils \
-    apt-transport-https \
     ca-certificates \
     wget \
-    gcc && \
-    apt-get clean \
-    && rm -rf \
-        /var/lib/apt/lists/* \
-        /tmp/* \
-        /var/tmp/* \
-        /usr/share/man \
-        /usr/share/doc \
-        /usr/share/doc-base
+    curl \
+    gcc \
+    bash \
+    mailcap
 
 WORKDIR /tmp
 
-# https://blog.container-solutions.com/faster-builds-in-docker-with-go-1-11
 WORKDIR /go/src/github.com/argoproj/argo-workflows
 COPY go.mod .
 COPY go.sum .
 RUN --mount=type=cache,target=/go/pkg/mod go mod download
 
-COPY . .
-
 ####################################################################################################
 
-FROM node:16 as argo-ui
+FROM node:16-alpine as argo-ui
 
 COPY ui/package.json ui/yarn.lock ui/
 
@@ -60,6 +50,8 @@ RUN curl -o /usr/local/bin/kubectl https://storage.googleapis.com/kubernetes-rel
 RUN curl -o /usr/local/bin/jq https://github.com/stedolan/jq/releases/download/jq-1.6/jq-linux64 && \
   chmod +x /usr/local/bin/jq
 
+COPY . .
+
 # Tell git to forget about all of the files that were not included because of .dockerignore in order to ensure that
 # the git state is "clean" even though said .dockerignore files are not present
 RUN cat .dockerignore >> .gitignore
@@ -71,6 +63,8 @@ RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache
 
 FROM builder as workflow-controller-build
 
+COPY . .
+
 # Tell git to forget about all of the files that were not included because of .dockerignore in order to ensure that
 # the git state is "clean" even though said .dockerignore files are not present
 RUN cat .dockerignore >> .gitignore
@@ -81,6 +75,8 @@ RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache
 ####################################################################################################
 
 FROM builder as argocli-build
+
+COPY . .
 
 RUN mkdir -p ui/dist
 COPY --from=argo-ui ui/dist/app ui/dist/app
