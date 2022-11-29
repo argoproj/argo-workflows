@@ -67,9 +67,6 @@ FROM builder as argocli-build
 
 RUN mkdir -p ui/dist
 COPY --from=argo-ui ui/dist/app ui/dist/app
-# stop make from trying to re-build this without yarn installed
-RUN touch ui/dist/node_modules.marker
-RUN touch ui/dist/app/index.html
 
 # Tell git to forget about all of the files that were not included because of .dockerignore in order to ensure that
 # the git state is "clean" even though said .dockerignore files are not present
