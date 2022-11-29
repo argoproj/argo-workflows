@@ -10,6 +10,7 @@ RUN apk update && apk add \
     curl \
     gcc \
     bash \
+    jq \
     mailcap
 
 WORKDIR /tmp
@@ -45,9 +46,6 @@ COPY hack/arch.sh hack/os.sh /bin/
 # NOTE: kubectl version should be one minor version less than https://storage.googleapis.com/kubernetes-release/release/stable.txt
 RUN curl -o /usr/local/bin/kubectl https://storage.googleapis.com/kubernetes-release/release/v1.24.8/bin/$(os.sh)/$(arch.sh)/kubectl && \
     chmod +x /usr/local/bin/kubectl
-
-RUN curl -o /usr/local/bin/jq https://github.com/stedolan/jq/releases/download/jq-1.6/jq-linux64 && \
-  chmod +x /usr/local/bin/jq
 
 COPY . .
 
@@ -95,7 +93,7 @@ RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache
 FROM gcr.io/distroless/static as argoexec
 
 COPY --from=argoexec-build /usr/local/bin/kubectl /bin/
-COPY --from=argoexec-build /usr/local/bin/jq /bin/
+COPY --from=argoexec-build /usr/bin/jq /bin/
 COPY --from=argoexec-build /go/src/github.com/argoproj/argo-workflows/dist/argoexec /bin/
 COPY --from=argoexec-build /etc/mime.types /etc/mime.types
 COPY hack/ssh_known_hosts /etc/ssh/
