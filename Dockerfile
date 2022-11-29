@@ -2,7 +2,7 @@
 
 FROM golang:1.18-alpine3.16 as builder
 
-RUN apk update && apk add \
+RUN apk update && apk add --no-cache \
     git \
     make \
     ca-certificates \
@@ -24,7 +24,7 @@ COPY . .
 
 FROM node:16-alpine as argo-ui
 
-RUN apk update && apk add git
+RUN apk update && apk add --no-cache git
 
 COPY ui/package.json ui/yarn.lock ui/
 
