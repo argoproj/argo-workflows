@@ -8,7 +8,9 @@ import (
 	"github.com/argoproj/argo-workflows/v3/util/errors"
 )
 
-func IsSIGCHLD(s os.Signal) bool { return s == syscall.SIGCHLD }
+func CanIgnoreSignal(s os.Signal) bool {
+	return s == syscall.SIGCHLD || s == syscall.SIGURG
+}
 
 func Kill(pid int, s syscall.Signal) error {
 	pgid, err := syscall.Getpgid(pid)

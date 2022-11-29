@@ -133,9 +133,13 @@ func NewEmissaryCommand() *cobra.Command {
 				}
 				go func() {
 					for s := range signals {
-						if !osspecific.IsSIGCHLD(s) {
-							_ = osspecific.Kill(command.Process.Pid, s.(syscall.Signal))
+						if osspecific.CanIgnoreSignal(s) {
+							logger.Debugf("ignore signal %s", s)
+							continue
 						}
+
+						logger.Debugf("forwarding signal %s", s)
+						_ = osspecific.Kill(command.Process.Pid, s.(syscall.Signal))
 					}
 				}()
 				pid := command.Process.Pid
