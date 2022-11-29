@@ -231,9 +231,10 @@ argoexec-image:
 
 %-image:
 	[ ! -e dist/$* ] || mv dist/$* .
-	docker build \
+	docker buildx build \
 		-t $(IMAGE_NAMESPACE)/$*:$(VERSION) \
 		--target $* \
+		--load \
 		 .
 	[ ! -e $* ] || mv $* dist/
 	docker run --rm -t $(IMAGE_NAMESPACE)/$*:$(VERSION) version

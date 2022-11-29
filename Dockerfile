@@ -25,7 +25,7 @@ WORKDIR /tmp
 WORKDIR /go/src/github.com/argoproj/argo-workflows
 COPY go.mod .
 COPY go.sum .
-RUN go mod download
+RUN --mount=type=cache,target=/go/pkg/mod go mod download
 
 COPY . .
 
@@ -35,12 +35,17 @@ FROM node:16 as argo-ui
 
 COPY ui/package.json ui/yarn.lock ui/
 
-RUN JOBS=max yarn --cwd ui install --network-timeout 1000000
+RUN --mount=type=cache,target=/root/.yarn \
+  YARN_CACHE_FOLDER=/root/.yarn JOBS=max \
+  yarn --cwd ui install --network-timeout 1000000
 
 COPY ui ui
 COPY api api
 
-RUN NODE_OPTIONS="--max-old-space-size=2048" JOBS=max yarn --cwd ui build
+RUN --mount=type=cache,target=/root/.yarn \
+  --mount=type=cache,target=/assets \
+  YARN_CACHE_FOLDER=/root/.yarn JOBS=max \
+  NODE_OPTIONS="--max-old-space-size=2048" JOBS=max yarn --cwd ui build
 
 ####################################################################################################
 
@@ -60,7 +65,7 @@ RUN curl -o /usr/local/bin/jq https://github.com/stedolan/jq/releases/download/j
 RUN cat .dockerignore >> .gitignore
 RUN git status --porcelain | cut -c4- | xargs git update-index --skip-worktree
 
-RUN --mount=type=cache,target=/root/.cache/go-build make dist/argoexec
+RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache/go-build make dist/argoexec
 
 ####################################################################################################
 
@@ -71,7 +76,7 @@ FROM builder as workflow-controller-build
 RUN cat .dockerignore >> .gitignore
 RUN git status --porcelain | cut -c4- | xargs git update-index --skip-worktree
 
-RUN --mount=type=cache,target=/root/.cache/go-build make dist/workflow-controller
+RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache/go-build make dist/workflow-controller
 
 ####################################################################################################
 
@@ -88,7 +93,7 @@ RUN touch ui/dist/app/index.html
 RUN cat .dockerignore >> .gitignore
 RUN git status --porcelain | cut -c4- | xargs git update-index --skip-worktree
 
-RUN --mount=type=cache,target=/root/.cache/go-build make dist/argo
+RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache/go-build make dist/argo
 
 ####################################################################################################
 
