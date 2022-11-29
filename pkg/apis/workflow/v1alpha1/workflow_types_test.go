@@ -1309,6 +1309,10 @@ func TestTemplate_HasOutputs(t *testing.T) {
 		x := &Template{Resource: &ResourceTemplate{}}
 		assert.False(t, x.HasOutput())
 	})
+	t.Run("Plugin", func(t *testing.T) {
+		x := &Template{Plugin: &Plugin{}}
+		assert.True(t, x.HasOutput())
+	})
 }
 
 func TestTemplate_SaveLogsAsArtifact(t *testing.T) {

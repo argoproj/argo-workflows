@@ -757,7 +757,7 @@ func getDescendantNodeIDs(wf *wfv1.Workflow, node wfv1.NodeStatus) []string {
 func deletePodNodeDuringRetryWorkflow(wf *wfv1.Workflow, node wfv1.NodeStatus, deletedPods map[string]bool, podsToDelete []string) (map[string]bool, []string) {
 	templateName := GetTemplateFromNode(node)
 	version := GetWorkflowPodNameVersion(wf)
-	podName := PodName(wf.Name, node.Name, templateName, node.ID, version)
+	podName := GeneratePodName(wf.Name, node.Name, templateName, node.ID, version)
 	if _, ok := deletedPods[podName]; !ok {
 		deletedPods[podName] = true
 		podsToDelete = append(podsToDelete, podName)
@@ -858,7 +858,7 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 		}
 		switch node.Phase {
 		case wfv1.NodeSucceeded, wfv1.NodeSkipped:
-			if doForceResetNode {
+			if strings.HasSuffix(node.Name, onExitNodeName) || doForceResetNode {
 				log.Debugf("Force reset for node: %s", node.Name)
 				// Reset parent node if this node is a step/task group or DAG.
 				if isGroupNode(node) && node.BoundaryID != "" {
@@ -913,7 +913,7 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 				}
 			}
 		case wfv1.NodeError, wfv1.NodeFailed, wfv1.NodeOmitted:
-			if !strings.HasPrefix(node.Name, onExitNodeName) && isGroupNode(node) {
+			if isGroupNode(node) {
 				newNode := node.DeepCopy()
 				newWF.Status.Nodes[newNode.ID] = resetNode(*newNode)
 				log.Debugf("Reset %s node %s since it's a group node", node.Name, string(node.Phase))
@@ -1079,7 +1079,14 @@ func patchShutdownStrategy(ctx context.Context, wfClient v1alpha1.WorkflowInterf
 		return errors.InternalWrapError(err)
 	}
 	err = waitutil.Backoff(retry.DefaultRetry, func() (bool, error) {
-		_, err := wfClient.Patch(ctx, name, types.MergePatchType, patch, metav1.PatchOptions{})
+		wf, err := wfClient.Get(ctx, name, metav1.GetOptions{})
+		if err != nil {
+			return !errorsutil.IsTransientErr(err), err
+		}
+		if wf.Status.Fulfilled() {
+			return true, fmt.Errorf("cannot shutdown a completed workflow")
+		}
+		_, err = wfClient.Patch(ctx, name, types.MergePatchType, patch, metav1.PatchOptions{})
 		if apierr.IsConflict(err) {
 			return false, nil
 		}

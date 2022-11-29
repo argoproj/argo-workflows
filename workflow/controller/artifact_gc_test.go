@@ -555,7 +555,6 @@ func TestProcessCompletedWorkflowArtifactGCTask(t *testing.T) {
 	cancel, controller := newController(wf)
 	defer cancel()
 
-	ctx := context.Background()
 	woc := newWorkflowOperationCtx(wf, controller)
 	woc.wf.Status.ArtifactGCStatus = &wfv1.ArtGCStatus{}
 
@@ -563,7 +562,7 @@ func TestProcessCompletedWorkflowArtifactGCTask(t *testing.T) {
 	// - Artifact.Deleted
 	// - Conditions
 
-	err := woc.processCompletedWorkflowArtifactGCTask(ctx, wfat, "OnWorkflowCompletion")
+	_, err := woc.processCompletedWorkflowArtifactGCTask(wfat, "OnWorkflowCompletion")
 	assert.Nil(t, err)
 
 	for _, expectedArtifact := range []struct {

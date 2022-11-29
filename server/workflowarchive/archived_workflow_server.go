@@ -3,6 +3,8 @@ package workflowarchive
 import (
 	"context"
 	"fmt"
+	"os"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -23,6 +25,8 @@ import (
 	"github.com/argoproj/argo-workflows/v3/server/auth"
 	"github.com/argoproj/argo-workflows/v3/workflow/util"
 )
+
+const disableValueListRetrievalKeyPattern = "DISABLE_VALUE_LIST_RETRIEVAL_KEY_PATTERN"
 
 type archivedWorkflowServer struct {
 	wfArchive sqldb.WorkflowArchive
@@ -184,6 +188,15 @@ func (w *archivedWorkflowServer) ListArchivedWorkflowLabelKeys(ctx context.Conte
 	return labelkeys, nil
 }
 
+func matchLabelKeyPattern(key string) bool {
+	pattern, _ := os.LookupEnv(disableValueListRetrievalKeyPattern)
+	if pattern == "" {
+		return false
+	}
+	match, _ := regexp.MatchString(pattern, key)
+	return match
+}
+
 func (w *archivedWorkflowServer) ListArchivedWorkflowLabelValues(ctx context.Context, req *workflowarchivepkg.ListArchivedWorkflowLabelValuesRequest) (*wfv1.LabelValues, error) {
 	options := req.ListOptions
 
@@ -201,6 +214,10 @@ func (w *archivedWorkflowServer) ListArchivedWorkflowLabelValues(ctx context.Con
 		key = requirement.Key()
 	} else {
 		return nil, fmt.Errorf("operation %v is not supported", requirement.Operator())
+	}
+	if matchLabelKeyPattern(key) {
+		log.WithFields(log.Fields{"labelKey": key}).Info("Skipping retrieving the list of values for label key")
+		return &wfv1.LabelValues{Items: []string{}}, nil
 	}
 
 	labels, err := w.wfArchive.ListWorkflowsLabelValues(key)
