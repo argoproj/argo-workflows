@@ -33,7 +33,6 @@ COPY ui ui
 COPY api api
 
 RUN --mount=type=cache,target=/root/.yarn \
-  --mount=type=cache,target=/assets \
   YARN_CACHE_FOLDER=/root/.yarn JOBS=max \
   NODE_OPTIONS="--max-old-space-size=2048" JOBS=max yarn --cwd ui build
 
