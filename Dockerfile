@@ -24,6 +24,8 @@ COPY . .
 
 FROM node:16-alpine as argo-ui
 
+RUN apk update && apk add git
+
 COPY ui/package.json ui/yarn.lock ui/
 
 RUN --mount=type=cache,target=/root/.yarn \
