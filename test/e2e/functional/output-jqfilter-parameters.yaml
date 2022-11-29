@@ -52,7 +52,7 @@ spec:
       - name: key
       - name: value
     container:
-      image: argoproj/argoexec:latest
+      image: quay.io/codefresh/argoexec:latest
       command: [sh, -c]
       args: ["
         echo '<{{inputs.parameters.key}}>' > /tmp/input;

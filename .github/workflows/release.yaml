@@ -6,6 +6,7 @@ on:
       - v*
     branches:
       - master
+      - release-*
       - dev-*
 
 concurrency:
@@ -43,11 +44,12 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-${{ matrix.platform }}-${{ matrix.target }}-buildx-
 
-      - name: Docker Login
-        uses: docker/login-action@v2
-        with:
-          username: ${{ secrets.DOCKERIO_USERNAME }}
-          password: ${{ secrets.DOCKERIO_PASSWORD }}
+      ## Codefresh - remove dockerhub
+      # - name: Docker Login
+      #   uses: docker/login-action@v1
+      #   with:
+      #     username: ${{ secrets.DOCKERIO_USERNAME }}
+      #     password: ${{ secrets.DOCKERIO_PASSWORD }}
 
       - name: Docker Login
         uses: docker/login-action@v2
@@ -114,11 +116,12 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-${{ matrix.platform }}-${{ matrix.target }}-buildx-
 
-      - name: Docker Login
-        uses: docker/login-action@v2
-        with:
-          username: ${{ secrets.DOCKERIO_USERNAME }}
-          password: ${{ secrets.DOCKERIO_PASSWORD }}
+      ## Codefresh - remove dockerhub
+      # - name: Docker Login
+      #   uses: docker/login-action@v1
+      #   with:
+      #     username: ${{ secrets.DOCKERIO_USERNAME }}
+      #     password: ${{ secrets.DOCKERIO_PASSWORD }}
 
       - name: Docker Login
         uses: docker/login-action@v2
@@ -162,12 +165,13 @@ jobs:
     if: github.repository == 'argoproj/argo-workflows'
     runs-on: windows-2019
     steps:
-      - uses: actions/checkout@v3
-      - name: Docker Login
-        uses: Azure/docker-login@v1
-        with:
-          username: ${{ secrets.DOCKERIO_USERNAME }}
-          password: ${{ secrets.DOCKERIO_PASSWORD }}
+      - uses: actions/checkout@v2
+      ## Codefresh - remove dockerhub
+      # - name: Docker Login
+      #   uses: Azure/docker-login@v1
+      #   with:
+      #     username: ${{ secrets.DOCKERIO_USERNAME }}
+      #     password: ${{ secrets.DOCKERIO_PASSWORD }}
 
       - name: Login to Quay
         uses: Azure/docker-login@v1
@@ -191,10 +195,56 @@ jobs:
           for target in $targets; do
             image_name="${docker_org}/${target}:${tag}-windows"
             docker build --target $target -t $image_name -f Dockerfile.windows .
-            docker push $image_name
+            ## Codefresh - remove dockerhub
+            # docker push $image_name
 
             docker tag $image_name quay.io/$image_name
             docker push quay.io/$image_name
+          done
+
+  push-linux-amd64-images:
+    name: Push manifest with linux/amd64
+    runs-on: ubuntu-20.04
+    needs: [ build-linux-amd64 ]
+    steps:
+      - uses: actions/checkout@v2
+      ## Codefresh - remove dockerhub
+      # - name: Docker Login
+      #   uses: Azure/docker-login@v1
+      #   with:
+      #     username: ${{ secrets.DOCKERIO_USERNAME }}
+      #     password: ${{ secrets.DOCKERIO_PASSWORD }}
+
+      - name: Login to Quay
+        uses: Azure/docker-login@v1
+        with:
+          login-server: quay.io
+          username: ${{ secrets.QUAYIO_USERNAME }}
+          password: ${{ secrets.QUAYIO_PASSWORD }}
+
+      - name: Push Multiarch Image
+        env:
+          DOCKERIO_ORG: ${{ secrets.DOCKERIO_ORG }}
+        run: |
+          echo $(jq -c '. + { "experimental": "enabled" }' ${DOCKER_CONFIG}/config.json) > ${DOCKER_CONFIG}/config.json
+
+          docker_org=$DOCKERIO_ORG
+
+          tag=$(basename $GITHUB_REF)
+          if [ $tag = "master" ]; then
+            tag="latest"
+          fi
+
+          targets="workflow-controller argoexec argocli"
+          for target in $targets; do
+            image_name="${docker_org}/${target}:${tag}"
+
+            docker manifest create $image_name ${image_name}-linux-amd64
+            docker manifest create quay.io/$image_name quay.io/${image_name}-linux-amd64
+
+            ## Codefresh - remove dockerhub
+            # docker manifest push $image_name
+            docker manifest push quay.io/$image_name
           done
 
   push-images:
@@ -203,12 +253,13 @@ jobs:
     runs-on: ubuntu-latest
     needs: [ build-linux-amd64, build-linux-arm64, build-windows ]
     steps:
-      - uses: actions/checkout@v3
-      - name: Docker Login
-        uses: Azure/docker-login@v1
-        with:
-          username: ${{ secrets.DOCKERIO_USERNAME }}
-          password: ${{ secrets.DOCKERIO_PASSWORD }}
+      - uses: actions/checkout@v2
+      ## Codefresh - remove dockerhub
+      # - name: Docker Login
+      #   uses: Azure/docker-login@v1
+      #   with:
+      #     username: ${{ secrets.DOCKERIO_USERNAME }}
+      #     password: ${{ secrets.DOCKERIO_PASSWORD }}
 
       - name: Login to Quay
         uses: Azure/docker-login@v1
@@ -242,7 +293,8 @@ jobs:
               docker manifest create quay.io/$image_name quay.io/${image_name}-linux-arm64 quay.io/${image_name}-linux-amd64
             fi
 
-            docker manifest push $image_name
+            ## Codefresh - remove dockerhub
+            # docker manifest push $image_name
             docker manifest push quay.io/$image_name
           done
 
@@ -256,11 +308,12 @@ jobs:
         platform: [ linux/amd64 ]
         target: [ workflow-controller, argocli, argoexec ]
     steps:
-      - name: Docker Login
-        uses: Azure/docker-login@v1
-        with:
-          username: ${{ secrets.DOCKERIO_USERNAME }}
-          password: ${{ secrets.DOCKERIO_PASSWORD }}
+      ## Codefresh - remove dockerhub
+      # - name: Docker Login
+      #   uses: Azure/docker-login@v1
+      #   with:
+      #     username: ${{ secrets.DOCKERIO_USERNAME }}
+      #     password: ${{ secrets.DOCKERIO_PASSWORD }}
 
       - name: Login to Quay
         uses: Azure/docker-login@v1
@@ -281,7 +334,8 @@ jobs:
           fi
 
           image_name="${DOCKERIO_ORG}/${TARGET}:${tag}"
-          docker pull $image_name
+          ## Codefresh - remove dockerhub
+          # docker pull $image_name
           docker pull quay.io/$image_name
 
   test-images-windows:
@@ -290,11 +344,12 @@ jobs:
     runs-on: windows-2019
     needs: [ push-images ]
     steps:
-      - name: Docker Login
-        uses: Azure/docker-login@v1
-        with:
-          username: ${{ secrets.DOCKERIO_USERNAME }}
-          password: ${{ secrets.DOCKERIO_PASSWORD }}
+      ## Codefresh - remove dockerhub
+      # - name: Docker Login
+      #   uses: Azure/docker-login@v1
+      #   with:
+      #     username: ${{ secrets.DOCKERIO_USERNAME }}
+      #     password: ${{ secrets.DOCKERIO_PASSWORD }}
 
       - name: Login to Quay
         uses: Azure/docker-login@v1
@@ -315,7 +370,8 @@ jobs:
           targets="argoexec"
           for target in $targets; do
             image_name="${docker_org}/${target}:${tag}"
-            docker pull $image_name
+            ## Codefresh - remove dockerhub
+            # docker pull $image_name
             docker pull quay.io/$image_name
           done
 
