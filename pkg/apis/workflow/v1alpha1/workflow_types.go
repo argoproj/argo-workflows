@@ -2923,9 +2923,10 @@ func (tmpl *Template) GetVolumeMounts() []apiv1.VolumeMount {
 	return nil
 }
 
-// whether or not the template can and will have outputs (i.e. exit code and result)
+// HasOutput returns true if the template can and will have outputs (i.e. exit code and result).
+// In the case of a plugin, we assume it will have outputs because we cannot know at runtime.
 func (tmpl *Template) HasOutput() bool {
-	return tmpl.Container != nil || tmpl.ContainerSet.HasContainerNamed("main") || tmpl.Script != nil || tmpl.Data != nil || tmpl.HTTP != nil
+	return tmpl.Container != nil || tmpl.ContainerSet.HasContainerNamed("main") || tmpl.Script != nil || tmpl.Data != nil || tmpl.HTTP != nil || tmpl.Plugin != nil
 }
 
 func (t *Template) IsDaemon() bool {
@@ -3061,7 +3062,8 @@ func (t *DAGTask) ShouldExpand() bool {
 
 // SuspendTemplate is a template subtype to suspend a workflow at a predetermined point in time
 type SuspendTemplate struct {
-	// Duration is the seconds to wait before automatically resuming a template
+	// Duration is the seconds to wait before automatically resuming a template. Must be a string. Default unit is seconds.
+	// Could also be a Duration, e.g.: "2m", "6h", "1d"
 	Duration string `json:"duration,omitempty" protobuf:"bytes,1,opt,name=duration"`
 }
 

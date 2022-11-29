@@ -5,17 +5,17 @@ repository. Argo supports any S3 compatible artifact repository such as AWS, GCS
 and MinIO. This section shows how to configure the artifact repository.
 Subsequent sections will show how to use it.
 
-| Name | Inputs | Outputs | Usage (Feb 2020) |
-|---|---|---|---|
-| Artifactory | Yes | Yes | 11% |
-| Azure Blob | Yes | Yes | - |
-| GCS | Yes | Yes | - |
-| Git | Yes | No | - |
-| HDFS | Yes | Yes | 3% |
-| HTTP | Yes | No | 2% |
-| OSS | Yes | Yes | - |
-| Raw | Yes | No | 5% |
-| S3 | Yes | Yes | 86% |
+| Name | Inputs | Outputs | Garbage Collection | Usage (Feb 2020) |
+|---|---|---|---|---|
+| Artifactory | Yes | Yes | No | 11% |
+| Azure Blob | Yes | Yes | Yes | - |
+| GCS | Yes | Yes | Yes | - |
+| Git | Yes | No | No | - |
+| HDFS | Yes | Yes | No | 3% |
+| HTTP | Yes | Yes | No | 2% |
+| OSS | Yes | Yes | No | - |
+| Raw | Yes | No | No | 5% |
+| S3 | Yes | Yes | Yes | 86% |
 
 The actual repository used by a workflow is chosen by the following rules:
 
@@ -75,7 +75,7 @@ $ cat > policy.json <<EOF
          "Effect":"Allow",
          "Action":[
             "s3:PutObject",
-            "s3:GetObject",
+            "s3:GetObject"
          ],
          "Resource":"arn:aws:s3:::$mybucket/*"
       },
@@ -85,7 +85,7 @@ $ cat > policy.json <<EOF
             "s3:ListBucket"
          ],
          "Resource":"arn:aws:s3:::$mybucket"
-      },
+      }
    ]
 }
 EOF
