@@ -13,14 +13,6 @@ RUN apk update && apk add \
     jq \
     mailcap
 
-
-# NOTE: kubectl version should be one minor version less than https://storage.googleapis.com/kubernetes-release/release/stable.txt
-RUN curl -o /usr/local/bin/kubectl \
-    https://storage.googleapis.com/kubernetes-release/release/v1.24.8/bin/linux/arm64/kubectl && \
-    chmod +x /usr/local/bin/kubectl
-
-WORKDIR /tmp
-
 WORKDIR /go/src/github.com/argoproj/argo-workflows
 COPY go.mod .
 COPY go.sum .
@@ -86,9 +78,14 @@ RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache
 
 ####################################################################################################
 
+# NOTE: kubectl version should be one minor version less than https://storage.googleapis.com/kubernetes-release/release/stable.txt
+FROM bitnami/kubectl:1.24.8 as kubectl
+
+####################################################################################################
+
 FROM gcr.io/distroless/static as argoexec
 
-COPY --from=argoexec-build /usr/local/bin/kubectl /bin/
+COPY --from=kubectl /opt/bitnami/kubectl/bin/kubectl /bin/
 COPY --from=argoexec-build /usr/bin/jq /bin/
 COPY --from=argoexec-build /go/src/github.com/argoproj/argo-workflows/dist/argoexec /bin/
 COPY --from=argoexec-build /etc/mime.types /etc/mime.types
