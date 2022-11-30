@@ -58,7 +58,6 @@ func StartCommand(cmd *exec.Cmd) (func(), error) {
 	signal.Notify(sigWinchCh, syscall.SIGWINCH)
 	go func() {
 		for range sigWinchCh {
-			// TODO: log error somehow?
 			if err := pty.InheritSize(stdin, ptmx); err != nil {
 				logger.WithError(err).Warn("Cannot resize pty")
 			}
