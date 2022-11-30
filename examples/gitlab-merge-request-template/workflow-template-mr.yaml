@@ -1,0 +1,197 @@
+# SUMMARY:
+#
+# Auto trigger the workflowTemplate once the Gitlab merge request was created or updated.
+#
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: mr-workflow
+  namespace: default
+spec:
+  entrypoint: main
+  arguments:
+    parameters:
+      - name: repo
+        value: git@gitlab.com:linuxsuren/gogit.git
+      - name: image
+        value: surenpi/test
+      - name: branch
+        value: master
+      - name: mr
+        value: 1
+      - name: workflowServer
+        value: "ip:port"
+
+  hooks:
+    exit:
+      template: hook
+      arguments:
+        parameters:
+          - name: status
+            value: success
+    running:
+      expression: workflow.status == "Running"
+      template: hook
+      arguments:
+        parameters:
+          - name: status
+            value: running
+
+  templates:
+  - name: main
+    dag:
+      tasks:
+        - name: clone
+          template: clone
+          arguments:
+            parameters:
+              - name: repo
+                value: "{{workflow.parameters.repo}}"
+              - name: branch
+                value: "{{workflow.parameters.branch}}"
+        - name: fetch
+          template: fetch
+          depends: "clone"
+          arguments:
+            parameters:
+              - name: mr
+                value: "{{workflow.parameters.mr}}"
+        - name: checkout
+          template: checkout
+          depends: "fetch"
+          arguments:
+            parameters:
+              - name: mr
+                value: "{{workflow.parameters.mr}}"
+        - name: build
+          template: image
+          depends: "checkout"
+          arguments:
+            parameters:
+              - name: image
+                value: "{{workflow.parameters.image}}"
+              - name: path
+                value: "/work"
+
+  - name: clone
+    inputs:
+      parameters:
+        - name: repo
+        - name: branch
+    volumes:
+      - name: git-secret
+        secret:
+          defaultMode: 0400
+          secretName: gitlab-secret
+    container:
+      volumeMounts:
+        - mountPath: /work
+          name: work
+        - mountPath: /root/.ssh/
+          name: git-secret
+      image: alpine/git:v2.26.2
+      workingDir: /work
+      args:
+        - clone
+        - --depth
+        - "1"
+        - --branch
+        - "{{inputs.parameters.branch}}"
+        - --single-branch
+        - "{{inputs.parameters.repo}}"
+        - .
+  - name: fetch
+    depends: "clone"
+    inputs:
+      parameters:
+        - name: mr
+    volumes:
+      - name: git-secret
+        secret:
+          defaultMode: 0400
+          secretName: gitlab-secret
+    container:
+      volumeMounts:
+        - mountPath: /work
+          name: work
+        - mountPath: /root/.ssh/
+          name: git-secret
+      image: alpine/git:v2.26.2
+      workingDir: /work
+      args:
+        - fetch
+        - origin
+        - merge-requests/{{inputs.parameters.mr}}/head:mr-{{inputs.parameters.mr}}
+  - name: checkout
+    depends: "fetch"
+    inputs:
+      parameters:
+        - name: mr
+    volumes:
+      - name: git-secret
+        secret:
+          defaultMode: 0400
+          secretName: gitlab-secret
+    container:
+      volumeMounts:
+        - mountPath: /work
+          name: work
+        - mountPath: /root/.ssh/
+          name: git-secret
+      image: alpine/git:v2.26.2
+      workingDir: /work
+      args:
+        - checkout
+        - mr-{{inputs.parameters.mr}}
+  - name: image
+    inputs:
+      parameters:
+        - name: image
+        - name: path
+    volumes:
+      - name: docker-config
+        secret:
+          secretName: docker-config
+    container:
+      image: moby/buildkit:v0.9.3-rootless
+      volumeMounts:
+        - name: work
+          mountPath: /work
+        - name: docker-config
+          mountPath: /.docker
+      workingDir: /work/
+      securityContext:
+        privileged: true
+      env:
+        - name: BUILDKITD_FLAGS
+          value: --oci-worker-no-process-sandbox
+        - name: DOCKER_CONFIG
+          value: /.docker
+      command:
+        - buildctl-daemonless.sh
+      args:
+        - build
+        - --frontend
+        - dockerfile.v0
+        - --local
+        - context=.
+        - --local
+        - dockerfile=.
+        - --output
+        - type=image,name=docker.io/{{inputs.parameters.image}},push=true
+
+  - name: hook
+    inputs:
+      parameters:
+        - name: status
+    container:
+      image: ghcr.io/linuxsuren/gogit:v0.0.1
+      args:
+        - --provider=gitlab
+        - --repo=yaml-readme
+        - --username=linuxsuren
+        - --owner=linuxsuren
+        - --token=h-zez9CWzyzykbLoS53s
+        - --pr={{workflow.parameters.mr}}
+        - --target=https://{{workflow.parameters.workflowServer}}/workflows/default/{{workflow.name}}
+        - --status={{inputs.parameters.status}}

@@ -1,0 +1,22 @@
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowEventBinding
+metadata:
+  name: mr-event
+  namespace: default
+spec:
+  event:
+    selector: payload.event_type == "merge_request"
+  submit:
+    workflowTemplateRef:
+      name: mr-workflow
+    arguments:
+      parameters:
+      - name: message
+        valueFrom:
+          event: payload.message
+      - name: branch
+        valueFrom:
+          event: payload.object_attributes.source_branch
+      - name: mr
+        valueFrom:
+          event: payload.object_attributes.iid
