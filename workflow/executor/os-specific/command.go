@@ -5,8 +5,8 @@ import (
 	"os"
 	"os/exec"
 
-	"golang.org/x/term"
 	log "github.com/sirupsen/logrus"
+	"golang.org/x/term"
 )
 
 var logger = log.WithField("argo", true)
