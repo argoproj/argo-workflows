@@ -15,8 +15,11 @@ import (
 )
 
 func StartCommand(cmd *exec.Cmd) (func(), error) {
-
 	closer := func() {}
+
+	if cmd.Stdin == nil {
+		cmd.Stdin = os.Stdin
+	}
 
 	cmd.SysProcAttr = &syscall.SysProcAttr{}
 
@@ -34,13 +37,13 @@ func StartCommand(cmd *exec.Cmd) (func(), error) {
 	stdin, ok := cmd.Stdin.(*os.File)
 	if !ok {
 		// should never happen when stdin is a tty
-		return nil, fmt.Errorf("Cannot convert stdin to os.File")
+		return nil, fmt.Errorf("Cannot convert stdin to os.File, it was %T", cmd.Stdin)
 	}
 
 	stdout := cmd.Stdout
 	stderr := cmd.Stderr
 
-	// pyt.Start will not assign these to the pty unless they are nil
+	// pty.Start will not assign these to the pty unless they are nil
 	cmd.Stdin = nil
 	cmd.Stdout = nil
 	cmd.Stderr = nil
@@ -56,7 +59,9 @@ func StartCommand(cmd *exec.Cmd) (func(), error) {
 	go func() {
 		for range sigWinchCh {
 			// TODO: log error somehow?
-			_ = pty.InheritSize(stdin, ptmx)
+			if err := pty.InheritSize(stdin, ptmx); err != nil {
+				logger.WithError(err).Warn("Cannot resize pty")
+			}
 		}
 	}()
 

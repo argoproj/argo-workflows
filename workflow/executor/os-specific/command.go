@@ -6,7 +6,10 @@ import (
 	"os/exec"
 
 	"golang.org/x/term"
+	log "github.com/sirupsen/logrus"
 )
+
+var logger = log.WithField("argo", true)
 
 func simpleStart(cmd *exec.Cmd) (func(), error) {
 	if err := cmd.Start(); err != nil {
