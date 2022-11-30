@@ -8,28 +8,8 @@ spec:
   templates:
     - name: main
       steps:
-        - - name: ensure-bucket-not-exists
-            template: ensure-bucket-not-exists
         - - name: generate-artifact
             template: whalesay
-
-    - name: ensure-bucket-not-exists
-      script:
-        image: amazon/aws-cli
-        env:
-          - name: AWS_ACCESS_KEY_ID
-            valueFrom:
-              secretKeyRef:
-                name: my-minio-cred
-                key: accesskey
-          - name: AWS_SECRET_ACCESS_KEY
-            valueFrom:
-              secretKeyRef:
-                name: my-minio-cred
-                key: secretkey
-        command: [/bin/sh]
-        source: |
-          aws s3api delete-bucket --endpoint-url http://minio:9000 --bucket bucket-that-does-not-exist-2 || true
 
     - name: whalesay
       container:
