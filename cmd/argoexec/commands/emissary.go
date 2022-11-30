@@ -235,7 +235,10 @@ func startCommand(name string, args []string, template *wfv1.Template) (*exec.Cm
 		}
 	}
 
-	cmdCloser, err := osspecific.StartCommand(command, os.Stdin, stdout, stderr)
+	command.Stdout = stdout
+	command.Stderr = stderr
+
+	cmdCloser, err := osspecific.StartCommand(command)
 	if err != nil {
 		return nil, nil, err
 	}

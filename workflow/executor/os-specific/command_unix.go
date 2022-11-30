@@ -3,6 +3,7 @@
 package os_specific
 
 import (
+	"fmt"
 	"io"
 	"os"
 	"os/exec"
@@ -13,13 +14,13 @@ import (
 	"golang.org/x/term"
 )
 
-func StartCommand(cmd *exec.Cmd, stdin *os.File, stdout io.Writer, stderr io.Writer) (func(), error) {
+func StartCommand(cmd *exec.Cmd) (func(), error) {
 
 	closer := func() {}
 
 	cmd.SysProcAttr = &syscall.SysProcAttr{}
 
-	if !term.IsTerminal(int(stdin.Fd())) {
+	if !isTerminal(cmd.Stdin) {
 		// avoid the error "Inappropriate ioctl for device" when
 		// running in tty
 		//
@@ -27,8 +28,22 @@ func StartCommand(cmd *exec.Cmd, stdin *os.File, stdout io.Writer, stderr io.Wri
 		// the group leader already
 		Setpgid(cmd.SysProcAttr)
 
-		return simpleStart(cmd, stdout, stderr)
+		return simpleStart(cmd)
 	}
+
+	stdin, ok := cmd.Stdin.(*os.File)
+	if !ok {
+		// should never happen when stdin is a tty
+		return nil, fmt.Errorf("Cannot convert stdin to os.File")
+	}
+
+	stdout := cmd.Stdout
+	stderr := cmd.Stderr
+
+	// pyt.Start will not assign these to the pty unless they are nil
+	cmd.Stdin = nil
+	cmd.Stdout = nil
+	cmd.Stderr = nil
 
 	ptmx, err := pty.Start(cmd)
 	if err != nil {
@@ -48,17 +63,13 @@ func StartCommand(cmd *exec.Cmd, stdin *os.File, stdout io.Writer, stderr io.Wri
 	// Initial resize
 	sigWinchCh <- syscall.SIGWINCH
 
-	// Set stdin in raw mode
 	oldState, err := term.MakeRaw(int(stdin.Fd()))
 	if err != nil {
 		return nil, err
 	}
 
-	// copy from stdin to the pty
 	go func() { _, _ = io.Copy(ptmx, stdin) }()
-	// copy from pty to stdout
 	go func() { _, _ = io.Copy(stdout, ptmx) }()
-	// copy from pty to stderr
 	go func() { _, _ = io.Copy(stderr, ptmx) }()
 
 	origCloser := closer
