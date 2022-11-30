@@ -38,7 +38,7 @@ templates:
             template: approval
         - - name: deploy-prod
             template: deploy
-            when: '{{steps.approval.outputs.parameters.approve}} == YES'
+            when: "'{{steps.approval.outputs.parameters.approve}}' == 'YES'"
    - name: approval
      suspend: {}
      inputs:
