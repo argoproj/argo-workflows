@@ -1758,33 +1758,6 @@ func TestPodMetadataWithWorkflowDefaults(t *testing.T) {
 	cancel()
 }
 
-func TestPodExists(t *testing.T) {
-	cancel, controller := newController()
-	defer cancel()
-
-	wf := wfv1.MustUnmarshalWorkflow(helloWorldWf)
-	ctx := context.Background()
-	woc := newWorkflowOperationCtx(wf, controller)
-	err := woc.setExecWorkflow(ctx)
-	assert.NoError(t, err)
-	mainCtr := woc.execWf.Spec.Templates[0].Container
-	pod, err := woc.createWorkflowPod(ctx, wf.Name, []apiv1.Container{*mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
-	assert.NoError(t, err)
-	assert.NotNil(t, pod)
-
-	pods, err := listPods(woc)
-	assert.NoError(t, err)
-	assert.Len(t, pods.Items, 1)
-
-	// Sleep 1 second to wait for informer getting pod info
-	time.Sleep(time.Second)
-	existingPod, doesExist, err := woc.podExists(pod.ObjectMeta.Name)
-	assert.NoError(t, err)
-	assert.NotNil(t, existingPod)
-	assert.True(t, doesExist)
-	assert.EqualValues(t, pod, existingPod)
-}
-
 func TestProgressEnvVars(t *testing.T) {
 	setup := func(t *testing.T, options ...interface{}) (context.CancelFunc, *apiv1.Pod) {
 		cancel, controller := newController(options...)

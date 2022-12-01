@@ -2,6 +2,7 @@ package controller
 
 import (
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/workflow/controller/indexes"
 )
 
 type counter func(wfv1.NodeStatus) bool
@@ -53,8 +54,8 @@ func (woc *wfOperationCtx) getUnsuccessfulChildren(boundaryID string) int64 {
 }
 
 func (woc *wfOperationCtx) nodePodExist(node wfv1.NodeStatus) bool {
-	_, podExist, _ := woc.podExists(node.ID)
-	return podExist
+	objs, _ := woc.controller.podInformer.GetIndexer().ByIndex(indexes.NodeIDIndex, woc.wf.Namespace+"/"+node.ID)
+	return len(objs) > 0
 }
 
 func (woc *wfOperationCtx) countNodes(counter counter) int64 {

@@ -23,7 +23,6 @@ import (
 	"github.com/argoproj/argo-workflows/v3/util/template"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/controller/entrypoint"
-	"github.com/argoproj/argo-workflows/v3/workflow/controller/indexes"
 	"github.com/argoproj/argo-workflows/v3/workflow/util"
 )
 
@@ -84,12 +83,14 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 	// we must check to see if the pod exists rather than just optimistically creating the pod and see if we get
 	// an `AlreadyExists` error because we won't get that error if there is not enough resources.
 	// Performance enhancement: Code later in this func is expensive to execute, so return quickly if we can.
-	existing, exists, err := woc.podExists(nodeID)
+	podName := woc.getPodName(nodeName, tmpl.Name)
+	obj, exists, err := woc.controller.podInformer.GetStore().GetByKey(woc.wf.Namespace + "/" + podName)
 	if err != nil {
 		return nil, err
 	}
 
 	if exists {
+		existing := obj.(*apiv1.Pod)
 		woc.log.WithField("podPhase", existing.Status.Phase).Debugf("Skipped pod %s (%s) creation: already exists", nodeName, nodeID)
 		return existing, nil
 	}
@@ -159,7 +160,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 
 	pod := &apiv1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      util.GeneratePodName(woc.wf.Name, nodeName, tmpl.Name, nodeID, util.GetWorkflowPodNameVersion(woc.wf)),
+			Name:      podName,
 			Namespace: woc.wf.ObjectMeta.Namespace,
 			Labels: map[string]string{
 				common.LabelKeyWorkflow:  woc.wf.ObjectMeta.Name, // Allows filtering by pods related to specific workflow
@@ -447,21 +448,6 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 	woc.log.Infof("Created pod: %s (%s)", nodeName, created.Name)
 	woc.activePods++
 	return created, nil
-}
-
-func (woc *wfOperationCtx) podExists(nodeID string) (existing *apiv1.Pod, exists bool, err error) {
-	objs, err := woc.controller.podInformer.GetIndexer().ByIndex(indexes.NodeIDIndex, woc.wf.Namespace+"/"+nodeID)
-	if err != nil {
-		return nil, false, fmt.Errorf("failed to get pod from informer store: %w", err)
-	}
-
-	if len(objs) == 0 {
-		return nil, false, nil
-	}
-
-	existing, ok := objs[0].(*apiv1.Pod)
-
-	return existing, ok, nil
 }
 
 func (woc *wfOperationCtx) getDeadline(opts *createWorkflowPodOpts) *time.Time {
