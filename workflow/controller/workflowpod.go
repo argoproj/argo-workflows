@@ -455,21 +455,13 @@ func (woc *wfOperationCtx) podExists(nodeID string) (existing *apiv1.Pod, exists
 		return nil, false, fmt.Errorf("failed to get pod from informer store: %w", err)
 	}
 
-	objectCount := len(objs)
-
-	if objectCount == 0 {
+	if len(objs) == 0 {
 		return nil, false, nil
 	}
 
-	if objectCount > 1 {
-		return nil, false, fmt.Errorf("expected < 2 pods, got %d - this is a bug", len(objs))
-	}
+	existing, ok := objs[0].(*apiv1.Pod)
 
-	if existing, ok := objs[0].(*apiv1.Pod); ok {
-		return existing, true, nil
-	}
-
-	return nil, false, nil
+	return existing, ok, nil
 }
 
 func (woc *wfOperationCtx) getDeadline(opts *createWorkflowPodOpts) *time.Time {
