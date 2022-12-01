@@ -22,16 +22,24 @@ COPY . .
 
 ####################################################################################################
 
-FROM builder as git-build
+FROM golang:1.18-alpine3.16 as git-build
 
-RUN apk add --no-cache autoconf libc-dev zlib-dev musl-dev
+RUN apk add --no-cache \
+    curl \
+    autoconf \
+    make  \
+    gcc \
+    musl-dev \
+    libc-dev \
+    zlib-dev \
+    zlib-static
 
 RUN curl -L -o git.tar.gz https://github.com/git/git/archive/refs/tags/v2.38.1.tar.gz
 RUN tar zxvf git.tar.gz
 WORKDIR git-2.38.1
 
 RUN autoconf
-RUN ./configure prefix=/usr CFLAGS="${CFLAGS} -static"
+RUN ./configure prefix=/usr CFLAGS="${CFLAGS} -static" NO_TCLTK=1
 RUN make
 RUN make install
 
