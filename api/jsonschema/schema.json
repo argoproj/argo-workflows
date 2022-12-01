@@ -6488,7 +6488,7 @@
           "description": "ContainerSet groups multiple containers within a single pod."
         },
         "daemon": {
-          "description": "Deamon will allow a workflow to proceed to the next step so long as the container reaches readiness",
+          "description": "Daemon will allow a workflow to proceed to the next step so long as the container reaches readiness",
           "type": "boolean"
         },
         "dag": {
