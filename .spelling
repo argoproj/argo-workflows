@@ -36,6 +36,7 @@ Artifactory
 BlackRock
 Breitgand
 Couler
+ClusterRoleBinding
 DataDog
 Dataflow
 DeleteObject
@@ -93,6 +94,7 @@ Roadmap
 RoleBinding
 s3
 SDKs
+ServiceAccount
 Sharding
 Singer.io
 Snyk
@@ -217,3 +219,4 @@ yaml
 idempotence
 kube-scheduler
 kube-apiserver
+kubectl

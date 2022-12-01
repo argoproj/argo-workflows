@@ -1337,6 +1337,14 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, old *wfv1.NodeStatus
 			new.Phase = old.Phase
 		}
 	}
+	// If the init container failed, we should mark the node as failed.
+	for _, c := range pod.Status.InitContainerStatuses {
+		if c.State.Terminated != nil && int(c.State.Terminated.ExitCode) != 0 {
+			new.Phase = wfv1.NodeFailed
+			woc.log.WithField("new.phase", new.Phase).Info("marking node as failed since init container has non-zero exit code")
+			break
+		}
+	}
 
 	// if we are transitioning from Pending to a different state, clear out unchanged message
 	if old.Phase == wfv1.NodePending && new.Phase != wfv1.NodePending && old.Message == new.Message {
