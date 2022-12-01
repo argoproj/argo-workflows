@@ -32,8 +32,8 @@ func waitContainer(ctx context.Context) error {
 	defer stats.LogStats()
 	stats.StartStatsTicker(5 * time.Minute)
 
-	// use a block to constrain the scope of ctx
-	{
+	// use a function to constrain the scope of ctx
+	func() {
 		// this allows us to gracefully shutdown, capturing artifacts
 		ctx, cancel := signal.NotifyContext(ctx, syscall.SIGTERM)
 		defer cancel()
@@ -43,7 +43,7 @@ func waitContainer(ctx context.Context) error {
 		if err != nil {
 			wfExecutor.AddError(err)
 		}
-	}
+	}()
 	// Capture output script result
 	err := wfExecutor.CaptureScriptResult(ctx)
 	if err != nil {
