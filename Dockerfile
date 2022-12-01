@@ -22,6 +22,21 @@ COPY . .
 
 ####################################################################################################
 
+FROM builder as git-build
+
+RUN apk add --no-cache autoconf libc-dev zlib-dev musl-dev
+
+RUN curl -L -o git.tar.gz https://github.com/git/git/archive/refs/tags/v2.38.1.tar.gz
+RUN tar zxvf git.tar.gz
+WORKDIR git-2.38.1
+
+RUN autoconf
+RUN ./configure prefix=/usr CFLAGS="${CFLAGS} -static"
+RUN make
+RUN make install
+
+####################################################################################################
+
 FROM node:16-alpine as argo-ui
 
 RUN apk update && apk add --no-cache git
