@@ -408,6 +408,35 @@ spec:
 	})
 }
 
+func (s *ArtifactsSuite) TestGitArtifactDepthClone() {
+	s.Given().
+		Workflow(`apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: git-depth-
+spec:
+  entrypoint: git-depth
+  templates:
+  - name: git-depth
+    inputs:
+      artifacts:
+      - name: git-repo
+        path: /tmp/git
+        git:
+          repo: https://github.com/argoproj-labs/go-git.git
+          revision: master
+          depth: 1
+    container:
+      image: argoproj/argosay:v2
+      command: [sh, -c]
+      args: ["ls -l"]
+      workingDir: /tmp/git
+`).
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeSucceeded)
+}
+
 func TestArtifactsSuite(t *testing.T) {
 	suite.Run(t, new(ArtifactsSuite))
 }
