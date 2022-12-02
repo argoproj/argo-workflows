@@ -3173,20 +3173,24 @@ func (a *Artifact) GetArchive() *ArchiveStrategy {
 
 // GetTemplateByName retrieves a defined template by its name
 func (wf *Workflow) GetTemplateByName(name string) *Template {
+	fmt.Printf("deletethis: looking for template '%s' from Workflow '%s'\n", name, wf.Name)
 	for _, t := range wf.Spec.Templates {
 		if t.Name == name {
+			fmt.Printf("deletethis: found template '%s' in wf.Spec.Templates for Workflow '%s'\n", name, wf.Name)
 			return &t
 		}
 	}
 	if wf.Status.StoredWorkflowSpec != nil {
 		for _, t := range wf.Status.StoredWorkflowSpec.Templates {
 			if t.Name == name {
+				fmt.Printf("deletethis: found template '%s' in wf.Status.StoredWorkflowSpec.Templates for Workflow '%s'\n", name, wf.Name)
 				return &t
 			}
 		}
 	}
 	for _, t := range wf.Status.StoredTemplates {
 		if t.Name == name {
+			fmt.Printf("deletethis: found template '%s' in wf.Status.StoredTemplates for Workflow '%s'\n", name, wf.Name)
 			return &t
 		}
 	}

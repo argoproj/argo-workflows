@@ -145,6 +145,8 @@ func newWorkflowOperationCtx(wf *wfv1.Workflow, wfc *WorkflowController) *wfOper
 	// Or create a copy manually for better performance
 	wfCopy := wf.DeepCopyObject().(*wfv1.Workflow)
 
+	fmt.Printf("deletethis: creating wfOperationCtx using Workflow whose status=%+v\n", wf.Status)
+
 	woc := wfOperationCtx{
 		wf:      wfCopy,
 		orig:    wf,
