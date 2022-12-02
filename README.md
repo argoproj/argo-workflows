@@ -156,7 +156,7 @@ the [CNCF Code of Conduct](https://github.com/cncf/foundation/blob/master/code-o
 
 ## Project Resources
 
-* Argo GitHub:  https://github.com/argoproj
+* Codefresh Argo GitHub:  https://github.com/codefresh-io
 * Argo Website: https://argoproj.github.io/
 * Argo Slack:   [click here to join](https://argoproj.github.io/community/join-slack)
 
