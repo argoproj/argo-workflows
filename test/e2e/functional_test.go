@@ -945,7 +945,7 @@ func (s *FunctionalSuite) TestPauseBefore() {
 		Workflow(`@functional/pause-before.yaml`).
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(fixtures.ToBeRunning).
+		WaitForWorkflow(fixtures.ToHaveRunningPod).
 		Exec("bash", []string{"-c", "sleep 5 &&  kubectl exec -i $(kubectl get pods | awk '/pause-before/ {print $1;exit}') -c main -- bash -c 'touch /proc/1/root/run/argo/ctr/main/before'"}, fixtures.NoError).
 		WaitForWorkflow(fixtures.ToBeSucceeded)
 }
@@ -955,7 +955,7 @@ func (s *FunctionalSuite) TestPauseAfter() {
 		Workflow(`@functional/pause-after.yaml`).
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(fixtures.ToBeRunning).
+		WaitForWorkflow(fixtures.ToHaveRunningPod).
 		Exec("bash", []string{"-c", "sleep 5 && kubectl exec -i $(kubectl get pods -n argo | awk '/pause-after/ {print $1;exit}') -c main -- bash -c 'touch /proc/1/root/run/argo/ctr/main/after'"}, fixtures.NoError).
 		WaitForWorkflow(fixtures.ToBeSucceeded)
 }
@@ -965,7 +965,7 @@ func (s *FunctionalSuite) TestPauseAfterAndBefore() {
 		Workflow(`@functional/pause-before-after.yaml`).
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(fixtures.ToBeRunning).
+		WaitForWorkflow(fixtures.ToHaveRunningPod).
 		Exec("bash", []string{"-c", "sleep 5 && kubectl exec -i $(kubectl get pods | awk '/pause-before-after/ {print $1;exit}') -c main -- bash -c 'touch /proc/1/root/run/argo/ctr/main/before'"}, fixtures.NoError).
 		Exec("bash", []string{"-c", "kubectl exec -i $(kubectl get pods | awk '/pause-before-after/ {print $1;exit}') -c main -- bash -c 'touch /proc/1/root/run/argo/ctr/main/after'"}, fixtures.NoError).
 		WaitForWorkflow(fixtures.ToBeSucceeded)
@@ -1153,4 +1153,12 @@ spec:
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeFailed)
+}
+
+func (s *FunctionalSuite) TestTTY() {
+	s.Given().
+		Workflow(`@functional/tty.yaml`).
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeSucceeded)
 }

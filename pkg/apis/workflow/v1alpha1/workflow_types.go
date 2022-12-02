@@ -641,7 +641,7 @@ type Template struct {
 	// Metdata sets the pods's metadata, i.e. annotations and labels
 	Metadata Metadata `json:"metadata,omitempty" protobuf:"bytes,9,opt,name=metadata"`
 
-	// Deamon will allow a workflow to proceed to the next step so long as the container reaches readiness
+	// Daemon will allow a workflow to proceed to the next step so long as the container reaches readiness
 	Daemon *bool `json:"daemon,omitempty" protobuf:"bytes,10,opt,name=daemon"`
 
 	// Steps define a series of sequential/parallel workflow steps
@@ -2212,7 +2212,7 @@ func (n NodeStatus) Pending() bool {
 	return n.Phase == NodePending
 }
 
-// IsDaemoned returns whether or not the node is deamoned
+// IsDaemoned returns whether or not the node is daemoned
 func (n NodeStatus) IsDaemoned() bool {
 	if n.Daemoned == nil || !*n.Daemoned {
 		return false
@@ -3062,7 +3062,8 @@ func (t *DAGTask) ShouldExpand() bool {
 
 // SuspendTemplate is a template subtype to suspend a workflow at a predetermined point in time
 type SuspendTemplate struct {
-	// Duration is the seconds to wait before automatically resuming a template
+	// Duration is the seconds to wait before automatically resuming a template. Must be a string. Default unit is seconds.
+	// Could also be a Duration, e.g.: "2m", "6h", "1d"
 	Duration string `json:"duration,omitempty" protobuf:"bytes,1,opt,name=duration"`
 }
 

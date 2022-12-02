@@ -10302,7 +10302,7 @@
       "type": "object",
       "properties": {
         "duration": {
-          "description": "Duration is the seconds to wait before automatically resuming a template",
+          "description": "Duration is the seconds to wait before automatically resuming a template. Must be a string. Default unit is seconds. Could also be a Duration, e.g.: \"2m\", \"6h\", \"1d\"",
           "type": "string"
         }
       }
@@ -10392,7 +10392,7 @@
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ContainerSetTemplate"
         },
         "daemon": {
-          "description": "Deamon will allow a workflow to proceed to the next step so long as the container reaches readiness",
+          "description": "Daemon will allow a workflow to proceed to the next step so long as the container reaches readiness",
           "type": "boolean"
         },
         "dag": {

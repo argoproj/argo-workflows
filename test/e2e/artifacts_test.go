@@ -4,11 +4,13 @@
 package e2e
 
 import (
+	"context"
 	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
@@ -67,6 +69,7 @@ func (s *ArtifactsSuite) TestArtifactGC() {
 
 	s.Given().
 		WorkflowTemplate("@testdata/artifactgc/artgc-template.yaml").
+		WorkflowTemplate("@testdata/artifactgc/artgc-template-2.yaml").
 		When().
 		CreateWorkflowTemplates()
 
@@ -95,11 +98,27 @@ func (s *ArtifactsSuite) TestArtifactGC() {
 			},
 		},
 		{
+			workflowFile:                 "@testdata/artifactgc/artgc-from-template-2.yaml",
+			expectedGCPodsOnWFCompletion: 1,
+			expectedArtifacts: []artifactState{
+				artifactState{"on-completion", "my-bucket-2", true, false},
+				artifactState{"on-deletion", "my-bucket-2", false, true},
+			},
+		},
+		{
 			workflowFile:                 "@testdata/artifactgc/artgc-step-wf-tmpl.yaml",
 			expectedGCPodsOnWFCompletion: 1,
 			expectedArtifacts: []artifactState{
 				artifactState{"on-completion", "my-bucket-2", true, false},
 				artifactState{"on-deletion", "my-bucket-2", false, true},
+			},
+		},
+		{
+			workflowFile:                 "@testdata/artifactgc/artgc-step-wf-tmpl-2.yaml",
+			expectedGCPodsOnWFCompletion: 1,
+			expectedArtifacts: []artifactState{
+				artifactState{"on-completion", "my-bucket-2", true, false},
+				artifactState{"on-deletion", "my-bucket-2", false, false},
 			},
 		},
 	} {
@@ -176,6 +195,64 @@ func (s *ArtifactsSuite) TestArtifactGC() {
 			}
 		}
 	}
+}
+
+// create a ServiceAccount which won't be tied to the artifactgc role and attempt to use that service account in the GC Pod
+// Want to verify that this causes the ArtifactGCError Condition in the Workflow
+func (s *ArtifactsSuite) TestArtifactGC_InsufficientRole() {
+	ctx := context.Background()
+	_, err := s.KubeClient.CoreV1().ServiceAccounts(fixtures.Namespace).Create(ctx, &corev1.ServiceAccount{ObjectMeta: metav1.ObjectMeta{Name: "artgc-role-test-sa"}}, metav1.CreateOptions{})
+	assert.NoError(s.T(), err)
+	s.T().Cleanup(func() {
+		_ = s.KubeClient.CoreV1().ServiceAccounts(fixtures.Namespace).Delete(ctx, "artgc-role-test-sa", metav1.DeleteOptions{})
+	})
+
+	s.Given().Workflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: art-gc-simple-
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    container:
+      image: argoproj/argosay:v2
+      command:
+        - sh
+        - -c
+      args:
+        - |
+          echo "can throw this away" > /tmp/temporary-artifact-on-completion.txt
+    outputs:
+      artifacts:
+        - name: temporary-artifact-on-completion
+          path: /tmp/temporary-artifact-on-completion.txt
+          s3:
+            key: temporary-artifact-on-completion.txt
+          artifactGC:
+            strategy: OnWorkflowCompletion
+            serviceAccountName: artgc-role-test-sa`).
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(
+			fixtures.WorkflowCompletionOkay(true),
+			fixtures.Condition(func(wf *wfv1.Workflow) (bool, string) {
+				return wf.Status.ArtifactGCStatus != nil &&
+					len(wf.Status.ArtifactGCStatus.PodsRecouped) == 1, "for pod to have been recouped"
+			})).
+		Then().
+		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			failCondition := false
+			for _, c := range status.Conditions {
+				if c.Type == wfv1.ConditionTypeArtifactGCError {
+					failCondition = true
+				}
+			}
+			assert.Equal(t, true, failCondition)
+		}).
+		When().
+		RemoveFinalizers(true)
 }
 
 func (s *ArtifactsSuite) TestDefaultParameterOutputs() {
@@ -329,6 +406,35 @@ spec:
 				}
 			})
 	})
+}
+
+func (s *ArtifactsSuite) TestGitArtifactDepthClone() {
+	s.Given().
+		Workflow(`apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: git-depth-
+spec:
+  entrypoint: git-depth
+  templates:
+  - name: git-depth
+    inputs:
+      artifacts:
+      - name: git-repo
+        path: /tmp/git
+        git:
+          repo: https://github.com/argoproj-labs/go-git.git
+          revision: master
+          depth: 1
+    container:
+      image: argoproj/argosay:v2
+      command: [sh, -c]
+      args: ["ls -l"]
+      workingDir: /tmp/git
+`).
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeSucceeded)
 }
 
 func TestArtifactsSuite(t *testing.T) {

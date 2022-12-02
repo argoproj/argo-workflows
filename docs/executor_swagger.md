@@ -4337,7 +4337,8 @@ Namespaces that do not pre-exist within StorageOS will be created.
 
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
-| duration | string| `string` |  | | Duration is the seconds to wait before automatically resuming a template |  |
+| duration | string| `string` |  | | Duration is the seconds to wait before automatically resuming a template. Must be a string. Default unit is seconds.
+Could also be a Duration, e.g.: "2m", "6h", "1d" |  |
 
 
 
@@ -4453,7 +4454,7 @@ Defaults to gzip.DefaultCompression. |  |
 ServiceAccountName of ExecutorConfig must be specified if this value is false. |  |
 | container | [Container](#container)| `Container` |  | |  |  |
 | containerSet | [ContainerSetTemplate](#container-set-template)| `ContainerSetTemplate` |  | |  |  |
-| daemon | boolean| `bool` |  | | Deamon will allow a workflow to proceed to the next step so long as the container reaches readiness |  |
+| daemon | boolean| `bool` |  | | Daemon will allow a workflow to proceed to the next step so long as the container reaches readiness |  |
 | dag | [DAGTemplate](#d-a-g-template)| `DAGTemplate` |  | |  |  |
 | data | [Data](#data)| `Data` |  | |  |  |
 | executor | [ExecutorConfig](#executor-config)| `ExecutorConfig` |  | |  |  |

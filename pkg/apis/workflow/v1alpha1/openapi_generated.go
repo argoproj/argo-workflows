@@ -5778,7 +5778,7 @@ func schema_pkg_apis_workflow_v1alpha1_SuspendTemplate(ref common.ReferenceCallb
 				Properties: map[string]spec.Schema{
 					"duration": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Duration is the seconds to wait before automatically resuming a template",
+							Description: "Duration is the seconds to wait before automatically resuming a template. Must be a string. Default unit is seconds. Could also be a Duration, e.g.: \"2m\", \"6h\", \"1d\"",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -5956,7 +5956,7 @@ func schema_pkg_apis_workflow_v1alpha1_Template(ref common.ReferenceCallback) co
 					},
 					"daemon": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Deamon will allow a workflow to proceed to the next step so long as the container reaches readiness",
+							Description: "Daemon will allow a workflow to proceed to the next step so long as the container reaches readiness",
 							Type:        []string{"boolean"},
 							Format:      "",
 						},

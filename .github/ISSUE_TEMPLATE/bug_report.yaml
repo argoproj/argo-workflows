@@ -36,6 +36,7 @@ body:
     id: controller-logs
     attributes:
       label: Logs from the workflow controller
+      render: text
       value: kubectl logs -n argo deploy/workflow-controller | grep ${workflow}
     validations:
       required: true
@@ -43,6 +44,7 @@ body:
     id: wait-logs
     attributes:
       label: Logs from in your workflow's wait container
+      render: text
       value: kubectl logs -n argo -c wait -l workflows.argoproj.io/workflow=${workflow},workflow.argoproj.io/phase!=Succeeded
     validations:
       required: true
