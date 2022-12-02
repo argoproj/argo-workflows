@@ -2,6 +2,8 @@
 #
 # Auto trigger the workflowTemplate once the Gitlab merge request was created or updated.
 #
+# Please make sure replace all the <placeholder> before you try this template.
+#
 apiVersion: argoproj.io/v1alpha1
 kind: WorkflowTemplate
 metadata:
@@ -12,9 +14,9 @@ spec:
   arguments:
     parameters:
       - name: repo
-        value: git@gitlab.com:linuxsuren/gogit.git
+        value: git@gitlab.com:<owner-name-of-repository>/<repository-name>.git
       - name: image
-        value: surenpi/test
+        value: <image-name>
       - name: branch
         value: master
       - name: mr
@@ -188,10 +190,10 @@ spec:
       image: ghcr.io/linuxsuren/gogit:v0.0.1
       args:
         - --provider=gitlab
-        - --repo=yaml-readme
-        - --username=linuxsuren
-        - --owner=linuxsuren
-        - --token=h-zez9CWzyzykbLoS53s
+        - --repo=<repository-name>
+        - --username=<user-name>
+        - --owner=<owner-name-of-repository>
+        - --token=<token>
         - --pr={{workflow.parameters.mr}}
         - --target=https://{{workflow.parameters.workflowServer}}/workflows/default/{{workflow.name}}
         - --status={{inputs.parameters.status}}
