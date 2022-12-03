@@ -84,7 +84,12 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 	// an `AlreadyExists` error because we won't get that error if there is not enough resources.
 	// Performance enhancement: Code later in this func is expensive to execute, so return quickly if we can.
 	podName := woc.getPodName(nodeName, tmpl.Name)
-	obj, exists, err := woc.controller.podInformer.GetStore().GetByKey(woc.wf.Namespace + "/" + podName)
+	namespace := woc.wf.Namespace
+	key := namespace + "/" + podName
+	if namespace == "" {
+		key = podName // namespace is only "" in tests
+	}
+	obj, exists, err := woc.controller.podInformer.GetStore().GetByKey(key)
 	if err != nil {
 		return nil, err
 	}

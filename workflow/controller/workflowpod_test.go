@@ -1247,7 +1247,7 @@ func Test_createSecretVolumesFromArtifactLocations_SSECUsed(t *testing.T) {
 
 	mainCtr := woc.execWf.Spec.Templates[0].Container
 	pod, err := woc.createWorkflowPod(ctx, wf.Name, []apiv1.Container{*mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
-	if assert.NoError(t, err) {
+	if assert.NoError(t, err) && assert.NotNil(t, pod) {
 		assert.Contains(t, pod.Spec.Volumes, wantVolume)
 		assert.Len(t, pod.Spec.InitContainers, 1)
 		assert.Contains(t, pod.Spec.InitContainers[0].VolumeMounts, wantInitContainerVolumeMount)
