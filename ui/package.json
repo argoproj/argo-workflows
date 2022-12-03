@@ -55,7 +55,7 @@
         "@types/react-datepicker": "^2.11.0",
         "@types/react-dom": "^16.8.2",
         "@types/react-form": "^2.16.1",
-        "@types/react-helmet": "^6.1.0",
+        "@types/react-helmet": "^6.1.6",
         "@types/react-router-dom": "^4.2.3",
         "@types/superagent": "^4.1.15",
         "@types/swagger-ui-react": "^4.11.0",
