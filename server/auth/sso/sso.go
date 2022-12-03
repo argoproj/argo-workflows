@@ -277,7 +277,6 @@ func (s *sso) HandleCallback(w http.ResponseWriter, r *http.Request) {
 			Expiry:  jwt.NewNumericDate(time.Now().Add(s.expiry)),
 		},
 		Groups:                  groups,
-		RawClaim:                c.RawClaim,
 		Email:                   c.Email,
 		EmailVerified:           c.EmailVerified,
 		ServiceAccountName:      c.ServiceAccountName,
