@@ -13,4 +13,4 @@ spec:
         - - name: main
             templateRef:
               name: artgc-template
-              template: artgc-template
+              template: artgc-template-main
