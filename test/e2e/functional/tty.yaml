@@ -1,0 +1,35 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: tty-
+spec:
+  entrypoint: entrypoint
+  templates:
+    - name: entrypoint
+      steps:
+        - - name: tty-true
+            template: tty-true
+          - name: tty-false
+            template: tty-false
+
+    - name: tty-true
+      script:
+        tty: true
+        stdin: true
+        image: alpine:latest
+        command: [sh]
+        source: |
+          if [[ ! -t 0 ]]; then
+            echo "I should be in a terminal but I'm not"
+            exit 1
+          fi
+
+    - name: tty-false
+      script:
+        image: alpine:latest
+        command: [sh]
+        source: |
+          if [[ -t 0 ]]; then
+            echo "I should not be in a terminal but I am"
+            exit 1
+          fi

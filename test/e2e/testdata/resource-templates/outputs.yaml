@@ -1,0 +1,31 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: outputs-
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      resource:
+        action: create
+        setOwnerReference: true
+        successCondition: status.phase == Succeeded
+        failureCondition: status.phase == Failed
+        manifest: |
+          apiVersion: v1
+          kind: Pod
+          metadata:
+            name: my-pod
+          spec:
+            containers:
+            - name: main
+              image: argoproj/argosay:v2
+            restartPolicy: Never
+      outputs:
+        parameters:
+          - name: json
+            valueFrom:
+              jsonPath: '{.metadata.name}'
+          - name: jq
+            valueFrom:
+              jqFilter: '.metadata.name'

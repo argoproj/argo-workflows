@@ -46,7 +46,7 @@ func NewServerCommand() *cobra.Command {
 		baseHRef                 string
 		secure                   bool
 		tlsCertificateSecretName string
-		htst                     bool
+		hsts                     bool
 		namespaced               bool   // --namespaced
 		managedNamespace         string // --managed-namespace
 		enableOpenBrowser        bool
@@ -56,6 +56,8 @@ func NewServerCommand() *cobra.Command {
 		frameOptions             string
 		accessControlAllowOrigin string
 		apiRateLimit             uint64
+		kubeAPIQPS               float32
+		kubeAPIBurst             int
 		allowedLinkProtocol      []string
 		logFormat                string // --log-format
 	)
@@ -77,8 +79,8 @@ See %s`, help.ArgoServer),
 			}
 			version := argo.GetVersion()
 			config = restclient.AddUserAgent(config, fmt.Sprintf("argo-workflows/%s argo-server", version.Version))
-			config.Burst = 30
-			config.QPS = 20.0
+			config.Burst = kubeAPIBurst
+			config.QPS = kubeAPIQPS
 
 			namespace := client.Namespace()
 			clients := &types.Clients{
@@ -153,7 +155,7 @@ See %s`, help.ArgoServer),
 			opts := apiserver.ArgoServerOpts{
 				BaseHRef:                 baseHRef,
 				TLSConfig:                tlsConfig,
-				HSTS:                     htst,
+				HSTS:                     hsts,
 				Namespaced:               namespaced,
 				Namespace:                namespace,
 				Clients:                  clients,
@@ -217,7 +219,8 @@ See %s`, help.ArgoServer),
 	command.Flags().StringVar(&baseHRef, "basehref", defaultBaseHRef, "Value for base href in index.html. Used if the server is running behind reverse proxy under subpath different from /. Defaults to the environment variable BASE_HREF.")
 	// "-e" for encrypt, like zip
 	command.Flags().BoolVarP(&secure, "secure", "e", true, "Whether or not we should listen on TLS.")
-	command.Flags().BoolVar(&htst, "hsts", true, "Whether or not we should add a HTTP Secure Transport Security header. This only has effect if secure is enabled.")
+	command.Flags().StringVar(&tlsCertificateSecretName, "tls-certificate-secret-name", "", "The name of a Kubernetes secret that contains the server certificates")
+	command.Flags().BoolVar(&hsts, "hsts", true, "Whether or not we should add a HTTP Secure Transport Security header. This only has effect if secure is enabled.")
 	command.Flags().StringArrayVar(&authModes, "auth-mode", []string{"client"}, "API server authentication mode. Any 1 or more length permutation of: client,server,sso")
 	command.Flags().StringVar(&configMap, "configmap", common.ConfigMapName, "Name of K8s configmap to retrieve workflow controller configuration")
 	command.Flags().BoolVar(&namespaced, "namespaced", false, "run as namespaced mode")
@@ -231,6 +234,8 @@ See %s`, help.ArgoServer),
 	command.Flags().Uint64Var(&apiRateLimit, "api-rate-limit", 1000, "Set limit per IP for api ratelimiter")
 	command.Flags().StringArrayVar(&allowedLinkProtocol, "allowed-link-protocol", defaultAllowedLinkProtocol, "Allowed link protocol in configMap. Used if the allowed configMap links protocol are different from http,https. Defaults to the environment variable ALLOWED_LINK_PROTOCOL")
 	command.Flags().StringVar(&logFormat, "log-format", "text", "The formatter to use for logs. One of: text|json")
+	command.Flags().Float32Var(&kubeAPIQPS, "kube-api-qps", 20.0, "QPS to use while talking with kube-apiserver.")
+	command.Flags().IntVar(&kubeAPIBurst, "kube-api-burst", 30, "Burst to use while talking with kube-apiserver.")
 
 	viper.AutomaticEnv()
 	viper.SetEnvPrefix("ARGO")

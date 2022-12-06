@@ -28,10 +28,13 @@ See https://argoproj.github.io/argo-workflows/argo-server/
       --event-worker-count int               how many event workers to run (default 4)
   -h, --help                                 help for server
       --hsts                                 Whether or not we should add a HTTP Secure Transport Security header. This only has effect if secure is enabled. (default true)
+      --kube-api-burst int                   Burst to use while talking with kube-apiserver. (default 30)
+      --kube-api-qps float32                 QPS to use while talking with kube-apiserver. (default 20)
       --log-format string                    The formatter to use for logs. One of: text|json (default "text")
       --managed-namespace string             namespace that watches, default to the installation namespace
       --namespaced                           run as namespaced mode
   -p, --port int                             Port to listen on (default 2746)
+      --tls-certificate-secret-name string   The name of a Kubernetes secret that contains the server certificates
       --x-frame-options string               Set X-Frame-Options header in HTTP responses. (default "DENY")
 ```
 

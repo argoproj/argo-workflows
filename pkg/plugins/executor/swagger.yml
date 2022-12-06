@@ -3974,7 +3974,7 @@ definitions:
       containerSet:
         $ref: '#/definitions/ContainerSetTemplate'
       daemon:
-        description: Deamon will allow a workflow to proceed to the next step so long
+        description: Daemon will allow a workflow to proceed to the next step so long
           as the container reaches readiness
         type: boolean
       dag:
