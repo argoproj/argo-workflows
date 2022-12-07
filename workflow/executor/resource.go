@@ -1,6 +1,7 @@
 package executor
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -294,37 +295,32 @@ func (we *WorkflowExecutor) SaveResourceParameters(ctx context.Context, resource
 			we.Template.Outputs.Parameters[i].Value = wfv1.AnyStringPtr(output)
 			continue
 		}
-		var cmd *exec.Cmd
+		outputFormat := ""
 		if param.ValueFrom.JSONPath != "" {
-			args := []string{"get", resourceName, "-o", fmt.Sprintf("jsonpath=%s", param.ValueFrom.JSONPath)}
-			if resourceNamespace != "" {
-				args = append(args, "-n", resourceNamespace)
-			}
-			cmd = exec.Command("kubectl", args...)
+			outputFormat = fmt.Sprintf("jsonpath=%s", param.ValueFrom.JSONPath)
 		} else if param.ValueFrom.JQFilter != "" {
-			resArgs := []string{resourceName}
-			if resourceNamespace != "" {
-				resArgs = append(resArgs, "-n", resourceNamespace)
-			}
-			cmdStr := fmt.Sprintf("kubectl get %s -o json | jq -rc '%s'", strings.Join(resArgs, " "), param.ValueFrom.JQFilter)
-			cmd = exec.Command(cmdStr)
+			outputFormat = "json"
 		} else {
 			continue
 		}
-		log.Info(cmd.Args)
-		out, err := cmd.Output()
+		kubectl := exec.Command("kubectl", "-n", resourceNamespace, "get", resourceName, "-o", outputFormat)
+		out, err := kubectl.Output()
+		log.WithError(err).WithField("out", string(out)).WithField("args", kubectl.Args).Info("kubectl")
 		if err != nil {
-			// We have a default value to use instead of returning an error
-			if param.ValueFrom.Default != nil {
-				out = []byte(param.ValueFrom.Default.String())
-			} else {
-				if exErr, ok := err.(*exec.ExitError); ok {
-					log.Errorf("`%s` stderr:\n%s", cmd.Args, string(exErr.Stderr))
-				}
-				return errors.InternalWrapError(err)
-			}
+			return err
 		}
 		output := string(out)
+		if param.ValueFrom.JQFilter != "" {
+			jq := exec.Command("jq", "-rc", param.ValueFrom.JQFilter)
+			jq.Stdin = bytes.NewBuffer(out)
+			out, err := jq.Output()
+			log.WithError(err).WithField("out", string(out)).WithField("args", jq.Args).Info("jq")
+			if err != nil {
+				return err
+			}
+			output = strings.TrimSpace(string(out))
+		}
+
 		we.Template.Outputs.Parameters[i].Value = wfv1.AnyStringPtr(output)
 		log.Infof("Saved output parameter: %s, value: %s", param.Name, output)
 	}

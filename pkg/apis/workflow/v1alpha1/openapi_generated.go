@@ -5956,7 +5956,7 @@ func schema_pkg_apis_workflow_v1alpha1_Template(ref common.ReferenceCallback) co
 					},
 					"daemon": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Deamon will allow a workflow to proceed to the next step so long as the container reaches readiness",
+							Description: "Daemon will allow a workflow to proceed to the next step so long as the container reaches readiness",
 							Type:        []string{"boolean"},
 							Format:      "",
 						},

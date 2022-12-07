@@ -56,6 +56,8 @@ func NewServerCommand() *cobra.Command {
 		frameOptions             string
 		accessControlAllowOrigin string
 		apiRateLimit             uint64
+		kubeAPIQPS               float32
+		kubeAPIBurst             int
 		allowedLinkProtocol      []string
 		logFormat                string // --log-format
 	)
@@ -77,8 +79,8 @@ See %s`, help.ArgoServer),
 			}
 			version := argo.GetVersion()
 			config = restclient.AddUserAgent(config, fmt.Sprintf("argo-workflows/%s argo-server", version.Version))
-			config.Burst = 30
-			config.QPS = 20.0
+			config.Burst = kubeAPIBurst
+			config.QPS = kubeAPIQPS
 
 			namespace := client.Namespace()
 			clients := &types.Clients{
@@ -232,6 +234,8 @@ See %s`, help.ArgoServer),
 	command.Flags().Uint64Var(&apiRateLimit, "api-rate-limit", 1000, "Set limit per IP for api ratelimiter")
 	command.Flags().StringArrayVar(&allowedLinkProtocol, "allowed-link-protocol", defaultAllowedLinkProtocol, "Allowed link protocol in configMap. Used if the allowed configMap links protocol are different from http,https. Defaults to the environment variable ALLOWED_LINK_PROTOCOL")
 	command.Flags().StringVar(&logFormat, "log-format", "text", "The formatter to use for logs. One of: text|json")
+	command.Flags().Float32Var(&kubeAPIQPS, "kube-api-qps", 20.0, "QPS to use while talking with kube-apiserver.")
+	command.Flags().IntVar(&kubeAPIBurst, "kube-api-burst", 30, "Burst to use while talking with kube-apiserver.")
 
 	viper.AutomaticEnv()
 	viper.SetEnvPrefix("ARGO")

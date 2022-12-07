@@ -6,8 +6,8 @@ import (
 	"syscall"
 )
 
-func IsSIGCHLD(s os.Signal) bool {
-	return false // this does not exist on windows
+func CanIgnoreSignal(s os.Signal) bool {
+	return false
 }
 
 func Kill(pid int, s syscall.Signal) error {
