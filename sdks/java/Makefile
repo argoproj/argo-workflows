@@ -41,7 +41,7 @@ generate:
 		--group-id io.argoproj.workflow \
 		--artifact-id argo-client-java \
 		--artifact-version $(VERSION) \
-		--import-mappings Time=java.time.Instant \
+		--import-mappings Time=java.util.Date \
 		--import-mappings Affinity=io.kubernetes.client.openapi.models.V1Affinity \
 		--import-mappings ConfigMapKeySelector=io.kubernetes.client.openapi.models.V1ConfigMapKeySelector \
 		--import-mappings Container=io.kubernetes.client.openapi.models.V1Container \
