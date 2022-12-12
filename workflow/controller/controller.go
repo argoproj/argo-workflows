@@ -402,8 +402,16 @@ func (wfc *WorkflowController) runConfigMapWatcher(stopCh <-chan struct{}) {
 				continue
 			}
 			log.Debugf("received config map %s/%s update", cm.Namespace, cm.Name)
+			if cm.GetName() == wfc.configController.GetName() && wfc.namespace == cm.GetNamespace() {
+				log.Infof("Received Workflow Controller config map %s/%s update", cm.Namespace, cm.Name)
+				err := wfc.updateConfig()
+				if err != nil {
+					log.Errorf("Failed update the Workflow Controller config map. error: %v", err)
+				}
+				log.Infof("Successfully Workflow Controller config map %s/%s updated", cm.Namespace, cm.Name)
+				continue
+			}
 			wfc.notifySemaphoreConfigUpdate(cm)
-
 		case <-stopCh:
 			return
 		}
@@ -1081,28 +1089,6 @@ func (wfc *WorkflowController) newConfigMapInformer() cache.SharedIndexInformer 
 					namespace, name, _ := cache.SplitMetaNamespaceKey(key)
 					delete(wfc.executorPlugins[namespace], name)
 					log.WithField("namespace", namespace).WithField("name", name).Info("Executor plugin removed")
-				},
-			},
-		})
-		indexInformer.AddEventHandler(cache.FilteringResourceEventHandler{
-			FilterFunc: func(obj interface{}) bool {
-				cm, err := meta.Accessor(obj)
-				if err != nil {
-					return false
-				}
-				return cm.GetName() == wfc.configController.GetName() && wfc.namespace == cm.GetNamespace()
-			},
-			Handler: cache.ResourceEventHandlerFuncs{
-				UpdateFunc: func(_, obj interface{}) {
-					cm := obj.(*apiv1.ConfigMap)
-					err := wfc.updateConfig()
-					if err != nil {
-						log.WithField("namespace", cm.GetNamespace()).
-							WithField("name", cm.GetName()).
-							WithError(err).
-							Error("failed to update Controller config map")
-						return
-					}
 				},
 			},
 		})
