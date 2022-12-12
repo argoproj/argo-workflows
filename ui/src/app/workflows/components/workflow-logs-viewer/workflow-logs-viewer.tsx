@@ -80,9 +80,10 @@ export const WorkflowLogsViewer = ({workflow, nodeId, initialPodName, container,
     const [uiTimezone, setUITimezone] = useState<string>(DEFAULT_TZ);
     // timezone used for timezone formatting
     const [timezone, setTimezone] = useLocalStorage<string>(TZ_LOCALSTORAGE_KEY, DEFAULT_TZ);
-    // list of timezones moment tz supports
+    // list of timezones the moment-timezone library supports
     const [timezones, setTimezones] = useState<string[]>([]);
 
+    // update the UI everytime the timezone changes
     useEffect(() => {
         setUITimezone(timezone);
     }, [timezone]);
@@ -194,10 +195,8 @@ export const WorkflowLogsViewer = ({workflow, nodeId, initialPodName, container,
                             items={filteredTimezones}
                             value={uiTimezone}
                             onChange={v => setUITimezone(v.target.value)}
-                            onSelect={tz => {
-                                setUITimezone(tz);
-                                setTimezone(tz);
-                            }}
+                            // useEffect ensures UITimezone is also changed
+                            onSelect={setTimezone}
                         />
                     </div>
                 </span>
