@@ -1070,6 +1070,7 @@ func (wfc *WorkflowController) newConfigMapInformer() cache.SharedIndexInformer 
 							Error("failed to convert configmap to plugin")
 						return
 					}
+
 					wfc.executorPlugins[cm.GetNamespace()][cm.GetName()] = p
 					log.WithField("namespace", cm.GetNamespace()).
 						WithField("name", cm.GetName()).
@@ -1083,6 +1084,29 @@ func (wfc *WorkflowController) newConfigMapInformer() cache.SharedIndexInformer 
 				},
 			},
 		})
+		indexInformer.AddEventHandler(cache.FilteringResourceEventHandler{
+			FilterFunc: func(obj interface{}) bool {
+				cm, err := meta.Accessor(obj)
+				if err != nil {
+					return false
+				}
+				return cm.GetName() == wfc.configController.GetName() && wfc.namespace == cm.GetNamespace()
+			},
+			Handler: cache.ResourceEventHandlerFuncs{
+				UpdateFunc: func(_, obj interface{}) {
+					cm := obj.(*apiv1.ConfigMap)
+					err := wfc.updateConfig()
+					if err != nil {
+						log.WithField("namespace", cm.GetNamespace()).
+							WithField("name", cm.GetName()).
+							WithError(err).
+							Error("failed to update Controller config map")
+						return
+					}
+				},
+			},
+		})
+
 	}
 	return indexInformer
 }
