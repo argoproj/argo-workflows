@@ -34,6 +34,7 @@ func (woc *wfOperationCtx) FindRetryNode(nodes wfv1.Nodes, nodeID string) *wfv1.
 				return &node
 			}
 		}
+		return nil
 	}
 	// if we can't find it with boundaryID try getting it from the node template
 	template, err := woc.GetNodeTemplate(&node)
