@@ -57,7 +57,7 @@ func NewLintCommand() *cobra.Command {
 	command.Flags().StringSliceVar(&lintKinds, "kinds", []string{"all"}, fmt.Sprintf("Which kinds will be linted. Can be: %s", strings.Join(allKinds, "|")))
 	command.Flags().StringVarP(&output, "output", "o", "pretty", "Linting results output format. One of: pretty|simple")
 	command.Flags().BoolVar(&strict, "strict", true, "Perform strict workflow validation")
-	command.Flags().BoolVar(&offline, "offline", false, "perform offline linting. When using this mode, you should provide the entire list of Argo Workflows resources as arguments, in order to allow ref resolution.")
+	command.Flags().BoolVar(&offline, "offline", false, "perform offline linting. For resources referencing other resources, the references will be resolved from the provided args")
 
 	return command
 }

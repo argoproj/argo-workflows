@@ -24,7 +24,7 @@ argo lint FILE... [flags]
 ```
   -h, --help            help for lint
       --kinds strings   Which kinds will be linted. Can be: workflows|workflowtemplates|cronworkflows|clusterworkflowtemplates (default [all])
-      --offline         perform offline linting. When using this mode, you should provide the entire list of Argo Workflows resources as arguments, in order to allow ref resolution.
+      --offline         perform offline linting. For resources referencing other resources, the references will be resolved from the provided args
   -o, --output string   Linting results output format. One of: pretty|simple (default "pretty")
       --strict          Perform strict workflow validation (default true)
 ```
