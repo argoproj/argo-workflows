@@ -829,8 +829,3 @@ spec:
 	podCleanupKey := "test/my-wf/labelPodCompleted"
 	assert.Equal(t, 0, controller.podCleanupQueue.NumRequeues(podCleanupKey))
 }
-
-func TestAutoUpdateControllerConfigmap(t *testing.T) {
-	cancel, controller := newController()
-	defer cancel()
-}
