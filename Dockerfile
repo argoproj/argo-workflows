@@ -86,6 +86,7 @@ FROM bitnami/kubectl:1.24.8 as kubectl
 
 FROM gcr.io/distroless/static as argoexec
 
+COPY --from=builder /usr/bin/git /bin/
 COPY --from=kubectl /opt/bitnami/kubectl/bin/kubectl /bin/
 COPY --from=argoexec-build /usr/local/bin/jq /bin/
 COPY --from=argoexec-build /go/src/github.com/argoproj/argo-workflows/dist/argoexec /bin/
