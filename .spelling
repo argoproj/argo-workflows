@@ -224,3 +224,4 @@ MutexStatus
 SemaphoreStatus
 structs
 mutexes
+ConfigMap
