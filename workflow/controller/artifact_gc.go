@@ -154,7 +154,7 @@ func (woc *wfOperationCtx) processArtifactGCStrategy(ctx context.Context, strate
 		}
 		template, found := templatesByName[templateName]
 		if !found {
-			template = woc.execWf.GetTemplateByName(templateName)
+			template = woc.wf.GetTemplateByName(templateName)
 			if template == nil {
 				return fmt.Errorf("can't process Artifact GC Strategy %s: template name %q belonging to node %+v not found??", strategy, templateName, node)
 			}

@@ -4454,7 +4454,7 @@ Defaults to gzip.DefaultCompression. |  |
 ServiceAccountName of ExecutorConfig must be specified if this value is false. |  |
 | container | [Container](#container)| `Container` |  | |  |  |
 | containerSet | [ContainerSetTemplate](#container-set-template)| `ContainerSetTemplate` |  | |  |  |
-| daemon | boolean| `bool` |  | | Deamon will allow a workflow to proceed to the next step so long as the container reaches readiness |  |
+| daemon | boolean| `bool` |  | | Daemon will allow a workflow to proceed to the next step so long as the container reaches readiness |  |
 | dag | [DAGTemplate](#d-a-g-template)| `DAGTemplate` |  | |  |  |
 | data | [Data](#data)| `Data` |  | |  |  |
 | executor | [ExecutorConfig](#executor-config)| `ExecutorConfig` |  | |  |  |
