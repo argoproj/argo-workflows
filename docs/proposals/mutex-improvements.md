@@ -5,7 +5,6 @@
 The motivation for this is to improve the reliability of how locking works via mutexes and semaphores. Currently the implementation makes use of
 string formatting, this is not scalable (with respect to the size of developers and features).
 
-### Why is this needed?
 
 ### How do mutexes currently work?
 
