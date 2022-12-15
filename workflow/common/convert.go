@@ -79,6 +79,12 @@ func toWorkflow(cronWf wfv1.CronWorkflow, objectMeta metav1.ObjectMeta) *wfv1.Wo
 				wf.Annotations[key] = annotation
 			}
 		}
+
+		if len(cronWf.Spec.WorkflowMetadata.Finalizers) > 0 {
+			for _, finalizer := range cronWf.Spec.WorkflowMetadata.Finalizers {
+				wf.Finalizers = append(wf.Finalizers, finalizer)
+			}
+		}
 	}
 	wf.SetOwnerReferences(append(wf.GetOwnerReferences(), *metav1.NewControllerRef(&cronWf, wfv1.SchemeGroupVersion.WithKind(workflow.CronWorkflowKind))))
 
