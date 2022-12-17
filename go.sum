@@ -390,8 +390,8 @@ github.com/fsnotify/fsnotify v1.6.0 h1:n+5WquG0fcWoWp6xPWfHdbskMCQaFnG6PfBrh1Ky4
 github.com/fsnotify/fsnotify v1.6.0/go.mod h1:sl3t1tCWJFWoRz9R8WJCbQihKKwmorjAbSClcnxKAGw=
 github.com/fullstorydev/grpcurl v1.6.0/go.mod h1:ZQ+ayqbKMJNhzLmbpCiurTVlaK2M/3nqZCxaQ2Ze/sM=
 github.com/fzipp/gocyclo v0.3.1/go.mod h1:DJHO6AUmbdqj2ET4Z9iArSuwWgYDRryYt2wASxc7x3E=
-github.com/gavv/httpexpect/v2 v2.7.0 h1:13fBkFn9SzUGsoEc1Ipa5K+ojxsOtJc8QoqhojKqi3s=
-github.com/gavv/httpexpect/v2 v2.7.0/go.mod h1:jIj2f4rLediVaQK7rIH2EcU4W1ovjeSI8D0g85VJe9o=
+github.com/gavv/httpexpect/v2 v2.8.0 h1:sIYO3vVjWq06X9LVncVXGvDGtVytedGLoJLp7tR+m5A=
+github.com/gavv/httpexpect/v2 v2.8.0/go.mod h1:jIj2f4rLediVaQK7rIH2EcU4W1ovjeSI8D0g85VJe9o=
 github.com/gdamore/encoding v1.0.0/go.mod h1:alR0ol34c49FCSBLjhosxzcPHQbf2trDkoo5dl+VrEg=
 github.com/gdamore/tcell v1.3.0/go.mod h1:Hjvr+Ofd+gLglo7RYKxxnzCBmev3BzsS67MebKS4zMM=
 github.com/getkin/kin-openapi v0.76.0/go.mod h1:660oXbgy5JFMKreazJaQTw7o+X00qeSyhcnluiMv+Xg=
