@@ -6,9 +6,9 @@ spec:
   workflowMetadata:
     labels:
       workflows.argoproj.io/test: "true"
-  entrypoint: artgc-template
+  entrypoint: artgc-template-main
   templates:
-  - name: artgc-template
+  - name: artgc-template-main
     container:
       image: argoproj/argosay:v2
       command:
