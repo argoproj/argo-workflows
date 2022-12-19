@@ -4430,6 +4430,8 @@ spec:
                               type: array
                             depends:
                               type: string
+                            description:
+                              type: string
                             hooks:
                               additionalProperties:
                                 properties:
@@ -12518,6 +12520,8 @@ spec:
                                   type: string
                                 type: array
                               depends:
+                                type: string
+                              description:
                                 type: string
                               hooks:
                                 additionalProperties:

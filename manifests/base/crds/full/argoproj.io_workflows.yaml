@@ -4445,6 +4445,8 @@ spec:
                               type: array
                             depends:
                               type: string
+                            description:
+                              type: string
                             hooks:
                               additionalProperties:
                                 properties:
@@ -12534,6 +12536,8 @@ spec:
                                 type: array
                               depends:
                                 type: string
+                              description:
+                                type: string
                               hooks:
                                 additionalProperties:
                                   properties:
@@ -19220,6 +19224,8 @@ spec:
                       type: array
                     daemoned:
                       type: boolean
+                    description:
+                      type: string
                     displayName:
                       type: string
                     estimatedDuration:
@@ -24209,6 +24215,8 @@ spec:
                                   type: string
                                 type: array
                               depends:
+                                type: string
+                              description:
                                 type: string
                               hooks:
                                 additionalProperties:
@@ -34128,6 +34136,8 @@ spec:
                                   type: array
                                 depends:
                                   type: string
+                                description:
+                                  type: string
                                 hooks:
                                   additionalProperties:
                                     properties:
@@ -42216,6 +42226,8 @@ spec:
                                       type: string
                                     type: array
                                   depends:
+                                    type: string
+                                  description:
                                     type: string
                                   hooks:
                                     additionalProperties:

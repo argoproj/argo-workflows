@@ -2305,6 +2305,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     "dependencies_example",
                                 ],
                                 depends="depends_example",
+                                description="description_example",
                                 hooks={
                                     "key": IoArgoprojWorkflowV1alpha1LifecycleHook(
                                         arguments=IoArgoprojWorkflowV1alpha1Arguments(
@@ -4860,6 +4861,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     error=True,
                                     failed=True,
                                 ),
+                                description="description_example",
                                 hooks={
                                     "key": IoArgoprojWorkflowV1alpha1LifecycleHook(
                                         arguments=IoArgoprojWorkflowV1alpha1Arguments(
@@ -6815,6 +6817,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         "dependencies_example",
                                     ],
                                     depends="depends_example",
+                                    description="description_example",
                                     hooks={
                                         "key": IoArgoprojWorkflowV1alpha1LifecycleHook(
                                             arguments=IoArgoprojWorkflowV1alpha1Arguments(
@@ -9370,6 +9373,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         error=True,
                                         failed=True,
                                     ),
+                                    description="description_example",
                                     hooks={
                                         "key": IoArgoprojWorkflowV1alpha1LifecycleHook(
                                             arguments=IoArgoprojWorkflowV1alpha1Arguments(
@@ -13105,6 +13109,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     "dependencies_example",
                                 ],
                                 depends="depends_example",
+                                description="description_example",
                                 hooks={
                                     "key": IoArgoprojWorkflowV1alpha1LifecycleHook(
                                         arguments=IoArgoprojWorkflowV1alpha1Arguments(
@@ -15660,6 +15665,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     error=True,
                                     failed=True,
                                 ),
+                                description="description_example",
                                 hooks={
                                     "key": IoArgoprojWorkflowV1alpha1LifecycleHook(
                                         arguments=IoArgoprojWorkflowV1alpha1Arguments(
@@ -17615,6 +17621,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         "dependencies_example",
                                     ],
                                     depends="depends_example",
+                                    description="description_example",
                                     hooks={
                                         "key": IoArgoprojWorkflowV1alpha1LifecycleHook(
                                             arguments=IoArgoprojWorkflowV1alpha1Arguments(
@@ -20170,6 +20177,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         error=True,
                                         failed=True,
                                     ),
+                                    description="description_example",
                                     hooks={
                                         "key": IoArgoprojWorkflowV1alpha1LifecycleHook(
                                             arguments=IoArgoprojWorkflowV1alpha1Arguments(
@@ -23809,6 +23817,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     "dependencies_example",
                                 ],
                                 depends="depends_example",
+                                description="description_example",
                                 hooks={
                                     "key": IoArgoprojWorkflowV1alpha1LifecycleHook(
                                         arguments=IoArgoprojWorkflowV1alpha1Arguments(
@@ -26364,6 +26373,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     error=True,
                                     failed=True,
                                 ),
+                                description="description_example",
                                 hooks={
                                     "key": IoArgoprojWorkflowV1alpha1LifecycleHook(
                                         arguments=IoArgoprojWorkflowV1alpha1Arguments(
@@ -28319,6 +28329,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         "dependencies_example",
                                     ],
                                     depends="depends_example",
+                                    description="description_example",
                                     hooks={
                                         "key": IoArgoprojWorkflowV1alpha1LifecycleHook(
                                             arguments=IoArgoprojWorkflowV1alpha1Arguments(
@@ -30874,6 +30885,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         error=True,
                                         failed=True,
                                     ),
+                                    description="description_example",
                                     hooks={
                                         "key": IoArgoprojWorkflowV1alpha1LifecycleHook(
                                             arguments=IoArgoprojWorkflowV1alpha1Arguments(

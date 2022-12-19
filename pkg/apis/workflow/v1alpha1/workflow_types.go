@@ -1504,10 +1504,17 @@ type WorkflowStep struct {
 	// Hooks holds the lifecycle hook which is invoked at lifecycle of
 	// step, irrespective of the success, failure, or error status of the primary step
 	Hooks LifecycleHooks `json:"hooks,omitempty" protobuf:"bytes,12,opt,name=hooks"`
+
+	// Description of the step
+	Description string `json:"description,omitempty" protobuf:"bytes,14,opt,name=description"`
 }
 
 func (step *WorkflowStep) GetName() string {
 	return step.Name
+}
+
+func (step *WorkflowStep) GetDescription() string {
+	return step.Description
 }
 
 func (step *WorkflowStep) IsDAGTask() bool {
@@ -2135,10 +2142,17 @@ type NodeStatus struct {
 
 	// SynchronizationStatus is the synchronization status of the node
 	SynchronizationStatus *NodeSynchronizationStatus `json:"synchronizationStatus,omitempty" protobuf:"bytes,25,opt,name=synchronizationStatus"`
+
+	// Description is the description of the node
+	Description string `json:"description,omitempty" protobuf:"bytes,27,opt,name=description"`
 }
 
 func (n *NodeStatus) GetName() string {
 	return n.Name
+}
+
+func (n *NodeStatus) GetDescription() string {
+	return n.Description
 }
 
 func (n *NodeStatus) IsDAGTask() bool {
@@ -3014,10 +3028,17 @@ type DAGTask struct {
 	// Hooks hold the lifecycle hook which is invoked at lifecycle of
 	// task, irrespective of the success, failure, or error status of the primary task
 	Hooks LifecycleHooks `json:"hooks,omitempty" protobuf:"bytes,13,opt,name=hooks"`
+
+	// Description is the description of the target
+	Description string `json:"description,omitempty" protobuf:"bytes,15,opt,name=description"`
 }
 
 func (t *DAGTask) GetName() string {
 	return t.Name
+}
+
+func (t *DAGTask) GetDescription() string {
+	return t.Description
 }
 
 func (t *DAGTask) IsDAGTask() bool {

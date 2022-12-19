@@ -99,6 +99,7 @@ class IoArgoprojWorkflowV1alpha1WorkflowStep(ModelNormal):
         return {
             'arguments': (IoArgoprojWorkflowV1alpha1Arguments,),  # noqa: E501
             'continue_on': (IoArgoprojWorkflowV1alpha1ContinueOn,),  # noqa: E501
+            'description': (str,),  # noqa: E501
             'hooks': ({str: (IoArgoprojWorkflowV1alpha1LifecycleHook,)},),  # noqa: E501
             'inline': (IoArgoprojWorkflowV1alpha1Template,),  # noqa: E501
             'name': (str,),  # noqa: E501
@@ -119,6 +120,7 @@ class IoArgoprojWorkflowV1alpha1WorkflowStep(ModelNormal):
     attribute_map = {
         'arguments': 'arguments',  # noqa: E501
         'continue_on': 'continueOn',  # noqa: E501
+        'description': 'description',  # noqa: E501
         'hooks': 'hooks',  # noqa: E501
         'inline': 'inline',  # noqa: E501
         'name': 'name',  # noqa: E501
@@ -174,6 +176,7 @@ class IoArgoprojWorkflowV1alpha1WorkflowStep(ModelNormal):
                                 _visited_composed_classes = (Animal,)
             arguments (IoArgoprojWorkflowV1alpha1Arguments): [optional]  # noqa: E501
             continue_on (IoArgoprojWorkflowV1alpha1ContinueOn): [optional]  # noqa: E501
+            description (str): Description of the step. [optional]  # noqa: E501
             hooks ({str: (IoArgoprojWorkflowV1alpha1LifecycleHook,)}): Hooks holds the lifecycle hook which is invoked at lifecycle of step, irrespective of the success, failure, or error status of the primary step. [optional]  # noqa: E501
             inline (IoArgoprojWorkflowV1alpha1Template): [optional]  # noqa: E501
             name (str): Name of the step. [optional]  # noqa: E501
@@ -267,6 +270,7 @@ class IoArgoprojWorkflowV1alpha1WorkflowStep(ModelNormal):
                                 _visited_composed_classes = (Animal,)
             arguments (IoArgoprojWorkflowV1alpha1Arguments): [optional]  # noqa: E501
             continue_on (IoArgoprojWorkflowV1alpha1ContinueOn): [optional]  # noqa: E501
+            description (str): Description of the step. [optional]  # noqa: E501
             hooks ({str: (IoArgoprojWorkflowV1alpha1LifecycleHook,)}): Hooks holds the lifecycle hook which is invoked at lifecycle of step, irrespective of the success, failure, or error status of the primary step. [optional]  # noqa: E501
             inline (IoArgoprojWorkflowV1alpha1Template): [optional]  # noqa: E501
             name (str): Name of the step. [optional]  # noqa: E501

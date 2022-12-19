@@ -1130,6 +1130,7 @@ Valid time units are "ns", "us" (or "µs"), "ms", "s", "m", "h". |  |
 | continueOn | [ContinueOn](#continue-on)| `ContinueOn` |  | |  |  |
 | dependencies | []string| `[]string` |  | | Dependencies are name of other targets which this depends on |  |
 | depends | string| `string` |  | | Depends are name of other targets which this depends on |  |
+| description | string| `string` |  | | Description is the description of the target |  |
 | hooks | [LifecycleHooks](#lifecycle-hooks)| `LifecycleHooks` |  | |  |  |
 | inline | [Template](#template)| `Template` |  | |  |  |
 | name | string| `string` |  | | Name is the name of the target |  |

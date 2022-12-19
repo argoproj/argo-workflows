@@ -8485,6 +8485,10 @@
           "description": "Depends are name of other targets which this depends on",
           "type": "string"
         },
+        "description": {
+          "description": "Description is the description of the target",
+          "type": "string"
+        },
         "hooks": {
           "description": "Hooks hold the lifecycle hook which is invoked at lifecycle of task, irrespective of the success, failure, or error status of the primary task",
           "type": "object",
@@ -9361,6 +9365,10 @@
         "daemoned": {
           "description": "Daemoned tracks whether or not this node was daemoned and need to be terminated",
           "type": "boolean"
+        },
+        "description": {
+          "description": "Description is the description of the node",
+          "type": "string"
         },
         "displayName": {
           "description": "DisplayName is a human readable representation of the node. Unique within a template boundary",
@@ -11400,6 +11408,10 @@
         "continueOn": {
           "description": "ContinueOn makes argo to proceed with the following step even if this step fails. Errors and Failed states can be specified",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ContinueOn"
+        },
+        "description": {
+          "description": "Description of the step",
+          "type": "string"
         },
         "hooks": {
           "description": "Hooks holds the lifecycle hook which is invoked at lifecycle of step, irrespective of the success, failure, or error status of the primary step",

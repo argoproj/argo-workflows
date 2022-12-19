@@ -178,6 +178,9 @@ const WorkflowNodeSummary = (props: Props) => {
             value: <ResourcesDuration resourcesDuration={props.node.resourcesDuration} />
         });
     }
+    if (props.node.description) {
+        attributes.push({title: 'DESCRIPTION', value: <ClipboardText text={props.node.description} />});
+    }
     const showLogs = (x = 'main') => props.onShowContainerLogs(props.node.id, x);
     return (
         <div className='white-box'>

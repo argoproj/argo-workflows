@@ -542,6 +542,9 @@ message DAGTask {
   // Hooks hold the lifecycle hook which is invoked at lifecycle of
   // task, irrespective of the success, failure, or error status of the primary task
   map<string, LifecycleHook> hooks = 13;
+
+  // Description is the description of the target
+  optional string description = 15;
 }
 
 // DAGTemplate is a template subtype for directed acyclic graph templates
@@ -1048,6 +1051,9 @@ message NodeStatus {
 
   // SynchronizationStatus is the synchronization status of the node
   optional NodeSynchronizationStatus synchronizationStatus = 25;
+
+  // Description is the description of the node
+  optional string description = 27;
 }
 
 // NodeSynchronizationStatus stores the status of a node
@@ -2099,6 +2105,9 @@ message WorkflowStep {
   // Hooks holds the lifecycle hook which is invoked at lifecycle of
   // step, irrespective of the success, failure, or error status of the primary step
   map<string, LifecycleHook> hooks = 12;
+
+  // Description of the step
+  optional string description = 14;
 }
 
 // WorkflowTaskResult is a used to communicate a result back to the controller. Unlike WorkflowTaskSet, it has

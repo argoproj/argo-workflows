@@ -1794,6 +1794,7 @@ NodeStatus contains status information about an individual node in the workflow
 |`boundaryID`|`string`|BoundaryID indicates the node ID of the associated template root node in which this node belongs to|
 |`children`|`Array< string >`|Children is a list of child node IDs|
 |`daemoned`|`boolean`|Daemoned tracks whether or not this node was daemoned and need to be terminated|
+|`description`|`string`|Description is the description of the node|
 |`displayName`|`string`|DisplayName is a human readable representation of the node. Unique within a template boundary|
 |`estimatedDuration`|`integer`|EstimatedDuration in seconds.|
 |`finishedAt`|[`Time`](#time)|Time at which this node completed|
@@ -3108,6 +3109,7 @@ WorkflowStep is a reference to a template to execute in a series of step
 |:----------:|:----------:|---------------|
 |`arguments`|[`Arguments`](#arguments)|Arguments hold arguments to the template|
 |`continueOn`|[`ContinueOn`](#continueon)|ContinueOn makes argo to proceed with the following step even if this step fails. Errors and Failed states can be specified|
+|`description`|`string`|Description of the step|
 |`hooks`|[`LifecycleHook`](#lifecyclehook)|Hooks holds the lifecycle hook which is invoked at lifecycle of step, irrespective of the success, failure, or error status of the primary step|
 |`inline`|[`Template`](#template)|Inline is the template. Template must be empty if this is declared (and vice-versa).|
 |`name`|`string`|Name of the step|
@@ -3836,6 +3838,7 @@ DAGTask represents a node in the graph during DAG execution
 |`continueOn`|[`ContinueOn`](#continueon)|ContinueOn makes argo to proceed with the following step even if this step fails. Errors and Failed states can be specified|
 |`dependencies`|`Array< string >`|Dependencies are name of other targets which this depends on|
 |`depends`|`string`|Depends are name of other targets which this depends on|
+|`description`|`string`|Description is the description of the target|
 |`hooks`|[`LifecycleHook`](#lifecyclehook)|Hooks hold the lifecycle hook which is invoked at lifecycle of task, irrespective of the success, failure, or error status of the primary task|
 |`inline`|[`Template`](#template)|Inline is the template. Template must be empty if this is declared (and vice-versa).|
 |`name`|`string`|Name is the name of the target|

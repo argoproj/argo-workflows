@@ -101,6 +101,7 @@ class IoArgoprojWorkflowV1alpha1NodeStatus(ModelNormal):
             'boundary_id': (str,),  # noqa: E501
             'children': ([str],),  # noqa: E501
             'daemoned': (bool,),  # noqa: E501
+            'description': (str,),  # noqa: E501
             'display_name': (str,),  # noqa: E501
             'estimated_duration': (int,),  # noqa: E501
             'finished_at': (datetime,),  # noqa: E501
@@ -133,6 +134,7 @@ class IoArgoprojWorkflowV1alpha1NodeStatus(ModelNormal):
         'boundary_id': 'boundaryID',  # noqa: E501
         'children': 'children',  # noqa: E501
         'daemoned': 'daemoned',  # noqa: E501
+        'description': 'description',  # noqa: E501
         'display_name': 'displayName',  # noqa: E501
         'estimated_duration': 'estimatedDuration',  # noqa: E501
         'finished_at': 'finishedAt',  # noqa: E501
@@ -202,6 +204,7 @@ class IoArgoprojWorkflowV1alpha1NodeStatus(ModelNormal):
             boundary_id (str): BoundaryID indicates the node ID of the associated template root node in which this node belongs to. [optional]  # noqa: E501
             children ([str]): Children is a list of child node IDs. [optional]  # noqa: E501
             daemoned (bool): Daemoned tracks whether or not this node was daemoned and need to be terminated. [optional]  # noqa: E501
+            description (str): Description is the description of the node. [optional]  # noqa: E501
             display_name (str): DisplayName is a human readable representation of the node. Unique within a template boundary. [optional]  # noqa: E501
             estimated_duration (int): EstimatedDuration in seconds.. [optional]  # noqa: E501
             finished_at (datetime): Time is a wrapper around time.Time which supports correct marshaling to YAML and JSON.  Wrappers are provided for many of the factory methods that the time package offers.. [optional]  # noqa: E501
@@ -312,6 +315,7 @@ class IoArgoprojWorkflowV1alpha1NodeStatus(ModelNormal):
             boundary_id (str): BoundaryID indicates the node ID of the associated template root node in which this node belongs to. [optional]  # noqa: E501
             children ([str]): Children is a list of child node IDs. [optional]  # noqa: E501
             daemoned (bool): Daemoned tracks whether or not this node was daemoned and need to be terminated. [optional]  # noqa: E501
+            description (str): Description is the description of the node. [optional]  # noqa: E501
             display_name (str): DisplayName is a human readable representation of the node. Unique within a template boundary. [optional]  # noqa: E501
             estimated_duration (int): EstimatedDuration in seconds.. [optional]  # noqa: E501
             finished_at (datetime): Time is a wrapper around time.Time which supports correct marshaling to YAML and JSON.  Wrappers are provided for many of the factory methods that the time package offers.. [optional]  # noqa: E501

@@ -11,6 +11,7 @@ Name | Type | Description | Notes
 **boundary_id** | **str** | BoundaryID indicates the node ID of the associated template root node in which this node belongs to | [optional] 
 **children** | **[str]** | Children is a list of child node IDs | [optional] 
 **daemoned** | **bool** | Daemoned tracks whether or not this node was daemoned and need to be terminated | [optional] 
+**description** | **str** | Description is the description of the node | [optional] 
 **display_name** | **str** | DisplayName is a human readable representation of the node. Unique within a template boundary | [optional] 
 **estimated_duration** | **int** | EstimatedDuration in seconds. | [optional] 
 **finished_at** | **datetime** | Time is a wrapper around time.Time which supports correct marshaling to YAML and JSON.  Wrappers are provided for many of the factory methods that the time package offers. | [optional] 

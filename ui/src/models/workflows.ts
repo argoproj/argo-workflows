@@ -670,6 +670,11 @@ export interface NodeStatus {
      * Memoization
      */
     memoizationStatus: MemoizationStatus;
+
+    /**
+     * Description is the description of the node.
+     */
+    description: string;
 }
 
 export interface TemplateRef {
@@ -901,6 +906,7 @@ export interface Sequence {
 
 export interface DAGTask {
     name: string;
+    description: string;
 
     /**
      * Name of template to execute
@@ -958,6 +964,10 @@ export interface WorkflowStep {
      * TemplateRef is the reference to the template resource which is used as the base of this template.
      */
     templateRef?: TemplateRef;
+    /**
+     * Description of the step
+     */
+    description?: string;
 }
 
 /**
