@@ -674,7 +674,7 @@ export interface NodeStatus {
     /**
      * Description is the description of the node.
      */
-    description: string;
+    description?: string;
 }
 
 export interface TemplateRef {
@@ -906,7 +906,7 @@ export interface Sequence {
 
 export interface DAGTask {
     name: string;
-    description: string;
+    description?: string;
 
     /**
      * Name of template to execute
