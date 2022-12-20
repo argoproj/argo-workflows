@@ -40,15 +40,15 @@ under step/DAG level output parameter. Both use the
             template: flip-coin
         - - name: heads
             template: heads
-            when: "{{steps.flipcoin.outputs.result}} == heads"
+            when: "{{steps.flip-coin.outputs.result}} == heads"
           - name: tails
             template: tails
-            when: "{{steps.flipcoin.outputs.result}} == tails"
+            when: "{{steps.flip-coin.outputs.result}} == tails"
       outputs:
         parameters:
           - name: stepresult
             valueFrom:
-              expression: "steps.flipcoin.outputs.result == 'heads' ? steps.heads.outputs.result : steps.tails.outputs.result"
+              expression: "steps['flip-coin'].outputs.result == 'heads' ? steps.heads.outputs.result : steps.tails.outputs.result"
 ```
 
 * [Steps parameter example](https://raw.githubusercontent.com/argoproj/argo-workflows/master/examples/conditional-parameters.yaml)
