@@ -3733,6 +3733,48 @@
         }
       }
     },
+    "/artifacts-by-manifest/{podName}/{artifactName}": {
+      "post": {
+        "tags": [
+          "ArtifactService"
+        ],
+        "summary": "Get an output artifact by a full workflow manifest.",
+        "operationId": "ArtifactService_GetOutputArtifactByManifest",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactByManifestRequest"
+            }
+          },
+          {
+            "type": "string",
+            "name": "podName",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "string",
+            "name": "artifactName",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "An artifact file."
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
+          }
+        }
+      }
+    },
     "/artifacts-by-uid/{uid}/{nodeId}/{artifactName}": {
       "get": {
         "tags": [
@@ -3827,6 +3869,48 @@
         }
       }
     },
+    "/input-artifacts-by-manifest/{podName}/{artifactName}": {
+      "post": {
+        "tags": [
+          "ArtifactService"
+        ],
+        "summary": "Get an output artifact by a full workflow manifest.",
+        "operationId": "ArtifactService_GetInputArtifactByManifest",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactByManifestRequest"
+            }
+          },
+          {
+            "type": "string",
+            "name": "podName",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "string",
+            "name": "artifactName",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "An artifact file."
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
+          }
+        }
+      }
+    },
     "/input-artifacts-by-uid/{uid}/{nodeId}/{artifactName}": {
       "get": {
         "tags": [
@@ -3901,94 +3985,6 @@
             "type": "string",
             "name": "artifactName",
             "in": "path",
-            "required": true
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "An artifact file.",
-            "schema": {
-              "type": "string",
-              "format": "binary"
-            }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
-            }
-          }
-        }
-      }
-    },
-    "/artifacts-by-manifest/{podId}/{artifactName}": {
-      "post": {
-        "tags": [
-          "ArtifactService"
-        ],
-        "summary": "Get outputs artifacts by manifest",
-        "operationId": "ArtifactService_GetOutputArtifactByManifest",
-        "parameters": [
-          {
-            "type": "string",
-            "name": "podId",
-            "in": "path",
-            "required": true
-          },
-          {
-            "type": "string",
-            "name": "artifactName",
-            "in": "path",
-            "required": true
-          },
-          {
-            "type": "string",
-            "name": "workflow",
-            "in": "body",
-            "required": true
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "An artifact file.",
-            "schema": {
-              "type": "string",
-              "format": "binary"
-            }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
-            }
-          }
-        }
-      }
-    },
-    "/input-artifacts-by-manifest/{podId}/{artifactName}": {
-      "post": {
-        "tags": [
-          "ArtifactService"
-        ],
-        "summary": "Get inputs artifacts by manifest",
-        "operationId": "ArtifactService_GetInputArtifactByManifest",
-        "parameters": [
-          {
-            "type": "string",
-            "name": "podId",
-            "in": "path",
-            "required": true
-          },
-          {
-            "type": "string",
-            "name": "artifactName",
-            "in": "path",
-            "required": true
-          },
-          {
-            "type": "string",
-            "name": "workflow",
-            "in": "body",
             "required": true
           }
         ],
@@ -7582,6 +7578,17 @@
         "subPath": {
           "description": "SubPath allows an artifact to be sourced from a subpath within the specified source",
           "type": "string"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.ArtifactByManifestRequest": {
+      "type": "object",
+      "required": [
+        "workflow"
+      ],
+      "properties": {
+        "workflow": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Workflow"
         }
       }
     },

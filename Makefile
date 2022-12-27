@@ -35,8 +35,8 @@ E2E_WAIT_TIMEOUT      ?= 1m
 E2E_PARALLEL          ?= 20
 E2E_SUITE_TIMEOUT     ?= 15m
 
-VERSION               := CR-15902-test-2
-DOCKER_PUSH           := true
+VERSION               := latest
+DOCKER_PUSH           := false
 
 # VERSION is the version to be used for files in manifests and should always be latest unless we are releasing
 # we assume HEAD means you are on a tag

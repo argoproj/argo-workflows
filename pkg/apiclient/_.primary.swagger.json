@@ -30,6 +30,90 @@
     }
   ],
   "paths": {
+    "/artifacts-by-manifest/{podName}/{artifactName}": {
+      "post": {
+        "tags": [
+          "ArtifactService"
+        ],
+        "summary": "Get an output artifact by a full workflow manifest.",
+        "operationId": "ArtifactService_GetOutputArtifactByManifest",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/github.com.argoproj.argo_workflows.v3.pkg.apis.workflow.v1alpha1.ArtifactByManifestRequest"
+            }
+          },
+          {
+            "type": "string",
+            "name": "podName",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "string",
+            "name": "artifactName",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "An artifact file."
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
+          }
+        }
+      }
+    },
+    "/input-artifacts-by-manifest/{podName}/{artifactName}": {
+      "post": {
+        "tags": [
+          "ArtifactService"
+        ],
+        "summary": "Get an output artifact by a full workflow manifest.",
+        "operationId": "ArtifactService_GetInputArtifactByManifest",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/github.com.argoproj.argo_workflows.v3.pkg.apis.workflow.v1alpha1.ArtifactByManifestRequest"
+            }
+          },
+          {
+            "type": "string",
+            "name": "podName",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "string",
+            "name": "artifactName",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "An artifact file."
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
+          }
+        }
+      }
+    },
     "/artifact-files/{namespace}/{idDiscriminator}/{id}/{nodeId}/{artifactDiscriminator}/{artifactName}": {
       "get": {
         "tags": [
@@ -289,6 +373,17 @@
     }
   },
   "definitions": {
+    "github.com.argoproj.argo_workflows.v3.pkg.apis.workflow.v1alpha1.ArtifactByManifestRequest": {
+      "type": "object",
+      "required": [
+        "workflow"
+      ],
+      "properties": {
+        "workflow": {
+          "$ref": "#/definitions/github.com.argoproj.argo_workflows.v3.pkg.apis.workflow.v1alpha1.Workflow"
+        }
+      }
+    },
     "io.k8s.apimachinery.pkg.runtime.Object": {
       "title": "This is a hack do deal with this problem: https://github.com/kubernetes/kube-openapi/issues/174"
     },
