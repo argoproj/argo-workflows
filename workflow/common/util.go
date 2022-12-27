@@ -121,8 +121,10 @@ func overwriteWithArguments(argParam, inParam *wfv1.Parameter) {
 	if argParam != nil {
 		if argParam.Value != nil {
 			inParam.Value = argParam.Value
+			inParam.ValueFrom = nil
 		} else {
 			inParam.ValueFrom = argParam.ValueFrom
+			inParam.Value = nil
 		}
 	}
 }
