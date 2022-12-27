@@ -14,7 +14,6 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
-	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/remotecommand"
 
 	"github.com/argoproj/argo-workflows/v3/errors"
@@ -117,7 +116,7 @@ func GetExecutorOutput(exec remotecommand.Executor) (*bytes.Buffer, *bytes.Buffe
 // * parameters in the template from the arguments
 // * global parameters (e.g. {{workflow.parameters.XX}}, {{workflow.name}}, {{workflow.status}})
 // * local parameters (e.g. {{pod.name}})
-func ProcessArgs(tmpl *wfv1.Template, args wfv1.ArgumentsProvider, globalParams, localParams Parameters, validateOnly bool, namespace string, configMapInformer cache.SharedIndexInformer) (*wfv1.Template, error) {
+func ProcessArgs(tmpl *wfv1.Template, args wfv1.ArgumentsProvider, globalParams, localParams Parameters, validateOnly bool, namespace string, configMapStore ConfigMapStore) (*wfv1.Template, error) {
 	// For each input parameter:
 	// 1) check if was supplied as argument. if so use the supplied value from arg
 	// 2) if not, use default value.
@@ -138,7 +137,7 @@ func ProcessArgs(tmpl *wfv1.Template, args wfv1.ArgumentsProvider, globalParams,
 			}
 		}
 		if inParam.ValueFrom != nil && inParam.ValueFrom.ConfigMapKeyRef != nil {
-			if configMapInformer != nil {
+			if configMapStore != nil {
 				// SubstituteParams is called only at the end of this method. To support parametrization of the configmap
 				// we need to perform a substitution here over the name and the key of the ConfigMapKeyRef.
 				cmName, err := substituteConfigMapKeyRefParam(inParam.ValueFrom.ConfigMapKeyRef.Name, globalParams)
@@ -152,7 +151,7 @@ func ProcessArgs(tmpl *wfv1.Template, args wfv1.ArgumentsProvider, globalParams,
 					return nil, err
 				}
 
-				cmValue, err := GetConfigMapValue(configMapInformer, namespace, cmName, cmKey)
+				cmValue, err := GetConfigMapValue(configMapStore, namespace, cmName, cmKey)
 				if err != nil {
 					if inParam.ValueFrom.Default != nil && errors.IsCode(errors.CodeNotFound, err) {
 						inParam.Value = inParam.ValueFrom.Default
