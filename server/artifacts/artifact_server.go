@@ -304,8 +304,8 @@ func (a *ArtifactServer) getArtifactByManifest(w http.ResponseWriter, r *http.Re
 
 	uid := wf.UID
 	requestPath := strings.SplitN(r.URL.Path, "/", 6)
-	nodeId := requestPath[2]
-	artifactName := requestPath[3]
+
+	nodeIdIndex := 2
 	artifactNameIndex := 3
 	fileNameFirstIndex := 4
 
@@ -319,6 +319,9 @@ func (a *ArtifactServer) getArtifactByManifest(w http.ResponseWriter, r *http.Re
 		a.httpBadRequestError(w)
 		return
 	}
+
+	nodeId := requestPath[nodeIdIndex]
+	artifactName := requestPath[artifactNameIndex]
 
 	log.WithFields(log.Fields{"uid": uid, "nodeId": nodeId, "artifactName": artifactName, "isInput": isInput}).Info("Download artifact by manifest")
 
