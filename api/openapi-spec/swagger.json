@@ -3920,6 +3920,94 @@
           }
         }
       }
+    },
+    "/artifacts-by-manifest/{podId}/{artifactName}": {
+      "post": {
+        "tags": [
+          "ArtifactService"
+        ],
+        "summary": "Get outputs artifacts by manifest",
+        "operationId": "ArtifactService_GetOutputArtifactByManifest",
+        "parameters": [
+          {
+            "type": "string",
+            "name": "podId",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "string",
+            "name": "artifactName",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "string",
+            "name": "workflow",
+            "in": "body",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "An artifact file.",
+            "schema": {
+              "type": "string",
+              "format": "binary"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
+          }
+        }
+      }
+    },
+    "/input-artifacts-by-manifest/{podId}/{artifactName}": {
+      "post": {
+        "tags": [
+          "ArtifactService"
+        ],
+        "summary": "Get inputs artifacts by manifest",
+        "operationId": "ArtifactService_GetInputArtifactByManifest",
+        "parameters": [
+          {
+            "type": "string",
+            "name": "podId",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "string",
+            "name": "artifactName",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "string",
+            "name": "workflow",
+            "in": "body",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "An artifact file.",
+            "schema": {
+              "type": "string",
+              "format": "binary"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
+          }
+        }
+      }
     }
   },
   "definitions": {
