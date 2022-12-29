@@ -3921,17 +3921,25 @@
         }
       }
     },
-    "/artifacts-by-manifest/{podId}/{artifactName}": {
+    "/artifacts-by-manifest/{podName}/{artifactName}": {
       "post": {
         "tags": [
           "ArtifactService"
         ],
-        "summary": "Get outputs artifacts by manifest",
+        "summary": "Get an output artifact by a full workflow manifest.",
         "operationId": "ArtifactService_GetOutputArtifactByManifest",
         "parameters": [
           {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactByManifestRequest"
+            }
+          },
+          {
             "type": "string",
-            "name": "podId",
+            "name": "podName",
             "in": "path",
             "required": true
           },
@@ -3940,21 +3948,11 @@
             "name": "artifactName",
             "in": "path",
             "required": true
-          },
-          {
-            "type": "string",
-            "name": "workflow",
-            "in": "body",
-            "required": true
           }
         ],
         "responses": {
           "200": {
-            "description": "An artifact file.",
-            "schema": {
-              "type": "string",
-              "format": "binary"
-            }
+            "description": "An artifact file."
           },
           "default": {
             "description": "An unexpected error response.",
@@ -3965,17 +3963,25 @@
         }
       }
     },
-    "/input-artifacts-by-manifest/{podId}/{artifactName}": {
+    "/input-artifacts-by-manifest/{podName}/{artifactName}": {
       "post": {
         "tags": [
           "ArtifactService"
         ],
-        "summary": "Get inputs artifacts by manifest",
+        "summary": "Get an inputs artifact by a full workflow manifest.",
         "operationId": "ArtifactService_GetInputArtifactByManifest",
         "parameters": [
           {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactByManifestRequest"
+            }
+          },
+          {
             "type": "string",
-            "name": "podId",
+            "name": "podName",
             "in": "path",
             "required": true
           },
@@ -3984,21 +3990,11 @@
             "name": "artifactName",
             "in": "path",
             "required": true
-          },
-          {
-            "type": "string",
-            "name": "workflow",
-            "in": "body",
-            "required": true
           }
         ],
         "responses": {
           "200": {
-            "description": "An artifact file.",
-            "schema": {
-              "type": "string",
-              "format": "binary"
-            }
+            "description": "An artifact file."
           },
           "default": {
             "description": "An unexpected error response.",
