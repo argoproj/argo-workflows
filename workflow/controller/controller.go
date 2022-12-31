@@ -402,8 +402,17 @@ func (wfc *WorkflowController) runConfigMapWatcher(stopCh <-chan struct{}) {
 				continue
 			}
 			log.Debugf("received config map %s/%s update", cm.Namespace, cm.Name)
+			if cm.GetName() == wfc.configController.GetName() && wfc.namespace == cm.GetNamespace() {
+				log.Infof("Received Workflow Controller config map %s/%s update", cm.Namespace, cm.Name)
+				err := wfc.updateConfig()
+				if err != nil {
+					log.Errorf("Failed update the Workflow Controller config map. error: %v", err)
+					continue
+				}
+				log.Infof("Successfully Workflow Controller config map %s/%s updated", cm.Namespace, cm.Name)
+				continue
+			}
 			wfc.notifySemaphoreConfigUpdate(cm)
-
 		case <-stopCh:
 			return
 		}
@@ -1070,6 +1079,7 @@ func (wfc *WorkflowController) newConfigMapInformer() cache.SharedIndexInformer 
 							Error("failed to convert configmap to plugin")
 						return
 					}
+
 					wfc.executorPlugins[cm.GetNamespace()][cm.GetName()] = p
 					log.WithField("namespace", cm.GetNamespace()).
 						WithField("name", cm.GetName()).
@@ -1083,6 +1093,7 @@ func (wfc *WorkflowController) newConfigMapInformer() cache.SharedIndexInformer 
 				},
 			},
 		})
+
 	}
 	return indexInformer
 }

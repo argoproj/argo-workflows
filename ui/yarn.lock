@@ -3421,10 +3421,10 @@ cron-parser@^4.7.0:
   dependencies:
     luxon "^3.1.0"
 
-cronstrue@^2.20.0:
-  version "2.20.0"
-  resolved "https://registry.yarnpkg.com/cronstrue/-/cronstrue-2.20.0.tgz#709ef674ccf385f3c0e77c40a5141911e38b5d05"
-  integrity sha512-cGGxqXGt+yf46nQw2nipLpQLaqlXbeAdcR2HoHYar91bpWRFViw16XCwbSLs0uwhzzYjHwN9BVw5SYIXNqIFwg==
+cronstrue@^2.21.0:
+  version "2.21.0"
+  resolved "https://registry.yarnpkg.com/cronstrue/-/cronstrue-2.21.0.tgz#278d19aa0b9e7ecc90a0c1dbd4f84ceece724094"
+  integrity sha512-YxabE1ZSHA1zJZMPCTSEbc0u4cRRenjqqTgCwJT7OvkspPSvfYFITuPFtsT+VkBuavJtFv2kJXT+mKSnlUJxfg==
 
 cross-fetch@^3.1.5:
   version "3.1.5"
@@ -8680,10 +8680,10 @@ sass-loader@^10.1.0:
     schema-utils "^3.0.0"
     semver "^7.3.2"
 
-sass@^1.56.1:
-  version "1.56.1"
-  resolved "https://registry.yarnpkg.com/sass/-/sass-1.56.1.tgz#94d3910cd468fd075fa87f5bb17437a0b617d8a7"
-  integrity sha512-VpEyKpyBPCxE7qGDtOcdJ6fFbcpOM+Emu7uZLxVrkX8KVU/Dp5UF7WLvzqRuUhB6mqqQt1xffLoG+AndxTZrCQ==
+sass@^1.57.1:
+  version "1.57.1"
+  resolved "https://registry.yarnpkg.com/sass/-/sass-1.57.1.tgz#dfafd46eb3ab94817145e8825208ecf7281119b5"
+  integrity sha512-O2+LwLS79op7GI0xZ8fqzF7X2m/m8WFfI02dHOdsK5R2ECeS5F62zrwg/relM1rjSLy7Vd/DiMNIvPrQGsA0jw==
   dependencies:
     chokidar ">=3.0.0 <4.0.0"
     immutable "^4.0.0"
