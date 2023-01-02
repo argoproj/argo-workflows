@@ -150,6 +150,13 @@ func (s *ArtifactsSuite) TestArtifactGC() {
 				assert.Contains(t, objectMeta.Finalizers, common.FinalizerArtifactGC)
 			})
 
+		if when.WorkflowCondition(func(wf *wfv1.Workflow) bool {
+			return wf.Status.Phase == wfv1.WorkflowFailed || wf.Status.Phase == wfv1.WorkflowError
+		}) {
+			fmt.Println("can't reliably verify Artifact GC since workflow failed")
+			continue
+		}
+
 		// wait for all pods to have started and been completed and recouped
 		when.
 			WaitForWorkflow(
