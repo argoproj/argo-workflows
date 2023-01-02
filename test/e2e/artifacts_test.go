@@ -154,7 +154,7 @@ func (s *ArtifactsSuite) TestArtifactGC() {
 			return wf.Status.Phase == wfv1.WorkflowFailed || wf.Status.Phase == wfv1.WorkflowError
 		}) {
 			fmt.Println("can't reliably verify Artifact GC since workflow failed")
-			when = when.RemoveFinalizers(false)
+			when.RemoveFinalizers(false)
 			continue
 		}
 
@@ -258,7 +258,7 @@ spec:
 		return wf.Status.Phase == wfv1.WorkflowFailed || wf.Status.Phase == wfv1.WorkflowError
 	}) {
 		fmt.Println("can't reliably verify Artifact GC (Insufficient Role test) since workflow failed")
-		when = when.RemoveFinalizers(false)
+		when.RemoveFinalizers(false)
 		return
 	}
 
