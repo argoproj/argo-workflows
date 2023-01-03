@@ -6,8 +6,10 @@ Method | HTTP request | Description
 ------------- | ------------- | -------------
 [**artifactServiceGetArtifactFile**](ArtifactServiceApi.md#artifactServiceGetArtifactFile) | **GET** /artifact-files/{namespace}/{idDiscriminator}/{id}/{nodeId}/{artifactDiscriminator}/{artifactName} | Get an artifact.
 [**artifactServiceGetInputArtifact**](ArtifactServiceApi.md#artifactServiceGetInputArtifact) | **GET** /input-artifacts/{namespace}/{name}/{nodeId}/{artifactName} | Get an input artifact.
+[**artifactServiceGetInputArtifactByManifest**](ArtifactServiceApi.md#artifactServiceGetInputArtifactByManifest) | **POST** /input-artifacts-by-manifest/{podName}/{artifactName} | Get an output artifact by a full workflow manifest.
 [**artifactServiceGetInputArtifactByUID**](ArtifactServiceApi.md#artifactServiceGetInputArtifactByUID) | **GET** /input-artifacts-by-uid/{uid}/{nodeId}/{artifactName} | Get an input artifact by UID.
 [**artifactServiceGetOutputArtifact**](ArtifactServiceApi.md#artifactServiceGetOutputArtifact) | **GET** /artifacts/{namespace}/{name}/{nodeId}/{artifactName} | Get an output artifact.
+[**artifactServiceGetOutputArtifactByManifest**](ArtifactServiceApi.md#artifactServiceGetOutputArtifactByManifest) | **POST** /artifacts-by-manifest/{podName}/{artifactName} | Get an output artifact by a full workflow manifest.
 [**artifactServiceGetOutputArtifactByUID**](ArtifactServiceApi.md#artifactServiceGetOutputArtifactByUID) | **GET** /artifacts-by-uid/{uid}/{nodeId}/{artifactName} | Get an output artifact by UID.
 
 
@@ -163,6 +165,77 @@ Name | Type | Description  | Notes
 **200** | An artifact file. |  -  |
 **0** | An unexpected error response. |  -  |
 
+<a name="artifactServiceGetInputArtifactByManifest"></a>
+# **artifactServiceGetInputArtifactByManifest**
+> artifactServiceGetInputArtifactByManifest(podName, artifactName, body)
+
+Get an output artifact by a full workflow manifest.
+
+### Example
+```java
+// Import classes:
+import io.argoproj.workflow.ApiClient;
+import io.argoproj.workflow.ApiException;
+import io.argoproj.workflow.Configuration;
+import io.argoproj.workflow.auth.*;
+import io.argoproj.workflow.models.*;
+import io.argoproj.workflow.apis.ArtifactServiceApi;
+
+public class Example {
+  public static void main(String[] args) {
+    ApiClient defaultClient = Configuration.getDefaultApiClient();
+    defaultClient.setBasePath("http://localhost:2746");
+    
+    // Configure API key authorization: BearerToken
+    ApiKeyAuth BearerToken = (ApiKeyAuth) defaultClient.getAuthentication("BearerToken");
+    BearerToken.setApiKey("YOUR API KEY");
+    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
+    //BearerToken.setApiKeyPrefix("Token");
+
+    ArtifactServiceApi apiInstance = new ArtifactServiceApi(defaultClient);
+    String podName = "podName_example"; // String | 
+    String artifactName = "artifactName_example"; // String | 
+    IoArgoprojWorkflowV1alpha1ArtifactByManifestRequest body = new IoArgoprojWorkflowV1alpha1ArtifactByManifestRequest(); // IoArgoprojWorkflowV1alpha1ArtifactByManifestRequest | 
+    try {
+      apiInstance.artifactServiceGetInputArtifactByManifest(podName, artifactName, body);
+    } catch (ApiException e) {
+      System.err.println("Exception when calling ArtifactServiceApi#artifactServiceGetInputArtifactByManifest");
+      System.err.println("Status code: " + e.getCode());
+      System.err.println("Reason: " + e.getResponseBody());
+      System.err.println("Response headers: " + e.getResponseHeaders());
+      e.printStackTrace();
+    }
+  }
+}
+```
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **podName** | **String**|  |
+ **artifactName** | **String**|  |
+ **body** | [**IoArgoprojWorkflowV1alpha1ArtifactByManifestRequest**](IoArgoprojWorkflowV1alpha1ArtifactByManifestRequest.md)|  |
+
+### Return type
+
+null (empty response body)
+
+### Authorization
+
+[BearerToken](../README.md#BearerToken)
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
+ - **Accept**: application/json
+
+### HTTP response details
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+**200** | An artifact file. |  -  |
+**0** | An unexpected error response. |  -  |
+
 <a name="artifactServiceGetInputArtifactByUID"></a>
 # **artifactServiceGetInputArtifactByUID**
 > File artifactServiceGetInputArtifactByUID(uid, nodeId, artifactName)
@@ -301,6 +374,77 @@ Name | Type | Description  | Notes
 ### HTTP request headers
 
  - **Content-Type**: Not defined
+ - **Accept**: application/json
+
+### HTTP response details
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+**200** | An artifact file. |  -  |
+**0** | An unexpected error response. |  -  |
+
+<a name="artifactServiceGetOutputArtifactByManifest"></a>
+# **artifactServiceGetOutputArtifactByManifest**
+> artifactServiceGetOutputArtifactByManifest(podName, artifactName, body)
+
+Get an output artifact by a full workflow manifest.
+
+### Example
+```java
+// Import classes:
+import io.argoproj.workflow.ApiClient;
+import io.argoproj.workflow.ApiException;
+import io.argoproj.workflow.Configuration;
+import io.argoproj.workflow.auth.*;
+import io.argoproj.workflow.models.*;
+import io.argoproj.workflow.apis.ArtifactServiceApi;
+
+public class Example {
+  public static void main(String[] args) {
+    ApiClient defaultClient = Configuration.getDefaultApiClient();
+    defaultClient.setBasePath("http://localhost:2746");
+    
+    // Configure API key authorization: BearerToken
+    ApiKeyAuth BearerToken = (ApiKeyAuth) defaultClient.getAuthentication("BearerToken");
+    BearerToken.setApiKey("YOUR API KEY");
+    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
+    //BearerToken.setApiKeyPrefix("Token");
+
+    ArtifactServiceApi apiInstance = new ArtifactServiceApi(defaultClient);
+    String podName = "podName_example"; // String | 
+    String artifactName = "artifactName_example"; // String | 
+    IoArgoprojWorkflowV1alpha1ArtifactByManifestRequest body = new IoArgoprojWorkflowV1alpha1ArtifactByManifestRequest(); // IoArgoprojWorkflowV1alpha1ArtifactByManifestRequest | 
+    try {
+      apiInstance.artifactServiceGetOutputArtifactByManifest(podName, artifactName, body);
+    } catch (ApiException e) {
+      System.err.println("Exception when calling ArtifactServiceApi#artifactServiceGetOutputArtifactByManifest");
+      System.err.println("Status code: " + e.getCode());
+      System.err.println("Reason: " + e.getResponseBody());
+      System.err.println("Response headers: " + e.getResponseHeaders());
+      e.printStackTrace();
+    }
+  }
+}
+```
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **podName** | **String**|  |
+ **artifactName** | **String**|  |
+ **body** | [**IoArgoprojWorkflowV1alpha1ArtifactByManifestRequest**](IoArgoprojWorkflowV1alpha1ArtifactByManifestRequest.md)|  |
+
+### Return type
+
+null (empty response body)
+
+### Authorization
+
+[BearerToken](../README.md#BearerToken)
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
  - **Accept**: application/json
 
 ### HTTP response details
