@@ -31,11 +31,12 @@ func TestIsTransientGCSErr(t *testing.T) {
 		{&url.Error{Op: "blah", URL: "blah", Err: errors.New("connection refused")}, true},
 		{&url.Error{Op: "blah", URL: "blah", Err: errors.New("compute: Received 504 `Gateway Timeout\n`")}, true},
 		{&url.Error{Op: "blah", URL: "blah", Err: errors.New("http2: client connection lost")}, true},
-		{&url.Error{Op: "blah", URL: "blah", Err: errors.New("net/http: TLS handshake timeout")}, true},
 		{io.ErrUnexpectedEOF, true},
 		{&tlsHandshakeTimeoutError{}, true},
 		{fmt.Errorf("Test unwrapping of a temporary error: %w", &googleapi.Error{Code: 500}), true},
 		{fmt.Errorf("Test unwrapping of a non-retriable error: %w", &googleapi.Error{Code: 400}), false},
+		{fmt.Errorf("writer close: Post \"https://storage.googleapis.com/upload/storage/v1/b/bucket/o?alt=json&name=test.json&uploadType=multipart\": compute: Received 504 `Gateway Timeout\n`"), true},
+		{fmt.Errorf("http2: client connection lost"), true},
 	} {
 		got := isTransientGCSErr(test.err)
 		if got != test.shouldretry {

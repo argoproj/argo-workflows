@@ -83,6 +83,9 @@ func isTransientNetworkErr(err error) bool {
 	} else if _, ok := err.(*url.Error); ok && strings.Contains(errorString, "EOF") {
 		// If err is EOF, retry.
 		return true
+	} else if strings.Contains(errorString, "http2: client connection lost") {
+		// If err is http2 transport ping timeout, retry.
+		return true
 	}
 
 	return false

@@ -55,7 +55,7 @@ func isTransientGCSErr(err error) bool {
 		// Also picks up certain 500-level codes that are sent back from upstream gcp services
 		// and not caught by the googleapi.Error case (Workload Identity in particular)
 		retriable := []string{"connection refused", "connection reset", "Received 504",
-			"connection lost", "Received 500", "TLS handshake timeout"}
+			"Received 500", "TLS handshake timeout"}
 		for _, s := range retriable {
 			if strings.Contains(e.Error(), s) {
 				return true
