@@ -3835,8 +3835,8 @@
 </blockquote>
 <p>Argo Workflows ships with a server that provides more features and security than before.</p>
 <p>The server can be configured with or without client auth (<code>server --auth-mode client</code>). When it is disabled, then clients must pass their KUBECONFIG base 64 encoded in the HTTP <code>Authorization</code> header:</p>
-<div class="highlight"><pre><span></span><code><span class="nv">ARGO_TOKEN</span><span class="o">=</span><span class="k">$(</span>argo auth token<span class="k">)</span>
-curl -H <span class="s2">&quot;Authorization: </span><span class="nv">$ARGO_TOKEN</span><span class="s2">&quot;</span> https://localhost:2746/api/v1/workflows/argo
+<div class="highlight"><pre><span></span><code><span class="nv">ARGO_TOKEN</span><span class="o">=</span><span class="k">$(</span>argo<span class="w"> </span>auth<span class="w"> </span>token<span class="k">)</span>
+curl<span class="w"> </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: </span><span class="nv">$ARGO_TOKEN</span><span class="s2">&quot;</span><span class="w"> </span>https://localhost:2746/api/v1/workflows/argo
 </code></pre></div>
 <ul>
 <li>Learn more on <a href="../access-token/">how to generate an access token</a>.</li>

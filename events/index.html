@@ -4044,14 +4044,14 @@
 <p>Clients wanting to send events to the endpoint need an <a href="../access-token/">access token</a>.</p>
 <p>It is only possible to submit workflow templates your access token has access to: <a href="https://raw.githubusercontent.com/argoproj/argo-workflows/master/manifests/quick-start/base/webhooks/submit-workflow-template-role.yaml">example role</a>.</p>
 <p>Example (note the trailing slash):</p>
-<div class="highlight"><pre><span></span><code>curl https://localhost:2746/api/v1/events/argo/ <span class="se">\</span>
-  -H <span class="s2">&quot;Authorization: </span><span class="nv">$ARGO_TOKEN</span><span class="s2">&quot;</span> <span class="se">\</span>
-  -d <span class="s1">&#39;{&quot;message&quot;: &quot;hello&quot;}&#39;</span>
+<div class="highlight"><pre><span></span><code>curl<span class="w"> </span>https://localhost:2746/api/v1/events/argo/<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: </span><span class="nv">$ARGO_TOKEN</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{&quot;message&quot;: &quot;hello&quot;}&#39;</span>
 </code></pre></div>
 <p>With a <strong>discriminator</strong>:</p>
-<div class="highlight"><pre><span></span><code>curl https://localhost:2746/api/v1/events/argo/my-discriminator <span class="se">\</span>
-  -H <span class="s2">&quot;Authorization: </span><span class="nv">$ARGO_TOKEN</span><span class="s2">&quot;</span> <span class="se">\</span>
-  -d <span class="s1">&#39;{&quot;message&quot;: &quot;hello&quot;}&#39;</span>
+<div class="highlight"><pre><span></span><code>curl<span class="w"> </span>https://localhost:2746/api/v1/events/argo/my-discriminator<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: </span><span class="nv">$ARGO_TOKEN</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{&quot;message&quot;: &quot;hello&quot;}&#39;</span>
 </code></pre></div>
 <p>The event endpoint will always return in under 10 seconds because the event will be queued and processed asynchronously. This means you will not be notified synchronously of failure. It will return a failure (503) if the event processing queue is full.  </p>
 <div class="admonition warning">
@@ -4061,54 +4061,54 @@
 <h2 id="workflow-template-triggered-by-the-event">Workflow Template triggered by the event<a class="headerlink" href="#workflow-template-triggered-by-the-event" title="Permanent link">&para;</a></h2>
 <p>Before the binding between an event and a workflow template, you must create the workflow template that you want to trigger.
 The following one takes in input the "message" parameter specified into the API call body, passed through the <code>WorkflowEventBinding</code> parameters section, and finally resolved here as the message of the <code>whalesay</code> image.</p>
-<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span><span class="w"></span>
-<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">WorkflowTemplate</span><span class="w"></span>
-<span class="nt">metadata</span><span class="p">:</span><span class="w"></span>
-<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-wf-tmple</span><span class="w"></span>
-<span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">argo</span><span class="w"></span>
-<span class="nt">spec</span><span class="p">:</span><span class="w"></span>
-<span class="w">  </span><span class="nt">templates</span><span class="p">:</span><span class="w"></span>
-<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">main</span><span class="w"></span>
-<span class="w">      </span><span class="nt">inputs</span><span class="p">:</span><span class="w"></span>
-<span class="w">        </span><span class="nt">parameters</span><span class="p">:</span><span class="w"></span>
-<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">message</span><span class="w"></span>
-<span class="w">            </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{workflow.parameters.message}}&quot;</span><span class="w"></span>
-<span class="w">      </span><span class="nt">container</span><span class="p">:</span><span class="w"></span>
-<span class="w">        </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">docker/whalesay:latest</span><span class="w"></span>
-<span class="w">        </span><span class="nt">command</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">cowsay</span><span class="p p-Indicator">]</span><span class="w"></span>
-<span class="w">        </span><span class="nt">args</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;{{inputs.parameters.message}}&quot;</span><span class="p p-Indicator">]</span><span class="w"></span>
-<span class="w">  </span><span class="nt">entrypoint</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">main</span><span class="w"></span>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">WorkflowTemplate</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-wf-tmple</span>
+<span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">argo</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">templates</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">main</span>
+<span class="w">      </span><span class="nt">inputs</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">message</span>
+<span class="w">            </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{workflow.parameters.message}}&quot;</span>
+<span class="w">      </span><span class="nt">container</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">docker/whalesay:latest</span>
+<span class="w">        </span><span class="nt">command</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">cowsay</span><span class="p p-Indicator">]</span>
+<span class="w">        </span><span class="nt">args</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;{{inputs.parameters.message}}&quot;</span><span class="p p-Indicator">]</span>
+<span class="w">  </span><span class="nt">entrypoint</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">main</span>
 </code></pre></div>
 <h2 id="submitting-a-workflow-from-a-workflow-template">Submitting A Workflow From A Workflow Template<a class="headerlink" href="#submitting-a-workflow-from-a-workflow-template" title="Permanent link">&para;</a></h2>
 <p>A workflow template will be submitted (i.e. workflow created from it) and that can be created using parameters from the event itself.
 The following example will be triggered by an event with "message" in the payload. That message will be used as an argument for the created workflow.  Note that the name of the meta-data header "x-argo-e2e" is lowercase in the selector to match.  Incoming header names are converted to lowercase.</p>
-<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span><span class="w"></span>
-<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">WorkflowEventBinding</span><span class="w"></span>
-<span class="nt">metadata</span><span class="p">:</span><span class="w"></span>
-<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">event-consumer</span><span class="w"></span>
-<span class="nt">spec</span><span class="p">:</span><span class="w"></span>
-<span class="w">  </span><span class="nt">event</span><span class="p">:</span><span class="w"></span>
-<span class="w">    </span><span class="c1"># metadata header name must be lowercase to match in selector</span><span class="w"></span>
-<span class="w">    </span><span class="nt">selector</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">payload.message != &quot;&quot; &amp;&amp; metadata[&quot;x-argo-e2e&quot;] == [&quot;true&quot;] &amp;&amp; discriminator == &quot;my-discriminator&quot;</span><span class="w"></span>
-<span class="w">  </span><span class="nt">submit</span><span class="p">:</span><span class="w"></span>
-<span class="w">    </span><span class="nt">workflowTemplateRef</span><span class="p">:</span><span class="w"></span>
-<span class="w">      </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-wf-tmple</span><span class="w"></span>
-<span class="w">    </span><span class="nt">arguments</span><span class="p">:</span><span class="w"></span>
-<span class="w">      </span><span class="nt">parameters</span><span class="p">:</span><span class="w"></span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">message</span><span class="w"></span>
-<span class="w">        </span><span class="nt">valueFrom</span><span class="p">:</span><span class="w"></span>
-<span class="w">          </span><span class="nt">event</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">payload.message</span><span class="w"></span>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">WorkflowEventBinding</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">event-consumer</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">event</span><span class="p">:</span>
+<span class="w">    </span><span class="c1"># metadata header name must be lowercase to match in selector</span>
+<span class="w">    </span><span class="nt">selector</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">payload.message != &quot;&quot; &amp;&amp; metadata[&quot;x-argo-e2e&quot;] == [&quot;true&quot;] &amp;&amp; discriminator == &quot;my-discriminator&quot;</span>
+<span class="w">  </span><span class="nt">submit</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">workflowTemplateRef</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-wf-tmple</span>
+<span class="w">    </span><span class="nt">arguments</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">message</span>
+<span class="w">        </span><span class="nt">valueFrom</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">event</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">payload.message</span>
 </code></pre></div>
 <p>Please, notice that <code>workflowTemplateRef</code> refers to a template with the name <code>my-wf-tmple</code>, this template has to be created before the triggering of the event.
 After that you have to apply the above explained <code>WorkflowEventBinding</code> (in this example this is called <code>event-template.yml</code>) to realize the binding between Workflow Template and event (you can use <code>kubectl</code> to do that):</p>
-<div class="highlight"><pre><span></span><code>kubectl apply -f event-template.yml   
+<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span>event-template.yml<span class="w">   </span>
 </code></pre></div>
 <p>Finally you can trigger the creation of your first parametrized workflow template, by using the following call:</p>
 <p>Event:</p>
-<div class="highlight"><pre><span></span><code>curl <span class="nv">$ARGO_SERVER</span>/api/v1/events/argo/my-discriminator <span class="se">\</span>
-    -H <span class="s2">&quot;Authorization: </span><span class="nv">$ARGO_TOKEN</span><span class="s2">&quot;</span> <span class="se">\</span>
-    -H <span class="s2">&quot;X-Argo-E2E: true&quot;</span> <span class="se">\</span>
-    -d <span class="s1">&#39;{&quot;message&quot;: &quot;hello events&quot;}&#39;</span>
+<div class="highlight"><pre><span></span><code>curl<span class="w"> </span><span class="nv">$ARGO_SERVER</span>/api/v1/events/argo/my-discriminator<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: </span><span class="nv">$ARGO_TOKEN</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>-H<span class="w"> </span><span class="s2">&quot;X-Argo-E2E: true&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>-d<span class="w"> </span><span class="s1">&#39;{&quot;message&quot;: &quot;hello events&quot;}&#39;</span>
 </code></pre></div>
 <div class="admonition warning">
 <p class="admonition-title">Malformed Expressions</p>
@@ -4128,13 +4128,13 @@ the expression in single quotes to avoid any problems when submitting the event
 binding to Kubernetes.</p>
 <p>This is an example snippet of how to set the name, annotations and labels. This is
 based on the workflow binding from above, and the first event.</p>
-<div class="highlight"><pre><span></span><code><span class="nt">submit</span><span class="p">:</span><span class="w"></span>
-<span class="w">  </span><span class="nt">metadata</span><span class="p">:</span><span class="w"></span>
-<span class="w">    </span><span class="nt">annotations</span><span class="p">:</span><span class="w"></span>
-<span class="w">      </span><span class="nt">anAnnotation</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;event.payload.message&#39;</span><span class="w"></span>
-<span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;event.payload.message</span><span class="nv"> </span><span class="s">+</span><span class="nv"> </span><span class="s">&quot;-world&quot;&#39;</span><span class="w"></span>
-<span class="w">    </span><span class="nt">labels</span><span class="p">:</span><span class="w"></span>
-<span class="w">      </span><span class="nt">someLabel</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;&quot;literal</span><span class="nv"> </span><span class="s">string&quot;&#39;</span><span class="w"></span>
+<div class="highlight"><pre><span></span><code><span class="nt">submit</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">metadata</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">annotations</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">anAnnotation</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;event.payload.message&#39;</span>
+<span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;event.payload.message</span><span class="nv"> </span><span class="s">+</span><span class="nv"> </span><span class="s">&quot;-world&quot;&#39;</span>
+<span class="w">    </span><span class="nt">labels</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">someLabel</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;&quot;literal</span><span class="nv"> </span><span class="s">string&quot;&#39;</span>
 </code></pre></div>
 <p>This will result in the workflow being named "hello-world" instead of
 <code>my-wf-tmple-&lt;timestamp&gt;</code>. There will be an extra label with the key <code>someLabel</code> and

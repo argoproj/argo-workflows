@@ -4040,22 +4040,22 @@
 <p><code>CronWorkflow</code> are workflows that run on a preset schedule. They are designed to be converted from <code>Workflow</code> easily and to mimic the same options as Kubernetes <code>CronJob</code>. In essence, <code>CronWorkflow</code> = <code>Workflow</code> + some specific cron options.</p>
 <h2 id="cronworkflow-spec"><code>CronWorkflow</code> Spec<a class="headerlink" href="#cronworkflow-spec" title="Permanent link">&para;</a></h2>
 <p>An example <code>CronWorkflow</code> spec would look like:</p>
-<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span><span class="w"></span>
-<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">CronWorkflow</span><span class="w"></span>
-<span class="nt">metadata</span><span class="p">:</span><span class="w"></span>
-<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">test-cron-wf</span><span class="w"></span>
-<span class="nt">spec</span><span class="p">:</span><span class="w"></span>
-<span class="w">  </span><span class="nt">schedule</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;*</span><span class="nv"> </span><span class="s">*</span><span class="nv"> </span><span class="s">*</span><span class="nv"> </span><span class="s">*</span><span class="nv"> </span><span class="s">*&quot;</span><span class="w"></span>
-<span class="w">  </span><span class="nt">concurrencyPolicy</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Replace&quot;</span><span class="w"></span>
-<span class="w">  </span><span class="nt">startingDeadlineSeconds</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0</span><span class="w"></span>
-<span class="w">  </span><span class="nt">workflowSpec</span><span class="p">:</span><span class="w"></span>
-<span class="w">    </span><span class="nt">entrypoint</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">whalesay</span><span class="w"></span>
-<span class="w">    </span><span class="nt">templates</span><span class="p">:</span><span class="w"></span>
-<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">whalesay</span><span class="w"></span>
-<span class="w">      </span><span class="nt">container</span><span class="p">:</span><span class="w"></span>
-<span class="w">        </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">alpine:3.6</span><span class="w"></span>
-<span class="w">        </span><span class="nt">command</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">sh</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">-c</span><span class="p p-Indicator">]</span><span class="w"></span>
-<span class="w">        </span><span class="nt">args</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;date;</span><span class="nv"> </span><span class="s">sleep</span><span class="nv"> </span><span class="s">90&quot;</span><span class="p p-Indicator">]</span><span class="w"></span>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">CronWorkflow</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">test-cron-wf</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">schedule</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;*</span><span class="nv"> </span><span class="s">*</span><span class="nv"> </span><span class="s">*</span><span class="nv"> </span><span class="s">*</span><span class="nv"> </span><span class="s">*&quot;</span>
+<span class="w">  </span><span class="nt">concurrencyPolicy</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Replace&quot;</span>
+<span class="w">  </span><span class="nt">startingDeadlineSeconds</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0</span>
+<span class="w">  </span><span class="nt">workflowSpec</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">entrypoint</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">whalesay</span>
+<span class="w">    </span><span class="nt">templates</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">whalesay</span>
+<span class="w">      </span><span class="nt">container</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">alpine:3.6</span>
+<span class="w">        </span><span class="nt">command</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">sh</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">-c</span><span class="p p-Indicator">]</span>
+<span class="w">        </span><span class="nt">args</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;date;</span><span class="nv"> </span><span class="s">sleep</span><span class="nv"> </span><span class="s">90&quot;</span><span class="p p-Indicator">]</span>
 </code></pre></div>
 <h3 id="workflowspec-and-workflowmetadata"><code>workflowSpec</code> and <code>workflowMetadata</code><a class="headerlink" href="#workflowspec-and-workflowmetadata" title="Permanent link">&para;</a></h3>
 <p><code>CronWorkflow.spec.workflowSpec</code> is the same type as <code>Workflow.spec</code> and serves as a template for <code>Workflow</code> objects that are created from it. Everything under this spec will be converted to a <code>Workflow</code>.</p>
@@ -4244,36 +4244,36 @@
 <h2 id="managing-cronworkflow">Managing <code>CronWorkflow</code><a class="headerlink" href="#managing-cronworkflow" title="Permanent link">&para;</a></h2>
 <h3 id="cli">CLI<a class="headerlink" href="#cli" title="Permanent link">&para;</a></h3>
 <p><code>CronWorkflow</code> can be created from the CLI by using basic commands:</p>
-<div class="highlight"><pre><span></span><code>$ argo cron create cron.yaml
-Name:                          test-cron-wf
-Namespace:                     argo
-Created:                       Mon Nov <span class="m">18</span> <span class="m">10</span>:17:06 -0800 <span class="o">(</span>now<span class="o">)</span>
-Schedule:                      * * * * *
-Suspended:                     <span class="nb">false</span>
-StartingDeadlineSeconds:       <span class="m">0</span>
-ConcurrencyPolicy:             Forbid
+<div class="highlight"><pre><span></span><code>$<span class="w"> </span>argo<span class="w"> </span>cron<span class="w"> </span>create<span class="w"> </span>cron.yaml
+Name:<span class="w">                          </span>test-cron-wf
+Namespace:<span class="w">                     </span>argo
+Created:<span class="w">                       </span>Mon<span class="w"> </span>Nov<span class="w"> </span><span class="m">18</span><span class="w"> </span><span class="m">10</span>:17:06<span class="w"> </span>-0800<span class="w"> </span><span class="o">(</span>now<span class="o">)</span>
+Schedule:<span class="w">                      </span>*<span class="w"> </span>*<span class="w"> </span>*<span class="w"> </span>*<span class="w"> </span>*
+Suspended:<span class="w">                     </span><span class="nb">false</span>
+StartingDeadlineSeconds:<span class="w">       </span><span class="m">0</span>
+ConcurrencyPolicy:<span class="w">             </span>Forbid
 
-$ argo cron list
-NAME           AGE   LAST RUN   SCHEDULE    SUSPENDED
-test-cron-wf   49s   N/A        * * * * *   <span class="nb">false</span>
+$<span class="w"> </span>argo<span class="w"> </span>cron<span class="w"> </span>list
+NAME<span class="w">           </span>AGE<span class="w">   </span>LAST<span class="w"> </span>RUN<span class="w">   </span>SCHEDULE<span class="w">    </span>SUSPENDED
+test-cron-wf<span class="w">   </span>49s<span class="w">   </span>N/A<span class="w">        </span>*<span class="w"> </span>*<span class="w"> </span>*<span class="w"> </span>*<span class="w"> </span>*<span class="w">   </span><span class="nb">false</span>
 
 <span class="c1"># some time passes</span>
 
-$ argo cron list
-NAME           AGE   LAST RUN   SCHEDULE    SUSPENDED
-test-cron-wf   56s   2s         * * * * *   <span class="nb">false</span>
+$<span class="w"> </span>argo<span class="w"> </span>cron<span class="w"> </span>list
+NAME<span class="w">           </span>AGE<span class="w">   </span>LAST<span class="w"> </span>RUN<span class="w">   </span>SCHEDULE<span class="w">    </span>SUSPENDED
+test-cron-wf<span class="w">   </span>56s<span class="w">   </span>2s<span class="w">         </span>*<span class="w"> </span>*<span class="w"> </span>*<span class="w"> </span>*<span class="w"> </span>*<span class="w">   </span><span class="nb">false</span>
 
-$ argo cron get test-cron-wf
-Name:                          test-cron-wf
-Namespace:                     argo
-Created:                       Wed Oct <span class="m">28</span> <span class="m">07</span>:19:02 -0600 <span class="o">(</span><span class="m">23</span> hours ago<span class="o">)</span>
-Schedule:                      * * * * *
-Suspended:                     <span class="nb">false</span>
-StartingDeadlineSeconds:       <span class="m">0</span>
-ConcurrencyPolicy:             Replace
-LastScheduledTime:             Thu Oct <span class="m">29</span> <span class="m">06</span>:51:00 -0600 <span class="o">(</span><span class="m">11</span> minutes ago<span class="o">)</span>
-NextScheduledTime:             Thu Oct <span class="m">29</span> <span class="m">13</span>:03:00 +0000 <span class="o">(</span><span class="m">32</span> seconds from now<span class="o">)</span>
-Active Workflows:              test-cron-wf-rt4nf
+$<span class="w"> </span>argo<span class="w"> </span>cron<span class="w"> </span>get<span class="w"> </span>test-cron-wf
+Name:<span class="w">                          </span>test-cron-wf
+Namespace:<span class="w">                     </span>argo
+Created:<span class="w">                       </span>Wed<span class="w"> </span>Oct<span class="w"> </span><span class="m">28</span><span class="w"> </span><span class="m">07</span>:19:02<span class="w"> </span>-0600<span class="w"> </span><span class="o">(</span><span class="m">23</span><span class="w"> </span>hours<span class="w"> </span>ago<span class="o">)</span>
+Schedule:<span class="w">                      </span>*<span class="w"> </span>*<span class="w"> </span>*<span class="w"> </span>*<span class="w"> </span>*
+Suspended:<span class="w">                     </span><span class="nb">false</span>
+StartingDeadlineSeconds:<span class="w">       </span><span class="m">0</span>
+ConcurrencyPolicy:<span class="w">             </span>Replace
+LastScheduledTime:<span class="w">             </span>Thu<span class="w"> </span>Oct<span class="w"> </span><span class="m">29</span><span class="w"> </span><span class="m">06</span>:51:00<span class="w"> </span>-0600<span class="w"> </span><span class="o">(</span><span class="m">11</span><span class="w"> </span>minutes<span class="w"> </span>ago<span class="o">)</span>
+NextScheduledTime:<span class="w">             </span>Thu<span class="w"> </span>Oct<span class="w"> </span><span class="m">29</span><span class="w"> </span><span class="m">13</span>:03:00<span class="w"> </span>+0000<span class="w"> </span><span class="o">(</span><span class="m">32</span><span class="w"> </span>seconds<span class="w"> </span>from<span class="w"> </span>now<span class="o">)</span>
+Active<span class="w"> </span>Workflows:<span class="w">              </span>test-cron-wf-rt4nf
 </code></pre></div>
 <p><strong>Note</strong>: <code>NextScheduledRun</code> assumes that the workflow-controller uses UTC as its timezone</p>
 <h3 id="kubectl"><code>kubectl</code><a class="headerlink" href="#kubectl" title="Permanent link">&para;</a></h3>

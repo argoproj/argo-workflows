@@ -3916,43 +3916,43 @@ running <a href="../argo-server/#auth-mode">authentication</a>):</p>
 <p>Recommended for: development.</p>
 <p>Everything is sent in plain text.</p>
 <p>Start Argo Server with the --secure=false (or <code>ARGO_SECURE=false</code>) flag, e.g.:</p>
-<div class="highlight"><pre><span></span><code><span class="nb">export</span> <span class="nv">ARGO_SECURE</span><span class="o">=</span><span class="nb">false</span>
-argo server --secure<span class="o">=</span><span class="nb">false</span>
+<div class="highlight"><pre><span></span><code><span class="nb">export</span><span class="w"> </span><span class="nv">ARGO_SECURE</span><span class="o">=</span><span class="nb">false</span>
+argo<span class="w"> </span>server<span class="w"> </span>--secure<span class="o">=</span><span class="nb">false</span>
 </code></pre></div>
 <p>To secure the UI you may front it with a HTTPS proxy.</p>
 <h2 id="encrypted">Encrypted<a class="headerlink" href="#encrypted" title="Permanent link">&para;</a></h2>
 <p>Recommended for: development and test environments.</p>
 <p>You can encrypt connections without any real effort.</p>
 <p>Start Argo Server with the <code>--secure</code> flag, e.g.:</p>
-<div class="highlight"><pre><span></span><code>argo server --secure
+<div class="highlight"><pre><span></span><code>argo<span class="w"> </span>server<span class="w"> </span>--secure
 </code></pre></div>
 <p>It will start with a self-signed certificate that expires after 365 days.</p>
 <p>Run the CLI with <code>--secure</code> (or <code>ARGO_SECURE=true</code>) and <code>--insecure-skip-verify</code> (or <code>ARGO_INSECURE_SKIP_VERIFY=true</code>).</p>
-<div class="highlight"><pre><span></span><code>argo --secure --insecure-skip-verify list
+<div class="highlight"><pre><span></span><code>argo<span class="w"> </span>--secure<span class="w"> </span>--insecure-skip-verify<span class="w"> </span>list
 </code></pre></div>
-<div class="highlight"><pre><span></span><code><span class="nb">export</span> <span class="nv">ARGO_SECURE</span><span class="o">=</span><span class="nb">true</span>
-<span class="nb">export</span> <span class="nv">ARGO_INSECURE_SKIP_VERIFY</span><span class="o">=</span><span class="nb">true</span>
-argo --secure --insecure-skip-verify list
+<div class="highlight"><pre><span></span><code><span class="nb">export</span><span class="w"> </span><span class="nv">ARGO_SECURE</span><span class="o">=</span><span class="nb">true</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">ARGO_INSECURE_SKIP_VERIFY</span><span class="o">=</span><span class="nb">true</span>
+argo<span class="w"> </span>--secure<span class="w"> </span>--insecure-skip-verify<span class="w"> </span>list
 </code></pre></div>
 <p>Tip: Don't forget to update your readiness probe to use HTTPS. To do so, edit your <code>argo-server</code>
 Deployment's <code>readinessProbe</code> spec:</p>
-<div class="highlight"><pre><span></span><code><span class="nt">readinessProbe</span><span class="p">:</span><span class="w"></span>
+<div class="highlight"><pre><span></span><code><span class="nt">readinessProbe</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">httpGet</span><span class="p">:</span><span class="w"> </span>
-<span class="w">        </span><span class="nt">scheme</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">HTTPS</span><span class="w"></span>
+<span class="w">        </span><span class="nt">scheme</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">HTTPS</span>
 </code></pre></div>
 <h3 id="encrypted-and-verified">Encrypted and Verified<a class="headerlink" href="#encrypted-and-verified" title="Permanent link">&para;</a></h3>
 <p>Recommended for: production environments.</p>
 <p>Run your HTTPS proxy in front of the Argo Server. You'll need to set-up your certificates (this is out of scope of this
 documentation).</p>
 <p>Start Argo Server with the <code>--secure</code> flag, e.g.:</p>
-<div class="highlight"><pre><span></span><code>argo server --secure
+<div class="highlight"><pre><span></span><code>argo<span class="w"> </span>server<span class="w"> </span>--secure
 </code></pre></div>
 <p>As before, it will start with a self-signed certificate that expires after 365 days.</p>
 <p>Run the CLI with <code>--secure</code> (or <code>ARGO_SECURE=true</code>) only.</p>
-<div class="highlight"><pre><span></span><code>argo --secure list
+<div class="highlight"><pre><span></span><code>argo<span class="w"> </span>--secure<span class="w"> </span>list
 </code></pre></div>
-<div class="highlight"><pre><span></span><code><span class="nb">export</span> <span class="nv">ARGO_SECURE</span><span class="o">=</span><span class="nb">true</span>
-argo list
+<div class="highlight"><pre><span></span><code><span class="nb">export</span><span class="w"> </span><span class="nv">ARGO_SECURE</span><span class="o">=</span><span class="nb">true</span>
+argo<span class="w"> </span>list
 </code></pre></div>
 <h3 id="tls-min-version">TLS Min Version<a class="headerlink" href="#tls-min-version" title="Permanent link">&para;</a></h3>
 <p>Set <code>TLS_MIN_VERSION</code> to be the minimum TLS version to use. This is v1.2 by default.</p>

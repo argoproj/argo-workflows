@@ -3960,7 +3960,7 @@ type template is used.</li>
 </li>
 </ul>
 <p>You can determine values as follows:</p>
-<div class="highlight"><pre><span></span><code>docker image inspect -f <span class="s1">&#39;{{.Config.Entrypoint}} {{.Config.Cmd}}&#39;</span> argoproj/argosay:v2
+<div class="highlight"><pre><span></span><code>docker<span class="w"> </span>image<span class="w"> </span>inspect<span class="w"> </span>-f<span class="w"> </span><span class="s1">&#39;{{.Config.Entrypoint}} {{.Config.Cmd}}&#39;</span><span class="w"> </span>argoproj/argosay:v2
 </code></pre></div>
 <p><a href="https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#notes">Learn more about command and args</a></p>
 <h3 id="image-index">Image Index<a class="headerlink" href="#image-index" title="Permanent link">&para;</a></h3>

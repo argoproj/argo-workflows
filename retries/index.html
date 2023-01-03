@@ -3873,21 +3873,21 @@
 <h1 id="retries">Retries<a class="headerlink" href="#retries" title="Permanent link">&para;</a></h1>
 <p>Argo Workflows offers a range of options for retrying failed steps.</p>
 <h2 id="configuring-retrystrategy-in-workflowspec">Configuring <code>retryStrategy</code> in <code>WorkflowSpec</code><a class="headerlink" href="#configuring-retrystrategy-in-workflowspec" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span><span class="w"></span>
-<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Workflow</span><span class="w"></span>
-<span class="nt">metadata</span><span class="p">:</span><span class="w"></span>
-<span class="w">  </span><span class="nt">generateName</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">retry-container-</span><span class="w"></span>
-<span class="nt">spec</span><span class="p">:</span><span class="w"></span>
-<span class="w">  </span><span class="nt">entrypoint</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">retry-container</span><span class="w"></span>
-<span class="w">  </span><span class="nt">templates</span><span class="p">:</span><span class="w"></span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">retry-container</span><span class="w"></span>
-<span class="w">    </span><span class="nt">retryStrategy</span><span class="p">:</span><span class="w"></span>
-<span class="w">      </span><span class="nt">limit</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;10&quot;</span><span class="w"></span>
-<span class="w">    </span><span class="nt">container</span><span class="p">:</span><span class="w"></span>
-<span class="w">      </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">python:alpine3.6</span><span class="w"></span>
-<span class="w">      </span><span class="nt">command</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;python&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">-c</span><span class="p p-Indicator">]</span><span class="w"></span>
-<span class="w">      </span><span class="c1"># fail with a 66% probability</span><span class="w"></span>
-<span class="w">      </span><span class="nt">args</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;import</span><span class="nv"> </span><span class="s">random;</span><span class="nv"> </span><span class="s">import</span><span class="nv"> </span><span class="s">sys;</span><span class="nv"> </span><span class="s">exit_code</span><span class="nv"> </span><span class="s">=</span><span class="nv"> </span><span class="s">random.choice([0,</span><span class="nv"> </span><span class="s">1,</span><span class="nv"> </span><span class="s">1]);</span><span class="nv"> </span><span class="s">sys.exit(exit_code)&quot;</span><span class="p p-Indicator">]</span><span class="w"></span>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Workflow</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">generateName</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">retry-container-</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">entrypoint</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">retry-container</span>
+<span class="w">  </span><span class="nt">templates</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">retry-container</span>
+<span class="w">    </span><span class="nt">retryStrategy</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">limit</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;10&quot;</span>
+<span class="w">    </span><span class="nt">container</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">python:alpine3.6</span>
+<span class="w">      </span><span class="nt">command</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;python&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">-c</span><span class="p p-Indicator">]</span>
+<span class="w">      </span><span class="c1"># fail with a 66% probability</span>
+<span class="w">      </span><span class="nt">args</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;import</span><span class="nv"> </span><span class="s">random;</span><span class="nv"> </span><span class="s">import</span><span class="nv"> </span><span class="s">sys;</span><span class="nv"> </span><span class="s">exit_code</span><span class="nv"> </span><span class="s">=</span><span class="nv"> </span><span class="s">random.choice([0,</span><span class="nv"> </span><span class="s">1,</span><span class="nv"> </span><span class="s">1]);</span><span class="nv"> </span><span class="s">sys.exit(exit_code)&quot;</span><span class="p p-Indicator">]</span>
 </code></pre></div>
 <h2 id="retry-policies">Retry policies<a class="headerlink" href="#retry-policies" title="Permanent link">&para;</a></h2>
 <p>Use <code>retryPolicy</code> to choose which failures to retry:</p>
@@ -3898,22 +3898,22 @@
 <li><code>OnTransientError</code>: Retry steps that encounter errors <a href="https://github.com/argoproj/argo-workflows/blob/master/util/errors/errors.go">defined as transient</a>, or errors matching the <code>TRANSIENT_ERROR_PATTERN</code> <a href="https://argoproj.github.io/argo-workflows/environment-variables/">environment variable</a>. Available in version 3.0 and later.</li>
 </ul>
 <p>For example:</p>
-<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span><span class="w"></span>
-<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Workflow</span><span class="w"></span>
-<span class="nt">metadata</span><span class="p">:</span><span class="w"></span>
-<span class="w">  </span><span class="nt">generateName</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">retry-on-error-</span><span class="w"></span>
-<span class="nt">spec</span><span class="p">:</span><span class="w"></span>
-<span class="w">  </span><span class="nt">entrypoint</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">error-container</span><span class="w"></span>
-<span class="w">  </span><span class="nt">templates</span><span class="p">:</span><span class="w"></span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">error-container</span><span class="w"></span>
-<span class="w">    </span><span class="nt">retryStrategy</span><span class="p">:</span><span class="w"></span>
-<span class="w">      </span><span class="nt">limit</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;2&quot;</span><span class="w"></span>
-<span class="w">      </span><span class="nt">retryPolicy</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Always&quot;</span><span class="w"></span>
-<span class="w">    </span><span class="nt">container</span><span class="p">:</span><span class="w"></span>
-<span class="w">      </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">python</span><span class="w"></span>
-<span class="w">      </span><span class="nt">command</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;python&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;-c&quot;</span><span class="p p-Indicator">]</span><span class="w"></span>
-<span class="w">      </span><span class="c1"># fail with a 80% probability</span><span class="w"></span>
-<span class="w">      </span><span class="nt">args</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;import</span><span class="nv"> </span><span class="s">random;</span><span class="nv"> </span><span class="s">import</span><span class="nv"> </span><span class="s">sys;</span><span class="nv"> </span><span class="s">exit_code</span><span class="nv"> </span><span class="s">=</span><span class="nv"> </span><span class="s">random.choice(range(0,</span><span class="nv"> </span><span class="s">5));</span><span class="nv"> </span><span class="s">sys.exit(exit_code)&quot;</span><span class="p p-Indicator">]</span><span class="w"></span>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Workflow</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">generateName</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">retry-on-error-</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">entrypoint</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">error-container</span>
+<span class="w">  </span><span class="nt">templates</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">error-container</span>
+<span class="w">    </span><span class="nt">retryStrategy</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">limit</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;2&quot;</span>
+<span class="w">      </span><span class="nt">retryPolicy</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Always&quot;</span>
+<span class="w">    </span><span class="nt">container</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">python</span>
+<span class="w">      </span><span class="nt">command</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;python&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;-c&quot;</span><span class="p p-Indicator">]</span>
+<span class="w">      </span><span class="c1"># fail with a 80% probability</span>
+<span class="w">      </span><span class="nt">args</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;import</span><span class="nv"> </span><span class="s">random;</span><span class="nv"> </span><span class="s">import</span><span class="nv"> </span><span class="s">sys;</span><span class="nv"> </span><span class="s">exit_code</span><span class="nv"> </span><span class="s">=</span><span class="nv"> </span><span class="s">random.choice(range(0,</span><span class="nv"> </span><span class="s">5));</span><span class="nv"> </span><span class="s">sys.exit(exit_code)&quot;</span><span class="p p-Indicator">]</span>
 </code></pre></div>
 <h2 id="conditional-retries">Conditional retries<a class="headerlink" href="#conditional-retries" title="Permanent link">&para;</a></h2>
 <blockquote>

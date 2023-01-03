@@ -3829,25 +3829,25 @@
 <h1 id="stress-testing">Stress Testing<a class="headerlink" href="#stress-testing" title="Permanent link">&para;</a></h1>
 <p>Install <code>gcloud</code> binary.</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Login to GCP:</span>
-gloud auth login
+gloud<span class="w"> </span>auth<span class="w"> </span>login
 
 <span class="c1"># Set-up your config (if needed):</span>
-gcloud config <span class="nb">set</span> project alex-sb
+gcloud<span class="w"> </span>config<span class="w"> </span><span class="nb">set</span><span class="w"> </span>project<span class="w"> </span>alex-sb
 
 <span class="c1"># Create a cluster (default region is us-west-2, if you&#39;re not in west of the USA, you might want at different region):</span>
-gcloud container clusters create-auto argo-workflows-stress-1
+gcloud<span class="w"> </span>container<span class="w"> </span>clusters<span class="w"> </span>create-auto<span class="w"> </span>argo-workflows-stress-1
 
 <span class="c1"># Get credentials:</span>
-gcloud container clusters get-credentials argo-workflows-stress-1                             
+gcloud<span class="w"> </span>container<span class="w"> </span>clusters<span class="w"> </span>get-credentials<span class="w"> </span>argo-workflows-stress-1<span class="w">                             </span>
 
 <span class="c1"># Install workflows (If this fails, try running it again):</span>
-make start <span class="nv">PROFILE</span><span class="o">=</span>stress
+make<span class="w"> </span>start<span class="w"> </span><span class="nv">PROFILE</span><span class="o">=</span>stress
 
 <span class="c1"># Make sure pods are running:</span>
-kubectl get deployments
+kubectl<span class="w"> </span>get<span class="w"> </span>deployments
 
 <span class="c1"># Run a test workflow:</span>
-argo submit examples/hello-world.yaml --watch
+argo<span class="w"> </span>submit<span class="w"> </span>examples/hello-world.yaml<span class="w"> </span>--watch
 </code></pre></div>
 <p>Checks</p>
 <ul>
@@ -3867,12 +3867,12 @@ argo submit examples/hello-world.yaml --watch
 <li>How many errors were logged? <code>log_messages{level="error"}</code> What was the cause?</li>
 </ol>
 <p>Check PProf to see if there any any hot spots:</p>
-<div class="highlight"><pre><span></span><code>go tool pprof -png http://localhost:6060/debug/pprof/allocs
-go tool pprof -png http://localhost:6060/debug/pprof/heap
-go tool pprof -png http://localhost:6060/debug/pprof/profile
+<div class="highlight"><pre><span></span><code>go<span class="w"> </span>tool<span class="w"> </span>pprof<span class="w"> </span>-png<span class="w"> </span>http://localhost:6060/debug/pprof/allocs
+go<span class="w"> </span>tool<span class="w"> </span>pprof<span class="w"> </span>-png<span class="w"> </span>http://localhost:6060/debug/pprof/heap
+go<span class="w"> </span>tool<span class="w"> </span>pprof<span class="w"> </span>-png<span class="w"> </span>http://localhost:6060/debug/pprof/profile
 </code></pre></div>
 <h2 id="clean-up">Clean-up<a class="headerlink" href="#clean-up" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code>gcloud container clusters delete argo-workflows-stress-1
+<div class="highlight"><pre><span></span><code>gcloud<span class="w"> </span>container<span class="w"> </span>clusters<span class="w"> </span>delete<span class="w"> </span>argo-workflows-stress-1
 </code></pre></div>
 
               

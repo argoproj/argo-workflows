@@ -3844,7 +3844,7 @@
 <h2 id="cherry-picking-fixes">Cherry-Picking Fixes<a class="headerlink" href="#cherry-picking-fixes" title="Permanent link">&para;</a></h2>
 <p>✋ Before you start, make sure the release branch is passing CI.</p>
 <p>Get a list of commits you may want to cherry-pick:</p>
-<div class="highlight"><pre><span></span><code>./hack/what-to-cherry-pick.sh release-3.3
+<div class="highlight"><pre><span></span><code>./hack/what-to-cherry-pick.sh<span class="w"> </span>release-3.3
 </code></pre></div>
 <p>Ignore:</p>
 <ul>
@@ -3860,8 +3860,8 @@ run <code>make test</code> locally before pushing.</p>
 <h2 id="publish-release">Publish Release<a class="headerlink" href="#publish-release" title="Permanent link">&para;</a></h2>
 <p>✋ Before you start, make sure the branch is passing CI.</p>
 <p>Push a new tag to the release branch. E.g.:</p>
-<div class="highlight"><pre><span></span><code>git tag v3.3.4
-git push upstream v3.3.4 <span class="p">;</span><span class="c1"># or origin if you do not use upstream</span>
+<div class="highlight"><pre><span></span><code>git<span class="w"> </span>tag<span class="w"> </span>v3.3.4
+git<span class="w"> </span>push<span class="w"> </span>upstream<span class="w"> </span>v3.3.4<span class="w"> </span><span class="p">;</span><span class="c1"># or origin if you do not use upstream</span>
 </code></pre></div>
 <p>Github Actions will automatically build and publish your release. This takes about 1h. Set your self a reminder to check
 this was successful.</p>

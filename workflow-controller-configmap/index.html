@@ -3848,50 +3848,50 @@
 <p>For a detailed example, please see <a href="../workflow-controller-configmap.yaml"><code>workflow-controller-configmap.yaml</code></a>.</p>
 <h2 id="alternate-structure">Alternate Structure<a class="headerlink" href="#alternate-structure" title="Permanent link">&para;</a></h2>
 <p>In all versions, the configuration may be under a <code>config: |</code> key:</p>
-<div class="highlight"><pre><span></span><code><span class="c1"># This file describes the config settings available in the workflow controller configmap</span><span class="w"></span>
-<span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1</span><span class="w"></span>
-<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ConfigMap</span><span class="w"></span>
-<span class="nt">metadata</span><span class="p">:</span><span class="w"></span>
-<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">workflow-controller-configmap</span><span class="w"></span>
-<span class="nt">data</span><span class="p">:</span><span class="w"></span>
-<span class="w">  </span><span class="nt">config</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span><span class="w"></span>
-<span class="w">    </span><span class="no">instanceID: my-ci-controller</span><span class="w"></span>
-<span class="w">    </span><span class="no">artifactRepository:</span><span class="w"></span>
-<span class="w">      </span><span class="no">archiveLogs: true</span><span class="w"></span>
-<span class="w">      </span><span class="no">s3:</span><span class="w"></span>
-<span class="w">        </span><span class="no">endpoint: s3.amazonaws.com</span><span class="w"></span>
-<span class="w">        </span><span class="no">bucket: my-bucket</span><span class="w"></span>
-<span class="w">        </span><span class="no">region: us-west-2</span><span class="w"></span>
-<span class="w">        </span><span class="no">insecure: false</span><span class="w"></span>
-<span class="w">        </span><span class="no">accessKeySecret:</span><span class="w"></span>
-<span class="w">          </span><span class="no">name: my-s3-credentials</span><span class="w"></span>
-<span class="w">          </span><span class="no">key: accessKey</span><span class="w"></span>
-<span class="w">        </span><span class="no">secretKeySecret:</span><span class="w"></span>
-<span class="w">          </span><span class="no">name: my-s3-credentials</span><span class="w"></span>
-<span class="w">          </span><span class="no">key: secretKey</span><span class="w"></span>
+<div class="highlight"><pre><span></span><code><span class="c1"># This file describes the config settings available in the workflow controller configmap</span>
+<span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ConfigMap</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">workflow-controller-configmap</span>
+<span class="nt">data</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">config</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
+<span class="w">    </span><span class="no">instanceID: my-ci-controller</span>
+<span class="w">    </span><span class="no">artifactRepository:</span>
+<span class="w">      </span><span class="no">archiveLogs: true</span>
+<span class="w">      </span><span class="no">s3:</span>
+<span class="w">        </span><span class="no">endpoint: s3.amazonaws.com</span>
+<span class="w">        </span><span class="no">bucket: my-bucket</span>
+<span class="w">        </span><span class="no">region: us-west-2</span>
+<span class="w">        </span><span class="no">insecure: false</span>
+<span class="w">        </span><span class="no">accessKeySecret:</span>
+<span class="w">          </span><span class="no">name: my-s3-credentials</span>
+<span class="w">          </span><span class="no">key: accessKey</span>
+<span class="w">        </span><span class="no">secretKeySecret:</span>
+<span class="w">          </span><span class="no">name: my-s3-credentials</span>
+<span class="w">          </span><span class="no">key: secretKey</span>
 </code></pre></div>
 <p>In version 2.7+, the <code>config: |</code> key is optional. However, if the <code>config: |</code> key is not used, all nested maps under top level
 keys should be strings. This makes it easier to generate the map with some configuration management tools like Kustomize.</p>
-<div class="highlight"><pre><span></span><code><span class="c1"># This file describes the config settings available in the workflow controller configmap</span><span class="w"></span>
-<span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1</span><span class="w"></span>
-<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ConfigMap</span><span class="w"></span>
-<span class="nt">metadata</span><span class="p">:</span><span class="w"></span>
-<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">workflow-controller-configmap</span><span class="w"></span>
-<span class="nt">data</span><span class="p">:</span><span class="w">                      </span><span class="c1"># &quot;config: |&quot; key is optional in 2.7+!</span><span class="w"></span>
-<span class="w">  </span><span class="nt">instanceID</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-ci-controller</span><span class="w"></span>
-<span class="w">  </span><span class="nt">artifactRepository</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span><span class="w">    </span><span class="c1"># However, all nested maps must be strings</span><span class="w"></span>
-<span class="w">   </span><span class="no">archiveLogs: true</span><span class="w"></span>
-<span class="w">   </span><span class="no">s3:</span><span class="w"></span>
-<span class="w">     </span><span class="no">endpoint: s3.amazonaws.com</span><span class="w"></span>
-<span class="w">     </span><span class="no">bucket: my-bucket</span><span class="w"></span>
-<span class="w">     </span><span class="no">region: us-west-2</span><span class="w"></span>
-<span class="w">     </span><span class="no">insecure: false</span><span class="w"></span>
-<span class="w">     </span><span class="no">accessKeySecret:</span><span class="w"></span>
-<span class="w">       </span><span class="no">name: my-s3-credentials</span><span class="w"></span>
-<span class="w">       </span><span class="no">key: accessKey</span><span class="w"></span>
-<span class="w">     </span><span class="no">secretKeySecret:</span><span class="w"></span>
-<span class="w">       </span><span class="no">name: my-s3-credentials</span><span class="w"></span>
-<span class="w">       </span><span class="no">key: secretKey</span><span class="w"></span>
+<div class="highlight"><pre><span></span><code><span class="c1"># This file describes the config settings available in the workflow controller configmap</span>
+<span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ConfigMap</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">workflow-controller-configmap</span>
+<span class="nt">data</span><span class="p">:</span><span class="w">                      </span><span class="c1"># &quot;config: |&quot; key is optional in 2.7+!</span>
+<span class="w">  </span><span class="nt">instanceID</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-ci-controller</span>
+<span class="w">  </span><span class="nt">artifactRepository</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span><span class="w">    </span><span class="c1"># However, all nested maps must be strings</span>
+<span class="w">   </span><span class="no">archiveLogs: true</span>
+<span class="w">   </span><span class="no">s3:</span>
+<span class="w">     </span><span class="no">endpoint: s3.amazonaws.com</span>
+<span class="w">     </span><span class="no">bucket: my-bucket</span>
+<span class="w">     </span><span class="no">region: us-west-2</span>
+<span class="w">     </span><span class="no">insecure: false</span>
+<span class="w">     </span><span class="no">accessKeySecret:</span>
+<span class="w">       </span><span class="no">name: my-s3-credentials</span>
+<span class="w">       </span><span class="no">key: accessKey</span>
+<span class="w">     </span><span class="no">secretKeySecret:</span>
+<span class="w">       </span><span class="no">name: my-s3-credentials</span>
+<span class="w">       </span><span class="no">key: secretKey</span>
 </code></pre></div>
 
               

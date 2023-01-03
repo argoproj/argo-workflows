@@ -3848,15 +3848,15 @@
 <li>You must be using at least Dex <a href="https://github.com/dexidp/dex/releases/tag/v2.35.0">v2.35.0</a>, because that's when <code>staticClients[].secretEnv</code> was added. That means Argo CD 1.7.12 and above.</li>
 <li>A secret containing two keys, <code>client-id</code> and <code>client-secret</code> to be used by both Dex and Argo Workflows Server. <code>client-id</code> is <code>argo-workflows-sso</code> in this example, <code>client-secret</code> can be any random string. If Argo CD and Argo Workflows are installed in different namespaces the secret must be present in both of them. Example:</li>
 </ul>
-<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1</span><span class="w"></span>
-<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Secret</span><span class="w"></span>
-<span class="nt">metadata</span><span class="p">:</span><span class="w"></span>
-<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">argo-workflows-sso</span><span class="w"></span>
-<span class="nt">data</span><span class="p">:</span><span class="w"></span>
-<span class="w">  </span><span class="c1"># client-id is &#39;argo-workflows-sso&#39;</span><span class="w"></span>
-<span class="w">  </span><span class="nt">client-id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">YXJnby13b3JrZmxvd3Mtc3Nv</span><span class="w"></span>
-<span class="w">  </span><span class="c1"># client-secret is &#39;MY-SECRET-STRING-CAN-BE-UUID&#39;</span><span class="w"></span>
-<span class="w">  </span><span class="nt">client-secret</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">TVktU0VDUkVULVNUUklORy1DQU4tQkUtVVVJRA==</span><span class="w"></span>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Secret</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">argo-workflows-sso</span>
+<span class="nt">data</span><span class="p">:</span>
+<span class="w">  </span><span class="c1"># client-id is &#39;argo-workflows-sso&#39;</span>
+<span class="w">  </span><span class="nt">client-id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">YXJnby13b3JrZmxvd3Mtc3Nv</span>
+<span class="w">  </span><span class="c1"># client-secret is &#39;MY-SECRET-STRING-CAN-BE-UUID&#39;</span>
+<span class="w">  </span><span class="nt">client-secret</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">TVktU0VDUkVULVNUUklORy1DQU4tQkUtVVVJRA==</span>
 </code></pre></div>
 <ul>
 <li><code>--auth-mode=sso</code> server argument added</li>
@@ -3865,117 +3865,117 @@
 </ul>
 <h2 id="example-manifests-for-authenticating-against-argo-cds-dex-kustomize">Example manifests for authenticating against Argo CD's Dex (Kustomize)<a class="headerlink" href="#example-manifests-for-authenticating-against-argo-cds-dex-kustomize" title="Permanent link">&para;</a></h2>
 <p>In Argo CD, add an environment variable to Dex deployment and configuration:</p>
-<div class="highlight"><pre><span></span><code><span class="nn">---</span><span class="w"></span>
-<span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">apps/v1</span><span class="w"></span>
-<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Deployment</span><span class="w"></span>
-<span class="nt">metadata</span><span class="p">:</span><span class="w"></span>
-<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">argocd-dex-server</span><span class="w"></span>
-<span class="nt">spec</span><span class="p">:</span><span class="w"></span>
-<span class="w">  </span><span class="nt">template</span><span class="p">:</span><span class="w"></span>
-<span class="w">    </span><span class="nt">spec</span><span class="p">:</span><span class="w"></span>
-<span class="w">      </span><span class="nt">containers</span><span class="p">:</span><span class="w"></span>
-<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">dex</span><span class="w"></span>
-<span class="w">          </span><span class="nt">env</span><span class="p">:</span><span class="w"></span>
-<span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ARGO_WORKFLOWS_SSO_CLIENT_SECRET</span><span class="w"></span>
-<span class="w">              </span><span class="nt">valueFrom</span><span class="p">:</span><span class="w"></span>
-<span class="w">                </span><span class="nt">secretKeyRef</span><span class="p">:</span><span class="w"></span>
-<span class="w">                  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">argo-workflows-sso</span><span class="w"></span>
-<span class="w">                  </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">client-secret</span><span class="w"></span>
-<span class="nn">---</span><span class="w"></span>
-<span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1</span><span class="w"></span>
-<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ConfigMap</span><span class="w"></span>
-<span class="nt">metadata</span><span class="p">:</span><span class="w"></span>
-<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">argocd-cm</span><span class="w"></span>
-<span class="nt">data</span><span class="p">:</span><span class="w"></span>
-<span class="w">  </span><span class="c1"># Kustomize sees the value of dex.config as a single string instead of yaml. It will not merge</span><span class="w"></span>
-<span class="w">  </span><span class="c1"># Dex settings, but instead it will replace the entire configuration with the settings below,</span><span class="w"></span>
-<span class="w">  </span><span class="c1"># so add these to the existing config instead of setting them in a separate file</span><span class="w"></span>
-<span class="w">  </span><span class="nt">dex.config</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span><span class="w"></span>
-<span class="w">    </span><span class="no"># Setting staticClients allows Argo Workflows to use Argo CD&#39;s Dex installation for authentication</span><span class="w"></span>
-<span class="w">    </span><span class="no">staticClients:</span><span class="w"></span>
-<span class="w">      </span><span class="no">- id: argo-workflows-sso</span><span class="w"></span>
-<span class="w">        </span><span class="no">name: Argo Workflow</span><span class="w"></span>
-<span class="w">        </span><span class="no">redirectURIs:</span><span class="w"></span>
-<span class="w">          </span><span class="no">- https://argo-workflows.mydomain.com/oauth2/callback</span><span class="w"></span>
-<span class="w">        </span><span class="no">secretEnv: ARGO_WORKFLOWS_SSO_CLIENT_SECRET</span><span class="w"></span>
+<div class="highlight"><pre><span></span><code><span class="nn">---</span>
+<span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">apps/v1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Deployment</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">argocd-dex-server</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">template</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">spec</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">containers</span><span class="p">:</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">dex</span>
+<span class="w">          </span><span class="nt">env</span><span class="p">:</span>
+<span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ARGO_WORKFLOWS_SSO_CLIENT_SECRET</span>
+<span class="w">              </span><span class="nt">valueFrom</span><span class="p">:</span>
+<span class="w">                </span><span class="nt">secretKeyRef</span><span class="p">:</span>
+<span class="w">                  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">argo-workflows-sso</span>
+<span class="w">                  </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">client-secret</span>
+<span class="nn">---</span>
+<span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ConfigMap</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">argocd-cm</span>
+<span class="nt">data</span><span class="p">:</span>
+<span class="w">  </span><span class="c1"># Kustomize sees the value of dex.config as a single string instead of yaml. It will not merge</span>
+<span class="w">  </span><span class="c1"># Dex settings, but instead it will replace the entire configuration with the settings below,</span>
+<span class="w">  </span><span class="c1"># so add these to the existing config instead of setting them in a separate file</span>
+<span class="w">  </span><span class="nt">dex.config</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
+<span class="w">    </span><span class="no"># Setting staticClients allows Argo Workflows to use Argo CD&#39;s Dex installation for authentication</span>
+<span class="w">    </span><span class="no">staticClients:</span>
+<span class="w">      </span><span class="no">- id: argo-workflows-sso</span>
+<span class="w">        </span><span class="no">name: Argo Workflow</span>
+<span class="w">        </span><span class="no">redirectURIs:</span>
+<span class="w">          </span><span class="no">- https://argo-workflows.mydomain.com/oauth2/callback</span>
+<span class="w">        </span><span class="no">secretEnv: ARGO_WORKFLOWS_SSO_CLIENT_SECRET</span>
 </code></pre></div>
 <p>In Argo Workflows add <code>--auth-mode=sso</code> argument to argo-server deployment.</p>
-<div class="highlight"><pre><span></span><code><span class="nn">---</span><span class="w"></span>
-<span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">apps/v1</span><span class="w"></span>
-<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Deployment</span><span class="w"></span>
-<span class="nt">metadata</span><span class="p">:</span><span class="w"></span>
-<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">argo-server</span><span class="w"></span>
-<span class="nt">spec</span><span class="p">:</span><span class="w"></span>
-<span class="w">  </span><span class="nt">template</span><span class="p">:</span><span class="w"></span>
-<span class="w">    </span><span class="nt">spec</span><span class="p">:</span><span class="w"></span>
-<span class="w">      </span><span class="nt">containers</span><span class="p">:</span><span class="w"></span>
-<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">argo-server</span><span class="w"></span>
-<span class="w">          </span><span class="nt">args</span><span class="p">:</span><span class="w"></span>
-<span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">server</span><span class="w"></span>
-<span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">--auth-mode=sso</span><span class="w"></span>
-<span class="nn">---</span><span class="w"></span>
-<span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1</span><span class="w"></span>
-<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ConfigMap</span><span class="w"></span>
-<span class="nt">metadata</span><span class="p">:</span><span class="w"></span>
-<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">workflow-controller-configmap</span><span class="w"></span>
-<span class="nt">data</span><span class="p">:</span><span class="w"></span>
-<span class="w">  </span><span class="c1"># SSO Configuration for the Argo server.</span><span class="w"></span>
-<span class="w">  </span><span class="c1"># You must also start argo server with `--auth-mode sso`.</span><span class="w"></span>
-<span class="w">  </span><span class="c1"># https://argoproj.github.io/argo-workflows/argo-server-auth-mode/</span><span class="w"></span>
-<span class="w">  </span><span class="nt">sso</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span><span class="w"></span>
-<span class="w">    </span><span class="no"># This is the root URL of the OIDC provider (required).</span><span class="w"></span>
-<span class="w">    </span><span class="no">issuer: https://argo-cd.mydomain.com/api/dex</span><span class="w"></span>
-<span class="w">    </span><span class="no"># This is name of the secret and the key in it that contain OIDC client</span><span class="w"></span>
-<span class="w">    </span><span class="no"># ID issued to the application by the provider (required).</span><span class="w"></span>
-<span class="w">    </span><span class="no">clientId:</span><span class="w"></span>
-<span class="w">      </span><span class="no">name: argo-workflows-sso</span><span class="w"></span>
-<span class="w">      </span><span class="no">key: client-id</span><span class="w"></span>
-<span class="w">    </span><span class="no"># This is name of the secret and the key in it that contain OIDC client</span><span class="w"></span>
-<span class="w">    </span><span class="no"># secret issued to the application by the provider (required).</span><span class="w"></span>
-<span class="w">    </span><span class="no">clientSecret:</span><span class="w"></span>
-<span class="w">      </span><span class="no">name: argo-workflows-sso</span><span class="w"></span>
-<span class="w">      </span><span class="no">key: client-secret</span><span class="w"></span>
-<span class="w">    </span><span class="no"># This is the redirect URL supplied to the provider (required). It must</span><span class="w"></span>
-<span class="w">    </span><span class="no"># be in the form &lt;argo-server-root-url&gt;/oauth2/callback. It must be</span><span class="w"></span>
-<span class="w">    </span><span class="no"># browser-accessible.</span><span class="w"></span>
-<span class="w">    </span><span class="no">redirectUrl: https://argo-workflows.mydomain.com/oauth2/callback</span><span class="w"></span>
+<div class="highlight"><pre><span></span><code><span class="nn">---</span>
+<span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">apps/v1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Deployment</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">argo-server</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">template</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">spec</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">containers</span><span class="p">:</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">argo-server</span>
+<span class="w">          </span><span class="nt">args</span><span class="p">:</span>
+<span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">server</span>
+<span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">--auth-mode=sso</span>
+<span class="nn">---</span>
+<span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ConfigMap</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">workflow-controller-configmap</span>
+<span class="nt">data</span><span class="p">:</span>
+<span class="w">  </span><span class="c1"># SSO Configuration for the Argo server.</span>
+<span class="w">  </span><span class="c1"># You must also start argo server with `--auth-mode sso`.</span>
+<span class="w">  </span><span class="c1"># https://argoproj.github.io/argo-workflows/argo-server-auth-mode/</span>
+<span class="w">  </span><span class="nt">sso</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
+<span class="w">    </span><span class="no"># This is the root URL of the OIDC provider (required).</span>
+<span class="w">    </span><span class="no">issuer: https://argo-cd.mydomain.com/api/dex</span>
+<span class="w">    </span><span class="no"># This is name of the secret and the key in it that contain OIDC client</span>
+<span class="w">    </span><span class="no"># ID issued to the application by the provider (required).</span>
+<span class="w">    </span><span class="no">clientId:</span>
+<span class="w">      </span><span class="no">name: argo-workflows-sso</span>
+<span class="w">      </span><span class="no">key: client-id</span>
+<span class="w">    </span><span class="no"># This is name of the secret and the key in it that contain OIDC client</span>
+<span class="w">    </span><span class="no"># secret issued to the application by the provider (required).</span>
+<span class="w">    </span><span class="no">clientSecret:</span>
+<span class="w">      </span><span class="no">name: argo-workflows-sso</span>
+<span class="w">      </span><span class="no">key: client-secret</span>
+<span class="w">    </span><span class="no"># This is the redirect URL supplied to the provider (required). It must</span>
+<span class="w">    </span><span class="no"># be in the form &lt;argo-server-root-url&gt;/oauth2/callback. It must be</span>
+<span class="w">    </span><span class="no"># browser-accessible.</span>
+<span class="w">    </span><span class="no">redirectUrl: https://argo-workflows.mydomain.com/oauth2/callback</span>
 </code></pre></div>
 <h2 id="example-helm-chart-configuration-for-authenticating-against-argo-cds-dex">Example Helm chart configuration for authenticating against Argo CD's Dex<a class="headerlink" href="#example-helm-chart-configuration-for-authenticating-against-argo-cds-dex" title="Permanent link">&para;</a></h2>
 <p><code>argo-cd/values.yaml</code>:</p>
-<div class="highlight"><pre><span></span><code><span class="w">     </span><span class="nt">dex</span><span class="p">:</span><span class="w"></span>
-<span class="w">       </span><span class="nt">image</span><span class="p">:</span><span class="w"></span>
-<span class="w">         </span><span class="nt">tag</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v2.35.0</span><span class="w"></span>
-<span class="w">       </span><span class="nt">env</span><span class="p">:</span><span class="w"></span>
-<span class="w">         </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ARGO_WORKFLOWS_SSO_CLIENT_SECRET</span><span class="w"></span>
-<span class="w">           </span><span class="nt">valueFrom</span><span class="p">:</span><span class="w"></span>
-<span class="w">             </span><span class="nt">secretKeyRef</span><span class="p">:</span><span class="w"></span>
-<span class="w">               </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">argo-workflows-sso</span><span class="w"></span>
-<span class="w">               </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">client-secret</span><span class="w"></span>
-<span class="w">     </span><span class="nt">server</span><span class="p">:</span><span class="w"></span>
-<span class="w">       </span><span class="nt">config</span><span class="p">:</span><span class="w"></span>
-<span class="w">         </span><span class="nt">dex.config</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span><span class="w"></span>
-<span class="w">           </span><span class="no">staticClients:</span><span class="w"></span>
-<span class="w">           </span><span class="no">- id: argo-workflows-sso</span><span class="w"></span>
-<span class="w">             </span><span class="no">name: Argo Workflow</span><span class="w"></span>
-<span class="w">             </span><span class="no">redirectURIs:</span><span class="w"></span>
-<span class="w">               </span><span class="no">- https://argo-workflows.mydomain.com/oauth2/callback</span><span class="w"></span>
-<span class="w">             </span><span class="no">secretEnv: ARGO_WORKFLOWS_SSO_CLIENT_SECRET</span><span class="w"></span>
+<div class="highlight"><pre><span></span><code><span class="w">     </span><span class="nt">dex</span><span class="p">:</span>
+<span class="w">       </span><span class="nt">image</span><span class="p">:</span>
+<span class="w">         </span><span class="nt">tag</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v2.35.0</span>
+<span class="w">       </span><span class="nt">env</span><span class="p">:</span>
+<span class="w">         </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ARGO_WORKFLOWS_SSO_CLIENT_SECRET</span>
+<span class="w">           </span><span class="nt">valueFrom</span><span class="p">:</span>
+<span class="w">             </span><span class="nt">secretKeyRef</span><span class="p">:</span>
+<span class="w">               </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">argo-workflows-sso</span>
+<span class="w">               </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">client-secret</span>
+<span class="w">     </span><span class="nt">server</span><span class="p">:</span>
+<span class="w">       </span><span class="nt">config</span><span class="p">:</span>
+<span class="w">         </span><span class="nt">dex.config</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
+<span class="w">           </span><span class="no">staticClients:</span>
+<span class="w">           </span><span class="no">- id: argo-workflows-sso</span>
+<span class="w">             </span><span class="no">name: Argo Workflow</span>
+<span class="w">             </span><span class="no">redirectURIs:</span>
+<span class="w">               </span><span class="no">- https://argo-workflows.mydomain.com/oauth2/callback</span>
+<span class="w">             </span><span class="no">secretEnv: ARGO_WORKFLOWS_SSO_CLIENT_SECRET</span>
 </code></pre></div>
 <p><code>argo-workflows/values.yaml</code>:</p>
-<div class="highlight"><pre><span></span><code><span class="w">     </span><span class="nt">server</span><span class="p">:</span><span class="w"></span>
-<span class="w">       </span><span class="nt">extraArgs</span><span class="p">:</span><span class="w"></span>
-<span class="w">         </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">--auth-mode=sso</span><span class="w"></span>
-<span class="w">       </span><span class="nt">sso</span><span class="p">:</span><span class="w"></span>
-<span class="w">         </span><span class="nt">issuer</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://argo-cd.mydomain.com/api/dex</span><span class="w"></span>
-<span class="w">         </span><span class="c1"># sessionExpiry defines how long your login is valid for in hours. (optional, default: 10h)</span><span class="w"></span>
-<span class="w">         </span><span class="nt">sessionExpiry</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">240h</span><span class="w"></span>
-<span class="w">         </span><span class="nt">clientId</span><span class="p">:</span><span class="w"></span>
-<span class="w">           </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">argo-workflows-sso</span><span class="w"></span>
-<span class="w">           </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">client-id</span><span class="w"></span>
-<span class="w">         </span><span class="nt">clientSecret</span><span class="p">:</span><span class="w"></span>
-<span class="w">           </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">argo-workflows-sso</span><span class="w"></span>
-<span class="w">           </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">client-secret</span><span class="w"></span>
-<span class="w">         </span><span class="nt">redirectUrl</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://argo-workflows.mydomain.com/oauth2/callback</span><span class="w"></span>
+<div class="highlight"><pre><span></span><code><span class="w">     </span><span class="nt">server</span><span class="p">:</span>
+<span class="w">       </span><span class="nt">extraArgs</span><span class="p">:</span>
+<span class="w">         </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">--auth-mode=sso</span>
+<span class="w">       </span><span class="nt">sso</span><span class="p">:</span>
+<span class="w">         </span><span class="nt">issuer</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://argo-cd.mydomain.com/api/dex</span>
+<span class="w">         </span><span class="c1"># sessionExpiry defines how long your login is valid for in hours. (optional, default: 10h)</span>
+<span class="w">         </span><span class="nt">sessionExpiry</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">240h</span>
+<span class="w">         </span><span class="nt">clientId</span><span class="p">:</span>
+<span class="w">           </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">argo-workflows-sso</span>
+<span class="w">           </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">client-id</span>
+<span class="w">         </span><span class="nt">clientSecret</span><span class="p">:</span>
+<span class="w">           </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">argo-workflows-sso</span>
+<span class="w">           </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">client-secret</span>
+<span class="w">         </span><span class="nt">redirectUrl</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://argo-workflows.mydomain.com/oauth2/callback</span>
 </code></pre></div>
 
               

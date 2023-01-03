@@ -3932,22 +3932,22 @@
 <p>Here we have two steps with the same <code>displayName</code>: <code>wait-approval</code>. To select one to suspend, we need to use their
 <code>name</code>, either <code>appr-promotion-ffsv4.app1.wait-approval</code> or <code>appr-promotion-ffsv4.app3.wait-approval</code>. If it is not clear
 what the full name of a node is, it can be found using <code>kubectl</code>:</p>
-<div class="highlight"><pre><span></span><code>$ kubectl get wf appr-promotion-ffsv4 -o yaml
+<div class="highlight"><pre><span></span><code>$<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>wf<span class="w"> </span>appr-promotion-ffsv4<span class="w"> </span>-o<span class="w"> </span>yaml
 
 ...
-    appr-promotion-ffsv4-3235686597:
-      boundaryID: appr-promotion-ffsv4-3079407832
-      displayName: wait-approval                        <span class="c1"># &lt;- Display Name</span>
-      finishedAt: null
-      id: appr-promotion-ffsv4-3235686597
-      name: appr-promotion-ffsv4.app1.wait-approval     <span class="c1"># &lt;- Full Name</span>
-      phase: Running
-      startedAt: <span class="s2">&quot;2021-01-20T17:00:25Z&quot;</span>
-      templateRef:
-        name: sample-template
-        template: waiting-for-approval
-      templateScope: namespaced/wftempl1
-      type: Suspend
+<span class="w">    </span>appr-promotion-ffsv4-3235686597:
+<span class="w">      </span>boundaryID:<span class="w"> </span>appr-promotion-ffsv4-3079407832
+<span class="w">      </span>displayName:<span class="w"> </span>wait-approval<span class="w">                        </span><span class="c1"># &lt;- Display Name</span>
+<span class="w">      </span>finishedAt:<span class="w"> </span>null
+<span class="w">      </span>id:<span class="w"> </span>appr-promotion-ffsv4-3235686597
+<span class="w">      </span>name:<span class="w"> </span>appr-promotion-ffsv4.app1.wait-approval<span class="w">     </span><span class="c1"># &lt;- Full Name</span>
+<span class="w">      </span>phase:<span class="w"> </span>Running
+<span class="w">      </span>startedAt:<span class="w"> </span><span class="s2">&quot;2021-01-20T17:00:25Z&quot;</span>
+<span class="w">      </span>templateRef:
+<span class="w">        </span>name:<span class="w"> </span>sample-template
+<span class="w">        </span>template:<span class="w"> </span>waiting-for-approval
+<span class="w">      </span>templateScope:<span class="w"> </span>namespaced/wftempl1
+<span class="w">      </span>type:<span class="w"> </span>Suspend
 ...
 </code></pre></div>
 

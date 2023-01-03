@@ -3803,25 +3803,25 @@
 <li><code>WorkflowNodeError</code></li>
 </ul>
 <p>The involved object is the workflow in both cases. Additionally, for node state change events, annotations indicate the name and type of the involved node:</p>
-<div class="highlight"><pre><span></span><code><span class="nt">metadata</span><span class="p">:</span><span class="w"></span>
-<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-wf.160434cb3af841f8</span><span class="w"></span>
-<span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-ns</span><span class="w"></span>
-<span class="w">  </span><span class="nt">annotations</span><span class="p">:</span><span class="w"></span>
-<span class="w">    </span><span class="nt">workflows.argoproj.io/node-name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-node</span><span class="w"></span>
-<span class="w">    </span><span class="nt">workflows.argoproj.io/node-type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Pod</span><span class="w"></span>
-<span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Normal</span><span class="w"></span>
-<span class="nt">reason</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">WorkflowNodeSucceeded</span><span class="w"></span>
-<span class="nt">message</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;Succeeded</span><span class="nv"> </span><span class="s">node</span><span class="nv"> </span><span class="s">my-node:</span><span class="nv"> </span><span class="s">my</span><span class="nv"> </span><span class="s">message&#39;</span><span class="w"></span>
-<span class="nt">involvedObject</span><span class="p">:</span><span class="w"></span>
-<span class="w">  </span><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1alpha1</span><span class="w"></span>
-<span class="w">  </span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Workflow</span><span class="w"></span>
-<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-wf</span><span class="w"></span>
-<span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-ns</span><span class="w"></span>
-<span class="w">  </span><span class="nt">resourceVersion</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;1234&quot;</span><span class="w"></span>
-<span class="w">  </span><span class="nt">uid</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-uid</span><span class="w"></span>
-<span class="nt">firstTimestamp</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;2020-04-09T16:50:16Z&quot;</span><span class="w"></span>
-<span class="nt">lastTimestamp</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;2020-04-09T16:50:16Z&quot;</span><span class="w"></span>
-<span class="nt">count</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span><span class="w"></span>
+<div class="highlight"><pre><span></span><code><span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-wf.160434cb3af841f8</span>
+<span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-ns</span>
+<span class="w">  </span><span class="nt">annotations</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">workflows.argoproj.io/node-name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-node</span>
+<span class="w">    </span><span class="nt">workflows.argoproj.io/node-type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Pod</span>
+<span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Normal</span>
+<span class="nt">reason</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">WorkflowNodeSucceeded</span>
+<span class="nt">message</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;Succeeded</span><span class="nv"> </span><span class="s">node</span><span class="nv"> </span><span class="s">my-node:</span><span class="nv"> </span><span class="s">my</span><span class="nv"> </span><span class="s">message&#39;</span>
+<span class="nt">involvedObject</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1alpha1</span>
+<span class="w">  </span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Workflow</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-wf</span>
+<span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-ns</span>
+<span class="w">  </span><span class="nt">resourceVersion</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;1234&quot;</span>
+<span class="w">  </span><span class="nt">uid</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-uid</span>
+<span class="nt">firstTimestamp</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;2020-04-09T16:50:16Z&quot;</span>
+<span class="nt">lastTimestamp</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;2020-04-09T16:50:16Z&quot;</span>
+<span class="nt">count</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
 </code></pre></div>
 
               

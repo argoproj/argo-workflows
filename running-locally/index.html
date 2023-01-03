@@ -4012,9 +4012,9 @@ generation does not work.</p>
 <li>This platform can spend 3 times the indicated time</li>
 <li>Configure Docker Desktop to use BuildKit:</li>
 </ul>
-<div class="highlight"><pre><span></span><code><span class="nt">&quot;features&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">  </span><span class="nt">&quot;buildkit&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w"></span>
-<span class="p">},</span><span class="w"></span>
+<div class="highlight"><pre><span></span><code><span class="nt">&quot;features&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;buildkit&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span>
+<span class="p">},</span>
 </code></pre></div>
 </li>
 <li>
@@ -4042,7 +4042,7 @@ generation does not work.</p>
 </ul>
 <p>We recommend using <a href="https://k3d.io/">K3D</a> to set up the local Kubernetes cluster since this will allow you to test RBAC
 set-up and is fast. You can set-up K3D to be part of your default kube config as follows:</p>
-<div class="highlight"><pre><span></span><code>k3d cluster start --wait
+<div class="highlight"><pre><span></span><code>k3d<span class="w"> </span>cluster<span class="w"> </span>start<span class="w"> </span>--wait
 </code></pre></div>
 <p>Alternatively, you can use <a href="https://github.com/kubernetes/minikube">Minikube</a> to set up the local Kubernetes cluster.
 Once a local Kubernetes cluster has started via <code>minikube start</code>, your kube config will use Minikube's context
@@ -4063,31 +4063,31 @@ returns <code>allowed</code>).</p>
 <li>MinIO (<a href="http://localhost:9000">http://localhost:9000</a>, use admin/password) so you can use artifacts:</li>
 </ul>
 <p>Run:</p>
-<div class="highlight"><pre><span></span><code>make start
+<div class="highlight"><pre><span></span><code>make<span class="w"> </span>start
 </code></pre></div>
 <p>Make sure you don't see any errors in your terminal. This runs the Workflow Controller locally on your machine (not in Docker/Kubernetes).</p>
 <p>You can submit a workflow for testing using <code>kubectl</code>:</p>
-<div class="highlight"><pre><span></span><code>kubectl create -f examples/hello-world.yaml
+<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>create<span class="w"> </span>-f<span class="w"> </span>examples/hello-world.yaml
 </code></pre></div>
 <p>We recommend running <code>make clean</code> before <code>make start</code> to ensure recompilation.</p>
 <p>If you made changes to the executor, you need to build the image:</p>
-<div class="highlight"><pre><span></span><code>make argoexec-image
+<div class="highlight"><pre><span></span><code>make<span class="w"> </span>argoexec-image
 </code></pre></div>
 <p>To also start the API on <a href="http://localhost:2746">http://localhost:2746</a>:</p>
-<div class="highlight"><pre><span></span><code>make start <span class="nv">API</span><span class="o">=</span><span class="nb">true</span>
+<div class="highlight"><pre><span></span><code>make<span class="w"> </span>start<span class="w"> </span><span class="nv">API</span><span class="o">=</span><span class="nb">true</span>
 </code></pre></div>
 <p>This runs the Argo Server (in addition to the Workflow Controller) locally on your machine.</p>
 <p>To also start the UI on <a href="http://localhost:8080">http://localhost:8080</a> (<code>UI=true</code> implies <code>API=true</code>):</p>
-<div class="highlight"><pre><span></span><code>make start <span class="nv">UI</span><span class="o">=</span><span class="nb">true</span>
+<div class="highlight"><pre><span></span><code>make<span class="w"> </span>start<span class="w"> </span><span class="nv">UI</span><span class="o">=</span><span class="nb">true</span>
 </code></pre></div>
 <p><img alt="diagram" src="../assets/make-start-UI-true.png" /></p>
 <p>If you are making change to the CLI (i.e. Argo Server), you can build it separately if you want:</p>
-<div class="highlight"><pre><span></span><code>make cli
-./dist/argo submit examples/hello-world.yaml <span class="p">;</span><span class="c1"># new CLI is created as `./dist/argo`</span>
+<div class="highlight"><pre><span></span><code>make<span class="w"> </span>cli
+./dist/argo<span class="w"> </span>submit<span class="w"> </span>examples/hello-world.yaml<span class="w"> </span><span class="p">;</span><span class="c1"># new CLI is created as `./dist/argo`</span>
 </code></pre></div>
 <p>Although, note that this will be built automatically if you do: <code>make start API=true</code>.</p>
 <p>To test the workflow archive, use <code>PROFILE=mysql</code> or <code>PROFILE=postgres</code>:</p>
-<div class="highlight"><pre><span></span><code>make start <span class="nv">PROFILE</span><span class="o">=</span>mysql
+<div class="highlight"><pre><span></span><code>make<span class="w"> </span>start<span class="w"> </span><span class="nv">PROFILE</span><span class="o">=</span>mysql
 </code></pre></div>
 <p>You'll have, either:</p>
 <ul>
@@ -4095,28 +4095,28 @@ returns <code>allowed</code>).</p>
 <li>MySQL on <a href="http://localhost:3306">http://localhost:3306</a>, run <code>make mysql-cli</code> to access.</li>
 </ul>
 <p>To test SSO integration, use <code>PROFILE=sso</code>:</p>
-<div class="highlight"><pre><span></span><code>make start <span class="nv">UI</span><span class="o">=</span><span class="nb">true</span> <span class="nv">PROFILE</span><span class="o">=</span>sso
+<div class="highlight"><pre><span></span><code>make<span class="w"> </span>start<span class="w"> </span><span class="nv">UI</span><span class="o">=</span><span class="nb">true</span><span class="w"> </span><span class="nv">PROFILE</span><span class="o">=</span>sso
 </code></pre></div>
 <h3 id="running-e2e-tests-locally">Running E2E tests locally<a class="headerlink" href="#running-e2e-tests-locally" title="Permanent link">&para;</a></h3>
 <p>Start up Argo Workflows using the following:</p>
-<div class="highlight"><pre><span></span><code>make start <span class="nv">PROFILE</span><span class="o">=</span>mysql <span class="nv">AUTH_MODE</span><span class="o">=</span>client <span class="nv">STATIC_FILES</span><span class="o">=</span><span class="nb">false</span> <span class="nv">API</span><span class="o">=</span><span class="nb">true</span>
+<div class="highlight"><pre><span></span><code>make<span class="w"> </span>start<span class="w"> </span><span class="nv">PROFILE</span><span class="o">=</span>mysql<span class="w"> </span><span class="nv">AUTH_MODE</span><span class="o">=</span>client<span class="w"> </span><span class="nv">STATIC_FILES</span><span class="o">=</span><span class="nb">false</span><span class="w"> </span><span class="nv">API</span><span class="o">=</span><span class="nb">true</span>
 </code></pre></div>
 <p>If you want to run Azure tests against a local Azurite:</p>
-<div class="highlight"><pre><span></span><code>kubectl -n <span class="nv">$KUBE_NAMESPACE</span> apply -f test/e2e/azure/deploy-azurite.yaml
-make start
+<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>-n<span class="w"> </span><span class="nv">$KUBE_NAMESPACE</span><span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span>test/e2e/azure/deploy-azurite.yaml
+make<span class="w"> </span>start
 </code></pre></div>
 <h4 id="running-one-test">Running One Test<a class="headerlink" href="#running-one-test" title="Permanent link">&para;</a></h4>
 <p>In most cases, you want to run the test that relates to your changes locally. You should not run all the tests suites.
 Our CI will run those concurrently when you create a PR, which will give you feedback much faster.</p>
 <p>Find the test that you want to run in <code>test/e2e</code></p>
-<div class="highlight"><pre><span></span><code>make TestArtifactServer
+<div class="highlight"><pre><span></span><code>make<span class="w"> </span>TestArtifactServer
 </code></pre></div>
 <h4 id="running-a-set-of-tests">Running A Set Of Tests<a class="headerlink" href="#running-a-set-of-tests" title="Permanent link">&para;</a></h4>
 <p>You can find the build tag at the top of the test file.</p>
-<div class="highlight"><pre><span></span><code><span class="c1">//go:build api</span><span class="w"></span>
+<div class="highlight"><pre><span></span><code><span class="c1">//go:build api</span>
 </code></pre></div>
 <p>You need to run <code>make test-{buildTag}</code>, so for <code>api</code> that would be:</p>
-<div class="highlight"><pre><span></span><code>make test-api
+<div class="highlight"><pre><span></span><code>make<span class="w"> </span>test-api
 </code></pre></div>
 <h4 id="diagnosing-test-failure">Diagnosing Test Failure<a class="headerlink" href="#diagnosing-test-failure" title="Permanent link">&para;</a></h4>
 <p>Tests often fail: that's good. To diagnose failure:</p>
@@ -4130,7 +4130,7 @@ Our CI will run those concurrently when you create a PR, which will give you fee
 <p>If tests run slowly or time out, factory reset your Kubernetes cluster.</p>
 <h2 id="committing">Committing<a class="headerlink" href="#committing" title="Permanent link">&para;</a></h2>
 <p>Before you commit code and raise a PR, always run:</p>
-<div class="highlight"><pre><span></span><code>make pre-commit -B
+<div class="highlight"><pre><span></span><code>make<span class="w"> </span>pre-commit<span class="w"> </span>-B
 </code></pre></div>
 <p>Please do the following when creating your PR:</p>
 <ul>
@@ -4139,9 +4139,9 @@ Our CI will run those concurrently when you create a PR, which will give you fee
 <li>Suffix the issue number.</li>
 </ul>
 <p>Examples:</p>
-<div class="highlight"><pre><span></span><code>git commit --signoff -m <span class="s1">&#39;fix: Fixed broken thing. Fixes #1234&#39;</span>
+<div class="highlight"><pre><span></span><code>git<span class="w"> </span>commit<span class="w"> </span>--signoff<span class="w"> </span>-m<span class="w"> </span><span class="s1">&#39;fix: Fixed broken thing. Fixes #1234&#39;</span>
 </code></pre></div>
-<div class="highlight"><pre><span></span><code>git commit --signoff -m <span class="s1">&#39;feat: Added a new feature. Fixes #1234&#39;</span>
+<div class="highlight"><pre><span></span><code>git<span class="w"> </span>commit<span class="w"> </span>--signoff<span class="w"> </span>-m<span class="w"> </span><span class="s1">&#39;feat: Added a new feature. Fixes #1234&#39;</span>
 </code></pre></div>
 <h2 id="troubleshooting">Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permanent link">&para;</a></h2>
 <ul>
@@ -4156,7 +4156,7 @@ Our CI will run those concurrently when you create a PR, which will give you fee
 the terminal. This allows you to make changes to the controller and re-start it, without restarting the UI (which I
 think takes too long to start-up).</p>
 <p>As a convenience, <code>CTRL=false</code> implies <code>UI=true</code>, so just run:</p>
-<div class="highlight"><pre><span></span><code>make start <span class="nv">CTRL</span><span class="o">=</span><span class="nb">false</span>
+<div class="highlight"><pre><span></span><code>make<span class="w"> </span>start<span class="w"> </span><span class="nv">CTRL</span><span class="o">=</span><span class="nb">false</span>
 </code></pre></div>
 
               

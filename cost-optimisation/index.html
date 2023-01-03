@@ -3973,8 +3973,8 @@
 <p>Smaller requests can be set in the pod spec patch's <a href="../fields/#resourcerequirements">resource requirements</a>.</p>
 <h2 id="use-a-node-selector-to-use-cheaper-instances">Use A Node Selector To Use Cheaper Instances<a class="headerlink" href="#use-a-node-selector-to-use-cheaper-instances" title="Permanent link">&para;</a></h2>
 <p>You can use a <a href="../fields/#nodeselector">node selector</a> for cheaper instances, e.g. spot instances:</p>
-<div class="highlight"><pre><span></span><code><span class="nt">nodeSelector</span><span class="p">:</span><span class="w"></span>
-<span class="w">  </span><span class="s">&quot;node-role.kubernetes.io/argo-spot-worker&quot;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="s">&quot;true&quot;</span><span class="w"></span>
+<div class="highlight"><pre><span></span><code><span class="nt">nodeSelector</span><span class="p">:</span>
+<span class="w">  </span><span class="s">&quot;node-role.kubernetes.io/argo-spot-worker&quot;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="s">&quot;true&quot;</span>
 </code></pre></div>
 <h3 id="consider-trying-volume-claim-templates-or-volumes-instead-of-artifacts">Consider trying Volume Claim Templates or Volumes instead of Artifacts<a class="headerlink" href="#consider-trying-volume-claim-templates-or-volumes-instead-of-artifacts" title="Permanent link">&para;</a></h3>
 <blockquote>
@@ -4002,26 +4002,26 @@
 <li><a href="../fields/#podgc">Pod GC</a> - delete completed pods after a time</li>
 </ul>
 <p>Example</p>
-<div class="highlight"><pre><span></span><code><span class="nt">spec</span><span class="p">:</span><span class="w"></span>
-<span class="w">  </span><span class="c1"># must complete in 8h (28,800 seconds)</span><span class="w"></span>
-<span class="w">  </span><span class="nt">activeDeadlineSeconds</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">28800</span><span class="w"></span>
-<span class="w">  </span><span class="c1"># keep workflows for 1d (86,400 seconds)</span><span class="w"></span>
-<span class="w">  </span><span class="nt">ttlStrategy</span><span class="p">:</span><span class="w"></span>
-<span class="w">    </span><span class="nt">secondsAfterCompletion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">86400</span><span class="w"></span>
-<span class="w">  </span><span class="c1"># delete all pods as soon as they complete</span><span class="w"></span>
-<span class="w">  </span><span class="nt">podGC</span><span class="p">:</span><span class="w"></span>
-<span class="w">    </span><span class="nt">strategy</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">OnPodCompletion</span><span class="w"></span>
+<div class="highlight"><pre><span></span><code><span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="c1"># must complete in 8h (28,800 seconds)</span>
+<span class="w">  </span><span class="nt">activeDeadlineSeconds</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">28800</span>
+<span class="w">  </span><span class="c1"># keep workflows for 1d (86,400 seconds)</span>
+<span class="w">  </span><span class="nt">ttlStrategy</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">secondsAfterCompletion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">86400</span>
+<span class="w">  </span><span class="c1"># delete all pods as soon as they complete</span>
+<span class="w">  </span><span class="nt">podGC</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">strategy</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">OnPodCompletion</span>
 </code></pre></div>
 <p>You can set these configurations globally using <a href="../default-workflow-specs/">Default Workflow Spec</a>.</p>
 <p>Changing these settings will not delete workflows that have already run. To list old workflows:</p>
-<div class="highlight"><pre><span></span><code>argo list --completed --since 7d
+<div class="highlight"><pre><span></span><code>argo<span class="w"> </span>list<span class="w"> </span>--completed<span class="w"> </span>--since<span class="w"> </span>7d
 </code></pre></div>
 <blockquote>
 <p>v2.9 and after</p>
 </blockquote>
 <p>To list/delete workflows completed over 7 days ago:</p>
-<div class="highlight"><pre><span></span><code>argo list --older 7d
-argo delete --older 7d
+<div class="highlight"><pre><span></span><code>argo<span class="w"> </span>list<span class="w"> </span>--older<span class="w"> </span>7d
+argo<span class="w"> </span>delete<span class="w"> </span>--older<span class="w"> </span>7d
 </code></pre></div>
 <h2 id="operator-cost-optimizations">Operator Cost Optimizations<a class="headerlink" href="#operator-cost-optimizations" title="Permanent link">&para;</a></h2>
 <p>Suggestions for operators who installed Argo Workflows.</p>
@@ -4030,12 +4030,12 @@ argo delete --older 7d
 <p>Suitable if you have many instances, e.g. on dozens of clusters or namespaces.</p>
 </blockquote>
 <p>Set resource requests and limits for the <code>workflow-controller</code> and <code>argo-server</code>, e.g.</p>
-<div class="highlight"><pre><span></span><code><span class="nt">requests</span><span class="p">:</span><span class="w"></span>
-<span class="w">  </span><span class="nt">cpu</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">100m</span><span class="w"></span>
-<span class="w">  </span><span class="nt">memory</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">64Mi</span><span class="w"></span>
-<span class="nt">limits</span><span class="p">:</span><span class="w"></span>
-<span class="w">  </span><span class="nt">cpu</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">500m</span><span class="w"></span>
-<span class="w">  </span><span class="nt">memory</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">128Mi</span><span class="w"></span>
+<div class="highlight"><pre><span></span><code><span class="nt">requests</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">cpu</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">100m</span>
+<span class="w">  </span><span class="nt">memory</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">64Mi</span>
+<span class="nt">limits</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">cpu</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">500m</span>
+<span class="w">  </span><span class="nt">memory</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">128Mi</span>
 </code></pre></div>
 <p>This above limit is suitable for the Argo Server, as this is stateless. The Workflow Controller is stateful and will scale to the number of live workflows - so you are likely to need higher values.</p>
 <h3 id="configure-executor-resource-requests">Configure Executor Resource Requests<a class="headerlink" href="#configure-executor-resource-requests" title="Permanent link">&para;</a></h3>
@@ -4043,14 +4043,14 @@ argo delete --older 7d
 <p>Suitable for all - unless you have large artifacts.</p>
 </blockquote>
 <p>Configure <a href="../workflow-controller-configmap.yaml">workflow-controller-configmap.yaml</a> to set the <code>executor.resources</code>:</p>
-<div class="highlight"><pre><span></span><code><span class="nt">executor</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span><span class="w"></span>
-<span class="w">  </span><span class="no">resources:</span><span class="w"></span>
-<span class="w">    </span><span class="no">requests:</span><span class="w"></span>
-<span class="w">      </span><span class="no">cpu: 100m</span><span class="w"></span>
-<span class="w">      </span><span class="no">memory: 64Mi</span><span class="w"></span>
-<span class="w">    </span><span class="no">limits:</span><span class="w"></span>
-<span class="w">      </span><span class="no">cpu: 500m</span><span class="w"></span>
-<span class="w">      </span><span class="no">memory: 512Mi</span><span class="w"></span>
+<div class="highlight"><pre><span></span><code><span class="nt">executor</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
+<span class="w">  </span><span class="no">resources:</span>
+<span class="w">    </span><span class="no">requests:</span>
+<span class="w">      </span><span class="no">cpu: 100m</span>
+<span class="w">      </span><span class="no">memory: 64Mi</span>
+<span class="w">    </span><span class="no">limits:</span>
+<span class="w">      </span><span class="no">cpu: 500m</span>
+<span class="w">      </span><span class="no">memory: 512Mi</span>
 </code></pre></div>
 <p>The correct values depend on the size of artifacts your workflows download. For artifacts &gt; 10GB, memory usage may be large - <a href="https://github.com/argoproj/argo-workflows/issues/1322">#1322</a>.</p>
 

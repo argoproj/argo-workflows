@@ -4326,18 +4326,18 @@ allowed you to specify <code>args</code> but not <code>entrypoint</code>). <code
 <p>If you are incorrectly configured, the workflow controller will error on start-up.</p>
 <h4 id="actions">Actions<a class="headerlink" href="#actions" title="Permanent link">&para;</a></h4>
 <p>You don't need to configure images that use v2 manifests anymore. You can just remove them (e.g. argoproj/argosay:v2):</p>
-<div class="highlight"><pre><span></span><code>% docker manifest inspect argoproj/argosay:v2
+<div class="highlight"><pre><span></span><code>%<span class="w"> </span>docker<span class="w"> </span>manifest<span class="w"> </span>inspect<span class="w"> </span>argoproj/argosay:v2
 ...
-<span class="s2">&quot;schemaVersion&quot;</span>: <span class="m">2</span>,
+<span class="s2">&quot;schemaVersion&quot;</span>:<span class="w"> </span><span class="m">2</span>,
 ...
 </code></pre></div>
 <p>For v1 manifests (e.g. docker/whalesay:latest):</p>
-<div class="highlight"><pre><span></span><code>% docker image inspect -f <span class="s1">&#39;{{.Config.Entrypoint}} {{.Config.Cmd}}&#39;</span> docker/whalesay:latest
-<span class="o">[]</span> <span class="o">[</span>/bin/bash<span class="o">]</span>
+<div class="highlight"><pre><span></span><code>%<span class="w"> </span>docker<span class="w"> </span>image<span class="w"> </span>inspect<span class="w"> </span>-f<span class="w"> </span><span class="s1">&#39;{{.Config.Entrypoint}} {{.Config.Cmd}}&#39;</span><span class="w"> </span>docker/whalesay:latest
+<span class="o">[]</span><span class="w"> </span><span class="o">[</span>/bin/bash<span class="o">]</span>
 </code></pre></div>
-<div class="highlight"><pre><span></span><code><span class="nt">images</span><span class="p">:</span><span class="w"></span>
-<span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">docker/whalesay:latest</span><span class="p p-Indicator">:</span><span class="w"></span>
-<span class="w">    </span><span class="nt">cmd</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">/bin/bash</span><span class="p p-Indicator">]</span><span class="w"></span>
+<div class="highlight"><pre><span></span><code><span class="nt">images</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">docker/whalesay:latest</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">cmd</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">/bin/bash</span><span class="p p-Indicator">]</span>
 </code></pre></div>
 <h2 id="feat-fail-on-invalid-config-8295">feat: Fail on invalid config. (#8295)<a class="headerlink" href="#feat-fail-on-invalid-config-8295" title="Permanent link">&para;</a></h2>
 <p>The workflow controller will error on start-up if incorrectly configured, rather than silently ignoring
@@ -4354,17 +4354,17 @@ mis-configuration.</p>
 <p>See <a href="../workflow-rbac/">workflow RBAC</a> and <a href="https://github.com/argoproj/argo-workflows/issues/3961">#8013</a>.</p>
 <h3 id="06d4bf76f-fix-reduce-agent-permissions-fixes-7986-7987"><a href="https://github.com/argoproj/argo-workflows/commit/06d4bf76f">06d4bf76f</a> fix: Reduce agent permissions. Fixes #7986 (#7987)<a class="headerlink" href="#06d4bf76f-fix-reduce-agent-permissions-fixes-7986-7987" title="Permanent link">&para;</a></h3>
 <p>The PR changes the permissions used by the agent to report back the outcome of HTTP template requests. The permission <code>patch workflowtasksets/status</code> replaces <code>patch workflowtasksets</code>, for example:</p>
-<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">rbac.authorization.k8s.io/v1</span><span class="w"></span>
-<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Role</span><span class="w"></span>
-<span class="nt">metadata</span><span class="p">:</span><span class="w"></span>
-<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">agent</span><span class="w"></span>
-<span class="nt">rules</span><span class="p">:</span><span class="w"></span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">apiGroups</span><span class="p">:</span><span class="w"></span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">argoproj.io</span><span class="w"></span>
-<span class="w">    </span><span class="nt">resources</span><span class="p">:</span><span class="w"></span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">workflowtasksets/status</span><span class="w"></span>
-<span class="w">    </span><span class="nt">verbs</span><span class="p">:</span><span class="w"></span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">patch</span><span class="w"></span>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">rbac.authorization.k8s.io/v1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Role</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">agent</span>
+<span class="nt">rules</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">apiGroups</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">argoproj.io</span>
+<span class="w">    </span><span class="nt">resources</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">workflowtasksets/status</span>
+<span class="w">    </span><span class="nt">verbs</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">patch</span>
 </code></pre></div>
 <p>Workflows running during any upgrade should be give both permissions.</p>
 <p>See <a href="https://github.com/argoproj/argo-workflows/issues/8013">#8013</a>.</p>
@@ -4375,71 +4375,71 @@ mis-configuration.</p>
   e.g.
   Workflow controller configmap similar to the following one given below won't be valid anymore:</li>
 </ul>
-<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1</span><span class="w"></span>
-<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ConfigMap</span><span class="w"></span>
-<span class="nt">metadata</span><span class="p">:</span><span class="w"></span>
-<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">workflow-controller-configmap</span><span class="w"></span>
-<span class="nt">data</span><span class="p">:</span><span class="w"></span>
-<span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">...</span><span class="w"></span>
-<span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">executorImage</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">argoproj/argocli:latest</span><span class="w"></span>
-<span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">...</span><span class="w"></span>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ConfigMap</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">workflow-controller-configmap</span>
+<span class="nt">data</span><span class="p">:</span>
+<span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">...</span>
+<span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">executorImage</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">argoproj/argocli:latest</span>
+<span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">...</span>
 </code></pre></div>
 <p>From now and onwards, only provide the executor image in workflow controller as a command argument as shown below:</p>
-<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1</span><span class="w"></span>
-<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ConfigMap</span><span class="w"></span>
-<span class="nt">metadata</span><span class="p">:</span><span class="w"></span>
-<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">workflow-controller-configmap</span><span class="w"></span>
-<span class="nt">data</span><span class="p">:</span><span class="w"></span>
-<span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">...</span><span class="w"></span>
-<span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">executor</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="p p-Indicator">|</span><span class="w"></span>
-<span class="w">    </span><span class="no">image: argoproj/argocli:latest</span><span class="w"></span>
-<span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">...</span><span class="w"></span>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ConfigMap</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">workflow-controller-configmap</span>
+<span class="nt">data</span><span class="p">:</span>
+<span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">...</span>
+<span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">executor</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
+<span class="w">    </span><span class="no">image: argoproj/argocli:latest</span>
+<span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">...</span>
 </code></pre></div>
 <ul>
 <li>executorImagePullPolicy (use executor.imagePullPolicy in configmap instead)
   e.g.
   Workflow controller configmap similar to the following one given below won't be valid anymore:</li>
 </ul>
-<div class="highlight"><pre><span></span><code><span class="nt">data</span><span class="p">:</span><span class="w"></span>
-<span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">...</span><span class="w"></span>
-<span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">executorImagePullPolicy</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">IfNotPresent</span><span class="w"></span>
-<span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">...</span><span class="w"></span>
+<div class="highlight"><pre><span></span><code><span class="nt">data</span><span class="p">:</span>
+<span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">...</span>
+<span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">executorImagePullPolicy</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">IfNotPresent</span>
+<span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">...</span>
 </code></pre></div>
 <p>Change it as shown below:</p>
-<div class="highlight"><pre><span></span><code><span class="nt">data</span><span class="p">:</span><span class="w"></span>
-<span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">...</span><span class="w"></span>
-<span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">executor</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="p p-Indicator">|</span><span class="w"></span>
-<span class="w">    </span><span class="no">imagePullPolicy: IfNotPresent</span><span class="w"></span>
-<span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">...</span><span class="w"></span>
+<div class="highlight"><pre><span></span><code><span class="nt">data</span><span class="p">:</span>
+<span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">...</span>
+<span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">executor</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
+<span class="w">    </span><span class="no">imagePullPolicy: IfNotPresent</span>
+<span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">...</span>
 </code></pre></div>
 <ul>
 <li>executorResources (use executor.resources in configmap instead)
   e.g.
   Workflow controller configmap similar to the following one given below won't be valid anymore:</li>
 </ul>
-<div class="highlight"><pre><span></span><code><span class="nt">data</span><span class="p">:</span><span class="w"></span>
-<span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">...</span><span class="w"></span>
-<span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">executorResources</span><span class="p p-Indicator">:</span><span class="w"></span>
-<span class="w">    </span><span class="nt">requests</span><span class="p">:</span><span class="w"></span>
-<span class="w">      </span><span class="nt">cpu</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.1</span><span class="w"></span>
-<span class="w">      </span><span class="nt">memory</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">64Mi</span><span class="w"></span>
-<span class="w">    </span><span class="nt">limits</span><span class="p">:</span><span class="w"></span>
-<span class="w">      </span><span class="nt">cpu</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.5</span><span class="w"></span>
-<span class="w">      </span><span class="nt">memory</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">512Mi</span><span class="w"></span>
-<span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">...</span><span class="w"></span>
+<div class="highlight"><pre><span></span><code><span class="nt">data</span><span class="p">:</span>
+<span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">...</span>
+<span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">executorResources</span><span class="p p-Indicator">:</span>
+<span class="w">    </span><span class="nt">requests</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">cpu</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.1</span>
+<span class="w">      </span><span class="nt">memory</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">64Mi</span>
+<span class="w">    </span><span class="nt">limits</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">cpu</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.5</span>
+<span class="w">      </span><span class="nt">memory</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">512Mi</span>
+<span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">...</span>
 </code></pre></div>
 <p>Change it as shown below:</p>
-<div class="highlight"><pre><span></span><code><span class="nt">data</span><span class="p">:</span><span class="w"></span>
-<span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">...</span><span class="w"></span>
-<span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">executor</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="p p-Indicator">|</span><span class="w"></span>
-<span class="w">    </span><span class="no">resources:</span><span class="w"></span>
-<span class="w">      </span><span class="no">requests:</span><span class="w"></span>
-<span class="w">        </span><span class="no">cpu: 0.1</span><span class="w"></span>
-<span class="w">        </span><span class="no">memory: 64Mi</span><span class="w"></span>
-<span class="w">      </span><span class="no">limits:</span><span class="w"></span>
-<span class="w">        </span><span class="no">cpu: 0.5</span><span class="w"></span>
-<span class="w">        </span><span class="no">memory: 512Mi</span><span class="w"></span>
-<span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">...</span><span class="w"></span>
+<div class="highlight"><pre><span></span><code><span class="nt">data</span><span class="p">:</span>
+<span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">...</span>
+<span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">executor</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
+<span class="w">    </span><span class="no">resources:</span>
+<span class="w">      </span><span class="no">requests:</span>
+<span class="w">        </span><span class="no">cpu: 0.1</span>
+<span class="w">        </span><span class="no">memory: 64Mi</span>
+<span class="w">      </span><span class="no">limits:</span>
+<span class="w">        </span><span class="no">cpu: 0.5</span>
+<span class="w">        </span><span class="no">memory: 512Mi</span>
+<span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">...</span>
 </code></pre></div>
 <h3 id="fce82d572-feat-remove-pod-workers-7837"><a href="https://github.com/argoproj/argo-workflows/commit/fce82d5727b89cfe49e8e3568fff40725bd43734">fce82d572</a> feat: Remove pod workers (#7837)<a class="headerlink" href="#fce82d572-feat-remove-pod-workers-7837" title="Permanent link">&para;</a></h3>
 <p>This PR removes pod workers from the code, the pod informer directly writes into the workflow queue. As a result the <code>--pod-workers</code> flag has been removed.</p>
@@ -4474,35 +4474,35 @@ is logged.</p>
 </ul>
 <h3 id="ab361667a-featcontroller-emissary-executor-4925"><a href="https://github.com/argoproj/argo-workflows/commit/ab361667a">ab361667a</a> feat(controller) Emissary executor.  (#4925)<a class="headerlink" href="#ab361667a-featcontroller-emissary-executor-4925" title="Permanent link">&para;</a></h3>
 <p>The Emissary executor is not a breaking change per-se, but it is brand new so we would not recommend you use it by default yet. Instead, we recommend you test it out on some workflows using <a href="https://github.com/argoproj/argo-workflows/blob/master/docs/workflow-controller-configmap.yaml#L125">config map configuration</a>.</p>
-<div class="highlight"><pre><span></span><code><span class="c1"># Specifies the executor to use.</span><span class="w"></span>
-<span class="c1">#</span><span class="w"></span>
-<span class="c1"># You can use this to:</span><span class="w"></span>
-<span class="c1"># * Tailor your executor based on your preference for security or performance.</span><span class="w"></span>
-<span class="c1"># * Test out an executor without committing yourself to use it for every workflow.</span><span class="w"></span>
-<span class="c1">#</span><span class="w"></span>
-<span class="c1"># To find out which executor was actually use, see the `wait` container logs.</span><span class="w"></span>
-<span class="c1">#</span><span class="w"></span>
-<span class="c1"># The list is in order of precedence; the first matching executor is used.</span><span class="w"></span>
-<span class="c1"># This has precedence over `containerRuntimeExecutor`.</span><span class="w"></span>
-<span class="nt">containerRuntimeExecutors</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span><span class="w"></span>
-<span class="w">  </span><span class="no">- name: emissary</span><span class="w"></span>
-<span class="w">    </span><span class="no">selector:</span><span class="w"></span>
-<span class="w">      </span><span class="no">matchLabels:</span><span class="w"></span>
-<span class="w">        </span><span class="no">workflows.argoproj.io/container-runtime-executor: emissary</span><span class="w"></span>
+<div class="highlight"><pre><span></span><code><span class="c1"># Specifies the executor to use.</span>
+<span class="c1">#</span>
+<span class="c1"># You can use this to:</span>
+<span class="c1"># * Tailor your executor based on your preference for security or performance.</span>
+<span class="c1"># * Test out an executor without committing yourself to use it for every workflow.</span>
+<span class="c1">#</span>
+<span class="c1"># To find out which executor was actually use, see the `wait` container logs.</span>
+<span class="c1">#</span>
+<span class="c1"># The list is in order of precedence; the first matching executor is used.</span>
+<span class="c1"># This has precedence over `containerRuntimeExecutor`.</span>
+<span class="nt">containerRuntimeExecutors</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
+<span class="w">  </span><span class="no">- name: emissary</span>
+<span class="w">    </span><span class="no">selector:</span>
+<span class="w">      </span><span class="no">matchLabels:</span>
+<span class="w">        </span><span class="no">workflows.argoproj.io/container-runtime-executor: emissary</span>
 </code></pre></div>
 <h3 id="be63efe89-featcontroller-expression-template-tags-resolves-4548-1293-5115"><a href="https://github.com/argoproj/argo-workflows/commit/e6fa41a">be63efe89</a> feat(controller): Expression template tags. Resolves #4548 &amp; #1293 (#5115)<a class="headerlink" href="#be63efe89-featcontroller-expression-template-tags-resolves-4548-1293-5115" title="Permanent link">&para;</a></h3>
 <p>This PR introduced a new expression syntax know as "expression tag template". A user has reported that this does not
 always play nicely with the <code>when</code> condition syntax (Goevaluate).</p>
 <p>This can be resolved using a single quote in your when expression:</p>
-<div class="highlight"><pre><span></span><code><span class="nt">when</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;&#39;{{inputs.parameters.should-print}}&#39;</span><span class="nv"> </span><span class="s">!=</span><span class="nv"> </span><span class="s">&#39;2021-01-01&#39;&quot;</span><span class="w"></span>
+<div class="highlight"><pre><span></span><code><span class="nt">when</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;&#39;{{inputs.parameters.should-print}}&#39;</span><span class="nv"> </span><span class="s">!=</span><span class="nv"> </span><span class="s">&#39;2021-01-01&#39;&quot;</span>
 </code></pre></div>
 <p><a href="https://github.com/argoproj/argo-workflows/issues/6314">Learn more</a></p>
 <h2 id="upgrading-to-v30">Upgrading to v3.0<a class="headerlink" href="#upgrading-to-v30" title="Permanent link">&para;</a></h2>
 <h3 id="defbd600e-fix-default-argo_securetrue-fixes-5607-5626"><a href="https://github.com/argoproj/argo-workflows/commit/defbd600e37258c8cdf30f64d4da9f4563eb7901">defbd600e</a> fix: Default ARGO_SECURE=true. Fixes #5607 (#5626)<a class="headerlink" href="#defbd600e-fix-default-argo_securetrue-fixes-5607-5626" title="Permanent link">&para;</a></h3>
 <p>The server now starts with TLS enabled by default if a key is available. The original behaviour can be configured with <code>--secure=false</code>.</p>
 <p>If you have an ingress, you may need to add the appropriate annotations:(varies by ingress):</p>
-<div class="highlight"><pre><span></span><code><span class="nt">alb.ingress.kubernetes.io/backend-protocol</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">HTTPS</span><span class="w"></span>
-<span class="nt">nginx.ingress.kubernetes.io/backend-protocol</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">HTTPS</span><span class="w"></span>
+<div class="highlight"><pre><span></span><code><span class="nt">alb.ingress.kubernetes.io/backend-protocol</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">HTTPS</span>
+<span class="nt">nginx.ingress.kubernetes.io/backend-protocol</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">HTTPS</span>
 </code></pre></div>
 <h3 id="01d310235-choreserver-required-authentication-by-default-resolves-5206-5211"><a href="https://github.com/argoproj/argo-workflows/commit/01d310235a9349e6d552c758964cc2250a9e9616">01d310235</a> chore(server)!: Required authentication by default. Resolves #5206 (#5211)<a class="headerlink" href="#01d310235-choreserver-required-authentication-by-default-resolves-5206-5211" title="Permanent link">&para;</a></h3>
 <p>To login to the user interface, you must provide a login token. The original behaviour can be configured with <code>--auth-mode=server</code>.</p>
@@ -4527,8 +4527,8 @@ always play nicely with the <code>when</code> condition syntax (Goevaluate).</p>
 </tbody>
 </table>
 <p>To find impacted workflows:</p>
-<div class="highlight"><pre><span></span><code>kubectl get wf --all-namespaces -o yaml <span class="p">|</span> grep templateRef
-kubectl get wf --all-namespaces -o yaml <span class="p">|</span> grep ttlSecondsAfterFinished
+<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>get<span class="w"> </span>wf<span class="w"> </span>--all-namespaces<span class="w"> </span>-o<span class="w"> </span>yaml<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>templateRef
+kubectl<span class="w"> </span>get<span class="w"> </span>wf<span class="w"> </span>--all-namespaces<span class="w"> </span>-o<span class="w"> </span>yaml<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>ttlSecondsAfterFinished
 </code></pre></div>
 <h3 id="c8215f972-featcontroller-key-only-artifacts-fixes-3184-4618"><a href="https://github.com/argoproj/argo-workflows/commit/c8215f972502435e6bc5b232823ecb6df919f952">c8215f972</a> feat(controller)!: Key-only artifacts. Fixes #3184 (#4618)<a class="headerlink" href="#c8215f972-featcontroller-key-only-artifacts-fixes-3184-4618" title="Permanent link">&para;</a></h3>
 <p>This change is not breaking per-se, but many users do not appear to aware of <a href="../artifact-repository-ref/">artifact repository ref</a>, so check your usage of that feature if you have problems.</p>

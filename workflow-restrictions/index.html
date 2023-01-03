@@ -3870,14 +3870,14 @@
 <h2 id="setting-workflow-restrictions">Setting Workflow Restrictions<a class="headerlink" href="#setting-workflow-restrictions" title="Permanent link">&para;</a></h2>
 <p>Workflow Restrictions can be specified by adding them under the <code>workflowRestrictions</code> key in the <a href="../workflow-controller-configmap.yaml"><code>workflow-controller-configmap</code></a>.</p>
 <p>For example, to specify that Workflows may only run with <code>workflowTemplateRef</code></p>
-<div class="highlight"><pre><span></span><code><span class="c1"># This file describes the config settings available in the workflow controller configmap</span><span class="w"></span>
-<span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1</span><span class="w"></span>
-<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ConfigMap</span><span class="w"></span>
-<span class="nt">metadata</span><span class="p">:</span><span class="w"></span>
-<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">workflow-controller-configmap</span><span class="w"></span>
-<span class="nt">data</span><span class="p">:</span><span class="w"></span>
-<span class="w">  </span><span class="nt">workflowRestrictions</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span><span class="w"></span>
-<span class="w">    </span><span class="no">templateReferencing: Secure</span><span class="w"></span>
+<div class="highlight"><pre><span></span><code><span class="c1"># This file describes the config settings available in the workflow controller configmap</span>
+<span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ConfigMap</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">workflow-controller-configmap</span>
+<span class="nt">data</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">workflowRestrictions</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
+<span class="w">    </span><span class="no">templateReferencing: Secure</span>
 </code></pre></div>
 
               

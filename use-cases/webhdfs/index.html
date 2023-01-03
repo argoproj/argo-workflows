@@ -3860,25 +3860,25 @@
 <p>webHDFS is a protocol allowing to access Hadoop or similar a data storage via a unified REST API (<a href="https://hadoop.apache.org/docs/r3.3.3/hadoop-project-dist/hadoop-hdfs/WebHDFS.html">https://hadoop.apache.org/docs/r3.3.3/hadoop-project-dist/hadoop-hdfs/WebHDFS.html</a>).</p>
 <h2 id="input-artifacts">Input Artifacts<a class="headerlink" href="#input-artifacts" title="Permanent link">&para;</a></h2>
 <p>In order to use the webHDFS protocol we will make use of HTTP artifacts, where the URL will be set to the webHDFS endpoint including the file path and all its query parameters. Suppose, our webHDFS endpoint is available under <code>https://mywebhdfsprovider.com/webhdfs/v1/</code> and we have a file <code>my-art.txt</code> located in a <code>data</code> folder, which we want to use as an input artifact. To construct the HTTP URL we need to append the file path to the base webHDFS endpoint and set the <a href="https://hadoop.apache.org/docs/r3.3.3/hadoop-project-dist/hadoop-hdfs/WebHDFS.html#Open_and_Read_a_File">OPEN operation</a> in the HTTP URL parameter. This results in the following URL: <code>https://mywebhdfsprovider.com/webhdfs/v1/data/my-art.txt?op=OPEN</code>. This is all you need for webHDFS input artifacts to work! Now, when run, the workflow will download the specified webHDFS artifact into the given <code>path</code>. There are some additional fields that can be set for HTTP artifacts (e.g. HTTP headers), which you can find in the <a href="https://github.com/argoproj/argo-workflows/blob/master/examples/webhdfs-input-output-artifacts.yaml">full webHDFS example</a>.</p>
-<div class="highlight"><pre><span></span><code><span class="nt">spec</span><span class="p">:</span><span class="w"></span>
-<span class="w">  </span><span class="p p-Indicator">[</span><span class="nv">...</span><span class="p p-Indicator">]</span><span class="w"></span>
-<span class="w">  </span><span class="nt">inputs</span><span class="p">:</span><span class="w"></span>
-<span class="w">    </span><span class="nt">artifacts</span><span class="p">:</span><span class="w"></span>
-<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-art</span><span class="w"></span>
-<span class="w">    </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/my-artifact</span><span class="w"></span>
-<span class="w">    </span><span class="nt">http</span><span class="p">:</span><span class="w"></span>
-<span class="w">      </span><span class="nt">url</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;https://mywebhdfsprovider.com/webhdfs/v1/file.txt?op=OPEN&quot;</span><span class="w"></span>
+<div class="highlight"><pre><span></span><code><span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">[</span><span class="nv">...</span><span class="p p-Indicator">]</span>
+<span class="w">  </span><span class="nt">inputs</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">artifacts</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-art</span>
+<span class="w">    </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/my-artifact</span>
+<span class="w">    </span><span class="nt">http</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">url</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;https://mywebhdfsprovider.com/webhdfs/v1/file.txt?op=OPEN&quot;</span>
 </code></pre></div>
 <h2 id="output-artifacts">Output Artifacts<a class="headerlink" href="#output-artifacts" title="Permanent link">&para;</a></h2>
 <p>In order to declare a webHDFS output artifact, little change is necessary: We only need to change the webHDFS operation to the <a href="https://hadoop.apache.org/docs/r3.3.3/hadoop-project-dist/hadoop-hdfs/WebHDFS.html#Create_and_Write_to_a_File">CREATE operation</a> and set the file path to where we want the output artifact to be stored. In this example we want to store the artifact under <code>outputs/newfile.txt</code>. We also supply the optional overwrite parameter <code>overwrite=true</code> to allow overwriting existing files in the webHDFS provider's data storage. If the <code>overwrite</code> flag is unset, the default behavior is used, which depends on the particular webHDFS provider. Below shows the example output artifact:</p>
-<div class="highlight"><pre><span></span><code><span class="nt">spec</span><span class="p">:</span><span class="w"></span>
-<span class="w">  </span><span class="p p-Indicator">[</span><span class="nv">...</span><span class="p p-Indicator">]</span><span class="w"></span>
-<span class="w">  </span><span class="nt">outputs</span><span class="p">:</span><span class="w"></span>
-<span class="w">    </span><span class="nt">artifacts</span><span class="p">:</span><span class="w"></span>
-<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-art</span><span class="w"></span>
-<span class="w">    </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/my-artifact</span><span class="w"></span>
-<span class="w">    </span><span class="nt">http</span><span class="p">:</span><span class="w"></span>
-<span class="w">      </span><span class="nt">url</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;https://mywebhdfsprovider.com/webhdfs/v1/outputs/newfile.txt?op=CREATE&amp;overwrite=true&quot;</span><span class="w"></span>
+<div class="highlight"><pre><span></span><code><span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">[</span><span class="nv">...</span><span class="p p-Indicator">]</span>
+<span class="w">  </span><span class="nt">outputs</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">artifacts</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-art</span>
+<span class="w">    </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/my-artifact</span>
+<span class="w">    </span><span class="nt">http</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">url</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;https://mywebhdfsprovider.com/webhdfs/v1/outputs/newfile.txt?op=CREATE&amp;overwrite=true&quot;</span>
 </code></pre></div>
 <h2 id="authentication">Authentication<a class="headerlink" href="#authentication" title="Permanent link">&para;</a></h2>
 <p>Above example showed a minimal use case without any authentication. However, in a real-world scenario, you may want to provide some authentication option. Currently, Argo Workflows' HTTP artifacts support the following authentication mechanisms:</p>

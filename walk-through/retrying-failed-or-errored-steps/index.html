@@ -3784,29 +3784,29 @@
 
 <h1 id="retrying-failed-or-errored-steps">Retrying Failed or Errored Steps<a class="headerlink" href="#retrying-failed-or-errored-steps" title="Permanent link">&para;</a></h1>
 <p>You can specify a <code>retryStrategy</code> that will dictate how failed or errored steps are retried:</p>
-<div class="highlight"><pre><span></span><code><span class="c1"># This example demonstrates the use of retry back offs</span><span class="w"></span>
-<span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span><span class="w"></span>
-<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Workflow</span><span class="w"></span>
-<span class="nt">metadata</span><span class="p">:</span><span class="w"></span>
-<span class="w">  </span><span class="nt">generateName</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">retry-backoff-</span><span class="w"></span>
-<span class="nt">spec</span><span class="p">:</span><span class="w"></span>
-<span class="w">  </span><span class="nt">entrypoint</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">retry-backoff</span><span class="w"></span>
-<span class="w">  </span><span class="nt">templates</span><span class="p">:</span><span class="w"></span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">retry-backoff</span><span class="w"></span>
-<span class="w">    </span><span class="nt">retryStrategy</span><span class="p">:</span><span class="w"></span>
-<span class="w">      </span><span class="nt">limit</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10</span><span class="w"></span>
-<span class="w">      </span><span class="nt">retryPolicy</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Always&quot;</span><span class="w"></span>
-<span class="w">      </span><span class="nt">backoff</span><span class="p">:</span><span class="w"></span>
-<span class="w">        </span><span class="nt">duration</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;1&quot;</span><span class="w">      </span><span class="c1"># Must be a string. Default unit is seconds. Could also be a Duration, e.g.: &quot;2m&quot;, &quot;6h&quot;, &quot;1d&quot;</span><span class="w"></span>
-<span class="w">        </span><span class="nt">factor</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2</span><span class="w"></span>
-<span class="w">        </span><span class="nt">maxDuration</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;1m&quot;</span><span class="w">  </span><span class="c1"># Must be a string. Default unit is seconds. Could also be a Duration, e.g.: &quot;2m&quot;, &quot;6h&quot;, &quot;1d&quot;</span><span class="w"></span>
-<span class="w">      </span><span class="nt">affinity</span><span class="p">:</span><span class="w"></span>
-<span class="w">        </span><span class="nt">nodeAntiAffinity</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{}</span><span class="w"></span>
-<span class="w">    </span><span class="nt">container</span><span class="p">:</span><span class="w"></span>
-<span class="w">      </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">python:alpine3.6</span><span class="w"></span>
-<span class="w">      </span><span class="nt">command</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;python&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">-c</span><span class="p p-Indicator">]</span><span class="w"></span>
-<span class="w">      </span><span class="c1"># fail with a 66% probability</span><span class="w"></span>
-<span class="w">      </span><span class="nt">args</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;import</span><span class="nv"> </span><span class="s">random;</span><span class="nv"> </span><span class="s">import</span><span class="nv"> </span><span class="s">sys;</span><span class="nv"> </span><span class="s">exit_code</span><span class="nv"> </span><span class="s">=</span><span class="nv"> </span><span class="s">random.choice([0,</span><span class="nv"> </span><span class="s">1,</span><span class="nv"> </span><span class="s">1]);</span><span class="nv"> </span><span class="s">sys.exit(exit_code)&quot;</span><span class="p p-Indicator">]</span><span class="w"></span>
+<div class="highlight"><pre><span></span><code><span class="c1"># This example demonstrates the use of retry back offs</span>
+<span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Workflow</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">generateName</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">retry-backoff-</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">entrypoint</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">retry-backoff</span>
+<span class="w">  </span><span class="nt">templates</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">retry-backoff</span>
+<span class="w">    </span><span class="nt">retryStrategy</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">limit</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10</span>
+<span class="w">      </span><span class="nt">retryPolicy</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Always&quot;</span>
+<span class="w">      </span><span class="nt">backoff</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">duration</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;1&quot;</span><span class="w">      </span><span class="c1"># Must be a string. Default unit is seconds. Could also be a Duration, e.g.: &quot;2m&quot;, &quot;6h&quot;, &quot;1d&quot;</span>
+<span class="w">        </span><span class="nt">factor</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2</span>
+<span class="w">        </span><span class="nt">maxDuration</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;1m&quot;</span><span class="w">  </span><span class="c1"># Must be a string. Default unit is seconds. Could also be a Duration, e.g.: &quot;2m&quot;, &quot;6h&quot;, &quot;1d&quot;</span>
+<span class="w">      </span><span class="nt">affinity</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">nodeAntiAffinity</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{}</span>
+<span class="w">    </span><span class="nt">container</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">python:alpine3.6</span>
+<span class="w">      </span><span class="nt">command</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;python&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">-c</span><span class="p p-Indicator">]</span>
+<span class="w">      </span><span class="c1"># fail with a 66% probability</span>
+<span class="w">      </span><span class="nt">args</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;import</span><span class="nv"> </span><span class="s">random;</span><span class="nv"> </span><span class="s">import</span><span class="nv"> </span><span class="s">sys;</span><span class="nv"> </span><span class="s">exit_code</span><span class="nv"> </span><span class="s">=</span><span class="nv"> </span><span class="s">random.choice([0,</span><span class="nv"> </span><span class="s">1,</span><span class="nv"> </span><span class="s">1]);</span><span class="nv"> </span><span class="s">sys.exit(exit_code)&quot;</span><span class="p p-Indicator">]</span>
 </code></pre></div>
 <ul>
 <li><code>limit</code> is the maximum number of times the container will be retried.</li>

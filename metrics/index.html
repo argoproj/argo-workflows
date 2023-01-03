@@ -4308,103 +4308,103 @@ the metric type a <code>value</code> must be specified. This value can be either
 <h3 id="metric-spec">Metric Spec<a class="headerlink" href="#metric-spec" title="Permanent link">&para;</a></h3>
 <p>In Argo you can define a metric on the <code>Workflow</code> level or on the <code>Template</code> level. Here is an example of a <code>Workflow</code>
 level Gauge metric that will report the Workflow duration time:</p>
-<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span><span class="w"></span>
-<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Workflow</span><span class="w"></span>
-<span class="nt">metadata</span><span class="p">:</span><span class="w"></span>
-<span class="w">  </span><span class="nt">generateName</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">model-training-</span><span class="w"></span>
-<span class="nt">spec</span><span class="p">:</span><span class="w"></span>
-<span class="w">  </span><span class="nt">entrypoint</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">steps</span><span class="w"></span>
-<span class="w">  </span><span class="nt">metrics</span><span class="p">:</span><span class="w"></span>
-<span class="w">    </span><span class="nt">prometheus</span><span class="p">:</span><span class="w"></span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">exec_duration_gauge</span><span class="w">         </span><span class="c1"># Metric name (will be prepended with &quot;argo_workflows_&quot;)</span><span class="w"></span>
-<span class="w">        </span><span class="nt">labels</span><span class="p">:</span><span class="w">                           </span><span class="c1"># Labels are optional. Avoid cardinality explosion.</span><span class="w"></span>
-<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">name</span><span class="w"></span>
-<span class="w">            </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">model_a</span><span class="w"></span>
-<span class="w">        </span><span class="nt">help</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Duration</span><span class="nv"> </span><span class="s">gauge</span><span class="nv"> </span><span class="s">by</span><span class="nv"> </span><span class="s">name&quot;</span><span class="w">    </span><span class="c1"># A help doc describing your metric. This is required.</span><span class="w"></span>
-<span class="w">        </span><span class="nt">gauge</span><span class="p">:</span><span class="w">                            </span><span class="c1"># The metric type. Available are &quot;gauge&quot;, &quot;histogram&quot;, and &quot;counter&quot;.</span><span class="w"></span>
-<span class="w">          </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{workflow.duration}}&quot;</span><span class="w">  </span><span class="c1"># The value of your metric. It could be an Argo variable (see variables doc) or a literal value</span><span class="w"></span>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Workflow</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">generateName</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">model-training-</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">entrypoint</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">steps</span>
+<span class="w">  </span><span class="nt">metrics</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">prometheus</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">exec_duration_gauge</span><span class="w">         </span><span class="c1"># Metric name (will be prepended with &quot;argo_workflows_&quot;)</span>
+<span class="w">        </span><span class="nt">labels</span><span class="p">:</span><span class="w">                           </span><span class="c1"># Labels are optional. Avoid cardinality explosion.</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">name</span>
+<span class="w">            </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">model_a</span>
+<span class="w">        </span><span class="nt">help</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Duration</span><span class="nv"> </span><span class="s">gauge</span><span class="nv"> </span><span class="s">by</span><span class="nv"> </span><span class="s">name&quot;</span><span class="w">    </span><span class="c1"># A help doc describing your metric. This is required.</span>
+<span class="w">        </span><span class="nt">gauge</span><span class="p">:</span><span class="w">                            </span><span class="c1"># The metric type. Available are &quot;gauge&quot;, &quot;histogram&quot;, and &quot;counter&quot;.</span>
+<span class="w">          </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{workflow.duration}}&quot;</span><span class="w">  </span><span class="c1"># The value of your metric. It could be an Argo variable (see variables doc) or a literal value</span>
 
-<span class="nn">...</span><span class="w"></span>
+<span class="nn">...</span>
 </code></pre></div>
 <p>An example of a <code>Template</code>-level Counter metric that will increase a counter every time the step fails:</p>
-<div class="highlight"><pre><span></span><code><span class="nn">...</span><span class="w"></span>
-<span class="w">  </span><span class="nt">templates</span><span class="p">:</span><span class="w"></span>
-<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">flakey</span><span class="w"></span>
-<span class="w">      </span><span class="nt">metrics</span><span class="p">:</span><span class="w"></span>
-<span class="w">        </span><span class="nt">prometheus</span><span class="p">:</span><span class="w"></span>
-<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">result_counter</span><span class="w"></span>
-<span class="w">            </span><span class="nt">help</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Count</span><span class="nv"> </span><span class="s">of</span><span class="nv"> </span><span class="s">step</span><span class="nv"> </span><span class="s">execution</span><span class="nv"> </span><span class="s">by</span><span class="nv"> </span><span class="s">result</span><span class="nv"> </span><span class="s">status&quot;</span><span class="w"></span>
-<span class="w">            </span><span class="nt">labels</span><span class="p">:</span><span class="w"></span>
-<span class="w">              </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">name</span><span class="w"></span>
-<span class="w">                </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">flakey</span><span class="w"></span>
-<span class="w">            </span><span class="nt">when</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{status}}</span><span class="nv"> </span><span class="s">==</span><span class="nv"> </span><span class="s">Failed&quot;</span><span class="w">       </span><span class="c1"># Emit the metric conditionally. Works the same as normal &quot;when&quot;</span><span class="w"></span>
-<span class="w">            </span><span class="nt">counter</span><span class="p">:</span><span class="w"></span>
-<span class="w">              </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;1&quot;</span><span class="w">                            </span><span class="c1"># This increments the counter by 1</span><span class="w"></span>
-<span class="w">      </span><span class="nt">container</span><span class="p">:</span><span class="w"></span>
-<span class="w">        </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">python:alpine3.6</span><span class="w"></span>
-<span class="w">        </span><span class="nt">command</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;python&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">-c</span><span class="p p-Indicator">]</span><span class="w"></span>
-<span class="w">        </span><span class="c1"># fail with a 66% probability</span><span class="w"></span>
-<span class="w">        </span><span class="nt">args</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;import</span><span class="nv"> </span><span class="s">random;</span><span class="nv"> </span><span class="s">import</span><span class="nv"> </span><span class="s">sys;</span><span class="nv"> </span><span class="s">exit_code</span><span class="nv"> </span><span class="s">=</span><span class="nv"> </span><span class="s">random.choice([0,</span><span class="nv"> </span><span class="s">1,</span><span class="nv"> </span><span class="s">1]);</span><span class="nv"> </span><span class="s">sys.exit(exit_code)&quot;</span><span class="p p-Indicator">]</span><span class="w"></span>
-<span class="nn">...</span><span class="w"></span>
+<div class="highlight"><pre><span></span><code><span class="nn">...</span>
+<span class="w">  </span><span class="nt">templates</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">flakey</span>
+<span class="w">      </span><span class="nt">metrics</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">prometheus</span><span class="p">:</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">result_counter</span>
+<span class="w">            </span><span class="nt">help</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Count</span><span class="nv"> </span><span class="s">of</span><span class="nv"> </span><span class="s">step</span><span class="nv"> </span><span class="s">execution</span><span class="nv"> </span><span class="s">by</span><span class="nv"> </span><span class="s">result</span><span class="nv"> </span><span class="s">status&quot;</span>
+<span class="w">            </span><span class="nt">labels</span><span class="p">:</span>
+<span class="w">              </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">name</span>
+<span class="w">                </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">flakey</span>
+<span class="w">            </span><span class="nt">when</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{status}}</span><span class="nv"> </span><span class="s">==</span><span class="nv"> </span><span class="s">Failed&quot;</span><span class="w">       </span><span class="c1"># Emit the metric conditionally. Works the same as normal &quot;when&quot;</span>
+<span class="w">            </span><span class="nt">counter</span><span class="p">:</span>
+<span class="w">              </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;1&quot;</span><span class="w">                            </span><span class="c1"># This increments the counter by 1</span>
+<span class="w">      </span><span class="nt">container</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">python:alpine3.6</span>
+<span class="w">        </span><span class="nt">command</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;python&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">-c</span><span class="p p-Indicator">]</span>
+<span class="w">        </span><span class="c1"># fail with a 66% probability</span>
+<span class="w">        </span><span class="nt">args</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;import</span><span class="nv"> </span><span class="s">random;</span><span class="nv"> </span><span class="s">import</span><span class="nv"> </span><span class="s">sys;</span><span class="nv"> </span><span class="s">exit_code</span><span class="nv"> </span><span class="s">=</span><span class="nv"> </span><span class="s">random.choice([0,</span><span class="nv"> </span><span class="s">1,</span><span class="nv"> </span><span class="s">1]);</span><span class="nv"> </span><span class="s">sys.exit(exit_code)&quot;</span><span class="p p-Indicator">]</span>
+<span class="nn">...</span>
 </code></pre></div>
 <p>A similar example of such a Counter metric that will increase for every step status</p>
-<div class="highlight"><pre><span></span><code><span class="nn">...</span><span class="w"></span>
-<span class="w">  </span><span class="nt">templates</span><span class="p">:</span><span class="w"></span>
-<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">flakey</span><span class="w"></span>
-<span class="w">      </span><span class="nt">metrics</span><span class="p">:</span><span class="w"></span>
-<span class="w">        </span><span class="nt">prometheus</span><span class="p">:</span><span class="w"></span>
-<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">result_counter</span><span class="w"></span>
-<span class="w">            </span><span class="nt">help</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Count</span><span class="nv"> </span><span class="s">of</span><span class="nv"> </span><span class="s">step</span><span class="nv"> </span><span class="s">execution</span><span class="nv"> </span><span class="s">by</span><span class="nv"> </span><span class="s">result</span><span class="nv"> </span><span class="s">status&quot;</span><span class="w"></span>
-<span class="w">            </span><span class="nt">labels</span><span class="p">:</span><span class="w"></span>
-<span class="w">              </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">name</span><span class="w"></span>
-<span class="w">                </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">flakey</span><span class="w"></span>
-<span class="w">              </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">status</span><span class="w"></span>
-<span class="w">                </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{status}}&quot;</span><span class="w">    </span><span class="c1"># Argo variable in `labels`</span><span class="w"></span>
-<span class="w">            </span><span class="nt">counter</span><span class="p">:</span><span class="w"></span>
-<span class="w">              </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;1&quot;</span><span class="w"></span>
-<span class="w">      </span><span class="nt">container</span><span class="p">:</span><span class="w"></span>
-<span class="w">        </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">python:alpine3.6</span><span class="w"></span>
-<span class="w">        </span><span class="nt">command</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;python&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">-c</span><span class="p p-Indicator">]</span><span class="w"></span>
-<span class="w">        </span><span class="c1"># fail with a 66% probability</span><span class="w"></span>
-<span class="w">        </span><span class="nt">args</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;import</span><span class="nv"> </span><span class="s">random;</span><span class="nv"> </span><span class="s">import</span><span class="nv"> </span><span class="s">sys;</span><span class="nv"> </span><span class="s">exit_code</span><span class="nv"> </span><span class="s">=</span><span class="nv"> </span><span class="s">random.choice([0,</span><span class="nv"> </span><span class="s">1,</span><span class="nv"> </span><span class="s">1]);</span><span class="nv"> </span><span class="s">sys.exit(exit_code)&quot;</span><span class="p p-Indicator">]</span><span class="w"></span>
-<span class="nn">...</span><span class="w"></span>
+<div class="highlight"><pre><span></span><code><span class="nn">...</span>
+<span class="w">  </span><span class="nt">templates</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">flakey</span>
+<span class="w">      </span><span class="nt">metrics</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">prometheus</span><span class="p">:</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">result_counter</span>
+<span class="w">            </span><span class="nt">help</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Count</span><span class="nv"> </span><span class="s">of</span><span class="nv"> </span><span class="s">step</span><span class="nv"> </span><span class="s">execution</span><span class="nv"> </span><span class="s">by</span><span class="nv"> </span><span class="s">result</span><span class="nv"> </span><span class="s">status&quot;</span>
+<span class="w">            </span><span class="nt">labels</span><span class="p">:</span>
+<span class="w">              </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">name</span>
+<span class="w">                </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">flakey</span>
+<span class="w">              </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">status</span>
+<span class="w">                </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{status}}&quot;</span><span class="w">    </span><span class="c1"># Argo variable in `labels`</span>
+<span class="w">            </span><span class="nt">counter</span><span class="p">:</span>
+<span class="w">              </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;1&quot;</span>
+<span class="w">      </span><span class="nt">container</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">python:alpine3.6</span>
+<span class="w">        </span><span class="nt">command</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;python&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">-c</span><span class="p p-Indicator">]</span>
+<span class="w">        </span><span class="c1"># fail with a 66% probability</span>
+<span class="w">        </span><span class="nt">args</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;import</span><span class="nv"> </span><span class="s">random;</span><span class="nv"> </span><span class="s">import</span><span class="nv"> </span><span class="s">sys;</span><span class="nv"> </span><span class="s">exit_code</span><span class="nv"> </span><span class="s">=</span><span class="nv"> </span><span class="s">random.choice([0,</span><span class="nv"> </span><span class="s">1,</span><span class="nv"> </span><span class="s">1]);</span><span class="nv"> </span><span class="s">sys.exit(exit_code)&quot;</span><span class="p p-Indicator">]</span>
+<span class="nn">...</span>
 </code></pre></div>
 <p>Finally, an example of a <code>Template</code>-level Histogram metric that tracks an internal value:</p>
-<div class="highlight"><pre><span></span><code><span class="nn">...</span><span class="w"></span>
-<span class="w">  </span><span class="nt">templates</span><span class="p">:</span><span class="w"></span>
-<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">random-int</span><span class="w"></span>
-<span class="w">      </span><span class="nt">metrics</span><span class="p">:</span><span class="w"></span>
-<span class="w">        </span><span class="nt">prometheus</span><span class="p">:</span><span class="w"></span>
-<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">random_int_step_histogram</span><span class="w"></span>
-<span class="w">            </span><span class="nt">help</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Value</span><span class="nv"> </span><span class="s">of</span><span class="nv"> </span><span class="s">the</span><span class="nv"> </span><span class="s">int</span><span class="nv"> </span><span class="s">emitted</span><span class="nv"> </span><span class="s">by</span><span class="nv"> </span><span class="s">random-int</span><span class="nv"> </span><span class="s">at</span><span class="nv"> </span><span class="s">step</span><span class="nv"> </span><span class="s">level&quot;</span><span class="w"></span>
-<span class="w">            </span><span class="nt">when</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{status}}</span><span class="nv"> </span><span class="s">==</span><span class="nv"> </span><span class="s">Succeeded&quot;</span><span class="w">    </span><span class="c1"># Only emit metric when step succeeds</span><span class="w"></span>
-<span class="w">            </span><span class="nt">histogram</span><span class="p">:</span><span class="w"></span>
-<span class="w">              </span><span class="nt">buckets</span><span class="p">:</span><span class="w">                              </span><span class="c1"># Bins must be defined for histogram metrics</span><span class="w"></span>
-<span class="w">                </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2.01</span><span class="w">                              </span><span class="c1"># and are part of the metric descriptor.</span><span class="w"></span>
-<span class="w">                </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">4.01</span><span class="w">                              </span><span class="c1"># All metrics in this series MUST have the</span><span class="w"></span>
-<span class="w">                </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">6.01</span><span class="w">                              </span><span class="c1"># same buckets.</span><span class="w"></span>
-<span class="w">                </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">8.01</span><span class="w"></span>
-<span class="w">                </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10.01</span><span class="w"></span>
-<span class="w">              </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{outputs.parameters.rand-int-value}}&quot;</span><span class="w">         </span><span class="c1"># References itself for its output (see variables doc)</span><span class="w"></span>
-<span class="w">      </span><span class="nt">outputs</span><span class="p">:</span><span class="w"></span>
-<span class="w">        </span><span class="nt">parameters</span><span class="p">:</span><span class="w"></span>
-<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">rand-int-value</span><span class="w"></span>
-<span class="w">            </span><span class="nt">globalName</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">rand-int-value</span><span class="w"></span>
-<span class="w">            </span><span class="nt">valueFrom</span><span class="p">:</span><span class="w"></span>
-<span class="w">              </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/tmp/rand_int.txt</span><span class="w"></span>
-<span class="w">      </span><span class="nt">container</span><span class="p">:</span><span class="w"></span>
-<span class="w">        </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">alpine:latest</span><span class="w"></span>
-<span class="w">        </span><span class="nt">command</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">sh</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">-c</span><span class="p p-Indicator">]</span><span class="w"></span>
-<span class="w">        </span><span class="nt">args</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;RAND_INT=$((1</span><span class="nv"> </span><span class="s">+</span><span class="nv"> </span><span class="s">RANDOM</span><span class="nv"> </span><span class="s">%</span><span class="nv"> </span><span class="s">10));</span><span class="nv"> </span><span class="s">echo</span><span class="nv"> </span><span class="s">$RAND_INT;</span><span class="nv"> </span><span class="s">echo</span><span class="nv"> </span><span class="s">$RAND_INT</span><span class="nv"> </span><span class="s">&gt;</span><span class="nv"> </span><span class="s">/tmp/rand_int.txt&quot;</span><span class="p p-Indicator">]</span><span class="w"></span>
-<span class="nn">...</span><span class="w"></span>
+<div class="highlight"><pre><span></span><code><span class="nn">...</span>
+<span class="w">  </span><span class="nt">templates</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">random-int</span>
+<span class="w">      </span><span class="nt">metrics</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">prometheus</span><span class="p">:</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">random_int_step_histogram</span>
+<span class="w">            </span><span class="nt">help</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Value</span><span class="nv"> </span><span class="s">of</span><span class="nv"> </span><span class="s">the</span><span class="nv"> </span><span class="s">int</span><span class="nv"> </span><span class="s">emitted</span><span class="nv"> </span><span class="s">by</span><span class="nv"> </span><span class="s">random-int</span><span class="nv"> </span><span class="s">at</span><span class="nv"> </span><span class="s">step</span><span class="nv"> </span><span class="s">level&quot;</span>
+<span class="w">            </span><span class="nt">when</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{status}}</span><span class="nv"> </span><span class="s">==</span><span class="nv"> </span><span class="s">Succeeded&quot;</span><span class="w">    </span><span class="c1"># Only emit metric when step succeeds</span>
+<span class="w">            </span><span class="nt">histogram</span><span class="p">:</span>
+<span class="w">              </span><span class="nt">buckets</span><span class="p">:</span><span class="w">                              </span><span class="c1"># Bins must be defined for histogram metrics</span>
+<span class="w">                </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2.01</span><span class="w">                              </span><span class="c1"># and are part of the metric descriptor.</span>
+<span class="w">                </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">4.01</span><span class="w">                              </span><span class="c1"># All metrics in this series MUST have the</span>
+<span class="w">                </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">6.01</span><span class="w">                              </span><span class="c1"># same buckets.</span>
+<span class="w">                </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">8.01</span>
+<span class="w">                </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10.01</span>
+<span class="w">              </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{outputs.parameters.rand-int-value}}&quot;</span><span class="w">         </span><span class="c1"># References itself for its output (see variables doc)</span>
+<span class="w">      </span><span class="nt">outputs</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">rand-int-value</span>
+<span class="w">            </span><span class="nt">globalName</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">rand-int-value</span>
+<span class="w">            </span><span class="nt">valueFrom</span><span class="p">:</span>
+<span class="w">              </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/tmp/rand_int.txt</span>
+<span class="w">      </span><span class="nt">container</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">alpine:latest</span>
+<span class="w">        </span><span class="nt">command</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">sh</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">-c</span><span class="p p-Indicator">]</span>
+<span class="w">        </span><span class="nt">args</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;RAND_INT=$((1</span><span class="nv"> </span><span class="s">+</span><span class="nv"> </span><span class="s">RANDOM</span><span class="nv"> </span><span class="s">%</span><span class="nv"> </span><span class="s">10));</span><span class="nv"> </span><span class="s">echo</span><span class="nv"> </span><span class="s">$RAND_INT;</span><span class="nv"> </span><span class="s">echo</span><span class="nv"> </span><span class="s">$RAND_INT</span><span class="nv"> </span><span class="s">&gt;</span><span class="nv"> </span><span class="s">/tmp/rand_int.txt&quot;</span><span class="p p-Indicator">]</span>
+<span class="nn">...</span>
 </code></pre></div>
 <h3 id="real-time-metrics">Real-Time Metrics<a class="headerlink" href="#real-time-metrics" title="Permanent link">&para;</a></h3>
 <p>Argo supports a limited number of real-time metrics. These metrics are emitted in real-time, beginning when the step execution starts
 and ending when it completes. Real-time metrics are only available on Gauge type metrics and with a <a href="../variables/#realtime-metrics">limited number of variables</a>.</p>
 <p>To define a real-time metric simply add <code>realtime: true</code> to a gauge metric with a valid real-time variable. For example:</p>
-<div class="highlight"><pre><span></span><code><span class="w">  </span><span class="nt">gauge</span><span class="p">:</span><span class="w"></span>
-<span class="w">    </span><span class="nt">realtime</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span><span class="w"></span>
-<span class="w">    </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{duration}}&quot;</span><span class="w"></span>
+<div class="highlight"><pre><span></span><code><span class="w">  </span><span class="nt">gauge</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">realtime</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">    </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{duration}}&quot;</span>
 </code></pre></div>
 
               

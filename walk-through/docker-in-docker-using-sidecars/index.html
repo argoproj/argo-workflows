@@ -3784,35 +3784,35 @@
 
 <h1 id="docker-in-docker-using-sidecars">Docker-in-Docker Using Sidecars<a class="headerlink" href="#docker-in-docker-using-sidecars" title="Permanent link">&para;</a></h1>
 <p>An application of sidecars is to implement Docker-in-Docker (DIND). DIND is useful when you want to run Docker commands from inside a container. For example, you may want to build and push a container image from inside your build container. In the following example, we use the <code>docker:dind</code> image to run a Docker daemon in a sidecar and give the main container access to the daemon.</p>
-<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span><span class="w"></span>
-<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Workflow</span><span class="w"></span>
-<span class="nt">metadata</span><span class="p">:</span><span class="w"></span>
-<span class="w">  </span><span class="nt">generateName</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">sidecar-dind-</span><span class="w"></span>
-<span class="nt">spec</span><span class="p">:</span><span class="w"></span>
-<span class="w">  </span><span class="nt">entrypoint</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">dind-sidecar-example</span><span class="w"></span>
-<span class="w">  </span><span class="nt">templates</span><span class="p">:</span><span class="w"></span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">dind-sidecar-example</span><span class="w"></span>
-<span class="w">    </span><span class="nt">container</span><span class="p">:</span><span class="w"></span>
-<span class="w">      </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">docker:19.03.13</span><span class="w"></span>
-<span class="w">      </span><span class="nt">command</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">sh</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">-c</span><span class="p p-Indicator">]</span><span class="w"></span>
-<span class="w">      </span><span class="nt">args</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;until</span><span class="nv"> </span><span class="s">docker</span><span class="nv"> </span><span class="s">ps;</span><span class="nv"> </span><span class="s">do</span><span class="nv"> </span><span class="s">sleep</span><span class="nv"> </span><span class="s">3;</span><span class="nv"> </span><span class="s">done;</span><span class="nv"> </span><span class="s">docker</span><span class="nv"> </span><span class="s">run</span><span class="nv"> </span><span class="s">--rm</span><span class="nv"> </span><span class="s">debian:latest</span><span class="nv"> </span><span class="s">cat</span><span class="nv"> </span><span class="s">/etc/os-release&quot;</span><span class="p p-Indicator">]</span><span class="w"></span>
-<span class="w">      </span><span class="nt">env</span><span class="p">:</span><span class="w"></span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">DOCKER_HOST</span><span class="w">               </span><span class="c1"># the docker daemon can be access on the standard port on localhost</span><span class="w"></span>
-<span class="w">        </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">127.0.0.1</span><span class="w"></span>
-<span class="w">    </span><span class="nt">sidecars</span><span class="p">:</span><span class="w"></span>
-<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">dind</span><span class="w"></span>
-<span class="w">      </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">docker:19.03.13-dind</span><span class="w">          </span><span class="c1"># Docker already provides an image for running a Docker daemon</span><span class="w"></span>
-<span class="w">      </span><span class="nt">command</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">dockerd-entrypoint.sh</span><span class="p p-Indicator">]</span><span class="w"></span>
-<span class="w">      </span><span class="nt">env</span><span class="p">:</span><span class="w"></span>
-<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">DOCKER_TLS_CERTDIR</span><span class="w">         </span><span class="c1"># Docker TLS env config</span><span class="w"></span>
-<span class="w">          </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;&quot;</span><span class="w"></span>
-<span class="w">      </span><span class="nt">securityContext</span><span class="p">:</span><span class="w"></span>
-<span class="w">        </span><span class="nt">privileged</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span><span class="w">                </span><span class="c1"># the Docker daemon can only run in a privileged container</span><span class="w"></span>
-<span class="w">      </span><span class="c1"># mirrorVolumeMounts will mount the same volumes specified in the main container</span><span class="w"></span>
-<span class="w">      </span><span class="c1"># to the sidecar (including artifacts), at the same mountPaths. This enables</span><span class="w"></span>
-<span class="w">      </span><span class="c1"># dind daemon to (partially) see the same filesystem as the main container in</span><span class="w"></span>
-<span class="w">      </span><span class="c1"># order to use features such as docker volume binding.</span><span class="w"></span>
-<span class="w">      </span><span class="nt">mirrorVolumeMounts</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span><span class="w"></span>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Workflow</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">generateName</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">sidecar-dind-</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">entrypoint</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">dind-sidecar-example</span>
+<span class="w">  </span><span class="nt">templates</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">dind-sidecar-example</span>
+<span class="w">    </span><span class="nt">container</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">docker:19.03.13</span>
+<span class="w">      </span><span class="nt">command</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">sh</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">-c</span><span class="p p-Indicator">]</span>
+<span class="w">      </span><span class="nt">args</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;until</span><span class="nv"> </span><span class="s">docker</span><span class="nv"> </span><span class="s">ps;</span><span class="nv"> </span><span class="s">do</span><span class="nv"> </span><span class="s">sleep</span><span class="nv"> </span><span class="s">3;</span><span class="nv"> </span><span class="s">done;</span><span class="nv"> </span><span class="s">docker</span><span class="nv"> </span><span class="s">run</span><span class="nv"> </span><span class="s">--rm</span><span class="nv"> </span><span class="s">debian:latest</span><span class="nv"> </span><span class="s">cat</span><span class="nv"> </span><span class="s">/etc/os-release&quot;</span><span class="p p-Indicator">]</span>
+<span class="w">      </span><span class="nt">env</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">DOCKER_HOST</span><span class="w">               </span><span class="c1"># the docker daemon can be access on the standard port on localhost</span>
+<span class="w">        </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">127.0.0.1</span>
+<span class="w">    </span><span class="nt">sidecars</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">dind</span>
+<span class="w">      </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">docker:19.03.13-dind</span><span class="w">          </span><span class="c1"># Docker already provides an image for running a Docker daemon</span>
+<span class="w">      </span><span class="nt">command</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">dockerd-entrypoint.sh</span><span class="p p-Indicator">]</span>
+<span class="w">      </span><span class="nt">env</span><span class="p">:</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">DOCKER_TLS_CERTDIR</span><span class="w">         </span><span class="c1"># Docker TLS env config</span>
+<span class="w">          </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;&quot;</span>
+<span class="w">      </span><span class="nt">securityContext</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">privileged</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span><span class="w">                </span><span class="c1"># the Docker daemon can only run in a privileged container</span>
+<span class="w">      </span><span class="c1"># mirrorVolumeMounts will mount the same volumes specified in the main container</span>
+<span class="w">      </span><span class="c1"># to the sidecar (including artifacts), at the same mountPaths. This enables</span>
+<span class="w">      </span><span class="c1"># dind daemon to (partially) see the same filesystem as the main container in</span>
+<span class="w">      </span><span class="c1"># order to use features such as docker volume binding.</span>
+<span class="w">      </span><span class="nt">mirrorVolumeMounts</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
 </code></pre></div>
 
               

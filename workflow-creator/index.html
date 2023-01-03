@@ -3787,15 +3787,15 @@
 <p>v2.9 and after</p>
 </blockquote>
 <p>If you create your workflow via the CLI or UI, an attempt will be made to label it with the user who created it</p>
-<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span><span class="w"></span>
-<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Workflow</span><span class="w"></span>
-<span class="nt">metadata</span><span class="p">:</span><span class="w"></span>
-<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-wf</span><span class="w"></span>
-<span class="w">  </span><span class="nt">labels</span><span class="p">:</span><span class="w"></span>
-<span class="w">    </span><span class="nt">workflows.argoproj.io/creator</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">admin</span><span class="w"></span>
-<span class="w">    </span><span class="c1"># labels must be DNS formatted, so the &quot;@&quot; is replaces by &#39;.at.&#39;  </span><span class="w"></span>
-<span class="w">    </span><span class="nt">workflows.argoproj.io/creator-email</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">admin.at.your.org</span><span class="w"></span>
-<span class="w">    </span><span class="nt">workflows.argoproj.io/creator-preferred-username</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">admin-preferred-username</span><span class="w"></span>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Workflow</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-wf</span>
+<span class="w">  </span><span class="nt">labels</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">workflows.argoproj.io/creator</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">admin</span>
+<span class="w">    </span><span class="c1"># labels must be DNS formatted, so the &quot;@&quot; is replaces by &#39;.at.&#39;  </span>
+<span class="w">    </span><span class="nt">workflows.argoproj.io/creator-email</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">admin.at.your.org</span>
+<span class="w">    </span><span class="nt">workflows.argoproj.io/creator-preferred-username</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">admin-preferred-username</span>
 </code></pre></div>
 <div class="admonition note">
 <p class="admonition-title">Note</p>

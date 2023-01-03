@@ -4095,17 +4095,17 @@ Subsequent sections will show how to use it.</p>
 </ol>
 <h2 id="configuring-minio">Configuring MinIO<a class="headerlink" href="#configuring-minio" title="Permanent link">&para;</a></h2>
 <p>NOTE: MinIO is already included in the <a href="../quick-start/">quick-start manifests</a>.</p>
-<div class="highlight"><pre><span></span><code>brew install helm <span class="c1"># mac, helm 3.x</span>
-helm repo add minio https://helm.min.io/ <span class="c1"># official minio Helm charts</span>
-helm repo update
-helm install argo-artifacts minio/minio --set service.type<span class="o">=</span>LoadBalancer --set <span class="nv">fullnameOverride</span><span class="o">=</span>argo-artifacts
+<div class="highlight"><pre><span></span><code>brew<span class="w"> </span>install<span class="w"> </span>helm<span class="w"> </span><span class="c1"># mac, helm 3.x</span>
+helm<span class="w"> </span>repo<span class="w"> </span>add<span class="w"> </span>minio<span class="w"> </span>https://helm.min.io/<span class="w"> </span><span class="c1"># official minio Helm charts</span>
+helm<span class="w"> </span>repo<span class="w"> </span>update
+helm<span class="w"> </span>install<span class="w"> </span>argo-artifacts<span class="w"> </span>minio/minio<span class="w"> </span>--set<span class="w"> </span>service.type<span class="o">=</span>LoadBalancer<span class="w"> </span>--set<span class="w"> </span><span class="nv">fullnameOverride</span><span class="o">=</span>argo-artifacts
 </code></pre></div>
 <p>Login to the MinIO UI using a web browser (port 9000) after obtaining the
 external IP using <code>kubectl</code>.</p>
-<div class="highlight"><pre><span></span><code>kubectl get service argo-artifacts
+<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>get<span class="w"> </span>service<span class="w"> </span>argo-artifacts
 </code></pre></div>
 <p>On Minikube:</p>
-<div class="highlight"><pre><span></span><code>minikube service --url argo-artifacts
+<div class="highlight"><pre><span></span><code>minikube<span class="w"> </span>service<span class="w"> </span>--url<span class="w"> </span>argo-artifacts
 </code></pre></div>
 <p>NOTE: When MinIO is installed via Helm, it generates
 credentials, which you will use to login to the UI:
@@ -4122,8 +4122,8 @@ create access keys with reduced scope. If you want to limit the permissions for
 an access key, you will need to create a user with just the permissions you want
 to associate with the access key. Otherwise, you can just create an access key
 using your existing user account.</p>
-<div class="highlight"><pre><span></span><code>$ <span class="nb">export</span> <span class="nv">mybucket</span><span class="o">=</span>bucket249
-$ cat &gt; policy.json <span class="s">&lt;&lt;EOF</span>
+<div class="highlight"><pre><span></span><code>$<span class="w"> </span><span class="nb">export</span><span class="w"> </span><span class="nv">mybucket</span><span class="o">=</span>bucket249
+$<span class="w"> </span>cat<span class="w"> </span>&gt;<span class="w"> </span>policy.json<span class="w"> </span><span class="s">&lt;&lt;EOF</span>
 <span class="s">{</span>
 <span class="s">   &quot;Version&quot;:&quot;2012-10-17&quot;,</span>
 <span class="s">   &quot;Statement&quot;:[</span>
@@ -4145,23 +4145,23 @@ $ cat &gt; policy.json <span class="s">&lt;&lt;EOF</span>
 <span class="s">   ]</span>
 <span class="s">}</span>
 <span class="s">EOF</span>
-$ aws s3 mb s3://<span class="nv">$mybucket</span> <span class="o">[</span>--region xxx<span class="o">]</span>
-$ aws iam create-user --user-name <span class="nv">$mybucket</span>-user
-$ aws iam put-user-policy --user-name <span class="nv">$mybucket</span>-user --policy-name <span class="nv">$mybucket</span>-policy --policy-document file://policy.json
-$ aws iam create-access-key --user-name <span class="nv">$mybucket</span>-user &gt; access-key.json
+$<span class="w"> </span>aws<span class="w"> </span>s3<span class="w"> </span>mb<span class="w"> </span>s3://<span class="nv">$mybucket</span><span class="w"> </span><span class="o">[</span>--region<span class="w"> </span>xxx<span class="o">]</span>
+$<span class="w"> </span>aws<span class="w"> </span>iam<span class="w"> </span>create-user<span class="w"> </span>--user-name<span class="w"> </span><span class="nv">$mybucket</span>-user
+$<span class="w"> </span>aws<span class="w"> </span>iam<span class="w"> </span>put-user-policy<span class="w"> </span>--user-name<span class="w"> </span><span class="nv">$mybucket</span>-user<span class="w"> </span>--policy-name<span class="w"> </span><span class="nv">$mybucket</span>-policy<span class="w"> </span>--policy-document<span class="w"> </span>file://policy.json
+$<span class="w"> </span>aws<span class="w"> </span>iam<span class="w"> </span>create-access-key<span class="w"> </span>--user-name<span class="w"> </span><span class="nv">$mybucket</span>-user<span class="w"> </span>&gt;<span class="w"> </span>access-key.json
 </code></pre></div>
 <p>If you have Artifact Garbage Collection configured, you should also add "s3:DeleteObject" to the list of Actions above.</p>
 <p>NOTE: if you want argo to figure out which region your buckets belong in, you
 must additionally set the following statement policy. Otherwise, you must
 specify a bucket region in your workflow configuration.</p>
-<div class="highlight"><pre><span></span><code><span class="w">      </span><span class="p">{</span><span class="w"></span>
-<span class="w">         </span><span class="nt">&quot;Effect&quot;</span><span class="p">:</span><span class="s2">&quot;Allow&quot;</span><span class="p">,</span><span class="w"></span>
-<span class="w">         </span><span class="nt">&quot;Action&quot;</span><span class="p">:[</span><span class="w"></span>
-<span class="w">            </span><span class="s2">&quot;s3:GetBucketLocation&quot;</span><span class="w"></span>
-<span class="w">         </span><span class="p">],</span><span class="w"></span>
-<span class="w">         </span><span class="nt">&quot;Resource&quot;</span><span class="p">:</span><span class="s2">&quot;arn:aws:s3:::*&quot;</span><span class="w"></span>
-<span class="w">      </span><span class="p">}</span><span class="w"></span>
-<span class="w">    </span><span class="err">...</span><span class="w"></span>
+<div class="highlight"><pre><span></span><code><span class="w">      </span><span class="p">{</span>
+<span class="w">         </span><span class="nt">&quot;Effect&quot;</span><span class="p">:</span><span class="s2">&quot;Allow&quot;</span><span class="p">,</span>
+<span class="w">         </span><span class="nt">&quot;Action&quot;</span><span class="p">:[</span>
+<span class="w">            </span><span class="s2">&quot;s3:GetBucketLocation&quot;</span>
+<span class="w">         </span><span class="p">],</span>
+<span class="w">         </span><span class="nt">&quot;Resource&quot;</span><span class="p">:</span><span class="s2">&quot;arn:aws:s3:::*&quot;</span>
+<span class="w">      </span><span class="p">}</span>
+<span class="w">    </span><span class="err">...</span>
 </code></pre></div>
 <h2 id="configuring-gcs-google-cloud-storage">Configuring GCS (Google Cloud Storage)<a class="headerlink" href="#configuring-gcs-google-cloud-storage" title="Permanent link">&para;</a></h2>
 <p>Create a bucket from the GCP Console
@@ -4173,23 +4173,23 @@ specify a bucket region in your workflow configuration.</p>
 <li>Create a kubernetes secret to store the key.</li>
 <li>Configure <code>gcs</code> artifact as following in the yaml.</li>
 </ul>
-<div class="highlight"><pre><span></span><code><span class="nt">artifacts</span><span class="p">:</span><span class="w"></span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">message</span><span class="w"></span>
-<span class="w">    </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/tmp/message</span><span class="w"></span>
-<span class="w">    </span><span class="nt">gcs</span><span class="p">:</span><span class="w"></span>
-<span class="w">      </span><span class="nt">bucket</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-bucket-name</span><span class="w"></span>
-<span class="w">      </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">path/in/bucket</span><span class="w"></span>
-<span class="w">      </span><span class="c1"># serviceAccountKeySecret is a secret selector.</span><span class="w"></span>
-<span class="w">      </span><span class="c1"># It references the k8s secret named &#39;my-gcs-credentials&#39;.</span><span class="w"></span>
-<span class="w">      </span><span class="c1"># This secret is expected to have have the key &#39;serviceAccountKey&#39;,</span><span class="w"></span>
-<span class="w">      </span><span class="c1"># containing the base64 encoded credentials</span><span class="w"></span>
-<span class="w">      </span><span class="c1"># to the bucket.</span><span class="w"></span>
-<span class="w">      </span><span class="c1">#</span><span class="w"></span>
-<span class="w">      </span><span class="c1"># If it&#39;s running on GKE and Workload Identity is used,</span><span class="w"></span>
-<span class="w">      </span><span class="c1"># serviceAccountKeySecret is not needed.</span><span class="w"></span>
-<span class="w">      </span><span class="nt">serviceAccountKeySecret</span><span class="p">:</span><span class="w"></span>
-<span class="w">        </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-gcs-credentials</span><span class="w"></span>
-<span class="w">        </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">serviceAccountKey</span><span class="w"></span>
+<div class="highlight"><pre><span></span><code><span class="nt">artifacts</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">message</span>
+<span class="w">    </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/tmp/message</span>
+<span class="w">    </span><span class="nt">gcs</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">bucket</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-bucket-name</span>
+<span class="w">      </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">path/in/bucket</span>
+<span class="w">      </span><span class="c1"># serviceAccountKeySecret is a secret selector.</span>
+<span class="w">      </span><span class="c1"># It references the k8s secret named &#39;my-gcs-credentials&#39;.</span>
+<span class="w">      </span><span class="c1"># This secret is expected to have have the key &#39;serviceAccountKey&#39;,</span>
+<span class="w">      </span><span class="c1"># containing the base64 encoded credentials</span>
+<span class="w">      </span><span class="c1"># to the bucket.</span>
+<span class="w">      </span><span class="c1">#</span>
+<span class="w">      </span><span class="c1"># If it&#39;s running on GKE and Workload Identity is used,</span>
+<span class="w">      </span><span class="c1"># serviceAccountKeySecret is not needed.</span>
+<span class="w">      </span><span class="nt">serviceAccountKeySecret</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-gcs-credentials</span>
+<span class="w">        </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">serviceAccountKey</span>
 </code></pre></div>
 <p>If it's a GKE cluster, and Workload Identity is configured, there's no need to
 create the service account key and store it as a Kubernetes secret,
@@ -4206,23 +4206,23 @@ access is on a per project rather than per bucket basis.</p>
 <li>Create a new key if needed.</li>
 <li>Configure <code>s3</code> artifact as following example.</li>
 </ul>
-<div class="highlight"><pre><span></span><code><span class="nt">artifacts</span><span class="p">:</span><span class="w"></span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-output-artifact</span><span class="w"></span>
-<span class="w">    </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/my-output-artifact</span><span class="w"></span>
-<span class="w">    </span><span class="nt">s3</span><span class="p">:</span><span class="w"></span>
-<span class="w">      </span><span class="nt">endpoint</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">storage.googleapis.com</span><span class="w"></span>
-<span class="w">      </span><span class="nt">bucket</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-gcs-bucket-name</span><span class="w"></span>
-<span class="w">      </span><span class="c1"># NOTE that, by default, all output artifacts are automatically tarred and</span><span class="w"></span>
-<span class="w">      </span><span class="c1"># gzipped before saving. So as a best practice, .tgz or .tar.gz</span><span class="w"></span>
-<span class="w">      </span><span class="c1"># should be incorporated into the key name so the resulting file</span><span class="w"></span>
-<span class="w">      </span><span class="c1"># has an accurate file extension.</span><span class="w"></span>
-<span class="w">      </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">path/in/bucket/my-output-artifact.tgz</span><span class="w"></span>
-<span class="w">      </span><span class="nt">accessKeySecret</span><span class="p">:</span><span class="w"></span>
-<span class="w">        </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-gcs-s3-credentials</span><span class="w"></span>
-<span class="w">        </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">accessKey</span><span class="w"></span>
-<span class="w">      </span><span class="nt">secretKeySecret</span><span class="p">:</span><span class="w"></span>
-<span class="w">        </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-gcs-s3-credentials</span><span class="w"></span>
-<span class="w">        </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">secretKey</span><span class="w"></span>
+<div class="highlight"><pre><span></span><code><span class="nt">artifacts</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-output-artifact</span>
+<span class="w">    </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/my-output-artifact</span>
+<span class="w">    </span><span class="nt">s3</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">endpoint</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">storage.googleapis.com</span>
+<span class="w">      </span><span class="nt">bucket</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-gcs-bucket-name</span>
+<span class="w">      </span><span class="c1"># NOTE that, by default, all output artifacts are automatically tarred and</span>
+<span class="w">      </span><span class="c1"># gzipped before saving. So as a best practice, .tgz or .tar.gz</span>
+<span class="w">      </span><span class="c1"># should be incorporated into the key name so the resulting file</span>
+<span class="w">      </span><span class="c1"># has an accurate file extension.</span>
+<span class="w">      </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">path/in/bucket/my-output-artifact.tgz</span>
+<span class="w">      </span><span class="nt">accessKeySecret</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-gcs-s3-credentials</span>
+<span class="w">        </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">accessKey</span>
+<span class="w">      </span><span class="nt">secretKeySecret</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-gcs-s3-credentials</span>
+<span class="w">        </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">secretKey</span>
 </code></pre></div>
 <h2 id="configuring-alibaba-cloud-oss-object-storage-service">Configuring Alibaba Cloud OSS (Object Storage Service)<a class="headerlink" href="#configuring-alibaba-cloud-oss-object-storage-service" title="Permanent link">&para;</a></h2>
 <p>Create your bucket and access key for the bucket. Suggest to limit the permission
@@ -4231,10 +4231,10 @@ want to associate with the access key. Otherwise, you can just create an access 
 using your existing user account.</p>
 <p>Setup <a href="https://www.alibabacloud.com/help/en/alibaba-cloud-cli/latest/product-introduction">Alibaba Cloud CLI</a>
 and follow the steps to configure the artifact storage for your workflow:</p>
-<div class="highlight"><pre><span></span><code>$ <span class="nb">export</span> <span class="nv">mybucket</span><span class="o">=</span>bucket-workflow-artifect
-$ <span class="nb">export</span> <span class="nv">myregion</span><span class="o">=</span>cn-zhangjiakou
-$ <span class="c1"># limit permission to read/write the bucket.</span>
-$ cat &gt; policy.json <span class="s">&lt;&lt;EOF</span>
+<div class="highlight"><pre><span></span><code>$<span class="w"> </span><span class="nb">export</span><span class="w"> </span><span class="nv">mybucket</span><span class="o">=</span>bucket-workflow-artifect
+$<span class="w"> </span><span class="nb">export</span><span class="w"> </span><span class="nv">myregion</span><span class="o">=</span>cn-zhangjiakou
+$<span class="w"> </span><span class="c1"># limit permission to read/write the bucket.</span>
+$<span class="w"> </span>cat<span class="w"> </span>&gt;<span class="w"> </span>policy.json<span class="w"> </span><span class="s">&lt;&lt;EOF</span>
 <span class="s">{</span>
 <span class="s">    &quot;Version&quot;: &quot;1&quot;,</span>
 <span class="s">    &quot;Statement&quot;: [</span>
@@ -4249,24 +4249,24 @@ $ cat &gt; policy.json <span class="s">&lt;&lt;EOF</span>
 <span class="s">    ]</span>
 <span class="s">}</span>
 <span class="s">EOF</span>
-$ <span class="c1"># create bucket.</span>
-$ aliyun oss mb oss://<span class="nv">$mybucket</span> --region <span class="nv">$myregion</span>
-$ <span class="c1"># show endpoint of bucket.</span>
-$ aliyun oss stat oss://<span class="nv">$mybucket</span>
-$ <span class="c1">#create a ram user to access bucket.</span>
-$ aliyun ram CreateUser --UserName <span class="nv">$mybucket</span>-user
-$ <span class="c1"># create ram policy with the limit permission.</span>
-$ aliyun ram CreatePolicy --PolicyName <span class="nv">$mybucket</span>-policy --PolicyDocument <span class="s2">&quot;</span><span class="k">$(</span>cat policy.json<span class="k">)</span><span class="s2">&quot;</span>
-$ <span class="c1"># attch ram policy to the ram user.</span>
-$ aliyun ram AttachPolicyToUser --UserName <span class="nv">$mybucket</span>-user --PolicyName <span class="nv">$mybucket</span>-policy --PolicyType Custom
-$ <span class="c1"># create access key and secret key for the ram user.</span>
-$ aliyun ram CreateAccessKey --UserName <span class="nv">$mybucket</span>-user &gt; access-key.json
-$ <span class="c1"># create secret in demo namespace, replace demo with your namespace.</span>
-$ kubectl create secret generic <span class="nv">$mybucket</span>-credentials -n demo<span class="se">\</span>
-  --from-literal <span class="s2">&quot;accessKey=</span><span class="k">$(</span>cat access-key.json <span class="p">|</span> jq -r .AccessKey.AccessKeyId<span class="k">)</span><span class="s2">&quot;</span> <span class="se">\</span>
-  --from-literal <span class="s2">&quot;secretKey=</span><span class="k">$(</span>cat access-key.json <span class="p">|</span> jq -r .AccessKey.AccessKeySecret<span class="k">)</span><span class="s2">&quot;</span>
-$ <span class="c1"># create configmap to config default artifact for a namespace.</span>
-$ cat &gt; default-artifact-repository.yaml <span class="s">&lt;&lt; EOF</span>
+$<span class="w"> </span><span class="c1"># create bucket.</span>
+$<span class="w"> </span>aliyun<span class="w"> </span>oss<span class="w"> </span>mb<span class="w"> </span>oss://<span class="nv">$mybucket</span><span class="w"> </span>--region<span class="w"> </span><span class="nv">$myregion</span>
+$<span class="w"> </span><span class="c1"># show endpoint of bucket.</span>
+$<span class="w"> </span>aliyun<span class="w"> </span>oss<span class="w"> </span>stat<span class="w"> </span>oss://<span class="nv">$mybucket</span>
+$<span class="w"> </span><span class="c1">#create a ram user to access bucket.</span>
+$<span class="w"> </span>aliyun<span class="w"> </span>ram<span class="w"> </span>CreateUser<span class="w"> </span>--UserName<span class="w"> </span><span class="nv">$mybucket</span>-user
+$<span class="w"> </span><span class="c1"># create ram policy with the limit permission.</span>
+$<span class="w"> </span>aliyun<span class="w"> </span>ram<span class="w"> </span>CreatePolicy<span class="w"> </span>--PolicyName<span class="w"> </span><span class="nv">$mybucket</span>-policy<span class="w"> </span>--PolicyDocument<span class="w"> </span><span class="s2">&quot;</span><span class="k">$(</span>cat<span class="w"> </span>policy.json<span class="k">)</span><span class="s2">&quot;</span>
+$<span class="w"> </span><span class="c1"># attch ram policy to the ram user.</span>
+$<span class="w"> </span>aliyun<span class="w"> </span>ram<span class="w"> </span>AttachPolicyToUser<span class="w"> </span>--UserName<span class="w"> </span><span class="nv">$mybucket</span>-user<span class="w"> </span>--PolicyName<span class="w"> </span><span class="nv">$mybucket</span>-policy<span class="w"> </span>--PolicyType<span class="w"> </span>Custom
+$<span class="w"> </span><span class="c1"># create access key and secret key for the ram user.</span>
+$<span class="w"> </span>aliyun<span class="w"> </span>ram<span class="w"> </span>CreateAccessKey<span class="w"> </span>--UserName<span class="w"> </span><span class="nv">$mybucket</span>-user<span class="w"> </span>&gt;<span class="w"> </span>access-key.json
+$<span class="w"> </span><span class="c1"># create secret in demo namespace, replace demo with your namespace.</span>
+$<span class="w"> </span>kubectl<span class="w"> </span>create<span class="w"> </span>secret<span class="w"> </span>generic<span class="w"> </span><span class="nv">$mybucket</span>-credentials<span class="w"> </span>-n<span class="w"> </span>demo<span class="se">\</span>
+<span class="w">  </span>--from-literal<span class="w"> </span><span class="s2">&quot;accessKey=</span><span class="k">$(</span>cat<span class="w"> </span>access-key.json<span class="w"> </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span>-r<span class="w"> </span>.AccessKey.AccessKeyId<span class="k">)</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--from-literal<span class="w"> </span><span class="s2">&quot;secretKey=</span><span class="k">$(</span>cat<span class="w"> </span>access-key.json<span class="w"> </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span>-r<span class="w"> </span>.AccessKey.AccessKeySecret<span class="k">)</span><span class="s2">&quot;</span>
+$<span class="w"> </span><span class="c1"># create configmap to config default artifact for a namespace.</span>
+$<span class="w"> </span>cat<span class="w"> </span>&gt;<span class="w"> </span>default-artifact-repository.yaml<span class="w"> </span><span class="s">&lt;&lt; EOF</span>
 <span class="s">apiVersion: v1</span>
 <span class="s">kind: ConfigMap</span>
 <span class="s">metadata:</span>
@@ -4294,7 +4294,7 @@ $ cat &gt; default-artifact-repository.yaml <span class="s">&lt;&lt; EOF</span>
 <span class="s">        key: secretKey</span>
 <span class="s">EOF</span>
 <span class="c1"># create cm in demo namespace, replace demo with your namespace.</span>
-$ k apply -f default-artifact-repository.yaml -n demo
+$<span class="w"> </span>k<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span>default-artifact-repository.yaml<span class="w"> </span>-n<span class="w"> </span>demo
 </code></pre></div>
 <p>You can also set <code>createBucketIfNotPresent</code> to <code>true</code> to tell the artifact driver to automatically create the OSS bucket if it doesn't exist yet when saving artifacts. Note that you'll need to set additional permission for your OSS account to create new buckets.</p>
 <h2 id="configuring-azure-blob-storage">Configuring Azure Blob Storage<a class="headerlink" href="#configuring-azure-blob-storage" title="Permanent link">&para;</a></h2>
@@ -4304,41 +4304,41 @@ ways to accomplish this, including the <a href="https://portal.azure.com">Azure 
 <ol>
 <li>Retrieve the blob service endpoint for the storage account. For example:</li>
 </ol>
-<div class="highlight"><pre><span></span><code>az storage account show -n mystorageaccountname --query <span class="s1">&#39;primaryEndpoints.blob&#39;</span> -otsv
+<div class="highlight"><pre><span></span><code>az<span class="w"> </span>storage<span class="w"> </span>account<span class="w"> </span>show<span class="w"> </span>-n<span class="w"> </span>mystorageaccountname<span class="w"> </span>--query<span class="w"> </span><span class="s1">&#39;primaryEndpoints.blob&#39;</span><span class="w"> </span>-otsv
 </code></pre></div>
 <ol>
 <li>Retrieve the access key for the storage account. For example:</li>
 </ol>
-<div class="highlight"><pre><span></span><code>az storage account keys list -n mystorageaccountname --query <span class="s1">&#39;[0].value&#39;</span> -otsv
+<div class="highlight"><pre><span></span><code>az<span class="w"> </span>storage<span class="w"> </span>account<span class="w"> </span>keys<span class="w"> </span>list<span class="w"> </span>-n<span class="w"> </span>mystorageaccountname<span class="w"> </span>--query<span class="w"> </span><span class="s1">&#39;[0].value&#39;</span><span class="w"> </span>-otsv
 </code></pre></div>
 <ol>
 <li>Create a kubernetes secret to hold the storage account key. For example:</li>
 </ol>
-<div class="highlight"><pre><span></span><code>kubectl create secret generic my-azure-storage-credentials <span class="se">\</span>
-  --from-literal <span class="s2">&quot;account-access-key=</span><span class="k">$(</span>az storage account keys list -n mystorageaccountname --query <span class="s1">&#39;[0].value&#39;</span> -otsv<span class="k">)</span><span class="s2">&quot;</span>
+<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>create<span class="w"> </span>secret<span class="w"> </span>generic<span class="w"> </span>my-azure-storage-credentials<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--from-literal<span class="w"> </span><span class="s2">&quot;account-access-key=</span><span class="k">$(</span>az<span class="w"> </span>storage<span class="w"> </span>account<span class="w"> </span>keys<span class="w"> </span>list<span class="w"> </span>-n<span class="w"> </span>mystorageaccountname<span class="w"> </span>--query<span class="w"> </span><span class="s1">&#39;[0].value&#39;</span><span class="w"> </span>-otsv<span class="k">)</span><span class="s2">&quot;</span>
 </code></pre></div>
 <ol>
 <li>Configure <code>azure</code> artifact as following in the yaml.</li>
 </ol>
-<div class="highlight"><pre><span></span><code><span class="nt">artifacts</span><span class="p">:</span><span class="w"></span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">message</span><span class="w"></span>
-<span class="w">    </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/tmp/message</span><span class="w"></span>
-<span class="w">    </span><span class="nt">azure</span><span class="p">:</span><span class="w"></span>
-<span class="w">      </span><span class="nt">endpoint</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://mystorageaccountname.blob.core.windows.net</span><span class="w"></span>
-<span class="w">      </span><span class="nt">container</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-container-name</span><span class="w"></span>
-<span class="w">      </span><span class="nt">blob</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">path/in/container</span><span class="w"></span>
-<span class="w">      </span><span class="c1"># accountKeySecret is a secret selector.</span><span class="w"></span>
-<span class="w">      </span><span class="c1"># It references the k8s secret named &#39;my-azure-storage-credentials&#39;.</span><span class="w"></span>
-<span class="w">      </span><span class="c1"># This secret is expected to have have the key &#39;account-access-key&#39;,</span><span class="w"></span>
-<span class="w">      </span><span class="c1"># containing the base64 encoded credentials to the storage account.</span><span class="w"></span>
-<span class="w">      </span><span class="c1">#</span><span class="w"></span>
-<span class="w">      </span><span class="c1"># If a managed identity has been assigned to the machines running the</span><span class="w"></span>
-<span class="w">      </span><span class="c1"># workflow (e.g., https://docs.microsoft.com/en-us/azure/aks/use-managed-identity)</span><span class="w"></span>
-<span class="w">      </span><span class="c1"># then accountKeySecret is not needed, and useSDKCreds should be</span><span class="w"></span>
-<span class="w">      </span><span class="c1"># set to true instead:</span><span class="w"></span>
-<span class="w">      </span><span class="c1"># useSDKCreds: true</span><span class="w"></span>
-<span class="w">      </span><span class="nt">accountKeySecret</span><span class="p">:</span><span class="w"></span>
-<span class="w">        </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-azure-storage-credentials</span><span class="w"></span>
+<div class="highlight"><pre><span></span><code><span class="nt">artifacts</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">message</span>
+<span class="w">    </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/tmp/message</span>
+<span class="w">    </span><span class="nt">azure</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">endpoint</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://mystorageaccountname.blob.core.windows.net</span>
+<span class="w">      </span><span class="nt">container</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-container-name</span>
+<span class="w">      </span><span class="nt">blob</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">path/in/container</span>
+<span class="w">      </span><span class="c1"># accountKeySecret is a secret selector.</span>
+<span class="w">      </span><span class="c1"># It references the k8s secret named &#39;my-azure-storage-credentials&#39;.</span>
+<span class="w">      </span><span class="c1"># This secret is expected to have have the key &#39;account-access-key&#39;,</span>
+<span class="w">      </span><span class="c1"># containing the base64 encoded credentials to the storage account.</span>
+<span class="w">      </span><span class="c1">#</span>
+<span class="w">      </span><span class="c1"># If a managed identity has been assigned to the machines running the</span>
+<span class="w">      </span><span class="c1"># workflow (e.g., https://docs.microsoft.com/en-us/azure/aks/use-managed-identity)</span>
+<span class="w">      </span><span class="c1"># then accountKeySecret is not needed, and useSDKCreds should be</span>
+<span class="w">      </span><span class="c1"># set to true instead:</span>
+<span class="w">      </span><span class="c1"># useSDKCreds: true</span>
+<span class="w">      </span><span class="nt">accountKeySecret</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-azure-storage-credentials</span>
 <span class="w">        </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">account-access-key</span><span class="w">     </span>
 </code></pre></div>
 <p>If <code>useSDKCreds</code> is set to <code>true</code>, then the <code>accountKeySecret</code> value is not
@@ -4382,22 +4382,22 @@ project rather than per bucket basis.</p>
 <p>For Alibaba Cloud OSS, the <code>accessKeySecret</code> and <code>secretKeySecret</code> corresponds to
 <code>accessKeyID</code> <code>and accessKeySecret</code> respectively.</p>
 <p>Example:</p>
-<div class="highlight"><pre><span></span><code>$ kubectl edit configmap workflow-controller-configmap -n argo  <span class="c1"># assumes argo was installed in the argo namespace</span>
+<div class="highlight"><pre><span></span><code>$<span class="w"> </span>kubectl<span class="w"> </span>edit<span class="w"> </span>configmap<span class="w"> </span>workflow-controller-configmap<span class="w"> </span>-n<span class="w"> </span>argo<span class="w">  </span><span class="c1"># assumes argo was installed in the argo namespace</span>
 ...
 data:
-  artifactRepository: <span class="p">|</span>
-    s3:
-      bucket: my-bucket
-      keyFormat: prefix/in/bucket     <span class="c1">#optional</span>
-      endpoint: my-minio-endpoint.default:9000        <span class="c1">#AWS =&gt; s3.amazonaws.com; GCS =&gt; storage.googleapis.com</span>
-      insecure: <span class="nb">true</span>                  <span class="c1">#omit for S3/GCS. Needed when minio runs without TLS</span>
-      accessKeySecret:                <span class="c1">#omit if accessing via AWS IAM</span>
-        name: my-minio-cred
-        key: accessKey
-      secretKeySecret:                <span class="c1">#omit if accessing via AWS IAM</span>
-        name: my-minio-cred
-        key: secretKey
-      useSDKCreds: <span class="nb">true</span>               <span class="c1">#tells argo to use AWS SDK&#39;s default provider chain, enable for things like IRSA support</span>
+<span class="w">  </span>artifactRepository:<span class="w"> </span><span class="p">|</span>
+<span class="w">    </span>s3:
+<span class="w">      </span>bucket:<span class="w"> </span>my-bucket
+<span class="w">      </span>keyFormat:<span class="w"> </span>prefix/in/bucket<span class="w">     </span><span class="c1">#optional</span>
+<span class="w">      </span>endpoint:<span class="w"> </span>my-minio-endpoint.default:9000<span class="w">        </span><span class="c1">#AWS =&gt; s3.amazonaws.com; GCS =&gt; storage.googleapis.com</span>
+<span class="w">      </span>insecure:<span class="w"> </span><span class="nb">true</span><span class="w">                  </span><span class="c1">#omit for S3/GCS. Needed when minio runs without TLS</span>
+<span class="w">      </span>accessKeySecret:<span class="w">                </span><span class="c1">#omit if accessing via AWS IAM</span>
+<span class="w">        </span>name:<span class="w"> </span>my-minio-cred
+<span class="w">        </span>key:<span class="w"> </span>accessKey
+<span class="w">      </span>secretKeySecret:<span class="w">                </span><span class="c1">#omit if accessing via AWS IAM</span>
+<span class="w">        </span>name:<span class="w"> </span>my-minio-cred
+<span class="w">        </span>key:<span class="w"> </span>secretKey
+<span class="w">      </span>useSDKCreds:<span class="w"> </span><span class="nb">true</span><span class="w">               </span><span class="c1">#tells argo to use AWS SDK&#39;s default provider chain, enable for things like IRSA support</span>
 </code></pre></div>
 <p>The secrets are retrieved from the namespace you use to run your workflows. Note
 that you can specify a <code>keyFormat</code>.</p>
@@ -4406,77 +4406,77 @@ that you can specify a <code>keyFormat</code>.</p>
 <p><code>serviceAccountKeySecret</code> references to a Kubernetes secret which stores a Google Cloud
 service account key to access the bucket.</p>
 <p>Example:</p>
-<div class="highlight"><pre><span></span><code>$ kubectl edit configmap workflow-controller-configmap -n argo  <span class="c1"># assumes argo was installed in the argo namespace</span>
+<div class="highlight"><pre><span></span><code>$<span class="w"> </span>kubectl<span class="w"> </span>edit<span class="w"> </span>configmap<span class="w"> </span>workflow-controller-configmap<span class="w"> </span>-n<span class="w"> </span>argo<span class="w">  </span><span class="c1"># assumes argo was installed in the argo namespace</span>
 ...
 data:
-  artifactRepository: <span class="p">|</span>
-    gcs:
-      bucket: my-bucket
-      keyFormat: prefix/in/bucket     <span class="c1">#optional, it could reference workflow variables, such as &quot;{{workflow.name}}/{{pod.name}}&quot;</span>
-      serviceAccountKeySecret:
-        name: my-gcs-credentials
-        key: serviceAccountKey
+<span class="w">  </span>artifactRepository:<span class="w"> </span><span class="p">|</span>
+<span class="w">    </span>gcs:
+<span class="w">      </span>bucket:<span class="w"> </span>my-bucket
+<span class="w">      </span>keyFormat:<span class="w"> </span>prefix/in/bucket<span class="w">     </span><span class="c1">#optional, it could reference workflow variables, such as &quot;{{workflow.name}}/{{pod.name}}&quot;</span>
+<span class="w">      </span>serviceAccountKeySecret:
+<span class="w">        </span>name:<span class="w"> </span>my-gcs-credentials
+<span class="w">        </span>key:<span class="w"> </span>serviceAccountKey
 </code></pre></div>
 <h3 id="azure-blob-storage">Azure Blob Storage<a class="headerlink" href="#azure-blob-storage" title="Permanent link">&para;</a></h3>
 <p>Argo can use native Azure APIs to access a Azure Blob Storage container.</p>
 <p><code>accountKeySecret</code> references to a Kubernetes secret which stores an Azure Blob
 Storage account shared key to access the container.</p>
 <p>Example:</p>
-<div class="highlight"><pre><span></span><code>$ kubectl edit configmap workflow-controller-configmap -n argo  <span class="c1"># assumes argo was installed in the argo namespace</span>
+<div class="highlight"><pre><span></span><code>$<span class="w"> </span>kubectl<span class="w"> </span>edit<span class="w"> </span>configmap<span class="w"> </span>workflow-controller-configmap<span class="w"> </span>-n<span class="w"> </span>argo<span class="w">  </span><span class="c1"># assumes argo was installed in the argo namespace</span>
 ...
 data:
-  artifactRepository: <span class="p">|</span>
-    azure:
-      container: my-container
-      blobNameFormat: prefix/in/container     <span class="c1">#optional, it could reference workflow variables, such as &quot;{{workflow.name}}/{{pod.name}}&quot;</span>
-      accountKeySecret:
-        name: my-azure-storage-credentials
-        key: account-access-key
+<span class="w">  </span>artifactRepository:<span class="w"> </span><span class="p">|</span>
+<span class="w">    </span>azure:
+<span class="w">      </span>container:<span class="w"> </span>my-container
+<span class="w">      </span>blobNameFormat:<span class="w"> </span>prefix/in/container<span class="w">     </span><span class="c1">#optional, it could reference workflow variables, such as &quot;{{workflow.name}}/{{pod.name}}&quot;</span>
+<span class="w">      </span>accountKeySecret:
+<span class="w">        </span>name:<span class="w"> </span>my-azure-storage-credentials
+<span class="w">        </span>key:<span class="w"> </span>account-access-key
 </code></pre></div>
 <h2 id="accessing-non-default-artifact-repositories">Accessing Non-Default Artifact Repositories<a class="headerlink" href="#accessing-non-default-artifact-repositories" title="Permanent link">&para;</a></h2>
 <p>This section shows how to access artifacts from non-default artifact
 repositories.</p>
 <p>The <code>endpoint</code>, <code>accessKeySecret</code> and <code>secretKeySecret</code> are the same as for
 configuring the default artifact repository described previously.</p>
-<div class="highlight"><pre><span></span><code><span class="w">  </span><span class="nt">templates</span><span class="p">:</span><span class="w"></span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">artifact-example</span><span class="w"></span>
-<span class="w">    </span><span class="nt">inputs</span><span class="p">:</span><span class="w"></span>
-<span class="w">      </span><span class="nt">artifacts</span><span class="p">:</span><span class="w"></span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-input-artifact</span><span class="w"></span>
-<span class="w">        </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/my-input-artifact</span><span class="w"></span>
-<span class="w">        </span><span class="nt">s3</span><span class="p">:</span><span class="w"></span>
-<span class="w">          </span><span class="nt">endpoint</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">s3.amazonaws.com</span><span class="w"></span>
-<span class="w">          </span><span class="nt">bucket</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-aws-bucket-name</span><span class="w"></span>
-<span class="w">          </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">path/in/bucket/my-input-artifact.tgz</span><span class="w"></span>
-<span class="w">          </span><span class="nt">accessKeySecret</span><span class="p">:</span><span class="w"></span>
-<span class="w">            </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-aws-s3-credentials</span><span class="w"></span>
-<span class="w">            </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">accessKey</span><span class="w"></span>
-<span class="w">          </span><span class="nt">secretKeySecret</span><span class="p">:</span><span class="w"></span>
-<span class="w">            </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-aws-s3-credentials</span><span class="w"></span>
-<span class="w">            </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">secretKey</span><span class="w"></span>
-<span class="w">    </span><span class="nt">outputs</span><span class="p">:</span><span class="w"></span>
-<span class="w">      </span><span class="nt">artifacts</span><span class="p">:</span><span class="w"></span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-output-artifact</span><span class="w"></span>
-<span class="w">        </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/my-output-artifact</span><span class="w"></span>
-<span class="w">        </span><span class="nt">s3</span><span class="p">:</span><span class="w"></span>
-<span class="w">          </span><span class="nt">endpoint</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">storage.googleapis.com</span><span class="w"></span>
-<span class="w">          </span><span class="nt">bucket</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-gcs-bucket-name</span><span class="w"></span>
-<span class="w">          </span><span class="c1"># NOTE that, by default, all output artifacts are automatically tarred and</span><span class="w"></span>
-<span class="w">          </span><span class="c1"># gzipped before saving. So as a best practice, .tgz or .tar.gz</span><span class="w"></span>
-<span class="w">          </span><span class="c1"># should be incorporated into the key name so the resulting file</span><span class="w"></span>
-<span class="w">          </span><span class="c1"># has an accurate file extension.</span><span class="w"></span>
-<span class="w">          </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">path/in/bucket/my-output-artifact.tgz</span><span class="w"></span>
-<span class="w">          </span><span class="nt">accessKeySecret</span><span class="p">:</span><span class="w"></span>
-<span class="w">            </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-gcs-s3-credentials</span><span class="w"></span>
-<span class="w">            </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">accessKey</span><span class="w"></span>
-<span class="w">          </span><span class="nt">secretKeySecret</span><span class="p">:</span><span class="w"></span>
-<span class="w">            </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-gcs-s3-credentials</span><span class="w"></span>
-<span class="w">            </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">secretKey</span><span class="w"></span>
-<span class="w">          </span><span class="nt">region</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-GCS-storage-bucket-region</span><span class="w"></span>
-<span class="w">    </span><span class="nt">container</span><span class="p">:</span><span class="w"></span>
-<span class="w">      </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">debian:latest</span><span class="w"></span>
-<span class="w">      </span><span class="nt">command</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">sh</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">-c</span><span class="p p-Indicator">]</span><span class="w"></span>
-<span class="w">      </span><span class="nt">args</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;cp</span><span class="nv"> </span><span class="s">-r</span><span class="nv"> </span><span class="s">/my-input-artifact</span><span class="nv"> </span><span class="s">/my-output-artifact&quot;</span><span class="p p-Indicator">]</span><span class="w"></span>
+<div class="highlight"><pre><span></span><code><span class="w">  </span><span class="nt">templates</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">artifact-example</span>
+<span class="w">    </span><span class="nt">inputs</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">artifacts</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-input-artifact</span>
+<span class="w">        </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/my-input-artifact</span>
+<span class="w">        </span><span class="nt">s3</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">endpoint</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">s3.amazonaws.com</span>
+<span class="w">          </span><span class="nt">bucket</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-aws-bucket-name</span>
+<span class="w">          </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">path/in/bucket/my-input-artifact.tgz</span>
+<span class="w">          </span><span class="nt">accessKeySecret</span><span class="p">:</span>
+<span class="w">            </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-aws-s3-credentials</span>
+<span class="w">            </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">accessKey</span>
+<span class="w">          </span><span class="nt">secretKeySecret</span><span class="p">:</span>
+<span class="w">            </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-aws-s3-credentials</span>
+<span class="w">            </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">secretKey</span>
+<span class="w">    </span><span class="nt">outputs</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">artifacts</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-output-artifact</span>
+<span class="w">        </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/my-output-artifact</span>
+<span class="w">        </span><span class="nt">s3</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">endpoint</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">storage.googleapis.com</span>
+<span class="w">          </span><span class="nt">bucket</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-gcs-bucket-name</span>
+<span class="w">          </span><span class="c1"># NOTE that, by default, all output artifacts are automatically tarred and</span>
+<span class="w">          </span><span class="c1"># gzipped before saving. So as a best practice, .tgz or .tar.gz</span>
+<span class="w">          </span><span class="c1"># should be incorporated into the key name so the resulting file</span>
+<span class="w">          </span><span class="c1"># has an accurate file extension.</span>
+<span class="w">          </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">path/in/bucket/my-output-artifact.tgz</span>
+<span class="w">          </span><span class="nt">accessKeySecret</span><span class="p">:</span>
+<span class="w">            </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-gcs-s3-credentials</span>
+<span class="w">            </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">accessKey</span>
+<span class="w">          </span><span class="nt">secretKeySecret</span><span class="p">:</span>
+<span class="w">            </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-gcs-s3-credentials</span>
+<span class="w">            </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">secretKey</span>
+<span class="w">          </span><span class="nt">region</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-GCS-storage-bucket-region</span>
+<span class="w">    </span><span class="nt">container</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">debian:latest</span>
+<span class="w">      </span><span class="nt">command</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">sh</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">-c</span><span class="p p-Indicator">]</span>
+<span class="w">      </span><span class="nt">args</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;cp</span><span class="nv"> </span><span class="s">-r</span><span class="nv"> </span><span class="s">/my-input-artifact</span><span class="nv"> </span><span class="s">/my-output-artifact&quot;</span><span class="p p-Indicator">]</span>
 </code></pre></div>
 
               

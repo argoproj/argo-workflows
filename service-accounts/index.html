@@ -3875,13 +3875,13 @@
 using the Kubernetes API. To communicate with the Kubernetes API, Argo uses a <code>ServiceAccount</code> to authenticate itself to the Kubernetes API.
 You can specify which <code>Role</code> (i.e. which permissions) the <code>ServiceAccount</code> that Argo uses by binding a <code>Role</code> to a <code>ServiceAccount</code> using a <code>RoleBinding</code></p>
 <p>Then, when submitting Workflows you can specify which <code>ServiceAccount</code> Argo uses using:</p>
-<div class="highlight"><pre><span></span><code>argo submit --serviceaccount &lt;name&gt;
+<div class="highlight"><pre><span></span><code>argo<span class="w"> </span>submit<span class="w"> </span>--serviceaccount<span class="w"> </span>&lt;name&gt;
 </code></pre></div>
 <p>When no <code>ServiceAccount</code> is provided, Argo will use the <code>default</code> <code>ServiceAccount</code> from the namespace from which it is run, which will almost always have insufficient privileges by default.</p>
 <p>For more information about granting Argo the necessary permissions for your use case see <a href="../workflow-rbac/">Workflow RBAC</a>.</p>
 <h3 id="granting-admin-privileges">Granting admin privileges<a class="headerlink" href="#granting-admin-privileges" title="Permanent link">&para;</a></h3>
 <p>For the purposes of this demo, we will grant the <code>default</code> <code>ServiceAccount</code> admin privileges (i.e., we will bind the <code>admin</code> <code>Role</code> to the <code>default</code> <code>ServiceAccount</code> of the current namespace):</p>
-<div class="highlight"><pre><span></span><code>kubectl create rolebinding default-admin --clusterrole<span class="o">=</span>admin --serviceaccount<span class="o">=</span>argo:default -n argo
+<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>create<span class="w"> </span>rolebinding<span class="w"> </span>default-admin<span class="w"> </span>--clusterrole<span class="o">=</span>admin<span class="w"> </span>--serviceaccount<span class="o">=</span>argo:default<span class="w"> </span>-n<span class="w"> </span>argo
 </code></pre></div>
 <p><strong>Note that this will grant admin privileges to the <code>default</code> <code>ServiceAccount</code> in the namespace that the command is run from, so you will only be able to
 run Workflows in the namespace where the <code>RoleBinding</code> was made.</strong></p>

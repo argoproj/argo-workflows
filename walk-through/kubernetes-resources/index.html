@@ -3784,44 +3784,44 @@
 
 <h1 id="kubernetes-resources">Kubernetes Resources<a class="headerlink" href="#kubernetes-resources" title="Permanent link">&para;</a></h1>
 <p>In many cases, you will want to manage Kubernetes resources from Argo workflows. The resource template allows you to create, delete or updated any type of Kubernetes resource.</p>
-<div class="highlight"><pre><span></span><code><span class="c1"># in a workflow. The resource template type accepts any k8s manifest</span><span class="w"></span>
-<span class="c1"># (including CRDs) and can perform any `kubectl` action against it (e.g. create,</span><span class="w"></span>
-<span class="c1"># apply, delete, patch).</span><span class="w"></span>
-<span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span><span class="w"></span>
-<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Workflow</span><span class="w"></span>
-<span class="nt">metadata</span><span class="p">:</span><span class="w"></span>
-<span class="w">  </span><span class="nt">generateName</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">k8s-jobs-</span><span class="w"></span>
-<span class="nt">spec</span><span class="p">:</span><span class="w"></span>
-<span class="w">  </span><span class="nt">entrypoint</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">pi-tmpl</span><span class="w"></span>
-<span class="w">  </span><span class="nt">templates</span><span class="p">:</span><span class="w"></span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">pi-tmpl</span><span class="w"></span>
-<span class="w">    </span><span class="nt">resource</span><span class="p">:</span><span class="w">                   </span><span class="c1"># indicates that this is a resource template</span><span class="w"></span>
-<span class="w">      </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">create</span><span class="w">            </span><span class="c1"># can be any kubectl action (e.g. create, delete, apply, patch)</span><span class="w"></span>
-<span class="w">      </span><span class="c1"># The successCondition and failureCondition are optional expressions.</span><span class="w"></span>
-<span class="w">      </span><span class="c1"># If failureCondition is true, the step is considered failed.</span><span class="w"></span>
-<span class="w">      </span><span class="c1"># If successCondition is true, the step is considered successful.</span><span class="w"></span>
-<span class="w">      </span><span class="c1"># They use kubernetes label selection syntax and can be applied against any field</span><span class="w"></span>
-<span class="w">      </span><span class="c1"># of the resource (not just labels). Multiple AND conditions can be represented by comma</span><span class="w"></span>
-<span class="w">      </span><span class="c1"># delimited expressions.</span><span class="w"></span>
-<span class="w">      </span><span class="c1"># For more details: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/</span><span class="w"></span>
-<span class="w">      </span><span class="nt">successCondition</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">status.succeeded &gt; 0</span><span class="w"></span>
-<span class="w">      </span><span class="nt">failureCondition</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">status.failed &gt; 3</span><span class="w"></span>
-<span class="w">      </span><span class="nt">manifest</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span><span class="w">               </span><span class="c1">#put your kubernetes spec here</span><span class="w"></span>
-<span class="w">        </span><span class="no">apiVersion: batch/v1</span><span class="w"></span>
-<span class="w">        </span><span class="no">kind: Job</span><span class="w"></span>
-<span class="w">        </span><span class="no">metadata:</span><span class="w"></span>
-<span class="w">          </span><span class="no">generateName: pi-job-</span><span class="w"></span>
-<span class="w">        </span><span class="no">spec:</span><span class="w"></span>
-<span class="w">          </span><span class="no">template:</span><span class="w"></span>
-<span class="w">            </span><span class="no">metadata:</span><span class="w"></span>
-<span class="w">              </span><span class="no">name: pi</span><span class="w"></span>
-<span class="w">            </span><span class="no">spec:</span><span class="w"></span>
-<span class="w">              </span><span class="no">containers:</span><span class="w"></span>
-<span class="w">              </span><span class="no">- name: pi</span><span class="w"></span>
-<span class="w">                </span><span class="no">image: perl</span><span class="w"></span>
-<span class="w">                </span><span class="no">command: [&quot;perl&quot;,  &quot;-Mbignum=bpi&quot;, &quot;-wle&quot;, &quot;print bpi(2000)&quot;]</span><span class="w"></span>
-<span class="w">              </span><span class="no">restartPolicy: Never</span><span class="w"></span>
-<span class="w">          </span><span class="no">backoffLimit: 4</span><span class="w"></span>
+<div class="highlight"><pre><span></span><code><span class="c1"># in a workflow. The resource template type accepts any k8s manifest</span>
+<span class="c1"># (including CRDs) and can perform any `kubectl` action against it (e.g. create,</span>
+<span class="c1"># apply, delete, patch).</span>
+<span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Workflow</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">generateName</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">k8s-jobs-</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">entrypoint</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">pi-tmpl</span>
+<span class="w">  </span><span class="nt">templates</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">pi-tmpl</span>
+<span class="w">    </span><span class="nt">resource</span><span class="p">:</span><span class="w">                   </span><span class="c1"># indicates that this is a resource template</span>
+<span class="w">      </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">create</span><span class="w">            </span><span class="c1"># can be any kubectl action (e.g. create, delete, apply, patch)</span>
+<span class="w">      </span><span class="c1"># The successCondition and failureCondition are optional expressions.</span>
+<span class="w">      </span><span class="c1"># If failureCondition is true, the step is considered failed.</span>
+<span class="w">      </span><span class="c1"># If successCondition is true, the step is considered successful.</span>
+<span class="w">      </span><span class="c1"># They use kubernetes label selection syntax and can be applied against any field</span>
+<span class="w">      </span><span class="c1"># of the resource (not just labels). Multiple AND conditions can be represented by comma</span>
+<span class="w">      </span><span class="c1"># delimited expressions.</span>
+<span class="w">      </span><span class="c1"># For more details: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/</span>
+<span class="w">      </span><span class="nt">successCondition</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">status.succeeded &gt; 0</span>
+<span class="w">      </span><span class="nt">failureCondition</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">status.failed &gt; 3</span>
+<span class="w">      </span><span class="nt">manifest</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span><span class="w">               </span><span class="c1">#put your kubernetes spec here</span>
+<span class="w">        </span><span class="no">apiVersion: batch/v1</span>
+<span class="w">        </span><span class="no">kind: Job</span>
+<span class="w">        </span><span class="no">metadata:</span>
+<span class="w">          </span><span class="no">generateName: pi-job-</span>
+<span class="w">        </span><span class="no">spec:</span>
+<span class="w">          </span><span class="no">template:</span>
+<span class="w">            </span><span class="no">metadata:</span>
+<span class="w">              </span><span class="no">name: pi</span>
+<span class="w">            </span><span class="no">spec:</span>
+<span class="w">              </span><span class="no">containers:</span>
+<span class="w">              </span><span class="no">- name: pi</span>
+<span class="w">                </span><span class="no">image: perl</span>
+<span class="w">                </span><span class="no">command: [&quot;perl&quot;,  &quot;-Mbignum=bpi&quot;, &quot;-wle&quot;, &quot;print bpi(2000)&quot;]</span>
+<span class="w">              </span><span class="no">restartPolicy: Never</span>
+<span class="w">          </span><span class="no">backoffLimit: 4</span>
 </code></pre></div>
 <p><strong>Note:</strong>
 Currently only a single resource can be managed by a resource template so either a <code>generateName</code> or <code>name</code> must be provided in the resource's meta-data.</p>
@@ -3829,30 +3829,30 @@ Currently only a single resource can be managed by a resource template so either
 <p>You can also collect data about the resource in output parameters (see more at <a href="https://github.com/argoproj/argo-workflows/tree/master/examples/k8s-jobs.yaml">k8s-jobs.yaml</a>)</p>
 <p><strong>Note:</strong>
 When patching, the resource will accept another attribute, <code>mergeStrategy</code>, which can either be <code>strategic</code>, <code>merge</code>, or <code>json</code>. If this attribute is not supplied, it will default to <code>strategic</code>. Keep in mind that Custom Resources cannot be patched with <code>strategic</code>, so a different strategy must be chosen. For example, suppose you have the <a href="https://kubernetes.io/docs/tasks/access-kubernetes-api/custom-resources/custom-resource-definitions/#create-a-customresourcedefinition"><code>CronTab</code> CRD</a> defined, and the following instance of a <code>CronTab</code>:</p>
-<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;stable.example.com/v1&quot;</span><span class="w"></span>
-<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">CronTab</span><span class="w"></span>
-<span class="nt">spec</span><span class="p">:</span><span class="w"></span>
-<span class="w">  </span><span class="nt">cronSpec</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;*</span><span class="nv"> </span><span class="s">*</span><span class="nv"> </span><span class="s">*</span><span class="nv"> </span><span class="s">*</span><span class="nv"> </span><span class="s">*/5&quot;</span><span class="w"></span>
-<span class="w">  </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-awesome-cron-image</span><span class="w"></span>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;stable.example.com/v1&quot;</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">CronTab</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">cronSpec</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;*</span><span class="nv"> </span><span class="s">*</span><span class="nv"> </span><span class="s">*</span><span class="nv"> </span><span class="s">*</span><span class="nv"> </span><span class="s">*/5&quot;</span>
+<span class="w">  </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-awesome-cron-image</span>
 </code></pre></div>
 <p>This <code>CronTab</code> can be modified using the following Argo Workflow:</p>
-<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span><span class="w"></span>
-<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Workflow</span><span class="w"></span>
-<span class="nt">metadata</span><span class="p">:</span><span class="w"></span>
-<span class="w">  </span><span class="nt">generateName</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">k8s-patch-</span><span class="w"></span>
-<span class="nt">spec</span><span class="p">:</span><span class="w"></span>
-<span class="w">  </span><span class="nt">entrypoint</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cront-tmpl</span><span class="w"></span>
-<span class="w">  </span><span class="nt">templates</span><span class="p">:</span><span class="w"></span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cront-tmpl</span><span class="w"></span>
-<span class="w">    </span><span class="nt">resource</span><span class="p">:</span><span class="w"></span>
-<span class="w">      </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">patch</span><span class="w"></span>
-<span class="w">      </span><span class="nt">mergeStrategy</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">merge</span><span class="w">                 </span><span class="c1"># Must be one of [strategic merge json]</span><span class="w"></span>
-<span class="w">      </span><span class="nt">manifest</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span><span class="w"></span>
-<span class="w">        </span><span class="no">apiVersion: &quot;stable.example.com/v1&quot;</span><span class="w"></span>
-<span class="w">        </span><span class="no">kind: CronTab</span><span class="w"></span>
-<span class="w">        </span><span class="no">spec:</span><span class="w"></span>
-<span class="w">          </span><span class="no">cronSpec: &quot;* * * * */10&quot;</span><span class="w"></span>
-<span class="w">          </span><span class="no">image: my-awesome-cron-image</span><span class="w"></span>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Workflow</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">generateName</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">k8s-patch-</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">entrypoint</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cront-tmpl</span>
+<span class="w">  </span><span class="nt">templates</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cront-tmpl</span>
+<span class="w">    </span><span class="nt">resource</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">patch</span>
+<span class="w">      </span><span class="nt">mergeStrategy</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">merge</span><span class="w">                 </span><span class="c1"># Must be one of [strategic merge json]</span>
+<span class="w">      </span><span class="nt">manifest</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
+<span class="w">        </span><span class="no">apiVersion: &quot;stable.example.com/v1&quot;</span>
+<span class="w">        </span><span class="no">kind: CronTab</span>
+<span class="w">        </span><span class="no">spec:</span>
+<span class="w">          </span><span class="no">cronSpec: &quot;* * * * */10&quot;</span>
+<span class="w">          </span><span class="no">image: my-awesome-cron-image</span>
 </code></pre></div>
 
               

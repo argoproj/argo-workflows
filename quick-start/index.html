@@ -3949,52 +3949,52 @@
 <p>To install Argo Workflows, navigate to the <a href="https://github.com/argoproj/argo-workflows/releases/latest">releases page</a> and find the release you wish to use (the latest full release is preferred).</p>
 <p>Scroll down to the <code>Controller and Server</code> section and execute the <code>kubectl</code> commands.</p>
 <p>Below is an example of the install commands, ensure that you update the command to install the correct version number:</p>
-<div class="highlight"><pre><span></span><code><span class="l l-Scalar l-Scalar-Plain">kubectl create namespace argo</span><span class="w"></span>
-<span class="l l-Scalar l-Scalar-Plain">kubectl apply -n argo -f https://github.com/argoproj/argo-workflows/releases/download/v&lt;&lt;ARGO_WORKFLOWS_VERSION&gt;&gt;/install.yaml</span><span class="w"></span>
+<div class="highlight"><pre><span></span><code><span class="l l-Scalar l-Scalar-Plain">kubectl create namespace argo</span>
+<span class="l l-Scalar l-Scalar-Plain">kubectl apply -n argo -f https://github.com/argoproj/argo-workflows/releases/download/v&lt;&lt;ARGO_WORKFLOWS_VERSION&gt;&gt;/install.yaml</span>
 </code></pre></div>
 <h3 id="patch-argo-server-authentication">Patch argo-server authentication<a class="headerlink" href="#patch-argo-server-authentication" title="Permanent link">&para;</a></h3>
 <p>The argo-server (and thus the UI) defaults to client authentication, which requires clients to provide their Kubernetes bearer token in order to authenticate. For more information, refer to the <a href="../argo-server-auth-mode/">Argo Server Auth Mode documentation</a>. We will switch the authentication mode to <code>server</code> so that we can bypass the UI login for now:</p>
-<div class="highlight"><pre><span></span><code>kubectl patch deployment <span class="se">\</span>
-  argo-server <span class="se">\</span>
-  --namespace argo <span class="se">\</span>
-  --type<span class="o">=</span><span class="s1">&#39;json&#39;</span> <span class="se">\</span>
-  -p<span class="o">=</span><span class="s1">&#39;[{&quot;op&quot;: &quot;replace&quot;, &quot;path&quot;: &quot;/spec/template/spec/containers/0/args&quot;, &quot;value&quot;: [</span>
+<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>patch<span class="w"> </span>deployment<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>argo-server<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--namespace<span class="w"> </span>argo<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--type<span class="o">=</span><span class="s1">&#39;json&#39;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-p<span class="o">=</span><span class="s1">&#39;[{&quot;op&quot;: &quot;replace&quot;, &quot;path&quot;: &quot;/spec/template/spec/containers/0/args&quot;, &quot;value&quot;: [</span>
 <span class="s1">  &quot;server&quot;,</span>
 <span class="s1">  &quot;--auth-mode=server&quot;</span>
 <span class="s1">]}]&#39;</span>
 </code></pre></div>
 <h3 id="port-forward-the-ui">Port-forward the UI<a class="headerlink" href="#port-forward-the-ui" title="Permanent link">&para;</a></h3>
 <p>Open a port-forward so you can access the UI:</p>
-<div class="highlight"><pre><span></span><code>kubectl -n argo port-forward deployment/argo-server <span class="m">2746</span>:2746
+<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>-n<span class="w"> </span>argo<span class="w"> </span>port-forward<span class="w"> </span>deployment/argo-server<span class="w"> </span><span class="m">2746</span>:2746
 </code></pre></div>
 <p>This will serve the UI on <a href="https://localhost:2746">https://localhost:2746</a>. Due to the self-signed certificate, you will receive a TLS error which you will need to manually approve.</p>
 <h2 id="install-the-argo-workflows-cli">Install the Argo Workflows CLI<a class="headerlink" href="#install-the-argo-workflows-cli" title="Permanent link">&para;</a></h2>
 <p>Next, Download the latest Argo CLI from the same <a href="https://github.com/argoproj/argo-workflows/releases/latest">releases page</a>.</p>
 <h2 id="submitting-an-example-workflow">Submitting an example workflow<a class="headerlink" href="#submitting-an-example-workflow" title="Permanent link">&para;</a></h2>
 <h3 id="submit-an-example-workflow-cli">Submit an example workflow (CLI)<a class="headerlink" href="#submit-an-example-workflow-cli" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code>argo submit -n argo --watch https://raw.githubusercontent.com/argoproj/argo-workflows/master/examples/hello-world.yaml
+<div class="highlight"><pre><span></span><code>argo<span class="w"> </span>submit<span class="w"> </span>-n<span class="w"> </span>argo<span class="w"> </span>--watch<span class="w"> </span>https://raw.githubusercontent.com/argoproj/argo-workflows/master/examples/hello-world.yaml
 </code></pre></div>
 <p>The <code>--watch</code> flag used above will allow you to observe the workflow as it runs and the status of whether it succeeds.
 When the workflow completes, the watch on the workflow will stop.</p>
 <p>You can list all the Workflows you have submitted by running the command below:</p>
-<div class="highlight"><pre><span></span><code>argo list -n argo
+<div class="highlight"><pre><span></span><code>argo<span class="w"> </span>list<span class="w"> </span>-n<span class="w"> </span>argo
 </code></pre></div>
 <p>You will notice the Workflow name has a <code>hello-world-</code> prefix followed by random characters. These characters are used
 to give Workflows unique names to help identify specific runs of a Workflow. If you submitted this Workflow again,
 the next Workflow run would have a different name.</p>
 <p>Using the <code>argo get</code> command, you can always review details of a Workflow run. The output for the command below will
 be the same as the information shown as when you submitted the Workflow:</p>
-<div class="highlight"><pre><span></span><code>argo get -n argo @latest
+<div class="highlight"><pre><span></span><code>argo<span class="w"> </span>get<span class="w"> </span>-n<span class="w"> </span>argo<span class="w"> </span>@latest
 </code></pre></div>
 <p>The <code>@latest</code> argument to the CLI is a short cut to view the latest Workflow run that was executed.</p>
 <p>You can also observe the logs of the Workflow run by running the following:</p>
-<div class="highlight"><pre><span></span><code>argo logs -n argo @latest
+<div class="highlight"><pre><span></span><code>argo<span class="w"> </span>logs<span class="w"> </span>-n<span class="w"> </span>argo<span class="w"> </span>@latest
 </code></pre></div>
 <h3 id="submit-an-example-workflow-gui">Submit an example workflow (GUI)<a class="headerlink" href="#submit-an-example-workflow-gui" title="Permanent link">&para;</a></h3>
 <ul>
 <li>Open a port-forward so you can access the UI:</li>
 </ul>
-<div class="highlight"><pre><span></span><code>kubectl -n argo port-forward deployment/argo-server <span class="m">2746</span>:2746
+<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>-n<span class="w"> </span>argo<span class="w"> </span>port-forward<span class="w"> </span>deployment/argo-server<span class="w"> </span><span class="m">2746</span>:2746
 </code></pre></div>
 <ul>
 <li>

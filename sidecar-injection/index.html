@@ -3917,12 +3917,12 @@ and logs of that pod.</p>
 <li>Process does not correctly respond to <code>kill 1</code> (e.g. some shell script weirdness).</li>
 </ol>
 <p>You can override the kill command by using a pod annotation (where <code>%d</code> is the signal number), for example:</p>
-<div class="highlight"><pre><span></span><code><span class="nt">spec</span><span class="p">:</span><span class="w"></span>
-<span class="w">  </span><span class="nt">podMetadata</span><span class="p">:</span><span class="w"></span>
-<span class="w">    </span><span class="nt">annotations</span><span class="p">:</span><span class="w"></span>
-<span class="w">      </span><span class="nt">workflows.argoproj.io/kill-cmd-istio-proxy</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;[&quot;pilot-agent&quot;,</span><span class="nv"> </span><span class="s">&quot;request&quot;,</span><span class="nv"> </span><span class="s">&quot;POST&quot;,</span><span class="nv"> </span><span class="s">&quot;quitquitquit&quot;]&#39;</span><span class="w"></span>
-<span class="w">      </span><span class="nt">workflows.argoproj.io/kill-cmd-vault-agent</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;[&quot;sh&quot;,</span><span class="nv"> </span><span class="s">&quot;-c&quot;,</span><span class="nv"> </span><span class="s">&quot;kill</span><span class="nv"> </span><span class="s">-%d</span><span class="nv"> </span><span class="s">1&quot;]&#39;</span><span class="w"></span>
-<span class="w">      </span><span class="nt">workflows.argoproj.io/kill-cmd-sidecar</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;[&quot;sh&quot;,</span><span class="nv"> </span><span class="s">&quot;-c&quot;,</span><span class="nv"> </span><span class="s">&quot;kill</span><span class="nv"> </span><span class="s">-%d</span><span class="nv"> </span><span class="s">$(pidof</span><span class="nv"> </span><span class="s">entrypoint.sh)&quot;]&#39;</span><span class="w"></span>
+<div class="highlight"><pre><span></span><code><span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">podMetadata</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">annotations</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">workflows.argoproj.io/kill-cmd-istio-proxy</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;[&quot;pilot-agent&quot;,</span><span class="nv"> </span><span class="s">&quot;request&quot;,</span><span class="nv"> </span><span class="s">&quot;POST&quot;,</span><span class="nv"> </span><span class="s">&quot;quitquitquit&quot;]&#39;</span>
+<span class="w">      </span><span class="nt">workflows.argoproj.io/kill-cmd-vault-agent</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;[&quot;sh&quot;,</span><span class="nv"> </span><span class="s">&quot;-c&quot;,</span><span class="nv"> </span><span class="s">&quot;kill</span><span class="nv"> </span><span class="s">-%d</span><span class="nv"> </span><span class="s">1&quot;]&#39;</span>
+<span class="w">      </span><span class="nt">workflows.argoproj.io/kill-cmd-sidecar</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;[&quot;sh&quot;,</span><span class="nv"> </span><span class="s">&quot;-c&quot;,</span><span class="nv"> </span><span class="s">&quot;kill</span><span class="nv"> </span><span class="s">-%d</span><span class="nv"> </span><span class="s">$(pidof</span><span class="nv"> </span><span class="s">entrypoint.sh)&quot;]&#39;</span>
 </code></pre></div>
 
               

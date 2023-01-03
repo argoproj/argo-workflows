@@ -3784,19 +3784,19 @@
 
 <h1 id="argo-cli">Argo CLI<a class="headerlink" href="#argo-cli" title="Permanent link">&para;</a></h1>
 <p>In case you want to follow along with this walk-through, here's a quick overview of the most useful argo command line interface (CLI) commands.</p>
-<div class="highlight"><pre><span></span><code>argo submit hello-world.yaml    <span class="c1"># submit a workflow spec to Kubernetes</span>
-argo list                       <span class="c1"># list current workflows</span>
-argo get hello-world-xxx        <span class="c1"># get info about a specific workflow</span>
-argo logs hello-world-xxx       <span class="c1"># print the logs from a workflow</span>
-argo delete hello-world-xxx     <span class="c1"># delete workflow</span>
+<div class="highlight"><pre><span></span><code>argo<span class="w"> </span>submit<span class="w"> </span>hello-world.yaml<span class="w">    </span><span class="c1"># submit a workflow spec to Kubernetes</span>
+argo<span class="w"> </span>list<span class="w">                       </span><span class="c1"># list current workflows</span>
+argo<span class="w"> </span>get<span class="w"> </span>hello-world-xxx<span class="w">        </span><span class="c1"># get info about a specific workflow</span>
+argo<span class="w"> </span>logs<span class="w"> </span>hello-world-xxx<span class="w">       </span><span class="c1"># print the logs from a workflow</span>
+argo<span class="w"> </span>delete<span class="w"> </span>hello-world-xxx<span class="w">     </span><span class="c1"># delete workflow</span>
 </code></pre></div>
 <p>You can also run workflow specs directly using <code>kubectl</code> but the Argo CLI provides syntax checking, nicer output, and requires less typing.</p>
-<div class="highlight"><pre><span></span><code>kubectl create -f hello-world.yaml
-kubectl get wf
-kubectl get wf hello-world-xxx
-kubectl get po --selector<span class="o">=</span>workflows.argoproj.io/workflow<span class="o">=</span>hello-world-xxx --show-all  <span class="c1"># similar to argo</span>
-kubectl logs hello-world-xxx-yyy -c main
-kubectl delete wf hello-world-xxx
+<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>create<span class="w"> </span>-f<span class="w"> </span>hello-world.yaml
+kubectl<span class="w"> </span>get<span class="w"> </span>wf
+kubectl<span class="w"> </span>get<span class="w"> </span>wf<span class="w"> </span>hello-world-xxx
+kubectl<span class="w"> </span>get<span class="w"> </span>po<span class="w"> </span>--selector<span class="o">=</span>workflows.argoproj.io/workflow<span class="o">=</span>hello-world-xxx<span class="w"> </span>--show-all<span class="w">  </span><span class="c1"># similar to argo</span>
+kubectl<span class="w"> </span>logs<span class="w"> </span>hello-world-xxx-yyy<span class="w"> </span>-c<span class="w"> </span>main
+kubectl<span class="w"> </span>delete<span class="w"> </span>wf<span class="w"> </span>hello-world-xxx
 </code></pre></div>
 
               

@@ -3853,37 +3853,37 @@ If a Workflow has a value that also has a default value set in the config map, t
 <p>Default Workflow values can be specified by adding them under the <code>workflowDefaults</code> key in the <a href="../workflow-controller-configmap.yaml"><code>workflow-controller-configmap</code></a>.
 Values can be added as they would under the <code>Workflow.spec</code> tag.</p>
 <p>For example, to specify default values that would partially produce the following <code>Workflow</code>:</p>
-<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span><span class="w"></span>
-<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Workflow</span><span class="w"></span>
-<span class="nt">metadata</span><span class="p">:</span><span class="w"></span>
-<span class="w">  </span><span class="nt">generateName</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">gc-ttl-</span><span class="w"></span>
-<span class="w">  </span><span class="nt">annotations</span><span class="p">:</span><span class="w"></span>
-<span class="w">    </span><span class="nt">argo</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">workflows</span><span class="w"></span>
-<span class="w">  </span><span class="nt">labels</span><span class="p">:</span><span class="w"></span>
-<span class="w">    </span><span class="nt">foo</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">bar</span><span class="w"></span>
-<span class="nt">spec</span><span class="p">:</span><span class="w"></span>
-<span class="w">  </span><span class="nt">ttlStrategy</span><span class="p">:</span><span class="w"></span>
-<span class="w">    </span><span class="nt">secondsAfterSuccess</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5</span><span class="w">     </span><span class="c1"># Time to live after workflow is successful</span><span class="w"></span>
-<span class="w">  </span><span class="nt">parallelism</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3</span><span class="w"></span>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Workflow</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">generateName</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">gc-ttl-</span>
+<span class="w">  </span><span class="nt">annotations</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">argo</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">workflows</span>
+<span class="w">  </span><span class="nt">labels</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">foo</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">bar</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">ttlStrategy</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">secondsAfterSuccess</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5</span><span class="w">     </span><span class="c1"># Time to live after workflow is successful</span>
+<span class="w">  </span><span class="nt">parallelism</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3</span>
 </code></pre></div>
 <p>The following would be specified in the Config Map:</p>
-<div class="highlight"><pre><span></span><code><span class="c1"># This file describes the config settings available in the workflow controller configmap</span><span class="w"></span>
-<span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1</span><span class="w"></span>
-<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ConfigMap</span><span class="w"></span>
-<span class="nt">metadata</span><span class="p">:</span><span class="w"></span>
-<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">workflow-controller-configmap</span><span class="w"></span>
-<span class="nt">data</span><span class="p">:</span><span class="w"></span>
-<span class="w">  </span><span class="c1"># Default values that will apply to all Workflows from this controller, unless overridden on the Workflow-level</span><span class="w"></span>
-<span class="w">  </span><span class="nt">workflowDefaults</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span><span class="w"></span>
-<span class="w">    </span><span class="no">metadata:</span><span class="w"></span>
-<span class="w">      </span><span class="no">annotations:</span><span class="w"></span>
-<span class="w">        </span><span class="no">argo: workflows</span><span class="w"></span>
-<span class="w">      </span><span class="no">labels:</span><span class="w"></span>
-<span class="w">        </span><span class="no">foo: bar</span><span class="w"></span>
-<span class="w">    </span><span class="no">spec:</span><span class="w"></span>
-<span class="w">      </span><span class="no">ttlStrategy:</span><span class="w"></span>
-<span class="w">        </span><span class="no">secondsAfterSuccess: 5</span><span class="w"></span>
-<span class="w">      </span><span class="no">parallelism: 3</span><span class="w"></span>
+<div class="highlight"><pre><span></span><code><span class="c1"># This file describes the config settings available in the workflow controller configmap</span>
+<span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ConfigMap</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">workflow-controller-configmap</span>
+<span class="nt">data</span><span class="p">:</span>
+<span class="w">  </span><span class="c1"># Default values that will apply to all Workflows from this controller, unless overridden on the Workflow-level</span>
+<span class="w">  </span><span class="nt">workflowDefaults</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
+<span class="w">    </span><span class="no">metadata:</span>
+<span class="w">      </span><span class="no">annotations:</span>
+<span class="w">        </span><span class="no">argo: workflows</span>
+<span class="w">      </span><span class="no">labels:</span>
+<span class="w">        </span><span class="no">foo: bar</span>
+<span class="w">    </span><span class="no">spec:</span>
+<span class="w">      </span><span class="no">ttlStrategy:</span>
+<span class="w">        </span><span class="no">secondsAfterSuccess: 5</span>
+<span class="w">      </span><span class="no">parallelism: 3</span>
 </code></pre></div>
 
               

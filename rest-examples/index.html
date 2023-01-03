@@ -3882,10 +3882,10 @@
 <li>argo-server is available on localhost:2746</li>
 </ul>
 <h2 id="submitting-workflow">Submitting workflow<a class="headerlink" href="#submitting-workflow" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code>curl --request POST <span class="se">\</span>
-  --url https://localhost:2746/api/v1/workflows/argo <span class="se">\</span>
-  --header <span class="s1">&#39;content-type: application/json&#39;</span> <span class="se">\</span>
-  --data <span class="s1">&#39;{</span>
+<div class="highlight"><pre><span></span><code>curl<span class="w"> </span>--request<span class="w"> </span>POST<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--url<span class="w"> </span>https://localhost:2746/api/v1/workflows/argo<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--header<span class="w"> </span><span class="s1">&#39;content-type: application/json&#39;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--data<span class="w"> </span><span class="s1">&#39;{</span>
 <span class="s1">  &quot;namespace&quot;: &quot;argo&quot;,</span>
 <span class="s1">  &quot;serverDryRun&quot;: false,</span>
 <span class="s1">  &quot;workflow&quot;: {</span>
@@ -3924,16 +3924,16 @@
 <span class="s1">}&#39;</span>
 </code></pre></div>
 <h2 id="getting-workflows-for-namespace-argo">Getting workflows for namespace argo<a class="headerlink" href="#getting-workflows-for-namespace-argo" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code>curl --request GET <span class="se">\</span>
-  --url https://localhost:2746/api/v1/workflows/argo
+<div class="highlight"><pre><span></span><code>curl<span class="w"> </span>--request<span class="w"> </span>GET<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--url<span class="w"> </span>https://localhost:2746/api/v1/workflows/argo
 </code></pre></div>
 <h2 id="getting-single-workflow-for-namespace-argo">Getting single workflow for namespace argo<a class="headerlink" href="#getting-single-workflow-for-namespace-argo" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code>curl --request GET <span class="se">\</span>
-  --url https://localhost:2746/api/v1/workflows/argo/abc-dthgt
+<div class="highlight"><pre><span></span><code>curl<span class="w"> </span>--request<span class="w"> </span>GET<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--url<span class="w"> </span>https://localhost:2746/api/v1/workflows/argo/abc-dthgt
 </code></pre></div>
 <h2 id="deleting-single-workflow-for-namespace-argo">Deleting single workflow for namespace argo<a class="headerlink" href="#deleting-single-workflow-for-namespace-argo" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code>curl --request DELETE <span class="se">\</span>
-  --url https://localhost:2746/api/v1/workflows/argo/abc-dthgt
+<div class="highlight"><pre><span></span><code>curl<span class="w"> </span>--request<span class="w"> </span>DELETE<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--url<span class="w"> </span>https://localhost:2746/api/v1/workflows/argo/abc-dthgt
 </code></pre></div>
 
               

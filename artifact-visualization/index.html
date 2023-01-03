@@ -3968,25 +3968,25 @@ the <a href="https://github.com/argoproj/argo-workflows/blob/master/examples/art
 <p>Viewing of <code>.tgz</code> is not supported in the UI. By default artifacts are compressed as a <code>.tgz</code>. Only artifacts that were
 not compressed can be viewed.</p>
 <p>To prevent compression, set <code>archive</code> to <code>none</code> to prevent compression:</p>
-<div class="highlight"><pre><span></span><code><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">artifact</span><span class="w"></span>
-<span class="w">  </span><span class="c1"># ...</span><span class="w"></span>
-<span class="w">  </span><span class="nt">archive</span><span class="p">:</span><span class="w"></span>
-<span class="w">    </span><span class="nt">none</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="w"> </span><span class="p p-Indicator">}</span><span class="w"></span>
+<div class="highlight"><pre><span></span><code><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">artifact</span>
+<span class="w">  </span><span class="c1"># ...</span>
+<span class="w">  </span><span class="nt">archive</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">none</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="w"> </span><span class="p p-Indicator">}</span>
 </code></pre></div>
 <h3 id="file">File<a class="headerlink" href="#file" title="Permanent link">&para;</a></h3>
 <p>Files maybe shown in the UI. To determine if a file can be shown, the UI checks if the artifact's file extension is
 supported. The extension is found in the artifact's key.</p>
 <p>To view a file, add the extension to the key:</p>
-<div class="highlight"><pre><span></span><code><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">single-file</span><span class="w"></span>
-<span class="w">  </span><span class="nt">s3</span><span class="p">:</span><span class="w"></span>
-<span class="w">    </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">visualization.png</span><span class="w"></span>
+<div class="highlight"><pre><span></span><code><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">single-file</span>
+<span class="w">  </span><span class="nt">s3</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">visualization.png</span>
 </code></pre></div>
 <h3 id="directory">Directory<a class="headerlink" href="#directory" title="Permanent link">&para;</a></h3>
 <p>Directories are shown in the UI. The UI considers any key with a trailing-slash to be a directory.</p>
 <p>To view a directory, add a trailing-slash:</p>
-<div class="highlight"><pre><span></span><code><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">reports</span><span class="w"></span>
-<span class="w">  </span><span class="nt">s3</span><span class="p">:</span><span class="w"></span>
-<span class="w">    </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">reports/</span><span class="w"></span>
+<div class="highlight"><pre><span></span><code><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">reports</span>
+<span class="w">  </span><span class="nt">s3</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">reports/</span>
 </code></pre></div>
 <p>If the directory contains <code>index.html</code>, then that will be shown, otherwise a directory listing is displayed.</p>
 <p>⚠️ HTML files may contain CSS and images served from the same origin. Scripts are not allowed. Nothing may be remotely

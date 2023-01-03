@@ -3784,77 +3784,77 @@
 
 <h1 id="conditionals">Conditionals<a class="headerlink" href="#conditionals" title="Permanent link">&para;</a></h1>
 <p>We also support conditional execution. The syntax is implemented by <a href="https://github.com/Knetic/govaluate"><code>govaluate</code></a> which offers the support for complex syntax. See in the example:</p>
-<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span><span class="w"></span>
-<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Workflow</span><span class="w"></span>
-<span class="nt">metadata</span><span class="p">:</span><span class="w"></span>
-<span class="w">  </span><span class="nt">generateName</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">coinflip-</span><span class="w"></span>
-<span class="nt">spec</span><span class="p">:</span><span class="w"></span>
-<span class="w">  </span><span class="nt">entrypoint</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">coinflip</span><span class="w"></span>
-<span class="w">  </span><span class="nt">templates</span><span class="p">:</span><span class="w"></span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">coinflip</span><span class="w"></span>
-<span class="w">    </span><span class="nt">steps</span><span class="p">:</span><span class="w"></span>
-<span class="w">    </span><span class="c1"># flip a coin</span><span class="w"></span>
-<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">flip-coin</span><span class="w"></span>
-<span class="w">        </span><span class="nt">template</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">flip-coin</span><span class="w"></span>
-<span class="w">    </span><span class="c1"># evaluate the result in parallel</span><span class="w"></span>
-<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">heads</span><span class="w"></span>
-<span class="w">        </span><span class="nt">template</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">heads</span><span class="w">                       </span><span class="c1"># call heads template if &quot;heads&quot;</span><span class="w"></span>
-<span class="w">        </span><span class="nt">when</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{steps.flip-coin.outputs.result}}</span><span class="nv"> </span><span class="s">==</span><span class="nv"> </span><span class="s">heads&quot;</span><span class="w"></span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">tails</span><span class="w"></span>
-<span class="w">        </span><span class="nt">template</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">tails</span><span class="w">                       </span><span class="c1"># call tails template if &quot;tails&quot;</span><span class="w"></span>
-<span class="w">        </span><span class="nt">when</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{steps.flip-coin.outputs.result}}</span><span class="nv"> </span><span class="s">==</span><span class="nv"> </span><span class="s">tails&quot;</span><span class="w"></span>
-<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">flip-again</span><span class="w"></span>
-<span class="w">        </span><span class="nt">template</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">flip-coin</span><span class="w"></span>
-<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">complex-condition</span><span class="w"></span>
-<span class="w">        </span><span class="nt">template</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">heads-tails-or-twice-tails</span><span class="w"></span>
-<span class="w">        </span><span class="c1"># call heads template if first flip was &quot;heads&quot; and second was &quot;tails&quot; OR both were &quot;tails&quot;</span><span class="w"></span>
-<span class="w">        </span><span class="nt">when</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">&gt;-</span><span class="w"></span>
-<span class="w">            </span><span class="no">( {{steps.flip-coin.outputs.result}} == heads &amp;&amp;</span><span class="w"></span>
-<span class="w">              </span><span class="no">{{steps.flip-again.outputs.result}} == tails</span><span class="w"></span>
-<span class="w">            </span><span class="no">) ||</span><span class="w"></span>
-<span class="w">            </span><span class="no">( {{steps.flip-coin.outputs.result}} == tails &amp;&amp;</span><span class="w"></span>
-<span class="w">              </span><span class="no">{{steps.flip-again.outputs.result}} == tails )</span><span class="w"></span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">heads-regex</span><span class="w"></span>
-<span class="w">        </span><span class="nt">template</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">heads</span><span class="w">                       </span><span class="c1"># call heads template if ~ &quot;hea&quot;</span><span class="w"></span>
-<span class="w">        </span><span class="nt">when</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{steps.flip-again.outputs.result}}</span><span class="nv"> </span><span class="s">=~</span><span class="nv"> </span><span class="s">hea&quot;</span><span class="w"></span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">tails-regex</span><span class="w"></span>
-<span class="w">        </span><span class="nt">template</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">tails</span><span class="w">                       </span><span class="c1"># call heads template if ~ &quot;tai&quot;</span><span class="w"></span>
-<span class="w">        </span><span class="nt">when</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{steps.flip-again.outputs.result}}</span><span class="nv"> </span><span class="s">=~</span><span class="nv"> </span><span class="s">tai&quot;</span><span class="w"></span>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Workflow</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">generateName</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">coinflip-</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">entrypoint</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">coinflip</span>
+<span class="w">  </span><span class="nt">templates</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">coinflip</span>
+<span class="w">    </span><span class="nt">steps</span><span class="p">:</span>
+<span class="w">    </span><span class="c1"># flip a coin</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">flip-coin</span>
+<span class="w">        </span><span class="nt">template</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">flip-coin</span>
+<span class="w">    </span><span class="c1"># evaluate the result in parallel</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">heads</span>
+<span class="w">        </span><span class="nt">template</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">heads</span><span class="w">                       </span><span class="c1"># call heads template if &quot;heads&quot;</span>
+<span class="w">        </span><span class="nt">when</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{steps.flip-coin.outputs.result}}</span><span class="nv"> </span><span class="s">==</span><span class="nv"> </span><span class="s">heads&quot;</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">tails</span>
+<span class="w">        </span><span class="nt">template</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">tails</span><span class="w">                       </span><span class="c1"># call tails template if &quot;tails&quot;</span>
+<span class="w">        </span><span class="nt">when</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{steps.flip-coin.outputs.result}}</span><span class="nv"> </span><span class="s">==</span><span class="nv"> </span><span class="s">tails&quot;</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">flip-again</span>
+<span class="w">        </span><span class="nt">template</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">flip-coin</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">complex-condition</span>
+<span class="w">        </span><span class="nt">template</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">heads-tails-or-twice-tails</span>
+<span class="w">        </span><span class="c1"># call heads template if first flip was &quot;heads&quot; and second was &quot;tails&quot; OR both were &quot;tails&quot;</span>
+<span class="w">        </span><span class="nt">when</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">&gt;-</span>
+<span class="w">            </span><span class="no">( {{steps.flip-coin.outputs.result}} == heads &amp;&amp;</span>
+<span class="w">              </span><span class="no">{{steps.flip-again.outputs.result}} == tails</span>
+<span class="w">            </span><span class="no">) ||</span>
+<span class="w">            </span><span class="no">( {{steps.flip-coin.outputs.result}} == tails &amp;&amp;</span>
+<span class="w">              </span><span class="no">{{steps.flip-again.outputs.result}} == tails )</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">heads-regex</span>
+<span class="w">        </span><span class="nt">template</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">heads</span><span class="w">                       </span><span class="c1"># call heads template if ~ &quot;hea&quot;</span>
+<span class="w">        </span><span class="nt">when</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{steps.flip-again.outputs.result}}</span><span class="nv"> </span><span class="s">=~</span><span class="nv"> </span><span class="s">hea&quot;</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">tails-regex</span>
+<span class="w">        </span><span class="nt">template</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">tails</span><span class="w">                       </span><span class="c1"># call heads template if ~ &quot;tai&quot;</span>
+<span class="w">        </span><span class="nt">when</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{steps.flip-again.outputs.result}}</span><span class="nv"> </span><span class="s">=~</span><span class="nv"> </span><span class="s">tai&quot;</span>
 
-<span class="w">  </span><span class="c1"># Return heads or tails based on a random number</span><span class="w"></span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">flip-coin</span><span class="w"></span>
-<span class="w">    </span><span class="nt">script</span><span class="p">:</span><span class="w"></span>
-<span class="w">      </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">python:alpine3.6</span><span class="w"></span>
-<span class="w">      </span><span class="nt">command</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">python</span><span class="p p-Indicator">]</span><span class="w"></span>
-<span class="w">      </span><span class="nt">source</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span><span class="w"></span>
-<span class="w">        </span><span class="no">import random</span><span class="w"></span>
-<span class="w">        </span><span class="no">result = &quot;heads&quot; if random.randint(0,1) == 0 else &quot;tails&quot;</span><span class="w"></span>
-<span class="w">        </span><span class="no">print(result)</span><span class="w"></span>
+<span class="w">  </span><span class="c1"># Return heads or tails based on a random number</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">flip-coin</span>
+<span class="w">    </span><span class="nt">script</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">python:alpine3.6</span>
+<span class="w">      </span><span class="nt">command</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">python</span><span class="p p-Indicator">]</span>
+<span class="w">      </span><span class="nt">source</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
+<span class="w">        </span><span class="no">import random</span>
+<span class="w">        </span><span class="no">result = &quot;heads&quot; if random.randint(0,1) == 0 else &quot;tails&quot;</span>
+<span class="w">        </span><span class="no">print(result)</span>
 
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">heads</span><span class="w"></span>
-<span class="w">    </span><span class="nt">container</span><span class="p">:</span><span class="w"></span>
-<span class="w">      </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">alpine:3.6</span><span class="w"></span>
-<span class="w">      </span><span class="nt">command</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">sh</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">-c</span><span class="p p-Indicator">]</span><span class="w"></span>
-<span class="w">      </span><span class="nt">args</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;echo</span><span class="nv"> </span><span class="s">\&quot;it</span><span class="nv"> </span><span class="s">was</span><span class="nv"> </span><span class="s">heads\&quot;&quot;</span><span class="p p-Indicator">]</span><span class="w"></span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">heads</span>
+<span class="w">    </span><span class="nt">container</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">alpine:3.6</span>
+<span class="w">      </span><span class="nt">command</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">sh</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">-c</span><span class="p p-Indicator">]</span>
+<span class="w">      </span><span class="nt">args</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;echo</span><span class="nv"> </span><span class="s">\&quot;it</span><span class="nv"> </span><span class="s">was</span><span class="nv"> </span><span class="s">heads\&quot;&quot;</span><span class="p p-Indicator">]</span>
 
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">tails</span><span class="w"></span>
-<span class="w">    </span><span class="nt">container</span><span class="p">:</span><span class="w"></span>
-<span class="w">      </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">alpine:3.6</span><span class="w"></span>
-<span class="w">      </span><span class="nt">command</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">sh</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">-c</span><span class="p p-Indicator">]</span><span class="w"></span>
-<span class="w">      </span><span class="nt">args</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;echo</span><span class="nv"> </span><span class="s">\&quot;it</span><span class="nv"> </span><span class="s">was</span><span class="nv"> </span><span class="s">tails\&quot;&quot;</span><span class="p p-Indicator">]</span><span class="w"></span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">tails</span>
+<span class="w">    </span><span class="nt">container</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">alpine:3.6</span>
+<span class="w">      </span><span class="nt">command</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">sh</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">-c</span><span class="p p-Indicator">]</span>
+<span class="w">      </span><span class="nt">args</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;echo</span><span class="nv"> </span><span class="s">\&quot;it</span><span class="nv"> </span><span class="s">was</span><span class="nv"> </span><span class="s">tails\&quot;&quot;</span><span class="p p-Indicator">]</span>
 
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">heads-tails-or-twice-tails</span><span class="w"></span>
-<span class="w">    </span><span class="nt">container</span><span class="p">:</span><span class="w"></span>
-<span class="w">      </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">alpine:3.6</span><span class="w"></span>
-<span class="w">      </span><span class="nt">command</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">sh</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">-c</span><span class="p p-Indicator">]</span><span class="w"></span>
-<span class="w">      </span><span class="nt">args</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;echo</span><span class="nv"> </span><span class="s">\&quot;it</span><span class="nv"> </span><span class="s">was</span><span class="nv"> </span><span class="s">heads</span><span class="nv"> </span><span class="s">the</span><span class="nv"> </span><span class="s">first</span><span class="nv"> </span><span class="s">flip</span><span class="nv"> </span><span class="s">and</span><span class="nv"> </span><span class="s">tails</span><span class="nv"> </span><span class="s">the</span><span class="nv"> </span><span class="s">second.</span><span class="nv"> </span><span class="s">Or</span><span class="nv"> </span><span class="s">it</span><span class="nv"> </span><span class="s">was</span><span class="nv"> </span><span class="s">two</span><span class="nv"> </span><span class="s">times</span><span class="nv"> </span><span class="s">tails.\&quot;&quot;</span><span class="p p-Indicator">]</span><span class="w"></span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">heads-tails-or-twice-tails</span>
+<span class="w">    </span><span class="nt">container</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">alpine:3.6</span>
+<span class="w">      </span><span class="nt">command</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">sh</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">-c</span><span class="p p-Indicator">]</span>
+<span class="w">      </span><span class="nt">args</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;echo</span><span class="nv"> </span><span class="s">\&quot;it</span><span class="nv"> </span><span class="s">was</span><span class="nv"> </span><span class="s">heads</span><span class="nv"> </span><span class="s">the</span><span class="nv"> </span><span class="s">first</span><span class="nv"> </span><span class="s">flip</span><span class="nv"> </span><span class="s">and</span><span class="nv"> </span><span class="s">tails</span><span class="nv"> </span><span class="s">the</span><span class="nv"> </span><span class="s">second.</span><span class="nv"> </span><span class="s">Or</span><span class="nv"> </span><span class="s">it</span><span class="nv"> </span><span class="s">was</span><span class="nv"> </span><span class="s">two</span><span class="nv"> </span><span class="s">times</span><span class="nv"> </span><span class="s">tails.\&quot;&quot;</span><span class="p p-Indicator">]</span>
 </code></pre></div>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 </div>
 <p>If the parameter value contains quotes, it may invalidate the govaluate expression. To handle parameters with
 quotes, embed an <a href="https://github.com/antonmedv/expr">expr</a> expression in the conditional. For example:</p>
-<div class="highlight"><pre><span></span><code><span class="nt">when</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{=inputs.parameters[&#39;may-contain-quotes&#39;]</span><span class="nv"> </span><span class="s">==</span><span class="nv"> </span><span class="s">&#39;example&#39;}}&quot;</span><span class="w"></span>
+<div class="highlight"><pre><span></span><code><span class="nt">when</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{=inputs.parameters[&#39;may-contain-quotes&#39;]</span><span class="nv"> </span><span class="s">==</span><span class="nv"> </span><span class="s">&#39;example&#39;}}&quot;</span>
 </code></pre></div>
 
               

@@ -3851,7 +3851,7 @@
 <h2 id="introduction">Introduction<a class="headerlink" href="#introduction" title="Permanent link">&para;</a></h2>
 <p>Users often source and transform data as part of their workflows. The <code>data</code> template provides first-class support for these common operations.</p>
 <p><code>data</code> templates can best be understood by looking at a common data sourcing and transformation operation in <code>bash</code>:</p>
-<div class="highlight"><pre><span></span><code>find -r . <span class="p">|</span> grep <span class="s2">&quot;.pdf&quot;</span> <span class="p">|</span> sed <span class="s2">&quot;s/foo/foo.ready/&quot;</span>
+<div class="highlight"><pre><span></span><code>find<span class="w"> </span>-r<span class="w"> </span>.<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span><span class="s2">&quot;.pdf&quot;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>sed<span class="w"> </span><span class="s2">&quot;s/foo/foo.ready/&quot;</span>
 </code></pre></div>
 <p>Such operations consist of two main parts:</p>
 <ul>
@@ -3860,23 +3860,23 @@
 </ul>
 <p>This operation, for example, could be useful in sourcing a potential list of files to be processed and filtering and manipulating the list as desired.</p>
 <p>In Argo, this operation would be written as:</p>
-<div class="highlight"><pre><span></span><code><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">generate-artifacts</span><span class="w"></span>
-<span class="w">  </span><span class="nt">data</span><span class="p">:</span><span class="w"></span>
-<span class="w">    </span><span class="nt">source</span><span class="p">:</span><span class="w">             </span><span class="c1"># Define a source for the data, only a single &quot;source&quot; is permitted</span><span class="w"></span>
-<span class="w">      </span><span class="nt">artifactPaths</span><span class="p">:</span><span class="w">    </span><span class="c1"># A predefined source: Generate a list of all artifact paths in a given repository</span><span class="w"></span>
-<span class="w">        </span><span class="nt">s3</span><span class="p">:</span><span class="w">             </span><span class="c1"># Source from an S3 bucket</span><span class="w"></span>
-<span class="w">          </span><span class="nt">bucket</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">test</span><span class="w"></span>
-<span class="w">          </span><span class="nt">endpoint</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">minio:9000</span><span class="w"></span>
-<span class="w">          </span><span class="nt">insecure</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span><span class="w"></span>
-<span class="w">          </span><span class="nt">accessKeySecret</span><span class="p">:</span><span class="w"></span>
-<span class="w">            </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-minio-cred</span><span class="w"></span>
-<span class="w">            </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">accesskey</span><span class="w"></span>
-<span class="w">          </span><span class="nt">secretKeySecret</span><span class="p">:</span><span class="w"></span>
-<span class="w">            </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-minio-cred</span><span class="w"></span>
-<span class="w">            </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">secretkey</span><span class="w"></span>
-<span class="w">    </span><span class="nt">transformation</span><span class="p">:</span><span class="w">     </span><span class="c1"># The source is then passed to be transformed by transformations defined here</span><span class="w"></span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">expression</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;filter(data,</span><span class="nv"> </span><span class="s">{#</span><span class="nv"> </span><span class="s">endsWith</span><span class="nv"> </span><span class="s">\&quot;.pdf\&quot;})&quot;</span><span class="w"></span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">expression</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;map(data,</span><span class="nv"> </span><span class="s">{#</span><span class="nv"> </span><span class="s">+</span><span class="nv"> </span><span class="s">\&quot;.ready\&quot;})&quot;</span><span class="w"></span>
+<div class="highlight"><pre><span></span><code><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">generate-artifacts</span>
+<span class="w">  </span><span class="nt">data</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">source</span><span class="p">:</span><span class="w">             </span><span class="c1"># Define a source for the data, only a single &quot;source&quot; is permitted</span>
+<span class="w">      </span><span class="nt">artifactPaths</span><span class="p">:</span><span class="w">    </span><span class="c1"># A predefined source: Generate a list of all artifact paths in a given repository</span>
+<span class="w">        </span><span class="nt">s3</span><span class="p">:</span><span class="w">             </span><span class="c1"># Source from an S3 bucket</span>
+<span class="w">          </span><span class="nt">bucket</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">test</span>
+<span class="w">          </span><span class="nt">endpoint</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">minio:9000</span>
+<span class="w">          </span><span class="nt">insecure</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">          </span><span class="nt">accessKeySecret</span><span class="p">:</span>
+<span class="w">            </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-minio-cred</span>
+<span class="w">            </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">accesskey</span>
+<span class="w">          </span><span class="nt">secretKeySecret</span><span class="p">:</span>
+<span class="w">            </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-minio-cred</span>
+<span class="w">            </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">secretkey</span>
+<span class="w">    </span><span class="nt">transformation</span><span class="p">:</span><span class="w">     </span><span class="c1"># The source is then passed to be transformed by transformations defined here</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">expression</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;filter(data,</span><span class="nv"> </span><span class="s">{#</span><span class="nv"> </span><span class="s">endsWith</span><span class="nv"> </span><span class="s">\&quot;.pdf\&quot;})&quot;</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">expression</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;map(data,</span><span class="nv"> </span><span class="s">{#</span><span class="nv"> </span><span class="s">+</span><span class="nv"> </span><span class="s">\&quot;.ready\&quot;})&quot;</span>
 </code></pre></div>
 <h2 id="spec">Spec<a class="headerlink" href="#spec" title="Permanent link">&para;</a></h2>
 <p>A <code>data</code> template must always contain a <code>source</code>. Current available sources:</p>

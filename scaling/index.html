@@ -3914,18 +3914,18 @@
 <p>Within a cluster can use instance ID to run N Argo instances within a cluster.</p>
 <p>Create one namespace for each Argo, e.g. <code>argo-i1</code>, <code>argo-i2</code>:.</p>
 <p>Edit <a href="../workflow-controller-configmap.yaml">workflow-controller-configmap.yaml</a> for each namespace to set an instance ID.</p>
-<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1</span><span class="w"></span>
-<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ConfigMap</span><span class="w"></span>
-<span class="nt">metadata</span><span class="p">:</span><span class="w"></span>
-<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">workflow-controller-configmap</span><span class="w"></span>
-<span class="nt">data</span><span class="p">:</span><span class="w"></span>
-<span class="w">    </span><span class="nt">instanceID</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">i1</span><span class="w"></span>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ConfigMap</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">workflow-controller-configmap</span>
+<span class="nt">data</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">instanceID</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">i1</span>
 </code></pre></div>
 <blockquote>
 <p>v2.9 and after</p>
 </blockquote>
 <p>You may need to pass the instance ID to the CLI:</p>
-<div class="highlight"><pre><span></span><code>argo --instanceid i1 submit my-wf.yaml
+<div class="highlight"><pre><span></span><code>argo<span class="w"> </span>--instanceid<span class="w"> </span>i1<span class="w"> </span>submit<span class="w"> </span>my-wf.yaml
 </code></pre></div>
 <p>You do not need to have one instance ID per namespace, you could have many or few.</p>
 

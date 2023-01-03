@@ -3913,10 +3913,10 @@ available task results is as follows:</p>
 </table>
 <p>For convenience, if an omitted task result is equivalent to <code>(task.Succeeded || task.Skipped || task.Daemoned)</code>.</p>
 <p>For example:</p>
-<div class="highlight"><pre><span></span><code><span class="nt">depends</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;task</span><span class="nv"> </span><span class="s">||</span><span class="nv"> </span><span class="s">task-2.Failed&quot;</span><span class="w"></span>
+<div class="highlight"><pre><span></span><code><span class="nt">depends</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;task</span><span class="nv"> </span><span class="s">||</span><span class="nv"> </span><span class="s">task-2.Failed&quot;</span>
 </code></pre></div>
 <p>is equivalent to:</p>
-<div class="highlight"><pre><span></span><code><span class="nt">depends</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">(task.Succeeded || task.Skipped || task.Daemoned) || task-2.Failed</span><span class="w"></span>
+<div class="highlight"><pre><span></span><code><span class="nt">depends</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">(task.Succeeded || task.Skipped || task.Daemoned) || task-2.Failed</span>
 </code></pre></div>
 <p>Full boolean logic is also available. Operators include:</p>
 <ul>
@@ -3925,19 +3925,19 @@ available task results is as follows:</p>
 <li><code>!</code></li>
 </ul>
 <p>Example:</p>
-<div class="highlight"><pre><span></span><code><span class="nt">depends</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;(task-2.Succeeded</span><span class="nv"> </span><span class="s">||</span><span class="nv"> </span><span class="s">task-2.Skipped)</span><span class="nv"> </span><span class="s">&amp;&amp;</span><span class="nv"> </span><span class="s">!task-3.Failed&quot;</span><span class="w"></span>
+<div class="highlight"><pre><span></span><code><span class="nt">depends</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;(task-2.Succeeded</span><span class="nv"> </span><span class="s">||</span><span class="nv"> </span><span class="s">task-2.Skipped)</span><span class="nv"> </span><span class="s">&amp;&amp;</span><span class="nv"> </span><span class="s">!task-3.Failed&quot;</span>
 </code></pre></div>
 <p>In the case that you're depending on a task that uses <code>withItems</code>, you can depend on
 whether any of the item tasks are successful or all have failed using <code>.AnySucceeded</code> and <code>.AllFailed</code>, for example:</p>
-<div class="highlight"><pre><span></span><code><span class="nt">depends</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;task-1.AnySucceeded</span><span class="nv"> </span><span class="s">||</span><span class="nv"> </span><span class="s">task-2.AllFailed&quot;</span><span class="w"></span>
+<div class="highlight"><pre><span></span><code><span class="nt">depends</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;task-1.AnySucceeded</span><span class="nv"> </span><span class="s">||</span><span class="nv"> </span><span class="s">task-2.AllFailed&quot;</span>
 </code></pre></div>
 <h2 id="compatibility-with-dependencies-and-dagtaskcontinueon">Compatibility with <code>dependencies</code> and <code>dag.task.continueOn</code><a class="headerlink" href="#compatibility-with-dependencies-and-dagtaskcontinueon" title="Permanent link">&para;</a></h2>
 <p>This feature is fully compatible with <code>dependencies</code> and conversion is easy.</p>
 <p>To convert simply join your <code>dependencies</code> with <code>&amp;&amp;</code>:</p>
-<div class="highlight"><pre><span></span><code><span class="nt">dependencies</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;A&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;B&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;C&quot;</span><span class="p p-Indicator">]</span><span class="w"></span>
+<div class="highlight"><pre><span></span><code><span class="nt">dependencies</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;A&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;B&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;C&quot;</span><span class="p p-Indicator">]</span>
 </code></pre></div>
 <p>is equivalent to:</p>
-<div class="highlight"><pre><span></span><code><span class="nt">depends</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;A</span><span class="nv"> </span><span class="s">&amp;&amp;</span><span class="nv"> </span><span class="s">B</span><span class="nv"> </span><span class="s">&amp;&amp;</span><span class="nv"> </span><span class="s">C&quot;</span><span class="w"></span>
+<div class="highlight"><pre><span></span><code><span class="nt">depends</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;A</span><span class="nv"> </span><span class="s">&amp;&amp;</span><span class="nv"> </span><span class="s">B</span><span class="nv"> </span><span class="s">&amp;&amp;</span><span class="nv"> </span><span class="s">C&quot;</span>
 </code></pre></div>
 <p>Because of the added control found in <code>depends</code>, the <code>dag.task.continueOn</code> is not available when using it. Furthermore,
 it is not possible to use both <code>dependencies</code> and <code>depends</code> in the same task group.</p>

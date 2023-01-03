@@ -3833,41 +3833,41 @@
 <p>v3.2 and after</p>
 </blockquote>
 <p><code>HTTP Template</code> is a type of template which can execute HTTP Requests.</p>
-<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span><span class="w"></span>
-<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Workflow</span><span class="w"></span>
-<span class="nt">metadata</span><span class="p">:</span><span class="w"></span>
-<span class="w">  </span><span class="nt">generateName</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">http-template-</span><span class="w"></span>
-<span class="nt">spec</span><span class="p">:</span><span class="w"></span>
-<span class="w">  </span><span class="nt">entrypoint</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">main</span><span class="w"></span>
-<span class="w">  </span><span class="nt">templates</span><span class="p">:</span><span class="w"></span>
-<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">main</span><span class="w"></span>
-<span class="w">      </span><span class="nt">steps</span><span class="p">:</span><span class="w"></span>
-<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">get-google-homepage</span><span class="w"></span>
-<span class="w">            </span><span class="nt">template</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">http</span><span class="w"></span>
-<span class="w">            </span><span class="nt">arguments</span><span class="p">:</span><span class="w"></span>
-<span class="w">              </span><span class="nt">parameters</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[{</span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="nv">url</span><span class="p p-Indicator">,</span><span class="nt"> value</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;https://www.google.com&quot;</span><span class="p p-Indicator">}]</span><span class="w"></span>
-<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">http</span><span class="w"></span>
-<span class="w">      </span><span class="nt">inputs</span><span class="p">:</span><span class="w"></span>
-<span class="w">        </span><span class="nt">parameters</span><span class="p">:</span><span class="w"></span>
-<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">url</span><span class="w"></span>
-<span class="w">      </span><span class="nt">http</span><span class="p">:</span><span class="w"></span>
-<span class="w">        </span><span class="nt">timeoutSeconds</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">20</span><span class="w"> </span><span class="c1"># Default 30</span><span class="w"></span>
-<span class="w">        </span><span class="nt">url</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{inputs.parameters.url}}&quot;</span><span class="w"></span>
-<span class="w">        </span><span class="nt">method</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;GET&quot;</span><span class="w"> </span><span class="c1"># Default GET</span><span class="w"></span>
-<span class="w">        </span><span class="nt">headers</span><span class="p">:</span><span class="w"></span>
-<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;x-header-name&quot;</span><span class="w"></span>
-<span class="w">            </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;test-value&quot;</span><span class="w"></span>
-<span class="w">        </span><span class="c1"># Template will succeed if evaluated to true, otherwise will fail</span><span class="w"></span>
-<span class="w">        </span><span class="c1"># Available variables:</span><span class="w"></span>
-<span class="w">        </span><span class="c1">#  request.body: string, the request body</span><span class="w"></span>
-<span class="w">        </span><span class="c1">#  request.headers: map[string][]string, the request headers</span><span class="w"></span>
-<span class="w">        </span><span class="c1">#  response.url: string, the request url</span><span class="w"></span>
-<span class="w">        </span><span class="c1">#  response.method: string, the request method</span><span class="w"></span>
-<span class="w">        </span><span class="c1">#  response.statusCode: int, the response status code</span><span class="w"></span>
-<span class="w">        </span><span class="c1">#  response.body: string, the response body</span><span class="w"></span>
-<span class="w">        </span><span class="c1">#  response.headers: map[string][]string, the response headers</span><span class="w"></span>
-<span class="w">        </span><span class="nt">successCondition</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;response.body</span><span class="nv"> </span><span class="s">contains</span><span class="nv"> </span><span class="s">\&quot;google\&quot;&quot;</span><span class="w"> </span><span class="c1"># available since v3.3</span><span class="w"></span>
-<span class="w">        </span><span class="nt">body</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;test</span><span class="nv"> </span><span class="s">body&quot;</span><span class="w"> </span><span class="c1"># Change request body</span><span class="w"></span>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Workflow</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">generateName</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">http-template-</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">entrypoint</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">main</span>
+<span class="w">  </span><span class="nt">templates</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">main</span>
+<span class="w">      </span><span class="nt">steps</span><span class="p">:</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">get-google-homepage</span>
+<span class="w">            </span><span class="nt">template</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">http</span>
+<span class="w">            </span><span class="nt">arguments</span><span class="p">:</span>
+<span class="w">              </span><span class="nt">parameters</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[{</span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="nv">url</span><span class="p p-Indicator">,</span><span class="nt"> value</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;https://www.google.com&quot;</span><span class="p p-Indicator">}]</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">http</span>
+<span class="w">      </span><span class="nt">inputs</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">url</span>
+<span class="w">      </span><span class="nt">http</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">timeoutSeconds</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">20</span><span class="w"> </span><span class="c1"># Default 30</span>
+<span class="w">        </span><span class="nt">url</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{inputs.parameters.url}}&quot;</span>
+<span class="w">        </span><span class="nt">method</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;GET&quot;</span><span class="w"> </span><span class="c1"># Default GET</span>
+<span class="w">        </span><span class="nt">headers</span><span class="p">:</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;x-header-name&quot;</span>
+<span class="w">            </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;test-value&quot;</span>
+<span class="w">        </span><span class="c1"># Template will succeed if evaluated to true, otherwise will fail</span>
+<span class="w">        </span><span class="c1"># Available variables:</span>
+<span class="w">        </span><span class="c1">#  request.body: string, the request body</span>
+<span class="w">        </span><span class="c1">#  request.headers: map[string][]string, the request headers</span>
+<span class="w">        </span><span class="c1">#  response.url: string, the request url</span>
+<span class="w">        </span><span class="c1">#  response.method: string, the request method</span>
+<span class="w">        </span><span class="c1">#  response.statusCode: int, the response status code</span>
+<span class="w">        </span><span class="c1">#  response.body: string, the response body</span>
+<span class="w">        </span><span class="c1">#  response.headers: map[string][]string, the response headers</span>
+<span class="w">        </span><span class="nt">successCondition</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;response.body</span><span class="nv"> </span><span class="s">contains</span><span class="nv"> </span><span class="s">\&quot;google\&quot;&quot;</span><span class="w"> </span><span class="c1"># available since v3.3</span>
+<span class="w">        </span><span class="nt">body</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;test</span><span class="nv"> </span><span class="s">body&quot;</span><span class="w"> </span><span class="c1"># Change request body</span>
 </code></pre></div>
 <h2 id="argo-agent">Argo Agent<a class="headerlink" href="#argo-agent" title="Permanent link">&para;</a></h2>
 <p>HTTP Templates use the Argo Agent, which executes the requests independently of the controller. The Agent and the Workflow

@@ -3864,42 +3864,42 @@
 <p><code>TemplateDefaults</code> feature enables the user to configure the default template values in workflow spec level that will apply to all the templates in the workflow. If the template has a value that also has a default value in <code>templateDefault</code>, the Template's value will take precedence. These values will be applied during the runtime. Template values and default values are merged using Kubernetes strategic merge patch. To check whether and how list values are merged, inspect the <code>patchStrategy</code> and <code>patchMergeKey</code> tags in the <a href="https://github.com/argoproj/argo-workflows/blob/master/pkg/apis/workflow/v1alpha1/workflow_types.go">workflow definition</a>.</p>
 <h2 id="configuring-templatedefaults-in-workflowspec">Configuring <code>templateDefaults</code> in <code>WorkflowSpec</code><a class="headerlink" href="#configuring-templatedefaults-in-workflowspec" title="Permanent link">&para;</a></h2>
 <p>For example:</p>
-<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span><span class="w"></span>
-<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Workflow</span><span class="w"></span>
-<span class="nt">metadata</span><span class="p">:</span><span class="w"></span>
-<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">template-defaults-example</span><span class="w"></span>
-<span class="nt">spec</span><span class="p">:</span><span class="w"></span>
-<span class="w">  </span><span class="nt">entrypoint</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">main</span><span class="w"></span>
-<span class="w">  </span><span class="nt">templateDefaults</span><span class="p">:</span><span class="w"></span>
-<span class="w">    </span><span class="nt">timeout</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">30s</span><span class="w">   </span><span class="c1"># timeout value will be applied to all templates</span><span class="w"></span>
-<span class="w">    </span><span class="nt">retryStrategy</span><span class="p">:</span><span class="w"> </span><span class="c1"># retryStrategy value will be applied to all templates</span><span class="w"></span>
-<span class="w">      </span><span class="nt">limit</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2</span><span class="w"></span>
-<span class="w">  </span><span class="nt">templates</span><span class="p">:</span><span class="w"></span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">main</span><span class="w"></span>
-<span class="w">    </span><span class="nt">container</span><span class="p">:</span><span class="w"></span>
-<span class="w">      </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">docker/whalesay:latest</span><span class="w"></span>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Workflow</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">template-defaults-example</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">entrypoint</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">main</span>
+<span class="w">  </span><span class="nt">templateDefaults</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">timeout</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">30s</span><span class="w">   </span><span class="c1"># timeout value will be applied to all templates</span>
+<span class="w">    </span><span class="nt">retryStrategy</span><span class="p">:</span><span class="w"> </span><span class="c1"># retryStrategy value will be applied to all templates</span>
+<span class="w">      </span><span class="nt">limit</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2</span>
+<span class="w">  </span><span class="nt">templates</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">main</span>
+<span class="w">    </span><span class="nt">container</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">docker/whalesay:latest</span>
 </code></pre></div>
 <p><a href="https://raw.githubusercontent.com/argoproj/argo-workflows/master/examples/template-defaults.yaml">template defaults example</a></p>
 <h2 id="configuring-templatedefaults-in-controller-level">Configuring <code>templateDefaults</code> in Controller Level<a class="headerlink" href="#configuring-templatedefaults-in-controller-level" title="Permanent link">&para;</a></h2>
 <p>Operator can configure the <code>templateDefaults</code> in <a href="../default-workflow-specs/">workflow defaults</a>. This <code>templateDefault</code> will be applied to all the workflow which runs on the controller.</p>
 <p>The following would be specified in the Config Map:</p>
-<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1</span><span class="w"></span>
-<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ConfigMap</span><span class="w"></span>
-<span class="nt">metadata</span><span class="p">:</span><span class="w"></span>
-<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">workflow-controller-configmap</span><span class="w"></span>
-<span class="nt">data</span><span class="p">:</span><span class="w"></span>
-<span class="w">  </span><span class="c1"># Default values that will apply to all Workflows from this controller, unless overridden on the Workflow-level</span><span class="w"></span>
-<span class="w">  </span><span class="nt">workflowDefaults</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span><span class="w"></span>
-<span class="w">    </span><span class="no">metadata:</span><span class="w"></span>
-<span class="w">      </span><span class="no">annotations:</span><span class="w"></span>
-<span class="w">        </span><span class="no">argo: workflows</span><span class="w"></span>
-<span class="w">      </span><span class="no">labels:</span><span class="w"></span>
-<span class="w">        </span><span class="no">foo: bar</span><span class="w"></span>
-<span class="w">    </span><span class="no">spec:</span><span class="w"></span>
-<span class="w">      </span><span class="no">ttlStrategy:</span><span class="w"></span>
-<span class="w">        </span><span class="no">secondsAfterSuccess: 5</span><span class="w"></span>
-<span class="w">      </span><span class="no">templateDefaults:</span><span class="w"></span>
-<span class="w">        </span><span class="no">timeout: 30s </span><span class="w"></span>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ConfigMap</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">workflow-controller-configmap</span>
+<span class="nt">data</span><span class="p">:</span>
+<span class="w">  </span><span class="c1"># Default values that will apply to all Workflows from this controller, unless overridden on the Workflow-level</span>
+<span class="w">  </span><span class="nt">workflowDefaults</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
+<span class="w">    </span><span class="no">metadata:</span>
+<span class="w">      </span><span class="no">annotations:</span>
+<span class="w">        </span><span class="no">argo: workflows</span>
+<span class="w">      </span><span class="no">labels:</span>
+<span class="w">        </span><span class="no">foo: bar</span>
+<span class="w">    </span><span class="no">spec:</span>
+<span class="w">      </span><span class="no">ttlStrategy:</span>
+<span class="w">        </span><span class="no">secondsAfterSuccess: 5</span>
+<span class="w">      </span><span class="no">templateDefaults:</span>
+<span class="w">        </span><span class="no">timeout: 30s </span>
 </code></pre></div>
 
               

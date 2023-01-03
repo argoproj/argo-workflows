@@ -3969,10 +3969,10 @@
 <p>If you want to automate tasks with the Argo Server API or CLI, you will need an access token.</p>
 <h2 id="prerequisites">Prerequisites<a class="headerlink" href="#prerequisites" title="Permanent link">&para;</a></h2>
 <p>Firstly, create a role with minimal permissions. This example role for jenkins only permission to update and list workflows:</p>
-<div class="highlight"><pre><span></span><code>kubectl create role jenkins --verb<span class="o">=</span>list,update --resource<span class="o">=</span>workflows.argoproj.io 
+<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>create<span class="w"> </span>role<span class="w"> </span>jenkins<span class="w"> </span>--verb<span class="o">=</span>list,update<span class="w"> </span>--resource<span class="o">=</span>workflows.argoproj.io<span class="w"> </span>
 </code></pre></div>
 <p>Create a service account for your service:</p>
-<div class="highlight"><pre><span></span><code>kubectl create sa jenkins
+<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>create<span class="w"> </span>sa<span class="w"> </span>jenkins
 </code></pre></div>
 <h3 id="tip-for-tokens-creation">Tip for Tokens Creation<a class="headerlink" href="#tip-for-tokens-creation" title="Permanent link">&para;</a></h3>
 <p>Create a unique service account for each client:</p>
@@ -3981,11 +3981,11 @@
 <li>(b) <a href="#token-revocation">revoke the token</a> without impacting other clients.</li>
 </ul>
 <p>Bind the service account to the role (in this case in the <code>argo</code> namespace):</p>
-<div class="highlight"><pre><span></span><code>kubectl create rolebinding jenkins --role<span class="o">=</span>jenkins --serviceaccount<span class="o">=</span>argo:jenkins
+<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>create<span class="w"> </span>rolebinding<span class="w"> </span>jenkins<span class="w"> </span>--role<span class="o">=</span>jenkins<span class="w"> </span>--serviceaccount<span class="o">=</span>argo:jenkins
 </code></pre></div>
 <h2 id="token-creation">Token Creation<a class="headerlink" href="#token-creation" title="Permanent link">&para;</a></h2>
 <p>You now need to create a secret to hold your token:</p>
-<div class="highlight"><pre><span></span><code>    kubectl apply -f - <span class="s">&lt;&lt;EOF</span>
+<div class="highlight"><pre><span></span><code><span class="w">    </span>kubectl<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span>-<span class="w"> </span><span class="s">&lt;&lt;EOF</span>
 <span class="s">apiVersion: v1</span>
 <span class="s">kind: Secret</span>
 <span class="s">metadata:</span>
@@ -3996,18 +3996,18 @@
 <span class="s">EOF</span>
 </code></pre></div>
 <p>Wait a few seconds:</p>
-<div class="highlight"><pre><span></span><code><span class="nv">ARGO_TOKEN</span><span class="o">=</span><span class="s2">&quot;Bearer </span><span class="k">$(</span>kubectl get secret jenkins.service-account-token -o<span class="o">=</span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">&#39;{.data.token}&#39;</span> <span class="p">|</span> base64 --decode<span class="k">)</span><span class="s2">&quot;</span>
-<span class="nb">echo</span> <span class="nv">$ARGO_TOKEN</span>
-Bearer ZXlKaGJHY2lPaUpTVXpJMU5pSXNJbXRwWkNJNkltS...
+<div class="highlight"><pre><span></span><code><span class="nv">ARGO_TOKEN</span><span class="o">=</span><span class="s2">&quot;Bearer </span><span class="k">$(</span>kubectl<span class="w"> </span>get<span class="w"> </span>secret<span class="w"> </span>jenkins.service-account-token<span class="w"> </span>-o<span class="o">=</span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">&#39;{.data.token}&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>base64<span class="w"> </span>--decode<span class="k">)</span><span class="s2">&quot;</span>
+<span class="nb">echo</span><span class="w"> </span><span class="nv">$ARGO_TOKEN</span>
+Bearer<span class="w"> </span>ZXlKaGJHY2lPaUpTVXpJMU5pSXNJbXRwWkNJNkltS...
 </code></pre></div>
 <h2 id="token-usage-test">Token Usage &amp; Test<a class="headerlink" href="#token-usage-test" title="Permanent link">&para;</a></h2>
 <p>To use that token with the CLI you need to set <code>ARGO_SERVER</code> (see <code>argo --help</code>).</p>
 <p>Use that token in your API requests, e.g. to list workflows:</p>
-<div class="highlight"><pre><span></span><code>curl https://localhost:2746/api/v1/workflows/argo -H <span class="s2">&quot;Authorization: </span><span class="nv">$ARGO_TOKEN</span><span class="s2">&quot;</span>
+<div class="highlight"><pre><span></span><code>curl<span class="w"> </span>https://localhost:2746/api/v1/workflows/argo<span class="w"> </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: </span><span class="nv">$ARGO_TOKEN</span><span class="s2">&quot;</span>
 <span class="c1"># 200 OK</span>
 </code></pre></div>
 <p>You should check you cannot do things you're not allowed!</p>
-<div class="highlight"><pre><span></span><code>curl https://localhost:2746/api/v1/workflow-templates/argo -H <span class="s2">&quot;Authorization: </span><span class="nv">$ARGO_TOKEN</span><span class="s2">&quot;</span>
+<div class="highlight"><pre><span></span><code>curl<span class="w"> </span>https://localhost:2746/api/v1/workflow-templates/argo<span class="w"> </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: </span><span class="nv">$ARGO_TOKEN</span><span class="s2">&quot;</span>
 <span class="c1"># 403 error</span>
 </code></pre></div>
 <h2 id="token-usage-docker">Token Usage - Docker<a class="headerlink" href="#token-usage-docker" title="Permanent link">&para;</a></h2>
@@ -4020,18 +4020,18 @@ Bearer ZXlKaGJHY2lPaUpTVXpJMU5pSXNJbXRwWkNJNkltS...
 <blockquote>
 <p>Note: Example for  getting list of templates from an existing namespace</p>
 </blockquote>
-<div class="highlight"><pre><span></span><code>docker run --rm -it <span class="se">\</span>
-  -e <span class="nv">ARGO_SERVER</span><span class="o">=</span><span class="nv">$ARGO_SERVER</span> <span class="se">\</span>
-  -e <span class="nv">ARGO_TOKEN</span><span class="o">=</span><span class="nv">$ARGO_TOKEN</span> <span class="se">\</span>
-  -e <span class="nv">ARGO_HTTP</span><span class="o">=</span><span class="nb">false</span> <span class="se">\</span>
-  -e <span class="nv">ARGO_HTTP1</span><span class="o">=</span><span class="nb">true</span> <span class="se">\</span>
-  -e <span class="nv">KUBECONFIG</span><span class="o">=</span>/dev/null <span class="se">\</span>
-  -e <span class="nv">ARGO_NAMESPACE</span><span class="o">=</span><span class="nv">$ARGO_NAMESPACE</span>  <span class="se">\</span>
-  argoproj/argocli:latest template list -v -e -k
+<div class="highlight"><pre><span></span><code>docker<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span>-it<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-e<span class="w"> </span><span class="nv">ARGO_SERVER</span><span class="o">=</span><span class="nv">$ARGO_SERVER</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-e<span class="w"> </span><span class="nv">ARGO_TOKEN</span><span class="o">=</span><span class="nv">$ARGO_TOKEN</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-e<span class="w"> </span><span class="nv">ARGO_HTTP</span><span class="o">=</span><span class="nb">false</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-e<span class="w"> </span><span class="nv">ARGO_HTTP1</span><span class="o">=</span><span class="nb">true</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-e<span class="w"> </span><span class="nv">KUBECONFIG</span><span class="o">=</span>/dev/null<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-e<span class="w"> </span><span class="nv">ARGO_NAMESPACE</span><span class="o">=</span><span class="nv">$ARGO_NAMESPACE</span><span class="w">  </span><span class="se">\</span>
+<span class="w">  </span>argoproj/argocli:latest<span class="w"> </span>template<span class="w"> </span>list<span class="w"> </span>-v<span class="w"> </span>-e<span class="w"> </span>-k
 </code></pre></div>
 <h2 id="token-revocation">Token Revocation<a class="headerlink" href="#token-revocation" title="Permanent link">&para;</a></h2>
 <p>Token compromised?</p>
-<div class="highlight"><pre><span></span><code>kubectl delete secret <span class="nv">$SECRET</span>
+<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>delete<span class="w"> </span>secret<span class="w"> </span><span class="nv">$SECRET</span>
 </code></pre></div>
 <p>A new one will be created.</p>
 
