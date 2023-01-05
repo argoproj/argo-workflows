@@ -609,6 +609,11 @@ func (w *When) ShutdownWorkflow(strategy wfv1.ShutdownStrategy) *When {
 	return w
 }
 
+// test condition function on Workflow
+func (w *When) WorkflowCondition(condition func(wf *wfv1.Workflow) bool) bool {
+	return condition(w.wf)
+}
+
 func (w *When) Then() *Then {
 	return &Then{
 		t:           w.t,
