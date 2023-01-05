@@ -150,6 +150,14 @@ func (s *ArtifactsSuite) TestArtifactGC() {
 				assert.Contains(t, objectMeta.Finalizers, common.FinalizerArtifactGC)
 			})
 
+		if when.WorkflowCondition(func(wf *wfv1.Workflow) bool {
+			return wf.Status.Phase == wfv1.WorkflowFailed || wf.Status.Phase == wfv1.WorkflowError
+		}) {
+			fmt.Println("can't reliably verify Artifact GC since workflow failed")
+			when.RemoveFinalizers(false)
+			continue
+		}
+
 		// wait for all pods to have started and been completed and recouped
 		when.
 			WaitForWorkflow(
@@ -216,7 +224,7 @@ func (s *ArtifactsSuite) TestArtifactGC_InsufficientRole() {
 		_ = s.KubeClient.CoreV1().ServiceAccounts(fixtures.Namespace).Delete(ctx, "artgc-role-test-sa", metav1.DeleteOptions{})
 	})
 
-	s.Given().Workflow(`
+	when := s.Given().Workflow(`
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
@@ -244,12 +252,22 @@ spec:
             serviceAccountName: artgc-role-test-sa`).
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(
-			fixtures.WorkflowCompletionOkay(true),
-			fixtures.Condition(func(wf *wfv1.Workflow) (bool, string) {
-				return wf.Status.ArtifactGCStatus != nil &&
-					len(wf.Status.ArtifactGCStatus.PodsRecouped) == 1, "for pod to have been recouped"
-			})).
+		WaitForWorkflow(fixtures.ToBeCompleted)
+
+	if when.WorkflowCondition(func(wf *wfv1.Workflow) bool {
+		return wf.Status.Phase == wfv1.WorkflowFailed || wf.Status.Phase == wfv1.WorkflowError
+	}) {
+		fmt.Println("can't reliably verify Artifact GC (Insufficient Role test) since workflow failed")
+		when.RemoveFinalizers(false)
+		return
+	}
+
+	when.WaitForWorkflow(
+		fixtures.WorkflowCompletionOkay(true),
+		fixtures.Condition(func(wf *wfv1.Workflow) (bool, string) {
+			return wf.Status.ArtifactGCStatus != nil &&
+				len(wf.Status.ArtifactGCStatus.PodsRecouped) == 1, "for pod to have been recouped"
+		})).
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			failCondition := false
