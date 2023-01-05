@@ -126,6 +126,7 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [NVIDIA](https://www.nvidia.com/)
 1. [One Concern](https://oneconcern.com/)
 1. [Onepanel](https://docs.onepanel.ai)
+1. [OpsMx](https://www.opsmx.io/)
 1. [Oracle](https://www.oracle.com/)
 1. [Orchest](https://www.orchest.io/)
 1. [OVH](https://www.ovh.com/)
