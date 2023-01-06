@@ -381,7 +381,7 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 					Message:      node.Message,
 					TemplateName: node.TemplateName,
 					Phase:        string(node.Phase),
-					PodName:      node.ID,
+					PodName:      wfutil.GeneratePodName(woc.wf.Name, node.Name, node.TemplateName, node.ID, wfutil.GetPodNameVersion()),
 					FinishedAt:   node.FinishedAt,
 				})
 		}
