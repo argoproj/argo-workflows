@@ -265,7 +265,6 @@ func ApplySubmitOpts(wf *wfv1.Workflow, opts *wfv1.SubmitOpts) error {
 		wfAnnotations = make(map[string]string)
 	}
 	if opts.Annotations != "" {
-		fmt.Println(opts.Annotations)
 		passedAnnotations, err := cmdutil.ParseLabels(opts.Annotations)
 		if err != nil {
 			return fmt.Errorf("expected Annotations of the form: NAME1=VALUE2,NAME2=VALUE2. Received: %s: %w", opts.Labels, err)
@@ -803,7 +802,6 @@ func resetConnectedParentGroupNodes(oldWF *wfv1.Workflow, newWF *wfv1.Workflow, 
 
 // FormulateRetryWorkflow formulates a previous workflow to be retried, deleting all failed steps as well as the onExit node (and children)
 func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSuccessful bool, nodeFieldSelector string, parameters []string) (*wfv1.Workflow, []string, error) {
-
 	switch wf.Status.Phase {
 	case wfv1.WorkflowFailed, wfv1.WorkflowError:
 	default:

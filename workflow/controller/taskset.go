@@ -112,7 +112,8 @@ func (woc *wfOperationCtx) nodeRequiresTaskSetReconciliation(nodeName string) bo
 	}
 	for _, child := range node.Children {
 		// If any of the node's children need an HTTP reconciliation, the parent node will also need one
-		if woc.nodeRequiresTaskSetReconciliation(child) {
+		childNodeName := woc.wf.Status.Nodes[child].Name
+		if woc.nodeRequiresTaskSetReconciliation(childNodeName) {
 			return true
 		}
 	}

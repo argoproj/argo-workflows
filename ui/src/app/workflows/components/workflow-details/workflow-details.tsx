@@ -197,7 +197,8 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
             'workflows.argoproj.io/workflow-event-binding',
             'workflows.argoproj.io/resubmitted-from-workflow'
         ]) {
-            const v = workflow?.metadata.labels[k];
+            const labels = workflow?.metadata?.labels || {};
+            const v = labels[k];
             if (v) {
                 items.push({
                     title: 'Previous Runs',
