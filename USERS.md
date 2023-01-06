@@ -186,6 +186,7 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [Xueqiu](https://www.xueqiu.com/)
 1. [Yubo](https://www.yubo.live/)
 1. [Zhihu](https://www.zhihu.com/)
+1. [Tessell](https://www.tessell.com/)
 
 ### Projects Using Argo
 
