@@ -4,7 +4,7 @@
 
 The following diagram shows the components of the Argo Workflows architecture. There are two Deployments: Workflow Controller and Argo Server. The former does all of the reconciling, and the latter serves the API. Note that the Controller can be used stand alone.
 
-The reconciliation code for the WorkflowController can be found in [workflow/controller/controller.go](workflow/controller/controller.go). The Argo Server opens up an HTTP(S) listener at [server/apiserver/argoserver.go](server/apiserver/argoserver.go).
+The reconciliation code for the WorkflowController can be found in [workflow/controller/controller.go](../workflow/controller/controller.go). The Argo Server opens up an HTTP(S) listener at [server/apiserver/argoserver.go](../server/apiserver/argoserver.go).
 
 ![diagram](assets/diagram.png)
 
@@ -23,7 +23,7 @@ The internals of a Pod are also shown. Each Step and each DAG Task cause a Pod t
 ---
 ## Workflow controller architecture
 
-The following diagram shows the process for reconciliation, whereby a set of worker goroutines process the Workflows which have been added to a Workflow queue based on adds and updates to Workflows and Workflow Pods. Note that in addition to the Informers shown, there are Informers for the other CRDs that Argo Workflows uses as well. You can find this code in [workflow/controller/controller.go](workflow/controller/controller.go). Note that the controller only ever processes a single Workflow at a time.
+The following diagram shows the process for reconciliation, whereby a set of worker goroutines process the Workflows which have been added to a Workflow queue based on adds and updates to Workflows and Workflow Pods. Note that in addition to the Informers shown, there are Informers for the other CRDs that Argo Workflows uses as well. You can find this code in [workflow/controller/controller.go](../workflow/controller/controller.go). Note that the controller only ever processes a single Workflow at a time.
 
 ![diagram](assets/workflow-controller-queue.png)
 
