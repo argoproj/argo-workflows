@@ -381,7 +381,7 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 					Message:      node.Message,
 					TemplateName: node.TemplateName,
 					Phase:        string(node.Phase),
-					PodName:      node.ID,
+					PodName:      wfutil.GeneratePodName(woc.wf.Name, node.Name, node.TemplateName, node.ID, wfutil.GetPodNameVersion()),
 					FinishedAt:   node.FinishedAt,
 				})
 		}
@@ -1230,6 +1230,8 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, old *wfv1.NodeStatus
 			new.Phase = wfv1.NodeSucceeded
 		} else {
 			new.Phase, new.Message = woc.inferFailedReason(pod, tmpl)
+			woc.log.WithField("displayName", old.DisplayName).WithField("templateName", old.TemplateName).
+				WithField("pod", pod.Name).Infof("Pod failed: %s", new.Message)
 		}
 		new.Daemoned = nil
 	case apiv1.PodRunning:

@@ -154,7 +154,7 @@ jobs:
         name: Wait for controller to be up
       - name: Run tests ${{matrix.test}}
         # https://github.com/marketplace/actions/retry-step
-        uses: nick-fields/retry@v2.8.2
+        uses: nick-fields/retry@v2.8.3
         with:
           timeout_minutes: 20
           max_attempts: 2
