@@ -10,7 +10,7 @@
 
 ## Workflow controller architecture
 
-![diagram](assets/architecture.jpeg)
+![diagram](assets/workflow-controller-queue.png)
 
 ## Various configurations for Argo UI and Argo Server
 
