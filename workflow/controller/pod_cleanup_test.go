@@ -5,9 +5,11 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	apiv1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
 
 func Test_determinePodCleanupAction(t *testing.T) {
@@ -69,4 +71,13 @@ func Test_determinePodCleanupAction(t *testing.T) {
 			assert.Equal(t, tt.Want, action)
 		})
 	}
+}
+
+func TestLabelSelectorStringification(t *testing.T) {
+	assert := assert.New(t)
+	lselector := metav1.LabelSelector{MatchLabels: map[string]string{common.LabelKeyWorkflow: "WORKFLOWNAME"}}
+	selector, err := metav1.LabelSelectorAsSelector(&lselector)
+	assert.NoError(err)
+	selectorString := selector.String()
+	assert.Equal(common.LabelKeyWorkflow+"="+"WORKFLOWNAME", selectorString)
 }
