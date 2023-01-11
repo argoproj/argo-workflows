@@ -37,6 +37,8 @@ BlackRock
 Breitgand
 Couler
 ClusterRoleBinding
+CRD
+CRDs
 DataDog
 Dataflow
 DeleteObject
@@ -49,11 +51,14 @@ GSoC
 GitOps
 Github
 Golang
+goroutine
+goroutines
 Grafana
 Grammarly
 Hadoop
 Heptio
 Homebrew
+InitContainer
 InsideBoard
 Invocators
 Istio
