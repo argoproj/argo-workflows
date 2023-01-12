@@ -8,8 +8,9 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
 
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"github.com/sirupsen/logrus"
+
+	"github.com/argoproj/argo-workflows/v3/workflow/common"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/workflow/controller/indexes"
@@ -66,7 +67,7 @@ func (woc *wfOperationCtx) runImmediateCleanup(pod *apiv1.Pod, podGC *wfv1.PodGC
 
 	var lselector metav1.LabelSelector
 	if woc.wf.Status.Fulfilled() {
-		log.Info("workflow is fullfilled, deleting everything which may be deleted as per PodGC.Strategy.LabelSelector")
+		log.Info("workflow is fulfilled, deleting everything which may be deleted as per PodGC.Strategy.LabelSelector")
 		lselector = getLabelSelector(wfName, podGC, false)
 	} else {
 		log.Info("deleting existing pods marked as completed")
@@ -112,7 +113,7 @@ func (woc *wfOperationCtx) cleanupPods() {
 		log := log.WithField("podName", pod.Name)
 
 		// specific handling for OnWorkflowCompletion
-		// we will be creating unecessary DeleteCollection requests after the first one
+		// we will be creating unnecessary DeleteCollection requests after the first one
 		// to fix this, we would need a variable in wfOperationCtx. I think it is possibly okay to avoid this optimisation for now.
 		if woc.isImmediateDeletionStrategy() {
 			err := woc.runImmediateCleanup(pod, podGC, workflowPhase)
