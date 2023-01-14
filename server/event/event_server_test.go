@@ -1,11 +1,11 @@
 package event
 
 import (
+	"context"
 	"encoding/json"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"golang.org/x/net/context"
 	fakekube "k8s.io/client-go/kubernetes/fake"
 
 	eventpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/event"
