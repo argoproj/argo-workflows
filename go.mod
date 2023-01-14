@@ -226,4 +226,4 @@ require (
 	sigs.k8s.io/structured-merge-diff/v4 v4.2.1 // indirect
 )
 
-replace github.com/go-git/go-git/v5 => github.com/argoproj-labs/go-git/v5 v5.4.5
+replace github.com/go-git/go-git/v5 => github.com/argoproj-labs/go-git/v5 v5.4.6
