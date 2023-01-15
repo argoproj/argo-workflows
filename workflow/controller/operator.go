@@ -109,7 +109,11 @@ type wfOperationCtx struct {
 	// 'execWf.Spec' should usually be used instead `wf.Spec`
 	execWf *wfv1.Workflow
 
+	finishedOnWorkflowCompleteCleanup bool
+
 	taskSet map[string]wfv1.Template
+
+	rateLimiter waitutil.RateLimiter
 }
 
 var (
@@ -154,13 +158,15 @@ func newWorkflowOperationCtx(wf *wfv1.Workflow, wfc *WorkflowController) *wfOper
 			"workflow":  wf.ObjectMeta.Name,
 			"namespace": wf.ObjectMeta.Namespace,
 		}),
-		controller:             wfc,
-		globalParams:           make(map[string]string),
-		volumes:                wf.Spec.DeepCopy().Volumes,
-		deadline:               time.Now().UTC().Add(maxOperationTime),
-		eventRecorder:          wfc.eventRecorderManager.Get(wf.Namespace),
-		preExecutionNodePhases: make(map[string]wfv1.NodePhase),
-		taskSet:                make(map[string]wfv1.Template),
+		controller:                        wfc,
+		globalParams:                      make(map[string]string),
+		volumes:                           wf.Spec.DeepCopy().Volumes,
+		deadline:                          time.Now().UTC().Add(maxOperationTime),
+		eventRecorder:                     wfc.eventRecorderManager.Get(wf.Namespace),
+		preExecutionNodePhases:            make(map[string]wfv1.NodePhase),
+		taskSet:                           make(map[string]wfv1.Template),
+		rateLimiter:                       waitutil.NewRateLimiter(time.Second / 30),
+		finishedOnWorkflowCompleteCleanup: false,
 	}
 
 	if woc.wf.Status.Nodes == nil {
@@ -746,7 +752,7 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 	// It is important that we *never* label pods as completed until we successfully updated the workflow
 	// Failing to do so means we can have inconsistent state.
 	// Pods may be be labeled multiple times.
-	woc.queuePodsForCleanup()
+	woc.cleanupPods()
 }
 
 func (woc *wfOperationCtx) deleteTaskResults(ctx context.Context) error {
