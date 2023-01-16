@@ -27,6 +27,7 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [Argonaut](https://www.argonaut.dev/)
 1. [ArthurAI](https://arthur.ai/) 
 1. [Astraea](https://astraea.earth/)
+1. [Atlan](https://atlan.com/)
 1. [BasisAI](https://basis-ai.com/)
 1. [BEI.RE](https://www.bei.re/)
 1. [bimspot](https://bimspot.io)
