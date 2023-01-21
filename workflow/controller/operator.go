@@ -110,6 +110,9 @@ type wfOperationCtx struct {
 	execWf *wfv1.Workflow
 
 	taskSet map[string]wfv1.Template
+
+	rateLimiter     *waitutil.RateLimiter
+	finishedCleanup bool
 }
 
 var (
@@ -140,6 +143,20 @@ type failedNodeStatus struct {
 
 // newWorkflowOperationCtx creates and initializes a new wfOperationCtx object.
 func newWorkflowOperationCtx(wf *wfv1.Workflow, wfc *WorkflowController) *wfOperationCtx {
+	var rateLimiter *waitutil.RateLimiter
+	rateLimiter = nil
+
+	intervalMsStr, present := os.LookupEnv(common.EnvCleanupRateLimitIntervalMilliSeconds)
+	if present {
+		intervalMs, err := strconv.Atoi(intervalMsStr)
+		if err != nil {
+			log.Errorf("was not able to convert %s to int, defaulting to queue based cleanup, err: %s", intervalMsStr, err)
+		} else {
+			rl := waitutil.NewRateLimiter(time.Duration(intervalMs) * time.Millisecond)
+			rateLimiter = &rl
+		}
+	}
+
 	// NEVER modify objects from the store. It's a read-only, local cache.
 	// You can use DeepCopy() to make a deep copy of original object and modify this copy
 	// Or create a copy manually for better performance
@@ -161,6 +178,8 @@ func newWorkflowOperationCtx(wf *wfv1.Workflow, wfc *WorkflowController) *wfOper
 		eventRecorder:          wfc.eventRecorderManager.Get(wf.Namespace),
 		preExecutionNodePhases: make(map[string]wfv1.NodePhase),
 		taskSet:                make(map[string]wfv1.Template),
+		rateLimiter:            rateLimiter,
+		finishedCleanup:        false,
 	}
 
 	if woc.wf.Status.Nodes == nil {
@@ -752,7 +771,7 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 	// It is important that we *never* label pods as completed until we successfully updated the workflow
 	// Failing to do so means we can have inconsistent state.
 	// Pods may be be labeled multiple times.
-	woc.queuePodsForCleanup()
+	woc.cleanupPods()
 }
 
 func (woc *wfOperationCtx) deleteTaskResults(ctx context.Context) error {
