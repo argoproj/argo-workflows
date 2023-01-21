@@ -4,11 +4,12 @@
 package e2e
 
 import (
+	"os"
 	"testing"
 
-	"github.com/stretchr/testify/suite"
-
 	"github.com/argoproj/argo-workflows/v3/test/e2e/fixtures"
+	"github.com/argoproj/argo-workflows/v3/workflow/common"
+	"github.com/stretchr/testify/suite"
 )
 
 type PodCleanupSuite struct {
@@ -388,5 +389,7 @@ spec:
 }
 
 func TestPodCleanupSuite(t *testing.T) {
+	suite.Run(t, new(PodCleanupSuite))
+	os.Setenv(common.EnvCleanupRateLimitIntervalMilliSeconds, "33")
 	suite.Run(t, new(PodCleanupSuite))
 }
