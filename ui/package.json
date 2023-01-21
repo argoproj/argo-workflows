@@ -64,7 +64,7 @@
         "copy-webpack-plugin": "^5.1.2",
         "copyfiles": "^2.4.1",
         "file-loader": "^6.2.0",
-        "glob": "^8.0.3",
+        "glob": "^8.1.0",
         "html-webpack-plugin": "^4.5.2",
         "jest": "^26.6.3",
         "monaco-editor-webpack-plugin": "^1.9.1",
