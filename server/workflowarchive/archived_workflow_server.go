@@ -56,7 +56,7 @@ func (w *archivedWorkflowServer) ListArchivedWorkflows(ctx context.Context, req 
 		return nil, status.Error(codes.InvalidArgument, "listOptions.continue must >= 0")
 	}
 
-	namespace := ""
+	namespace := req.Namespace // optional
 	name := ""
 	minStartedAt := time.Time{}
 	maxStartedAt := time.Time{}
@@ -65,9 +65,7 @@ func (w *archivedWorkflowServer) ListArchivedWorkflows(ctx context.Context, req 
 		if len(selector) == 0 {
 			continue
 		}
-		if strings.HasPrefix(selector, "metadata.namespace=") {
-			namespace = strings.TrimPrefix(selector, "metadata.namespace=")
-		} else if strings.HasPrefix(selector, "metadata.name=") {
+		if strings.HasPrefix(selector, "metadata.name=") {
 			name = strings.TrimPrefix(selector, "metadata.name=")
 		} else if strings.HasPrefix(selector, "spec.startedAt>") {
 			minStartedAt, err = time.Parse(time.RFC3339, strings.TrimPrefix(selector, "spec.startedAt>"))
@@ -93,7 +91,7 @@ func (w *archivedWorkflowServer) ListArchivedWorkflows(ctx context.Context, req 
 		return nil, err
 	}
 
-	allowed, err := auth.CanI(ctx, "list", workflow.WorkflowPlural, namespace, "")
+	allowed, err := auth.CanI(ctx, "list", workflow.WorkflowPlural, namespace, "") // todo: do we really still need this?
 	if err != nil {
 		return nil, err
 	}

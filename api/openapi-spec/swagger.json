@@ -84,6 +84,11 @@
             "type": "string",
             "name": "namePrefix",
             "in": "query"
+          },
+          {
+            "type": "string",
+            "name": "namespace",
+            "in": "query"
           }
         ],
         "responses": {

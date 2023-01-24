@@ -10,6 +10,7 @@ package workflowarchive;
 message ListArchivedWorkflowsRequest {
   k8s.io.apimachinery.pkg.apis.meta.v1.ListOptions listOptions = 1;
   string namePrefix = 2;
+  string namespace = 3;
 }
 message GetArchivedWorkflowRequest {
   string uid = 1;
