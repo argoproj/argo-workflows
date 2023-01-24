@@ -91,7 +91,7 @@ func (w *archivedWorkflowServer) ListArchivedWorkflows(ctx context.Context, req 
 		return nil, err
 	}
 
-	allowed, err := auth.CanI(ctx, "list", workflow.WorkflowPlural, namespace, "") // todo: do we really still need this?
+	allowed, err := auth.CanI(ctx, "list", workflow.WorkflowPlural, namespace, "") // todo: why did we ever need this?
 	if err != nil {
 		return nil, err
 	}
