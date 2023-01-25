@@ -13,20 +13,36 @@ export class ArchivedWorkflowsService {
         }
     }
 
-    public get(uid: string) {
-        return requests.get(`api/v1/archived-workflows/${uid}`).then(res => res.body as models.Workflow);
+    public get(uid: string, namespace: string) {
+        if (namespace == "") {
+            return requests.get(`api/v1/archived-workflows/${uid}`).then(res => res.body as models.Workflow);
+        } else {
+            return requests.get(`api/v1/archived-workflows/${uid}?namespace=${namespace}`).then(res => res.body as models.Workflow);
+        }
     }
 
-    public delete(uid: string) {
-        return requests.delete(`api/v1/archived-workflows/${uid}`);
+    public delete(uid: string, namespace: string) {
+        if (namespace == "") {
+            return requests.delete(`api/v1/archived-workflows/${uid}`);
+        } else {
+            return requests.delete(`api/v1/archived-workflows/${uid}?namespace=${namespace}`);
+        }
     }
 
-    public listLabelKeys() {
-        return requests.get(`api/v1/archived-workflows-label-keys`).then(res => res.body as models.Labels);
+    public listLabelKeys(namespace: string) {
+        if (namespace == "") {
+            return requests.get(`api/v1/archived-workflows-label-keys`).then(res => res.body as models.Labels);
+        } else {
+            return requests.get(`api/v1/archived-workflows-label-keys?namespace=${namespace}`).then(res => res.body as models.Labels);
+        }
     }
 
-    public listLabelValues(key: string) {
-        return requests.get(`api/v1/archived-workflows-label-values?listOptions.labelSelector=${key}`).then(res => res.body as models.Labels);
+    public listLabelValues(key: string, namespace: string) {
+        if (namespace == "") {
+            return requests.get(`api/v1/archived-workflows-label-values?listOptions.labelSelector=${key}`).then(res => res.body as models.Labels);
+        } else {
+            return requests.get(`api/v1/archived-workflows-label-values?namespace=${namespace}&listOptions.labelSelector=${key}`).then(res => res.body as models.Labels);
+        }
     }
 
     public resubmit(uid: string, namespace: string) {

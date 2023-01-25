@@ -14,16 +14,20 @@ message ListArchivedWorkflowsRequest {
 }
 message GetArchivedWorkflowRequest {
   string uid = 1;
+  string namespace = 2;
 }
 message DeleteArchivedWorkflowRequest {
   string uid = 1;
+  string namespace = 2;
 }
 message ArchivedWorkflowDeletedResponse {
 }
 message ListArchivedWorkflowLabelKeysRequest {
+  string namespace = 1;
 }
 message ListArchivedWorkflowLabelValuesRequest {
   k8s.io.apimachinery.pkg.apis.meta.v1.ListOptions listOptions = 1;
+  string namespace = 2;
 }
 message RetryArchivedWorkflowRequest {
   string uid = 1;
