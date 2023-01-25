@@ -97,6 +97,8 @@ export const WorkflowLogsViewer = ({workflow, nodeId, initialPodName, container,
         )
     ];
 
+    const [candidateContainer, setCandidateContainer] = useState(container);
+
     return (
         <div className='workflow-logs-viewer'>
             <h3>Logs</h3>
@@ -114,7 +116,27 @@ export const WorkflowLogsViewer = ({workflow, nodeId, initialPodName, container,
                         setPodName(item.value);
                     }}
                 />{' '}
-                / <Autocomplete items={containers} value={selectedContainer} onSelect={setContainer} />
+                /{' '}
+                <Autocomplete
+                    items={containers}
+                    value={candidateContainer}
+                    onSelect={v => {
+                        setCandidateContainer(v);
+                        setContainer(v);
+                    }}
+                    onChange={v => setCandidateContainer(v.target.value)}
+                    renderInput={props => (
+                        <input
+                            {...props}
+                            onKeyUp={event => {
+                                if (event.keyCode === 13) {
+                                    // ENTER, to confirm custom container name input
+                                    setContainer(candidateContainer);
+                                }
+                            }}
+                        />
+                    )}
+                />
                 <span className='fa-pull-right'>
                     <i className='fa fa-filter' /> <input type='search' defaultValue={logFilter} onChange={v => setLogFilter(v.target.value)} placeholder='Filter (regexp)...' />
                 </span>
