@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/antonmedv/expr"
 	log "github.com/sirupsen/logrus"
@@ -107,7 +108,12 @@ func (o *Operation) dispatch(ctx context.Context, wfeb wfv1.WorkflowEventBinding
 		}
 
 		if wf.Name == "" {
-			wf.SetName(wf.GetGenerateName() + util.RandSuffix())
+			newWFName := wf.GetGenerateName() + fmt.Sprintf("%v", time.Now().Unix()) + util.RandSuffix()
+			if len(newWFName) <= 63 {
+				wf.SetName(newWFName)
+			} else {
+				wf.SetName(wf.GetGenerateName() + util.RandSuffix())
+			}
 		}
 
 		// users will always want to know why a workflow was submitted,
