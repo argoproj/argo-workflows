@@ -77,8 +77,8 @@ func (w *archivedWorkflowServer) ListArchivedWorkflows(ctx context.Context, req 
 			case fieldSelectedNamespace:
 				break
 			default:
-				return nil, status.Error(codes.InvalidArgument,
-					"'namespace' query param (%q) and fieldselector 'metadata.namespace' (%q) are both specified and contradict each other")
+				return nil, status.Errorf(codes.InvalidArgument,
+					"'namespace' query param (%q) and fieldselector 'metadata.namespace' (%q) are both specified and contradict each other", namespace, fieldSelectedNamespace)
 			}
 		} else if strings.HasPrefix(selector, "metadata.name=") {
 			name = strings.TrimPrefix(selector, "metadata.name=")
