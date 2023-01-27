@@ -382,6 +382,8 @@ func (woc *wfOperationCtx) executeDAGTask(ctx context.Context, dagCtx *dagContex
 		scope, err := woc.buildLocalScopeFromTask(dagCtx, task)
 		if err != nil {
 			woc.markNodeError(node.Name, err)
+			woc.log.Errorf("Got a nil pointer for scope due to error %s", err)
+			return
 		}
 		scope.addParamToScope(fmt.Sprintf("tasks.%s.status", task.Name), string(node.Phase))
 		hookCompleted, err := woc.executeTmplLifeCycleHook(ctx, scope, dagCtx.GetTask(taskName).Hooks, node, dagCtx.boundaryID, dagCtx.tmplCtx, "tasks."+taskName)
