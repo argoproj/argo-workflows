@@ -6,12 +6,12 @@ export class ArchivedWorkflowsService {
     public list(namespace: string, name: string, namePrefix: string, phases: string[], labels: string[], minStartedAt: Date, maxStartedAt: Date, pagination: Pagination) {
         if (namespace === '') {
             return requests
-            .get(`api/v1/archived-workflows?${Utils.queryParams({name, namePrefix, phases, labels, minStartedAt, maxStartedAt, pagination}).join('&')}`)
-            .then(res => res.body as models.WorkflowList);
+                .get(`api/v1/archived-workflows?${Utils.queryParams({name, namePrefix, phases, labels, minStartedAt, maxStartedAt, pagination}).join('&')}`)
+                .then(res => res.body as models.WorkflowList);
         } else {
             return requests
-            .get(`api/v1/archived-workflows?namespace=${namespace}&${Utils.queryParams({name, namePrefix, phases, labels, minStartedAt, maxStartedAt, pagination}).join('&')}`)
-            .then(res => res.body as models.WorkflowList);
+                .get(`api/v1/archived-workflows?namespace=${namespace}&${Utils.queryParams({name, namePrefix, phases, labels, minStartedAt, maxStartedAt, pagination}).join('&')}`)
+                .then(res => res.body as models.WorkflowList);
         }
     }
 
