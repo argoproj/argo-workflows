@@ -626,7 +626,12 @@ func FormulateResubmitWorkflow(wf *wfv1.Workflow, memoized bool, parameters []st
 		default:
 			return nil, errors.Errorf(errors.CodeBadRequest, "workflow must be Failed/Error to resubmit in memoized mode")
 		}
-		newWF.ObjectMeta.Name = newWF.ObjectMeta.GenerateName + RandSuffix()
+		newWFName := newWF.ObjectMeta.GenerateName + fmt.Sprintf("%v", time.Now().Unix()) + RandSuffix()
+		if len(newWFName) <= 63 {
+			newWF.ObjectMeta.Name = newWFName
+		} else {
+			newWF.ObjectMeta.Name = newWF.ObjectMeta.GenerateName + RandSuffix()
+		}
 	}
 
 	// carry over the unmodified spec
