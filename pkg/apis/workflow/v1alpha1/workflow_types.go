@@ -205,7 +205,13 @@ func (w *Workflow) GetExecSpec() *WorkflowSpec {
 func (w *Workflow) HasArtifactGC() bool {
 
 	if w.Spec.ArtifactGC != nil && w.Spec.ArtifactGC.Strategy != ArtifactGCNever && w.Spec.ArtifactGC.Strategy != ArtifactGCStrategyUndefined {
-		return true
+		// defined on the Workflow level but first just make sure there's at least one Artifact actually defined
+		for _, template := range w.GetTemplates() {
+			if len(template.Outputs.Artifacts) > 0 {
+				return true
+			}
+		}
+		return false
 	}
 
 	// either it's defined by an Output Artifact or by the WorkflowSpec itself, or both
