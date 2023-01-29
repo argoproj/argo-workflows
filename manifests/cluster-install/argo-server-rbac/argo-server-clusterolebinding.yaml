@@ -2,12 +2,10 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   name: argo-server-binding
-  namespace: argo
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
   name: argo-server-cluster-role
 subjects:
   - kind: ServiceAccount
-    namespace: argo
     name: argo-server
