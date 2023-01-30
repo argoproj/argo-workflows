@@ -56,6 +56,9 @@ type dagContext struct {
 	// Because this resolved "depends" is computed using regex and regex is expensive, we cache the results so that they
 	// are only computed once per operation
 	dependsLogic map[string]string
+
+	// failFast
+	failFast bool
 }
 
 func (d *dagContext) GetTaskDependencies(taskName string) []string {
@@ -228,6 +231,10 @@ func (woc *wfOperationCtx) executeDAG(ctx context.Context, nodeName string, tmpl
 		onExitTemplate: opts.onExitTemplate,
 		dependencies:   make(map[string][]string),
 		dependsLogic:   make(map[string]string),
+	}
+
+	if (tmpl.FailFast != nil && *tmpl.FailFast) || (tmpl.DAG != nil && tmpl.DAG.FailFast != nil && *tmpl.DAG.FailFast) {
+		dagCtx.failFast = true
 	}
 
 	// Identify our target tasks. If user did not specify any, then we choose all tasks which have
@@ -513,14 +520,13 @@ func (woc *wfOperationCtx) executeDAGTask(ctx context.Context, dagCtx *dagContex
 				continue
 			}
 		}
-
 		// Finally execute the template
-		node, err = woc.executeTemplate(ctx, taskNodeName, &t, dagCtx.tmplCtx, t.Arguments, &executeTemplateOpts{boundaryID: dagCtx.boundaryID, onExitTemplate: dagCtx.onExitTemplate})
+		node, err = woc.executeTemplate(ctx, taskNodeName, &t, dagCtx.tmplCtx, t.Arguments, &executeTemplateOpts{boundaryID: dagCtx.boundaryID, onExitTemplate: dagCtx.onExitTemplate, failFast: dagCtx.failFast})
 		if err != nil {
 			switch err {
 			case ErrDeadlineExceeded:
 				return
-			case ErrParallelismReached:
+			case ErrParallelismReached, ErrFailFast:
 			case ErrTimeout:
 				_ = woc.markNodePhase(taskNodeName, wfv1.NodeFailed, err.Error())
 				return

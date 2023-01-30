@@ -23,9 +23,11 @@ func (woc *wfOperationCtx) queuePodsForCleanup() {
 			continue
 		}
 		nodeID := woc.nodeID(pod)
-		if !woc.wf.Status.Nodes[nodeID].Phase.Fulfilled() {
+		tmpl := woc.wf.GetTemplateByName(woc.execWf.Status.Nodes[nodeID].TemplateName)
+		if !woc.wf.Status.Nodes[nodeID].Phase.Fulfilled() && !failFastDelete(tmpl.FailFast, woc.wf.Status.Phase.Completed()) {
 			continue
 		}
+
 		switch determinePodCleanupAction(selector, pod.Labels, strategy, workflowPhase, pod.Status.Phase) {
 		case deletePod:
 			woc.controller.queuePodForCleanupAfter(pod.Namespace, pod.Name, deletePod, delay)
@@ -35,6 +37,12 @@ func (woc *wfOperationCtx) queuePodsForCleanup() {
 	}
 }
 
+func failFastDelete(failFast *bool, complete bool) bool {
+	if failFast == nil {
+		return false
+	}
+	return (*failFast && complete)
+}
 func determinePodCleanupAction(
 	selector labels.Selector,
 	podLabels map[string]string,
