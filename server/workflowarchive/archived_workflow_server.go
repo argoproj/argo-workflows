@@ -56,7 +56,9 @@ func (w *archivedWorkflowServer) ListArchivedWorkflows(ctx context.Context, req 
 		return nil, status.Error(codes.InvalidArgument, "listOptions.continue must >= 0")
 	}
 
-	namespace := ""
+	// namespace is now specified as its own query parameter
+	// note that for backward compatibility, the field selector 'metadata.namespace' is also supported for now
+	namespace := req.Namespace // optional
 	name := ""
 	minStartedAt := time.Time{}
 	maxStartedAt := time.Time{}
@@ -66,7 +68,18 @@ func (w *archivedWorkflowServer) ListArchivedWorkflows(ctx context.Context, req 
 			continue
 		}
 		if strings.HasPrefix(selector, "metadata.namespace=") {
-			namespace = strings.TrimPrefix(selector, "metadata.namespace=")
+			// for backward compatibility, the field selector 'metadata.namespace' is supported for now despite the addition
+			// of the new 'namespace' query parameter, which is what the UI uses
+			fieldSelectedNamespace := strings.TrimPrefix(selector, "metadata.namespace=")
+			switch namespace {
+			case "":
+				namespace = fieldSelectedNamespace
+			case fieldSelectedNamespace:
+				break
+			default:
+				return nil, status.Errorf(codes.InvalidArgument,
+					"'namespace' query param (%q) and fieldselector 'metadata.namespace' (%q) are both specified and contradict each other", namespace, fieldSelectedNamespace)
+			}
 		} else if strings.HasPrefix(selector, "metadata.name=") {
 			name = strings.TrimPrefix(selector, "metadata.name=")
 		} else if strings.HasPrefix(selector, "spec.startedAt>") {
@@ -93,12 +106,13 @@ func (w *archivedWorkflowServer) ListArchivedWorkflows(ctx context.Context, req 
 		return nil, err
 	}
 
+	// verify if we have permission to list Workflows
 	allowed, err := auth.CanI(ctx, "list", workflow.WorkflowPlural, namespace, "")
 	if err != nil {
 		return nil, err
 	}
 	if !allowed {
-		return nil, status.Error(codes.PermissionDenied, fmt.Sprintf("Permission denied, you are not allowed to list workflows in namespace \"%s\". Maybe you want to specify a namespace with `listOptions.fieldSelector=metadata.namespace=your-ns`?", namespace))
+		return nil, status.Error(codes.PermissionDenied, fmt.Sprintf("Permission denied, you are not allowed to list workflows in namespace \"%s\". Maybe you want to specify a namespace with query parameter `.namespace=%s`?", namespace, namespace))
 	}
 
 	// When the zero value is passed, we should treat this as returning all results
