@@ -77,6 +77,28 @@ func (s *WorkflowTemplateSuite) TestSubmitWorkflowTemplateWorkflowMetadataSubsti
 		})
 }
 
+func (s *WorkflowTemplateSuite) TestWorkflowTemplateInvalidOnExit() {
+	s.Given().
+		WorkflowTemplate("@testdata/workflow-template-invalid-onexit.yaml").
+		Workflow(`
+metadata:
+  generateName: workflow-template-invalid-onexit-
+spec:
+  workflowTemplateRef:
+    name: workflow-template-invalid-onexit
+`).
+		When().
+		CreateWorkflowTemplates().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeFailed).
+		Then().
+		ExpectWorkflow(func(t *testing.T, metadata *v1.ObjectMeta, status *v1alpha1.WorkflowStatus) {
+			assert.Equal(t, status.Phase, v1alpha1.WorkflowFailed)
+			assert.Contains(t, status.Message, "invalid spec")
+		}).
+		ExpectPVCDeleted()
+}
+
 func TestWorkflowTemplateSuite(t *testing.T) {
 	suite.Run(t, new(WorkflowTemplateSuite))
 }
