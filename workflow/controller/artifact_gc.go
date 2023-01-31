@@ -72,7 +72,11 @@ func (woc *wfOperationCtx) garbageCollectArtifacts(ctx context.Context) error {
 }
 
 func (woc *wfOperationCtx) HasArtifactGC() bool {
+	// ArtifactGC can be defined on the Workflow level or on the Artifact level
+	// It may be defined in the Workflow itself or in a WorkflowTemplate referenced by the Workflow
 
+	// woc.execWf.Spec.Templates includes templates described directly in the Workflow as well as templates
+	// in a WorkflowTemplate that the entire Workflow is based on
 	for _, template := range woc.execWf.Spec.Templates {
 		for _, artifact := range template.Outputs.Artifacts {
 			strategy := woc.execWf.GetArtifactGCStrategy(&artifact)
@@ -82,6 +86,7 @@ func (woc *wfOperationCtx) HasArtifactGC() bool {
 		}
 	}
 
+	// need to go to woc.wf.Status.StoredTemplates in the case of a Step referencing a WorkflowTemplate
 	for _, template := range woc.wf.Status.StoredTemplates {
 		for _, artifact := range template.Outputs.Artifacts {
 			strategy := woc.execWf.GetArtifactGCStrategy(&artifact)

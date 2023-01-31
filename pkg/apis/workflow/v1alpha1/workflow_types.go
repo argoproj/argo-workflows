@@ -3190,14 +3190,6 @@ func (wf *Workflow) GetTemplateByName(name string) *Template {
 	return nil
 }
 
-/*
-func (w *Workflow) GetTemplates() []Template { // todo: these are not mutually exclusive!!
-	return append(
-		w.GetExecSpec().Templates,
-		w.Status.GetStoredTemplates()...,
-	)
-}*/
-
 func (wf *Workflow) GetNodeByName(nodeName string) *NodeStatus {
 	nodeID := wf.NodeID(nodeName)
 	node, ok := wf.Status.Nodes[nodeID]

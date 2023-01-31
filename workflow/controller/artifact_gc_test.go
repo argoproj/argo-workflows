@@ -656,12 +656,22 @@ func TestWorkflowHasArtifactGC(t *testing.T) {
 			expectedResult:            false,
 		},
 		{
-			name: "WorkflowSpecGCNone",
+			name: "WorkflowSpecGC_None",
 			workflowArtGCStrategySpec: `
               artifactGC:
                 strategy: ""`,
 			artifactGCStrategySpec: "",
 			expectedResult:         false,
+		},
+		{
+			name: "ArtifactSpecGC_None",
+			workflowArtGCStrategySpec: `
+              artifactGC:
+                strategy: OnWorkflowDeletion`,
+			artifactGCStrategySpec: `
+                      artifactGC:
+                        strategy: Never`,
+			expectedResult: false,
 		},
 	}
 
@@ -688,8 +698,7 @@ func TestWorkflowHasArtifactGC(t *testing.T) {
                       path: /out
                       s3:
                         key: out
-                        %s
-                        `, tt.workflowArtGCStrategySpec, tt.artifactGCStrategySpec)
+                        %s`, tt.workflowArtGCStrategySpec, tt.artifactGCStrategySpec)
 
 			wf := wfv1.MustUnmarshalWorkflow(workflowSpec)
 			cancel, controller := newController(wf)

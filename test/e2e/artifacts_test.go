@@ -93,6 +93,7 @@ func (s *ArtifactsSuite) TestArtifactGC() {
 				artifactState{"second-on-completion", "my-bucket-2", true, false},
 			},
 		},
+		// entire Workflow based on a WorkflowTemplate
 		{
 			workflowFile:                 "@testdata/artifactgc/artgc-from-template.yaml",
 			hasGC:                        true,
@@ -102,6 +103,7 @@ func (s *ArtifactsSuite) TestArtifactGC() {
 				artifactState{"on-deletion", "my-bucket-2", false, true},
 			},
 		},
+		// entire Workflow based on a WorkflowTemplate
 		{
 			workflowFile:                 "@testdata/artifactgc/artgc-from-template-2.yaml",
 			hasGC:                        true,
@@ -111,6 +113,7 @@ func (s *ArtifactsSuite) TestArtifactGC() {
 				artifactState{"on-deletion", "my-bucket-2", false, true},
 			},
 		},
+		// Step in Workflow references a WorkflowTemplate's template
 		{
 			workflowFile:                 "@testdata/artifactgc/artgc-step-wf-tmpl.yaml",
 			hasGC:                        true,
@@ -120,6 +123,7 @@ func (s *ArtifactsSuite) TestArtifactGC() {
 				artifactState{"on-deletion", "my-bucket-2", false, true},
 			},
 		},
+		// Step in Workflow references a WorkflowTemplate's template
 		{
 			workflowFile:                 "@testdata/artifactgc/artgc-step-wf-tmpl-2.yaml",
 			hasGC:                        true,
@@ -129,6 +133,7 @@ func (s *ArtifactsSuite) TestArtifactGC() {
 				artifactState{"on-deletion", "my-bucket-2", false, false},
 			},
 		},
+		// entire Workflow based on a WorkflowTemplate which has a Step that references another WorkflowTemplate's template
 		{
 			workflowFile:                 "@testdata/artifactgc/artgc-from-ref-template.yaml",
 			hasGC:                        true,
@@ -138,8 +143,10 @@ func (s *ArtifactsSuite) TestArtifactGC() {
 				artifactState{"on-deletion", "my-bucket-2", false, true},
 			},
 		},
+		// Step in Workflow references a WorkflowTemplate's template
+		// Workflow defines ArtifactGC but all artifacts override with "Never" so Artifact GC should not be done
 		{
-			workflowFile:                 "@testdata/artifactgc/artgc-step-wf-tmpl-no-gc.yaml", // in this case there are no artifacts defined, but still want to make sure workflow is successfully deleted
+			workflowFile:                 "@testdata/artifactgc/artgc-step-wf-tmpl-no-gc.yaml",
 			hasGC:                        false,
 			expectedGCPodsOnWFCompletion: 0,
 			expectedArtifacts:            []artifactState{},
