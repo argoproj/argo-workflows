@@ -202,20 +202,6 @@ func (w *Workflow) GetExecSpec() *WorkflowSpec {
 	return &w.Spec
 }
 
-/*
-func (w *Workflow) HasArtifactGC() bool {
-
-	for _, template := range w.GetTemplates() {
-		for _, artifact := range template.Outputs.Artifacts {
-			strategy := w.GetArtifactGCStrategy(&artifact)
-			if strategy != ArtifactGCStrategyUndefined && strategy != ArtifactGCNever {
-				return true
-			}
-		}
-	}
-	return false
-}*/
-
 // return the ultimate ArtifactGCStrategy for the Artifact
 // (defined on the Workflow level but can be overridden on the Artifact level)
 func (w *Workflow) GetArtifactGCStrategy(a *Artifact) ArtifactGCStrategy {
