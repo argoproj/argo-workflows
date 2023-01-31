@@ -132,9 +132,9 @@ func (s *ArtifactsSuite) TestArtifactGC() {
 		{
 			workflowFile:                 "@testdata/artifactgc/artgc-from-ref-template.yaml",
 			hasGC:                        true,
-			expectedGCPodsOnWFCompletion: 0,
+			expectedGCPodsOnWFCompletion: 1,
 			expectedArtifacts: []artifactState{
-				artifactState{"on-completion", "my-bucket-2", false, true},
+				artifactState{"on-completion", "my-bucket-2", true, false},
 				artifactState{"on-deletion", "my-bucket-2", false, true},
 			},
 		},
