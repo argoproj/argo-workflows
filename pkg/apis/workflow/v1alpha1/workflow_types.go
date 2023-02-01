@@ -202,23 +202,6 @@ func (w *Workflow) GetExecSpec() *WorkflowSpec {
 	return &w.Spec
 }
 
-func (w *Workflow) HasArtifactGC() bool {
-
-	if w.Spec.ArtifactGC != nil && w.Spec.ArtifactGC.Strategy != ArtifactGCNever && w.Spec.ArtifactGC.Strategy != ArtifactGCStrategyUndefined {
-		return true
-	}
-
-	// either it's defined by an Output Artifact or by the WorkflowSpec itself, or both
-	for _, template := range w.GetTemplates() {
-		for _, artifact := range template.Outputs.Artifacts {
-			if artifact.GetArtifactGC().Strategy != ArtifactGCNever && artifact.GetArtifactGC().Strategy != ArtifactGCStrategyUndefined {
-				return true
-			}
-		}
-	}
-	return false
-}
-
 // return the ultimate ArtifactGCStrategy for the Artifact
 // (defined on the Workflow level but can be overridden on the Artifact level)
 func (w *Workflow) GetArtifactGCStrategy(a *Artifact) ArtifactGCStrategy {
@@ -3191,13 +3174,6 @@ func (wf *Workflow) GetTemplateByName(name string) *Template {
 		}
 	}
 	return nil
-}
-
-func (w *Workflow) GetTemplates() []Template {
-	return append(
-		w.GetExecSpec().Templates,
-		w.Status.GetStoredTemplates()...,
-	)
 }
 
 func (wf *Workflow) GetNodeByName(nodeName string) *NodeStatus {
