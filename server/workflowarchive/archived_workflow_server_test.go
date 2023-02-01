@@ -58,6 +58,7 @@ func Test_archivedWorkflowServer(t *testing.T) {
 	repo.On("ListWorkflows", "", "my-name", "", minStartAt, maxStartAt, labels.Requirements(nil), 2, 0).Return(wfv1.Workflows{{}}, nil)
 	repo.On("ListWorkflows", "", "", "my-", minStartAt, maxStartAt, labels.Requirements(nil), 2, 0).Return(wfv1.Workflows{{}}, nil)
 	repo.On("ListWorkflows", "", "my-name", "my-", minStartAt, maxStartAt, labels.Requirements(nil), 2, 0).Return(wfv1.Workflows{{}}, nil)
+	repo.On("ListWorkflows", "user-ns", "", "", time.Time{}, time.Time{}, labels.Requirements(nil), 2, 0).Return(wfv1.Workflows{{}, {}}, nil)
 	repo.On("CountWorkflows", "", "my-name", "my-", minStartAt, maxStartAt, labels.Requirements(nil)).Return(int64(5), nil)
 	repo.On("GetWorkflow", "").Return(nil, nil)
 	repo.On("GetWorkflow", "my-uid").Return(&wfv1.Workflow{
@@ -124,7 +125,7 @@ func Test_archivedWorkflowServer(t *testing.T) {
 	t.Run("ListArchivedWorkflows", func(t *testing.T) {
 		allowed = false
 		_, err := w.ListArchivedWorkflows(ctx, &workflowarchivepkg.ListArchivedWorkflowsRequest{ListOptions: &metav1.ListOptions{Limit: 1}})
-		assert.Equal(t, err, status.Error(codes.PermissionDenied, "Permission denied, you are not allowed to list workflows in namespace \"\". Maybe you want to specify a namespace with `listOptions.fieldSelector=metadata.namespace=your-ns`?"))
+		assert.Equal(t, err, status.Error(codes.PermissionDenied, "Permission denied, you are not allowed to list workflows in namespace \"\". Maybe you want to specify a namespace with query parameter `.namespace=`?"))
 		allowed = true
 		resp, err := w.ListArchivedWorkflows(ctx, &workflowarchivepkg.ListArchivedWorkflowsRequest{ListOptions: &metav1.ListOptions{Limit: 1}})
 		if assert.NoError(t, err) {
@@ -162,6 +163,32 @@ func Test_archivedWorkflowServer(t *testing.T) {
 			assert.Equal(t, *resp.ListMeta.RemainingItemCount, int64(4))
 			assert.Empty(t, resp.Continue)
 		}
+		/////// Currently, for the purpose of backward compatibility, namespace is supported both as its own query parameter and as part of the field selector
+		/////// need to test both
+		// pass namespace as its own query parameter
+		resp, err = w.ListArchivedWorkflows(ctx, &workflowarchivepkg.ListArchivedWorkflowsRequest{Namespace: "user-ns", ListOptions: &metav1.ListOptions{Limit: 1}})
+		if assert.NoError(t, err) {
+			assert.Len(t, resp.Items, 1)
+			assert.Equal(t, "1", resp.Continue)
+		}
+		// pass namespace as field selector and not query parameter
+		resp, err = w.ListArchivedWorkflows(ctx, &workflowarchivepkg.ListArchivedWorkflowsRequest{ListOptions: &metav1.ListOptions{Limit: 1, FieldSelector: "metadata.namespace=user-ns"}})
+		if assert.NoError(t, err) {
+			assert.Len(t, resp.Items, 1)
+			assert.Equal(t, "1", resp.Continue)
+		}
+
+		// pass namespace as field selector and query parameter both, where both match
+		resp, err = w.ListArchivedWorkflows(ctx, &workflowarchivepkg.ListArchivedWorkflowsRequest{Namespace: "user-ns", ListOptions: &metav1.ListOptions{Limit: 1, FieldSelector: "metadata.namespace=user-ns"}})
+		if assert.NoError(t, err) {
+			assert.Len(t, resp.Items, 1)
+			assert.Equal(t, "1", resp.Continue)
+		}
+
+		// pass namespace as field selector and query parameter both, where they don't match
+		_, err = w.ListArchivedWorkflows(ctx, &workflowarchivepkg.ListArchivedWorkflowsRequest{Namespace: "user-ns", ListOptions: &metav1.ListOptions{Limit: 1, FieldSelector: "metadata.namespace=other-ns"}})
+		assert.Equal(t, err, status.Error(codes.InvalidArgument, "'namespace' query param (\"user-ns\") and fieldselector 'metadata.namespace' (\"other-ns\") are both specified and contradict each other"))
+
 	})
 	t.Run("GetArchivedWorkflow", func(t *testing.T) {
 		allowed = false
