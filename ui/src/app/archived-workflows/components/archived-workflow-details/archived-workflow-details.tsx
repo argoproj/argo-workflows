@@ -73,7 +73,7 @@ export const ArchivedWorkflowDetails = ({history, location, match}: RouteCompone
             .getInfo()
             .then(info => setLinks(info.links))
             .then(() =>
-                services.archivedWorkflows.get(uid).then(retrievedWorkflow => {
+                services.archivedWorkflows.get(uid, namespace).then(retrievedWorkflow => {
                     setError(null);
                     setWorkflow(retrievedWorkflow);
                 })
@@ -180,7 +180,7 @@ export const ArchivedWorkflowDetails = ({history, location, match}: RouteCompone
             return;
         }
         services.archivedWorkflows
-            .delete(uid)
+            .delete(uid, workflow.metadata.namespace)
             .then(() => {
                 document.location.href = uiUrl('archived-workflows');
             })
