@@ -147,6 +147,13 @@ func (o *Operation) populateWorkflowMetadata(wf *wfv1.Workflow, metadata *metav1
 		}
 		wf.SetName(evalName)
 	}
+	if len(metadata.GenerateName) > 0 {
+		evalName, err := o.evaluateStringExpression(metadata.GenerateName, "generateName")
+		if err != nil {
+			return err
+		}
+		wf.GenerateName = evalName
+	}
 	for labelKey, labelValue := range metadata.Labels {
 		evalLabel, err := o.evaluateStringExpression(labelValue, fmt.Sprintf("label \"%s\"", labelKey))
 		if err != nil {
