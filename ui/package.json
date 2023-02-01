@@ -11,8 +11,8 @@
         "lint": "tslint --fix -p ./src/app",
         "test": "jest"
     },
-    "engines" : {
-        "node" : ">=16"
+    "engines": {
+        "node": ">=16"
     },
     "dependencies": {
         "argo-ui": "https://github.com/argoproj/argo-ui.git#v2.5.0",
@@ -20,12 +20,13 @@
         "chartjs-plugin-annotation": "^0.5.7",
         "classnames": "^2.3.2",
         "cron-parser": "^4.7.0",
-        "cronstrue": "^2.21.0",
+        "cronstrue": "^2.22.0",
         "dagre": "^0.8.5",
         "history": "^4.10.1",
         "js-yaml": "^4.1.0",
         "json-merge-patch": "^0.2.3",
         "moment": "^2.29.4",
+        "moment-timezone": "^0.5.40",
         "monaco-editor": "0.20.0",
         "prop-types": "^15.8.1",
         "react": "^16.14.0",
@@ -59,7 +60,7 @@
         "@types/react-router-dom": "^4.2.3",
         "@types/superagent": "^4.1.16",
         "@types/swagger-ui-react": "^4.11.0",
-        "babel-jest": "^29.3.1",
+        "babel-jest": "^29.4.1",
         "babel-loader": "^8.3.0",
         "copy-webpack-plugin": "^5.1.2",
         "copyfiles": "^2.4.1",
