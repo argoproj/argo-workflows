@@ -8630,7 +8630,7 @@ func TestFailSuspendedAndPendingNodesAfterDeadlineOrShutdown(t *testing.T) {
 	})
 }
 
-func TestWorkflowTemplateValidation(t *testing.T) {
+func TestWorkflowTemplateOnExitValidation(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(`
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -8642,6 +8642,29 @@ spec:
     name: workflow-template-invalid-onexit
 `)
 	wft := wfv1.MustUnmarshalWorkflowTemplate("@testdata/workflow-template-invalid-onexit.yaml")
+	cancel, controller := newController(wf, wft)
+	defer cancel()
+
+	ctx := context.Background()
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate(ctx)
+	t.Log(woc.wf)
+	assert.Equal(t, woc.wf.Status.Phase, wfv1.WorkflowFailed)
+	assert.Contains(t, woc.wf.Status.Message, "invalid spec")
+}
+
+func TestWorkflowTemplateEntryPointValidation(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: workflow-template-invalid-entrypoint-
+  namespace: argo
+spec:
+  workflowTemplateRef:
+    name: workflow-template-invalid-entrypoint
+`)
+	wft := wfv1.MustUnmarshalWorkflowTemplate("@testdata/workflow-template-invalid-entrypoint.yaml")
 	cancel, controller := newController(wf, wft)
 	defer cancel()
 

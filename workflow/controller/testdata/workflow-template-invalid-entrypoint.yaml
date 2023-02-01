@@ -1,7 +1,8 @@
 apiVersion: argoproj.io/v1alpha1
 kind: WorkflowTemplate
 metadata:
-  name: workflow-template-invalid-onexit
+  name: workflow-template-invalid-entrypoint
+  namespace: argo
 spec:
   volumeClaimTemplates:
     - metadata:
@@ -17,6 +18,8 @@ spec:
   onExit: notify
   templates:
     - name: whalesay
+      # note this is an invalid template
+    - name: notify
       container:
         image: 'argoproj/argosay:v2'
         command:
@@ -24,10 +27,3 @@ spec:
         args:
           - echo
           - 'hello world'
-    - name: notify
-      container:
-        image: 'argoproj/argosay:v2'
-        command: [sh, -c]
-        args: ["exit 0"]
-        volumeMounts:
-          - name: foo # <<< invalid since no volume `foo`

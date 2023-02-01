@@ -90,11 +90,33 @@ spec:
 		When().
 		CreateWorkflowTemplates().
 		SubmitWorkflow().
-		WaitForWorkflow(fixtures.ToBeFailed).
+		WaitForWorkflow(fixtures.ToBeErrored).
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *v1.ObjectMeta, status *v1alpha1.WorkflowStatus) {
-			assert.Equal(t, status.Phase, v1alpha1.WorkflowFailed)
-			assert.Contains(t, status.Message, "invalid spec")
+			assert.Equal(t, status.Phase, v1alpha1.WorkflowError)
+			assert.Contains(t, status.Message, "error in exit template execution")
+		}).
+		ExpectPVCDeleted()
+}
+
+func (s *WorkflowTemplateSuite) TestWorkflowTemplateInvalidEntryPoint() {
+	s.Given().
+		WorkflowTemplate("@testdata/workflow-template-invalid-entrypoint.yaml").
+		Workflow(`
+metadata:
+  generateName: workflow-template-invalid-entrypoint-
+spec:
+  workflowTemplateRef:
+    name: workflow-template-invalid-entrypoint
+`).
+		When().
+		CreateWorkflowTemplates().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeErrored).
+		Then().
+		ExpectWorkflow(func(t *testing.T, metadata *v1.ObjectMeta, status *v1alpha1.WorkflowStatus) {
+			assert.Equal(t, status.Phase, v1alpha1.WorkflowError)
+			assert.Contains(t, status.Message, "error in entry template execution")
 		}).
 		ExpectPVCDeleted()
 }

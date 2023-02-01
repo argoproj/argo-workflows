@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: WorkflowTemplate
 metadata:
-  name: workflow-template-invalid-onexit
+  name: workflow-template-invalid-entrypoint
 spec:
   volumeClaimTemplates:
     - metadata:
@@ -24,10 +24,10 @@ spec:
         args:
           - echo
           - 'hello world'
+        volumeMounts:
+          - name: foo # <<< invalid since no volume `foo`
     - name: notify
       container:
         image: 'argoproj/argosay:v2'
         command: [sh, -c]
         args: ["exit 0"]
-        volumeMounts:
-          - name: foo # <<< invalid since no volume `foo`
