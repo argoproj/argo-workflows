@@ -11,21 +11,24 @@
         "lint": "tslint --fix -p ./src/app",
         "test": "jest"
     },
-    "engines" : {
-        "node" : ">=16"
+    "engines": {
+        "node": ">=16"
     },
     "dependencies": {
         "argo-ui": "https://github.com/argoproj/argo-ui.git#v2.5.0",
         "chart.js": "^2.9.4",
         "chartjs-plugin-annotation": "^0.5.7",
         "classnames": "^2.3.2",
+
         "cron-parser": "^4.7.1",
-        "cronstrue": "^2.21.0",
+        "cronstrue": "^2.22.0",
+
         "dagre": "^0.8.5",
         "history": "^4.10.1",
         "js-yaml": "^4.1.0",
         "json-merge-patch": "^0.2.3",
         "moment": "^2.29.4",
+        "moment-timezone": "^0.5.40",
         "monaco-editor": "0.20.0",
         "prop-types": "^15.8.1",
         "react": "^16.14.0",
