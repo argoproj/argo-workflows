@@ -84,6 +84,11 @@
             "type": "string",
             "name": "namePrefix",
             "in": "query"
+          },
+          {
+            "type": "string",
+            "name": "namespace",
+            "in": "query"
           }
         ],
         "responses": {
@@ -108,6 +113,13 @@
           "ArchivedWorkflowService"
         ],
         "operationId": "ArchivedWorkflowService_ListArchivedWorkflowLabelKeys",
+        "parameters": [
+          {
+            "type": "string",
+            "name": "namespace",
+            "in": "query"
+          }
+        ],
         "responses": {
           "200": {
             "description": "A successful response.",
@@ -186,6 +198,11 @@
             "description": "The continue option should be set when retrieving more results from the server. Since this value is\nserver defined, clients may only use the continue value from a previous query result with identical\nquery parameters (except for the value of continue) and the server may reject a continue value it\ndoes not recognize. If the specified continue value is no longer valid whether due to expiration\n(generally five to fifteen minutes) or a configuration change on the server, the server will\nrespond with a 410 ResourceExpired error together with a continue token. If the client needs a\nconsistent list, it must restart their list without the continue field. Otherwise, the client may\nsend another list request with the token received with the 410 error, the server will respond with\na list starting from the next key, but from the latest snapshot, which is inconsistent from the\nprevious list results - objects that are created, modified, or deleted after the first list request\nwill be included in the response, as long as their keys are after the \"next key\".\n\nThis field is not supported when watch is true. Clients may start a watch from the last\nresourceVersion value returned by the server and not miss any modifications.",
             "name": "listOptions.continue",
             "in": "query"
+          },
+          {
+            "type": "string",
+            "name": "namespace",
+            "in": "query"
           }
         ],
         "responses": {
@@ -216,6 +233,11 @@
             "name": "uid",
             "in": "path",
             "required": true
+          },
+          {
+            "type": "string",
+            "name": "namespace",
+            "in": "query"
           }
         ],
         "responses": {
@@ -244,6 +266,11 @@
             "name": "uid",
             "in": "path",
             "required": true
+          },
+          {
+            "type": "string",
+            "name": "namespace",
+            "in": "query"
           }
         ],
         "responses": {
