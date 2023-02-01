@@ -3069,6 +3069,26 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#kubernetes-compatibility-matrix" class="md-nav__link">
+    Kubernetes Compatibility Matrix
+  </a>
+  
+    <nav class="md-nav" aria-label="Kubernetes Compatibility Matrix">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#notes-on-compatibility" class="md-nav__link">
+    Notes on Compatibility
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -3850,6 +3870,26 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#kubernetes-compatibility-matrix" class="md-nav__link">
+    Kubernetes Compatibility Matrix
+  </a>
+  
+    <nav class="md-nav" aria-label="Kubernetes Compatibility Matrix">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#notes-on-compatibility" class="md-nav__link">
+    Notes on Compatibility
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -3891,6 +3931,81 @@ for 4-6 weeks before the release becomes generally available.</p>
 <li>Patch fixes for the current stable version.</li>
 <li>The next release candidate, if we are currently in a release-cycle.</li>
 </ul>
+<h2 id="kubernetes-compatibility-matrix">Kubernetes Compatibility Matrix<a class="headerlink" href="#kubernetes-compatibility-matrix" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Argo Workflows \ Kubernetes</th>
+<th>1.17</th>
+<th>1.18</th>
+<th>1.19</th>
+<th>1.20</th>
+<th>1.21</th>
+<th>1.22</th>
+<th>1.23</th>
+<th>1.24</th>
+<th>1.25</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>3.4</strong></td>
+<td><code>x</code></td>
+<td><code>x</code></td>
+<td><code>x</code></td>
+<td><code>?</code></td>
+<td><code>✓</code></td>
+<td><code>✓</code></td>
+<td><code>✓</code></td>
+<td><code>✓</code></td>
+<td><code>?</code></td>
+</tr>
+<tr>
+<td><strong>3.3</strong></td>
+<td><code>?</code></td>
+<td><code>?</code></td>
+<td><code>?</code></td>
+<td><code>?</code></td>
+<td><code>✓</code></td>
+<td><code>✓</code></td>
+<td><code>✓</code></td>
+<td><code>?</code></td>
+<td><code>?</code></td>
+</tr>
+<tr>
+<td><strong>3.2</strong></td>
+<td><code>?</code></td>
+<td><code>?</code></td>
+<td><code>✓</code></td>
+<td><code>✓</code></td>
+<td><code>✓</code></td>
+<td><code>?</code></td>
+<td><code>?</code></td>
+<td><code>?</code></td>
+<td><code>?</code></td>
+</tr>
+<tr>
+<td><strong>3.1</strong></td>
+<td><code>✓</code></td>
+<td><code>✓</code></td>
+<td><code>✓</code></td>
+<td><code>?</code></td>
+<td><code>?</code></td>
+<td><code>?</code></td>
+<td><code>?</code></td>
+<td><code>?</code></td>
+<td><code>?</code></td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><code>✓</code> Fully supported versions.</li>
+<li><code>?</code> Due to breaking changes might not work. Also, we haven't thoroughly tested against this version.</li>
+<li><code>✕</code> Unsupported versions.</li>
+</ul>
+<h3 id="notes-on-compatibility">Notes on Compatibility<a class="headerlink" href="#notes-on-compatibility" title="Permanent link">&para;</a></h3>
+<p>Argo versions may be compatible with newer and older versions than what it is listed but only three minor versions are supported per Argo release unless otherwise noted.</p>
+<p>The main branch of <code>Argo Workflows</code> is currently tested on <code>Kubernetes</code> 1.21.</p>
 
               
 
