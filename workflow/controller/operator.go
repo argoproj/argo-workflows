@@ -357,6 +357,11 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 				woc.markWorkflowError(ctx, x)
 			}
 		}
+		// Garbage collect PVCs if Entrypoint template execution returns error
+		err = woc.deletePVCs(ctx)
+		if err != nil {
+			woc.log.WithError(err).Warn("failed to delete PVCs")
+		}
 		return
 	}
 
@@ -423,6 +428,7 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 					woc.markWorkflowError(ctx, x)
 				}
 			}
+			// Garbage collect PVCs if Onexit template execution returns error
 			err = woc.deletePVCs(ctx)
 			if err != nil {
 				woc.log.WithError(err).Warn("failed to delete PVCs")

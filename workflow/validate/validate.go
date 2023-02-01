@@ -236,20 +236,12 @@ func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 	var tmplHolder *wfv1.WorkflowStep
 	if wf.Spec.OnExit != "" {
 		if hasWorkflowTemplateRef {
-			tmplHolder = &wfv1.WorkflowStep{TemplateRef: &wfv1.TemplateRef{
-				Name:         wf.Spec.WorkflowTemplateRef.Name,
-				Template:     wf.Spec.OnExit,
-				ClusterScope: wf.Spec.WorkflowTemplateRef.ClusterScope,
-			}}
+			tmplHolder = &wfv1.WorkflowStep{TemplateRef: wf.Spec.WorkflowTemplateRef.ToTemplateRef(wf.Spec.OnExit)}
 		} else {
 			tmplHolder = &wfv1.WorkflowStep{Template: wf.Spec.OnExit}
 		}
 	} else if hasWorkflowTemplateRef && wfSpecHolder.GetWorkflowSpec().OnExit != "" {
-		tmplHolder = &wfv1.WorkflowStep{TemplateRef: &wfv1.TemplateRef{
-			Name:         wfSpecHolder.GetName(),
-			Template:     wfSpecHolder.GetWorkflowSpec().OnExit,
-			ClusterScope: wf.Spec.WorkflowTemplateRef.ClusterScope,
-		}}
+		tmplHolder = &wfv1.WorkflowStep{TemplateRef: wf.Spec.WorkflowTemplateRef.ToTemplateRef(wfSpecHolder.GetWorkflowSpec().OnExit)}
 	}
 	if tmplHolder != nil {
 		ctx.globalParams[common.GlobalVarWorkflowFailures] = placeholderGenerator.NextPlaceholder()
@@ -271,11 +263,7 @@ func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 	// If the templates are inlined in Workflow, then the inlined templates will be validated.
 	if hasWorkflowTemplateRef {
 		for _, template := range wfSpecHolder.GetWorkflowSpec().Templates {
-			_, err := ctx.validateTemplateHolder(&wfv1.WorkflowStep{TemplateRef: &wfv1.TemplateRef{
-				Name:         wfSpecHolder.GetName(),
-				Template:     template.Name,
-				ClusterScope: wf.Spec.WorkflowTemplateRef.ClusterScope,
-			}}, tmplCtx, &FakeArguments{}, opts.WorkflowTemplateValidation)
+			_, err := ctx.validateTemplateHolder(&wfv1.WorkflowStep{TemplateRef: wf.Spec.WorkflowTemplateRef.ToTemplateRef(template.Name)}, tmplCtx, &FakeArguments{}, opts.WorkflowTemplateValidation)
 			if err != nil {
 				return errors.Errorf(errors.CodeBadRequest, "templates.%s %s", template.Name, err.Error())
 			}
