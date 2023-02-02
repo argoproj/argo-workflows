@@ -31,7 +31,7 @@ Use `retryPolicy` to choose which failures to retry:
 - `OnError`: Retry steps that encounter Argo controller errors, or whose **init or wait containers** fail
 - `OnTransientError`: Retry steps that encounter errors [defined as transient](https://github.com/argoproj/argo-workflows/blob/master/util/errors/errors.go), or errors matching the `TRANSIENT_ERROR_PATTERN` [environment variable](https://argoproj.github.io/argo-workflows/environment-variables/). Available in version 3.0 and later.
 
-Using a `retryPolicy = Always` is the simplest approach to ensure your step is automatically retried for any error or failure, whether in the main, init, or wait containers. 
+Using `retryPolicy = Always` is the simplest approach to ensure your step is automatically retried for any error or failure, whether in the main, init, or wait containers. 
 
 For example:
 
