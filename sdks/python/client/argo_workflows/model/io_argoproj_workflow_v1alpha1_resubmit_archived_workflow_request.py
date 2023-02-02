@@ -24,8 +24,8 @@ from argo_workflows.model_utils import (  # noqa: F401
     file_type,
     none_type,
     validate_get_composed_info,
+    OpenApiModel
 )
-from ..model_utils import OpenApiModel
 from argo_workflows.exceptions import ApiAttributeError
 
 
@@ -84,6 +84,7 @@ class IoArgoprojWorkflowV1alpha1ResubmitArchivedWorkflowRequest(ModelNormal):
             'memoized': (bool,),  # noqa: E501
             'name': (str,),  # noqa: E501
             'namespace': (str,),  # noqa: E501
+            'parameters': ([str],),  # noqa: E501
             'uid': (str,),  # noqa: E501
         }
 
@@ -96,6 +97,7 @@ class IoArgoprojWorkflowV1alpha1ResubmitArchivedWorkflowRequest(ModelNormal):
         'memoized': 'memoized',  # noqa: E501
         'name': 'name',  # noqa: E501
         'namespace': 'namespace',  # noqa: E501
+        'parameters': 'parameters',  # noqa: E501
         'uid': 'uid',  # noqa: E501
     }
 
@@ -143,6 +145,7 @@ class IoArgoprojWorkflowV1alpha1ResubmitArchivedWorkflowRequest(ModelNormal):
             memoized (bool): [optional]  # noqa: E501
             name (str): [optional]  # noqa: E501
             namespace (str): [optional]  # noqa: E501
+            parameters ([str]): [optional]  # noqa: E501
             uid (str): [optional]  # noqa: E501
         """
 
@@ -228,6 +231,7 @@ class IoArgoprojWorkflowV1alpha1ResubmitArchivedWorkflowRequest(ModelNormal):
             memoized (bool): [optional]  # noqa: E501
             name (str): [optional]  # noqa: E501
             namespace (str): [optional]  # noqa: E501
+            parameters ([str]): [optional]  # noqa: E501
             uid (str): [optional]  # noqa: E501
         """
 

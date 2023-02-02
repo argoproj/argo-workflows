@@ -66,28 +66,41 @@ interface Props {
 }
 
 const AttributeRow = (attr: {title: string; value: any}) => (
-    <div className='row white-box__details-row' key={attr.title}>
-        <div className='columns small-4'>{attr.title}</div>
-        <div className='columns columns--narrower-height small-8' style={{overflow: 'auto hidden'}}>
-            {attr.value}
-        </div>
-    </div>
+    <React.Fragment key={attr.title}>
+        <div>{attr.title}</div>
+        <div style={{overflow: 'auto hidden'}}>{attr.value}</div>
+    </React.Fragment>
 );
 const AttributeRows = (props: {attributes: {title: string; value: any}[]}) => (
-    <div>
+    <div className='workflow-details__attribute-grid'>
         {props.attributes.map(attr => (
             <AttributeRow key={attr.title} {...attr} />
         ))}
     </div>
 );
 
+const DisplayWorkflowTime = (props: {date: Date | string | number}) => {
+    const {date} = props;
+    const getLocalDateTime = (utc: Date | string | number) => {
+        return new Date(utc.toString()).toLocaleString();
+    };
+    return (
+        <div>
+            {date === null || date === undefined ? (
+                '-'
+            ) : (
+                <span>
+                    {getLocalDateTime(date)} (<Timestamp date={date} />)
+                </span>
+            )}
+        </div>
+    );
+};
+
 const WorkflowNodeSummary = (props: Props) => {
     const {workflow, node} = props;
 
-    let annotations: {[name: string]: string} = {};
-    if (typeof workflow.metadata.annotations !== 'undefined') {
-        annotations = workflow.metadata.annotations;
-    }
+    const annotations = workflow.metadata.annotations || {};
     const version = annotations[ANNOTATION_KEY_POD_NAME_VERSION];
     const templateName = getTemplateNameFromNode(node);
 
@@ -95,6 +108,7 @@ const WorkflowNodeSummary = (props: Props) => {
 
     const attributes = [
         {title: 'NAME', value: <ClipboardText text={props.node.name} />},
+        {title: 'ID', value: <ClipboardText text={props.node.id} />},
         {title: 'TYPE', value: props.node.type},
         {
             title: 'PHASE',
@@ -108,8 +122,8 @@ const WorkflowNodeSummary = (props: Props) => {
                   }
               ]
             : []),
-        {title: 'START TIME', value: <Timestamp date={props.node.startedAt} />},
-        {title: 'END TIME', value: <Timestamp date={props.node.finishedAt} />},
+        {title: 'START TIME', value: <DisplayWorkflowTime date={props.node.startedAt} />},
+        {title: 'END TIME', value: <DisplayWorkflowTime date={props.node.finishedAt} />},
         {
             title: 'DURATION',
             value: <Ticker>{now => <DurationPanel duration={nodeDuration(props.node, now)} phase={props.node.phase} estimatedDuration={props.node.estimatedDuration} />}</Ticker>
@@ -167,7 +181,9 @@ const WorkflowNodeSummary = (props: Props) => {
     const showLogs = (x = 'main') => props.onShowContainerLogs(props.node.id, x);
     return (
         <div className='white-box'>
-            <div className='white-box__details'>{<AttributeRows attributes={attributes} />}</div>
+            <div className='white-box__details' style={{paddingBottom: '8px'}}>
+                {<AttributeRows attributes={attributes} />}
+            </div>
             <div>
                 {props.node.type === 'Suspend' && props.onResume && (
                     <Button icon='play' onClick={() => props.onResume()}>
@@ -190,7 +206,16 @@ const WorkflowNodeSummary = (props: Props) => {
                     </Button>
                 )}{' '}
                 {props.node.type === 'Container' && props.onShowContainerLogs && (
-                    <Button icon='bars' onClick={() => props.onShowContainerLogs(props.node.name.replace(/.[^.]*$/, ''), props.node.name.replace(/.*\./, ''))}>
+                    <Button
+                        icon='bars'
+                        onClick={() =>
+                            props.onShowContainerLogs(
+                                // find parent node id using node name,
+                                // in container set, the parent of the selected node id contains log output
+                                Object.keys(props.workflow.status.nodes).find(key => props.workflow.status.nodes[key].name === props.node.name.replace(/.[^.]*$/, '')),
+                                props.node.name.replace(/.*\./, '')
+                            )
+                        }>
                         logs
                     </Button>
                 )}{' '}
@@ -200,7 +225,7 @@ const WorkflowNodeSummary = (props: Props) => {
                         object={{
                             metadata: {
                                 namespace: props.workflow.metadata.namespace,
-                                name: props.node.id
+                                name: podName
                             },
                             workflow: props.workflow,
                             status: {

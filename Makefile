@@ -29,6 +29,12 @@ K3D_CLUSTER_NAME      ?= k3s-default
 KUBE_NAMESPACE        ?= argo
 MANAGED_NAMESPACE     ?= $(KUBE_NAMESPACE)
 
+# Timeout for wait conditions
+E2E_WAIT_TIMEOUT      ?= 1m
+
+E2E_PARALLEL          ?= 20
+E2E_SUITE_TIMEOUT     ?= 15m
+
 VERSION               := latest
 DOCKER_PUSH           := false
 
@@ -53,7 +59,7 @@ LOGS                  ?= $(CTRL)
 UI                    ?= $(shell [ $(CTRL) = true ] && echo false || echo true)
 # start the Argo Server
 API                   ?= $(UI)
-GOTEST                ?= go test -v
+GOTEST                ?= go test -v -p 20
 PROFILE               ?= minimal
 PLUGINS               ?= $(shell [ $PROFILE = plugins ] && echo false || echo true)
 # by keeping this short we speed up the tests
@@ -115,7 +121,6 @@ SWAGGER_FILES := pkg/apiclient/_.primary.swagger.json \
 	pkg/apiclient/event/event.swagger.json \
 	pkg/apiclient/eventsource/eventsource.swagger.json \
 	pkg/apiclient/info/info.swagger.json \
-	pkg/apiclient/pipeline/pipeline.swagger.json \
 	pkg/apiclient/sensor/sensor.swagger.json \
 	pkg/apiclient/workflow/workflow.swagger.json \
 	pkg/apiclient/workflowarchive/workflow-archive.swagger.json \
@@ -226,9 +231,10 @@ argoexec-image:
 
 %-image:
 	[ ! -e dist/$* ] || mv dist/$* .
-	docker build \
+	docker buildx build \
 		-t $(IMAGE_NAMESPACE)/$*:$(VERSION) \
 		--target $* \
+		--load \
 		 .
 	[ ! -e $* ] || mv $* dist/
 	docker run --rm -t $(IMAGE_NAMESPACE)/$*:$(VERSION) version
@@ -259,7 +265,6 @@ swagger: \
 	pkg/apiclient/eventsource/eventsource.swagger.json \
 	pkg/apiclient/info/info.swagger.json \
 	pkg/apiclient/sensor/sensor.swagger.json \
-	pkg/apiclient/pipeline/pipeline.swagger.json \
 	pkg/apiclient/workflow/workflow.swagger.json \
 	pkg/apiclient/workflowarchive/workflow-archive.swagger.json \
 	pkg/apiclient/workflowtemplate/workflow-template.swagger.json \
@@ -293,10 +298,12 @@ $(GOPATH)/bin/goimports:
 	go install golang.org/x/tools/cmd/goimports@v0.1.7
 
 /usr/local/bin/clang-format:
+ifeq (, $(shell which clang-format))
 ifeq ($(shell uname),Darwin)
 	brew install clang-format
 else
 	sudo apt-get install clang-format
+endif
 endif
 
 pkg/apis/workflow/v1alpha1/generated.proto: $(GOPATH)/bin/go-to-protobuf $(PROTO_BINARIES) $(TYPES) $(GOPATH)/src/github.com/gogo/protobuf
@@ -333,9 +340,6 @@ pkg/apiclient/info/info.swagger.json: $(PROTO_BINARIES) $(TYPES) pkg/apiclient/i
 
 pkg/apiclient/sensor/sensor.swagger.json: $(PROTO_BINARIES) $(TYPES) pkg/apiclient/sensor/sensor.proto
 	$(call protoc,pkg/apiclient/sensor/sensor.proto)
-
-pkg/apiclient/pipeline/pipeline.swagger.json: $(PROTO_BINARIES) $(TYPES) pkg/apiclient/pipeline/pipeline.proto
-	$(call protoc,pkg/apiclient/pipeline/pipeline.proto)
 
 pkg/apiclient/workflow/workflow.swagger.json: $(PROTO_BINARIES) $(TYPES) pkg/apiclient/workflow/workflow.proto
 	$(call protoc,pkg/apiclient/workflow/workflow.proto)
@@ -390,7 +394,7 @@ dist/manifests/%: manifests/%
 # lint/test/etc
 
 $(GOPATH)/bin/golangci-lint:
-	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b `go env GOPATH`/bin
+	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b `go env GOPATH`/bin v1.49.0
 
 .PHONY: lint
 lint: server/static/files.go $(GOPATH)/bin/golangci-lint
@@ -476,6 +480,7 @@ endif
 ifeq ($(AUTH_MODE),sso)
 	grep '127.0.0.1.*dex' /etc/hosts
 endif
+	grep '127.0.0.1.*azurite' /etc/hosts
 	grep '127.0.0.1.*minio' /etc/hosts
 	grep '127.0.0.1.*postgres' /etc/hosts
 	grep '127.0.0.1.*mysql' /etc/hosts
@@ -511,7 +516,7 @@ mysql-cli:
 test-cli: ./dist/argo
 
 test-%:
-	go test -failfast -v -timeout 15m -count 1 --tags $* -parallel 10 ./test/e2e
+	go test -failfast -v -timeout $(E2E_SUITE_TIMEOUT) -count 1 --tags $* -parallel $(E2E_PARALLEL) ./test/e2e
 
 .PHONY: test-examples
 test-examples:
@@ -522,7 +527,8 @@ test-%-sdk:
 	make --directory sdks/$* install test -B
 
 Test%:
-	go test -failfast -v -timeout 15m -count 1 --tags api,cli,cron,executor,examples,functional,plugins -parallel 10 ./test/e2e  -run='.*/$*'
+	go test -failfast -v -timeout $(E2E_SUITE_TIMEOUT) -count 1 --tags api,cli,cron,executor,examples,corefunctional,functional,plugins -parallel $(E2E_PARALLEL) ./test/e2e  -run='.*/$*'
+
 
 # clean
 
@@ -629,7 +635,7 @@ docs-lint: /usr/local/bin/markdownlint
 	markdownlint docs --fix --ignore docs/fields.md --ignore docs/executor_swagger.md --ignore docs/cli --ignore docs/walk-through/the-structure-of-workflow-specs.md
 
 /usr/local/bin/mkdocs:
-	pip install mkdocs==1.2.4 mkdocs_material==8.1.9  mkdocs-spellcheck==0.2.1
+	python -m pip install mkdocs==1.2.4 mkdocs_material==8.1.9  mkdocs-spellcheck==0.2.1
 
 .PHONY: docs
 docs: /usr/local/bin/mkdocs \
@@ -654,6 +660,7 @@ docs-serve: docs
 # pre-commit checks
 
 .git/hooks/%: hack/git/hooks/%
+	@mkdir -p .git/hooks
 	cp hack/git/hooks/$* .git/hooks/$*
 
 .PHONY: githooks
@@ -671,4 +678,5 @@ release-notes: /dev/null
 
 .PHONY: checksums
 checksums:
-	for f in ./dist/argo-*.gz; do openssl dgst -sha256 "$$f" | awk ' { print $$2 }' > "$$f".sha256 ; done
+	sha256sum ./dist/argo-*.gz | awk -F './dist/' '{print $$1 $$2}' > ./dist/argo-workflows-cli-checksums.txt
+

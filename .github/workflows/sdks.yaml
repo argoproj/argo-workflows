@@ -3,8 +3,15 @@ on:
   push:
     tags:
       - v*
+
+permissions:
+  contents: read
+
 jobs:
   sdk:
+    permissions:
+      packages: write # for publishing packages
+      contents: write  # for creating releases
     if: github.repository == 'argoproj/argo-workflows'
     runs-on: ubuntu-latest
     name: Publish SDK

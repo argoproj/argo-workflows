@@ -24,25 +24,29 @@ func (woc *wfOperationCtx) executeWfLifeCycleHook(ctx context.Context, tmplCtx *
 		if execute {
 			hookNodeName := generateLifeHookNodeName(woc.wf.ObjectMeta.Name, string(hookName))
 			woc.log.WithField("lifeCycleHook", hookName).WithField("node", hookNodeName).Infof("Running workflow level hooks")
-			_, err := woc.executeTemplate(ctx, hookNodeName, &wfv1.WorkflowStep{Template: hook.Template, TemplateRef: hook.TemplateRef}, tmplCtx, hook.Arguments, &executeTemplateOpts{})
+			hookNode, err := woc.executeTemplate(ctx, hookNodeName, &wfv1.WorkflowStep{Template: hook.Template, TemplateRef: hook.TemplateRef}, tmplCtx, hook.Arguments, &executeTemplateOpts{})
 			if err != nil {
 				return err
 			}
 			woc.addChildNode(woc.wf.Name, hookNodeName)
+			// If the hookNode node is HTTP template, it requires HTTP reconciliation, do it here
+			if hookNode != nil && woc.nodeRequiresTaskSetReconciliation(hookNode.Name) {
+				woc.taskSetReconciliation(ctx)
+			}
 		}
 	}
 
 	return nil
 }
 
-func (woc *wfOperationCtx) executeTmplLifeCycleHook(ctx context.Context, envMap map[string]string, lifeCycleHooks wfv1.LifecycleHooks, parentNode *wfv1.NodeStatus, boundaryID string, tmplCtx *templateresolution.Context, prefix string) (bool, error) {
+func (woc *wfOperationCtx) executeTmplLifeCycleHook(ctx context.Context, scope *wfScope, lifeCycleHooks wfv1.LifecycleHooks, parentNode *wfv1.NodeStatus, boundaryID string, tmplCtx *templateresolution.Context, prefix string) (bool, error) {
 	var hookNodes []*wfv1.NodeStatus
 	for hookName, hook := range lifeCycleHooks {
 		//exit hook will be executed in runOnExitNode
 		if hookName == wfv1.ExitLifecycleEvent {
 			continue
 		}
-		execute, err := argoexpr.EvalBool(hook.Expression, env.GetFuncMap(template.EnvMap(envMap)))
+		execute, err := argoexpr.EvalBool(hook.Expression, env.GetFuncMap(template.EnvMap(woc.globalParams.Merge(scope.getParameters()))))
 		if err != nil {
 			return false, err
 		}
@@ -57,7 +61,7 @@ func (woc *wfOperationCtx) executeTmplLifeCycleHook(ctx context.Context, envMap 
 			resolvedArgs := hook.Arguments
 			var err error
 			if !resolvedArgs.IsEmpty() && outputs != nil {
-				resolvedArgs, err = woc.resolveExitTmplArgument(hook.Arguments, prefix, outputs)
+				resolvedArgs, err = woc.resolveExitTmplArgument(hook.Arguments, prefix, outputs, scope)
 				if err != nil {
 					return false, err
 				}

@@ -1,8 +1,8 @@
-import {Autocomplete, Page, SlidingPanel} from 'argo-ui';
+import {Page, SlidingPanel} from 'argo-ui';
 import * as React from 'react';
 import {RouteComponentProps} from 'react-router-dom';
 import * as models from '../../../../models';
-import {labels, Workflow, WorkflowPhase, WorkflowPhases} from '../../../../models';
+import {labels, NODE_PHASE, Workflow, WorkflowPhase, WorkflowPhases} from '../../../../models';
 import {uiUrl} from '../../../shared/base';
 
 import {BasePage} from '../../../shared/components/base-page';
@@ -13,7 +13,6 @@ import {ExampleManifests} from '../../../shared/components/example-manifests';
 import {FirstTimeUserPanel} from '../../../shared/components/first-time-user-panel';
 import {Loading} from '../../../shared/components/loading';
 import {PaginationPanel} from '../../../shared/components/pagination-panel';
-import {Query} from '../../../shared/components/query';
 import {ZeroState} from '../../../shared/components/zero-state';
 import {Consumer} from '../../../shared/context';
 import {ListWatch, sortByYouth} from '../../../shared/list-watch';
@@ -25,6 +24,7 @@ import * as Actions from '../../../shared/workflow-operations-map';
 import {WorkflowCreator} from '../workflow-creator';
 import {WorkflowFilters} from '../workflow-filters/workflow-filters';
 import {WorkflowsRow} from '../workflows-row/workflows-row';
+import {WorkflowsSummaryContainer} from '../workflows-summary-container/workflows-summary-container';
 import {WorkflowsToolbar} from '../workflows-toolbar/workflows-toolbar';
 
 require('./workflows-list.scss');
@@ -194,7 +194,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                                 />
                                 <div className='row'>
                                     <div className='columns small-12 xlarge-2'>
-                                        {this.renderQuery(ctx)}
+                                        <WorkflowsSummaryContainer workflows={this.state.workflows} />
                                         <div>
                                             <WorkflowFilters
                                                 workflows={this.state.workflows || []}
@@ -242,6 +242,18 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
         return dt;
     }
 
+    private nullSafeTimeFilter(minStartedAt: Date, maxStartedAt: Date, startedStr: string, isPending: boolean): boolean {
+        // looser check for startedStr is intentional to also check for undefined
+        if (startedStr == null) {
+            // return true if isPending
+            // else false
+            return isPending;
+        }
+        const started: Date = new Date(startedStr);
+
+        return started > minStartedAt && started < maxStartedAt;
+    }
+
     private fetchWorkflows(namespace: string, selectedPhases: WorkflowPhase[], selectedLabels: string[], minStartedAt: Date, maxStartedAt: Date, pagination: Pagination): void {
         if (this.listWatch) {
             this.listWatch.stop();
@@ -249,7 +261,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
         this.listWatch = new ListWatch(
             () =>
                 services.workflows.list(namespace, selectedPhases, selectedLabels, pagination).then(x => {
-                    x.items = x.items && x.items.filter(w => new Date(w.status.startedAt) > minStartedAt && new Date(w.status.startedAt) < maxStartedAt);
+                    x.items = x.items && x.items.filter(w => this.nullSafeTimeFilter(minStartedAt, maxStartedAt, w.status.startedAt, w.status.phase === NODE_PHASE.PENDING));
                     return x;
                 }),
             (resourceVersion: string) => services.workflows.watchFields({namespace, phases: selectedPhases, labels: selectedLabels, resourceVersion}),
@@ -425,53 +437,5 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
             }
         }
         this.setState({batchActionDisabled: nowDisabled, selectedWorkflows: new Map<string, models.Workflow>(newSelectedWorkflows)});
-    }
-
-    private renderQuery(ctx: any) {
-        return (
-            <Query>
-                {q => (
-                    <div>
-                        <i className='fa fa-search' />
-                        {q.get('search') && (
-                            <i
-                                className='fa fa-times'
-                                onClick={() => {
-                                    ctx.navigation.goto('.', {search: null}, {replace: true});
-                                }}
-                            />
-                        )}
-                        <Autocomplete
-                            filterSuggestions={true}
-                            renderInput={inputProps => (
-                                <input
-                                    {...inputProps}
-                                    onFocus={e => {
-                                        e.target.select();
-                                        if (inputProps.onFocus) {
-                                            inputProps.onFocus(e);
-                                        }
-                                    }}
-                                    className='argo-field'
-                                />
-                            )}
-                            renderItem={item => (
-                                <React.Fragment>
-                                    <i className='icon argo-icon-workflow' /> {item.label}
-                                </React.Fragment>
-                            )}
-                            onSelect={val => {
-                                ctx.navigation.goto(uiUrl(`workflows/${val}`));
-                            }}
-                            onChange={e => {
-                                ctx.navigation.goto('.', {search: e.target.value}, {replace: true});
-                            }}
-                            value={q.get('search') || ''}
-                            items={(this.state.workflows || []).map(wf => wf.metadata.namespace + '/' + wf.metadata.name)}
-                        />
-                    </div>
-                )}
-            </Query>
-        );
     }
 }

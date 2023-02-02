@@ -25,7 +25,7 @@ theme:
 extra:
   analytics:
     provider: google
-    property: UA-105170809-7
+    property: G-5Z1VTPDL73
 markdown_extensions:
   - codehilite
   - admonition
@@ -104,6 +104,7 @@ nav:
           - cron-backfill.md
           - workflow-of-workflows.md
           - workflow-notifications.md
+          - work-avoidance.md
       - UI Features:
           - artifact-visualization.md
           - widgets.md
@@ -137,6 +138,7 @@ nav:
           - use-cases/machine-learning.md
           - use-cases/other.md
           - use-cases/stream-processing.md
+          - use-cases/webhdfs.md
       - FAQ: faq.md
       - kubectl.md
       - ide-setup.md
@@ -213,6 +215,7 @@ nav:
           - workflow-executors.md
           - workflow-restrictions.md
           - sidecar-injection.md
+          - manually-create-secrets.md
       - Argo Server:
           - argo-server.md
           - argo-server-auth-mode.md

@@ -24,8 +24,8 @@ from argo_workflows.model_utils import (  # noqa: F401
     file_type,
     none_type,
     validate_get_composed_info,
+    OpenApiModel
 )
-from ..model_utils import OpenApiModel
 from argo_workflows.exceptions import ApiAttributeError
 
 
@@ -290,7 +290,7 @@ class IoArgoprojWorkflowV1alpha1WorkflowSpec(ModelNormal):
             pod_disruption_budget (IoK8sApiPolicyV1beta1PodDisruptionBudgetSpec): [optional]  # noqa: E501
             pod_gc (IoArgoprojWorkflowV1alpha1PodGC): [optional]  # noqa: E501
             pod_metadata (IoArgoprojWorkflowV1alpha1Metadata): [optional]  # noqa: E501
-            pod_priority (int): Priority to apply to workflow pods.. [optional]  # noqa: E501
+            pod_priority (int): Priority to apply to workflow pods. DEPRECATED: Use PodPriorityClassName instead.. [optional]  # noqa: E501
             pod_priority_class_name (str): PriorityClassName to apply to workflow pods.. [optional]  # noqa: E501
             pod_spec_patch (str): PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of container fields which are not strings (e.g. resource limits).. [optional]  # noqa: E501
             priority (int): Priority is used if controller is configured to process limited number of workflows in parallel. Workflows with higher priority are processed first.. [optional]  # noqa: E501
@@ -413,7 +413,7 @@ class IoArgoprojWorkflowV1alpha1WorkflowSpec(ModelNormal):
             pod_disruption_budget (IoK8sApiPolicyV1beta1PodDisruptionBudgetSpec): [optional]  # noqa: E501
             pod_gc (IoArgoprojWorkflowV1alpha1PodGC): [optional]  # noqa: E501
             pod_metadata (IoArgoprojWorkflowV1alpha1Metadata): [optional]  # noqa: E501
-            pod_priority (int): Priority to apply to workflow pods.. [optional]  # noqa: E501
+            pod_priority (int): Priority to apply to workflow pods. DEPRECATED: Use PodPriorityClassName instead.. [optional]  # noqa: E501
             pod_priority_class_name (str): PriorityClassName to apply to workflow pods.. [optional]  # noqa: E501
             pod_spec_patch (str): PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of container fields which are not strings (e.g. resource limits).. [optional]  # noqa: E501
             priority (int): Priority is used if controller is configured to process limited number of workflows in parallel. Workflows with higher priority are processed first.. [optional]  # noqa: E501

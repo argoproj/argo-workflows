@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"sync"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -36,25 +37,27 @@ import (
 type AgentExecutor struct {
 	log               *log.Entry
 	WorkflowName      string
+	workflowUID       string
 	ClientSet         kubernetes.Interface
 	WorkflowInterface workflow.Interface
 	RESTClient        rest.Interface
 	Namespace         string
-	consideredTasks   map[string]bool
+	consideredTasks   *sync.Map
 	plugins           []executorplugins.TemplateExecutor
 }
 
 type templateExecutor = func(ctx context.Context, tmpl wfv1.Template, result *wfv1.NodeResult) (time.Duration, error)
 
-func NewAgentExecutor(clientSet kubernetes.Interface, restClient rest.Interface, config *rest.Config, namespace, workflowName string, plugins []executorplugins.TemplateExecutor) *AgentExecutor {
+func NewAgentExecutor(clientSet kubernetes.Interface, restClient rest.Interface, config *rest.Config, namespace, workflowName, workflowUID string, plugins []executorplugins.TemplateExecutor) *AgentExecutor {
 	return &AgentExecutor{
 		log:               log.WithField("workflow", workflowName),
 		ClientSet:         clientSet,
 		RESTClient:        restClient,
 		Namespace:         namespace,
 		WorkflowName:      workflowName,
+		workflowUID:       workflowUID,
 		WorkflowInterface: workflow.NewForConfigOrDie(config),
-		consideredTasks:   make(map[string]bool),
+		consideredTasks:   &sync.Map{},
 		plugins:           plugins,
 	}
 }
@@ -126,12 +129,10 @@ func (ae *AgentExecutor) taskWorker(ctx context.Context, taskQueue chan task, re
 
 		// Do not work on tasks that have already been considered once, to prevent calling an endpoint more
 		// than once unintentionally.
-		if _, ok := ae.consideredTasks[nodeID]; ok {
+		if _, ok := ae.consideredTasks.LoadOrStore(nodeID, true); ok {
 			log.Info("Task is already considered")
 			continue
 		}
-
-		ae.consideredTasks[nodeID] = true
 
 		log.Info("Processing task")
 		result, requeue, err := ae.processTask(ctx, tmpl)
@@ -155,7 +156,8 @@ func (ae *AgentExecutor) taskWorker(ctx context.Context, taskQueue chan task, re
 		}
 		if requeue > 0 {
 			time.AfterFunc(requeue, func() {
-				delete(ae.consideredTasks, nodeID)
+				ae.consideredTasks.Delete(nodeID)
+
 				taskQueue <- task
 			})
 		}
@@ -267,10 +269,11 @@ func (ae *AgentExecutor) executeHTTPTemplate(ctx context.Context, tmpl wfv1.Temp
 	} else {
 		evalScope := map[string]interface{}{
 			"request": map[string]interface{}{
-				"method":  tmpl.HTTP.Method,
-				"url":     tmpl.HTTP.URL,
-				"body":    tmpl.HTTP.Body,
-				"headers": tmpl.HTTP.Headers.ToHeader(),
+				"method":    tmpl.HTTP.Method,
+				"url":       tmpl.HTTP.URL,
+				"body":      tmpl.HTTP.Body,
+				"bodyBytes": tmpl.HTTP.GetBodyBytes(),
+				"headers":   tmpl.HTTP.Headers.ToHeader(),
 			},
 			"response": map[string]interface{}{
 				"statusCode": response.StatusCode,
@@ -294,7 +297,7 @@ func (ae *AgentExecutor) executeHTTPTemplate(ctx context.Context, tmpl wfv1.Temp
 	return 0, nil
 }
 
-var httpClientSkip *http.Client = &http.Client{
+var httpClientSkip = &http.Client{
 	Transport: &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 	},
@@ -306,7 +309,17 @@ var httpClients = map[bool]*http.Client{
 }
 
 func (ae *AgentExecutor) executeHTTPTemplateRequest(ctx context.Context, httpTemplate *wfv1.HTTP) (*http.Response, error) {
-	request, err := http.NewRequest(httpTemplate.Method, httpTemplate.URL, bytes.NewBufferString(httpTemplate.Body))
+	var (
+		request *http.Request
+		err     error
+	)
+	if httpTemplate.BodyFrom != nil {
+		if httpTemplate.BodyFrom.Bytes != nil {
+			request, err = http.NewRequest(httpTemplate.Method, httpTemplate.URL, bytes.NewBuffer(httpTemplate.BodyFrom.Bytes))
+		}
+	} else {
+		request, err = http.NewRequest(httpTemplate.Method, httpTemplate.URL, bytes.NewBufferString(httpTemplate.Body))
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -341,7 +354,11 @@ func (ae *AgentExecutor) executeHTTPTemplateRequest(ctx context.Context, httpTem
 func (ae *AgentExecutor) executePluginTemplate(ctx context.Context, tmpl wfv1.Template, result *wfv1.NodeResult) (time.Duration, error) {
 	args := executorplugins.ExecuteTemplateArgs{
 		Workflow: &executorplugins.Workflow{
-			ObjectMeta: executorplugins.ObjectMeta{Name: ae.WorkflowName},
+			ObjectMeta: executorplugins.ObjectMeta{
+				Name:      ae.WorkflowName,
+				Namespace: ae.Namespace,
+				Uid:       ae.workflowUID,
+			},
 		},
 		Template: &tmpl,
 	}

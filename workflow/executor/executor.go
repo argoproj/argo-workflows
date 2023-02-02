@@ -265,6 +265,10 @@ func (we *WorkflowExecutor) StageFiles() error {
 		filePath = common.ExecutorScriptSourcePath
 		body = []byte(we.Template.Script.Source)
 	case wfv1.TemplateTypeResource:
+		if we.Template.Resource.ManifestFrom != nil && we.Template.Resource.ManifestFrom.Artifact != nil {
+			log.Infof("manifest %s already staged", we.Template.Resource.ManifestFrom.Artifact.Name)
+			return nil
+		}
 		log.Infof("Loading manifest to %s", common.ExecutorResourceManifestPath)
 		filePath = common.ExecutorResourceManifestPath
 		body = []byte(we.Template.Resource.Manifest)
@@ -403,6 +407,22 @@ func (we *WorkflowExecutor) stageArchiveFile(containerName string, art *wfv1.Art
 			}
 			return fileName, mountedArtPath, nil
 		}
+		if strategy.Zip != nil {
+			fileName := fmt.Sprintf("%s.zip", art.Name)
+			localArtPath := filepath.Join(tempOutArtDir, fileName)
+			f, err := os.Create(localArtPath)
+			if err != nil {
+				return "", "", argoerrs.InternalWrapError(err)
+			}
+			zw := zip.NewWriter(f)
+			defer zw.Close()
+			err = archive.ZipToWriter(mountedArtPath, zw)
+			if err != nil {
+				return "", "", err
+			}
+			log.Infof("Successfully staged %s from mirrored volume mount %s", art.Path, mountedArtPath)
+			return fileName, localArtPath, nil
+		}
 		fileName := fmt.Sprintf("%s.tgz", art.Name)
 		localArtPath := filepath.Join(tempOutArtDir, fileName)
 		f, err := os.Create(localArtPath)
@@ -461,6 +481,22 @@ func (we *WorkflowExecutor) stageArchiveFile(containerName string, art *wfv1.Art
 	}
 	// In the future, if we were to support other compression formats (e.g. bzip2) or options
 	// the logic would go here, and compression would be moved out of the executors
+	if strategy.Zip != nil {
+		fileName = fmt.Sprintf("%s.zip", art.Name)
+		localArtPath = filepath.Join(tempOutArtDir, fileName)
+		f, err := os.Create(localArtPath)
+		if err != nil {
+			return "", "", argoerrs.InternalWrapError(err)
+		}
+		zw := zip.NewWriter(f)
+		defer zw.Close()
+		err = archive.ZipToWriter(unarchivedArtPath, zw)
+		if err != nil {
+			return "", "", err
+		}
+		log.Infof("Successfully zipped %s to %s", unarchivedArtPath, localArtPath)
+		return fileName, localArtPath, nil
+	}
 	return fileName, localArtPath, nil
 }
 
@@ -565,7 +601,7 @@ func (we *WorkflowExecutor) SaveLogs(ctx context.Context) {
 		}
 	}
 
-	// Annotating pod with output
+	// try to upsert TaskResult, if it fails, we will try to update the Pod's Annotations
 	err := we.reportOutputs(ctx, logArtifacts)
 	if err != nil {
 		we.AddError(err)
@@ -856,6 +892,11 @@ func untar(tarPath string, destPath string) error {
 				return err
 			}
 			switch header.Typeflag {
+			case tar.TypeSymlink:
+				err := os.Symlink(header.Linkname, target)
+				if err != nil {
+					return err
+				}
 			case tar.TypeReg:
 				f, err := os.OpenFile(target, os.O_CREATE|os.O_RDWR, os.FileMode(header.Mode))
 				if err != nil {

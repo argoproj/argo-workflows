@@ -2,6 +2,7 @@ import {Ticker} from 'argo-ui/src/index';
 import * as React from 'react';
 import {Link} from 'react-router-dom';
 import {Workflow} from '../../../../models';
+import {ANNOTATION_DESCRIPTION, ANNOTATION_TITLE} from '../../../shared/annotations';
 import {uiUrl} from '../../../shared/base';
 import {DurationPanel} from '../../../shared/components/duration-panel';
 import {PhaseIcon} from '../../../shared/components/phase-icon';
@@ -48,7 +49,10 @@ export class WorkflowsRow extends React.Component<WorkflowsRowProps, WorkflowRow
                         <PhaseIcon value={wf.status.phase} />
                     </div>
                     <Link to={uiUrl(`workflows/${wf.metadata.namespace}/${wf.metadata.name}`)} className='small-11 row'>
-                        <div className='columns small-3'>{wf.metadata.name}</div>
+                        <div className='columns small-3'>
+                            {(wf.metadata.annotations && wf.metadata.annotations[ANNOTATION_TITLE]) || wf.metadata.name}
+                            {wf.metadata.annotations && wf.metadata.annotations[ANNOTATION_DESCRIPTION] ? <p>{wf.metadata.annotations[ANNOTATION_DESCRIPTION]}</p> : null}
+                        </div>
                         <div className='columns small-1'>{wf.metadata.namespace}</div>
                         <div className='columns small-1'>
                             <Timestamp date={wf.status.startedAt} />

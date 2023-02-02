@@ -27,7 +27,7 @@ export const ProcessURL = (url: string, jsonObject: any) => {
     return null if element is not found*/
     return url.replace(/\${[^}]*}/g, x => {
         const res = x
-            .replace(/[${}]+/g, '')
+            .replace(/(\$%7B|%7D|\${|})/g, '')
             .split('.')
             .reduce((p: any, c: string) => (p && p[c]) || null, jsonObject);
         return res;

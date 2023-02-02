@@ -5,6 +5,17 @@ the [conventional commits](https://www.conventionalcommits.org/en/v1.0.0/#summar
 
 ## Upgrading to v3.4
 
+### Non-Emissary executors are removed. ([#7829](https://github.com/argoproj/argo-workflows/issues/7829))
+
+Emissary executor is now the only supported executor. If you are using other executors, e.g. docker, k8sapi, pns, and kubelet, you need to
+remove your `containerRuntimeExecutors` and `containerRuntimeExecutor` from your controller's configmap. If you have workflows that use different
+executors with the label `workflows.argoproj.io/container-runtime-executor`, this is no longer supported and will not be effective.
+
+### chore!: Remove dataflow pipelines from codebase. (#9071)
+
+You are affected if you are using [dataflow pipelines](https://github.com/argoproj-labs/argo-dataflow) in the UI or via the `/pipelines` endpoint.
+We no longer support dataflow pipelines and all relevant code has been removed.
+
 ### feat!: Add entrypoint lookup. Fixes #8344
 
 Affected if:
@@ -33,7 +44,7 @@ For v1 manifests (e.g. docker/whalesay:latest):
 ```bash
 % docker image inspect -f '{{.Config.Entrypoint}} {{.Config.Cmd}}' docker/whalesay:latest
 [] [/bin/bash]
-````
+```
 
 ```yaml
 images:
@@ -53,6 +64,10 @@ Failed to register watch for controller config map: error unmarshaling JSON: whi
 ## feat: add indexes for improve archived workflow performance. (#8860)
 
 This PR adds indexes to archived workflow tables. This change may cause a long time to upgrade if the user has a large table.
+
+## feat: enhance artifact visualization (#8655)
+
+For AWS users using S3: visualizing artifacts in the UI and downloading them now requires an additional "Action" to be configured in your S3 bucket policy: "ListBucket".
 
 ## Upgrading to v3.3
 

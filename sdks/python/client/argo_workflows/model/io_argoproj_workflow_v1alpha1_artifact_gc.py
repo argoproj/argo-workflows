@@ -24,10 +24,14 @@ from argo_workflows.model_utils import (  # noqa: F401
     file_type,
     none_type,
     validate_get_composed_info,
+    OpenApiModel
 )
-from ..model_utils import OpenApiModel
 from argo_workflows.exceptions import ApiAttributeError
 
+
+def lazy_import():
+    from argo_workflows.model.io_argoproj_workflow_v1alpha1_metadata import IoArgoprojWorkflowV1alpha1Metadata
+    globals()['IoArgoprojWorkflowV1alpha1Metadata'] = IoArgoprojWorkflowV1alpha1Metadata
 
 
 class IoArgoprojWorkflowV1alpha1ArtifactGC(ModelNormal):
@@ -66,6 +70,7 @@ class IoArgoprojWorkflowV1alpha1ArtifactGC(ModelNormal):
         This must be a method because a model may have properties that are
         of type self, this must run after the class is loaded
         """
+        lazy_import()
         return (bool, date, datetime, dict, float, int, list, str, none_type,)  # noqa: E501
 
     _nullable = False
@@ -80,7 +85,10 @@ class IoArgoprojWorkflowV1alpha1ArtifactGC(ModelNormal):
             openapi_types (dict): The key is attribute name
                 and the value is attribute type.
         """
+        lazy_import()
         return {
+            'pod_metadata': (IoArgoprojWorkflowV1alpha1Metadata,),  # noqa: E501
+            'service_account_name': (str,),  # noqa: E501
             'strategy': (str,),  # noqa: E501
         }
 
@@ -90,6 +98,8 @@ class IoArgoprojWorkflowV1alpha1ArtifactGC(ModelNormal):
 
 
     attribute_map = {
+        'pod_metadata': 'podMetadata',  # noqa: E501
+        'service_account_name': 'serviceAccountName',  # noqa: E501
         'strategy': 'strategy',  # noqa: E501
     }
 
@@ -134,7 +144,9 @@ class IoArgoprojWorkflowV1alpha1ArtifactGC(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            strategy (str): Strategy is the strategy to use. One of \"OnWorkflowCompletion\", \"OnWorkflowDeletion\". [optional]  # noqa: E501
+            pod_metadata (IoArgoprojWorkflowV1alpha1Metadata): [optional]  # noqa: E501
+            service_account_name (str): ServiceAccountName is an optional field for specifying the Service Account that should be assigned to the Pod doing the deletion. [optional]  # noqa: E501
+            strategy (str): Strategy is the strategy to use.. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -216,7 +228,9 @@ class IoArgoprojWorkflowV1alpha1ArtifactGC(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            strategy (str): Strategy is the strategy to use. One of \"OnWorkflowCompletion\", \"OnWorkflowDeletion\". [optional]  # noqa: E501
+            pod_metadata (IoArgoprojWorkflowV1alpha1Metadata): [optional]  # noqa: E501
+            service_account_name (str): ServiceAccountName is an optional field for specifying the Service Account that should be assigned to the Pod doing the deletion. [optional]  # noqa: E501
+            strategy (str): Strategy is the strategy to use.. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)

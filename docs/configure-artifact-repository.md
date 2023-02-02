@@ -5,16 +5,17 @@ repository. Argo supports any S3 compatible artifact repository such as AWS, GCS
 and MinIO. This section shows how to configure the artifact repository.
 Subsequent sections will show how to use it.
 
-| Name | Inputs | Outputs | Usage (Feb 2020) |
-|---|---|---|---|
-| Artifactory | Yes | Yes | 11% |
-| GCS | Yes | Yes | - |
-| Git | Yes | No | - |
-| HDFS | Yes | Yes | 3% |
-| HTTP | Yes | No | 2% |
-| OSS | Yes | Yes | - |
-| Raw | Yes | No | 5% |
-| S3 | Yes | Yes | 86% |
+| Name | Inputs | Outputs | Garbage Collection | Usage (Feb 2020) |
+|---|---|---|---|---|
+| Artifactory | Yes | Yes | No | 11% |
+| Azure Blob | Yes | Yes | Yes | - |
+| GCS | Yes | Yes | Yes | - |
+| Git | Yes | No | No | - |
+| HDFS | Yes | Yes | No | 3% |
+| HTTP | Yes | Yes | No | 2% |
+| OSS | Yes | Yes | No | - |
+| Raw | Yes | No | No | 5% |
+| S3 | Yes | Yes | Yes | 86% |
 
 The actual repository used by a workflow is chosen by the following rules:
 
@@ -75,6 +76,13 @@ $ cat > policy.json <<EOF
             "s3:GetObject"
          ],
          "Resource":"arn:aws:s3:::$mybucket/*"
+      },
+      {
+         "Effect":"Allow",
+         "Action":[
+            "s3:ListBucket"
+         ],
+         "Resource":"arn:aws:s3:::$mybucket"
       }
    ]
 }
@@ -84,6 +92,8 @@ $ aws iam create-user --user-name $mybucket-user
 $ aws iam put-user-policy --user-name $mybucket-user --policy-name $mybucket-policy --policy-document file://policy.json
 $ aws iam create-access-key --user-name $mybucket-user > access-key.json
 ```
+
+If you have Artifact Garbage Collection configured, you should also add "s3:DeleteObject" to the list of Actions above.
 
 NOTE: if you want argo to figure out which region your buckets belong in, you
 must additionally set the following statement policy. Otherwise, you must
@@ -172,36 +182,137 @@ artifacts:
 
 ## Configuring Alibaba Cloud OSS (Object Storage Service)
 
-To configure artifact storage for Alibaba Cloud OSS, please first follow
-the [official documentation](https://www.alibabacloud.com/product/oss) to set up
-an OSS account and bucket.
+Create your bucket and access key for the bucket. Suggest to limit the permission
+for the access key, you will need to create a user with just the permissions you
+want to associate with the access key. Otherwise, you can just create an access key
+using your existing user account.
 
-Once it's set up, you can find endpoint and bucket
-information on your OSS dashboard and then use them like the following to
-configure the artifact storage for your workflow:
+Setup [Alibaba Cloud CLI](https://www.alibabacloud.com/help/en/alibaba-cloud-cli/latest/product-introduction)
+and follow the steps to configure the artifact storage for your workflow:
 
-```yaml
-artifacts:
-  - name: my-art
-    path: /my-artifact
+```bash
+$ export mybucket=bucket-workflow-artifect
+$ export myregion=cn-zhangjiakou
+$ # limit permission to read/write the bucket.
+$ cat > policy.json <<EOF
+{
+    "Version": "1",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [
+              "oss:PutObject",
+              "oss:GetObject"
+            ],
+            "Resource": "acs:oss:*:*:$mybucket/*"
+        }
+    ]
+}
+EOF
+$ # create bucket.
+$ aliyun oss mb oss://$mybucket --region $myregion
+$ # show endpoint of bucket.
+$ aliyun oss stat oss://$mybucket
+$ #create a ram user to access bucket.
+$ aliyun ram CreateUser --UserName $mybucket-user
+$ # create ram policy with the limit permission.
+$ aliyun ram CreatePolicy --PolicyName $mybucket-policy --PolicyDocument "$(cat policy.json)"
+$ # attch ram policy to the ram user.
+$ aliyun ram AttachPolicyToUser --UserName $mybucket-user --PolicyName $mybucket-policy --PolicyType Custom
+$ # create access key and secret key for the ram user.
+$ aliyun ram CreateAccessKey --UserName $mybucket-user > access-key.json
+$ # create secret in demo namespace, replace demo with your namespace.
+$ kubectl create secret generic $mybucket-credentials -n demo\
+  --from-literal "accessKey=$(cat access-key.json | jq -r .AccessKey.AccessKeyId)" \
+  --from-literal "secretKey=$(cat access-key.json | jq -r .AccessKey.AccessKeySecret)"
+$ # create configmap to config default artifact for a namespace.
+$ cat > default-artifact-repository.yaml << EOF
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  # If you want to use this config map by default, name it "artifact-repositories". Otherwise, you can provide a reference to a
+  # different config map in `artifactRepositoryRef.configMap`.
+  name: artifact-repositories
+  annotations:
+    # v3.0 and after - if you want to use a specific key, put that key into this annotation.
+    workflows.argoproj.io/default-artifact-repository: default-oss-artifact-repository
+data:
+  default-oss-artifact-repository: |
     oss:
-      endpoint: http://oss-cn-hangzhou-zmf.aliyuncs.com
-      bucket: test-bucket-name
-      key: test/mydirectory/ # this is path in the bucket
+      endpoint: http://oss-cn-zhangjiakou-internal.aliyuncs.com
+      bucket: $mybucket
       # accessKeySecret and secretKeySecret are secret selectors.
-      # It references the k8s secret named 'my-oss-credentials'.
+      # It references the k8s secret named 'bucket-workflow-artifect-credentials'.
       # This secret is expected to have have the keys 'accessKey'
       # and 'secretKey', containing the base64 encoded credentials
       # to the bucket.
       accessKeySecret:
-        name: my-oss-credentials
+        name: $mybucket-credentials
         key: accessKey
       secretKeySecret:
-        name: my-oss-credentials
+        name: $mybucket-credentials
         key: secretKey
+EOF
+# create cm in demo namespace, replace demo with your namespace.
+$ k apply -f default-artifact-repository.yaml -n demo
 ```
 
 You can also set `createBucketIfNotPresent` to `true` to tell the artifact driver to automatically create the OSS bucket if it doesn't exist yet when saving artifacts. Note that you'll need to set additional permission for your OSS account to create new buckets.
+
+## Configuring Azure Blob Storage
+
+Create an Azure Storage account and a container within that account. There are a number of
+ways to accomplish this, including the [Azure Portal](https://portal.azure.com) or the
+[CLI](https://docs.microsoft.com/en-us/cli/azure/).
+
+1. Retrieve the blob service endpoint for the storage account. For example:
+
+   ```bash
+   az storage account show -n mystorageaccountname --query 'primaryEndpoints.blob' -otsv
+   ```
+
+2. Retrieve the access key for the storage account. For example:
+
+   ```bash
+   az storage account keys list -n mystorageaccountname --query '[0].value' -otsv
+   ```
+
+3. Create a kubernetes secret to hold the storage account key. For example:
+
+   ```bash
+   kubectl create secret generic my-azure-storage-credentials \
+     --from-literal "account-access-key=$(az storage account keys list -n mystorageaccountname --query '[0].value' -otsv)"
+   ```
+
+4. Configure `azure` artifact as following in the yaml.
+
+```yaml
+artifacts:
+  - name: message
+    path: /tmp/message
+    azure:
+      endpoint: https://mystorageaccountname.blob.core.windows.net
+      container: my-container-name
+      blob: path/in/container
+      # accountKeySecret is a secret selector.
+      # It references the k8s secret named 'my-azure-storage-credentials'.
+      # This secret is expected to have have the key 'account-access-key',
+      # containing the base64 encoded credentials to the storage account.
+      #
+      # If a managed identity has been assigned to the machines running the
+      # workflow (e.g., https://docs.microsoft.com/en-us/azure/aks/use-managed-identity)
+      # then accountKeySecret is not needed, and useSDKCreds should be
+      # set to true instead:
+      # useSDKCreds: true
+      accountKeySecret:
+        name: my-azure-storage-credentials
+        key: account-access-key     
+```
+
+If `useSDKCreds` is set to `true`, then the `accountKeySecret` value is not
+used and authentication with Azure will be attempted using a
+[`DefaultAzureCredential`](https://docs.microsoft.com/en-us/azure/developer/go/azure-sdk-authentication)
+instead.
 
 ## Configure the Default Artifact Repository
 
@@ -291,6 +402,28 @@ data:
       serviceAccountKeySecret:
         name: my-gcs-credentials
         key: serviceAccountKey
+```
+
+### Azure Blob Storage
+
+Argo can use native Azure APIs to access a Azure Blob Storage container.
+
+`accountKeySecret` references to a Kubernetes secret which stores an Azure Blob
+Storage account shared key to access the container.
+
+Example:
+
+```bash
+$ kubectl edit configmap workflow-controller-configmap -n argo  # assumes argo was installed in the argo namespace
+...
+data:
+  artifactRepository: |
+    azure:
+      container: my-container
+      blobNameFormat: prefix/in/container     #optional, it could reference workflow variables, such as "{{workflow.name}}/{{pod.name}}"
+      accountKeySecret:
+        name: my-azure-storage-credentials
+        key: account-access-key
 ```
 
 ## Accessing Non-Default Artifact Repositories

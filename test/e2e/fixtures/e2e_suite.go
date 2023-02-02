@@ -5,8 +5,9 @@ import (
 	"encoding/base64"
 	"fmt"
 	"os"
-	"strings"
 	"time"
+
+	"github.com/argoproj/argo-workflows/v3/util/secrets"
 
 	"github.com/TwiN/go-color"
 	"github.com/stretchr/testify/suite"
@@ -36,7 +37,8 @@ const (
 	Label     = workflow.WorkflowFullName + "/test" // mark this workflow as a test
 )
 
-var defaultTimeout = env.LookupEnvDurationOr("E2E_TIMEOUT", 30*time.Second)
+var defaultTimeout = env.LookupEnvDurationOr("E2E_WAIT_TIMEOUT", 60*time.Second)
+var EnvFactor = env.LookupEnvIntOr("E2E_ENV_FACTOR", 1)
 
 type E2ESuite struct {
 	suite.Suite
@@ -188,16 +190,11 @@ func (s *E2ESuite) GetServiceAccountToken() (string, error) {
 	}
 
 	ctx := context.Background()
-	secretList, err := clientset.CoreV1().Secrets("argo").List(ctx, metav1.ListOptions{})
+	sec, err := clientset.CoreV1().Secrets(Namespace).Get(ctx, secrets.TokenName("argo-server"), metav1.GetOptions{})
 	if err != nil {
 		return "", err
 	}
-	for _, sec := range secretList.Items {
-		if strings.HasPrefix(sec.Name, "argo-server-token") {
-			return string(sec.Data["token"]), nil
-		}
-	}
-	return "", nil
+	return string(sec.Data["token"]), nil
 }
 
 func (s *E2ESuite) Given() *Given {

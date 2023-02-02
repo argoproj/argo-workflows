@@ -17,6 +17,8 @@ See https://argoproj.github.io/argo-workflows/argo-server/
 
 ```
       --access-control-allow-origin string   Set Access-Control-Allow-Origin header in HTTP responses.
+      --allowed-link-protocol stringArray    Allowed link protocol in configMap. Used if the allowed configMap links protocol are different from http,https. Defaults to the environment variable ALLOWED_LINK_PROTOCOL (default [http,https])
+      --api-rate-limit uint                  Set limit per IP for api ratelimiter (default 1000)
       --auth-mode stringArray                API server authentication mode. Any 1 or more length permutation of: client,server,sso (default [client])
       --basehref string                      Value for base href in index.html. Used if the server is running behind reverse proxy under subpath different from /. Defaults to the environment variable BASE_HREF. (default "/")
   -b, --browser                              enable automatic launching of the browser [local mode]
@@ -26,10 +28,13 @@ See https://argoproj.github.io/argo-workflows/argo-server/
       --event-worker-count int               how many event workers to run (default 4)
   -h, --help                                 help for server
       --hsts                                 Whether or not we should add a HTTP Secure Transport Security header. This only has effect if secure is enabled. (default true)
+      --kube-api-burst int                   Burst to use while talking with kube-apiserver. (default 30)
+      --kube-api-qps float32                 QPS to use while talking with kube-apiserver. (default 20)
       --log-format string                    The formatter to use for logs. One of: text|json (default "text")
       --managed-namespace string             namespace that watches, default to the installation namespace
       --namespaced                           run as namespaced mode
   -p, --port int                             Port to listen on (default 2746)
+      --tls-certificate-secret-name string   The name of a Kubernetes secret that contains the server certificates
       --x-frame-options string               Set X-Frame-Options header in HTTP responses. (default "DENY")
 ```
 
@@ -56,6 +61,7 @@ See https://argoproj.github.io/argo-workflows/argo-server/
       --loglevel string                Set the logging level. One of: debug|info|warn|error (default "info")
   -n, --namespace string               If present, the namespace scope for this CLI request
       --password string                Password for basic authentication to the API server
+      --proxy-url string               If provided, this URL will be used to connect via proxy
       --request-timeout string         The length of time to wait before giving up on a single server request. Non-zero values should contain a corresponding time unit (e.g. 1s, 2m, 3h). A value of zero means don't timeout requests. (default "0")
   -e, --secure                         Whether or not the server is using TLS with the Argo Server. Defaults to the ARGO_SECURE environment variable. (default true)
       --server string                  The address and port of the Kubernetes API server

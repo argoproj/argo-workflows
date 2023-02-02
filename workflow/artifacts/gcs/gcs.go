@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -22,6 +21,7 @@ import (
 
 	"github.com/argoproj/argo-workflows/v3/errors"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	errutil "github.com/argoproj/argo-workflows/v3/util/errors"
 	waitutil "github.com/argoproj/argo-workflows/v3/util/wait"
 	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/common"
 )
@@ -38,7 +38,7 @@ var (
 
 // from https://github.com/googleapis/google-cloud-go/blob/master/storage/go110.go
 func isTransientGCSErr(err error) bool {
-	if err == io.ErrUnexpectedEOF {
+	if err == io.ErrUnexpectedEOF || errutil.IsTransientErr(err) {
 		return true
 	}
 	switch e := err.(type) {
@@ -46,19 +46,20 @@ func isTransientGCSErr(err error) bool {
 		// Retry on 429 and 5xx, according to
 		// https://cloud.google.com/storage/docs/exponential-backoff.
 		return e.Code == 429 || (e.Code >= 500 && e.Code < 600)
-	case *url.Error:
-		// Retry socket-level errors ECONNREFUSED and ENETUNREACH (from syscall).
-		// Unfortunately the error type is unexported, so we resort to string
-		// matching.
-		retriable := []string{"connection refused", "connection reset"}
+	case interface{ Temporary() bool }:
+		if e.Temporary() {
+			return true
+		}
+	default:
+		// Retry errors that might be an unexported type
+		// Also picks up certain 500-level codes that are sent back from upstream gcp services
+		// and not caught by the googleapi.Error case (Workload Identity in particular)
+		retriable := []string{"connection refused", "connection reset", "Received 504",
+			"Received 500", "TLS handshake timeout"}
 		for _, s := range retriable {
 			if strings.Contains(e.Error(), s) {
 				return true
 			}
-		}
-	case interface{ Temporary() bool }:
-		if e.Temporary() {
-			return true
 		}
 	}
 	if e, ok := err.(interface{ Unwrap() error }); ok {
@@ -79,11 +80,11 @@ func newGCSClientWithCredential(serviceAccountJSON string) (*storage.Client, err
 	ctx := context.Background()
 	creds, err := google.CredentialsFromJSON(ctx, []byte(serviceAccountJSON), storage.ScopeReadWrite)
 	if err != nil {
-		return nil, fmt.Errorf("GCS client CredentialsFromJSON: %v", err)
+		return nil, fmt.Errorf("GCS client CredentialsFromJSON: %w", err)
 	}
 	client, err := storage.NewClient(ctx, option.WithCredentials(creds))
 	if err != nil {
-		return nil, fmt.Errorf("GCS storage.NewClient with credential: %v", err)
+		return nil, fmt.Errorf("GCS storage.NewClient with credential: %w", err)
 	}
 	return client, nil
 }
@@ -92,7 +93,7 @@ func newGCSClientDefault() (*storage.Client, error) {
 	ctx := context.Background()
 	client, err := storage.NewClient(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("GCS storage.NewClient: %v", err)
+		return nil, fmt.Errorf("GCS storage.NewClient: %w", err)
 	}
 	return client, nil
 }
@@ -101,14 +102,15 @@ func newGCSClientDefault() (*storage.Client, error) {
 func (g *ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) error {
 	err := waitutil.Backoff(defaultRetry,
 		func() (bool, error) {
-			log.Infof("GCS Load path: %s, key: %s", path, inputArtifact.GCS.Key)
+			key := filepath.Clean(inputArtifact.GCS.Key)
+			log.Infof("GCS Load path: %s, key: %s", path, key)
 			gcsClient, err := g.newGCSClient()
 			if err != nil {
 				log.Warnf("Failed to create new GCS client: %v", err)
 				return !isTransientGCSErr(err), err
 			}
 			defer gcsClient.Close()
-			err = downloadObjects(gcsClient, inputArtifact.GCS.Bucket, inputArtifact.GCS.Key, path)
+			err = downloadObjects(gcsClient, inputArtifact.GCS.Bucket, key, path)
 			if err != nil {
 				log.Warnf("Failed to download objects from GCS: %v", err)
 				return !isTransientGCSErr(err), err
@@ -149,7 +151,7 @@ func downloadObject(client *storage.Client, bucket, key, objName, path string) e
 	objectDir, _ := filepath.Split(localPath)
 	if objectDir != "" {
 		if err := os.MkdirAll(objectDir, 0o700); err != nil {
-			return fmt.Errorf("mkdir %s: %v", objectDir, err)
+			return fmt.Errorf("mkdir %s: %w", objectDir, err)
 		}
 	}
 	ctx := context.Background()
@@ -158,12 +160,12 @@ func downloadObject(client *storage.Client, bucket, key, objName, path string) e
 		if err == storage.ErrObjectNotExist {
 			return errors.New(errors.CodeNotFound, err.Error())
 		}
-		return fmt.Errorf("new bucket reader: %v", err)
+		return fmt.Errorf("new bucket reader: %w", err)
 	}
 	defer rc.Close()
 	out, err := os.Create(localPath)
 	if err != nil {
-		return fmt.Errorf("os create %s: %v", localPath, err)
+		return fmt.Errorf("os create %s: %w", localPath, err)
 	}
 	defer func() {
 		if err := out.Close(); err != nil {
@@ -172,7 +174,7 @@ func downloadObject(client *storage.Client, bucket, key, objName, path string) e
 	}()
 	_, err = io.Copy(out, rc)
 	if err != nil {
-		return fmt.Errorf("io copy: %v", err)
+		return fmt.Errorf("io copy: %w", err)
 	}
 	return nil
 }
@@ -192,6 +194,12 @@ func listByPrefix(client *storage.Client, bucket, prefix, delim string) ([]strin
 		if err == iterator.Done {
 			break
 		}
+		// skip "folder" path like objects
+		// note that we still download content (including "subfolders")
+		// this is just a consequence of how objects are stored in GCS (no real hierarchy)
+		if strings.HasSuffix(attrs.Name, "/") {
+			continue
+		}
 		if err != nil {
 			return nil, err
 		}
@@ -209,13 +217,14 @@ func (g *ArtifactDriver) OpenStream(a *wfv1.Artifact) (io.ReadCloser, error) {
 func (g *ArtifactDriver) Save(path string, outputArtifact *wfv1.Artifact) error {
 	err := waitutil.Backoff(defaultRetry,
 		func() (bool, error) {
-			log.Infof("GCS Save path: %s, key: %s", path, outputArtifact.GCS.Key)
+			key := filepath.Clean(outputArtifact.GCS.Key)
+			log.Infof("GCS Save path: %s, key: %s", path, key)
 			client, err := g.newGCSClient()
 			if err != nil {
 				return !isTransientGCSErr(err), err
 			}
 			defer client.Close()
-			err = uploadObjects(client, outputArtifact.GCS.Bucket, outputArtifact.GCS.Key, path)
+			err = uploadObjects(client, outputArtifact.GCS.Bucket, key, path)
 			if err != nil {
 				return !isTransientGCSErr(err), err
 			}
@@ -251,7 +260,7 @@ func listFileRelPaths(path string, relPath string) ([]string, error) {
 func uploadObjects(client *storage.Client, bucket, key, path string) error {
 	isDir, err := file.IsDirectory(path)
 	if err != nil {
-		return fmt.Errorf("test if %s is a dir: %v", path, err)
+		return fmt.Errorf("test if %s is a dir: %w", path, err)
 	}
 	if isDir {
 		dirName := filepath.Clean(path) + string(os.PathSeparator)
@@ -268,7 +277,7 @@ func uploadObjects(client *storage.Client, bucket, key, path string) error {
 
 			err = uploadObject(client, bucket, fullKey, dirName+relPath)
 			if err != nil {
-				return fmt.Errorf("upload %s: %v", dirName+relPath, err)
+				return fmt.Errorf("upload %s: %w", dirName+relPath, err)
 			}
 		}
 	} else {
@@ -278,7 +287,7 @@ func uploadObjects(client *storage.Client, bucket, key, path string) error {
 		}
 		err = uploadObject(client, bucket, objectKey, path)
 		if err != nil {
-			return fmt.Errorf("upload %s: %v", path, err)
+			return fmt.Errorf("upload %s: %w", path, err)
 		}
 	}
 	return nil
@@ -288,7 +297,7 @@ func uploadObjects(client *storage.Client, bucket, key, path string) error {
 func uploadObject(client *storage.Client, bucket, key, localPath string) error {
 	f, err := os.Open(filepath.Clean(localPath))
 	if err != nil {
-		return fmt.Errorf("os open: %v", err)
+		return fmt.Errorf("os open: %w", err)
 	}
 	defer func() {
 		if err := f.Close(); err != nil {
@@ -298,24 +307,48 @@ func uploadObject(client *storage.Client, bucket, key, localPath string) error {
 	ctx := context.Background()
 	wc := client.Bucket(bucket).Object(key).NewWriter(ctx)
 	if _, err = io.Copy(wc, f); err != nil {
-		return fmt.Errorf("io copy: %v", err)
+		return fmt.Errorf("io copy: %w", err)
 	}
 	if err := wc.Close(); err != nil {
-		return fmt.Errorf("writer close: %v", err)
+		return fmt.Errorf("writer close: %w", err)
 	}
 	return nil
 }
 
-// Delete is unsupported for the gcp artifacts
+// delete an object from GCS
+func deleteObject(client *storage.Client, bucket, key string) error {
+	ctx := context.Background()
+	err := client.Bucket(bucket).Object(key).Delete(ctx)
+	if err != nil {
+		return fmt.Errorf("delete %s: %v", key, err)
+	}
+	return nil
+}
+
+// Delete deletes an artifact from GCS
 func (h *ArtifactDriver) Delete(s *wfv1.Artifact) error {
-	return common.ErrDeleteNotSupported
+	err := waitutil.Backoff(defaultRetry,
+		func() (bool, error) {
+			client, err := h.newGCSClient()
+			if err != nil {
+				return !isTransientGCSErr(err), err
+			}
+			defer client.Close()
+			err = deleteObject(client, s.GCS.Bucket, s.GCS.Key)
+			if err != nil {
+				return !isTransientGCSErr(err), err
+			}
+			return true, nil
+		},
+	)
+	return err
 }
 
 func (g *ArtifactDriver) ListObjects(artifact *wfv1.Artifact) ([]string, error) {
 	var files []string
 	err := waitutil.Backoff(defaultRetry,
 		func() (bool, error) {
-			log.Infof("GCS List bucekt: %s, key: %s", artifact.GCS.Bucket, artifact.GCS.Key)
+			log.Infof("GCS List bucket: %s, key: %s", artifact.GCS.Bucket, artifact.GCS.Key)
 			client, err := g.newGCSClient()
 			if err != nil {
 				log.Warnf("Failed to create new GCS client: %v", err)

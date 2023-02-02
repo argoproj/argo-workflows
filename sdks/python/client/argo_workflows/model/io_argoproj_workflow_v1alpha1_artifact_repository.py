@@ -24,18 +24,20 @@ from argo_workflows.model_utils import (  # noqa: F401
     file_type,
     none_type,
     validate_get_composed_info,
+    OpenApiModel
 )
-from ..model_utils import OpenApiModel
 from argo_workflows.exceptions import ApiAttributeError
 
 
 def lazy_import():
     from argo_workflows.model.io_argoproj_workflow_v1alpha1_artifactory_artifact_repository import IoArgoprojWorkflowV1alpha1ArtifactoryArtifactRepository
+    from argo_workflows.model.io_argoproj_workflow_v1alpha1_azure_artifact_repository import IoArgoprojWorkflowV1alpha1AzureArtifactRepository
     from argo_workflows.model.io_argoproj_workflow_v1alpha1_gcs_artifact_repository import IoArgoprojWorkflowV1alpha1GCSArtifactRepository
     from argo_workflows.model.io_argoproj_workflow_v1alpha1_hdfs_artifact_repository import IoArgoprojWorkflowV1alpha1HDFSArtifactRepository
     from argo_workflows.model.io_argoproj_workflow_v1alpha1_oss_artifact_repository import IoArgoprojWorkflowV1alpha1OSSArtifactRepository
     from argo_workflows.model.io_argoproj_workflow_v1alpha1_s3_artifact_repository import IoArgoprojWorkflowV1alpha1S3ArtifactRepository
     globals()['IoArgoprojWorkflowV1alpha1ArtifactoryArtifactRepository'] = IoArgoprojWorkflowV1alpha1ArtifactoryArtifactRepository
+    globals()['IoArgoprojWorkflowV1alpha1AzureArtifactRepository'] = IoArgoprojWorkflowV1alpha1AzureArtifactRepository
     globals()['IoArgoprojWorkflowV1alpha1GCSArtifactRepository'] = IoArgoprojWorkflowV1alpha1GCSArtifactRepository
     globals()['IoArgoprojWorkflowV1alpha1HDFSArtifactRepository'] = IoArgoprojWorkflowV1alpha1HDFSArtifactRepository
     globals()['IoArgoprojWorkflowV1alpha1OSSArtifactRepository'] = IoArgoprojWorkflowV1alpha1OSSArtifactRepository
@@ -97,6 +99,7 @@ class IoArgoprojWorkflowV1alpha1ArtifactRepository(ModelNormal):
         return {
             'archive_logs': (bool,),  # noqa: E501
             'artifactory': (IoArgoprojWorkflowV1alpha1ArtifactoryArtifactRepository,),  # noqa: E501
+            'azure': (IoArgoprojWorkflowV1alpha1AzureArtifactRepository,),  # noqa: E501
             'gcs': (IoArgoprojWorkflowV1alpha1GCSArtifactRepository,),  # noqa: E501
             'hdfs': (IoArgoprojWorkflowV1alpha1HDFSArtifactRepository,),  # noqa: E501
             'oss': (IoArgoprojWorkflowV1alpha1OSSArtifactRepository,),  # noqa: E501
@@ -111,6 +114,7 @@ class IoArgoprojWorkflowV1alpha1ArtifactRepository(ModelNormal):
     attribute_map = {
         'archive_logs': 'archiveLogs',  # noqa: E501
         'artifactory': 'artifactory',  # noqa: E501
+        'azure': 'azure',  # noqa: E501
         'gcs': 'gcs',  # noqa: E501
         'hdfs': 'hdfs',  # noqa: E501
         'oss': 'oss',  # noqa: E501
@@ -160,6 +164,7 @@ class IoArgoprojWorkflowV1alpha1ArtifactRepository(ModelNormal):
                                 _visited_composed_classes = (Animal,)
             archive_logs (bool): ArchiveLogs enables log archiving. [optional]  # noqa: E501
             artifactory (IoArgoprojWorkflowV1alpha1ArtifactoryArtifactRepository): [optional]  # noqa: E501
+            azure (IoArgoprojWorkflowV1alpha1AzureArtifactRepository): [optional]  # noqa: E501
             gcs (IoArgoprojWorkflowV1alpha1GCSArtifactRepository): [optional]  # noqa: E501
             hdfs (IoArgoprojWorkflowV1alpha1HDFSArtifactRepository): [optional]  # noqa: E501
             oss (IoArgoprojWorkflowV1alpha1OSSArtifactRepository): [optional]  # noqa: E501
@@ -247,6 +252,7 @@ class IoArgoprojWorkflowV1alpha1ArtifactRepository(ModelNormal):
                                 _visited_composed_classes = (Animal,)
             archive_logs (bool): ArchiveLogs enables log archiving. [optional]  # noqa: E501
             artifactory (IoArgoprojWorkflowV1alpha1ArtifactoryArtifactRepository): [optional]  # noqa: E501
+            azure (IoArgoprojWorkflowV1alpha1AzureArtifactRepository): [optional]  # noqa: E501
             gcs (IoArgoprojWorkflowV1alpha1GCSArtifactRepository): [optional]  # noqa: E501
             hdfs (IoArgoprojWorkflowV1alpha1HDFSArtifactRepository): [optional]  # noqa: E501
             oss (IoArgoprojWorkflowV1alpha1OSSArtifactRepository): [optional]  # noqa: E501

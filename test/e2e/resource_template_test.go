@@ -96,6 +96,72 @@ spec:
 		})
 }
 
+func (s *ResourceTemplateSuite) TestResourceTemplateWithArtifact() {
+	s.Given().
+		Workflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: k8s-resource-tmpl-with-artifact-
+spec:
+  serviceAccount: argo
+  entrypoint: main
+  templates:
+    - name: main
+      serviceAccountName: argo
+      inputs:
+        artifacts:
+        - name: manifest
+          path: /tmp/manifestfrom-path.yaml
+          raw:
+            data: |
+              apiVersion: v1
+              kind: Pod
+              metadata:
+                generateName: k8s-pod-resource-
+              spec:
+                serviceAccountName: argo
+                containers:
+                - name: argosay-container
+                  image: argoproj/argosay:v2
+                  command: ["/argosay"]
+                restartPolicy: Never
+      resource:
+        action: create
+        successCondition: status.phase == Succeeded
+        failureCondition: status.phase == Failed
+        manifestFrom:
+          artifact:
+            name: manifest
+`).
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow().
+		Then().
+		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
+		})
+}
+
+func (s *ResourceTemplateSuite) TestResourceTemplateWithOutputs() {
+	s.Given().
+		Workflow("@testdata/resource-templates/outputs.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeSucceeded).
+		Then().
+		ExpectWorkflow(func(t *testing.T, md *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			outputs := status.Nodes[md.Name].Outputs
+			if assert.NotNil(t, outputs) {
+				parameters := outputs.Parameters
+				if assert.Len(t, parameters, 2) {
+					assert.Equal(t, "my-pod", parameters[0].Value.String(), "metadata.name is capture for json")
+					assert.Equal(t, "my-pod", parameters[1].Value.String(), "metadata.name is capture for jq")
+				}
+			}
+		})
+}
+
 func TestResourceTemplateSuite(t *testing.T) {
 	suite.Run(t, new(ResourceTemplateSuite))
 }

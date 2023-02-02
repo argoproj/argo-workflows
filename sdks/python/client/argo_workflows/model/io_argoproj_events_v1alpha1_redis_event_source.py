@@ -24,8 +24,8 @@ from argo_workflows.model_utils import (  # noqa: F401
     file_type,
     none_type,
     validate_get_composed_info,
+    OpenApiModel
 )
-from ..model_utils import OpenApiModel
 from argo_workflows.exceptions import ApiAttributeError
 
 
@@ -95,10 +95,12 @@ class IoArgoprojEventsV1alpha1RedisEventSource(ModelNormal):
             'db': (int,),  # noqa: E501
             'filter': (IoArgoprojEventsV1alpha1EventSourceFilter,),  # noqa: E501
             'host_address': (str,),  # noqa: E501
+            'json_body': (bool,),  # noqa: E501
             'metadata': ({str: (str,)},),  # noqa: E501
             'namespace': (str,),  # noqa: E501
             'password': (SecretKeySelector,),  # noqa: E501
             'tls': (IoArgoprojEventsV1alpha1TLSConfig,),  # noqa: E501
+            'username': (str,),  # noqa: E501
         }
 
     @cached_property
@@ -111,10 +113,12 @@ class IoArgoprojEventsV1alpha1RedisEventSource(ModelNormal):
         'db': 'db',  # noqa: E501
         'filter': 'filter',  # noqa: E501
         'host_address': 'hostAddress',  # noqa: E501
+        'json_body': 'jsonBody',  # noqa: E501
         'metadata': 'metadata',  # noqa: E501
         'namespace': 'namespace',  # noqa: E501
         'password': 'password',  # noqa: E501
         'tls': 'tls',  # noqa: E501
+        'username': 'username',  # noqa: E501
     }
 
     read_only_vars = {
@@ -162,10 +166,12 @@ class IoArgoprojEventsV1alpha1RedisEventSource(ModelNormal):
             db (int): [optional]  # noqa: E501
             filter (IoArgoprojEventsV1alpha1EventSourceFilter): [optional]  # noqa: E501
             host_address (str): [optional]  # noqa: E501
+            json_body (bool): [optional]  # noqa: E501
             metadata ({str: (str,)}): [optional]  # noqa: E501
             namespace (str): [optional]  # noqa: E501
             password (SecretKeySelector): [optional]  # noqa: E501
             tls (IoArgoprojEventsV1alpha1TLSConfig): [optional]  # noqa: E501
+            username (str): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -251,10 +257,12 @@ class IoArgoprojEventsV1alpha1RedisEventSource(ModelNormal):
             db (int): [optional]  # noqa: E501
             filter (IoArgoprojEventsV1alpha1EventSourceFilter): [optional]  # noqa: E501
             host_address (str): [optional]  # noqa: E501
+            json_body (bool): [optional]  # noqa: E501
             metadata ({str: (str,)}): [optional]  # noqa: E501
             namespace (str): [optional]  # noqa: E501
             password (SecretKeySelector): [optional]  # noqa: E501
             tls (IoArgoprojEventsV1alpha1TLSConfig): [optional]  # noqa: E501
+            username (str): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)

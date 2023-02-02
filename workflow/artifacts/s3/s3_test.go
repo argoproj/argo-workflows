@@ -64,6 +64,18 @@ func (s *mockS3Client) OpenFile(bucket, key string) (io.ReadCloser, error) {
 	return nil, err
 }
 
+func (s *mockS3Client) KeyExists(bucket, key string) (bool, error) {
+	err := s.getMockedErr("KeyExists")
+	if files, ok := s.files[bucket]; ok {
+		for _, file := range files {
+			if strings.HasPrefix(file, key+"/") || file == key { // either it's a prefixing directory or the key itself
+				return true, err
+			}
+		}
+	}
+	return false, err
+}
+
 // GetDirectory downloads a directory to a local file path
 func (s *mockS3Client) GetDirectory(bucket, key, path string) error {
 	return s.getMockedErr("GetDirectory")
@@ -75,7 +87,7 @@ func (s *mockS3Client) ListDirectory(bucket, keyPrefix string) ([]string, error)
 	err := s.getMockedErr("ListDirectory")
 	if files, ok := s.files[bucket]; ok {
 		for _, file := range files {
-			if strings.HasPrefix(file, keyPrefix) {
+			if strings.HasPrefix(file, keyPrefix+"/") {
 				dirs = append(dirs, file)
 			}
 		}
@@ -526,4 +538,85 @@ func TestSaveS3Artifact(t *testing.T) {
 		})
 		_ = os.Unsetenv(transientEnvVarKey)
 	}
+}
+
+func TestListObjects(t *testing.T) {
+
+	tests := map[string]struct {
+		s3client         argos3.S3Client
+		bucket           string
+		key              string
+		expectedSuccess  bool
+		expectedErrMsg   string
+		expectedNumFiles int
+	}{
+		"Found objects": {
+			s3client: newMockS3Client(
+				map[string][]string{
+					"my-bucket": []string{
+						"/folder/hello-art.tar.gz",
+					},
+				},
+				map[string]error{}),
+			bucket:           "my-bucket",
+			key:              "/folder",
+			expectedSuccess:  true,
+			expectedNumFiles: 1,
+		},
+		"Empty directory": {
+			s3client: newMockS3Client(
+				map[string][]string{
+					"my-bucket": []string{
+						"/folder",
+					},
+				},
+				map[string]error{}),
+			bucket:           "my-bucket",
+			key:              "/folder",
+			expectedSuccess:  true,
+			expectedNumFiles: 0,
+		},
+		"Non-existent directory": {
+			s3client: newMockS3Client(
+				map[string][]string{
+					"my-bucket": []string{
+						"/folder",
+					},
+				},
+				map[string]error{}),
+			bucket:          "my-bucket",
+			key:             "/non-existent-folder",
+			expectedSuccess: false,
+			expectedErrMsg:  "no key found of name /non-existent-folder",
+		},
+	}
+
+	_ = os.Setenv(transientEnvVarKey, "this error is transient")
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			_, files, err := listObjects(tc.s3client,
+				&wfv1.Artifact{
+					ArtifactLocation: wfv1.ArtifactLocation{
+						S3: &wfv1.S3Artifact{
+							S3Bucket: wfv1.S3Bucket{
+								Bucket:                   tc.bucket,
+								CreateBucketIfNotPresent: &wfv1.CreateS3BucketOptions{},
+								EncryptionOptions: &wfv1.S3EncryptionOptions{
+									EnableEncryption: true,
+								},
+							},
+							Key: tc.key,
+						},
+					},
+				})
+			if tc.expectedSuccess {
+				assert.Nil(t, err)
+				assert.Equal(t, tc.expectedNumFiles, len(files))
+			} else {
+				assert.NotNil(t, err)
+				assert.Equal(t, tc.expectedErrMsg, err.Error())
+			}
+		})
+	}
+	_ = os.Unsetenv(transientEnvVarKey)
 }

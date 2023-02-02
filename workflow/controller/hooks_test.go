@@ -6,8 +6,10 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	apiv1 "k8s.io/api/core/v1"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
 
 func TestExecuteWfLifeCycleHook(t *testing.T) {
@@ -324,7 +326,7 @@ spec:
     parameters:
     - name: message
       value: test
-  entrypoint: main	
+  entrypoint: main
   workflowTemplateRef:
     name: workflow-template-whalesay-template
 status:
@@ -931,4 +933,65 @@ status:
 	woc.operate(ctx)
 	node := woc.wf.Status.Nodes.FindByDisplayName("lifecycle-hook-fh7t4.hooks.Failed")
 	assert.NotNil(t, node)
+}
+
+func TestWfHookHasFailures(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: hook-failures
+  namespace: argo
+spec:
+  entrypoint: intentional-fail
+  hooks:
+    failure:
+      expression: workflow.status == "Failed"
+      template: message
+      arguments:
+        parameters:
+          - name: message
+            value: |
+              Workflow {{ workflow.name }} {{ workflow.status }} {{ workflow.failures }}
+  templates:
+    - name: intentional-fail
+      container:
+        image: alpine:latest
+        command: [sh, -c]
+        args: ["echo intentional failure; exit 1"]
+    - name: message
+      inputs:
+        parameters:
+          - name: message
+      script:
+        image: alpine:latest
+        command: [sh]
+        source: |
+          echo {{ inputs.parameters.message }}
+`)
+
+	cancel, controller := newController(wf)
+	defer cancel()
+
+	ctx := context.Background()
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate(ctx)
+	makePodsPhase(ctx, woc, apiv1.PodFailed)
+
+	woc = newWorkflowOperationCtx(woc.wf, controller)
+	woc.operate(ctx)
+	node := woc.wf.Status.Nodes.FindByDisplayName("hook-failures.hooks.failure")
+	assert.NotNil(t, node)
+	assert.Contains(t,
+		woc.globalParams[common.GlobalVarWorkflowFailures],
+		`[{\"displayName\":\"hook-failures\",\"message\":\"Pod failed\",\"templateName\":\"intentional-fail\",\"phase\":\"Failed\",\"podName\":\"hook-failures\"`,
+	)
+	assert.Equal(t, wfv1.NodePending, node.Phase)
+	makePodsPhase(ctx, woc, apiv1.PodFailed)
+	woc = newWorkflowOperationCtx(woc.wf, controller)
+	err := woc.podReconciliation(ctx)
+	assert.NoError(t, err)
+	node = woc.wf.Status.Nodes.FindByDisplayName("hook-failures.hooks.failure")
+	assert.NotNil(t, node)
+	assert.Equal(t, wfv1.NodeFailed, node.Phase)
 }

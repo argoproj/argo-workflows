@@ -49,6 +49,8 @@ func (f listFlags) displayFields() string {
 		return nameFields
 	case "json", "yaml":
 		return ""
+	case "wide":
+		return ""
 	default:
 		return defaultFields
 	}
@@ -90,7 +92,7 @@ func NewListCommand() *cobra.Command {
 	command.Flags().Int64VarP(&listArgs.chunkSize, "chunk-size", "", 0, "Return large lists in chunks rather than all at once. Pass 0 to disable.")
 	command.Flags().BoolVar(&listArgs.noHeaders, "no-headers", false, "Don't print headers (default print headers).")
 	command.Flags().StringVarP(&listArgs.labels, "selector", "l", "", "Selector (label query) to filter on, not including uninitialized ones, supports '=', '==', and '!='.(e.g. -l key1=value1,key2=value2)")
-	command.Flags().StringVar(&listArgs.fields, "field-selector", "", "Selector (field query) to filter on, supports '=', '==', and '!='.(e.g. --field-selectorkey1=value1,key2=value2). The server only supports a limited number of field queries per type.")
+	command.Flags().StringVar(&listArgs.fields, "field-selector", "", "Selector (field query) to filter on, supports '=', '==', and '!='.(e.g. --field-selector key1=value1,key2=value2). The server only supports a limited number of field queries per type.")
 	return command
 }
 

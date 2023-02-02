@@ -1,0 +1,121 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: testing-on-completion-and-on-deletion-strategies-
+spec:
+  entrypoint: entrypoint
+  artifactGC:
+    strategy: OnWorkflowCompletion
+  podGC:
+    strategy: ""
+  templates:
+    - name: entrypoint
+      steps:
+      - - name: call-first
+          template: first
+      - - name: call-second
+          template: second
+    - name: first
+      container:
+        image: argoproj/argosay:v2
+        command:
+          - sh
+          - -c
+        args:
+          - |
+            echo "hello world" > /tmp/message
+      outputs:
+        artifacts:
+          - name: first-on-completion-1
+            path: /tmp/message
+            s3:
+              key: first-on-completion-1
+              bucket: my-bucket-2
+              endpoint: minio:9000
+              insecure: true
+              accessKeySecret:
+                name: my-minio-cred
+                key: accesskey
+              secretKeySecret:
+                name: my-minio-cred
+                key: secretkey
+            artifactGC:
+              strategy: OnWorkflowCompletion
+              serviceAccountName: default
+              podMetadata:
+                annotations:
+                  annotation-key-1: annotation-value-1
+                  annotation-key-2: annotation-value-2
+          - name: first-on-completion-2
+            path: /tmp/message
+            s3:
+              key: first-on-completion-2
+              bucket: my-bucket-3
+              endpoint: minio:9000
+              insecure: true
+              accessKeySecret:
+                name: my-minio-cred
+                key: accesskey
+              secretKeySecret:
+                name: my-minio-cred
+                key: secretkey
+          - name: first-no-deletion 
+            path: /tmp/message
+            s3:
+              key: first-no-deletion
+              bucket: my-bucket-3
+              endpoint: minio:9000
+              insecure: true
+              accessKeySecret:
+                name: my-minio-cred
+                key: accesskey
+              secretKeySecret:
+                name: my-minio-cred
+                key: secretkey
+            artifactGC:
+              strategy: Never
+
+    - name: second
+      archiveLocation:
+        s3:
+          key: default-to-be-overridden
+          bucket: my-bucket-3
+          endpoint: minio:9000
+          insecure: true
+          accessKeySecret:
+            name: my-minio-cred
+            key: accesskey
+          secretKeySecret:
+            name: my-minio-cred
+            key: secretkey
+      container:
+        image: argoproj/argosay:v2
+        command:
+          - sh
+          - -c
+        args:
+          - |
+            echo "hello world" > /tmp/message
+      outputs:
+        artifacts:
+          - name: second-on-deletion
+            s3:
+              key: second-on-deletion
+            path: /tmp/message
+            artifactGC:
+              strategy: OnWorkflowDeletion
+          - name: second-on-completion
+            path: /tmp/message
+            s3:
+              key: second-on-completion
+              bucket: my-bucket-2
+              endpoint: minio:9000
+              insecure: true
+              accessKeySecret:
+                name: my-minio-cred
+                key: accesskey
+              secretKeySecret:
+                name: my-minio-cred
+                key: secretkey
+            artifactGC:
+              strategy: OnWorkflowCompletion

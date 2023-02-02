@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/argoproj/argo-workflows/v3/util/secrets"
+
 	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -84,10 +86,7 @@ func addWebhookAuthorization(r *http.Request, kube kubernetes.Interface) error {
 			if err != nil {
 				return fmt.Errorf("failed to get service account \"%s\": %w", serviceAccountName, err)
 			}
-			if len(serviceAccount.Secrets) == 0 {
-				return fmt.Errorf("failed to get secret for service account \"%s\": no secrets", serviceAccountName)
-			}
-			tokenSecret, err := secretsInterface.Get(ctx, serviceAccount.Secrets[0].Name, metav1.GetOptions{})
+			tokenSecret, err := secretsInterface.Get(ctx, secrets.TokenNameForServiceAccount(serviceAccount), metav1.GetOptions{})
 			if err != nil {
 				return fmt.Errorf("failed to get token secret \"%s\": %w", tokenSecret, err)
 			}

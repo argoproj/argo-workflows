@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path"
 	"path/filepath"
 	"strconv"
 	"testing"
@@ -224,7 +225,7 @@ func TestTmplServiceAccount(t *testing.T) {
 func TestWFLevelAutomountServiceAccountToken(t *testing.T) {
 	woc := newWoc()
 	ctx := context.Background()
-	_, err := util.CreateServiceAccountWithToken(ctx, woc.controller.kubeclientset, "", "foo", "foo-token")
+	_, err := util.CreateServiceAccountWithToken(ctx, woc.controller.kubeclientset, "", "foo")
 	assert.NoError(t, err)
 
 	falseValue := false
@@ -246,7 +247,7 @@ func TestWFLevelAutomountServiceAccountToken(t *testing.T) {
 func TestTmplLevelAutomountServiceAccountToken(t *testing.T) {
 	woc := newWoc()
 	ctx := context.Background()
-	_, err := util.CreateServiceAccountWithToken(ctx, woc.controller.kubeclientset, "", "foo", "foo-token")
+	_, err := util.CreateServiceAccountWithToken(ctx, woc.controller.kubeclientset, "", "foo")
 	assert.NoError(t, err)
 
 	trueValue := true
@@ -280,7 +281,7 @@ func verifyServiceAccountTokenVolumeMount(t *testing.T, ctr apiv1.Container, vol
 func TestWFLevelExecutorServiceAccountName(t *testing.T) {
 	woc := newWoc()
 	ctx := context.Background()
-	_, err := util.CreateServiceAccountWithToken(ctx, woc.controller.kubeclientset, "", "foo", "foo-token")
+	_, err := util.CreateServiceAccountWithToken(ctx, woc.controller.kubeclientset, "", "foo")
 	assert.NoError(t, err)
 
 	woc.execWf.Spec.Executor = &wfv1.ExecutorConfig{ServiceAccountName: "foo"}
@@ -294,7 +295,6 @@ func TestWFLevelExecutorServiceAccountName(t *testing.T) {
 	assert.Len(t, pods.Items, 1)
 	pod := pods.Items[0]
 	assert.Equal(t, "exec-sa-token", pod.Spec.Volumes[2].Name)
-	assert.Equal(t, "foo-token", pod.Spec.Volumes[2].VolumeSource.Secret.SecretName)
 
 	waitCtr := pod.Spec.Containers[0]
 	verifyServiceAccountTokenVolumeMount(t, waitCtr, "exec-sa-token", "/var/run/secrets/kubernetes.io/serviceaccount")
@@ -304,9 +304,9 @@ func TestWFLevelExecutorServiceAccountName(t *testing.T) {
 func TestTmplLevelExecutorServiceAccountName(t *testing.T) {
 	woc := newWoc()
 	ctx := context.Background()
-	_, err := util.CreateServiceAccountWithToken(ctx, woc.controller.kubeclientset, "", "foo", "foo-token")
+	_, err := util.CreateServiceAccountWithToken(ctx, woc.controller.kubeclientset, "", "foo")
 	assert.NoError(t, err)
-	_, err = util.CreateServiceAccountWithToken(ctx, woc.controller.kubeclientset, "", "tmpl", "tmpl-token")
+	_, err = util.CreateServiceAccountWithToken(ctx, woc.controller.kubeclientset, "", "tmpl")
 	assert.NoError(t, err)
 
 	woc.execWf.Spec.Executor = &wfv1.ExecutorConfig{ServiceAccountName: "foo"}
@@ -321,7 +321,6 @@ func TestTmplLevelExecutorServiceAccountName(t *testing.T) {
 	assert.Len(t, pods.Items, 1)
 	pod := pods.Items[0]
 	assert.Equal(t, "exec-sa-token", pod.Spec.Volumes[2].Name)
-	assert.Equal(t, "tmpl-token", pod.Spec.Volumes[2].VolumeSource.Secret.SecretName)
 
 	waitCtr := pod.Spec.Containers[0]
 	verifyServiceAccountTokenVolumeMount(t, waitCtr, "exec-sa-token", "/var/run/secrets/kubernetes.io/serviceaccount")
@@ -332,9 +331,9 @@ func TestTmplLevelExecutorSecurityContext(t *testing.T) {
 	var user int64 = 1000
 	ctx := context.Background()
 	woc := newWoc()
-	_, err := util.CreateServiceAccountWithToken(ctx, woc.controller.kubeclientset, "", "foo", "foo-token")
+	_, err := util.CreateServiceAccountWithToken(ctx, woc.controller.kubeclientset, "", "foo")
 	assert.NoError(t, err)
-	_, err = util.CreateServiceAccountWithToken(ctx, woc.controller.kubeclientset, "", "tmpl", "tmpl-token")
+	_, err = util.CreateServiceAccountWithToken(ctx, woc.controller.kubeclientset, "", "tmpl")
 	assert.NoError(t, err)
 
 	woc.controller.Config.Executor = &apiv1.Container{SecurityContext: &apiv1.SecurityContext{RunAsUser: &user}}
@@ -660,13 +659,17 @@ func Test_createWorkflowPod_emissary(t *testing.T) {
 		woc := newWoc()
 		pod, err := woc.createWorkflowPod(context.Background(), "", []apiv1.Container{{Command: []string{"foo"}}}, &wfv1.Template{}, &createWorkflowPodOpts{})
 		assert.NoError(t, err)
-		assert.Equal(t, []string{"/var/run/argo/argoexec", "emissary", "--", "foo"}, pod.Spec.Containers[1].Command)
+		assert.Equal(t, []string{"/var/run/argo/argoexec", "emissary",
+			"--loglevel", getExecutorLogLevel(), "--log-format", woc.controller.cliExecutorLogFormat,
+			"--", "foo"}, pod.Spec.Containers[1].Command)
 	})
 	t.Run("NoCommandWithImageIndex", func(t *testing.T) {
 		woc := newWoc()
 		pod, err := woc.createWorkflowPod(context.Background(), "", []apiv1.Container{{Image: "my-image"}}, &wfv1.Template{}, &createWorkflowPodOpts{})
 		if assert.NoError(t, err) {
-			assert.Equal(t, []string{"/var/run/argo/argoexec", "emissary", "--", "my-entrypoint"}, pod.Spec.Containers[1].Command)
+			assert.Equal(t, []string{"/var/run/argo/argoexec", "emissary",
+				"--loglevel", getExecutorLogLevel(), "--log-format", woc.controller.cliExecutorLogFormat,
+				"--", "my-entrypoint"}, pod.Spec.Containers[1].Command)
 			assert.Equal(t, []string{"my-cmd"}, pod.Spec.Containers[1].Args)
 		}
 	})
@@ -674,7 +677,9 @@ func Test_createWorkflowPod_emissary(t *testing.T) {
 		woc := newWoc()
 		pod, err := woc.createWorkflowPod(context.Background(), "", []apiv1.Container{{Image: "my-image", Args: []string{"foo"}}}, &wfv1.Template{}, &createWorkflowPodOpts{})
 		if assert.NoError(t, err) {
-			assert.Equal(t, []string{"/var/run/argo/argoexec", "emissary", "--", "my-entrypoint"}, pod.Spec.Containers[1].Command)
+			assert.Equal(t, []string{"/var/run/argo/argoexec", "emissary",
+				"--loglevel", getExecutorLogLevel(), "--log-format", woc.controller.cliExecutorLogFormat,
+				"--", "my-entrypoint"}, pod.Spec.Containers[1].Command)
 			assert.Equal(t, []string{"foo"}, pod.Spec.Containers[1].Args)
 		}
 	})
@@ -689,7 +694,9 @@ func Test_createWorkflowPod_emissary(t *testing.T) {
 		assert.NoError(t, err)
 		pod, err := woc.createWorkflowPod(context.Background(), "", []apiv1.Container{{Command: []string{"foo"}}}, &wfv1.Template{PodSpecPatch: string(podSpecPatch)}, &createWorkflowPodOpts{})
 		assert.NoError(t, err)
-		assert.Equal(t, []string{"/var/run/argo/argoexec", "emissary", "--", "bar"}, pod.Spec.Containers[1].Command)
+		assert.Equal(t, []string{"/var/run/argo/argoexec", "emissary",
+			"--loglevel", getExecutorLogLevel(), "--log-format", woc.controller.cliExecutorLogFormat,
+			"--", "bar"}, pod.Spec.Containers[1].Command)
 	})
 }
 
@@ -745,7 +752,9 @@ func TestVolumeAndVolumeMounts(t *testing.T) {
 				assert.Equal(t, "var-run-argo", wait.VolumeMounts[2].Name)
 			}
 			main := containers[1]
-			assert.Equal(t, []string{"/var/run/argo/argoexec", "emissary", "--", "cowsay"}, main.Command)
+			assert.Equal(t, []string{"/var/run/argo/argoexec", "emissary",
+				"--loglevel", getExecutorLogLevel(), "--log-format", woc.controller.cliExecutorLogFormat,
+				"--", "cowsay"}, main.Command)
 			if assert.Len(t, main.VolumeMounts, 2) {
 				assert.Equal(t, "volume-name", main.VolumeMounts[0].Name)
 				assert.Equal(t, "var-run-argo", main.VolumeMounts[1].Name)
@@ -1155,6 +1164,92 @@ func TestTmplLevelSecurityContext(t *testing.T) {
 	pod := pods.Items[0]
 	assert.NotNil(t, pod.Spec.SecurityContext)
 	assert.Equal(t, runAsUser, *pod.Spec.SecurityContext.RunAsUser)
+}
+
+func Test_createSecretVolumesFromArtifactLocations_SSECUsed(t *testing.T) {
+	ctx := context.Background()
+
+	cancel, controller := newControllerWithComplexDefaults()
+	defer cancel()
+
+	wf := wfv1.MustUnmarshalWorkflow(helloWorldWf)
+	wf.Spec.Templates[0].Inputs = wfv1.Inputs{
+		Artifacts: []wfv1.Artifact{
+			{
+				Name: "foo",
+				Path: "/tmp/file",
+				ArtifactLocation: wfv1.ArtifactLocation{
+					S3: &wfv1.S3Artifact{
+						Key: "/foo/key",
+					},
+				},
+				Archive: &wfv1.ArchiveStrategy{
+					None: &wfv1.NoneStrategy{},
+				},
+			},
+		},
+	}
+	woc := newWorkflowOperationCtx(wf, controller)
+	setArtifactRepository(woc.controller,
+		&wfv1.ArtifactRepository{
+			S3: &wfv1.S3ArtifactRepository{
+				S3Bucket: wfv1.S3Bucket{
+					Bucket: "foo",
+					AccessKeySecret: &apiv1.SecretKeySelector{
+						LocalObjectReference: apiv1.LocalObjectReference{
+							Name: "accesskey",
+						},
+						Key: "aws-keys",
+					},
+					SecretKeySecret: &apiv1.SecretKeySelector{
+						LocalObjectReference: apiv1.LocalObjectReference{
+							Name: "secretkey",
+						},
+						Key: "aws-keys",
+					},
+					EncryptionOptions: &wfv1.S3EncryptionOptions{
+						EnableEncryption: true,
+						ServerSideCustomerKeySecret: &apiv1.SecretKeySelector{
+							LocalObjectReference: apiv1.LocalObjectReference{
+								Name: "enckey",
+							},
+							Key: "aws-sse-c",
+						},
+					},
+				},
+			},
+		},
+	)
+
+	wantVolume := apiv1.Volume{
+		Name: "enckey",
+		VolumeSource: apiv1.VolumeSource{
+			Secret: &apiv1.SecretVolumeSource{
+				SecretName: "enckey",
+				Items: []apiv1.KeyToPath{
+					{
+						Key:  "aws-sse-c",
+						Path: "aws-sse-c",
+					},
+				},
+			},
+		},
+	}
+	wantInitContainerVolumeMount := apiv1.VolumeMount{
+		Name:      "enckey",
+		ReadOnly:  true,
+		MountPath: path.Join(common.SecretVolMountPath, "enckey"),
+	}
+
+	err := woc.setExecWorkflow(ctx)
+	require.NoError(t, err)
+	woc.operate(ctx)
+
+	mainCtr := woc.execWf.Spec.Templates[0].Container
+	pod, _ := woc.createWorkflowPod(ctx, wf.Name, []apiv1.Container{*mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
+	assert.Contains(t, pod.Spec.Volumes, wantVolume)
+	assert.Len(t, pod.Spec.InitContainers, 1)
+	assert.Contains(t, pod.Spec.InitContainers[0].VolumeMounts, wantInitContainerVolumeMount)
 }
 
 var helloWorldWfWithPatch = `

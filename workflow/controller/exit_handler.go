@@ -13,28 +13,28 @@ import (
 	"github.com/argoproj/argo-workflows/v3/workflow/templateresolution"
 )
 
-func (woc *wfOperationCtx) runOnExitNode(ctx context.Context, exitHook *wfv1.LifecycleHook, parentNode *wfv1.NodeStatus, boundaryID string, tmplCtx *templateresolution.Context, prefix string) (bool, *wfv1.NodeStatus, error) {
+func (woc *wfOperationCtx) runOnExitNode(ctx context.Context, exitHook *wfv1.LifecycleHook, parentNode *wfv1.NodeStatus, boundaryID string, tmplCtx *templateresolution.Context, prefix string, scope *wfScope) (bool, *wfv1.NodeStatus, error) {
 	outputs := parentNode.Outputs
 	if parentNode.Type == wfv1.NodeTypeRetry {
 		lastChildNode := getChildNodeIndex(parentNode, woc.wf.Status.Nodes, -1)
 		outputs = lastChildNode.Outputs
 	}
+
 	if exitHook != nil && woc.GetShutdownStrategy().ShouldExecute(true) {
 		execute := true
 		var err error
 		if exitHook.Expression != "" {
-			execute, err = argoexpr.EvalBool(exitHook.Expression, env.GetFuncMap(template.EnvMap(woc.globalParams)))
+			execute, err = argoexpr.EvalBool(exitHook.Expression, env.GetFuncMap(template.EnvMap(woc.globalParams.Merge(scope.getParameters()))))
 			if err != nil {
 				return true, nil, err
 			}
 		}
 		if execute {
 			woc.log.WithField("lifeCycleHook", exitHook).Infof("Running OnExit handler")
-
 			onExitNodeName := common.GenerateOnExitNodeName(parentNode.Name)
 			resolvedArgs := exitHook.Arguments
 			if !resolvedArgs.IsEmpty() && outputs != nil {
-				resolvedArgs, err = woc.resolveExitTmplArgument(exitHook.Arguments, prefix, outputs)
+				resolvedArgs, err = woc.resolveExitTmplArgument(exitHook.Arguments, prefix, outputs, scope)
 				if err != nil {
 					return true, nil, err
 				}
@@ -52,8 +52,10 @@ func (woc *wfOperationCtx) runOnExitNode(ctx context.Context, exitHook *wfv1.Lif
 	return false, nil, nil
 }
 
-func (woc *wfOperationCtx) resolveExitTmplArgument(args wfv1.Arguments, prefix string, outputs *wfv1.Outputs) (wfv1.Arguments, error) {
-	scope := createScope(nil)
+func (woc *wfOperationCtx) resolveExitTmplArgument(args wfv1.Arguments, prefix string, outputs *wfv1.Outputs, scope *wfScope) (wfv1.Arguments, error) {
+	if scope == nil {
+		scope = createScope(nil)
+	}
 	for _, param := range outputs.Parameters {
 		scope.addParamToScope(fmt.Sprintf("%s.outputs.parameters.%s", prefix, param.Name), param.Value.String())
 	}

@@ -25,7 +25,7 @@ spec:
       container:
         image: docker/whalesay
         command: [ cowsay ]
-        args: [ "{{inputs.parameters.message}}" ] 
+        args: [ "{{inputs.parameters.message}}" ]
 ```
 
 The following variables are made available to reference various meta-data of a workflow:
@@ -41,7 +41,7 @@ There are two kinds of template tag:
 
 The tag is substituted with the variable that has a name the same as the tag.
 
-Simple tags **may** have white-space between the brackets and variable.
+Simple tags **may** have white-space between the brackets and variable as seen below. However, there is a known issue where variables may fail to interpolate with white-space, so it is recommended to avoid using white-space until this issue is resolved. [Please report](https://github.com/argoproj/argo-workflows/issues/8960) unexpected behavior with reproducible examples.
 
 ```yaml
 args: [ "{{ inputs.parameters.message }}" ]  
@@ -130,11 +130,13 @@ returns `0`. Please review the Sprig documentation to understand which functions
 | `inputs.parameters.<NAME>`| Input parameter to a template |
 | `inputs.parameters`| All input parameters to a template as a JSON string |
 | `inputs.artifacts.<NAME>` | Input artifact to a template |
+| `node.name` | Full name of the node |
 
 ### Steps Templates
 
 | Variable | Description|
 |----------|------------|
+| `steps.name` | Name of the step |
 | `steps.<STEPNAME>.id` | unique id of container step |
 | `steps.<STEPNAME>.ip` | IP address of a previous daemon container step |
 | `steps.<STEPNAME>.status` | Phase status of any previous step |
@@ -150,6 +152,7 @@ returns `0`. Please review the Sprig documentation to understand which functions
 
 | Variable | Description|
 |----------|------------|
+| `tasks.name` | Name of the task |
 | `tasks.<TASKNAME>.id` | unique id of container task |
 | `tasks.<TASKNAME>.ip` | IP address of a previous daemon container task |
 | `tasks.<TASKNAME>.status` | Phase status of any previous task |
@@ -244,11 +247,14 @@ For `Template`-level metrics:
 | `workflow.serviceAccountName` | Workflow service account name |
 | `workflow.uid` | Workflow UID. Useful for setting ownership reference to a resource, or a unique artifact location |
 | `workflow.parameters.<NAME>` | Input parameter to the workflow |
-| `workflow.parameters` | All input parameters to the workflow as a JSON string |
+| `workflow.parameters` | All input parameters to the workflow as a JSON string (this is deprecated in favor of `workflow.parameters.json` as this doesn't work with expression tags and that does) |
+| `workflow.parameters.json` | All input parameters to the workflow as a JSON string |
 | `workflow.outputs.parameters.<NAME>` | Global parameter in the workflow |
 | `workflow.outputs.artifacts.<NAME>` | Global artifact in the workflow |
 | `workflow.annotations.<NAME>` | Workflow annotations |
+| `workflow.annotations.json` | all Workflow annotations as a JSON string |
 | `workflow.labels.<NAME>` | Workflow labels |
+| `workflow.labels.json` | all Workflow labels as a JSON string |
 | `workflow.creationTimestamp` | Workflow creation time-stamp formatted in RFC 3339  (e.g. `2018-08-23T05:42:49Z`) |
 | `workflow.creationTimestamp.<STRFTIMECHAR>` | Creation time-stamp formatted with a [`strftime`](http://strftime.org) format character. |
 | `workflow.creationTimestamp.RFC3339` | Creation time-stamp formatted with in RFC 3339. |

@@ -10,19 +10,24 @@ package workflowarchive;
 message ListArchivedWorkflowsRequest {
   k8s.io.apimachinery.pkg.apis.meta.v1.ListOptions listOptions = 1;
   string namePrefix = 2;
+  string namespace = 3;
 }
 message GetArchivedWorkflowRequest {
   string uid = 1;
+  string namespace = 2;
 }
 message DeleteArchivedWorkflowRequest {
   string uid = 1;
+  string namespace = 2;
 }
 message ArchivedWorkflowDeletedResponse {
 }
 message ListArchivedWorkflowLabelKeysRequest {
+  string namespace = 1;
 }
 message ListArchivedWorkflowLabelValuesRequest {
   k8s.io.apimachinery.pkg.apis.meta.v1.ListOptions listOptions = 1;
+  string namespace = 2;
 }
 message RetryArchivedWorkflowRequest {
   string uid = 1;
@@ -30,6 +35,7 @@ message RetryArchivedWorkflowRequest {
   string namespace = 3;
   bool restartSuccessful = 4;
   string nodeFieldSelector = 5;
+  repeated string parameters = 6;
 }
 
 message ResubmitArchivedWorkflowRequest {
@@ -37,6 +43,7 @@ message ResubmitArchivedWorkflowRequest {
   string name = 2;
   string namespace = 3;
   bool memoized = 4;
+  repeated string parameters = 5;
 }
 
 service ArchivedWorkflowService {

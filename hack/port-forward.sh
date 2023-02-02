@@ -8,7 +8,7 @@ pf() {
   dest_port=${3:-"$port"}
   ./hack/free-port.sh $port
   echo "port-forward $resource $port"
-  kubectl -n argo port-forward "svc/$resource" "$port:$dest_port" > /dev/null &
+  kubectl -n argo port-forward "svc/$resource" "$port:$dest_port" &
 	until lsof -i ":$port" > /dev/null ; do sleep 1 ; done
 }
 
@@ -56,4 +56,10 @@ fi
 if [[ "$(kubectl -n argo get pod -l app=prometheus -o name)" != "" ]]; then
   wait-for prometheus
   pf prometheus 9091 9090
+fi
+
+azurite=$(kubectl -n argo get pod -l app=azurite -o name)
+if [[ "$azurite" != "" ]]; then
+  wait-for azurite
+  pf azurite 10000
 fi

@@ -16,8 +16,9 @@ spec:
       serviceAccountName: dex
       containers:
         - name: dex
-          image: quay.io/dexidp/dex:v2.23.0
+          image: ghcr.io/dexidp/dex:v2.35.0
           args:
+            - dex
             - serve
             - /data/config.yaml
           ports:

@@ -24,8 +24,8 @@ from argo_workflows.model_utils import (  # noqa: F401
     file_type,
     none_type,
     validate_get_composed_info,
+    OpenApiModel
 )
-from ..model_utils import OpenApiModel
 from argo_workflows.exceptions import ApiAttributeError
 
 
@@ -86,6 +86,7 @@ class IoArgoprojWorkflowV1alpha1GetUserInfoResponse(ModelNormal):
             'groups': ([str],),  # noqa: E501
             'issuer': (str,),  # noqa: E501
             'service_account_name': (str,),  # noqa: E501
+            'service_account_namespace': (str,),  # noqa: E501
             'subject': (str,),  # noqa: E501
         }
 
@@ -100,6 +101,7 @@ class IoArgoprojWorkflowV1alpha1GetUserInfoResponse(ModelNormal):
         'groups': 'groups',  # noqa: E501
         'issuer': 'issuer',  # noqa: E501
         'service_account_name': 'serviceAccountName',  # noqa: E501
+        'service_account_namespace': 'serviceAccountNamespace',  # noqa: E501
         'subject': 'subject',  # noqa: E501
     }
 
@@ -149,6 +151,7 @@ class IoArgoprojWorkflowV1alpha1GetUserInfoResponse(ModelNormal):
             groups ([str]): [optional]  # noqa: E501
             issuer (str): [optional]  # noqa: E501
             service_account_name (str): [optional]  # noqa: E501
+            service_account_namespace (str): [optional]  # noqa: E501
             subject (str): [optional]  # noqa: E501
         """
 
@@ -236,6 +239,7 @@ class IoArgoprojWorkflowV1alpha1GetUserInfoResponse(ModelNormal):
             groups ([str]): [optional]  # noqa: E501
             issuer (str): [optional]  # noqa: E501
             service_account_name (str): [optional]  # noqa: E501
+            service_account_namespace (str): [optional]  # noqa: E501
             subject (str): [optional]  # noqa: E501
         """
 

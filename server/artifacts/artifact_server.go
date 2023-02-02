@@ -18,6 +18,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/env"
 
+	argoerrors "github.com/argoproj/argo-workflows/v3/errors"
 	"github.com/argoproj/argo-workflows/v3/persist/sqldb"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/server/auth"
@@ -27,6 +28,7 @@ import (
 	artifact "github.com/argoproj/argo-workflows/v3/workflow/artifacts"
 	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/hydrator"
+	"github.com/argoproj/argo-workflows/v3/workflow/util"
 )
 
 type ArtifactServer struct {
@@ -56,9 +58,11 @@ func (a *ArtifactServer) GetInputArtifact(w http.ResponseWriter, r *http.Request
 
 // single endpoint to be able to handle serving directories as well as files, both those that have been archived and those that haven't
 // Valid requests:
-//  /artifact-files/{namespace}/[archived-workflows|workflows]/{id}/{nodeId}/outputs/{artifactName}
-//  /artifact-files/{namespace}/[archived-workflows|workflows]/{id}/{nodeId}/outputs/{artifactName}/{fileName}
-//  /artifact-files/{namespace}/[archived-workflows|workflows]/{id}/{nodeId}/outputs/{artifactName}/{fileDir}/.../{fileName}
+//
+//	/artifact-files/{namespace}/[archived-workflows|workflows]/{id}/{nodeId}/outputs/{artifactName}
+//	/artifact-files/{namespace}/[archived-workflows|workflows]/{id}/{nodeId}/outputs/{artifactName}/{fileName}
+//	/artifact-files/{namespace}/[archived-workflows|workflows]/{id}/{nodeId}/outputs/{artifactName}/{fileDir}/.../{fileName}
+//
 // 'id' field represents 'uid' for archived workflows and 'name' for non-archived
 func (a *ArtifactServer) GetArtifactFile(w http.ResponseWriter, r *http.Request) {
 
@@ -154,8 +158,10 @@ func (a *ArtifactServer) GetArtifactFile(w http.ResponseWriter, r *http.Request)
 	if !isDir {
 		isDir, err := driver.IsDirectory(artifact)
 		if err != nil {
-			a.serverInternalError(err, w)
-			return
+			if !argoerrors.IsCode(argoerrors.CodeNotImplemented, err) {
+				a.serverInternalError(err, w)
+				return
+			}
 		}
 		if isDir {
 			http.Redirect(w, r, r.URL.String()+"/", http.StatusTemporaryRedirect)
@@ -168,7 +174,7 @@ func (a *ArtifactServer) GetArtifactFile(w http.ResponseWriter, r *http.Request)
 
 		objects, err := driver.ListObjects(artifact)
 		if err != nil {
-			a.serverInternalError(err, w)
+			a.httpFromError(err, w)
 			return
 		}
 		log.Debugf("this is a directory, artifact: %+v; files: %v", artifact, objects)
@@ -176,7 +182,7 @@ func (a *ArtifactServer) GetArtifactFile(w http.ResponseWriter, r *http.Request)
 		key, _ := artifact.GetKey()
 		for _, object := range objects {
 
-			// object is prefixed the key, we must trim it
+			// object is prefixed by the key, we must trim it
 			dir, file := path.Split(strings.TrimPrefix(object, key+"/"))
 
 			// if dir is empty string, we are in the root dir
@@ -214,11 +220,11 @@ func (a *ArtifactServer) GetArtifactFile(w http.ResponseWriter, r *http.Request)
 
 	} else { // stream the file itself
 		log.Debugf("not a directory, artifact: %+v", artifact)
+
 		err = a.returnArtifact(w, artifact, driver)
 
 		if err != nil {
-			a.serverInternalError(err, w)
-			return
+			a.httpFromError(err, w)
 		}
 	}
 
@@ -306,6 +312,7 @@ func (a *ArtifactServer) getArtifactByUID(w http.ResponseWriter, r *http.Request
 	}
 
 	log.WithFields(log.Fields{"uid": uid, "nodeId": nodeId, "artifactName": artifactName, "isInput": isInput}).Info("Download artifact")
+
 	err = a.returnArtifact(w, art, driver)
 
 	if err != nil {
@@ -344,14 +351,25 @@ func (a *ArtifactServer) httpBadRequestError(w http.ResponseWriter) {
 }
 
 func (a *ArtifactServer) httpFromError(err error, w http.ResponseWriter) {
+	if err == nil {
+		return
+	}
+	statusCode := http.StatusInternalServerError
 	e := &apierr.StatusError{}
-	if errors.As(err, &e) {
+	if errors.As(err, &e) { // check if it's a Kubernetes API error
 		// There is a http error code somewhere in the error stack
-		statusCode := int(e.Status().Code)
-		http.Error(w, http.StatusText(statusCode), statusCode)
+		statusCode = int(e.Status().Code)
 	} else {
-		// Unknown error - return internal error
-		a.serverInternalError(err, w)
+		// check if it's an internal ArgoError
+		argoerr, typeOkay := err.(argoerrors.ArgoError)
+		if typeOkay {
+			statusCode = argoerr.HTTPCode()
+		}
+	}
+
+	http.Error(w, http.StatusText(statusCode), statusCode)
+	if statusCode == http.StatusInternalServerError {
+		log.WithError(err).Error("Artifact Server returned internal error")
 	}
 }
 
@@ -366,15 +384,35 @@ func (a *ArtifactServer) getArtifactAndDriver(ctx context.Context, nodeId, artif
 		art = wf.Status.Nodes[nodeId].Outputs.GetArtifactByName(artifactName)
 	}
 	if art == nil {
-		return nil, nil, fmt.Errorf("artifact not found: %s", artifactName)
+		return nil, nil, fmt.Errorf("artifact not found: %s, isInput=%t, Workflow Status=%+v", artifactName, isInput, wf.Status)
 	}
 
-	ar, err := a.artifactRepositories.Get(ctx, wf.Status.ArtifactRepositoryRef)
-	if err != nil {
-		return art, nil, err
+	// Artifact Location can be defined in various places:
+	// 1. In the Artifact itself
+	// 2. Defined by Controller configmap
+	// 3. Workflow spec defines artifactRepositoryRef which is a ConfigMap which defines the location
+	// 4. Template defines ArchiveLocation
+	// 5. Inline Template
+
+	var archiveLocation *wfv1.ArtifactLocation
+	templateName := util.GetTemplateFromNode(wf.Status.Nodes[nodeId])
+	if templateName != "" {
+		template := wf.GetTemplateByName(templateName)
+		if template == nil {
+			return nil, nil, fmt.Errorf("no template found by the name of '%s' (which is the template associated with nodeId '%s'??", templateName, nodeId)
+		}
+		archiveLocation = template.ArchiveLocation // this is case 4
 	}
-	l := ar.ToArtifactLocation()
-	err = art.Relocate(l)
+
+	if templateName == "" || !archiveLocation.HasLocation() {
+		ar, err := a.artifactRepositories.Get(ctx, wf.Status.ArtifactRepositoryRef) // this should handle cases 2, 3 and 5
+		if err != nil {
+			return art, nil, err
+		}
+		archiveLocation = ar.ToArtifactLocation()
+	}
+
+	err := art.Relocate(archiveLocation) // if the Artifact defines the location (case 1), it will be used; otherwise whatever archiveLocation is set to
 	if err != nil {
 		return art, nil, err
 	}
@@ -403,7 +441,7 @@ func (a *ArtifactServer) returnArtifact(w http.ResponseWriter, art *wfv1.Artifac
 
 	defer func() {
 		if err := stream.Close(); err != nil {
-			log.Warningf("Error closing stream[%s]: %v", stream, err)
+			log.WithFields(log.Fields{"stream": stream}).WithError(err).Warning("Error closing stream")
 		}
 	}()
 
@@ -415,7 +453,9 @@ func (a *ArtifactServer) returnArtifact(w http.ResponseWriter, art *wfv1.Artifac
 
 	_, err = io.Copy(w, stream)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("failed to stream artifact: %v", err), http.StatusInternalServerError)
+		errStr := fmt.Sprintf("failed to stream artifact: %v", err)
+		http.Error(w, errStr, http.StatusInternalServerError)
+		return errors.New(errStr)
 	} else {
 		w.WriteHeader(http.StatusOK)
 	}

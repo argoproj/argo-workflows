@@ -3,6 +3,8 @@ package workflowarchive
 import (
 	"context"
 	"fmt"
+	"os"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -23,6 +25,8 @@ import (
 	"github.com/argoproj/argo-workflows/v3/server/auth"
 	"github.com/argoproj/argo-workflows/v3/workflow/util"
 )
+
+const disableValueListRetrievalKeyPattern = "DISABLE_VALUE_LIST_RETRIEVAL_KEY_PATTERN"
 
 type archivedWorkflowServer struct {
 	wfArchive sqldb.WorkflowArchive
@@ -52,16 +56,30 @@ func (w *archivedWorkflowServer) ListArchivedWorkflows(ctx context.Context, req 
 		return nil, status.Error(codes.InvalidArgument, "listOptions.continue must >= 0")
 	}
 
-	namespace := ""
+	// namespace is now specified as its own query parameter
+	// note that for backward compatibility, the field selector 'metadata.namespace' is also supported for now
+	namespace := req.Namespace // optional
 	name := ""
 	minStartedAt := time.Time{}
 	maxStartedAt := time.Time{}
+	showRemainingItemCount := false
 	for _, selector := range strings.Split(options.FieldSelector, ",") {
 		if len(selector) == 0 {
 			continue
 		}
 		if strings.HasPrefix(selector, "metadata.namespace=") {
-			namespace = strings.TrimPrefix(selector, "metadata.namespace=")
+			// for backward compatibility, the field selector 'metadata.namespace' is supported for now despite the addition
+			// of the new 'namespace' query parameter, which is what the UI uses
+			fieldSelectedNamespace := strings.TrimPrefix(selector, "metadata.namespace=")
+			switch namespace {
+			case "":
+				namespace = fieldSelectedNamespace
+			case fieldSelectedNamespace:
+				break
+			default:
+				return nil, status.Errorf(codes.InvalidArgument,
+					"'namespace' query param (%q) and fieldselector 'metadata.namespace' (%q) are both specified and contradict each other", namespace, fieldSelectedNamespace)
+			}
 		} else if strings.HasPrefix(selector, "metadata.name=") {
 			name = strings.TrimPrefix(selector, "metadata.name=")
 		} else if strings.HasPrefix(selector, "spec.startedAt>") {
@@ -74,6 +92,11 @@ func (w *archivedWorkflowServer) ListArchivedWorkflows(ctx context.Context, req 
 			if err != nil {
 				return nil, err
 			}
+		} else if strings.HasPrefix(selector, "ext.showRemainingItemCount") {
+			showRemainingItemCount, err = strconv.ParseBool(strings.TrimPrefix(selector, "ext.showRemainingItemCount="))
+			if err != nil {
+				return nil, err
+			}
 		} else {
 			return nil, fmt.Errorf("unsupported requirement %s", selector)
 		}
@@ -83,12 +106,13 @@ func (w *archivedWorkflowServer) ListArchivedWorkflows(ctx context.Context, req 
 		return nil, err
 	}
 
+	// verify if we have permission to list Workflows
 	allowed, err := auth.CanI(ctx, "list", workflow.WorkflowPlural, namespace, "")
 	if err != nil {
 		return nil, err
 	}
 	if !allowed {
-		return nil, status.Error(codes.PermissionDenied, fmt.Sprintf("Permission denied, you are not allowed to list workflows in namespace \"%s\". Maybe you want to specify a namespace with `listOptions.fieldSelector=metadata.namespace=your-ns`?", namespace))
+		return nil, status.Error(codes.PermissionDenied, fmt.Sprintf("Permission denied, you are not allowed to list workflows in namespace \"%s\". Maybe you want to specify a namespace with query parameter `.namespace=%s`?", namespace, namespace))
 	}
 
 	// When the zero value is passed, we should treat this as returning all results
@@ -108,6 +132,21 @@ func (w *archivedWorkflowServer) ListArchivedWorkflows(ctx context.Context, req 
 	}
 
 	meta := metav1.ListMeta{}
+
+	if showRemainingItemCount && !loadAll {
+		total, err := w.wfArchive.CountWorkflows(namespace, name, namePrefix, minStartedAt, maxStartedAt, requirements)
+		if err != nil {
+			return nil, err
+		}
+		var count = total - int64(offset) - int64(items.Len())
+		if len(items) > limit {
+			count = count + 1
+		}
+		if count < 0 {
+			count = 0
+		}
+		meta.RemainingItemCount = &count
+	}
 
 	if !loadAll && len(items) > limit {
 		items = items[0:limit]
@@ -163,6 +202,15 @@ func (w *archivedWorkflowServer) ListArchivedWorkflowLabelKeys(ctx context.Conte
 	return labelkeys, nil
 }
 
+func matchLabelKeyPattern(key string) bool {
+	pattern, _ := os.LookupEnv(disableValueListRetrievalKeyPattern)
+	if pattern == "" {
+		return false
+	}
+	match, _ := regexp.MatchString(pattern, key)
+	return match
+}
+
 func (w *archivedWorkflowServer) ListArchivedWorkflowLabelValues(ctx context.Context, req *workflowarchivepkg.ListArchivedWorkflowLabelValuesRequest) (*wfv1.LabelValues, error) {
 	options := req.ListOptions
 
@@ -180,6 +228,10 @@ func (w *archivedWorkflowServer) ListArchivedWorkflowLabelValues(ctx context.Con
 		key = requirement.Key()
 	} else {
 		return nil, fmt.Errorf("operation %v is not supported", requirement.Operator())
+	}
+	if matchLabelKeyPattern(key) {
+		log.WithFields(log.Fields{"labelKey": key}).Info("Skipping retrieving the list of values for label key")
+		return &wfv1.LabelValues{Items: []string{}}, nil
 	}
 
 	labels, err := w.wfArchive.ListWorkflowsLabelValues(key)
@@ -200,7 +252,7 @@ func (w *archivedWorkflowServer) ResubmitArchivedWorkflow(ctx context.Context, r
 		return nil, err
 	}
 
-	newWF, err := util.FormulateResubmitWorkflow(wf, req.Memoized)
+	newWF, err := util.FormulateResubmitWorkflow(wf, req.Memoized, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -224,7 +276,7 @@ func (w *archivedWorkflowServer) RetryArchivedWorkflow(ctx context.Context, req 
 	_, err = wfClient.ArgoprojV1alpha1().Workflows(req.Namespace).Get(ctx, wf.Name, metav1.GetOptions{})
 	if apierr.IsNotFound(err) {
 
-		wf, podsToDelete, err := util.FormulateRetryWorkflow(ctx, wf, req.RestartSuccessful, req.NodeFieldSelector)
+		wf, podsToDelete, err := util.FormulateRetryWorkflow(ctx, wf, req.RestartSuccessful, req.NodeFieldSelector, nil)
 		if err != nil {
 			return nil, err
 		}
