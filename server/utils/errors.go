@@ -12,6 +12,21 @@ import (
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 )
 
+var errorMaps = map[int]codes.Code{
+	http.StatusOK:                  codes.OK,
+	http.StatusRequestTimeout:      codes.Canceled,
+	http.StatusGatewayTimeout:      codes.DeadlineExceeded,
+	http.StatusNotFound:            codes.NotFound,
+	http.StatusConflict:            codes.AlreadyExists,
+	http.StatusForbidden:           codes.PermissionDenied,
+	http.StatusUnauthorized:        codes.Unauthenticated,
+	http.StatusTooManyRequests:     codes.ResourceExhausted,
+	http.StatusBadRequest:          codes.InvalidArgument,
+	http.StatusNotImplemented:      codes.Unimplemented,
+	http.StatusInternalServerError: codes.Internal,
+	http.StatusServiceUnavailable:  codes.Unavailable,
+}
+
 // Return a new status error and true else nil and false
 // is meant to be as close to the opposite of grpc gateways status -> http error code converter
 // exceptions made where one to one mappings were not available
@@ -19,21 +34,6 @@ func httpToStatusError(code int, msg string) (error, bool) {
 	// handle success & information  codes in one go
 	if code < 300 {
 		return status.Error(codes.OK, msg), true
-	}
-
-	errorMaps := map[int]codes.Code{
-		http.StatusOK:                  codes.OK,
-		http.StatusRequestTimeout:      codes.Canceled,
-		http.StatusGatewayTimeout:      codes.DeadlineExceeded,
-		http.StatusNotFound:            codes.NotFound,
-		http.StatusConflict:            codes.AlreadyExists,
-		http.StatusForbidden:           codes.PermissionDenied,
-		http.StatusUnauthorized:        codes.Unauthenticated,
-		http.StatusTooManyRequests:     codes.ResourceExhausted,
-		http.StatusBadRequest:          codes.InvalidArgument,
-		http.StatusNotImplemented:      codes.Unimplemented,
-		http.StatusInternalServerError: codes.Internal,
-		http.StatusServiceUnavailable:  codes.Unavailable,
 	}
 
 	statusCode, ok := errorMaps[code]
