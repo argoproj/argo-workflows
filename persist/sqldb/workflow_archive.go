@@ -2,16 +2,16 @@ package sqldb
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"time"
 
 	log "github.com/sirupsen/logrus"
+	"github.com/upper/db/v4"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
-	"upper.io/db.v3"
-	"upper.io/db.v3/lib/sqlbuilder"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/util/instanceid"
@@ -66,7 +66,7 @@ type WorkflowArchive interface {
 }
 
 type workflowArchive struct {
-	session           sqlbuilder.Database
+	session           db.Session
 	clusterName       string
 	managedNamespace  string
 	instanceIDService instanceid.Service
@@ -78,7 +78,7 @@ func (r *workflowArchive) IsEnabled() bool {
 }
 
 // NewWorkflowArchive returns a new workflowArchive
-func NewWorkflowArchive(session sqlbuilder.Database, clusterName, managedNamespace string, instanceIDService instanceid.Service) WorkflowArchive {
+func NewWorkflowArchive(session db.Session, clusterName, managedNamespace string, instanceIDService instanceid.Service) WorkflowArchive {
 	return &workflowArchive{session: session, clusterName: clusterName, managedNamespace: managedNamespace, instanceIDService: instanceIDService, dbType: dbTypeFor(session)}
 }
 
@@ -89,8 +89,8 @@ func (r *workflowArchive) ArchiveWorkflow(wf *wfv1.Workflow) error {
 	if err != nil {
 		return err
 	}
-	return r.session.Tx(context.Background(), func(sess sqlbuilder.Tx) error {
-		_, err := sess.
+	return r.session.TxContext(context.Background(), func(sess db.Session) error {
+		_, err := sess.SQL().
 			DeleteFrom(archiveTableName).
 			Where(r.clusterManagedNamespaceAndInstanceID()).
 			And(db.Cond{"uid": wf.UID}).
@@ -116,7 +116,7 @@ func (r *workflowArchive) ArchiveWorkflow(wf *wfv1.Workflow) error {
 			return err
 		}
 
-		_, err = sess.
+		_, err = sess.SQL().
 			DeleteFrom(archiveLabelsTableName).
 			Where(db.Cond{"clustername": r.clusterName}).
 			And(db.Cond{"uid": wf.UID}).
@@ -138,7 +138,7 @@ func (r *workflowArchive) ArchiveWorkflow(wf *wfv1.Workflow) error {
 			}
 		}
 		return nil
-	})
+	}, &sql.TxOptions{})
 }
 
 func (r *workflowArchive) ListWorkflows(namespace string, name string, namePrefix string, minStartedAt, maxStartedAt time.Time, labelRequirements labels.Requirements, limit int, offset int) (wfv1.Workflows, error) {
@@ -155,7 +155,7 @@ func (r *workflowArchive) ListWorkflows(namespace string, name string, namePrefi
 		offset = -1
 	}
 
-	err = r.session.
+	err = r.session.SQL().
 		Select("name", "namespace", "uid", "phase", "startedat", "finishedat").
 		From(archiveTableName).
 		Where(r.clusterManagedNamespaceAndInstanceID()).
@@ -197,7 +197,7 @@ func (r *workflowArchive) CountWorkflows(namespace string, name string, namePref
 		return 0, err
 	}
 
-	err = r.session.
+	err = r.session.SQL().
 		Select(db.Raw("count(*) as total")).
 		From(archiveTableName).
 		Where(r.clusterManagedNamespaceAndInstanceID()).
@@ -214,7 +214,7 @@ func (r *workflowArchive) CountWorkflows(namespace string, name string, namePref
 	return int64(total.Total), nil
 }
 
-func (r *workflowArchive) clusterManagedNamespaceAndInstanceID() db.Compound {
+func (r *workflowArchive) clusterManagedNamespaceAndInstanceID() *db.AndExpr {
 	return db.And(
 		db.Cond{"clustername": r.clusterName},
 		namespaceEqual(r.managedNamespace),
@@ -222,8 +222,8 @@ func (r *workflowArchive) clusterManagedNamespaceAndInstanceID() db.Compound {
 	)
 }
 
-func startedAtClause(from, to time.Time) db.Compound {
-	var conds []db.Compound
+func startedAtClause(from, to time.Time) *db.AndExpr {
+	var conds []db.LogicalExpr
 	if !from.IsZero() {
 		conds = append(conds, db.Cond{"startedat > ": from})
 	}
@@ -259,7 +259,7 @@ func namePrefixClause(namePrefix string) db.Cond {
 
 func (r *workflowArchive) GetWorkflow(uid string) (*wfv1.Workflow, error) {
 	archivedWf := &archivedWorkflowRecord{}
-	err := r.session.
+	err := r.session.SQL().
 		Select("workflow").
 		From(archiveTableName).
 		Where(r.clusterManagedNamespaceAndInstanceID()).
@@ -280,7 +280,7 @@ func (r *workflowArchive) GetWorkflow(uid string) (*wfv1.Workflow, error) {
 }
 
 func (r *workflowArchive) DeleteWorkflow(uid string) error {
-	rs, err := r.session.
+	rs, err := r.session.SQL().
 		DeleteFrom(archiveTableName).
 		Where(r.clusterManagedNamespaceAndInstanceID()).
 		And(db.Cond{"uid": uid}).
@@ -297,7 +297,7 @@ func (r *workflowArchive) DeleteWorkflow(uid string) error {
 }
 
 func (r *workflowArchive) DeleteExpiredWorkflows(ttl time.Duration) error {
-	rs, err := r.session.
+	rs, err := r.session.SQL().
 		DeleteFrom(archiveTableName).
 		Where(r.clusterManagedNamespaceAndInstanceID()).
 		And(fmt.Sprintf("finishedat < current_timestamp - interval '%d' second", int(ttl.Seconds()))).

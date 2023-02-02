@@ -2,27 +2,28 @@ package sqldb
 
 import (
 	"context"
+	"database/sql"
 
 	log "github.com/sirupsen/logrus"
-	"upper.io/db.v3/lib/sqlbuilder"
+	"github.com/upper/db/v4"
 )
 
 type Migrate interface {
 	Exec(ctx context.Context) error
 }
 
-func NewMigrate(session sqlbuilder.Database, clusterName string, tableName string) Migrate {
+func NewMigrate(session db.Session, clusterName string, tableName string) Migrate {
 	return migrate{session, clusterName, tableName}
 }
 
 type migrate struct {
-	session     sqlbuilder.Database
+	session     db.Session
 	clusterName string
 	tableName   string
 }
 
 type change interface {
-	apply(session sqlbuilder.Database) error
+	apply(session db.Session) error
 }
 
 func ternary(condition bool, left, right change) change {
@@ -36,11 +37,11 @@ func ternary(condition bool, left, right change) change {
 func (m migrate) Exec(ctx context.Context) (err error) {
 	{
 		// poor mans SQL migration
-		_, err = m.session.Exec("create table if not exists schema_history(schema_version int not null)")
+		_, err = m.session.SQL().Exec("create table if not exists schema_history(schema_version int not null)")
 		if err != nil {
 			return err
 		}
-		rs, err := m.session.Query("select schema_version from schema_history")
+		rs, err := m.session.SQL().Query("select schema_version from schema_history")
 		if err != nil {
 			return err
 		}
@@ -51,7 +52,7 @@ func (m migrate) Exec(ctx context.Context) (err error) {
 			}
 		}()
 		if !rs.Next() {
-			_, err := m.session.Exec("insert into schema_history values(-1)")
+			_, err := m.session.SQL().Exec("insert into schema_history values(-1)")
 			if err != nil {
 				return err
 			}
@@ -269,25 +270,25 @@ func (m migrate) Exec(ctx context.Context) (err error) {
 }
 
 func (m migrate) applyChange(ctx context.Context, changeSchemaVersion int, c change) error {
-	tx, err := m.session.NewTx(ctx)
-	if err != nil {
-		return err
-	}
-	defer func() { _ = tx.Rollback() }()
-	rs, err := tx.Exec("update schema_history set schema_version = ? where schema_version = ?", changeSchemaVersion, changeSchemaVersion-1)
-	if err != nil {
-		return err
-	}
-	rowsAffected, err := rs.RowsAffected()
-	if err != nil {
-		return err
-	}
-	if rowsAffected == 1 {
-		log.WithFields(log.Fields{"changeSchemaVersion": changeSchemaVersion, "change": c}).Info("applying database change")
-		err := c.apply(m.session)
+	if err := m.session.TxContext(ctx, func(tx db.Session) error {
+		rs, err := tx.SQL().Exec("update schema_history set schema_version = ? where schema_version = ?", changeSchemaVersion, changeSchemaVersion-1)
 		if err != nil {
 			return err
 		}
+		rowsAffected, err := rs.RowsAffected()
+		if err != nil {
+			return err
+		}
+		if rowsAffected == 1 {
+			log.WithFields(log.Fields{"changeSchemaVersion": changeSchemaVersion, "change": c}).Info("applying database change")
+			err := c.apply(m.session)
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	}, &sql.TxOptions{}); err != nil {
+		return err
 	}
-	return tx.Commit()
+	return nil
 }

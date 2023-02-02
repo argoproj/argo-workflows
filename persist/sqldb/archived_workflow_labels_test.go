@@ -4,8 +4,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/upper/db/v4"
 	"k8s.io/apimachinery/pkg/labels"
-	"upper.io/db.v3"
 )
 
 func Test_labelsClause(t *testing.T) {
@@ -13,7 +13,7 @@ func Test_labelsClause(t *testing.T) {
 		name         string
 		dbType       dbType
 		requirements labels.Requirements
-		want         db.Compound
+		want         db.LogicalExpr
 	}{
 		{"Empty", Postgres, requirements(""), db.And()},
 		{"DoesNotExist", Postgres, requirements("!foo"), db.And(db.Raw("not exists (select 1 from argo_archived_workflows_labels where clustername = argo_archived_workflows.clustername and uid = argo_archived_workflows.uid and name = 'foo')"))},
@@ -32,7 +32,7 @@ func Test_labelsClause(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := labelsClause(tt.dbType, tt.requirements)
 			if assert.NoError(t, err) {
-				assert.Equal(t, tt.want.Sentences(), got.Sentences())
+				assert.Equal(t, tt.want.Expressions(), got.Expressions())
 			}
 		})
 	}
