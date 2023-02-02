@@ -55,3 +55,13 @@ spec:
       command: [sh, -c]
       args: ["echo boohoo!"]
 ```
+
+**Note**: Exit handlers will NOT run if a workflow is [terminated](/cli/argo_terminate/). However, if a workflow is [stopped](/cli/argo_stop/), exit handers will still run.
+
+## Template-level vs. Step-level Exit handlers
+The above example demonstrates an exit handler at the template level.
+
+Exit handlers can also be used at the step level:
+- [Step-level exit handler example](/examples/exit-handler-step-level.yaml)
+
+If you using [`templateRef`](/workflow-templates/#referencing-other-workflowtemplates) in combination with an exit handler, ensure you are using a template-level exit handler since the `templateRef` will only refer to the template level, not the step level.
