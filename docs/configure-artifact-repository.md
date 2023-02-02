@@ -24,8 +24,6 @@ The actual repository used by a workflow is chosen by the following rules:
 
 ## Configuring MinIO
 
-NOTE: MinIO is already included in the [quick-start manifests](quick-start.md).
-
 ```bash
 brew install helm # mac, helm 3.x
 helm repo add minio https://helm.min.io/ # official minio Helm charts
