@@ -71,13 +71,10 @@ func (woc *wfOperationCtx) runImmediateCleanup(pod *apiv1.Pod, podGC *wfv1.PodGC
 		}
 	}
 
-	var lselector metav1.LabelSelector
+	lselector := getLabelSelector(wfName, podGC, true)
 	if woc.wf.Status.Fulfilled() {
 		log.Info("workflow is fulfilled, deleting everything which may be deleted as per PodGC.Strategy.LabelSelector")
 		lselector = getLabelSelector(wfName, podGC, false)
-	} else {
-		log.Info("deleting existing pods marked as completed")
-		lselector = getLabelSelector(wfName, podGC, true)
 	}
 	selector, err := metav1.LabelSelectorAsSelector(&lselector)
 	if err != nil {
@@ -94,6 +91,7 @@ func (woc *wfOperationCtx) runImmediateCleanup(pod *apiv1.Pod, podGC *wfv1.PodGC
 		podList, err := pods.List(context.Background(), metav1.ListOptions{LabelSelector: selectorString})
 		if err != nil {
 			log.Errorf("unable to obtain list of pods due to %s", err)
+			markDone = false
 		} else {
 			for _, nonCompletedPod := range podList.Items {
 				woc.rateLimiter.Wait()
@@ -116,9 +114,8 @@ func (woc *wfOperationCtx) runImmediateCleanup(pod *apiv1.Pod, podGC *wfv1.PodGC
 	}
 
 	woc.rateLimiter.Wait()
-	err = pods.DeleteCollection(context.Background(), metav1.DeleteOptions{}, metav1.ListOptions{LabelSelector: selectorString})
 
-	if err != nil {
+	if err = pods.DeleteCollection(context.Background(), metav1.DeleteOptions{}, metav1.ListOptions{LabelSelector: selectorString}); err != nil {
 		log.Errorf("was not able to delete collection to due %s", err)
 	}
 
@@ -147,12 +144,8 @@ func (woc *wfOperationCtx) cleanupPods() {
 			continue
 		}
 
-		// specific handling for OnWorkflowCompletion
-		// we will be creating unnecessary DeleteCollection requests after the first one
-		// to fix this, we would need a variable in wfOperationCtx. I think it is possibly okay to avoid this optimisation for now.
 		if woc.isImmediateSkipQueues() {
-			err := woc.runImmediateCleanup(pod, podGC, workflowPhase)
-			if err != nil {
+			if err := woc.runImmediateCleanup(pod, podGC, workflowPhase); err != nil {
 				log.Errorf("was unable to run cleanup due to %s", err)
 			}
 			continue
