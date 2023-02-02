@@ -26,10 +26,12 @@ spec:
 
 Use `retryPolicy` to choose which failures to retry:
 
-- `Always`: Retry all failed steps
-- `OnFailure`: Retry steps whose main container is marked as failed in Kubernetes (this is the default)
-- `OnError`: Retry steps that encounter Argo controller errors, or whose init or wait containers fail
+- `Always`: Retry all failed steps (i.e. whenever a pod fails OR is deleted)
+- `OnFailure`: Retry steps whose **main container** is marked as failed in Kubernetes (**this is the default setting**)
+- `OnError`: Retry steps that encounter Argo controller errors, or whose **init or wait containers** fail
 - `OnTransientError`: Retry steps that encounter errors [defined as transient](https://github.com/argoproj/argo-workflows/blob/master/util/errors/errors.go), or errors matching the `TRANSIENT_ERROR_PATTERN` [environment variable](https://argoproj.github.io/argo-workflows/environment-variables/). Available in version 3.0 and later.
+
+Using a `retryPolicy = Always` is the simplest approach to ensure your step is automatically retried for any error or failure, whether in the main, init, or wait containers. 
 
 For example:
 
