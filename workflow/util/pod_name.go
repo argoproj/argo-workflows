@@ -79,8 +79,10 @@ func ensurePodNamePrefixLength(prefix string) string {
 // given workflow
 func GetWorkflowPodNameVersion(wf *v1alpha1.Workflow) PodNameVersion {
 	annotations := wf.GetAnnotations()
-	version := annotations[common.AnnotationKeyPodNameVersion]
-
+	version, ok := annotations[common.AnnotationKeyPodNameVersion]
+	if !ok {
+		return GetPodNameVersion()
+	}
 	switch version {
 	case PodNameV1.String():
 		return PodNameV1
