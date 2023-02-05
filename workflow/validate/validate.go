@@ -235,10 +235,9 @@ func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 	//   - If OnExit is empty in referred WorkflowTemplate, nothing will be validated.
 	var tmplHolder *wfv1.WorkflowStep
 	if wf.Spec.OnExit != "" {
+		tmplHolder = &wfv1.WorkflowStep{Template: wf.Spec.OnExit}
 		if hasWorkflowTemplateRef {
 			tmplHolder = &wfv1.WorkflowStep{TemplateRef: wf.Spec.WorkflowTemplateRef.ToTemplateRef(wf.Spec.OnExit)}
-		} else {
-			tmplHolder = &wfv1.WorkflowStep{Template: wf.Spec.OnExit}
 		}
 	} else if hasWorkflowTemplateRef && wfSpecHolder.GetWorkflowSpec().OnExit != "" {
 		tmplHolder = &wfv1.WorkflowStep{TemplateRef: wf.Spec.WorkflowTemplateRef.ToTemplateRef(wfSpecHolder.GetWorkflowSpec().OnExit)}
@@ -260,7 +259,6 @@ func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 
 	// Check if all templates can be resolved.
 	// If the Workflow is using a WorkflowTemplateRef, then the templates of the referred WorkflowTemplate will be validated.
-	// If the templates are inlined in Workflow, then the inlined templates will be validated.
 	if hasWorkflowTemplateRef {
 		for _, template := range wfSpecHolder.GetWorkflowSpec().Templates {
 			_, err := ctx.validateTemplateHolder(&wfv1.WorkflowStep{TemplateRef: wf.Spec.WorkflowTemplateRef.ToTemplateRef(template.Name)}, tmplCtx, &FakeArguments{}, opts.WorkflowTemplateValidation)
@@ -268,12 +266,13 @@ func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 				return errors.Errorf(errors.CodeBadRequest, "templates.%s %s", template.Name, err.Error())
 			}
 		}
-	} else {
-		for _, template := range wf.Spec.Templates {
-			_, err := ctx.validateTemplateHolder(&wfv1.WorkflowStep{Template: template.Name}, tmplCtx, &FakeArguments{}, opts.WorkflowTemplateValidation)
-			if err != nil {
-				return errors.Errorf(errors.CodeBadRequest, "templates.%s %s", template.Name, err.Error())
-			}
+		return nil
+	}
+	// If the templates are inlined in Workflow, then the inlined templates will be validated.
+	for _, template := range wf.Spec.Templates {
+		_, err := ctx.validateTemplateHolder(&wfv1.WorkflowStep{Template: template.Name}, tmplCtx, &FakeArguments{}, opts.WorkflowTemplateValidation)
+		if err != nil {
+			return errors.Errorf(errors.CodeBadRequest, "templates.%s %s", template.Name, err.Error())
 		}
 	}
 	return nil

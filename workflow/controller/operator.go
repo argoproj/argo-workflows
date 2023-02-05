@@ -358,8 +358,7 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 			}
 		}
 		// Garbage collect PVCs if Entrypoint template execution returns error
-		err = woc.deletePVCs(ctx)
-		if err != nil {
+		if err := woc.deletePVCs(ctx); err != nil {
 			woc.log.WithError(err).Warn("failed to delete PVCs")
 		}
 		return
@@ -429,8 +428,7 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 				}
 			}
 			// Garbage collect PVCs if Onexit template execution returns error
-			err = woc.deletePVCs(ctx)
-			if err != nil {
+			if err := woc.deletePVCs(ctx); err != nil {
 				woc.log.WithError(err).Warn("failed to delete PVCs")
 			}
 			return
@@ -487,8 +485,7 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 		woc.computeMetrics(woc.execWf.Spec.Metrics.Prometheus, localScope, realTimeScope, false)
 	}
 
-	err = woc.deletePVCs(ctx)
-	if err != nil {
+	if err := woc.deletePVCs(ctx); err != nil {
 		woc.log.WithError(err).Warn("failed to delete PVCs")
 	}
 }
