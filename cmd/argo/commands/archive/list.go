@@ -30,7 +30,7 @@ func NewListCommand() *cobra.Command {
 			serviceClient, err := apiClient.NewArchivedWorkflowServiceClient()
 			errors.CheckError(err)
 			namespace := client.Namespace()
-			workflows, err := listArchivedWorkflows(ctx, serviceClient, "metadata.namespace="+namespace, selector, chunkSize)
+			workflows, err := listArchivedWorkflows(ctx, serviceClient, namespace, selector, chunkSize)
 			errors.CheckError(err)
 			err = printer.PrintWorkflows(workflows, os.Stdout, printer.PrintOpts{Output: output, Namespace: true, UID: true})
 			errors.CheckError(err)
@@ -42,16 +42,15 @@ func NewListCommand() *cobra.Command {
 	return command
 }
 
-func listArchivedWorkflows(ctx context.Context, serviceClient workflowarchivepkg.ArchivedWorkflowServiceClient, fieldSelector string, labelSelector string, chunkSize int64) (wfv1.Workflows, error) {
+func listArchivedWorkflows(ctx context.Context, serviceClient workflowarchivepkg.ArchivedWorkflowServiceClient, namespace string, labelSelector string, chunkSize int64) (wfv1.Workflows, error) {
 	listOpts := &metav1.ListOptions{
-		FieldSelector: fieldSelector,
 		LabelSelector: labelSelector,
 		Limit:         chunkSize,
 	}
 	var workflows wfv1.Workflows
 	for {
 		log.WithField("listOpts", listOpts).Debug()
-		resp, err := serviceClient.ListArchivedWorkflows(ctx, &workflowarchivepkg.ListArchivedWorkflowsRequest{ListOptions: listOpts})
+		resp, err := serviceClient.ListArchivedWorkflows(ctx, &workflowarchivepkg.ListArchivedWorkflowsRequest{Namespace: namespace, ListOptions: listOpts})
 		if err != nil {
 			return nil, err
 		}
