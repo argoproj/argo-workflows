@@ -1507,7 +1507,7 @@ metadata:
   name: template-ref-target
 spec:
   templates:
-  - name: A
+  - name: a
     container:
       image: alpine:latest
       command: [echo, hello]
@@ -1525,7 +1525,7 @@ metadata:
   name: template-ref-target
 spec:
   templates:
-  - name: A
+  - name: a
     container:
       image: alpine:latest
       command: [echo, "{{workflow.parameters.something}}"]
@@ -1543,12 +1543,12 @@ metadata:
   name: template-ref-nested-target
 spec:
   templates:
-  - name: A
+  - name: a
     steps:
       - - name: call-A
           templateRef:
             name: template-ref-target
-            template: A
+            template: a
 `
 
 var nestedTemplateRef = `
@@ -1557,14 +1557,14 @@ kind: Workflow
 metadata:
   generateName: template-ref-
 spec:
-  entrypoint: A
+  entrypoint: a
   templates:
-  - name: A
+  - name: a
     steps:
       - - name: call-A
           templateRef:
             name: template-ref-target
-            template: A
+            template: a
 `
 
 func TestNestedTemplateRef(t *testing.T) {
@@ -1582,9 +1582,9 @@ kind: Workflow
 metadata:
   generateName: undefined-template-ref-
 spec:
-  entrypoint: A
+  entrypoint: a
   templates:
-  - name: A
+  - name: a
     steps:
       - - name: call-A
           templateRef:
@@ -2169,9 +2169,9 @@ metadata:
   name: template-ref-with-entrypoint
   namespace: default
 spec:
-  entrypoint: A
+  entrypoint: a
   templates:
-  - name: A
+  - name: a
     container:
       image: alpine:latest
       command: [echo, hello]
@@ -2190,7 +2190,7 @@ kind: Workflow
 metadata:
   generateName: hello-world-
 spec:
-  entrypoint: A
+  entrypoint: a
   serviceAccountName: argo
   parallelism: 1
   volumes:
@@ -2288,12 +2288,12 @@ kind: WorkflowTemplate
 metadata:
   name: template-ref-with-param
 spec:
-  entrypoint: A
+  entrypoint: a
   arguments:
     parameters:
     - name: some-param
   templates:
-  - name: A
+  - name: a
     container:
       image: alpine:latest
       command: [echo, hello]
@@ -2357,14 +2357,14 @@ kind: WorkflowTemplate
 metadata:
   name: template-ref-with-artifact
 spec:
-  entrypoint: A
+  entrypoint: a
   arguments:
     artifacts:
     - name: binary-file
       http:
         url: https://a.server.io/file
   templates:
-  - name: A
+  - name: a
     inputs:
       artifacts:
       - name: binary-file
@@ -3049,6 +3049,109 @@ spec:
 func TestNodeNameParameterInterpoliates(t *testing.T) {
 	err := validate(nodeNamePlumbsCorrectly)
 	assert.NoError(t, err)
+}
+
+var (
+	// there will be some users whose template.Name contains uppercase characters.
+	// We need to be compatible with this part of case
+	testTemplateNameUpperCase = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: example-
+spec:
+  entrypoint: main
+  arguments:
+    parameters:
+    - name: workflow-param-1
+      value: workflow-param-1-value
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: step-A 
+        template: step-template-A
+        arguments:
+          parameters:
+          - name: template-param-1
+            value: "{{workflow.parameters.workflow-param-1}}"
+ 
+  - name: step-template-A
+    inputs:
+      parameters:
+        - name: template-param-1
+    script:
+      image: alpine
+      command: [/bin/sh]
+      source: |
+          echo "{{inputs.parameters.template-param-1}}"`
+	testTemplateNameLowerCase = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: example-
+spec:
+  entrypoint: main
+  arguments:
+    parameters:
+    - name: workflow-param-1
+      value: workflow-param-1-value
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: step-A 
+        template: step-template-a
+        arguments:
+          parameters:
+          - name: template-param-1
+            value: "{{workflow.parameters.workflow-param-1}}"
+ 
+  - name: step-template-a
+    inputs:
+      parameters:
+        - name: template-param-1
+    script:
+      image: alpine
+      command: [/bin/sh]
+      source: |
+          echo "{{inputs.parameters.template-param-1}}"`
+)
+
+func TestTemplateName(t *testing.T) {
+	tests := []struct {
+		name            string
+		workflow        string
+		expectedSuccess bool
+	}{
+		{
+			name:            "workflow template name contain upperCase",
+			workflow:        testTemplateNameUpperCase,
+			expectedSuccess: true,
+		},
+		{
+			name:            "workflow template name consist of lower case alphanumeric characters",
+			workflow:        testTemplateNameLowerCase,
+			expectedSuccess: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := validate(tt.workflow)
+			if err == nil {
+				if !tt.expectedSuccess {
+					t.Fatal("expect err but got nil")
+				}
+				return // expected failed, got nil
+			}
+
+			if tt.expectedSuccess {
+				t.Fatalf("expect success but got %v", err)
+			}
+			// expect err, got err
+		})
+	}
 }
 
 func TestSubstituteGlobalVariablesLabelsAnnotations(t *testing.T) {

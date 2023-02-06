@@ -58,9 +58,9 @@ metadata:
   name: script-wf
   namespace: default
 spec: 
-  entrypoint: scriptTmpl
+  entrypoint: scripttmpl
   templates:
-  - name: scriptTmpl
+  - name: scripttmpl
     synchronization: 
       semaphore: 
         configMapKeyRef: 
@@ -84,9 +84,9 @@ metadata:
   name: resource-wf
   namespace: default
 spec: 
-  entrypoint: resourceTmpl
+  entrypoint: resourcetmpl
   templates:
-  - name: resourceTmpl 
+  - name: resourcetmpl 
     synchronization: 
       semaphore: 
         configMapKeyRef: 

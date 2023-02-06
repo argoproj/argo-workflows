@@ -3318,7 +3318,7 @@ spec:
   - name: suspend
     steps:
     - - name: leafA
-        onExit: exitContainer
+        onExit: exitcontainer
         template: whalesay
     - - name: leafB
         onExit: exitContainer
@@ -3330,7 +3330,7 @@ spec:
       command: [cowsay]
       args: ["hello world"]
 
-  - name: exitContainer
+  - name: exitcontainer
     container:
       image: docker/whalesay
       command: [cowsay]

@@ -34,7 +34,7 @@ Inputs to `DAGTemplate`s use the `arguments` format:
 dag:
   tasks:
   - name: step-A
-    template: step-template-A
+    template: step-template-a
     arguments:
       parameters:
       - name: template-param-1
@@ -58,13 +58,13 @@ spec:
     dag:
       tasks:
       - name: step-A 
-        template: step-template-A
+        template: step-template-a
         arguments:
           parameters:
           - name: template-param-1
             value: "{{workflow.parameters.workflow-param-1}}"
  
-  - name: step-template-A
+  - name: step-template-a
     inputs:
       parameters:
         - name: template-param-1

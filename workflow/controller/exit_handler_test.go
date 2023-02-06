@@ -25,7 +25,7 @@ spec:
     - - name: leafA
         hooks:
           exit: 
-            template: exitContainer
+            template: exitcontainer
             arguments:
               parameters:
               - name: input
@@ -34,7 +34,7 @@ spec:
     - - name: leafB
         hooks:
           exit: 
-            template: exitContainer
+            template: exitcontainer
             arguments:
               parameters:
               - name: input
@@ -51,7 +51,7 @@ spec:
         valueFrom:
           default: "welcome"
           path: /tmp/hello_world.txt
-  - name: exitContainer
+  - name: exitcontainer
 
     container:
       image: docker/whalesay
@@ -93,7 +93,7 @@ spec:
       - name: leafA
         hooks:
           exit: 
-            template: exitContainer
+            template: exitcontainer
             arguments:
               parameters:
               - name: input
@@ -103,7 +103,7 @@ spec:
         dependencies: [leafA]
         hooks:
           exit: 
-            template: exitContainer
+            template: exitcontainer
             arguments:
               parameters:
               - name: input
@@ -120,7 +120,7 @@ spec:
         valueFrom:
           default: "welcome"
           path: /tmp/hello_world.txt
-  - name: exitContainer
+  - name: exitcontainer
     container:
       image: docker/whalesay
       command: [cowsay]
@@ -161,7 +161,7 @@ spec:
     - - name: leafA
         hooks:
           exit: 
-            template: exitContainer
+            template: exitcontainer
             arguments:
               artifacts:
               - name: input
@@ -170,13 +170,13 @@ spec:
   - name: whalesay
     container:
       image: docker/whalesay
-      command: [cowsay]
-      args: ["hello world"]
+      command: [sh, -c]
+      args: ["cowsay hello world | tee /tmp/hello_world.txt"]
     outputs:
       artifacts:
       - name: result
         path: /tmp/hello_world.txt
-  - name: exitContainer
+  - name: exitcontainer
     inputs:
       artifacts:
       - name: input
@@ -236,7 +236,7 @@ spec:
       - name: leafA
         hooks:
           exit: 
-            template: exitContainer
+            template: exitcontainer
             arguments:
               artifacts:
               - name: input
@@ -251,7 +251,7 @@ spec:
       artifacts:
       - name: result
         path: /tmp/hello_world.txt
-  - name: exitContainer
+  - name: exitcontainer
     inputs:
       artifacts:
       - name: input
@@ -308,12 +308,12 @@ spec:
   - name: suspend
     steps:
     - - name: leafA
-        onExit: exitContainer1
+        onExit: exitcontainer1
         template: whalesay
     - - name: leafB
         hooks:
           exit: 
-            template: exitContainer
+            template: exitcontainer
             arguments:
               parameters:
               - name: input
@@ -330,7 +330,7 @@ spec:
         valueFrom:
           default: "welcome"
           path: /tmp/hello_world.txt
-  - name: exitContainer
+  - name: exitcontainer
     inputs:
       parameters:
       - name: input
@@ -338,7 +338,7 @@ spec:
       image: docker/whalesay
       command: [cowsay]
       args: ["goodbye world"]
-  - name: exitContainer1
+  - name: exitcontainer1
     container:
       image: docker/whalesay
       command: [cowsay]
@@ -411,13 +411,13 @@ spec:
     dag:
       tasks:
       - name: leafA
-        onExit: exitContainer1
+        onExit: exitcontainer1
         template: whalesay
       - name: leafB
         dependencies: [leafA]
         hooks:
           exit: 
-            template: exitContainer
+            template: exitcontainer
             arguments:
               parameters:
               - name: input
@@ -434,7 +434,7 @@ spec:
         valueFrom:
           default: "welcome"
           path: /tmp/hello_world.txt
-  - name: exitContainer
+  - name: exitcontainer
     inputs:
       parameters:
       - name: input
@@ -442,7 +442,7 @@ spec:
       image: docker/whalesay
       command: [cowsay]
       args: ["goodbye world  {{inputs.parameters.input}}"]
-  - name: exitContainer1
+  - name: exitcontainer1
     container:
       image: docker/whalesay
       command: [cowsay]

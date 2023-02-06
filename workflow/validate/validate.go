@@ -13,6 +13,7 @@ import (
 
 	"github.com/robfig/cron/v3"
 	"github.com/sirupsen/logrus"
+	apimachineryvalidation "k8s.io/apimachinery/pkg/api/validation"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	apivalidation "k8s.io/apimachinery/pkg/util/validation"
 	"sigs.k8s.io/yaml"
@@ -349,6 +350,17 @@ func (ctx *templateValidationCtx) validateInitContainers(containers []wfv1.UserC
 func (ctx *templateValidationCtx) validateTemplate(tmpl *wfv1.Template, tmplCtx *templateresolution.Context, args wfv1.ArgumentsProvider, workflowTemplateValidation bool) error {
 	if err := validateTemplateType(tmpl); err != nil {
 		return err
+	}
+
+	if tmpl.IsLeaf() {
+		// inline template may not have a name
+		if len(tmpl.Name) != 0 {
+			// There will be some users whose template.Name contains uppercase characters.
+			// We need to be compatible with this part of case
+			if errs := apimachineryvalidation.NameIsDNSSubdomain(strings.ToLower(tmpl.Name), false); errs != nil {
+				return errors.Errorf(errors.CodeBadRequest, "templates.%s %s", strings.ToLower(tmpl.Name), strings.Join(errs, ";"))
+			}
+		}
 	}
 
 	scope, err := validateInputs(tmpl)

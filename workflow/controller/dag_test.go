@@ -65,20 +65,20 @@ spec:
        template: %s
        %s
      - name: TestSingle
-       template: Succeeded
+       template: succeeded
        depends: A.%s
 
- - name: Succeeded
+ - name: succeeded
    container:
      image: alpine:3.7
      command: [sh, -c, "exit 0"]
 
- - name: Failed
+ - name: failed
    container:
      image: alpine:3.7
      command: [sh, -c, "exit 1"]
 
- - name: Skipped
+ - name: skipped
    container:
      image: alpine:3.7
      command: [sh, -c, "echo Hello"]
@@ -88,7 +88,11 @@ func TestSingleDependency(t *testing.T) {
 	statusMap := map[string]v1.PodPhase{"Succeeded": v1.PodSucceeded, "Failed": v1.PodFailed}
 	var closer context.CancelFunc
 	var controller *WorkflowController
-	for _, status := range []string{"Succeeded", "Failed", "Skipped"} {
+	for name, status := range map[string]string{
+		"succeeded": "Succeeded",
+		"failed":    "Failed",
+		"skipped":   "Skipped",
+	} {
 		fmt.Printf("\n\n\nCurrent status %s\n\n\n", status)
 		closer, controller = newController()
 		wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
@@ -96,9 +100,9 @@ func TestSingleDependency(t *testing.T) {
 		// If the status is "skipped" skip the root node.
 		var wfString string
 		if status == "Skipped" {
-			wfString = fmt.Sprintf(dynamicSingleDag, status, `when: "False == True"`, status)
+			wfString = fmt.Sprintf(dynamicSingleDag, name, `when: "False == True"`, status)
 		} else {
-			wfString = fmt.Sprintf(dynamicSingleDag, status, "", status)
+			wfString = fmt.Sprintf(dynamicSingleDag, name, "", status)
 		}
 		wf := wfv1.MustUnmarshalWorkflow(wfString)
 

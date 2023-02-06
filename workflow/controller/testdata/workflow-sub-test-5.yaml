@@ -8,9 +8,9 @@ metadata:
   annotations:
     schedulerName: myScheduler
 spec:
-  entrypoint: myTemplate
+  entrypoint: mytemplate
   templates:
-    - name: myTemplate
+    - name: mytemplate
       steps:
         - - name: whalesay
             templateRef:
