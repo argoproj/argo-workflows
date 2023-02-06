@@ -259,7 +259,7 @@ export class Reports extends BasePage<RouteComponentProps<any>, State> {
 
     private fetchWorkflowsLabels(isArchivedWorkflows: boolean): void {
         if (isArchivedWorkflows) {
-            services.archivedWorkflows.listLabelKeys().then(list => {
+            services.archivedWorkflows.listLabelKeys(this.state.namespace).then(list => {
                 this.setState({
                     autocompleteLabels: list.items?.sort((a, b) => a.localeCompare(b)) || []
                 });
@@ -268,7 +268,7 @@ export class Reports extends BasePage<RouteComponentProps<any>, State> {
     }
 
     private fetchArchivedWorkflowsLabels(key: string): Promise<any> {
-        return services.archivedWorkflows.listLabelValues(key).then(list => {
+        return services.archivedWorkflows.listLabelValues(key, this.state.namespace).then(list => {
             return list.items.map(i => key + '=' + i).sort((a, b) => a.localeCompare(b));
         });
     }
