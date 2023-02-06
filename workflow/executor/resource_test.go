@@ -1,6 +1,7 @@
 package executor
 
 import (
+	"context"
 	"io/ioutil"
 	"os"
 	"path"
@@ -216,4 +217,22 @@ func TestResourceExecRetry(t *testing.T) {
 	_, _, _, err := we.ExecResource("", "../../examples/hello-world.yaml", nil)
 	assert.Error(t, err)
 	assert.Equal(t, "no more retries i/o timeout", err.Error())
+}
+
+func Test_jqFilter(t *testing.T) {
+	for _, testCase := range []struct {
+		input  []byte
+		filter string
+		want   string
+	}{
+		{[]byte(`{"metadata": {"name": "foo"}}`), ".metadata.name", "foo"},
+		{[]byte(`{"items": [{"key": "foo"}, {"key": "bar"}]}`), ".items.[].key", "foo\nbar"},
+	} {
+		t.Run(string(testCase.input), func(t *testing.T) {
+			ctx := context.Background()
+			got, err := jqFilter(ctx, testCase.input, testCase.filter)
+			assert.NoError(t, err)
+			assert.Equal(t, testCase.want, got)
+		})
+	}
 }

@@ -311,37 +311,11 @@ func (we *WorkflowExecutor) SaveResourceParameters(ctx context.Context, resource
 		}
 		output := string(out)
 		if param.ValueFrom.JQFilter != "" {
-			var v interface{}
-			if err := json.Unmarshal(out, &v); err != nil {
-				return err
-			}
-			q, err := gojq.Parse(param.ValueFrom.JQFilter)
+			output, err = jqFilter(ctx, out, param.ValueFrom.JQFilter)
+			log.WithError(err).WithField("out", string(out)).WithField("filter", param.ValueFrom.JQFilter).Info("gojq")
 			if err != nil {
 				return err
 			}
-			iter := q.RunWithContext(ctx, v)
-			var buf strings.Builder
-			for {
-				v, ok := iter.Next()
-				if !ok {
-					break
-				}
-				if err, ok := v.(error); ok {
-					log.WithError(err).WithField("out", string(out)).WithField("query", q.String()).Info("gojq")
-					return err
-				}
-				if s, ok := v.(string); ok {
-					buf.WriteString(s)
-				} else {
-					b, err := json.Marshal(v)
-					if err != nil {
-						return err
-					}
-					buf.Write(b)
-				}
-				buf.WriteString("\n")
-			}
-			output = strings.TrimSpace(buf.String())
 		}
 
 		we.Template.Outputs.Parameters[i].Value = wfv1.AnyStringPtr(output)
@@ -349,4 +323,37 @@ func (we *WorkflowExecutor) SaveResourceParameters(ctx context.Context, resource
 	}
 	err := we.reportOutputs(ctx, nil)
 	return err
+}
+
+func jqFilter(ctx context.Context, input []byte, filter string) (string, error) {
+	var v interface{}
+	if err := json.Unmarshal(input, &v); err != nil {
+		return "", err
+	}
+	q, err := gojq.Parse(filter)
+	if err != nil {
+		return "", err
+	}
+	iter := q.RunWithContext(ctx, v)
+	var buf strings.Builder
+	for {
+		v, ok := iter.Next()
+		if !ok {
+			break
+		}
+		if err, ok := v.(error); ok {
+			return "", err
+		}
+		if s, ok := v.(string); ok {
+			buf.WriteString(s)
+		} else {
+			b, err := json.Marshal(v)
+			if err != nil {
+				return "", err
+			}
+			buf.Write(b)
+		}
+		buf.WriteString("\n")
+	}
+	return strings.TrimSpace(buf.String()), nil
 }
