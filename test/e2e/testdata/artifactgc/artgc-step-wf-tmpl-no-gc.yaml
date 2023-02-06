@@ -1,0 +1,17 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: artgc-step-wf-tmpl-no-gc-
+spec:
+  artifactGC:
+    strategy: OnWorkflowDeletion 
+  entrypoint: artgc-step-wf-tmpl-no-gc
+  templates:
+  - name: artgc-step-wf-tmpl-no-gc
+    steps:                             
+      - - name: call-template
+          templateRef:                 
+            name: artgc-template-no-gc
+            template: artgc-template-main
+            clusterScope: false         
+         
