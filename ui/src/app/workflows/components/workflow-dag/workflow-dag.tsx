@@ -211,7 +211,7 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
                 consideredChildren.add(item.nodeName);
 
                 const node: NodeStatus = this.props.nodes[item.nodeName];
-                if (!node || node.phase === NODE_PHASE.OMITTED) {
+                if (!node) {
                     continue;
                 }
 

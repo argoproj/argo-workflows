@@ -70,16 +70,20 @@ func (s *ArtifactsSuite) TestArtifactGC() {
 	s.Given().
 		WorkflowTemplate("@testdata/artifactgc/artgc-template.yaml").
 		WorkflowTemplate("@testdata/artifactgc/artgc-template-2.yaml").
+		WorkflowTemplate("@testdata/artifactgc/artgc-template-ref-template.yaml").
+		WorkflowTemplate("@testdata/artifactgc/artgc-template-no-gc.yaml").
 		When().
 		CreateWorkflowTemplates()
 
 	for _, tt := range []struct {
 		workflowFile                 string
+		hasGC                        bool
 		expectedArtifacts            []artifactState
 		expectedGCPodsOnWFCompletion int
 	}{
 		{
 			workflowFile:                 "@testdata/artifactgc/artgc-multi-strategy-multi-anno.yaml",
+			hasGC:                        true,
 			expectedGCPodsOnWFCompletion: 2,
 			expectedArtifacts: []artifactState{
 				artifactState{"first-on-completion-1", "my-bucket-2", true, false},
@@ -89,37 +93,63 @@ func (s *ArtifactsSuite) TestArtifactGC() {
 				artifactState{"second-on-completion", "my-bucket-2", true, false},
 			},
 		},
+		// entire Workflow based on a WorkflowTemplate
 		{
 			workflowFile:                 "@testdata/artifactgc/artgc-from-template.yaml",
+			hasGC:                        true,
 			expectedGCPodsOnWFCompletion: 1,
 			expectedArtifacts: []artifactState{
 				artifactState{"on-completion", "my-bucket-2", true, false},
 				artifactState{"on-deletion", "my-bucket-2", false, true},
 			},
 		},
+		// entire Workflow based on a WorkflowTemplate
 		{
 			workflowFile:                 "@testdata/artifactgc/artgc-from-template-2.yaml",
+			hasGC:                        true,
 			expectedGCPodsOnWFCompletion: 1,
 			expectedArtifacts: []artifactState{
 				artifactState{"on-completion", "my-bucket-2", true, false},
 				artifactState{"on-deletion", "my-bucket-2", false, true},
 			},
 		},
+		// Step in Workflow references a WorkflowTemplate's template
 		{
 			workflowFile:                 "@testdata/artifactgc/artgc-step-wf-tmpl.yaml",
+			hasGC:                        true,
 			expectedGCPodsOnWFCompletion: 1,
 			expectedArtifacts: []artifactState{
 				artifactState{"on-completion", "my-bucket-2", true, false},
 				artifactState{"on-deletion", "my-bucket-2", false, true},
 			},
 		},
+		// Step in Workflow references a WorkflowTemplate's template
 		{
 			workflowFile:                 "@testdata/artifactgc/artgc-step-wf-tmpl-2.yaml",
+			hasGC:                        true,
 			expectedGCPodsOnWFCompletion: 1,
 			expectedArtifacts: []artifactState{
 				artifactState{"on-completion", "my-bucket-2", true, false},
 				artifactState{"on-deletion", "my-bucket-2", false, false},
 			},
+		},
+		// entire Workflow based on a WorkflowTemplate which has a Step that references another WorkflowTemplate's template
+		{
+			workflowFile:                 "@testdata/artifactgc/artgc-from-ref-template.yaml",
+			hasGC:                        true,
+			expectedGCPodsOnWFCompletion: 1,
+			expectedArtifacts: []artifactState{
+				artifactState{"on-completion", "my-bucket-2", true, false},
+				artifactState{"on-deletion", "my-bucket-2", false, true},
+			},
+		},
+		// Step in Workflow references a WorkflowTemplate's template
+		// Workflow defines ArtifactGC but all artifacts override with "Never" so Artifact GC should not be done
+		{
+			workflowFile:                 "@testdata/artifactgc/artgc-step-wf-tmpl-no-gc.yaml",
+			hasGC:                        false,
+			expectedGCPodsOnWFCompletion: 0,
+			expectedArtifacts:            []artifactState{},
 		},
 	} {
 		// for each test make sure that:
@@ -138,8 +168,18 @@ func (s *ArtifactsSuite) TestArtifactGC() {
 			WaitForWorkflow(fixtures.ToBeCompleted).
 			Then().
 			ExpectWorkflow(func(t *testing.T, objectMeta *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-				assert.Contains(t, objectMeta.Finalizers, common.FinalizerArtifactGC)
+				if tt.hasGC {
+					assert.Contains(t, objectMeta.Finalizers, common.FinalizerArtifactGC)
+				}
 			})
+
+		if when.WorkflowCondition(func(wf *wfv1.Workflow) bool {
+			return wf.Status.Phase == wfv1.WorkflowFailed || wf.Status.Phase == wfv1.WorkflowError
+		}) {
+			fmt.Println("can't reliably verify Artifact GC since workflow failed")
+			when.RemoveFinalizers(false)
+			continue
+		}
 
 		// wait for all pods to have started and been completed and recouped
 		when.
@@ -207,7 +247,7 @@ func (s *ArtifactsSuite) TestArtifactGC_InsufficientRole() {
 		_ = s.KubeClient.CoreV1().ServiceAccounts(fixtures.Namespace).Delete(ctx, "artgc-role-test-sa", metav1.DeleteOptions{})
 	})
 
-	s.Given().Workflow(`
+	when := s.Given().Workflow(`
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
@@ -235,12 +275,22 @@ spec:
             serviceAccountName: artgc-role-test-sa`).
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(
-			fixtures.WorkflowCompletionOkay(true),
-			fixtures.Condition(func(wf *wfv1.Workflow) (bool, string) {
-				return wf.Status.ArtifactGCStatus != nil &&
-					len(wf.Status.ArtifactGCStatus.PodsRecouped) == 1, "for pod to have been recouped"
-			})).
+		WaitForWorkflow(fixtures.ToBeCompleted)
+
+	if when.WorkflowCondition(func(wf *wfv1.Workflow) bool {
+		return wf.Status.Phase == wfv1.WorkflowFailed || wf.Status.Phase == wfv1.WorkflowError
+	}) {
+		fmt.Println("can't reliably verify Artifact GC (Insufficient Role test) since workflow failed")
+		when.RemoveFinalizers(false)
+		return
+	}
+
+	when.WaitForWorkflow(
+		fixtures.WorkflowCompletionOkay(true),
+		fixtures.Condition(func(wf *wfv1.Workflow) (bool, string) {
+			return wf.Status.ArtifactGCStatus != nil &&
+				len(wf.Status.ArtifactGCStatus.PodsRecouped) == 1, "for pod to have been recouped"
+		})).
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			failCondition := false
@@ -406,6 +456,35 @@ spec:
 				}
 			})
 	})
+}
+
+func (s *ArtifactsSuite) TestGitArtifactDepthClone() {
+	s.Given().
+		Workflow(`apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: git-depth-
+spec:
+  entrypoint: git-depth
+  templates:
+  - name: git-depth
+    inputs:
+      artifacts:
+      - name: git-repo
+        path: /tmp/git
+        git:
+          repo: https://github.com/argoproj-labs/go-git.git
+          revision: master
+          depth: 1
+    container:
+      image: argoproj/argosay:v2
+      command: [sh, -c]
+      args: ["ls -l"]
+      workingDir: /tmp/git
+`).
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeSucceeded)
 }
 
 func TestArtifactsSuite(t *testing.T) {

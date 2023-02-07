@@ -43,7 +43,7 @@ func (woc *wfOperationCtx) garbageCollectArtifacts(ctx context.Context) error {
 		if woc.wf.Status.ArtifactGCStatus.NotSpecified {
 			return nil // we already verified it's not required for this workflow
 		}
-		if woc.execWf.HasArtifactGC() {
+		if woc.HasArtifactGC() {
 			woc.log.Info("adding artifact GC finalizer")
 			finalizers := append(woc.wf.GetFinalizers(), common.FinalizerArtifactGC)
 			woc.wf.SetFinalizers(finalizers)
@@ -69,6 +69,34 @@ func (woc *wfOperationCtx) garbageCollectArtifacts(ctx context.Context) error {
 		return err
 	}
 	return nil
+}
+
+func (woc *wfOperationCtx) HasArtifactGC() bool {
+	// ArtifactGC can be defined on the Workflow level or on the Artifact level
+	// It may be defined in the Workflow itself or in a WorkflowTemplate referenced by the Workflow
+
+	// woc.execWf.Spec.Templates includes templates described directly in the Workflow as well as templates
+	// in a WorkflowTemplate that the entire Workflow is based on
+	for _, template := range woc.execWf.Spec.Templates {
+		for _, artifact := range template.Outputs.Artifacts {
+			strategy := woc.execWf.GetArtifactGCStrategy(&artifact)
+			if strategy != wfv1.ArtifactGCStrategyUndefined && strategy != wfv1.ArtifactGCNever {
+				return true
+			}
+		}
+	}
+
+	// need to go to woc.wf.Status.StoredTemplates in the case of a Step referencing a WorkflowTemplate
+	for _, template := range woc.wf.Status.StoredTemplates {
+		for _, artifact := range template.Outputs.Artifacts {
+			strategy := woc.execWf.GetArtifactGCStrategy(&artifact)
+			if strategy != wfv1.ArtifactGCStrategyUndefined && strategy != wfv1.ArtifactGCNever {
+				return true
+			}
+		}
+	}
+
+	return false
 }
 
 // which ArtifactGC Strategies are ready to process?
@@ -154,7 +182,7 @@ func (woc *wfOperationCtx) processArtifactGCStrategy(ctx context.Context, strate
 		}
 		template, found := templatesByName[templateName]
 		if !found {
-			template = woc.execWf.GetTemplateByName(templateName)
+			template = woc.wf.GetTemplateByName(templateName)
 			if template == nil {
 				return fmt.Errorf("can't process Artifact GC Strategy %s: template name %q belonging to node %+v not found??", strategy, templateName, node)
 			}

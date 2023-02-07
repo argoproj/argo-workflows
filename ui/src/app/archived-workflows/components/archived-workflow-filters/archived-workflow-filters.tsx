@@ -192,7 +192,7 @@ export class ArchivedWorkflowFilters extends React.Component<ArchivedWorkflowFil
     }
 
     private fetchArchivedWorkflowsLabelKeys(): void {
-        services.archivedWorkflows.listLabelKeys().then(list => {
+        services.archivedWorkflows.listLabelKeys(this.props.namespace).then(list => {
             this.setState({
                 labels: list.items?.sort((a, b) => a.localeCompare(b)) || []
             });
@@ -200,7 +200,7 @@ export class ArchivedWorkflowFilters extends React.Component<ArchivedWorkflowFil
     }
 
     private fetchArchivedWorkflowsLabels(key: string): Promise<any> {
-        return services.archivedWorkflows.listLabelValues(key).then(list => {
+        return services.archivedWorkflows.listLabelValues(key, this.props.namespace).then(list => {
             return list.items.map(i => key + '=' + i).sort((a, b) => a.localeCompare(b));
         });
     }
