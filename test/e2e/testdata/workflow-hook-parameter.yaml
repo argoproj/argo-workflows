@@ -19,15 +19,18 @@ spec:
           - name: status
       container:
         image: 'argoproj/argosay:v2'
-        command: ['sh','-c']
+        command: ['bash','-c']
         args:
-          - exit 0
+          - |
+            echo "{{inputs.parameters.ternary}}"
+            echo "{{inputs.parameters.status}}"
+            [[ "{{inputs.parameters.ternary}}" = "{{inputs.parameters.status}}" ]]
   hooks:
     exit:
       template: cowsay
       arguments:
         parameters:
           - name: ternary
-            value: '{{= workflow.status == "Succeeded" ? "SUCCESSFUL" : "FAILED" }}'
+            value: '{{= workflow.status == "Succeeded" ? "Succeeded" : "Failed" }}'
           - name: status
             value: '{{= workflow.status }}'

@@ -700,7 +700,7 @@ func (s *FunctionalSuite) TestWorkflowHookParameterTemplates() {
 		}).
 		ExpectWorkflowNode(wfv1.NodeWithDisplayName("workflow-hook-parameter.onExit"), func(t *testing.T, n *wfv1.NodeStatus, p *apiv1.Pod) {
 			assert.Equal(t, wfv1.NodeSucceeded, n.Phase)
-			assert.Equal(t, "SUCCESSFUL", n.Inputs.Parameters[0].Value.String())
+			assert.Equal(t, "Succeeded", n.Inputs.Parameters[0].Value.String())
 			assert.Equal(t, "Succeeded", n.Inputs.Parameters[1].Value.String())
 		})
 }
