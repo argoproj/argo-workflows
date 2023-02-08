@@ -145,7 +145,7 @@ func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 
 	wfArgs := wf.Spec.Arguments
 
-	if wf.Spec.WorkflowTemplateRef != nil {
+	if hasWorkflowTemplateRef {
 		wfArgs.Parameters = util.MergeParameters(wfArgs.Parameters, wfSpecHolder.GetWorkflowSpec().Arguments.Parameters)
 		wfArgs.Artifacts = util.MergeArtifacts(wfArgs.Artifacts, wfSpecHolder.GetWorkflowSpec().Arguments.Artifacts)
 	}
@@ -225,9 +225,26 @@ func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 			return err
 		}
 	}
+
+	// Validate OnExit hooks
+	// If the OnExit is specified in Workflow:
+	//   - If the template that referred by OnExit is from a WorkflowTemplate, template in WorkflowTemplate will be validated.
+	//   - If the template is inlined, the template will be validated.
+	// If the OnExit is empty in Workflow:
+	//   - If OnExit is specified in referred WorkflowTemplate, the OnExit of the referred WorkflowTemplate will be validated.
+	//   - If OnExit is empty in referred WorkflowTemplate, nothing will be validated.
+	var tmplHolder *wfv1.WorkflowStep
 	if wf.Spec.OnExit != "" {
+		tmplHolder = &wfv1.WorkflowStep{Template: wf.Spec.OnExit}
+		if hasWorkflowTemplateRef {
+			tmplHolder = &wfv1.WorkflowStep{TemplateRef: wf.Spec.WorkflowTemplateRef.ToTemplateRef(wf.Spec.OnExit)}
+		}
+	} else if hasWorkflowTemplateRef && wfSpecHolder.GetWorkflowSpec().OnExit != "" {
+		tmplHolder = &wfv1.WorkflowStep{TemplateRef: wf.Spec.WorkflowTemplateRef.ToTemplateRef(wfSpecHolder.GetWorkflowSpec().OnExit)}
+	}
+	if tmplHolder != nil {
 		ctx.globalParams[common.GlobalVarWorkflowFailures] = placeholderGenerator.NextPlaceholder()
-		_, err = ctx.validateTemplateHolder(&wfv1.WorkflowStep{Template: wf.Spec.OnExit}, tmplCtx, &wf.Spec.Arguments, opts.WorkflowTemplateValidation)
+		_, err = ctx.validateTemplateHolder(tmplHolder, tmplCtx, &wf.Spec.Arguments, opts.WorkflowTemplateValidation)
 		if err != nil {
 			return err
 		}
@@ -241,6 +258,17 @@ func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 	}
 
 	// Check if all templates can be resolved.
+	// If the Workflow is using a WorkflowTemplateRef, then the templates of the referred WorkflowTemplate will be validated.
+	if hasWorkflowTemplateRef {
+		for _, template := range wfSpecHolder.GetWorkflowSpec().Templates {
+			_, err := ctx.validateTemplateHolder(&wfv1.WorkflowStep{TemplateRef: wf.Spec.WorkflowTemplateRef.ToTemplateRef(template.Name)}, tmplCtx, &FakeArguments{}, opts.WorkflowTemplateValidation)
+			if err != nil {
+				return errors.Errorf(errors.CodeBadRequest, "templates.%s %s", template.Name, err.Error())
+			}
+		}
+		return nil
+	}
+	// If the templates are inlined in Workflow, then the inlined templates will be validated.
 	for _, template := range wf.Spec.Templates {
 		_, err := ctx.validateTemplateHolder(&wfv1.WorkflowStep{Template: template.Name}, tmplCtx, &FakeArguments{}, opts.WorkflowTemplateValidation)
 		if err != nil {
