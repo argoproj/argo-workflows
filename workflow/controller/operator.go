@@ -881,7 +881,7 @@ func (woc *wfOperationCtx) requeue() {
 }
 
 // processNodeRetries updates the retry node state based on the child node state and the retry strategy and returns the node.
-func (woc *wfOperationCtx) processNodeRetries(node *wfv1.NodeStatus, retryStrategy wfv1.RetryStrategy, executeTmpl *wfv1.Template, opts *executeTemplateOpts) (*wfv1.NodeStatus, bool, error) {
+func (woc *wfOperationCtx) processNodeRetries(node *wfv1.NodeStatus, retryStrategy wfv1.RetryStrategy, opts *executeTemplateOpts) (*wfv1.NodeStatus, bool, error) {
 	if node.Fulfilled() {
 		return node, true, nil
 	}
@@ -1018,16 +1018,11 @@ func (woc *wfOperationCtx) processNodeRetries(node *wfv1.NodeStatus, retryStrate
 	if err != nil {
 		return nil, false, err
 	}
-
 	if retryStrategy.Limit != nil && limit != nil && int32(len(node.Children)) > *limit {
 		woc.log.Infoln("No more retries left. Failing...")
 		return woc.markNodePhase(node.Name, lastChildNode.Phase, "No more retries left"), true, nil
 	}
 
-	if executeTmpl.Metrics != nil {
-		localScope, realTimeScope := woc.prepareMetricScope(lastChildNode)
-		woc.computeMetrics(executeTmpl.Metrics.Prometheus, localScope, realTimeScope, false)
-	}
 	woc.log.Infof("%d child nodes of %s failed. Trying again...", len(node.Children), node.Name)
 	return node, true, nil
 }
@@ -1903,7 +1898,7 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 			woc.log.Debugf("Inject a retry node for node %s", retryNodeName)
 			retryParentNode = woc.initializeExecutableNode(retryNodeName, wfv1.NodeTypeRetry, templateScope, processedTmpl, orgTmpl, opts.boundaryID, wfv1.NodeRunning)
 		}
-		processedRetryParentNode, continueExecution, err := woc.processNodeRetries(retryParentNode, *woc.retryStrategy(processedTmpl), processedTmpl, opts)
+		processedRetryParentNode, continueExecution, err := woc.processNodeRetries(retryParentNode, *woc.retryStrategy(processedTmpl), opts)
 		if err != nil {
 			return woc.markNodeError(retryNodeName, err), err
 		} else if !continueExecution {
@@ -1911,9 +1906,11 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 			return retryParentNode, nil
 		}
 		retryParentNode = processedRetryParentNode
-		// The retry node might have completed by now.
 		lastChildNode := getChildNodeIndex(retryParentNode, woc.wf.Status.Nodes, -1)
+		// The retry node might have completed by now.
 		if retryParentNode.Fulfilled() {
+			// If retry node has completed, set the output of the last child node to its output.
+			// Runtime parameters (e.g., `status`, `resourceDuration`) in the output will be used to emit metrics.
 			if lastChildNode != nil {
 				retryParentNode.Outputs = lastChildNode.Outputs.DeepCopy()
 				woc.wf.Status.Nodes[node.ID] = *retryParentNode
@@ -1932,6 +1929,10 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 				woc.controller.syncManager.Release(woc.wf, node.ID, processedTmpl.Synchronization)
 			}
 			return retryParentNode, nil
+		} else if lastChildNode != nil && lastChildNode.Fulfilled() && processedTmpl.Metrics != nil {
+			// If retry node has not completed and last child node has completed, emit metrics for the last child node.
+			localScope, realTimeScope := woc.prepareMetricScope(lastChildNode)
+			woc.computeMetrics(processedTmpl.Metrics.Prometheus, localScope, realTimeScope, false)
 		}
 		if lastChildNode != nil && !lastChildNode.Fulfilled() {
 			// Last child node is still running.
