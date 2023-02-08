@@ -634,10 +634,10 @@ spec:
 		When().
 		CreateWorkflowTemplates().
 		SubmitWorkflow().
-		WaitForWorkflow(fixtures.ToBeErrored).
+		WaitForWorkflow(fixtures.ToBeFailed).
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Contains(t, status.Message, "error in exit template execution")
+			assert.Contains(t, status.Message, "invalid spec")
 		})
 }
 
