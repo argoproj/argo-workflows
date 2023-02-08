@@ -1024,7 +1024,7 @@ func (woc *wfOperationCtx) processNodeRetries(node *wfv1.NodeStatus, retryStrate
 		return woc.markNodePhase(node.Name, lastChildNode.Phase, "No more retries left"), true, nil
 	}
 
-	if len(executeTmpl.Metrics.Prometheus) != 0 {
+	if executeTmpl.Metrics != nil {
 		localScope, realTimeScope := woc.prepareMetricScope(lastChildNode)
 		woc.computeMetrics(executeTmpl.Metrics.Prometheus, localScope, realTimeScope, false)
 	}
