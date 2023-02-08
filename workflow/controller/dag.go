@@ -358,6 +358,7 @@ func (woc *wfOperationCtx) executeDAGTask(ctx context.Context, dagCtx *dagContex
 
 	node := dagCtx.getTaskNode(taskName)
 	task := dagCtx.GetTask(taskName)
+	log := woc.log.WithField("taskName", taskName)
 	if node != nil && node.Fulfilled() {
 		// Collect the completed task metrics
 		_, tmpl, _, _ := dagCtx.tmplCtx.ResolveTemplate(task)
@@ -382,6 +383,8 @@ func (woc *wfOperationCtx) executeDAGTask(ctx context.Context, dagCtx *dagContex
 		scope, err := woc.buildLocalScopeFromTask(dagCtx, task)
 		if err != nil {
 			woc.markNodeError(node.Name, err)
+			log.Error("Failed to build local scope from task")
+			return
 		}
 		scope.addParamToScope(fmt.Sprintf("tasks.%s.status", task.Name), string(node.Phase))
 		hookCompleted, err := woc.executeTmplLifeCycleHook(ctx, scope, dagCtx.GetTask(taskName).Hooks, node, dagCtx.boundaryID, dagCtx.tmplCtx, "tasks."+taskName)
