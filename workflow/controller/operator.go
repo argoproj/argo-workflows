@@ -143,8 +143,7 @@ type failedNodeStatus struct {
 
 // newWorkflowOperationCtx creates and initializes a new wfOperationCtx object.
 func newWorkflowOperationCtx(wf *wfv1.Workflow, wfc *WorkflowController) *wfOperationCtx {
-	var rateLimiter *waitutil.RateLimiter
-	rateLimiter = nil
+	var rateLimiter *waitutil.RateLimiter = nil
 
 	intervalMsStr, present := os.LookupEnv(common.EnvCleanupRateLimitIntervalMilliSeconds)
 	if present {
