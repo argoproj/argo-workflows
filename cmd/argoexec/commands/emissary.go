@@ -99,7 +99,13 @@ func NewEmissaryCommand() *cobra.Command {
 				return fmt.Errorf("failed to find name in PATH: %w", err)
 			}
 
-			if _, ok := os.LookupEnv("ARGO_DEBUG_PAUSE_BEFORE"); ok {
+			debugBefore, ok := os.LookupEnv("ARGO_DEBUG_PAUSE_BEFORE")
+			boolDebugBefore, err := strconv.ParseBool(debugBefore)
+			if err != nil {
+				fmt.Errorf("Failed to change ARGO_DEBUG_PAUSE_BEFORE to boolean value: %w", err)
+			}
+
+			if ok && boolDebugBefore {
 				for {
 					// User can create the file: /ctr/NAME_OF_THE_CONTAINER/before
 					// in order to break out of the sleep and release the container from
@@ -164,7 +170,13 @@ func NewEmissaryCommand() *cobra.Command {
 			})
 			logger.WithError(err).Info("sub-process exited")
 
-			if _, ok := os.LookupEnv("ARGO_DEBUG_PAUSE_AFTER"); ok {
+			debugAfter, ok := os.LookupEnv("ARGO_DEBUG_PAUSE_AFTER")
+			boolDebugAfter, err := strconv.ParseBool(debugAfter)
+			if err != nil {
+				fmt.Errorf("Failed to change ARGO_DEBUG_PAUSE_AFTER to boolean value: %w", err)
+			}
+
+			if ok && boolDebugAfter {
 				for {
 					// User can create the file: /ctr/NAME_OF_THE_CONTAINER/after
 					// in order to break out of the sleep and release the container from
