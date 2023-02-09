@@ -9,7 +9,7 @@ as Devenv/Nix in the case of dependency management.
 
 ## Proposal Specifics
 
-In order to better address reproducibility, it is better to split up the duties the Makefile currently performs into various sub components, that can be assembled in more appropriate technology. One important aspect here is to completely shift the responsibility of dependency management away from the Makefile and into technology such as Nix or Devenv.
+In order to better address reproducibility, it is better to split up the duties the Makefile currently performs into various sub components, that can be assembled in more appropriate technology. One important aspect here is to completely shift the responsibility of dependency management away from the Makefile and into technology such as Nix or Devenv. This proposal will also enable quicker access to a development build of Argo Workflows to developers, reducing the costs of on-boarding and barrier to entry.
 
 ### Devenv
 
@@ -42,14 +42,13 @@ I suggest that we use Nix over Devenv. I believe that our build environment is u
 ### Proposal
 
 In order to maximize the benefit we receive from using something like Nix, I suggest that we initially start off with a modest change to the Makefile.
-The first proposal would be to remove out all dependency management code and replace this functionality with Nix, where it is trivially possible. This may not be possible for some go lang related binaries we use, we will retain the Makefile functionality in those cases, at least for a while. Eventually we will migrate more and more of this responsibility away from the Makefile. Following Nix being responsible for all dependency management, we could start to consider moving more of our build system itself into Nix, perhaps it is easiest to start off with UI build as it is relatively painless. However, do note that this is not a requirement, I do not see a problem with the Makefile and the Nix file co-existing, it is more about finding a good balance between the reproducibility we desire and the effort we put into obtaining said reproducibility
+The first proposal would be to remove out all dependency management code and replace this functionality with Nix, where it is trivially possible. This may not be possible for some go lang related binaries we use, we will retain the Makefile functionality in those cases, at least for a while. Eventually we will migrate more and more of this responsibility away from the Makefile. Following Nix being responsible for all dependency management, we could start to consider moving more of our build system itself into Nix, perhaps it is easiest to start off with UI build as it is relatively painless. However, do note that this is not a requirement, I do not see a problem with the Makefile and the Nix file co-existing, it is more about finding a good balance between the reproducibility we desire and the effort we put into obtaining said reproducibility. An example for a replacement could be [this](https://github.com/argoproj/argo-workflows/blob/master/Makefile#L629) dependency for example, note that we do not state any version here, replacing such installations with Nix based installations will ensure that we can ensure that if a build works on a certain developer's machine, it should also work on every other machine as well.
 
 ### What will Nix get us?
 
-As mentioned previously Nix gets us closer to reproducible build environment's. It should ease significantly the on-boarding process of developers onto the project.
-There have been at least one confirmed developer who wanted to work on Argo Workflows but found the Makefile to be a barrier, it is likely that there are more developers on this boat. With a reproducible build environment, we hope that
-everyone who would like to contribute to the project is able to do so easily. It should also save time for engineers on-boarding onto the project, especially if they are using a more niche
-system that the Makefile does not cater for, for example a developer running Fedora.
+As mentioned previously Nix gets us closer to reproducible build environments. It should ease significantly the on-boarding process of developers onto the project.
+There have been several developers who wanted to work on Argo Workflows but found the Makefile to be a barrier, it is likely that there are more developers on this boat. With a reproducible build environment, we hope that
+everyone who would like to contribute to the project is able to do so easily. It should also save time for engineers on-boarding onto the project, especially if they are using a system that is not Ubuntu or OSX.
 
 ### What will Nix cost us?
 
