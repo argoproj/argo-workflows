@@ -102,19 +102,20 @@ func NewEmissaryCommand() *cobra.Command {
 			debugBefore, ok := os.LookupEnv("ARGO_DEBUG_PAUSE_BEFORE")
 			boolDebugBefore, err := strconv.ParseBool(debugBefore)
 			if err != nil {
-				logger.Error((fmt.Errorf("failed to change ARGO_DEBUG_PAUSE_BEFORE to boolean value: %w", err))
-			} else {
-				if ok && boolDebugBefore {
-					for {
-						// User can create the file: /ctr/NAME_OF_THE_CONTAINER/before
-						// in order to break out of the sleep and release the container from
-						// the debugging state.
-						if _, err := os.Stat(varRunArgo + "/ctr/" + containerName + "/before"); os.IsNotExist(err) {
-							time.Sleep(time.Second)
-							continue
-						}
-						break
+				logger.Error(fmt.Errorf("failed to change ARGO_DEBUG_PAUSE_BEFORE to boolean value: %w", err))
+				boolDebugBefore = false
+			}
+
+			if ok && boolDebugBefore {
+				for {
+					// User can create the file: /ctr/NAME_OF_THE_CONTAINER/before
+					// in order to break out of the sleep and release the container from
+					// the debugging state.
+					if _, err := os.Stat(varRunArgo + "/ctr/" + containerName + "/before"); os.IsNotExist(err) {
+						time.Sleep(time.Second)
+						continue
 					}
+					break
 				}
 			}
 
@@ -174,19 +175,20 @@ func NewEmissaryCommand() *cobra.Command {
 			debugAfter, ok := os.LookupEnv("ARGO_DEBUG_PAUSE_AFTER")
 			boolDebugAfter, err := strconv.ParseBool(debugAfter)
 			if err != nil {
-				logger.Error((fmt.Errorf("failed to change ARGO_DEBUG_PAUSE_AFTER to boolean value: %w", err))
-			} else {
-				if ok && boolDebugAfter {
-					for {
-						// User can create the file: /ctr/NAME_OF_THE_CONTAINER/after
-						// in order to break out of the sleep and release the container from
-						// the debugging state.
-						if _, err := os.Stat(varRunArgo + "/ctr/" + containerName + "/after"); os.IsNotExist(err) {
-							time.Sleep(time.Second)
-							continue
-						}
-						break
+				logger.Errorfmt(Errorf("failed to change ARGO_DEBUG_PAUSE_AFTER to boolean value: %w", err))
+				boolDebugAfter = false
+			}
+
+			if ok && boolDebugAfter {
+				for {
+					// User can create the file: /ctr/NAME_OF_THE_CONTAINER/after
+					// in order to break out of the sleep and release the container from
+					// the debugging state.
+					if _, err := os.Stat(varRunArgo + "/ctr/" + containerName + "/after"); os.IsNotExist(err) {
+						time.Sleep(time.Second)
+						continue
 					}
+					break
 				}
 			}
 
