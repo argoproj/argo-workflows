@@ -27,8 +27,8 @@ Both use the [expr](https://github.com/antonmedv/expr/blob/master/docs/Language-
 
 ```
 
-* [Steps artifacts example](https://raw.githubusercontent.com/argoproj/argo-workflows/master/examples/conditional-artifacts.yaml)
-* [DAG artifacts example](https://raw.githubusercontent.com/argoproj/argo-workflows/master/examples/dag-conditional-artifacts.yaml)
+* [Steps artifacts example](https://github.com/argoproj/argo-workflows/blob/master/examples/conditional-artifacts.yaml)
+* [DAG artifacts example](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-conditional-artifacts.yaml)
 
 ## Conditional Parameters
 
@@ -50,8 +50,8 @@ Both use the [expr](https://github.com/antonmedv/expr/blob/master/docs/Language-
               expression: "steps['flip-coin'].outputs.result == 'heads' ? steps.heads.outputs.result : steps.tails.outputs.result"
 ```
 
-* [Steps parameter example](https://raw.githubusercontent.com/argoproj/argo-workflows/master/examples/conditional-parameters.yaml)
-* [DAG parameter example](https://raw.githubusercontent.com/argoproj/argo-workflows/master/examples/dag-conditional-parameters.yaml)
+* [Steps parameter example](https://github.com/argoproj/argo-workflows/blob/master/examples/conditional-parameters.yaml)
+* [DAG parameter example](https://github.com/argoproj/argo-workflows/blob/master/examples/dag-conditional-parameters.yaml)
 
 ## Built-In Functions
 
@@ -64,7 +64,7 @@ Convenient functions added to support more use cases:
    e.g: `jsonpath('{"employee":{"name":"sonoo","salary":56000,"married":true}}", "$.employee.name" )` )
 5. [Sprig](http://masterminds.github.io/sprig/) - Support all `sprig` functions
 
-* [Advanced example: fibonacci Sequence](https://raw.githubusercontent.com/argoproj/argo-workflows/master/examples/fibonacci-seq-conditional-param.yaml)
+* [Advanced example: fibonacci Sequence](https://github.com/argoproj/argo-workflows/blob/master/examples/fibonacci-seq-conditional-param.yaml)
 
 !!! NOTE
     Expressions will decode the `-` as operator if template name has `-`, it will fail the expression. So here solution
