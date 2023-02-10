@@ -23,7 +23,7 @@ The actual repository used by a workflow is chosen by the following rules:
 2. From a config map named `artifact-repositories` if it has the `workflows.argoproj.io/default-artifact-repository` annotation in the workflow's namespace.
 3. From a workflow controller config-map.
 
-**Important:** Restart the Argo controller after changing the configmap to finish configuring an artifact repo.
+**Important:** Restart the Argo controller after changing the configmap to finish configuring an artifact repository.
 
 ## Configuring MinIO
 
