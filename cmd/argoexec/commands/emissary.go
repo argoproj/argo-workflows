@@ -175,7 +175,7 @@ func NewEmissaryCommand() *cobra.Command {
 			debugAfter, ok := os.LookupEnv("ARGO_DEBUG_PAUSE_AFTER")
 			boolDebugAfter, err := strconv.ParseBool(debugAfter)
 			if err != nil {
-				logger.Error(Errorf("failed to change ARGO_DEBUG_PAUSE_AFTER to boolean value: %w", err))
+				logger.Error(fmt.Errorf("failed to change ARGO_DEBUG_PAUSE_AFTER to boolean value: %w", err))
 				boolDebugAfter = false
 			}
 

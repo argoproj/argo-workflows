@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"strings"
 	"path/filepath"
+	"strings"
 
 	"github.com/xeipuuv/gojsonschema"
 	"sigs.k8s.io/yaml"
@@ -75,7 +75,7 @@ func ValidateArgoYamlRecursively(fromPath string, skipFileNames []string) (map[s
 					errorDescriptions = append(errorDescriptions, fmt.Sprintf("%s in %s", err.Description(), err.Context().String()))
 				}
 			}
-			
+
 			if !(incorrectError && len(errorDescriptions) == 1) {
 				failed[path] = errorDescriptions
 			}

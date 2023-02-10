@@ -13,13 +13,13 @@ import (
 )
 
 /*
-	The GRPC code generation does not correctly support "inline". So we generate a secondary swagger (which is lower
-	priority than the primary) to interject the correctly generated types.
+The GRPC code generation does not correctly support "inline". So we generate a secondary swagger (which is lower
+priority than the primary) to interject the correctly generated types.
 
-	We do some hackerey here too:
+We do some hackerey here too:
 
-	* Change "/" into "." in names.
-	* Change "argo-workflows" into "argo_workflows".
+* Change "/" into "." in names.
+* Change "argo-workflows" into "argo_workflows".
 */
 func secondarySwaggerGen() {
 	definitions := make(map[string]interface{})
