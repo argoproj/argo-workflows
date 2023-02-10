@@ -102,7 +102,7 @@ func NewEmissaryCommand() *cobra.Command {
 			debugBefore, ok := os.LookupEnv("ARGO_DEBUG_PAUSE_BEFORE")
 			boolDebugBefore, err := strconv.ParseBool(debugBefore)
 			if err != nil {
-				fmt.Errorf("failed to change ARGO_DEBUG_PAUSE_BEFORE to boolean value: %w", err)
+				logger.Error((fmt.Errorf("failed to change ARGO_DEBUG_PAUSE_BEFORE to boolean value: %w", err))
 			} else {
 				if ok && boolDebugBefore {
 					for {
@@ -174,7 +174,7 @@ func NewEmissaryCommand() *cobra.Command {
 			debugAfter, ok := os.LookupEnv("ARGO_DEBUG_PAUSE_AFTER")
 			boolDebugAfter, err := strconv.ParseBool(debugAfter)
 			if err != nil {
-				fmt.Errorf("failed to change ARGO_DEBUG_PAUSE_AFTER to boolean value: %w", err)
+				logger.Error((fmt.Errorf("failed to change ARGO_DEBUG_PAUSE_AFTER to boolean value: %w", err))
 			} else {
 				if ok && boolDebugAfter {
 					for {
