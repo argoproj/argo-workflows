@@ -129,6 +129,7 @@ boolean
 booleans
 buildkit
 config
+configmap
 cpu
 cron
 daemoned
