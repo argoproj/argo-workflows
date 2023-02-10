@@ -2,10 +2,9 @@
 
 > v3.1 and after
 
-The Conditional Artifacts and Parameters feature enables to assign the Step/DAG level artifacts or parameters based on
-expression. This introduces a new field `fromExpression: ...` under Step/DAG level output artifact and `expression: ...`
-under step/DAG level output parameter. Both use the
-[expr](https://github.com/antonmedv/expr/blob/master/docs/Language-Definition.md) syntax.
+Conditional Artifacts and Parameters means you can assign the Step/DAG level artifacts or parameters based on an expression. 
+This introduces a new field `fromExpression: ...` under Step/DAG level output artifact and `expression: ...` under step/DAG level output parameter. 
+Both use the [expr](https://github.com/antonmedv/expr/blob/master/docs/Language-Definition.md) syntax.
 
 ## Conditional Artifacts
 
