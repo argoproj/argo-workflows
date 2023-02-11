@@ -42,9 +42,6 @@ RUN --mount=type=cache,target=/root/.yarn \
 
 FROM builder as argoexec-build
 
-RUN curl -L -o /usr/local/bin/jq https://github.com/stedolan/jq/releases/download/jq-1.6/jq-linux64 && \
-  chmod +x /usr/local/bin/jq
-
 # Tell git to forget about all of the files that were not included because of .dockerignore in order to ensure that
 # the git state is "clean" even though said .dockerignore files are not present
 RUN cat .dockerignore >> .gitignore
@@ -87,7 +84,6 @@ FROM bitnami/kubectl:1.24.8 as kubectl
 FROM gcr.io/distroless/static as argoexec
 
 COPY --from=kubectl /opt/bitnami/kubectl/bin/kubectl /bin/
-COPY --from=argoexec-build /usr/local/bin/jq /bin/
 COPY --from=argoexec-build /go/src/github.com/argoproj/argo-workflows/dist/argoexec /bin/
 COPY --from=argoexec-build /etc/mime.types /etc/mime.types
 COPY hack/ssh_known_hosts /etc/ssh/
