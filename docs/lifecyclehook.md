@@ -60,3 +60,5 @@ spec:
      http:
        url: http://dummy.restapiexample.com/api/v1/employees
 ```
+
+> Put differently, an exit handler is like a workflow-level `LifecycleHook` with an expression of `workflow.status == "Completed"` or `workflow.status == "Failed"` or `workflow.status == "Error"`.
