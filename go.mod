@@ -18,7 +18,7 @@ require (
 	github.com/coreos/go-oidc/v3 v3.5.0
 	github.com/doublerebel/bellows v0.0.0-20160303004610-f177d92a03d3
 	github.com/evanphx/json-patch v5.6.0+incompatible
-	github.com/gavv/httpexpect/v2 v2.10.0
+	github.com/gavv/httpexpect/v2 v2.12.0
 	github.com/go-git/go-git/v5 v5.4.2
 	github.com/go-jose/go-jose/v3 v3.0.0
 	github.com/go-openapi/jsonreference v0.20.2
