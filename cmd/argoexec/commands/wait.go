@@ -2,8 +2,6 @@ package commands
 
 import (
 	"context"
-	"os/signal"
-	"syscall"
 	"time"
 
 	"github.com/argoproj/pkg/stats"
@@ -32,20 +30,13 @@ func waitContainer(ctx context.Context) error {
 	defer stats.LogStats()
 	stats.StartStatsTicker(5 * time.Minute)
 
-	// use a function to constrain the scope of ctx
-	func() {
-		// this allows us to gracefully shutdown, capturing artifacts
-		ctx, cancel := signal.NotifyContext(ctx, syscall.SIGTERM)
-		defer cancel()
-
-		// Wait for main container to complete
-		err := wfExecutor.Wait(ctx)
-		if err != nil {
-			wfExecutor.AddError(err)
-		}
-	}()
+	// Wait for main container to complete
+	err := wfExecutor.Wait(ctx)
+	if err != nil {
+		wfExecutor.AddError(err)
+	}
 	// Capture output script result
-	err := wfExecutor.CaptureScriptResult(ctx)
+	err = wfExecutor.CaptureScriptResult(ctx)
 	if err != nil {
 		wfExecutor.AddError(err)
 	}

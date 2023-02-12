@@ -521,6 +521,7 @@ func printNode(w *tabwriter.Writer, node wfv1.NodeStatus, wfName, nodePrefix str
 // boundaryNode
 func (nodeInfo *boundaryNode) renderNodes(w *tabwriter.Writer, wf *wfv1.Workflow, depth int, nodePrefix string, childPrefix string, getArgs GetFlags) {
 	filtered, childIndent := filterNode(nodeInfo.getNodeStatus(wf), getArgs)
+	println("ALEX", filtered)
 	if !filtered {
 		version := util.GetWorkflowPodNameVersion(wf)
 		printNode(w, nodeInfo.getNodeStatus(wf), wf.ObjectMeta.Name, nodePrefix, getArgs, version)
