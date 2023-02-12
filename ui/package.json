@@ -69,7 +69,7 @@
         "html-webpack-plugin": "^4.5.2",
         "jest": "^26.6.3",
         "monaco-editor-webpack-plugin": "^1.9.1",
-        "prettier": "^1.19.1",
+        "prettier": "^2.8.4",
         "raw-loader": "^0.5.1",
         "react-hot-loader": "^4.13.1",
         "sass": "^1.58.0",
