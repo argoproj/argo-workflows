@@ -1,7 +1,6 @@
 package executor
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -11,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/itchyny/gojq"
 	log "github.com/sirupsen/logrus"
 	"github.com/tidwall/gjson"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
@@ -311,14 +311,11 @@ func (we *WorkflowExecutor) SaveResourceParameters(ctx context.Context, resource
 		}
 		output := string(out)
 		if param.ValueFrom.JQFilter != "" {
-			jq := exec.Command("jq", "-rc", param.ValueFrom.JQFilter)
-			jq.Stdin = bytes.NewBuffer(out)
-			out, err := jq.Output()
-			log.WithError(err).WithField("out", string(out)).WithField("args", jq.Args).Info("jq")
+			output, err = jqFilter(ctx, out, param.ValueFrom.JQFilter)
+			log.WithError(err).WithField("out", string(out)).WithField("filter", param.ValueFrom.JQFilter).Info("gojq")
 			if err != nil {
 				return err
 			}
-			output = strings.TrimSpace(string(out))
 		}
 
 		we.Template.Outputs.Parameters[i].Value = wfv1.AnyStringPtr(output)
@@ -326,4 +323,37 @@ func (we *WorkflowExecutor) SaveResourceParameters(ctx context.Context, resource
 	}
 	err := we.reportOutputs(ctx, nil)
 	return err
+}
+
+func jqFilter(ctx context.Context, input []byte, filter string) (string, error) {
+	var v interface{}
+	if err := json.Unmarshal(input, &v); err != nil {
+		return "", err
+	}
+	q, err := gojq.Parse(filter)
+	if err != nil {
+		return "", err
+	}
+	iter := q.RunWithContext(ctx, v)
+	var buf strings.Builder
+	for {
+		v, ok := iter.Next()
+		if !ok {
+			break
+		}
+		if err, ok := v.(error); ok {
+			return "", err
+		}
+		if s, ok := v.(string); ok {
+			buf.WriteString(s)
+		} else {
+			b, err := json.Marshal(v)
+			if err != nil {
+				return "", err
+			}
+			buf.Write(b)
+		}
+		buf.WriteString("\n")
+	}
+	return strings.TrimSpace(buf.String()), nil
 }
