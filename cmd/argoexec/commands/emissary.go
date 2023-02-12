@@ -99,14 +99,7 @@ func NewEmissaryCommand() *cobra.Command {
 				return fmt.Errorf("failed to find name in PATH: %w", err)
 			}
 
-			debugBefore, ok := os.LookupEnv("ARGO_DEBUG_PAUSE_BEFORE")
-			boolDebugBefore, err := strconv.ParseBool(debugBefore)
-			if err != nil {
-				logger.Error(fmt.Errorf("failed to change ARGO_DEBUG_PAUSE_BEFORE to boolean value: %w", err))
-				boolDebugBefore = false
-			}
-
-			if ok && boolDebugBefore {
+			if os.Getenv("ARGO_DEBUG_PAUSE_BEFORE") == "true" {
 				for {
 					// User can create the file: /ctr/NAME_OF_THE_CONTAINER/before
 					// in order to break out of the sleep and release the container from
