@@ -13,7 +13,7 @@ succeeded (or failed, etc.).
 
 To remedy this, there exists a new field called `depends`, which allows users to specify dependent tasks, their statuses,
 as well as any complex boolean logic. The field is a `string` field and the syntax is expression-like with operands having
-form `<task-name>.<task-result>`. Examples include `task-1.Suceeded`, `task-2.Failed`, `task-3.Daemoned`. The full list of
+form `<task-name>.<task-result>`. Examples include `task-1.Succeeded`, `task-2.Failed`, `task-3.Daemoned`. The full list of
 available task results is as follows:
 
 |  Task Result | Description    | Meaning |

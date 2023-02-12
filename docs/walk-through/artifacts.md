@@ -57,6 +57,31 @@ spec:
 The `whalesay` template uses the `cowsay` command to generate a file named `/tmp/hello-world.txt`. It then `outputs` this file as an artifact named `hello-art`. In general, the artifact's `path` may be a directory rather than just a file. The `print-message` template takes an input artifact named `message`, unpacks it at the `path` named `/tmp/message` and then prints the contents of `/tmp/message` using the `cat` command.
 The `artifact-example` template passes the `hello-art` artifact generated as an output of the `generate-artifact` step as the `message` input artifact to the `print-message` step. DAG templates use the tasks prefix to refer to another task, for example `{{tasks.generate-artifact.outputs.artifacts.hello-art}}`.
 
+Optionally, for large artifacts, you can set `podSpecPatch` in the workflow spec to increase the resource request for the init container and avoid any Out of memory issues.
+
+```yaml
+<... snipped ...>
+  - name: large-artifact
+    # below patch gets merged with the actual pod spec and increses the memory
+    # request of the init container.
+    podSpecPatch: |
+      initContainers:
+        - name: init
+          resources:
+            requests:
+              memory: 2Gi
+              cpu: 300m
+    inputs:
+      artifacts:
+      - name: data
+        path: /tmp/large-file
+    container:
+      image: alpine:latest
+      command: [sh, -c]
+      args: ["cat /tmp/large-file"]
+<... snipped ...>
+```
+
 Artifacts are packaged as Tarballs and gzipped by default. You may customize this behavior by specifying an archive strategy, using the `archive` field. For example:
 
 ```yaml
@@ -89,7 +114,7 @@ Artifacts are packaged as Tarballs and gzipped by default. You may customize thi
 
 ## Artifact Garbage Collection
 
-As of version 3.4 you can configure your Workflow to automatically delete Artifacts that you don't need (presuming you're using S3 - other storage engines still need to be implemented).
+As of version 3.4 you can configure your Workflow to automatically delete Artifacts that you don't need (visit [artifact repository capability](https://argoproj.github.io/argo-workflows/configure-artifact-repository/) for the current supported store engine).
 
 Artifacts can be deleted `OnWorkflowCompletion` or `OnWorkflowDeletion`. You can specify your Garbage Collection strategy on both the Workflow level and the Artifact level, so for example, you may have temporary artifacts that can be deleted right away but a final output that should be persisted:
 
@@ -184,7 +209,35 @@ spec:
               strategy: Never
 ```
 
-If you do supply your own Service Account you will need to create a RoleBinding that binds it with the new `artifactgc` Role.
+If you do supply your own Service Account you will need to create a RoleBinding that binds it with a role like this:
+
+```yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  annotations:
+    workflows.argoproj.io/description: |
+      This is the minimum recommended permissions needed if you want to use artifact GC.
+  name: artifactgc
+rules:
+- apiGroups:
+  - argoproj.io
+  resources:
+  - workflowartifactgctasks
+  verbs:
+  - list
+  - watch
+- apiGroups:
+  - argoproj.io
+  resources:
+  - workflowartifactgctasks/status
+  verbs:
+  - patch
+```
+
+This is the `artifactgc` role if you installed using one of the quick-start manifest files. If you installed with the `install.yaml` file for the release then the same permissions are in the `argo-cluster-role`.
+
+If you don't use your own `ServiceAccount` and are just using `default` ServiceAccount, then the role needs a RoleBinding or ClusterRoleBinding to `default` ServiceAccount.
 
 ### What happens if Garbage Collection fails?
 

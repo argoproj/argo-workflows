@@ -159,7 +159,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 
 	pod := &apiv1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      util.PodName(woc.wf.Name, nodeName, tmpl.Name, nodeID, util.GetWorkflowPodNameVersion(woc.wf)),
+			Name:      util.GeneratePodName(woc.wf.Name, nodeName, tmpl.Name, nodeID, util.GetWorkflowPodNameVersion(woc.wf)),
 			Namespace: woc.wf.ObjectMeta.Namespace,
 			Labels: map[string]string{
 				common.LabelKeyWorkflow:  woc.wf.ObjectMeta.Name, // Allows filtering by pods related to specific workflow
@@ -1171,6 +1171,10 @@ func createSecretVolumesFromArtifactLocations(volMap map[string]apiv1.Volume, ar
 		if artifactLocation.S3 != nil {
 			createSecretVal(volMap, artifactLocation.S3.AccessKeySecret, keyMap)
 			createSecretVal(volMap, artifactLocation.S3.SecretKeySecret, keyMap)
+			sseCUsed := artifactLocation.S3.EncryptionOptions != nil && artifactLocation.S3.EncryptionOptions.EnableEncryption && artifactLocation.S3.EncryptionOptions.ServerSideCustomerKeySecret != nil
+			if sseCUsed {
+				createSecretVal(volMap, artifactLocation.S3.EncryptionOptions.ServerSideCustomerKeySecret, keyMap)
+			}
 		} else if artifactLocation.Git != nil {
 			createSecretVal(volMap, artifactLocation.Git.UsernameSecret, keyMap)
 			createSecretVal(volMap, artifactLocation.Git.PasswordSecret, keyMap)

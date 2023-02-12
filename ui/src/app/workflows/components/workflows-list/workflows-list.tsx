@@ -2,7 +2,7 @@ import {Page, SlidingPanel} from 'argo-ui';
 import * as React from 'react';
 import {RouteComponentProps} from 'react-router-dom';
 import * as models from '../../../../models';
-import {labels, Workflow, WorkflowPhase, WorkflowPhases} from '../../../../models';
+import {labels, NODE_PHASE, Workflow, WorkflowPhase, WorkflowPhases} from '../../../../models';
 import {uiUrl} from '../../../shared/base';
 
 import {BasePage} from '../../../shared/components/base-page';
@@ -242,6 +242,18 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
         return dt;
     }
 
+    private nullSafeTimeFilter(minStartedAt: Date, maxStartedAt: Date, startedStr: string, isPending: boolean): boolean {
+        // looser check for startedStr is intentional to also check for undefined
+        if (startedStr == null) {
+            // return true if isPending
+            // else false
+            return isPending;
+        }
+        const started: Date = new Date(startedStr);
+
+        return started > minStartedAt && started < maxStartedAt;
+    }
+
     private fetchWorkflows(namespace: string, selectedPhases: WorkflowPhase[], selectedLabels: string[], minStartedAt: Date, maxStartedAt: Date, pagination: Pagination): void {
         if (this.listWatch) {
             this.listWatch.stop();
@@ -249,7 +261,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
         this.listWatch = new ListWatch(
             () =>
                 services.workflows.list(namespace, selectedPhases, selectedLabels, pagination).then(x => {
-                    x.items = x.items && x.items.filter(w => new Date(w.status.startedAt) > minStartedAt && new Date(w.status.startedAt) < maxStartedAt);
+                    x.items = x.items && x.items.filter(w => this.nullSafeTimeFilter(minStartedAt, maxStartedAt, w.status.startedAt, w.status.phase === NODE_PHASE.PENDING));
                     return x;
                 }),
             (resourceVersion: string) => services.workflows.watchFields({namespace, phases: selectedPhases, labels: selectedLabels, resourceVersion}),

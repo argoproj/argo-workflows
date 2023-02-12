@@ -108,13 +108,9 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
         // if there's an ArtifactLocation configured for the Template we use that
         // otherwise we use the central one for the Workflow configured in workflow.status.artifactRepositoryRef.artifactRepository
         // (Note that individual Artifacts may also override whatever this gets set to)
-        if (workflow && workflow.status && workflow.status.nodes && selectedArtifact) {
+        if (workflow?.status?.nodes && selectedArtifact) {
             const template = getResolvedTemplates(workflow, workflow.status.nodes[selectedArtifact.nodeId]);
-            let artifactRepo;
-            if (template) {
-                artifactRepo = template.archiveLocation;
-            }
-
+            const artifactRepo = template?.archiveLocation;
             if (artifactRepo && artifactRepoHasLocation(artifactRepo)) {
                 setSelectedTemplateArtifactRepo(artifactRepo);
             } else {
@@ -201,7 +197,8 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
             'workflows.argoproj.io/workflow-event-binding',
             'workflows.argoproj.io/resubmitted-from-workflow'
         ]) {
-            const v = workflow?.metadata.labels[k];
+            const labels = workflow?.metadata?.labels || {};
+            const v = labels[k];
             if (v) {
                 items.push({
                     title: 'Previous Runs',
@@ -389,10 +386,7 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
 
     const ensurePodName = (wf: Workflow, node: NodeStatus, nodeID: string): string => {
         if (workflow && node) {
-            let annotations: {[name: string]: string} = {};
-            if (typeof workflow.metadata.annotations !== 'undefined') {
-                annotations = workflow.metadata.annotations;
-            }
+            const annotations = workflow.metadata.annotations || {};
             const version = annotations[ANNOTATION_KEY_POD_NAME_VERSION];
             const templateName = getTemplateNameFromNode(node);
             return getPodName(wf.metadata.name, node.name, templateName, node.id, version);
@@ -482,7 +476,7 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
                     {parsedSidePanel.type === 'logs' && (
                         <WorkflowLogsViewer workflow={workflow} initialPodName={podName} nodeId={parsedSidePanel.nodeId} container={parsedSidePanel.container} archived={false} />
                     )}
-                    {parsedSidePanel.type === 'events' && <EventsPanel namespace={namespace} kind='Pod' name={parsedSidePanel.nodeId} />}
+                    {parsedSidePanel.type === 'events' && <EventsPanel namespace={namespace} kind='Pod' name={podName} />}
                     {parsedSidePanel.type === 'share' && <WidgetGallery namespace={namespace} name={name} />}
                     {parsedSidePanel.type === 'yaml' && <WorkflowYamlViewer workflow={workflow} selectedNode={selectedNode} />}
                     {!parsedSidePanel}

@@ -3,17 +3,19 @@ name: Approve and enable auto-merge for dependabot
 on: pull_request
 
 permissions:
-  pull-requests: write
-  contents: write
+  contents: read
 
 jobs:
   review:
     runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      contents: write
     if: ${{ github.actor == 'dependabot[bot]' && github.repository == 'argoproj/argo-workflows'}}
     steps:
       - name: Dependabot metadata
         id: metadata
-        uses: dependabot/fetch-metadata@v1.3.4
+        uses: dependabot/fetch-metadata@v1.3.6
         with:
           github-token: "${{ secrets.GITHUB_TOKEN }}"
       - name: Approve PR

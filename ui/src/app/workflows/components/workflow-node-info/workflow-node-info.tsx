@@ -100,10 +100,7 @@ const DisplayWorkflowTime = (props: {date: Date | string | number}) => {
 const WorkflowNodeSummary = (props: Props) => {
     const {workflow, node} = props;
 
-    let annotations: {[name: string]: string} = {};
-    if (typeof workflow.metadata.annotations !== 'undefined') {
-        annotations = workflow.metadata.annotations;
-    }
+    const annotations = workflow.metadata.annotations || {};
     const version = annotations[ANNOTATION_KEY_POD_NAME_VERSION];
     const templateName = getTemplateNameFromNode(node);
 

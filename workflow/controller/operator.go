@@ -66,7 +66,7 @@ import (
 
 // wfOperationCtx is the context for evaluation and operation of a single workflow
 type wfOperationCtx struct {
-	// wf is the workflow object. It should not be used in execution logic. woc.wfSpec should be used instead
+	// wf is the workflow object. It should not be used in execution logic. woc.execWf.Spec should be used instead
 	wf *wfv1.Workflow
 	// orig is the original workflow object for purposes of creating a patch
 	orig *wfv1.Workflow
@@ -357,6 +357,10 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 				woc.markWorkflowError(ctx, x)
 			}
 		}
+		// Garbage collect PVCs if Entrypoint template execution returns error
+		if err := woc.deletePVCs(ctx); err != nil {
+			woc.log.WithError(err).Warn("failed to delete PVCs")
+		}
 		return
 	}
 
@@ -381,7 +385,7 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 					Message:      node.Message,
 					TemplateName: node.TemplateName,
 					Phase:        string(node.Phase),
-					PodName:      node.ID,
+					PodName:      wfutil.GeneratePodName(woc.wf.Name, node.Name, node.TemplateName, node.ID, wfutil.GetPodNameVersion()),
 					FinishedAt:   node.FinishedAt,
 				})
 		}
@@ -421,8 +425,11 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 			default:
 				if !errorsutil.IsTransientErr(err) && !woc.wf.Status.Phase.Completed() && os.Getenv("BUBBLE_ENTRY_TEMPLATE_ERR") != "false" {
 					woc.markWorkflowError(ctx, x)
-					return
 				}
+			}
+			// Garbage collect PVCs if Onexit template execution returns error
+			if err := woc.deletePVCs(ctx); err != nil {
+				woc.log.WithError(err).Warn("failed to delete PVCs")
 			}
 			return
 		}
@@ -478,8 +485,7 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 		woc.computeMetrics(woc.execWf.Spec.Metrics.Prometheus, localScope, realTimeScope, false)
 	}
 
-	err = woc.deletePVCs(ctx)
-	if err != nil {
+	if err := woc.deletePVCs(ctx); err != nil {
 		woc.log.WithError(err).Warn("failed to delete PVCs")
 	}
 }
@@ -1230,6 +1236,8 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, old *wfv1.NodeStatus
 			new.Phase = wfv1.NodeSucceeded
 		} else {
 			new.Phase, new.Message = woc.inferFailedReason(pod, tmpl)
+			woc.log.WithField("displayName", old.DisplayName).WithField("templateName", old.TemplateName).
+				WithField("pod", pod.Name).Infof("Pod failed: %s", new.Message)
 		}
 		new.Daemoned = nil
 	case apiv1.PodRunning:
@@ -1335,6 +1343,14 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, old *wfv1.NodeStatus
 		if c.Name == common.WaitContainerName && c.State.Terminated == nil && new.Phase.Completed() {
 			woc.log.WithField("new.phase", new.Phase).Info("leaving phase un-changed: wait container is not yet terminated ")
 			new.Phase = old.Phase
+		}
+	}
+	// If the init container failed, we should mark the node as failed.
+	for _, c := range pod.Status.InitContainerStatuses {
+		if c.State.Terminated != nil && int(c.State.Terminated.ExitCode) != 0 {
+			new.Phase = wfv1.NodeFailed
+			woc.log.WithField("new.phase", new.Phase).Info("marking node as failed since init container has non-zero exit code")
+			break
 		}
 	}
 
@@ -1735,6 +1751,9 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 	if orgTmpl.IsWorkflowStep() {
 		localParams["steps.name"] = orgTmpl.GetName()
 	}
+
+	localParams["node.name"] = nodeName
+
 	// Merge Template defaults to template
 	err = woc.mergedTemplateDefaultsInto(resolvedTmpl)
 	if err != nil {
@@ -2306,7 +2325,8 @@ func (woc *wfOperationCtx) initializeNode(nodeName string, nodeType wfv1.NodeTyp
 func (woc *wfOperationCtx) markNodePhase(nodeName string, phase wfv1.NodePhase, message ...string) *wfv1.NodeStatus {
 	node := woc.wf.GetNodeByName(nodeName)
 	if node == nil {
-		panic(fmt.Sprintf("workflow '%s' node '%s' uninitialized when marking as %v: %s", woc.wf.Name, nodeName, phase, message))
+		woc.log.Warningf("workflow '%s' node '%s' uninitialized when marking as %v: %s", woc.wf.Name, nodeName, phase, message)
+		node = &wfv1.NodeStatus{}
 	}
 	if node.Phase != phase {
 		if node.Phase.Fulfilled() {
@@ -3733,7 +3753,7 @@ func (woc *wfOperationCtx) substituteGlobalVariables(params common.Parameters) e
 // POD_NAMES environment variable
 func (woc *wfOperationCtx) getPodName(nodeName, templateName string) string {
 	version := wfutil.GetWorkflowPodNameVersion(woc.wf)
-	return wfutil.PodName(woc.wf.Name, nodeName, templateName, woc.wf.NodeID(nodeName), version)
+	return wfutil.GeneratePodName(woc.wf.Name, nodeName, templateName, woc.wf.NodeID(nodeName), version)
 }
 
 func (woc *wfOperationCtx) getServiceAccountTokenName(ctx context.Context, name string) (string, error) {

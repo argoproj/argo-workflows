@@ -601,7 +601,7 @@ func (we *WorkflowExecutor) SaveLogs(ctx context.Context) {
 		}
 	}
 
-	// Annotating pod with output
+	// try to upsert TaskResult, if it fails, we will try to update the Pod's Annotations
 	err := we.reportOutputs(ctx, logArtifacts)
 	if err != nil {
 		we.AddError(err)
@@ -892,6 +892,11 @@ func untar(tarPath string, destPath string) error {
 				return err
 			}
 			switch header.Typeflag {
+			case tar.TypeSymlink:
+				err := os.Symlink(header.Linkname, target)
+				if err != nil {
+					return err
+				}
 			case tar.TypeReg:
 				f, err := os.OpenFile(target, os.O_CREATE|os.O_RDWR, os.FileMode(header.Mode))
 				if err != nil {

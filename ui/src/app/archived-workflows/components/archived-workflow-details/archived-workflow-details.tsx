@@ -1,18 +1,23 @@
 import {NotificationType, Page, SlidingPanel} from 'argo-ui';
 import * as classNames from 'classnames';
 import * as React from 'react';
+import {useContext, useEffect, useState} from 'react';
 import {RouteComponentProps} from 'react-router';
-import {execSpec, Link, NodePhase, Workflow} from '../../../../models';
+import {ArtifactRepository, execSpec, Link, Workflow} from '../../../../models';
+import {artifactRepoHasLocation, findArtifact} from '../../../shared/artifacts';
 import {uiUrl} from '../../../shared/base';
-import {BasePage} from '../../../shared/components/base-page';
 import {ErrorNotice} from '../../../shared/components/error-notice';
 import {ProcessURL} from '../../../shared/components/links';
 import {Loading} from '../../../shared/components/loading';
+import {Context} from '../../../shared/context';
 import {services} from '../../../shared/services';
+import {useQueryParams} from '../../../shared/use-query-params';
 import {WorkflowArtifacts} from '../../../workflows/components/workflow-artifacts';
 
 import {ANNOTATION_KEY_POD_NAME_VERSION} from '../../../shared/annotations';
 import {getPodName, getTemplateNameFromNode} from '../../../shared/pod-name';
+import {getResolvedTemplates} from '../../../shared/template-resolution';
+import {ArtifactPanel} from '../../../workflows/components/workflow-details/artifact-panel';
 import {WorkflowResourcePanel} from '../../../workflows/components/workflow-details/workflow-resource-panel';
 import {WorkflowLogsViewer} from '../../../workflows/components/workflow-logs-viewer/workflow-logs-viewer';
 import {WorkflowNodeInfo} from '../../../workflows/components/workflow-node-info/workflow-node-info';
@@ -27,293 +32,206 @@ require('../../../workflows/components/workflow-details/workflow-details.scss');
 const STEP_GRAPH_CONTAINER_MIN_WIDTH = 490;
 const STEP_INFO_WIDTH = 570;
 
-interface State {
-    workflow?: Workflow;
-    links?: Link[];
-    error?: Error;
-}
+export const ArchivedWorkflowDetails = ({history, location, match}: RouteComponentProps<any>) => {
+    const ctx = useContext(Context);
+    const queryParams = new URLSearchParams(location.search);
+    const [workflow, setWorkflow] = useState<Workflow>();
+    const [links, setLinks] = useState<Link[]>();
+    const [error, setError] = useState<Error>();
 
-export class ArchivedWorkflowDetails extends BasePage<RouteComponentProps<any>, State> {
-    private get namespace() {
-        return this.props.match.params.namespace;
-    }
+    const [namespace] = useState(match.params.namespace);
+    const [uid] = useState(match.params.uid);
+    const [tab, setTab] = useState(queryParams.get('tab') || 'workflow');
+    const [nodeId, setNodeId] = useState(queryParams.get('nodeId'));
+    const [container, setContainer] = useState(queryParams.get('container') || 'main');
+    const [sidePanel, setSidePanel] = useState(queryParams.get('sidePanel'));
+    const selectedArtifact = workflow && workflow.status && findArtifact(workflow.status, nodeId);
+    const [selectedTemplateArtifactRepo, setSelectedTemplateArtifactRepo] = useState<ArtifactRepository>();
+    const node = nodeId && workflow.status.nodes[nodeId];
 
-    private get uid() {
-        return this.props.match.params.uid;
-    }
+    const podName = () => {
+        if (nodeId && workflow) {
+            const workflowName = workflow.metadata.name;
+            const annotations = workflow.metadata.annotations || {};
+            const version = annotations[ANNOTATION_KEY_POD_NAME_VERSION];
+            const templateName = getTemplateNameFromNode(node);
+            return getPodName(workflowName, node.name, templateName, nodeId, version);
+        }
+    };
 
-    private get tab() {
-        return this.queryParam('tab') || 'workflow';
-    }
+    useEffect(
+        useQueryParams(history, p => {
+            setSidePanel(p.get('sidePanel'));
+            setNodeId(p.get('nodeId'));
+            setContainer(p.get('container'));
+        }),
+        [history]
+    );
 
-    private set tab(tab) {
-        this.setQueryParams({tab});
-    }
-
-    private get nodeId() {
-        return this.queryParam('nodeId');
-    }
-
-    private set nodeId(nodeId) {
-        this.setQueryParams({nodeId});
-    }
-
-    private get container() {
-        return this.queryParam('container') || 'main';
-    }
-
-    private get sidePanel() {
-        return this.queryParam('sidePanel');
-    }
-
-    private set sidePanel(sidePanel) {
-        this.setQueryParams({sidePanel});
-    }
-
-    constructor(props: RouteComponentProps<any>, context: any) {
-        super(props, context);
-        this.state = {};
-    }
-
-    public componentDidMount(): void {
+    useEffect(() => {
         services.info
             .getInfo()
-            .then(info => this.setState({links: info.links}))
+            .then(info => setLinks(info.links))
             .then(() =>
-                services.archivedWorkflows.get(this.uid).then(workflow =>
-                    this.setState({
-                        error: null,
-                        workflow
-                    })
-                )
+                services.archivedWorkflows.get(uid, namespace).then(retrievedWorkflow => {
+                    setError(null);
+                    setWorkflow(retrievedWorkflow);
+                })
             )
-            .catch(error => this.setState({error}));
+            .catch(newError => setError(newError));
         services.info.collectEvent('openedArchivedWorkflowDetails').then();
-    }
+    }, []);
 
-    public render() {
-        const workflowPhase: NodePhase = this.state.workflow && this.state.workflow.status ? this.state.workflow.status.phase : undefined;
-        const items = [
-            {
-                title: 'Retry',
-                iconClassName: 'fa fa-undo',
-                disabled: workflowPhase === undefined || !(workflowPhase === 'Failed' || workflowPhase === 'Error'),
-                action: () => this.retryArchivedWorkflow()
-            },
-            {
-                title: 'Resubmit',
-                iconClassName: 'fa fa-plus-circle',
-                disabled: false,
-                action: () => this.resubmitArchivedWorkflow()
-            },
-            {
-                title: 'Delete',
-                iconClassName: 'fa fa-trash',
-                disabled: false,
-                action: () => this.deleteArchivedWorkflow()
+    useEffect(() => {
+        // update the default Artifact Repository for the Template that corresponds to the selectedArtifact
+        // if there's an ArtifactLocation configured for the Template we use that
+        // otherwise we use the central one for the Workflow configured in workflow.status.artifactRepositoryRef.artifactRepository
+        // (Note that individual Artifacts may also override whatever this gets set to)
+        if (workflow?.status?.nodes && selectedArtifact) {
+            const template = getResolvedTemplates(workflow, workflow.status.nodes[selectedArtifact.nodeId]);
+            const artifactRepo = template?.archiveLocation;
+            if (artifactRepo && artifactRepoHasLocation(artifactRepo)) {
+                setSelectedTemplateArtifactRepo(artifactRepo);
+            } else {
+                setSelectedTemplateArtifactRepo(workflow.status.artifactRepositoryRef.artifactRepository);
             }
-        ];
-        if (this.state.links) {
-            this.state.links
-                .filter(link => link.scope === 'workflow')
-                .forEach(link =>
-                    items.push({
-                        title: link.name,
-                        iconClassName: 'fa fa-external-link-alt',
-                        disabled: false,
-                        action: () => this.openLink(link)
-                    })
-                );
         }
-        return (
-            <Page
-                title='Archived Workflow Details'
-                toolbar={{
-                    actionMenu: {
-                        items
-                    },
-                    breadcrumbs: [
-                        {title: 'Archived Workflows', path: uiUrl('archived-workflows')},
-                        {
-                            title: this.namespace,
-                            path: uiUrl('archived-workflows/' + this.namespace)
-                        },
-                        {
-                            title: this.uid,
-                            path: uiUrl('archived-workflows/' + this.namespace + '/' + this.uid)
-                        }
-                    ],
-                    tools: (
-                        <div className='workflow-details__topbar-buttons'>
-                            <a className={classNames({active: this.tab === 'summary'})} onClick={() => (this.tab = 'summary')}>
-                                <i className='fa fa-columns' />
-                            </a>
-                            <a className={classNames({active: this.tab === 'timeline'})} onClick={() => (this.tab = 'timeline')}>
-                                <i className='fa argo-icon-timeline' />
-                            </a>
-                            <a className={classNames({active: this.tab === 'workflow'})} onClick={() => (this.tab = 'workflow')}>
-                                <i className='fa argo-icon-workflow' />
-                            </a>
-                        </div>
-                    )
-                }}>
-                <div className={classNames('workflow-details', {'workflow-details--step-node-expanded': !!this.nodeId})}>{this.renderArchivedWorkflowDetails()}</div>
-            </Page>
-        );
-    }
+    }, [workflow, selectedArtifact]);
 
-    private renderArchivedWorkflowDetails() {
-        if (this.state.error) {
-            return <ErrorNotice error={this.state.error} />;
+    const renderArchivedWorkflowDetails = () => {
+        if (error) {
+            return <ErrorNotice error={error} />;
         }
-        if (!this.state.workflow) {
+        if (!workflow) {
             return <Loading />;
         }
         return (
             <>
-                {this.tab === 'summary' ? (
+                {tab === 'summary' ? (
                     <div className='workflow-details__container'>
                         <div className='argo-container'>
                             <div className='workflow-details__content'>
-                                <WorkflowSummaryPanel workflow={this.state.workflow} />
-                                {execSpec(this.state.workflow).arguments && execSpec(this.state.workflow).arguments.parameters && (
+                                <WorkflowSummaryPanel workflow={workflow} />
+                                {execSpec(workflow).arguments && execSpec(workflow).arguments.parameters && (
                                     <React.Fragment>
                                         <h6>Parameters</h6>
-                                        <WorkflowParametersPanel parameters={execSpec(this.state.workflow).arguments.parameters} />
+                                        <WorkflowParametersPanel parameters={execSpec(workflow).arguments.parameters} />
                                     </React.Fragment>
                                 )}
                                 <h6>Artifacts</h6>
-                                <WorkflowArtifacts workflow={this.state.workflow} archived={true} />
-                                <WorkflowResourcePanel workflow={this.state.workflow} />
+                                <WorkflowArtifacts workflow={workflow} archived={true} />
+                                <WorkflowResourcePanel workflow={workflow} />
                             </div>
                         </div>
                     </div>
                 ) : (
                     <div className='workflow-details__graph-container-wrapper'>
                         <div className='workflow-details__graph-container' style={{minWidth: STEP_GRAPH_CONTAINER_MIN_WIDTH, width: '100%'}}>
-                            {this.tab === 'workflow' ? (
+                            {tab === 'workflow' ? (
                                 <WorkflowPanel
-                                    workflowMetadata={this.state.workflow.metadata}
-                                    workflowStatus={this.state.workflow.status}
-                                    selectedNodeId={this.nodeId}
-                                    nodeClicked={nodeId => (this.nodeId = nodeId)}
+                                    workflowMetadata={workflow.metadata}
+                                    workflowStatus={workflow.status}
+                                    selectedNodeId={nodeId}
+                                    nodeClicked={newNodeId => setNodeId(newNodeId)}
                                 />
                             ) : (
-                                <WorkflowTimeline workflow={this.state.workflow} selectedNodeId={this.nodeId} nodeClicked={node => (this.nodeId = node.id)} />
+                                <WorkflowTimeline workflow={workflow} selectedNodeId={nodeId} nodeClicked={newNode => setNodeId(newNode.id)} />
                             )}
                         </div>
-                        {this.nodeId && (
+                        {nodeId && (
                             <div className='workflow-details__step-info' style={{width: STEP_INFO_WIDTH, float: 'right'}}>
-                                <button className='workflow-details__step-info-close' onClick={() => (this.nodeId = null)}>
+                                <button className='workflow-details__step-info-close' onClick={() => setNodeId(null)}>
                                     <i className='argo-icon-close' />
                                 </button>
-                                <WorkflowNodeInfo
-                                    node={this.node}
-                                    workflow={this.state.workflow}
-                                    links={this.state.links}
-                                    onShowYaml={nodeId =>
-                                        this.setQueryParams({
-                                            sidePanel: 'yaml',
-                                            nodeId
-                                        })
-                                    }
-                                    onShowContainerLogs={(nodeId, container) =>
-                                        this.setQueryParams({
-                                            sidePanel: 'logs',
-                                            nodeId,
-                                            container
-                                        })
-                                    }
-                                    archived={true}
-                                />
+                                {node && (
+                                    <WorkflowNodeInfo
+                                        node={node}
+                                        workflow={workflow}
+                                        links={links}
+                                        onShowYaml={newNodeId => {
+                                            setSidePanel('yaml');
+                                            setNodeId(newNodeId);
+                                        }}
+                                        onShowContainerLogs={(newNodeId, newContainer) => {
+                                            setSidePanel('logs');
+                                            setNodeId(newNodeId);
+                                            setContainer(newContainer);
+                                        }}
+                                        archived={true}
+                                    />
+                                )}
+                                {selectedArtifact && (
+                                    <ArtifactPanel workflow={workflow} artifact={selectedArtifact} archived={true} artifactRepository={selectedTemplateArtifactRepo} />
+                                )}
                             </div>
                         )}
                     </div>
                 )}
-                <SlidingPanel isShown={!!this.sidePanel} onClose={() => (this.sidePanel = null)}>
-                    {this.sidePanel === 'yaml' && <WorkflowYamlViewer workflow={this.state.workflow} selectedNode={this.node} />}
-                    {this.sidePanel === 'logs' && (
-                        <WorkflowLogsViewer workflow={this.state.workflow} initialPodName={this.podName} nodeId={this.nodeId} container={this.container} archived={true} />
-                    )}
+                <SlidingPanel isShown={!!sidePanel} onClose={() => setSidePanel(null)}>
+                    {sidePanel === 'yaml' && <WorkflowYamlViewer workflow={workflow} selectedNode={node} />}
+                    {sidePanel === 'logs' && <WorkflowLogsViewer workflow={workflow} initialPodName={podName()} nodeId={nodeId} container={container} archived={true} />}
                 </SlidingPanel>
             </>
         );
-    }
+    };
 
-    private get node() {
-        return this.nodeId && this.state.workflow.status.nodes[this.nodeId];
-    }
-
-    private get podName() {
-        if (this.nodeId && this.state.workflow) {
-            const workflowName = this.state.workflow.metadata.name;
-            let annotations: {[name: string]: string} = {};
-            if (typeof this.state.workflow.metadata.annotations !== 'undefined') {
-                annotations = this.state.workflow.metadata.annotations;
-            }
-            const version = annotations[ANNOTATION_KEY_POD_NAME_VERSION];
-            const templateName = getTemplateNameFromNode(this.node);
-            return getPodName(workflowName, this.node.name, templateName, this.nodeId, version);
-        }
-    }
-
-    private deleteArchivedWorkflow() {
+    const deleteArchivedWorkflow = () => {
         if (!confirm('Are you sure you want to delete this archived workflow?\nThere is no undo.')) {
             return;
         }
         services.archivedWorkflows
-            .delete(this.uid)
+            .delete(uid, workflow.metadata.namespace)
             .then(() => {
                 document.location.href = uiUrl('archived-workflows');
             })
             .catch(e => {
-                this.appContext.apis.notifications.show({
+                ctx.notifications.show({
                     content: 'Failed to delete archived workflow ' + e,
                     type: NotificationType.Error
                 });
             });
-    }
+    };
 
-    private resubmitArchivedWorkflow() {
+    const resubmitArchivedWorkflow = () => {
         if (!confirm('Are you sure you want to resubmit this archived workflow?')) {
             return;
         }
         services.archivedWorkflows
-            .resubmit(this.state.workflow.metadata.uid, this.state.workflow.metadata.namespace)
-            .then(workflow => (document.location.href = uiUrl(`workflows/${workflow.metadata.namespace}/${workflow.metadata.name}`)))
+            .resubmit(workflow.metadata.uid, workflow.metadata.namespace)
+            .then(newWorkflow => (document.location.href = uiUrl(`workflows/${newWorkflow.metadata.namespace}/${newWorkflow.metadata.name}`)))
             .catch(e => {
-                this.appContext.apis.notifications.show({
+                ctx.notifications.show({
                     content: 'Failed to resubmit archived workflow ' + e,
                     type: NotificationType.Error
                 });
             });
-    }
+    };
 
-    private retryArchivedWorkflow() {
+    const retryArchivedWorkflow = () => {
         if (!confirm('Are you sure you want to retry this archived workflow?')) {
             return;
         }
         services.archivedWorkflows
-            .retry(this.state.workflow.metadata.uid, this.state.workflow.metadata.namespace)
-            .then(workflow => (document.location.href = uiUrl(`workflows/${workflow.metadata.namespace}/${workflow.metadata.name}`)))
+            .retry(workflow.metadata.uid, workflow.metadata.namespace)
+            .then(newWorkflow => (document.location.href = uiUrl(`workflows/${newWorkflow.metadata.namespace}/${newWorkflow.metadata.name}`)))
             .catch(e => {
-                this.appContext.apis.notifications.show({
+                ctx.notifications.show({
                     content: 'Failed to retry archived workflow ' + e,
                     type: NotificationType.Error
                 });
             });
-    }
+    };
 
-    private openLink(link: Link) {
+    const openLink = (link: Link) => {
         const object = {
             metadata: {
-                namespace: this.state.workflow.metadata.namespace,
-                name: this.state.workflow.metadata.name
+                namespace: workflow.metadata.namespace,
+                name: workflow.metadata.name
             },
-            workflow: this.state.workflow,
+            workflow,
             status: {
-                startedAt: this.state.workflow.status.startedAt,
-                finishedAt: this.state.workflow.status.finishedAt
+                startedAt: workflow.status.startedAt,
+                finishedAt: workflow.status.finishedAt
             }
         };
         const url = ProcessURL(link.url, object);
@@ -323,5 +241,75 @@ export class ArchivedWorkflowDetails extends BasePage<RouteComponentProps<any>, 
         } else {
             document.location.href = url;
         }
+    };
+
+    const workflowPhase = workflow?.status?.phase;
+    const items = [
+        {
+            title: 'Retry',
+            iconClassName: 'fa fa-undo',
+            disabled: workflowPhase === undefined || !(workflowPhase === 'Failed' || workflowPhase === 'Error'),
+            action: () => retryArchivedWorkflow()
+        },
+        {
+            title: 'Resubmit',
+            iconClassName: 'fa fa-plus-circle',
+            disabled: false,
+            action: () => resubmitArchivedWorkflow()
+        },
+        {
+            title: 'Delete',
+            iconClassName: 'fa fa-trash',
+            disabled: false,
+            action: () => deleteArchivedWorkflow()
+        }
+    ];
+    if (links) {
+        links
+            .filter(link => link.scope === 'workflow')
+            .forEach(link =>
+                items.push({
+                    title: link.name,
+                    iconClassName: 'fa fa-external-link-alt',
+                    disabled: false,
+                    action: () => openLink(link)
+                })
+            );
     }
-}
+
+    return (
+        <Page
+            title='Archived Workflow Details'
+            toolbar={{
+                actionMenu: {
+                    items
+                },
+                breadcrumbs: [
+                    {title: 'Archived Workflows', path: uiUrl('archived-workflows')},
+                    {
+                        title: namespace,
+                        path: uiUrl('archived-workflows/' + namespace)
+                    },
+                    {
+                        title: uid,
+                        path: uiUrl('archived-workflows/' + namespace + '/' + uid)
+                    }
+                ],
+                tools: (
+                    <div className='workflow-details__topbar-buttons'>
+                        <a className={classNames({active: tab === 'summary'})} onClick={() => setTab('summary')}>
+                            <i className='fa fa-columns' />
+                        </a>
+                        <a className={classNames({active: tab === 'timeline'})} onClick={() => setTab('timeline')}>
+                            <i className='fa argo-icon-timeline' />
+                        </a>
+                        <a className={classNames({active: tab === 'workflow'})} onClick={() => setTab('workflow')}>
+                            <i className='fa argo-icon-workflow' />
+                        </a>
+                    </div>
+                )
+            }}>
+            <div className={classNames('workflow-details', {'workflow-details--step-node-expanded': !!nodeId})}>{renderArchivedWorkflowDetails()}</div>
+        </Page>
+    );
+};

@@ -426,7 +426,7 @@ export interface Template {
         containers: ContainerNode[];
     };
     /**
-     * Deamon will allow a workflow to proceed to the next step so long as the container reaches readiness
+     * Daemon will allow a workflow to proceed to the next step so long as the container reaches readiness
      */
     daemon?: boolean;
     /**

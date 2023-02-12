@@ -21,11 +21,12 @@ Argo is a [Cloud Native Computing Foundation (CNCF)](https://cncf.io/) hosted pr
 
 ## Use Cases
 
-* Machine Learning pipelines
-* Data and batch processing
+* [Machine Learning pipelines](https://argoproj.github.io/argo-workflows/use-cases/machine-learning/)
+* [Data and batch processing](https://argoproj.github.io/argo-workflows/use-cases/data-processing/)
+* [Infrastructure automation](https://argoproj.github.io/argo-workflows/use-cases/infrastructure-automation/)
+* [CI/CD](https://argoproj.github.io/argo-workflows/use-cases/ci-cd/)
 * ETL
-* Infrastructure automation
-* CI/CD
+* [Other use cases](https://argoproj.github.io/argo-workflows/use-cases/other/)
 
 ## Why Argo Workflows?
 

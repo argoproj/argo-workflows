@@ -1332,6 +1332,32 @@ func TestAssessNodeStatus(t *testing.T) {
 		node: &wfv1.NodeStatus{TemplateName: templateName},
 		want: wfv1.NodeFailed,
 	}, {
+		name: "pod failed - init container failed",
+		pod: &apiv1.Pod{
+			Status: apiv1.PodStatus{
+				InitContainerStatuses: []apiv1.ContainerStatus{
+					{
+						Name:  common.InitContainerName,
+						State: apiv1.ContainerState{Terminated: &apiv1.ContainerStateTerminated{ExitCode: 1}},
+					},
+				},
+				ContainerStatuses: []apiv1.ContainerStatus{
+					{
+						Name:  common.WaitContainerName,
+						State: apiv1.ContainerState{Terminated: nil},
+					},
+					{
+						Name:  common.MainContainerName,
+						State: apiv1.ContainerState{Terminated: &apiv1.ContainerStateTerminated{ExitCode: 0}},
+					},
+				},
+				Message: "failed since init container failed",
+				Phase:   apiv1.PodFailed,
+			},
+		},
+		node: &wfv1.NodeStatus{TemplateName: templateName},
+		want: wfv1.NodeFailed,
+	}, {
 		name: "pod running",
 		pod: &apiv1.Pod{
 			Status: apiv1.PodStatus{
@@ -6608,6 +6634,58 @@ func TestWorkflowScheduledTimeVariable(t *testing.T) {
 	assert.Equal(t, "2006-01-02T15:04:05-07:00", woc.globalParams[common.GlobalVarWorkflowCronScheduleTime])
 }
 
+var wfNodeNameField = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: hello-world
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      dag:
+        tasks:
+          - name: this-is-part-1
+            template: main2
+    - name: main2
+      steps:
+        - - name: this-is-part-2
+            template: whalesay
+            arguments:
+                parameters:
+                  - name: message
+                    value: "{{node.name}}"
+    - name: whalesay
+      inputs:
+        parameters:
+          - name: message
+      container:
+        image: docker/whalesay:latest
+        command: [cowsay]
+        args: ["{{ inputs.parameters.message }}"]
+`
+
+func TestWorkflowInterpolatesNodeNameField(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(wfNodeNameField)
+	cancel, controller := newController(wf)
+	defer cancel()
+
+	ctx := context.Background()
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate(ctx)
+
+	foundPod := false
+	for _, element := range woc.wf.Status.Nodes {
+		if element.Type == "Pod" {
+			foundPod = true
+			assert.Equal(t, "hello-world.this-is-part-1", element.Inputs.Parameters[0].Value.String())
+		}
+	}
+
+	assert.True(t, foundPod)
+
+}
+
 func TestWorkflowShutdownStrategy(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(`
 apiVersion: argoproj.io/v1alpha1
@@ -8550,4 +8628,50 @@ func TestFailSuspendedAndPendingNodesAfterDeadlineOrShutdown(t *testing.T) {
 		assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Nodes[step1NodeName].Phase)
 		assert.Equal(t, wfv1.NodeFailed, woc.wf.Status.Nodes[step2NodeName].Phase)
 	})
+}
+
+func TestWorkflowTemplateOnExitValidation(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: workflow-template-invalid-onexit-
+  namespace: argo
+spec:
+  workflowTemplateRef:
+    name: workflow-template-invalid-onexit
+`)
+	wft := wfv1.MustUnmarshalWorkflowTemplate("@testdata/workflow-template-invalid-onexit.yaml")
+	cancel, controller := newController(wf, wft)
+	defer cancel()
+
+	ctx := context.Background()
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate(ctx)
+	t.Log(woc.wf)
+	assert.Equal(t, woc.wf.Status.Phase, wfv1.WorkflowFailed)
+	assert.Contains(t, woc.wf.Status.Message, "invalid spec")
+}
+
+func TestWorkflowTemplateEntryPointValidation(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: workflow-template-invalid-entrypoint-
+  namespace: argo
+spec:
+  workflowTemplateRef:
+    name: workflow-template-invalid-entrypoint
+`)
+	wft := wfv1.MustUnmarshalWorkflowTemplate("@testdata/workflow-template-invalid-entrypoint.yaml")
+	cancel, controller := newController(wf, wft)
+	defer cancel()
+
+	ctx := context.Background()
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate(ctx)
+	t.Log(woc.wf)
+	assert.Equal(t, woc.wf.Status.Phase, wfv1.WorkflowFailed)
+	assert.Contains(t, woc.wf.Status.Message, "invalid spec")
 }

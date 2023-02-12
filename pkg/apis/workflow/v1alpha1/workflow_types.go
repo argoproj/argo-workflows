@@ -202,23 +202,6 @@ func (w *Workflow) GetExecSpec() *WorkflowSpec {
 	return &w.Spec
 }
 
-func (w *Workflow) HasArtifactGC() bool {
-
-	if w.Spec.ArtifactGC != nil && w.Spec.ArtifactGC.Strategy != ArtifactGCNever && w.Spec.ArtifactGC.Strategy != ArtifactGCStrategyUndefined {
-		return true
-	}
-
-	// either it's defined by an Output Artifact or by the WorkflowSpec itself, or both
-	for _, template := range w.GetTemplates() {
-		for _, artifact := range template.Outputs.Artifacts {
-			if artifact.GetArtifactGC().Strategy != ArtifactGCNever && artifact.GetArtifactGC().Strategy != ArtifactGCStrategyUndefined {
-				return true
-			}
-		}
-	}
-	return false
-}
-
 // return the ultimate ArtifactGCStrategy for the Artifact
 // (defined on the Workflow level but can be overridden on the Artifact level)
 func (w *Workflow) GetArtifactGCStrategy(a *Artifact) ArtifactGCStrategy {
@@ -641,7 +624,7 @@ type Template struct {
 	// Metdata sets the pods's metadata, i.e. annotations and labels
 	Metadata Metadata `json:"metadata,omitempty" protobuf:"bytes,9,opt,name=metadata"`
 
-	// Deamon will allow a workflow to proceed to the next step so long as the container reaches readiness
+	// Daemon will allow a workflow to proceed to the next step so long as the container reaches readiness
 	Daemon *bool `json:"daemon,omitempty" protobuf:"bytes,10,opt,name=daemon"`
 
 	// Steps define a series of sequential/parallel workflow steps
@@ -1666,11 +1649,11 @@ type WorkflowTemplateRef struct {
 	ClusterScope bool `json:"clusterScope,omitempty" protobuf:"varint,2,opt,name=clusterScope"`
 }
 
-func (ref *WorkflowTemplateRef) ToTemplateRef(entrypoint string) *TemplateRef {
+func (ref *WorkflowTemplateRef) ToTemplateRef(template string) *TemplateRef {
 	return &TemplateRef{
 		Name:         ref.Name,
 		ClusterScope: ref.ClusterScope,
-		Template:     entrypoint,
+		Template:     template,
 	}
 }
 
@@ -2212,7 +2195,7 @@ func (n NodeStatus) Pending() bool {
 	return n.Phase == NodePending
 }
 
-// IsDaemoned returns whether or not the node is deamoned
+// IsDaemoned returns whether or not the node is daemoned
 func (n NodeStatus) IsDaemoned() bool {
 	if n.Daemoned == nil || !*n.Daemoned {
 		return false
@@ -2923,9 +2906,10 @@ func (tmpl *Template) GetVolumeMounts() []apiv1.VolumeMount {
 	return nil
 }
 
-// whether or not the template can and will have outputs (i.e. exit code and result)
+// HasOutput returns true if the template can and will have outputs (i.e. exit code and result).
+// In the case of a plugin, we assume it will have outputs because we cannot know at runtime.
 func (tmpl *Template) HasOutput() bool {
-	return tmpl.Container != nil || tmpl.ContainerSet.HasContainerNamed("main") || tmpl.Script != nil || tmpl.Data != nil || tmpl.HTTP != nil
+	return tmpl.Container != nil || tmpl.ContainerSet.HasContainerNamed("main") || tmpl.Script != nil || tmpl.Data != nil || tmpl.HTTP != nil || tmpl.Plugin != nil
 }
 
 func (t *Template) IsDaemon() bool {
@@ -3061,7 +3045,8 @@ func (t *DAGTask) ShouldExpand() bool {
 
 // SuspendTemplate is a template subtype to suspend a workflow at a predetermined point in time
 type SuspendTemplate struct {
-	// Duration is the seconds to wait before automatically resuming a template
+	// Duration is the seconds to wait before automatically resuming a template. Must be a string. Default unit is seconds.
+	// Could also be a Duration, e.g.: "2m", "6h", "1d"
 	Duration string `json:"duration,omitempty" protobuf:"bytes,1,opt,name=duration"`
 }
 
@@ -3189,13 +3174,6 @@ func (wf *Workflow) GetTemplateByName(name string) *Template {
 		}
 	}
 	return nil
-}
-
-func (w *Workflow) GetTemplates() []Template {
-	return append(
-		w.GetExecSpec().Templates,
-		w.Status.GetStoredTemplates()...,
-	)
 }
 
 func (wf *Workflow) GetNodeByName(nodeName string) *NodeStatus {

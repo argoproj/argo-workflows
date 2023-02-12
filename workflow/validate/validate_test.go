@@ -3018,6 +3018,39 @@ func TestInitContainerHasName(t *testing.T) {
 	assert.EqualError(t, err, "templates.main.tasks.spurious initContainers must all have container name")
 }
 
+var nodeNamePlumbsCorrectly = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+    generateName: hello-world-
+spec:
+    entrypoint: main
+    templates:
+      - name: main
+        dag:
+          tasks:
+            - name: this-is-part-1
+              template: main2
+      - name: main2
+        steps:
+          - - name: this-is-part-2
+              template: main3
+      - name: main3
+        dag:
+          tasks:
+            - name: this-is-part-3
+              template: whalesay
+      - name: whalesay
+        container:
+          image: docker/whalesay:latest
+          command: [cowsay]
+          args: ["{{ node.name }}"]`
+
+func TestNodeNameParameterInterpoliates(t *testing.T) {
+	err := validate(nodeNamePlumbsCorrectly)
+	assert.NoError(t, err)
+}
+
 func TestSubstituteGlobalVariablesLabelsAnnotations(t *testing.T) {
 	tests := []struct {
 		name             string
