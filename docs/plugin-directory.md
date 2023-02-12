@@ -12,3 +12,5 @@
 | [Hermes](https://github.com/kjagiello/hermes) | Send notifications, e.g. Slack |
 | [WASM](https://github.com/Shark/wasm-workflows-plugin) | Run Web Assembly (WASM) tasks |
 | [Chaos Mesh Plugin](https://github.com/xlgao-zju/argo-chaos-mesh-plugin) | Run Chaos Mesh experiment |
+| [Pull Request Build Status](https://github.com/LinuxSuRen/gogit) | Send build status of pull request to Git provider |
+| [Atomic Workflow Plugin](https://github.com/LinuxSuRen/argo-workflow-atomic-plugin) | Stop the workflows which comes from the same `WorkflowTemplate` and have the same parameters |

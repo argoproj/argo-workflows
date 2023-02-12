@@ -232,8 +232,19 @@ func (c DatabaseConfig) GetHostname() string {
 
 type PostgreSQLConfig struct {
 	DatabaseConfig
-	SSL     bool   `json:"ssl,omitempty"`
-	SSLMode string `json:"sslMode,omitempty"`
+	SSL              bool                    `json:"ssl,omitempty"`
+	SSLMode          string                  `json:"sslMode,omitempty"`
+	CaCertSecret     apiv1.SecretKeySelector `json:"caCertSecret,omitempty"`
+	ClientCertSecret apiv1.SecretKeySelector `json:"clientCertSecret,omitempty"`
+	ClientKeySecret  apiv1.SecretKeySelector `json:"clientKeySecret,omitempty"`
+	CertPath         string                  `json:"certPath"`
+}
+
+func (c PostgreSQLConfig) GetPGCertPath() string {
+	if c.CertPath != "" {
+		return c.CertPath
+	}
+	return "/home/argo/pgcerts"
 }
 
 type MySQLConfig struct {

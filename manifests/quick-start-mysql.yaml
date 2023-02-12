@@ -1793,7 +1793,7 @@ spec:
           value: admin
         - name: MINIO_SECRET_KEY
           value: password
-        image: minio/minio
+        image: minio/minio:RELEASE.2022-11-17T23-20-09Z
         lifecycle:
           postStart:
             exec:
