@@ -144,6 +144,8 @@ func (c *Config) Sanitize(allowedProtocol []string) error {
 	links := c.Links
 
 	for _, link := range links {
+		// We only validate user-supplied URL but not encode/decode it
+		// see 2.4.2 on https://www.ietf.org/rfc/rfc2396.txt
 		u, err := url.Parse(link.URL)
 		if err != nil {
 			return err
@@ -152,7 +154,6 @@ func (c *Config) Sanitize(allowedProtocol []string) error {
 		if err != nil {
 			return err
 		}
-		link.URL = u.String() // reassembles the URL into a valid URL string
 	}
 	return nil
 }
@@ -231,8 +232,19 @@ func (c DatabaseConfig) GetHostname() string {
 
 type PostgreSQLConfig struct {
 	DatabaseConfig
-	SSL     bool   `json:"ssl,omitempty"`
-	SSLMode string `json:"sslMode,omitempty"`
+	SSL              bool                    `json:"ssl,omitempty"`
+	SSLMode          string                  `json:"sslMode,omitempty"`
+	CaCertSecret     apiv1.SecretKeySelector `json:"caCertSecret,omitempty"`
+	ClientCertSecret apiv1.SecretKeySelector `json:"clientCertSecret,omitempty"`
+	ClientKeySecret  apiv1.SecretKeySelector `json:"clientKeySecret,omitempty"`
+	CertPath         string                  `json:"certPath"`
+}
+
+func (c PostgreSQLConfig) GetPGCertPath() string {
+	if c.CertPath != "" {
+		return c.CertPath
+	}
+	return "/home/argo/pgcerts"
 }
 
 type MySQLConfig struct {
