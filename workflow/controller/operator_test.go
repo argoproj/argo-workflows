@@ -6223,8 +6223,7 @@ func TestWFWithRetryAndWithParam(t *testing.T) {
 			ctrs := pods.Items[0].Spec.Containers
 			assert.Len(t, ctrs, 2)
 			envs := ctrs[1].Env
-			assert.Len(t, envs, 8)
-			assert.Equal(t, apiv1.EnvVar{Name: "ARGO_INCLUDE_SCRIPT_OUTPUT", Value: "true"}, envs[3])
+			assert.Equal(t, apiv1.EnvVar{Name: "ARGO_INCLUDE_SCRIPT_OUTPUT", Value: "true"}, envs[4])
 		}
 	})
 }

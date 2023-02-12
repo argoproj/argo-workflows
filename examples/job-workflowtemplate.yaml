@@ -4,7 +4,7 @@ metadata:
   name: job
   annotations:
     workflows.argoproj.io/description: |
-      This workflows builds and tests Argo Workflows. 
+      This workflows builds and tests a project using a job. 
       
       It demonstrates:
       

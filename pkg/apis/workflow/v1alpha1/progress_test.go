@@ -29,19 +29,3 @@ func TestProgress(t *testing.T) {
 		assert.Equal(t, Progress("100/100"), Progress("0/100").Complete())
 	})
 }
-
-func TestProgressV2(t *testing.T) {
-	p, ok := ParseProgress("SFKRP")
-	assert.True(t, ok)
-	assert.Equal(t, 4, p.N())
-	assert.Equal(t, 5, p.M())
-	assert.Equal(t, NodeSucceeded, p.Status(0))
-	assert.Equal(t, NodeFailed, p.Status(1))
-	assert.Equal(t, NodeSkipped, p.Status(2))
-	assert.Equal(t, NodeRunning, p.Status(3))
-	assert.Equal(t, NodePending, p.Status(4))
-	assert.Equal(t, NodePending, p.Status(5))
-	assert.True(t, p.Failure())
-	p = p.WithStatus(1, NodeSucceeded)
-	assert.False(t, p.Failure())
-}

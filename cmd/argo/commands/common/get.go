@@ -211,11 +211,6 @@ type renderNode interface {
 	nodeInfoInterface
 }
 
-// Currently this is Pod or Resource Nodes
-type executionNode struct {
-	nodeInfo
-}
-
 // Currently this is the step groups or retry nodes
 type nonBoundaryParentNode struct {
 	nodeInfo
@@ -336,7 +331,7 @@ func convertToRenderTrees(wf *wfv1.Workflow) map[string]renderNode {
 			log.Fatal("Missing node type in status node. Cannot get workflows created with Argo <= 2.0 using the default or wide output option.")
 			return nil
 		}
-		if isNonBoundaryParentNode(status.Type) {
+		if !isBoundaryNode(status.Type) {
 			n := nonBoundaryParentNode{nodeInfo: nodeInfo{id: id}}
 			nonBoundaryParentMap[id] = &n
 
@@ -361,27 +356,20 @@ func convertToRenderTrees(wf *wfv1.Workflow) map[string]renderNode {
 			for _, val := range parentBoundaryMap[id] {
 				n.boundaryContained = insertSorted(wf, n.boundaryContained, val)
 			}
-		case isNonBoundaryParentNode(status.Type):
+		default:
 			nPtr, ok := nonBoundaryParentMap[id]
 			if !ok {
 				log.Fatal("Unable to lookup node " + id)
-				return nil
 			}
 			// Attach to my parent if needed
 			if attachToParent(wf, nPtr, nonBoundaryParentChildrenMap,
 				status.BoundaryID, boundaryNodeMap, parentBoundaryMap) {
 				renderTreeRoots[nPtr.getID()] = nPtr
 			}
-			// All children attach directly to the nonBoundaryParents since they are already created
-			// in pass 1 so no need to do that here
-		case isExecutionNode(status.Type):
-			n := executionNode{nodeInfo: nodeInfo{id: id}}
-			// Attach to my parent if needed
-			if attachToParent(wf, &n, nonBoundaryParentChildrenMap,
-				status.BoundaryID, boundaryNodeMap, parentBoundaryMap) {
-				renderTreeRoots[n.getID()] = &n
-			}
 			// Execution nodes don't have other render nodes as children
+			for _, val := range parentBoundaryMap[id] {
+				nPtr.children = insertSorted(wf, nPtr.children, val)
+			}
 		}
 	}
 
@@ -521,6 +509,7 @@ func printNode(w *tabwriter.Writer, node wfv1.NodeStatus, wfName, nodePrefix str
 // boundaryNode
 func (nodeInfo *boundaryNode) renderNodes(w *tabwriter.Writer, wf *wfv1.Workflow, depth int, nodePrefix string, childPrefix string, getArgs GetFlags) {
 	filtered, childIndent := filterNode(nodeInfo.getNodeStatus(wf), getArgs)
+	println("ALEX", filtered)
 	if !filtered {
 		version := util.GetWorkflowPodNameVersion(wf)
 		printNode(w, nodeInfo.getNodeStatus(wf), wf.ObjectMeta.Name, nodePrefix, getArgs, version)
@@ -543,15 +532,6 @@ func (nodeInfo *nonBoundaryParentNode) renderNodes(w *tabwriter.Writer, wf *wfv1
 	for i, nInfo := range nodeInfo.children {
 		renderChild(w, wf, nInfo, depth, nodePrefix, childPrefix, filtered, i,
 			len(nodeInfo.children)-1, childIndent, getArgs)
-	}
-}
-
-// executionNode
-func (nodeInfo *executionNode) renderNodes(w *tabwriter.Writer, wf *wfv1.Workflow, _ int, nodePrefix string, _ string, getArgs GetFlags) {
-	filtered, _ := filterNode(nodeInfo.getNodeStatus(wf), getArgs)
-	if !filtered {
-		version := util.GetWorkflowPodNameVersion(wf)
-		printNode(w, nodeInfo.getNodeStatus(wf), wf.ObjectMeta.Name, nodePrefix, getArgs, version)
 	}
 }
 

@@ -3412,16 +3412,11 @@ More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#cont
 ### <span id="progress"></span> Progress
 
 
-> (v1) Is N/M format. N is number of task complete. M is number of tasks.
-(v2) Is PRSFK format. M can be inferred by the length of the string N is the number of runes that are not P.
   
-
-
 
 | Name | Type | Go type | Default | Description | Example |
 |------|------|---------| ------- |-------------|---------|
-| Progress | string| string | | (v1) Is N/M format. N is number of task complete. M is number of tasks.
-(v2) Is PRSFK format. M can be inferred by the length of the string N is the number of runes that are not P. |  |
+| Progress | string| string | |  |  |
 
 
 

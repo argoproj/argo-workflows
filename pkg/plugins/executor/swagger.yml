@@ -3001,10 +3001,7 @@ definitions:
     description: +enum
     type: string
   Progress:
-    description: |-
-      (v1) Is N/M format. N is number of task complete. M is number of tasks.
-      (v2) Is PRSFK format. M can be inferred by the length of the string N is the number of runes that are not P.
-    title: Progress in one of two  formats.
+    title: Progress in N/M format. N is number of task complete. M is number of tasks.
     type: string
   ProjectedVolumeSource:
     description: Represents a projected volume source
