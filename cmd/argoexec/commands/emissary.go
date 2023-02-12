@@ -165,14 +165,7 @@ func NewEmissaryCommand() *cobra.Command {
 			})
 			logger.WithError(err).Info("sub-process exited")
 
-			debugAfter, ok := os.LookupEnv("ARGO_DEBUG_PAUSE_AFTER")
-			boolDebugAfter, err := strconv.ParseBool(debugAfter)
-			if err != nil {
-				logger.Error(fmt.Errorf("failed to change ARGO_DEBUG_PAUSE_AFTER to boolean value: %w", err))
-				boolDebugAfter = false
-			}
-
-			if ok && boolDebugAfter {
+			if os.Getenv("ARGO_DEBUG_PAUSE_AFTER") == "true" {
 				for {
 					// User can create the file: /ctr/NAME_OF_THE_CONTAINER/after
 					// in order to break out of the sleep and release the container from
