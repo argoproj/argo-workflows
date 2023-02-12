@@ -2,9 +2,9 @@ package commands
 
 import (
 	"encoding/json"
-	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 
 	"github.com/antonmedv/expr"
 	log "github.com/sirupsen/logrus"
@@ -19,31 +19,26 @@ func NewJobCommand() *cobra.Command {
 		Use:          "job",
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-
 			tmpl := &wfv1.Template{}
 			if err := json.Unmarshal([]byte(os.Getenv(common.EnvVarTemplate)), tmpl); err != nil {
 				return err
 			}
-			job := tmpl.Job
-			steps := job.Steps
-			progress := wfv1.PendingProgress(len(steps))
-			for i, s := range steps {
-				progress = progress.WithStatus(i, wfv1.NodeRunning)
-				log := log.WithField("step", i).WithField("progress", progress)
-				ok, err := expr.Eval(s.GetIf(), map[string]interface{}{
-					"success": func() bool { return !progress.Failure() },
-					"failure": func() bool { return progress.Failure() },
+			var finalErr error
+			for _, step := range tmpl.Job.Steps {
+				stepPhase := wfv1.NodeRunning
+				failed := finalErr != nil
+				log := log.WithField("step", step.Name).WithField("failed", failed)
+				ok, err := expr.Eval(step.GetIf(), map[string]interface{}{
+					"success": func() bool { return !failed },
+					"failure": func() bool { return failed },
 					"always":  func() bool { return true },
 				})
 				if err != nil {
 					return err
 				}
 				if ok.(bool) {
-					if err := os.WriteFile(os.Getenv(common.EnvVarProgressFile), []byte(progress), os.ModePerm); err != nil {
-						return err
-					}
 					log.Info("running step")
-					cmd := exec.Command("sh", "-c", s.Run)
+					cmd := exec.Command("sh", "-c", step.Run)
 					cmd.Env = os.Environ()
 					cmd.Stdin = os.Stdin
 					cmd.Stdout = os.Stdout
@@ -51,22 +46,27 @@ func NewJobCommand() *cobra.Command {
 					err := cmd.Run()
 					log.WithError(err).Info("step complete")
 					if err != nil {
-						progress = progress.WithStatus(i, wfv1.NodeFailed)
+						if finalErr == nil {
+							finalErr = err
+						}
+						stepPhase = wfv1.NodeFailed
 					} else {
-						progress = progress.WithStatus(i, wfv1.NodeSucceeded)
+						stepPhase = wfv1.NodeSucceeded
 					}
 				} else {
 					log.Info("skipped step")
-					progress = progress.WithStatus(i, wfv1.NodeSkipped)
+					stepPhase = wfv1.NodeSkipped
 				}
-				if err := os.WriteFile(os.Getenv(common.EnvVarProgressFile), []byte(progress), os.ModePerm); err != nil {
+				filename := filepath.Join(common.VarRunArgoPath, step.Name, "phase")
+				_ = os.Mkdir(filepath.Dir(filename), os.ModePerm)
+				if err := os.WriteFile(filename, []byte(stepPhase), os.ModePerm); err != nil {
 					return err
 				}
+				if stepPhase.FailedOrError() {
+					failed = true
+				}
 			}
-			if progress.Failure() {
-				return fmt.Errorf("failure")
-			}
-			return nil
+			return finalErr
 		},
 	}
 }

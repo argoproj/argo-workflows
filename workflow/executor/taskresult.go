@@ -14,21 +14,21 @@ import (
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
 
-func (we *WorkflowExecutor) upsertTaskResult(ctx context.Context, result wfv1.NodeResult) error {
-	err := we.createTaskResult(ctx, result)
+func (we *WorkflowExecutor) upsertTaskResult(ctx context.Context, nodeID string, result wfv1.NodeResult) error {
+	err := we.createTaskResult(ctx, nodeID, result)
 	if apierr.IsAlreadyExists(err) {
-		return we.patchTaskResult(ctx, result)
+		return we.patchTaskResult(ctx, nodeID, result)
 	}
 	return err
 }
 
-func (we *WorkflowExecutor) patchTaskResult(ctx context.Context, result wfv1.NodeResult) error {
+func (we *WorkflowExecutor) patchTaskResult(ctx context.Context, nodeID string, result wfv1.NodeResult) error {
 	data, err := json.Marshal(&wfv1.WorkflowTaskResult{NodeResult: result})
 	if err != nil {
 		return err
 	}
 	_, err = we.taskResultClient.Patch(ctx,
-		we.nodeId,
+		nodeID,
 		types.MergePatchType,
 		data,
 		metav1.PatchOptions{},
@@ -36,14 +36,14 @@ func (we *WorkflowExecutor) patchTaskResult(ctx context.Context, result wfv1.Nod
 	return err
 }
 
-func (we *WorkflowExecutor) createTaskResult(ctx context.Context, result wfv1.NodeResult) error {
+func (we *WorkflowExecutor) createTaskResult(ctx context.Context, nodeID string, result wfv1.NodeResult) error {
 	taskResult := &wfv1.WorkflowTaskResult{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: workflow.APIVersion,
 			Kind:       workflow.WorkflowTaskResultKind,
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:   we.nodeId,
+			Name:   nodeID,
 			Labels: map[string]string{common.LabelKeyWorkflow: we.workflow},
 		},
 		NodeResult: result,

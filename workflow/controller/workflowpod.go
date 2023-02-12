@@ -271,6 +271,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 	// Add standard environment variables, making pod spec larger
 	envVars := []apiv1.EnvVar{
 		{Name: common.EnvVarTemplate, Value: envVarTemplateValue},
+		{Name: common.EnvVarNodeName, Value: nodeName},
 		{Name: common.EnvVarNodeID, Value: nodeID},
 		{Name: common.EnvVarIncludeScriptOutput, Value: strconv.FormatBool(opts.includeScriptOutput)},
 		{Name: common.EnvVarDeadline, Value: woc.getDeadline(opts).Format(time.RFC3339)},

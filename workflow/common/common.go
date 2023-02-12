@@ -125,6 +125,7 @@ const (
 	EnvVarWorkflowName = "ARGO_WORKFLOW_NAME"
 	// EnvVarWorkflowUID is the workflow UUID
 	EnvVarWorkflowUID = "ARGO_WORKFLOW_UID"
+	EnvVarNodeName    = "ARGO_NODE_NAME"
 	// EnvVarNodeID is the node ID of the node.
 	EnvVarNodeID = "ARGO_NODE_ID"
 	// EnvVarPluginAddresses is a list of plugin addresses
@@ -151,6 +152,7 @@ const (
 	EnvVarProgressFileTickDuration = "ARGO_PROGRESS_FILE_TICK_DURATION"
 	// EnvVarProgressFile is the file watched for reporting progress
 	EnvVarProgressFile = "ARGO_PROGRESS_FILE"
+	EnvVarPhaseFile    = "ARGO_PHAS_FILE"
 	// EnvVarDefaultRequeueTime is the default requeue time for Workflow Informers. For more info, see rate_limiters.go
 	EnvVarDefaultRequeueTime = "DEFAULT_REQUEUE_TIME"
 	// EnvAgentTaskWorkers is the number of task workers for the agent pod

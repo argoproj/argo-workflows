@@ -12,14 +12,13 @@ import (
 	"io"
 	"io/fs"
 	"io/ioutil"
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"os"
-	"os/signal"
 	"path"
 	"path/filepath"
 	"runtime/debug"
 	"strconv"
 	"strings"
-	"syscall"
 	"time"
 
 	"github.com/argoproj/argo-workflows/v3/util/file"
@@ -59,6 +58,7 @@ type WorkflowExecutor struct {
 	PodName             string
 	podUID              types.UID
 	workflow            string
+	nodeName            string
 	nodeId              string
 	Template            wfv1.Template
 	IncludeScriptOutput bool
@@ -116,7 +116,7 @@ func NewExecutor(
 	restClient rest.Interface,
 	podName string,
 	podUID types.UID,
-	workflow, nodeId, namespace string,
+	workflow, nodeName, nodeId, namespace string,
 	cre ContainerRuntimeExecutor,
 	template wfv1.Template,
 	includeScriptOutput bool,
@@ -128,6 +128,7 @@ func NewExecutor(
 		PodName:                      podName,
 		podUID:                       podUID,
 		workflow:                     workflow,
+		nodeName:                     nodeName,
 		nodeId:                       nodeId,
 		ClientSet:                    clientset,
 		taskResultClient:             taskResultClient,
@@ -793,7 +794,7 @@ func (we *WorkflowExecutor) reportResult(ctx context.Context, result wfv1.NodeRe
 		Steps:    5,
 		Cap:      30 * time.Second,
 	}, errorsutil.IsTransientErr, func() error {
-		err := we.upsertTaskResult(ctx, result)
+		err := we.upsertTaskResult(ctx, we.nodeId, result)
 		if apierr.IsForbidden(err) {
 			log.WithError(err).Warn("failed to patch task set, falling back to legacy/insecure pod patch, see https://argoproj.github.io/argo-workflows/workflow-rbac/")
 			if result.Outputs.HasOutputs() {
@@ -1055,9 +1056,6 @@ func chmod(artPath string, mode int32, recurse bool) error {
 // Also monitors for updates in the pod annotations which may change (e.g. terminate)
 // Upon completion, kills any sidecars after it finishes.
 func (we *WorkflowExecutor) Wait(ctx context.Context) error {
-	// this allows us to gracefully shutdown, capturing artifacts
-	ctx, cancel := signal.NotifyContext(ctx, syscall.SIGTERM)
-	defer cancel()
 
 	containerNames := we.Template.GetMainContainerNames()
 	// only monitor progress if both tick durations are >0
@@ -1067,6 +1065,7 @@ func (we *WorkflowExecutor) Wait(ctx context.Context) error {
 		log.WithField("annotationPatchTickDuration", we.annotationPatchTickDuration).WithField("readProgressFileTickDuration", we.readProgressFileTickDuration).Info("monitoring progress disabled")
 	}
 
+	go we.monitorPhases(ctx)
 	go we.monitorDeadline(ctx, containerNames)
 
 	err := retryutil.OnError(executorretry.ExecutorRetry, errorsutil.IsTransientErr, func() error {
@@ -1134,6 +1133,50 @@ func (we *WorkflowExecutor) monitorProgress(ctx context.Context, progressFile st
 			} else {
 				log.WithField("line", lastLine).Info("unable to parse progress")
 			}
+		}
+	}
+}
+
+func (we *WorkflowExecutor) monitorPhases(ctx context.Context) {
+	defer utilruntime.HandleCrash()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		default:
+			job := we.Template.Job
+			if job != nil {
+				for _, step := range job.Steps {
+					filename := filepath.Join(common.VarRunArgoPath, step.Name, "phase")
+					data, _ := os.ReadFile(filename)
+					if data != nil {
+						wf := &wfv1.Workflow{
+							ObjectMeta: metav1.ObjectMeta{
+								Name: we.workflow,
+							},
+						}
+						nodeName := fmt.Sprintf("%s.%s", we.nodeName, step.Name)
+						nodeID := wf.NodeID(nodeName)
+						err := retryutil.OnError(wait.Backoff{
+							Duration: time.Second,
+							Factor:   2,
+							Jitter:   0.1,
+							Steps:    5,
+							Cap:      30 * time.Second,
+						}, errorsutil.IsTransientErr, func() error {
+							return we.upsertTaskResult(ctx, nodeID, wfv1.NodeResult{
+								Phase: wfv1.NodePhase(data),
+							})
+						})
+						if err != nil {
+							log.WithError(err).Warn("failed to upsert task-result")
+						}
+						_ = os.Remove(filename)
+					}
+				}
+			}
+
+			time.Sleep(time.Second)
 		}
 	}
 }

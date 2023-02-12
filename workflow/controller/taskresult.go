@@ -66,6 +66,9 @@ func (woc *wfOperationCtx) taskResultReconciliation() {
 				new.Outputs.ExitCode = old.Outputs.ExitCode
 			}
 		}
+		if result.Phase != "" {
+			new.Phase = result.Phase
+		}
 		if result.Progress.IsValid() {
 			new.Progress = result.Progress
 		}
@@ -76,13 +79,5 @@ func (woc *wfOperationCtx) taskResultReconciliation() {
 			woc.wf.Status.Nodes[nodeID] = *new
 			woc.updated = true
 		}
-	}
-	for _, node := range woc.wf.Status.Nodes.Filter(func(n wfv1.NodeStatus) bool {
-		return n.Type == wfv1.NodeTypeJobStep
-	}) {
-		nodeName, stepName := splitStepNodeName(node.Name)
-		node := woc.wf.GetNodeByName(nodeName)
-		i := woc.execWf.GetTemplateByName(node.TemplateName).Job.StepIndex(stepName)
-		woc.markNodePhase(node.Name, node.Progress.Status(i))
 	}
 }

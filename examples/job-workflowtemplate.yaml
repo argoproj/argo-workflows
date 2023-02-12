@@ -18,34 +18,36 @@ spec:
 
   entrypoint: main
 
+  activeDeadlineSeconds: 300
+
   templates:
     - name: main
       inputs:
         artifacts:
-          - name: GOMODCACHE
+          - name: go-mod-cache
             path: /go/pkg/mod
             optional: true
             s3:
-              key: "github.com/golang/examples/{{workflow.parameters.branch}}/GOMODCACHE"
-          - name: GOCACHE
+              key: "github.com/golang/examples/{{workflow.parameters.branch}}/go-mod-cache"
+          - name: go-cache
             path: /root/.cache/go-build
             optional: true
             s3:
-              key: "github.com/golang/examples/{{workflow.parameters.branch}}/GOCACHE"
+              key: "github.com/golang/examples/{{workflow.parameters.branch}}/go-cache"
       job:
-        image: golang:1.18
+        image: golang
         workingDir: /go/src/github.com/golang/example
         steps:
           - name: clone
             run: git clone -v -b "{{workflow.parameters.branch}}" --single-branch --depth 1 https://github.com/golang/example.git .
           - name: deps
-            run: go mod download -x
+            run: go mod download
           - name: build
             run: go build ./...
           - name: test
-            run: go test -v ./... 2>&1 > test.out
-          - name: fail
-            run: exit 1
+            run: |
+              go test -v ./... 2>&1 > test.out
+              exit 1 # force failure
           - name: test-report
             if: always()
             run: |
@@ -55,16 +57,16 @@ spec:
               cat test.out | go-junit-report | junit2html > test-report.html
       outputs:
         artifacts:
-          - name: GOMODCACHE
+          - name: go-mod-cache
             path: /go/pkg/mod
             optional: true
             s3:
-              key: "github.com/golang/examples/{{workflow.parameters.branch}}/GOMODCACHE"
-          - name: GOCACHE
+              key: "github.com/golang/examples/{{workflow.parameters.branch}}/go-mod-cache"
+          - name: go-cache
             path: /root/.cache/go-build
             optional: true
             s3:
-              key: "github.com/golang/examples/{{workflow.parameters.branch}}/GOCACHE"
+              key: "github.com/golang/examples/{{workflow.parameters.branch}}/go-cache"
           - name: test-report
             path: /go/src/github.com/golang/example/test-report.html
             archive:

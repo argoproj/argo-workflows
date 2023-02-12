@@ -27,6 +27,7 @@ const (
 	fakePodName       = "fake-test-pod-1234567890"
 	fakeWorkflow      = "my-wf"
 	fakePodUID        = "my-pod-uid"
+	fakeNodeName      = "my-node-name"
 	fakeNodeID        = "my-node-id"
 	fakeNamespace     = "default"
 	fakeContainerName = "main"
@@ -488,6 +489,7 @@ func TestMonitorProgress(t *testing.T) {
 		fakePodName,
 		fakePodUID,
 		fakeWorkflow,
+		fakeNodeName,
 		fakeNodeID,
 		fakeNamespace,
 		&mocks.ContainerRuntimeExecutor{},

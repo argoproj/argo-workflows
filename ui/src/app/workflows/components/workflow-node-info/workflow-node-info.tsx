@@ -190,7 +190,7 @@ const WorkflowNodeSummary = (props: Props) => {
                         RESUME
                     </Button>
                 )}{' '}
-                {props.node.type !== 'Container' && props.onShowYaml && (
+                {!['Container', 'JobStep'].includes(props.node.type) && props.onShowYaml && (
                     <Button icon='file-code' onClick={() => props.onShowYaml(props.node.id)}>
                         MANIFEST
                     </Button>
@@ -492,7 +492,7 @@ export const WorkflowNodeInfo = (props: Props) => (
                     )
                 }
             ].concat(
-                props.node.type !== 'Container'
+                !(['Container', 'JobStep'].includes(props.node.type))
                     ? [
                           {
                               title: 'CONTAINERS',
