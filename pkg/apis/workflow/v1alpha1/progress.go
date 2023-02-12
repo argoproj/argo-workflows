@@ -6,7 +6,9 @@ import (
 	"strings"
 )
 
-// Progress in N/M format. N is number of task complete. M is number of tasks.
+// Progress in one of two  formats.
+// (v1) Is N/M format. N is number of task complete. M is number of tasks.
+// (v2) Is PRSFK format. M can be inferred by the length of the string N is the number of runes that are not P.
 type Progress string
 
 const (
@@ -23,12 +25,12 @@ var progressRune = map[NodePhase]rune{
 	NodeSkipped:   'K',
 }
 
-var progressPhase = map[rune]NodePhase{
-	'P': NodePending,
-	'R': NodeRunning,
-	'S': NodeSucceeded,
-	'F': NodeFailed,
-	'K': NodeSkipped,
+var progressPhase = map[rune]NodePhase{}
+
+func init() {
+	for k, v := range progressRune {
+		progressPhase[v] = k
+	}
 }
 
 func ParseProgress(s string) (Progress, bool) {
@@ -45,7 +47,7 @@ func (in Progress) parts() []string {
 }
 
 func (in Progress) N() int {
-	if strings.ContainsRune(string(in), '/') {
+	if in.isV1() {
 		v, _ := strconv.Atoi(in.parts()[0])
 		return v
 	}
@@ -58,10 +60,16 @@ func (in Progress) N() int {
 	return n
 }
 
+// isV1 returns true if the progress is in the v1 format
+func (in Progress) isV1() bool {
+	return strings.ContainsRune(string(in), '/')
+}
+
 func (in Progress) M() int {
-	if strings.ContainsRune(string(in), '/') {
+	if in.isV1() {
 		v, _ := strconv.Atoi(in.parts()[1])
 		return v
+
 	}
 	return len(string(in))
 }
@@ -82,12 +90,14 @@ func (in Progress) Failure() bool {
 	return strings.ContainsRune(string(in), progressRune[NodeFailed])
 }
 
+// WithStatus returns a new progress with the status of the i'th node set to x
 func (in Progress) WithStatus(i int, x NodePhase) Progress {
 	out := []rune(in)
 	out[i] = progressRune[x]
 	return Progress(out)
 }
 
+// Status returns the status of the i'th node
 func (in Progress) Status(i int) NodePhase {
 	if i >= len(in) {
 		return NodePending

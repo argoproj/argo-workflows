@@ -2,7 +2,7 @@
 
 It is possible to have the Argo Workflows Server use the Argo CD Dex instance for authentication, for instance if you use Okta with SAML which cannot integrate with Argo Workflows directly. In order to make this happen, you will need the following:
 
-- You must be using at least Dex [v2.23.0](https://github.com/dexidp/dex/releases/tag/v2.23.0), because that's when `staticClients[].secretEnv` was added. That means Argo CD 1.7.12 and above.
+- You must be using at least Dex [v2.35.0](https://github.com/dexidp/dex/releases/tag/v2.35.0), because that's when `staticClients[].secretEnv` was added. That means Argo CD 1.7.12 and above.
 - A secret containing two keys, `client-id` and `client-secret` to be used by both Dex and Argo Workflows Server. `client-id` is `argo-workflows-sso` in this example, `client-secret` can be any random string. If Argo CD and Argo Workflows are installed in different namespaces the secret must be present in both of them. Example:
 
   ```yaml
@@ -112,7 +112,7 @@ data:
 ```yaml
      dex:
        image:
-         tag: v2.23.0
+         tag: v2.35.0
        env:
          - name: ARGO_WORKFLOWS_SSO_CLIENT_SECRET
            valueFrom:
@@ -130,7 +130,7 @@ data:
              secretEnv: ARGO_WORKFLOWS_SSO_CLIENT_SECRET
 ```
 
-`argo/values.yaml`:
+`argo-workflows/values.yaml`:
 
 ```yaml
      server:

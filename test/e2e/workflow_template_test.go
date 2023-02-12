@@ -64,6 +64,63 @@ func (s *WorkflowTemplateSuite) TestSubmitWorkflowTemplateWithEnum() {
 		})
 }
 
+func (s *WorkflowTemplateSuite) TestSubmitWorkflowTemplateWorkflowMetadataSubstitution() {
+	s.Given().
+		WorkflowTemplate("@testdata/workflow-template-sub-test.yaml").
+		When().
+		CreateWorkflowTemplates().
+		SubmitWorkflowsFromWorkflowTemplates().
+		WaitForWorkflow().
+		Then().
+		ExpectWorkflow(func(t *testing.T, metadata *v1.ObjectMeta, status *v1alpha1.WorkflowStatus) {
+			assert.Equal(t, status.Phase, v1alpha1.WorkflowSucceeded)
+		})
+}
+
+func (s *WorkflowTemplateSuite) TestWorkflowTemplateInvalidOnExit() {
+	s.Given().
+		WorkflowTemplate("@testdata/workflow-template-invalid-onexit.yaml").
+		Workflow(`
+metadata:
+  generateName: workflow-template-invalid-onexit-
+spec:
+  workflowTemplateRef:
+    name: workflow-template-invalid-onexit
+`).
+		When().
+		CreateWorkflowTemplates().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeErrored).
+		Then().
+		ExpectWorkflow(func(t *testing.T, metadata *v1.ObjectMeta, status *v1alpha1.WorkflowStatus) {
+			assert.Equal(t, status.Phase, v1alpha1.WorkflowError)
+			assert.Contains(t, status.Message, "error in exit template execution")
+		}).
+		ExpectPVCDeleted()
+}
+
+func (s *WorkflowTemplateSuite) TestWorkflowTemplateInvalidEntryPoint() {
+	s.Given().
+		WorkflowTemplate("@testdata/workflow-template-invalid-entrypoint.yaml").
+		Workflow(`
+metadata:
+  generateName: workflow-template-invalid-entrypoint-
+spec:
+  workflowTemplateRef:
+    name: workflow-template-invalid-entrypoint
+`).
+		When().
+		CreateWorkflowTemplates().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeErrored).
+		Then().
+		ExpectWorkflow(func(t *testing.T, metadata *v1.ObjectMeta, status *v1alpha1.WorkflowStatus) {
+			assert.Equal(t, status.Phase, v1alpha1.WorkflowError)
+			assert.Contains(t, status.Message, "error in entry template execution")
+		}).
+		ExpectPVCDeleted()
+}
+
 func TestWorkflowTemplateSuite(t *testing.T) {
 	suite.Run(t, new(WorkflowTemplateSuite))
 }

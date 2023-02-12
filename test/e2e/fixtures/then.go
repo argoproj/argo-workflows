@@ -8,6 +8,7 @@ import (
 	"time"
 
 	apiv1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -92,7 +93,7 @@ func (t *Then) ExpectWorkflowNode(selector func(status wfv1.NodeStatus) bool, f 
 					ObjectMeta: *metadata,
 				}
 				version := util.GetWorkflowPodNameVersion(wf)
-				podName := util.PodName(t.wf.Name, n.Name, n.TemplateName, n.ID, version)
+				podName := util.GeneratePodName(t.wf.Name, n.Name, n.TemplateName, n.ID, version)
 
 				var err error
 				ctx := context.Background()
@@ -185,7 +186,53 @@ func (t *Then) ExpectAuditEvents(filter func(event apiv1.Event) bool, num int, b
 	return t
 }
 
-func (t *Then) ExpectArtifact(nodeName string, artifactName string, f func(t *testing.T, object *minio.Object, err error)) {
+func (t *Then) ExpectPVCDeleted() *Then {
+	t.t.Helper()
+	timeout := defaultTimeout
+	_, _ = fmt.Println("Checking", timeout.String(), "for expecting PVCs deletion")
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+	for {
+		select {
+		case <-ctx.Done():
+			t.t.Errorf("timeout after %v waiting for condition", timeout)
+			return t
+		default:
+			num := len(t.wf.Status.PersistentVolumeClaims)
+			pvcClient := t.kubeClient.CoreV1().PersistentVolumeClaims(t.wf.ObjectMeta.Namespace)
+			for _, p := range t.wf.Status.PersistentVolumeClaims {
+				_, err := pvcClient.Get(ctx, p.PersistentVolumeClaim.ClaimName, metav1.GetOptions{})
+				if err == nil {
+					break
+				} else if errors.IsNotFound(err) {
+					num--
+				} else {
+					t.t.Fatal(err)
+					return t
+				}
+			}
+			if num == 0 {
+				return t
+			}
+		}
+	}
+}
+
+func (t *Then) ExpectArtifact(nodeName string, artifactName string, bucketName string, f func(t *testing.T, object minio.ObjectInfo, err error)) {
+	t.t.Helper()
+
+	if nodeName == "-" {
+		nodeName = t.wf.Name
+	}
+
+	n := t.wf.GetNodeByName(nodeName)
+	a := n.GetOutputs().GetArtifactByName(artifactName)
+	key, _ := a.GetKey()
+
+	t.ExpectArtifactByKey(key, bucketName, f)
+}
+
+func (t *Then) ExpectArtifactByKey(key string, bucketName string, f func(t *testing.T, object minio.ObjectInfo, err error)) {
 	t.t.Helper()
 
 	c, err := minio.New("localhost:9000", &minio.Options{
@@ -196,15 +243,7 @@ func (t *Then) ExpectArtifact(nodeName string, artifactName string, f func(t *te
 		t.t.Error(err)
 	}
 
-	if nodeName == "-" {
-		nodeName = t.wf.Name
-	}
-
-	n := t.wf.GetNodeByName(nodeName)
-	a := n.GetOutputs().GetArtifactByName(artifactName)
-	key, _ := a.GetKey()
-
-	object, err := c.GetObject(context.Background(), "my-bucket", key, minio.GetObjectOptions{})
+	object, err := c.StatObject(context.Background(), bucketName, key, minio.StatObjectOptions{})
 	f(t.t, object, err)
 }
 

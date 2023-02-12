@@ -7,12 +7,14 @@ resources:
 - https://raw.githubusercontent.com/argoproj/argo-events/stable/manifests/base/crds/argoproj.io_eventsources.yaml
 - https://raw.githubusercontent.com/argoproj/argo-events/stable/manifests/base/crds/argoproj.io_sensors.yaml
 - ../mixins/argo-workflows-agent-ca-certificates.yaml
+- ../mixins/argo-server.service-account-token-secret.yaml
 
 patchesStrategicMerge:
 - ../mixins/argo-server-deployment.yaml
 - ../mixins/workflow-controller-configmap.yaml
 - ../mixins/workflow-controller-deployment.yaml
 - ../mixins/cluster-workflow-template-rbac.yaml
+- ../mixins/minio-deployment.yaml
 
 commonLabels:
   app.kubernetes.io/part-of: argo

@@ -24,8 +24,8 @@ from argo_workflows.model_utils import (  # noqa: F401
     file_type,
     none_type,
     validate_get_composed_info,
+    OpenApiModel
 )
-from ..model_utils import OpenApiModel
 from argo_workflows.exceptions import ApiAttributeError
 
 
@@ -272,7 +272,7 @@ class IoArgoprojWorkflowV1alpha1Template(ModelNormal):
             automount_service_account_token (bool): AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods. ServiceAccountName of ExecutorConfig must be specified if this value is false.. [optional]  # noqa: E501
             container (Container): [optional]  # noqa: E501
             container_set (IoArgoprojWorkflowV1alpha1ContainerSetTemplate): [optional]  # noqa: E501
-            daemon (bool): Deamon will allow a workflow to proceed to the next step so long as the container reaches readiness. [optional]  # noqa: E501
+            daemon (bool): Daemon will allow a workflow to proceed to the next step so long as the container reaches readiness. [optional]  # noqa: E501
             dag (IoArgoprojWorkflowV1alpha1DAGTemplate): [optional]  # noqa: E501
             data (IoArgoprojWorkflowV1alpha1Data): [optional]  # noqa: E501
             executor (IoArgoprojWorkflowV1alpha1ExecutorConfig): [optional]  # noqa: E501
@@ -393,7 +393,7 @@ class IoArgoprojWorkflowV1alpha1Template(ModelNormal):
             automount_service_account_token (bool): AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods. ServiceAccountName of ExecutorConfig must be specified if this value is false.. [optional]  # noqa: E501
             container (Container): [optional]  # noqa: E501
             container_set (IoArgoprojWorkflowV1alpha1ContainerSetTemplate): [optional]  # noqa: E501
-            daemon (bool): Deamon will allow a workflow to proceed to the next step so long as the container reaches readiness. [optional]  # noqa: E501
+            daemon (bool): Daemon will allow a workflow to proceed to the next step so long as the container reaches readiness. [optional]  # noqa: E501
             dag (IoArgoprojWorkflowV1alpha1DAGTemplate): [optional]  # noqa: E501
             data (IoArgoprojWorkflowV1alpha1Data): [optional]  # noqa: E501
             executor (IoArgoprojWorkflowV1alpha1ExecutorConfig): [optional]  # noqa: E501

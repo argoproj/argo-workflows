@@ -12,6 +12,7 @@ import (
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	wfextvv1alpha1 "github.com/argoproj/argo-workflows/v3/pkg/client/informers/externalversions/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/controller/indexes"
 )
 
@@ -22,7 +23,7 @@ func (wfc *WorkflowController) newWorkflowTaskResultInformer() cache.SharedIndex
 		String()
 	log.WithField("labelSelector", labelSelector).
 		Info("Watching task results")
-	return wfextvv1alpha1.NewFilteredWorkflowTaskResultInformer(
+	informer := wfextvv1alpha1.NewFilteredWorkflowTaskResultInformer(
 		wfc.wfclientset,
 		wfc.GetManagedNamespace(),
 		20*time.Minute,
@@ -33,6 +34,20 @@ func (wfc *WorkflowController) newWorkflowTaskResultInformer() cache.SharedIndex
 			options.LabelSelector = labelSelector
 		},
 	)
+	informer.AddEventHandler(
+		cache.ResourceEventHandlerFuncs{
+			AddFunc: func(new interface{}) {
+				result := new.(*wfv1.WorkflowTaskResult)
+				workflow := result.Labels[common.LabelKeyWorkflow]
+				wfc.wfQueue.AddRateLimited(result.Namespace + "/" + workflow)
+			},
+			UpdateFunc: func(old, new interface{}) {
+				result := new.(*wfv1.WorkflowTaskResult)
+				workflow := result.Labels[common.LabelKeyWorkflow]
+				wfc.wfQueue.AddRateLimited(result.Namespace + "/" + workflow)
+			},
+		})
+	return informer
 }
 
 func (woc *wfOperationCtx) taskResultReconciliation() {

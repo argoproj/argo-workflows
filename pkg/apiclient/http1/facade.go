@@ -112,6 +112,7 @@ func (h Facade) do(in interface{}, out interface{}, method string, path string) 
 			TLSClientConfig: &tls.Config{
 				InsecureSkipVerify: h.insecureSkipVerify,
 			},
+			DisableKeepAlives: true,
 		},
 	}
 	resp, err := client.Do(req)

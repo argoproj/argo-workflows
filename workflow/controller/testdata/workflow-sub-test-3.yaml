@@ -1,0 +1,21 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: workflow-template-hello-world-
+  namespace: test
+  labels:
+    mutexName: myMutex
+  annotations:
+    schedulerName: myScheduler
+spec:
+  workflowTemplateRef:
+    name: workflow-template-submittable
+  synchronization:
+    mutex:
+      name:  "{{workflow.labels.mutexName}}"
+  schedulerName:  "{{workflow.annotations.schedulerName}}"
+  workflowMetadata:
+    labels:
+      mutexName: wfMetadataMutex
+    annotations:
+      schedulerName: wfMetadataScheduler

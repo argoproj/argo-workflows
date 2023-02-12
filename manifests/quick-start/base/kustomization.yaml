@@ -6,6 +6,7 @@ resources:
   - minio
   - httpbin
   - webhooks
+  - default.service-account-token-secret.yaml
   - argo-server-sso-secret.yaml
   - executor/emissary/executor-role.yaml
   - executor-default-rolebinding.yaml
@@ -15,6 +16,8 @@ resources:
   - workflow-manager-default-rolebinding.yaml
   - agent-role.yaml
   - agent-default-rolebinding.yaml
+  - artifactgc-role.yaml
+  - artifactgc-default-rolebinding.yaml
   - cluster-workflow-template-rbac.yaml
   - artifact-repositories-configmap.yaml
 

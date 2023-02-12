@@ -867,6 +867,29 @@ func (s *CLISuite) TestWorkflowRetry() {
 		})
 }
 
+func (s *CLISuite) TestWorkflowRetryNestedDag() {
+	s.Given().
+		Workflow("@testdata/retry-nested-dag-test.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeFailed).
+		Then().
+		RunCli([]string{"retry", "retry-nested-dag", "--restart-successful", "--node-field-selector", "name=retry-nested-dag.dag1-step2.dag2-step1.dag3-step1"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err, output) {
+				assert.Contains(t, output, "Name:")
+				assert.Contains(t, output, "Namespace:")
+			}
+		}).
+		When().
+		WaitForWorkflow(fixtures.ToBeFailed).
+		Then().
+		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.NodeSucceeded, status.Nodes.FindByDisplayName("dag3-step3").Phase)
+			assert.Equal(t, wfv1.NodeSucceeded, status.Nodes.FindByDisplayName("dag3-step2").Phase)
+			assert.Equal(t, wfv1.NodeSucceeded, status.Nodes.FindByDisplayName("dag3-step1").Phase)
+		})
+}
+
 func (s *CLISuite) TestWorkflowStop() {
 	s.Given().
 		Workflow("@smoke/basic.yaml").
@@ -1333,8 +1356,12 @@ func (s *CLISuite) TestWorkflowTemplateRefSubmit() {
 }
 
 func (s *CLISuite) TestWorkflowCopyArtifact() {
+	s.workflowCopyArtifactTests("basic-artifact-workflow.yaml")
+}
+
+func (s *CLISuite) workflowCopyArtifactTests(workflowFileName string) {
 	s.Given().
-		Workflow("@testdata/basic-artifact-workflow.yaml").
+		Workflow(fmt.Sprintf("@testdata/%s", workflowFileName)).
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow().
@@ -1349,7 +1376,7 @@ func (s *CLISuite) TestWorkflowCopyArtifact() {
 	os.RemoveAll("outputDir")
 
 	s.Given().
-		Workflow("@testdata/basic-artifact-workflow.yaml").
+		Workflow(fmt.Sprintf("@testdata/%s", workflowFileName)).
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow().
@@ -1364,7 +1391,7 @@ func (s *CLISuite) TestWorkflowCopyArtifact() {
 	os.RemoveAll("outputDir")
 
 	s.Given().
-		Workflow("@testdata/basic-artifact-workflow.yaml").
+		Workflow(fmt.Sprintf("@testdata/%s", workflowFileName)).
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow().
@@ -1379,7 +1406,7 @@ func (s *CLISuite) TestWorkflowCopyArtifact() {
 	os.RemoveAll("outputDir")
 
 	s.Given().
-		Workflow("@testdata/basic-artifact-workflow.yaml").
+		Workflow(fmt.Sprintf("@testdata/%s", workflowFileName)).
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow().

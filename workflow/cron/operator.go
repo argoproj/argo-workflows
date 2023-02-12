@@ -156,7 +156,7 @@ func (woc *cronWfOperationCtx) patch(ctx context.Context, patch map[string]inter
 		return true, nil
 	})
 	if err != nil {
-		woc.log.WithError(err).Error("failed to data cron workflow")
+		woc.log.WithError(err).Error("failed to update cron workflow")
 		return
 	}
 }

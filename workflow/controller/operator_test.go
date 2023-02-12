@@ -1332,6 +1332,32 @@ func TestAssessNodeStatus(t *testing.T) {
 		node: &wfv1.NodeStatus{TemplateName: templateName},
 		want: wfv1.NodeFailed,
 	}, {
+		name: "pod failed - init container failed",
+		pod: &apiv1.Pod{
+			Status: apiv1.PodStatus{
+				InitContainerStatuses: []apiv1.ContainerStatus{
+					{
+						Name:  common.InitContainerName,
+						State: apiv1.ContainerState{Terminated: &apiv1.ContainerStateTerminated{ExitCode: 1}},
+					},
+				},
+				ContainerStatuses: []apiv1.ContainerStatus{
+					{
+						Name:  common.WaitContainerName,
+						State: apiv1.ContainerState{Terminated: nil},
+					},
+					{
+						Name:  common.MainContainerName,
+						State: apiv1.ContainerState{Terminated: &apiv1.ContainerStateTerminated{ExitCode: 0}},
+					},
+				},
+				Message: "failed since init container failed",
+				Phase:   apiv1.PodFailed,
+			},
+		},
+		node: &wfv1.NodeStatus{TemplateName: templateName},
+		want: wfv1.NodeFailed,
+	}, {
 		name: "pod running",
 		pod: &apiv1.Pod{
 			Status: apiv1.PodStatus{
@@ -1548,7 +1574,7 @@ spec:
       args: ["cowsay {{inputs.parameters.message}}"]
 `
 
-// TestWorkflowParallelismLimit verifies parallelism at a workflow level is honored.
+// TestWorkflowStepRetry verifies that steps retry will restart from the 0th step
 func TestWorkflowStepRetry(t *testing.T) {
 	cancel, controller := newController()
 	defer cancel()
@@ -2818,7 +2844,9 @@ func TestResolveIOPathPlaceholders(t *testing.T) {
 	assert.NoError(t, err)
 	assert.True(t, len(pods.Items) > 0, "pod was not created successfully")
 
-	assert.Equal(t, []string{"/var/run/argo/argoexec", "emissary", "--", "sh", "-c", "head -n 3 <\"/inputs/text/data\" | tee \"/outputs/text/data\" | wc -l > \"/outputs/actual-lines-count/data\""}, pods.Items[0].Spec.Containers[1].Command)
+	assert.Equal(t, []string{"/var/run/argo/argoexec", "emissary",
+		"--loglevel", getExecutorLogLevel(), "--log-format", woc.controller.cliExecutorLogFormat,
+		"--", "sh", "-c", "head -n 3 <\"/inputs/text/data\" | tee \"/outputs/text/data\" | wc -l > \"/outputs/actual-lines-count/data\""}, pods.Items[0].Spec.Containers[1].Command)
 }
 
 var outputValuePlaceholders = `
@@ -3778,38 +3806,7 @@ func TestNestedOptionalOutputArtifacts(t *testing.T) {
 	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
 }
 
-var artifactGCOnWorkflowCompletion = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: artifact-passing-
-spec:
-  entrypoint: whalesay
-  artifactGC:
-    strategy: OnWorkflowCompletion
-  templates:
-  - name: whalesay
-    container:
-      image: docker/whalesay:latest
-      command: [sh, -c]
-      args: ["sleep 1; cowsay hello world | tee /tmp/hello_world.txt"]
-`
-
-func TestArtifactGCOnWorkflowCompletion(t *testing.T) {
-	cancel, controller := newController()
-	defer cancel()
-	ctx := context.Background()
-
-	wf := wfv1.MustUnmarshalWorkflow(artifactGCOnWorkflowCompletion)
-	woc := newWorkflowOperationCtx(wf, controller)
-	woc.operate(ctx)
-
-	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
-	assert.Equal(t, 1, len(woc.wf.GetFinalizers()))
-	assert.Equal(t, "workflows.argoproj.io/artifact-gc", woc.wf.GetFinalizers()[0])
-}
-
-//  TestPodSpecLogForFailedPods tests PodSpec logging configuration
+// TestPodSpecLogForFailedPods tests PodSpec logging configuration
 func TestPodSpecLogForFailedPods(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(helloWorldWf)
 	cancel, controller := newController(wf)
@@ -3827,7 +3824,7 @@ func TestPodSpecLogForFailedPods(t *testing.T) {
 	}
 }
 
-//  TestPodSpecLogForAllPods tests  PodSpec logging configuration
+// TestPodSpecLogForAllPods tests  PodSpec logging configuration
 func TestPodSpecLogForAllPods(t *testing.T) {
 	cancel, controller := newController()
 	defer cancel()
@@ -5350,7 +5347,7 @@ status:
       name: my-wf
       phase: Failed
 `)
-	wf, err := util.FormulateResubmitWorkflow(wf, true)
+	wf, err := util.FormulateResubmitWorkflow(wf, true, nil)
 	if assert.NoError(t, err) {
 		cancel, controller := newController(wf)
 		defer cancel()
@@ -5374,6 +5371,77 @@ status:
 		if assert.NoError(t, err) {
 			assert.Len(t, list.Items, 1)
 		}
+	}
+}
+
+func TestResubmitParamsOverride(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(`apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: my-wf
+spec:
+  arguments:
+    parameters:
+    - name: message
+      value: default
+  entrypoint: main
+  templates:
+  - name: main
+    container:
+      image: busybox
+status:
+  phase: Failed
+  nodes:
+    my-wf:
+      name: my-wf
+      phase: Failed
+`)
+	wf, err := util.FormulateResubmitWorkflow(wf, true, []string{"message=modified"})
+	if assert.NoError(t, err) {
+		cancel, controller := newController(wf)
+		defer cancel()
+
+		ctx := context.Background()
+		woc := newWorkflowOperationCtx(wf, controller)
+		woc.operate(ctx)
+		assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
+		assert.Equal(t, "modified", wf.Spec.Arguments.Parameters[0].Value.String())
+	}
+}
+
+func TestRetryParamsOverride(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(`apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: my-wf
+  labels:
+    workflows.argoproj.io/completed: true
+spec:
+  arguments:
+    parameters:
+    - name: message
+      value: default
+  entrypoint: main
+  templates:
+  - name: main
+    container:
+      image: busybox
+status:
+  phase: Failed
+  nodes:
+    my-wf:
+      name: my-wf
+      phase: Failed
+`)
+	wf, _, err := util.FormulateRetryWorkflow(context.Background(), wf, false, "", []string{"message=modified"})
+	if assert.NoError(t, err) {
+		cancel, controller := newController(wf)
+		defer cancel()
+
+		ctx := context.Background()
+		woc := newWorkflowOperationCtx(wf, controller)
+		woc.operate(ctx)
+		assert.Equal(t, "modified", wf.Spec.Arguments.Parameters[0].Value.String())
 	}
 }
 
@@ -6566,6 +6634,58 @@ func TestWorkflowScheduledTimeVariable(t *testing.T) {
 	assert.Equal(t, "2006-01-02T15:04:05-07:00", woc.globalParams[common.GlobalVarWorkflowCronScheduleTime])
 }
 
+var wfNodeNameField = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: hello-world
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      dag:
+        tasks:
+          - name: this-is-part-1
+            template: main2
+    - name: main2
+      steps:
+        - - name: this-is-part-2
+            template: whalesay
+            arguments:
+                parameters:
+                  - name: message
+                    value: "{{node.name}}"
+    - name: whalesay
+      inputs:
+        parameters:
+          - name: message
+      container:
+        image: docker/whalesay:latest
+        command: [cowsay]
+        args: ["{{ inputs.parameters.message }}"]
+`
+
+func TestWorkflowInterpolatesNodeNameField(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(wfNodeNameField)
+	cancel, controller := newController(wf)
+	defer cancel()
+
+	ctx := context.Background()
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate(ctx)
+
+	foundPod := false
+	for _, element := range woc.wf.Status.Nodes {
+		if element.Type == "Pod" {
+			foundPod = true
+			assert.Equal(t, "hello-world.this-is-part-1", element.Inputs.Parameters[0].Value.String())
+		}
+	}
+
+	assert.True(t, foundPod)
+
+}
+
 func TestWorkflowShutdownStrategy(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(`
 apiVersion: argoproj.io/v1alpha1
@@ -7005,6 +7125,92 @@ func TestSubstituteGlobalVariables(t *testing.T) {
 	tempStr, err := json.Marshal(woc.execWf.Spec.Templates)
 	assert.NoError(t, err)
 	assert.Contains(t, string(tempStr), "{{workflow.parameters.message}}")
+}
+
+// test that Labels and Annotations are correctly substituted in the case of
+// a Workflow referencing a WorkflowTemplate, where Labels and Annotations can come from:
+// - Workflow metadata
+// - Workflow spec.workflowMetadata
+// - WorkflowTemplate spec.workflowMetadata
+func TestSubstituteGlobalVariablesLabelsAnnotations(t *testing.T) {
+
+	tests := []struct {
+		name                  string
+		workflow              string
+		workflowTemplate      string
+		expectedMutexName     string
+		expectedSchedulerName string
+	}{
+		{
+			// entire template referenced; value not contained in WorkflowTemplate or Workflow
+			workflow:              "@testdata/workflow-sub-test-1.yaml",
+			workflowTemplate:      "@testdata/workflow-template-sub-test-1.yaml",
+			expectedMutexName:     "{{workflow.labels.mutexName}}",
+			expectedSchedulerName: "{{workflow.annotations.schedulerName}}",
+		},
+		{
+			// entire template referenced; value is in Workflow.Labels
+			workflow:              "@testdata/workflow-sub-test-2.yaml",
+			workflowTemplate:      "@testdata/workflow-template-sub-test-1.yaml",
+			expectedMutexName:     "myMutex",
+			expectedSchedulerName: "myScheduler",
+		},
+		{
+			// entire template referenced; value is in WorkflowTemplate.workflowMetadata
+			workflow:              "@testdata/workflow-sub-test-2.yaml",
+			workflowTemplate:      "@testdata/workflow-template-sub-test-2.yaml",
+			expectedMutexName:     "wfMetadataTemplateMutex",
+			expectedSchedulerName: "wfMetadataTemplateScheduler",
+		},
+		{
+			// entire template referenced; value is in Workflow.workflowMetadata
+			workflow:              "@testdata/workflow-sub-test-3.yaml",
+			workflowTemplate:      "@testdata/workflow-template-sub-test-2.yaml",
+			expectedMutexName:     "wfMetadataMutex",
+			expectedSchedulerName: "wfMetadataScheduler",
+		},
+		// test using LabelsFrom
+		{
+			workflow:              "@testdata/workflow-sub-test-4.yaml",
+			workflowTemplate:      "@testdata/workflow-template-sub-test-3.yaml",
+			expectedMutexName:     "wfMetadataTemplateMutex",
+			expectedSchedulerName: "wfMetadataScheduler",
+		},
+		{
+			// just a single template from the WorkflowTemplate is referenced:
+			// shouldn't have access to the global scope of the WorkflowTemplate
+			workflow:              "@testdata/workflow-sub-test-5.yaml",
+			workflowTemplate:      "@testdata/workflow-template-sub-test-4.yaml",
+			expectedMutexName:     "myMutex",
+			expectedSchedulerName: "myScheduler",
+		},
+		{
+			// this checks that we can use a sprig expression to set a label (using workflowMetadata.labelsFrom)
+			// and the result of that label can also be evaluated in the spec
+			workflow:              "@testdata/workflow-sub-test-6.yaml",
+			workflowTemplate:      "@testdata/workflow-template-sub-test-2.yaml",
+			expectedMutexName:     "wfMetadataScheduler",
+			expectedSchedulerName: "wfMetadataScheduler",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			wf := wfv1.MustUnmarshalWorkflow(tt.workflow)
+			wftmpl := wfv1.MustUnmarshalWorkflowTemplate(tt.workflowTemplate)
+			cancel, controller := newController(wf, wftmpl)
+			defer cancel()
+
+			woc := newWorkflowOperationCtx(wf, controller)
+			err := woc.setExecWorkflow(context.Background())
+
+			assert.Nil(t, err)
+			assert.NotNil(t, woc.execWf)
+			assert.Equal(t, tt.expectedMutexName, woc.execWf.Spec.Synchronization.Mutex.Name)
+			assert.Equal(t, tt.expectedSchedulerName, woc.execWf.Spec.SchedulerName)
+		})
+	}
 }
 
 var wfPending = `
@@ -8422,4 +8628,50 @@ func TestFailSuspendedAndPendingNodesAfterDeadlineOrShutdown(t *testing.T) {
 		assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Nodes[step1NodeName].Phase)
 		assert.Equal(t, wfv1.NodeFailed, woc.wf.Status.Nodes[step2NodeName].Phase)
 	})
+}
+
+func TestWorkflowTemplateOnExitValidation(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: workflow-template-invalid-onexit-
+  namespace: argo
+spec:
+  workflowTemplateRef:
+    name: workflow-template-invalid-onexit
+`)
+	wft := wfv1.MustUnmarshalWorkflowTemplate("@testdata/workflow-template-invalid-onexit.yaml")
+	cancel, controller := newController(wf, wft)
+	defer cancel()
+
+	ctx := context.Background()
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate(ctx)
+	t.Log(woc.wf)
+	assert.Equal(t, woc.wf.Status.Phase, wfv1.WorkflowFailed)
+	assert.Contains(t, woc.wf.Status.Message, "invalid spec")
+}
+
+func TestWorkflowTemplateEntryPointValidation(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: workflow-template-invalid-entrypoint-
+  namespace: argo
+spec:
+  workflowTemplateRef:
+    name: workflow-template-invalid-entrypoint
+`)
+	wft := wfv1.MustUnmarshalWorkflowTemplate("@testdata/workflow-template-invalid-entrypoint.yaml")
+	cancel, controller := newController(wf, wft)
+	defer cancel()
+
+	ctx := context.Background()
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate(ctx)
+	t.Log(woc.wf)
+	assert.Equal(t, woc.wf.Status.Phase, wfv1.WorkflowFailed)
+	assert.Contains(t, woc.wf.Status.Message, "invalid spec")
 }

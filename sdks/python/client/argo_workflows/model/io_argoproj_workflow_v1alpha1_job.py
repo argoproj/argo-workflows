@@ -24,8 +24,8 @@ from argo_workflows.model_utils import (  # noqa: F401
     file_type,
     none_type,
     validate_get_composed_info,
+    OpenApiModel
 )
-from ..model_utils import OpenApiModel
 from argo_workflows.exceptions import ApiAttributeError
 
 
@@ -89,6 +89,7 @@ class IoArgoprojWorkflowV1alpha1Job(ModelNormal):
         return {
             'image': (str,),  # noqa: E501
             'steps': ([IoArgoprojWorkflowV1alpha1JobStep],),  # noqa: E501
+            'working_dir': (str,),  # noqa: E501
         }
 
     @cached_property
@@ -99,6 +100,7 @@ class IoArgoprojWorkflowV1alpha1Job(ModelNormal):
     attribute_map = {
         'image': 'image',  # noqa: E501
         'steps': 'steps',  # noqa: E501
+        'working_dir': 'workingDir',  # noqa: E501
     }
 
     read_only_vars = {
@@ -146,6 +148,7 @@ class IoArgoprojWorkflowV1alpha1Job(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
+            working_dir (str): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -233,6 +236,7 @@ class IoArgoprojWorkflowV1alpha1Job(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
+            working_dir (str): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)

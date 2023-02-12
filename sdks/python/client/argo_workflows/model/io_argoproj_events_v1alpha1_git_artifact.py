@@ -24,8 +24,8 @@ from argo_workflows.model_utils import (  # noqa: F401
     file_type,
     none_type,
     validate_get_composed_info,
+    OpenApiModel
 )
-from ..model_utils import OpenApiModel
 from argo_workflows.exceptions import ApiAttributeError
 
 
@@ -95,6 +95,7 @@ class IoArgoprojEventsV1alpha1GitArtifact(ModelNormal):
             'clone_directory': (str,),  # noqa: E501
             'creds': (IoArgoprojEventsV1alpha1GitCreds,),  # noqa: E501
             'file_path': (str,),  # noqa: E501
+            'insecure_ignore_host_key': (bool,),  # noqa: E501
             'ref': (str,),  # noqa: E501
             'remote': (IoArgoprojEventsV1alpha1GitRemoteConfig,),  # noqa: E501
             'ssh_key_secret': (SecretKeySelector,),  # noqa: E501
@@ -112,6 +113,7 @@ class IoArgoprojEventsV1alpha1GitArtifact(ModelNormal):
         'clone_directory': 'cloneDirectory',  # noqa: E501
         'creds': 'creds',  # noqa: E501
         'file_path': 'filePath',  # noqa: E501
+        'insecure_ignore_host_key': 'insecureIgnoreHostKey',  # noqa: E501
         'ref': 'ref',  # noqa: E501
         'remote': 'remote',  # noqa: E501
         'ssh_key_secret': 'sshKeySecret',  # noqa: E501
@@ -164,6 +166,7 @@ class IoArgoprojEventsV1alpha1GitArtifact(ModelNormal):
             clone_directory (str): Directory to clone the repository. We clone complete directory because GitArtifact is not limited to any specific Git service providers. Hence we don't use any specific git provider client.. [optional]  # noqa: E501
             creds (IoArgoprojEventsV1alpha1GitCreds): [optional]  # noqa: E501
             file_path (str): [optional]  # noqa: E501
+            insecure_ignore_host_key (bool): [optional]  # noqa: E501
             ref (str): [optional]  # noqa: E501
             remote (IoArgoprojEventsV1alpha1GitRemoteConfig): [optional]  # noqa: E501
             ssh_key_secret (SecretKeySelector): [optional]  # noqa: E501
@@ -254,6 +257,7 @@ class IoArgoprojEventsV1alpha1GitArtifact(ModelNormal):
             clone_directory (str): Directory to clone the repository. We clone complete directory because GitArtifact is not limited to any specific Git service providers. Hence we don't use any specific git provider client.. [optional]  # noqa: E501
             creds (IoArgoprojEventsV1alpha1GitCreds): [optional]  # noqa: E501
             file_path (str): [optional]  # noqa: E501
+            insecure_ignore_host_key (bool): [optional]  # noqa: E501
             ref (str): [optional]  # noqa: E501
             remote (IoArgoprojEventsV1alpha1GitRemoteConfig): [optional]  # noqa: E501
             ssh_key_secret (SecretKeySelector): [optional]  # noqa: E501

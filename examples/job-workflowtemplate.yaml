@@ -1,0 +1,72 @@
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: job
+  annotations:
+    workflows.argoproj.io/description: |
+      This workflows builds and tests Argo Workflows. 
+      
+      It demonstrates:
+      
+      * Cache restore and store.
+      * Publishing test reports.
+spec:
+  arguments:
+    parameters:
+      - name: branch
+        value: master
+
+  entrypoint: main
+
+  templates:
+    - name: main
+      inputs:
+        artifacts:
+          - name: GOMODCACHE
+            path: /go/pkg/mod
+            optional: true
+            s3:
+              key: "github.com/golang/examples/{{workflow.parameters.branch}}/GOMODCACHE"
+          - name: GOCACHE
+            path: /root/.cache/go-build
+            optional: true
+            s3:
+              key: "github.com/golang/examples/{{workflow.parameters.branch}}/GOCACHE"
+      job:
+        image: golang:1.18
+        workingDir: /go/src/github.com/golang/example
+        steps:
+          - name: clone
+            run: git clone -v -b "{{workflow.parameters.branch}}" --single-branch --depth 1 https://github.com/golang/example.git .
+          - name: deps
+            run: go mod download -x
+          - name: build
+            run: go build ./...
+          - name: test
+            run: |
+              go install github.com/jstemmer/go-junit-report@latest
+              go install github.com/alexec/junit2html@latest
+          
+              trap 'cat test.out | go-junit-report | junit2html > test-report.html' EXIT
+          
+              go test -v ./... 2>&1 > test.out
+          - name: fail
+            run: exit 1
+      outputs:
+        artifacts:
+          - name: GOMODCACHE
+            path: /go/pkg/mod
+            optional: true
+            s3:
+              key: "github.com/golang/examples/{{workflow.parameters.branch}}/GOMODCACHE"
+          - name: GOCACHE
+            path: /root/.cache/go-build
+            optional: true
+            s3:
+              key: "github.com/golang/examples/{{workflow.parameters.branch}}/GOCACHE"
+          - name: test-report
+            path: /go/src/github.com/golang/example/test-report.html
+            archive:
+              none: { }
+            s3:
+              key: "{{workflow.parameters.branch}}/test-report.html"

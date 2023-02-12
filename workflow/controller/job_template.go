@@ -15,18 +15,17 @@ func (woc *wfOperationCtx) executeJobTemplate(ctx context.Context, jobName strin
 
 	job := tmpl.Job
 	steps := job.Steps
-	nodeName := func(stepName string) string { return fmt.Sprintf("%s.%s", jobName, stepName) }
-
-	for i, s := range steps {
-		stepName := nodeName(s.Name)
-		stepNode := woc.wf.GetNodeByName(stepName)
+	for i, step := range steps {
+		nodeName := fmt.Sprintf("%s.%s", jobName, step.Name)
+		stepNode := woc.wf.GetNodeByName(nodeName)
 		if stepNode == nil {
-			_ = woc.initializeNode(stepName, wfv1.NodeTypeJobStep, templateScope, orgTmpl, node.ID, wfv1.NodePending)
+			_ = woc.initializeNode(nodeName, wfv1.NodeTypeJobStep, templateScope, orgTmpl, node.ID, wfv1.NodePending)
 		}
 		if i == 0 {
-			woc.addChildNode(jobName, stepName)
+			woc.addChildNode(jobName, nodeName)
 		} else {
-			woc.addChildNode(nodeName(steps[i-1].Name), stepName)
+			previousStep := steps[i-1]
+			woc.addChildNode(fmt.Sprintf("%s.%s", jobName, previousStep.Name), nodeName)
 		}
 	}
 
@@ -34,9 +33,9 @@ func (woc *wfOperationCtx) executeJobTemplate(ctx context.Context, jobName strin
 		onExitPod:         opts.onExitTemplate,
 		executionDeadline: opts.executionDeadline,
 	})
+
 	if err != nil {
 		return woc.requeueIfTransientErr(err, node.Name)
 	}
-
 	return node, nil
 }

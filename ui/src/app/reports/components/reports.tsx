@@ -259,16 +259,16 @@ export class Reports extends BasePage<RouteComponentProps<any>, State> {
 
     private fetchWorkflowsLabels(isArchivedWorkflows: boolean): void {
         if (isArchivedWorkflows) {
-            services.archivedWorkflows.listLabelKeys().then(list => {
+            services.archivedWorkflows.listLabelKeys(this.state.namespace).then(list => {
                 this.setState({
-                    autocompleteLabels: list.items.sort((a, b) => a.localeCompare(b)) || []
+                    autocompleteLabels: list.items?.sort((a, b) => a.localeCompare(b)) || []
                 });
             });
         }
     }
 
     private fetchArchivedWorkflowsLabels(key: string): Promise<any> {
-        return services.archivedWorkflows.listLabelValues(key).then(list => {
+        return services.archivedWorkflows.listLabelValues(key, this.state.namespace).then(list => {
             return list.items.map(i => key + '=' + i).sort((a, b) => a.localeCompare(b));
         });
     }
@@ -328,8 +328,8 @@ export class Reports extends BasePage<RouteComponentProps<any>, State> {
                     <div className=' columns small-12 xlarge-12'>
                         <p className='wf-filters-container__title'>Phase</p>
                         {[NODE_PHASE.SUCCEEDED, NODE_PHASE.ERROR, NODE_PHASE.FAILED].map(phase => (
-                            <div>
-                                <label key={phase} style={{marginRight: 10}}>
+                            <div key={phase}>
+                                <label style={{marginRight: 10}}>
                                     <input type='radio' checked={phase === this.phase} onChange={() => (this.phase = phase)} style={{marginRight: 5}} />
                                     {phase}
                                 </label>

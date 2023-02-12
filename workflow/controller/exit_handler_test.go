@@ -757,3 +757,245 @@ func TestWorkflowOnExitHttpReconciliation(t *testing.T) {
 		assert.Len(t, taskSets.Items, 1)
 	}
 }
+
+var testWorkflowOnExitStepsHttpReconciliation = `apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: hello-world-647r7
+spec:
+  arguments: {}
+  entrypoint: whalesay
+  onExit: exit-handler
+  templates:
+  - container:
+      args:
+      - hello world
+      command:
+      - cowsay
+      image: docker/whalesay:latest
+      name: ""
+      resources: {}
+    inputs: {}
+    metadata: {}
+    name: whalesay
+    outputs: {}
+  - inputs: {}
+    metadata: {}
+    name: exit-handler
+    outputs: {}
+    steps:
+    - - arguments: {}
+        name: run-example-com
+        template: example-com
+  - http:
+      url: https://example.com
+    inputs: {}
+    metadata: {}
+    name: example-com
+    outputs: {}
+status:
+  nodes:
+    hello-world-647r7:
+      displayName: hello-world-647r7
+      finishedAt: "2021-12-09T04:11:35Z"
+      hostNodeName: dev-capact-control-plane
+      id: hello-world-647r7
+      name: hello-world-647r7
+      outputs:
+        exitCode: "0"
+      phase: Succeeded
+      progress: 1/1
+      startedAt: "2021-12-09T04:11:30Z"
+      templateName: whalesay
+      templateScope: local/hello-world-647r7
+      type: Pod
+    hello-world-647r7-206029318:
+      children:
+      - hello-world-647r7-1045616760
+      displayName: hello-world-647r7.onExit
+      finishedAt: null
+      id: hello-world-647r7-206029318
+      name: hello-world-647r7.onExit
+      phase: Running
+      progress: 0/1
+      startedAt: "2021-12-09T04:11:36Z"
+      templateName: exit-handler
+      templateScope: local/hello-world-647r7
+      type: Steps
+    hello-world-647r7-1045616760:
+      boundaryID: hello-world-647r7-206029318
+      children:
+      - hello-world-647r7-370991976
+      displayName: '[0]'
+      finishedAt: null
+      id: hello-world-647r7-1045616760
+      name: hello-world-647r7.onExit[0]
+      phase: Running
+      progress: 0/1
+      startedAt: "2021-12-09T04:11:36Z"
+      templateScope: local/hello-world-647r7
+      type: StepGroup
+  phase: Running
+  startedAt: "2021-12-09T04:11:30Z"
+`
+
+func TestWorkflowOnExitStepsHttpReconciliation(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(testWorkflowOnExitStepsHttpReconciliation)
+	cancel, controller := newController(wf)
+	defer cancel()
+
+	ctx := context.Background()
+	woc := newWorkflowOperationCtx(wf, controller)
+
+	taskSets, err := woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskSets("").List(ctx, v1.ListOptions{})
+	if assert.NoError(t, err) {
+		assert.Len(t, taskSets.Items, 0)
+	}
+
+	woc.operate(ctx)
+
+	assert.Len(t, woc.wf.Status.Nodes, 4)
+	taskSets, err = woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskSets("").List(ctx, v1.ListOptions{})
+	if assert.NoError(t, err) {
+		assert.Len(t, taskSets.Items, 1)
+	}
+}
+
+func TestWorkflowOnExitWorkflowStatus(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(`apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: exit-handler-with-param-96rrj
+spec:
+  entrypoint: first
+  templates:
+  - dag:
+      tasks:
+      - hooks:
+          exit:
+            arguments:
+              parameters:
+              - name: message
+                value: '{{tasks.step-1.status}}'
+            template: exit
+        name: step-1
+        template: output
+    name: first
+  - container:
+      args:
+      - echo -n hello world > /tmp/hello_world.txt
+      command:
+      - sh
+      - -c
+      image: python:alpine3.6
+      name: ""
+    name: output
+    outputs:
+      parameters:
+      - name: result
+        valueFrom:
+          default: Foobar
+          path: /tmp/hello_world.txt
+  - inputs:
+      parameters:
+      - name: message
+    name: exit
+    script:
+      command:
+      - python
+      image: python:alpine3.6
+      name: ""
+      source: |
+        print("{{inputs.parameters.message}}")
+status:
+  nodes:
+    exit-handler-with-param-96rrj:
+      children:
+      - exit-handler-with-param-96rrj-588897729
+      displayName: exit-handler-with-param-96rrj
+      finishedAt: "2022-08-17T15:59:10Z"
+      id: exit-handler-with-param-96rrj
+      name: exit-handler-with-param-96rrj
+      outboundNodes:
+      - exit-handler-with-param-96rrj-588897729
+      phase: Running
+      progress: 2/2
+      resourcesDuration:
+        cpu: 7
+        memory: 5
+      startedAt: "2022-08-17T15:58:59Z"
+      templateName: first
+      templateScope: local/exit-handler-with-param-96rrj
+      type: DAG
+    exit-handler-with-param-96rrj-588897729:
+      boundaryID: exit-handler-with-param-96rrj
+      children:
+      - exit-handler-with-param-96rrj-1481430296
+      displayName: step-1
+      finishedAt: "2022-08-17T15:59:03Z"
+      hostNodeName: kind-control-plane
+      id: exit-handler-with-param-96rrj-588897729
+      name: exit-handler-with-param-96rrj.step-1
+      outputs:
+        artifacts:
+        - name: main-logs
+          s3:
+            key: exit-handler-with-param-96rrj/exit-handler-with-param-96rrj-output-588897729/main.log
+        exitCode: "0"
+        parameters:
+        - name: result
+          value: hello world
+          valueFrom:
+            default: Foobar
+            path: /tmp/hello_world.txt
+      phase: Succeeded
+      progress: 1/1
+      resourcesDuration:
+        cpu: 4
+        memory: 3
+      startedAt: "2022-08-17T15:58:59Z"
+      templateName: output
+      templateScope: local/exit-handler-with-param-96rrj
+      type: Pod
+#    exit-handler-with-param-96rrj-1481430296:
+#      boundaryID: exit-handler-with-param-96rrj
+#      displayName: step-1.onExit
+#      finishedAt: "2022-08-17T15:59:09Z"
+#      hostNodeName: kind-control-plane
+#      id: exit-handler-with-param-96rrj-1481430296
+#      inputs:
+#        parameters:
+#        - name: message
+#          value: Succeeded
+#      name: exit-handler-with-param-96rrj.step-1.onExit
+#      outputs:
+#        artifacts:
+#        - name: main-logs
+#          s3:
+#            key: exit-handler-with-param-96rrj/exit-handler-with-param-96rrj-exit-1481430296/main.log
+#        exitCode: "0"
+#      phase: Succeeded
+#      progress: 1/1
+#      resourcesDuration:
+#        cpu: 3
+#        memory: 2
+#      startedAt: "2022-08-17T15:59:05Z"
+#      templateName: exit
+#      templateScope: local/exit-handler-with-param-96rrj
+#      type: Pod
+  phase: Running
+  progress: 2/2
+`)
+	cancel, controller := newController(wf)
+	defer cancel()
+
+	ctx := context.Background()
+	woc := newWorkflowOperationCtx(wf, controller)
+
+	taskSets, err := woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskSets("").List(ctx, v1.ListOptions{})
+	if assert.NoError(t, err) {
+		assert.Len(t, taskSets.Items, 0)
+	}
+	woc.operate(ctx)
+	assert.Equal(t, woc.wf.Status.Phase, wfv1.WorkflowRunning)
+}

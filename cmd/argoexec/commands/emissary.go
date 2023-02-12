@@ -16,6 +16,8 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/argoproj/argo-workflows/v3/util/errors"
+
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"k8s.io/client-go/util/retry"
@@ -59,18 +61,6 @@ func NewEmissaryCommand() *cobra.Command {
 			}
 
 			name, args := args[0], args[1:]
-
-			signals := make(chan os.Signal, 1)
-			defer close(signals)
-			signal.Notify(signals)
-			defer signal.Reset()
-			go func() {
-				for s := range signals {
-					if !osspecific.IsSIGCHLD(s) {
-						_ = osspecific.Kill(-os.Getpid(), s.(syscall.Signal))
-					}
-				}
-			}()
 
 			data, err := ioutil.ReadFile(varRunArgo + "/template")
 			if err != nil {
@@ -121,31 +111,36 @@ func NewEmissaryCommand() *cobra.Command {
 					break
 				}
 			}
-
 			backoff, err := template.GetRetryStrategy()
 			if err != nil {
 				return fmt.Errorf("failed to get retry strategy: %w", err)
 			}
 
-			var command *exec.Cmd
-			var stdout *os.File
-			var combined *os.File
 			cmdErr := retry.OnError(backoff, func(error) bool { return true }, func() error {
-				if stdout != nil {
-					stdout.Close()
-				}
-				if combined != nil {
-					combined.Close()
-				}
-				command, stdout, combined, err = createCommand(name, args, template)
+				// setup signal handlers
+				signals := make(chan os.Signal, 1)
+				defer close(signals)
+				signal.Notify(signals)
+				defer signal.Reset()
+
+				command, closer, err := startCommand(name, args, template)
 				if err != nil {
-					return fmt.Errorf("failed to create command: %w", err)
+					return fmt.Errorf("failed to start command: %w", err)
 				}
+				defer closer()
 
-				if err := command.Start(); err != nil {
-					return err
-				}
+				go func() {
+					for s := range signals {
+						if osspecific.CanIgnoreSignal(s) {
+							logger.Debugf("ignore signal %s", s)
+							continue
+						}
 
+						logger.Debugf("forwarding signal %s", s)
+						_ = osspecific.Kill(command.Process.Pid, s.(syscall.Signal))
+					}
+				}()
+				pid := command.Process.Pid
 				ctx, cancel := context.WithCancel(context.Background())
 				defer cancel()
 				go func() {
@@ -158,16 +153,16 @@ func NewEmissaryCommand() *cobra.Command {
 							_ = os.Remove(varRunArgo + "/ctr/" + containerName + "/signal")
 							s, _ := strconv.Atoi(string(data))
 							if s > 0 {
-								_ = osspecific.Kill(command.Process.Pid, syscall.Signal(s))
+								_ = osspecific.Kill(pid, syscall.Signal(s))
 							}
 							time.Sleep(2 * time.Second)
 						}
 					}
 				}()
-				return command.Wait()
+				return osspecific.Wait(command.Process)
+
 			})
-			defer stdout.Close()
-			defer combined.Close()
+			logger.WithError(err).Info("sub-process exited")
 
 			if _, ok := os.LookupEnv("ARGO_DEBUG_PAUSE_AFTER"); ok {
 				for {
@@ -184,7 +179,7 @@ func NewEmissaryCommand() *cobra.Command {
 
 			if cmdErr == nil {
 				exitCode = 0
-			} else if exitError, ok := cmdErr.(*exec.ExitError); ok {
+			} else if exitError, ok := cmdErr.(errors.Exited); ok {
 				if exitError.ExitCode() >= 0 {
 					exitCode = exitError.ExitCode()
 				} else {
@@ -216,32 +211,50 @@ func NewEmissaryCommand() *cobra.Command {
 	}
 }
 
-func createCommand(name string, args []string, template *wfv1.Template) (*exec.Cmd, *os.File, *os.File, error) {
+func startCommand(name string, args []string, template *wfv1.Template) (*exec.Cmd, func(), error) {
 	command := exec.Command(name, args...)
 	command.Env = os.Environ()
-	command.SysProcAttr = &syscall.SysProcAttr{}
-	osspecific.Setpgid(command.SysProcAttr)
-	command.Stdout = os.Stdout
-	command.Stderr = os.Stderr
 
-	var stdout *os.File
-	var combined *os.File
-	var err error
+	var closer func() = func() {}
+	var stdout io.Writer = os.Stdout
+	var stderr io.Writer = os.Stderr
+
 	// this may not be that important an optimisation, except for very long logs we don't want to capture
 	if includeScriptOutput || template.SaveLogsAsArtifact() {
 		logger.Info("capturing logs")
-		stdout, err = os.OpenFile(varRunArgo+"/ctr/"+containerName+"/stdout", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+		stdoutf, err := os.OpenFile(varRunArgo+"/ctr/"+containerName+"/stdout", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
 		if err != nil {
-			return nil, nil, nil, fmt.Errorf("failed to open stdout: %w", err)
+			return nil, nil, fmt.Errorf("failed to open stdout: %w", err)
 		}
-		combined, err = os.OpenFile(varRunArgo+"/ctr/"+containerName+"/combined", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+		combinedf, err := os.OpenFile(varRunArgo+"/ctr/"+containerName+"/combined", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
 		if err != nil {
-			return nil, nil, nil, fmt.Errorf("failed to open combined: %w", err)
+			return nil, nil, fmt.Errorf("failed to open combined: %w", err)
 		}
-		command.Stdout = io.MultiWriter(os.Stdout, stdout, combined)
-		command.Stderr = io.MultiWriter(os.Stderr, combined)
+		stdout = io.MultiWriter(stdout, stdoutf, combinedf)
+		stderr = io.MultiWriter(stderr, combinedf)
+
+		closer = func() {
+			_ = stdoutf.Close()
+			_ = combinedf.Close()
+		}
 	}
-	return command, stdout, combined, nil
+
+	command.Stdout = stdout
+	command.Stderr = stderr
+
+	cmdCloser, err := osspecific.StartCommand(command)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	origCloser := closer
+
+	closer = func() {
+		cmdCloser()
+		origCloser()
+	}
+
+	return command, closer, nil
 }
 
 func saveArtifact(srcPath string) error {

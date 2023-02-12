@@ -33,6 +33,7 @@ export class WorkflowsService {
             'items.metadata.namespace',
             'items.metadata.creationTimestamp',
             'items.metadata.labels',
+            'items.metadata.annotations',
             'items.status.phase',
             'items.status.message',
             'items.status.finishedAt',
@@ -90,6 +91,7 @@ export class WorkflowsService {
             'result.object.status.progress',
             'result.type',
             'result.object.metadata.labels',
+            'result.object.metadata.annotations',
             'result.object.spec.suspend'
         ];
         params.push(`fields=${fields.join(',')}`);
@@ -206,8 +208,16 @@ export class WorkflowsService {
         if (archived) {
             return getLogsFromArtifact();
         }
+
         // return archived log if main container is finished and has artifact
-        return this.getContainerLogsFromCluster(workflow, podName, container, grep).pipe(catchError(getLogsFromArtifact));
+        return from(this.isWorkflowNodePendingOrRunning(workflow, nodeId)).pipe(
+            switchMap(isPendingOrRunning => {
+                if (!isPendingOrRunning && this.hasArtifactLogs(workflow, nodeId, container) && container === 'main') {
+                    return getLogsFromArtifact();
+                }
+                return this.getContainerLogsFromCluster(workflow, podName, container, grep).pipe(catchError(getLogsFromArtifact));
+            })
+        );
     }
 
     public getArtifactLogsPath(workflow: Workflow, nodeId: string, container: string, archived: boolean) {

@@ -48,7 +48,7 @@ See [managed namespace](managed-namespace.md).
 ### Base HREF
 
 If the server is running behind reverse proxy with a sub-path different from `/` (for example,
-`/argo`), you can set an alternative sub-path with the `--base-href` flag or the `BASE_HREF`
+`/argo`), you can set an alternative sub-path with the `--basehref` flag or the `BASE_HREF`
 environment variable.
 
 You probably now should [read how to set-up an ingress](#ingress)
@@ -164,3 +164,14 @@ Argo Server does not perform authentication directly. It delegates this to eithe
 ### IP Address Logging
 
 Argo Server does not log the IP addresses of API requests. We recommend you put the Argo Server behind a load balancer, and that load balancer is configured to log the IP addresses of requests that return authentication or authorization errors.
+
+### Rate Limiting
+
+> v3.4 and after
+
+Argo Server by default rate limits to 1000 per IP per minute, you can configure it through `--api-rate-limit`. You can access additional information through the following headers.
+
+* `X-Rate-Limit-Limit` - the rate limit ceiling that is applicable for the current request.
+* `X-Rate-Limit-Remaining` - the number of requests left for the current rate-limit window.
+* `X-Rate-Limit-Reset` - the time at which the rate limit resets, specified in UTC time.
+* `Retry-After` - indicate when a client should retry requests (when the rate limit expires), in UTC time.

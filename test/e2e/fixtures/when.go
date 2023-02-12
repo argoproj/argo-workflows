@@ -233,12 +233,18 @@ var ToBeWaitingOnAMutex Condition = func(wf *wfv1.Workflow) (bool, string) {
 	return wf.Status.Synchronization != nil && wf.Status.Synchronization.Mutex != nil, "to be waiting on a mutex"
 }
 
+type WorkflowCompletionOkay bool
+
 // Wait for a workflow to meet a condition:
 // Options:
 // * `time.Duration` - change the timeout - 30s by default
 // * `string` - either:
-//    * the workflow's name (not spaces)
-//    * or a new message (if it contain spaces) - default "to finish"
+//   - the workflow's name (not spaces)
+//   - or a new message (if it contain spaces) - default "to finish"
+//
+// * `WorkflowCompletionOkay“ (bool alias): if this is true, we won't stop checking for the other options
+//   - just because the Workflow completed
+//
 // * `Condition` - a condition - `ToFinish` by default
 func (w *When) WaitForWorkflow(options ...interface{}) *When {
 	w.t.Helper()
@@ -248,6 +254,7 @@ func (w *When) WaitForWorkflow(options ...interface{}) *When {
 		workflowName = w.wf.Name
 	}
 	condition := ToBeDone
+	var workflowCompletionOkay WorkflowCompletionOkay
 	for _, opt := range options {
 		switch v := opt.(type) {
 		case time.Duration:
@@ -256,6 +263,8 @@ func (w *When) WaitForWorkflow(options ...interface{}) *When {
 			workflowName = v
 		case Condition:
 			condition = v
+		case WorkflowCompletionOkay:
+			workflowCompletionOkay = v
 		default:
 			w.t.Fatal("unknown option type: " + reflect.TypeOf(opt).String())
 		}
@@ -294,11 +303,13 @@ func (w *When) WaitForWorkflow(options ...interface{}) *When {
 					w.wf = wf
 					return w
 				}
-				// once done the workflow is done, the condition can never be met
-				// rather than wait maybe 30s for something that can never happen
-				if ok, _ = ToBeDone(wf); ok {
-					w.t.Errorf("condition never and cannot be met because the workflow is done")
-					return w
+				if !workflowCompletionOkay {
+					// once done the workflow is done, the condition can never be met
+					// rather than wait maybe 30s for something that can never happen
+					if ok, _ = ToBeDone(wf); ok {
+						w.t.Errorf("condition never and cannot be met because the workflow is done")
+						return w
+					}
 				}
 			} else {
 				w.t.Errorf("not ok")
@@ -337,6 +348,14 @@ func (w *When) WaitForWorkflowList(listOptions metav1.ListOptions, condition fun
 	}
 }
 
+func (w *When) WaitForWorkflowDeletion() *When {
+	fieldSelector := "metadata.name=" + w.wf.Name
+	opts := metav1.ListOptions{LabelSelector: Label, FieldSelector: fieldSelector}
+	return w.WaitForWorkflowList(opts, func(list []wfv1.Workflow) bool {
+		return len(list) == 0
+	})
+}
+
 func (w *When) hydrateWorkflow(wf *wfv1.Workflow) {
 	w.t.Helper()
 	err := w.hydrator.Hydrate(wf)
@@ -361,6 +380,17 @@ func (w *When) DeleteWorkflow() *When {
 	ctx := context.Background()
 	err := w.client.Delete(ctx, w.wf.Name, metav1.DeleteOptions{})
 	if err != nil {
+		w.t.Fatal(err)
+	}
+	return w
+}
+
+func (w *When) RemoveFinalizers(shouldErr bool) *When {
+	w.t.Helper()
+	ctx := context.Background()
+
+	_, err := w.client.Patch(ctx, w.wf.Name, types.MergePatchType, []byte("{\"metadata\":{\"finalizers\":null}}"), metav1.PatchOptions{})
+	if err != nil && shouldErr {
 		w.t.Fatal(err)
 	}
 	return w
@@ -577,6 +607,11 @@ func (w *When) ShutdownWorkflow(strategy wfv1.ShutdownStrategy) *When {
 		w.t.Fatal(err)
 	}
 	return w
+}
+
+// test condition function on Workflow
+func (w *When) WorkflowCondition(condition func(wf *wfv1.Workflow) bool) bool {
+	return condition(w.wf)
 }
 
 func (w *When) Then() *Then {

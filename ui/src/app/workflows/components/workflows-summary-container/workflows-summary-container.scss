@@ -1,0 +1,45 @@
+@import 'node_modules/argo-ui/src/styles/config';
+
+.wf-summary-container {
+    color:  $argo-color-gray-6;
+    padding: 5px 0px;
+    overflow: visible;
+    position: relative;
+    border-radius: 5px;
+    box-shadow: 1px 1px 3px #8fa4b1;
+    padding: 0 1em 0.75em 1em;
+    margin: 12px 0;
+    background-color: white;
+
+    &__title {
+        width: 100%;
+        max-width: 100%;
+        padding: 8px 0;
+        font-size: 15px;
+        background-color: transparent;
+        border: 0;
+        margin: 0;
+        margin-top: 1em;
+        color: #6d7f8b;
+        text-transform: uppercase;
+    }
+
+    &__text{
+        font-size: 16px;
+    }
+
+    &__subtext {
+        font-size: 12px;
+    }
+
+    &__running {
+        font-size: 16px;
+        font-weight: bold;
+        color: #0DADEA;
+    }
+
+    &__others {
+        font-size: 12px;
+        font-weight: bold;
+    }
+}

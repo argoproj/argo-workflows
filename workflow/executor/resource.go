@@ -10,14 +10,16 @@ import (
 	"strings"
 	"time"
 
+	"github.com/itchyny/gojq"
 	log "github.com/sirupsen/logrus"
 	"github.com/tidwall/gjson"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/util/retry"
+	"k8s.io/gengo/namer"
+	gengotypes "k8s.io/gengo/types"
 
 	"github.com/argoproj/argo-workflows/v3/errors"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
@@ -77,7 +79,11 @@ func inferObjectSelfLink(obj unstructured.Unstructured) string {
 	gvk := obj.GroupVersionKind()
 	// This is the best guess we can do here and is what `kubectl` uses under the hood. Hopefully future versions of the
 	// REST client would remove the need to infer the plural name.
-	pluralGVR, _ := meta.UnsafeGuessKindToResource(gvk)
+	lowercaseNamer := namer.NewAllLowercasePluralNamer(map[string]string{})
+	pluralName := lowercaseNamer.Name(&gengotypes.Type{Name: gengotypes.Name{
+		Name: gvk.Kind,
+	}})
+
 	var selfLinkPrefix string
 	if gvk.Group == "" {
 		selfLinkPrefix = "api"
@@ -85,8 +91,14 @@ func inferObjectSelfLink(obj unstructured.Unstructured) string {
 		selfLinkPrefix = "apis"
 	}
 	// We cannot use `obj.GetSelfLink()` directly since it is deprecated and will be removed after Kubernetes 1.21: https://github.com/kubernetes/enhancements/tree/master/keps/sig-api-machinery/1164-remove-selflink
-	return fmt.Sprintf("%s/%s/namespaces/%s/%s/%s",
-		selfLinkPrefix, obj.GetAPIVersion(), obj.GetNamespace(), pluralGVR.Resource, obj.GetName())
+	var selfLink string
+	if obj.GetNamespace() == "" {
+		selfLink = fmt.Sprintf("%s/%s/%s/%s", selfLinkPrefix, obj.GetAPIVersion(), pluralName, obj.GetName())
+	} else {
+		selfLink = fmt.Sprintf("%s/%s/namespaces/%s/%s/%s",
+			selfLinkPrefix, obj.GetAPIVersion(), obj.GetNamespace(), pluralName, obj.GetName())
+	}
+	return selfLink
 }
 
 func (we *WorkflowExecutor) getKubectlArguments(action string, manifestPath string, flags []string) ([]string, error) {
@@ -283,40 +295,65 @@ func (we *WorkflowExecutor) SaveResourceParameters(ctx context.Context, resource
 			we.Template.Outputs.Parameters[i].Value = wfv1.AnyStringPtr(output)
 			continue
 		}
-		var cmd *exec.Cmd
+		outputFormat := ""
 		if param.ValueFrom.JSONPath != "" {
-			args := []string{"get", resourceName, "-o", fmt.Sprintf("jsonpath=%s", param.ValueFrom.JSONPath)}
-			if resourceNamespace != "" {
-				args = append(args, "-n", resourceNamespace)
-			}
-			cmd = exec.Command("kubectl", args...)
+			outputFormat = fmt.Sprintf("jsonpath=%s", param.ValueFrom.JSONPath)
 		} else if param.ValueFrom.JQFilter != "" {
-			resArgs := []string{resourceName}
-			if resourceNamespace != "" {
-				resArgs = append(resArgs, "-n", resourceNamespace)
-			}
-			cmdStr := fmt.Sprintf("kubectl get %s -o json | jq -rc '%s'", strings.Join(resArgs, " "), param.ValueFrom.JQFilter)
-			cmd = exec.Command("sh", "-c", cmdStr)
+			outputFormat = "json"
 		} else {
 			continue
 		}
-		log.Info(cmd.Args)
-		out, err := cmd.Output()
+		kubectl := exec.Command("kubectl", "-n", resourceNamespace, "get", resourceName, "-o", outputFormat)
+		out, err := kubectl.Output()
+		log.WithError(err).WithField("out", string(out)).WithField("args", kubectl.Args).Info("kubectl")
 		if err != nil {
-			// We have a default value to use instead of returning an error
-			if param.ValueFrom.Default != nil {
-				out = []byte(param.ValueFrom.Default.String())
-			} else {
-				if exErr, ok := err.(*exec.ExitError); ok {
-					log.Errorf("`%s` stderr:\n%s", cmd.Args, string(exErr.Stderr))
-				}
-				return errors.InternalWrapError(err)
-			}
+			return err
 		}
 		output := string(out)
+		if param.ValueFrom.JQFilter != "" {
+			output, err = jqFilter(ctx, out, param.ValueFrom.JQFilter)
+			log.WithError(err).WithField("out", string(out)).WithField("filter", param.ValueFrom.JQFilter).Info("gojq")
+			if err != nil {
+				return err
+			}
+		}
+
 		we.Template.Outputs.Parameters[i].Value = wfv1.AnyStringPtr(output)
 		log.Infof("Saved output parameter: %s, value: %s", param.Name, output)
 	}
 	err := we.reportOutputs(ctx, nil)
 	return err
+}
+
+func jqFilter(ctx context.Context, input []byte, filter string) (string, error) {
+	var v interface{}
+	if err := json.Unmarshal(input, &v); err != nil {
+		return "", err
+	}
+	q, err := gojq.Parse(filter)
+	if err != nil {
+		return "", err
+	}
+	iter := q.RunWithContext(ctx, v)
+	var buf strings.Builder
+	for {
+		v, ok := iter.Next()
+		if !ok {
+			break
+		}
+		if err, ok := v.(error); ok {
+			return "", err
+		}
+		if s, ok := v.(string); ok {
+			buf.WriteString(s)
+		} else {
+			b, err := json.Marshal(v)
+			if err != nil {
+				return "", err
+			}
+			buf.Write(b)
+		}
+		buf.WriteString("\n")
+	}
+	return strings.TrimSpace(buf.String()), nil
 }

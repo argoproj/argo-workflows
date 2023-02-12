@@ -13,7 +13,8 @@ import (
 )
 
 var (
-	age = env.LookupEnvDurationOr("HEALTHZ_AGE", 5*time.Minute)
+	age   = env.LookupEnvDurationOr("HEALTHZ_AGE", 5*time.Minute)
+	limit = int64(env.LookupEnvIntOr("HEALTHZ_LIST_LIMIT", 200))
 )
 
 // https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/#define-a-liveness-http-request
@@ -30,7 +31,7 @@ func (wfc *WorkflowController) Healthz(w http.ResponseWriter, r *http.Request) {
 	labelSelector := "!" + common.LabelKeyPhase + "," + instanceIDSelector
 	err := func() error {
 		// avoid problems with informers, but directly querying the API
-		list, err := wfc.wfclientset.ArgoprojV1alpha1().Workflows(wfc.managedNamespace).List(ctx, metav1.ListOptions{LabelSelector: labelSelector})
+		list, err := wfc.wfclientset.ArgoprojV1alpha1().Workflows(wfc.managedNamespace).List(ctx, metav1.ListOptions{LabelSelector: labelSelector, Limit: limit})
 		if err != nil {
 			return err
 		}

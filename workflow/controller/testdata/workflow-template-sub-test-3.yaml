@@ -1,0 +1,27 @@
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: workflow-template-submittable
+  namespace: argo
+  labels:
+    mutexName: myMutex
+  annotations:
+    schedulerName: myScheduler
+spec:
+  arguments:
+    parameters:
+      - name: mutex
+        value: wfMetadataTemplateMutex
+  entrypoint: whalesay-template
+  templates:
+    - name: whalesay-template
+      container:
+        image: docker/whalesay
+        command: [cowsay]
+        args: ['hello']
+  workflowMetadata:
+    labelsFrom:
+      mutexName:
+        expression: workflow.parameters.mutex
+    annotations:
+      schedulerName: wfMetadataTemplateScheduler

@@ -1,5 +1,4 @@
 import {Page} from 'argo-ui';
-
 import * as React from 'react';
 import {Link, RouteComponentProps} from 'react-router-dom';
 import * as models from '../../../../models';
@@ -19,7 +18,7 @@ import {services} from '../../../shared/services';
 import {Utils} from '../../../shared/utils';
 import {ArchivedWorkflowFilters} from '../archived-workflow-filters/archived-workflow-filters';
 
-interface State {
+interface BrowserStorageOptions {
     pagination: Pagination;
     namespace: string;
     name: string;
@@ -28,8 +27,12 @@ interface State {
     selectedLabels: string[];
     minStartedAt?: Date;
     maxStartedAt?: Date;
-    workflows?: Workflow[];
     error?: Error;
+    deep: boolean;
+}
+
+interface State extends BrowserStorageOptions {
+    workflows?: Workflow[];
 }
 
 const defaultPaginationLimit = 10;
@@ -55,7 +58,8 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
             selectedPhases: phaseQueryParam.length > 0 ? phaseQueryParam : savedOptions.selectedPhases,
             selectedLabels: labelQueryParam.length > 0 ? labelQueryParam : savedOptions.selectedLabels,
             minStartedAt: this.parseTime(this.queryParam('minStartedAt')) || this.lastMonth(),
-            maxStartedAt: this.parseTime(this.queryParam('maxStartedAt')) || this.nextDay()
+            maxStartedAt: this.parseTime(this.queryParam('maxStartedAt')) || this.nextDay(),
+            deep: this.queryParam('deep') === 'true'
         };
     }
 
@@ -71,6 +75,14 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
             this.state.pagination
         );
         services.info.collectEvent('openedArchivedWorkflowList').then();
+    }
+
+    public componentDidUpdate(): void {
+        if (this.state.deep === true && this.state.workflows && this.state.workflows.length === 1) {
+            const workflow = this.state.workflows[0];
+            const url = '/archived-workflows/' + workflow.metadata.namespace + '/' + (workflow.metadata.uid || '');
+            this.props.history.push(url);
+        }
     }
 
     public render() {
@@ -172,8 +184,23 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
         return params;
     }
 
+    private fetchBrowserStorageStateObject(state: State): BrowserStorageOptions {
+        const browserStorageOptions: BrowserStorageOptions = {} as BrowserStorageOptions;
+        browserStorageOptions.deep = state.deep;
+        browserStorageOptions.error = state.error;
+        browserStorageOptions.maxStartedAt = state.maxStartedAt;
+        browserStorageOptions.minStartedAt = state.minStartedAt;
+        browserStorageOptions.name = state.name;
+        browserStorageOptions.namePrefix = state.namePrefix;
+        browserStorageOptions.namespace = state.namespace;
+        browserStorageOptions.pagination = state.pagination;
+        browserStorageOptions.selectedLabels = state.selectedLabels;
+        browserStorageOptions.selectedPhases = state.selectedPhases;
+        return browserStorageOptions;
+    }
+
     private saveHistory() {
-        this.storage.setItem('options', this.state, {} as State);
+        this.storage.setItem('options', this.fetchBrowserStorageStateObject(this.state), {} as BrowserStorageOptions);
         const newNamespace = Utils.managedNamespace ? '' : this.state.namespace;
         this.url = uiUrl('archived-workflows' + (newNamespace ? '/' + newNamespace : '') + '?' + this.filterParams.toString());
         Utils.currentNamespace = this.state.namespace;

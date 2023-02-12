@@ -16,7 +16,7 @@ const config = {
     main: "./src/app/index.tsx"
   },
   output: {
-    filename: "[name].[chunkhash].js",
+    filename: "[name].[hash].js",
     path: __dirname + "/../../dist/app"
   },
 
@@ -59,7 +59,8 @@ const config = {
       "process.env.NODE_ENV": JSON.stringify(process.env.NODE_ENV || "development"),
       SYSTEM_INFO: JSON.stringify({
         version: process.env.VERSION || "latest"
-      })
+      }), 
+      "process.env.DEFAULT_TZ": JSON.stringify("UTC"),
     }),
     new HtmlWebpackPlugin({ template: "src/app/index.html" }),
     new CopyWebpackPlugin([{
@@ -76,11 +77,10 @@ const config = {
     new MonacoWebpackPlugin({"languages":["json","yaml"]})
   ],
   devServer: {
+    // this needs to be disable to allow EventSource to work
+    compress: false,
     historyApiFallback: {
       disableDotRule: true
-    },
-    watchOptions: {
-      ignored: [/dist/, /node_modules/]
     },
     headers: {
       'X-Frame-Options': 'SAMEORIGIN'

@@ -14,6 +14,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/argoproj/argo-workflows/v3/util/secrets"
+
 	"github.com/gavv/httpexpect/v2"
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
@@ -377,31 +379,25 @@ func (s *ArgoServerSuite) TestMultiCookieAuth() {
 		Status(200)
 }
 
-func (s *ArgoServerSuite) TestPermission() {
-	nsName := fixtures.Namespace
-	// Create good serviceaccount
-	goodSaName := "argotestgood"
-	goodSa := &corev1.ServiceAccount{ObjectMeta: metav1.ObjectMeta{Name: goodSaName}}
+func (s *ArgoServerSuite) createServiceAccount(name string) {
 	ctx := context.Background()
-	s.Run("CreateGoodSA", func() {
-		_, err := s.KubeClient.CoreV1().ServiceAccounts(nsName).Create(ctx, goodSa, metav1.CreateOptions{})
-		assert.NoError(s.T(), err)
+	_, err := s.KubeClient.CoreV1().ServiceAccounts(fixtures.Namespace).Create(ctx, &corev1.ServiceAccount{ObjectMeta: metav1.ObjectMeta{Name: name}}, metav1.CreateOptions{})
+	assert.NoError(s.T(), err)
+	secret, err := s.KubeClient.CoreV1().Secrets(fixtures.Namespace).Create(ctx, secrets.NewTokenSecret(name), metav1.CreateOptions{})
+	assert.NoError(s.T(), err)
+	s.T().Cleanup(func() {
+		_ = s.KubeClient.CoreV1().Secrets(fixtures.Namespace).Delete(ctx, secret.Name, metav1.DeleteOptions{})
+		_ = s.KubeClient.CoreV1().ServiceAccounts(fixtures.Namespace).Delete(ctx, name, metav1.DeleteOptions{})
 	})
-	defer func() {
-		// Clean up created sa
-		_ = s.KubeClient.CoreV1().ServiceAccounts(nsName).Delete(ctx, goodSaName, metav1.DeleteOptions{})
-	}()
+}
 
-	// Create bad serviceaccount
+func (s *ArgoServerSuite) TestPermission() {
+	ctx := context.Background()
+	nsName := fixtures.Namespace
+	goodSaName := "argotestgood"
+	s.createServiceAccount(goodSaName)
 	badSaName := "argotestbad"
-	badSa := &corev1.ServiceAccount{ObjectMeta: metav1.ObjectMeta{Name: badSaName}}
-	s.Run("CreateBadSA", func() {
-		_, err := s.KubeClient.CoreV1().ServiceAccounts(nsName).Create(ctx, badSa, metav1.CreateOptions{})
-		assert.NoError(s.T(), err)
-	})
-	defer func() {
-		_ = s.KubeClient.CoreV1().ServiceAccounts(nsName).Delete(ctx, badSaName, metav1.DeleteOptions{})
-	}()
+	s.createServiceAccount(badSaName)
 
 	// Create RBAC Role
 	var roleName string
@@ -445,7 +441,7 @@ func (s *ArgoServerSuite) TestPermission() {
 	s.Run("GetGoodSAToken", func() {
 		sAccount, err := s.KubeClient.CoreV1().ServiceAccounts(nsName).Get(ctx, goodSaName, metav1.GetOptions{})
 		if assert.NoError(s.T(), err) {
-			secretName := sAccount.Secrets[0].Name
+			secretName := secrets.TokenNameForServiceAccount(sAccount)
 			secret, err := s.KubeClient.CoreV1().Secrets(nsName).Get(ctx, secretName, metav1.GetOptions{})
 			assert.NoError(s.T(), err)
 			goodToken = string(secret.Data["token"])
@@ -457,7 +453,7 @@ func (s *ArgoServerSuite) TestPermission() {
 	s.Run("GetBadSAToken", func() {
 		sAccount, err := s.KubeClient.CoreV1().ServiceAccounts(nsName).Get(ctx, badSaName, metav1.GetOptions{})
 		assert.NoError(s.T(), err)
-		secretName := sAccount.Secrets[0].Name
+		secretName := secrets.TokenNameForServiceAccount(sAccount)
 		secret, err := s.KubeClient.CoreV1().Secrets(nsName).Get(ctx, secretName, metav1.GetOptions{})
 		assert.NoError(s.T(), err)
 		badToken = string(secret.Data["token"])
@@ -1057,6 +1053,10 @@ func (s *ArgoServerSuite) TestArtifactServer() {
 			uid = metadata.UID
 		})
 
+	s.artifactServerRetrievalTests(name, uid)
+}
+
+func (s *ArgoServerSuite) artifactServerRetrievalTests(name string, uid types.UID) {
 	s.Run("GetArtifact", func() {
 		resp := s.e().GET("/artifacts/argo/" + name + "/" + name + "/main-file").
 			Expect().
@@ -1826,20 +1826,6 @@ func (s *ArgoServerSuite) TestEventSourcesService() {
 	})
 }
 
-func (s *ArgoServerSuite) TestPipelineService() {
-	s.T().SkipNow()
-	s.Run("GetPipeline", func() {
-		s.e().GET("/api/v1/pipelines/argo/not-exists").
-			Expect().
-			Status(404)
-	})
-	s.Run("ListPipelines", func() {
-		s.e().GET("/api/v1/pipelines/argo").
-			Expect().
-			Status(200)
-	})
-}
-
 func (s *ArgoServerSuite) TestSensorService() {
 	s.Run("CreateSensor", func() {
 		s.e().POST("/api/v1/sensors/argo").
@@ -1966,6 +1952,19 @@ func (s *ArgoServerSuite) TestSensorService() {
 		s.e().DELETE("/api/v1/sensors/argo/test-sensor").
 			Expect().
 			Status(200)
+	})
+}
+
+func (s *ArgoServerSuite) TestRateLimitHeader() {
+	s.Run("GetRateLimit", func() {
+		resp := s.e().GET("/api/v1/version").
+			Expect().
+			Status(200)
+
+		resp.Header("X-RateLimit-Limit").NotEmpty()
+		resp.Header("X-RateLimit-Remaining").NotEmpty()
+		resp.Header("X-RateLimit-Reset").NotEmpty()
+		resp.Header("Retry-After").Empty()
 	})
 }
 

@@ -57,6 +57,31 @@ spec:
 The `whalesay` template uses the `cowsay` command to generate a file named `/tmp/hello-world.txt`. It then `outputs` this file as an artifact named `hello-art`. In general, the artifact's `path` may be a directory rather than just a file. The `print-message` template takes an input artifact named `message`, unpacks it at the `path` named `/tmp/message` and then prints the contents of `/tmp/message` using the `cat` command.
 The `artifact-example` template passes the `hello-art` artifact generated as an output of the `generate-artifact` step as the `message` input artifact to the `print-message` step. DAG templates use the tasks prefix to refer to another task, for example `{{tasks.generate-artifact.outputs.artifacts.hello-art}}`.
 
+Optionally, for large artifacts, you can set `podSpecPatch` in the workflow spec to increase the resource request for the init container and avoid any Out of memory issues.
+
+```yaml
+<... snipped ...>
+  - name: large-artifact
+    # below patch gets merged with the actual pod spec and increses the memory
+    # request of the init container.
+    podSpecPatch: |
+      initContainers:
+        - name: init
+          resources:
+            requests:
+              memory: 2Gi
+              cpu: 300m
+    inputs:
+      artifacts:
+      - name: data
+        path: /tmp/large-file
+    container:
+      image: alpine:latest
+      command: [sh, -c]
+      args: ["cat /tmp/large-file"]
+<... snipped ...>
+```
+
 Artifacts are packaged as Tarballs and gzipped by default. You may customize this behavior by specifying an archive strategy, using the `archive` field. For example:
 
 ```yaml
@@ -85,4 +110,150 @@ Artifacts are packaged as Tarballs and gzipped by default. You may customize thi
             # no compression (also accepts the standard gzip 1 to 9 values)
             compressionLevel: 0
 <... snipped ...>
+```
+
+## Artifact Garbage Collection
+
+As of version 3.4 you can configure your Workflow to automatically delete Artifacts that you don't need (visit [artifact repository capability](https://argoproj.github.io/argo-workflows/configure-artifact-repository/) for the current supported store engine).
+
+Artifacts can be deleted `OnWorkflowCompletion` or `OnWorkflowDeletion`. You can specify your Garbage Collection strategy on both the Workflow level and the Artifact level, so for example, you may have temporary artifacts that can be deleted right away but a final output that should be persisted:
+
+```yaml
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: artifact-gc-
+spec:
+  entrypoint: main
+  artifactGC:
+    strategy: OnWorkflowDeletion  # default Strategy set here applies to all Artifacts by default
+  templates:
+    - name: main
+      container:
+        image: argoproj/argosay:v2
+        command:
+          - sh
+          - -c
+        args:
+          - |
+            echo "can throw this away" > /tmp/temporary-artifact.txt
+            echo "keep this" > /tmp/keep-this.txt
+      outputs:
+        artifacts:
+          - name: temporary-artifact
+            path: /tmp/temporary-artifact.txt
+            s3:
+              key: temporary-artifact.txt
+          - name: keep-this
+            path: /tmp/keep-this.txt
+            s3:
+              key: keep-this.txt
+            artifactGC:
+              strategy: Never   # optional override for an Artifact
+```
+
+### Artifact Naming
+
+Consider parameterizing your S3 keys by {{workflow.uid}}, etc (as shown in the example above) if there's a possibility that you could have concurrent Workflows of the same spec. This would be to avoid a scenario in which the artifact from one Workflow is being deleted while the same S3 key is being generated for a different Workflow.
+
+### Service Accounts and Annotations
+
+Does your S3 bucket require you to run with a special Service Account or IAM Role Annotation? You can either use the same ones you use for creating artifacts or generate new ones that are specific for deletion permission. Generally users will probably just have a single Service Account or IAM Role to apply to all artifacts for the Workflow, but you can also customize on the artifact level if you need that:
+
+```yaml
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: artifact-gc-
+spec:
+  entrypoint: main
+  artifactGC:
+    strategy: OnWorkflowDeletion 
+    ##############################################################################################
+    #    Workflow Level Service Account and Metadata
+    ##############################################################################################
+    serviceAccountName: my-sa
+    podMetadata:
+      annotations:
+        eks.amazonaws.com/role-arn: arn:aws:iam::111122223333:role/my-iam-role
+  templates:
+    - name: main
+      container:
+        image: argoproj/argosay:v2
+        command:
+          - sh
+          - -c
+        args:
+          - |
+            echo "can throw this away" > /tmp/temporary-artifact.txt
+            echo "keep this" > /tmp/keep-this.txt
+      outputs:
+        artifacts:
+          - name: temporary-artifact
+            path: /tmp/temporary-artifact.txt
+            s3:
+              key: temporary-artifact-{{workflow.uid}}.txt
+            artifactGC:
+              ####################################################################################
+              #    Optional override capability
+              ####################################################################################
+              serviceAccountName: artifact-specific-sa
+              podMetadata:
+                annotations:
+                  eks.amazonaws.com/role-arn: arn:aws:iam::111122223333:role/artifact-specific-iam-role
+          - name: keep-this
+            path: /tmp/keep-this.txt
+            s3:
+              key: keep-this-{{workflow.uid}}.txt
+            artifactGC:
+              strategy: Never
+```
+
+If you do supply your own Service Account you will need to create a RoleBinding that binds it with a role like this:
+
+```yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  annotations:
+    workflows.argoproj.io/description: |
+      This is the minimum recommended permissions needed if you want to use artifact GC.
+  name: artifactgc
+rules:
+- apiGroups:
+  - argoproj.io
+  resources:
+  - workflowartifactgctasks
+  verbs:
+  - list
+  - watch
+- apiGroups:
+  - argoproj.io
+  resources:
+  - workflowartifactgctasks/status
+  verbs:
+  - patch
+```
+
+This is the `artifactgc` role if you installed using one of the quick-start manifest files. If you installed with the `install.yaml` file for the release then the same permissions are in the `argo-cluster-role`.
+
+If you don't use your own `ServiceAccount` and are just using `default` ServiceAccount, then the role needs a RoleBinding or ClusterRoleBinding to `default` ServiceAccount.
+
+### What happens if Garbage Collection fails?
+
+If deletion of the artifact fails for some reason (other than the Artifact already have been deleted which is not considered a failure), the Workflow's Status will be marked with a new Condition to indicate "Artifact GC Failure", a Kubernetes Event will be issued, and the Argo Server UI will also indicate the failure. In that case, if the user needs to delete the Workflow and its child CRD objects, the user will need to patch the Workflow to remove the finalizer preventing the deletion:
+
+```yaml
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+  finalizers:
+  - workflows.argoproj.io/artifact-gc
+```
+
+The finalizer can be deleted by doing:
+
+```sh
+kubectl patch workflow my-wf \
+    --type json \
+    --patch='[ { "op": "remove", "path": "/metadata/finalizers" } ]'
 ```

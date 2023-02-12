@@ -1,6 +1,7 @@
 package executor
 
 import (
+	"context"
 	"io/ioutil"
 	"os"
 	"path"
@@ -174,6 +175,22 @@ func TestInferSelfLink(t *testing.T) {
 		Kind:    "Duty",
 	})
 	assert.Equal(t, "apis/test.group/v1/namespaces/test-namespace/duties/test-name", inferObjectSelfLink(obj))
+
+	obj.SetGroupVersionKind(schema.GroupVersionKind{
+		Group:   "test.group",
+		Version: "v1",
+		Kind:    "IngressGateway",
+	})
+	assert.Equal(t, "apis/test.group/v1/namespaces/test-namespace/ingressgateways/test-name", inferObjectSelfLink(obj))
+
+	obj.SetNamespace("")
+	obj.SetGroupVersionKind(schema.GroupVersionKind{
+		Group:   "",
+		Version: "v1",
+		Kind:    "Namespace",
+	})
+	assert.Equal(t, "api/v1/namespaces/test-name", inferObjectSelfLink(obj))
+
 }
 
 // TestResourceExecRetry tests whether Exec retries transitive errors
@@ -200,4 +217,22 @@ func TestResourceExecRetry(t *testing.T) {
 	_, _, _, err := we.ExecResource("", "../../examples/hello-world.yaml", nil)
 	assert.Error(t, err)
 	assert.Equal(t, "no more retries i/o timeout", err.Error())
+}
+
+func Test_jqFilter(t *testing.T) {
+	for _, testCase := range []struct {
+		input  []byte
+		filter string
+		want   string
+	}{
+		{[]byte(`{"metadata": {"name": "foo"}}`), ".metadata.name", "foo"},
+		{[]byte(`{"items": [{"key": "foo"}, {"key": "bar"}]}`), ".items.[].key", "foo\nbar"},
+	} {
+		t.Run(string(testCase.input), func(t *testing.T) {
+			ctx := context.Background()
+			got, err := jqFilter(ctx, testCase.input, testCase.filter)
+			assert.NoError(t, err)
+			assert.Equal(t, testCase.want, got)
+		})
+	}
 }

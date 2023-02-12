@@ -11,6 +11,7 @@ import (
 	"github.com/argoproj/pkg/errors"
 	syncpkg "github.com/argoproj/pkg/sync"
 	log "github.com/sirupsen/logrus"
+	"golang.org/x/exp/slices"
 	"golang.org/x/time/rate"
 	apiv1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
@@ -84,7 +85,10 @@ type WorkflowController struct {
 
 	// cliExecutorImagePullPolicy is the executor imagePullPolicy as specified from the command line
 	cliExecutorImagePullPolicy string
-	containerRuntimeExecutor   string
+
+	// cliExecutorLogFormat is the format in which argoexec will log
+	// possible options are json/text
+	cliExecutorLogFormat string
 
 	// restConfig is used by controller to send a SIGUSR1 to the wait sidecar using remotecommand.NewSPDYExecutor().
 	restConfig       *rest.Config
@@ -114,6 +118,7 @@ type WorkflowController struct {
 	archiveLabelSelector  labels.Selector
 	cacheFactory          controllercache.Factory
 	wfTaskSetInformer     wfextvv1alpha1.WorkflowTaskSetInformer
+	artGCTaskInformer     wfextvv1alpha1.WorkflowArtifactGCTaskInformer
 	taskResultInformer    cache.SharedIndexInformer
 
 	// progressPatchTickDuration defines how often the executor will patch pod annotations if an updated progress is found.
@@ -134,7 +139,18 @@ const (
 	workflowTaskSetResyncPeriod         = 20 * time.Minute
 )
 
-var cacheGCPeriod = env.LookupEnvDurationOr("CACHE_GC_PERIOD", 0)
+var (
+	cacheGCPeriod = env.LookupEnvDurationOr("CACHE_GC_PERIOD", 0)
+
+	// semaphoreNotifyDelay is a slight delay when notifying/enqueueing workflows to the workqueue
+	// that are waiting on a semaphore. This value is passed to AddAfter(). We delay adding the next
+	// workflow because if we add immediately with AddRateLimited(), the next workflow will likely
+	// be reconciled at a point in time before we have finished the current workflow reconciliation
+	// as well as incrementing the semaphore counter availability, and so the next workflow will
+	// believe it cannot run. By delaying for 1s, we would have finished the semaphore counter
+	// updates, and the next workflow will see the updated availability.
+	semaphoreNotifyDelay = env.LookupEnvDurationOr("SEMAPHORE_NOTIFY_DELAY", time.Second)
+)
 
 func init() {
 	if cacheGCPeriod != 0 {
@@ -143,7 +159,7 @@ func init() {
 }
 
 // NewWorkflowController instantiates a new WorkflowController
-func NewWorkflowController(ctx context.Context, restConfig *rest.Config, kubeclientset kubernetes.Interface, wfclientset wfclientset.Interface, namespace, managedNamespace, executorImage, executorImagePullPolicy, containerRuntimeExecutor, configMap string, executorPlugins bool) (*WorkflowController, error) {
+func NewWorkflowController(ctx context.Context, restConfig *rest.Config, kubeclientset kubernetes.Interface, wfclientset wfclientset.Interface, namespace, managedNamespace, executorImage, executorImagePullPolicy, executorLogFormat, configMap string, executorPlugins bool) (*WorkflowController, error) {
 	dynamicInterface, err := dynamic.NewForConfig(restConfig)
 	if err != nil {
 		return nil, err
@@ -158,7 +174,7 @@ func NewWorkflowController(ctx context.Context, restConfig *rest.Config, kubecli
 		managedNamespace:           managedNamespace,
 		cliExecutorImage:           executorImage,
 		cliExecutorImagePullPolicy: executorImagePullPolicy,
-		containerRuntimeExecutor:   containerRuntimeExecutor,
+		cliExecutorLogFormat:       executorLogFormat,
 		configController:           config.NewController(namespace, configMap, kubeclientset),
 		workflowKeyLock:            syncpkg.NewKeyLock(),
 		cacheFactory:               controllercache.NewCacheFactory(kubeclientset, namespace),
@@ -241,6 +257,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 	wfc.wfInformer = util.NewWorkflowInformer(wfc.dynamicInterface, wfc.GetManagedNamespace(), workflowResyncPeriod, wfc.tweakListOptions, indexers)
 	wfc.wftmplInformer = informer.NewTolerantWorkflowTemplateInformer(wfc.dynamicInterface, workflowTemplateResyncPeriod, wfc.managedNamespace)
 	wfc.wfTaskSetInformer = wfc.newWorkflowTaskSetInformer()
+	wfc.artGCTaskInformer = wfc.newArtGCTaskInformer()
 	wfc.taskResultInformer = wfc.newWorkflowTaskResultInformer()
 
 	wfc.addWorkflowInformerHandlers(ctx)
@@ -262,7 +279,9 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 	go wfc.podInformer.Run(ctx.Done())
 	go wfc.configMapInformer.Run(ctx.Done())
 	go wfc.wfTaskSetInformer.Informer().Run(ctx.Done())
+	go wfc.artGCTaskInformer.Informer().Run(ctx.Done())
 	go wfc.taskResultInformer.Run(ctx.Done())
+	wfc.createClusterWorkflowTemplateInformer(ctx)
 
 	// Wait for all involved caches to be synced, before processing items from the queue is started
 	if !cache.WaitForCacheSync(
@@ -272,12 +291,11 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 		wfc.podInformer.HasSynced,
 		wfc.configMapInformer.HasSynced,
 		wfc.wfTaskSetInformer.Informer().HasSynced,
+		wfc.artGCTaskInformer.Informer().HasSynced,
 		wfc.taskResultInformer.HasSynced,
 	) {
 		log.Fatal("Timed out waiting for caches to sync")
 	}
-
-	wfc.createClusterWorkflowTemplateInformer(ctx)
 
 	// Start the metrics server
 	go wfc.metrics.RunServer(ctx)
@@ -324,7 +342,7 @@ func (wfc *WorkflowController) createSynchronizationManager(ctx context.Context)
 	}
 
 	nextWorkflow := func(key string) {
-		wfc.wfQueue.AddRateLimited(key)
+		wfc.wfQueue.AddAfter(key, semaphoreNotifyDelay)
 	}
 
 	isWFDeleted := func(key string) bool {
@@ -352,11 +370,12 @@ func (wfc *WorkflowController) initManagers(ctx context.Context) error {
 		return err
 	}
 
+	wfc.syncManager.Initialize(wfList.Items)
+
 	if err := wfc.throttler.Init(wfList.Items); err != nil {
 		return err
 	}
 
-	wfc.syncManager.Initialize(wfList.Items)
 	return nil
 }
 
@@ -383,8 +402,17 @@ func (wfc *WorkflowController) runConfigMapWatcher(stopCh <-chan struct{}) {
 				continue
 			}
 			log.Debugf("received config map %s/%s update", cm.Namespace, cm.Name)
+			if cm.GetName() == wfc.configController.GetName() && wfc.namespace == cm.GetNamespace() {
+				log.Infof("Received Workflow Controller config map %s/%s update", cm.Namespace, cm.Name)
+				err := wfc.updateConfig()
+				if err != nil {
+					log.Errorf("Failed update the Workflow Controller config map. error: %v", err)
+					continue
+				}
+				log.Infof("Successfully Workflow Controller config map %s/%s updated", cm.Namespace, cm.Name)
+				continue
+			}
 			wfc.notifySemaphoreConfigUpdate(cm)
-
 		case <-stopCh:
 			return
 		}
@@ -420,6 +448,14 @@ func (wfc *WorkflowController) createClusterWorkflowTemplateInformer(ctx context
 	if cwftGetAllowed && cwftListAllowed && cwftWatchAllowed {
 		wfc.cwftmplInformer = informer.NewTolerantClusterWorkflowTemplateInformer(wfc.dynamicInterface, clusterWorkflowTemplateResyncPeriod)
 		go wfc.cwftmplInformer.Informer().Run(ctx.Done())
+
+		// since the above call is asynchronous, make sure we populate our cache before we try to use it later
+		if !cache.WaitForCacheSync(
+			ctx.Done(),
+			wfc.cwftmplInformer.Informer().HasSynced,
+		) {
+			log.Fatal("Timed out waiting for ClusterWorkflowTemplate cache to sync")
+		}
 	} else {
 		log.Warnf("Controller doesn't have RBAC access for ClusterWorkflowTemplates")
 	}
@@ -532,12 +568,11 @@ func (wfc *WorkflowController) signalContainers(namespace string, podName string
 	}
 
 	for _, c := range pod.Status.ContainerStatuses {
-		if c.State.Terminated != nil {
+		if c.State.Running == nil {
 			continue
 		}
-		if err := signal.SignalContainer(wfc.restConfig, pod, c.Name, sig); errorsutil.IgnoreContainerNotFoundErr(err) != nil {
-			return 0, err
-		}
+		// problems are already logged at info level, so we just ignore errors here
+		_ = signal.SignalContainer(wfc.restConfig, pod, c.Name, sig)
 	}
 	if pod.Spec.TerminationGracePeriodSeconds == nil {
 		return 30 * time.Second, nil
@@ -689,6 +724,11 @@ func (wfc *WorkflowController) processNextItem(ctx context.Context) bool {
 		return true
 	}
 
+	if !reconciliationNeeded(un) {
+		log.WithFields(log.Fields{"key": key}).Debug("Won't process Workflow since it's completed")
+		return true
+	}
+
 	wf, err := util.FromUnstructured(un)
 	if err != nil {
 		log.WithFields(log.Fields{"key": key, "error": err}).Warn("Failed to unmarshal key to workflow object")
@@ -698,11 +738,6 @@ func (wfc *WorkflowController) processNextItem(ctx context.Context) bool {
 		return true
 	}
 
-	if wf.Labels[common.LabelKeyCompleted] == "true" {
-		// can get here if we already added the completed=true label,
-		// but we are still draining the controller's workflow workqueue
-		return true
-	}
 	// this will ensure we process every incomplete workflow once every 20m
 	wfc.wfQueue.AddAfter(key, workflowResyncPeriod)
 
@@ -720,7 +755,7 @@ func (wfc *WorkflowController) processNextItem(ctx context.Context) bool {
 	// make sure this is removed from the throttler is complete
 	defer func() {
 		// must be done with woc
-		if woc.wf.Labels[common.LabelKeyCompleted] == "true" {
+		if !reconciliationNeeded(woc.wf) {
 			wfc.throttler.Remove(key.(string))
 		}
 	}()
@@ -747,6 +782,10 @@ func (wfc *WorkflowController) processNextItem(ctx context.Context) bool {
 	// See: https://github.com/kubernetes/client-go/blob/master/examples/workqueue/main.go
 	// c.handleErr(err, key)
 	return true
+}
+
+func reconciliationNeeded(wf metav1.Object) bool {
+	return wf.GetLabels()[common.LabelKeyCompleted] != "true" || slices.Contains(wf.GetFinalizers(), common.FinalizerArtifactGC)
 }
 
 // enqueueWfFromPodLabel will extract the workflow name from pod label and
@@ -794,7 +833,7 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers(ctx context.Context) 
 	wfc.wfInformer.AddEventHandler(
 		cache.FilteringResourceEventHandler{
 			FilterFunc: func(obj interface{}) bool {
-				return !common.UnstructuredHasCompletedLabel(obj)
+				return reconciliationNeeded(obj.(*unstructured.Unstructured))
 			},
 			Handler: cache.ResourceEventHandlerFuncs{
 				AddFunc: func(obj interface{}) {
@@ -918,8 +957,10 @@ func (wfc *WorkflowController) archiveWorkflowAux(ctx context.Context, obj inter
 	return nil
 }
 
-var incompleteReq, _ = labels.NewRequirement(common.LabelKeyCompleted, selection.Equals, []string{"false"})
-var workflowReq, _ = labels.NewRequirement(common.LabelKeyWorkflow, selection.Exists, nil)
+var (
+	incompleteReq, _ = labels.NewRequirement(common.LabelKeyCompleted, selection.Equals, []string{"false"})
+	workflowReq, _   = labels.NewRequirement(common.LabelKeyWorkflow, selection.Exists, nil)
+)
 
 func (wfc *WorkflowController) instanceIDReq() labels.Requirement {
 	return util.InstanceIDRequirement(wfc.Config.InstanceID)
@@ -1038,6 +1079,7 @@ func (wfc *WorkflowController) newConfigMapInformer() cache.SharedIndexInformer 
 							Error("failed to convert configmap to plugin")
 						return
 					}
+
 					wfc.executorPlugins[cm.GetNamespace()][cm.GetName()] = p
 					log.WithField("namespace", cm.GetNamespace()).
 						WithField("name", cm.GetName()).
@@ -1051,6 +1093,7 @@ func (wfc *WorkflowController) newConfigMapInformer() cache.SharedIndexInformer 
 				},
 			},
 		})
+
 	}
 	return indexInformer
 }
@@ -1182,6 +1225,27 @@ func (wfc *WorkflowController) newWorkflowTaskSetInformer() wfextvv1alpha1.Workf
 			r := util.InstanceIDRequirement(wfc.Config.InstanceID)
 			x.LabelSelector = r.String()
 		})).Argoproj().V1alpha1().WorkflowTaskSets()
+	informer.Informer().AddEventHandler(
+		cache.ResourceEventHandlerFuncs{
+			UpdateFunc: func(old, new interface{}) {
+				key, err := cache.MetaNamespaceKeyFunc(new)
+				if err == nil {
+					wfc.wfQueue.AddRateLimited(key)
+				}
+			},
+		})
+	return informer
+}
+
+func (wfc *WorkflowController) newArtGCTaskInformer() wfextvv1alpha1.WorkflowArtifactGCTaskInformer {
+	informer := externalversions.NewSharedInformerFactoryWithOptions(
+		wfc.wfclientset,
+		workflowTaskSetResyncPeriod,
+		externalversions.WithNamespace(wfc.GetManagedNamespace()),
+		externalversions.WithTweakListOptions(func(x *metav1.ListOptions) {
+			r := util.InstanceIDRequirement(wfc.Config.InstanceID)
+			x.LabelSelector = r.String()
+		})).Argoproj().V1alpha1().WorkflowArtifactGCTasks()
 	informer.Informer().AddEventHandler(
 		cache.ResourceEventHandlerFuncs{
 			UpdateFunc: func(old, new interface{}) {

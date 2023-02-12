@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"math"
+	"net/url"
 	"time"
 
 	apiv1 "k8s.io/api/core/v1"
@@ -130,6 +131,33 @@ func (c Config) GetPodGCDeleteDelayDuration() time.Duration {
 	return c.PodGCDeleteDelayDuration.Duration
 }
 
+func (c Config) ValidateProtocol(inputProtocol string, allowedProtocol []string) error {
+	for _, protocol := range allowedProtocol {
+		if inputProtocol == protocol {
+			return nil
+		}
+	}
+	return fmt.Errorf("protocol %s is not allowed", inputProtocol)
+}
+
+func (c *Config) Sanitize(allowedProtocol []string) error {
+	links := c.Links
+
+	for _, link := range links {
+		// We only validate user-supplied URL but not encode/decode it
+		// see 2.4.2 on https://www.ietf.org/rfc/rfc2396.txt
+		u, err := url.Parse(link.URL)
+		if err != nil {
+			return err
+		}
+		err = c.ValidateProtocol(u.Scheme, allowedProtocol)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // PodSpecLogStrategy contains the configuration for logging the pod spec in controller log for debugging purpose
 type PodSpecLogStrategy struct {
 	FailedPod bool `json:"failedPod,omitempty"`
@@ -204,8 +232,19 @@ func (c DatabaseConfig) GetHostname() string {
 
 type PostgreSQLConfig struct {
 	DatabaseConfig
-	SSL     bool   `json:"ssl,omitempty"`
-	SSLMode string `json:"sslMode,omitempty"`
+	SSL              bool                    `json:"ssl,omitempty"`
+	SSLMode          string                  `json:"sslMode,omitempty"`
+	CaCertSecret     apiv1.SecretKeySelector `json:"caCertSecret,omitempty"`
+	ClientCertSecret apiv1.SecretKeySelector `json:"clientCertSecret,omitempty"`
+	ClientKeySecret  apiv1.SecretKeySelector `json:"clientKeySecret,omitempty"`
+	CertPath         string                  `json:"certPath"`
+}
+
+func (c PostgreSQLConfig) GetPGCertPath() string {
+	if c.CertPath != "" {
+		return c.CertPath
+	}
+	return "/home/argo/pgcerts"
 }
 
 type MySQLConfig struct {

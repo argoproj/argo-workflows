@@ -24,8 +24,8 @@ from argo_workflows.model_utils import (  # noqa: F401
     file_type,
     none_type,
     validate_get_composed_info,
+    OpenApiModel
 )
-from ..model_utils import OpenApiModel
 from argo_workflows.exceptions import ApiAttributeError
 
 
@@ -134,7 +134,7 @@ class IoArgoprojWorkflowV1alpha1SuspendTemplate(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            duration (str): Duration is the seconds to wait before automatically resuming a template. [optional]  # noqa: E501
+            duration (str): Duration is the seconds to wait before automatically resuming a template. Must be a string. Default unit is seconds. Could also be a Duration, e.g.: \"2m\", \"6h\", \"1d\". [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -216,7 +216,7 @@ class IoArgoprojWorkflowV1alpha1SuspendTemplate(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            duration (str): Duration is the seconds to wait before automatically resuming a template. [optional]  # noqa: E501
+            duration (str): Duration is the seconds to wait before automatically resuming a template. Must be a string. Default unit is seconds. Could also be a Duration, e.g.: \"2m\", \"6h\", \"1d\". [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)

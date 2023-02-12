@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"context"
 	"fmt"
 	"sync"
 	"time"
@@ -15,13 +14,18 @@ import (
 
 // applyExecutionControl will ensure a pod's execution control annotation is up-to-date
 // kills any pending and running pods when workflow has reached it's deadline
-func (woc *wfOperationCtx) applyExecutionControl(ctx context.Context, pod *apiv1.Pod, wfNodesLock *sync.RWMutex) {
+func (woc *wfOperationCtx) applyExecutionControl(pod *apiv1.Pod, wfNodesLock *sync.RWMutex) {
 	if pod == nil {
 		return
 	}
 
 	nodeID := woc.nodeID(pod)
-	node := woc.wf.Status.Nodes[nodeID]
+	wfNodesLock.RLock()
+	node, ok := woc.wf.Status.Nodes[nodeID]
+	wfNodesLock.RUnlock()
+	if !ok {
+		return
+	}
 	//node is already completed
 	if node.Fulfilled() {
 		return
@@ -98,7 +102,7 @@ func (woc *wfOperationCtx) killDaemonedChildren(nodeID string) {
 		if !childNode.IsDaemoned() {
 			continue
 		}
-		podName := util.PodName(woc.wf.Name, childNode.Name, childNode.TemplateName, childNode.ID, util.GetWorkflowPodNameVersion(woc.wf))
+		podName := util.GeneratePodName(woc.wf.Name, childNode.Name, childNode.TemplateName, childNode.ID, util.GetWorkflowPodNameVersion(woc.wf))
 		woc.controller.queuePodForCleanup(woc.wf.Namespace, podName, terminateContainers)
 		childNode.Phase = wfv1.NodeSucceeded
 		childNode.Daemoned = nil

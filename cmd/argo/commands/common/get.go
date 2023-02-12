@@ -116,8 +116,22 @@ func PrintWorkflowHelper(wf *wfv1.Workflow, getArgs GetFlags) string {
 			for _, art := range wf.Status.Outputs.Artifacts {
 				if art.S3 != nil {
 					out += fmt.Sprintf(fmtStr, "  "+art.Name+":", art.S3.String())
+				} else if art.Git != nil {
+					out += fmt.Sprintf(fmtStr, "  "+art.Name+":", art.Git.String())
+				} else if art.HTTP != nil {
+					out += fmt.Sprintf(fmtStr, "  "+art.Name+":", art.HTTP.String())
 				} else if art.Artifactory != nil {
 					out += fmt.Sprintf(fmtStr, "  "+art.Name+":", art.Artifactory.String())
+				} else if art.HDFS != nil {
+					out += fmt.Sprintf(fmtStr, "  "+art.Name+":", art.HDFS.String())
+				} else if art.Raw != nil {
+					out += fmt.Sprintf(fmtStr, "  "+art.Name+":", art.Raw.String())
+				} else if art.OSS != nil {
+					out += fmt.Sprintf(fmtStr, "  "+art.Name+":", art.OSS.String())
+				} else if art.GCS != nil {
+					out += fmt.Sprintf(fmtStr, "  "+art.Name+":", art.GCS.String())
+				} else if art.Azure != nil {
+					out += fmt.Sprintf(fmtStr, "  "+art.Name+":", art.Azure.String())
 				}
 			}
 		}
@@ -164,7 +178,6 @@ func PrintWorkflowHelper(wf *wfv1.Workflow, getArgs GetFlags) string {
 		}
 	}
 	writerBuffer := new(bytes.Buffer)
-	printer.PrintSecurityNudges(*wf, writerBuffer)
 	out += writerBuffer.String()
 	return out
 }
@@ -478,7 +491,9 @@ func printNode(w *tabwriter.Writer, node wfv1.NodeStatus, wfName, nodePrefix str
 	var args []interface{}
 	duration := humanize.RelativeDurationShort(node.StartedAt.Time, node.FinishedAt.Time)
 	if node.Type == wfv1.NodeTypePod {
-		podName := util.PodName(wfName, nodeName, templateName, node.ID, podNameVersion)
+		// node.Name is used here because nodeName may contain additionally formatting.
+		// We want to use the original naming to ensure the correct hash is dervied
+		podName := util.GeneratePodName(wfName, node.Name, templateName, node.ID, podNameVersion)
 		args = []interface{}{nodePrefix, nodeName, templateName, podName, duration, node.Message, ""}
 	} else {
 		args = []interface{}{nodePrefix, nodeName, templateName, "", "", node.Message, ""}

@@ -1,6 +1,7 @@
 package v1alpha1
 
 import (
+	"fmt"
 	"sort"
 	"testing"
 	"time"
@@ -114,6 +115,85 @@ func TestWorkflowHappenedBetween(t *testing.T) {
 		ObjectMeta: metav1.ObjectMeta{CreationTimestamp: metav1.Time{Time: t1}},
 		Status:     WorkflowStatus{FinishedAt: metav1.Time{Time: t2}},
 	}))
+}
+
+func TestWorkflowGetArtifactGCStrategy(t *testing.T) {
+	tests := []struct {
+		name                      string
+		workflowArtGCStrategySpec string
+		artifactGCStrategySpec    string
+		expectedStrategy          ArtifactGCStrategy
+	}{
+		{
+			name: "WorkflowLevel",
+			workflowArtGCStrategySpec: `
+              artifactGC:
+                strategy: OnWorkflowCompletion`,
+			artifactGCStrategySpec: "",
+			expectedStrategy:       ArtifactGCOnWorkflowCompletion,
+		},
+		{
+			name: "ArtifactOverride",
+			workflowArtGCStrategySpec: `
+              artifactGC:
+                strategy: OnWorkflowCompletion`,
+			artifactGCStrategySpec: `
+                      artifactGC:
+                        strategy: Never`,
+			expectedStrategy: ArtifactGCNever,
+		},
+		{
+			name: "NotDefined",
+			workflowArtGCStrategySpec: `
+              artifactGC:`,
+			artifactGCStrategySpec: `
+                      artifactGC:`,
+			expectedStrategy: ArtifactGCNever,
+		},
+		{
+			name: "NotDefined2",
+			workflowArtGCStrategySpec: `
+              artifactGC:
+                strategy: ""`,
+			artifactGCStrategySpec: `
+                      artifactGC:
+                        strategy: ""`,
+			expectedStrategy: ArtifactGCNever,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			workflowSpec := fmt.Sprintf(`
+            apiVersion: argoproj.io/v1alpha1
+            kind: Workflow
+            metadata:
+              generateName: artifact-passing-
+            spec:
+              entrypoint: whalesay
+              %s
+              templates:
+              - name: whalesay
+                container:
+                  image: docker/whalesay:latest
+                  command: [sh, -c]
+                  args: ["sleep 1; cowsay hello world | tee /tmp/hello_world.txt"]
+                outputs:
+                  artifacts:
+                    - name: out
+                      path: /out
+                      s3:
+                        key: out
+                        %s`, tt.workflowArtGCStrategySpec, tt.artifactGCStrategySpec)
+
+			wf := MustUnmarshalWorkflow(workflowSpec)
+			a := wf.Spec.Templates[0].Outputs.Artifacts[0]
+			gcStrategy := wf.GetArtifactGCStrategy(&a)
+			assert.Equal(t, tt.expectedStrategy, gcStrategy)
+		})
+	}
+
 }
 
 func TestArtifact_ValidatePath(t *testing.T) {
@@ -247,6 +327,15 @@ func TestArtifactoryArtifact(t *testing.T) {
 	assert.Equal(t, "/my-key", key, "has leading slash")
 }
 
+func TestAzureArtifact(t *testing.T) {
+	a := &AzureArtifact{Blob: "my-blob", AzureBlobContainer: AzureBlobContainer{Container: "my-container"}}
+	assert.True(t, a.HasLocation())
+	assert.NoError(t, a.SetKey("my-blob"))
+	key, err := a.GetKey()
+	assert.NoError(t, err)
+	assert.Equal(t, "my-blob", key)
+}
+
 func TestGitArtifact(t *testing.T) {
 	a := &GitArtifact{Repo: "my-repo"}
 	assert.True(t, a.HasLocation())
@@ -346,6 +435,9 @@ func TestArtifactLocation_Get(t *testing.T) {
 	assert.Nil(t, v)
 	assert.EqualError(t, err, "You need to configure artifact storage. More information on how to do this can be found in the docs: https://argoproj.github.io/argo-workflows/configure-artifact-repository/")
 
+	v, _ = (&ArtifactLocation{Azure: &AzureArtifact{}}).Get()
+	assert.IsType(t, &AzureArtifact{}, v)
+
 	v, _ = (&ArtifactLocation{Git: &GitArtifact{}}).Get()
 	assert.IsType(t, &GitArtifact{}, v)
 
@@ -378,6 +470,11 @@ func TestArtifactLocation_SetType(t *testing.T) {
 		assert.NoError(t, l.SetType(&ArtifactoryArtifact{}))
 		assert.NotNil(t, l.Artifactory)
 	})
+	t.Run("Azure", func(t *testing.T) {
+		l := &ArtifactLocation{}
+		assert.NoError(t, l.SetType(&AzureArtifact{}))
+		assert.NotNil(t, l.Azure)
+	})
 	t.Run("GCS", func(t *testing.T) {
 		l := &ArtifactLocation{}
 		assert.NoError(t, l.SetType(&GCSArtifact{}))
@@ -408,6 +505,11 @@ func TestArtifactLocation_SetType(t *testing.T) {
 		assert.NoError(t, l.SetType(&S3Artifact{}))
 		assert.NotNil(t, l.S3)
 	})
+	t.Run("Azure", func(t *testing.T) {
+		l := &ArtifactLocation{}
+		assert.NoError(t, l.SetType(&AzureArtifact{}))
+		assert.NotNil(t, l.Azure)
+	})
 }
 
 func TestArtifactLocation_Key(t *testing.T) {
@@ -433,6 +535,12 @@ func TestArtifactLocation_Key(t *testing.T) {
 		err := l.AppendToKey("my-file")
 		assert.NoError(t, err)
 		assert.Equal(t, "http://my-host/my-dir/my-file?a=1", l.Artifactory.URL, "appends to Artifactory path")
+	})
+	t.Run("Azure", func(t *testing.T) {
+		l := &ArtifactLocation{Azure: &AzureArtifact{Blob: "my-dir"}}
+		err := l.AppendToKey("my-file")
+		assert.NoError(t, err)
+		assert.Equal(t, "my-dir/my-file", l.Azure.Blob, "appends to Azure Blob name")
 	})
 	t.Run("Git", func(t *testing.T) {
 		l := &ArtifactLocation{Git: &GitArtifact{}}
@@ -519,11 +627,11 @@ func TestArtifact_GetArchive(t *testing.T) {
 func TestArtifactGC_GetStrategy(t *testing.T) {
 	t.Run("Nil", func(t *testing.T) {
 		var artifactGC *ArtifactGC
-		assert.Equal(t, ArtifactGCNever, artifactGC.GetStrategy())
+		assert.Equal(t, ArtifactGCStrategyUndefined, artifactGC.GetStrategy())
 	})
 	t.Run("Unspecified", func(t *testing.T) {
 		var artifactGC = &ArtifactGC{}
-		assert.Equal(t, ArtifactGCNever, artifactGC.GetStrategy())
+		assert.Equal(t, ArtifactGCStrategyUndefined, artifactGC.GetStrategy())
 	})
 	t.Run("Specified", func(t *testing.T) {
 		var artifactGC = &ArtifactGC{Strategy: ArtifactGCOnWorkflowCompletion}
@@ -927,7 +1035,7 @@ func TestWorkflowSpec_GetArtifactGC(t *testing.T) {
 	spec := WorkflowSpec{}
 
 	assert.NotNil(t, spec.GetArtifactGC())
-	assert.Equal(t, &ArtifactGC{Strategy: ArtifactGCNever}, spec.GetArtifactGC())
+	assert.Equal(t, &ArtifactGC{Strategy: ArtifactGCStrategyUndefined}, spec.GetArtifactGC())
 }
 
 func TestWorkflowSpec_GetVolumeGC(t *testing.T) {
@@ -1110,6 +1218,10 @@ func TestTemplate_HasOutputs(t *testing.T) {
 	t.Run("Resource", func(t *testing.T) {
 		x := &Template{Resource: &ResourceTemplate{}}
 		assert.False(t, x.HasOutput())
+	})
+	t.Run("Plugin", func(t *testing.T) {
+		x := &Template{Plugin: &Plugin{}}
+		assert.True(t, x.HasOutput())
 	})
 }
 

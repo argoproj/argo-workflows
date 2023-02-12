@@ -46,18 +46,26 @@ func GetLockName(sync *v1alpha1.Synchronization, namespace string) (*LockName, e
 }
 
 func DecodeLockName(lockName string) (*LockName, error) {
-	items := strings.Split(lockName, "/")
+	items := strings.SplitN(lockName, "/", 3)
 	if len(items) < 3 {
 		return nil, errors.New(errors.CodeBadRequest, "Invalid lock key: unknown format")
 	}
 
 	var lock LockName
 	lockKind := LockKind(items[1])
+	namespace := items[0]
+
 	switch lockKind {
 	case LockKindMutex:
-		lock = LockName{Namespace: items[0], Kind: LockKind(items[1]), ResourceName: items[2]}
+		lock = LockName{Namespace: namespace, Kind: lockKind, ResourceName: items[2]}
 	case LockKindConfigMap:
-		lock = LockName{Namespace: items[0], Kind: LockKind(items[1]), ResourceName: items[2], Key: items[3]}
+		components := strings.Split(items[2], "/")
+
+		if len(components) != 2 {
+			return nil, errors.New(errors.CodeBadRequest, "Invalid ConfigMap lock key: unknown format")
+		}
+
+		lock = LockName{Namespace: namespace, Kind: lockKind, ResourceName: components[0], Key: components[1]}
 	default:
 		return nil, errors.New(errors.CodeBadRequest, fmt.Sprintf("Invalid lock key, unexpected kind: %s", lockKind))
 	}
