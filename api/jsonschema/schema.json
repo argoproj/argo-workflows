@@ -5162,17 +5162,21 @@
       "description": "Item expands a single workflow step into multiple parallel steps The value of Item can be a map, string, bool, or number"
     },
     "io.argoproj.workflow.v1alpha1.Job": {
+      "description": "Job is a template for a job resource",
       "properties": {
         "image": {
+          "description": "Image is the container image to run",
           "type": "string"
         },
         "steps": {
+          "description": "Steps is the list of steps to run",
           "items": {
             "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.JobStep"
           },
           "type": "array"
         },
         "workingDir": {
+          "description": "WorkingDir is the working directory to run the job in",
           "type": "string"
         }
       },
@@ -5183,14 +5187,18 @@
       "type": "object"
     },
     "io.argoproj.workflow.v1alpha1.JobStep": {
+      "description": "JobStep is a step in a job",
       "properties": {
         "if": {
+          "description": "If is the expression to evaluate to determine if the step should run, default \"success()\"",
           "type": "string"
         },
         "name": {
+          "description": "Name is the name of the step, must be unique within the job",
           "type": "string"
         },
         "run": {
+          "description": "Run is the shell script to run.",
           "type": "string"
         }
       },

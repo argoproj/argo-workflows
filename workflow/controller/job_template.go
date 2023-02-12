@@ -3,33 +3,34 @@ package controller
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
 
-func (woc *wfOperationCtx) executeJobTemplate(ctx context.Context, jobName string, templateScope string, tmpl *wfv1.Template, orgTmpl wfv1.TemplateReferenceHolder, opts *executeTemplateOpts) (*wfv1.NodeStatus, error) {
-	node := woc.wf.GetNodeByName(jobName)
+func (woc *wfOperationCtx) executeJobTemplate(ctx context.Context, nodeName string, templateScope string, tmpl *wfv1.Template, orgTmpl wfv1.TemplateReferenceHolder, opts *executeTemplateOpts) (*wfv1.NodeStatus, error) {
+	node := woc.wf.GetNodeByName(nodeName)
 	if node == nil {
-		node = woc.initializeExecutableNode(jobName, wfv1.NodeTypePod, templateScope, tmpl, orgTmpl, opts.boundaryID, wfv1.NodePending)
+		node = woc.initializeExecutableNode(nodeName, wfv1.NodeTypePod, templateScope, tmpl, orgTmpl, opts.boundaryID, wfv1.NodePending)
 	}
 
 	job := tmpl.Job
 	steps := job.Steps
 	for i, step := range steps {
-		nodeName := fmt.Sprintf("%s.%s", jobName, step.Name)
-		stepNode := woc.wf.GetNodeByName(nodeName)
+		stepNodeName := joinStepNodeName(nodeName, step.Name)
+		stepNode := woc.wf.GetNodeByName(stepNodeName)
 		if stepNode == nil {
-			_ = woc.initializeNode(nodeName, wfv1.NodeTypeJobStep, templateScope, orgTmpl, node.ID, wfv1.NodePending)
+			_ = woc.initializeNode(stepNodeName, wfv1.NodeTypeJobStep, templateScope, orgTmpl, node.ID, wfv1.NodePending)
 		}
 		if i == 0 {
-			woc.addChildNode(jobName, nodeName)
+			woc.addChildNode(nodeName, stepNodeName)
 		} else {
 			previousStep := steps[i-1]
-			woc.addChildNode(fmt.Sprintf("%s.%s", jobName, previousStep.Name), nodeName)
+			woc.addChildNode(joinStepNodeName(nodeName, previousStep.Name), stepNodeName)
 		}
 	}
 
-	_, err := woc.createWorkflowPod(ctx, jobName, job.GetContainers(), tmpl, &createWorkflowPodOpts{
+	_, err := woc.createWorkflowPod(ctx, nodeName, job.GetContainers(), tmpl, &createWorkflowPodOpts{
 		onExitPod:         opts.onExitTemplate,
 		executionDeadline: opts.executionDeadline,
 	})
@@ -38,4 +39,13 @@ func (woc *wfOperationCtx) executeJobTemplate(ctx context.Context, jobName strin
 		return woc.requeueIfTransientErr(err, node.Name)
 	}
 	return node, nil
+}
+
+func joinStepNodeName(jobName string, stepName string) string {
+	return fmt.Sprintf("%s.%s", jobName, stepName)
+}
+
+func splitStepNodeName(n string) (string, string) {
+	parts := strings.Split(n, ".")
+	return parts[0], parts[1]
 }

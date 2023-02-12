@@ -824,19 +824,27 @@ message Item {
   optional bytes value = 1;
 }
 
+// Job is a template for a job resource
 message Job {
+  // Image is the container image to run
   optional string image = 1;
 
+  // WorkingDir is the working directory to run the job in
   optional string workingDir = 2;
 
+  // Steps is the list of steps to run
   repeated JobStep steps = 3;
 }
 
+// JobStep is a step in a job
 message JobStep {
+  // Name is the name of the step, must be unique within the job
   optional string name = 1;
 
+  // Run is the shell script to run.
   optional string run = 2;
 
+  // If is the expression to evaluate to determine if the step should run, default "success()"
   optional string if = 3;
 }
 
@@ -1579,6 +1587,7 @@ message Template {
   // Plugin is a plugin template
   optional Plugin plugin = 43;
 
+  // Job is a job template
   optional Job job = 44;
 
   // Volumes is a list of volumes that can be mounted by containers in a template.

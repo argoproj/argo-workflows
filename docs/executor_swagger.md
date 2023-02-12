@@ -2110,7 +2110,10 @@ is other than default (typically TCP ports 860 and 3260). |  |
 ### <span id="job"></span> Job
 
 
+> Job is a template for a job resource
   
+
+
 
 
 
@@ -2118,16 +2121,19 @@ is other than default (typically TCP ports 860 and 3260). |  |
 
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
-| image | string| `string` |  | |  |  |
-| steps | [][JobStep](#job-step)| `[]*JobStep` |  | |  |  |
-| workingDir | string| `string` |  | |  |  |
+| image | string| `string` |  | | Image is the container image to run |  |
+| steps | [][JobStep](#job-step)| `[]*JobStep` |  | | Steps is the list of steps to run |  |
+| workingDir | string| `string` |  | | WorkingDir is the working directory to run the job in |  |
 
 
 
 ### <span id="job-step"></span> JobStep
 
 
+> JobStep is a step in a job
   
+
+
 
 
 
@@ -2135,9 +2141,9 @@ is other than default (typically TCP ports 860 and 3260). |  |
 
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
-| if | string| `string` |  | |  |  |
-| name | string| `string` |  | |  |  |
-| run | string| `string` |  | |  |  |
+| if | string| `string` |  | | If is the expression to evaluate to determine if the step should run, default "success()" |  |
+| name | string| `string` |  | | Name is the name of the step, must be unique within the job |  |
+| run | string| `string` |  | | Run is the shell script to run. |  |
 
 
 

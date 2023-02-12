@@ -13,11 +13,13 @@ import (
 	"io/fs"
 	"io/ioutil"
 	"os"
+	"os/signal"
 	"path"
 	"path/filepath"
 	"runtime/debug"
 	"strconv"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/argoproj/argo-workflows/v3/util/file"

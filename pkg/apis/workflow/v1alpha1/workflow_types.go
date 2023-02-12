@@ -659,6 +659,7 @@ type Template struct {
 	// Plugin is a plugin template
 	Plugin *Plugin `json:"plugin,omitempty" protobuf:"bytes,43,opt,name=plugin"`
 
+	// Job is a job template
 	Job *Job `json:"job,omitempty" protobuf:"bytes,44,opt,name=job"`
 
 	// Volumes is a list of volumes that can be mounted by containers in a template.
