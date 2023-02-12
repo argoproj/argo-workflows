@@ -2,9 +2,6 @@ package controller
 
 import (
 	"context"
-	"fmt"
-	"strings"
-
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
 
@@ -39,13 +36,4 @@ func (woc *wfOperationCtx) executeJobTemplate(ctx context.Context, nodeName stri
 		return woc.requeueIfTransientErr(err, node.Name)
 	}
 	return node, nil
-}
-
-func joinStepNodeName(jobName string, stepName string) string {
-	return fmt.Sprintf("%s.%s", jobName, stepName)
-}
-
-func splitStepNodeName(n string) (string, string) {
-	parts := strings.Split(n, ".")
-	return parts[0], parts[1]
 }

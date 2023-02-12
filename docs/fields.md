@@ -1651,7 +1651,7 @@ Template is a reusable and composable unit of execution in a workflow
 |`http`|[`HTTP`](#http)|HTTP makes a HTTP request|
 |`initContainers`|`Array<`[`UserContainer`](#usercontainer)`>`|InitContainers is a list of containers which run before the main container.|
 |`inputs`|[`Inputs`](#inputs)|Inputs describe what inputs parameters and artifacts are supplied to this template|
-|`job`|[`Job`](#job)|_No description available_|
+|`job`|[`Job`](#job)|Job is a job template|
 |`memoize`|[`Memoize`](#memoize)|Memoize allows templates to use outputs generated from already executed templates|
 |`metadata`|[`Metadata`](#metadata)|Metdata sets the pods's metadata, i.e. annotations and labels|
 |`metrics`|[`Metrics`](#metrics)|Metrics are a list of metrics emitted from this template|

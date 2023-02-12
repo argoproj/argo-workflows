@@ -10512,6 +10512,7 @@
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Inputs"
         },
         "job": {
+          "description": "Job is a job template",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Job"
         },
         "memoize": {

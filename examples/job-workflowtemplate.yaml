@@ -43,15 +43,16 @@ spec:
           - name: build
             run: go build ./...
           - name: test
+            run: go test -v ./... 2>&1 > test.out
+          - name: fail
+            run: exit 1
+          - name: test-report
+            if: always()
             run: |
               go install github.com/jstemmer/go-junit-report@latest
               go install github.com/alexec/junit2html@latest
           
-              trap 'cat test.out | go-junit-report | junit2html > test-report.html' EXIT
-          
-              go test -v ./... 2>&1 > test.out
-          - name: fail
-            run: exit 1
+              cat test.out | go-junit-report | junit2html > test-report.html
       outputs:
         artifacts:
           - name: GOMODCACHE

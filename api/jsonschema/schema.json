@@ -6581,7 +6581,8 @@
           "description": "Inputs describe what inputs parameters and artifacts are supplied to this template"
         },
         "job": {
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Job"
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Job",
+          "description": "Job is a job template"
         },
         "memoize": {
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Memoize",

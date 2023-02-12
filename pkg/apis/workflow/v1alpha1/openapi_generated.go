@@ -6115,7 +6115,8 @@ func schema_pkg_apis_workflow_v1alpha1_Template(ref common.ReferenceCallback) co
 					},
 					"job": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Job"),
+							Description: "Job is a job template",
+							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Job"),
 						},
 					},
 					"volumes": {
