@@ -1147,9 +1147,11 @@ func (we *WorkflowExecutor) monitorPhases(ctx context.Context) {
 			job := we.Template.Job
 			if job != nil {
 				for _, step := range job.Steps {
-					filename := filepath.Join(common.VarRunArgoPath, step.Name, "phase")
+					filename := filepath.Join(common.VarRunArgoPath, step.Name, "status")
 					data, _ := os.ReadFile(filename)
 					if data != nil {
+						result := wfv1.NodeResult{}
+						_ = json.Unmarshal(data, &result)
 						wf := &wfv1.Workflow{
 							ObjectMeta: metav1.ObjectMeta{
 								Name: we.workflow,
@@ -1164,9 +1166,7 @@ func (we *WorkflowExecutor) monitorPhases(ctx context.Context) {
 							Steps:    5,
 							Cap:      30 * time.Second,
 						}, errorsutil.IsTransientErr, func() error {
-							return we.upsertTaskResult(ctx, nodeID, wfv1.NodeResult{
-								Phase: wfv1.NodePhase(data),
-							})
+							return we.upsertTaskResult(ctx, nodeID, result)
 						})
 						if err != nil {
 							log.WithError(err).Warn("failed to upsert task-result")

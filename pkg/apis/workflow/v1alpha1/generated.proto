@@ -982,6 +982,10 @@ message NodeResult {
   optional Outputs outputs = 3;
 
   optional string progress = 4;
+
+  optional k8s.io.apimachinery.pkg.apis.meta.v1.Time startedAt = 5;
+
+  optional k8s.io.apimachinery.pkg.apis.meta.v1.Time finishedAt = 6;
 }
 
 // NodeStatus contains status information about an individual node in the workflow

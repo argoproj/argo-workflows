@@ -18,6 +18,9 @@ spec:
         properties:
           apiVersion:
             type: string
+          finishedAt:
+            format: date-time
+            type: string
           kind:
             type: string
           message:
@@ -577,6 +580,9 @@ spec:
           phase:
             type: string
           progress:
+            type: string
+          startedAt:
+            format: date-time
             type: string
         required:
         - metadata

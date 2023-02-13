@@ -2,6 +2,7 @@ package commands
 
 import (
 	"encoding/json"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -25,7 +26,6 @@ func NewJobCommand() *cobra.Command {
 			}
 			var finalErr error
 			for _, step := range tmpl.Job.Steps {
-				stepPhase := wfv1.NodeRunning
 				failed := finalErr != nil
 				log := log.WithField("step", step.Name).WithField("failed", failed)
 				ok, err := expr.Eval(step.GetIf(), map[string]interface{}{
@@ -35,6 +35,19 @@ func NewJobCommand() *cobra.Command {
 				})
 				if err != nil {
 					return err
+				}
+				filename := filepath.Join(common.VarRunArgoPath, step.Name, "status")
+				_ = os.Mkdir(filepath.Dir(filename), os.ModePerm)
+				result := &wfv1.NodeResult{
+					Phase:     wfv1.NodeRunning,
+					StartedAt: metav1.Now(),
+				}
+				writeStatus := func() error {
+					data, err := json.Marshal(result)
+					if err != nil {
+						return err
+					}
+					return os.WriteFile(filename, data, os.ModePerm)
 				}
 				if ok.(bool) {
 					log.Info("running step")
@@ -49,20 +62,19 @@ func NewJobCommand() *cobra.Command {
 						if finalErr == nil {
 							finalErr = err
 						}
-						stepPhase = wfv1.NodeFailed
+						result.Phase = wfv1.NodeFailed
 					} else {
-						stepPhase = wfv1.NodeSucceeded
+						result.Phase = wfv1.NodeSucceeded
 					}
 				} else {
 					log.Info("skipped step")
-					stepPhase = wfv1.NodeSkipped
+					result.Phase = wfv1.NodeSkipped
 				}
-				filename := filepath.Join(common.VarRunArgoPath, step.Name, "phase")
-				_ = os.Mkdir(filepath.Dir(filename), os.ModePerm)
-				if err := os.WriteFile(filename, []byte(stepPhase), os.ModePerm); err != nil {
+				result.FinishedAt = metav1.Now()
+				if err := writeStatus(); err != nil {
 					return err
 				}
-				if stepPhase.FailedOrError() {
+				if result.Phase.FailedOrError() {
 					failed = true
 				}
 			}

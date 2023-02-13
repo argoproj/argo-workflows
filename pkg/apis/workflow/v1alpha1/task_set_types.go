@@ -31,10 +31,12 @@ type WorkflowTaskSetList struct {
 }
 
 type NodeResult struct {
-	Phase    NodePhase `json:"phase,omitempty" protobuf:"bytes,1,opt,name=phase,casttype=NodePhase"`
-	Message  string    `json:"message,omitempty" protobuf:"bytes,2,opt,name=message"`
-	Outputs  *Outputs  `json:"outputs,omitempty" protobuf:"bytes,3,opt,name=outputs"`
-	Progress Progress  `json:"progress,omitempty" protobuf:"bytes,4,opt,name=progress,casttype=Progress"`
+	Phase      NodePhase   `json:"phase,omitempty" protobuf:"bytes,1,opt,name=phase,casttype=NodePhase"`
+	Message    string      `json:"message,omitempty" protobuf:"bytes,2,opt,name=message"`
+	Outputs    *Outputs    `json:"outputs,omitempty" protobuf:"bytes,3,opt,name=outputs"`
+	Progress   Progress    `json:"progress,omitempty" protobuf:"bytes,4,opt,name=progress,casttype=Progress"`
+	StartedAt  metav1.Time `json:"startedAt,omitempty" protobuf:"bytes,5,opt,name=startedAt"`
+	FinishedAt metav1.Time `json:"finishedAt,omitempty" protobuf:"bytes,6,opt,name=finishedAt"`
 }
 
 func (in NodeResult) Fulfilled() bool {

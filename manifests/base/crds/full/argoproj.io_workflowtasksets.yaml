@@ -8146,6 +8146,9 @@ spec:
               nodes:
                 additionalProperties:
                   properties:
+                    finishedAt:
+                      format: date-time
+                      type: string
                     message:
                       type: string
                     outputs:
@@ -8701,6 +8704,9 @@ spec:
                     phase:
                       type: string
                     progress:
+                      type: string
+                    startedAt:
+                      format: date-time
                       type: string
                   type: object
                 type: object

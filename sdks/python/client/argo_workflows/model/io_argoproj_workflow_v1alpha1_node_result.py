@@ -87,10 +87,12 @@ class IoArgoprojWorkflowV1alpha1NodeResult(ModelNormal):
         """
         lazy_import()
         return {
+            'finished_at': (datetime,),  # noqa: E501
             'message': (str,),  # noqa: E501
             'outputs': (IoArgoprojWorkflowV1alpha1Outputs,),  # noqa: E501
             'phase': (str,),  # noqa: E501
             'progress': (str,),  # noqa: E501
+            'started_at': (datetime,),  # noqa: E501
         }
 
     @cached_property
@@ -99,10 +101,12 @@ class IoArgoprojWorkflowV1alpha1NodeResult(ModelNormal):
 
 
     attribute_map = {
+        'finished_at': 'finishedAt',  # noqa: E501
         'message': 'message',  # noqa: E501
         'outputs': 'outputs',  # noqa: E501
         'phase': 'phase',  # noqa: E501
         'progress': 'progress',  # noqa: E501
+        'started_at': 'startedAt',  # noqa: E501
     }
 
     read_only_vars = {
@@ -146,10 +150,12 @@ class IoArgoprojWorkflowV1alpha1NodeResult(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
+            finished_at (datetime): Time is a wrapper around time.Time which supports correct marshaling to YAML and JSON.  Wrappers are provided for many of the factory methods that the time package offers.. [optional]  # noqa: E501
             message (str): [optional]  # noqa: E501
             outputs (IoArgoprojWorkflowV1alpha1Outputs): [optional]  # noqa: E501
             phase (str): [optional]  # noqa: E501
             progress (str): [optional]  # noqa: E501
+            started_at (datetime): Time is a wrapper around time.Time which supports correct marshaling to YAML and JSON.  Wrappers are provided for many of the factory methods that the time package offers.. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -231,10 +237,12 @@ class IoArgoprojWorkflowV1alpha1NodeResult(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
+            finished_at (datetime): Time is a wrapper around time.Time which supports correct marshaling to YAML and JSON.  Wrappers are provided for many of the factory methods that the time package offers.. [optional]  # noqa: E501
             message (str): [optional]  # noqa: E501
             outputs (IoArgoprojWorkflowV1alpha1Outputs): [optional]  # noqa: E501
             phase (str): [optional]  # noqa: E501
             progress (str): [optional]  # noqa: E501
+            started_at (datetime): Time is a wrapper around time.Time which supports correct marshaling to YAML and JSON.  Wrappers are provided for many of the factory methods that the time package offers.. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)

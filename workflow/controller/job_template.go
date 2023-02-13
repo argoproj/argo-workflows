@@ -18,7 +18,7 @@ func (woc *wfOperationCtx) executeJobTemplate(ctx context.Context, nodeName stri
 		stepNodeName := fmt.Sprintf("%s.%s", nodeName, step.Name)
 		stepNode := woc.wf.GetNodeByName(stepNodeName)
 		if stepNode == nil {
-			_ = woc.initializeNode(stepNodeName, wfv1.NodeTypeJobStep, templateScope, orgTmpl, node.ID, wfv1.NodePending)
+			_ = woc.initializeNode(stepNodeName, wfv1.NodeTypeJobStep, "", &wfv1.NodeStatus{}, node.ID, wfv1.NodePending)
 		}
 		if i == 0 {
 			woc.addChildNode(nodeName, stepNodeName)

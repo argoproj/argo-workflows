@@ -492,7 +492,7 @@ export const WorkflowNodeInfo = (props: Props) => (
                     )
                 }
             ].concat(
-                !(['Container', 'JobStep'].includes(props.node.type))
+                !['Container', 'JobStep'].includes(props.node.type)
                     ? [
                           {
                               title: 'CONTAINERS',

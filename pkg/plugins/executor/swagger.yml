@@ -2212,6 +2212,8 @@ definitions:
     type: string
   NodeResult:
     properties:
+      finishedAt:
+        $ref: '#/definitions/Time'
       message:
         type: string
       outputs:
@@ -2220,6 +2222,8 @@ definitions:
         $ref: '#/definitions/NodePhase'
       progress:
         $ref: '#/definitions/Progress'
+      startedAt:
+        $ref: '#/definitions/Time'
     type: object
   NodeSelector:
     description: |-

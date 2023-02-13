@@ -5467,6 +5467,9 @@
     },
     "io.argoproj.workflow.v1alpha1.NodeResult": {
       "properties": {
+        "finishedAt": {
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.Time"
+        },
         "message": {
           "type": "string"
         },
@@ -5478,6 +5481,9 @@
         },
         "progress": {
           "type": "string"
+        },
+        "startedAt": {
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.Time"
         }
       },
       "type": "object"

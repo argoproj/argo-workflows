@@ -72,6 +72,12 @@ func (woc *wfOperationCtx) taskResultReconciliation() {
 		if result.Progress.IsValid() {
 			new.Progress = result.Progress
 		}
+		if !result.StartedAt.IsZero() {
+			new.StartedAt = result.StartedAt
+		}
+		if !result.FinishedAt.IsZero() {
+			new.FinishedAt = result.FinishedAt
+		}
 		if !reflect.DeepEqual(&old, new) {
 			woc.log.
 				WithField("nodeID", nodeID).

@@ -2570,10 +2570,12 @@ node(s) with the highest sum are the most preferred.
 
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
+| finishedAt | [Time](#time)| `Time` |  | |  |  |
 | message | string| `string` |  | |  |  |
 | outputs | [Outputs](#outputs)| `Outputs` |  | |  |  |
 | phase | [NodePhase](#node-phase)| `NodePhase` |  | |  |  |
 | progress | [Progress](#progress)| `Progress` |  | |  |  |
+| startedAt | [Time](#time)| `Time` |  | |  |  |
 
 
 
