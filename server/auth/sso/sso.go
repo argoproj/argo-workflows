@@ -141,8 +141,12 @@ func newSso(
 		ObjectMeta: metav1.ObjectMeta{Name: secretName},
 		Data:       map[string][]byte{cookieEncryptionPrivateKeySecretKey: x509.MarshalPKCS1PrivateKey(generatedKey)},
 	}, metav1.CreateOptions{})
-	if err != nil && !apierr.IsAlreadyExists(err) {
-		return nil, fmt.Errorf("failed to create secret: %w", err)
+	isSecretAlreadyExists := false
+	if err != nil {
+		isSecretAlreadyExists = apierr.IsAlreadyExists(err)
+		if !isSecretAlreadyExists {
+			return nil, fmt.Errorf("failed to create secret: %w", err)
+		}
 	}
 	secret, err := secretsIf.Get(ctx, secretName, metav1.GetOptions{})
 	if err != nil {
@@ -150,7 +154,11 @@ func newSso(
 	}
 	privateKey, err := x509.ParsePKCS1PrivateKey(secret.Data[cookieEncryptionPrivateKeySecretKey])
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse private key: %w", err)
+		if isSecretAlreadyExists {
+			return nil, fmt.Errorf("failed to parse private key. If you have already defined a Secret named %s, delete it and retry: %w", secretName, err)
+		} else {
+			return nil, fmt.Errorf("failed to parse private key: %w", err)
+		}
 	}
 
 	clientID := clientIDObj.Data[c.ClientID.Key]
@@ -277,7 +285,6 @@ func (s *sso) HandleCallback(w http.ResponseWriter, r *http.Request) {
 			Expiry:  jwt.NewNumericDate(time.Now().Add(s.expiry)),
 		},
 		Groups:                  groups,
-		RawClaim:                c.RawClaim,
 		Email:                   c.Email,
 		EmailVerified:           c.EmailVerified,
 		ServiceAccountName:      c.ServiceAccountName,

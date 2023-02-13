@@ -66,7 +66,7 @@ import (
 
 // wfOperationCtx is the context for evaluation and operation of a single workflow
 type wfOperationCtx struct {
-	// wf is the workflow object. It should not be used in execution logic. woc.wfSpec should be used instead
+	// wf is the workflow object. It should not be used in execution logic. woc.execWf.Spec should be used instead
 	wf *wfv1.Workflow
 	// orig is the original workflow object for purposes of creating a patch
 	orig *wfv1.Workflow
@@ -357,6 +357,10 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 				woc.markWorkflowError(ctx, x)
 			}
 		}
+		// Garbage collect PVCs if Entrypoint template execution returns error
+		if err := woc.deletePVCs(ctx); err != nil {
+			woc.log.WithError(err).Warn("failed to delete PVCs")
+		}
 		return
 	}
 
@@ -421,8 +425,11 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 			default:
 				if !errorsutil.IsTransientErr(err) && !woc.wf.Status.Phase.Completed() && os.Getenv("BUBBLE_ENTRY_TEMPLATE_ERR") != "false" {
 					woc.markWorkflowError(ctx, x)
-					return
 				}
+			}
+			// Garbage collect PVCs if Onexit template execution returns error
+			if err := woc.deletePVCs(ctx); err != nil {
+				woc.log.WithError(err).Warn("failed to delete PVCs")
 			}
 			return
 		}
@@ -478,8 +485,7 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 		woc.computeMetrics(woc.execWf.Spec.Metrics.Prometheus, localScope, realTimeScope, false)
 	}
 
-	err = woc.deletePVCs(ctx)
-	if err != nil {
+	if err := woc.deletePVCs(ctx); err != nil {
 		woc.log.WithError(err).Warn("failed to delete PVCs")
 	}
 }

@@ -50,6 +50,8 @@ func NewOperation(ctx context.Context, instanceIDService instanceid.Service, eve
 	}, nil
 }
 
+// not to be converted with sutils, parent calling function should handle this
+// responsibility
 func (o *Operation) Dispatch(ctx context.Context) error {
 	log.Debug("Executing event dispatch")
 
@@ -146,6 +148,13 @@ func (o *Operation) populateWorkflowMetadata(wf *wfv1.Workflow, metadata *metav1
 			return err
 		}
 		wf.SetName(evalName)
+	}
+	if len(metadata.GenerateName) > 0 {
+		evalName, err := o.evaluateStringExpression(metadata.GenerateName, "generateName")
+		if err != nil {
+			return err
+		}
+		wf.GenerateName = evalName
 	}
 	for labelKey, labelValue := range metadata.Labels {
 		evalLabel, err := o.evaluateStringExpression(labelValue, fmt.Sprintf("label \"%s\"", labelKey))
