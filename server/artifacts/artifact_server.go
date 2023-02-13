@@ -155,7 +155,6 @@ func (a *ArtifactServer) GetArtifactFile(w http.ResponseWriter, r *http.Request)
 	}
 
 	a.getArtifactFromPath(artifact, driver, w, r)
-
 }
 
 func (a *ArtifactServer) getArtifactFromPath(artifact *wfv1.Artifact, driver common.ArtifactDriver, w http.ResponseWriter, r *http.Request) {
