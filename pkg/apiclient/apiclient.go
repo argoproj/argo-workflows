@@ -33,6 +33,7 @@ type Opts struct {
 	ClientConfig         clientcmd.ClientConfig
 	ClientConfigSupplier func() clientcmd.ClientConfig
 	Offline              bool
+	OfflineFiles         []string
 	Context              context.Context
 }
 
@@ -63,7 +64,7 @@ func NewClient(argoServer string, authSupplier func() string, clientConfig clien
 func NewClientFromOpts(opts Opts) (context.Context, Client, error) {
 	log.WithField("opts", opts).Debug("Client options")
 	if opts.Offline {
-		return newOfflineClient()
+		return newOfflineClient(opts.OfflineFiles)
 	}
 	if opts.ArgoServerOpts.URL != "" && opts.InstanceID != "" {
 		return nil, nil, fmt.Errorf("cannot use instance ID with Argo Server")
