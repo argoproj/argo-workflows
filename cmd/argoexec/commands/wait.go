@@ -14,7 +14,7 @@ func NewWaitCommand() *cobra.Command {
 		Use:   "wait",
 		Short: "wait for main container to finish and save artifacts",
 		Run: func(cmd *cobra.Command, args []string) {
-			ctx := context.Background()
+			ctx := cmd.Context()
 			err := waitContainer(ctx)
 			if err != nil {
 				log.Fatalf("%+v", err)
