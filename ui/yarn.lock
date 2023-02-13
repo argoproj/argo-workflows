@@ -3425,10 +3425,10 @@ cron-parser@^4.7.1:
   dependencies:
     luxon "^3.2.1"
 
-cronstrue@^2.22.0:
-  version "2.22.0"
-  resolved "https://registry.yarnpkg.com/cronstrue/-/cronstrue-2.22.0.tgz#7581c280fcc737c85e6082700ce317c1cc280292"
-  integrity sha512-jS6dApMpBBkfNkc4nUDC35w+YC1EO6qGRofMb6+94yhVVO5XeQO/zUXkZggOvJMEFGCQJGkbH/JkA/KmTTuQew==
+cronstrue@^2.23.0:
+  version "2.23.0"
+  resolved "https://registry.yarnpkg.com/cronstrue/-/cronstrue-2.23.0.tgz#8f000f62c0034a0efae820b6b4f86052836c3d38"
+  integrity sha512-iPoWUQbCwUmrBf1w9W+9YQs8FowWp/teC2XGz3zAmt0Aja+HWGjyjUkWASWcsdzxSuL0EIIdvlfGEVBljvTbSQ==
 
 cross-fetch@^3.1.5:
   version "3.1.5"
