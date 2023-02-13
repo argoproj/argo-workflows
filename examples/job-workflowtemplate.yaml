@@ -39,7 +39,7 @@ spec:
         workingDir: /go/src/github.com/golang/example
         steps:
           - name: clone
-            run: git clone -v -b "{{workflow.parameters.branch}}" --single-branch --depth 1 https://github.com/golang/example.git .
+            run: git clone -b "{{workflow.parameters.branch}}" --single-branch --depth 1 https://github.com/golang/example.git .
           - name: deps
             run: go mod download
           - name: build
