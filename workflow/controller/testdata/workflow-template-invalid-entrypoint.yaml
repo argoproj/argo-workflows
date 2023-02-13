@@ -1,0 +1,29 @@
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: workflow-template-invalid-entrypoint
+  namespace: argo
+spec:
+  volumeClaimTemplates:
+    - metadata:
+        name: builddir
+      spec:
+        accessModes: [ "ReadWriteMany" ]
+        resources:
+          requests:
+            storage: 1Mi
+  volumeClaimGC:
+    strategy: OnWorkflowCompletion
+  entrypoint: whalesay
+  onExit: notify
+  templates:
+    - name: whalesay
+      # note this is an invalid template
+    - name: notify
+      container:
+        image: 'argoproj/argosay:v2'
+        command:
+          - /argosay
+        args:
+          - echo
+          - 'hello world'
