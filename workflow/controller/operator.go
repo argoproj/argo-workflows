@@ -2837,41 +2837,14 @@ func (woc *wfOperationCtx) addOutputsToGlobalScope(outputs *wfv1.Outputs) {
 	}
 }
 
-// loopNodes is a node list which supports sorting by loop index
-type loopNodes []wfv1.NodeStatus
-
-func (n loopNodes) Len() int {
-	return len(n)
-}
-
-func parseLoopIndex(s string) int {
-	s = strings.SplitN(s, "(", 2)[1]
-	s = strings.SplitN(s, ":", 2)[0]
-	val, err := strconv.Atoi(s)
-	if err != nil {
-		panic(fmt.Sprintf("failed to parse '%s' as int: %v", s, err))
-	}
-	return val
-}
-
-func (n loopNodes) Less(i, j int) bool {
-	left := parseLoopIndex(n[i].DisplayName)
-	right := parseLoopIndex(n[j].DisplayName)
-	return left < right
-}
-
-func (n loopNodes) Swap(i, j int) {
-	n[i], n[j] = n[j], n[i]
-}
-
 // processAggregateNodeOutputs adds the aggregated outputs of a withItems/withParam template as a
 // parameter in the form of a JSON list
-func (woc *wfOperationCtx) processAggregateNodeOutputs(scope *wfScope, prefix string, childNodes []wfv1.NodeStatus) error {
+func (woc *wfOperationCtx) processAggregateNodeOutputs(scope *wfScope, prefix string, childNodes wfv1.NodeStatuses) error {
 	if len(childNodes) == 0 {
 		return nil
 	}
 	// need to sort the child node list so that the order of outputs are preserved
-	sort.Sort(loopNodes(childNodes))
+	sort.Sort(childNodes)
 	paramList := make([]map[string]string, 0)
 	outputParamValueLists := make(map[string][]string)
 	resultsList := make([]wfv1.Item, 0)

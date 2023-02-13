@@ -11,6 +11,7 @@ import (
 	"reflect"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -1760,6 +1761,15 @@ func (s Nodes) Map(f func(x NodeStatus) interface{}) map[string]interface{} {
 	return values
 }
 
+func (n Nodes) NodeStatuses() NodeStatuses {
+	var nodes NodeStatuses
+	for _, status := range n {
+		nodes = append(nodes, status)
+	}
+	sort.Sort(nodes)
+	return nodes
+}
+
 // UserContainer is a container specified by a user.
 type UserContainer struct {
 	apiv1.Container `json:",inline" protobuf:"bytes,1,opt,name=container"`
@@ -2035,6 +2045,24 @@ type Condition struct {
 	Message string `json:"message,omitempty" protobuf:"bytes,3,opt,name=message"`
 }
 
+type NodeStatuses []NodeStatus
+
+func (n NodeStatuses) Len() int {
+	return len(n)
+}
+
+func (n NodeStatuses) Less(i, j int) bool {
+	a, b := n[i], n[j]
+	if a.loopIndex() < b.loopIndex() {
+		return true
+	}
+	return a.StartedAt.Time.Before(b.StartedAt.Time)
+}
+
+func (n NodeStatuses) Swap(i, j int) {
+	n[i], n[j] = n[j], n[i]
+}
+
 // NodeStatus contains status information about an individual node in the workflow
 type NodeStatus struct {
 	// ID is a unique identifier of a node within the worklow
@@ -2293,6 +2321,21 @@ func (n NodeStatus) HasChild(childID string) bool {
 		}
 	}
 	return false
+}
+
+func (n NodeStatus) loopIndex() int {
+	parts := strings.SplitN(n.DisplayName, "(", 2)
+	if len(parts) < 2 {
+		return 0
+	}
+	s := parts[1]
+	parts = strings.SplitN(s, ":", 2)
+	if len(parts) < 1 {
+		return 0
+	}
+	s = parts[0]
+	val, _ := strconv.Atoi(s)
+	return val
 }
 
 // S3Bucket contains the access information required for interfacing with an S3 bucket

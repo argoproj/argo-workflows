@@ -227,14 +227,6 @@ func isBoundaryNode(node wfv1.NodeType) bool {
 	return (node == wfv1.NodeTypeDAG) || (node == wfv1.NodeTypeSteps)
 }
 
-func isNonBoundaryParentNode(node wfv1.NodeType) bool {
-	return (node == wfv1.NodeTypeStepGroup) || (node == wfv1.NodeTypeRetry)
-}
-
-func isExecutionNode(node wfv1.NodeType) bool {
-	return (node == wfv1.NodeTypePod) || (node == wfv1.NodeTypeSkipped) || (node == wfv1.NodeTypeSuspend) || (node == wfv1.NodeTypeHTTP) || (node == wfv1.NodeTypePlugin) || (node == wfv1.NodeTypeJobStep)
-}
-
 func insertSorted(wf *wfv1.Workflow, sortedArray []renderNode, item renderNode) []renderNode {
 	insertTime := item.getStartTime(wf)
 	var index int
@@ -326,12 +318,14 @@ func convertToRenderTrees(wf *wfv1.Workflow) map[string]renderNode {
 	// in a 1 pass strategy
 
 	// 1st Pass Process enough of nonBoundaryParent nodes to know all their children
-	for id, status := range wf.Status.Nodes {
+	nodes := wf.Status.Nodes.NodeStatuses()
+	for _, status := range nodes {
 		if status.Type == "" {
 			log.Fatal("Missing node type in status node. Cannot get workflows created with Argo <= 2.0 using the default or wide output option.")
 			return nil
 		}
 		if !isBoundaryNode(status.Type) {
+			id := status.ID
 			n := nonBoundaryParentNode{nodeInfo: nodeInfo{id: id}}
 			nonBoundaryParentMap[id] = &n
 
@@ -342,7 +336,8 @@ func convertToRenderTrees(wf *wfv1.Workflow) map[string]renderNode {
 	}
 
 	// 2nd Pass process everything
-	for id, status := range wf.Status.Nodes {
+	for _, status := range nodes {
+		id := status.ID
 		switch {
 		case isBoundaryNode(status.Type):
 			n := boundaryNode{nodeInfo: nodeInfo{id: id}}
@@ -509,7 +504,6 @@ func printNode(w *tabwriter.Writer, node wfv1.NodeStatus, wfName, nodePrefix str
 // boundaryNode
 func (nodeInfo *boundaryNode) renderNodes(w *tabwriter.Writer, wf *wfv1.Workflow, depth int, nodePrefix string, childPrefix string, getArgs GetFlags) {
 	filtered, childIndent := filterNode(nodeInfo.getNodeStatus(wf), getArgs)
-	println("ALEX", filtered)
 	if !filtered {
 		version := util.GetWorkflowPodNameVersion(wf)
 		printNode(w, nodeInfo.getNodeStatus(wf), wf.ObjectMeta.Name, nodePrefix, getArgs, version)

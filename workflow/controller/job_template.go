@@ -2,6 +2,7 @@ package controller
 
 import (
 	"context"
+	"fmt"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
 
@@ -14,7 +15,7 @@ func (woc *wfOperationCtx) executeJobTemplate(ctx context.Context, nodeName stri
 	job := tmpl.Job
 	steps := job.Steps
 	for i, step := range steps {
-		stepNodeName := joinStepNodeName(nodeName, step.Name)
+		stepNodeName := fmt.Sprintf("%s.%s", nodeName, step.Name)
 		stepNode := woc.wf.GetNodeByName(stepNodeName)
 		if stepNode == nil {
 			_ = woc.initializeNode(stepNodeName, wfv1.NodeTypeJobStep, templateScope, orgTmpl, node.ID, wfv1.NodePending)
@@ -23,7 +24,7 @@ func (woc *wfOperationCtx) executeJobTemplate(ctx context.Context, nodeName stri
 			woc.addChildNode(nodeName, stepNodeName)
 		} else {
 			previousStep := steps[i-1]
-			woc.addChildNode(joinStepNodeName(nodeName, previousStep.Name), stepNodeName)
+			woc.addChildNode(fmt.Sprintf("%s.%s", nodeName, previousStep.Name), stepNodeName)
 		}
 	}
 
