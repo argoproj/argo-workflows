@@ -35,6 +35,7 @@ func waitContainer(ctx context.Context) error {
 	if err != nil {
 		wfExecutor.AddError(err)
 	}
+	ctx = context.Background() // don't allow cancellation to impact capture of results, parameters,or artifacts
 	// Capture output script result
 	err = wfExecutor.CaptureScriptResult(ctx)
 	if err != nil {
