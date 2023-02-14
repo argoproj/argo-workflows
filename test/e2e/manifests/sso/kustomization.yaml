@@ -3,6 +3,7 @@ kind: Kustomization
 
 resources:
 - ../../../../manifests/quick-start/sso
+- ../mixins/argo-server.service-account-token-secret.yaml
 
 patchesStrategicMerge:
 - ../mixins/argo-server-deployment.yaml
