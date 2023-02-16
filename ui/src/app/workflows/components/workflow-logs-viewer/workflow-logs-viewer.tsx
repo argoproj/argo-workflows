@@ -12,8 +12,8 @@ import {Button} from '../../../shared/components/button';
 import {ErrorNotice} from '../../../shared/components/error-notice';
 import {InfoIcon, WarningIcon} from '../../../shared/components/fa-icons';
 import {Links} from '../../../shared/components/links';
-import {useLocalStorage} from '../../../shared/hooks/uselocalstorage';
 import {Context} from '../../../shared/context';
+import {useLocalStorage} from '../../../shared/hooks/uselocalstorage';
 import {getPodName, getTemplateNameFromNode} from '../../../shared/pod-name';
 import {ScopedLocalStorage} from '../../../shared/scoped-local-storage';
 import {services} from '../../../shared/services';
@@ -102,8 +102,7 @@ export const WorkflowLogsViewer = ({workflow, nodeId, initialPodName, container,
     useEffect(() => {
         setError(null);
         setLoaded(false);
-        const source = services.workflows
-            .getContainerLogs(workflow, podName, nodeId, selectedContainer, grep, archived).pipe(
+        const source = services.workflows.getContainerLogs(workflow, podName, nodeId, selectedContainer, grep, archived).pipe(
             // extract message from LogEntry
             map(e => {
                 const values: string[] = [];
