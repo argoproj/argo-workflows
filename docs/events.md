@@ -49,6 +49,9 @@ metadata:
   name: my-wf-tmple
   namespace: argo
 spec:
+  arguments:
+    parameters:
+    - name: message
   templates:
     - name: main
       inputs:
