@@ -7,8 +7,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
+	v1 "k8s.io/client-go/kubernetes/typed/core/v1"
 
 	"github.com/sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 
@@ -39,6 +41,35 @@ func getLabelSelector(wfName string, podGC *wfv1.PodGC, labelCompleted bool) met
 		expressions = append(expressions, podGC.LabelSelector.MatchExpressions...)
 	}
 	return metav1.LabelSelector{MatchLabels: labels, MatchExpressions: expressions}
+}
+
+func patchSelectedPodsAsCompleted(woc *wfOperationCtx, pods v1.PodInterface, labelSelector string) {
+	podList, err := pods.List(context.Background(), metav1.ListOptions{LabelSelector: labelSelector})
+
+	markDone := true
+	if err != nil {
+		log.Errorf("unable to obtain list of pods due to %s", err)
+		// no need to update markDone here because we return
+		// if we want to be explicit we would have `makeDone = false` here
+		return
+	}
+	for _, nonCompletedPod := range podList.Items {
+		woc.rateLimiter.Wait()
+		_, err := pods.Patch(
+			context.Background(),
+			nonCompletedPod.Name,
+			types.MergePatchType,
+			[]byte(`{"metadata": {"labels": {"workflows.argoproj.io/completed": "true"}}}`),
+			metav1.PatchOptions{},
+		)
+		if err != nil {
+			markDone = false
+			log.Errorf("unable to patch pod %s due to %s", nonCompletedPod.Name, err)
+		}
+	}
+	if markDone {
+		woc.finishedCleanup = true
+	}
 }
 
 func (woc *wfOperationCtx) runImmediateCleanup(pod *apiv1.Pod, podGC *wfv1.PodGC, workflowPhase wfv1.WorkflowPhase) error {
@@ -87,30 +118,7 @@ func (woc *wfOperationCtx) runImmediateCleanup(pod *apiv1.Pod, podGC *wfv1.PodGC
 	// optimisation when function is called with a fulfilled workflow
 	// lets patch everything up
 	if woc.wf.Status.Fulfilled() {
-		markDone := true
-		podList, err := pods.List(context.Background(), metav1.ListOptions{LabelSelector: selectorString})
-		if err != nil {
-			log.Errorf("unable to obtain list of pods due to %s", err)
-			markDone = false
-		} else {
-			for _, nonCompletedPod := range podList.Items {
-				woc.rateLimiter.Wait()
-				_, err := pods.Patch(
-					context.Background(),
-					nonCompletedPod.Name,
-					types.MergePatchType,
-					[]byte(`{"metadata": {"labels": {"workflows.argoproj.io/completed": "true"}}}`),
-					metav1.PatchOptions{},
-				)
-				if err != nil {
-					markDone = false
-					log.Errorf("unable to patch pod %s due to %s", nonCompletedPod.Name, err)
-				}
-			}
-		}
-		if markDone {
-			woc.finishedCleanup = true
-		}
+		patchSelectedPodsAsCompleted(woc, pods, selectorString)
 	}
 
 	woc.rateLimiter.Wait()
