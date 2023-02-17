@@ -28,6 +28,7 @@ type ArtifactDriver struct {
 	Password              string
 	SSHPrivateKey         string
 	InsecureIgnoreHostKey bool
+	InsecureSkipTLS       bool
 	DisableSubmodules     bool
 }
 
@@ -93,10 +94,11 @@ func (g *ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) error {
 	defer closer()
 	depth := a.GetDepth()
 	cloneOptions := &git.CloneOptions{
-		URL:          a.Repo,
-		Auth:         auth,
-		Depth:        depth,
-		SingleBranch: a.SingleBranch,
+		URL:             a.Repo,
+		Auth:            auth,
+		Depth:           depth,
+		SingleBranch:    a.SingleBranch,
+		InsecureSkipTLS: g.InsecureSkipTLS,
 	}
 	if a.SingleBranch && a.Branch == "" {
 		return errors.New("single branch mode without a branch specified")
