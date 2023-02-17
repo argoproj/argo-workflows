@@ -32,8 +32,10 @@
         "react-chartjs-2": "^2.11.2",
         "react-datepicker": "^4.25.0",
         "react-dom": "^16.14.0",
+        "react-markdown": "^8.0.7",
         "react-monaco-editor": "^0.50.1",
         "react-router-dom": "^4.2.2",
+        "remark-gfm": "^3.0.0",
         "superagent": "^8.1.2",
         "swagger-ui-react": "^4.19.1"
     },
