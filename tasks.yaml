@@ -1,3 +1,5 @@
+apiVersion: kit/v1
+kind: Tasks
 metadata:
   annotations:
     help: |
