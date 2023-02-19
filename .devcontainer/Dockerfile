@@ -3,10 +3,10 @@
 ARG VARIANT="bullseye"
 FROM --platform=linux/amd64 mcr.microsoft.com/vscode/devcontainers/base:0-${VARIANT}
 
-ARG NEW_USERNAME=""
-ARG HOME=""
+ARG NEW_USERNAME=$(whoami)
+ARG HOME=/root
 ARG OLD_USERNAME="vscode"
-ARG VSCODE_SCRIPT_VERSION=""
+ARG VSCODE_SCRIPT_VERSION="v0.234.0"
 
 ARG PROTOC_ZIP="protoc-3.14.0-linux-x86_64.zip"
 RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
