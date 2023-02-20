@@ -28,12 +28,6 @@ RUN choco install golang --version=$env:GOLANG_VERSION ; \
 FROM mcr.microsoft.com/windows/nanoserver:${IMAGE_OS_VERSION} as argoexec-base
 COPY --from=builder /windows/system32/netapi32.dll /windows/system32/netapi32.dll
 
-# NOTE: kubectl version should be one minor version less than https://storage.googleapis.com/kubernetes-release/release/stable.txt
-ENV KUBECTL_VERSION=1.24.8
-
-RUN mkdir C:\app && \
-    curl -L -o C:\app\kubectl.exe "https://storage.googleapis.com/kubernetes-release/release/v%KUBECTL_VERSION%/bin/windows/amd64/kubectl.exe"
-
 COPY --from=builder C:/ProgramData/chocolatey/lib/7zip.portable/tools/7z-extra/x64/7za.exe C:/app/7za.exe
 
 # add binaries to path
