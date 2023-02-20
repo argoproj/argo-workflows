@@ -11,7 +11,6 @@ import (
 	workflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflow"
 	workflowarchivepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowarchive"
 	"github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowtemplate"
-	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/workflow/templateresolution"
 
@@ -44,7 +43,7 @@ func newOfflineClient(files []string) (context.Context, Client, error) {
 		}
 		switch generic["kind"] {
 		case "ClusterWorkflowTemplate":
-			cwftmpl := new(v1alpha1.ClusterWorkflowTemplate)
+			cwftmpl := new(wfv1.ClusterWorkflowTemplate)
 			if err := yaml.Unmarshal(bytes, &cwftmpl); err != nil {
 				return nil, nil, fmt.Errorf("failed to unmarshal file %s as a ClusterWorkflowTemplate: %w", file, err)
 			}
@@ -55,7 +54,7 @@ func newOfflineClient(files []string) (context.Context, Client, error) {
 			clusterWorkflowTemplateGetter.clusterWorkflowTemplates[cwftmpl.Name] = cwftmpl
 
 		case "WorkflowTemplate":
-			wftmpl := new(v1alpha1.WorkflowTemplate)
+			wftmpl := new(wfv1.WorkflowTemplate)
 			if err := yaml.Unmarshal(bytes, &wftmpl); err != nil {
 				return nil, nil, fmt.Errorf("failed to unmarshal file %s as a WorkflowTemplate: %w", file, err)
 			}
