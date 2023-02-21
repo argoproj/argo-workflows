@@ -7,7 +7,6 @@ import (
 	"sort"
 
 	"golang.org/x/exp/maps"
-	apiv1 "k8s.io/api/core/v1"
 	corev1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -673,7 +672,7 @@ func (woc *wfOperationCtx) addArtGCCondition(msg string) {
 }
 
 func (woc *wfOperationCtx) addArtGCEvent(msg string) {
-	woc.eventRecorder.Event(woc.wf, apiv1.EventTypeWarning, "ArtifactGCFailed", msg)
+	woc.eventRecorder.Event(woc.wf, corev1.EventTypeWarning, "ArtifactGCFailed", msg)
 }
 
 func (woc *wfOperationCtx) getArtifactGCPodInfo(artifact *wfv1.Artifact) podInfo {
