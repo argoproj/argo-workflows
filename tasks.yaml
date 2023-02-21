@@ -18,9 +18,12 @@ spec:
   tasks:
     - name: static-files
       command: make server/static/files.go STATIC_FILES=false
+    - name: deps
+      command: go mod download
+      mutex: deps
     - command: go build ./...
       name: build
-      dependencies: static-files
+      dependencies: static-files deps
     - name: cluster-info
       command: kubectl cluster-info
     - name: docker-ps
@@ -29,7 +32,7 @@ spec:
       command: sh -c "make install PROFILE=$PROFILE"
       env:
         - PROFILE=minimal
-      dependencies: cluster-info
+      dependencies: cluster-info deps
       watch: manifests
     - command: make ./dist/workflow-controller
       dependencies: build
@@ -77,11 +80,12 @@ spec:
         - ARGO_MANAGED_NAMESPACE=argo
         - UPPERIO_DB_DEBUG=1
       ports: "2746"
-    - name: ui-install
+    - name: ui-deps
       command: yarn --cwd ui install
+      mutex: deps
     - name: ui
       command: yarn --cwd ui start
-      dependencies: ui-install
+      dependencies: ui-deps
       ports: "8080"
     - name: executor
       command: make argoexec-image
