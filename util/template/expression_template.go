@@ -5,10 +5,12 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 
 	"github.com/antonmedv/expr"
 	"github.com/antonmedv/expr/file"
 	"github.com/antonmedv/expr/parser/lexer"
+	"github.com/doublerebel/bellows"
 )
 
 func init() {
@@ -33,6 +35,18 @@ func expressionReplace(w io.Writer, expression string, env map[string]interface{
 		// See https://github.com/argoproj/argo-workflows/issues/5388
 		return w.Write([]byte(fmt.Sprintf("{{%s%s}}", kindExpression, expression)))
 	}
+
+	// This is to make sure expressions which contains `workflow.status` and `work.failures` don't get resolved to nil
+	// when `workflow.status` and `workflow.failures` don't exist in the env.
+	// See https://github.com/argoproj/argo-workflows/issues/10393, https://github.com/antonmedv/expr/issues/330
+	// This issue doesn't happen to other template parameters since `workflow.status` and `workflow.failures` only exist in the env
+	// when the exit handlers complete.
+	if ((hasWorkflowStatus(unmarshalledExpression) && !hasVarInEnv(env, "workflow.status")) ||
+		(hasWorkflowFailures(unmarshalledExpression) && !hasVarInEnv(env, "workflow.failures"))) &&
+		allowUnresolved {
+		return w.Write([]byte(fmt.Sprintf("{{%s%s}}", kindExpression, expression)))
+	}
+
 	result, err := expr.Eval(unmarshalledExpression, env)
 	if (err != nil || result == nil) && allowUnresolved { //  <nil> result is also un-resolved, and any error can be unresolved
 		return w.Write([]byte(fmt.Sprintf("{{%s%s}}", kindExpression, expression)))
@@ -78,4 +92,49 @@ func hasRetries(expression string) bool {
 		}
 	}
 	return false
+}
+
+// hasWorkflowStatus checks if expression contains `workflow.status`
+func hasWorkflowStatus(expression string) bool {
+	if !strings.Contains(expression, "workflow.status") {
+		return false
+	}
+	// Even if the expression contains `workflow.status`, it could be the case that it represents a string (`"workflow.status"`),
+	// not a variable, so we need to parse it and handle filter the string case.
+	tokens, err := lexer.Lex(file.NewSource(expression))
+	if err != nil {
+		return false
+	}
+	for i := 0; i < len(tokens)-2; i++ {
+		if tokens[i].Value+tokens[i+1].Value+tokens[i+2].Value == "workflow.status" {
+			return true
+		}
+	}
+	return false
+}
+
+// hasWorkflowFailures checks if expression contains `workflow.failures`
+func hasWorkflowFailures(expression string) bool {
+	if !strings.Contains(expression, "workflow.failures") {
+		return false
+	}
+	// Even if the expression contains `workflow.failures`, it could be the case that it represents a string (`"workflow.failures"`),
+	// not a variable, so we need to parse it and handle filter the string case.
+	tokens, err := lexer.Lex(file.NewSource(expression))
+	if err != nil {
+		return false
+	}
+	for i := 0; i < len(tokens)-2; i++ {
+		if tokens[i].Value+tokens[i+1].Value+tokens[i+2].Value == "workflow.failures" {
+			return true
+		}
+	}
+	return false
+}
+
+// hasVarInEnv checks if a parameter is in env or not
+func hasVarInEnv(env map[string]interface{}, parameter string) bool {
+	flattenEnv := bellows.Flatten(env)
+	_, ok := flattenEnv[parameter]
+	return ok
 }
