@@ -264,7 +264,7 @@ func saveArtifact(srcPath string) error {
 		return nil
 	}
 	if _, err := os.Stat(srcPath); os.IsNotExist(err) { // might be optional, so we ignore
-		logger.WithError(err).Errorf("cannot save artifact %s", srcPath)
+		logger.WithError(err).Warnf("cannot save artifact %s", srcPath)
 		return nil
 	}
 	dstPath := filepath.Join(varRunArgo, "/outputs/artifacts/", strings.TrimSuffix(srcPath, "/")+".tgz")
