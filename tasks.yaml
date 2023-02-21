@@ -92,5 +92,8 @@ spec:
       command: make argoexec-image
       dependencies: docker-ps
       watch: cmd/argoexec config errors pkg util workflow
+    - name: example
+      command: kubectl create -f examples/hello-world.yaml
+      dependencies: controller
     - name: up
-      dependencies: controller server executor ui
+      dependencies: controller server executor ui example

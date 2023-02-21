@@ -302,7 +302,8 @@ ifeq (, $(shell which clang-format))
 ifeq ($(shell uname),Darwin)
 	brew install clang-format
 else
-	sudo apt-get install clang-format
+	sudo apt update
+	sudo apt install clang-format
 endif
 endif
 
