@@ -13,7 +13,7 @@ import (
 
 type OfflineClusterWorkflowTemplateServiceClient struct {
 	clusterWorkflowTemplateGetter       templateresolution.ClusterWorkflowTemplateGetter
-	namespacedWorkflowTemplateGetterMap map[string]templateresolution.WorkflowTemplateNamespacedGetter
+	namespacedWorkflowTemplateGetterMap offlineWorkflowTemplateGetterMap
 }
 
 var _ clusterworkflowtmplpkg.ClusterWorkflowTemplateServiceClient = &OfflineClusterWorkflowTemplateServiceClient{}
