@@ -8,7 +8,6 @@ import (
 	"time"
 
 	apiv1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -204,7 +203,7 @@ func (t *Then) ExpectPVCDeleted() *Then {
 				_, err := pvcClient.Get(ctx, p.PersistentVolumeClaim.ClaimName, metav1.GetOptions{})
 				if err == nil {
 					break
-				} else if errors.IsNotFound(err) {
+				} else if apierr.IsNotFound(err) {
 					num--
 				} else {
 					t.t.Fatal(err)
