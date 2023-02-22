@@ -22,7 +22,7 @@ spec:
     - name: static-files
       command: make server/static/files.go STATIC_FILES=false
       dependencies: deps
-    - command: go build ./...
+    - command: go build -v ./...
       name: build
       dependencies: static-files deps
     - name: cluster-info
