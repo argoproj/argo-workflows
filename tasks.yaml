@@ -16,15 +16,15 @@ metadata:
   name: argo-workflows
 spec:
   tasks:
-    - name: deps
+    - name: go-deps
       command: go mod download
       mutex: deps
     - name: static-files
       command: make server/static/files.go STATIC_FILES=false
-      dependencies: deps
+      dependencies: go-deps
     - command: go build -v ./...
-      name: build
-      dependencies: static-files deps
+      name: go-build
+      dependencies: static-files go-deps
     - name: cluster-info
       command: kubectl cluster-info
     - name: docker-ps
@@ -33,10 +33,10 @@ spec:
       command: sh -c "make install PROFILE=$PROFILE"
       env:
         - PROFILE=minimal
-      dependencies: cluster-info deps
+      dependencies: cluster-info go-deps
       watch: manifests
     - command: make ./dist/workflow-controller
-      dependencies: build
+      dependencies: go-build
       name: build-controller
     - name: port-forward
       command: ./hack/port-forward.sh
@@ -64,7 +64,7 @@ spec:
       watch: cmd/workflow-controller config errors persist pkg util workflow
     - name: build-argo
       command: make ./dist/argo
-      dependencies: build
+      dependencies: go-build
       env:
         - STATIC_FILES=false
       watch: cmd/argo config errors persist pkg util server workflow
@@ -84,9 +84,12 @@ spec:
     - name: ui-deps
       command: yarn --cwd ui install
       mutex: deps
+    - name: ui-build
+      command: yarn --cwd ui build
+      dependencies: ui-deps
     - name: ui
       command: yarn --cwd ui start
-      dependencies: ui-deps
+      dependencies: ui-deps server
       ports: "8080"
     - name: executor
       command: make argoexec-image
@@ -95,5 +98,7 @@ spec:
     - name: example
       command: kubectl create -f examples/hello-world.yaml
       dependencies: controller
+    - name: build
+      dependencies: build-controller build-argo ui-build
     - name: up
       dependencies: controller server executor ui example
