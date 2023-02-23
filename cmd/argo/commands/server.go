@@ -13,6 +13,7 @@ import (
 
 	eventsource "github.com/argoproj/argo-events/pkg/client/eventsource/clientset/versioned"
 	sensor "github.com/argoproj/argo-events/pkg/client/sensor/clientset/versioned"
+	"github.com/argoproj/pkg/cli"
 	"github.com/argoproj/pkg/stats"
 	log "github.com/sirupsen/logrus"
 	"github.com/skratchdot/open-golang/open"
@@ -59,6 +60,8 @@ func NewServerCommand() *cobra.Command {
 		kubeAPIQPS               float32
 		kubeAPIBurst             int
 		allowedLinkProtocol      []string
+		logLevel                 string // --loglevel
+		glogLevel                int    // --gloglevel
 		logFormat                string // --log-format
 	)
 
@@ -68,6 +71,8 @@ func NewServerCommand() *cobra.Command {
 		Example: fmt.Sprintf(`
 See %s`, help.ArgoServer),
 		RunE: func(c *cobra.Command, args []string) error {
+			cli.SetLogLevel(logLevel)
+			cmd.SetGLogLevel(glogLevel)
 			cmd.SetLogFormatter(logFormat)
 			stats.RegisterStackDumper()
 			stats.StartStatsTicker(5 * time.Minute)
@@ -233,6 +238,8 @@ See %s`, help.ArgoServer),
 	command.Flags().StringVar(&accessControlAllowOrigin, "access-control-allow-origin", "", "Set Access-Control-Allow-Origin header in HTTP responses.")
 	command.Flags().Uint64Var(&apiRateLimit, "api-rate-limit", 1000, "Set limit per IP for api ratelimiter")
 	command.Flags().StringArrayVar(&allowedLinkProtocol, "allowed-link-protocol", defaultAllowedLinkProtocol, "Allowed link protocol in configMap. Used if the allowed configMap links protocol are different from http,https. Defaults to the environment variable ALLOWED_LINK_PROTOCOL")
+	command.Flags().StringVar(&logLevel, "loglevel", "info", "Set the logging level. One of: debug|info|warn|error")
+	command.Flags().IntVar(&glogLevel, "gloglevel", 0, "Set the glog logging level")
 	command.Flags().StringVar(&logFormat, "log-format", "text", "The formatter to use for logs. One of: text|json")
 	command.Flags().Float32Var(&kubeAPIQPS, "kube-api-qps", 20.0, "QPS to use while talking with kube-apiserver.")
 	command.Flags().IntVar(&kubeAPIBurst, "kube-api-burst", 30, "Burst to use while talking with kube-apiserver.")
