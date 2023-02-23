@@ -2,10 +2,11 @@ Fixes #TODO
 
 Please do not open a pull request until you have checked ALL of these:
 
-* [ ] Create the PR as draft .
+* [ ] Create the PR as draft.
 * [ ] Run `make pre-commit -B` to fix codegen and lint problems.
 * [ ] Sign-off your commits (otherwise the DCO check will fail).
 * [ ] Use [a conventional commit message](https://www.conventionalcommits.org/en/v1.0.0/) (otherwise the commit message check will fail).
+* [ ] Describe what you did. It makes it more difficult for reviewers and adds time if they need to go through a long thread from the original issue or otherwise decipher the change that was made.
 * [ ] "Fixes #" is in both the PR title (for release notes) and this description (to automatically link and close the issue).
 * [ ] Add unit or e2e tests. Say how you tested your changes. If you changed the UI, attach screenshots.
 * [ ] Github checks are green.
