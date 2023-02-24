@@ -1,10 +1,12 @@
 package executor
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
@@ -17,9 +19,11 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/client-go/util/retry"
 	"k8s.io/gengo/namer"
 	gengotypes "k8s.io/gengo/types"
+	kubectlcmd "k8s.io/kubectl/pkg/cmd"
 
 	"github.com/argoproj/argo-workflows/v3/errors"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
@@ -36,11 +40,11 @@ func (we *WorkflowExecutor) ExecResource(action string, manifestPath string, fla
 
 	var out []byte
 	err = retry.OnError(retry.DefaultBackoff, argoerr.IsTransientErr, func() error {
-		cmd := exec.Command("kubectl", args...)
-		log.Info(strings.Join(cmd.Args, " "))
-
-		out, err = cmd.Output()
-		return err
+		out, err = runKubectl(args...)
+		if err != nil {
+			return err
+		}
+		return nil
 	})
 	if err != nil {
 		if exErr, ok := err.(*exec.ExitError); ok {
@@ -111,6 +115,7 @@ func (we *WorkflowExecutor) getKubectlArguments(action string, manifestPath stri
 	}
 
 	args := []string{
+		"kubectl",
 		action,
 	}
 	output := "json"
@@ -303,9 +308,9 @@ func (we *WorkflowExecutor) SaveResourceParameters(ctx context.Context, resource
 		} else {
 			continue
 		}
-		kubectl := exec.Command("kubectl", "-n", resourceNamespace, "get", resourceName, "-o", outputFormat)
-		out, err := kubectl.Output()
-		log.WithError(err).WithField("out", string(out)).WithField("args", kubectl.Args).Info("kubectl")
+		args := []string{"kubectl", "-n", resourceNamespace, "get", resourceName, "-o", outputFormat}
+		out, err := runKubectl(args...)
+		log.WithError(err).WithField("out", string(out)).WithField("args", args).Info("kubectl")
 		if err != nil {
 			return err
 		}
@@ -356,4 +361,22 @@ func jqFilter(ctx context.Context, input []byte, filter string) (string, error) 
 		buf.WriteString("\n")
 	}
 	return strings.TrimSpace(buf.String()), nil
+}
+
+func runKubectl(args ...string) ([]byte, error) {
+	log.Info(strings.Join(args, " "))
+	osArgs := append([]string{}, os.Args...)
+	os.Args = args
+	defer func() {
+		os.Args = osArgs
+	}()
+	var buf bytes.Buffer
+	if err := kubectlcmd.NewKubectlCommand(kubectlcmd.KubectlOptions{
+		Arguments:   args,
+		ConfigFlags: genericclioptions.NewConfigFlags(true),
+		IOStreams:   genericclioptions.IOStreams{Out: &buf, ErrOut: os.Stderr},
+	}).Execute(); err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
 }

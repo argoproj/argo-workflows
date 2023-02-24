@@ -21,7 +21,7 @@ COPY . .
 
 ####################################################################################################
 
-FROM node:16-alpine as argo-ui
+FROM node:19-alpine as argo-ui
 
 RUN apk update && apk add --no-cache git
 
@@ -76,14 +76,8 @@ RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache
 
 ####################################################################################################
 
-# NOTE: kubectl version should be one minor version less than https://storage.googleapis.com/kubernetes-release/release/stable.txt
-FROM bitnami/kubectl:1.24.8 as kubectl
-
-####################################################################################################
-
 FROM gcr.io/distroless/static as argoexec
 
-COPY --from=kubectl /opt/bitnami/kubectl/bin/kubectl /bin/
 COPY --from=argoexec-build /go/src/github.com/argoproj/argo-workflows/dist/argoexec /bin/
 COPY --from=argoexec-build /etc/mime.types /etc/mime.types
 COPY hack/ssh_known_hosts /etc/ssh/
