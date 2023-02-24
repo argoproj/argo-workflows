@@ -51,17 +51,6 @@ else
 STATIC_FILES          ?= $(shell [ $(DEV_BRANCH) = true ] && echo false || echo true)
 endif
 
-# start the UI
-UI                    ?= false
-# start the Argo Server
-API                   ?= $(UI)
-TASKS                 := controller
-ifeq ($(API),true)
-TASKS                 := controller server
-endif
-ifeq ($(UI),true)
-TASKS                 := controller server ui
-endif
 GOTEST                ?= go test -v -p 20
 PROFILE               ?= minimal
 PLUGINS               ?= $(shell [ $PROFILE = plugins ] && echo false || echo true)
@@ -461,7 +450,7 @@ ifeq ($(shell uname),Darwin)
 	brew tap kitproj/kit --custom-remote https://github.com/kitproj/kit
 	brew install kit
 else
-	curl -q https://raw.githubusercontent.com/kitproj/kit/main/install.sh | tag=v0.1.8 sh
+	curl -q https://raw.githubusercontent.com/kitproj/kit/main/install.sh | sh
 endif
 endif
 
@@ -469,7 +458,7 @@ endif
 .PHONY: start
 ifeq ($(RUN_MODE),local)
 ifeq ($(API),true)
-start: install controller kit cli
+start: install controller cli
 else
 start: install controller kit
 endif
@@ -477,12 +466,6 @@ else
 start: install kit
 endif
 	@echo "starting STATIC_FILES=$(STATIC_FILES) (DEV_BRANCH=$(DEV_BRANCH), GIT_BRANCH=$(GIT_BRANCH)), AUTH_MODE=$(AUTH_MODE), RUN_MODE=$(RUN_MODE), MANAGED_NAMESPACE=$(MANAGED_NAMESPACE)"
-ifneq ($(API),true)
-	@echo "⚠️️  not starting API. If you want to test the API, use 'make start API=true' to start it"
-endif
-ifneq ($(UI),true)
-	@echo "⚠️  not starting UI. If you want to test the UI, run 'make start UI=true' to start it"
-endif
 ifneq ($(PLUGINS),true)
 	@echo "⚠️  not starting plugins. If you want to test plugins, run 'make start PROFILE=plugins' to start it"
 endif
@@ -495,7 +478,7 @@ endif
 	grep '127.0.0.1.*postgres' /etc/hosts
 	grep '127.0.0.1.*mysql' /etc/hosts
 ifeq ($(RUN_MODE),local)
-	env DEFAULT_REQUEUE_TIME=$(DEFAULT_REQUEUE_TIME) ARGO_SECURE=$(SECURE) ALWAYS_OFFLOAD_NODE_STATUS=$(ALWAYS_OFFLOAD_NODE_STATUS) ARGO_LOG_LEVEL=$(LOG_LEVEL) UPPERIO_DB_DEBUG=$(UPPERIO_DB_DEBUG) ARGO_AUTH_MODE=$(AUTH_MODE) ARGO_NAMESPACED=$(NAMESPACED) ARGO_NAMESPACE=$(KUBE_NAMESPACE) ARGO_MANAGED_NAMESPACE=$(MANAGED_NAMESPACE) ARGO_EXECUTOR_PLUGINS=$(PLUGINS) PROFILE=$(PROFILE) kit $(TASKS)
+	env DEFAULT_REQUEUE_TIME=$(DEFAULT_REQUEUE_TIME) ARGO_SECURE=$(SECURE) ALWAYS_OFFLOAD_NODE_STATUS=$(ALWAYS_OFFLOAD_NODE_STATUS) ARGO_LOG_LEVEL=$(LOG_LEVEL) UPPERIO_DB_DEBUG=$(UPPERIO_DB_DEBUG) ARGO_AUTH_MODE=$(AUTH_MODE) NAMESPACED=$(NAMESPACED) ARGO_NAMESPACE=$(KUBE_NAMESPACE) ARG_MANAGED_NAMESPACE=$(MANAGED_NAMESPACE) ARGO_EXECUTOR_PLUGINS=$(PLUGINS) kit up
 endif
 
 .PHONY: wait
