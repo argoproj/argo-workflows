@@ -140,13 +140,11 @@ jobs:
           echo '127.0.0.1 azurite'  | sudo tee -a /etc/hosts
       - run: make install PROFILE=${{matrix.profile}} STATIC_FILES=false
         name: Install manifests
-      - run: make controller $(go env GOPATH)/bin/goreman STATIC_FILES=false
+      - run: make controller STATIC_FILES=false
         name: Build controller
       - run: make cli STATIC_FILES=false
         if: ${{matrix.test == 'test-api' || matrix.test == 'test-cli' || matrix.test == 'test-java-sdk' || matrix.test == 'test-python-sdk'}}
         name: Build CLI
-      - run:  ./hack/port-forward.sh
-        name: Start port forward
       - run: make start PROFILE=${{matrix.profile}} AUTH_MODE=client STATIC_FILES=false LOG_LEVEL=info API=${{matrix.test == 'test-api' || matrix.test == 'test-cli' || matrix.test == 'test-java-sdk' || matrix.test == 'test-python-sdk'}} UI=false LOGS=false > /tmp/argo.log 2>&1 &
         name: Start controller/API
       - run: make wait

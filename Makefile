@@ -15,8 +15,6 @@ RELEASE_TAG           := $(shell if [[ "$(GIT_TAG)" =~ ^v[0-9]+\.[0-9]+\.[0-9]+.
 DEV_BRANCH            := $(shell [ $(GIT_BRANCH) = master ] || [ `echo $(GIT_BRANCH) | cut -c -8` = release- ] || [ `echo $(GIT_BRANCH) | cut -c -4` = dev- ] || [ $(RELEASE_TAG) = true ] && echo false || echo true)
 SRC                   := $(GOPATH)/src/github.com/argoproj/argo-workflows
 
-GREP_LOGS             := ""
-
 
 # docker image publishing options
 IMAGE_NAMESPACE       ?= quay.io/argoproj
@@ -51,14 +49,6 @@ else
 STATIC_FILES          ?= $(shell [ $(DEV_BRANCH) = true ] && echo false || echo true)
 endif
 
-# start the Controller
-CTRL                  ?= true
-# tail logs
-LOGS                  ?= $(CTRL)
-# start the UI
-UI                    ?= $(shell [ $(CTRL) = true ] && echo false || echo true)
-# start the Argo Server
-API                   ?= $(UI)
 GOTEST                ?= go test -v -p 20
 PROFILE               ?= minimal
 PLUGINS               ?= $(shell [ $PROFILE = plugins ] && echo false || echo true)
@@ -448,32 +438,29 @@ dist/argosay:
 	mkdir -p dist
 	cp test/e2e/images/argosay/v2/argosay dist/
 
-$(GOPATH)/bin/goreman:
-	go install github.com/mattn/goreman@v0.3.11
+.PHONY: kit
+kit:
+ifeq ($(shell command -v kit),)
+ifeq ($(shell uname),Darwin)
+	brew tap kitproj/kit --custom-remote https://github.com/kitproj/kit
+	brew install kit
+else
+	curl -q https://raw.githubusercontent.com/kitproj/kit/main/install.sh | sh
+endif
+endif
+
 
 .PHONY: start
 ifeq ($(RUN_MODE),local)
 ifeq ($(API),true)
-start: install controller cli $(GOPATH)/bin/goreman
+start: install controller cli
 else
-start: install controller $(GOPATH)/bin/goreman
+start: install controller kit
 endif
 else
 start: install
 endif
 	@echo "starting STATIC_FILES=$(STATIC_FILES) (DEV_BRANCH=$(DEV_BRANCH), GIT_BRANCH=$(GIT_BRANCH)), AUTH_MODE=$(AUTH_MODE), RUN_MODE=$(RUN_MODE), MANAGED_NAMESPACE=$(MANAGED_NAMESPACE)"
-ifneq ($(CTRL),true)
-	@echo "⚠️️  not starting controller. If you want to test the controller, use 'make start CTRL=true' to start it"
-endif
-ifneq ($(LOGS),true)
-	@echo "⚠️️  not starting logs. If you want to tail logs, use 'make start LOGS=true' to start it"
-endif
-ifneq ($(API),true)
-	@echo "⚠️️  not starting API. If you want to test the API, use 'make start API=true' to start it"
-endif
-ifneq ($(UI),true)
-	@echo "⚠️  not starting UI. If you want to test the UI, run 'make start UI=true' to start it"
-endif
 ifneq ($(PLUGINS),true)
 	@echo "⚠️  not starting plugins. If you want to test plugins, run 'make start PROFILE=plugins' to start it"
 endif
@@ -485,17 +472,9 @@ endif
 	grep '127.0.0.1.*minio' /etc/hosts
 	grep '127.0.0.1.*postgres' /etc/hosts
 	grep '127.0.0.1.*mysql' /etc/hosts
-	./hack/port-forward.sh
 ifeq ($(RUN_MODE),local)
-	env DEFAULT_REQUEUE_TIME=$(DEFAULT_REQUEUE_TIME) SECURE=$(SECURE) ALWAYS_OFFLOAD_NODE_STATUS=$(ALWAYS_OFFLOAD_NODE_STATUS) LOG_LEVEL=$(LOG_LEVEL) UPPERIO_DB_DEBUG=$(UPPERIO_DB_DEBUG) IMAGE_NAMESPACE=$(IMAGE_NAMESPACE) VERSION=$(VERSION) AUTH_MODE=$(AUTH_MODE) NAMESPACED=$(NAMESPACED) NAMESPACE=$(KUBE_NAMESPACE) MANAGED_NAMESPACE=$(MANAGED_NAMESPACE) CTRL=$(CTRL) LOGS=$(LOGS) UI=$(UI) API=$(API) PLUGINS=$(PLUGINS) $(GOPATH)/bin/goreman -set-ports=false -logtime=false start $(shell if [ -z $GREP_LOGS ]; then echo; else echo "| grep \"$(GREP_LOGS)\""; fi)
+	env DEFAULT_REQUEUE_TIME=$(DEFAULT_REQUEUE_TIME) ARGO_SECURE=$(SECURE) ALWAYS_OFFLOAD_NODE_STATUS=$(ALWAYS_OFFLOAD_NODE_STATUS) ARGO_LOG_LEVEL=$(LOG_LEVEL) UPPERIO_DB_DEBUG=$(UPPERIO_DB_DEBUG) ARGO_AUTH_MODE=$(AUTH_MODE) NAMESPACED=$(NAMESPACED) ARGO_NAMESPACE=$(KUBE_NAMESPACE) ARG_MANAGED_NAMESPACE=$(MANAGED_NAMESPACE) ARGO_EXECUTOR_PLUGINS=$(PLUGINS) kit up
 endif
-
-$(GOPATH)/bin/stern:
-	go install github.com/stern/stern@latest
-
-.PHONY: logs
-logs: $(GOPATH)/bin/stern
-	$(GOPATH)/bin/stern -l workflows.argoproj.io/workflow 2>&1
 
 .PHONY: wait
 wait:
