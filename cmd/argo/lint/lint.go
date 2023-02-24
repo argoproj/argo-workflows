@@ -99,7 +99,7 @@ func RunLint(ctx context.Context, client apiclient.Client, kinds []string, outpu
 	errors.CheckError(err)
 
 	if !res.Success {
-		os.Exit(1)
+		log.StandardLogger().Exit(1)
 	}
 }
 

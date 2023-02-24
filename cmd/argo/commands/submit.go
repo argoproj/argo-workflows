@@ -205,7 +205,9 @@ func submitWorkflows(ctx context.Context, serviceClient workflowpkg.WorkflowServ
 		}
 		err := util.ApplySubmitOpts(&wf, submitOpts)
 		errors.CheckError(err)
-		wf.Spec.Priority = cliOpts.Priority
+		if cliOpts.Priority != nil {
+			wf.Spec.Priority = cliOpts.Priority
+		}
 		options := &metav1.CreateOptions{}
 		if submitOpts.DryRun {
 			options.DryRun = []string{"All"}
