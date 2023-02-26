@@ -92,8 +92,6 @@ spec:
       dependencies: install
       mutex: docker
     - name: build
-      dependencies: build-controller build-argo
-    - name: pre-up
-      dependencies: build install executor example
+      dependencies: build-controller build-argo ui-build install executor
     - name: up
       dependencies: pre-up controller server ui
