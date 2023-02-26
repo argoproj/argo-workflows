@@ -1,19 +1,24 @@
 {
-  "image": "mcr.microsoft.com/vscode/devcontainers/base:ubuntu",
-  "features": {
-    "ghcr.io/devcontainers/features/go:1": {
-      "version": "1.19"
+    "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
+    "features": {
+        "ghcr.io/devcontainers/features/go:1": {
+            "version": "1.19"
+        },
+        "ghcr.io/devcontainers/features/node:1": {
+            "version": "18"
+        },
+        "ghcr.io/devcontainers/features/docker-in-docker:1": {
+            "version": "latest",
+            "moby": true
+        },
+        "ghcr.io/rio/features/k3d:1": {
+            "version": "latest"
+        },
     },
-    "ghcr.io/devcontainers/features/node:1": {
-      "version": "16"
+    "hostRequirements": {
+        "cpus": 4
     },
-    "ghcr.io/devcontainers/features/docker-in-docker:2": {},
-    "ghcr.io/devcontainers/features/python:1": {}
-  },
-  "hostRequirements": {
-    "cpus": 4
-  },
-  "onCreateCommand": ".devcontainer/pre-build.sh",
-  "workspaceMount": "source=${localWorkspaceFolder},target=/home/vscode/go/src/github.com/argoproj/argo-workflows,type=bind",
-  "workspaceFolder": "/home/vscode/go/src/github.com/argoproj/argo-workflows"
+    "onCreateCommand": ".devcontainer/pre-build.sh",
+    "workspaceMount": "source=${localWorkspaceFolder},target=${localEnv:HOME}/go/src/github.com/argoproj/argo-workflows,type=bind",
+    "workspaceFolder": "${localEnv:HOME}/go/src/github.com/argoproj/argo-workflows"
 }
