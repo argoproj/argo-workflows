@@ -24,7 +24,7 @@ COPY . .
 
 ####################################################################################################
 
-FROM node:16-alpine as argo-ui
+FROM node:18-alpine as argo-ui
 
 RUN apk update && apk add --no-cache git
 
