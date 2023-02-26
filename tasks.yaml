@@ -99,6 +99,6 @@ spec:
       command: kubectl create -f examples/hello-world.yaml
       dependencies: controller
     - name: build
-      dependencies: build-controller build-argo ui-build
+      dependencies: build-controller build-argo ui-build install executor
     - name: up
       dependencies: controller server executor ui example
