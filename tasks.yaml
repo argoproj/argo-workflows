@@ -75,12 +75,13 @@ spec:
         - UPPERIO_DB_DEBUG=1
       ports: "2746"
     - name: ui-deps
-      command: yarn --cwd ui install
+      command: sh -c "command -v yarn && yarn install || true"
+      workingDir: ui
       mutex: deps
     - name: ui
-      command: yarn start
+      command: sh -c "command -v yarn && yarn start || true"
       workingDir: ui
-      dependencies: ui-deps server
+      dependencies: ui-deps
       ports: "8080"
     - name: executor
       command: make argoexec-image
