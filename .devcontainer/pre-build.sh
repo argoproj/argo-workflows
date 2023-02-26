@@ -17,4 +17,4 @@ pwd
 ls
 
 # do time consuming tasks, e.g. download deps and initial build
-CI=1 kit pre-test
+CI=1 kit pre-up

@@ -19,12 +19,17 @@ spec:
     - name: go-deps
       command: go mod download
       mutex: deps
+      semaphore: cpus
     - name: static-files
       command: make server/static/files.go STATIC_FILES=false
       dependencies: go-deps
-    - command: go build -v ./cmd/...
-      name: go-build
+      mutex: deps
+      semaphore: cpus
+    - name: go-build
+      command: go build -v ./cmd/...
       dependencies: static-files go-deps
+      mutex: build
+      semaphore: cpus
     - name: cluster-info
       command: kubectl cluster-info
     - name: docker-ps
@@ -33,14 +38,15 @@ spec:
       command: sh -c "make install PROFILE=$PROFILE"
       env:
         - PROFILE=minimal
-      dependencies: go-deps
+      dependencies: cluster-info
       watch: manifests
-      mutex: docker
+      semaphore: cpus
     - name: build-controller
       command: make ./dist/workflow-controller
+      dependencies: go-build
       watch: cmd/workflow-controller config errors persist pkg util workflow
-      dependencies: go-deps
       mutex: build
+      semaphore: cpus
     - name: port-forward
       command: ./hack/port-forward.sh
       ports: 9000
@@ -66,11 +72,12 @@ spec:
       ports: "9090"
     - name: build-argo
       command: make ./dist/argo
-      dependencies: go-deps
+      dependencies: go-build
+      mutex: build
       env:
         - STATIC_FILES=false
       watch: cmd/argo config errors persist pkg util server workflow
-      mutex: build
+      semaphore: cpus
     - name: server
       command: ./dist/argo server
       dependencies: build-argo port-forward
@@ -88,21 +95,24 @@ spec:
       command: sh -c "command -v yarn && yarn install || true"
       workingDir: ui
       mutex: deps
+      semaphore: cpus
     - name: ui
       command: sh -c "command -v yarn && yarn start || true"
       workingDir: ui
-      dependencies: ui-deps
+      dependencies: ui-deps server
       ports: "8080"
     - name: executor
       command: make argoexec-image
       watch: cmd/argoexec config errors pkg util workflow
-      mutex: docker
+      mutex: build
+      semaphore: cpus
     - name: example
       command: kubectl create -f examples/hello-world.yaml
       dependencies: install
+      semaphore: cpus
     - name: build
       dependencies: build-controller build-argo
-    - name: pre-test
+    - name: pre-up
       dependencies: build install executor example
     - name: up
-      dependencies: pre-test controller server ui
+      dependencies: pre-up controller server ui
