@@ -98,15 +98,7 @@ If you made changes to the executor, you need to build the image:
 make argoexec-image
 ```
 
-To also start the API on <http://localhost:2746>:
-
-```bash
-make start API=true
-```
-
-This runs the Argo Server (in addition to the Workflow Controller) locally on your machine.
-
-To also start the UI on <http://localhost:8080> (`UI=true` implies `API=true`):
+To also start the UI on <http://localhost:8080>:
 
 ```bash
 make start UI=true
@@ -120,8 +112,6 @@ If you are making change to the CLI (i.e. Argo Server), you can build it separat
 make cli
 ./dist/argo submit examples/hello-world.yaml ;# new CLI is created as `./dist/argo`
 ```
-
-Although, note that this will be built automatically if you do: `make start API=true`.
 
 To test the workflow archive, use `PROFILE=mysql` or `PROFILE=postgres`:
 
@@ -145,7 +135,7 @@ make start UI=true PROFILE=sso
 Start up Argo Workflows using the following:
 
 ```bash
-make start PROFILE=mysql AUTH_MODE=client STATIC_FILES=false API=true
+make start PROFILE=mysql AUTH_MODE=client STATIC_FILES=false 
 ```
 
 If you want to run Azure tests against a local Azurite:
