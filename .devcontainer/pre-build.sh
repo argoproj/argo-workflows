@@ -16,4 +16,4 @@ kubectl cluster-info
 curl -q https://raw.githubusercontent.com/kitproj/kit/main/install.sh | sh
 
 # do time consuming tasks, e.g. download deps and initial build
-kit pre-test
+CI=1 kit pre-test
