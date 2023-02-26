@@ -18,7 +18,17 @@ spec:
   tasks:
     - name: go-deps
       command: go mod download
-      mutex: downloads
+      mutex: deps
+    - name: static-files
+      command: make server/static/files.go STATIC_FILES=false
+      dependencies: go-deps
+    - command: go build -v ./cmd/...
+      name: go-build
+      dependencies: static-files go-deps
+    - name: cluster-info
+      command: kubectl cluster-info
+    - name: docker-ps
+      command: docker ps
     - name: install
       command: sh -c "make install PROFILE=$PROFILE"
       env:
