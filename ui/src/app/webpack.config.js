@@ -18,7 +18,7 @@ const config = {
   output: {
     filename: "[name].[hash].js",
     path: __dirname + "/../../dist/app",
-    hashFunction: "sha256",
+    hashFunction: "md5",
   },
 
   devtool: "source-map",

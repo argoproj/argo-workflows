@@ -78,11 +78,15 @@ spec:
       command: sh -c "command -v yarn && yarn install || true"
       workingDir: ui
       mutex: deps
+      env:
+        - NODE_OPTIONS=
     - name: ui
       command: sh -c "command -v yarn && yarn start || true"
       workingDir: ui
       dependencies: ui-deps
       ports: "8080"
+      env:
+        - NODE_OPTIONS=--no-experimental-fetch
     - name: executor
       command: make argoexec-image
       watch: cmd/argoexec config errors pkg util workflow
