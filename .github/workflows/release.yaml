@@ -74,13 +74,13 @@ jobs:
           tag_suffix=$(echo $PLATFORM | sed -r "s/\//-/g")
           image_name="${DOCKERIO_ORG}/${TARGET}:${tag}-${tag_suffix}"
 
-          docker buildx build \
+          docker build \
             --cache-from "type=local,src=/tmp/.buildx-cache" \
             --cache-to "type=local,dest=/tmp/.buildx-cache" \
             --build-arg GIT_COMMIT=$tag \
             --build-arg GIT_BRANCH=$branch \
             --build-arg GIT_TREE_STATE=$tree_state \
-            --output "type=image,push=true" \
+            --push \
             --platform="${PLATFORM}" \
             --target $TARGET \
             --tag $image_name .
@@ -147,13 +147,13 @@ jobs:
           tag_suffix=$(echo $PLATFORM | sed -r "s/\//-/g")
           image_name="${DOCKERIO_ORG}/${TARGET}:${tag}-${tag_suffix}"
 
-          docker buildx build \
+          docker build \
             --cache-from "type=local,src=/tmp/.buildx-cache" \
             --cache-to "type=local,dest=/tmp/.buildx-cache" \
             --build-arg GIT_COMMIT=$tag \
             --build-arg GIT_BRANCH=$branch \
             --build-arg GIT_TREE_STATE=$tree_state \
-            --output "type=image,push=true" \
+            --push \
             --platform="${PLATFORM}" \
             --target $TARGET \
             --tag $image_name .
