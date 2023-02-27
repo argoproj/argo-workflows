@@ -12,7 +12,7 @@
         "test": "jest"
     },
     "engines": {
-        "node": ">=19"
+        "node": ">=16"
     },
     "dependencies": {
         "argo-ui": "https://github.com/argoproj/argo-ui.git#v2.5.0",

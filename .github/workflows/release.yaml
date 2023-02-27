@@ -68,25 +68,25 @@ jobs:
           if [ $tag = "master" ]; then
             tag="latest"
           fi
-
+          branch=$(git rev-parse --symbolic-full-name --verify --quiet --abbrev-ref HEAD)
+          tree_state=$(if [ -z "`git status --porcelain`" ]; then echo "clean" ; else echo "dirty"; fi)
+  
           tag_suffix=$(echo $PLATFORM | sed -r "s/\//-/g")
           image_name="${DOCKERIO_ORG}/${TARGET}:${tag}-${tag_suffix}"
 
           docker buildx build \
             --cache-from "type=local,src=/tmp/.buildx-cache" \
             --cache-to "type=local,dest=/tmp/.buildx-cache" \
+            --build-arg GIT_COMMIT=$tag \
+            --build-arg GIT_BRANCH=$branch \
+            --build-arg GIT_TREE_STATE=$tree_state \
             --output "type=image,push=true" \
             --platform="${PLATFORM}" \
             --target $TARGET \
             --tag $image_name .
 
-          docker buildx build \
-            --cache-from "type=local,src=/tmp/.buildx-cache" \
-            --cache-to "type=local,dest=/tmp/.buildx-cache" \
-            --output "type=image,push=true" \
-            --platform="${PLATFORM}" \
-            --target $TARGET \
-            --tag quay.io/$image_name .
+            docker tag $image_name quay.io/$image_name
+            docker push quay.io/$image_name
 
   build-linux-arm64:
     name: Build & push linux/arm64
@@ -141,25 +141,25 @@ jobs:
           if [ $tag = "master" ]; then
             tag="latest"
           fi
-
+          branch=$(git rev-parse --symbolic-full-name --verify --quiet --abbrev-ref HEAD)
+          tree_state=$(if [ -z "`git status --porcelain`" ]; then echo "clean" ; else echo "dirty"; fi)
+          
           tag_suffix=$(echo $PLATFORM | sed -r "s/\//-/g")
           image_name="${DOCKERIO_ORG}/${TARGET}:${tag}-${tag_suffix}"
 
           docker buildx build \
             --cache-from "type=local,src=/tmp/.buildx-cache" \
             --cache-to "type=local,dest=/tmp/.buildx-cache" \
+            --build-arg GIT_COMMIT=$tag \
+            --build-arg GIT_BRANCH=$branch \
+            --build-arg GIT_TREE_STATE=$tree_state \
             --output "type=image,push=true" \
             --platform="${PLATFORM}" \
             --target $TARGET \
             --tag $image_name .
 
-          docker buildx build \
-            --cache-from "type=local,src=/tmp/.buildx-cache" \
-            --cache-to "type=local,dest=/tmp/.buildx-cache" \
-            --output "type=image,push=true" \
-            --platform="${PLATFORM}" \
-            --target $TARGET \
-            --tag quay.io/$image_name .
+            docker tag $image_name quay.io/$image_name
+            docker push quay.io/$image_name
 
   build-windows:
     name: Build & push windows
@@ -194,7 +194,15 @@ jobs:
           targets="argoexec"
           for target in $targets; do
             image_name="${docker_org}/${target}:${tag}-windows"
-            docker build --target $target -t $image_name -f Dockerfile.windows .
+            docker build \
+              --build-arg GIT_COMMIT=$tag \
+              --build-arg GIT_BRANCH=$branch \
+              --build-arg GIT_TREE_STATE=$tree_state \
+              --target $target \
+              -t $image_name \
+              -f Dockerfile.windows \
+              .
+          
             docker push $image_name
 
             docker tag $image_name quay.io/$image_name
@@ -348,7 +356,7 @@ jobs:
       - uses: actions/checkout@v3
       - uses: actions/setup-node@v3
         with:
-          node-version: "19"
+          node-version: "16"
       - uses: actions/setup-go@v3
         with:
           go-version: "1.19"
