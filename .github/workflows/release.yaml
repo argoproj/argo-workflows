@@ -69,11 +69,11 @@ jobs:
             --build-arg GIT_COMMIT=$tag \
             --build-arg GIT_BRANCH=$branch \
             --build-arg GIT_TREE_STATE=$tree_state \
-            --push \
             --platform="${PLATFORM}" \
             --target $TARGET \
             --tag $image_name .
 
+            docker push $image_name
             docker tag $image_name quay.io/$image_name
             docker push quay.io/$image_name
 
@@ -131,11 +131,11 @@ jobs:
             --build-arg GIT_COMMIT=$tag \
             --build-arg GIT_BRANCH=$branch \
             --build-arg GIT_TREE_STATE=$tree_state \
-            --push \
             --platform="${PLATFORM}" \
             --target $TARGET \
             --tag $image_name .
 
+            docker push $image_name
             docker tag $image_name quay.io/$image_name
             docker push quay.io/$image_name
 
