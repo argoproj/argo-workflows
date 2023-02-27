@@ -53,12 +53,12 @@ endif
 UI                    ?= false
 # start the Argo Server
 API                   ?= $(UI)
-TASKS                 ?= controller
+TASKS                 := controller
 ifeq ($(API),true)
-TASKS                 ?= controller api
+TASKS                 := controller server
 endif
 ifeq ($(UI),true)
-TASKS                 ?= controller api ui
+TASKS                 := controller server ui
 endif
 GOTEST                ?= go test -v -p 20
 PROFILE               ?= minimal
@@ -472,6 +472,12 @@ else
 start: install
 endif
 	@echo "starting STATIC_FILES=$(STATIC_FILES) (DEV_BRANCH=$(DEV_BRANCH), GIT_BRANCH=$(GIT_BRANCH)), AUTH_MODE=$(AUTH_MODE), RUN_MODE=$(RUN_MODE), MANAGED_NAMESPACE=$(MANAGED_NAMESPACE)"
+ifneq ($(API),true)
+	@echo "⚠️️  not starting API. If you want to test the API, use 'make start API=true' to start it"
+endif
+ifneq ($(UI),true)
+	@echo "⚠️  not starting UI. If you want to test the UI, run 'make start UI=true' to start it"
+endif
 ifneq ($(PLUGINS),true)
 	@echo "⚠️  not starting plugins. If you want to test plugins, run 'make start PROFILE=plugins' to start it"
 endif
