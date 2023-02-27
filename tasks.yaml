@@ -75,11 +75,11 @@ spec:
         - UPPERIO_DB_DEBUG=1
       ports: "2746"
     - name: ui-deps
-      command: sh -c "command -v yarn && yarn install || true"
+      command: yarn install
       workingDir: ui
       mutex: downloads
     - name: ui
-      command: sh -c "command -v yarn && yarn start || true"
+      command: yarn start
       workingDir: ui
       dependencies: ui-deps server
       ports: "8080"
