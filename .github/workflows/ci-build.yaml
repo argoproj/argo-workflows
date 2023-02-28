@@ -155,7 +155,7 @@ jobs:
         uses: nick-fields/retry@v2.8.3
         with:
           timeout_minutes: 20
-          max_attempts: 1
+          max_attempts: 0
           command: make ${{matrix.test}} E2E_SUITE_TIMEOUT=20m STATIC_FILES=false
       - if: ${{ failure() }}
         name: MinIO/MySQL deployment
