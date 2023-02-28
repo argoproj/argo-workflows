@@ -45,17 +45,29 @@ RUN --mount=type=cache,target=/root/.yarn \
 
 FROM builder as argoexec-build
 
+ARG GIT_COMMIT
+ARG GIT_TAG
+ARG GIT_TREE_STATE
+
 RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache/go-build make dist/argoexec GIT_COMMIT=${GIT_COMMIT} GIT_TAG=${GIT_TAG} GIT_TREE_STATE=${GIT_TREE_STATE}
 
 ####################################################################################################
 
 FROM builder as workflow-controller-build
 
+ARG GIT_COMMIT
+ARG GIT_TAG
+ARG GIT_TREE_STATE
+
 RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache/go-build make dist/workflow-controller GIT_COMMIT=${GIT_COMMIT} GIT_TAG=${GIT_TAG} GIT_TREE_STATE=${GIT_TREE_STATE}
 
 ####################################################################################################
 
 FROM builder as argocli-build
+
+ARG GIT_COMMIT
+ARG GIT_TAG
+ARG GIT_TREE_STATE
 
 RUN mkdir -p ui/dist
 COPY --from=argo-ui ui/dist/app ui/dist/app
