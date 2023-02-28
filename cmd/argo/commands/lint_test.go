@@ -154,4 +154,19 @@ spec:
 
 		assert.False(t, fatal, "should not have exited")
 	})
+
+	t.Run("linting one file from stdin", func(t *testing.T) {
+		defer func() { logrus.StandardLogger().ExitFunc = nil }()
+		var fatal bool
+		logrus.StandardLogger().ExitFunc = func(int) { fatal = true }
+
+		oldStdin := os.Stdin
+		defer func() { os.Stdin = oldStdin }() // Restore original Stdin
+		os.Stdin, err = os.Open(clusterWftmplPath)
+		require.NoError(t, err)
+
+		runLint(context.Background(), []string{workflowPath, wftmplPath, "-"}, true, nil, "pretty", true)
+
+		assert.False(t, fatal, "should not have exited")
+	})
 }
