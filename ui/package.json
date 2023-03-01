@@ -27,7 +27,7 @@
         "json-merge-patch": "^0.2.3",
         "moment": "^2.29.4",
         "moment-timezone": "^0.5.41",
-        "monaco-editor": "0.20.0",
+        "monaco-editor": "0.35.0",
         "prop-types": "^15.8.1",
         "react": "^16.14.0",
         "react-chartjs-2": "^2.11.2",
