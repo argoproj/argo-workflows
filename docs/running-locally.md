@@ -38,11 +38,11 @@ Note:
 
 ## Requirements
 
-* [Go 1.19](https://golang.org/dl/)
+* [Go](https://golang.org/dl/)
 * [Yarn](https://classic.yarnpkg.com/en/docs/install/#mac-stable)
 * [Docker](https://docs.docker.com/get-docker/)
 * [`protoc`](http://google.github.io/proto-lens/installing-protoc.html)
-* [`node` >= 19](https://nodejs.org/download/release/latest-v19.x/) for running the UI
+* [`node`](https://nodejs.org/download/release/latest-v19.x/) for running the UI
 * A local Kubernetes cluster ([`k3d`](https://k3d.io/), [`kind`](https://kind.sigs.k8s.io/docs/user/quick-start/#installation), or [`minikube`](https://minikube.sigs.k8s.io/docs/start/))
 
 We recommend using [K3D](https://k3d.io/) to set up the local Kubernetes cluster since this will allow you to test RBAC
