@@ -242,7 +242,7 @@ require (
 	gopkg.in/jcmturner/rpc.v0 v0.0.2 // indirect
 	gopkg.in/mgo.v2 v2.0.0-20190816093944-a6b53ec6cb22 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
-	gopkg.in/yaml.v2 v2.4.0 // indirect
+	gopkg.in/yaml.v2 v2.4.0
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	k8s.io/component-base v0.24.3 // indirect
 	k8s.io/component-helpers v0.24.3 // indirect

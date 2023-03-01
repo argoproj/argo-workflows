@@ -13,8 +13,8 @@ import (
 	"strings"
 
 	"github.com/klauspost/pgzip"
-	"github.com/sirupsen/logrus"
 	log "github.com/sirupsen/logrus"
+	"gopkg.in/yaml.v2"
 	"k8s.io/utils/env"
 )
 
@@ -154,15 +154,29 @@ func WalkManifests(root string, fn func(path string, data []byte) error) error {
 		case info.IsDir():
 			return nil // skip
 		default:
-			logrus.Debugf("ignoring file with unknown extension: %s", path)
+			log.Debugf("ignoring file with unknown extension: %s", path)
 			return nil
 		}
 
-		bytes, err := io.ReadAll(r)
-		if err != nil {
-			return err
+		log.Debugf("start reading file at: %s", path)
+		decoder := yaml.NewDecoder(r)
+		for {
+			var value interface{}
+			if err := decoder.Decode(&value); err != nil {
+				if err == io.EOF {
+					break
+				}
+				log.Fatalf("document decode failed: %v", err)
+			}
+			bytes, err := yaml.Marshal(value)
+			if err != nil {
+				log.Fatalf("document encode failed: %v", err)
+			}
+			if err := fn(path, bytes); err != nil {
+				log.Fatalf("unexpected exception while reading yaml: %v", err)
+			}
 		}
 
-		return fn(path, bytes)
+		return nil
 	})
 }
