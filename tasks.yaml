@@ -32,7 +32,7 @@ spec:
       dependencies: go-deps
       mutex: build
     - name: port-forward
-      command: bash -c "./hack/port-forward.sh && cat"
+      command: ./hack/port-forward.sh
       ports: 9000
       dependencies: install
     - name: controller
