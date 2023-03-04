@@ -6,13 +6,13 @@
         "src"
     ],
     "scripts": {
-        "build": "rm -Rf dist && NODE_OPTIONS='--openssl-legacy-provider' NODE_ENV=production webpack --mode production --config ./src/app/webpack.config.js",
-        "start": "NODE_OPTIONS='--no-experimental-fetch --openssl-legacy-provider' webpack-dev-server --config ./src/app/webpack.config.js",
+        "build": "rm -Rf dist && NODE_OPTIONS='' NODE_ENV=production webpack --mode production --config ./src/app/webpack.config.js",
+        "start": "NODE_OPTIONS='--no-experimental-fetch' webpack-dev-server --config ./src/app/webpack.config.js",
         "lint": "tslint --fix -p ./src/app",
         "test": "jest"
     },
     "engines": {
-        "node": ">=19"
+        "node": ">=16"
     },
     "dependencies": {
         "argo-ui": "https://github.com/argoproj/argo-ui.git#v2.5.0",
@@ -35,7 +35,7 @@
         "react-dom": "^16.14.0",
         "react-moment": "^1.1.3",
         "react-monaco-editor": "^0.50.1",
-        "react-router-dom": "^5.3.4",
+        "react-router-dom": "^4.2.2",
         "superagent": "^8.0.9",
         "superagent-promise": "^1.1.0",
         "swagger-ui-react": "^4.12.0"
@@ -57,7 +57,7 @@
         "@types/react-dom": "^16.8.2",
         "@types/react-form": "^2.16.1",
         "@types/react-helmet": "^6.1.6",
-        "@types/react-router-dom": "^5.3.3",
+        "@types/react-router-dom": "^4.2.3",
         "@types/superagent": "^4.1.16",
         "@types/swagger-ui-react": "^4.11.0",
         "babel-jest": "^29.4.3",
