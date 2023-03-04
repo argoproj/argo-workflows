@@ -6,13 +6,13 @@
         "src"
     ],
     "scripts": {
-        "build": "rm -Rf dist && NODE_OPTIONS='--openssl-legacy-provider' NODE_ENV=production webpack --mode production --config ./src/app/webpack.config.js",
-        "start": "NODE_OPTIONS='--no-experimental-fetch --openssl-legacy-provider' webpack-dev-server --config ./src/app/webpack.config.js",
+        "build": "rm -Rf dist && NODE_OPTIONS='' NODE_ENV=production webpack --mode production --config ./src/app/webpack.config.js",
+        "start": "NODE_OPTIONS='--no-experimental-fetch' webpack-dev-server --config ./src/app/webpack.config.js",
         "lint": "tslint --fix -p ./src/app",
         "test": "jest"
     },
     "engines": {
-        "node": ">=19"
+        "node": ">=16"
     },
     "dependencies": {
         "argo-ui": "https://github.com/argoproj/argo-ui.git#v2.5.0",
