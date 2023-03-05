@@ -174,6 +174,7 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [Tiger Analytics](https://www.tigeranalytics.com/)
 1. [Tradeshift](https://tradeshift.com/)
 1. [Trendyol](https://trendyol.com)
+1. [Tuhu](https://www.tuhu.cn/)
 1. [Tulip](https://tulip.com/)
 1. [Ubie](https://ubie.life/)
 1. [UFirstGroup](https://www.ufirstgroup.com)

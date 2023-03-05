@@ -11,5 +11,5 @@ The server used to start with auth mode of "server" by default, but since v3.0 i
 To change the server auth mode specify the list as multiple auth-mode flags:
 
 ```bash
-argo server --auth-mode sso --auth-mode ...
+argo server --auth-mode=sso --auth-mode=...
 ```

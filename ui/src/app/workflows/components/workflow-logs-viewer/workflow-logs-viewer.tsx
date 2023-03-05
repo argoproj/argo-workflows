@@ -167,6 +167,7 @@ export const WorkflowLogsViewer = ({workflow, nodeId, initialPodName, container,
             )
         )
     ];
+    const [candidateContainer, setCandidateContainer] = useState(container);
     const filteredTimezones = timezones.filter(tz => tz.startsWith(uiTimezone) || uiTimezone === '');
     return (
         <div className='workflow-logs-viewer'>
@@ -185,7 +186,27 @@ export const WorkflowLogsViewer = ({workflow, nodeId, initialPodName, container,
                         setPodName(item.value);
                     }}
                 />{' '}
-                / <Autocomplete items={containers} value={selectedContainer} onSelect={setContainer} />
+                /{' '}
+                <Autocomplete
+                    items={containers}
+                    value={candidateContainer}
+                    onSelect={v => {
+                        setCandidateContainer(v);
+                        setContainer(v);
+                    }}
+                    onChange={v => setCandidateContainer(v.target.value)}
+                    renderInput={props => (
+                        <input
+                            {...props}
+                            onKeyUp={event => {
+                                if (event.keyCode === 13) {
+                                    // ENTER, to confirm custom container name input
+                                    setContainer(candidateContainer);
+                                }
+                            }}
+                        />
+                    )}
+                />
                 <span className='fa-pull-right'>
                     <div className='log-menu'>
                         <i className='fa fa-filter' />{' '}

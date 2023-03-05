@@ -68,7 +68,7 @@ jobs:
           if [ $tag = "master" ]; then
             tag="latest"
           fi
-
+  
           tag_suffix=$(echo $PLATFORM | sed -r "s/\//-/g")
           image_name="${DOCKERIO_ORG}/${TARGET}:${tag}-${tag_suffix}"
 
@@ -141,7 +141,7 @@ jobs:
           if [ $tag = "master" ]; then
             tag="latest"
           fi
-
+          
           tag_suffix=$(echo $PLATFORM | sed -r "s/\//-/g")
           image_name="${DOCKERIO_ORG}/${TARGET}:${tag}-${tag_suffix}"
 
@@ -351,7 +351,7 @@ jobs:
           node-version: "16"
       - uses: actions/setup-go@v3
         with:
-          go-version: "1.18"
+          go-version: "1.19"
       - uses: actions/cache@v3
         with:
           path: ui/node_modules
