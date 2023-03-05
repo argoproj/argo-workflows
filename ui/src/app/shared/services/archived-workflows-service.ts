@@ -39,12 +39,12 @@ export class ArchivedWorkflowsService {
         }
     }
 
-    public listLabelValues(key: string, namespace: string) {
-        if (namespace === '') {
-            return requests.get(`api/v1/archived-workflows-label-values?listOptions.labelSelector=${key}`).then(res => res.body as models.Labels);
-        } else {
-            return requests.get(`api/v1/archived-workflows-label-values?namespace=${namespace}&listOptions.labelSelector=${key}`).then(res => res.body as models.Labels);
+    public async listLabelValues(key: string, namespace: string): Promise<models.Labels> {
+        let url = `api/v1/archived-workflows-label-values?listOptions.labelSelector=${key}`;
+        if (namespace !== '') {
+            url += `&namespace=${namespace}`;
         }
+        return (await requests.get(url)).body as models.Labels;
     }
 
     public resubmit(uid: string, namespace: string) {
