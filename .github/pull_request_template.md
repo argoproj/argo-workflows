@@ -18,7 +18,7 @@ When you open your PR
 
 * "Fixes #" is in both the PR title (for release notes) and this description (to automatically link and close the issue).
 * Create the PR as draft.
-* Once build are green, mark your PR "Ready for review".
+* Once builds are green, mark your PR "Ready for review".
 
 When changes are requested, please address them and then dismiss the review to get it reviewed again.
 
