@@ -4,7 +4,7 @@ Please do not open a pull request until you have checked ALL of these:
 
 * [ ] Create the PR as draft.
 * [ ] Run `make pre-commit -B` to fix codegen and lint problems.
-* [ ] Sign-off your commits (otherwise the DCO check will fail).
+* [ ] [Sign-off your commits](https://github.com/apps/dco/) (otherwise the DCO check will fail
 * [ ] Use [a conventional commit message](https://www.conventionalcommits.org/en/v1.0.0/) (otherwise the commit message check will fail).
 * [ ] Describe why and what you did. For example, summarize the original issue, and explain how your fix addresses that.
 * [ ] "Fixes #" is in both the PR title (for release notes) and this description (to automatically link and close the issue).
