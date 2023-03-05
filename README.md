@@ -55,15 +55,16 @@ Just some of the projects that use or rely on Argo Workflows:
 
 * [Argo Events](https://github.com/argoproj/argo-events)
 * [Couler](https://github.com/couler-proj/couler)
+* [Hera](https://github.com/argoproj-labs/hera-workflows)
 * [Katib](https://github.com/kubeflow/katib)
 * [Kedro](https://kedro.readthedocs.io/en/stable/)
 * [Kubeflow Pipelines](https://github.com/kubeflow/pipelines)
 * [Netflix Metaflow](https://metaflow.org)
 * [Onepanel](https://www.onepanel.ai/)
+* [Orchest](https://github.com/orchest/orchest/)
 * [Ploomber](https://github.com/ploomber/ploomber)
 * [Seldon](https://github.com/SeldonIO/seldon-core)
 * [SQLFlow](https://github.com/sql-machine-learning/sqlflow)
-* [Orchest](https://github.com/orchest/orchest/)
 
 ## Client Libraries
 
