@@ -3,6 +3,8 @@
 *.iml
 *.md
 *.yaml
+# The .git folder gets modified every time git runs preventing caching of builds. Once removed, we must pass GIT_COMMIT as Docker build-args.
+.git
 .github
 .idea
 .run
@@ -12,9 +14,11 @@ coverage.out
 dist
 docs
 examples
+logs
 manifests
 plugins
 sdks
+site
 test/e2e
 ui/dist
 ui/node_modules
