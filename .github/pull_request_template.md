@@ -1,13 +1,13 @@
 TODO: Say why you made your changes.
 TODO: Say what changes you made.
-TODO: Say how you tested you changes.
-TODO: Attach UI screenshots (if you changed the UI).
+TODO: Say how you tested your changes.
+TODO: Attach screenshots if you changed the UI.
 
 Fixes #TODO
 
 <!--
 
-Do not open a pull request until you have:
+Do not open a PR until you have:
 
 * Run `make pre-commit -B` to fix codegen and lint problems (build will fail).
 * [Sign-off your commits](https://github.com/apps/dco/) (otherwise the DCO check will fail).
