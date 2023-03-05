@@ -4411,7 +4411,7 @@ data:
 <span class="w">  </span>artifactRepository:<span class="w"> </span><span class="p">|</span>
 <span class="w">    </span>gcs:
 <span class="w">      </span>bucket:<span class="w"> </span>my-bucket
-<span class="w">      </span>keyFormat:<span class="w"> </span>prefix/in/bucket<span class="w">     </span><span class="c1">#optional, it could reference workflow variables, such as &quot;{{workflow.name}}/{{pod.name}}&quot;</span>
+<span class="w">      </span>keyFormat:<span class="w"> </span>prefix/in/bucket/<span class="o">{{</span>workflow.name<span class="o">}}</span>/<span class="o">{{</span>pod.name<span class="o">}}</span><span class="w">     </span><span class="c1">#it should reference workflow variables, such as &quot;{{workflow.name}}/{{pod.name}}&quot;</span>
 <span class="w">      </span>serviceAccountKeySecret:
 <span class="w">        </span>name:<span class="w"> </span>my-gcs-credentials
 <span class="w">        </span>key:<span class="w"> </span>serviceAccountKey
