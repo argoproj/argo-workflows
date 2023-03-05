@@ -10,8 +10,8 @@ Fixes #TODO
 Do not open a PR until you have:
 
 * Run `make pre-commit -B` to fix codegen and lint problems (build will fail).
-* [Sign-off your commits](https://github.com/apps/dco/) (otherwise the DCO check will fail).
-* Use [a conventional commit message](https://www.conventionalcommits.org/en/v1.0.0/).
+* [Signed-off your commits](https://github.com/apps/dco/) (otherwise the DCO check will fail).
+* Used [a conventional commit message](https://www.conventionalcommits.org/en/v1.0.0/).
 
 
 When you open your PR
