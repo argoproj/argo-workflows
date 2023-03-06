@@ -176,9 +176,9 @@ jobs:
             --cache-from "type=local,src=/tmp/.buildx-cache" \
             --cache-to "type=local,dest=/tmp/.buildx-cache" \
             --output "type=image,push=true" \
-            --build-arg GIT_COMMIT=$tag \
-            --build-arg GIT_BRANCH=$branch \
-            --build-arg GIT_TREE_STATE=$tree_state \
+            --build-arg GIT_COMMIT=$GIT_COMMIT \
+            --build-arg GIT_TAG=$GIT_TAG \
+            --build-arg GIT_TREE_STATE=$GIT_TREE_STATE \
             --platform="${PLATFORM}" \
             --target $TARGET \
             --tag quay.io/$image_name .
