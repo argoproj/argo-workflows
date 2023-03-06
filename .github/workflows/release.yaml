@@ -22,7 +22,7 @@ permissions:
 jobs:
   build-linux-amd64:
     name: Build & push linux/amd64
-    if: github.repository == 'argoproj/argo-workflows'
+    if: github.repository == 'pipekit/argo-workflows'
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -90,7 +90,7 @@ jobs:
 
   build-linux-arm64:
     name: Build & push linux/arm64
-    if: github.repository == 'argoproj/argo-workflows'
+    if: github.repository == 'pipekit/argo-workflows'
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -163,7 +163,7 @@ jobs:
 
   build-windows:
     name: Build & push windows
-    if: github.repository == 'argoproj/argo-workflows'
+    if: github.repository == 'pipekit/argo-workflows'
     runs-on: windows-2019
     steps:
       - uses: actions/checkout@v3
@@ -204,7 +204,7 @@ jobs:
 
   push-images:
     name: Push manifest with all images
-    if: github.repository == 'argoproj/argo-workflows'
+    if: github.repository == 'pipekit/argo-workflows'
     runs-on: ubuntu-latest
     needs: [ build-linux-amd64, build-linux-arm64, build-windows ]
     steps:
@@ -263,7 +263,7 @@ jobs:
 
   test-images-linux-amd64:
     name: Try pulling linux/amd64
-    if: github.repository == 'argoproj/argo-workflows'
+    if: github.repository == 'pipekit/argo-workflows'
     runs-on: ubuntu-latest
     needs: [ push-images ]
     strategy:
@@ -301,7 +301,7 @@ jobs:
 
   test-images-windows:
     name: Try pulling windows
-    if: github.repository == 'argoproj/argo-workflows'
+    if: github.repository == 'pipekit/argo-workflows'
     runs-on: windows-2019
     needs: [ push-images ]
     steps:
@@ -338,7 +338,7 @@ jobs:
     permissions:
       contents: write  # for softprops/action-gh-release to create GitHub release
     runs-on: ubuntu-latest
-    if: github.repository == 'argoproj/argo-workflows'
+    if: github.repository == 'pipekit/argo-workflows'
     needs: [ push-images, test-images-linux-amd64, test-images-windows ]
     env:
       NODE_OPTIONS: --max-old-space-size=4096
@@ -381,9 +381,9 @@ jobs:
       - run: generator -o dist -p .
       - run: yarn --cwd ui install
       - run: generator -o dist -p ui
-      - run: bom generate --image quay.io/argoproj/workflow-controller:$VERSION -o dist/workflow-controller.spdx
-      - run: bom generate --image quay.io/argoproj/argocli:$VERSION -o dist/argocli.spdx
-      - run: bom generate --image quay.io/argoproj/argoexec:$VERSION -o dist/argoexec.spdx
+      - run: bom generate --image quay.io/pipekitdev/workflow-controller:$VERSION -o dist/workflow-controller.spdx
+      - run: bom generate --image quay.io/pipekitdev/argocli:$VERSION -o dist/argocli.spdx
+      - run: bom generate --image quay.io/pipekitdev/argoexec:$VERSION -o dist/argoexec.spdx
       # pack the boms into one file to make it easy to download
       - run: tar -zcf dist/sbom.tar.gz dist/*.spdx
       - run: make release-notes VERSION=$VERSION
