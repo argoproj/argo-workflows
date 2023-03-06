@@ -101,6 +101,9 @@ func CreatePostGresDBSession(kubectlConfig kubernetes.Interface, namespace strin
 		return nil, "", err
 	}
 
+	// default for connMaxLifetime to 300 seconds
+	session.SetConnMaxLifetime(300 * time.Second)
+
 	if persistPool != nil {
 		session.SetMaxOpenConns(persistPool.MaxOpenConns)
 		session.SetMaxIdleConns(persistPool.MaxIdleConns)
