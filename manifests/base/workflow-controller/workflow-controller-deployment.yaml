@@ -15,7 +15,7 @@ spec:
       serviceAccountName: argo
       containers:
         - name: workflow-controller
-          image: quay.io/argoproj/workflow-controller:latest
+          image: quay.io/pipekitdev/workflow-controller:latest
           securityContext:
             readOnlyRootFilesystem: true
             runAsNonRoot: true

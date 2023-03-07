@@ -1655,7 +1655,7 @@ spec:
         - --auth-mode
         - client
         env: []
-        image: quay.io/argoproj/argocli:latest
+        image: quay.io/pipekitdev/argocli:latest
         name: argo-server
         ports:
         - containerPort: 2746
@@ -1800,7 +1800,7 @@ spec:
             fieldRef:
               apiVersion: v1
               fieldPath: metadata.name
-        image: quay.io/argoproj/workflow-controller:latest
+        image: quay.io/pipekitdev/workflow-controller:latest
         livenessProbe:
           failureThreshold: 3
           httpGet:
