@@ -13,13 +13,13 @@ GIT_TAG               := $(shell git describe --exact-match --tags --abbrev=0  2
 GIT_TREE_STATE        := $(shell if [ -z "`git status --porcelain`" ]; then echo "clean" ; else echo "dirty"; fi)
 RELEASE_TAG           := $(shell if [[ "$(GIT_TAG)" =~ ^v[0-9]+\.[0-9]+\.[0-9]+.*$$ ]]; then echo "true"; else echo "false"; fi)
 DEV_BRANCH            := $(shell [ $(GIT_BRANCH) = master ] || [ `echo $(GIT_BRANCH) | cut -c -8` = release- ] || [ `echo $(GIT_BRANCH) | cut -c -4` = dev- ] || [ $(RELEASE_TAG) = true ] && echo false || echo true)
-SRC                   := $(GOPATH)/src/github.com/argoproj/argo-workflows
+SRC                   := $(GOPATH)/src/github.com/pipekit/argo-workflows
 
 GREP_LOGS             := ""
 
 
 # docker image publishing options
-IMAGE_NAMESPACE       ?= quay.io/argoproj
+IMAGE_NAMESPACE       ?= quay.io/pipekitdev
 DEV_IMAGE             ?= $(shell [ `uname -s` = Darwin ] && echo true || echo false)
 
 # declares which cluster to import to in case it's not the default name
@@ -95,13 +95,13 @@ $(info KUBECTX=$(KUBECTX) DOCKER_DESKTOP=$(DOCKER_DESKTOP) K3D=$(K3D) DOCKER_PUS
 $(info RUN_MODE=$(RUN_MODE) PROFILE=$(PROFILE) AUTH_MODE=$(AUTH_MODE) SECURE=$(SECURE) STATIC_FILES=$(STATIC_FILES) ALWAYS_OFFLOAD_NODE_STATUS=$(ALWAYS_OFFLOAD_NODE_STATUS) UPPERIO_DB_DEBUG=$(UPPERIO_DB_DEBUG) LOG_LEVEL=$(LOG_LEVEL) NAMESPACED=$(NAMESPACED))
 
 override LDFLAGS += \
-  -X github.com/argoproj/argo-workflows/v3.version=$(VERSION) \
-  -X github.com/argoproj/argo-workflows/v3.buildDate=${BUILD_DATE} \
-  -X github.com/argoproj/argo-workflows/v3.gitCommit=${GIT_COMMIT} \
-  -X github.com/argoproj/argo-workflows/v3.gitTreeState=${GIT_TREE_STATE}
+  -X github.com/pipekit/argo-workflows/v3.version=$(VERSION) \
+  -X github.com/pipekit/argo-workflows/v3.buildDate=${BUILD_DATE} \
+  -X github.com/pipekit/argo-workflows/v3.gitCommit=${GIT_COMMIT} \
+  -X github.com/pipekit/argo-workflows/v3.gitTreeState=${GIT_TREE_STATE}
 
 ifneq ($(GIT_TAG),)
-override LDFLAGS += -X github.com/argoproj/argo-workflows/v3.gitTag=${GIT_TAG}
+override LDFLAGS += -X github.com/pipekit/argo-workflows/v3.gitTag=${GIT_TAG}
 endif
 
 ifndef $(GOPATH)
@@ -109,9 +109,9 @@ ifndef $(GOPATH)
 	export GOPATH
 endif
 
-ARGOEXEC_PKGS    := $(shell echo cmd/argoexec            && go list -f '{{ join .Deps "\n" }}' ./cmd/argoexec/            | grep 'argoproj/argo-workflows/v3/' | cut -c 39-)
-CLI_PKGS         := $(shell echo cmd/argo                && go list -f '{{ join .Deps "\n" }}' ./cmd/argo/                | grep 'argoproj/argo-workflows/v3/' | cut -c 39-)
-CONTROLLER_PKGS  := $(shell echo cmd/workflow-controller && go list -f '{{ join .Deps "\n" }}' ./cmd/workflow-controller/ | grep 'argoproj/argo-workflows/v3/' | cut -c 39-)
+ARGOEXEC_PKGS    := $(shell echo cmd/argoexec            && go list -f '{{ join .Deps "\n" }}' ./cmd/argoexec/            | grep 'pipekit/argo-workflows/v3/' | cut -c 39-)
+CLI_PKGS         := $(shell echo cmd/argo                && go list -f '{{ join .Deps "\n" }}' ./cmd/argo/                | grep 'pipekit/argo-workflows/v3/' | cut -c 39-)
+CONTROLLER_PKGS  := $(shell echo cmd/workflow-controller && go list -f '{{ join .Deps "\n" }}' ./cmd/workflow-controller/ | grep 'pipekit/argo-workflows/v3/' | cut -c 39-)
 TYPES := $(shell find pkg/apis/workflow/v1alpha1 -type f -name '*.go' -not -name openapi_generated.go -not -name '*generated*' -not -name '*test.go')
 CRDS := $(shell find manifests/base/crds -type f -name 'argoproj.io_*.yaml')
 SWAGGER_FILES := pkg/apiclient/_.primary.swagger.json \
@@ -142,7 +142,7 @@ define protoc
       --grpc-gateway_out=logtostderr=true:$(GOPATH)/src \
       --swagger_out=logtostderr=true,fqn_for_swagger_name=true:. \
       $(1)
-     perl -i -pe 's|argoproj/argo-workflows/|argoproj/argo-workflows/v3/|g' `echo "$(1)" | sed 's/proto/pb.go/g'`
+     perl -i -pe 's|pipekit/argo-workflows/|pipekit/argo-workflows/v3/|g' `echo "$(1)" | sed 's/proto/pb.go/g'`
 
 endef
 
@@ -239,7 +239,7 @@ argoexec-image:
 	[ ! -e $* ] || mv $* dist/
 	docker run --rm -t $(IMAGE_NAMESPACE)/$*:$(VERSION) version
 	if [ $(K3D) = true ]; then k3d image import -c $(K3D_CLUSTER_NAME) $(IMAGE_NAMESPACE)/$*:$(VERSION); fi
-	if [ $(DOCKER_PUSH) = true ] && [ $(IMAGE_NAMESPACE) != argoproj ] ; then docker push $(IMAGE_NAMESPACE)/$*:$(VERSION) ; fi
+	if [ $(DOCKER_PUSH) = true ] && [ $(IMAGE_NAMESPACE) != pipekitdev ] ; then docker push $(IMAGE_NAMESPACE)/$*:$(VERSION) ; fi
 
 .PHONY: codegen
 codegen: types swagger manifests $(GOPATH)/bin/mockery docs/fields.md docs/cli/argo.md
@@ -315,7 +315,7 @@ pkg/apis/workflow/v1alpha1/generated.proto: $(GOPATH)/bin/go-to-protobuf $(PROTO
 	find pkg/apiclient -name '*.proto'|xargs clang-format -i
 	$(GOPATH)/bin/go-to-protobuf \
 		--go-header-file=./hack/custom-boilerplate.go.txt \
-		--packages=github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1 \
+		--packages=github.com/pipekit/argo-workflows/v3/pkg/apis/workflow/v1alpha1 \
 		--apimachinery-packages=+k8s.io/apimachinery/pkg/util/intstr,+k8s.io/apimachinery/pkg/api/resource,k8s.io/apimachinery/pkg/runtime/schema,+k8s.io/apimachinery/pkg/runtime,k8s.io/apimachinery/pkg/apis/meta/v1,k8s.io/api/core/v1,k8s.io/api/policy/v1beta1 \
 		--proto-import $(GOPATH)/src
 	# Delete the link
@@ -425,7 +425,7 @@ install: githooks
 	kubectl get ns $(KUBE_NAMESPACE) || kubectl create ns $(KUBE_NAMESPACE)
 	kubectl config set-context --current --namespace=$(KUBE_NAMESPACE)
 	@echo "installing PROFILE=$(PROFILE)"
-	kubectl kustomize --load-restrictor=LoadRestrictionsNone test/e2e/manifests/$(PROFILE) | sed 's|quay.io/argoproj/|$(IMAGE_NAMESPACE)/|' | sed 's/namespace: argo/namespace: $(KUBE_NAMESPACE)/' | kubectl -n $(KUBE_NAMESPACE) apply --prune -l app.kubernetes.io/part-of=argo -f -
+	kubectl kustomize --load-restrictor=LoadRestrictionsNone test/e2e/manifests/$(PROFILE) | sed 's|quay.io/pipekitdev/|$(IMAGE_NAMESPACE)/|' | sed 's/namespace: argo/namespace: $(KUBE_NAMESPACE)/' | kubectl -n $(KUBE_NAMESPACE) apply --prune -l app.kubernetes.io/part-of=argo -f -
 ifeq ($(PROFILE),stress)
 	kubectl -n $(KUBE_NAMESPACE) apply -f test/stress/massive-workflow.yaml
 endif
@@ -545,8 +545,8 @@ pkg/apis/workflow/v1alpha1/openapi_generated.go: $(GOPATH)/bin/openapi-gen $(TYP
 	[ -e ./v3 ] || ln -s . v3
 	$(GOPATH)/bin/openapi-gen \
 	  --go-header-file ./hack/custom-boilerplate.go.txt \
-	  --input-dirs github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1 \
-	  --output-package github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1 \
+	  --input-dirs github.com/pipekit/argo-workflows/v3/pkg/apis/workflow/v1alpha1 \
+	  --output-package github.com/pipekit/argo-workflows/v3/pkg/apis/workflow/v1alpha1 \
 	  --report-filename pkg/apis/api-rules/violation_exceptions.list
 	# Delete the link
 	[ -e ./v3 ] && rm -rf v3
@@ -558,7 +558,7 @@ pkg/apis/workflow/v1alpha1/zz_generated.deepcopy.go: $(TYPES)
 	[ -e ./v3 ] || ln -s . v3
 	bash $(GOPATH)/pkg/mod/k8s.io/code-generator@v0.21.5/generate-groups.sh \
 	    "deepcopy,client,informer,lister" \
-	    github.com/argoproj/argo-workflows/v3/pkg/client github.com/argoproj/argo-workflows/v3/pkg/apis \
+	    github.com/pipekit/argo-workflows/v3/pkg/client github.com/pipekit/argo-workflows/v3/pkg/apis \
 	    workflow:v1alpha1 \
 	    --go-header-file ./hack/custom-boilerplate.go.txt
 	# Delete the link
@@ -680,4 +680,3 @@ release-notes: /dev/null
 .PHONY: checksums
 checksums:
 	sha256sum ./dist/argo-*.gz | awk -F './dist/' '{print $$1 $$2}' > ./dist/argo-workflows-cli-checksums.txt
-
