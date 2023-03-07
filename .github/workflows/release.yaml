@@ -88,78 +88,78 @@ jobs:
             --target $TARGET \
             --tag quay.io/$image_name .
 
-  build-linux-arm64:
-    name: Build & push linux/arm64
-    if: github.repository == 'pipekit/argo-workflows'
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        platform: [ linux/arm64 ]
-        target: [ workflow-controller, argocli, argoexec ]
-    steps:
-      - uses: actions/checkout@v3
+  # build-linux-arm64:
+  #   name: Build & push linux/arm64
+  #   if: github.repository == 'pipekit/argo-workflows'
+  #   runs-on: ubuntu-latest
+  #   strategy:
+  #     matrix:
+  #       platform: [ linux/arm64 ]
+  #       target: [ workflow-controller, argocli, argoexec ]
+  #   steps:
+  #     - uses: actions/checkout@v3
 
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v2
-        with:
-          platforms: arm64
+  #     - name: Set up QEMU
+  #       uses: docker/setup-qemu-action@v2
+  #       with:
+  #         platforms: arm64
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
-        with:
-          version: v0.9.1
+  #     - name: Set up Docker Buildx
+  #       uses: docker/setup-buildx-action@v2
+  #       with:
+  #         version: v0.9.1
 
-      - name: Cache Docker layers
-        uses: actions/cache@v3
-        id: cache
-        with:
-          path: /tmp/.buildx-cache
-          key: ${{ runner.os }}-${{ matrix.platform }}-${{ matrix.target }}-buildx-${{ github.sha }}
-          restore-keys: |
-            ${{ runner.os }}-${{ matrix.platform }}-${{ matrix.target }}-buildx-
+  #     - name: Cache Docker layers
+  #       uses: actions/cache@v3
+  #       id: cache
+  #       with:
+  #         path: /tmp/.buildx-cache
+  #         key: ${{ runner.os }}-${{ matrix.platform }}-${{ matrix.target }}-buildx-${{ github.sha }}
+  #         restore-keys: |
+  #           ${{ runner.os }}-${{ matrix.platform }}-${{ matrix.target }}-buildx-
 
-      - name: Docker Login
-        uses: docker/login-action@v2
-        with:
-          username: ${{ secrets.DOCKERIO_USERNAME }}
-          password: ${{ secrets.DOCKERIO_PASSWORD }}
+  #     - name: Docker Login
+  #       uses: docker/login-action@v2
+  #       with:
+  #         username: ${{ secrets.DOCKERIO_USERNAME }}
+  #         password: ${{ secrets.DOCKERIO_PASSWORD }}
 
-      - name: Docker Login
-        uses: docker/login-action@v2
-        with:
-          registry: quay.io
-          username: ${{ secrets.QUAYIO_USERNAME }}
-          password: ${{ secrets.QUAYIO_PASSWORD }}
+  #     - name: Docker Login
+  #       uses: docker/login-action@v2
+  #       with:
+  #         registry: quay.io
+  #         username: ${{ secrets.QUAYIO_USERNAME }}
+  #         password: ${{ secrets.QUAYIO_PASSWORD }}
 
-      - name: Docker Buildx
-        env:
-          DOCKERIO_ORG: ${{ secrets.DOCKERIO_ORG }}
-          PLATFORM: ${{ matrix.platform }}
-          TARGET: ${{ matrix.target }}
-        run: |
-          tag=$(basename $GITHUB_REF)
-          if [ $tag = "master" ]; then
-            tag="latest"
-          fi
+  #     - name: Docker Buildx
+  #       env:
+  #         DOCKERIO_ORG: ${{ secrets.DOCKERIO_ORG }}
+  #         PLATFORM: ${{ matrix.platform }}
+  #         TARGET: ${{ matrix.target }}
+  #       run: |
+  #         tag=$(basename $GITHUB_REF)
+  #         if [ $tag = "master" ]; then
+  #           tag="latest"
+  #         fi
 
-          tag_suffix=$(echo $PLATFORM | sed -r "s/\//-/g")
-          image_name="${DOCKERIO_ORG}/${TARGET}:${tag}-${tag_suffix}"
+  #         tag_suffix=$(echo $PLATFORM | sed -r "s/\//-/g")
+  #         image_name="${DOCKERIO_ORG}/${TARGET}:${tag}-${tag_suffix}"
 
-          docker buildx build \
-            --cache-from "type=local,src=/tmp/.buildx-cache" \
-            --cache-to "type=local,dest=/tmp/.buildx-cache" \
-            --output "type=image,push=true" \
-            --platform="${PLATFORM}" \
-            --target $TARGET \
-            --tag $image_name .
+  #         docker buildx build \
+  #           --cache-from "type=local,src=/tmp/.buildx-cache" \
+  #           --cache-to "type=local,dest=/tmp/.buildx-cache" \
+  #           --output "type=image,push=true" \
+  #           --platform="${PLATFORM}" \
+  #           --target $TARGET \
+  #           --tag $image_name .
 
-          docker buildx build \
-            --cache-from "type=local,src=/tmp/.buildx-cache" \
-            --cache-to "type=local,dest=/tmp/.buildx-cache" \
-            --output "type=image,push=true" \
-            --platform="${PLATFORM}" \
-            --target $TARGET \
-            --tag quay.io/$image_name .
+  #         docker buildx build \
+  #           --cache-from "type=local,src=/tmp/.buildx-cache" \
+  #           --cache-to "type=local,dest=/tmp/.buildx-cache" \
+  #           --output "type=image,push=true" \
+  #           --platform="${PLATFORM}" \
+  #           --target $TARGET \
+  #           --tag quay.io/$image_name .
 
   build-windows:
     name: Build & push windows
@@ -206,7 +206,8 @@ jobs:
     name: Push manifest with all images
     if: github.repository == 'pipekit/argo-workflows'
     runs-on: ubuntu-latest
-    needs: [ build-linux-amd64, build-linux-arm64, build-windows ]
+    # needs: [ build-linux-amd64, build-linux-arm64, build-windows ]
+    needs: [ build-linux-amd64, build-windows ]
     steps:
       - uses: actions/checkout@v3
       - name: Docker Login
@@ -247,11 +248,15 @@ jobs:
             image_name="${docker_org}/${target}:${tag}"
 
             if [ $target = "argoexec" ]; then
-              docker manifest create $image_name ${image_name}-linux-arm64 ${image_name}-linux-amd64 ${image_name}-windows
-              docker manifest create quay.io/$image_name quay.io/${image_name}-linux-arm64 quay.io/${image_name}-linux-amd64 quay.io/${image_name}-windows
+              # docker manifest create $image_name ${image_name}-linux-arm64 ${image_name}-linux-amd64 ${image_name}-windows
+              # docker manifest create quay.io/$image_name quay.io/${image_name}-linux-arm64 quay.io/${image_name}-linux-amd64 quay.io/${image_name}-windows
+              docker manifest create $image_name ${image_name}-linux-amd64 ${image_name}-windows
+              docker manifest create quay.io/$image_name quay.io/${image_name}-linux-amd64 quay.io/${image_name}-windows
             else
-              docker manifest create $image_name ${image_name}-linux-arm64 ${image_name}-linux-amd64
-              docker manifest create quay.io/$image_name quay.io/${image_name}-linux-arm64 quay.io/${image_name}-linux-amd64
+              # docker manifest create $image_name ${image_name}-linux-arm64 ${image_name}-linux-amd64
+              # docker manifest create quay.io/$image_name quay.io/${image_name}-linux-arm64 quay.io/${image_name}-linux-amd64
+              docker manifest create $image_name ${image_name}-linux-amd64
+              docker manifest create quay.io/$image_name quay.io/${image_name}-linux-amd64
             fi
 
             docker manifest push $image_name
