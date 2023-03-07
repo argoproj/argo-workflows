@@ -44,7 +44,7 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           context: .
-          tags: quay.io/argoproj/argoexec:latest
+          tags: quay.io/pipekitdev/argoexec:latest
           outputs: type=docker,dest=/tmp/argoexec_image.tar
           target: argoexec
           cache-from: type=gha
@@ -221,8 +221,8 @@ jobs:
           docker pull openapitools/openapi-generator-cli:v5.2.1 &
       - name: Create links
         run: |
-          mkdir -p /home/runner/go/src/github.com/argoproj
-          ln -s "$PWD" /home/runner/go/src/github.com/argoproj/argo-workflows
+          mkdir -p /home/runner/go/src/github.com/pipekit
+          ln -s "$PWD" /home/runner/go/src/github.com/pipekit/argo-workflows
       - run: make codegen -B STATIC_FILES=false
       - run: git diff --exit-code
 
