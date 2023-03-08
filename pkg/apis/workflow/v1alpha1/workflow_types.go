@@ -1735,6 +1735,30 @@ func (s Nodes) Children(parentNodeId string) Nodes {
 	return childNodes
 }
 
+func (s Nodes) NestedChildrenStatus(parentNodeId string) ([]NodeStatus, error) {
+	parentNode, ok := s[parentNodeId]
+	if !ok {
+		return nil, fmt.Errorf("could not find %s in nodes when searching for nested children", parentNodeId)
+	}
+
+	children := []NodeStatus{}
+	q := []NodeStatus{parentNode}
+
+	for {
+		if len(q) <= 0 {
+			break
+		}
+		childNode := q[0]
+		q = q[1:]
+		for _, nodeID := range childNode.Children {
+			q = append(q, s[nodeID])
+		}
+		children = append(children, childNode)
+	}
+
+	return children, nil
+}
+
 // Filter returns the subset of the nodes that match the predicate, e.g. only failed nodes
 func (s Nodes) Filter(predicate func(NodeStatus) bool) Nodes {
 	filteredNodes := make(Nodes)

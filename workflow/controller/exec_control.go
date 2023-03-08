@@ -82,18 +82,9 @@ func (woc *wfOperationCtx) handleExecutionControlError(nodeID string, wfNodesLoc
 	node := woc.wf.Status.Nodes[nodeID]
 	woc.markNodePhase(node.Name, wfv1.NodeFailed, errorMsg)
 
-	children := []wfv1.NodeStatus{}
-	q := []wfv1.NodeStatus{node}
-	for {
-		if len(q) <= 0 {
-			break
-		}
-		childNode := q[0]
-		q = q[1:]
-		for _, nodeID := range childNode.Children {
-			q = append(q, woc.wf.Status.Nodes[nodeID])
-		}
-		children = append(children, childNode)
+	children, err := woc.wf.Status.Nodes.NestedChildrenStatus(nodeID)
+	if err != nil {
+		woc.log.Errorf("was not able to obtain children: %s", err)
 	}
 
 	// if node is a pod created from ContainerSet template
