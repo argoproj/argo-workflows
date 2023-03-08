@@ -85,6 +85,7 @@ func (woc *wfOperationCtx) handleExecutionControlError(nodeID string, wfNodesLoc
 	children, err := woc.wf.Status.Nodes.NestedChildrenStatus(nodeID)
 	if err != nil {
 		woc.log.Errorf("was not able to obtain children: %s", err)
+		return
 	}
 
 	// if node is a pod created from ContainerSet template
