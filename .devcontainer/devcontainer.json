@@ -1,30 +1,7 @@
-// For format details, see https://aka.ms/devcontainer.json. For config options, see the README at:
-// https://github.com/microsoft/vscode-dev-containers/tree/v0.234.0/containers/debian
 {
-	"name": "Debian",
-	"build": {
-		"dockerfile": "Dockerfile",
-		"args": { 
-			"VARIANT": "bullseye",
-			"NEW_USERNAME": "${localEnv:USER}",
-			"HOME": "${localEnv:HOME}",
-			"VSCODE_SCRIPT_VERSION": "v0.234.0"
-		}
-	},
-
-	"settings": {},
-
-	"extensions": [],
-
-	"mounts": [ "source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind" ],
-
-	"runArgs": [ "--cap-add=SYS_PTRACE", "--security-opt", "seccomp=unconfined" ],
-
-	"remoteUser": "${localEnv:USER}",
-	"features": {},
-
-	"workspaceMount": "source=${localWorkspaceFolder},target=${localEnv:HOME}/go/src/github.com/argoproj/argo-workflows,type=bind",
-	"workspaceFolder": "${localEnv:HOME}/go/src/github.com/argoproj/argo-workflows",
-
-	"postStartCommand": "bash -i .devcontainer/startup.sh"
+    "build": { "dockerfile": "Dockerfile" },
+    "hostRequirements": {"cpus": 4},
+    "onCreateCommand": ".devcontainer/pre-build.sh",
+    "workspaceMount": "source=${localWorkspaceFolder},target=${localEnv:HOME}/go/src/github.com/argoproj/argo-workflows,type=bind",
+    "workspaceFolder": "${localEnv:HOME}/go/src/github.com/argoproj/argo-workflows"
 }

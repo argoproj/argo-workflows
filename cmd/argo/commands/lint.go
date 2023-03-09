@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"strings"
@@ -12,6 +13,8 @@ import (
 	wf "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
 )
 
+var allKinds = []string{wf.WorkflowPlural, wf.WorkflowTemplatePlural, wf.CronWorkflowPlural, wf.ClusterWorkflowTemplatePlural}
+
 func NewLintCommand() *cobra.Command {
 	var (
 		strict    bool
@@ -19,8 +22,6 @@ func NewLintCommand() *cobra.Command {
 		output    string
 		offline   bool
 	)
-
-	allKinds := []string{wf.WorkflowPlural, wf.WorkflowTemplatePlural, wf.CronWorkflowPlural, wf.ClusterWorkflowTemplatePlural}
 
 	command := &cobra.Command{
 		Use:   "lint FILE...",
@@ -34,23 +35,12 @@ func NewLintCommand() *cobra.Command {
 
   cat manifests.yaml | argo lint --kinds=workflows,cronworkflows -`,
 		Run: func(cmd *cobra.Command, args []string) {
-			client.Offline = offline
-			client.OfflineFiles = args
-			ctx, apiClient := client.NewAPIClient(cmd.Context())
 			if len(args) == 0 {
 				cmd.HelpFunc()(cmd, args)
 				os.Exit(1)
 			}
-			if len(lintKinds) == 0 || strings.Contains(strings.Join(lintKinds, ","), "all") {
-				lintKinds = allKinds
-			}
-			ops := lint.LintOptions{
-				Files:            args,
-				Strict:           strict,
-				DefaultNamespace: client.Namespace(),
-				Printer:          os.Stdout,
-			}
-			lint.RunLint(ctx, apiClient, lintKinds, output, offline, ops)
+
+			runLint(cmd.Context(), args, offline, lintKinds, output, strict)
 		},
 	}
 
@@ -60,4 +50,21 @@ func NewLintCommand() *cobra.Command {
 	command.Flags().BoolVar(&offline, "offline", false, "perform offline linting. For resources referencing other resources, the references will be resolved from the provided args")
 
 	return command
+}
+
+func runLint(ctx context.Context, args []string, offline bool, lintKinds []string, output string, strict bool) {
+	client.Offline = offline
+	client.OfflineFiles = args
+	ctx, apiClient := client.NewAPIClient(ctx)
+
+	if len(lintKinds) == 0 || strings.Contains(strings.Join(lintKinds, ","), "all") {
+		lintKinds = allKinds
+	}
+	ops := lint.LintOptions{
+		Files:            args,
+		Strict:           strict,
+		DefaultNamespace: client.Namespace(),
+		Printer:          os.Stdout,
+	}
+	lint.RunLint(ctx, apiClient, lintKinds, output, offline, ops)
 }

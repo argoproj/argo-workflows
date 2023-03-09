@@ -60,7 +60,16 @@ func (d *WebsocketRoundTripper) RoundTrip(r *http.Request) (*http.Response, erro
 }
 
 // ExecPodContainer runs a command in a container in a pod and returns the remotecommand.Executor
-func ExecPodContainer(restConfig *rest.Config, namespace string, pod string, container string, stdout bool, stderr bool, command ...string) (remotecommand.Executor, error) {
+func ExecPodContainer(restConfig *rest.Config, namespace string, pod string, container string, stdout bool, stderr bool, command ...string) (exec remotecommand.Executor, err error) {
+	defer func() {
+		log.WithField("namespace", namespace).
+			WithField("pod", pod).
+			WithField("container", container).
+			WithField("command", command).
+			WithError(err).
+			Debug("exec container command")
+	}()
+
 	clientset, err := kubernetes.NewForConfig(restConfig)
 	if err != nil {
 		return nil, errors.InternalWrapError(err)
@@ -81,7 +90,7 @@ func ExecPodContainer(restConfig *rest.Config, namespace string, pod string, con
 	}
 
 	log.Info(execRequest.URL())
-	exec, err := remotecommand.NewSPDYExecutor(restConfig, "POST", execRequest.URL())
+	exec, err = remotecommand.NewSPDYExecutor(restConfig, "POST", execRequest.URL())
 	if err != nil {
 		return nil, errors.InternalWrapError(err)
 	}
