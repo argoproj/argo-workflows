@@ -69,8 +69,10 @@ jobs:
           if [ $tag = "master" ]; then
             tag="latest"
           fi
-          branch=$(git rev-parse --symbolic-full-name --verify --quiet --abbrev-ref HEAD)
-          tree_state=$(if [ -z "`git status --porcelain`" ]; then echo "clean" ; else echo "dirty"; fi)
+          # copied verbatim from Makefile
+          GIT_COMMIT=$(git rev-parse HEAD || echo unknown)
+          GIT_TAG=$(git describe --exact-match --tags --abbrev=0  2> /dev/null || echo untagged)
+          GIT_TREE_STATE=$(if [ -z "`git status --porcelain`" ]; then echo "clean" ; else echo "dirty"; fi)
   
           tag_suffix=$(echo $PLATFORM | sed -r "s/\//-/g")
           image_name="${DOCKERIO_ORG}/${TARGET}:${tag}-${tag_suffix}"
@@ -79,9 +81,9 @@ jobs:
             --cache-from "type=local,src=/tmp/.buildx-cache" \
             --cache-to "type=local,dest=/tmp/.buildx-cache" \
             --output "type=image,push=true" \
-            --build-arg GIT_COMMIT=$tag \
-            --build-arg GIT_BRANCH=$branch \
-            --build-arg GIT_TREE_STATE=$tree_state \
+            --build-arg GIT_COMMIT=$GIT_COMMIT \
+            --build-arg GIT_TAG=$GIT_TAG \
+            --build-arg GIT_TREE_STATE=$GIT_TREE_STATE \
             --platform="${PLATFORM}" \
             --target $TARGET \
             --tag $image_name .
@@ -90,9 +92,9 @@ jobs:
             --cache-from "type=local,src=/tmp/.buildx-cache" \
             --cache-to "type=local,dest=/tmp/.buildx-cache" \
             --output "type=image,push=true" \
-            --build-arg GIT_COMMIT=$tag \
-            --build-arg GIT_BRANCH=$branch \
-            --build-arg GIT_TREE_STATE=$tree_state \
+            --build-arg GIT_COMMIT=$GIT_COMMIT \
+            --build-arg GIT_TAG=$GIT_TAG \
+            --build-arg GIT_TREE_STATE=$GIT_TREE_STATE \
             --platform="${PLATFORM}" \
             --target $TARGET \
             --tag quay.io/$image_name .
@@ -151,8 +153,10 @@ jobs:
           if [ $tag = "master" ]; then
             tag="latest"
           fi
-          branch=$(git rev-parse --symbolic-full-name --verify --quiet --abbrev-ref HEAD)
-          tree_state=$(if [ -z "`git status --porcelain`" ]; then echo "clean" ; else echo "dirty"; fi)
+          # copied verbatim from Makefile
+          GIT_COMMIT=$(git rev-parse HEAD || echo unknown)
+          GIT_TAG=$(git describe --exact-match --tags --abbrev=0  2> /dev/null || echo untagged)
+          GIT_TREE_STATE=$(if [ -z "`git status --porcelain`" ]; then echo "clean" ; else echo "dirty"; fi)
           
           tag_suffix=$(echo $PLATFORM | sed -r "s/\//-/g")
           image_name="${DOCKERIO_ORG}/${TARGET}:${tag}-${tag_suffix}"
@@ -161,9 +165,9 @@ jobs:
             --cache-from "type=local,src=/tmp/.buildx-cache" \
             --cache-to "type=local,dest=/tmp/.buildx-cache" \
             --output "type=image,push=true" \
-            --build-arg GIT_COMMIT=$tag \
-            --build-arg GIT_BRANCH=$branch \
-            --build-arg GIT_TREE_STATE=$tree_state \
+            --build-arg GIT_COMMIT=$GIT_COMMIT \
+            --build-arg GIT_TAG=$GIT_TAG \
+            --build-arg GIT_TREE_STATE=$GIT_TREE_STATE \
             --platform="${PLATFORM}" \
             --target $TARGET \
             --tag $image_name .
@@ -172,9 +176,9 @@ jobs:
             --cache-from "type=local,src=/tmp/.buildx-cache" \
             --cache-to "type=local,dest=/tmp/.buildx-cache" \
             --output "type=image,push=true" \
-            --build-arg GIT_COMMIT=$tag \
-            --build-arg GIT_BRANCH=$branch \
-            --build-arg GIT_TREE_STATE=$tree_state \
+            --build-arg GIT_COMMIT=$GIT_COMMIT \
+            --build-arg GIT_TAG=$GIT_TAG \
+            --build-arg GIT_TREE_STATE=$GIT_TREE_STATE \
             --platform="${PLATFORM}" \
             --target $TARGET \
             --tag quay.io/$image_name .

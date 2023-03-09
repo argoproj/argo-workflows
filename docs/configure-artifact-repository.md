@@ -398,7 +398,7 @@ data:
   artifactRepository: |
     gcs:
       bucket: my-bucket
-      keyFormat: prefix/in/bucket     #optional, it could reference workflow variables, such as "{{workflow.name}}/{{pod.name}}"
+      keyFormat: prefix/in/bucket/{{workflow.name}}/{{pod.name}}     #it should reference workflow variables, such as "{{workflow.name}}/{{pod.name}}"
       serviceAccountKeySecret:
         name: my-gcs-credentials
         key: serviceAccountKey

@@ -42,6 +42,10 @@ RUN SETX /m path C:\app;%path%
 ####################################################################################################
 FROM builder as argo-build
 
+ARG GIT_COMMIT
+ARG GIT_TAG
+ARG GIT_TREE_STATE
+
 # Perform the build
 WORKDIR C:/Users/ContainerAdministrator/go/src/github.com/argoproj/argo-workflows
 COPY . .
