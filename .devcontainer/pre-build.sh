@@ -16,4 +16,4 @@ kubectl cluster-info
 curl -q https://raw.githubusercontent.com/kitproj/kit/main/install.sh | sh
 
 # download dependencies and do first-pass compile
-kit pre-up
+CI=1 kit pre-up
