@@ -6,13 +6,15 @@ MAKEFLAGS += --no-builtin-rules
 .SUFFIXES:
 
 BUILD_DATE            := $(shell date -u +'%Y-%m-%dT%H:%M:%SZ')
-GIT_COMMIT            := $(shell git rev-parse HEAD)
+# copied verbatim to release.yaml
+GIT_COMMIT            := $(shell git rev-parse HEAD || echo unknown)
 GIT_REMOTE            := origin
 GIT_BRANCH            := $(shell git rev-parse --symbolic-full-name --verify --quiet --abbrev-ref HEAD)
+# copied verbatim to release.yaml
 GIT_TAG               := $(shell git describe --exact-match --tags --abbrev=0  2> /dev/null || echo untagged)
 GIT_TREE_STATE        := $(shell if [ -z "`git status --porcelain`" ]; then echo "clean" ; else echo "dirty"; fi)
 RELEASE_TAG           := $(shell if [[ "$(GIT_TAG)" =~ ^v[0-9]+\.[0-9]+\.[0-9]+.*$$ ]]; then echo "true"; else echo "false"; fi)
-DEV_BRANCH            := $(shell [ $(GIT_BRANCH) = master ] || [ `echo $(GIT_BRANCH) | cut -c -8` = release- ] || [ `echo $(GIT_BRANCH) | cut -c -4` = dev- ] || [ $(RELEASE_TAG) = true ] && echo false || echo true)
+DEV_BRANCH            := $(shell [ "$(GIT_BRANCH)" = master ] || [ `echo $(GIT_BRANCH) | cut -c -8` = release- ] || [ `echo $(GIT_BRANCH) | cut -c -4` = dev- ] || [ $(RELEASE_TAG) = true ] && echo false || echo true)
 SRC                   := $(GOPATH)/src/github.com/argoproj/argo-workflows
 
 GREP_LOGS             := ""
@@ -96,9 +98,9 @@ $(info RUN_MODE=$(RUN_MODE) PROFILE=$(PROFILE) AUTH_MODE=$(AUTH_MODE) SECURE=$(S
 
 override LDFLAGS += \
   -X github.com/argoproj/argo-workflows/v3.version=$(VERSION) \
-  -X github.com/argoproj/argo-workflows/v3.buildDate=${BUILD_DATE} \
-  -X github.com/argoproj/argo-workflows/v3.gitCommit=${GIT_COMMIT} \
-  -X github.com/argoproj/argo-workflows/v3.gitTreeState=${GIT_TREE_STATE}
+  -X github.com/argoproj/argo-workflows/v3.buildDate=$(BUILD_DATE) \
+  -X github.com/argoproj/argo-workflows/v3.gitCommit=$(GIT_COMMIT) \
+  -X github.com/argoproj/argo-workflows/v3.gitTreeState=$(GIT_TREE_STATE)
 
 ifneq ($(GIT_TAG),)
 override LDFLAGS += -X github.com/argoproj/argo-workflows/v3.gitTag=${GIT_TAG}
@@ -232,6 +234,9 @@ argoexec-image:
 %-image:
 	[ ! -e dist/$* ] || mv dist/$* .
 	docker buildx build \
+		--build-arg GIT_COMMIT=$(GIT_COMMIT) \
+		--build-arg GIT_TAG=$(GIT_TAG) \
+		--build-arg GIT_TREE_STATE=$(GIT_TREE_STATE) \
 		-t $(IMAGE_NAMESPACE)/$*:$(VERSION) \
 		--target $* \
 		--load \
