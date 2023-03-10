@@ -5,10 +5,13 @@
 ####################################################################################################
 
 ARG IMAGE_OS_VERSION=1809
+ARG GIT_COMMIT=unknown
+ARG GIT_TAG=unknown
+ARG GIT_TREE_STATE=unknown
 
 # had issues with official golange image for windows so I'm using plain servercore
 FROM mcr.microsoft.com/windows/servercore:${IMAGE_OS_VERSION} as builder
-ENV GOLANG_VERSION=1.18
+ENV GOLANG_VERSION=1.19
 SHELL ["powershell", "-Command"]
 
 # install chocolatey package manager
@@ -28,14 +31,6 @@ RUN choco install golang --version=$env:GOLANG_VERSION ; \
 FROM mcr.microsoft.com/windows/nanoserver:${IMAGE_OS_VERSION} as argoexec-base
 COPY --from=builder /windows/system32/netapi32.dll /windows/system32/netapi32.dll
 
-# NOTE: kubectl version should be one minor version less than https://storage.googleapis.com/kubernetes-release/release/stable.txt
-ENV KUBECTL_VERSION=1.24.8
-ENV JQ_VERSION=1.6
-
-RUN mkdir C:\app && \
-    curl -L -o C:\app\kubectl.exe "https://storage.googleapis.com/kubernetes-release/release/v%KUBECTL_VERSION%/bin/windows/amd64/kubectl.exe" && \
-    curl -L -o C:\app\jq.exe "https://github.com/stedolan/jq/releases/download/jq-%JQ_VERSION%/jq-win64.exe"
-
 COPY --from=builder C:/ProgramData/chocolatey/lib/7zip.portable/tools/7z-extra/x64/7za.exe C:/app/7za.exe
 
 # add binaries to path
@@ -47,13 +42,15 @@ RUN SETX /m path C:\app;%path%
 ####################################################################################################
 FROM builder as argo-build
 
+ARG GIT_COMMIT
+ARG GIT_TAG
+ARG GIT_TREE_STATE
+
 # Perform the build
 WORKDIR C:/Users/ContainerAdministrator/go/src/github.com/argoproj/argo-workflows
 COPY . .
-# check we can use Git
-RUN git rev-parse HEAD
 # run in git bash for all the shell commands in Makefile to work
-RUN bash -c 'make dist/argoexec'
+RUN bash -c 'make dist/argoexec GIT_COMMIT=${GIT_COMMIT} GIT_TAG=${GIT_TAG} GIT_TREE_STATE=${GIT_TREE_STATE}'
 
 ####################################################################################################
 # argoexec

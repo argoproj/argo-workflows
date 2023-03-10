@@ -688,6 +688,23 @@ spec:
 		})
 }
 
+func (s *FunctionalSuite) TestWorkflowHookParameterTemplates() {
+	s.Given().
+		Workflow("@testdata/workflow-hook-parameter.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeSucceeded).
+		Then().
+		ExpectWorkflow(func(t *testing.T, md *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
+		}).
+		ExpectWorkflowNode(wfv1.NodeWithDisplayName("workflow-hook-parameter.onExit"), func(t *testing.T, n *wfv1.NodeStatus, p *apiv1.Pod) {
+			assert.Equal(t, wfv1.NodeSucceeded, n.Phase)
+			assert.Equal(t, "Succeeded", n.Inputs.Parameters[0].Value.String())
+			assert.Equal(t, "Succeeded", n.Inputs.Parameters[1].Value.String())
+		})
+}
+
 func (s *FunctionalSuite) TestParametrizableAds() {
 	s.Given().
 		Workflow(`

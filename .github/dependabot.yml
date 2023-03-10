@@ -25,4 +25,6 @@ updates:
     ignore:
       - dependency-name: raw-loader
       - dependency-name: style-loader
+      - dependency-name: react-router-dom
+      - dependency-name: @types/react-router-dom
     open-pull-requests-limit: 10

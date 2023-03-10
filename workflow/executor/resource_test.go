@@ -1,6 +1,7 @@
 package executor
 
 import (
+	"context"
 	"io/ioutil"
 	"os"
 	"path"
@@ -64,7 +65,7 @@ func TestResourcePatchFlags(t *testing.T) {
 	manifestPath := "../../examples/hello-world.yaml"
 	buff, err := ioutil.ReadFile(manifestPath)
 	assert.NoError(t, err)
-	fakeFlags := []string{"patch", "--type", "strategic", "-p", string(buff), "-f", manifestPath, "-o", "json"}
+	fakeFlags := []string{"kubectl", "patch", "--type", "strategic", "-p", string(buff), "-f", manifestPath, "-o", "json"}
 
 	mockRuntimeExecutor := mocks.ContainerRuntimeExecutor{}
 
@@ -95,7 +96,7 @@ func TestResourcePatchFlagsJson(t *testing.T) {
 	manifestPath := "../../examples/hello-world.yaml"
 	buff, err := ioutil.ReadFile(manifestPath)
 	assert.NoError(t, err)
-	fakeFlags := []string{"patch", "--type", "json", "-p", string(buff), "-o", "json"}
+	fakeFlags := []string{"kubectl", "patch", "--type", "json", "-p", string(buff), "-o", "json"}
 
 	mockRuntimeExecutor := mocks.ContainerRuntimeExecutor{}
 
@@ -215,5 +216,29 @@ func TestResourceExecRetry(t *testing.T) {
 
 	_, _, _, err := we.ExecResource("", "../../examples/hello-world.yaml", nil)
 	assert.Error(t, err)
-	assert.Equal(t, "no more retries i/o timeout", err.Error())
+	assert.Contains(t, err.Error(), "no more retries")
+}
+
+func Test_jqFilter(t *testing.T) {
+	for _, testCase := range []struct {
+		input  []byte
+		filter string
+		want   string
+	}{
+		{[]byte(`{"metadata": {"name": "foo"}}`), ".metadata.name", "foo"},
+		{[]byte(`{"items": [{"key": "foo"}, {"key": "bar"}]}`), ".items.[].key", "foo\nbar"},
+	} {
+		t.Run(string(testCase.input), func(t *testing.T) {
+			ctx := context.Background()
+			got, err := jqFilter(ctx, testCase.input, testCase.filter)
+			assert.NoError(t, err)
+			assert.Equal(t, testCase.want, got)
+		})
+	}
+}
+
+func Test_runKubectl(t *testing.T) {
+	out, err := runKubectl("kubectl", "version", "--client=true", "--output", "json")
+	assert.NoError(t, err)
+	assert.Contains(t, string(out), "clientVersion")
 }
