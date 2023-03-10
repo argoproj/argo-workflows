@@ -7,7 +7,7 @@ There are two basic ways of running a template multiple times.
 - `withItems` takes a list of things to work on. Either
     - plain, single values, which are then usable in your template as '{{item}}'
     - a JSON object where each element in the object can be addressed by it's key as '{{item.key}}'
-- `withParams` takes a JSON array of items, and iterates over it - again the items can be objects like with `withItems`. This is very powerful, as you can generate the JSON in another step in your workflow, so creating a dynamic workflow.
+- `withParam` takes a JSON array of items, and iterates over it - again the items can be objects like with `withItems`. This is very powerful, as you can generate the JSON in another step in your workflow, so creating a dynamic workflow.
 
 ## `withItems` basic example
 
@@ -84,7 +84,7 @@ spec:
       args: [/etc/os-release]
 ```
 
-## `withParams` example
+## `withParam` example
 
 This example does exactly the same job as the previous example, but using `withParam` to pass the information as a JSON array argument, instead of hard-coding it into the template.
 
@@ -134,7 +134,7 @@ spec:
       args: [/etc/os-release]
 ```
 
-## `withParams` example from another step in the workflow
+## `withParam` example from another step in the workflow
 
 Finally, the most powerful form of this is to generate that JSON array of objects dynamically in one step, and then pass it to the next step so that the number and values used in the second step are only calculated at runtime.
 
