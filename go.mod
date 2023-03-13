@@ -10,7 +10,7 @@ require (
 	github.com/Masterminds/sprig/v3 v3.2.3
 	github.com/TwiN/go-color v1.4.0
 	github.com/aliyun/aliyun-oss-go-sdk v2.2.6+incompatible
-	github.com/antonmedv/expr v1.12.1
+	github.com/antonmedv/expr v1.12.3
 	github.com/argoproj/argo-events v1.7.3
 	github.com/argoproj/pkg v0.13.6
 	github.com/blushft/go-diagrams v0.0.0-20201006005127-c78c821223d9
@@ -24,7 +24,7 @@ require (
 	github.com/go-openapi/jsonreference v0.20.2
 	github.com/go-sql-driver/mysql v1.7.0
 	github.com/gogo/protobuf v1.3.2
-	github.com/golang/protobuf v1.5.2
+	github.com/golang/protobuf v1.5.3
 	github.com/google/go-containerregistry v0.11.0
 	github.com/google/go-containerregistry/pkg/authn/k8schain v0.0.0-20220411142604-2042cc9d6401
 	github.com/gorilla/handlers v1.5.1
@@ -56,8 +56,8 @@ require (
 	golang.org/x/oauth2 v0.6.0
 	golang.org/x/sync v0.1.0
 	golang.org/x/time v0.3.0
-	google.golang.org/api v0.111.0
-	google.golang.org/genproto v0.0.0-20230223222841-637eb2293923
+	google.golang.org/api v0.112.0
+	google.golang.org/genproto v0.0.0-20230303212802-e74f57abe488
 	google.golang.org/grpc v1.53.0
 	gopkg.in/go-playground/webhooks.v5 v5.17.0
 	gopkg.in/jcmturner/gokrb5.v5 v5.3.0
@@ -75,10 +75,10 @@ require (
 )
 
 require (
-	cloud.google.com/go v0.107.0 // indirect
+	cloud.google.com/go v0.110.0 // indirect
 	cloud.google.com/go/compute v1.18.0 // indirect
 	cloud.google.com/go/compute/metadata v0.2.3 // indirect
-	cloud.google.com/go/iam v0.11.0 // indirect
+	cloud.google.com/go/iam v0.12.0 // indirect
 	github.com/Azure/azure-sdk-for-go v62.0.0+incompatible // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.4.0 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/internal v1.2.0 // indirect

@@ -404,13 +404,7 @@ func (wfc *WorkflowController) runConfigMapWatcher(stopCh <-chan struct{}) {
 			log.Debugf("received config map %s/%s update", cm.Namespace, cm.Name)
 			if cm.GetName() == wfc.configController.GetName() && wfc.namespace == cm.GetNamespace() {
 				log.Infof("Received Workflow Controller config map %s/%s update", cm.Namespace, cm.Name)
-				err := wfc.updateConfig()
-				if err != nil {
-					log.Errorf("Failed update the Workflow Controller config map. error: %v", err)
-					continue
-				}
-				log.Infof("Successfully Workflow Controller config map %s/%s updated", cm.Namespace, cm.Name)
-				continue
+				wfc.UpdateConfig(ctx)
 			}
 			wfc.notifySemaphoreConfigUpdate(cm)
 		case <-stopCh:
