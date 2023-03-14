@@ -75,7 +75,7 @@ data:
       url: http://my-chat
     # Adds a button to the top of workflow view to navigate to customized views.
     - name: Completed Workflows
-      scope: custom-buttons
+      scope: workflow-list
       url: http://workflows?label=workflows.argoproj.io/completed=true
 
   # uncomment following lines if you want to change navigation bar background color

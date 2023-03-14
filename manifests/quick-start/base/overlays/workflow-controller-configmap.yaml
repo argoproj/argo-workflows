@@ -41,7 +41,7 @@ data:
       scope: sensor-logs
       url: http://logging-facility?namespace=${metadata.namespace}&podName=${metadata.name}&startedAt=${status.startedAt}&finishedAt=${status.finishedAt}
     - name: Completed Workflows
-      scope: custom-buttons
+      scope: workflow-list
       url: http://workflows?label=workflows.argoproj.io/completed=true
 kind: ConfigMap
 metadata:
