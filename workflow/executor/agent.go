@@ -368,6 +368,9 @@ func (ae *AgentExecutor) executePluginTemplate(ctx context.Context, tmpl wfv1.Te
 			return 0, err
 		} else if reply.Node != nil {
 			*result = *reply.Node
+			if reply.Node.Phase == wfv1.NodeSucceeded {
+				return 0, nil
+			}
 			return reply.GetRequeue(), nil
 		}
 	}
