@@ -1,6 +1,17 @@
 # Loops
 
-When writing workflows, it is often very useful to be able to iterate over a set of inputs as shown in this example:
+When writing workflows, it is often very useful to be able to iterate over a set of inputs, as this is how argo-workflows can perform loops.
+
+There are two basic ways of running a template multiple times.
+
+- `withItems` takes a list of things to work on. Either
+    - plain, single values, which are then usable in your template as '{{item}}'
+    - a JSON object where each element in the object can be addressed by it's key as '{{item.key}}'
+- `withParam` takes a JSON array of items, and iterates over it - again the items can be objects like with `withItems`. This is very powerful, as you can generate the JSON in another step in your workflow, so creating a dynamic workflow.
+
+## `withItems` basic example
+
+This example is the simplest. We are taking a basic list of items and iterating over it with `withItems`. It is limited to one varying field for each of the workflow templates instantiated.
 
 ```yaml
 apiVersion: argoproj.io/v1alpha1
@@ -32,7 +43,9 @@ spec:
       args: ["{{inputs.parameters.message}}"]
 ```
 
-We can also iterate over sets of items:
+## `withItems` more complex example
+
+If we'd like to pass more than one piece of information in each workflow, you can instead use a JSON object for each entry in `withItems` and then address the elements by key, as shown in this example.
 
 ```yaml
 apiVersion: argoproj.io/v1alpha1
@@ -42,7 +55,9 @@ metadata:
 spec:
   entrypoint: loop-map-example
   templates:
-  - name: loop-map-example
+  - name: loop-map-example parameter specifies the list to iterate over
+
+
     steps:
     - - name: test-linux
         template: cat-os-release
@@ -69,7 +84,9 @@ spec:
       args: [/etc/os-release]
 ```
 
-We can pass lists of items as parameters:
+## `withParam` example
+
+This example does exactly the same job as the previous example, but using `withParam` to pass the information as a JSON array argument, instead of hard-coding it into the template.
 
 ```yaml
 apiVersion: argoproj.io/v1alpha1
@@ -117,7 +134,9 @@ spec:
       args: [/etc/os-release]
 ```
 
-We can even dynamically generate the list of items to iterate over!
+## `withParam` example from another step in the workflow
+
+Finally, the most powerful form of this is to generate that JSON array of objects dynamically in one step, and then pass it to the next step so that the number and values used in the second step are only calculated at runtime.
 
 ```yaml
 apiVersion: argoproj.io/v1alpha1
