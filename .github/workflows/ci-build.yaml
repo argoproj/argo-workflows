@@ -140,25 +140,18 @@ jobs:
           echo '127.0.0.1 azurite'  | sudo tee -a /etc/hosts
       - run: make install PROFILE=${{matrix.profile}} STATIC_FILES=false
         name: Install manifests
-      - run: make controller $(go env GOPATH)/bin/goreman STATIC_FILES=false
+      - run: make controller kit STATIC_FILES=false
         name: Build controller
       - run: make cli STATIC_FILES=false
         if: ${{matrix.test == 'test-api' || matrix.test == 'test-cli' || matrix.test == 'test-java-sdk' || matrix.test == 'test-python-sdk'}}
         name: Build CLI
-      - run:  ./hack/port-forward.sh
-        name: Start port forward
-      - run: make start PROFILE=${{matrix.profile}} AUTH_MODE=client STATIC_FILES=false LOG_LEVEL=info API=${{matrix.test == 'test-api' || matrix.test == 'test-cli' || matrix.test == 'test-java-sdk' || matrix.test == 'test-python-sdk'}} UI=false LOGS=false > /tmp/argo.log 2>&1 &
+      - run: make start PROFILE=${{matrix.profile}} AUTH_MODE=client STATIC_FILES=false LOG_LEVEL=info API=${{matrix.test == 'test-api' || matrix.test == 'test-cli' || matrix.test == 'test-java-sdk' || matrix.test == 'test-python-sdk'}} UI=false > /tmp/argo.log 2>&1 &
         name: Start controller/API
-      - run: make wait
+      - run: make wait API=${{matrix.test == 'test-api' || matrix.test == 'test-cli' || matrix.test == 'test-java-sdk' || matrix.test == 'test-python-sdk'}}
         timeout-minutes: 4
         name: Wait for controller to be up
       - name: Run tests ${{matrix.test}}
-        # https://github.com/marketplace/actions/retry-step
-        uses: nick-fields/retry@v2.8.3
-        with:
-          timeout_minutes: 20
-          max_attempts: 2
-          command: make ${{matrix.test}} E2E_SUITE_TIMEOUT=20m STATIC_FILES=false
+        run: make ${{matrix.test}} E2E_SUITE_TIMEOUT=20m STATIC_FILES=false
       - if: ${{ failure() }}
         name: MinIO/MySQL deployment
         run: |
