@@ -34,7 +34,7 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
         with:
-          version: v0.9.1
+          version: v0.11.4
 
       - name: Cache Docker layers
         uses: actions/cache@v3
@@ -86,6 +86,7 @@ jobs:
             --build-arg GIT_TREE_STATE=$GIT_TREE_STATE \
             --platform="${PLATFORM}" \
             --target $TARGET \
+            --provenance=false \
             --tag $image_name .
 
           docker buildx build \
@@ -97,6 +98,7 @@ jobs:
             --build-arg GIT_TREE_STATE=$GIT_TREE_STATE \
             --platform="${PLATFORM}" \
             --target $TARGET \
+            --provenance=false \
             --tag quay.io/$image_name .
 
   build-linux-arm64:
@@ -118,7 +120,7 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
         with:
-          version: v0.9.1
+          version: v0.11.4
 
       - name: Cache Docker layers
         uses: actions/cache@v3
@@ -170,6 +172,7 @@ jobs:
             --build-arg GIT_TREE_STATE=$GIT_TREE_STATE \
             --platform="${PLATFORM}" \
             --target $TARGET \
+            --provenance=false \
             --tag $image_name .
 
           docker buildx build \
@@ -181,6 +184,7 @@ jobs:
             --build-arg GIT_TREE_STATE=$GIT_TREE_STATE \
             --platform="${PLATFORM}" \
             --target $TARGET \
+            --provenance=false \
             --tag quay.io/$image_name .
 
   build-windows:
