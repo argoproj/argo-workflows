@@ -846,7 +846,7 @@ WorkflowStatus contains overall status information about a workflow
 |`offloadNodeStatusVersion`|`string`|Whether on not node status has been offloaded to a database. If exists, then Nodes and CompressedNodes will be empty. This will actually be populated with a hash of the offloaded data.|
 |`outputs`|[`Outputs`](#outputs)|Outputs captures output values and artifact locations produced by the workflow via global outputs|
 |`persistentVolumeClaims`|`Array<`[`Volume`](#volume)`>`|PersistentVolumeClaims tracks all PVCs that were created as part of the io.argoproj.workflow.v1alpha1. The contents of this list are drained at the end of the workflow.|
-|`phase`|`string`|Phase a simple, high-level summary of where the workflow is in its lifecycle.|
+|`phase`|`string`|Phase a simple, high-level summary of where the workflow is in its lifecycle. Possible values are "Pending", "Running", "Succeeded", "Failed" or "Error". The last 3 of these are final states.|
 |`progress`|`string`|Progress to completion|
 |`resourcesDuration`|`Map< integer , int64 >`|ResourcesDuration is the total for the workflow|
 |`startedAt`|[`Time`](#time)|Time at which this workflow started|
