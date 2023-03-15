@@ -890,6 +890,30 @@ func (s *CLISuite) TestWorkflowRetryNestedDag() {
 		})
 }
 
+func (s *CLISuite) TestWorkflowRetryWithRecreatedPVC() {
+	s.Given().
+		Workflow("@testdata/retry-with-recreated-pvc-test.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeFailed).
+		Then().
+		RunCli([]string{"retry", "retry-with-recreated-pvc"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err, output) {
+				assert.Contains(t, output, "Name:")
+				assert.Contains(t, output, "Namespace:")
+			}
+		}).
+		When().
+		WaitForWorkflow(fixtures.ToBeFailed).
+		Then().
+		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.NodeFailed, status.Nodes.FindByDisplayName("print").Phase)
+			// This step is failed intentionally to allow retry. The error message is not related to PVC that is deleted
+			// previously since it is re-created during retry.
+			assert.Equal(t, "Error (exit code 1)", status.Nodes.FindByDisplayName("print").Message)
+		})
+}
+
 func (s *CLISuite) TestWorkflowStop() {
 	s.Given().
 		Workflow("@smoke/basic.yaml").
