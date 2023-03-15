@@ -5225,7 +5225,7 @@
           "type": "string"
         },
         "scope": {
-          "description": "\"workflow\", \"pod\", \"pod-logs\", \"event-source-logs\", \"sensor-logs\" or \"chat\"",
+          "description": "\"workflow\", \"pod\", \"pod-logs\", \"event-source-logs\", \"sensor-logs\", \"workflow-list\" or \"chat\"",
           "type": "string"
         },
         "url": {

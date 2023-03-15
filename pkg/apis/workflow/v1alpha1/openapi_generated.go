@@ -3554,7 +3554,7 @@ func schema_pkg_apis_workflow_v1alpha1_Link(ref common.ReferenceCallback) common
 					},
 					"scope": {
 						SchemaProps: spec.SchemaProps{
-							Description: "\"workflow\", \"pod\", \"pod-logs\", \"event-source-logs\", \"sensor-logs\" or \"chat\"",
+							Description: "\"workflow\", \"pod\", \"pod-logs\", \"event-source-logs\", \"sensor-logs\", \"workflow-list\" or \"chat\"",
 							Default:     "",
 							Type:        []string{"string"},
 							Format:      "",
