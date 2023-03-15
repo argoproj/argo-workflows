@@ -1002,6 +1002,8 @@ message NodeStatus {
 
   // Phase a simple, high-level summary of where the node is in its lifecycle.
   // Can be used as a state machine.
+  // Will be one of these values "Pending", "Running" before the node is completed, or "Succeeded",
+  // "Skipped", "Failed", "Error", or "Omitted" as a final state.
   optional string phase = 7;
 
   // BoundaryID indicates the node ID of the associated template root node in which this node belongs to
@@ -2014,6 +2016,8 @@ message WorkflowSpec {
 // WorkflowStatus contains overall status information about a workflow
 message WorkflowStatus {
   // Phase a simple, high-level summary of where the workflow is in its lifecycle.
+  // Will be "" (Unknown), "Pending", or "Running" before the workflow is completed, and "Succeeded",
+  // "Failed" or "Error" once the workflow has completed.
   optional string phase = 1;
 
   // Time at which this workflow started
