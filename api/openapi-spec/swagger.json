@@ -8090,6 +8090,31 @@
     "io.argoproj.workflow.v1alpha1.CollectEventResponse": {
       "type": "object"
     },
+    "io.argoproj.workflow.v1alpha1.Column": {
+      "description": "Column is a custom column that will be exposed in the Workflow List View.",
+      "type": "object",
+      "required": [
+        "name",
+        "type",
+        "key"
+      ],
+      "properties": {
+        "key": {
+          "description": "The key of the label or annotation, e.g., \"workflows.argoproj.io/completed\".",
+          "type": "string"
+        },
+        "name": {
+          "description": "The name of this column, e.g., \"Workflow Completed\".",
+          "type": "string"
+        },
+        "type": {
+          "description": "The type of this column, \"label\" or \"annotation\".",
+          "type": "string"
+        }
+      },
+      "x-kubernetes-patch-merge-key": "name",
+      "x-kubernetes-patch-strategy": "merge"
+    },
     "io.argoproj.workflow.v1alpha1.Condition": {
       "type": "object",
       "properties": {
@@ -9043,6 +9068,12 @@
     "io.argoproj.workflow.v1alpha1.InfoResponse": {
       "type": "object",
       "properties": {
+        "columns": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Column"
+          }
+        },
         "links": {
           "type": "array",
           "items": {

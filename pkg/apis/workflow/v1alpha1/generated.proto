@@ -371,6 +371,20 @@ message ClusterWorkflowTemplateList {
   repeated ClusterWorkflowTemplate items = 2;
 }
 
+// Column is a custom column that will be exposed in the Workflow List View.
+// +patchStrategy=merge
+// +patchMergeKey=name
+message Column {
+  // The name of this column, e.g., "Workflow Completed".
+  optional string name = 1;
+
+  // The type of this column, "label" or "annotation".
+  optional string type = 2;
+
+  // The key of the label or annotation, e.g., "workflows.argoproj.io/completed".
+  optional string key = 3;
+}
+
 message Condition {
   // Type is the type of condition
   optional string type = 1;

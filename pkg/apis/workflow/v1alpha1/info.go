@@ -11,3 +11,15 @@ type Link struct {
 	// The URL. Can contain "${metadata.namespace}", "${metadata.name}", "${status.startedAt}", "${status.finishedAt}" or any other element in workflow yaml, e.g. "${workflow.metadata.annotations.userDefinedKey}"
 	URL string `json:"url" protobuf:"bytes,3,opt,name=url"`
 }
+
+// Column is a custom column that will be exposed in the Workflow List View.
+// +patchStrategy=merge
+// +patchMergeKey=name
+type Column struct {
+	// The name of this column, e.g., "Workflow Completed".
+	Name string `json:"name" protobuf:"bytes,1,opt,name=name"`
+	// The type of this column, "label" or "annotation".
+	Type string `json:"type" protobuf:"bytes,2,opt,name=type"`
+	// The key of the label or annotation, e.g., "workflows.argoproj.io/completed".
+	Key string `json:"key" protobuf:"bytes,3,opt,name=key"`
+}
