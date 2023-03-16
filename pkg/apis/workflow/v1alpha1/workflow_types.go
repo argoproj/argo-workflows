@@ -1742,16 +1742,17 @@ func (s Nodes) NestedChildrenStatus(parentNodeId string) ([]NodeStatus, error) {
 	}
 
 	children := []NodeStatus{}
-	q := []NodeStatus{parentNode}
+	toexplore := []NodeStatus{parentNode}
 
-	for {
-		if len(q) <= 0 {
-			break
-		}
-		childNode := q[0]
-		q = q[1:]
+	for len(toexplore) > 0 {
+		childNode := toexplore[0]
+		toexplore = toexplore[1:]
 		for _, nodeID := range childNode.Children {
-			q = append(q, s[nodeID])
+			toexplore = append(toexplore, s[nodeID])
+		}
+
+		if childNode.Name == parentNode.Name {
+			continue
 		}
 		children = append(children, childNode)
 	}
