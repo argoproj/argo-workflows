@@ -3,7 +3,7 @@ kind: Tasks
 metadata:
   annotations:
     help: |
-      Install `kit` by following https://github.com/alexec/kit#install.
+      Install `kit` by following https://github.com/kitproj/kit#install.
       
       Run `kit up` to start argo.
 
