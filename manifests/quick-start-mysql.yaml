@@ -1396,6 +1396,10 @@ data:
       secretKeySecret:
         name: my-minio-cred
         key: secretkey
+  columns: |
+    - name: Workflow Completed
+      type: label
+      key: workflows.argoproj.io/completed
   executor: |
     resources:
       requests:
