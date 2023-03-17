@@ -1735,6 +1735,8 @@ func (s Nodes) Children(parentNodeId string) Nodes {
 	return childNodes
 }
 
+// NestedChildrenStatus takes in a nodeID and returns all its children, this involves a tree search using DFS.
+// This is needed to mark all children nodes as failed for example.
 func (s Nodes) NestedChildrenStatus(parentNodeId string) ([]NodeStatus, error) {
 	parentNode, ok := s[parentNodeId]
 	if !ok {
