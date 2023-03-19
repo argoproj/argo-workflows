@@ -9065,7 +9065,7 @@
 <tr>
 <td style="text-align: center;"><code>phase</code></td>
 <td style="text-align: center;"><code>string</code></td>
-<td>Phase a simple, high-level summary of where the workflow is in its lifecycle.</td>
+<td>Phase a simple, high-level summary of where the workflow is in its lifecycle. Will be "" (Unknown), "Pending", or "Running" before the workflow is completed, and "Succeeded", "Failed" or "Error" once the workflow has completed.</td>
 </tr>
 <tr>
 <td style="text-align: center;"><code>progress</code></td>
@@ -10644,7 +10644,7 @@
 <tr>
 <td style="text-align: center;"><code>phase</code></td>
 <td style="text-align: center;"><code>string</code></td>
-<td>Phase a simple, high-level summary of where the node is in its lifecycle. Can be used as a state machine.</td>
+<td>Phase a simple, high-level summary of where the node is in its lifecycle. Can be used as a state machine. Will be one of these values "Pending", "Running" before the node is completed, or "Succeeded", "Skipped", "Failed", "Error", or "Omitted" as a final state.</td>
 </tr>
 <tr>
 <td style="text-align: center;"><code>podIP</code></td>
