@@ -33,6 +33,9 @@ func Test_infoServer_GetInfo(t *testing.T) {
 			links: []*wfv1.Link{
 				{Name: "link-name", Scope: "scope", URL: "https://example.com"},
 			},
+			columns: []*wfv1.Column{
+				{Name: "Workflow Completed", Type: "label", Key: "workflows.argoproj.io/completed"},
+			},
 			navColor: "red",
 		}
 		info, err := i.GetInfo(context.TODO(), nil)
@@ -40,6 +43,9 @@ func Test_infoServer_GetInfo(t *testing.T) {
 			assert.Equal(t, "argo", info.ManagedNamespace)
 			assert.Equal(t, "link-name", info.Links[0].Name)
 			assert.Equal(t, "red", info.NavColor)
+			assert.Equal(t, "Workflow Completed", info.Columns[0].Name)
+			assert.Equal(t, "label", info.Columns[0].Type)
+			assert.Equal(t, "workflows.argoproj.io/completed", info.Columns[0].Key)
 		}
 	})
 
@@ -49,6 +55,7 @@ func Test_infoServer_GetInfo(t *testing.T) {
 		if assert.NoError(t, err) {
 			assert.Equal(t, "", info.ManagedNamespace)
 			assert.Equal(t, 0, len(info.Links))
+			assert.Equal(t, 0, len(info.Columns))
 			assert.Equal(t, "", info.NavColor)
 		}
 	})

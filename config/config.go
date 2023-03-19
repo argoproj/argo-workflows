@@ -71,6 +71,9 @@ type Config struct {
 	// Links to related apps.
 	Links []*wfv1.Link `json:"links,omitempty"`
 
+	// Columns are custom columns that will be exposed in the Workflow List View.
+	Columns []*wfv1.Column `json:"columns,omitempty"`
+
 	// WorkflowDefaults are values that will apply to all Workflows from this controller, unless overridden on the Workflow-level
 	WorkflowDefaults *wfv1.Workflow `json:"workflowDefaults,omitempty"`
 
