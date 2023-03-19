@@ -322,7 +322,7 @@ pkg/apis/workflow/v1alpha1/generated.proto: $(GOPATH)/bin/go-to-protobuf $(PROTO
 	$(GOPATH)/bin/go-to-protobuf \
 		--go-header-file=./hack/custom-boilerplate.go.txt \
 		--packages=github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1 \
-		--apimachinery-packages=+k8s.io/apimachinery/pkg/util/intstr,+k8s.io/apimachinery/pkg/api/resource,k8s.io/apimachinery/pkg/runtime/schema,+k8s.io/apimachinery/pkg/runtime,k8s.io/apimachinery/pkg/apis/meta/v1,k8s.io/api/core/v1,k8s.io/api/policy/v1beta1 \
+		--apimachinery-packages=+k8s.io/apimachinery/pkg/util/intstr,+k8s.io/apimachinery/pkg/api/resource,k8s.io/apimachinery/pkg/runtime/schema,+k8s.io/apimachinery/pkg/runtime,k8s.io/apimachinery/pkg/apis/meta/v1,k8s.io/api/core/v1,k8s.io/api/policy/v1 \
 		--proto-import $(GOPATH)/src
 	# Delete the link
 	[ -e ./v3 ] && rm -rf v3
