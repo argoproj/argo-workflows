@@ -9468,7 +9468,7 @@
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Outputs"
         },
         "phase": {
-          "description": "Phase a simple, high-level summary of where the node is in its lifecycle. Can be used as a state machine.",
+          "description": "Phase a simple, high-level summary of where the node is in its lifecycle. Can be used as a state machine. Will be one of these values \"Pending\", \"Running\" before the node is completed, or \"Succeeded\", \"Skipped\", \"Failed\", \"Error\", or \"Omitted\" as a final state.",
           "type": "string"
         },
         "podIP": {
@@ -11411,7 +11411,7 @@
           }
         },
         "phase": {
-          "description": "Phase a simple, high-level summary of where the workflow is in its lifecycle.",
+          "description": "Phase a simple, high-level summary of where the workflow is in its lifecycle. Will be \"\" (Unknown), \"Pending\", or \"Running\" before the workflow is completed, and \"Succeeded\", \"Failed\" or \"Error\" once the workflow has completed.",
           "type": "string"
         },
         "progress": {
