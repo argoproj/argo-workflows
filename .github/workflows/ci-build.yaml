@@ -226,6 +226,7 @@ jobs:
       - run: |
           pwd
           ls -lrth
+          echo "---"
           ls -lrth /home/runner/go/src/github.com/argoproj/argo-workflows
           cd /home/runner/go/src/github.com/argoproj/argo-workflows
           make codegen -B STATIC_FILES=false
