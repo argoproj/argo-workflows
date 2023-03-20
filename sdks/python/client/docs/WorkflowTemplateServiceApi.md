@@ -942,7 +942,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                 },
                 on_exit="on_exit_example",
                 parallelism=1,
-                pod_disruption_budget=IoK8sApiPolicyV1beta1PodDisruptionBudgetSpec(
+                pod_disruption_budget=IoK8sApiPolicyV1PodDisruptionBudgetSpec(
                     max_unavailable="max_unavailable_example",
                     min_available="min_available_example",
                     selector=LabelSelector(
@@ -11749,7 +11749,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                 },
                 on_exit="on_exit_example",
                 parallelism=1,
-                pod_disruption_budget=IoK8sApiPolicyV1beta1PodDisruptionBudgetSpec(
+                pod_disruption_budget=IoK8sApiPolicyV1PodDisruptionBudgetSpec(
                     max_unavailable="max_unavailable_example",
                     min_available="min_available_example",
                     selector=LabelSelector(
@@ -22465,7 +22465,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                 },
                 on_exit="on_exit_example",
                 parallelism=1,
-                pod_disruption_budget=IoK8sApiPolicyV1beta1PodDisruptionBudgetSpec(
+                pod_disruption_budget=IoK8sApiPolicyV1PodDisruptionBudgetSpec(
                     max_unavailable="max_unavailable_example",
                     min_available="min_available_example",
                     selector=LabelSelector(

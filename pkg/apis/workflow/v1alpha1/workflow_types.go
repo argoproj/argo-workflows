@@ -15,7 +15,7 @@ import (
 	"time"
 
 	apiv1 "k8s.io/api/core/v1"
-	policyv1beta "k8s.io/api/policy/v1beta1"
+	policyv1 "k8s.io/api/policy/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -390,7 +390,7 @@ type WorkflowSpec struct {
 	// Controller will automatically add the selector with workflow name, if selector is empty.
 	// Optional: Defaults to empty.
 	// +optional
-	PodDisruptionBudget *policyv1beta.PodDisruptionBudgetSpec `json:"podDisruptionBudget,omitempty" protobuf:"bytes,31,opt,name=podDisruptionBudget"`
+	PodDisruptionBudget *policyv1.PodDisruptionBudgetSpec `json:"podDisruptionBudget,omitempty" protobuf:"bytes,31,opt,name=podDisruptionBudget"`
 
 	// Metrics are a list of metrics emitted from this Workflow
 	Metrics *Metrics `json:"metrics,omitempty" protobuf:"bytes,32,opt,name=metrics"`
@@ -1769,6 +1769,8 @@ type UserContainer struct {
 // WorkflowStatus contains overall status information about a workflow
 type WorkflowStatus struct {
 	// Phase a simple, high-level summary of where the workflow is in its lifecycle.
+	// Will be "" (Unknown), "Pending", or "Running" before the workflow is completed, and "Succeeded",
+	// "Failed" or "Error" once the workflow has completed.
 	Phase WorkflowPhase `json:"phase,omitempty" protobuf:"bytes,1,opt,name=phase,casttype=WorkflowPhase"`
 
 	// Time at which this workflow started
@@ -2058,6 +2060,8 @@ type NodeStatus struct {
 
 	// Phase a simple, high-level summary of where the node is in its lifecycle.
 	// Can be used as a state machine.
+	// Will be one of these values "Pending", "Running" before the node is completed, or "Succeeded",
+	// "Skipped", "Failed", "Error", or "Omitted" as a final state.
 	Phase NodePhase `json:"phase,omitempty" protobuf:"bytes,7,opt,name=phase,casttype=NodePhase"`
 
 	// BoundaryID indicates the node ID of the associated template root node in which this node belongs to
