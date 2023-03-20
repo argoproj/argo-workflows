@@ -223,13 +223,7 @@ jobs:
         run: |
           mkdir -p /home/runner/go/src/github.com/argoproj
           ln -s "$PWD" /home/runner/go/src/github.com/argoproj/argo-workflows
-      - run: |
-          pwd
-          ls -lrth
-          echo "---"
-          ls -lrth /home/runner/go/src/github.com/argoproj/argo-workflows
-          cd /home/runner/go/src/github.com/argoproj/argo-workflows
-          make codegen -B STATIC_FILES=false
+      - run: make codegen -B STATIC_FILES=false
       - run: git diff --exit-code
 
   lint:
