@@ -31,7 +31,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - run: |
-              cd ../../
+              cd ../../../
               ls -lrth
 
       - name: Set up Docker Buildx
