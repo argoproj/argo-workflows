@@ -318,9 +318,9 @@ pkg/apis/workflow/v1alpha1/generated.proto: $(GOPATH)/bin/go-to-protobuf $(PROTO
 		--packages=github.com/pipekit/argo-workflows/v3/pkg/apis/workflow/v1alpha1 \
 		--apimachinery-packages=+k8s.io/apimachinery/pkg/util/intstr,+k8s.io/apimachinery/pkg/api/resource,k8s.io/apimachinery/pkg/runtime/schema,+k8s.io/apimachinery/pkg/runtime,k8s.io/apimachinery/pkg/apis/meta/v1,k8s.io/api/core/v1,k8s.io/api/policy/v1beta1 \
 		--proto-import $(GOPATH)/src
-	# # Delete the link
-	# [ -e ./v3 ] && rm -rf v3
-	touch pkg/apis/workflow/v1alpha1/generated.proto
+	# Delete the link
+	[ -e ./v3 ] && rm -rf v3
+	touch $(SRC)/pkg/apis/workflow/v1alpha1/generated.proto
 
 # this target will also create a .pb.go and a .pb.gw.go file, but in Make 3 we cannot use _grouped target_, instead we must choose
 # on file to represent all of them
