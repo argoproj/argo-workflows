@@ -221,8 +221,8 @@ jobs:
           docker pull openapitools/openapi-generator-cli:v5.2.1 &
       - name: Create links
         run: |
-          mkdir -p /home/runner/go/src/github.com/pipekit
-          ln -s "$PWD" /home/runner/go/src/github.com/pipekit/argo-workflows
+          mkdir -p /home/runner/go/src/github.com/argoproj
+          ln -s "$PWD" /home/runner/go/src/github.com/argoproj/argo-workflows
       - run: make codegen -B STATIC_FILES=false
       - run: git diff --exit-code
 
