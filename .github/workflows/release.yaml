@@ -30,6 +30,10 @@ jobs:
         target: [ workflow-controller, argocli, argoexec ]
     steps:
       - uses: actions/checkout@v3
+      - run: |
+              cd ../../
+              mv pipekit/ argoproj/
+              cd argoproj/argo-workflows
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
