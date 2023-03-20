@@ -196,7 +196,7 @@ jobs:
   codegen:
     name: Codegen
     runs-on: ubuntu-latest
-    needs: [ tests ]
+    # needs: [ tests ]
     timeout-minutes: 20
     env:
       GOPATH: /home/runner/go
@@ -223,7 +223,10 @@ jobs:
         run: |
           mkdir -p /home/runner/go/src/github.com/argoproj
           ln -s "$PWD" /home/runner/go/src/github.com/argoproj/argo-workflows
-      - run: make codegen -B STATIC_FILES=false
+      - run: |
+          pwd
+          ls -lrth
+          make codegen -B STATIC_FILES=false
       - run: git diff --exit-code
 
   lint:
