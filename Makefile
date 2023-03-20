@@ -320,7 +320,7 @@ pkg/apis/workflow/v1alpha1/generated.proto: $(GOPATH)/bin/go-to-protobuf $(PROTO
 		--proto-import $(GOPATH)/src
 	# Delete the link
 	[ -e ./v3 ] && rm -rf v3
-	touch $(SRC)/pkg/apis/workflow/v1alpha1/generated.proto
+	# touch pkg/apis/workflow/v1alpha1/generated.proto
 
 # this target will also create a .pb.go and a .pb.gw.go file, but in Make 3 we cannot use _grouped target_, instead we must choose
 # on file to represent all of them
