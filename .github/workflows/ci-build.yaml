@@ -226,6 +226,8 @@ jobs:
       - run: |
           pwd
           ls -lrth
+          ls -lrth /home/runner/go/src/github.com/argoproj/argo-workflows
+          cd /home/runner/go/src/github.com/argoproj/argo-workflows
           make codegen -B STATIC_FILES=false
       - run: git diff --exit-code
 
