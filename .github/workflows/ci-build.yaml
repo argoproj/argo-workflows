@@ -196,7 +196,7 @@ jobs:
   codegen:
     name: Codegen
     runs-on: ubuntu-latest
-    # needs: [ tests ]
+    needs: [ tests ]
     timeout-minutes: 20
     env:
       GOPATH: /home/runner/go
