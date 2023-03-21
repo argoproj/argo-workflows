@@ -2531,6 +2531,11 @@ func (woc *wfOperationCtx) executeContainer(ctx context.Context, nodeName string
 	node := woc.wf.GetNodeByName(nodeName)
 	if node == nil {
 		node = woc.initializeExecutableNode(nodeName, wfv1.NodeTypePod, templateScope, tmpl, orgTmpl, opts.boundaryID, wfv1.NodePending)
+	} else {
+		// TODO: Address dirty fix later, pushed for LadyBug
+		if strings.TrimSpace(node.Name) == "" {
+			node.Name = nodeName
+		}
 	}
 
 	// Check if the output of this container is referenced elsewhere in the Workflow. If so, make sure to include it during
