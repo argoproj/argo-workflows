@@ -105,3 +105,5 @@ kubectl -n argo port-forward deployment/argo-server 2746:2746
 * Click `+ Submit New Workflow` and then `Edit using full workflow options`
 
 * You can find an example workflow already in the text field. Press `+ Create` to start the workflow.
+
+> Pay close attention to the URI. It uses `https` and not `http`. Navigating to `http://localhost:2746` result in server-side error that breaks the port-forwarding.
