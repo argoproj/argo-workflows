@@ -3,7 +3,6 @@ package controller
 import (
 	"context"
 	"fmt"
-
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/time/rate"
 	apiv1 "k8s.io/api/core/v1"
@@ -23,7 +22,6 @@ func (wfc *WorkflowController) updateConfig() error {
 		return err
 	}
 	log.Info("Configuration:\n" + string(bytes))
-	wfc.session = nil
 	wfc.artifactRepositories = artifactrepositories.New(wfc.kubeclientset, wfc.namespace, &wfc.Config.ArtifactRepository)
 	wfc.offloadNodeStatusRepo = sqldb.ExplosiveOffloadNodeStatusRepo
 	wfc.wfArchive = sqldb.NullWorkflowArchive
@@ -31,23 +29,26 @@ func (wfc *WorkflowController) updateConfig() error {
 	persistence := wfc.Config.Persistence
 	if persistence != nil {
 		log.Info("Persistence configuration enabled")
-		session, tableName, err := sqldb.CreateDBSession(wfc.kubeclientset, wfc.namespace, persistence)
-		if err != nil {
-			return err
-		}
-		log.Info("Persistence Session created successfully")
-		if !persistence.SkipMigration {
-			err = sqldb.NewMigrate(session, persistence.GetClusterName(), tableName).Exec(context.Background())
+		var tableName string
+		if wfc.session == nil {
+			session, tableName, err := sqldb.CreateDBSession(wfc.kubeclientset, wfc.namespace, persistence)
 			if err != nil {
 				return err
 			}
-		} else {
-			log.Info("DB migration is disabled")
+			log.Info("Persistence Session created successfully")
+			if !persistence.SkipMigration {
+				err = sqldb.NewMigrate(session, persistence.GetClusterName(), tableName).Exec(context.Background())
+				if err != nil {
+					return err
+				}
+			} else {
+				log.Info("DB migration is disabled")
+			}
+			wfc.session = session
 		}
-
-		wfc.session = session
+		sqldb.ConfigureDBSession(wfc.session, persistence.ConnectionPool)
 		if persistence.NodeStatusOffload {
-			wfc.offloadNodeStatusRepo, err = sqldb.NewOffloadNodeStatusRepo(session, persistence.GetClusterName(), tableName)
+			wfc.offloadNodeStatusRepo, err = sqldb.NewOffloadNodeStatusRepo(wfc.session, persistence.GetClusterName(), tableName)
 			if err != nil {
 				return err
 			}
@@ -62,7 +63,7 @@ func (wfc *WorkflowController) updateConfig() error {
 			if err != nil {
 				return err
 			}
-			wfc.wfArchive = sqldb.NewWorkflowArchive(session, persistence.GetClusterName(), wfc.managedNamespace, instanceIDService)
+			wfc.wfArchive = sqldb.NewWorkflowArchive(wfc.session, persistence.GetClusterName(), wfc.managedNamespace, instanceIDService)
 			log.Info("Workflow archiving is enabled")
 		} else {
 			log.Info("Workflow archiving is disabled")
