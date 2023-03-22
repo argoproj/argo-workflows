@@ -246,6 +246,12 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 		}
 		woc.updated = wfUpdate
 		if !acquired {
+			if sdStrategy := woc.GetShutdownStrategy(); sdStrategy == wfv1.ShutdownStrategyTerminate && woc.execWf.Status.Phase == wfv1.WorkflowPending {
+				if woc.controller.syncManager.ReleaseAll(woc.execWf) {
+					woc.log.WithFields(log.Fields{"key": woc.execWf.Name}).Info("Released all locks since this pending workflow is terminating")
+					woc.markWorkflowSuccess(ctx)
+				}
+			}
 			woc.log.Warn("Workflow processing has been postponed due to concurrency limit")
 			phase := woc.wf.Status.Phase
 			if phase == wfv1.WorkflowUnknown {
@@ -1867,6 +1873,12 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 		if !lockAcquired {
 			if node == nil {
 				node = woc.initializeExecutableNode(nodeName, wfutil.GetNodeType(processedTmpl), templateScope, processedTmpl, orgTmpl, opts.boundaryID, wfv1.NodePending, msg)
+			}
+			if sdStrategy := woc.GetShutdownStrategy(); sdStrategy == wfv1.ShutdownStrategyTerminate && woc.execWf.Status.Phase == wfv1.WorkflowPending {
+				if woc.controller.syncManager.ReleaseAll(woc.execWf) {
+					woc.log.WithFields(log.Fields{"key": woc.execWf.Name}).Info("Released all locks since this pending workflow is terminating")
+					woc.markWorkflowSuccess(ctx)
+				}
 			}
 			lockName, err := argosync.GetLockName(processedTmpl.Synchronization, woc.wf.Namespace)
 			if err != nil {
