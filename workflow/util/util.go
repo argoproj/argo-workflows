@@ -926,7 +926,7 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 			// do not add this status to the node. pretend as if this node never existed.
 		default:
 			// Do not allow retry of workflows with pods in Running/Pending phase
-			return nil, nil, errors.InternalErrorf("Workflow cannot be retried with node %s in %s phase", node.Name, node.Phase)
+			return nil, nil, fmt.Errorf("workflow cannot be retried with node %s in %s phase", node.Name, node.Phase)
 		}
 
 		if node.Name == wf.ObjectMeta.Name {

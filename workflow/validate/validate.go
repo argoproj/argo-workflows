@@ -1102,7 +1102,7 @@ func validateOutputParameter(paramRef string, param *wfv1.Parameter) error {
 func validateWorkflowFieldNames(slice interface{}) error {
 	s := reflect.ValueOf(slice)
 	if s.Kind() != reflect.Slice {
-		return errors.InternalErrorf("validateWorkflowFieldNames given a non-slice type")
+		return fmt.Errorf("validateWorkflowFieldNames given a non-slice type")
 	}
 	items := make([]interface{}, s.Len())
 	for i := 0; i < s.Len(); i++ {
@@ -1117,7 +1117,7 @@ func validateWorkflowFieldNames(slice interface{}) error {
 				return s.Field(i).String(), nil
 			}
 		}
-		return "", errors.InternalError("No 'Name' field in struct")
+		return "", fmt.Errorf("no 'Name' field in struct")
 	}
 
 	for i, item := range items {

@@ -3,7 +3,9 @@ package controller
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"strings"
 	"time"
 
@@ -11,7 +13,6 @@ import (
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 
-	"github.com/argoproj/argo-workflows/v3/errors"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/util/template"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
@@ -317,9 +318,9 @@ func shouldExecute(when string) (bool, error) {
 	expression, err := govaluate.NewEvaluableExpression(when)
 	if err != nil {
 		if strings.Contains(err.Error(), "Invalid token") {
-			return false, errors.Errorf(errors.CodeBadRequest, "Invalid 'when' expression '%s': %v (hint: try wrapping the affected expression in quotes (\"))", when, err)
+			return false, apierrors.NewBadRequest(fmt.Sprintf("Invalid 'when' expression '%s': %v (hint: try wrapping the affected expression in quotes (\"))", when, err))
 		}
-		return false, errors.Errorf(errors.CodeBadRequest, "Invalid 'when' expression '%s': %v", when, err)
+		return false, apierrors.NewBadRequest(fmt.Sprintf("Invalid 'when' expression '%s': %v", when, err))
 	}
 	// The following loop converts govaluate variables (which we don't use), into strings. This
 	// allows us to have expressions like: "foo != bar" without requiring foo and bar to be quoted.
@@ -335,15 +336,15 @@ func shouldExecute(when string) (bool, error) {
 	}
 	expression, err = govaluate.NewEvaluableExpressionFromTokens(tokens)
 	if err != nil {
-		return false, errors.InternalWrapErrorf(err, "Failed to parse 'when' expression '%s': %v", when, err)
+		return false, fmt.Errorf("failed to parse 'when' expression '%s': %v", when, err)
 	}
 	result, err := expression.Evaluate(nil)
 	if err != nil {
-		return false, errors.InternalWrapErrorf(err, "Failed to evaluate 'when' expresion '%s': %v", when, err)
+		return false, fmt.Errorf("failed to evaluate 'when' expresion '%s': %v", when, err)
 	}
 	boolRes, ok := result.(bool)
 	if !ok {
-		return false, errors.Errorf(errors.CodeBadRequest, "Expected boolean evaluation for '%s'. Got %v", when, result)
+		return false, apierrors.NewBadRequest(fmt.Sprintf("Expected boolean evaluation for '%s'. Got %v", when, result))
 	}
 	return boolRes, nil
 }
@@ -370,7 +371,7 @@ func (woc *wfOperationCtx) resolveReferences(stepGroup []wfv1.WorkflowStep, scop
 		// TODO: improve this
 		stepBytes, err := json.Marshal(step)
 		if err != nil {
-			return nil, errors.InternalWrapError(err)
+			return nil, err
 		}
 		newStepStr, err := template.Replace(string(stepBytes), woc.globalParams.Merge(scope.getParameters()), true)
 		if err != nil {
@@ -379,7 +380,7 @@ func (woc *wfOperationCtx) resolveReferences(stepGroup []wfv1.WorkflowStep, scop
 		var newStep wfv1.WorkflowStep
 		err = json.Unmarshal([]byte(newStepStr), &newStep)
 		if err != nil {
-			return nil, errors.InternalWrapError(err)
+			return nil, err
 		}
 
 		// If we are not executing, don't attempt to resolve any artifact references. We only check if we are executing after
@@ -461,7 +462,7 @@ func (woc *wfOperationCtx) expandStep(step wfv1.WorkflowStep) ([]wfv1.WorkflowSt
 	} else if step.WithParam != "" {
 		err = json.Unmarshal([]byte(step.WithParam), &items)
 		if err != nil {
-			return nil, errors.Errorf(errors.CodeBadRequest, "withParam value could not be parsed as a JSON list: %s: %v", strings.TrimSpace(step.WithParam), err)
+			return nil, apierrors.NewBadRequest(fmt.Sprintf("withParam value could not be parsed as a JSON list: %s: %v", strings.TrimSpace(step.WithParam), err))
 		}
 	} else if step.WithSequence != nil {
 		items, err = expandSequence(step.WithSequence)
@@ -470,7 +471,7 @@ func (woc *wfOperationCtx) expandStep(step wfv1.WorkflowStep) ([]wfv1.WorkflowSt
 		}
 	} else {
 		// this should have been prevented in expandStepGroup()
-		return nil, errors.InternalError("expandStep() was called with withItems and withParam empty")
+		return nil, errors.New("expandStep() was called with withItems and withParam empty")
 	}
 
 	// these fields can be very large (>100m) and marshalling 10k x 100m = 6GB of memory used and
@@ -481,7 +482,7 @@ func (woc *wfOperationCtx) expandStep(step wfv1.WorkflowStep) ([]wfv1.WorkflowSt
 
 	stepBytes, err := json.Marshal(step)
 	if err != nil {
-		return nil, errors.InternalWrapError(err)
+		return nil, err
 	}
 	t, err := template.NewTemplate(string(stepBytes))
 	if err != nil {

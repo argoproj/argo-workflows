@@ -3,7 +3,9 @@ package controller
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"math"
 	"os"
 	"reflect"
@@ -35,7 +37,6 @@ import (
 	"k8s.io/utils/pointer"
 	"sigs.k8s.io/yaml"
 
-	"github.com/argoproj/argo-workflows/v3/errors"
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
@@ -114,12 +115,12 @@ type wfOperationCtx struct {
 
 var (
 	// ErrDeadlineExceeded indicates the operation exceeded its deadline for execution
-	ErrDeadlineExceeded = errors.New(errors.CodeTimeout, "Deadline exceeded")
+	ErrDeadlineExceeded = apierr.NewTimeoutError("Deadline exceeded", 0)
 	// ErrParallelismReached indicates this workflow reached its parallelism limit
-	ErrParallelismReached       = errors.New(errors.CodeForbidden, "Max parallelism reached")
-	ErrResourceRateLimitReached = errors.New(errors.CodeForbidden, "resource creation rate-limit reached")
+	ErrParallelismReached       = apierr.NewForbidden(schema.GroupResource{}, "", fmt.Errorf("parallelism limit reached"))
+	ErrResourceRateLimitReached = apierr.NewForbidden(schema.GroupResource{}, "", fmt.Errorf("resource creation rate-limit reached"))
 	// ErrTimeout indicates a specific template timed out
-	ErrTimeout = errors.New(errors.CodeTimeout, "timeout")
+	ErrTimeout = apierr.NewTimeoutError("timeout", 0)
 )
 
 // maxOperationTime is the maximum time a workflow operation is allowed to run
@@ -475,7 +476,7 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 	default:
 		// NOTE: we should never make it here because if the node was 'Running' we should have
 		// returned earlier.
-		err = errors.InternalErrorf("Unexpected node phase %s: %+v", woc.wf.ObjectMeta.Name, err)
+		err = fmt.Errorf("unexpected node phase %s: %+v", woc.wf.ObjectMeta.Name, err)
 		woc.markWorkflowError(ctx, err)
 	}
 
@@ -993,7 +994,7 @@ func (woc *wfOperationCtx) processNodeRetries(node *wfv1.NodeStatus, retryStrate
 		retryOnFailed = false
 		retryOnError = true
 	case wfv1.RetryPolicyOnTransientError:
-		if (lastChildNode.Phase == wfv1.NodeFailed || lastChildNode.Phase == wfv1.NodeError) && errorsutil.IsTransientErr(errors.InternalError(lastChildNode.Message)) {
+		if (lastChildNode.Phase == wfv1.NodeFailed || lastChildNode.Phase == wfv1.NodeError) && errorsutil.IsTransientErr(errors.New(lastChildNode.Message)) {
 			retryOnFailed = true
 			retryOnError = true
 		}
@@ -1535,7 +1536,7 @@ func (woc *wfOperationCtx) createPVCs(ctx context.Context) error {
 	pvcClient := woc.controller.kubeclientset.CoreV1().PersistentVolumeClaims(woc.wf.ObjectMeta.Namespace)
 	for i, pvcTmpl := range woc.execWf.Spec.VolumeClaimTemplates {
 		if pvcTmpl.ObjectMeta.Name == "" {
-			return errors.Errorf(errors.CodeBadRequest, "volumeClaimTemplates[%d].metadata.name is required", i)
+			return apierr.NewBadRequest(fmt.Sprintf("volumeClaimTemplates[%d].metadata.name is required", i))
 		}
 		pvcTmpl = *pvcTmpl.DeepCopy()
 		// PVC name will be <workflowname>-<volumeclaimtemplatename>
@@ -1566,7 +1567,7 @@ func (woc *wfOperationCtx) createPVCs(ctx context.Context) error {
 				}
 			}
 			if !hasOwnerReference {
-				return errors.Errorf(errors.CodeForbidden, "%s pvc already exists with different ownerreference", pvcTmpl.Name)
+				return apierr.NewForbidden(wfv1.Resource(woc.execWf.ResourceVersion), pvc.Name, fmt.Errorf("pvc '%s' already exists and is not owned by this workflow", pvc.Name))
 			}
 		}
 
@@ -1979,7 +1980,7 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 	case wfv1.TemplateTypePlugin:
 		node = woc.executePluginTemplate(nodeName, templateScope, processedTmpl, orgTmpl, opts)
 	default:
-		err = errors.Errorf(errors.CodeBadRequest, "Template '%s' missing specification", processedTmpl.Name)
+		err = apierr.NewBadRequest(fmt.Sprintf("Template '%s' missing specification", processedTmpl.Name))
 		return woc.initializeNode(nodeName, wfv1.NodeTypeSkipped, templateScope, orgTmpl, opts.boundaryID, wfv1.NodeError, err.Error()), err
 	}
 
@@ -2497,7 +2498,7 @@ func (woc *wfOperationCtx) checkParallelism(tmpl *wfv1.Template, node *wfv1.Node
 	if boundaryID != "" && (node == nil || (node.Phase != wfv1.NodePending && node.Phase != wfv1.NodeRunning)) {
 		boundaryNode, ok := woc.wf.Status.Nodes[boundaryID]
 		if !ok {
-			return errors.InternalError("boundaryNode not found")
+			return errors.New("boundaryNode not found")
 		}
 		tmplCtx, err := woc.createTemplateContext(boundaryNode.GetTemplateScope())
 		if err != nil {
@@ -3176,7 +3177,7 @@ func processItem(tmpl template.Template, name string, index int, item wfv1.Item,
 		}
 		jsonByteVal, err := json.Marshal(mapVal)
 		if err != nil {
-			return "", errors.InternalWrapError(err)
+			return "", err
 		}
 		replaceMap["item"] = string(jsonByteVal)
 
@@ -3187,12 +3188,12 @@ func processItem(tmpl template.Template, name string, index int, item wfv1.Item,
 		listVal := item.GetListVal()
 		byteVal, err := json.Marshal(listVal)
 		if err != nil {
-			return "", errors.InternalWrapError(err)
+			return "", err
 		}
 		replaceMap["item"] = string(byteVal)
 		newName = generateNodeName(name, index, listVal)
 	default:
-		return "", errors.Errorf(errors.CodeBadRequest, "withItems[%d] expected string, number, list, or map. received: %v", index, item)
+		return "", fmt.Errorf("withItems[%d] expected string, number, list, or map. received: %v", index, item)
 	}
 	var newStepStr string
 	// If when is not parameterised and evaluated to false, we are not executing nor resolving artifact,
@@ -3209,7 +3210,7 @@ func processItem(tmpl template.Template, name string, index int, item wfv1.Item,
 	}
 	err = json.Unmarshal([]byte(newStepStr), &obj)
 	if err != nil {
-		return "", errors.InternalWrapError(err)
+		return "", err
 	}
 	return newName, nil
 }
@@ -3249,7 +3250,7 @@ func expandSequence(seq *wfv1.Sequence) ([]wfv1.Item, error) {
 		}
 		end = start + count - 1
 	} else {
-		return nil, errors.InternalError("neither end nor count was specified in withSequence")
+		return nil, errors.New("neither end nor count was specified in withSequence")
 	}
 	items := make([]wfv1.Item, 0)
 	format := "%d"
@@ -3284,7 +3285,7 @@ func (woc *wfOperationCtx) substituteParamsInVolumes(params map[string]string) e
 	volumes := woc.volumes
 	volumesBytes, err := json.Marshal(volumes)
 	if err != nil {
-		return errors.InternalWrapError(err)
+		return err
 	}
 	newVolumesStr, err := template.Replace(string(volumesBytes), params, true)
 	if err != nil {
@@ -3293,7 +3294,7 @@ func (woc *wfOperationCtx) substituteParamsInVolumes(params map[string]string) e
 	var newVolumes []apiv1.Volume
 	err = json.Unmarshal([]byte(newVolumesStr), &newVolumes)
 	if err != nil {
-		return errors.InternalWrapError(err)
+		return err
 	}
 	woc.volumes = newVolumes
 	return nil

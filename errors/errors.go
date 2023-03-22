@@ -46,11 +46,6 @@ func Errorf(code string, format string, args ...interface{}) error {
 	return New(code, fmt.Sprintf(format, args...))
 }
 
-// InternalError is a convenience function to create a Internal error with a message
-func InternalError(message string) error {
-	return New(CodeInternal, message)
-}
-
 // InternalErrorf is a convenience function to format an Internal error
 func InternalErrorf(format string, args ...interface{}) error {
 	return Errorf(CodeInternal, format, args...)
@@ -62,11 +57,6 @@ func InternalWrapError(err error, message ...string) error {
 		return Wrap(err, CodeInternal, err.Error())
 	}
 	return Wrap(err, CodeInternal, message[0])
-}
-
-// InternalWrapErrorf annotates the error with the ERR_INTERNAL code and a stack trace, optional message
-func InternalWrapErrorf(err error, format string, args ...interface{}) error {
-	return Wrap(err, CodeInternal, fmt.Sprintf(format, args...))
 }
 
 // Wrap returns an error annotating err with a stack trace at the point Wrap is called,

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"net/http"
 	"sort"
 	"strings"
@@ -17,7 +18,6 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/remotecommand"
 
-	"github.com/argoproj/argo-workflows/v3/errors"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/util"
 	"github.com/argoproj/argo-workflows/v3/util/template"
@@ -72,7 +72,7 @@ func ExecPodContainer(restConfig *rest.Config, namespace string, pod string, con
 
 	clientset, err := kubernetes.NewForConfig(restConfig)
 	if err != nil {
-		return nil, errors.InternalWrapError(err)
+		return nil, err
 	}
 
 	execRequest := clientset.CoreV1().RESTClient().Post().
@@ -92,7 +92,7 @@ func ExecPodContainer(restConfig *rest.Config, namespace string, pod string, con
 	log.Info(execRequest.URL())
 	exec, err = remotecommand.NewSPDYExecutor(restConfig, "POST", execRequest.URL())
 	if err != nil {
-		return nil, errors.InternalWrapError(err)
+		return nil, err
 	}
 	return exec, nil
 }
@@ -107,7 +107,7 @@ func GetExecutorOutput(exec remotecommand.Executor) (*bytes.Buffer, *bytes.Buffe
 		Tty:    false,
 	})
 	if err != nil {
-		return nil, nil, errors.InternalWrapError(err)
+		return nil, nil, err
 	}
 	return &stdOut, &stdErr, nil
 }
@@ -154,10 +154,10 @@ func ProcessArgs(tmpl *wfv1.Template, args wfv1.ArgumentsProvider, globalParams,
 
 				cmValue, err := GetConfigMapValue(configMapInformer, namespace, cmName, cmKey)
 				if err != nil {
-					if inParam.ValueFrom.Default != nil && errors.IsCode(errors.CodeNotFound, err) {
+					if inParam.ValueFrom.Default != nil && apierrors.IsNotFound(err) {
 						inParam.Value = inParam.ValueFrom.Default
 					} else {
-						return nil, errors.Errorf(errors.CodeBadRequest, "unable to retrieve inputs.parameters.%s from ConfigMap: %s", inParam.Name, err)
+						return nil, apierrors.NewBadRequest(fmt.Sprintf("unable to retrieve inputs.parameters.%s from ConfigMap: %s", inParam.Name, err))
 					}
 				} else {
 					inParam.Value = wfv1.AnyStringPtr(cmValue)
@@ -165,7 +165,7 @@ func ProcessArgs(tmpl *wfv1.Template, args wfv1.ArgumentsProvider, globalParams,
 			}
 		} else {
 			if inParam.Value == nil {
-				return nil, errors.Errorf(errors.CodeBadRequest, "inputs.parameters.%s was not supplied", inParam.Name)
+				return nil, apierrors.NewBadRequest(fmt.Sprintf("inputs.parameters.%s was not supplied", inParam.Name))
 			}
 		}
 
@@ -181,10 +181,10 @@ func ProcessArgs(tmpl *wfv1.Template, args wfv1.ArgumentsProvider, globalParams,
 		if !inArt.Optional && !inArt.HasLocationOrKey() {
 			// artifact must be supplied
 			if argArt == nil {
-				return nil, errors.Errorf(errors.CodeBadRequest, "inputs.artifacts.%s was not supplied", inArt.Name)
+				return nil, apierrors.NewBadRequest(fmt.Sprintf("inputs.artifacts.%s was not supplied", inArt.Name))
 			}
 			if (argArt.From == "" || argArt.FromExpression == "") && !argArt.HasLocationOrKey() && !validateOnly {
-				return nil, errors.Errorf(errors.CodeBadRequest, "inputs.artifacts.%s missing location information", inArt.Name)
+				return nil, apierrors.NewBadRequest(fmt.Sprintf("inputs.artifacts.%s missing location information", inArt.Name))
 			}
 		}
 		if argArt != nil {
@@ -206,7 +206,7 @@ func substituteConfigMapKeyRefParam(in string, globalParams Parameters) (string,
 
 		v, ok := globalParams[k]
 		if !ok {
-			err := errors.InternalError(fmt.Sprintf("parameter %s not found", k))
+			err := fmt.Errorf("parameter %s not found", k)
 			log.WithError(err).Error()
 			return "", err
 		}
@@ -219,7 +219,7 @@ func substituteConfigMapKeyRefParam(in string, globalParams Parameters) (string,
 func SubstituteParams(tmpl *wfv1.Template, globalParams, localParams Parameters) (*wfv1.Template, error) {
 	tmplBytes, err := json.Marshal(tmpl)
 	if err != nil {
-		return nil, errors.InternalWrapError(err)
+		return nil, err
 	}
 	// First replace globals & locals, then replace inputs because globals could be referenced in the inputs
 	replaceMap := globalParams.Merge(localParams)
@@ -230,13 +230,13 @@ func SubstituteParams(tmpl *wfv1.Template, globalParams, localParams Parameters)
 	var globalReplacedTmpl wfv1.Template
 	err = json.Unmarshal([]byte(globalReplacedTmplStr), &globalReplacedTmpl)
 	if err != nil {
-		return nil, errors.InternalWrapError(err)
+		return nil, err
 	}
 	// Now replace the rest of substitutions (the ones that can be made) in the template
 	replaceMap = make(map[string]string)
 	for _, inParam := range globalReplacedTmpl.Inputs.Parameters {
 		if inParam.Value == nil && inParam.ValueFrom == nil {
-			return nil, errors.InternalErrorf("inputs.parameters.%s had no value", inParam.Name)
+			return nil, fmt.Errorf("inputs.parameters.%s had no value", inParam.Name)
 		} else if inParam.Value != nil {
 			replaceMap["inputs.parameters."+inParam.Name] = inParam.Value.String()
 		}
@@ -244,7 +244,7 @@ func SubstituteParams(tmpl *wfv1.Template, globalParams, localParams Parameters)
 	// allow {{inputs.parameters}} to fetch the entire input parameters list as JSON
 	jsonInputParametersBytes, err := json.Marshal(globalReplacedTmpl.Inputs.Parameters)
 	if err != nil {
-		return nil, errors.InternalWrapError(err)
+		return nil, err
 	}
 	replaceMap["inputs.parameters"] = string(jsonInputParametersBytes)
 	for _, inArt := range globalReplacedTmpl.Inputs.Artifacts {
@@ -270,7 +270,7 @@ func SubstituteParams(tmpl *wfv1.Template, globalParams, localParams Parameters)
 	var newTmpl wfv1.Template
 	err = json.Unmarshal([]byte(s), &newTmpl)
 	if err != nil {
-		return nil, errors.InternalWrapError(err)
+		return nil, err
 	}
 	return &newTmpl, nil
 }
