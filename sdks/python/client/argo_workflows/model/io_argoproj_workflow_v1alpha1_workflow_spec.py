@@ -47,7 +47,7 @@ def lazy_import():
     from argo_workflows.model.io_argoproj_workflow_v1alpha1_volume_claim_gc import IoArgoprojWorkflowV1alpha1VolumeClaimGC
     from argo_workflows.model.io_argoproj_workflow_v1alpha1_workflow_metadata import IoArgoprojWorkflowV1alpha1WorkflowMetadata
     from argo_workflows.model.io_argoproj_workflow_v1alpha1_workflow_template_ref import IoArgoprojWorkflowV1alpha1WorkflowTemplateRef
-    from argo_workflows.model.io_k8s_api_policy_v1beta1_pod_disruption_budget_spec import IoK8sApiPolicyV1beta1PodDisruptionBudgetSpec
+    from argo_workflows.model.io_k8s_api_policy_v1_pod_disruption_budget_spec import IoK8sApiPolicyV1PodDisruptionBudgetSpec
     from argo_workflows.model.local_object_reference import LocalObjectReference
     from argo_workflows.model.persistent_volume_claim import PersistentVolumeClaim
     from argo_workflows.model.pod_dns_config import PodDNSConfig
@@ -71,7 +71,7 @@ def lazy_import():
     globals()['IoArgoprojWorkflowV1alpha1VolumeClaimGC'] = IoArgoprojWorkflowV1alpha1VolumeClaimGC
     globals()['IoArgoprojWorkflowV1alpha1WorkflowMetadata'] = IoArgoprojWorkflowV1alpha1WorkflowMetadata
     globals()['IoArgoprojWorkflowV1alpha1WorkflowTemplateRef'] = IoArgoprojWorkflowV1alpha1WorkflowTemplateRef
-    globals()['IoK8sApiPolicyV1beta1PodDisruptionBudgetSpec'] = IoK8sApiPolicyV1beta1PodDisruptionBudgetSpec
+    globals()['IoK8sApiPolicyV1PodDisruptionBudgetSpec'] = IoK8sApiPolicyV1PodDisruptionBudgetSpec
     globals()['LocalObjectReference'] = LocalObjectReference
     globals()['PersistentVolumeClaim'] = PersistentVolumeClaim
     globals()['PodDNSConfig'] = PodDNSConfig
@@ -152,7 +152,7 @@ class IoArgoprojWorkflowV1alpha1WorkflowSpec(ModelNormal):
             'node_selector': ({str: (str,)},),  # noqa: E501
             'on_exit': (str,),  # noqa: E501
             'parallelism': (int,),  # noqa: E501
-            'pod_disruption_budget': (IoK8sApiPolicyV1beta1PodDisruptionBudgetSpec,),  # noqa: E501
+            'pod_disruption_budget': (IoK8sApiPolicyV1PodDisruptionBudgetSpec,),  # noqa: E501
             'pod_gc': (IoArgoprojWorkflowV1alpha1PodGC,),  # noqa: E501
             'pod_metadata': (IoArgoprojWorkflowV1alpha1Metadata,),  # noqa: E501
             'pod_priority': (int,),  # noqa: E501
@@ -287,7 +287,7 @@ class IoArgoprojWorkflowV1alpha1WorkflowSpec(ModelNormal):
             node_selector ({str: (str,)}): NodeSelector is a selector which will result in all pods of the workflow to be scheduled on the selected node(s). This is able to be overridden by a nodeSelector specified in the template.. [optional]  # noqa: E501
             on_exit (str): OnExit is a template reference which is invoked at the end of the workflow, irrespective of the success, failure, or error of the primary io.argoproj.workflow.v1alpha1.. [optional]  # noqa: E501
             parallelism (int): Parallelism limits the max total parallel pods that can execute at the same time in a workflow. [optional]  # noqa: E501
-            pod_disruption_budget (IoK8sApiPolicyV1beta1PodDisruptionBudgetSpec): [optional]  # noqa: E501
+            pod_disruption_budget (IoK8sApiPolicyV1PodDisruptionBudgetSpec): [optional]  # noqa: E501
             pod_gc (IoArgoprojWorkflowV1alpha1PodGC): [optional]  # noqa: E501
             pod_metadata (IoArgoprojWorkflowV1alpha1Metadata): [optional]  # noqa: E501
             pod_priority (int): Priority to apply to workflow pods. DEPRECATED: Use PodPriorityClassName instead.. [optional]  # noqa: E501
@@ -410,7 +410,7 @@ class IoArgoprojWorkflowV1alpha1WorkflowSpec(ModelNormal):
             node_selector ({str: (str,)}): NodeSelector is a selector which will result in all pods of the workflow to be scheduled on the selected node(s). This is able to be overridden by a nodeSelector specified in the template.. [optional]  # noqa: E501
             on_exit (str): OnExit is a template reference which is invoked at the end of the workflow, irrespective of the success, failure, or error of the primary io.argoproj.workflow.v1alpha1.. [optional]  # noqa: E501
             parallelism (int): Parallelism limits the max total parallel pods that can execute at the same time in a workflow. [optional]  # noqa: E501
-            pod_disruption_budget (IoK8sApiPolicyV1beta1PodDisruptionBudgetSpec): [optional]  # noqa: E501
+            pod_disruption_budget (IoK8sApiPolicyV1PodDisruptionBudgetSpec): [optional]  # noqa: E501
             pod_gc (IoArgoprojWorkflowV1alpha1PodGC): [optional]  # noqa: E501
             pod_metadata (IoArgoprojWorkflowV1alpha1Metadata): [optional]  # noqa: E501
             pod_priority (int): Priority to apply to workflow pods. DEPRECATED: Use PodPriorityClassName instead.. [optional]  # noqa: E501

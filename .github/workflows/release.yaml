@@ -34,7 +34,7 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
         with:
-          version: v0.9.1
+          version: v0.10.4
 
       - name: Cache Docker layers
         uses: actions/cache@v3
@@ -64,10 +64,15 @@ jobs:
           PLATFORM: ${{ matrix.platform }}
           TARGET: ${{ matrix.target }}
         run: |
+          set -eux
           tag=$(basename $GITHUB_REF)
           if [ $tag = "master" ]; then
             tag="latest"
           fi
+          # copied verbatim from Makefile
+          GIT_COMMIT=$(git rev-parse HEAD || echo unknown)
+          GIT_TAG=$(git describe --exact-match --tags --abbrev=0  2> /dev/null || echo untagged)
+          GIT_TREE_STATE=$(if [ -z "`git status --porcelain`" ]; then echo "clean" ; else echo "dirty"; fi)
   
           tag_suffix=$(echo $PLATFORM | sed -r "s/\//-/g")
           image_name="${DOCKERIO_ORG}/${TARGET}:${tag}-${tag_suffix}"
@@ -76,16 +81,24 @@ jobs:
             --cache-from "type=local,src=/tmp/.buildx-cache" \
             --cache-to "type=local,dest=/tmp/.buildx-cache" \
             --output "type=image,push=true" \
+            --build-arg GIT_COMMIT=$GIT_COMMIT \
+            --build-arg GIT_TAG=$GIT_TAG \
+            --build-arg GIT_TREE_STATE=$GIT_TREE_STATE \
             --platform="${PLATFORM}" \
             --target $TARGET \
+            --provenance=false \
             --tag $image_name .
 
           docker buildx build \
             --cache-from "type=local,src=/tmp/.buildx-cache" \
             --cache-to "type=local,dest=/tmp/.buildx-cache" \
             --output "type=image,push=true" \
+            --build-arg GIT_COMMIT=$GIT_COMMIT \
+            --build-arg GIT_TAG=$GIT_TAG \
+            --build-arg GIT_TREE_STATE=$GIT_TREE_STATE \
             --platform="${PLATFORM}" \
             --target $TARGET \
+            --provenance=false \
             --tag quay.io/$image_name .
 
   build-linux-arm64:
@@ -107,7 +120,7 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
         with:
-          version: v0.9.1
+          version: v0.10.4
 
       - name: Cache Docker layers
         uses: actions/cache@v3
@@ -137,10 +150,15 @@ jobs:
           PLATFORM: ${{ matrix.platform }}
           TARGET: ${{ matrix.target }}
         run: |
+          set -eux
           tag=$(basename $GITHUB_REF)
           if [ $tag = "master" ]; then
             tag="latest"
           fi
+          # copied verbatim from Makefile
+          GIT_COMMIT=$(git rev-parse HEAD || echo unknown)
+          GIT_TAG=$(git describe --exact-match --tags --abbrev=0  2> /dev/null || echo untagged)
+          GIT_TREE_STATE=$(if [ -z "`git status --porcelain`" ]; then echo "clean" ; else echo "dirty"; fi)
           
           tag_suffix=$(echo $PLATFORM | sed -r "s/\//-/g")
           image_name="${DOCKERIO_ORG}/${TARGET}:${tag}-${tag_suffix}"
@@ -149,16 +167,24 @@ jobs:
             --cache-from "type=local,src=/tmp/.buildx-cache" \
             --cache-to "type=local,dest=/tmp/.buildx-cache" \
             --output "type=image,push=true" \
+            --build-arg GIT_COMMIT=$GIT_COMMIT \
+            --build-arg GIT_TAG=$GIT_TAG \
+            --build-arg GIT_TREE_STATE=$GIT_TREE_STATE \
             --platform="${PLATFORM}" \
             --target $TARGET \
+            --provenance=false \
             --tag $image_name .
 
           docker buildx build \
             --cache-from "type=local,src=/tmp/.buildx-cache" \
             --cache-to "type=local,dest=/tmp/.buildx-cache" \
             --output "type=image,push=true" \
+            --build-arg GIT_COMMIT=$GIT_COMMIT \
+            --build-arg GIT_TAG=$GIT_TAG \
+            --build-arg GIT_TREE_STATE=$GIT_TREE_STATE \
             --platform="${PLATFORM}" \
             --target $TARGET \
+            --provenance=false \
             --tag quay.io/$image_name .
 
   build-windows:
@@ -194,7 +220,15 @@ jobs:
           targets="argoexec"
           for target in $targets; do
             image_name="${docker_org}/${target}:${tag}-windows"
-            docker build --target $target -t $image_name -f Dockerfile.windows .
+            docker build \
+              --build-arg GIT_COMMIT=$tag \
+              --build-arg GIT_BRANCH=$branch \
+              --build-arg GIT_TREE_STATE=$tree_state \
+              --target $target \
+              -t $image_name \
+              -f Dockerfile.windows \
+              .
+          
             docker push $image_name
 
             docker tag $image_name quay.io/$image_name
@@ -349,7 +383,7 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version: "16"
-      - uses: actions/setup-go@v3
+      - uses: actions/setup-go@v4
         with:
           go-version: "1.19"
       - uses: actions/cache@v3

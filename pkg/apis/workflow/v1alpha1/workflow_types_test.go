@@ -727,6 +727,29 @@ func TestNodes_Children(t *testing.T) {
 	})
 }
 
+func TestNestedChildren(t *testing.T) {
+	nodes := Nodes{
+		"node_0": NodeStatus{Name: "node_0", Phase: NodeFailed, Children: []string{"node_1", "node_2"}},
+		"node_1": NodeStatus{Name: "node_1", Phase: NodeFailed, Children: []string{"node_3"}},
+		"node_2": NodeStatus{Name: "node_2", Phase: NodeRunning, Children: []string{}},
+		"node_3": NodeStatus{Name: "node_3", Phase: NodeRunning, Children: []string{"node_4"}},
+		"node_4": NodeStatus{Name: "node_4", Phase: NodeRunning, Children: []string{}},
+	}
+	t.Run("Get children", func(t *testing.T) {
+		statuses, err := nodes.NestedChildrenStatus("node_0")
+		assert.NoError(t, err)
+		found := make(map[string]bool)
+		// parent is already assumed to be found
+		found["node_0"] = true
+		for _, child := range statuses {
+			_, ok := found[child.Name]
+			assert.False(t, ok, "got %s", child.Name)
+			found[child.Name] = true
+		}
+		assert.Equal(t, len(nodes), len(found))
+	})
+}
+
 func TestNodes_Filter(t *testing.T) {
 	nodes := Nodes{
 		"node_1": NodeStatus{ID: "node_1", Phase: NodeFailed},

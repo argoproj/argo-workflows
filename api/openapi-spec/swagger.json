@@ -8090,6 +8090,31 @@
     "io.argoproj.workflow.v1alpha1.CollectEventResponse": {
       "type": "object"
     },
+    "io.argoproj.workflow.v1alpha1.Column": {
+      "description": "Column is a custom column that will be exposed in the Workflow List View.",
+      "type": "object",
+      "required": [
+        "name",
+        "type",
+        "key"
+      ],
+      "properties": {
+        "key": {
+          "description": "The key of the label or annotation, e.g., \"workflows.argoproj.io/completed\".",
+          "type": "string"
+        },
+        "name": {
+          "description": "The name of this column, e.g., \"Workflow Completed\".",
+          "type": "string"
+        },
+        "type": {
+          "description": "The type of this column, \"label\" or \"annotation\".",
+          "type": "string"
+        }
+      },
+      "x-kubernetes-patch-merge-key": "name",
+      "x-kubernetes-patch-strategy": "merge"
+    },
     "io.argoproj.workflow.v1alpha1.Condition": {
       "type": "object",
       "properties": {
@@ -9043,6 +9068,12 @@
     "io.argoproj.workflow.v1alpha1.InfoResponse": {
       "type": "object",
       "properties": {
+        "columns": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Column"
+          }
+        },
         "links": {
           "type": "array",
           "items": {
@@ -9161,7 +9192,7 @@
           "type": "string"
         },
         "scope": {
-          "description": "\"workflow\", \"pod\", \"pod-logs\", \"event-source-logs\", \"sensor-logs\" or \"chat\"",
+          "description": "\"workflow\", \"pod\", \"pod-logs\", \"event-source-logs\", \"sensor-logs\", \"workflow-list\" or \"chat\"",
           "type": "string"
         },
         "url": {
@@ -9437,7 +9468,7 @@
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Outputs"
         },
         "phase": {
-          "description": "Phase a simple, high-level summary of where the node is in its lifecycle. Can be used as a state machine.",
+          "description": "Phase a simple, high-level summary of where the node is in its lifecycle. Can be used as a state machine. Will be one of these values \"Pending\", \"Running\" before the node is completed, or \"Succeeded\", \"Skipped\", \"Failed\", \"Error\", or \"Omitted\" as a final state.",
           "type": "string"
         },
         "podIP": {
@@ -11210,7 +11241,7 @@
         },
         "podDisruptionBudget": {
           "description": "PodDisruptionBudget holds the number of concurrent disruptions that you allow for Workflow's Pods. Controller will automatically add the selector with workflow name, if selector is empty. Optional: Defaults to empty.",
-          "$ref": "#/definitions/io.k8s.api.policy.v1beta1.PodDisruptionBudgetSpec"
+          "$ref": "#/definitions/io.k8s.api.policy.v1.PodDisruptionBudgetSpec"
         },
         "podGC": {
           "description": "PodGC describes the strategy to use when deleting completed pods",
@@ -11380,7 +11411,7 @@
           }
         },
         "phase": {
-          "description": "Phase a simple, high-level summary of where the workflow is in its lifecycle.",
+          "description": "Phase a simple, high-level summary of where the workflow is in its lifecycle. Will be \"\" (Unknown), \"Pending\", or \"Running\" before the workflow is completed, and \"Succeeded\", \"Failed\" or \"Error\" once the workflow has completed.",
           "type": "string"
         },
         "progress": {
@@ -14228,7 +14259,7 @@
         }
       }
     },
-    "io.k8s.api.policy.v1beta1.PodDisruptionBudgetSpec": {
+    "io.k8s.api.policy.v1.PodDisruptionBudgetSpec": {
       "description": "PodDisruptionBudgetSpec is a description of a PodDisruptionBudget.",
       "type": "object",
       "properties": {
@@ -14241,7 +14272,7 @@
           "$ref": "#/definitions/io.k8s.apimachinery.pkg.util.intstr.IntOrString"
         },
         "selector": {
-          "description": "Label query over pods whose evictions are managed by the disruption budget. A null selector selects no pods. An empty selector ({}) also selects no pods, which differs from standard behavior of selecting all pods. In policy/v1, an empty selector will select all pods in the namespace.",
+          "description": "Label query over pods whose evictions are managed by the disruption budget. A null selector will match no pods, while an empty ({}) selector will select all pods within the namespace.",
           "x-kubernetes-patch-strategy": "replace",
           "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.LabelSelector"
         }
