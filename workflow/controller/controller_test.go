@@ -2,6 +2,7 @@ package controller
 
 import (
 	"context"
+	"github.com/stretchr/testify/require"
 	"testing"
 	"time"
 
@@ -9,6 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	authorizationv1 "k8s.io/api/authorization/v1"
 	apiv1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
@@ -199,6 +201,7 @@ func newController(options ...interface{}) (context.CancelFunc, *WorkflowControl
 		cacheFactory:              controllercache.NewCacheFactory(kube, "default"),
 		progressPatchTickDuration: envutil.LookupEnvDurationOr(common.EnvVarProgressPatchTickDuration, 1*time.Minute),
 		progressFileTickDuration:  envutil.LookupEnvDurationOr(common.EnvVarProgressFileTickDuration, 3*time.Second),
+		podLimit:                  envutil.LookupEnvIntOr(common.EnvVarWorkflowPodLimit, 5000),
 	}
 
 	for _, opt := range options {
@@ -828,4 +831,65 @@ spec:
 	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
 	podCleanupKey := "test/my-wf/labelPodCompleted"
 	assert.Equal(t, 0, controller.podCleanupQueue.NumRequeues(podCleanupKey))
+}
+
+// TestWorkflowPodLimitsWithDefaultLimit checks that the default pod limit is applied to workflows
+func TestWorkflowPodLimitsWithDefaultLimit(t *testing.T) {
+	setup := func(t *testing.T, options ...interface{}) (context.CancelFunc, *wfOperationCtx) {
+		cancel, controller := newController(options...)
+
+		wf := wfv1.MustUnmarshalWorkflow(helloWorldWf)
+		ctx := context.Background()
+		woc := newWorkflowOperationCtx(wf, controller)
+		err := woc.setExecWorkflow(ctx)
+		require.NoError(t, err)
+
+		return cancel, woc
+	}
+	t.Run("WorkflowPodLimitsWithDefaultLimit", func(t *testing.T) {
+		cancel, operationContext := setup(t)
+		defer cancel()
+
+		controller := operationContext.controller
+		// get context
+		ctx := context.Background()
+
+		// call the function
+		controller.createResourceQuotaForPods(ctx)
+
+		// assert that a ResourceQuota object was created with the expected pod limit
+		quota, err := controller.kubeclientset.CoreV1().ResourceQuotas(controller.namespace).Get(ctx, "workflow-pods-quota", metav1.GetOptions{})
+		if err != nil {
+			t.Errorf("failed to get resource quota: %v", err)
+		}
+		// default limit is 5000
+		if quota.Spec.Hard["count/workflows.argoproj.io"] != resource.MustParse("5000") {
+			t.Errorf("unexpected pod limit: %v", quota.Spec.Hard["count/workflows.argoproj.io"])
+		}
+
+	})
+
+	t.Run("WorkflowPodLimitsWithDefaultLimit configurable", func(t *testing.T) {
+		cancel, operationContext := setup(t, func(workflowController *WorkflowController) {
+			workflowController.podLimit = 10
+		})
+		defer cancel()
+
+		controller := operationContext.controller
+		// get context
+		ctx := context.Background()
+
+		// call the function
+		controller.createResourceQuotaForPods(ctx)
+
+		// assert that a ResourceQuota object was created with the expected pod limit
+		quota, err := controller.kubeclientset.CoreV1().ResourceQuotas(controller.namespace).Get(ctx, "workflow-pods-quota", metav1.GetOptions{})
+		if err != nil {
+			t.Errorf("failed to get resource quota: %v", err)
+		}
+		// default limit is 5000
+		if quota.Spec.Hard["count/workflows.argoproj.io"] != resource.MustParse("10") {
+			t.Errorf("unexpected pod limit: %v", quota.Spec.Hard["count/workflows.argoproj.io"])
+		}
+	})
 }
