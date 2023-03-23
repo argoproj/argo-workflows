@@ -496,7 +496,7 @@ func (woc *wfOperationCtx) releaseLocksForPendingShuttingdownWfs(ctx context.Con
 	if sdStrategy := woc.GetShutdownStrategy(); (sdStrategy == wfv1.ShutdownStrategyTerminate || sdStrategy == wfv1.ShutdownStrategyStop) &&
 		woc.execWf.Status.Phase == wfv1.WorkflowPending {
 		if woc.controller.syncManager.ReleaseAll(woc.execWf) {
-			woc.log.WithFields(log.Fields{"key": woc.execWf.Name}).Info("Released all locks since this pending workflow is terminating")
+			woc.log.WithFields(log.Fields{"key": woc.execWf.Name}).Info("Released all locks since this pending workflow is being shutdown")
 			woc.markWorkflowSuccess(ctx)
 			return true
 		}
