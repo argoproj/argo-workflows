@@ -6,8 +6,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/argoproj/argo-workflows/v3/errors"
 	log "github.com/sirupsen/logrus"
+
+	"github.com/argoproj/argo-workflows/v3/errors"
 )
 
 func simpleReplace(w io.Writer, tag string, replaceMap map[string]string, allowUnresolved bool) (int, error) {
