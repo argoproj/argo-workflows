@@ -2,12 +2,12 @@ package controller
 
 import (
 	"context"
-	"github.com/stretchr/testify/require"
 	"testing"
 	"time"
 
 	"github.com/argoproj/pkg/sync"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	authorizationv1 "k8s.io/api/authorization/v1"
 	apiv1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
