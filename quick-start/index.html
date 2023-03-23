@@ -3968,6 +3968,9 @@
 <div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>-n<span class="w"> </span>argo<span class="w"> </span>port-forward<span class="w"> </span>deployment/argo-server<span class="w"> </span><span class="m">2746</span>:2746
 </code></pre></div>
 <p>This will serve the UI on <a href="https://localhost:2746">https://localhost:2746</a>. Due to the self-signed certificate, you will receive a TLS error which you will need to manually approve.</p>
+<blockquote>
+<p>Pay close attention to the URI. It uses <code>https</code> and not <code>http</code>. Navigating to <code>http://localhost:2746</code> result in server-side error that breaks the port-forwarding.</p>
+</blockquote>
 <h2 id="install-the-argo-workflows-cli">Install the Argo Workflows CLI<a class="headerlink" href="#install-the-argo-workflows-cli" title="Permanent link">&para;</a></h2>
 <p>Next, Download the latest Argo CLI from the same <a href="https://github.com/argoproj/argo-workflows/releases/latest">releases page</a>.</p>
 <h2 id="submitting-an-example-workflow">Submitting an example workflow<a class="headerlink" href="#submitting-an-example-workflow" title="Permanent link">&para;</a></h2>
