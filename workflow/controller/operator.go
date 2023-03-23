@@ -246,7 +246,7 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 		}
 		woc.updated = wfUpdate
 		if !acquired {
-			if !woc.releaseLocksForPendingTerminatingWfs(ctx) {
+			if !woc.releaseLocksForPendingShuttingdownWfs(ctx) {
 				woc.log.Warn("Workflow processing has been postponed due to concurrency limit")
 				phase := woc.wf.Status.Phase
 				if phase == wfv1.WorkflowUnknown {
@@ -492,8 +492,9 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 	}
 }
 
-func (woc *wfOperationCtx) releaseLocksForPendingTerminatingWfs(ctx context.Context) bool {
-	if sdStrategy := woc.GetShutdownStrategy(); sdStrategy == wfv1.ShutdownStrategyTerminate && woc.execWf.Status.Phase == wfv1.WorkflowPending {
+func (woc *wfOperationCtx) releaseLocksForPendingShuttingdownWfs(ctx context.Context) bool {
+	if sdStrategy := woc.GetShutdownStrategy(); (sdStrategy == wfv1.ShutdownStrategyTerminate || sdStrategy == wfv1.ShutdownStrategyStop) &&
+		woc.execWf.Status.Phase == wfv1.WorkflowPending {
 		if woc.controller.syncManager.ReleaseAll(woc.execWf) {
 			woc.log.WithFields(log.Fields{"key": woc.execWf.Name}).Info("Released all locks since this pending workflow is terminating")
 			woc.markWorkflowSuccess(ctx)
@@ -1881,7 +1882,7 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 			if node == nil {
 				node = woc.initializeExecutableNode(nodeName, wfutil.GetNodeType(processedTmpl), templateScope, processedTmpl, orgTmpl, opts.boundaryID, wfv1.NodePending, msg)
 			}
-			if !woc.releaseLocksForPendingTerminatingWfs(ctx) {
+			if !woc.releaseLocksForPendingShuttingdownWfs(ctx) {
 				lockName, err := argosync.GetLockName(processedTmpl.Synchronization, woc.wf.Namespace)
 				if err != nil {
 					// If an error were to be returned here, it would have been caught by TryAcquire. If it didn't, then it is
