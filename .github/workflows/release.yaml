@@ -250,8 +250,8 @@ jobs:
             if [ $target = "argoexec" ]; then
               # docker manifest create $image_name ${image_name}-linux-arm64 ${image_name}-linux-amd64 ${image_name}-windows
               # docker manifest create quay.io/$image_name quay.io/${image_name}-linux-arm64 quay.io/${image_name}-linux-amd64 quay.io/${image_name}-windows
-              docker manifest create $image_name ${image_name}-linux-amd64 ${image_name}-build-linux-arm64
-              docker manifest create quay.io/$image_name quay.io/${image_name}-linux-amd64 quay.io/${image_name}-build-linux-arm64
+              docker manifest create $image_name ${image_name}-linux-amd64 ${image_name}-linux-arm64
+              docker manifest create quay.io/$image_name quay.io/${image_name}-linux-amd64 quay.io/${image_name}-linux-arm64
             else
               docker manifest create $image_name ${image_name}-linux-arm64 ${image_name}-linux-amd64
               docker manifest create quay.io/$image_name quay.io/${image_name}-linux-arm64 quay.io/${image_name}-linux-amd64
