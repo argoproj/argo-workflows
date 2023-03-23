@@ -2,6 +2,7 @@ package controller
 
 import (
 	"context"
+	"encoding/json"
 	"strconv"
 	"strings"
 	"testing"
@@ -9,6 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 
 	argoErr "github.com/argoproj/argo-workflows/v3/errors"
@@ -832,4 +834,70 @@ func TestSynchronizationWithStepRetry(t *testing.T) {
 		}
 	})
 
+}
+
+const pendingWfWithShutdownStrategy = `apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: synchronization-wf-level
+  namespace: default
+spec:
+  entrypoint: whalesay
+  synchronization:
+    mutex:
+      name:  test
+  templates:
+    - name: whalesay
+      container:
+        image: docker/whalesay:latest
+        command: [sh, -c]
+        args: ["sleep 99999"]`
+
+func TestSynchronizationForPendingShuttingdownWfs(t *testing.T) {
+	cancel, controller := newController()
+	defer cancel()
+	ctx := context.Background()
+	controller.syncManager = sync.NewLockManager(GetSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
+	}, workflowExistenceFunc)
+
+	t.Run("PendingShuttingdownTerminatingWf", func(t *testing.T) {
+
+		// Create and acquire the lock for the first workflow
+		wf := wfv1.MustUnmarshalWorkflow(pendingWfWithShutdownStrategy)
+		wf.Name = "one"
+		wf, err := controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace).Create(ctx, wf, metav1.CreateOptions{})
+		assert.NoError(t, err)
+		woc := newWorkflowOperationCtx(wf, controller)
+		woc.operate(ctx)
+		assert.NotNil(t, woc.wf.Status.Synchronization)
+		assert.NotNil(t, woc.wf.Status.Synchronization.Mutex)
+		assert.Equal(t, 1, len(woc.wf.Status.Synchronization.Mutex.Holding))
+
+		// Create the second workflow and try to acquire the lock, which should not be available.
+		wfTwo := wf.DeepCopy()
+		wfTwo.Name = "two"
+		wfTwo, err = controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace).Create(ctx, wfTwo, metav1.CreateOptions{})
+		assert.NoError(t, err)
+		// This workflow should be pending since the first workflow still holds the lock.
+		wocTwo := newWorkflowOperationCtx(wfTwo, controller)
+		wocTwo.operate(ctx)
+		assert.Equal(t, wfv1.WorkflowPending, wocTwo.wf.Status.Phase)
+
+		// Shutdown the second workflow that's pending.
+		patchObj := map[string]interface{}{
+			"spec": map[string]interface{}{
+				"shutdown": wfv1.ShutdownStrategyTerminate,
+			},
+		}
+		patch, err := json.Marshal(patchObj)
+		assert.NoError(t, err)
+		wfTwo, err = controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace).Patch(ctx, wfTwo.Name, types.MergePatchType, patch, metav1.PatchOptions{})
+		assert.NoError(t, err)
+
+		// The pending workflow that's being shutdown should have succeeded and released the lock.
+		wocTwo = newWorkflowOperationCtx(wfTwo, controller)
+		wocTwo.operate(ctx)
+		assert.Equal(t, wfv1.WorkflowSucceeded, wocTwo.execWf.Status.Phase)
+		assert.Nil(t, wocTwo.wf.Status.Synchronization)
+	})
 }
