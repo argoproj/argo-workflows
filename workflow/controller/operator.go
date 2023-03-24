@@ -494,7 +494,7 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 
 func (woc *wfOperationCtx) releaseLocksForPendingShuttingdownWfs(ctx context.Context) bool {
 	if sdStrategy := woc.GetShutdownStrategy(); (sdStrategy == wfv1.ShutdownStrategyTerminate || sdStrategy == wfv1.ShutdownStrategyStop) &&
-		woc.execWf.Status.Phase == wfv1.WorkflowPending {
+		woc.wf.Status.Phase == wfv1.WorkflowPending {
 		if woc.controller.syncManager.ReleaseAll(woc.execWf) {
 			woc.log.WithFields(log.Fields{"key": woc.execWf.Name}).Info("Released all locks since this pending workflow is being shutdown")
 			// TODO: Stop should be treated differently since all exit handlers can still run.
