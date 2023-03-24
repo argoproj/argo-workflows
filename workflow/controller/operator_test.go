@@ -366,6 +366,7 @@ func TestGlobalParams(t *testing.T) {
 
 	assert.Contains(t, woc.globalParams, "workflow.duration")
 	assert.Contains(t, woc.globalParams, "workflow.name")
+	assert.Contains(t, woc.globalParams, "workflow.originName")
 	assert.Contains(t, woc.globalParams, "workflow.namespace")
 	assert.Contains(t, woc.globalParams, "workflow.mainEntrypoint")
 	assert.Contains(t, woc.globalParams, "workflow.parameters")
@@ -377,6 +378,22 @@ func TestGlobalParams(t *testing.T) {
 	// Ensure that the phase label is included after the first operation
 	woc.operate(ctx)
 	assert.Contains(t, woc.globalParams, "workflow.labels.workflows.argoproj.io/phase")
+}
+
+func TestOriginName(t *testing.T) {
+	for input, expected := range map[string]string{
+		`template-name-1234567890`:       `template-name`, // Cronworkflows run on a cron
+		`template-name1234567890`:        `template-name`, // Cronworkflow without trailing -
+		`foobar-fs4hy`:                   `foobar`,        // Standard template submission
+		`foobar-foobar-ashda`:            `foobar-foobar`,
+		`foobarfs4hy`:                    `foobar`, // Template without trailing -
+		`foobar`:                         `foobar`, // We don't replace the end of this
+		`foo-bar`:                        `foo-bar`,
+		`foobar-foobar-0987654321-4ab1a`: `foobar-foobar`, // Cronworkflow, resubmitted
+		`foobar-foobar`:                  `foobar-f`,      // Can't really prevent this kind of thing, not desired though
+	} {
+		assert.Equal(t, expected, getOriginNameFromName(input))
+	}
 }
 
 // TestSidecarWithVolume verifies ia sidecar can have a volumeMount reference to both existing or volumeClaimTemplate volumes

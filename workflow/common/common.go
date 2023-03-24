@@ -165,6 +165,8 @@ const (
 
 	// GlobalVarWorkflowName is a global workflow variable referencing the workflow's metadata.name field
 	GlobalVarWorkflowName = "workflow.name"
+	// GlobalVarWorkflowOriginName is a global workflow variable referencing the workflow's name reverse engineered to the template name from a generateName
+	GlobalVarWorkflowOriginName = "workflow.originName"
 	// GlobalVarWorkflowNamespace is a global workflow variable referencing the workflow's metadata.namespace field
 	GlobalVarWorkflowNamespace = "workflow.namespace"
 	// GlobalVarWorkflowMainEntrypoint is a global workflow variable referencing the workflow's top level entrypoint name

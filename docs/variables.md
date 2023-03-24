@@ -246,6 +246,7 @@ For `Template`-level metrics:
 | Variable | Description|
 |----------|------------|
 | `workflow.name` | Workflow name |
+| `workflow.originName` | Workflow template name. This works only for template names, it may give wrong answers for non-generated names |
 | `workflow.namespace` | Workflow namespace |
 | `workflow.mainEntrypoint` | Workflow's initial entrypoint |
 | `workflow.serviceAccountName` | Workflow service account name |
