@@ -843,6 +843,7 @@ metadata:
   namespace: default
 spec:
   entrypoint: whalesay
+  onExit: whalesay
   synchronization:
     mutex:
       name:  test
@@ -861,10 +862,10 @@ func TestSynchronizationForPendingShuttingdownWfs(t *testing.T) {
 	}, workflowExistenceFunc)
 
 	t.Run("PendingShuttingdownTerminatingWf", func(t *testing.T) {
-
 		// Create and acquire the lock for the first workflow
 		wf := wfv1.MustUnmarshalWorkflow(pendingWfWithShutdownStrategy)
-		wf.Name = "one"
+		wf.Name = "one-terminating"
+		wf.Spec.Synchronization.Mutex.Name = "terminating-test"
 		wf, err := controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace).Create(ctx, wf, metav1.CreateOptions{})
 		assert.NoError(t, err)
 		woc := newWorkflowOperationCtx(wf, controller)
@@ -875,7 +876,7 @@ func TestSynchronizationForPendingShuttingdownWfs(t *testing.T) {
 
 		// Create the second workflow and try to acquire the lock, which should not be available.
 		wfTwo := wf.DeepCopy()
-		wfTwo.Name = "two"
+		wfTwo.Name = "two-terminating"
 		wfTwo, err = controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace).Create(ctx, wfTwo, metav1.CreateOptions{})
 		assert.NoError(t, err)
 		// This workflow should be pending since the first workflow still holds the lock.
@@ -898,6 +899,47 @@ func TestSynchronizationForPendingShuttingdownWfs(t *testing.T) {
 		wocTwo = newWorkflowOperationCtx(wfTwo, controller)
 		wocTwo.operate(ctx)
 		assert.Equal(t, wfv1.WorkflowSucceeded, wocTwo.execWf.Status.Phase)
+		assert.Nil(t, wocTwo.wf.Status.Synchronization)
+	})
+
+	t.Run("PendingShuttingdownStoppingWf", func(t *testing.T) {
+		// Create and acquire the lock for the first workflow
+		wf := wfv1.MustUnmarshalWorkflow(pendingWfWithShutdownStrategy)
+		wf.Name = "one-stopping"
+		wf.Spec.Synchronization.Mutex.Name = "stopping-test"
+		wf, err := controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace).Create(ctx, wf, metav1.CreateOptions{})
+		assert.NoError(t, err)
+		woc := newWorkflowOperationCtx(wf, controller)
+		woc.operate(ctx)
+		assert.NotNil(t, woc.wf.Status.Synchronization)
+		assert.NotNil(t, woc.wf.Status.Synchronization.Mutex)
+		assert.Equal(t, 1, len(woc.wf.Status.Synchronization.Mutex.Holding))
+
+		// Create the second workflow and try to acquire the lock, which should not be available.
+		wfTwo := wf.DeepCopy()
+		wfTwo.Name = "two-stopping"
+		wfTwo, err = controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace).Create(ctx, wfTwo, metav1.CreateOptions{})
+		assert.NoError(t, err)
+		// This workflow should be pending since the first workflow still holds the lock.
+		wocTwo := newWorkflowOperationCtx(wfTwo, controller)
+		wocTwo.operate(ctx)
+		assert.Equal(t, wfv1.WorkflowPending, wocTwo.wf.Status.Phase)
+
+		// Shutdown the second workflow that's pending.
+		patchObj := map[string]interface{}{
+			"spec": map[string]interface{}{
+				"shutdown": wfv1.ShutdownStrategyStop,
+			},
+		}
+		patch, err := json.Marshal(patchObj)
+		assert.NoError(t, err)
+		wfTwo, err = controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace).Patch(ctx, wfTwo.Name, types.MergePatchType, patch, metav1.PatchOptions{})
+		assert.NoError(t, err)
+
+		// The pending workflow that's being shutdown should be running exit handlers and released the lock.
+		wocTwo = newWorkflowOperationCtx(wfTwo, controller)
+		wocTwo.operate(ctx)
+		assert.Equal(t, wfv1.WorkflowRunning, wocTwo.execWf.Status.Phase)
 		assert.Nil(t, wocTwo.wf.Status.Synchronization)
 	})
 }
