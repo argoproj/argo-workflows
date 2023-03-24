@@ -493,12 +493,7 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 }
 
 func (woc *wfOperationCtx) releaseLocksForPendingShuttingdownWfs(ctx context.Context) bool {
-	if woc.GetShutdownStrategy().Enabled() && woc.wf.Status.Phase == wfv1.WorkflowPending {
-		// 1. If a workflow is being stopped, all exit handlers should still run.
-		// 2. If a workflow is being terminated, workflow should be marked as succeeded.
-		if woc.GetShutdownStrategy() == wfv1.ShutdownStrategyStop {
-			return false
-		}
+	if woc.GetShutdownStrategy().Enabled() && woc.wf.Status.Phase == wfv1.WorkflowPending && woc.GetShutdownStrategy() == wfv1.ShutdownStrategyTerminate {
 		if woc.controller.syncManager.ReleaseAll(woc.execWf) {
 			woc.log.WithFields(log.Fields{"key": woc.execWf.Name}).Info("Released all locks since this pending workflow is being shutdown")
 			woc.markWorkflowSuccess(ctx)
