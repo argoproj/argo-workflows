@@ -936,10 +936,20 @@ func TestSynchronizationForPendingShuttingdownWfs(t *testing.T) {
 		wfTwo, err = controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace).Patch(ctx, wfTwo.Name, types.MergePatchType, patch, metav1.PatchOptions{})
 		assert.NoError(t, err)
 
-		// The pending workflow that's being shutdown should be running exit handlers and released the lock.
+		// The pending workflow that's being shutdown should still be pending and waiting to acquire the lock.
 		wocTwo = newWorkflowOperationCtx(wfTwo, controller)
 		wocTwo.operate(ctx)
+		assert.Equal(t, wfv1.WorkflowPending, wocTwo.execWf.Status.Phase)
+		assert.NotNil(t, wocTwo.wf.Status.Synchronization)
+		assert.NotNil(t, wocTwo.wf.Status.Synchronization.Mutex)
+		assert.Equal(t, 1, len(wocTwo.wf.Status.Synchronization.Mutex.Waiting))
+
+		// Mark the first workflow as succeeded
+		woc.wf.Status.Phase = wfv1.WorkflowSucceeded
+		woc.operate(ctx)
+		assert.Nil(t, woc.wf.Status.Synchronization)
+		// The pending workflow should now be running normally
+		wocTwo.operate(ctx)
 		assert.Equal(t, wfv1.WorkflowRunning, wocTwo.execWf.Status.Phase)
-		assert.Nil(t, wocTwo.wf.Status.Synchronization)
 	})
 }
