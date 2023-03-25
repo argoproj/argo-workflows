@@ -26,7 +26,7 @@
         "js-yaml": "^4.1.0",
         "json-merge-patch": "^0.2.3",
         "moment": "^2.29.4",
-        "moment-timezone": "^0.5.41",
+        "moment-timezone": "^0.5.42",
         "monaco-editor": "0.20.0",
         "prop-types": "^15.8.1",
         "react": "^16.14.0",
