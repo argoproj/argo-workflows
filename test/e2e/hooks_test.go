@@ -1,5 +1,5 @@
-//go:build functional || local
-// +build functional local
+//go:build functional
+// +build functional
 
 package e2e
 
