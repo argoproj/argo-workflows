@@ -400,12 +400,22 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 	// This strconv.Quote is necessary so that the escaped quotes are not removed during parameter substitution
 	woc.globalParams[common.GlobalVarWorkflowFailures] = strconv.Quote(string(failedNodeBytes))
 
-	err = woc.executeWfLifeCycleHook(ctx, tmplCtx)
+	woc.log.Errorf("@#@#@#@#@##@#@#@# Node Inspect Lifecycle 실행 이전 : %+v", node)
+
+	hookCompleted, err := woc.executeWfLifeCycleHook(ctx, tmplCtx)
 	if err != nil {
 		woc.markNodeError(node.Name, err)
 	}
 	// Reconcile TaskSet and Agent for HTTP templates
 	woc.taskSetReconciliation(ctx)
+
+	// Check all hooks are completes
+	if !hookCompleted {
+		return
+	}
+
+	woc.log.Errorf("@#@#@#@#@##@#@#@# Node Inspect Lifecycle 실행 이후 : %+v", node)
+	woc.log.Errorf("############################################################")
 
 	if !node.Fulfilled() {
 		// node can be nil if a workflow created immediately in a parallelism == 0 state
