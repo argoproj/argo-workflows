@@ -1884,15 +1884,13 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 			if node == nil {
 				node = woc.initializeExecutableNode(nodeName, wfutil.GetNodeType(processedTmpl), templateScope, processedTmpl, orgTmpl, opts.boundaryID, wfv1.NodePending, msg)
 			}
-			if !woc.releaseLocksForPendingShuttingdownWfs(ctx) {
-				lockName, err := argosync.GetLockName(processedTmpl.Synchronization, woc.wf.Namespace)
-				if err != nil {
-					// If an error were to be returned here, it would have been caught by TryAcquire. If it didn't, then it is
-					// unexpected behavior and is a bug.
-					panic("bug: GetLockName should not return an error after a call to TryAcquire")
-				}
-				return woc.markNodeWaitingForLock(node.Name, lockName.EncodeName()), nil
+			lockName, err := argosync.GetLockName(processedTmpl.Synchronization, woc.wf.Namespace)
+			if err != nil {
+				// If an error were to be returned here, it would have been caught by TryAcquire. If it didn't, then it is
+				// unexpected behavior and is a bug.
+				panic("bug: GetLockName should not return an error after a call to TryAcquire")
 			}
+			return woc.markNodeWaitingForLock(node.Name, lockName.EncodeName()), nil
 		} else {
 			woc.log.Infof("Node %s acquired synchronization lock", nodeName)
 			if node != nil {
