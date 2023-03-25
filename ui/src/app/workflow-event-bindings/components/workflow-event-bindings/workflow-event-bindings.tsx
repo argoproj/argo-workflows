@@ -20,6 +20,7 @@ import {services} from '../../../shared/services';
 import {useQueryParams} from '../../../shared/use-query-params';
 import {Utils} from '../../../shared/utils';
 import {ID} from './id';
+import { absoluteUrl } from '../../../shared/base';
 
 const introductionText = (
     <>
@@ -109,7 +110,7 @@ export const WorkflowEventBindings = ({match, location, history}: RouteComponent
                     </p>
                     <p>
                         <code>
-                            curl '{document.location.protocol}//{document.location.host}/api/v1/events/{namespace}/-' -H 'Content-Type: application/json' -H 'Authorization:
+                            curl '{absoluteUrl('api/v1/events/{namespace}/-')}' -H 'Content-Type: application/json' -H 'Authorization:
                             $ARGO_TOKEN' -d '&#123;&#125;'
                         </code>
                     </p>
