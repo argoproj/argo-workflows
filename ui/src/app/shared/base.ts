@@ -19,6 +19,6 @@ export function apiUrl(apiPath: string): string {
 }
 
 export function absoluteUrl(path: string): string {
-    const baseUrl = document.baseURI.endsWith('/') ? document.baseURI : document.baseURI + '/';
-    return `${baseUrl}${path}`;
+    const base = document.baseURI.endsWith('/') ? document.baseURI : document.baseURI + '/';
+    return `${base}${path}`;
 }
