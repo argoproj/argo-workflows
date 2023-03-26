@@ -7,7 +7,7 @@ spec:
   entrypoint: pdbcreate
   serviceAccountName: default
   podDisruptionBudget:
-    minAvailable: "9999"   # Provide arbitrary big number if you don't know how many pods workflow creates
+    minAvailable: 9999   # Provide arbitrary big number if you don't know how many pods workflow creates
   templates:
   - name: pdbcreate
     container:
