@@ -18,6 +18,9 @@ import (
 	"github.com/argoproj/argo-workflows/v3/workflow/controller/indexes"
 )
 
+// isImmediateSkipQueues checks if we immediately clean up pods and skip the queues.
+// it does this by checking if a rateLimiter has been set. This rateLimiter is only set if the environment variable
+// in common.EnvCleanupRateLimitIntervalMilliSeconds is set.
 func (woc *wfOperationCtx) isImmediateSkipQueues() bool {
 	return woc.rateLimiter != nil && woc.orig.Spec.PodGC != nil && woc.orig.Spec.PodGC.Strategy == wfv1.PodGCOnPodCompletion
 }

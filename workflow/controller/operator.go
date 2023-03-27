@@ -151,6 +151,7 @@ func newWorkflowOperationCtx(wf *wfv1.Workflow, wfc *WorkflowController) *wfOper
 		if err != nil {
 			log.Errorf("was not able to convert %s to int, defaulting to queue based cleanup, err: %s", intervalMsStr, err)
 		} else {
+			// only used for batch cleanup that skips the pod cleanup queues.
 			rl := waitutil.NewRateLimiter(time.Duration(intervalMs) * time.Millisecond)
 			rateLimiter = &rl
 		}
