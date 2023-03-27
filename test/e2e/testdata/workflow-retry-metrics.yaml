@@ -1,0 +1,38 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: workflow-retry-metrics
+spec:
+  entrypoint: main
+  podGC:
+    strategy: OnWorkflowSuccess
+  templates:
+    - name: main
+      steps:
+        - - continueOn:
+              error: true
+              failed: true
+            name: runTest
+            template: run-test
+    - container:
+        name: runner
+        image: 'argoproj/argosay:v2'
+        args:
+          - exit 1
+        command:
+          - sh
+          - -c
+      metrics:
+        prometheus:
+          - counter:
+              value: "1"
+            help: Count of runs by exit code
+            labels:
+              - key: exit_code
+                value: '{{exitCode}}'
+              - key: status
+                value: "{{status}}"
+            name: runs_exit_status_counter
+      name: run-test
+      retryStrategy:
+        limit: "2"
