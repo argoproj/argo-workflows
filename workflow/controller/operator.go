@@ -246,13 +246,15 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 		}
 		woc.updated = wfUpdate
 		if !acquired {
-			woc.log.Warn("Workflow processing has been postponed due to concurrency limit")
-			phase := woc.wf.Status.Phase
-			if phase == wfv1.WorkflowUnknown {
-				phase = wfv1.WorkflowPending
+			if !woc.releaseLocksForPendingShuttingdownWfs(ctx) {
+				woc.log.Warn("Workflow processing has been postponed due to concurrency limit")
+				phase := woc.wf.Status.Phase
+				if phase == wfv1.WorkflowUnknown {
+					phase = wfv1.WorkflowPending
+				}
+				woc.markWorkflowPhase(ctx, phase, msg)
+				return
 			}
-			woc.markWorkflowPhase(ctx, phase, msg)
-			return
 		}
 	}
 
@@ -488,6 +490,17 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 	if err := woc.deletePVCs(ctx); err != nil {
 		woc.log.WithError(err).Warn("failed to delete PVCs")
 	}
+}
+
+func (woc *wfOperationCtx) releaseLocksForPendingShuttingdownWfs(ctx context.Context) bool {
+	if woc.GetShutdownStrategy().Enabled() && woc.wf.Status.Phase == wfv1.WorkflowPending && woc.GetShutdownStrategy() == wfv1.ShutdownStrategyTerminate {
+		if woc.controller.syncManager.ReleaseAll(woc.execWf) {
+			woc.log.WithFields(log.Fields{"key": woc.execWf.Name}).Info("Released all locks since this pending workflow is being shutdown")
+			woc.markWorkflowSuccess(ctx)
+			return true
+		}
+	}
+	return false
 }
 
 // set Labels and Annotations for the Workflow
