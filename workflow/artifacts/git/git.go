@@ -6,7 +6,9 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"os/exec"
 	"regexp"
+	"strings"
 
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/config"
@@ -44,33 +46,49 @@ func GetUser(url string) string {
 	return "git"
 }
 
-func (g *ArtifactDriver) auth(sshUser string) (func(), transport.AuthMethod, error) {
+func (g *ArtifactDriver) auth(sshUser string) (func(), transport.AuthMethod, []string, error) {
 	if g.SSHPrivateKey != "" {
 		signer, err := ssh.ParsePrivateKey([]byte(g.SSHPrivateKey))
 		if err != nil {
-			return nil, nil, err
+			return nil, nil, nil, err
 		}
 		privateKeyFile, err := ioutil.TempFile("", "id_rsa.")
 		if err != nil {
-			return nil, nil, err
+			return nil, nil, nil, err
 		}
 		err = ioutil.WriteFile(privateKeyFile.Name(), []byte(g.SSHPrivateKey), 0o600)
 		if err != nil {
-			return nil, nil, err
+			return nil, nil, nil, err
 		}
 		auth := &ssh2.PublicKeys{User: sshUser, Signer: signer}
 		if g.InsecureIgnoreHostKey {
 			auth.HostKeyCallback = ssh.InsecureIgnoreHostKey()
 		}
+		args := []string{"ssh", "-i", privateKeyFile.Name()}
+		if g.InsecureIgnoreHostKey {
+			args = append(args, "-o", "StrictHostKeyChecking=no", "-o", "UserKnownHostsFile=/dev/null")
+		} else {
+			args = append(args, "-o", "StrictHostKeyChecking=yes", "-o")
+		}
+		env := []string{"GIT_SSH_COMMAND=" + strings.Join(args, " ")}
 		if g.InsecureIgnoreHostKey {
 			auth.HostKeyCallback = ssh.InsecureIgnoreHostKey()
+			env = append(env, "GIT_SSL_NO_VERIFY=true")
 		}
-		return func() { _ = os.Remove(privateKeyFile.Name()) }, auth, nil
+		return func() { _ = os.Remove(privateKeyFile.Name()) },
+			auth,
+			env,
+			nil
 	}
 	if g.Username != "" || g.Password != "" {
-		return func() {}, &http.BasicAuth{Username: g.Username, Password: g.Password}, nil
+		var gitAuth []string
+		gitAuth = append(gitAuth, "-c", fmt.Sprintf("url.https://%s:%s@.insteadOf=https://", g.Username, g.Password))
+		return func() {},
+			&http.BasicAuth{Username: g.Username, Password: g.Password},
+			gitAuth,
+			nil
 	}
-	return func() {}, nil, nil
+	return func() {}, nil, nil, nil
 }
 
 // Save is unsupported for git output artifacts
@@ -86,7 +104,7 @@ func (g *ArtifactDriver) Delete(s *wfv1.Artifact) error {
 func (g *ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) error {
 	a := inputArtifact.Git
 	sshUser := GetUser(a.Repo)
-	closer, auth, err := g.auth(sshUser)
+	closer, auth, env, err := g.auth(sshUser)
 	if err != nil {
 		return err
 	}
@@ -138,53 +156,53 @@ func (g *ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) error {
 		if err := opts.Validate(); err != nil {
 			return fmt.Errorf("failed to validate fetch %v: %w", refSpecs, err)
 		}
-		if err = r.Fetch(opts); isFetchErr(err) {
+		if err = r.Fetch(opts); isAlreadyUpToDateErr(err) {
 			return fmt.Errorf("failed to fetch %v: %w", refSpecs, err)
 		}
-	}
-	w, err := r.Worktree()
-	if err != nil {
-		return fmt.Errorf("failed to get work tree: %w", err)
 	}
 
 	if a.Revision != "" {
-		refSpecs := []config.RefSpec{"refs/heads/*:refs/heads/*"}
-		if a.SingleBranch {
-			refSpecs = []config.RefSpec{config.RefSpec(fmt.Sprintf("refs/heads/%s:refs/heads/%s", a.Branch, a.Branch))}
-		}
-		opts := &git.FetchOptions{Auth: auth, RefSpecs: refSpecs}
-		if err := opts.Validate(); err != nil {
-			return fmt.Errorf("failed to validate fetch %v: %w", refSpecs, err)
-		}
-		if err := r.Fetch(opts); isFetchErr(err) {
-			return fmt.Errorf("failed to fetch %v: %w", refSpecs, err)
-		}
-		h, err := r.ResolveRevision(plumbing.Revision(a.Revision))
+		// We still rely on forking git for checkout, since go-git does not have a reliable
+		// way of resolving revisions (e.g. mybranch, HEAD^, v1.2.3)
+		rev := getRevisionForCheckout(inputArtifact.Git.Revision)
+		log.Info("Checking out revision ", rev)
+		cmd := exec.Command("git", "checkout", rev, "--")
+		cmd.Dir = path
+		cmd.Env = env
+		output, err := cmd.Output()
 		if err != nil {
-			return fmt.Errorf("failed to get resolve revision: %w", err)
+			return g.error(err, cmd)
 		}
-		if err := w.Checkout(&git.CheckoutOptions{Hash: plumbing.NewHash(h.String())}); err != nil {
-			return fmt.Errorf("failed to checkout %q: %w", h, err)
-		}
+		log.Infof("`%s` stdout:\n%s", cmd.Args, string(output))
 	}
 	if !a.DisableSubmodules {
-		s, err := w.Submodules()
+		submodulesCmd := exec.Command("git", "submodule", "update", "--init", "--recursive", "--force")
+		submodulesCmd.Dir = path
+		submodulesCmd.Env = env
+		submoduleOutput, err := submodulesCmd.Output()
 		if err != nil {
-			return fmt.Errorf("failed to get submodules: %w", err)
+			return g.error(err, submodulesCmd)
 		}
-		if err := s.Update(&git.SubmoduleUpdateOptions{
-			Init:              true,
-			RecurseSubmodules: git.DefaultSubmoduleRecursionDepth,
-			Auth:              auth,
-		}); err != nil {
-			return fmt.Errorf("failed to update submodules: %w", err)
-		}
+		log.Infof("`%s` stdout:\n%s", submodulesCmd.Args, string(submoduleOutput))
 	}
 	return nil
 }
 
-func isFetchErr(err error) bool {
+// getRevisionForCheckout trims "refs/heads/" from the revision name (if present)
+// so that `git checkout` will succeed.
+func getRevisionForCheckout(revision string) string {
+	return strings.TrimPrefix(revision, "refs/heads/")
+}
+
+func isAlreadyUpToDateErr(err error) bool {
 	return err != nil && err.Error() != "already up-to-date"
+}
+func (g *ArtifactDriver) error(err error, cmd *exec.Cmd) error {
+	if exErr, ok := err.(*exec.ExitError); ok {
+		log.Errorf("`%s` stderr:\n%s", cmd.Args, string(exErr.Stderr))
+		return errors.New(strings.Split(string(exErr.Stderr), "\n")[0])
+	}
+	return err
 }
 
 func (g *ArtifactDriver) OpenStream(a *wfv1.Artifact) (io.ReadCloser, error) {
