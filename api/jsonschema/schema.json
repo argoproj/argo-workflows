@@ -4779,6 +4779,10 @@
     "io.argoproj.workflow.v1alpha1.Gauge": {
       "description": "Gauge is a Gauge prometheus metric",
       "properties": {
+        "operation": {
+          "description": "Operation defines the operation to apply with value and the metrics' current value",
+          "type": "string"
+        },
         "realtime": {
           "description": "Realtime emits this metric in real time if applicable",
           "type": "boolean"
@@ -4790,7 +4794,8 @@
       },
       "required": [
         "value",
-        "realtime"
+        "realtime",
+        "operation"
       ],
       "type": "object"
     },

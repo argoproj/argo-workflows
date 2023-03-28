@@ -81,6 +81,7 @@ class IoArgoprojWorkflowV1alpha1Gauge(ModelNormal):
                 and the value is attribute type.
         """
         return {
+            'operation': (str,),  # noqa: E501
             'realtime': (bool,),  # noqa: E501
             'value': (str,),  # noqa: E501
         }
@@ -91,6 +92,7 @@ class IoArgoprojWorkflowV1alpha1Gauge(ModelNormal):
 
 
     attribute_map = {
+        'operation': 'operation',  # noqa: E501
         'realtime': 'realtime',  # noqa: E501
         'value': 'value',  # noqa: E501
     }
@@ -102,10 +104,11 @@ class IoArgoprojWorkflowV1alpha1Gauge(ModelNormal):
 
     @classmethod
     @convert_js_args_to_python_args
-    def _from_openapi_data(cls, realtime, value, *args, **kwargs):  # noqa: E501
+    def _from_openapi_data(cls, operation, realtime, value, *args, **kwargs):  # noqa: E501
         """IoArgoprojWorkflowV1alpha1Gauge - a model defined in OpenAPI
 
         Args:
+            operation (str): Operation defines the operation to apply with value and the metrics' current value
             realtime (bool): Realtime emits this metric in real time if applicable
             value (str): Value is the value of the metric
 
@@ -167,6 +170,7 @@ class IoArgoprojWorkflowV1alpha1Gauge(ModelNormal):
         self._configuration = _configuration
         self._visited_composed_classes = _visited_composed_classes + (self.__class__,)
 
+        self.operation = operation
         self.realtime = realtime
         self.value = value
         for var_name, var_value in kwargs.items():
@@ -189,10 +193,11 @@ class IoArgoprojWorkflowV1alpha1Gauge(ModelNormal):
     ])
 
     @convert_js_args_to_python_args
-    def __init__(self, realtime, value, *args, **kwargs):  # noqa: E501
+    def __init__(self, operation, realtime, value, *args, **kwargs):  # noqa: E501
         """IoArgoprojWorkflowV1alpha1Gauge - a model defined in OpenAPI
 
         Args:
+            operation (str): Operation defines the operation to apply with value and the metrics' current value
             realtime (bool): Realtime emits this metric in real time if applicable
             value (str): Value is the value of the metric
 
@@ -252,6 +257,7 @@ class IoArgoprojWorkflowV1alpha1Gauge(ModelNormal):
         self._configuration = _configuration
         self._visited_composed_classes = _visited_composed_classes + (self.__class__,)
 
+        self.operation = operation
         self.realtime = realtime
         self.value = value
         for var_name, var_value in kwargs.items():

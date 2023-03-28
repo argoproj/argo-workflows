@@ -8711,9 +8711,14 @@
       "type": "object",
       "required": [
         "value",
-        "realtime"
+        "realtime",
+        "operation"
       ],
       "properties": {
+        "operation": {
+          "description": "Operation defines the operation to apply with value and the metrics' current value",
+          "type": "string"
+        },
         "realtime": {
           "description": "Realtime emits this metric in real time if applicable",
           "type": "boolean"

@@ -968,6 +968,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     value="value_example",
                                 ),
                                 gauge=IoArgoprojWorkflowV1alpha1Gauge(
+                                    operation="operation_example",
                                     realtime=True,
                                     value="value_example",
                                 ),
@@ -3504,6 +3505,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         value="value_example",
                                     ),
                                     gauge=IoArgoprojWorkflowV1alpha1Gauge(
+                                        operation="operation_example",
                                         realtime=True,
                                         value="value_example",
                                     ),
@@ -8014,6 +8016,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             value="value_example",
                                         ),
                                         gauge=IoArgoprojWorkflowV1alpha1Gauge(
+                                            operation="operation_example",
                                             realtime=True,
                                             value="value_example",
                                         ),
@@ -11841,6 +11844,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     value="value_example",
                                 ),
                                 gauge=IoArgoprojWorkflowV1alpha1Gauge(
+                                    operation="operation_example",
                                     realtime=True,
                                     value="value_example",
                                 ),
@@ -14377,6 +14381,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         value="value_example",
                                     ),
                                     gauge=IoArgoprojWorkflowV1alpha1Gauge(
+                                        operation="operation_example",
                                         realtime=True,
                                         value="value_example",
                                     ),
@@ -18887,6 +18892,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             value="value_example",
                                         ),
                                         gauge=IoArgoprojWorkflowV1alpha1Gauge(
+                                            operation="operation_example",
                                             realtime=True,
                                             value="value_example",
                                         ),
@@ -22799,6 +22805,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     value="value_example",
                                 ),
                                 gauge=IoArgoprojWorkflowV1alpha1Gauge(
+                                    operation="operation_example",
                                     realtime=True,
                                     value="value_example",
                                 ),
@@ -25335,6 +25342,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         value="value_example",
                                     ),
                                     gauge=IoArgoprojWorkflowV1alpha1Gauge(
+                                        operation="operation_example",
                                         realtime=True,
                                         value="value_example",
                                     ),
@@ -29845,6 +29853,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             value="value_example",
                                         ),
                                         gauge=IoArgoprojWorkflowV1alpha1Gauge(
+                                            operation="operation_example",
                                             realtime=True,
                                             value="value_example",
                                         ),
