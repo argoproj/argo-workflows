@@ -635,6 +635,9 @@ message Gauge {
 
   // Realtime emits this metric in real time if applicable
   optional bool realtime = 2;
+
+  // Operation defines the operation to apply with value and the metrics' current value
+  optional string operation = 3;
 }
 
 // GitArtifact is the location of an git artifact

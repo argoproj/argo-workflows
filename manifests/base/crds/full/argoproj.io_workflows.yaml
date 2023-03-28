@@ -1605,11 +1605,14 @@ spec:
                           type: object
                         gauge:
                           properties:
+                            operation:
+                              type: string
                             realtime:
                               type: boolean
                             value:
                               type: string
                           required:
+                          - operation
                           - realtime
                           - value
                           type: object
@@ -6822,11 +6825,14 @@ spec:
                               type: object
                             gauge:
                               properties:
+                                operation:
+                                  type: string
                                 realtime:
                                   type: boolean
                                 value:
                                   type: string
                               required:
+                              - operation
                               - realtime
                               - value
                               type: object
@@ -14911,11 +14917,14 @@ spec:
                                 type: object
                               gauge:
                                 properties:
+                                  operation:
+                                    type: string
                                   realtime:
                                     type: boolean
                                   value:
                                     type: string
                                 required:
+                                - operation
                                 - realtime
                                 - value
                                 type: object
@@ -26587,11 +26596,14 @@ spec:
                                 type: object
                               gauge:
                                 properties:
+                                  operation:
+                                    type: string
                                   realtime:
                                     type: boolean
                                   value:
                                     type: string
                                 required:
+                                - operation
                                 - realtime
                                 - value
                                 type: object
@@ -31288,11 +31300,14 @@ spec:
                               type: object
                             gauge:
                               properties:
+                                operation:
+                                  type: string
                                 realtime:
                                   type: boolean
                                 value:
                                   type: string
                               required:
+                              - operation
                               - realtime
                               - value
                               type: object
@@ -36505,11 +36520,14 @@ spec:
                                   type: object
                                 gauge:
                                   properties:
+                                    operation:
+                                      type: string
                                     realtime:
                                       type: boolean
                                     value:
                                       type: string
                                   required:
+                                  - operation
                                   - realtime
                                   - value
                                   type: object
@@ -44594,11 +44612,14 @@ spec:
                                     type: object
                                   gauge:
                                     properties:
+                                      operation:
+                                        type: string
                                       realtime:
                                         type: boolean
                                       value:
                                         type: string
                                     required:
+                                    - operation
                                     - realtime
                                     - value
                                     type: object
