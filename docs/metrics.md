@@ -293,7 +293,7 @@ To define a real-time metric simply add `realtime: true` to a gauge metric with 
 
 ## Metrics endpoint
 
-Metrics are emitted by the workflow-controller on port 9090 on the `/metrics` path. By port-forwarding to the pod you can view the metrics in your browser at [http://localhost:9090/metrics](http://localhost:9090/metrics):
+Metrics are emitted by the workflow-controller on port 9090 on the `/metrics` path. By port-forwarding to the pod you can view the metrics in your browser at `http://localhost:9090/metrics`:
 
 `kubectl -n argo port-forward deploy/workflow-controller 9090:9090`
 
