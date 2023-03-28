@@ -3151,6 +3151,19 @@
     Configuring AWS S3
   </a>
   
+    <nav class="md-nav" aria-label="Configuring AWS S3">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#aws-s3-irsa" class="md-nav__link">
+    AWS S3 IRSA
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -3904,6 +3917,19 @@
     Configuring AWS S3
   </a>
   
+    <nav class="md-nav" aria-label="Configuring AWS S3">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#aws-s3-irsa" class="md-nav__link">
+    AWS S3 IRSA
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -4130,7 +4156,8 @@ $<span class="w"> </span>cat<span class="w"> </span>&gt;<span class="w"> </span>
 <span class="s">         &quot;Effect&quot;:&quot;Allow&quot;,</span>
 <span class="s">         &quot;Action&quot;:[</span>
 <span class="s">            &quot;s3:PutObject&quot;,</span>
-<span class="s">            &quot;s3:GetObject&quot;</span>
+<span class="s">            &quot;s3:GetObject&quot;,</span>
+<span class="s">            &quot;s3:DeleteObject&quot;</span>
 <span class="s">         ],</span>
 <span class="s">         &quot;Resource&quot;:&quot;arn:aws:s3:::$mybucket/*&quot;</span>
 <span class="s">      },</span>
@@ -4149,7 +4176,7 @@ $<span class="w"> </span>aws<span class="w"> </span>iam<span class="w"> </span>c
 $<span class="w"> </span>aws<span class="w"> </span>iam<span class="w"> </span>put-user-policy<span class="w"> </span>--user-name<span class="w"> </span><span class="nv">$mybucket</span>-user<span class="w"> </span>--policy-name<span class="w"> </span><span class="nv">$mybucket</span>-policy<span class="w"> </span>--policy-document<span class="w"> </span>file://policy.json
 $<span class="w"> </span>aws<span class="w"> </span>iam<span class="w"> </span>create-access-key<span class="w"> </span>--user-name<span class="w"> </span><span class="nv">$mybucket</span>-user<span class="w"> </span>&gt;<span class="w"> </span>access-key.json
 </code></pre></div>
-<p>If you have Artifact Garbage Collection configured, you should also add "s3:DeleteObject" to the list of Actions above.</p>
+<p>If you do not have Artifact Garbage Collection configured, you should remove <code>s3:DeleteObject</code> from the list of Actions above.</p>
 <p>NOTE: if you want argo to figure out which region your buckets belong in, you
 must additionally set the following statement policy. Otherwise, you must
 specify a bucket region in your workflow configuration.</p>
@@ -4161,6 +4188,16 @@ specify a bucket region in your workflow configuration.</p>
 <span class="w">         </span><span class="nt">&quot;Resource&quot;</span><span class="p">:</span><span class="s2">&quot;arn:aws:s3:::*&quot;</span>
 <span class="w">      </span><span class="p">}</span>
 <span class="w">    </span><span class="err">...</span>
+</code></pre></div>
+<h3 id="aws-s3-irsa">AWS S3 IRSA<a class="headerlink" href="#aws-s3-irsa" title="Permanent link">&para;</a></h3>
+<p>If you wish to use S3 IRSA instead of passing in an <code>accessKey</code> and <code>secretKey</code>, you need to annotate the service account of both the running workflow (in order to save logs/artifacts) and the argo-server pod (in order to retrieve the logs/artifacts).</p>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ServiceAccount</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">annotations</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">eks.amazonaws.com/role-arn</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">arn:aws:iam::012345678901:role/mybucket</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">myserviceaccount</span>
+<span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">mynamespace</span>
 </code></pre></div>
 <h2 id="configuring-gcs-google-cloud-storage">Configuring GCS (Google Cloud Storage)<a class="headerlink" href="#configuring-gcs-google-cloud-storage" title="Permanent link">&para;</a></h2>
 <p>Create a bucket from the GCP Console
