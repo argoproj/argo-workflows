@@ -3,7 +3,6 @@ package sqldb
 import (
 	"context"
 	"fmt"
-	"os"
 	"time"
 
 	"k8s.io/client-go/kubernetes"
@@ -54,43 +53,9 @@ func CreatePostGresDBSession(kubectlConfig kubernetes.Interface, namespace strin
 	}
 
 	if cfg.SSL {
-		if cfg.SSLMode != "" && cfg.SSLMode != "disable" {
-			err := os.MkdirAll(cfg.GetPGCertPath(), 0700)
-			if err != nil {
-				return nil, "", err
-			}
-			rootCertByte, err := util.GetSecrets(ctx, kubectlConfig, namespace, cfg.CaCertSecret.Name, cfg.CaCertSecret.Key)
-			if err != nil {
-				return nil, "", err
-			}
-			err = os.WriteFile(cfg.GetPGCertPath()+"/ca.crt", rootCertByte, 0600)
-			if err != nil {
-				return nil, "", err
-			}
-
-			serverCertByte, err := util.GetSecrets(ctx, kubectlConfig, namespace, cfg.ClientCertSecret.Name, cfg.ClientCertSecret.Key)
-			if err != nil {
-				return nil, "", err
-			}
-			err = os.WriteFile(cfg.GetPGCertPath()+"/tls.crt", serverCertByte, 0600)
-			if err != nil {
-				return nil, "", err
-			}
-
-			serverKeyByte, err := util.GetSecrets(ctx, kubectlConfig, namespace, cfg.ClientKeySecret.Name, cfg.ClientKeySecret.Key)
-			if err != nil {
-				return nil, "", err
-			}
-			err = os.WriteFile(cfg.GetPGCertPath()+"/tls.key", serverKeyByte, 0400)
-			if err != nil {
-				return nil, "", err
-			}
-
+		if cfg.SSLMode != "" {
 			options := map[string]string{
-				"sslmode":     cfg.SSLMode,
-				"sslrootcert": cfg.GetPGCertPath() + "/ca.crt",
-				"sslkey":      cfg.GetPGCertPath() + "/tls.key",
-				"sslcert":     cfg.GetPGCertPath() + "/tls.crt",
+				"sslmode": cfg.SSLMode,
 			}
 			settings.Options = options
 		}
@@ -100,12 +65,7 @@ func CreatePostGresDBSession(kubectlConfig kubernetes.Interface, namespace strin
 	if err != nil {
 		return nil, "", err
 	}
-
-	if persistPool != nil {
-		session.SetMaxOpenConns(persistPool.MaxOpenConns)
-		session.SetMaxIdleConns(persistPool.MaxIdleConns)
-		session.SetConnMaxLifetime(time.Duration(persistPool.ConnMaxLifetime))
-	}
+	session = ConfigureDBSession(session, persistPool)
 	return session, cfg.TableName, nil
 }
 
@@ -135,12 +95,7 @@ func CreateMySQLDBSession(kubectlConfig kubernetes.Interface, namespace string, 
 	if err != nil {
 		return nil, "", err
 	}
-
-	if persistPool != nil {
-		session.SetMaxOpenConns(persistPool.MaxOpenConns)
-		session.SetMaxIdleConns(persistPool.MaxIdleConns)
-		session.SetConnMaxLifetime(time.Duration(persistPool.ConnMaxLifetime))
-	}
+	session = ConfigureDBSession(session, persistPool)
 	// this is needed to make MySQL run in a Golang-compatible UTF-8 character set.
 	_, err = session.Exec("SET NAMES 'utf8mb4'")
 	if err != nil {
@@ -151,4 +106,14 @@ func CreateMySQLDBSession(kubectlConfig kubernetes.Interface, namespace string, 
 		return nil, "", err
 	}
 	return session, cfg.TableName, nil
+}
+
+// ConfigureDBSession configures the DB session
+func ConfigureDBSession(session sqlbuilder.Database, persistPool *config.ConnectionPool) sqlbuilder.Database {
+	if persistPool != nil {
+		session.SetMaxOpenConns(persistPool.MaxOpenConns)
+		session.SetMaxIdleConns(persistPool.MaxIdleConns)
+		session.SetConnMaxLifetime(time.Duration(persistPool.ConnMaxLifetime))
+	}
+	return session
 }

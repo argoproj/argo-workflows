@@ -4020,7 +4020,7 @@ func schema_pkg_apis_workflow_v1alpha1_NodeStatus(ref common.ReferenceCallback) 
 					},
 					"phase": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Phase a simple, high-level summary of where the node is in its lifecycle. Can be used as a state machine.",
+							Description: "Phase a simple, high-level summary of where the node is in its lifecycle. Can be used as a state machine. Will be one of these values \"Pending\", \"Running\" before the node is completed, or \"Succeeded\", \"Skipped\", \"Failed\", \"Error\", or \"Omitted\" as a final state.",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -7429,7 +7429,7 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowSpec(ref common.ReferenceCallback
 					"podDisruptionBudget": {
 						SchemaProps: spec.SchemaProps{
 							Description: "PodDisruptionBudget holds the number of concurrent disruptions that you allow for Workflow's Pods. Controller will automatically add the selector with workflow name, if selector is empty. Optional: Defaults to empty.",
-							Ref:         ref("k8s.io/api/policy/v1beta1.PodDisruptionBudgetSpec"),
+							Ref:         ref("k8s.io/api/policy/v1.PodDisruptionBudgetSpec"),
 						},
 					},
 					"metrics": {
@@ -7519,7 +7519,7 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowSpec(ref common.ReferenceCallback
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Arguments", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactGC", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactRepositoryRef", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ExecutorConfig", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.LifecycleHook", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Metadata", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Metrics", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.PodGC", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.RetryStrategy", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Synchronization", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.TTLStrategy", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Template", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.VolumeClaimGC", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowMetadata", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowTemplateRef", "k8s.io/api/core/v1.Affinity", "k8s.io/api/core/v1.HostAlias", "k8s.io/api/core/v1.LocalObjectReference", "k8s.io/api/core/v1.PersistentVolumeClaim", "k8s.io/api/core/v1.PodDNSConfig", "k8s.io/api/core/v1.PodSecurityContext", "k8s.io/api/core/v1.Toleration", "k8s.io/api/core/v1.Volume", "k8s.io/api/policy/v1beta1.PodDisruptionBudgetSpec"},
+			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Arguments", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactGC", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactRepositoryRef", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ExecutorConfig", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.LifecycleHook", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Metadata", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Metrics", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.PodGC", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.RetryStrategy", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Synchronization", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.TTLStrategy", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Template", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.VolumeClaimGC", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowMetadata", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowTemplateRef", "k8s.io/api/core/v1.Affinity", "k8s.io/api/core/v1.HostAlias", "k8s.io/api/core/v1.LocalObjectReference", "k8s.io/api/core/v1.PersistentVolumeClaim", "k8s.io/api/core/v1.PodDNSConfig", "k8s.io/api/core/v1.PodSecurityContext", "k8s.io/api/core/v1.Toleration", "k8s.io/api/core/v1.Volume", "k8s.io/api/policy/v1.PodDisruptionBudgetSpec"},
 	}
 }
 
@@ -7532,7 +7532,7 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowStatus(ref common.ReferenceCallba
 				Properties: map[string]spec.Schema{
 					"phase": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Phase a simple, high-level summary of where the workflow is in its lifecycle.",
+							Description: "Phase a simple, high-level summary of where the workflow is in its lifecycle. Will be \"\" (Unknown), \"Pending\", or \"Running\" before the workflow is completed, and \"Succeeded\", \"Failed\" or \"Error\" once the workflow has completed.",
 							Type:        []string{"string"},
 							Format:      "",
 						},

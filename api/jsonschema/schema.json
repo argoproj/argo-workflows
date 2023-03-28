@@ -5532,7 +5532,7 @@
           "description": "Outputs captures output parameter values and artifact locations produced by this template invocation"
         },
         "phase": {
-          "description": "Phase a simple, high-level summary of where the node is in its lifecycle. Can be used as a state machine.",
+          "description": "Phase a simple, high-level summary of where the node is in its lifecycle. Can be used as a state machine. Will be one of these values \"Pending\", \"Running\" before the node is completed, or \"Succeeded\", \"Skipped\", \"Failed\", \"Error\", or \"Omitted\" as a final state.",
           "type": "string"
         },
         "podIP": {
@@ -7327,7 +7327,7 @@
           "type": "integer"
         },
         "podDisruptionBudget": {
-          "$ref": "#/definitions/io.k8s.api.policy.v1beta1.PodDisruptionBudgetSpec",
+          "$ref": "#/definitions/io.k8s.api.policy.v1.PodDisruptionBudgetSpec",
           "description": "PodDisruptionBudget holds the number of concurrent disruptions that you allow for Workflow's Pods. Controller will automatically add the selector with workflow name, if selector is empty. Optional: Defaults to empty."
         },
         "podGC": {
@@ -7498,7 +7498,7 @@
           "type": "array"
         },
         "phase": {
-          "description": "Phase a simple, high-level summary of where the workflow is in its lifecycle.",
+          "description": "Phase a simple, high-level summary of where the workflow is in its lifecycle. Will be \"\" (Unknown), \"Pending\", or \"Running\" before the workflow is completed, and \"Succeeded\", \"Failed\" or \"Error\" once the workflow has completed.",
           "type": "string"
         },
         "progress": {
@@ -10356,7 +10356,7 @@
       },
       "type": "object"
     },
-    "io.k8s.api.policy.v1beta1.PodDisruptionBudgetSpec": {
+    "io.k8s.api.policy.v1.PodDisruptionBudgetSpec": {
       "description": "PodDisruptionBudgetSpec is a description of a PodDisruptionBudget.",
       "properties": {
         "maxUnavailable": {
@@ -10369,7 +10369,7 @@
         },
         "selector": {
           "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.LabelSelector",
-          "description": "Label query over pods whose evictions are managed by the disruption budget. A null selector selects no pods. An empty selector ({}) also selects no pods, which differs from standard behavior of selecting all pods. In policy/v1, an empty selector will select all pods in the namespace.",
+          "description": "Label query over pods whose evictions are managed by the disruption budget. A null selector will match no pods, while an empty ({}) selector will select all pods within the namespace.",
           "x-kubernetes-patch-strategy": "replace"
         }
       },

@@ -3,7 +3,7 @@ module github.com/argoproj/argo-workflows/v3
 go 1.19
 
 require (
-	cloud.google.com/go/storage v1.29.0
+	cloud.google.com/go/storage v1.30.1
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.2.2
 	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v0.4.1
 	github.com/Knetic/govaluate v3.0.1-0.20171022003610-9aa49832a739+incompatible
@@ -34,7 +34,7 @@ require (
 	github.com/grpc-ecosystem/grpc-gateway v1.16.0
 	github.com/itchyny/gojq v0.12.12
 	github.com/klauspost/pgzip v1.2.5
-	github.com/minio/minio-go/v7 v7.0.49
+	github.com/minio/minio-go/v7 v7.0.50
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.14.0
 	github.com/prometheus/client_model v0.3.0
@@ -56,8 +56,8 @@ require (
 	golang.org/x/oauth2 v0.6.0
 	golang.org/x/sync v0.1.0
 	golang.org/x/time v0.3.0
-	google.golang.org/api v0.112.0
-	google.golang.org/genproto v0.0.0-20230303212802-e74f57abe488
+	google.golang.org/api v0.114.0
+	google.golang.org/genproto v0.0.0-20230320184635-7606e756e683
 	google.golang.org/grpc v1.53.0
 	gopkg.in/go-playground/webhooks.v5 v5.17.0
 	gopkg.in/jcmturner/gokrb5.v5 v5.3.0
@@ -155,7 +155,7 @@ require (
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510 // indirect
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.2.3 // indirect
-	github.com/googleapis/gax-go/v2 v2.7.0 // indirect
+	github.com/googleapis/gax-go/v2 v2.7.1 // indirect
 	github.com/gregjones/httpcache v0.0.0-20190611155906-901d90724c79 // indirect
 	github.com/hashicorp/go-uuid v1.0.2 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
@@ -171,8 +171,8 @@ require (
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/kevinburke/ssh_config v1.2.0 // indirect
-	github.com/klauspost/compress v1.15.15 // indirect
-	github.com/klauspost/cpuid/v2 v2.2.3 // indirect
+	github.com/klauspost/compress v1.16.0 // indirect
+	github.com/klauspost/cpuid/v2 v2.2.4 // indirect
 	github.com/kylelemons/godebug v1.1.0 // indirect
 	github.com/lib/pq v1.10.4 // indirect
 	github.com/liggitt/tabwriter v0.0.0-20181228230101-89fcab3d43de // indirect
@@ -234,7 +234,7 @@ require (
 	golang.org/x/text v0.8.0 // indirect
 	golang.org/x/xerrors v0.0.0-20220907171357-04be3eba64a2 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
-	google.golang.org/protobuf v1.28.1 // indirect
+	google.golang.org/protobuf v1.29.1 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/jcmturner/aescts.v1 v1.0.1 // indirect

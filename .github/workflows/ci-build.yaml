@@ -23,7 +23,7 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v3
-      - uses: actions/setup-go@v3
+      - uses: actions/setup-go@v4
         with:
           go-version: "1.19"
           cache: true
@@ -100,7 +100,7 @@ jobs:
         # needed by Kubernetes v1.25
         run: sudo apt-get -y install socat
       - uses: actions/checkout@v3
-      - uses: actions/setup-go@v3
+      - uses: actions/setup-go@v4
         with:
           go-version: "1.19"
           cache: true
@@ -195,7 +195,7 @@ jobs:
       GOPATH: /home/runner/go
     steps:
       - uses: actions/checkout@v3
-      - uses: actions/setup-go@v3
+      - uses: actions/setup-go@v4
         with:
           go-version: "1.19"
           cache: true
@@ -228,7 +228,7 @@ jobs:
       GOPATH: /home/runner/go
     steps:
       - uses: actions/checkout@v3
-      - uses: actions/setup-go@v3
+      - uses: actions/setup-go@v4
         with:
           go-version: "1.19"
           cache: true

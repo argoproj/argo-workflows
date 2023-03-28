@@ -9,7 +9,7 @@ import (
 	json "encoding/json"
 
 	v1 "k8s.io/api/core/v1"
-	v1beta1 "k8s.io/api/policy/v1beta1"
+	policyv1 "k8s.io/api/policy/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	intstr "k8s.io/apimachinery/pkg/util/intstr"
@@ -3778,7 +3778,7 @@ func (in *WorkflowSpec) DeepCopyInto(out *WorkflowSpec) {
 	}
 	if in.PodDisruptionBudget != nil {
 		in, out := &in.PodDisruptionBudget, &out.PodDisruptionBudget
-		*out = new(v1beta1.PodDisruptionBudgetSpec)
+		*out = new(policyv1.PodDisruptionBudgetSpec)
 		(*in).DeepCopyInto(*out)
 	}
 	if in.Metrics != nil {
