@@ -109,7 +109,7 @@ class IoArgoprojWorkflowV1alpha1Gauge(ModelNormal):
 
         Args:
             realtime (bool): Realtime emits this metric in real time if applicable
-            value (str): Value is the value of the metric
+            value (str): Value is the value to be used in the operation with the metric's current value. If no operation is set, value is the value of the metric
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
@@ -197,7 +197,7 @@ class IoArgoprojWorkflowV1alpha1Gauge(ModelNormal):
 
         Args:
             realtime (bool): Realtime emits this metric in real time if applicable
-            value (str): Value is the value of the metric
+            value (str): Value is the value to be used in the operation with the metric's current value. If no operation is set, value is the value of the metric
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types

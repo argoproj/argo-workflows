@@ -3437,7 +3437,8 @@ type MetricLabel struct {
 
 // Gauge is a Gauge prometheus metric
 type Gauge struct {
-	// Value is the value of the metric
+	// Value is the value to be used in the operation with the metric's current value. If no operation is set,
+	// value is the value of the metric
 	Value string `json:"value" protobuf:"bytes,1,opt,name=value"`
 	// Realtime emits this metric in real time if applicable
 	Realtime *bool `json:"realtime" protobuf:"varint,2,opt,name=realtime"`
