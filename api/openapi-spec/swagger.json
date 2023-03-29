@@ -8711,8 +8711,7 @@
       "type": "object",
       "required": [
         "value",
-        "realtime",
-        "operation"
+        "realtime"
       ],
       "properties": {
         "operation": {

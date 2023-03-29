@@ -637,6 +637,7 @@ message Gauge {
   optional bool realtime = 2;
 
   // Operation defines the operation to apply with value and the metrics' current value
+  // +optional
   optional string operation = 3;
 }
 

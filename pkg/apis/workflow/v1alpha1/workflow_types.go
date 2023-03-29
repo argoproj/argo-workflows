@@ -3442,7 +3442,8 @@ type Gauge struct {
 	// Realtime emits this metric in real time if applicable
 	Realtime *bool `json:"realtime" protobuf:"varint,2,opt,name=realtime"`
 	// Operation defines the operation to apply with value and the metrics' current value
-	Operation GaugeOperation `json:"operation" protobuf:"bytes,3,opt,name=operation"`
+	// +optional
+	Operation GaugeOperation `json:"operation,omitempty" protobuf:"bytes,3,opt,name=operation"`
 }
 
 // A GaugeOperation is the set of operations that can be used in a gauge metric.

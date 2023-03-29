@@ -4794,8 +4794,7 @@
       },
       "required": [
         "value",
-        "realtime",
-        "operation"
+        "realtime"
       ],
       "type": "object"
     },

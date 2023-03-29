@@ -2692,13 +2692,12 @@ func schema_pkg_apis_workflow_v1alpha1_Gauge(ref common.ReferenceCallback) commo
 					"operation": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Operation defines the operation to apply with value and the metrics' current value",
-							Default:     "",
 							Type:        []string{"string"},
 							Format:      "",
 						},
 					},
 				},
-				Required: []string{"value", "realtime", "operation"},
+				Required: []string{"value", "realtime"},
 			},
 		},
 	}

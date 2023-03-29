@@ -1619,7 +1619,6 @@ spec:
                                 value:
                                   type: string
                               required:
-                              - operation
                               - realtime
                               - value
                               type: object
@@ -6839,7 +6838,6 @@ spec:
                                     value:
                                       type: string
                                   required:
-                                  - operation
                                   - realtime
                                   - value
                                   type: object
@@ -14931,7 +14929,6 @@ spec:
                                       value:
                                         type: string
                                     required:
-                                    - operation
                                     - realtime
                                     - value
                                     type: object
