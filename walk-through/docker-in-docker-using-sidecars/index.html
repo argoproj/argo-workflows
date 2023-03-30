@@ -3783,6 +3783,8 @@
 
 
 <h1 id="docker-in-docker-using-sidecars">Docker-in-Docker Using Sidecars<a class="headerlink" href="#docker-in-docker-using-sidecars" title="Permanent link">&para;</a></h1>
+<p>Note: It is increasingly unlikely that the below example will work for you on your version of Kubernetes. <a href="https://kubernetes.io/blog/2022/02/17/dockershim-faq/">Since Kubernetes 1.24, the dockershim has been unavailable as part of Kubernetes</a>, rendering Docker-in-Docker unworkable. It is recommended to seek alternative methods of building containers, such as <a href="https://github.com/GoogleContainerTools/kaniko">Kaniko</a> or <a href="https://github.com/moby/buildkit">Buildkit</a>. A <a href="https://raw.githubusercontent.com/argoproj/argo-workflows/master/examples/buildkit-template.yaml">Buildkit Workflow example</a> is available in the examples directory of the Argo Workflows repository.</p>
+<hr />
 <p>An application of sidecars is to implement Docker-in-Docker (DIND). DIND is useful when you want to run Docker commands from inside a container. For example, you may want to build and push a container image from inside your build container. In the following example, we use the <code>docker:dind</code> image to run a Docker daemon in a sidecar and give the main container access to the daemon.</p>
 <div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
 <span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Workflow</span>
