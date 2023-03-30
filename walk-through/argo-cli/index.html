@@ -3794,7 +3794,7 @@ argo<span class="w"> </span>delete<span class="w"> </span>hello-world-xxx<span c
 <div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>create<span class="w"> </span>-f<span class="w"> </span>hello-world.yaml
 kubectl<span class="w"> </span>get<span class="w"> </span>wf
 kubectl<span class="w"> </span>get<span class="w"> </span>wf<span class="w"> </span>hello-world-xxx
-kubectl<span class="w"> </span>get<span class="w"> </span>po<span class="w"> </span>--selector<span class="o">=</span>workflows.argoproj.io/workflow<span class="o">=</span>hello-world-xxx<span class="w"> </span>--show-all<span class="w">  </span><span class="c1"># similar to argo</span>
+kubectl<span class="w"> </span>get<span class="w"> </span>po<span class="w"> </span>--selector<span class="o">=</span>workflows.argoproj.io/workflow<span class="o">=</span>hello-world-xxx
 kubectl<span class="w"> </span>logs<span class="w"> </span>hello-world-xxx-yyy<span class="w"> </span>-c<span class="w"> </span>main
 kubectl<span class="w"> </span>delete<span class="w"> </span>wf<span class="w"> </span>hello-world-xxx
 </code></pre></div>
