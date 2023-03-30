@@ -3280,6 +3280,10 @@ func resolveTemplateReference(callerScope ResourceScope, resourceName string, ca
 		return fmt.Sprintf("%s/%s/%s", referenceScope, tmplRef.Name, tmplRef.Template), true
 	} else if callerScope != ResourceScopeLocal {
 		// Either a WorkflowTemplate or a ClusterWorkflowTemplate is calling a template inside itself. Template storage is needed
+		if caller.GetTemplate() != nil {
+			// If we have an inlined template here, use the inlined name
+			return fmt.Sprintf("%s/%s/inline/%s", callerScope, resourceName, caller.GetName()), true
+		}
 		return fmt.Sprintf("%s/%s/%s", callerScope, resourceName, caller.GetTemplateName()), true
 	} else {
 		// A Workflow is calling a template inside itself. Template storage is not needed
