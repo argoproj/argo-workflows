@@ -246,13 +246,15 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 		}
 		woc.updated = wfUpdate
 		if !acquired {
-			woc.log.Warn("Workflow processing has been postponed due to concurrency limit")
-			phase := woc.wf.Status.Phase
-			if phase == wfv1.WorkflowUnknown {
-				phase = wfv1.WorkflowPending
+			if !woc.releaseLocksForPendingShuttingdownWfs(ctx) {
+				woc.log.Warn("Workflow processing has been postponed due to concurrency limit")
+				phase := woc.wf.Status.Phase
+				if phase == wfv1.WorkflowUnknown {
+					phase = wfv1.WorkflowPending
+				}
+				woc.markWorkflowPhase(ctx, phase, msg)
+				return
 			}
-			woc.markWorkflowPhase(ctx, phase, msg)
-			return
 		}
 	}
 
@@ -488,6 +490,17 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 	if err := woc.deletePVCs(ctx); err != nil {
 		woc.log.WithError(err).Warn("failed to delete PVCs")
 	}
+}
+
+func (woc *wfOperationCtx) releaseLocksForPendingShuttingdownWfs(ctx context.Context) bool {
+	if woc.GetShutdownStrategy().Enabled() && woc.wf.Status.Phase == wfv1.WorkflowPending && woc.GetShutdownStrategy() == wfv1.ShutdownStrategyTerminate {
+		if woc.controller.syncManager.ReleaseAll(woc.execWf) {
+			woc.log.WithFields(log.Fields{"key": woc.execWf.Name}).Info("Released all locks since this pending workflow is being shutdown")
+			woc.markWorkflowSuccess(ctx)
+			return true
+		}
+	}
+	return false
 }
 
 // set Labels and Annotations for the Workflow
@@ -1909,8 +1922,15 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 			return retryParentNode, nil
 		}
 		retryParentNode = processedRetryParentNode
+		lastChildNode := getChildNodeIndex(retryParentNode, woc.wf.Status.Nodes, -1)
 		// The retry node might have completed by now.
 		if retryParentNode.Fulfilled() {
+			// If retry node has completed, set the output of the last child node to its output.
+			// Runtime parameters (e.g., `status`, `resourceDuration`) in the output will be used to emit metrics.
+			if lastChildNode != nil {
+				retryParentNode.Outputs = lastChildNode.Outputs.DeepCopy()
+				woc.wf.Status.Nodes[node.ID] = *retryParentNode
+			}
 			if processedTmpl.Metrics != nil {
 				// In this check, a completed node may or may not have existed prior to this execution. If it did exist, ensure that it wasn't
 				// completed before this execution. If it did not exist prior, then we can infer that it was completed during this execution.
@@ -1924,14 +1944,12 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 			if processedTmpl.Synchronization != nil {
 				woc.controller.syncManager.Release(woc.wf, node.ID, processedTmpl.Synchronization)
 			}
-			lastChildNode := getChildNodeIndex(retryParentNode, woc.wf.Status.Nodes, -1)
-			if lastChildNode != nil {
-				retryParentNode.Outputs = lastChildNode.Outputs.DeepCopy()
-				woc.wf.Status.Nodes[node.ID] = *retryParentNode
-			}
 			return retryParentNode, nil
+		} else if lastChildNode != nil && lastChildNode.Fulfilled() && processedTmpl.Metrics != nil {
+			// If retry node has not completed and last child node has completed, emit metrics for the last child node.
+			localScope, realTimeScope := woc.prepareMetricScope(lastChildNode)
+			woc.computeMetrics(processedTmpl.Metrics.Prometheus, localScope, realTimeScope, false)
 		}
-		lastChildNode := getChildNodeIndex(retryParentNode, woc.wf.Status.Nodes, -1)
 		if lastChildNode != nil && !lastChildNode.Fulfilled() {
 			// Last child node is still running.
 			nodeName = lastChildNode.Name
