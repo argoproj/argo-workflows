@@ -28,7 +28,7 @@ func isTransientS3Err(err error) bool {
 	}
 	for _, transientErrCode := range s3TransientErrorCodes {
 		if argos3.IsS3ErrCode(err, transientErrCode) {
-			log.Infof("Transient S3 error: %v", err)
+			log.Errorf("Transient S3 error: %v", err)
 			return true
 		}
 	}
