@@ -10,6 +10,7 @@ import {Loading} from '../../../shared/components/loading';
 import {PaginationPanel} from '../../../shared/components/pagination-panel';
 import {PhaseIcon} from '../../../shared/components/phase-icon';
 import {Timestamp} from '../../../shared/components/timestamp';
+import {WorkflowsRowName} from '../../../shared/components/workflows-row-name/workflows-row-name';
 import {ZeroState} from '../../../shared/components/zero-state';
 import {formatDuration, wfDuration} from '../../../shared/duration';
 import {Pagination, parseLimit} from '../../../shared/pagination';
@@ -275,7 +276,9 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
                             <div className='columns small-1'>
                                 <PhaseIcon value={w.status.phase} />
                             </div>
-                            <div className='columns small-3'>{w.metadata.name}</div>
+                            <div className='columns small-3'>
+                                <WorkflowsRowName metadata={w.metadata} />
+                            </div>
                             <div className='columns small-2'>{w.metadata.namespace}</div>
                             <div className='columns small-2'>
                                 <Timestamp date={w.status.startedAt} />
