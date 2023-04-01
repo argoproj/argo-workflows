@@ -16,13 +16,15 @@ The pattern involves two steps - the first step is a short-running step that tri
 When implemented as a `WorkflowTemplate` it can look something like this:
 
 ```yaml
+# async-pattern.yaml
 apiVersion: argoproj.io/v1alpha1
 kind: WorkflowTemplate
 metadata:
   name: external-job-template
 spec:
+  entrypoint: main
   templates:
-  - name: run-external-job
+  - name: main
     inputs:
       parameters:
         - name: "job-cmd"
@@ -31,7 +33,7 @@ spec:
           template: trigger-job
           arguments:
             parameters:
-              - name: "job-cmd"
+              - name: "cmd"
                 value: "{{inputs.parameters.job-cmd}}"
       - - name: wait-completion
           template: wait-completion
@@ -43,8 +45,8 @@ spec:
   - name: trigger-job
     inputs:
       parameters:
-        - name: "job-cmd"
-          value: "{{inputs.parameters.job-cmd}}"
+        - name: "cmd"
+    container:
       image: appropriate/curl:latest
       command: ["/bin/sh", "-c"]
       args: ["{{inputs.parameters.cmd}}"]
@@ -62,31 +64,83 @@ On job completion the external job would need to call either resume if successfu
 
 You may need  an [access token](access-token.md).
 
+#### Prep
 ```bash
-curl --request PUT \
-  --url https://localhost:2746/api/v1/workflows/<NAMESPACE>/<WORKFLOWNAME>/resume
-  --header 'content-type: application/json' \
-  --header "Authorization: Bearer $ARGO_TOKEN" \
-  --data '{
-      "namespace": "<NAMESPACE>",
-      "name": "<WORKFLOWNAME>",
-      "nodeFieldSelector": "inputs.parameters.uuid.value=<UUID>"
-    }'  
+# add template to cluster
+kubectl apply -f async-pattern.yaml
+
+export ARGO=https://localhost:2746
+export NAMESPACE=argo
+export WFNAME=async-pattern
+export WFTNAME=external-job-template
+export ARGO_TOKEN=<INSERT>
+# some value that gets generated beforehand and used as a selector later
+export UUID=cb2f8900-4e01-424f-8a26-1975068b97ed 
 ```
 
-or stop if unsuccessful:
+#### Using Argo CLI
+```
+# submit workflow using argo CLI
+argo submit -n $NAMESPACE --name $WFNAME \
+  --from workflowtemplate/external-job-template -p job-cmd="echo $UUID"
 
-```bash
+# resume
+argo resume --node-field-selector "inputs.parameters.uuid.value=$UUID" $WFNAME
+
+# stop
+argo stop --node-field-selector  "inputs.parameters.uuid.value=$UUID" $WFNAME
+```
+
+#### Using cURL:
+```
+# alternatively submit via curl
+cat > data.json <<EOF
+{
+    "resourceKind": "WorkflowTemplate",
+    "resourceName": "$WFTNAME",
+    "submitOptions": {
+        "name": "$WFNAME",
+        "labels": "workflows.argoproj.io/workflow-template=$WFTNAME",
+        "parameters": [
+            "job-cmd=echo $UUID"
+        ]
+    }
+}
+EOF
+curl --request POST \
+  --url $ARGO/api/v1/workflows/$NAMESPACE/submit \
+  --header 'Content-Type: application/json' \
+  --header "Authorization: Bearer $ARGO_TOKEN" \
+  --data @./data.json
+    
+# resume flow
+cat > resume.json <<EOF
+{
+  "namespace": "$NAMESPACE",
+  "name": "$WFNAME",
+  "nodeFieldSelector": "inputs.parameters.uuid.value=$UUID"
+}
+EOF
 curl --request PUT \
-  --url https://localhost:2746/api/v1/workflows/<NAMESPACE>/<WORKFLOWNAME>/stop
+  --url $ARGO/api/v1/workflows/$NAMESPACE/$WFNAME/resume \
+  --header 'Content-Type: application/json' \
+  --header "Authorization: Bearer $ARGO_TOKEN" \
+  --data @./resume.json
+
+# or stop if unsuccessful:
+cat > stop.json <<EOF
+{
+  "namespace": "$NAMESPACE",
+  "name": "$WFNAME",
+  "nodeFieldSelector": "inputs.parameters.uuid.value=$UUID",
+  "message": "<FAILURE-MESSAGE>"
+}
+EOF
+curl --request PUT \
+  --url $ARGO/api/v1/workflows/$NAMESPACE/$WFNAME/stop \
   --header 'content-type: application/json' \
   --header "Authorization: Bearer $ARGO_TOKEN" \
-  --data '{
-      "namespace": "<NAMESPACE>",
-      "name": "<WORKFLOWNAME>",
-      "nodeFieldSelector": "inputs.parameters.uuid.value=<UUID>",
-      "message": "<FAILURE-MESSAGE>"
-    }'  
+  --data @./stop.json 
 ```
 
 ## Retrying failed jobs
@@ -96,5 +150,5 @@ Using `argo retry` on failed jobs that follow this pattern will cause Argo to re
 Instead you need to use the `--restart-successful` option, e.g. if using the template from above:
 
 ```bash
-argo retry <WORKFLOWNAME> --restart-successful --node-field-selector templateRef.template=run-external-job,phase=Failed
+argo retry $WFNAME --restart-successful --node-field-selector templateRef.template=run-external-job,phase=Failed
 ```
