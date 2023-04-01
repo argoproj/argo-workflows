@@ -31,7 +31,7 @@
         "prop-types": "^15.8.1",
         "react": "^16.14.0",
         "react-chartjs-2": "^2.11.2",
-        "react-datepicker": "^4.10.0",
+        "react-datepicker": "^4.11.0",
         "react-dom": "^16.14.0",
         "react-moment": "^1.1.3",
         "react-monaco-editor": "^0.50.1",
