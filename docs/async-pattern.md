@@ -58,7 +58,7 @@ spec:
     suspend: {}
 ```
 
-In this case the ```job-cmd``` parameter can be a command that makes an HTTP call via curl to an endpoint that returns a job UUID. More sophisticated submission and parsing of submission output could be done with something like a Python script step.
+In this case the `job-cmd` parameter can be a command that makes an HTTP call via curl to an endpoint that returns a job UUID. More sophisticated submission and parsing of submission output could be done with something like a Python script step.
 
 On job completion the external job would need to call either resume if successful:
 
@@ -79,7 +79,7 @@ export UUID=cb2f8900-4e01-424f-8a26-1975068b97ed
 ```
 
 #### Using Argo CLI
-```
+```bash
 # submit workflow using argo CLI
 argo submit -n $NAMESPACE --name $WFNAME \
   --from workflowtemplate/external-job-template -p job-cmd="echo $UUID"
@@ -92,7 +92,7 @@ argo stop --node-field-selector  "inputs.parameters.uuid.value=$UUID" $WFNAME
 ```
 
 #### Using cURL:
-```
+```bash
 # alternatively submit via curl
 cat > data.json <<EOF
 {
