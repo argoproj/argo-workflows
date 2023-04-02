@@ -64,7 +64,7 @@ On job completion the external job would need to call either resume if successfu
 
 You may need  an [access token](access-token.md).
 
-#### Prep
+### Prep
 ```bash
 # add template to cluster
 kubectl apply -f async-pattern.yaml
@@ -78,7 +78,7 @@ export ARGO_TOKEN=<INSERT>
 export UUID=cb2f8900-4e01-424f-8a26-1975068b97ed 
 ```
 
-#### Using Argo CLI
+### Using Argo CLI
 ```bash
 # submit workflow using argo CLI
 argo submit -n $NAMESPACE --name $WFNAME \
@@ -91,7 +91,7 @@ argo resume --node-field-selector "inputs.parameters.uuid.value=$UUID" $WFNAME
 argo stop --node-field-selector  "inputs.parameters.uuid.value=$UUID" $WFNAME
 ```
 
-#### Using cURL:
+### Using cURL:
 ```bash
 # alternatively submit via curl
 cat > data.json <<EOF
