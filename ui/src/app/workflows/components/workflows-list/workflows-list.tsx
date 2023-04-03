@@ -122,7 +122,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
             minStartedAt: this.lastMonth(),
             maxStartedAt: this.nextDay(),
             selectedWorkflows: new Map<string, models.Workflow>(),
-            batchActionDisabled: {...allBatchActionsEnabled}, 
+            batchActionDisabled: {...allBatchActionsEnabled},
             links: [],
             columns: []
         };
@@ -131,7 +131,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
     public componentDidMount(): void {
         services.info.getInfo().then(info => {
             const links = (info.links || []).filter(link => link.scope === 'workflow-list');
-            this.setState({links, columns: info.columns });
+            this.setState({links, columns: info.columns});
         });
         this.setState({selectedWorkflows: new Map<string, models.Workflow>()}, () => {
             this.fetchWorkflows(
@@ -171,11 +171,11 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                                         iconClassName: 'fa fa-plus',
                                         action: () => ctx.navigation.goto('.', {sidePanel: 'submit-new-workflow'})
                                     },
-                                    ...(this.state.links.map(link => ({
+                                    ...this.state.links.map(link => ({
                                         title: link.name,
                                         iconClassName: 'fa fa-external-link',
-                                        action: () => window.location.href = link.url
-                                    })))
+                                        action: () => (window.location.href = link.url)
+                                    }))
                                 ]
                             }
                         }}>
@@ -382,7 +382,9 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                                     <div className='columns small-1'>DETAILS</div>
                                     {(this.state.columns || []).map(col => {
                                         return (
-                                            <div className='columns small-1' key={col.key}>{col.name}</div>
+                                            <div className='columns small-1' key={col.key}>
+                                                {col.name}
+                                            </div>
                                         );
                                     })}
                                 </div>

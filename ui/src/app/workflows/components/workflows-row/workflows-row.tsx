@@ -1,7 +1,7 @@
 import {Ticker} from 'argo-ui/src/index';
 import * as React from 'react';
-import * as models from '../../../../models';
 import {Link} from 'react-router-dom';
+import * as models from '../../../../models';
 import {Workflow} from '../../../../models';
 import {ANNOTATION_DESCRIPTION, ANNOTATION_TITLE} from '../../../shared/annotations';
 import {uiUrl} from '../../../shared/base';
