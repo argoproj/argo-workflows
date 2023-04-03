@@ -3423,6 +3423,20 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#metrics-endpoint" class="md-nav__link">
+    Metrics endpoint
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#metrics-configuration" class="md-nav__link">
+    Metrics configuration
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -4168,6 +4182,20 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#metrics-endpoint" class="md-nav__link">
+    Metrics endpoint
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#metrics-configuration" class="md-nav__link">
+    Metrics configuration
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -4405,6 +4433,62 @@ and ending when it completes. Real-time metrics are only available on Gauge type
 <div class="highlight"><pre><span></span><code><span class="w">  </span><span class="nt">gauge</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">realtime</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
 <span class="w">    </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{duration}}&quot;</span>
+</code></pre></div>
+<h2 id="metrics-endpoint">Metrics endpoint<a class="headerlink" href="#metrics-endpoint" title="Permanent link">&para;</a></h2>
+<p>By default, metrics are emitted by the workflow-controller on port 9090 on the <code>/metrics</code> path. By port-forwarding to the pod you can view the metrics in your browser at <code>http://localhost:9090/metrics</code>:</p>
+<p><code>kubectl -n argo port-forward deploy/workflow-controller 9090:9090</code></p>
+<p>A metrics service is not installed as part of <a href="../quick-start/">the default installation</a> so you will need to add one if you wish to use a Prometheus Service Monitor:</p>
+<div class="highlight"><pre><span></span><code><span class="l l-Scalar l-Scalar-Plain">cat &lt;&lt;EOF | kubectl apply -f -</span>
+<span class="l l-Scalar l-Scalar-Plain">apiVersion</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Service</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">labels</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">app</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">workflow-controller</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">workflow-controller-metrics</span>
+<span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">argo</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">ports</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">metrics</span>
+<span class="w">    </span><span class="nt">port</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">9090</span>
+<span class="w">    </span><span class="nt">protocol</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">TCP</span>
+<span class="w">    </span><span class="nt">targetPort</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">9090</span>
+<span class="w">  </span><span class="nt">selector</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">app</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">workflow-controller</span>
+<span class="nn">---</span>
+<span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">monitoring.coreos.com/v1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ServiceMonitor</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">argo-workflows</span>
+<span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">argo</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">endpoints</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">port</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">metrics</span>
+<span class="w">  </span><span class="nt">selector</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">matchLabels</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">app.kubernetes.io/instance</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">argo-workflows</span>
+<span class="l l-Scalar l-Scalar-Plain">EOF</span>
+</code></pre></div>
+<p>If you have more than one controller pod, using one as a <a href="../high-availability/">hot-standby</a>, you should use <a href="https://kubernetes.io/docs/concepts/services-networking/service/#headless-services">a headless service</a> to ensure that each pod is being scraped so that no metrics are missed.</p>
+<h2 id="metrics-configuration">Metrics configuration<a class="headerlink" href="#metrics-configuration" title="Permanent link">&para;</a></h2>
+<p>You can adjust various elements of the metrics configuration by changing values in the <a href="../workflow-controller-configmap/">Workflow Controller Config Map</a>.</p>
+<div class="highlight"><pre><span></span><code><span class="nt">metricsConfig</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
+<span class="w">  </span><span class="no"># Enabled controls metric emission. Default is true, set &quot;enabled: false&quot; to turn off</span>
+<span class="w">  </span><span class="no">enabled: true</span>
+
+<span class="w">  </span><span class="no"># Path is the path where metrics are emitted. Must start with a &quot;/&quot;. Default is &quot;/metrics&quot;</span>
+<span class="w">  </span><span class="no">path: /metrics</span>
+
+<span class="w">  </span><span class="no"># Port is the port where metrics are emitted. Default is &quot;9090&quot;</span>
+<span class="w">  </span><span class="no">port: 8080</span>
+
+<span class="w">  </span><span class="no"># MetricsTTL sets how often custom metrics are cleared from memory. Default is &quot;0&quot;, metrics are never cleared</span>
+<span class="w">  </span><span class="no">metricsTTL: &quot;10m&quot;</span>
+
+<span class="w">  </span><span class="no"># IgnoreErrors is a flag that instructs prometheus to ignore metric emission errors. Default is &quot;false&quot;</span>
+<span class="w">  </span><span class="no">ignoreErrors: false</span>
+
+<span class="w">  </span><span class="no"># Use a self-signed cert for TLS, default false</span>
+<span class="w">  </span><span class="no">secure: false</span>
 </code></pre></div>
 
               
