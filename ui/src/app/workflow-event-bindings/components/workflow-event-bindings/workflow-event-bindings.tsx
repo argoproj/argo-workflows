@@ -3,7 +3,7 @@ import * as React from 'react';
 import {useContext, useEffect, useState} from 'react';
 import {RouteComponentProps} from 'react-router-dom';
 import {WorkflowEventBinding} from '../../../../models';
-import {uiUrl} from '../../../shared/base';
+import {absoluteUrl, uiUrl} from '../../../shared/base';
 import {ErrorNotice} from '../../../shared/components/error-notice';
 import {InfoIcon} from '../../../shared/components/fa-icons';
 import {GraphPanel} from '../../../shared/components/graph/graph-panel';
@@ -108,10 +108,7 @@ export const WorkflowEventBindings = ({match, location, history}: RouteComponent
                         Once you've created a workflow event binding, you can test it from the CLI using <code>curl</code>, for example:
                     </p>
                     <p>
-                        <code>
-                            curl '{document.location.protocol}//{document.location.host}/api/v1/events/{namespace}/-' -H 'Content-Type: application/json' -H 'Authorization:
-                            $ARGO_TOKEN' -d '&#123;&#125;'
-                        </code>
+                        <code>curl '{absoluteUrl('api/v1/events/{namespace}/-')}' -H 'Content-Type: application/json' -H 'Authorization: $ARGO_TOKEN' -d '&#123;&#125;'</code>
                     </p>
                     <p>
                         You'll probably find it easiest to experiment and test using the <a href={uiUrl('apidocs')}>graphical interface to the API </a> - look for "EventService.
