@@ -4,8 +4,6 @@ apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   generateName: workflow-of-workflows-
-  labels:
-    workflows.argoproj.io/test: "true"
 spec:
   entrypoint: main
   templates:
