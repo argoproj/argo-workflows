@@ -66,6 +66,7 @@ J.P.
 Jemison
 JetBrains
 KNative
+Kaniko
 Katacoda
 Kerberos
 Killercoda
@@ -134,6 +135,7 @@ cron
 daemoned
 dev-container
 dinever
+dockershim
 dropdown
 e.g.
 e2e
