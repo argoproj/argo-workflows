@@ -543,11 +543,9 @@ func (woc *wfOperationCtx) processArtifactGCCompletion(ctx context.Context) erro
 		removeFinalizer = anyPodSuccess && woc.allArtifactsDeleted()
 	}
 	if removeFinalizer {
-		if anyPodSuccess && woc.allArtifactsDeleted() {
-			woc.log.Info("no remaining artifacts to GC, removing artifact GC finalizer (forceFinalizerRemoval=%v)", woc.execWf.Spec.ArtifactGC.ForceFinalizerRemoval)
-			woc.wf.Finalizers = slice.RemoveString(woc.wf.Finalizers, common.FinalizerArtifactGC)
-			woc.updated = true
-		}
+		woc.log.Info("no remaining artifacts to GC, removing artifact GC finalizer (forceFinalizerRemoval=%v)", woc.execWf.Spec.ArtifactGC.ForceFinalizerRemoval)
+		woc.wf.Finalizers = slice.RemoveString(woc.wf.Finalizers, common.FinalizerArtifactGC)
+		woc.updated = true
 	}
 	return nil
 }
