@@ -154,7 +154,7 @@ definitions:
         type: string
     type: object
   ArtifactGC:
-    description: ArtifactGC describes how to delete artifacts from completed Workflows
+    description: and also used for individual Artifacts to override that as needed
     properties:
       podMetadata:
         $ref: '#/definitions/Metadata'
@@ -164,6 +164,8 @@ definitions:
         type: string
       strategy:
         $ref: '#/definitions/ArtifactGCStrategy'
+    title: ArtifactGC describes how to delete artifacts from completed Workflows -
+      this spec is embedded into the WorkflowLevelArtifactGC,
     type: object
   ArtifactGCStrategy:
     title: ArtifactGCStrategy is the strategy when to delete artifacts for GC.

@@ -682,7 +682,7 @@ func (woc *wfOperationCtx) getArtifactGCPodInfo(artifact *wfv1.Artifact) podInfo
 	//  start with Workflow.ArtifactGC and override with Artifact.ArtifactGC
 	podAccessInfo := podInfo{}
 	if woc.execWf.Spec.ArtifactGC != nil {
-		woc.updateArtifactGCPodInfo(woc.execWf.Spec.ArtifactGC, &podAccessInfo)
+		woc.updateArtifactGCPodInfo(&woc.execWf.Spec.ArtifactGC.ArtifactGC, &podAccessInfo)
 	}
 	if artifact.ArtifactGC != nil {
 		woc.updateArtifactGCPodInfo(artifact.ArtifactGC, &podAccessInfo)
