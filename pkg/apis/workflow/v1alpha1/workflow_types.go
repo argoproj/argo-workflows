@@ -1360,7 +1360,7 @@ func (gcStatus *ArtGCStatus) IsArtifactGCPodRecouped(podName string) bool {
 }
 func (gcStatus *ArtGCStatus) AllArtifactGCPodsRecouped() bool {
 	if gcStatus.PodsRecouped == nil {
-		return true
+		return false
 	}
 	for _, recouped := range gcStatus.PodsRecouped {
 		if !recouped {

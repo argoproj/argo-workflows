@@ -536,7 +536,7 @@ func (woc *wfOperationCtx) processArtifactGCCompletion(ctx context.Context) erro
 	}
 
 	removeFinalizer := false
-	if woc.execWf.Spec.ArtifactGC.ForceFinalizerRemoval {
+	if woc.execWf.Spec.ArtifactGC != nil && woc.execWf.Spec.ArtifactGC.ForceFinalizerRemoval {
 		removeFinalizer = woc.wf.Status.ArtifactGCStatus.AllArtifactGCPodsRecouped()
 	} else {
 		// check if all artifacts have been deleted and if so remove Finalizer
