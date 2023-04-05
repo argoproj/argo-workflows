@@ -5983,7 +5983,9 @@ status:
     restartCount: 0
     started: false
     state:
-      waiting: {}
+      waiting:
+        reason: ContainerCreating
+        message: 'Container is creating'
   - containerID: docker://d31f0d56f29b6962ef1493b2df6b7cdb54d48d8b8fa95d7e9c98ddc56f857b35
     image: argoproj/argoexec:v2.9.5
     imageID: docker-pullable://argoproj/argoexec@sha256:989114232892e051c25be323af626149452578d3ebbdc3e9ec7205bba3918d48
@@ -6010,7 +6012,7 @@ func TestPodFailureWithContainerWaitingState(t *testing.T) {
 	assert.NotNil(t, pod)
 	nodeStatus, msg := newWoc().inferFailedReason(&pod, nil)
 	assert.Equal(t, wfv1.NodeError, nodeStatus)
-	assert.Contains(t, msg, "Pod failed before")
+	assert.Equal(t, msg, "Pod failed before main container starts due to ContainerCreating: Container is creating")
 }
 
 var podWithWaitContainerOOM = `
