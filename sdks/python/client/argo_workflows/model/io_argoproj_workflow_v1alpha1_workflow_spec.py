@@ -33,7 +33,6 @@ def lazy_import():
     from argo_workflows.model.affinity import Affinity
     from argo_workflows.model.host_alias import HostAlias
     from argo_workflows.model.io_argoproj_workflow_v1alpha1_arguments import IoArgoprojWorkflowV1alpha1Arguments
-    from argo_workflows.model.io_argoproj_workflow_v1alpha1_artifact_gc import IoArgoprojWorkflowV1alpha1ArtifactGC
     from argo_workflows.model.io_argoproj_workflow_v1alpha1_artifact_repository_ref import IoArgoprojWorkflowV1alpha1ArtifactRepositoryRef
     from argo_workflows.model.io_argoproj_workflow_v1alpha1_executor_config import IoArgoprojWorkflowV1alpha1ExecutorConfig
     from argo_workflows.model.io_argoproj_workflow_v1alpha1_lifecycle_hook import IoArgoprojWorkflowV1alpha1LifecycleHook
@@ -45,6 +44,7 @@ def lazy_import():
     from argo_workflows.model.io_argoproj_workflow_v1alpha1_template import IoArgoprojWorkflowV1alpha1Template
     from argo_workflows.model.io_argoproj_workflow_v1alpha1_ttl_strategy import IoArgoprojWorkflowV1alpha1TTLStrategy
     from argo_workflows.model.io_argoproj_workflow_v1alpha1_volume_claim_gc import IoArgoprojWorkflowV1alpha1VolumeClaimGC
+    from argo_workflows.model.io_argoproj_workflow_v1alpha1_workflow_level_artifact_gc import IoArgoprojWorkflowV1alpha1WorkflowLevelArtifactGC
     from argo_workflows.model.io_argoproj_workflow_v1alpha1_workflow_metadata import IoArgoprojWorkflowV1alpha1WorkflowMetadata
     from argo_workflows.model.io_argoproj_workflow_v1alpha1_workflow_template_ref import IoArgoprojWorkflowV1alpha1WorkflowTemplateRef
     from argo_workflows.model.io_k8s_api_policy_v1_pod_disruption_budget_spec import IoK8sApiPolicyV1PodDisruptionBudgetSpec
@@ -57,7 +57,6 @@ def lazy_import():
     globals()['Affinity'] = Affinity
     globals()['HostAlias'] = HostAlias
     globals()['IoArgoprojWorkflowV1alpha1Arguments'] = IoArgoprojWorkflowV1alpha1Arguments
-    globals()['IoArgoprojWorkflowV1alpha1ArtifactGC'] = IoArgoprojWorkflowV1alpha1ArtifactGC
     globals()['IoArgoprojWorkflowV1alpha1ArtifactRepositoryRef'] = IoArgoprojWorkflowV1alpha1ArtifactRepositoryRef
     globals()['IoArgoprojWorkflowV1alpha1ExecutorConfig'] = IoArgoprojWorkflowV1alpha1ExecutorConfig
     globals()['IoArgoprojWorkflowV1alpha1LifecycleHook'] = IoArgoprojWorkflowV1alpha1LifecycleHook
@@ -69,6 +68,7 @@ def lazy_import():
     globals()['IoArgoprojWorkflowV1alpha1TTLStrategy'] = IoArgoprojWorkflowV1alpha1TTLStrategy
     globals()['IoArgoprojWorkflowV1alpha1Template'] = IoArgoprojWorkflowV1alpha1Template
     globals()['IoArgoprojWorkflowV1alpha1VolumeClaimGC'] = IoArgoprojWorkflowV1alpha1VolumeClaimGC
+    globals()['IoArgoprojWorkflowV1alpha1WorkflowLevelArtifactGC'] = IoArgoprojWorkflowV1alpha1WorkflowLevelArtifactGC
     globals()['IoArgoprojWorkflowV1alpha1WorkflowMetadata'] = IoArgoprojWorkflowV1alpha1WorkflowMetadata
     globals()['IoArgoprojWorkflowV1alpha1WorkflowTemplateRef'] = IoArgoprojWorkflowV1alpha1WorkflowTemplateRef
     globals()['IoK8sApiPolicyV1PodDisruptionBudgetSpec'] = IoK8sApiPolicyV1PodDisruptionBudgetSpec
@@ -137,7 +137,7 @@ class IoArgoprojWorkflowV1alpha1WorkflowSpec(ModelNormal):
             'affinity': (Affinity,),  # noqa: E501
             'archive_logs': (bool,),  # noqa: E501
             'arguments': (IoArgoprojWorkflowV1alpha1Arguments,),  # noqa: E501
-            'artifact_gc': (IoArgoprojWorkflowV1alpha1ArtifactGC,),  # noqa: E501
+            'artifact_gc': (IoArgoprojWorkflowV1alpha1WorkflowLevelArtifactGC,),  # noqa: E501
             'artifact_repository_ref': (IoArgoprojWorkflowV1alpha1ArtifactRepositoryRef,),  # noqa: E501
             'automount_service_account_token': (bool,),  # noqa: E501
             'dns_config': (PodDNSConfig,),  # noqa: E501
@@ -272,7 +272,7 @@ class IoArgoprojWorkflowV1alpha1WorkflowSpec(ModelNormal):
             affinity (Affinity): [optional]  # noqa: E501
             archive_logs (bool): ArchiveLogs indicates if the container logs should be archived. [optional]  # noqa: E501
             arguments (IoArgoprojWorkflowV1alpha1Arguments): [optional]  # noqa: E501
-            artifact_gc (IoArgoprojWorkflowV1alpha1ArtifactGC): [optional]  # noqa: E501
+            artifact_gc (IoArgoprojWorkflowV1alpha1WorkflowLevelArtifactGC): [optional]  # noqa: E501
             artifact_repository_ref (IoArgoprojWorkflowV1alpha1ArtifactRepositoryRef): [optional]  # noqa: E501
             automount_service_account_token (bool): AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods. ServiceAccountName of ExecutorConfig must be specified if this value is false.. [optional]  # noqa: E501
             dns_config (PodDNSConfig): [optional]  # noqa: E501
@@ -395,7 +395,7 @@ class IoArgoprojWorkflowV1alpha1WorkflowSpec(ModelNormal):
             affinity (Affinity): [optional]  # noqa: E501
             archive_logs (bool): ArchiveLogs indicates if the container logs should be archived. [optional]  # noqa: E501
             arguments (IoArgoprojWorkflowV1alpha1Arguments): [optional]  # noqa: E501
-            artifact_gc (IoArgoprojWorkflowV1alpha1ArtifactGC): [optional]  # noqa: E501
+            artifact_gc (IoArgoprojWorkflowV1alpha1WorkflowLevelArtifactGC): [optional]  # noqa: E501
             artifact_repository_ref (IoArgoprojWorkflowV1alpha1ArtifactRepositoryRef): [optional]  # noqa: E501
             automount_service_account_token (bool): AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods. ServiceAccountName of ExecutorConfig must be specified if this value is false.. [optional]  # noqa: E501
             dns_config (PodDNSConfig): [optional]  # noqa: E501

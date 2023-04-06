@@ -582,7 +582,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         ),
                     ],
                 ),
-                artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                artifact_gc=IoArgoprojWorkflowV1alpha1WorkflowLevelArtifactGC(
+                    force_finalizer_removal=True,
                     pod_metadata=IoArgoprojWorkflowV1alpha1Metadata(
                         annotations={
                             "key": "key_example",
@@ -11389,7 +11390,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         ),
                     ],
                 ),
-                artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                artifact_gc=IoArgoprojWorkflowV1alpha1WorkflowLevelArtifactGC(
+                    force_finalizer_removal=True,
                     pod_metadata=IoArgoprojWorkflowV1alpha1Metadata(
                         annotations={
                             "key": "key_example",
@@ -22105,7 +22107,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         ),
                     ],
                 ),
-                artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                artifact_gc=IoArgoprojWorkflowV1alpha1WorkflowLevelArtifactGC(
+                    force_finalizer_removal=True,
                     pod_metadata=IoArgoprojWorkflowV1alpha1Metadata(
                         annotations={
                             "key": "key_example",
