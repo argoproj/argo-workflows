@@ -536,14 +536,15 @@ func (woc *wfOperationCtx) processArtifactGCCompletion(ctx context.Context) erro
 	}
 
 	removeFinalizer := false
-	if woc.execWf.Spec.ArtifactGC != nil && woc.execWf.Spec.ArtifactGC.ForceFinalizerRemoval {
+	forceFinalizerRemoval := woc.execWf.Spec.ArtifactGC != nil && woc.execWf.Spec.ArtifactGC.ForceFinalizerRemoval
+	if forceFinalizerRemoval {
 		removeFinalizer = woc.wf.Status.ArtifactGCStatus.AllArtifactGCPodsRecouped()
 	} else {
 		// check if all artifacts have been deleted and if so remove Finalizer
 		removeFinalizer = anyPodSuccess && woc.allArtifactsDeleted()
 	}
 	if removeFinalizer {
-		woc.log.Infof("no remaining artifacts to GC, removing artifact GC finalizer (forceFinalizerRemoval=%v)", woc.execWf.Spec.ArtifactGC.ForceFinalizerRemoval)
+		woc.log.Infof("no remaining artifacts to GC, removing artifact GC finalizer (forceFinalizerRemoval=%v)", forceFinalizerRemoval)
 		woc.wf.Finalizers = slice.RemoveString(woc.wf.Finalizers, common.FinalizerArtifactGC)
 		woc.updated = true
 	}
