@@ -46,7 +46,7 @@ func getLabelSelector(wfName string, podGC *wfv1.PodGC, labelCompleted bool) met
 	return metav1.LabelSelector{MatchLabels: labels, MatchExpressions: expressions}
 }
 
-func patchSelectedPodsAsCompleted(woc *wfOperationCtx, pods v1.PodInterface, labelSelector string) {
+func patchSelectedPodsAsCompleted(woc *wfOperationCtx, ctx context.Context, pods v1.PodInterface, labelSelector string) {
 	podList, err := pods.List(context.Background(), metav1.ListOptions{LabelSelector: labelSelector})
 
 	markDone := true
@@ -57,7 +57,7 @@ func patchSelectedPodsAsCompleted(woc *wfOperationCtx, pods v1.PodInterface, lab
 		return
 	}
 	for _, nonCompletedPod := range podList.Items {
-		woc.rateLimiter.Wait()
+		woc.rateLimiter.Wait(ctx)
 		_, err := pods.Patch(
 			context.Background(),
 			nonCompletedPod.Name,
@@ -76,6 +76,7 @@ func patchSelectedPodsAsCompleted(woc *wfOperationCtx, pods v1.PodInterface, lab
 }
 
 func (woc *wfOperationCtx) runImmediateCleanup(pod *apiv1.Pod, podGC *wfv1.PodGC, workflowPhase wfv1.WorkflowPhase) error {
+	ctx := context.Background()
 	/// we have finished the cleanup previously
 	if woc.finishedCleanup {
 		return nil
@@ -89,7 +90,7 @@ func (woc *wfOperationCtx) runImmediateCleanup(pod *apiv1.Pod, podGC *wfv1.PodGC
 	if err != nil {
 		return err
 	}
-	woc.rateLimiter.Wait()
+	woc.rateLimiter.Wait(ctx)
 	// check if we need to label the pod as completed first and do so if we must
 	if determinePodCleanupAction(podGCSelector, pod.Labels, wfv1.PodGCOnPodCompletion, workflowPhase, pod.Status.Phase) == labelPodCompleted {
 		_, err := pods.Patch(
@@ -121,10 +122,10 @@ func (woc *wfOperationCtx) runImmediateCleanup(pod *apiv1.Pod, podGC *wfv1.PodGC
 	// optimisation when function is called with a fulfilled workflow
 	// lets patch everything up
 	if woc.wf.Status.Fulfilled() {
-		patchSelectedPodsAsCompleted(woc, pods, selectorString)
+		patchSelectedPodsAsCompleted(woc, ctx, pods, selectorString)
 	}
 
-	woc.rateLimiter.Wait()
+	woc.rateLimiter.Wait(ctx)
 
 	if err = pods.DeleteCollection(context.Background(), metav1.DeleteOptions{}, metav1.ListOptions{LabelSelector: selectorString}); err != nil {
 		log.Errorf("was not able to delete collection to due %s", err)

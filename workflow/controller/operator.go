@@ -62,6 +62,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/workflow/templateresolution"
 	wfutil "github.com/argoproj/argo-workflows/v3/workflow/util"
 	"github.com/argoproj/argo-workflows/v3/workflow/validate"
+	xtime "golang.org/x/time/rate"
 )
 
 // wfOperationCtx is the context for evaluation and operation of a single workflow
@@ -111,7 +112,7 @@ type wfOperationCtx struct {
 
 	taskSet map[string]wfv1.Template
 
-	rateLimiter     *waitutil.RateLimiter
+	rateLimiter     *xtime.Limiter
 	finishedCleanup bool
 }
 
@@ -141,9 +142,22 @@ type failedNodeStatus struct {
 	FinishedAt   metav1.Time `json:"finishedAt"`
 }
 
+// ms indicates the interval in milliseconds before an
+// event is allowed to happen
+func millisecondsToHertz(ms int) float64 {
+	msAsF64 := float64(ms)
+	// enure total function by introducing epsilon to cater for
+	// divide by zero
+	epsilon := 0.0001
+	if ms == 0 {
+		msAsF64 = epsilon
+	}
+	return 1000 / msAsF64
+}
+
 // newWorkflowOperationCtx creates and initializes a new wfOperationCtx object.
 func newWorkflowOperationCtx(wf *wfv1.Workflow, wfc *WorkflowController) *wfOperationCtx {
-	var rateLimiter *waitutil.RateLimiter = nil
+	var rateLimiter *xtime.Limiter = nil
 
 	intervalMsStr, present := os.LookupEnv(common.EnvCleanupRateLimitIntervalMilliSeconds)
 	if present {
@@ -151,9 +165,8 @@ func newWorkflowOperationCtx(wf *wfv1.Workflow, wfc *WorkflowController) *wfOper
 		if err != nil {
 			log.Errorf("was not able to convert %s to int, defaulting to queue based cleanup, err: %s", intervalMsStr, err)
 		} else {
-			// only used for batch cleanup that skips the pod cleanup queues.
-			rl := waitutil.NewRateLimiter(time.Duration(intervalMs) * time.Millisecond)
-			rateLimiter = &rl
+			rl := xtime.NewLimiter(xtime.Limit(millisecondsToHertz(intervalMs)), 0)
+			rateLimiter = rl
 		}
 	}
 
