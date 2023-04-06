@@ -1041,8 +1041,7 @@ type WorkflowLevelArtifactGC struct {
 	ForceFinalizerRemoval bool `json:"forceFinalizerRemoval,omitempty" protobuf:"bytes,2,opt,name=forceFinalizerRemoval"`
 }
 
-// ArtifactGC describes how to delete artifacts from completed Workflows - this spec is embedded into the WorkflowLevelArtifactGC,
-// and also used for individual Artifacts to override that as needed
+// ArtifactGC describes how to delete artifacts from completed Workflows - this is embedded into the WorkflowLevelArtifactGC, and also used for individual Artifacts to override that as needed
 type ArtifactGC struct {
 	// Strategy is the strategy to use.
 	// +kubebuilder:validation:Enum="";OnWorkflowCompletion;OnWorkflowDeletion;Never
