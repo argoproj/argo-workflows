@@ -461,7 +461,7 @@ ifeq ($(shell uname),Darwin)
 	brew tap kitproj/kit --custom-remote https://github.com/kitproj/kit
 	brew install kit
 else
-	curl -q https://raw.githubusercontent.com/kitproj/kit/main/install.sh | sh
+	curl -q https://raw.githubusercontent.com/kitproj/kit/main/install.sh | tag=v0.1.8 sh
 endif
 endif
 
