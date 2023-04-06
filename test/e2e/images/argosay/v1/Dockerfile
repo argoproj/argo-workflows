@@ -1,4 +1,4 @@
-FROM ubuntu:14.04
+FROM ubuntu:trusty-20190515
 
 RUN apt-get update && \
     apt-get install -y apt-utils ca-certificates apt-transport-https cowsay --no-install-recommends && \
