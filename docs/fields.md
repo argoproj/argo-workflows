@@ -3250,7 +3250,7 @@ ArchiveStrategy describes how to archive files/directory when saving artifacts
 
 ## ArtifactGC
 
-ArtifactGC describes how to delete artifacts from completed Workflows - this spec is embedded into the WorkflowLevelArtifactGC, and also used for individual Artifacts to override that as needed
+ArtifactGC describes how to delete artifacts from completed Workflows - this is embedded into the WorkflowLevelArtifactGC, and also used for individual Artifacts to override that as needed
 
 <details>
 <summary>Examples with this field (click to open)</summary>

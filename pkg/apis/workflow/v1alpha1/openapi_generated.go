@@ -479,7 +479,7 @@ func schema_pkg_apis_workflow_v1alpha1_ArtifactGC(ref common.ReferenceCallback) 
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "ArtifactGC describes how to delete artifacts from completed Workflows - this spec is embedded into the WorkflowLevelArtifactGC, and also used for individual Artifacts to override that as needed",
+				Description: "ArtifactGC describes how to delete artifacts from completed Workflows - this is embedded into the WorkflowLevelArtifactGC, and also used for individual Artifacts to override that as needed",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"strategy": {

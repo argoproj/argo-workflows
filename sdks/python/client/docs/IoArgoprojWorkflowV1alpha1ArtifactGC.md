@@ -1,6 +1,6 @@
 # IoArgoprojWorkflowV1alpha1ArtifactGC
 
-ArtifactGC describes how to delete artifacts from completed Workflows - this spec is embedded into the WorkflowLevelArtifactGC, and also used for individual Artifacts to override that as needed
+ArtifactGC describes how to delete artifacts from completed Workflows - this is embedded into the WorkflowLevelArtifactGC, and also used for individual Artifacts to override that as needed
 
 ## Properties
 Name | Type | Description | Notes
