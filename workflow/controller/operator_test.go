@@ -1384,6 +1384,36 @@ func TestAssessNodeStatus(t *testing.T) {
 		node: &wfv1.NodeStatus{TemplateName: templateName},
 		want: wfv1.NodeFailed,
 	}, {
+		name: "pod failed - init container with non-standard init container name failed but neither wait nor main containers are finished",
+		pod: &apiv1.Pod{
+			Status: apiv1.PodStatus{
+				InitContainerStatuses: []apiv1.ContainerStatus{
+					{
+						Name:  common.InitContainerName,
+						State: apiv1.ContainerState{Terminated: &apiv1.ContainerStateTerminated{ExitCode: 0}},
+					},
+					{
+						Name:  "random-init-container",
+						State: apiv1.ContainerState{Terminated: &apiv1.ContainerStateTerminated{ExitCode: 1}},
+					},
+				},
+				ContainerStatuses: []apiv1.ContainerStatus{
+					{
+						Name:  common.WaitContainerName,
+						State: apiv1.ContainerState{Terminated: nil},
+					},
+					{
+						Name:  common.MainContainerName,
+						State: apiv1.ContainerState{Terminated: nil},
+					},
+				},
+				Message: "failed since init container failed",
+				Phase:   apiv1.PodFailed,
+			},
+		},
+		node: &wfv1.NodeStatus{TemplateName: templateName},
+		want: wfv1.NodeFailed,
+	}, {
 		name: "pod running",
 		pod: &apiv1.Pod{
 			Status: apiv1.PodStatus{
