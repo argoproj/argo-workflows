@@ -1470,11 +1470,9 @@ func (woc *wfOperationCtx) inferFailedReason(pod *apiv1.Pod, tmpl *wfv1.Template
 
 	// We only get one message to set for the overall node status.
 	// If multiple containers failed, in order of preference:
-	// init, main (annotated), main (exit code), wait, sidecars
+	// init containers (will be appended later), main (annotated), main (exit code), wait, sidecars.
 	order := func(n string) int {
 		switch {
-		case n == common.InitContainerName:
-			return 0
 		case tmpl.IsMainContainerName(n):
 			return 1
 		case n == common.WaitContainerName:
@@ -1483,9 +1481,10 @@ func (woc *wfOperationCtx) inferFailedReason(pod *apiv1.Pod, tmpl *wfv1.Template
 			return 3
 		}
 	}
-
-	ctrs := append(pod.Status.InitContainerStatuses, pod.Status.ContainerStatuses...)
+	ctrs := pod.Status.ContainerStatuses
 	sort.Slice(ctrs, func(i, j int) bool { return order(ctrs[i].Name) < order(ctrs[j].Name) })
+	// Init containers have the highest preferences over other containers.
+	ctrs = append(pod.Status.InitContainerStatuses, ctrs...)
 
 	for _, ctr := range ctrs {
 
