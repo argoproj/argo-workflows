@@ -906,8 +906,10 @@ func TestWorkflow_SearchArtifacts(t *testing.T) {
 			Namespace: "test",
 		},
 		Spec: WorkflowSpec{
-			ArtifactGC: &ArtifactGC{
-				Strategy: ArtifactGCOnWorkflowCompletion,
+			ArtifactGC: &WorkflowLevelArtifactGC{
+				ArtifactGC: ArtifactGC{
+					Strategy: ArtifactGCOnWorkflowCompletion,
+				},
 			},
 			Templates: []Template{
 				{

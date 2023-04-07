@@ -12,7 +12,7 @@ Name | Type | Description | Notes
 **affinity** | [**io.kubernetes.client.openapi.models.V1Affinity**](io.kubernetes.client.openapi.models.V1Affinity.md) |  |  [optional]
 **archiveLogs** | **Boolean** | ArchiveLogs indicates if the container logs should be archived |  [optional]
 **arguments** | [**IoArgoprojWorkflowV1alpha1Arguments**](IoArgoprojWorkflowV1alpha1Arguments.md) |  |  [optional]
-**artifactGC** | [**IoArgoprojWorkflowV1alpha1ArtifactGC**](IoArgoprojWorkflowV1alpha1ArtifactGC.md) |  |  [optional]
+**artifactGC** | [**IoArgoprojWorkflowV1alpha1WorkflowLevelArtifactGC**](IoArgoprojWorkflowV1alpha1WorkflowLevelArtifactGC.md) |  |  [optional]
 **artifactRepositoryRef** | [**IoArgoprojWorkflowV1alpha1ArtifactRepositoryRef**](IoArgoprojWorkflowV1alpha1ArtifactRepositoryRef.md) |  |  [optional]
 **automountServiceAccountToken** | **Boolean** | AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods. ServiceAccountName of ExecutorConfig must be specified if this value is false. |  [optional]
 **dnsConfig** | [**io.kubernetes.client.openapi.models.V1PodDNSConfig**](io.kubernetes.client.openapi.models.V1PodDNSConfig.md) |  |  [optional]
