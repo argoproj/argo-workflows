@@ -1,5 +1,4 @@
 import {NotificationType} from 'argo-ui';
-import * as PropTypes from 'prop-types';
 import * as React from 'react';
 import {Workflow} from '../../../../models';
 import {Consumer} from '../../../shared/context';
