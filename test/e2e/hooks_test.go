@@ -1,5 +1,5 @@
-//go:build functional
-// +build functional
+//go:build functional || local
+// +build functional local
 
 package e2e
 
@@ -187,6 +187,15 @@ spec:
                 template: hook
               failed:
                 expression: steps["step-1"].status == "Failed"
+                template: hook
+            template: argosay
+        - - name: step-2
+            hooks:
+              running:
+                expression: steps["step-2"].status == "Running"
+                template: hook
+              failed:
+                expression: steps["step-2"].status == "Failed"
                 template: hook
             template: argosay
     - name: argosay
