@@ -68,24 +68,34 @@ jobs:
         include:
           - test: test-executor
             profile: minimal
+            install_k3s_version: v1.26.3+k3s1
           - test: test-corefunctional
             profile: minimal
+            install_k3s_version: v1.26.3+k3s1
           - test: test-functional
             profile: minimal
+            install_k3s_version: v1.26.3+k3s1
           - test: test-api
             profile: mysql
+            install_k3s_version: v1.26.3+k3s1
           - test: test-cli
             profile: mysql
+            install_k3s_version: v1.26.3+k3s1
           - test: test-cron
             profile: minimal
+            install_k3s_version: v1.26.3+k3s1
           - test: test-examples
             profile: minimal
+            install_k3s_version: v1.26.3+k3s1
           - test: test-plugins
             profile: plugins
+            install_k3s_version: v1.26.3+k3s1
           - test: test-java-sdk
             profile: minimal
+            install_k3s_version: v1.26.3+k3s1
           - test: test-python-sdk
             profile: minimal
+            install_k3s_version: v1.26.3+k3s1
           - test: test-executor
             install_k3s_version: v1.21.2+k3s1
             profile: minimal
