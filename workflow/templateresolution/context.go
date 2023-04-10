@@ -32,7 +32,7 @@ func (wrapper *workflowTemplateInterfaceWrapper) Get(name string) (*wfv1.Workflo
 	return wrapper.clientset.Get(ctx, name, metav1.GetOptions{})
 }
 
-// WorkflowTemplateNamespaceLister helps get WorkflowTemplates.
+// WorkflowTemplateNamespacedGetter helps get WorkflowTemplates.
 type WorkflowTemplateNamespacedGetter interface {
 	// Get retrieves the WorkflowTemplate from the indexer for a given name.
 	Get(name string) (*wfv1.WorkflowTemplate, error)
@@ -43,7 +43,7 @@ type clusterWorkflowTemplateInterfaceWrapper struct {
 	clientset typed.ClusterWorkflowTemplateInterface
 }
 
-// WorkflowTemplateNamespaceLister helps get WorkflowTemplates.
+// ClusterWorkflowTemplateGetter helps get WorkflowTemplates.
 type ClusterWorkflowTemplateGetter interface {
 	// Get retrieves the WorkflowTemplate from the indexer for a given name.
 	Get(name string) (*wfv1.ClusterWorkflowTemplate, error)
@@ -91,8 +91,8 @@ func NewContext(wftmplGetter WorkflowTemplateNamespacedGetter, cwftmplGetter Clu
 	}
 }
 
-// NewContext returns new Context.
-func NewContextFromClientset(wftmplClientset typed.WorkflowTemplateInterface, clusterWftmplClient typed.ClusterWorkflowTemplateInterface, tmplBase wfv1.TemplateHolder, workflow *wfv1.Workflow) *Context {
+// NewContextFromClientSet returns new Context.
+func NewContextFromClientSet(wftmplClientset typed.WorkflowTemplateInterface, clusterWftmplClient typed.ClusterWorkflowTemplateInterface, tmplBase wfv1.TemplateHolder, workflow *wfv1.Workflow) *Context {
 	return &Context{
 		wftmplGetter:  WrapWorkflowTemplateInterface(wftmplClientset),
 		cwftmplGetter: WrapClusterWorkflowTemplateInterface(clusterWftmplClient),
@@ -265,7 +265,7 @@ func (ctx *Context) WithWorkflowTemplate(name string) (*Context, error) {
 	return ctx.WithTemplateBase(wftmpl), nil
 }
 
-// WithWorkflowTemplate creates new context with a wfv1.TemplateHolder.
+// WithClusterWorkflowTemplate creates new context with a wfv1.TemplateHolder.
 func (ctx *Context) WithClusterWorkflowTemplate(name string) (*Context, error) {
 	cwftmpl, err := ctx.cwftmplGetter.Get(name)
 	if err != nil {
