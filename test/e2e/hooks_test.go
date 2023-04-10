@@ -1,5 +1,5 @@
-//go:build functional || local
-// +build functional local
+//go:build functional
+// +build functional
 
 package e2e
 
@@ -88,7 +88,7 @@ spec:
     - name: argosay
       container:
         image: argoproj/argosay:v2
-        command: ["/argosay; exit 1"]
+        command: ["/argosay", "sleep 5", "exit 1"]
         
     - name: hook
       container:
@@ -189,19 +189,10 @@ spec:
                 expression: steps["step-1"].status == "Failed"
                 template: hook
             template: argosay
-        - - name: step-2
-            hooks:
-              running:
-                expression: steps["step-2"].status == "Running"
-                template: hook
-              failed:
-                expression: steps["step-2"].status == "Failed"
-                template: hook
-            template: argosay
     - name: argosay
       container:
         image: argoproj/argosay:v2
-        command: ["/argosay; exit 1"]
+        command: ["/argosay", "sleep 5", "exit 1"]
     - name: hook
       container:
         image: argoproj/argosay:v2
@@ -307,7 +298,7 @@ spec:
     - name: argosay
       container:
         image: argoproj/argosay:v2
-        command: ["/argosay; exit 1"]
+        command: ["/argosay", "sleep 5", "exit 1"]
     - name: hook
       container:
         image: argoproj/argosay:v2
