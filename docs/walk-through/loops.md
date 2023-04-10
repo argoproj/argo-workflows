@@ -55,9 +55,7 @@ metadata:
 spec:
   entrypoint: loop-map-example
   templates:
-  - name: loop-map-example parameter specifies the list to iterate over
-
-
+  - name: loop-map-example # parameter specifies the list to iterate over
     steps:
     - - name: test-linux
         template: cat-os-release
