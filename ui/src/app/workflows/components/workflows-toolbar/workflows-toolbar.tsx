@@ -2,7 +2,7 @@ import {NotificationType} from 'argo-ui';
 import * as PropTypes from 'prop-types';
 import * as React from 'react';
 import {Workflow} from '../../../../models';
-import {AppContext, Consumer} from '../../../shared/context';
+import {Consumer} from '../../../shared/context';
 import * as Actions from '../../../shared/workflow-operations-map';
 import {WorkflowOperation, WorkflowOperationAction} from '../../../shared/workflow-operations-map';
 
@@ -22,11 +22,6 @@ interface WorkflowGroupAction extends WorkflowOperation {
 }
 
 export class WorkflowsToolbar extends React.Component<WorkflowsToolbarProps, {}> {
-    public static contextTypes = {
-        router: PropTypes.object,
-        apis: PropTypes.object
-    };
-
     constructor(props: WorkflowsToolbarProps) {
         super(props);
     }
@@ -60,7 +55,7 @@ export class WorkflowsToolbar extends React.Component<WorkflowsToolbarProps, {}>
             promises.push(
                 action(wf).catch(() => {
                     this.props.loadWorkflows();
-                    this.appContext.apis.notifications.show({
+                    ctx.notifications.show({
                         content: `Unable to ${title} workflow`,
                         type: NotificationType.Error
                     });
@@ -85,7 +80,7 @@ export class WorkflowsToolbar extends React.Component<WorkflowsToolbarProps, {}>
                     return this.performActionOnSelectedWorkflows(ctx, action.title, action.action).then(confirmed => {
                         if (confirmed) {
                             this.props.clearSelection();
-                            this.appContext.apis.notifications.show({
+                            ctx.notifications.show({
                                 content: `Performed '${action.title}' on selected workflows.`,
                                 type: NotificationType.Success
                             });
@@ -112,9 +107,5 @@ export class WorkflowsToolbar extends React.Component<WorkflowsToolbarProps, {}>
             );
         }
         return actionButtons;
-    }
-
-    private get appContext(): AppContext {
-        return this.context as AppContext;
     }
 }
