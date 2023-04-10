@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/suite"
 	apiv1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -19,7 +20,7 @@ type HooksSuite struct {
 	fixtures.E2ESuite
 }
 
-func (s *HooksSuite) TestWorkflowLevelHooks() {
+func (s *HooksSuite) TestWorkflowLevelHooksSuccessVersion() {
 	s.Given().
 		Workflow(`apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -28,20 +29,23 @@ metadata:
 spec:
   entrypoint: main
   hooks:
-    exit:
-      template: http
     running:
       expression: workflow.status == "Running"
-      template: http
+      template: argosay
+    succeed:
+      expression: workflow.status == "Succeeded"
+      template: argosay
+
   templates:
     - name: main
       steps:
       - - name: step1
-          template: http
+          template: argosay
 
-    - name: http
-      http:
-        url: "http://httpstat.us"
+    - name: argosay
+      container:
+        image: argoproj/argosay:v2
+        command: ["/argosay"]
 `).When().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeSucceeded).
@@ -49,48 +53,64 @@ spec:
 		ExpectWorkflow(func(t *testing.T, metadata *v1.ObjectMeta, status *v1alpha1.WorkflowStatus) {
 			assert.Equal(t, status.Phase, v1alpha1.WorkflowSucceeded)
 		}).ExpectWorkflowNode(func(status v1alpha1.NodeStatus) bool {
-		return strings.Contains(status.Name, "hook")
+		return strings.Contains(status.Name, ".hooks.running")
+	}, func(t *testing.T, status *v1alpha1.NodeStatus, pod *apiv1.Pod) {
+		assert.Equal(t, v1alpha1.NodeSucceeded, status.Phase)
+	}).ExpectWorkflowNode(func(status v1alpha1.NodeStatus) bool {
+		return strings.Contains(status.Name, ".hooks.succeed")
 	}, func(t *testing.T, status *v1alpha1.NodeStatus, pod *apiv1.Pod) {
 		assert.Equal(t, v1alpha1.NodeSucceeded, status.Phase)
 	})
 }
 
-func (s *HooksSuite) TestTemplateLevelHooks() {
+func (s *HooksSuite) TestWorkflowLevelHooksFailVersion() {
 	s.Given().
 		Workflow(`apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: lifecycle-hook-tmpl-level-
+  generateName: lifecycle-hook-
 spec:
   entrypoint: main
+  hooks:
+    running:
+      expression: workflow.status == "Running"
+      template: hook
+    failed:
+      expression: workflow.status == "Failed"
+      template: hook
+
   templates:
     - name: main
       steps:
-        - - name: step-1
-            hooks:
-              exit:
-                template: http
-              success:
-                expression: steps["step-1"].status == "Succeeded"
-                template: http
-            template: http
-    - name: http
-      http:
-        url: "http://httpstat.us"
+      - - name: step1
+          template: argosay
+
+    - name: argosay
+      container:
+        image: argoproj/argosay:v2
+        command: ["/argosay; exit 1"]
+
+    - name: hook
+      container:
+        image: argoproj/argosay:v2
+        command: ["/argosay"]
 `).When().
 		SubmitWorkflow().
-		WaitForWorkflow(fixtures.ToBeSucceeded).
+		WaitForWorkflow(fixtures.ToBeFailed).
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *v1.ObjectMeta, status *v1alpha1.WorkflowStatus) {
-			assert.Equal(t, v1alpha1.WorkflowSucceeded, status.Phase)
+			assert.Equal(t, status.Phase, v1alpha1.WorkflowFailed)
 		}).ExpectWorkflowNode(func(status v1alpha1.NodeStatus) bool {
-		return strings.Contains(status.Name, "hook")
+		return strings.Contains(status.Name, ".hooks.running")
+	}, func(t *testing.T, status *v1alpha1.NodeStatus, pod *apiv1.Pod) {
+		assert.Equal(t, v1alpha1.NodeSucceeded, status.Phase)
+	}).ExpectWorkflowNode(func(status v1alpha1.NodeStatus) bool {
+		return strings.Contains(status.Name, ".hooks.failed")
 	}, func(t *testing.T, status *v1alpha1.NodeStatus, pod *apiv1.Pod) {
 		assert.Equal(t, v1alpha1.NodeSucceeded, status.Phase)
 	})
 }
 
 func TestHooksSuite(t *testing.T) {
-	// TODO: Tests are temporarily disabled: "https://github.com/argoproj/argo-workflows/issues/9591"
-	//suite.Run(t, new(HooksSuite))
+	suite.Run(t, new(HooksSuite))
 }
