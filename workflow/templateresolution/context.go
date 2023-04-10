@@ -32,7 +32,7 @@ func (wrapper *workflowTemplateInterfaceWrapper) Get(name string) (*wfv1.Workflo
 	return wrapper.clientset.Get(ctx, name, metav1.GetOptions{})
 }
 
-// WorkflowTemplateNamespaceLister helps get WorkflowTemplates.
+// WorkflowTemplateNamespaceGetter helps get WorkflowTemplates.
 type WorkflowTemplateNamespacedGetter interface {
 	// Get retrieves the WorkflowTemplate from the indexer for a given name.
 	Get(name string) (*wfv1.WorkflowTemplate, error)
