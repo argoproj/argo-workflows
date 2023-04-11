@@ -2282,6 +2282,143 @@ func TestInvalidWfNoImageFieldScript(t *testing.T) {
 	assert.EqualError(t, err, "templates.whalesay.script.image may not be empty")
 }
 
+var invalidWfNoImageScriptInTemplateDefault = `apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: hello-world-right-env-12
+spec:
+  entrypoint: whalesay
+  templateDefaults:
+    script:
+      command: [cowsay]
+  templates:
+  - name: whalesay
+    script:
+      args:
+      - hello world
+      env: []`
+
+func TestIinvalidWfNoImageScriptInTemplateDefault(t *testing.T) {
+	err := validate(invalidWfNoImageScriptInTemplateDefault)
+	assert.EqualError(t, err, "templates.whalesay.script.image may not be empty")
+}
+
+var validWfImageScriptInTemplateDefault = `apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: hello-world-right-env-12
+spec:
+  entrypoint: whalesay
+  templateDefaults:
+    script:
+      image: alpine:latest
+  templates:
+  - name: whalesay
+    script:
+      command:
+      - cowsay
+      args:
+      - hello world
+      env: []`
+
+func TestValidWfImageScriptInTemplateDefault(t *testing.T) {
+	err := validate(validWfImageScriptInTemplateDefault)
+	assert.NoError(t, err)
+}
+
+var validWfImageContainerInTemplateDefault = `apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: hello-world-right-env-12
+spec:
+  entrypoint: whalesay
+  templateDefaults:
+    container:
+      image: alpine:latest
+  templates:
+  - name: whalesay
+    container:
+      command:
+      - cowsay
+      args:
+      - hello world
+      env: []`
+
+func TestValidWfImageContainerInTemplateDefault(t *testing.T) {
+	err := validate(validWfImageContainerInTemplateDefault)
+	assert.NoError(t, err)
+}
+
+var templateRefScriptImageDefaultTarget = `
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: template-ref-no-script-image
+spec:
+  entrypoint: whalesay
+  templateDefaults:
+    script:
+      image: alpine:latest
+  templates:
+  - name: whalesay
+    script:
+      command: [cowsay]
+      args: [hello world]
+`
+
+var wfWithWFTRefScriptImageInDefault = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: hello-world-
+  namespace: default
+spec:
+  workflowTemplateRef:
+    name: template-ref-no-script-image
+`
+
+func TestValidateFieldsWithWFTRefScriptImageInDefault(t *testing.T) {
+	err := createWorkflowTemplateFromSpec(templateRefScriptImageDefaultTarget)
+	assert.NoError(t, err)
+	err = validate(wfWithWFTRefScriptImageInDefault)
+	assert.NoError(t, err)
+}
+
+var templateRefContainerImageDefaultTarget = `
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: template-ref-no-container-image
+spec:
+  entrypoint: whalesay
+  templateDefaults:
+    container:
+      image: alpine:latest
+  templates:
+  - name: whalesay
+    container:
+      command: [cowsay]
+      args: [hello world]
+`
+
+var wfWithWFTRefContainerImageInDefault = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: hello-world-
+  namespace: default
+spec:
+  workflowTemplateRef:
+    name: template-ref-no-container-image
+`
+
+func TestValidateFieldsWithWFTRefContainerImageInDefault(t *testing.T) {
+	err := createWorkflowTemplateFromSpec(templateRefContainerImageDefaultTarget)
+	assert.NoError(t, err)
+	err = validate(wfWithWFTRefContainerImageInDefault)
+	assert.NoError(t, err)
+}
+
 var templateRefWithParam = `
 apiVersion: argoproj.io/v1alpha1
 kind: WorkflowTemplate

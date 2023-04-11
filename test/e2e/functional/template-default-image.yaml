@@ -1,0 +1,31 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: template-default-
+spec:
+  entrypoint: entrypoint
+  templateDefaults:
+    script:
+      image: argoproj/argosay:v1
+      command: [sh]
+      workingDir: "/src"
+    container:
+      image: argoproj/argosay:v1
+      command: [sh, -c]
+      workingDir: "/src"
+  templates:
+    - name: entrypoint
+      steps:
+      - - name: test-script
+          template: test-script
+        - name: test-container
+          template: test-container
+    
+    - name: test-script
+      script:
+        source: |
+          pwd
+
+    - name: test-container
+      container:
+        args: ["pwd"]
