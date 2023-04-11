@@ -450,7 +450,7 @@ func (ctx *templateValidationCtx) validateTemplate(tmpl *wfv1.Template, tmplCtx 
 	case wfv1.TemplateTypeDAG:
 		err = ctx.validateDAG(scope, tmplCtx, newTmpl, workflowTemplateValidation)
 	default:
-		err = ctx.validateLeaf(scope, newTmpl, workflowTemplateValidation)
+		err = ctx.validateLeaf(scope, tmplCtx, newTmpl, workflowTemplateValidation)
 	}
 	if err != nil {
 		return err
@@ -668,7 +668,7 @@ func validateNonLeaf(tmpl *wfv1.Template) error {
 	return nil
 }
 
-func (ctx *templateValidationCtx) validateLeaf(scope map[string]interface{}, tmpl *wfv1.Template, workflowTemplateValidation bool) error {
+func (ctx *templateValidationCtx) validateLeaf(scope map[string]interface{}, tmplCtx *templateresolution.Context, tmpl *wfv1.Template, workflowTemplateValidation bool) error {
 	tmplBytes, err := json.Marshal(tmpl)
 	if err != nil {
 		return errors.InternalWrapError(err)
@@ -693,7 +693,18 @@ func (ctx *templateValidationCtx) validateLeaf(scope map[string]interface{}, tmp
 			mountPaths[art.Path] = fmt.Sprintf("inputs.artifacts.%s", art.Name)
 		}
 		if tmpl.Container.Image == "" {
-			return errors.Errorf(errors.CodeBadRequest, "templates.%s.container.image may not be empty", tmpl.Name)
+			switch baseTemplate := tmplCtx.GetCurrentTemplateBase().(type) {
+			case *wfv1.Workflow:
+				if !(baseTemplate.Spec.TemplateDefaults != nil && baseTemplate.Spec.TemplateDefaults.Container != nil && baseTemplate.Spec.TemplateDefaults.Container.Image != "") {
+					return errors.Errorf(errors.CodeBadRequest, "templates.%s.container.image may not be empty", tmpl.Name)
+				}
+			case *wfv1.WorkflowTemplate:
+				if !(baseTemplate.Spec.TemplateDefaults != nil && baseTemplate.Spec.TemplateDefaults.Container != nil && baseTemplate.Spec.TemplateDefaults.Container.Image != "") {
+					return errors.Errorf(errors.CodeBadRequest, "templates.%s.container.image may not be empty", tmpl.Name)
+				}
+			default:
+				return errors.Errorf(errors.CodeBadRequest, "templates.%s.container.image may not be empty", tmpl.Name)
+			}
 		}
 	}
 	if tmpl.ContainerSet != nil {
@@ -748,7 +759,18 @@ func (ctx *templateValidationCtx) validateLeaf(scope map[string]interface{}, tmp
 	}
 	if tmpl.Script != nil {
 		if tmpl.Script.Image == "" {
-			return errors.Errorf(errors.CodeBadRequest, "templates.%s.script.image may not be empty", tmpl.Name)
+			switch baseTemplate := tmplCtx.GetCurrentTemplateBase().(type) {
+			case *wfv1.Workflow:
+				if !(baseTemplate.Spec.TemplateDefaults != nil && baseTemplate.Spec.TemplateDefaults.Script != nil && baseTemplate.Spec.TemplateDefaults.Script.Image != "") {
+					return errors.Errorf(errors.CodeBadRequest, "templates.%s.script.image may not be empty", tmpl.Name)
+				}
+			case *wfv1.WorkflowTemplate:
+				if !(baseTemplate.Spec.TemplateDefaults != nil && baseTemplate.Spec.TemplateDefaults.Script != nil && baseTemplate.Spec.TemplateDefaults.Script.Image != "") {
+					return errors.Errorf(errors.CodeBadRequest, "templates.%s.script.image may not be empty", tmpl.Name)
+				}
+			default:
+				return errors.Errorf(errors.CodeBadRequest, "templates.%s.script.image may not be empty", tmpl.Name)
+			}
 		}
 	}
 	// we don't validate tmpl.Plugin, because this is done by Plugin.UnmarshallJSON
