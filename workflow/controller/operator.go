@@ -711,6 +711,15 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 	wf, err := wfClient.Update(ctx, woc.wf, metav1.UpdateOptions{})
 	if err != nil {
 		woc.log.Warnf("Error updating workflow: %v %s", err, apierr.ReasonForError(err))
+		if strings.Contains(err.Error(), "is invalid") {
+			woc.log.Warnf("mark error when Error updating workflow")
+			woc.markWorkflowError(ctx, err)
+			_, err = wfClient.Update(ctx, woc.wf, metav1.UpdateOptions{})
+			if err != nil {
+				woc.log.Warnf("Error updating workflow to errored: %v %s", err, apierr.ReasonForError(err))
+			}
+			return
+		}
 		if argokubeerr.IsRequestEntityTooLargeErr(err) {
 			woc.persistWorkflowSizeLimitErr(ctx, wfClient, err)
 			return

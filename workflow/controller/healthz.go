@@ -2,10 +2,10 @@ package controller
 
 import (
 	"fmt"
+	log "github.com/sirupsen/logrus"
 	"net/http"
 	"time"
 
-	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/argoproj/argo-workflows/v3/util/env"
@@ -13,7 +13,7 @@ import (
 )
 
 var (
-	age   = env.LookupEnvDurationOr("HEALTHZ_AGE", 5*time.Minute)
+	age   = env.LookupEnvDurationOr("HEALTHZ_AGE", 1*time.Minute)
 	limit = int64(env.LookupEnvIntOr("HEALTHZ_LIST_LIMIT", 200))
 )
 
@@ -37,18 +37,19 @@ func (wfc *WorkflowController) Healthz(w http.ResponseWriter, r *http.Request) {
 		}
 		for _, wf := range list.Items {
 			if time.Since(wf.GetCreationTimestamp().Time) > age {
+				//log.WithField("wf", wf.Name).Warn("workflow never reconciled")
 				return fmt.Errorf("workflow never reconciled: %s", wf.Name)
 			}
 		}
 		return nil
 	}()
-	log.WithField("err", err).
-		WithField("managedNamespace", wfc.managedNamespace).
-		WithField("instanceID", instanceID).
-		WithField("labelSelector", labelSelector).
-		WithField("age", age).
-		Info("healthz")
 	if err != nil {
+		log.WithField("err", err).
+			WithField("managedNamespace", wfc.managedNamespace).
+			WithField("instanceID", instanceID).
+			WithField("labelSelector", labelSelector).
+			WithField("age", age).
+			Info("healthz")
 		w.WriteHeader(500)
 		_, _ = w.Write([]byte(err.Error()))
 	} else {
