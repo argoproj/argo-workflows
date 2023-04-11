@@ -43,7 +43,7 @@ func (g *Given) Workflow(text string) *Given {
 	g.t.Helper()
 	g.wf = &wfv1.Workflow{}
 	g.readResource(text, g.wf)
-	g.checkImages(g.wf.Spec.Templates)
+	g.checkImages(g.wf)
 	return g
 }
 
@@ -81,8 +81,29 @@ func (g *Given) readResource(text string, v metav1.Object) {
 	}
 }
 
-func (g *Given) checkImages(templates []wfv1.Template) {
+func (g *Given) checkImages(wf interface{}) {
 	g.t.Helper()
+	var defaultImage string
+	var templates []wfv1.Template
+	switch baseTemplate := wf.(type) {
+	case *wfv1.Workflow:
+		if baseTemplate.Spec.TemplateDefaults != nil && baseTemplate.Spec.TemplateDefaults.Container != nil && baseTemplate.Spec.TemplateDefaults.Container.Image != "" {
+			defaultImage = baseTemplate.Spec.TemplateDefaults.Container.Image
+			templates = baseTemplate.Spec.Templates
+		}
+	case *wfv1.WorkflowTemplate:
+		if baseTemplate.Spec.TemplateDefaults != nil && baseTemplate.Spec.TemplateDefaults.Container != nil && baseTemplate.Spec.TemplateDefaults.Container.Image != "" {
+			defaultImage = baseTemplate.Spec.TemplateDefaults.Container.Image
+			templates = baseTemplate.Spec.Templates
+		}
+	case *wfv1.CronWorkflow:
+		if baseTemplate.Spec.WorkflowSpec.TemplateDefaults != nil && baseTemplate.Spec.WorkflowSpec.TemplateDefaults.Container != nil && baseTemplate.Spec.WorkflowSpec.TemplateDefaults.Container.Image != "" {
+			defaultImage = baseTemplate.Spec.WorkflowSpec.TemplateDefaults.Container.Image
+			templates = baseTemplate.Spec.WorkflowSpec.Templates
+		}
+	default:
+		g.t.Fatalf("Unsupported checkImage workflow type: %s", wf)
+	}
 
 	// discouraged
 	discouraged := func(image string) bool {
@@ -96,7 +117,12 @@ func (g *Given) checkImages(templates []wfv1.Template) {
 	for _, t := range templates {
 		container := t.Container
 		if container != nil {
-			image := container.Image
+			var image string
+			if container.Image != "" {
+				image = container.Image
+			} else {
+				image = defaultImage
+			}
 			if !allowed(image) {
 				g.t.Fatalf("image not allowed in tests: %s", image)
 			}
@@ -140,7 +166,7 @@ func (g *Given) WorkflowTemplate(text string) *Given {
 	g.t.Helper()
 	wfTemplate := &wfv1.WorkflowTemplate{}
 	g.readResource(text, wfTemplate)
-	g.checkImages(wfTemplate.Spec.Templates)
+	g.checkImages(wfTemplate)
 	g.wfTemplates = append(g.wfTemplates, wfTemplate)
 	return g
 }
@@ -149,7 +175,7 @@ func (g *Given) CronWorkflow(text string) *Given {
 	g.t.Helper()
 	g.cronWf = &wfv1.CronWorkflow{}
 	g.readResource(text, g.cronWf)
-	g.checkImages(g.cronWf.Spec.WorkflowSpec.Templates)
+	g.checkImages(g.cronWf)
 	return g
 }
 
