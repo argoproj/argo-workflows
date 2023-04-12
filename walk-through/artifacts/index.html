@@ -631,6 +631,13 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#release-versions-35" class="md-nav__link">
+    Release Versions &gt;= 3.5
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -3859,6 +3866,13 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#release-versions-35" class="md-nav__link">
+    Release Versions &gt;= 3.5
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -4105,6 +4119,13 @@ The <code>artifact-example</code> template passes the <code>hello-art</code> art
 <div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>patch<span class="w"> </span>workflow<span class="w"> </span>my-wf<span class="w"> </span><span class="se">\</span>
 <span class="w">    </span>--type<span class="w"> </span>json<span class="w"> </span><span class="se">\</span>
 <span class="w">    </span>--patch<span class="o">=</span><span class="s1">&#39;[ { &quot;op&quot;: &quot;remove&quot;, &quot;path&quot;: &quot;/metadata/finalizers&quot; } ]&#39;</span>
+</code></pre></div>
+<h3 id="release-versions-35">Release Versions &gt;= 3.5<a class="headerlink" href="#release-versions-35" title="Permanent link">&para;</a></h3>
+<p>A flag has been added to the Workflow Spec called <code>forceFinalizerRemoval</code> (see <a href="../../fields/#workflowlevelartifactgc">here</a>) to force the finalizer's removal even if Artifact GC fails:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">artifactGC</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">strategy</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">OnWorkflowDeletion</span><span class="w"> </span>
+<span class="w">    </span><span class="nt">forceFinalizerRemoval</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
 </code></pre></div>
 
               
