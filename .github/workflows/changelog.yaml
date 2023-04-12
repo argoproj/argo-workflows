@@ -25,7 +25,7 @@ jobs:
       - run: git tag -l 'v*'
       # avoid invoking `make` to reduce the risk of a Makefile bug failing this workflow
       - run: ./hack/changelog.sh > CHANGELOG.md
-      - uses: peter-evans/create-pull-request@v4
+      - uses: peter-evans/create-pull-request@v5
         with:
           title: 'docs: updated CHANGELOG.md'
           commit-message: 'docs: updated CHANGELOG.md'
