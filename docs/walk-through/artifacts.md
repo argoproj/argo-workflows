@@ -257,3 +257,15 @@ kubectl patch workflow my-wf \
     --type json \
     --patch='[ { "op": "remove", "path": "/metadata/finalizers" } ]'
 ```
+
+### Release Versions >= 3.5
+
+A flag has been added to the Workflow Spec called `forceFinalizerRemoval` (see [here](../fields.md#workflowlevelartifactgc)) to force the finalizer's removal even if Artifact GC fails:
+
+```yaml
+spec:
+  artifactGC:
+    strategy: OnWorkflowDeletion 
+    forceFinalizerRemoval: true
+
+```
