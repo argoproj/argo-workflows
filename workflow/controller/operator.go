@@ -30,6 +30,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/strategicpatch"
+	"k8s.io/apimachinery/pkg/util/validation"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/utils/pointer"
@@ -542,6 +543,9 @@ func (woc *wfOperationCtx) updateWorkflowMetadata() error {
 			if !ok {
 				return fmt.Errorf("failed to evaluate label %q expression %q evaluted to %T but must be a string", n, f.Expression, r)
 			}
+			if errs := validation.IsValidLabelValue(v); errs != nil {
+				return errors.Errorf(errors.CodeBadRequest, "invalid label value %q for label %q and expression %q: %s", v, n, f.Expression, strings.Join(errs, ";"))
+			}
 			woc.wf.Labels[n] = v
 			woc.globalParams["workflow.labels."+n] = v
 			updatedParams["workflow.labels."+n] = v
@@ -711,15 +715,6 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 	wf, err := wfClient.Update(ctx, woc.wf, metav1.UpdateOptions{})
 	if err != nil {
 		woc.log.Warnf("Error updating workflow: %v %s", err, apierr.ReasonForError(err))
-		if strings.Contains(err.Error(), "is invalid") {
-			woc.log.Warnf("mark error when Error updating workflow")
-			woc.markWorkflowError(ctx, err)
-			_, err = wfClient.Update(ctx, woc.wf, metav1.UpdateOptions{})
-			if err != nil {
-				woc.log.Warnf("Error updating workflow to errored: %v %s", err, apierr.ReasonForError(err))
-			}
-			return
-		}
 		if argokubeerr.IsRequestEntityTooLargeErr(err) {
 			woc.persistWorkflowSizeLimitErr(ctx, wfClient, err)
 			return
