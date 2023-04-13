@@ -1179,3 +1179,11 @@ func (s *FunctionalSuite) TestTTY() {
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeSucceeded)
 }
+
+func (s *FunctionalSuite) TestTemplateDefaultImage() {
+	s.Given().
+		Workflow(`@functional/template-default-image.yaml`).
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeSucceeded)
+}
