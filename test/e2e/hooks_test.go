@@ -1,7 +1,6 @@
 //go:build functional
 // +build functional
 
-
 package e2e
 
 import (
@@ -47,7 +46,7 @@ spec:
       container:
         image: argoproj/argosay:v2
         command: ["/bin/sh", "-c"]
-        args: ["/bin/sleep 5; /argosay"]
+        args: ["/bin/sleep 3; /argosay"]
 `).When().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeSucceeded).
@@ -91,13 +90,13 @@ spec:
       container:
         image: argoproj/argosay:v2
         command: ["/bin/sh", "-c"]
-        args: ["/bin/sleep 5; /argosay; exit 1"]
+        args: ["/bin/sleep 3; /argosay; exit 1"]
         
     - name: hook
       container:
         image: argoproj/argosay:v2
         command: ["/bin/sh", "-c"]
-        args: ["/bin/sleep 5; /argosay"]
+        args: ["/bin/sleep 3; /argosay"]
 `).When().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeFailed).
@@ -148,7 +147,7 @@ spec:
       container:
         image: argoproj/argosay:v2
         command: ["/bin/sh", "-c"]
-        args: ["/bin/sleep 5; /argosay"]
+        args: ["/bin/sleep 3; /argosay"]
 `).When().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeSucceeded).
@@ -198,12 +197,12 @@ spec:
       container:
         image: argoproj/argosay:v2
         command: ["/bin/sh", "-c"]
-        args: ["/bin/sleep 5; /argosay; exit 1"]
+        args: ["/bin/sleep 3; /argosay; exit 1"]
     - name: hook
       container:
         image: argoproj/argosay:v2
         command: ["/bin/sh", "-c"]
-        args: ["/bin/sleep 5; /argosay"]
+        args: ["/bin/sleep 3; /argosay"]
 `).When().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeFailed).
@@ -256,7 +255,7 @@ spec:
       container:
         image: argoproj/argosay:v2
         command: ["/bin/sh", "-c"]
-        args: ["/bin/sleep 5; /argosay"]
+        args: ["/bin/sleep 3; /argosay"]
 `).When().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeSucceeded).
@@ -307,12 +306,12 @@ spec:
       container:
         image: argoproj/argosay:v2
         command: ["/bin/sh", "-c"]
-        args: ["/bin/sleep 5; /argosay; exit 1"]
+        args: ["/bin/sleep 3; /argosay; exit 1"]
     - name: hook
       container:
         image: argoproj/argosay:v2
         command: ["/bin/sh", "-c"]
-        args: ["/bin/sleep 5; /argosay"]
+        args: ["/bin/sleep 3; /argosay"]
 `).When().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeFailed).
