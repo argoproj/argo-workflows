@@ -24,7 +24,11 @@ func newPersistence(kubeClient kubernetes.Interface, wcConfig *config.Config) *P
 		if persistence.MySQL != nil {
 			persistence.MySQL.Host = "localhost"
 		}
-		session, tableName, err := sqldb.CreateDBSession(kubeClient, Namespace, persistence)
+		session, err := sqldb.CreateDBSession(kubeClient, Namespace, persistence)
+		if err != nil {
+			panic(err)
+		}
+		tableName, err := sqldb.GetTableName(persistence)
 		if err != nil {
 			panic(err)
 		}
