@@ -21,6 +21,7 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [Akuity](https://akuity.io/)
 1. [Alibaba Cloud](https://www.alibabacloud.com/about)
 1. [Alibaba Group](https://www.alibabagroup.com/)
+1. [Anova](https://www.anova.com/)
 1. [Ant Group](https://www.antgroup.com/)
 1. [AppDirect](https://www.appdirect.com/)
 1. [Arabesque](https://www.arabesque.com/)
