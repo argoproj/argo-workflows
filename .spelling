@@ -129,6 +129,7 @@ blkperl
 boolean
 booleans
 buildkit
+changelog
 config
 cpu
 cron
