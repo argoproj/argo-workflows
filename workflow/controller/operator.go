@@ -400,12 +400,17 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 	// This strconv.Quote is necessary so that the escaped quotes are not removed during parameter substitution
 	woc.globalParams[common.GlobalVarWorkflowFailures] = strconv.Quote(string(failedNodeBytes))
 
-	err = woc.executeWfLifeCycleHook(ctx, tmplCtx)
+	hookCompleted, err := woc.executeWfLifeCycleHook(ctx, tmplCtx)
 	if err != nil {
 		woc.markNodeError(node.Name, err)
 	}
 	// Reconcile TaskSet and Agent for HTTP templates
 	woc.taskSetReconciliation(ctx)
+
+	// Check all hooks are completes
+	if !hookCompleted {
+		return
+	}
 
 	if !node.Fulfilled() {
 		// node can be nil if a workflow created immediately in a parallelism == 0 state
@@ -1470,11 +1475,9 @@ func (woc *wfOperationCtx) inferFailedReason(pod *apiv1.Pod, tmpl *wfv1.Template
 
 	// We only get one message to set for the overall node status.
 	// If multiple containers failed, in order of preference:
-	// init, main (annotated), main (exit code), wait, sidecars
+	// init containers (will be appended later), main (annotated), main (exit code), wait, sidecars.
 	order := func(n string) int {
 		switch {
-		case n == common.InitContainerName:
-			return 0
 		case tmpl.IsMainContainerName(n):
 			return 1
 		case n == common.WaitContainerName:
@@ -1483,9 +1486,10 @@ func (woc *wfOperationCtx) inferFailedReason(pod *apiv1.Pod, tmpl *wfv1.Template
 			return 3
 		}
 	}
-
-	ctrs := append(pod.Status.InitContainerStatuses, pod.Status.ContainerStatuses...)
+	ctrs := pod.Status.ContainerStatuses
 	sort.Slice(ctrs, func(i, j int) bool { return order(ctrs[i].Name) < order(ctrs[j].Name) })
+	// Init containers have the highest preferences over other containers.
+	ctrs = append(pod.Status.InitContainerStatuses, ctrs...)
 
 	for _, ctr := range ctrs {
 
@@ -1494,7 +1498,7 @@ func (woc *wfOperationCtx) inferFailedReason(pod *apiv1.Pod, tmpl *wfv1.Template
 		// https://github.com/virtual-kubelet/virtual-kubelet/blob/7f2a02291530d2df14905702e6d51500dd57640a/node/sync.go#L195-L208
 
 		if ctr.State.Waiting != nil {
-			return wfv1.NodeError, fmt.Sprintf("Pod failed before %s container starts", ctr.Name)
+			return wfv1.NodeError, fmt.Sprintf("Pod failed before %s container starts due to %s: %s", ctr.Name, ctr.State.Waiting.Reason, ctr.State.Waiting.Message)
 		}
 		t := ctr.State.Terminated
 		if t == nil {
