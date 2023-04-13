@@ -258,6 +258,8 @@ kubectl patch workflow my-wf \
     --patch='[ { "op": "remove", "path": "/metadata/finalizers" } ]'
 ```
 
+Or use the Argo CLI `argo delete` command with flag `--force`, which under the hood removes the finalizer before performing the deletion.
+
 ### Release Versions >= 3.5
 
 A flag has been added to the Workflow Spec called `forceFinalizerRemoval` (see [here](../fields.md#workflowlevelartifactgc)) to force the finalizer's removal even if Artifact GC fails:
