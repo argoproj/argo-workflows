@@ -204,7 +204,11 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 	wfArchive := sqldb.NullWorkflowArchive
 	persistence := config.Persistence
 	if persistence != nil {
-		session, tableName, err := sqldb.CreateDBSession(as.clients.Kubernetes, as.namespace, persistence)
+		session, err := sqldb.CreateDBSession(as.clients.Kubernetes, as.namespace, persistence)
+		if err != nil {
+			log.Fatal(err)
+		}
+		tableName, err := sqldb.GetTableName(persistence)
 		if err != nil {
 			log.Fatal(err)
 		}
