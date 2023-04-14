@@ -632,6 +632,40 @@ func TestCheckAndInitWorkflowTmplRef(t *testing.T) {
 	assert.Equal(t, wftmpl.Spec.Templates, woc.execWf.Spec.Templates)
 }
 
+const wfWithInvalidMetadata = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: crash
+spec:
+  serviceAccountName: my-sa
+  entrypoint: test-container
+  arguments:
+    parameters:
+      - name: execution_label
+        value: some/special/char
+  workflowMetadata:
+    labelsFrom:
+      execution_label:
+        expression: workflow.parameters.execution_label
+  templates:
+  - name: test-container
+    container:
+      image: alpine:latest
+      command: ["echo", "bye"]
+`
+
+func TestInvalidWorkflowMetadata(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(wfWithInvalidMetadata)
+	cancel, controller := newController(wf)
+	defer cancel()
+	woc := newWorkflowOperationCtx(wf, controller)
+	err := woc.setExecWorkflow(context.Background())
+	if assert.NotNil(t, err) {
+		assert.Contains(t, err.Error(), "invalid label value")
+	}
+}
+
 func TestIsArchivable(t *testing.T) {
 	cancel, controller := newController()
 	defer cancel()
