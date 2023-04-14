@@ -21,6 +21,8 @@ type SSOConfig struct {
 	CustomGroupClaimName string `json:"customGroupClaimName,omitempty"`
 	UserInfoPath         string `json:"userInfoPath,omitempty"`
 	InsecureSkipVerify   bool   `json:"insecureSkipVerify,omitempty"`
+	CompressBearerToken  bool   `json:"compressBearerToken,omitempty"`
+	MaxConcurrentUsers   int    `json:"maxConcurrentUsers,omitempty"`
 }
 
 func (c SSOConfig) GetSessionExpiry() time.Duration {
@@ -28,4 +30,11 @@ func (c SSOConfig) GetSessionExpiry() time.Duration {
 		return c.SessionExpiry.Duration
 	}
 	return 10 * time.Hour
+}
+
+func (c SSOConfig) GetMaxConcurrentUsers() int {
+	if c.MaxConcurrentUsers > 0 {
+		return c.MaxConcurrentUsers
+	}
+	return 1000
 }

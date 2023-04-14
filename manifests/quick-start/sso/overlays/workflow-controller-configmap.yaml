@@ -16,6 +16,7 @@ data:
     - profile
     rbac:
       enabled: true
+    compressBearerToken: true
 kind: ConfigMap
 metadata:
   name: workflow-controller-configmap

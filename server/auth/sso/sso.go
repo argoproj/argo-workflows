@@ -8,6 +8,8 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
+	"github.com/google/uuid"
+	"k8s.io/utils/lru"
 	"net/http"
 	"strings"
 	"time"
@@ -49,18 +51,20 @@ var _ Interface = &sso{}
 type Config = config.SSOConfig
 
 type sso struct {
-	config          *oauth2.Config
-	issuer          string
-	idTokenVerifier *oidc.IDTokenVerifier
-	httpClient      *http.Client
-	baseHRef        string
-	secure          bool
-	privateKey      crypto.PrivateKey
-	encrypter       jose.Encrypter
-	rbacConfig      *config.RBACConfig
-	expiry          time.Duration
-	customClaimName string
-	userInfoPath    string
+	config              *oauth2.Config
+	issuer              string
+	idTokenVerifier     *oidc.IDTokenVerifier
+	httpClient          *http.Client
+	baseHRef            string
+	secure              bool
+	privateKey          crypto.PrivateKey
+	encrypter           jose.Encrypter
+	rbacConfig          *config.RBACConfig
+	expiry              time.Duration
+	customClaimName     string
+	userInfoPath        string
+	bearerTokenMap      *lru.Cache
+	compressBearerToken bool
 }
 
 func (s *sso) IsRBACEnabled() bool {
@@ -188,18 +192,20 @@ func newSso(
 	log.WithFields(lf).Info("SSO configuration")
 
 	return &sso{
-		config:          config,
-		idTokenVerifier: idTokenVerifier,
-		baseHRef:        baseHRef,
-		httpClient:      httpClient,
-		secure:          secure,
-		privateKey:      privateKey,
-		encrypter:       encrypter,
-		rbacConfig:      c.RBAC,
-		expiry:          c.GetSessionExpiry(),
-		customClaimName: c.CustomGroupClaimName,
-		userInfoPath:    c.UserInfoPath,
-		issuer:          c.Issuer,
+		config:              config,
+		idTokenVerifier:     idTokenVerifier,
+		baseHRef:            baseHRef,
+		httpClient:          httpClient,
+		secure:              secure,
+		privateKey:          privateKey,
+		encrypter:           encrypter,
+		rbacConfig:          c.RBAC,
+		expiry:              c.GetSessionExpiry(),
+		customClaimName:     c.CustomGroupClaimName,
+		userInfoPath:        c.UserInfoPath,
+		issuer:              c.Issuer,
+		bearerTokenMap:      lru.New(c.GetMaxConcurrentUsers()),
+		compressBearerToken: c.CompressBearerToken,
 	}, nil
 }
 
@@ -298,6 +304,11 @@ func (s *sso) HandleCallback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	value := Prefix + raw
+	if s.compressBearerToken {
+		compressedToken := Prefix + uuid.New().String()
+		s.bearerTokenMap.Add(compressedToken, value)
+		value = compressedToken
+	}
 	log.Debugf("handing oauth2 callback %v", value)
 	http.SetCookie(w, &http.Cookie{
 		Value:    value,
@@ -323,16 +334,23 @@ func (s *sso) HandleCallback(w http.ResponseWriter, r *http.Request) {
 
 // authorize verifies a bearer token and pulls user information form the claims.
 func (s *sso) Authorize(authorization string) (*types.Claims, error) {
-	tok, err := jwt.ParseEncrypted(strings.TrimPrefix(authorization, Prefix))
+	bearerToken := authorization
+	if uncompressedToken, ok := s.bearerTokenMap.Get(authorization); ok {
+		bearerToken = uncompressedToken.(string)
+	}
+	tok, err := jwt.ParseEncrypted(strings.TrimPrefix(bearerToken, Prefix))
 	if err != nil {
+		s.bearerTokenMap.Remove(authorization)
 		return nil, fmt.Errorf("failed to parse encrypted token %v", err)
 	}
 	c := &types.Claims{}
 	if err := tok.Claims(s.privateKey, c); err != nil {
+		s.bearerTokenMap.Remove(authorization)
 		return nil, fmt.Errorf("failed to parse claims: %v", err)
 	}
 
 	if err := c.Validate(jwt.Expected{Issuer: issuer}); err != nil {
+		s.bearerTokenMap.Remove(authorization)
 		return nil, fmt.Errorf("failed to validate claims: %v", err)
 	}
 
