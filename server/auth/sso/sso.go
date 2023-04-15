@@ -8,11 +8,12 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
-	"github.com/google/uuid"
-	"k8s.io/utils/lru"
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/google/uuid"
+	"k8s.io/utils/lru"
 
 	"github.com/argoproj/argo-workflows/v3/config"
 
