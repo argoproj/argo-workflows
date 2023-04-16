@@ -2716,6 +2716,49 @@ func TestWorkflowTemplateWithEnumValueWithoutValue(t *testing.T) {
 	assert.EqualError(t, err, "spec.arguments.message.value is required")
 }
 
+var validWorkflowTemplateWithResourceManifest = `
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: workflow-template-with-resource-expr
+spec:
+  entrypoint: whalesay
+  templates:
+    - name: whalesay
+      inputs:
+        parameters:
+          - name: intParam
+            value: '20'
+          - name: strParam
+            value: 'foobarbaz'
+      outputs: {}
+      metadata: {}
+      resource:
+        action: create
+        setOwnerReference: true
+        manifest: |
+          apiVersion: v1
+          kind: Pod
+          metadata:
+            name: foo
+          spec:
+            restartPolicy: Never
+            containers:
+            - name: 'foo'
+              image: docker/whalesay
+              command: [cowsay]
+              args: ["{{=sprig.replace("bar", "baz", inputs.parameters.strParam)}}"]
+              ports:
+              - containerPort: {{=asInt(inputs.parameters.intParam)}}
+`
+
+func TestWorkflowTemplateWithResourceManifest(t *testing.T) {
+	err := createWorkflowTemplateFromSpec(validWorkflowTemplateWithResourceManifest)
+	assert.NoError(t, err)
+	err = validate(validWorkflowTemplateWithResourceManifest)
+	assert.NoError(t, err)
+}
+
 var validActiveDeadlineSecondsArgoVariable = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
