@@ -1509,9 +1509,6 @@ type WorkflowStep struct {
 }
 
 func (step *WorkflowStep) GetName() string {
-	if step.Inline != nil {
-		return step.Inline.Name
-	}
 	return step.Name
 }
 
@@ -1583,9 +1580,6 @@ func (step *WorkflowStep) GetTemplate() *Template {
 }
 
 func (step *WorkflowStep) GetTemplateName() string {
-	if step.Inline != nil {
-		return step.Inline.Name
-	}
 	return step.Template
 }
 
@@ -3056,9 +3050,6 @@ type DAGTask struct {
 }
 
 func (t *DAGTask) GetName() string {
-	if t.Inline != nil {
-		return t.Inline.Name
-	}
 	return t.Name
 }
 
@@ -3091,9 +3082,6 @@ func (t *DAGTask) GetTemplate() *Template {
 }
 
 func (t *DAGTask) GetTemplateName() string {
-	if t.Inline != nil {
-		return t.Inline.Name
-	}
 	return t.Template
 }
 
