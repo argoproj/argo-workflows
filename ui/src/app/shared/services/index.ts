@@ -9,25 +9,25 @@ import {WorkflowTemplateService} from './workflow-template-service';
 import {WorkflowsService} from './workflows-service';
 
 interface Services {
-    info: InfoService;
-    sensor: SensorService;
-    event: EventService;
-    eventSource: EventSourceService;
-    workflows: WorkflowsService;
-    workflowTemplate: WorkflowTemplateService;
-    clusterWorkflowTemplate: ClusterWorkflowTemplateService;
-    archivedWorkflows: ArchivedWorkflowsService;
-    cronWorkflows: CronWorkflowService;
+    info: typeof InfoService;
+    sensor: typeof SensorService;
+    event: typeof EventService;
+    eventSource: typeof EventSourceService;
+    workflows: typeof WorkflowsService;
+    workflowTemplate: typeof WorkflowTemplateService;
+    clusterWorkflowTemplate: typeof ClusterWorkflowTemplateService;
+    archivedWorkflows: typeof ArchivedWorkflowsService;
+    cronWorkflows: typeof CronWorkflowService;
 }
 
 export const services: Services = {
-    info: new InfoService(),
-    workflows: new WorkflowsService(),
-    workflowTemplate: new WorkflowTemplateService(),
-    clusterWorkflowTemplate: new ClusterWorkflowTemplateService(),
-    event: new EventService(),
-    eventSource: new EventSourceService(),
-    sensor: new SensorService(),
-    archivedWorkflows: new ArchivedWorkflowsService(),
-    cronWorkflows: new CronWorkflowService()
+    info: InfoService,
+    workflows: WorkflowsService,
+    workflowTemplate: WorkflowTemplateService,
+    clusterWorkflowTemplate: ClusterWorkflowTemplateService,
+    event: EventService,
+    eventSource: EventSourceService,
+    sensor: SensorService,
+    archivedWorkflows: ArchivedWorkflowsService,
+    cronWorkflows: CronWorkflowService
 };
