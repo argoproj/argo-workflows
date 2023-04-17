@@ -26,6 +26,7 @@ func (i *infoServer) GetUserInfo(ctx context.Context, _ *infopkg.GetUserInfoRequ
 			Subject:                 claims.Subject,
 			Issuer:                  claims.Issuer,
 			Groups:                  claims.Groups,
+			Name:                    claims.Name,
 			Email:                   claims.Email,
 			EmailVerified:           claims.EmailVerified,
 			ServiceAccountName:      claims.ServiceAccountName,
