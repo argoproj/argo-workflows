@@ -290,3 +290,70 @@ To define a real-time metric simply add `realtime: true` to a gauge metric with 
     realtime: true
     value: "{{duration}}"
 ```
+
+## Metrics endpoint
+
+By default, metrics are emitted by the workflow-controller on port 9090 on the `/metrics` path. By port-forwarding to the pod you can view the metrics in your browser at `http://localhost:9090/metrics`:
+
+`kubectl -n argo port-forward deploy/workflow-controller 9090:9090`
+
+A metrics service is not installed as part of [the default installation](quick-start.md) so you will need to add one if you wish to use a Prometheus Service Monitor:
+
+```yaml
+cat <<EOF | kubectl apply -f -
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: workflow-controller
+  name: workflow-controller-metrics
+  namespace: argo
+spec:
+  ports:
+  - name: metrics
+    port: 9090
+    protocol: TCP
+    targetPort: 9090
+  selector:
+    app: workflow-controller
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: argo-workflows
+  namespace: argo
+spec:
+  endpoints:
+  - port: metrics
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: argo-workflows
+EOF
+```
+
+If you have more than one controller pod, using one as a [hot-standby](high-availability.md), you should use [a headless service](https://kubernetes.io/docs/concepts/services-networking/service/#headless-services) to ensure that each pod is being scraped so that no metrics are missed.
+
+## Metrics configuration
+
+You can adjust various elements of the metrics configuration by changing values in the [Workflow Controller Config Map](workflow-controller-configmap.md).
+
+```yaml
+metricsConfig: |
+  # Enabled controls metric emission. Default is true, set "enabled: false" to turn off
+  enabled: true
+
+  # Path is the path where metrics are emitted. Must start with a "/". Default is "/metrics"
+  path: /metrics
+  
+  # Port is the port where metrics are emitted. Default is "9090"
+  port: 8080
+
+  # MetricsTTL sets how often custom metrics are cleared from memory. Default is "0", metrics are never cleared
+  metricsTTL: "10m"
+
+  # IgnoreErrors is a flag that instructs prometheus to ignore metric emission errors. Default is "false"
+  ignoreErrors: false
+
+  # Use a self-signed cert for TLS, default false
+  secure: false
+```

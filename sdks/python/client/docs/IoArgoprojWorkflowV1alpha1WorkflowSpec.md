@@ -9,7 +9,7 @@ Name | Type | Description | Notes
 **affinity** | [**Affinity**](Affinity.md) |  | [optional] 
 **archive_logs** | **bool** | ArchiveLogs indicates if the container logs should be archived | [optional] 
 **arguments** | [**IoArgoprojWorkflowV1alpha1Arguments**](IoArgoprojWorkflowV1alpha1Arguments.md) |  | [optional] 
-**artifact_gc** | [**IoArgoprojWorkflowV1alpha1ArtifactGC**](IoArgoprojWorkflowV1alpha1ArtifactGC.md) |  | [optional] 
+**artifact_gc** | [**IoArgoprojWorkflowV1alpha1WorkflowLevelArtifactGC**](IoArgoprojWorkflowV1alpha1WorkflowLevelArtifactGC.md) |  | [optional] 
 **artifact_repository_ref** | [**IoArgoprojWorkflowV1alpha1ArtifactRepositoryRef**](IoArgoprojWorkflowV1alpha1ArtifactRepositoryRef.md) |  | [optional] 
 **automount_service_account_token** | **bool** | AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods. ServiceAccountName of ExecutorConfig must be specified if this value is false. | [optional] 
 **dns_config** | [**PodDNSConfig**](PodDNSConfig.md) |  | [optional] 

@@ -1,6 +1,7 @@
 import {Ticker} from 'argo-ui/src/index';
 import * as React from 'react';
 import {Link} from 'react-router-dom';
+import * as models from '../../../../models';
 import {Workflow} from '../../../../models';
 import {ANNOTATION_DESCRIPTION, ANNOTATION_TITLE} from '../../../shared/annotations';
 import {uiUrl} from '../../../shared/base';
@@ -15,6 +16,7 @@ interface WorkflowsRowProps {
     onChange: (key: string) => void;
     select: (wf: Workflow) => void;
     checked: boolean;
+    columns: models.Column[];
 }
 
 interface WorkflowRowState {
@@ -85,6 +87,14 @@ export class WorkflowsRow extends React.Component<WorkflowsRowProps, WorkflowRow
                                 </div>
                             </div>
                         </div>
+                        {(this.props.columns || []).map(column => {
+                            const value = wf.metadata.labels[column.key];
+                            return (
+                                <div key={column.name} className='columns small-1'>
+                                    {value}
+                                </div>
+                            );
+                        })}
                         {this.state.hideDrawer ? (
                             <span />
                         ) : (

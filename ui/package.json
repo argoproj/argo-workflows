@@ -20,18 +20,18 @@
         "chartjs-plugin-annotation": "^0.5.7",
         "classnames": "^2.3.2",
         "cron-parser": "^4.8.1",
-        "cronstrue": "^2.24.0",
+        "cronstrue": "^2.26.0",
         "dagre": "^0.8.5",
         "history": "^4.10.1",
         "js-yaml": "^4.1.0",
         "json-merge-patch": "^0.2.3",
         "moment": "^2.29.4",
-        "moment-timezone": "^0.5.42",
+        "moment-timezone": "^0.5.43",
         "monaco-editor": "0.20.0",
         "prop-types": "^15.8.1",
         "react": "^16.14.0",
         "react-chartjs-2": "^2.11.2",
-        "react-datepicker": "^4.10.0",
+        "react-datepicker": "^4.11.0",
         "react-dom": "^16.14.0",
         "react-moment": "^1.1.3",
         "react-monaco-editor": "^0.50.1",
@@ -41,9 +41,9 @@
         "swagger-ui-react": "^4.12.0"
     },
     "devDependencies": {
-        "@babel/core": "^7.21.3",
-        "@babel/preset-env": "^7.20.2",
-        "@fortawesome/fontawesome-free": "^6.3.0",
+        "@babel/core": "^7.21.4",
+        "@babel/preset-env": "^7.21.4",
+        "@fortawesome/fontawesome-free": "^6.4.0",
         "@types/chart.js": "^2.9.24",
         "@types/classnames": "^2.3.1",
         "@types/dagre": "^0.7.48",
@@ -65,14 +65,14 @@
         "copy-webpack-plugin": "^5.1.2",
         "copyfiles": "^2.4.1",
         "file-loader": "^6.2.0",
-        "glob": "^9.3.2",
+        "glob": "^10.1.0",
         "html-webpack-plugin": "^4.5.2",
         "jest": "^26.6.3",
         "monaco-editor-webpack-plugin": "^1.9.1",
         "prettier": "^1.19.1",
         "raw-loader": "^0.5.1",
         "react-hot-loader": "^4.13.1",
-        "sass": "^1.60.0",
+        "sass": "^1.61.0",
         "sass-loader": "^10.1.0",
         "source-map-loader": "^1.1.3",
         "style-loader": "^0.20.1",
@@ -87,11 +87,13 @@
         "webfonts-generator": "^0.4.0",
         "webpack": "^4.46.0",
         "webpack-cli": "^4.10.0",
-        "webpack-dev-server": "^4.13.1"
+        "webpack-dev-server": "^4.13.2"
     },
     "resolutions": {
         "lodash": "4.17.21",
         "prismjs": "1.27.0",
-        "@types/react": "16.8.5"
+        "@types/react": "16.8.5",
+        "autolinker": "3.16.1",
+        "fast-json-patch": "3.1.1"
     }
 }

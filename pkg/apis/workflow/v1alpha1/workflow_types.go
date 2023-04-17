@@ -428,7 +428,7 @@ type WorkflowSpec struct {
 
 	// ArtifactGC describes the strategy to use when deleting artifacts from completed or deleted workflows (applies to all output Artifacts
 	// unless Artifact.ArtifactGC is specified, which overrides this)
-	ArtifactGC *ArtifactGC `json:"artifactGC,omitempty" protobuf:"bytes,43,opt,name=artifactGC"`
+	ArtifactGC *WorkflowLevelArtifactGC `json:"artifactGC,omitempty" protobuf:"bytes,43,opt,name=artifactGC"`
 }
 
 type LabelValueFrom struct {
@@ -476,7 +476,7 @@ func (wfs WorkflowSpec) GetArtifactGC() *ArtifactGC {
 		return &ArtifactGC{Strategy: ArtifactGCStrategyUndefined}
 	}
 
-	return wfs.ArtifactGC
+	return &wfs.ArtifactGC.ArtifactGC
 }
 
 func (wfs WorkflowSpec) GetTTLStrategy() *TTLStrategy {
@@ -1033,7 +1033,15 @@ func (podGC *PodGC) GetStrategy() PodGCStrategy {
 	return PodGCOnPodNone
 }
 
-// ArtifactGC describes how to delete artifacts from completed Workflows
+// WorkflowLevelArtifactGC describes how to delete artifacts from completed Workflows - this spec is used on the Workflow level
+type WorkflowLevelArtifactGC struct {
+	// ArtifactGC is an embedded struct
+	ArtifactGC `json:",inline" protobuf:"bytes,1,opt,name=artifactGC"`
+	// ForceFinalizerRemoval: if set to true, the finalizer will be removed in the case that Artifact GC fails
+	ForceFinalizerRemoval bool `json:"forceFinalizerRemoval,omitempty" protobuf:"bytes,2,opt,name=forceFinalizerRemoval"`
+}
+
+// ArtifactGC describes how to delete artifacts from completed Workflows - this is embedded into the WorkflowLevelArtifactGC, and also used for individual Artifacts to override that as needed
 type ArtifactGC struct {
 	// Strategy is the strategy to use.
 	// +kubebuilder:validation:Enum="";OnWorkflowCompletion;OnWorkflowDeletion;Never
@@ -1348,6 +1356,17 @@ func (gcStatus *ArtGCStatus) IsArtifactGCPodRecouped(podName string) bool {
 		return recouped
 	}
 	return false
+}
+func (gcStatus *ArtGCStatus) AllArtifactGCPodsRecouped() bool {
+	if gcStatus.PodsRecouped == nil {
+		return false
+	}
+	for _, recouped := range gcStatus.PodsRecouped {
+		if !recouped {
+			return false
+		}
+	}
+	return true
 }
 
 type ArtifactSearchResult struct {
@@ -3280,6 +3299,10 @@ func resolveTemplateReference(callerScope ResourceScope, resourceName string, ca
 		return fmt.Sprintf("%s/%s/%s", referenceScope, tmplRef.Name, tmplRef.Template), true
 	} else if callerScope != ResourceScopeLocal {
 		// Either a WorkflowTemplate or a ClusterWorkflowTemplate is calling a template inside itself. Template storage is needed
+		if caller.GetTemplate() != nil {
+			// If we have an inlined template here, use the inlined name
+			return fmt.Sprintf("%s/%s/inline/%s", callerScope, resourceName, caller.GetName()), true
+		}
 		return fmt.Sprintf("%s/%s/%s", callerScope, resourceName, caller.GetTemplateName()), true
 	} else {
 		// A Workflow is calling a template inside itself. Template storage is not needed
