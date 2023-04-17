@@ -241,7 +241,9 @@ If you don't use your own `ServiceAccount` and are just using `default` ServiceA
 
 ### What happens if Garbage Collection fails?
 
-If deletion of the artifact fails for some reason (other than the Artifact already have been deleted which is not considered a failure), the Workflow's Status will be marked with a new Condition to indicate "Artifact GC Failure", a Kubernetes Event will be issued, and the Argo Server UI will also indicate the failure. In that case, if the user needs to delete the Workflow and its child CRD objects, the user will need to patch the Workflow to remove the finalizer preventing the deletion:
+If deletion of the artifact fails for some reason (other than the Artifact already having been deleted which is not considered a failure), the Workflow's Status will be marked with a new Condition to indicate "Artifact GC Failure", a Kubernetes Event will be issued, and the Argo Server UI will also indicate the failure. For additional debugging, the user should find 1 or more Pods named `<wfName>-artgc-*` and can view the logs.
+
+If the user needs to delete the Workflow and its child CRD objects, they will need to patch the Workflow to remove the finalizer preventing the deletion:
 
 ```yaml
 apiVersion: argoproj.io/v1alpha1
@@ -257,6 +259,8 @@ kubectl patch workflow my-wf \
     --type json \
     --patch='[ { "op": "remove", "path": "/metadata/finalizers" } ]'
 ```
+
+Or for simplicity use the Argo CLI `argo delete` command with flag `--force`, which under the hood removes the finalizer before performing the deletion.
 
 ### Release Versions >= 3.5
 

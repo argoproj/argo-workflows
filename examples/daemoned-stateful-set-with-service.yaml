@@ -24,7 +24,7 @@ spec:
         - - name: test
             template: test
 
-    - name: delete    # This is called as an onExit handler
+    - name: delete # This is called as an onExit handler
       steps:
         - - name: delete-service
             template: delete-service
@@ -70,7 +70,7 @@ spec:
                 terminationGracePeriodSeconds: 10
                 containers:
                   - name: nginx
-                    image: k8s.gcr.io/nginx-slim:0.8
+                    image: registry.k8s.io/nginx-slim:0.8
                     ports:
                       - containerPort: 80
                         name: web
