@@ -11,6 +11,7 @@ Name | Type | Description | Notes
 **emailVerified** | **Boolean** |  |  [optional]
 **groups** | **List&lt;String&gt;** |  |  [optional]
 **issuer** | **String** |  |  [optional]
+**name** | **String** |  |  [optional]
 **serviceAccountName** | **String** |  |  [optional]
 **serviceAccountNamespace** | **String** |  |  [optional]
 **subject** | **String** |  |  [optional]
