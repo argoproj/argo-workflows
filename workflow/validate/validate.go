@@ -109,14 +109,15 @@ var _ wfv1.ArgumentsProvider = &FakeArguments{}
 
 func SubstituteResourceManifestExpressions(manifest string) string {
 	var substitutions = make(map[string]string)
-	pattern, _ := regexp.Compile(`{{=(.*)}}`)
+	pattern, _ := regexp.Compile(`{{\s*=\s*(.+?)\s*}}`)
 	for _, match := range pattern.FindAllStringSubmatch(manifest, -1) {
 		substitutions[string(match[1])] = placeholderGenerator.NextPlaceholder()
 	}
 
 	// since we don't need to resolve/evaluate here we can do just a simple replacement
 	for old, new := range substitutions {
-		manifest = strings.ReplaceAll(manifest, fmt.Sprintf("{{=%s}}", old), new)
+		rmatch, _ := regexp.Compile(`{{\s*=\s*` + regexp.QuoteMeta(old) + `\s*}}`)
+		manifest = rmatch.ReplaceAllString(manifest, new)
 	}
 
 	return manifest

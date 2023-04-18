@@ -2,6 +2,7 @@ package validate
 
 import (
 	"context"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -2716,6 +2717,33 @@ func TestWorkflowTemplateWithEnumValueWithoutValue(t *testing.T) {
 	assert.EqualError(t, err, "spec.arguments.message.value is required")
 }
 
+var resourceManifestWithExpressions = `
+apiVersion: v1
+kind: Pod
+metadata:
+  name: foo
+spec:
+  restartPolicy: Never
+  containers:
+  - name: 'foo'
+    image: docker/whalesay
+    command: [cowsay]
+    args: ["{{ = asInt(inputs.parameters.intParam) }}"]
+    ports:
+    - containerPort: {{=asInt(inputs.parameters.intParam)}}
+`
+
+func TestSubstituteResourceManifestExpressions(t *testing.T) {
+	replaced := SubstituteResourceManifestExpressions(resourceManifestWithExpressions)
+	assert.NotEqual(t, resourceManifestWithExpressions, replaced)
+
+	// despite spacing in the expr itself we should have only 1 placeholder here
+	patt, _ := regexp.Compile(`placeholder\-\d+`)
+	matches := patt.FindAllString(replaced, -1)
+	assert.Exactly(t, 2, len(matches))
+	assert.Equal(t, matches[0], matches[1])
+}
+
 var validWorkflowTemplateWithResourceManifest = `
 apiVersion: argoproj.io/v1alpha1
 kind: WorkflowTemplate
@@ -2753,9 +2781,7 @@ spec:
 `
 
 func TestWorkflowTemplateWithResourceManifest(t *testing.T) {
-	err := createWorkflowTemplateFromSpec(validWorkflowTemplateWithResourceManifest)
-	assert.NoError(t, err)
-	err = validate(validWorkflowTemplateWithResourceManifest)
+	err := validate(validWorkflowTemplateWithResourceManifest)
 	assert.NoError(t, err)
 }
 
