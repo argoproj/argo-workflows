@@ -4811,6 +4811,9 @@
         "issuer": {
           "type": "string"
         },
+        "name": {
+          "type": "string"
+        },
         "serviceAccountName": {
           "type": "string"
         },

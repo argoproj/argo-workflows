@@ -13,6 +13,7 @@ type Claims struct {
 	Groups                  []string               `json:"groups,omitempty"`
 	Email                   string                 `json:"email,omitempty"`
 	EmailVerified           bool                   `json:"email_verified,omitempty"`
+	Name                    string                 `json:"name,omitempty"`
 	ServiceAccountName      string                 `json:"service_account_name,omitempty"`
 	ServiceAccountNamespace string                 `json:"service_account_namespace,omitempty"`
 	PreferredUsername       string                 `json:"preferred_username,omitempty"`

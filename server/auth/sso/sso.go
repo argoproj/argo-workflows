@@ -287,6 +287,7 @@ func (s *sso) HandleCallback(w http.ResponseWriter, r *http.Request) {
 		Groups:                  groups,
 		Email:                   c.Email,
 		EmailVerified:           c.EmailVerified,
+		Name:                    c.Name,
 		ServiceAccountName:      c.ServiceAccountName,
 		PreferredUsername:       c.PreferredUsername,
 		ServiceAccountNamespace: c.ServiceAccountNamespace,
