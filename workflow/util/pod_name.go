@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"hash/fnv"
 	"os"
+	"strings"
 
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
@@ -55,7 +56,10 @@ func GeneratePodName(workflowName, nodeName, templateName, nodeID string, versio
 		return workflowName
 	}
 
-	prefix := fmt.Sprintf("%s-%s", workflowName, templateName)
+	prefix := workflowName
+	if !strings.Contains(nodeName, ".inline") {
+		prefix = fmt.Sprintf("%s-%s", workflowName, templateName)
+	}
 	prefix = ensurePodNamePrefixLength(prefix)
 
 	h := fnv.New32a()
