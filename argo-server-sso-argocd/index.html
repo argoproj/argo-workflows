@@ -3899,6 +3899,7 @@
 <span class="w">          </span><span class="no">- https://argo-workflows.mydomain.com/oauth2/callback</span>
 <span class="w">        </span><span class="no">secretEnv: ARGO_WORKFLOWS_SSO_CLIENT_SECRET</span>
 </code></pre></div>
+<p>Note that the <code>id</code> field of <code>staticClients</code> must match the <code>client-id</code>.</p>
 <p>In Argo Workflows add <code>--auth-mode=sso</code> argument to argo-server deployment.</p>
 <div class="highlight"><pre><span></span><code><span class="nn">---</span>
 <span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">apps/v1</span>

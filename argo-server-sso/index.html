@@ -4033,6 +4033,9 @@ kubectl<span class="w"> </span>create<span class="w"> </span>secret<span class="
 <span class="w">    </span><span class="nt">workflows.argoproj.io/rbac-rule-precedence</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;0&quot;</span>
 </code></pre></div>
 <p>The precedence must be the lowest of all your service accounts.</p>
+<p>As of Kubernetes v1.24, secrets for a service account token are no longer automatically created.
+Therefore, service account secrets for SSO RBAC must be created manually.
+See <a href="../manually-create-secrets/">Manually create secrets</a> for detailed instructions.</p>
 <h2 id="sso-rbac-namespace-delegation">SSO RBAC Namespace Delegation<a class="headerlink" href="#sso-rbac-namespace-delegation" title="Permanent link">&para;</a></h2>
 <blockquote>
 <p>v3.3 and after</p>
