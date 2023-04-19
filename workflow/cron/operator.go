@@ -305,7 +305,7 @@ func (woc *cronWfOperationCtx) removeFromActiveList(uid types.UID) {
 }
 
 func (woc *cronWfOperationCtx) enforceHistoryLimit(ctx context.Context, workflows []v1alpha1.Workflow) error {
-	woc.log.Infof("Enforcing history limit for '%s'", woc.cronWf.Name)
+	woc.log.Debugf("Enforcing history limit for '%s'", woc.cronWf.Name)
 
 	var successfulWorkflows []v1alpha1.Workflow
 	var failedWorkflows []v1alpha1.Workflow
