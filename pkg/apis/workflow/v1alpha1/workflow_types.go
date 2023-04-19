@@ -3460,11 +3460,24 @@ type MetricLabel struct {
 
 // Gauge is a Gauge prometheus metric
 type Gauge struct {
-	// Value is the value of the metric
+	// Value is the value to be used in the operation with the metric's current value. If no operation is set,
+	// value is the value of the metric
 	Value string `json:"value" protobuf:"bytes,1,opt,name=value"`
 	// Realtime emits this metric in real time if applicable
 	Realtime *bool `json:"realtime" protobuf:"varint,2,opt,name=realtime"`
+	// Operation defines the operation to apply with value and the metrics' current value
+	// +optional
+	Operation GaugeOperation `json:"operation,omitempty" protobuf:"bytes,3,opt,name=operation"`
 }
+
+// A GaugeOperation is the set of operations that can be used in a gauge metric.
+type GaugeOperation string
+
+const (
+	GaugeOperationSet GaugeOperation = "Set"
+	GaugeOperationAdd GaugeOperation = "Add"
+	GaugeOperationSub GaugeOperation = "Sub"
+)
 
 // Histogram is a Histogram prometheus metric
 type Histogram struct {

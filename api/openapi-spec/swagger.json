@@ -8714,12 +8714,16 @@
         "realtime"
       ],
       "properties": {
+        "operation": {
+          "description": "Operation defines the operation to apply with value and the metrics' current value",
+          "type": "string"
+        },
         "realtime": {
           "description": "Realtime emits this metric in real time if applicable",
           "type": "boolean"
         },
         "value": {
-          "description": "Value is the value of the metric",
+          "description": "Value is the value to be used in the operation with the metric's current value. If no operation is set, value is the value of the metric",
           "type": "string"
         }
       }
