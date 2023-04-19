@@ -318,6 +318,14 @@ func (we *WorkflowExecutor) saveArtifact(ctx context.Context, containerName stri
 		}
 		return err
 	}
+	fi, err := os.Stat(localArtPath)
+	if err != nil {
+		return err
+	}
+	size := fi.Size()
+	if size == 0 {
+		log.Warnf("The file %q is empty. It may not be uploaded successfully depending on the artifact driver", localArtPath)
+	}
 	return we.saveArtifactFromFile(ctx, art, fileName, localArtPath)
 }
 
