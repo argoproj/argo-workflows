@@ -66,6 +66,7 @@ J.P.
 Jemison
 JetBrains
 KNative
+Kaniko
 Katacoda
 Kerberos
 Killercoda
@@ -128,12 +129,14 @@ blkperl
 boolean
 booleans
 buildkit
+changelog
 config
 cpu
 cron
 daemoned
 dev-container
 dinever
+dockershim
 dropdown
 e.g.
 e2e

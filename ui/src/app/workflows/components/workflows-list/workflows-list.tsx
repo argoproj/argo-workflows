@@ -41,6 +41,8 @@ interface State {
     resourceVersion?: string;
     error?: Error;
     batchActionDisabled: Actions.OperationDisabled;
+    links: models.Link[];
+    columns: models.Column[];
 }
 
 interface WorkflowListRenderOptions {
@@ -120,11 +122,17 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
             minStartedAt: this.lastMonth(),
             maxStartedAt: this.nextDay(),
             selectedWorkflows: new Map<string, models.Workflow>(),
-            batchActionDisabled: {...allBatchActionsEnabled}
+            batchActionDisabled: {...allBatchActionsEnabled},
+            links: [],
+            columns: []
         };
     }
 
     public componentDidMount(): void {
+        services.info.getInfo().then(info => {
+            const links = (info.links || []).filter(link => link.scope === 'workflow-list');
+            this.setState({links, columns: info.columns});
+        });
         this.setState({selectedWorkflows: new Map<string, models.Workflow>()}, () => {
             this.fetchWorkflows(
                 this.state.namespace,
@@ -162,7 +170,12 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                                         title: 'Submit New Workflow',
                                         iconClassName: 'fa fa-plus',
                                         action: () => ctx.navigation.goto('.', {sidePanel: 'submit-new-workflow'})
-                                    }
+                                    },
+                                    ...this.state.links.map(link => ({
+                                        title: link.name,
+                                        iconClassName: 'fa fa-external-link',
+                                        action: () => (window.location.href = link.url)
+                                    }))
                                 ]
                             }
                         }}>
@@ -367,6 +380,13 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                                     <div className='columns small-1'>PROGRESS</div>
                                     <div className='columns small-2'>MESSAGE</div>
                                     <div className='columns small-1'>DETAILS</div>
+                                    {(this.state.columns || []).map(col => {
+                                        return (
+                                            <div className='columns small-1' key={col.key}>
+                                                {col.name}
+                                            </div>
+                                        );
+                                    })}
                                 </div>
                             </div>
                             {this.state.workflows.map(wf => {
@@ -375,6 +395,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                                         workflow={wf}
                                         key={wf.metadata.uid}
                                         checked={this.state.selectedWorkflows.has(wf.metadata.uid)}
+                                        columns={this.state.columns}
                                         onChange={key => {
                                             const value = `${key}=${wf.metadata.labels[key]}`;
                                             let newTags: string[] = [];

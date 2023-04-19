@@ -933,6 +933,8 @@ spec:
                 type: object
               artifactGC:
                 properties:
+                  forceFinalizerRemoval:
+                    type: boolean
                   podMetadata:
                     properties:
                       annotations:

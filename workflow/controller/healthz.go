@@ -42,13 +42,13 @@ func (wfc *WorkflowController) Healthz(w http.ResponseWriter, r *http.Request) {
 		}
 		return nil
 	}()
-	log.WithField("err", err).
-		WithField("managedNamespace", wfc.managedNamespace).
-		WithField("instanceID", instanceID).
-		WithField("labelSelector", labelSelector).
-		WithField("age", age).
-		Info("healthz")
 	if err != nil {
+		log.WithField("err", err).
+			WithField("managedNamespace", wfc.managedNamespace).
+			WithField("instanceID", instanceID).
+			WithField("labelSelector", labelSelector).
+			WithField("age", age).
+			Info("healthz")
 		w.WriteHeader(500)
 		_, _ = w.Write([]byte(err.Error()))
 	} else {

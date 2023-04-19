@@ -50,6 +50,10 @@ export class UserInfo extends BasePage<RouteComponentProps<any>, State> {
                                 <dd>{(this.state.userInfo.groups && this.state.userInfo.groups.length > 0 && this.state.userInfo.groups.join(', ')) || '-'}</dd>
                             </dl>
                             <dl>
+                                <dt>Name:</dt>
+                                <dd>{this.state.userInfo.name || '-'}</dd>
+                            </dl>
+                            <dl>
                                 <dt>Email:</dt>
                                 <dd>{this.state.userInfo.email || '-'}</dd>
                             </dl>
