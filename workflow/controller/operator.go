@@ -3485,10 +3485,11 @@ func (woc *wfOperationCtx) createPDBResource(ctx context.Context) error {
 		woc.wf.Name,
 		metav1.GetOptions{},
 	)
-	if err != nil && !apierr.IsNotFound(err) {
+	if err != nil && !apierr.IsNotFound(err) && !apierr.IsAlreadyExists(err) {
 		return err
 	}
 	if pdb != nil && pdb.Name != "" {
+		woc.log.Info("PDB resource already exists for workflow.")
 		return nil
 	}
 
