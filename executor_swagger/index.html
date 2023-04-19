@@ -2541,6 +2541,13 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#gaugeoperation" class="md-nav__link">
+     GaugeOperation
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#gitartifact" class="md-nav__link">
      GitArtifact
   </a>
@@ -5969,6 +5976,13 @@
           <li class="md-nav__item">
   <a href="#gauge" class="md-nav__link">
      Gauge
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gaugeoperation" class="md-nav__link">
+     GaugeOperation
   </a>
   
 </li>
@@ -13442,6 +13456,15 @@ PDs support ownership management and SELinux relabeling.</p>
 </thead>
 <tbody>
 <tr>
+<td>operation</td>
+<td><a href="#gauge-operation">GaugeOperation</a></td>
+<td><code>GaugeOperation</code></td>
+<td style="text-align: center;"></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
 <td>realtime</td>
 <td>boolean</td>
 <td><code>bool</code></td>
@@ -13456,7 +13479,39 @@ PDs support ownership management and SELinux relabeling.</p>
 <td><code>string</code></td>
 <td style="text-align: center;"></td>
 <td></td>
-<td>Value is the value of the metric</td>
+<td>Value is the value to be used in the operation with the metric's current value. If no operation is set,</td>
+<td></td>
+</tr>
+<tr>
+<td>value is the value of the metric</td>
+<td></td>
+<td></td>
+<td style="text-align: center;"></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h3 id="gaugeoperation"><span id="gauge-operation"></span> GaugeOperation<a class="headerlink" href="#gaugeoperation" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Go type</th>
+<th>Default</th>
+<th>Description</th>
+<th>Example</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>GaugeOperation</td>
+<td>string</td>
+<td>string</td>
+<td></td>
+<td></td>
 <td></td>
 </tr>
 </tbody>
