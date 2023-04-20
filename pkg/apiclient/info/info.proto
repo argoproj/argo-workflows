@@ -32,6 +32,7 @@ message GetUserInfoResponse {
   bool emailVerified = 5;
   string serviceAccountName = 6;
   string serviceAccountNamespace = 7;
+  string name = 8;
 }
 
 message CollectEventRequest {

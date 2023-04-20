@@ -91,7 +91,16 @@ func constructOrUpdateGaugeMetric(metric prometheus.Metric, metricSpec *wfv1.Pro
 	}
 
 	gauge := metric.(prometheus.Gauge)
-	gauge.Set(val)
+	switch metricSpec.Gauge.Operation {
+	case wfv1.GaugeOperationAdd:
+		gauge.Add(val)
+	case wfv1.GaugeOperationSet:
+		gauge.Set(val)
+	case wfv1.GaugeOperationSub:
+		gauge.Sub(val)
+	default:
+		gauge.Set(val)
+	}
 	return gauge, nil
 }
 

@@ -1493,13 +1493,20 @@ definitions:
   Gauge:
     description: Gauge is a Gauge prometheus metric
     properties:
+      operation:
+        $ref: '#/definitions/GaugeOperation'
       realtime:
         description: Realtime emits this metric in real time if applicable
         type: boolean
       value:
-        description: Value is the value of the metric
+        description: |-
+          Value is the value to be used in the operation with the metric's current value. If no operation is set,
+          value is the value of the metric
         type: string
     type: object
+  GaugeOperation:
+    title: A GaugeOperation is the set of operations that can be used in a gauge metric.
+    type: string
   GitArtifact:
     description: GitArtifact is the location of an git artifact
     properties:

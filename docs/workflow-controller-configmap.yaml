@@ -361,6 +361,7 @@ data:
     scopes:
      - groups
      - email
+     - profile
     # RBAC Config. >= v2.12
     rbac:
       enabled: false
