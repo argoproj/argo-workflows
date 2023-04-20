@@ -630,11 +630,16 @@ message GCSBucket {
 
 // Gauge is a Gauge prometheus metric
 message Gauge {
-  // Value is the value of the metric
+  // Value is the value to be used in the operation with the metric's current value. If no operation is set,
+  // value is the value of the metric
   optional string value = 1;
 
   // Realtime emits this metric in real time if applicable
   optional bool realtime = 2;
+
+  // Operation defines the operation to apply with value and the metrics' current value
+  // +optional
+  optional string operation = 3;
 }
 
 // GitArtifact is the location of an git artifact
