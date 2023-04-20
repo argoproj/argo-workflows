@@ -1661,8 +1661,21 @@ If this is not specified, the default behavior is defined by gRPC.
 
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
+| operation | [GaugeOperation](#gauge-operation)| `GaugeOperation` |  | |  |  |
 | realtime | boolean| `bool` |  | | Realtime emits this metric in real time if applicable |  |
-| value | string| `string` |  | | Value is the value of the metric |  |
+| value | string| `string` |  | | Value is the value to be used in the operation with the metric's current value. If no operation is set,
+value is the value of the metric |  |
+
+
+
+### <span id="gauge-operation"></span> GaugeOperation
+
+
+  
+
+| Name | Type | Go type | Default | Description | Example |
+|------|------|---------| ------- |-------------|---------|
+| GaugeOperation | string| string | |  |  |
 
 
 
