@@ -963,6 +963,7 @@ func (ctx *templateValidationCtx) addOutputsToScope(tmpl *wfv1.Template, prefix 
 	scope[fmt.Sprintf("%s.id", prefix)] = true
 	scope[fmt.Sprintf("%s.startedAt", prefix)] = true
 	scope[fmt.Sprintf("%s.finishedAt", prefix)] = true
+	scope[fmt.Sprintf("%s.hostNodeName", prefix)] = true
 	if tmpl.Daemon != nil && *tmpl.Daemon {
 		scope[fmt.Sprintf("%s.ip", prefix)] = true
 	}

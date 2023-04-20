@@ -2829,6 +2829,10 @@ func (woc *wfOperationCtx) buildLocalScope(scope *wfScope, prefix string, node *
 		key := fmt.Sprintf("%s.status", prefix)
 		scope.addParamToScope(key, string(node.Phase))
 	}
+	if node.HostNodeName != "" {
+		key := fmt.Sprintf("%s.hostNodeName", prefix)
+		scope.addParamToScope(key, string(node.HostNodeName))
+	}
 	woc.addOutputsToLocalScope(prefix, node.Outputs, scope)
 }
 

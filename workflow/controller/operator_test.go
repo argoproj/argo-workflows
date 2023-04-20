@@ -3977,6 +3977,7 @@ status:
         cpu: 10
         memory: 0
       startedAt: "2020-04-02T16:29:18Z"
+      hostNodeName: ip-127-0-1-1
       templateName: influxdb
       type: Pod
     daemon-step-dvbnn-3639466923:
@@ -4020,6 +4021,7 @@ func TestRetryNodeOutputs(t *testing.T) {
 	assert.Contains(t, scope.scope, "steps.influx.id")
 	assert.Contains(t, scope.scope, "steps.influx.startedAt")
 	assert.Contains(t, scope.scope, "steps.influx.finishedAt")
+	assert.Contains(t, scope.scope, "steps.influx.hostNodeName")
 }
 
 var workflowWithPVCAndFailingStep = `
