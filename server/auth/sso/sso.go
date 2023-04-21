@@ -49,18 +49,19 @@ var _ Interface = &sso{}
 type Config = config.SSOConfig
 
 type sso struct {
-	config          *oauth2.Config
-	issuer          string
-	idTokenVerifier *oidc.IDTokenVerifier
-	httpClient      *http.Client
-	baseHRef        string
-	secure          bool
-	privateKey      crypto.PrivateKey
-	encrypter       jose.Encrypter
-	rbacConfig      *config.RBACConfig
-	expiry          time.Duration
-	customClaimName string
-	userInfoPath    string
+	config              *oauth2.Config
+	issuer              string
+	idTokenVerifier     *oidc.IDTokenVerifier
+	httpClient          *http.Client
+	baseHRef            string
+	secure              bool
+	privateKey          crypto.PrivateKey
+	encrypter           jose.Encrypter
+	rbacConfig          *config.RBACConfig
+	expiry              time.Duration
+	customClaimName     string
+	userInfoPath        string
+	userInfoGroupsField string
 }
 
 func (s *sso) IsRBACEnabled() bool {
@@ -188,18 +189,19 @@ func newSso(
 	log.WithFields(lf).Info("SSO configuration")
 
 	return &sso{
-		config:          config,
-		idTokenVerifier: idTokenVerifier,
-		baseHRef:        baseHRef,
-		httpClient:      httpClient,
-		secure:          secure,
-		privateKey:      privateKey,
-		encrypter:       encrypter,
-		rbacConfig:      c.RBAC,
-		expiry:          c.GetSessionExpiry(),
-		customClaimName: c.CustomGroupClaimName,
-		userInfoPath:    c.UserInfoPath,
-		issuer:          c.Issuer,
+		config:              config,
+		idTokenVerifier:     idTokenVerifier,
+		baseHRef:            baseHRef,
+		httpClient:          httpClient,
+		secure:              secure,
+		privateKey:          privateKey,
+		encrypter:           encrypter,
+		rbacConfig:          c.RBAC,
+		expiry:              c.GetSessionExpiry(),
+		customClaimName:     c.CustomGroupClaimName,
+		userInfoPath:        c.UserInfoPath,
+		userInfoGroupsField: c.UserInfoGroupsField,
+		issuer:              c.Issuer,
 	}, nil
 }
 
@@ -271,7 +273,10 @@ func (s *sso) HandleCallback(w http.ResponseWriter, r *http.Request) {
 	// Some SSO implementations (Okta) require a call to
 	// the OIDC user info path to get attributes like groups
 	if s.userInfoPath != "" {
-		groups, err = c.GetUserInfoGroups(oauth2Token.AccessToken, s.issuer, s.userInfoPath)
+		if s.userInfoGroupsField == "" {
+			s.userInfoGroupsField = "groups"
+		}
+		groups, err = c.GetUserInfoGroups(oauth2Token.AccessToken, s.issuer, s.userInfoPath, s.userInfoGroupsField)
 		if err != nil {
 			w.WriteHeader(401)
 			return

@@ -20,6 +20,7 @@ type SSOConfig struct {
 	// customGroupClaimName will override the groups claim name
 	CustomGroupClaimName string `json:"customGroupClaimName,omitempty"`
 	UserInfoPath         string `json:"userInfoPath,omitempty"`
+	UserInfoGroupsField  string `json:"userInfoGroupsField,omitempty"`
 	InsecureSkipVerify   bool   `json:"insecureSkipVerify,omitempty"`
 }
 
