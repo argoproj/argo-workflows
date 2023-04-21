@@ -3,10 +3,9 @@ package types
 import (
 	"encoding/json"
 	"fmt"
-	"net/http"
-	"reflect"
-
 	"github.com/go-jose/go-jose/v3/jwt"
+	"io"
+	"net/http"
 )
 
 type Claims struct {
@@ -78,26 +77,13 @@ func (c *Claims) GetCustomGroup(customKeyName string) ([]string, error) {
 	return newSlice, nil
 }
 
-func TransTypeToStringList(v reflect.Value) []string {
-	var s []string
-	for i := 0; i < v.Len(); i++ {
-		str, ok := v.Index(i).Interface().(string)
-		if ok {
-			s = append(s, str)
-		}
+func TransToStringList(v interface{}) []string {
+	v_ := v.([]interface{})
+	array := make([]string, len(v_))
+	for i, str := range v_ {
+		array[i] = str.(string)
 	}
-	return s
-}
-
-func GetUserInfoStruct(userInfoGroupsField string) any {
-	newType := reflect.StructOf([]reflect.StructField{
-		{
-			Name: "Groups",
-			Type: reflect.TypeOf([]string{""}),
-			Tag:  reflect.StructTag(fmt.Sprintf(`json:"%s"`, userInfoGroupsField)),
-		},
-	})
-	return reflect.New(newType).Interface()
+	return array
 }
 
 func (c *Claims) GetUserInfoGroups(accessToken, issuer, userInfoPath string, userInfoGroupsField string) ([]string, error) {
@@ -117,14 +103,20 @@ func (c *Claims) GetUserInfoGroups(accessToken, issuer, userInfoPath string, use
 		return nil, err
 	}
 
-	userInfo := GetUserInfoStruct(userInfoGroupsField)
-
 	defer response.Body.Close()
-	err = json.NewDecoder(response.Body).Decode(&userInfo)
+
+	var userInfo map[string]interface{}
+
+	body, err := io.ReadAll(response.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	err = json.Unmarshal(body, &userInfo)
 
 	if err != nil {
 		return nil, err
 	}
 
-	return TransTypeToStringList(reflect.ValueOf(userInfo).Elem().FieldByName("Groups")), nil
+	return TransToStringList(userInfo[userInfoGroupsField]), nil
 }
