@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"reflect"
 
 	"github.com/go-jose/go-jose/v3/jwt"
 )
@@ -18,10 +19,6 @@ type Claims struct {
 	ServiceAccountNamespace string                 `json:"service_account_namespace,omitempty"`
 	PreferredUsername       string                 `json:"preferred_username,omitempty"`
 	RawClaim                map[string]interface{} `json:"-"`
-}
-
-type UserInfo struct {
-	Groups []string `json:"groups"`
 }
 
 type HttpClient interface {
@@ -81,7 +78,29 @@ func (c *Claims) GetCustomGroup(customKeyName string) ([]string, error) {
 	return newSlice, nil
 }
 
-func (c *Claims) GetUserInfoGroups(accessToken, issuer, userInfoPath string) ([]string, error) {
+func TransTypeToStringList(v reflect.Value) []string {
+	var s []string
+	for i := 0; i < v.Len(); i++ {
+		str, ok := v.Index(i).Interface().(string)
+		if ok {
+			s = append(s, str)
+		}
+	}
+	return s
+}
+
+func GetUserInfoStruct(userInfoGroupsField string) any {
+	newType := reflect.StructOf([]reflect.StructField{
+		{
+			Name: "Groups",
+			Type: reflect.TypeOf([]string{""}),
+			Tag:  reflect.StructTag(fmt.Sprintf(`json:"%s"`, userInfoGroupsField)),
+		},
+	})
+	return reflect.New(newType).Interface()
+}
+
+func (c *Claims) GetUserInfoGroups(accessToken, issuer, userInfoPath string, userInfoGroupsField string) ([]string, error) {
 	url := fmt.Sprintf("%s%s", issuer, userInfoPath)
 	request, err := http.NewRequest("GET", url, nil)
 
@@ -98,7 +117,7 @@ func (c *Claims) GetUserInfoGroups(accessToken, issuer, userInfoPath string) ([]
 		return nil, err
 	}
 
-	userInfo := UserInfo{}
+	userInfo := GetUserInfoStruct(userInfoGroupsField)
 
 	defer response.Body.Close()
 	err = json.NewDecoder(response.Body).Decode(&userInfo)
@@ -107,5 +126,5 @@ func (c *Claims) GetUserInfoGroups(accessToken, issuer, userInfoPath string) ([]
 		return nil, err
 	}
 
-	return userInfo.Groups, nil
+	return TransTypeToStringList(reflect.ValueOf(userInfo).Elem().FieldByName("Groups")), nil
 }
