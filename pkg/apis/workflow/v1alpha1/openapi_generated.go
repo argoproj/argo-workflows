@@ -2677,7 +2677,7 @@ func schema_pkg_apis_workflow_v1alpha1_Gauge(ref common.ReferenceCallback) commo
 				Properties: map[string]spec.Schema{
 					"value": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Value is the value of the metric",
+							Description: "Value is the value to be used in the operation with the metric's current value. If no operation is set, value is the value of the metric",
 							Default:     "",
 							Type:        []string{"string"},
 							Format:      "",
@@ -2687,6 +2687,13 @@ func schema_pkg_apis_workflow_v1alpha1_Gauge(ref common.ReferenceCallback) commo
 						SchemaProps: spec.SchemaProps{
 							Description: "Realtime emits this metric in real time if applicable",
 							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
+					"operation": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Operation defines the operation to apply with value and the metrics' current value",
+							Type:        []string{"string"},
 							Format:      "",
 						},
 					},

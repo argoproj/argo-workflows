@@ -1607,6 +1607,8 @@ spec:
                           type: object
                         gauge:
                           properties:
+                            operation:
+                              type: string
                             realtime:
                               type: boolean
                             value:
@@ -6824,6 +6826,8 @@ spec:
                               type: object
                             gauge:
                               properties:
+                                operation:
+                                  type: string
                                 realtime:
                                   type: boolean
                                 value:
@@ -14913,6 +14917,8 @@ spec:
                                 type: object
                               gauge:
                                 properties:
+                                  operation:
+                                    type: string
                                   realtime:
                                     type: boolean
                                   value:
@@ -26589,6 +26595,8 @@ spec:
                                 type: object
                               gauge:
                                 properties:
+                                  operation:
+                                    type: string
                                   realtime:
                                     type: boolean
                                   value:
@@ -31292,6 +31300,8 @@ spec:
                               type: object
                             gauge:
                               properties:
+                                operation:
+                                  type: string
                                 realtime:
                                   type: boolean
                                 value:
@@ -36509,6 +36519,8 @@ spec:
                                   type: object
                                 gauge:
                                   properties:
+                                    operation:
+                                      type: string
                                     realtime:
                                       type: boolean
                                     value:
@@ -44598,6 +44610,8 @@ spec:
                                     type: object
                                   gauge:
                                     properties:
+                                      operation:
+                                        type: string
                                       realtime:
                                         type: boolean
                                       value:

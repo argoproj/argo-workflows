@@ -3591,8 +3591,9 @@ Gauge is a Gauge prometheus metric
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
+|`operation`|`string`|Operation defines the operation to apply with value and the metrics' current value|
 |`realtime`|`boolean`|Realtime emits this metric in real time if applicable|
-|`value`|`string`|Value is the value of the metric|
+|`value`|`string`|Value is the value to be used in the operation with the metric's current value. If no operation is set, value is the value of the metric|
 
 ## Histogram
 
