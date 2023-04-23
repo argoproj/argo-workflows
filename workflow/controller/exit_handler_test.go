@@ -70,14 +70,76 @@ func TestStepsOnExitTmpl(t *testing.T) {
 	makePodsPhase(ctx, woc, apiv1.PodFailed)
 	woc = newWorkflowOperationCtx(woc.wf, controller)
 	woc.operate(ctx)
-	onExitNodeIsPresent := false
-	for _, node := range woc.wf.Status.Nodes {
-		if strings.Contains(node.Name, "onExit") {
-			onExitNodeIsPresent = true
-			break
-		}
+
+	node := woc.wf.Status.Nodes.FindByDisplayName("leafA.onExit")
+	assert.NotNil(t, node)
+}
+
+func TestStepsOnExitTmplWithExpression(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(stepsOnExitTmpl)
+
+	for _, step := range wf.Spec.Templates[0].Steps {
+		// add an expression to the exit hook
+		stepHooks := step.Steps[0].Hooks
+		exitHook := stepHooks["exit"]
+		// we check that we can do both 'simple' and 'expr' expressions in exit hook
+		// conditions, referring to step outputs for the step the hook is part of
+		exitHook.Expression = "'{{=steps.leafA.outputs.parameters.result}}' == steps.leafA.outputs.parameters.result"
+		stepHooks["exit"] = exitHook
 	}
-	assert.True(t, onExitNodeIsPresent)
+
+	cancel, controller := newController(wf)
+	defer cancel()
+
+	ctx := context.Background()
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate(ctx)
+
+	// at this point the step is there and pending
+	node := woc.wf.Status.Nodes.FindByDisplayName("leafA")
+	assert.NotNil(t, node)
+	assert.Equal(t, wfv1.NodePending, node.Phase)
+
+	// since it's pending, the exit hook should not have been created yet
+	node = woc.wf.Status.Nodes.FindByDisplayName("leafA.onExit")
+	assert.Nil(t, node)
+
+	// add the outputs to the pod, so that the expression has them in scope
+	sampleOutputs := wfv1.Outputs{
+		Parameters: []wfv1.Parameter{
+			{Name: "result", Value: wfv1.AnyStringPtr("welcome")},
+		},
+		ExitCode: pointer.StringPtr("0"),
+	}
+	makePodsPhase(ctx, woc, apiv1.PodSucceeded, withOutputs(wfv1.MustMarshallJSON(sampleOutputs)))
+
+	woc = newWorkflowOperationCtx(woc.wf, controller)
+	woc.operate(ctx)
+
+	// and now it's there - this means that the expression evaluated to true
+	node = woc.wf.Status.Nodes.FindByDisplayName("leafA.onExit")
+	assert.NotNil(t, node)
+
+	// then check leafB's exit hook runs too. It has the same expression as
+	// leafA. This checks that expressions can refer to outputs of other
+	// completed steps.
+	woc = newWorkflowOperationCtx(woc.wf, controller)
+	woc.operate(ctx)
+
+	node = woc.wf.Status.Nodes.FindByDisplayName("leafB")
+	assert.NotNil(t, node)
+	assert.Equal(t, wfv1.NodePending, node.Phase)
+
+	node = woc.wf.Status.Nodes.FindByDisplayName("leafB.onExit")
+	assert.Nil(t, node)
+
+	makePodsPhase(ctx, woc, apiv1.PodSucceeded, withOutputs(wfv1.MustMarshallJSON(sampleOutputs)))
+
+	woc = newWorkflowOperationCtx(woc.wf, controller)
+	woc.operate(ctx)
+
+	node = woc.wf.Status.Nodes.FindByDisplayName("leafB.onExit")
+	assert.NotNil(t, node)
 }
 
 var dagOnExitTmpl = `apiVersion: argoproj.io/v1alpha1
@@ -138,14 +200,75 @@ func TestDAGOnExitTmpl(t *testing.T) {
 	makePodsPhase(ctx, woc, apiv1.PodFailed)
 	woc = newWorkflowOperationCtx(woc.wf, controller)
 	woc.operate(ctx)
-	onExitNodeIsPresent := false
-	for _, node := range woc.wf.Status.Nodes {
-		if strings.Contains(node.Name, "onExit") {
-			onExitNodeIsPresent = true
-			break
-		}
+
+	node := woc.wf.Status.Nodes.FindByDisplayName("leafA.onExit")
+	assert.NotNil(t, node)
+}
+
+func TestDagOnExitTmplWithExpression(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(dagOnExitTmpl)
+
+	for _, task := range wf.Spec.Templates[0].DAG.Tasks {
+		// add an expression to the exit hook
+		dagTaskHooks := task.Hooks
+		exitHook := dagTaskHooks["exit"]
+
+		// we check that we can do both 'simple' and 'expr' expressions in exit hook
+		// conditions, referring to step outputs for the step the hook is part of
+		exitHook.Expression = "'{{=tasks.leafA.outputs.parameters.result}}' == tasks.leafA.outputs.parameters.result"
+		dagTaskHooks["exit"] = exitHook
 	}
-	assert.True(t, onExitNodeIsPresent)
+
+	cancel, controller := newController(wf)
+	defer cancel()
+
+	ctx := context.Background()
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate(ctx)
+
+	node := woc.wf.Status.Nodes.FindByDisplayName("leafA")
+	assert.NotNil(t, node)
+	assert.Equal(t, wfv1.NodePending, node.Phase)
+
+	// since it's pending, the exit hook should not have been created yet
+	node = woc.wf.Status.Nodes.FindByDisplayName("leafA.onExit")
+	assert.Nil(t, node)
+
+	// add the outputs to the pod, so that the expression has them in scope
+	sampleOutputs := wfv1.Outputs{
+		Parameters: []wfv1.Parameter{
+			{Name: "result", Value: wfv1.AnyStringPtr("welcome")},
+		},
+		ExitCode: pointer.StringPtr("0"),
+	}
+	makePodsPhase(ctx, woc, apiv1.PodSucceeded, withOutputs(wfv1.MustMarshallJSON(sampleOutputs)))
+
+	woc = newWorkflowOperationCtx(woc.wf, controller)
+	woc.operate(ctx)
+
+	node = woc.wf.Status.Nodes.FindByDisplayName("leafA.onExit")
+	assert.NotNil(t, node)
+
+	// then check leafB's exit hook runs too. It has the same expression as
+	// leafA. This checks that expressions can refer to outputs of other
+	// completed tasks.
+	woc = newWorkflowOperationCtx(woc.wf, controller)
+	woc.operate(ctx)
+
+	node = woc.wf.Status.Nodes.FindByDisplayName("leafB")
+	assert.NotNil(t, node)
+	assert.Equal(t, wfv1.NodePending, node.Phase)
+
+	node = woc.wf.Status.Nodes.FindByDisplayName("leafB.onExit")
+	assert.Nil(t, node)
+
+	makePodsPhase(ctx, woc, apiv1.PodSucceeded, withOutputs(wfv1.MustMarshallJSON(sampleOutputs)))
+
+	woc = newWorkflowOperationCtx(woc.wf, controller)
+	woc.operate(ctx)
+
+	node = woc.wf.Status.Nodes.FindByDisplayName("leafB.onExit")
+	assert.NotNil(t, node)
 }
 
 var stepsOnExitTmplWithArt = `
