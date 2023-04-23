@@ -25,7 +25,7 @@ In other words, a `LifecycleHook` functions like an [exit handler](https://githu
 
 ## Unsupported conditions
 
-- [`outputs`](https://argoproj.github.io/argo-workflows/fields/#outputs) are not usable since `LifecycleHook` executes during execution time and `outputs` are not produced until the step is completed. You can use outputs from previous steps, just not the one you're hooking into. If you'd like to use outputs create an exit handler instead - all the status variable are available there so you can still conditionally decide what to do.
+- [`outputs`](https://argoproj.github.io/argo-workflows/fields/#outputs) are not usable since `LifecycleHook` executes during execution time and `outputs` are not produced until the step is completed. You can use outputs from previous steps, just not the one you're hooking into. If you'd like to use outputs create an exit handler instead - all the status and output variables (for completed steps, including the current step), are there so you can still conditionally decide what to do.
 
 ## Notification use case
 

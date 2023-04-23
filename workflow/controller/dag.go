@@ -265,6 +265,8 @@ func (woc *wfOperationCtx) executeDAG(ctx context.Context, nodeName string, tmpl
 				if taskNode.Completed() {
 					// Run the node's onExit node, if any. Since this is a target task, we don't need to consider the status
 					// of the onExit node before continuing. That will be done in assesDAGPhase
+					prefix := fmt.Sprintf("tasks.%s", task.Name)
+					woc.buildLocalScope(scope, prefix, taskNode)
 					_, _, err := woc.runOnExitNode(ctx, dagCtx.GetTask(taskName).GetExitHook(woc.execWf.Spec.Arguments), taskNode, dagCtx.boundaryID, dagCtx.tmplCtx, "tasks."+taskName, scope)
 					if err != nil {
 						return node, err
@@ -352,9 +354,12 @@ func (woc *wfOperationCtx) updateOutboundNodesForTargetTasks(dagCtx *dagContext,
 // executeDAGTask traverses and executes the upward chain of dependencies of a task
 func (woc *wfOperationCtx) executeDAGTask(ctx context.Context, dagCtx *dagContext, taskName string) {
 	if _, ok := dagCtx.visited[taskName]; ok {
+		log.WithField("taskName", taskName).Info("Task already visited")
 		return
 	}
 	dagCtx.visited[taskName] = true
+
+	log.WithField("taskName", taskName).Info("Executing DAG task")
 
 	node := dagCtx.getTaskNode(taskName)
 	task := dagCtx.GetTask(taskName)
@@ -407,6 +412,8 @@ func (woc *wfOperationCtx) executeDAGTask(ctx context.Context, dagCtx *dagContex
 
 		if node.Completed() {
 			// Run the node's onExit node, if any.
+			prefix := fmt.Sprintf("tasks.%s", task.Name)
+			woc.buildLocalScope(scope, prefix, node)
 			hasOnExitNode, onExitNode, err := woc.runOnExitNode(ctx, task.GetExitHook(woc.execWf.Spec.Arguments), node, dagCtx.boundaryID, dagCtx.tmplCtx, "tasks."+taskName, scope)
 			if hasOnExitNode && (onExitNode == nil || !onExitNode.Fulfilled() || err != nil) {
 				// The onExit node is either not complete or has errored out, return.
