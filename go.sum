@@ -172,8 +172,8 @@ github.com/antihax/optional v1.0.0/go.mod h1:uupD/76wgC+ih3iEmQUL+0Ugr19nfwCT1kd
 github.com/antonmedv/expr v1.12.5 h1:Fq4okale9swwL3OeLLs9WD9H6GbgBLJyN/NUHRv+n0E=
 github.com/antonmedv/expr v1.12.5/go.mod h1:FPC8iWArxls7axbVLsW+kpg1mz29A1b2M6jt+hZfDkU=
 github.com/aokoli/goutils v1.0.1/go.mod h1:SijmP0QR8LtwsmDs8Yii5Z/S4trXFGFC2oO5g9DP+DQ=
-github.com/argoproj-labs/go-git/v5 v5.4.6 h1:qSXJlgYSkDvpCFMN647SSUoUmB6LtPmair3iW9xWSfo=
-github.com/argoproj-labs/go-git/v5 v5.4.6/go.mod h1:Lv1K45bcCda9jDMEZCGCVuXSGdBaSGAXUvptnVtaEsA=
+github.com/argoproj-labs/go-git/v5 v5.4.7 h1:BXrXK/anGnbdj0MoKJyn++h6HZ7Wa0UhW2mNOmuTcV8=
+github.com/argoproj-labs/go-git/v5 v5.4.7/go.mod h1:hA0dcdz5GgO4KXyDY90CCfJaw4PIGMecmq5YwHdTBi0=
 github.com/argoproj/argo-events v1.7.3 h1:XiGnKCzRRQCI7sFCKw3RoeFUOR6IupfAJI9uUK7pnG8=
 github.com/argoproj/argo-events v1.7.3/go.mod h1:YxDOXrveW52SDAeeTI93Wagkr4jt5DK0dA0juIdWDRw=
 github.com/argoproj/pkg v0.13.6 h1:36WPD9MNYECHcO1/R1pj6teYspiK7uMQLCgLGft2abM=
