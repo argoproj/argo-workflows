@@ -746,7 +746,7 @@ func (s *CLISuite) TestWorkflowLint() {
 			})
 	})
 	s.Run("LintDir", func() {
-		tmp, err := os.CreateTemp("", "")
+		tmp, err := os.MkdirTemp("", "")
 		s.CheckError(err)
 		defer func() { _ = os.RemoveAll(tmp) }()
 		// Read all content of src to data
