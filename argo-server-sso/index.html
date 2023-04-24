@@ -3998,7 +3998,7 @@ kubectl<span class="w"> </span>create<span class="w"> </span>secret<span class="
 </code></pre></div>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>Not all OIDC provider support the groups scope. Please speak to your provider about their options.</p>
+<p>Not all OIDC providers support the <code>groups</code> scope. Please speak to your provider about their options.</p>
 </div>
 <p>To configure a service account to be used, annotate it:</p>
 <div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1</span>
@@ -4025,7 +4025,7 @@ kubectl<span class="w"> </span>create<span class="w"> </span>secret<span class="
 <span class="w">    </span><span class="nt">workflows.argoproj.io/rbac-rule-precedence</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;1&quot;</span>
 </code></pre></div>
 <p>If no rule matches, we deny the user access.</p>
-<p>TIp: You'll probably want to configure a default account to use if no other rule matches, e.g. a read-only account, you can do this as follows:</p>
+<p>Tip: You'll probably want to configure a default account to use if no other rule matches, e.g. a read-only account, you can do this as follows:</p>
 <div class="highlight"><pre><span></span><code><span class="nt">metadata</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">read-only</span>
 <span class="w">  </span><span class="nt">annotations</span><span class="p">:</span>
@@ -4054,6 +4054,10 @@ To enable the feature, set env variable <code>SSO_DELEGATE_RBAC_TO_NAMESPACE=tru
 <span class="w">    </span><span class="nt">workflows.argoproj.io/rbac-rule</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;true&quot;</span>
 <span class="w">    </span><span class="nt">workflows.argoproj.io/rbac-rule-precedence</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;0&quot;</span>
 </code></pre></div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>All users MUST map to a cluster service account (such as the one above) before a namespace service account can apply.</p>
+</div>
 <p>Now, for the namespace that you own, configure a service account which would allow members of your team to perform operations in your namespace.
 Make sure that the precedence of the namespace service account is higher than the precedence of the login service account. Create appropriate role that you want to grant to this service account and bind it with a role-binding.</p>
 <div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1</span>
