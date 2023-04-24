@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -44,7 +43,7 @@ func NewEmissaryCommand() *cobra.Command {
 			exitCode := 64
 
 			defer func() {
-				err := ioutil.WriteFile(varRunArgo+"/ctr/"+containerName+"/exitcode", []byte(strconv.Itoa(exitCode)), 0o644)
+				err := os.WriteFile(varRunArgo+"/ctr/"+containerName+"/exitcode", []byte(strconv.Itoa(exitCode)), 0o644)
 				if err != nil {
 					logger.Error(fmt.Errorf("failed to write exit code: %w", err))
 				}
@@ -62,7 +61,7 @@ func NewEmissaryCommand() *cobra.Command {
 
 			name, args := args[0], args[1:]
 
-			data, err := ioutil.ReadFile(varRunArgo + "/template")
+			data, err := os.ReadFile(varRunArgo + "/template")
 			if err != nil {
 				return fmt.Errorf("failed to read template: %w", err)
 			}
@@ -76,7 +75,7 @@ func NewEmissaryCommand() *cobra.Command {
 					for _, y := range x.Dependencies {
 						logger.Infof("waiting for dependency %q", y)
 						for {
-							data, err := ioutil.ReadFile(filepath.Clean(varRunArgo + "/ctr/" + y + "/exitcode"))
+							data, err := os.ReadFile(filepath.Clean(varRunArgo + "/ctr/" + y + "/exitcode"))
 							if os.IsNotExist(err) {
 								time.Sleep(time.Second)
 								continue
@@ -150,7 +149,7 @@ func NewEmissaryCommand() *cobra.Command {
 						case <-ctx.Done():
 							return
 						default:
-							data, _ := ioutil.ReadFile(filepath.Clean(varRunArgo + "/ctr/" + containerName + "/signal"))
+							data, _ := os.ReadFile(filepath.Clean(varRunArgo + "/ctr/" + containerName + "/signal"))
 							_ = os.Remove(varRunArgo + "/ctr/" + containerName + "/signal")
 							s, _ := strconv.Atoi(string(data))
 							if s > 0 {

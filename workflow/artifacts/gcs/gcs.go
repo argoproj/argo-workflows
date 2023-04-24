@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -238,7 +237,7 @@ func (g *ArtifactDriver) Save(path string, outputArtifact *wfv1.Artifact) error 
 // relPath is a given relative path to be inserted in front
 func listFileRelPaths(path string, relPath string) ([]string, error) {
 	results := []string{}
-	files, err := ioutil.ReadDir(path)
+	files, err := os.ReadDir(path)
 	if err != nil {
 		return nil, err
 	}
