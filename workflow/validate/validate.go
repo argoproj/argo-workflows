@@ -107,6 +107,22 @@ func (args *FakeArguments) GetArtifactByName(name string) *wfv1.Artifact {
 
 var _ wfv1.ArgumentsProvider = &FakeArguments{}
 
+func SubstituteResourceManifestExpressions(manifest string) string {
+	var substitutions = make(map[string]string)
+	pattern, _ := regexp.Compile(`{{\s*=\s*(.+?)\s*}}`)
+	for _, match := range pattern.FindAllStringSubmatch(manifest, -1) {
+		substitutions[string(match[1])] = placeholderGenerator.NextPlaceholder()
+	}
+
+	// since we don't need to resolve/evaluate here we can do just a simple replacement
+	for old, new := range substitutions {
+		rmatch, _ := regexp.Compile(`{{\s*=\s*` + regexp.QuoteMeta(old) + `\s*}}`)
+		manifest = rmatch.ReplaceAllString(manifest, new)
+	}
+
+	return manifest
+}
+
 // ValidateWorkflow accepts a workflow and performs validation against it.
 func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespacedGetter, cwftmplGetter templateresolution.ClusterWorkflowTemplateGetter, wf *wfv1.Workflow, opts ValidateOpts) error {
 	ctx := newTemplateValidationCtx(wf, opts)
@@ -375,6 +391,7 @@ func (ctx *templateValidationCtx) validateInitContainers(containers []wfv1.UserC
 }
 
 func (ctx *templateValidationCtx) validateTemplate(tmpl *wfv1.Template, tmplCtx *templateresolution.Context, args wfv1.ArgumentsProvider, workflowTemplateValidation bool) error {
+
 	if err := validateTemplateType(tmpl); err != nil {
 		return err
 	}
@@ -750,7 +767,12 @@ func (ctx *templateValidationCtx) validateLeaf(scope map[string]interface{}, tmp
 			if tmpl.Resource.Manifest != "" && !placeholderGenerator.IsPlaceholder(tmpl.Resource.Manifest) {
 				// Try to unmarshal the given manifest, just ensuring it's a valid YAML.
 				var obj interface{}
-				err := yaml.Unmarshal([]byte(tmpl.Resource.Manifest), &obj)
+
+				// Unmarshalling will fail if we have unquoted expressions which is sometimes a false positive,
+				// so for the sake of template validation we will just replace expressions with placeholders
+				// and the 'real' validation will be performed at a later stage once the manifest is applied
+				replaced := SubstituteResourceManifestExpressions(tmpl.Resource.Manifest)
+				err := yaml.Unmarshal([]byte(replaced), &obj)
 				if err != nil {
 					return errors.Errorf(errors.CodeBadRequest, "templates.%s.resource.manifest must be a valid yaml", tmpl.Name)
 				}

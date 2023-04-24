@@ -77,6 +77,19 @@ func (s *WorkflowTemplateSuite) TestSubmitWorkflowTemplateWorkflowMetadataSubsti
 		})
 }
 
+func (s *WorkflowTemplateSuite) TestSubmitWorkflowTemplateResourceUnquotedExpressions() {
+	s.Given().
+		WorkflowTemplate("@testdata/workflow-template-with-resource-expr.yaml").
+		When().
+		CreateWorkflowTemplates().
+		SubmitWorkflowsFromWorkflowTemplates().
+		WaitForWorkflow().
+		Then().
+		ExpectWorkflow(func(t *testing.T, metadata *v1.ObjectMeta, status *v1alpha1.WorkflowStatus) {
+			assert.Equal(t, status.Phase, v1alpha1.WorkflowSucceeded)
+		})
+}
+
 func (s *WorkflowTemplateSuite) TestWorkflowTemplateInvalidOnExit() {
 	s.Given().
 		WorkflowTemplate("@testdata/workflow-template-invalid-onexit.yaml").
