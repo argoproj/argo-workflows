@@ -198,7 +198,7 @@ func ProcessArgs(tmpl *wfv1.Template, args wfv1.ArgumentsProvider, globalParams,
 	return SubstituteParams(newTmpl, globalParams, localParams)
 }
 
-// substituteConfigMapKeyRefParams check if ConfigMapKeyRef's key is a param and perform the substitution.
+// substituteConfigMapKeyRefParam check if ConfigMapKeyRef's key is a param and perform the substitution.
 func substituteConfigMapKeyRefParam(in string, globalParams Parameters) (string, error) {
 	if strings.HasPrefix(in, "{{") && strings.HasSuffix(in, "}}") {
 		k := strings.TrimSuffix(strings.TrimPrefix(in, "{{"), "}}")
