@@ -123,5 +123,9 @@ func (c *Claims) GetUserInfoGroups(accessToken, issuer, userInfoPath string, use
 		return nil, err
 	}
 
+	if userInfoGroupsField == "" {
+		userInfoGroupsField = "groups"
+	}
+
 	return TransToStringList(userInfo[userInfoGroupsField]), nil
 }
