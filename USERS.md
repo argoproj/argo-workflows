@@ -170,6 +170,7 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [Softonic](https://hello.softonic.com/)
 1. [Sohu](https://www.sohu.com/)
 1. [Stillwater Supercomputing, Inc](http://www.stillwater-sc.com/)
+1. [StreamNative](https://streamnative.io)
 1. [strongDM](https://www.strongdm.com/)
 1. [Styra](https://www.styra.com/)
 1. [Splunk](https://www.splunk.com/)
