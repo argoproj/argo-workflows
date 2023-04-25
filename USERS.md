@@ -53,6 +53,7 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [Commodus Tech](https://www.commodus.tech)
 1. [Concierge Render](https://www.conciergerender.com)
 1. [Cookpad](https://cookpad.com/)
+1. [Coralogix](https://coralogix.com)
 1. [CoreFiling](https://www.corefiling.com/)
 1. [CoreWeave Cloud](https://www.coreweave.com)
 1. [Cratejoy](https://www.cratejoy.com/)

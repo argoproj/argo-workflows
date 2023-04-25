@@ -65,7 +65,7 @@ sso:
 ```
 
 !!! Note
-    Not all OIDC provider support the groups scope. Please speak to your provider about their options.
+    Not all OIDC providers support the `groups` scope. Please speak to your provider about their options.
 
 To configure a service account to be used, annotate it:
 
@@ -96,7 +96,7 @@ metadata:
 
 If no rule matches, we deny the user access.
 
-TIp: You'll probably want to configure a default account to use if no other rule matches, e.g. a read-only account, you can do this as follows:
+Tip: You'll probably want to configure a default account to use if no other rule matches, e.g. a read-only account, you can do this as follows:
 
 ```yaml
 metadata:
@@ -135,6 +135,9 @@ metadata:
     workflows.argoproj.io/rbac-rule: "true"
     workflows.argoproj.io/rbac-rule-precedence: "0"
 ```
+
+!!! Note
+    All users MUST map to a cluster service account (such as the one above) before a namespace service account can apply.
 
 Now, for the namespace that you own, configure a service account which would allow members of your team to perform operations in your namespace.
 Make sure that the precedence of the namespace service account is higher than the precedence of the login service account. Create appropriate role that you want to grant to this service account and bind it with a role-binding.
