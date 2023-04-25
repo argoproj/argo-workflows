@@ -834,7 +834,7 @@ func addVolumeReferences(pod *apiv1.Pod, vols []apiv1.Volume, tmpl *wfv1.Templat
 	return nil
 }
 
-// addInputArtifactVolumes sets up the artifacts volume to the pod to support input artifacts to containers.
+// addInputArtifactsVolumes sets up the artifacts volume to the pod to support input artifacts to containers.
 // In order support input artifacts, the init container shares a emptydir volume with the main container.
 // It is the responsibility of the init container to load all artifacts to the mounted emptydir location.
 // (e.g. /inputs/artifacts/CODE). The shared emptydir is mapped to the user's desired location in the main
