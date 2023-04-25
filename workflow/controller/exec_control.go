@@ -99,7 +99,9 @@ func (woc *wfOperationCtx) handleExecutionControlError(nodeID string, wfNodesLoc
 
 // killDaemonedChildren kill any daemoned pods of a steps or DAG template node.
 func (woc *wfOperationCtx) killDaemonedChildren(nodeID string) {
-	woc.log.Infof("Checking daemoned children of %s", nodeID)
+	if nodeID != "" {
+		woc.log.Debugf("Checking daemoned children of %s", nodeID)
+	}
 	for _, childNode := range woc.wf.Status.Nodes {
 		if childNode.BoundaryID != nodeID {
 			continue
