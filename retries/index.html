@@ -3926,6 +3926,7 @@ access to the following variables:</p>
 <li><code>lastRetry.exitCode</code>: The exit code of the last retry, or "-1" if not available</li>
 <li><code>lastRetry.status</code>: The phase of the last retry: Error, Failed</li>
 <li><code>lastRetry.duration</code>: The duration of the last retry, in seconds</li>
+<li><code>lastRetry.message</code>: The message output from the last retry (available from version 3.5)</li>
 </ul>
 <p>If <code>expression</code> evaluates to false, the step will not be retried.</p>
 <p>See <a href="https://raw.githubusercontent.com/argoproj/argo-workflows/master/examples/retry-conditional.yaml">example</a> for usage.</p>
