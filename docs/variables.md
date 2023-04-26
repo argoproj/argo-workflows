@@ -191,7 +191,7 @@ When using the `expression` field within `retryStrategy`, special variables are 
 | `lastRetry.exitCode` | Exit code of the last retry |
 | `lastRetry.status` | Status of the last retry |
 | `lastRetry.duration` | Duration in seconds of the last retry |
-| `lastRetry.message` | Message output from the last retry |
+| `lastRetry.message` | Message output from the last retry (available from version 3.5) |
 
 Note: These variables evaluate to a string type. If using advanced expressions, either cast them to int values (`expression: "{{=asInt(lastRetry.exitCode) >= 2}}"`) or compare them to string values (`expression: "{{=lastRetry.exitCode != '2'}}"`).
 
