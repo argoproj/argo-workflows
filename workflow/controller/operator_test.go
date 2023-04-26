@@ -7861,11 +7861,12 @@ func TestBuildRetryStrategyLocalScope(t *testing.T) {
 
 	localScope := buildRetryStrategyLocalScope(retryNode, wf.Status.Nodes)
 
-	assert.Len(t, localScope, 4)
+	assert.Len(t, localScope, 5)
 	assert.Equal(t, "1", localScope[common.LocalVarRetries])
 	assert.Equal(t, "1", localScope[common.LocalVarRetriesLastExitCode])
 	assert.Equal(t, string(wfv1.NodeFailed), localScope[common.LocalVarRetriesLastStatus])
 	assert.Equal(t, "6", localScope[common.LocalVarRetriesLastDuration])
+	assert.Equal(t, "Error (exit code 1)", localScope[common.LocalVarRetriesLastMessage])
 }
 
 var exitHandlerWithRetryNodeParam = `
