@@ -63,6 +63,7 @@ access to the following variables:
 - `lastRetry.exitCode`: The exit code of the last retry, or "-1" if not available
 - `lastRetry.status`: The phase of the last retry: Error, Failed
 - `lastRetry.duration`: The duration of the last retry, in seconds
+- `lastRetry.message`: The message output from the last retry (available from version 3.5)
 
 If `expression` evaluates to false, the step will not be retried.
 
