@@ -99,7 +99,7 @@ func NewEmissaryCommand() *cobra.Command {
 				return fmt.Errorf("failed to find name in PATH: %w", err)
 			}
 
-			if _, ok := os.LookupEnv("ARGO_DEBUG_PAUSE_BEFORE"); ok {
+			if os.Getenv("ARGO_DEBUG_PAUSE_BEFORE") == "true" {
 				for {
 					// User can create the file: /ctr/NAME_OF_THE_CONTAINER/before
 					// in order to break out of the sleep and release the container from
@@ -111,6 +111,7 @@ func NewEmissaryCommand() *cobra.Command {
 					break
 				}
 			}
+
 			backoff, err := template.GetRetryStrategy()
 			if err != nil {
 				return fmt.Errorf("failed to get retry strategy: %w", err)
@@ -164,7 +165,7 @@ func NewEmissaryCommand() *cobra.Command {
 			})
 			logger.WithError(err).Info("sub-process exited")
 
-			if _, ok := os.LookupEnv("ARGO_DEBUG_PAUSE_AFTER"); ok {
+			if os.Getenv("ARGO_DEBUG_PAUSE_AFTER") == "true" {
 				for {
 					// User can create the file: /ctr/NAME_OF_THE_CONTAINER/after
 					// in order to break out of the sleep and release the container from
@@ -263,7 +264,7 @@ func saveArtifact(srcPath string) error {
 		return nil
 	}
 	if _, err := os.Stat(srcPath); os.IsNotExist(err) { // might be optional, so we ignore
-		logger.WithError(err).Errorf("cannot save artifact %s", srcPath)
+		logger.WithError(err).Warnf("cannot save artifact %s", srcPath)
 		return nil
 	}
 	dstPath := filepath.Join(varRunArgo, "/outputs/artifacts/", strings.TrimSuffix(srcPath, "/")+".tgz")

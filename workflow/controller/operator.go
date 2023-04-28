@@ -24,12 +24,13 @@ import (
 	jsonpatch "github.com/evanphx/json-patch"
 	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
-	policyv1beta "k8s.io/api/policy/v1beta1"
+	policyv1 "k8s.io/api/policy/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/strategicpatch"
+	"k8s.io/apimachinery/pkg/util/validation"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/utils/pointer"
@@ -66,7 +67,7 @@ import (
 
 // wfOperationCtx is the context for evaluation and operation of a single workflow
 type wfOperationCtx struct {
-	// wf is the workflow object. It should not be used in execution logic. woc.wfSpec should be used instead
+	// wf is the workflow object. It should not be used in execution logic. woc.execWf.Spec should be used instead
 	wf *wfv1.Workflow
 	// orig is the original workflow object for purposes of creating a patch
 	orig *wfv1.Workflow
@@ -246,13 +247,15 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 		}
 		woc.updated = wfUpdate
 		if !acquired {
-			woc.log.Warn("Workflow processing has been postponed due to concurrency limit")
-			phase := woc.wf.Status.Phase
-			if phase == wfv1.WorkflowUnknown {
-				phase = wfv1.WorkflowPending
+			if !woc.releaseLocksForPendingShuttingdownWfs(ctx) {
+				woc.log.Warn("Workflow processing has been postponed due to concurrency limit")
+				phase := woc.wf.Status.Phase
+				if phase == wfv1.WorkflowUnknown {
+					phase = wfv1.WorkflowPending
+				}
+				woc.markWorkflowPhase(ctx, phase, msg)
+				return
 			}
-			woc.markWorkflowPhase(ctx, phase, msg)
-			return
 		}
 	}
 
@@ -357,6 +360,10 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 				woc.markWorkflowError(ctx, x)
 			}
 		}
+		// Garbage collect PVCs if Entrypoint template execution returns error
+		if err := woc.deletePVCs(ctx); err != nil {
+			woc.log.WithError(err).Warn("failed to delete PVCs")
+		}
 		return
 	}
 
@@ -394,12 +401,17 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 	// This strconv.Quote is necessary so that the escaped quotes are not removed during parameter substitution
 	woc.globalParams[common.GlobalVarWorkflowFailures] = strconv.Quote(string(failedNodeBytes))
 
-	err = woc.executeWfLifeCycleHook(ctx, tmplCtx)
+	hookCompleted, err := woc.executeWfLifeCycleHook(ctx, tmplCtx)
 	if err != nil {
 		woc.markNodeError(node.Name, err)
 	}
 	// Reconcile TaskSet and Agent for HTTP templates
 	woc.taskSetReconciliation(ctx)
+
+	// Check all hooks are completes
+	if !hookCompleted {
+		return
+	}
 
 	if !node.Fulfilled() {
 		// node can be nil if a workflow created immediately in a parallelism == 0 state
@@ -421,8 +433,11 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 			default:
 				if !errorsutil.IsTransientErr(err) && !woc.wf.Status.Phase.Completed() && os.Getenv("BUBBLE_ENTRY_TEMPLATE_ERR") != "false" {
 					woc.markWorkflowError(ctx, x)
-					return
 				}
+			}
+			// Garbage collect PVCs if Onexit template execution returns error
+			if err := woc.deletePVCs(ctx); err != nil {
+				woc.log.WithError(err).Warn("failed to delete PVCs")
 			}
 			return
 		}
@@ -478,10 +493,20 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 		woc.computeMetrics(woc.execWf.Spec.Metrics.Prometheus, localScope, realTimeScope, false)
 	}
 
-	err = woc.deletePVCs(ctx)
-	if err != nil {
+	if err := woc.deletePVCs(ctx); err != nil {
 		woc.log.WithError(err).Warn("failed to delete PVCs")
 	}
+}
+
+func (woc *wfOperationCtx) releaseLocksForPendingShuttingdownWfs(ctx context.Context) bool {
+	if woc.GetShutdownStrategy().Enabled() && woc.wf.Status.Phase == wfv1.WorkflowPending && woc.GetShutdownStrategy() == wfv1.ShutdownStrategyTerminate {
+		if woc.controller.syncManager.ReleaseAll(woc.execWf) {
+			woc.log.WithFields(log.Fields{"key": woc.execWf.Name}).Info("Released all locks since this pending workflow is being shutdown")
+			woc.markWorkflowSuccess(ctx)
+			return true
+		}
+	}
+	return false
 }
 
 // set Labels and Annotations for the Workflow
@@ -495,6 +520,9 @@ func (woc *wfOperationCtx) updateWorkflowMetadata() error {
 			woc.wf.Labels = make(map[string]string)
 		}
 		for n, v := range md.Labels {
+			if errs := validation.IsValidLabelValue(v); errs != nil {
+				return errors.Errorf(errors.CodeBadRequest, "invalid label value %q for label %q: %s", v, n, strings.Join(errs, ";"))
+			}
 			woc.wf.Labels[n] = v
 			woc.globalParams["workflow.labels."+n] = v
 			updatedParams["workflow.labels."+n] = v
@@ -517,6 +545,9 @@ func (woc *wfOperationCtx) updateWorkflowMetadata() error {
 			v, ok := r.(string)
 			if !ok {
 				return fmt.Errorf("failed to evaluate label %q expression %q evaluted to %T but must be a string", n, f.Expression, r)
+			}
+			if errs := validation.IsValidLabelValue(v); errs != nil {
+				return errors.Errorf(errors.CodeBadRequest, "invalid label value %q for label %q and expression %q: %s", v, n, f.Expression, strings.Join(errs, ";"))
 			}
 			woc.wf.Labels[n] = v
 			woc.globalParams["workflow.labels."+n] = v
@@ -1331,20 +1362,23 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, old *wfv1.NodeStatus
 		new.Outputs.ExitCode = pointer.StringPtr(fmt.Sprint(*exitCode))
 	}
 
-	// We cannot fail the node until the wait container is finished because it may be busy saving outputs, and these
-	// would not get captured successfully.
-	for _, c := range pod.Status.ContainerStatuses {
-		if c.Name == common.WaitContainerName && c.State.Terminated == nil && new.Phase.Completed() {
-			woc.log.WithField("new.phase", new.Phase).Info("leaving phase un-changed: wait container is not yet terminated ")
-			new.Phase = old.Phase
-		}
-	}
 	// If the init container failed, we should mark the node as failed.
+	var initContainerFailed bool
 	for _, c := range pod.Status.InitContainerStatuses {
 		if c.State.Terminated != nil && int(c.State.Terminated.ExitCode) != 0 {
 			new.Phase = wfv1.NodeFailed
+			initContainerFailed = true
 			woc.log.WithField("new.phase", new.Phase).Info("marking node as failed since init container has non-zero exit code")
 			break
+		}
+	}
+
+	// We cannot fail the node until the wait container is finished (unless any init container has failed) because it may be busy saving outputs, and these
+	// would not get captured successfully.
+	for _, c := range pod.Status.ContainerStatuses {
+		if (c.Name == common.WaitContainerName && c.State.Terminated == nil && new.Phase.Completed()) && !initContainerFailed {
+			woc.log.WithField("new.phase", new.Phase).Info("leaving phase un-changed: wait container is not yet terminated ")
+			new.Phase = old.Phase
 		}
 	}
 
@@ -1448,11 +1482,9 @@ func (woc *wfOperationCtx) inferFailedReason(pod *apiv1.Pod, tmpl *wfv1.Template
 
 	// We only get one message to set for the overall node status.
 	// If multiple containers failed, in order of preference:
-	// init, main (annotated), main (exit code), wait, sidecars
+	// init containers (will be appended later), main (annotated), main (exit code), wait, sidecars.
 	order := func(n string) int {
 		switch {
-		case n == common.InitContainerName:
-			return 0
 		case tmpl.IsMainContainerName(n):
 			return 1
 		case n == common.WaitContainerName:
@@ -1461,9 +1493,10 @@ func (woc *wfOperationCtx) inferFailedReason(pod *apiv1.Pod, tmpl *wfv1.Template
 			return 3
 		}
 	}
-
-	ctrs := append(pod.Status.InitContainerStatuses, pod.Status.ContainerStatuses...)
+	ctrs := pod.Status.ContainerStatuses
 	sort.Slice(ctrs, func(i, j int) bool { return order(ctrs[i].Name) < order(ctrs[j].Name) })
+	// Init containers have the highest preferences over other containers.
+	ctrs = append(pod.Status.InitContainerStatuses, ctrs...)
 
 	for _, ctr := range ctrs {
 
@@ -1472,7 +1505,7 @@ func (woc *wfOperationCtx) inferFailedReason(pod *apiv1.Pod, tmpl *wfv1.Template
 		// https://github.com/virtual-kubelet/virtual-kubelet/blob/7f2a02291530d2df14905702e6d51500dd57640a/node/sync.go#L195-L208
 
 		if ctr.State.Waiting != nil {
-			return wfv1.NodeError, fmt.Sprintf("Pod failed before %s container starts", ctr.Name)
+			return wfv1.NodeError, fmt.Sprintf("Pod failed before %s container starts due to %s: %s", ctr.Name, ctr.State.Waiting.Reason, ctr.State.Waiting.Message)
 		}
 		t := ctr.State.Terminated
 		if t == nil {
@@ -1699,6 +1732,7 @@ func buildRetryStrategyLocalScope(node *wfv1.NodeStatus, nodes wfv1.Nodes) map[s
 	localScope[common.LocalVarRetriesLastExitCode] = exitCode
 	localScope[common.LocalVarRetriesLastStatus] = string(lastChildNode.Phase)
 	localScope[common.LocalVarRetriesLastDuration] = fmt.Sprint(lastChildNode.GetDuration().Seconds())
+	localScope[common.LocalVarRetriesLastMessage] = lastChildNode.Message
 
 	return localScope
 }
@@ -1900,8 +1934,15 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 			return retryParentNode, nil
 		}
 		retryParentNode = processedRetryParentNode
+		lastChildNode := getChildNodeIndex(retryParentNode, woc.wf.Status.Nodes, -1)
 		// The retry node might have completed by now.
 		if retryParentNode.Fulfilled() {
+			// If retry node has completed, set the output of the last child node to its output.
+			// Runtime parameters (e.g., `status`, `resourceDuration`) in the output will be used to emit metrics.
+			if lastChildNode != nil {
+				retryParentNode.Outputs = lastChildNode.Outputs.DeepCopy()
+				woc.wf.Status.Nodes[node.ID] = *retryParentNode
+			}
 			if processedTmpl.Metrics != nil {
 				// In this check, a completed node may or may not have existed prior to this execution. If it did exist, ensure that it wasn't
 				// completed before this execution. If it did not exist prior, then we can infer that it was completed during this execution.
@@ -1915,14 +1956,12 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 			if processedTmpl.Synchronization != nil {
 				woc.controller.syncManager.Release(woc.wf, node.ID, processedTmpl.Synchronization)
 			}
-			lastChildNode := getChildNodeIndex(retryParentNode, woc.wf.Status.Nodes, -1)
-			if lastChildNode != nil {
-				retryParentNode.Outputs = lastChildNode.Outputs.DeepCopy()
-				woc.wf.Status.Nodes[node.ID] = *retryParentNode
-			}
 			return retryParentNode, nil
+		} else if lastChildNode != nil && lastChildNode.Fulfilled() && processedTmpl.Metrics != nil {
+			// If retry node has not completed and last child node has completed, emit metrics for the last child node.
+			localScope, realTimeScope := woc.prepareMetricScope(lastChildNode)
+			woc.computeMetrics(processedTmpl.Metrics.Prometheus, localScope, realTimeScope, false)
 		}
-		lastChildNode := getChildNodeIndex(retryParentNode, woc.wf.Status.Nodes, -1)
 		if lastChildNode != nil && !lastChildNode.Fulfilled() {
 			// Last child node is still running.
 			nodeName = lastChildNode.Name
@@ -2794,6 +2833,10 @@ func (woc *wfOperationCtx) buildLocalScope(scope *wfScope, prefix string, node *
 		key := fmt.Sprintf("%s.status", prefix)
 		scope.addParamToScope(key, string(node.Phase))
 	}
+	if node.HostNodeName != "" {
+		key := fmt.Sprintf("%s.hostNodeName", prefix)
+		scope.addParamToScope(key, string(node.HostNodeName))
+	}
 	woc.addOutputsToLocalScope(prefix, node.Outputs, scope)
 }
 
@@ -3450,10 +3493,11 @@ func (woc *wfOperationCtx) createPDBResource(ctx context.Context) error {
 		woc.wf.Name,
 		metav1.GetOptions{},
 	)
-	if err != nil && !apierr.IsNotFound(err) {
+	if err != nil && !apierr.IsNotFound(err) && !apierr.IsAlreadyExists(err) {
 		return err
 	}
 	if pdb != nil && pdb.Name != "" {
+		woc.log.Info("PDB resource already exists for workflow.")
 		return nil
 	}
 
@@ -3464,7 +3508,7 @@ func (woc *wfOperationCtx) createPDBResource(ctx context.Context) error {
 		}
 	}
 
-	newPDB := policyv1beta.PodDisruptionBudget{
+	newPDB := policyv1.PodDisruptionBudget{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   woc.wf.Name,
 			Labels: map[string]string{common.LabelKeyWorkflow: woc.wf.Name},
@@ -3474,7 +3518,7 @@ func (woc *wfOperationCtx) createPDBResource(ctx context.Context) error {
 		},
 		Spec: pdbSpec,
 	}
-	_, err = woc.controller.kubeclientset.PolicyV1beta1().PodDisruptionBudgets(woc.wf.Namespace).Create(ctx, &newPDB, metav1.CreateOptions{})
+	_, err = woc.controller.kubeclientset.PolicyV1().PodDisruptionBudgets(woc.wf.Namespace).Create(ctx, &newPDB, metav1.CreateOptions{})
 	if err != nil {
 		return err
 	}
@@ -3488,7 +3532,7 @@ func (woc *wfOperationCtx) deletePDBResource(ctx context.Context) error {
 		return nil
 	}
 	err := waitutil.Backoff(retry.DefaultRetry, func() (bool, error) {
-		err := woc.controller.kubeclientset.PolicyV1beta1().PodDisruptionBudgets(woc.wf.Namespace).Delete(ctx, woc.wf.Name, metav1.DeleteOptions{})
+		err := woc.controller.kubeclientset.PolicyV1().PodDisruptionBudgets(woc.wf.Namespace).Delete(ctx, woc.wf.Name, metav1.DeleteOptions{})
 		if apierr.IsNotFound(err) {
 			return true, nil
 		}

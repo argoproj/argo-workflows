@@ -107,6 +107,22 @@ func (args *FakeArguments) GetArtifactByName(name string) *wfv1.Artifact {
 
 var _ wfv1.ArgumentsProvider = &FakeArguments{}
 
+func SubstituteResourceManifestExpressions(manifest string) string {
+	var substitutions = make(map[string]string)
+	pattern, _ := regexp.Compile(`{{\s*=\s*(.+?)\s*}}`)
+	for _, match := range pattern.FindAllStringSubmatch(manifest, -1) {
+		substitutions[string(match[1])] = placeholderGenerator.NextPlaceholder()
+	}
+
+	// since we don't need to resolve/evaluate here we can do just a simple replacement
+	for old, new := range substitutions {
+		rmatch, _ := regexp.Compile(`{{\s*=\s*` + regexp.QuoteMeta(old) + `\s*}}`)
+		manifest = rmatch.ReplaceAllString(manifest, new)
+	}
+
+	return manifest
+}
+
 // ValidateWorkflow accepts a workflow and performs validation against it.
 func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespacedGetter, cwftmplGetter templateresolution.ClusterWorkflowTemplateGetter, wf *wfv1.Workflow, opts ValidateOpts) error {
 	ctx := newTemplateValidationCtx(wf, opts)
@@ -145,7 +161,7 @@ func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 
 	wfArgs := wf.Spec.Arguments
 
-	if wf.Spec.WorkflowTemplateRef != nil {
+	if hasWorkflowTemplateRef {
 		wfArgs.Parameters = util.MergeParameters(wfArgs.Parameters, wfSpecHolder.GetWorkflowSpec().Arguments.Parameters)
 		wfArgs.Artifacts = util.MergeArtifacts(wfArgs.Artifacts, wfSpecHolder.GetWorkflowSpec().Arguments.Artifacts)
 	}
@@ -225,9 +241,26 @@ func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 			return err
 		}
 	}
+
+	// Validate OnExit hooks
+	// If the OnExit is specified in Workflow:
+	//   - If the template that referred by OnExit is from a WorkflowTemplate, template in WorkflowTemplate will be validated.
+	//   - If the template is inlined, the template will be validated.
+	// If the OnExit is empty in Workflow:
+	//   - If OnExit is specified in referred WorkflowTemplate, the OnExit of the referred WorkflowTemplate will be validated.
+	//   - If OnExit is empty in referred WorkflowTemplate, nothing will be validated.
+	var tmplHolder *wfv1.WorkflowStep
 	if wf.Spec.OnExit != "" {
+		tmplHolder = &wfv1.WorkflowStep{Template: wf.Spec.OnExit}
+		if hasWorkflowTemplateRef {
+			tmplHolder = &wfv1.WorkflowStep{TemplateRef: wf.Spec.WorkflowTemplateRef.ToTemplateRef(wf.Spec.OnExit)}
+		}
+	} else if hasWorkflowTemplateRef && wfSpecHolder.GetWorkflowSpec().OnExit != "" {
+		tmplHolder = &wfv1.WorkflowStep{TemplateRef: wf.Spec.WorkflowTemplateRef.ToTemplateRef(wfSpecHolder.GetWorkflowSpec().OnExit)}
+	}
+	if tmplHolder != nil {
 		ctx.globalParams[common.GlobalVarWorkflowFailures] = placeholderGenerator.NextPlaceholder()
-		_, err = ctx.validateTemplateHolder(&wfv1.WorkflowStep{Template: wf.Spec.OnExit}, tmplCtx, &wf.Spec.Arguments, opts.WorkflowTemplateValidation)
+		_, err = ctx.validateTemplateHolder(tmplHolder, tmplCtx, &wf.Spec.Arguments, opts.WorkflowTemplateValidation)
 		if err != nil {
 			return err
 		}
@@ -241,6 +274,17 @@ func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 	}
 
 	// Check if all templates can be resolved.
+	// If the Workflow is using a WorkflowTemplateRef, then the templates of the referred WorkflowTemplate will be validated.
+	if hasWorkflowTemplateRef {
+		for _, template := range wfSpecHolder.GetWorkflowSpec().Templates {
+			_, err := ctx.validateTemplateHolder(&wfv1.WorkflowStep{TemplateRef: wf.Spec.WorkflowTemplateRef.ToTemplateRef(template.Name)}, tmplCtx, &FakeArguments{}, opts.WorkflowTemplateValidation)
+			if err != nil {
+				return errors.Errorf(errors.CodeBadRequest, "templates.%s %s", template.Name, err.Error())
+			}
+		}
+		return nil
+	}
+	// If the templates are inlined in Workflow, then the inlined templates will be validated.
 	for _, template := range wf.Spec.Templates {
 		_, err := ctx.validateTemplateHolder(&wfv1.WorkflowStep{Template: template.Name}, tmplCtx, &FakeArguments{}, opts.WorkflowTemplateValidation)
 		if err != nil {
@@ -347,6 +391,7 @@ func (ctx *templateValidationCtx) validateInitContainers(containers []wfv1.UserC
 }
 
 func (ctx *templateValidationCtx) validateTemplate(tmpl *wfv1.Template, tmplCtx *templateresolution.Context, args wfv1.ArgumentsProvider, workflowTemplateValidation bool) error {
+
 	if err := validateTemplateType(tmpl); err != nil {
 		return err
 	}
@@ -370,10 +415,12 @@ func (ctx *templateValidationCtx) validateTemplate(tmpl *wfv1.Template, tmplCtx 
 		localParams[common.LocalVarRetriesLastExitCode] = placeholderGenerator.NextPlaceholder()
 		localParams[common.LocalVarRetriesLastStatus] = placeholderGenerator.NextPlaceholder()
 		localParams[common.LocalVarRetriesLastDuration] = placeholderGenerator.NextPlaceholder()
+		localParams[common.LocalVarRetriesLastMessage] = placeholderGenerator.NextPlaceholder()
 		scope[common.LocalVarRetries] = placeholderGenerator.NextPlaceholder()
 		scope[common.LocalVarRetriesLastExitCode] = placeholderGenerator.NextPlaceholder()
 		scope[common.LocalVarRetriesLastStatus] = placeholderGenerator.NextPlaceholder()
 		scope[common.LocalVarRetriesLastDuration] = placeholderGenerator.NextPlaceholder()
+		scope[common.LocalVarRetriesLastMessage] = placeholderGenerator.NextPlaceholder()
 	}
 	if tmpl.IsLeaf() {
 		for _, art := range tmpl.Outputs.Artifacts {
@@ -422,7 +469,7 @@ func (ctx *templateValidationCtx) validateTemplate(tmpl *wfv1.Template, tmplCtx 
 	case wfv1.TemplateTypeDAG:
 		err = ctx.validateDAG(scope, tmplCtx, newTmpl, workflowTemplateValidation)
 	default:
-		err = ctx.validateLeaf(scope, newTmpl, workflowTemplateValidation)
+		err = ctx.validateLeaf(scope, tmplCtx, newTmpl, workflowTemplateValidation)
 	}
 	if err != nil {
 		return err
@@ -640,7 +687,7 @@ func validateNonLeaf(tmpl *wfv1.Template) error {
 	return nil
 }
 
-func (ctx *templateValidationCtx) validateLeaf(scope map[string]interface{}, tmpl *wfv1.Template, workflowTemplateValidation bool) error {
+func (ctx *templateValidationCtx) validateLeaf(scope map[string]interface{}, tmplCtx *templateresolution.Context, tmpl *wfv1.Template, workflowTemplateValidation bool) error {
 	tmplBytes, err := json.Marshal(tmpl)
 	if err != nil {
 		return errors.InternalWrapError(err)
@@ -665,7 +712,18 @@ func (ctx *templateValidationCtx) validateLeaf(scope map[string]interface{}, tmp
 			mountPaths[art.Path] = fmt.Sprintf("inputs.artifacts.%s", art.Name)
 		}
 		if tmpl.Container.Image == "" {
-			return errors.Errorf(errors.CodeBadRequest, "templates.%s.container.image may not be empty", tmpl.Name)
+			switch baseTemplate := tmplCtx.GetCurrentTemplateBase().(type) {
+			case *wfv1.Workflow:
+				if !(baseTemplate.Spec.TemplateDefaults != nil && baseTemplate.Spec.TemplateDefaults.Container != nil && baseTemplate.Spec.TemplateDefaults.Container.Image != "") {
+					return errors.Errorf(errors.CodeBadRequest, "templates.%s.container.image may not be empty", tmpl.Name)
+				}
+			case *wfv1.WorkflowTemplate:
+				if !(baseTemplate.Spec.TemplateDefaults != nil && baseTemplate.Spec.TemplateDefaults.Container != nil && baseTemplate.Spec.TemplateDefaults.Container.Image != "") {
+					return errors.Errorf(errors.CodeBadRequest, "templates.%s.container.image may not be empty", tmpl.Name)
+				}
+			default:
+				return errors.Errorf(errors.CodeBadRequest, "templates.%s.container.image may not be empty", tmpl.Name)
+			}
 		}
 	}
 	if tmpl.ContainerSet != nil {
@@ -711,7 +769,12 @@ func (ctx *templateValidationCtx) validateLeaf(scope map[string]interface{}, tmp
 			if tmpl.Resource.Manifest != "" && !placeholderGenerator.IsPlaceholder(tmpl.Resource.Manifest) {
 				// Try to unmarshal the given manifest, just ensuring it's a valid YAML.
 				var obj interface{}
-				err := yaml.Unmarshal([]byte(tmpl.Resource.Manifest), &obj)
+
+				// Unmarshalling will fail if we have unquoted expressions which is sometimes a false positive,
+				// so for the sake of template validation we will just replace expressions with placeholders
+				// and the 'real' validation will be performed at a later stage once the manifest is applied
+				replaced := SubstituteResourceManifestExpressions(tmpl.Resource.Manifest)
+				err := yaml.Unmarshal([]byte(replaced), &obj)
 				if err != nil {
 					return errors.Errorf(errors.CodeBadRequest, "templates.%s.resource.manifest must be a valid yaml", tmpl.Name)
 				}
@@ -720,7 +783,18 @@ func (ctx *templateValidationCtx) validateLeaf(scope map[string]interface{}, tmp
 	}
 	if tmpl.Script != nil {
 		if tmpl.Script.Image == "" {
-			return errors.Errorf(errors.CodeBadRequest, "templates.%s.script.image may not be empty", tmpl.Name)
+			switch baseTemplate := tmplCtx.GetCurrentTemplateBase().(type) {
+			case *wfv1.Workflow:
+				if !(baseTemplate.Spec.TemplateDefaults != nil && baseTemplate.Spec.TemplateDefaults.Script != nil && baseTemplate.Spec.TemplateDefaults.Script.Image != "") {
+					return errors.Errorf(errors.CodeBadRequest, "templates.%s.script.image may not be empty", tmpl.Name)
+				}
+			case *wfv1.WorkflowTemplate:
+				if !(baseTemplate.Spec.TemplateDefaults != nil && baseTemplate.Spec.TemplateDefaults.Script != nil && baseTemplate.Spec.TemplateDefaults.Script.Image != "") {
+					return errors.Errorf(errors.CodeBadRequest, "templates.%s.script.image may not be empty", tmpl.Name)
+				}
+			default:
+				return errors.Errorf(errors.CodeBadRequest, "templates.%s.script.image may not be empty", tmpl.Name)
+			}
 		}
 	}
 	// we don't validate tmpl.Plugin, because this is done by Plugin.UnmarshallJSON
@@ -913,6 +987,7 @@ func (ctx *templateValidationCtx) addOutputsToScope(tmpl *wfv1.Template, prefix 
 	scope[fmt.Sprintf("%s.id", prefix)] = true
 	scope[fmt.Sprintf("%s.startedAt", prefix)] = true
 	scope[fmt.Sprintf("%s.finishedAt", prefix)] = true
+	scope[fmt.Sprintf("%s.hostNodeName", prefix)] = true
 	if tmpl.Daemon != nil && *tmpl.Daemon {
 		scope[fmt.Sprintf("%s.ip", prefix)] = true
 	}

@@ -20,12 +20,12 @@ jobs:
   tests:
     name: Unit Tests
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v3
-      - uses: actions/setup-go@v3
+      - uses: actions/setup-go@v4
         with:
-          go-version: "1.18"
+          go-version: "1.19"
           cache: true
       - run: make test STATIC_FILES=false GOTEST='go test -p 20 -covermode=atomic -coverprofile=coverage.out'
       # engineers just ignore this in PRs, so lets not even run it
@@ -100,9 +100,9 @@ jobs:
         # needed by Kubernetes v1.25
         run: sudo apt-get -y install socat
       - uses: actions/checkout@v3
-      - uses: actions/setup-go@v3
+      - uses: actions/setup-go@v4
         with:
-          go-version: "1.18"
+          go-version: "1.19"
           cache: true
       - uses: actions/setup-java@v3
         if: ${{matrix.test == 'test-java-sdk'}}
@@ -117,7 +117,12 @@ jobs:
           cache: pip
       - name: Install and start K3S
         run: |
-          curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION=${{matrix.install_k3s_version}} INSTALL_K3S_CHANNEL=stable INSTALL_K3S_EXEC=--docker K3S_KUBECONFIG_MODE=644 sh -
+          if ! echo "${{ matrix.install_k3s_version }}" | egrep '^v[0-9]+\.[0-9]+\.[0-9]+\+k3s1$'; then
+            export INSTALL_K3S_VERSION=v1.26.3+k3s1
+          else
+            export INSTALL_K3S_VERSION=${{ matrix.install_k3s_version }}
+          fi
+          curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL=stable INSTALL_K3S_EXEC=--docker K3S_KUBECONFIG_MODE=644 sh -
           until kubectl --kubeconfig=/etc/rancher/k3s/k3s.yaml cluster-info ; do sleep 10s ; done
           cp /etc/rancher/k3s/k3s.yaml /home/runner/.kubeconfig
           echo "- name: fake_token_user" >> $KUBECONFIG
@@ -140,25 +145,18 @@ jobs:
           echo '127.0.0.1 azurite'  | sudo tee -a /etc/hosts
       - run: make install PROFILE=${{matrix.profile}} STATIC_FILES=false
         name: Install manifests
-      - run: make controller $(go env GOPATH)/bin/goreman STATIC_FILES=false
+      - run: make controller kit STATIC_FILES=false
         name: Build controller
       - run: make cli STATIC_FILES=false
         if: ${{matrix.test == 'test-api' || matrix.test == 'test-cli' || matrix.test == 'test-java-sdk' || matrix.test == 'test-python-sdk'}}
         name: Build CLI
-      - run:  ./hack/port-forward.sh
-        name: Start port forward
-      - run: make start PROFILE=${{matrix.profile}} AUTH_MODE=client STATIC_FILES=false LOG_LEVEL=info API=${{matrix.test == 'test-api' || matrix.test == 'test-cli' || matrix.test == 'test-java-sdk' || matrix.test == 'test-python-sdk'}} UI=false LOGS=false > /tmp/argo.log 2>&1 &
+      - run: make start PROFILE=${{matrix.profile}} AUTH_MODE=client STATIC_FILES=false LOG_LEVEL=info API=${{matrix.test == 'test-api' || matrix.test == 'test-cli' || matrix.test == 'test-java-sdk' || matrix.test == 'test-python-sdk'}} UI=false > /tmp/argo.log 2>&1 &
         name: Start controller/API
-      - run: make wait
+      - run: make wait API=${{matrix.test == 'test-api' || matrix.test == 'test-cli' || matrix.test == 'test-java-sdk' || matrix.test == 'test-python-sdk'}}
         timeout-minutes: 4
         name: Wait for controller to be up
       - name: Run tests ${{matrix.test}}
-        # https://github.com/marketplace/actions/retry-step
-        uses: nick-fields/retry@v2.8.3
-        with:
-          timeout_minutes: 20
-          max_attempts: 2
-          command: make ${{matrix.test}} E2E_SUITE_TIMEOUT=20m STATIC_FILES=false
+        run: make ${{matrix.test}} E2E_SUITE_TIMEOUT=20m STATIC_FILES=false
       - if: ${{ failure() }}
         name: MinIO/MySQL deployment
         run: |
@@ -202,7 +200,7 @@ jobs:
       GOPATH: /home/runner/go
     steps:
       - uses: actions/checkout@v3
-      - uses: actions/setup-go@v3
+      - uses: actions/setup-go@v4
         with:
           go-version: "1.19"
           cache: true
@@ -235,9 +233,9 @@ jobs:
       GOPATH: /home/runner/go
     steps:
       - uses: actions/checkout@v3
-      - uses: actions/setup-go@v3
+      - uses: actions/setup-go@v4
         with:
-          go-version: "1.18"
+          go-version: "1.19"
           cache: true
       - run: make lint STATIC_FILES=false
       - run: git diff --exit-code

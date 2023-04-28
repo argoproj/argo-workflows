@@ -2,18 +2,19 @@ package apiclient
 
 import (
 	"context"
-	"fmt"
 
 	"google.golang.org/grpc"
 
 	workflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflow"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/workflow/templateresolution"
 	"github.com/argoproj/argo-workflows/v3/workflow/validate"
 )
 
-var OfflineErr = fmt.Errorf("not supported when you are in offline mode")
-
-type OfflineWorkflowServiceClient struct{}
+type OfflineWorkflowServiceClient struct {
+	clusterWorkflowTemplateGetter       templateresolution.ClusterWorkflowTemplateGetter
+	namespacedWorkflowTemplateGetterMap offlineWorkflowTemplateGetterMap
+}
 
 var _ workflowpkg.WorkflowServiceClient = &OfflineWorkflowServiceClient{}
 
@@ -69,20 +70,8 @@ func (o OfflineWorkflowServiceClient) SetWorkflow(context.Context, *workflowpkg.
 	return nil, OfflineErr
 }
 
-type offlineWorkflowTemplateNamespacedGetter struct{}
-
-func (w offlineWorkflowTemplateNamespacedGetter) Get(name string) (*wfv1.WorkflowTemplate, error) {
-	return nil, OfflineErr
-}
-
-type offlineClusterWorkflowTemplateNamespacedGetter struct{}
-
-func (o offlineClusterWorkflowTemplateNamespacedGetter) Get(name string) (*wfv1.ClusterWorkflowTemplate, error) {
-	return nil, OfflineErr
-}
-
 func (o OfflineWorkflowServiceClient) LintWorkflow(_ context.Context, req *workflowpkg.WorkflowLintRequest, _ ...grpc.CallOption) (*wfv1.Workflow, error) {
-	err := validate.ValidateWorkflow(&offlineWorkflowTemplateNamespacedGetter{}, &offlineClusterWorkflowTemplateNamespacedGetter{}, req.Workflow, validate.ValidateOpts{Lint: true})
+	err := validate.ValidateWorkflow(o.namespacedWorkflowTemplateGetterMap.GetNamespaceGetter(req.Namespace), o.clusterWorkflowTemplateGetter, req.Workflow, validate.ValidateOpts{Lint: true})
 	if err != nil {
 		return nil, err
 	}

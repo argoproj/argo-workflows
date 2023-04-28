@@ -30,7 +30,9 @@ from argo_workflows.exceptions import ApiAttributeError
 
 
 def lazy_import():
+    from argo_workflows.model.io_argoproj_workflow_v1alpha1_column import IoArgoprojWorkflowV1alpha1Column
     from argo_workflows.model.io_argoproj_workflow_v1alpha1_link import IoArgoprojWorkflowV1alpha1Link
+    globals()['IoArgoprojWorkflowV1alpha1Column'] = IoArgoprojWorkflowV1alpha1Column
     globals()['IoArgoprojWorkflowV1alpha1Link'] = IoArgoprojWorkflowV1alpha1Link
 
 
@@ -87,6 +89,7 @@ class IoArgoprojWorkflowV1alpha1InfoResponse(ModelNormal):
         """
         lazy_import()
         return {
+            'columns': ([IoArgoprojWorkflowV1alpha1Column],),  # noqa: E501
             'links': ([IoArgoprojWorkflowV1alpha1Link],),  # noqa: E501
             'managed_namespace': (str,),  # noqa: E501
             'modals': ({str: (bool,)},),  # noqa: E501
@@ -99,6 +102,7 @@ class IoArgoprojWorkflowV1alpha1InfoResponse(ModelNormal):
 
 
     attribute_map = {
+        'columns': 'columns',  # noqa: E501
         'links': 'links',  # noqa: E501
         'managed_namespace': 'managedNamespace',  # noqa: E501
         'modals': 'modals',  # noqa: E501
@@ -146,6 +150,7 @@ class IoArgoprojWorkflowV1alpha1InfoResponse(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
+            columns ([IoArgoprojWorkflowV1alpha1Column]): [optional]  # noqa: E501
             links ([IoArgoprojWorkflowV1alpha1Link]): [optional]  # noqa: E501
             managed_namespace (str): [optional]  # noqa: E501
             modals ({str: (bool,)}): [optional]  # noqa: E501
@@ -231,6 +236,7 @@ class IoArgoprojWorkflowV1alpha1InfoResponse(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
+            columns ([IoArgoprojWorkflowV1alpha1Column]): [optional]  # noqa: E501
             links ([IoArgoprojWorkflowV1alpha1Link]): [optional]  # noqa: E501
             managed_namespace (str): [optional]  # noqa: E501
             modals ({str: (bool,)}): [optional]  # noqa: E501

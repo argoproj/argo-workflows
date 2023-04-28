@@ -6,20 +6,24 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 	"time"
 
+	"github.com/itchyny/gojq"
 	log "github.com/sirupsen/logrus"
 	"github.com/tidwall/gjson"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/client-go/util/retry"
 	"k8s.io/gengo/namer"
 	gengotypes "k8s.io/gengo/types"
+	kubectlcmd "k8s.io/kubectl/pkg/cmd"
 
 	"github.com/argoproj/argo-workflows/v3/errors"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
@@ -36,11 +40,11 @@ func (we *WorkflowExecutor) ExecResource(action string, manifestPath string, fla
 
 	var out []byte
 	err = retry.OnError(retry.DefaultBackoff, argoerr.IsTransientErr, func() error {
-		cmd := exec.Command("kubectl", args...)
-		log.Info(strings.Join(cmd.Args, " "))
-
-		out, err = cmd.Output()
-		return err
+		out, err = runKubectl(args...)
+		if err != nil {
+			return err
+		}
+		return nil
 	})
 	if err != nil {
 		if exErr, ok := err.(*exec.ExitError); ok {
@@ -111,6 +115,7 @@ func (we *WorkflowExecutor) getKubectlArguments(action string, manifestPath stri
 	}
 
 	args := []string{
+		"kubectl",
 		action,
 	}
 	output := "json"
@@ -303,22 +308,19 @@ func (we *WorkflowExecutor) SaveResourceParameters(ctx context.Context, resource
 		} else {
 			continue
 		}
-		kubectl := exec.Command("kubectl", "-n", resourceNamespace, "get", resourceName, "-o", outputFormat)
-		out, err := kubectl.Output()
-		log.WithError(err).WithField("out", string(out)).WithField("args", kubectl.Args).Info("kubectl")
+		args := []string{"kubectl", "-n", resourceNamespace, "get", resourceName, "-o", outputFormat}
+		out, err := runKubectl(args...)
+		log.WithError(err).WithField("out", string(out)).WithField("args", args).Info("kubectl")
 		if err != nil {
 			return err
 		}
 		output := string(out)
 		if param.ValueFrom.JQFilter != "" {
-			jq := exec.Command("jq", "-rc", param.ValueFrom.JQFilter)
-			jq.Stdin = bytes.NewBuffer(out)
-			out, err := jq.Output()
-			log.WithError(err).WithField("out", string(out)).WithField("args", jq.Args).Info("jq")
+			output, err = jqFilter(ctx, out, param.ValueFrom.JQFilter)
+			log.WithError(err).WithField("out", string(out)).WithField("filter", param.ValueFrom.JQFilter).Info("gojq")
 			if err != nil {
 				return err
 			}
-			output = strings.TrimSpace(string(out))
 		}
 
 		we.Template.Outputs.Parameters[i].Value = wfv1.AnyStringPtr(output)
@@ -326,4 +328,55 @@ func (we *WorkflowExecutor) SaveResourceParameters(ctx context.Context, resource
 	}
 	err := we.reportOutputs(ctx, nil)
 	return err
+}
+
+func jqFilter(ctx context.Context, input []byte, filter string) (string, error) {
+	var v interface{}
+	if err := json.Unmarshal(input, &v); err != nil {
+		return "", err
+	}
+	q, err := gojq.Parse(filter)
+	if err != nil {
+		return "", err
+	}
+	iter := q.RunWithContext(ctx, v)
+	var buf strings.Builder
+	for {
+		v, ok := iter.Next()
+		if !ok {
+			break
+		}
+		if err, ok := v.(error); ok {
+			return "", err
+		}
+		if s, ok := v.(string); ok {
+			buf.WriteString(s)
+		} else {
+			b, err := json.Marshal(v)
+			if err != nil {
+				return "", err
+			}
+			buf.Write(b)
+		}
+		buf.WriteString("\n")
+	}
+	return strings.TrimSpace(buf.String()), nil
+}
+
+func runKubectl(args ...string) ([]byte, error) {
+	log.Info(strings.Join(args, " "))
+	osArgs := append([]string{}, os.Args...)
+	os.Args = args
+	defer func() {
+		os.Args = osArgs
+	}()
+	var buf bytes.Buffer
+	if err := kubectlcmd.NewKubectlCommand(kubectlcmd.KubectlOptions{
+		Arguments:   args,
+		ConfigFlags: genericclioptions.NewConfigFlags(true),
+		IOStreams:   genericclioptions.IOStreams{Out: &buf, ErrOut: os.Stderr},
+	}).Execute(); err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
 }

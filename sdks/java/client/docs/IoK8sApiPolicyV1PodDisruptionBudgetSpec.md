@@ -1,6 +1,6 @@
 
 
-# IoK8sApiPolicyV1beta1PodDisruptionBudgetSpec
+# IoK8sApiPolicyV1PodDisruptionBudgetSpec
 
 PodDisruptionBudgetSpec is a description of a PodDisruptionBudget.
 

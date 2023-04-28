@@ -52,6 +52,8 @@ kubectl -n argo port-forward deployment/argo-server 2746:2746
 
 This will serve the UI on <https://localhost:2746>. Due to the self-signed certificate, you will receive a TLS error which you will need to manually approve.
 
+> Pay close attention to the URI. It uses `https` and not `http`. Navigating to `http://localhost:2746` result in server-side error that breaks the port-forwarding.
+
 ## Install the Argo Workflows CLI
 
 Next, Download the latest Argo CLI from the same [releases page](https://github.com/argoproj/argo-workflows/releases/latest).

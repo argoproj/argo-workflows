@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"os"
-	"path/filepath"
 	"strings"
 
 	"github.com/argoproj/pkg/errors"
@@ -20,6 +18,7 @@ import (
 	workflowtemplatepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowtemplate"
 	wf "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	fileutil "github.com/argoproj/argo-workflows/v3/util/file"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
 
@@ -64,12 +63,6 @@ type Formatter interface {
 }
 
 var (
-	lintExt = map[string]bool{
-		".yaml": true,
-		".yml":  true,
-		".json": true,
-	}
-
 	defaultFormatter = formatterPretty{}
 
 	formatters = map[string]Formatter{
@@ -99,7 +92,7 @@ func RunLint(ctx context.Context, client apiclient.Client, kinds []string, outpu
 	errors.CheckError(err)
 
 	if !res.Success {
-		os.Exit(1)
+		log.StandardLogger().Exit(1)
 	}
 }
 
@@ -121,41 +114,11 @@ func Lint(ctx context.Context, opts *LintOptions) (*LintResults, error) {
 	}
 
 	for _, file := range opts.Files {
-		err := filepath.Walk(file, func(path string, info os.FileInfo, err error) error {
-			var r io.Reader
-			switch {
-			case path == "-":
-				path = "stdin"
-				r = os.Stdin
-			case err != nil:
-				return err
-			case strings.HasPrefix(path, "/dev/") || lintExt[filepath.Ext(path)]:
-				f, err := os.Open(filepath.Clean(path))
-				if err != nil {
-					return err
-				}
-				defer func() {
-					if err := f.Close(); err != nil {
-						log.Fatalf("Error closing file[%s]: %v", path, err)
-					}
-				}()
-				r = f
-			case info.IsDir():
-				return nil // skip
-			default:
-				log.Debugf("ignoring file with unknown extension: %s", path)
-				return nil
-			}
-
-			data, err := ioutil.ReadAll(r)
-			if err != nil {
-				return err
-			}
-
+		err := fileutil.WalkManifests(file, func(path string, data []byte) error {
 			res := lintData(ctx, path, data, opts)
 			results.Results = append(results.Results, res)
 
-			_, err = w.Write([]byte(results.fmtr.Format(res)))
+			_, err := w.Write([]byte(results.fmtr.Format(res)))
 			return err
 		})
 		if err != nil {
