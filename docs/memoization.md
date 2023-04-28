@@ -17,8 +17,7 @@ This allows you to easily manipulate cache entries manually through `kubectl` an
 
 Memoization is set at the template level. You must specify a `key`, which can be static strings but more often depend on inputs.
 You must also specify a name for the `config-map` cache.
-Optionally you can set a `maxAge`  (e.g. \"180s\", \"24h\") to define how long should it be considered valid. If an entry is older than the MaxAge, it will be ignored.
-
+Optionally you can set a `maxAge` in seconds or hours (e.g. `180s`, `24h`) to define how long should it be considered valid. If an entry is older than the `maxAge`, it will be ignored.
 
 ```yaml
 apiVersion: argoproj.io/v1alpha1
@@ -37,7 +36,7 @@ spec:
                  name: whalesay-cache
 ```
 
-[Find a simple memoise example here](https://github.com/argoproj/argo-workflows/blob/master/examples/memoize-simple.yaml).
+[Find a simple example for memoization here](https://github.com/argoproj/argo-workflows/blob/master/examples/memoize-simple.yaml).
 
 !!! Note
     In order to use memoization it is necessary to add the verbs `create` and `update` to the `configmaps` resource for the appropriate (cluster) roles. In the case of a cluster install the `argo-cluster-role` cluster role should be updated, whilst for a namespace install the `argo-role` role should be updated.
