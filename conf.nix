@@ -7,7 +7,7 @@ rec {
     ALWAYS_OFFLOAD_NODE_STATUS = "false";
     LOG_LEVEL = "debug";
     UPPERIO_DB_DEBUG = "0";
-    IMAGE_NAMESPACE = "quay.io/pipekitdev";
+    IMAGE_NAMESPACE = "quay.io/argoproj";
     VERSION = "${version}";
     AUTH_MODE = "hybrid";
     NAMESPACED = "true";
