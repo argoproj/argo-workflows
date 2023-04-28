@@ -632,11 +632,11 @@ func TestCheckAndInitWorkflowTmplRef(t *testing.T) {
 	assert.Equal(t, wftmpl.Spec.Templates, woc.execWf.Spec.Templates)
 }
 
-const wfWithInvalidMetadata = `
+const wfWithInvalidMetadataLabelsFrom = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  name: crash
+  name: invalid-labels-from
 spec:
   serviceAccountName: my-sa
   entrypoint: test-container
@@ -655,12 +655,39 @@ spec:
       command: ["echo", "bye"]
 `
 
+const wfWithInvalidMetadataLabels = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: invalid-labels
+spec:
+  serviceAccountName: my-sa
+  entrypoint: test-container
+  workflowMetadata:
+    labels:
+      test: $INVALID
+  templates:
+  - name: test-container
+    container:
+      image: alpine:latest
+      command: ["echo", "bye"]
+`
+
 func TestInvalidWorkflowMetadata(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(wfWithInvalidMetadata)
+	wf := wfv1.MustUnmarshalWorkflow(wfWithInvalidMetadataLabelsFrom)
 	cancel, controller := newController(wf)
 	defer cancel()
 	woc := newWorkflowOperationCtx(wf, controller)
 	err := woc.setExecWorkflow(context.Background())
+	if assert.NotNil(t, err) {
+		assert.Contains(t, err.Error(), "invalid label value")
+	}
+
+	wf = wfv1.MustUnmarshalWorkflow(wfWithInvalidMetadataLabels)
+	cancel, controller = newController(wf)
+	defer cancel()
+	woc = newWorkflowOperationCtx(wf, controller)
+	err = woc.setExecWorkflow(context.Background())
 	if assert.NotNil(t, err) {
 		assert.Contains(t, err.Error(), "invalid label value")
 	}

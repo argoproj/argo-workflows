@@ -415,10 +415,12 @@ func (ctx *templateValidationCtx) validateTemplate(tmpl *wfv1.Template, tmplCtx 
 		localParams[common.LocalVarRetriesLastExitCode] = placeholderGenerator.NextPlaceholder()
 		localParams[common.LocalVarRetriesLastStatus] = placeholderGenerator.NextPlaceholder()
 		localParams[common.LocalVarRetriesLastDuration] = placeholderGenerator.NextPlaceholder()
+		localParams[common.LocalVarRetriesLastMessage] = placeholderGenerator.NextPlaceholder()
 		scope[common.LocalVarRetries] = placeholderGenerator.NextPlaceholder()
 		scope[common.LocalVarRetriesLastExitCode] = placeholderGenerator.NextPlaceholder()
 		scope[common.LocalVarRetriesLastStatus] = placeholderGenerator.NextPlaceholder()
 		scope[common.LocalVarRetriesLastDuration] = placeholderGenerator.NextPlaceholder()
+		scope[common.LocalVarRetriesLastMessage] = placeholderGenerator.NextPlaceholder()
 	}
 	if tmpl.IsLeaf() {
 		for _, art := range tmpl.Outputs.Artifacts {

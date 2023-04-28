@@ -224,6 +224,8 @@ const (
 	LocalVarRetriesLastStatus = "lastRetry.status"
 	// LocalVarRetriesLastDuration is a variable that references information about the last retry's duration, in seconds
 	LocalVarRetriesLastDuration = "lastRetry.duration"
+	// LocalVarRetriesLastMessage is a variable that references information about the last retry's failure message
+	LocalVarRetriesLastMessage = "lastRetry.message"
 
 	KubeConfigDefaultMountPath    = "/kube/config"
 	KubeConfigDefaultVolumeName   = "kubeconfig"

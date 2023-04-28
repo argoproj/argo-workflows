@@ -520,6 +520,9 @@ func (woc *wfOperationCtx) updateWorkflowMetadata() error {
 			woc.wf.Labels = make(map[string]string)
 		}
 		for n, v := range md.Labels {
+			if errs := validation.IsValidLabelValue(v); errs != nil {
+				return errors.Errorf(errors.CodeBadRequest, "invalid label value %q for label %q: %s", v, n, strings.Join(errs, ";"))
+			}
 			woc.wf.Labels[n] = v
 			woc.globalParams["workflow.labels."+n] = v
 			updatedParams["workflow.labels."+n] = v
@@ -1729,6 +1732,7 @@ func buildRetryStrategyLocalScope(node *wfv1.NodeStatus, nodes wfv1.Nodes) map[s
 	localScope[common.LocalVarRetriesLastExitCode] = exitCode
 	localScope[common.LocalVarRetriesLastStatus] = string(lastChildNode.Phase)
 	localScope[common.LocalVarRetriesLastDuration] = fmt.Sprint(lastChildNode.GetDuration().Seconds())
+	localScope[common.LocalVarRetriesLastMessage] = lastChildNode.Message
 
 	return localScope
 }

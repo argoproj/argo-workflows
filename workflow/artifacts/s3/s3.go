@@ -39,7 +39,7 @@ type ArtifactDriver struct {
 
 var _ artifactscommon.ArtifactDriver = &ArtifactDriver{}
 
-// newMinioClient instantiates a new minio client object.
+// newS3Client instantiates a new S3 client object.
 func (s3Driver *ArtifactDriver) newS3Client(ctx context.Context) (argos3.S3Client, error) {
 	opts := argos3.S3ClientOpts{
 		Endpoint:    s3Driver.Endpoint,
