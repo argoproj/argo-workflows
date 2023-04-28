@@ -1008,9 +1008,18 @@ func (woc *wfOperationCtx) processNodeRetries(node *wfv1.NodeStatus, retryStrate
 		node = woc.markNodePhase(node.Name, node.Phase, "")
 	}
 
+	retryPolicy := retryStrategy.RetryPolicy
+	if retryPolicy == "" {
+		if retryStrategy.Expression == "" {
+			retryPolicy = wfv1.RetryPolicyOnFailure
+		} else {
+			retryPolicy = wfv1.RetryPolicyAlways
+		}
+	}
+
 	var retryOnFailed bool
 	var retryOnError bool
-	switch retryStrategy.RetryPolicy {
+	switch retryPolicy {
 	case wfv1.RetryPolicyAlways:
 		retryOnFailed = true
 		retryOnError = true
@@ -1022,7 +1031,7 @@ func (woc *wfOperationCtx) processNodeRetries(node *wfv1.NodeStatus, retryStrate
 			retryOnFailed = true
 			retryOnError = true
 		}
-	case wfv1.RetryPolicyOnFailure, "":
+	case wfv1.RetryPolicyOnFailure:
 		retryOnFailed = true
 		retryOnError = false
 	default:

@@ -24,18 +24,32 @@ spec:
 
 ## Retry policies
 
-The default retry policy is to retry only `OnFailure`, and will apply if you do not specify a policy.
-
 Use `retryPolicy` to choose which failure types to retry:
 
 - `Always`: Retry all failed steps
-- `OnFailure`: Retry steps whose main container is marked as failed in Kubernetes (**default**)
+- `OnFailure`: Retry steps whose main container is marked as failed in Kubernetes
 - `OnError`: Retry steps that encounter Argo controller errors, or whose init or wait containers fail
 - `OnTransientError`: Retry steps that encounter errors [defined as transient](https://github.com/argoproj/argo-workflows/blob/master/util/errors/errors.go), or errors matching the `TRANSIENT_ERROR_PATTERN` [environment variable](https://argoproj.github.io/argo-workflows/environment-variables/). Available in version 3.0 and later.
 
-The `retryPolicy` applies even if you also specify an `expression`.
+The `retryPolicy` applies even if you also specify an `expression`, but in version 3.5 or later the default policy means the expression makes the decision unless you explicitly specify a policy.
 
-For example:
+The default `retryPolicy` is `OnFailure`, except in version 3.5 or later when an expression is also supplied, when it is `Always`. This may be easier to understand in this diagram.
+
+```mermaid
+flowchart LR
+  start([Start])
+  start --> expression
+  expression(Expression specified)
+  expression-->|No|onfailure
+  expression-->|Yes|version
+  onfailure[retryPolicy: OnFailure]
+  version(Workflows version)
+  version-->|3.4 or ealier|onfailure
+  always[retryPolicy: Always]
+  version-->|3.5 or later|always
+```
+
+An example retry strategy:
 
 ```yaml
 apiVersion: argoproj.io/v1alpha1
