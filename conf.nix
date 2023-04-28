@@ -1,5 +1,11 @@
+# most of these configuration options might not do anything yet. 
+# the plan is to gradually introduced more and more functionality into Nix 
+# and move away from the Makefile. 
+# At the moment, only the equivalent of "make start UI=true" is supported. 
+# Even then the buildFlags are not passed into Go, meaning you won't see the correct version info yet. 
+# This is only intended for quick developing at the moment, gradually more functionality will be pushed here. 
 rec {
-  staticFiles = true;
+  staticFiles = false; # not acted upon
   version = "latest";
   env = {
     DEFAULT_REQUEUE_TIME = "1s";
