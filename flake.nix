@@ -13,17 +13,17 @@
       perSystem = { pkgs, lib, config, ... }:
         let
           argoConfig = import ./conf.nix;
-          myyarn = pkgs.yarn.override { nodejs = pkgs.nodejs-19_x; };
+          myyarn = pkgs.yarn.override { nodejs = pkgs.nodejs-16_x-openssl_1_1; };
           src = 
             builtins.filterSource
-            (path: type: !(type == "directory" && baseNameOf path == "hack"))
-            (lib.sourceFilesBySuffices inputs.self [ ".go" ".mod" ".sum" ]);
+              (path: type: !(type == "directory" && baseNameOf path == "hack"))
+              (lib.sourceFilesBySuffices inputs.self [ ".go" ".mod" ".sum" ]);
           package = {
             name = "controller";
             version = argoConfig.version;
           };
 
-          nodejs = pkgs.nodejs-19_x;
+          nodejs = pkgs.nodejs-16_x-openssl_1_1;
           nodeEnv = import ./node-env.nix {
             inherit (pkgs) stdenv lib python2 runCommand writeTextFile writeShellScript;
             inherit pkgs nodejs;
@@ -160,7 +160,7 @@
               pname = package.name;
               inherit (package) version;
               inherit src;
-              vendorSha256 = "sha256-vtBy1+fEh7ewKyCUZYOWC3AXi3hs7R3e/9p1aLubDyQ=";
+              vendorSha256 = "sha256-1ivPt7m65B89jOTlYA21AcrW6OZeMlgpoPZd9Lw2Ohc=";
               doCheck = false;
             };
 
