@@ -520,6 +520,9 @@ func (woc *wfOperationCtx) updateWorkflowMetadata() error {
 			woc.wf.Labels = make(map[string]string)
 		}
 		for n, v := range md.Labels {
+			if errs := validation.IsValidLabelValue(v); errs != nil {
+				return errors.Errorf(errors.CodeBadRequest, "invalid label value %q for label %q: %s", v, n, strings.Join(errs, ";"))
+			}
 			woc.wf.Labels[n] = v
 			woc.globalParams["workflow.labels."+n] = v
 			updatedParams["workflow.labels."+n] = v
@@ -545,14 +548,6 @@ func (woc *wfOperationCtx) updateWorkflowMetadata() error {
 			}
 			if errs := validation.IsValidLabelValue(v); errs != nil {
 				return errors.Errorf(errors.CodeBadRequest, "invalid label value %q for label %q and expression %q: %s", v, n, f.Expression, strings.Join(errs, ";"))
-			}
-			woc.wf.Labels[n] = v
-			woc.globalParams["workflow.labels."+n] = v
-			updatedParams["workflow.labels."+n] = v
-		}
-		for n, v := range md.Labels {
-			if errs := validation.IsValidLabelValue(v); errs != nil {
-				return errors.Errorf(errors.CodeBadRequest, "invalid label value %q for label %q: %s", v, n, strings.Join(errs, ";"))
 			}
 			woc.wf.Labels[n] = v
 			woc.globalParams["workflow.labels."+n] = v
