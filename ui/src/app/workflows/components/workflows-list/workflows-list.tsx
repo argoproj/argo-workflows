@@ -74,7 +74,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
             });
         }
         if (this.state.selectedLabels) {
-            this.state.selectedLabels.forEach(label => {
+            this.state?.selectedLabels.forEach(label => {
                 params.append('label', label);
             });
         }
@@ -301,7 +301,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
     private countsByCompleted() {
         const counts = {complete: 0, incomplete: 0};
         (this.state.workflows || []).forEach(wf => {
-            if (wf.metadata.labels && wf.metadata.labels[labels.completed] === 'true') {
+            if (wf.metadata?.labels && wf.metadata?.labels[labels.completed] === 'true') {
                 counts.complete++;
             } else {
                 counts.incomplete++;
@@ -376,7 +376,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                                         key={wf.metadata.uid}
                                         checked={this.state.selectedWorkflows.has(wf.metadata.uid)}
                                         onChange={key => {
-                                            const value = `${key}=${wf.metadata.labels[key]}`;
+                                            const value = `${key}=${wf.metadata?.labels[key]}`;
                                             let newTags: string[] = [];
                                             if (this.state.selectedLabels.indexOf(value) === -1) {
                                                 newTags = this.state.selectedLabels.concat(value);
