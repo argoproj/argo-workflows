@@ -56,5 +56,5 @@ For program specific questions, please refer to [GSoC FAQ](https://developers.go
 
 If you have any problems with your relationship, please contact us:
 
-* alex_collins@intuit.com
-* terrytangyuan@gmail.com
+* <alex_collins@intuit.com>
+* <terrytangyuan@gmail.com>
