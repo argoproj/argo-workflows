@@ -995,3 +995,77 @@ spec:
 	assert.NotNil(t, node)
 	assert.Equal(t, wfv1.NodeFailed, node.Phase)
 }
+
+func TestWfHookNoExpression(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: hook-failures
+  namespace: argo
+spec:
+  entrypoint: message
+  hooks:
+    failure:
+      template: message
+  templates:
+    - name: message
+      script:
+        image: alpine:latest
+        command: [sh]
+        source: |
+          echo Hi
+`)
+
+	cancel, controller := newController(wf)
+	defer cancel()
+
+	ctx := context.Background()
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate(ctx)
+	makePodsPhase(ctx, woc, apiv1.PodFailed)
+
+	woc = newWorkflowOperationCtx(woc.wf, controller)
+	woc.operate(ctx)
+	assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
+	assert.Equal(t, "invalid spec: hooks.failure Expression required", woc.wf.Status.Message)
+}
+
+func TestStepHookNoExpression(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: hook-failures
+  namespace: argo
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      steps:
+        - - name: step-1
+            template: message
+            hooks:
+              foo:
+                template: message
+    - name: message
+      script:
+        image: alpine:latest
+        command: [sh]
+        source: |
+          echo Hi
+`)
+
+	cancel, controller := newController(wf)
+	defer cancel()
+
+	ctx := context.Background()
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate(ctx)
+	makePodsPhase(ctx, woc, apiv1.PodFailed)
+
+	woc = newWorkflowOperationCtx(woc.wf, controller)
+	woc.operate(ctx)
+	assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
+	assert.Equal(t, "invalid spec: templates.main.steps[0].step-1.foo Expression required", woc.wf.Status.Message)
+}

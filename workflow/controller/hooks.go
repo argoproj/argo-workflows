@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/argoproj/argo-workflows/v3/errors"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/util/expr/argoexpr"
 	"github.com/argoproj/argo-workflows/v3/util/expr/env"
@@ -18,12 +19,15 @@ func (woc *wfOperationCtx) executeWfLifeCycleHook(ctx context.Context, tmplCtx *
 		if hookName == wfv1.ExitLifecycleEvent {
 			continue
 		}
+		hookNodeName := generateLifeHookNodeName(woc.wf.ObjectMeta.Name, string(hookName))
+		if hook.Expression == "" {
+			return true, errors.Errorf(errors.CodeBadRequest, "Expression required for hook %s", hookNodeName)
+		}
 		execute, err := argoexpr.EvalBool(hook.Expression, env.GetFuncMap(template.EnvMap(woc.globalParams)))
 		if err != nil {
 			return true, err
 		}
 		if execute {
-			hookNodeName := generateLifeHookNodeName(woc.wf.ObjectMeta.Name, string(hookName))
 			woc.log.WithField("lifeCycleHook", hookName).WithField("node", hookNodeName).Infof("Running workflow level hooks")
 			hookNode, err := woc.executeTemplate(ctx, hookNodeName, &wfv1.WorkflowStep{Template: hook.Template, TemplateRef: hook.TemplateRef}, tmplCtx, hook.Arguments, &executeTemplateOpts{})
 			if err != nil {
@@ -53,6 +57,10 @@ func (woc *wfOperationCtx) executeTmplLifeCycleHook(ctx context.Context, scope *
 		if hookName == wfv1.ExitLifecycleEvent {
 			continue
 		}
+		hookNodeName := generateLifeHookNodeName(parentNode.Name, string(hookName))
+		if hook.Expression == "" {
+			return false, errors.Errorf(errors.CodeBadRequest, "Expression required for hook %s", hookNodeName)
+		}
 		execute, err := argoexpr.EvalBool(hook.Expression, env.GetFuncMap(template.EnvMap(woc.globalParams.Merge(scope.getParameters()))))
 		if err != nil {
 			return false, err
@@ -63,7 +71,6 @@ func (woc *wfOperationCtx) executeTmplLifeCycleHook(ctx context.Context, scope *
 				lastChildNode := getChildNodeIndex(parentNode, woc.wf.Status.Nodes, -1)
 				outputs = lastChildNode.Outputs
 			}
-			hookNodeName := generateLifeHookNodeName(parentNode.Name, string(hookName))
 			woc.log.WithField("lifeCycleHook", hookName).WithField("node", hookNodeName).WithField("hookName", hookName).Info("Running hooks")
 			resolvedArgs := hook.Arguments
 			var err error
