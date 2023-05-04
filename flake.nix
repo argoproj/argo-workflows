@@ -291,6 +291,7 @@
             ${package.name} = pkgs.mkShell {
               inherit (package) name;
               shellHook = ''
+                unset GOROOT;
                 unset GOPATH;
               '';
               inputsFrom = [ config.packages.${package.name} ];
@@ -345,10 +346,12 @@
                     myyarn
                   ];
                   enterShell = ''
+                    unset GOPATH;
+                    unset GOROOT;
                     ./hack/port-forward.sh;
-                    ./hack/free-port 9090;
-                    ./hack/free-port 2746;
-                    ./hack/free-port 8080;
+                    ./hack/free-port.sh 9090;
+                    ./hack/free-port.sh 2746;
+                    ./hack/free-port.sh 8080;
                     yarn --cwd ui install;
                   '';
                   processes = {
