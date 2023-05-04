@@ -3,7 +3,7 @@ ARG GIT_COMMIT=unknown
 ARG GIT_TAG=unknown
 ARG GIT_TREE_STATE=unknown
 
-FROM golang:1.19-alpine3.16 as builder
+FROM golang:1.20-alpine3.16 as builder
 
 RUN apk update && apk add --no-cache \
     git \
