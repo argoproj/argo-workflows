@@ -76,12 +76,13 @@ func (h Facade) EventStreamReader(in interface{}, path string) (*bufio.Reader, e
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
 	err = errFromResponse(resp)
 	if err != nil {
 		return nil, err
 	}
-	return bufio.NewReader(resp.Body), nil
+	rd := bufio.NewReader(resp.Body)
+	defer resp.Body.Close()
+	return rd, nil
 }
 
 func (h Facade) do(in interface{}, out interface{}, method string, path string) error {
