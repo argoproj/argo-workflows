@@ -72,7 +72,7 @@ func (h Facade) EventStreamReader(in interface{}, path string) (*bufio.Reader, e
 			},
 		},
 	}
-	resp, err := client.Do(req)
+	resp, err := client.Do(req) //nolint
 	if err != nil {
 		return nil, err
 	}
@@ -80,9 +80,7 @@ func (h Facade) EventStreamReader(in interface{}, path string) (*bufio.Reader, e
 	if err != nil {
 		return nil, err
 	}
-	rd := bufio.NewReader(resp.Body)
-	defer resp.Body.Close()
-	return rd, nil
+	return bufio.NewReader(resp.Body), nil
 }
 
 func (h Facade) do(in interface{}, out interface{}, method string, path string) error {
