@@ -72,7 +72,7 @@ func (h Facade) EventStreamReader(in interface{}, path string) (*bufio.Reader, e
 			},
 		},
 	}
-	resp, err := client.Do(req)
+	resp, err := client.Do(req) //nolint
 	if err != nil {
 		return nil, err
 	}
