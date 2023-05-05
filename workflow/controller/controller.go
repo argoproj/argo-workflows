@@ -615,7 +615,10 @@ func (wfc *WorkflowController) deleteOffloadedNodesForWorkflow(uid string, versi
 	case 0:
 		log.WithField("uid", uid).Info("Workflow missing, probably deleted")
 	case 1:
-		un := workflows[0].(*unstructured.Unstructured)
+		un, ok := workflows[0].(*unstructured.Unstructured)
+		if !ok {
+			return fmt.Errorf("object %+v is not an unstructured", workflows[0])
+		}
 		wf, err = util.FromUnstructured(un)
 		if err != nil {
 			return err
