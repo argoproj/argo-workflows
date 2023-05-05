@@ -827,7 +827,12 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers(ctx context.Context) 
 	wfc.wfInformer.AddEventHandler(
 		cache.FilteringResourceEventHandler{
 			FilterFunc: func(obj interface{}) bool {
-				return reconciliationNeeded(obj.(*unstructured.Unstructured))
+				un, ok := obj.(*unstructured.Unstructured)
+				if !ok {
+					log.Warnf("Workflow FilterFunc: '%v' is not an unstructured", obj)
+					return false
+				}
+				return reconciliationNeeded(un)
 			},
 			Handler: cache.ResourceEventHandlerFuncs{
 				AddFunc: func(obj interface{}) {
