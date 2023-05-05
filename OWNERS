@@ -1,9 +1,9 @@
 owners:
 - alexec
 - sarabala1979
+- terrytangyuan
 
 reviewers:
-- juliev0
 - tczhao
 
 approvers:
@@ -11,5 +11,5 @@ approvers:
 - alexmt
 - edlee2121
 - jessesuen
-- simster7
-- terrytangyuan
+- juliev0
+
