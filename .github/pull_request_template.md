@@ -19,7 +19,7 @@ When changes are requested, please address them and then dismiss the review to g
 -->
 
 
-<!-- Does this PR fixes an issue -->
+<!-- Does this PR fix an issue -->
 
 Fixes #TODO
 
