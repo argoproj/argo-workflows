@@ -2,9 +2,14 @@
 
 > v2.5 and after
 
-If you want to keep completed workflows for a long time, you can use the workflow archive to save them in a Postgres or MySQL (>= 5.7.8) database. The workflow archive stores the status of the workflow, which pods have been executed, what was the result etc. The job logs of the workflow pods will not be archived. If you need to save the logs of the pods, you must setup an [artifact repository](artifact-repository-ref.md) according to [this doc](configure-artifact-repository.md).
+If you want to keep completed workflows for a long time, you can use the workflow archive to save them in a Postgres or MySQL (>= 5.7.8) database. 
+The workflow archive stores the status of the workflow, which pods have been executed, what was the result etc. 
+The job logs of the workflow pods will not be archived. 
+If you need to save the logs of the pods, you must setup an [artifact repository](artifact-repository-ref.md) according to [this doc](configure-artifact-repository.md).
 
-The default Argo Workflows deployment includes a PosgreSQL database server to archive the finished workflows and in this case the workflow archive is already enabled. This is convenient for test environments, but in a production environment you must use a production-quality database service.
+The default Argo Workflows deployment includes a PosgreSQL database server to store the archive of the finished workflows.
+In this case the workflow archive is already enabled.
+This is convenient for test environments, but in a production environment you must use a production quality database service.
 
 ## Enabling Workflow Archive
 To enable archiving of the workflows, you must configure database parameters in the `persistence` section of [your configuration](workflow-controller-configmap.yaml) and set `archive:` to `true`.
@@ -47,7 +52,8 @@ Every time the Argo workflow-controller starts with persistence enabled, it trie
 The database user/role must have `CREATE` and `USAGE` permissions on the `public` schema of the database so that the tables can be created during the migration.
 
 ## Archive TTL
-You can configure the time period to keep archived workflows before they will be deleted by the archived workflow garbage collection function.Default is forever.
+You can configure the time period to keep archived workflows before they will be deleted by the archived workflow garbage collection function. 
+The default is forever.
 
 Example:
 
@@ -55,8 +61,9 @@ Example:
       archiveTTL: 10d
 
 
-The `ARCHIVED_WORKFLOW_GC_PERIOD` variable defines the periodicity of running the GC function, the default is 24h.
-When the workflow controller starts, it sets the ticker to run every `ARCHIVED_WORKFLOW_GC_PERIOD`. It does not run the garbage collection function immediately and the first garbage collection happens only after the period defined in the `ARCHIVED_WORKFLOW_GC_PERIOD` variable.
+The `ARCHIVED_WORKFLOW_GC_PERIOD` variable defines the periodicity of running the garbage collection function, the default is `24h`.
+When the workflow controller starts, it sets the ticker to run every `ARCHIVED_WORKFLOW_GC_PERIOD`. 
+It does not run the garbage collection function immediately and the first garbage collection happens only after the period defined in the `ARCHIVED_WORKFLOW_GC_PERIOD` variable.
 
 
 ## Cluster Name
