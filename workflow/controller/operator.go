@@ -1008,18 +1008,9 @@ func (woc *wfOperationCtx) processNodeRetries(node *wfv1.NodeStatus, retryStrate
 		node = woc.markNodePhase(node.Name, node.Phase, "")
 	}
 
-	retryPolicy := retryStrategy.RetryPolicy
-	if retryPolicy == "" {
-		if retryStrategy.Expression == "" {
-			retryPolicy = wfv1.RetryPolicyOnFailure
-		} else {
-			retryPolicy = wfv1.RetryPolicyAlways
-		}
-	}
-
 	var retryOnFailed bool
 	var retryOnError bool
-	switch retryPolicy {
+	switch retryStrategy.RetryPolicyActual() {
 	case wfv1.RetryPolicyAlways:
 		retryOnFailed = true
 		retryOnError = true
@@ -1035,8 +1026,9 @@ func (woc *wfOperationCtx) processNodeRetries(node *wfv1.NodeStatus, retryStrate
 		retryOnFailed = true
 		retryOnError = false
 	default:
-		return nil, false, fmt.Errorf("%s is not a valid RetryPolicy", retryStrategy.RetryPolicy)
+		return nil, false, fmt.Errorf("%s is not a valid RetryPolicy", retryStrategy.RetryPolicyActual())
 	}
+	woc.log.Infof("Retry Policy: %s (onFailed: %v, onError %v)", retryStrategy.RetryPolicyActual(), retryOnFailed, retryOnError)
 
 	if (lastChildNode.Phase == wfv1.NodeFailed && !retryOnFailed) || (lastChildNode.Phase == wfv1.NodeError && !retryOnError) {
 		woc.log.Infof("Node not set to be retried after status: %s", lastChildNode.Phase)
@@ -2032,9 +2024,9 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 		// and we return instead.
 		retryStrategy := woc.retryStrategy(processedTmpl)
 		if retryStrategy == nil ||
-			(retryStrategy.RetryPolicy != wfv1.RetryPolicyAlways &&
-				retryStrategy.RetryPolicy != wfv1.RetryPolicyOnError &&
-				retryStrategy.RetryPolicy != wfv1.RetryPolicyOnTransientError) {
+			(retryStrategy.RetryPolicyActual() != wfv1.RetryPolicyAlways &&
+				retryStrategy.RetryPolicyActual() != wfv1.RetryPolicyOnError &&
+				retryStrategy.RetryPolicyActual() != wfv1.RetryPolicyOnTransientError) {
 			woc.controller.syncManager.Release(woc.wf, node.ID, processedTmpl.Synchronization)
 			return node, err
 		}

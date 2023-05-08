@@ -22,6 +22,8 @@ spec:
       args: ["import random; import sys; exit_code = random.choice([0, 1, 1]); sys.exit(exit_code)"]
 ```
 
+The `retryPolicy` and `expression` are re-evaluated after each attempt. For example, if you set `retryPolicy: OnFailure` and your first attempt produces a failure then a retry will be attempted. If the second attempt produces an error, then another attempt will not be made.
+
 ## Retry policies
 
 Use `retryPolicy` to choose which failure types to retry:
@@ -37,16 +39,25 @@ The default `retryPolicy` is `OnFailure`, except in version 3.5 or later when an
 
 ```mermaid
 flowchart LR
-  start([Start])
-  start --> expression
-  expression(Expression specified)
-  expression-->|No|onfailure
-  expression-->|Yes|version
-  onfailure[retryPolicy: OnFailure]
+  start([Will a retry be attempted])
+  start --> policy
+  policy(Policy Specified?)
+  policy-->|No|expressionNoPolicy
+  policy-->|Yes|policyGiven
+  policyGiven(Expression Specified?)
+  policyGiven-->|No|policyGivenApplies
+  policyGiven-->|Yes|policyAndExpression
+  policyGivenApplies(Supplied Policy)
+  policyAndExpression(Supplied Policy AND Expression)
+  expressionNoPolicy(Expression specified?)
+  expressionNoPolicy-->|No|onfailure
+  expressionNoPolicy-->|Yes|version
+  onfailure[OnFailure AND Expression]
   version(Workflows version)
   version-->|3.4 or ealier|onfailure
-  always[retryPolicy: Always]
+  always[Only Expression matters]
   version-->|3.5 or later|always
+
 ```
 
 An example retry strategy:
