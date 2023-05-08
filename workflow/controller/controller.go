@@ -615,7 +615,10 @@ func (wfc *WorkflowController) deleteOffloadedNodesForWorkflow(uid string, versi
 	case 0:
 		log.WithField("uid", uid).Info("Workflow missing, probably deleted")
 	case 1:
-		un := workflows[0].(*unstructured.Unstructured)
+		un, ok := workflows[0].(*unstructured.Unstructured)
+		if !ok {
+			return fmt.Errorf("object %+v is not an unstructured", workflows[0])
+		}
 		wf, err = util.FromUnstructured(un)
 		if err != nil {
 			return err
@@ -827,7 +830,12 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers(ctx context.Context) 
 	wfc.wfInformer.AddEventHandler(
 		cache.FilteringResourceEventHandler{
 			FilterFunc: func(obj interface{}) bool {
-				return reconciliationNeeded(obj.(*unstructured.Unstructured))
+				un, ok := obj.(*unstructured.Unstructured)
+				if !ok {
+					log.Warnf("Workflow FilterFunc: '%v' is not an unstructured", obj)
+					return false
+				}
+				return reconciliationNeeded(un)
 			},
 			Handler: cache.ResourceEventHandlerFuncs{
 				AddFunc: func(obj interface{}) {
