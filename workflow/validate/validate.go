@@ -107,6 +107,34 @@ func (args *FakeArguments) GetArtifactByName(name string) *wfv1.Artifact {
 
 var _ wfv1.ArgumentsProvider = &FakeArguments{}
 
+func SubstituteResourceManifestExpressions(manifest string) string {
+	var substitutions = make(map[string]string)
+	pattern, _ := regexp.Compile(`{{\s*=\s*(.+?)\s*}}`)
+	for _, match := range pattern.FindAllStringSubmatch(manifest, -1) {
+		substitutions[string(match[1])] = placeholderGenerator.NextPlaceholder()
+	}
+
+	// since we don't need to resolve/evaluate here we can do just a simple replacement
+	for old, new := range substitutions {
+		rmatch, _ := regexp.Compile(`{{\s*=\s*` + regexp.QuoteMeta(old) + `\s*}}`)
+		manifest = rmatch.ReplaceAllString(manifest, new)
+	}
+
+	return manifest
+}
+
+// validateHooks takes an array of hooks to validate and the name of the
+// container they are in and generates an error for the first invalid hook
+// or nil if they are all valid
+func validateHooks(hooks wfv1.LifecycleHooks, hookBaseName string) error {
+	for hookName, hook := range hooks {
+		if hookName != wfv1.ExitLifecycleEvent && hook.Expression == "" {
+			return errors.Errorf(errors.CodeBadRequest, "%s.%s %s", hookBaseName, hookName, "Expression required")
+		}
+	}
+	return nil
+}
+
 // ValidateWorkflow accepts a workflow and performs validation against it.
 func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespacedGetter, cwftmplGetter templateresolution.ClusterWorkflowTemplateGetter, wf *wfv1.Workflow, opts ValidateOpts) error {
 	ctx := newTemplateValidationCtx(wf, opts)
@@ -249,6 +277,10 @@ func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 			return err
 		}
 	}
+	err = validateHooks(wf.Spec.Hooks, "hooks")
+	if err != nil {
+		return err
+	}
 
 	if !wf.Spec.PodGC.GetStrategy().IsValid() {
 		return errors.Errorf(errors.CodeBadRequest, "podGC.strategy unknown strategy '%s'", wf.Spec.PodGC.Strategy)
@@ -375,6 +407,7 @@ func (ctx *templateValidationCtx) validateInitContainers(containers []wfv1.UserC
 }
 
 func (ctx *templateValidationCtx) validateTemplate(tmpl *wfv1.Template, tmplCtx *templateresolution.Context, args wfv1.ArgumentsProvider, workflowTemplateValidation bool) error {
+
 	if err := validateTemplateType(tmpl); err != nil {
 		return err
 	}
@@ -398,10 +431,12 @@ func (ctx *templateValidationCtx) validateTemplate(tmpl *wfv1.Template, tmplCtx 
 		localParams[common.LocalVarRetriesLastExitCode] = placeholderGenerator.NextPlaceholder()
 		localParams[common.LocalVarRetriesLastStatus] = placeholderGenerator.NextPlaceholder()
 		localParams[common.LocalVarRetriesLastDuration] = placeholderGenerator.NextPlaceholder()
+		localParams[common.LocalVarRetriesLastMessage] = placeholderGenerator.NextPlaceholder()
 		scope[common.LocalVarRetries] = placeholderGenerator.NextPlaceholder()
 		scope[common.LocalVarRetriesLastExitCode] = placeholderGenerator.NextPlaceholder()
 		scope[common.LocalVarRetriesLastStatus] = placeholderGenerator.NextPlaceholder()
 		scope[common.LocalVarRetriesLastDuration] = placeholderGenerator.NextPlaceholder()
+		scope[common.LocalVarRetriesLastMessage] = placeholderGenerator.NextPlaceholder()
 	}
 	if tmpl.IsLeaf() {
 		for _, art := range tmpl.Outputs.Artifacts {
@@ -450,7 +485,7 @@ func (ctx *templateValidationCtx) validateTemplate(tmpl *wfv1.Template, tmplCtx 
 	case wfv1.TemplateTypeDAG:
 		err = ctx.validateDAG(scope, tmplCtx, newTmpl, workflowTemplateValidation)
 	default:
-		err = ctx.validateLeaf(scope, newTmpl, workflowTemplateValidation)
+		err = ctx.validateLeaf(scope, tmplCtx, newTmpl, workflowTemplateValidation)
 	}
 	if err != nil {
 		return err
@@ -668,7 +703,7 @@ func validateNonLeaf(tmpl *wfv1.Template) error {
 	return nil
 }
 
-func (ctx *templateValidationCtx) validateLeaf(scope map[string]interface{}, tmpl *wfv1.Template, workflowTemplateValidation bool) error {
+func (ctx *templateValidationCtx) validateLeaf(scope map[string]interface{}, tmplCtx *templateresolution.Context, tmpl *wfv1.Template, workflowTemplateValidation bool) error {
 	tmplBytes, err := json.Marshal(tmpl)
 	if err != nil {
 		return errors.InternalWrapError(err)
@@ -693,7 +728,18 @@ func (ctx *templateValidationCtx) validateLeaf(scope map[string]interface{}, tmp
 			mountPaths[art.Path] = fmt.Sprintf("inputs.artifacts.%s", art.Name)
 		}
 		if tmpl.Container.Image == "" {
-			return errors.Errorf(errors.CodeBadRequest, "templates.%s.container.image may not be empty", tmpl.Name)
+			switch baseTemplate := tmplCtx.GetCurrentTemplateBase().(type) {
+			case *wfv1.Workflow:
+				if !(baseTemplate.Spec.TemplateDefaults != nil && baseTemplate.Spec.TemplateDefaults.Container != nil && baseTemplate.Spec.TemplateDefaults.Container.Image != "") {
+					return errors.Errorf(errors.CodeBadRequest, "templates.%s.container.image may not be empty", tmpl.Name)
+				}
+			case *wfv1.WorkflowTemplate:
+				if !(baseTemplate.Spec.TemplateDefaults != nil && baseTemplate.Spec.TemplateDefaults.Container != nil && baseTemplate.Spec.TemplateDefaults.Container.Image != "") {
+					return errors.Errorf(errors.CodeBadRequest, "templates.%s.container.image may not be empty", tmpl.Name)
+				}
+			default:
+				return errors.Errorf(errors.CodeBadRequest, "templates.%s.container.image may not be empty", tmpl.Name)
+			}
 		}
 	}
 	if tmpl.ContainerSet != nil {
@@ -739,7 +785,12 @@ func (ctx *templateValidationCtx) validateLeaf(scope map[string]interface{}, tmp
 			if tmpl.Resource.Manifest != "" && !placeholderGenerator.IsPlaceholder(tmpl.Resource.Manifest) {
 				// Try to unmarshal the given manifest, just ensuring it's a valid YAML.
 				var obj interface{}
-				err := yaml.Unmarshal([]byte(tmpl.Resource.Manifest), &obj)
+
+				// Unmarshalling will fail if we have unquoted expressions which is sometimes a false positive,
+				// so for the sake of template validation we will just replace expressions with placeholders
+				// and the 'real' validation will be performed at a later stage once the manifest is applied
+				replaced := SubstituteResourceManifestExpressions(tmpl.Resource.Manifest)
+				err := yaml.Unmarshal([]byte(replaced), &obj)
 				if err != nil {
 					return errors.Errorf(errors.CodeBadRequest, "templates.%s.resource.manifest must be a valid yaml", tmpl.Name)
 				}
@@ -748,7 +799,18 @@ func (ctx *templateValidationCtx) validateLeaf(scope map[string]interface{}, tmp
 	}
 	if tmpl.Script != nil {
 		if tmpl.Script.Image == "" {
-			return errors.Errorf(errors.CodeBadRequest, "templates.%s.script.image may not be empty", tmpl.Name)
+			switch baseTemplate := tmplCtx.GetCurrentTemplateBase().(type) {
+			case *wfv1.Workflow:
+				if !(baseTemplate.Spec.TemplateDefaults != nil && baseTemplate.Spec.TemplateDefaults.Script != nil && baseTemplate.Spec.TemplateDefaults.Script.Image != "") {
+					return errors.Errorf(errors.CodeBadRequest, "templates.%s.script.image may not be empty", tmpl.Name)
+				}
+			case *wfv1.WorkflowTemplate:
+				if !(baseTemplate.Spec.TemplateDefaults != nil && baseTemplate.Spec.TemplateDefaults.Script != nil && baseTemplate.Spec.TemplateDefaults.Script.Image != "") {
+					return errors.Errorf(errors.CodeBadRequest, "templates.%s.script.image may not be empty", tmpl.Name)
+				}
+			default:
+				return errors.Errorf(errors.CodeBadRequest, "templates.%s.script.image may not be empty", tmpl.Name)
+			}
 		}
 	}
 	// we don't validate tmpl.Plugin, because this is done by Plugin.UnmarshallJSON
@@ -865,6 +927,11 @@ func (ctx *templateValidationCtx) validateSteps(scope map[string]interface{}, tm
 				ctx.addOutputsToScope(resolvedTmpl, fmt.Sprintf("steps.%s", step.Name), scope, false, false)
 			}
 			resolvedTemplates[step.Name] = resolvedTmpl
+
+			err = validateHooks(step.Hooks, fmt.Sprintf("templates.%s.steps[%d].%s", tmpl.Name, i, step.Name))
+			if err != nil {
+				return err
+			}
 		}
 
 		stepBytes, err := json.Marshal(stepGroup)
@@ -941,6 +1008,7 @@ func (ctx *templateValidationCtx) addOutputsToScope(tmpl *wfv1.Template, prefix 
 	scope[fmt.Sprintf("%s.id", prefix)] = true
 	scope[fmt.Sprintf("%s.startedAt", prefix)] = true
 	scope[fmt.Sprintf("%s.finishedAt", prefix)] = true
+	scope[fmt.Sprintf("%s.hostNodeName", prefix)] = true
 	if tmpl.Daemon != nil && *tmpl.Daemon {
 		scope[fmt.Sprintf("%s.ip", prefix)] = true
 	}

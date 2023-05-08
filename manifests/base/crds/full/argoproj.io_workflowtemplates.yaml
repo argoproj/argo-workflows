@@ -933,6 +933,8 @@ spec:
                 type: object
               artifactGC:
                 properties:
+                  forceFinalizerRemoval:
+                    type: boolean
                   podMetadata:
                     properties:
                       annotations:
@@ -1590,6 +1592,8 @@ spec:
                           type: object
                         gauge:
                           properties:
+                            operation:
+                              type: string
                             realtime:
                               type: boolean
                             value:
@@ -6807,6 +6811,8 @@ spec:
                               type: object
                             gauge:
                               properties:
+                                operation:
+                                  type: string
                                 realtime:
                                   type: boolean
                                 value:
@@ -14896,6 +14902,8 @@ spec:
                                 type: object
                               gauge:
                                 properties:
+                                  operation:
+                                    type: string
                                   realtime:
                                     type: boolean
                                   value:

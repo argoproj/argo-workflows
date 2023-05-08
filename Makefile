@@ -139,7 +139,7 @@ define protoc
       -I $(CURDIR) \
       -I $(CURDIR)/vendor \
       -I $(GOPATH)/src \
-      -I $(GOPATH)/pkg/mod/github.com/gogo/protobuf@v1.3.1/gogoproto \
+      -I $(GOPATH)/pkg/mod/github.com/gogo/protobuf@v1.3.2/gogoproto \
       -I $(GOPATH)/pkg/mod/github.com/grpc-ecosystem/grpc-gateway@v1.16.0/third_party/googleapis \
       --gogofast_out=plugins=grpc:$(GOPATH)/src \
       --grpc-gateway_out=logtostderr=true:$(GOPATH)/src \
@@ -281,7 +281,7 @@ swagger: \
 
 
 $(GOPATH)/bin/mockery:
-	go install github.com/vektra/mockery/v2@v2.10.0
+	go install github.com/vektra/mockery/v2@v2.26.0
 $(GOPATH)/bin/controller-gen:
 	go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.4.1
 $(GOPATH)/bin/go-to-protobuf:
@@ -401,7 +401,7 @@ dist/manifests/%: manifests/%
 # lint/test/etc
 
 $(GOPATH)/bin/golangci-lint:
-	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b `go env GOPATH`/bin v1.49.0
+	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b `go env GOPATH`/bin v1.52.2
 
 .PHONY: lint
 lint: server/static/files.go $(GOPATH)/bin/golangci-lint
@@ -461,7 +461,7 @@ ifeq ($(shell uname),Darwin)
 	brew tap kitproj/kit --custom-remote https://github.com/kitproj/kit
 	brew install kit
 else
-	curl -q https://raw.githubusercontent.com/kitproj/kit/main/install.sh | sh
+	curl -q https://raw.githubusercontent.com/kitproj/kit/main/install.sh | tag=v0.1.8 sh
 endif
 endif
 
@@ -618,7 +618,7 @@ docs/cli/argo.md: $(CLI_PKGS) go.sum server/static/files.go hack/cli/main.go
 .PHONY: docs-spellcheck
 docs-spellcheck: /usr/local/bin/mdspell
 	# check docs for spelling mistakes
-	mdspell --ignore-numbers --ignore-acronyms --en-us --no-suggestions --report $(shell find docs -name '*.md' -not -name upgrading.md -not -name fields.md -not -name upgrading.md -not -name executor_swagger.md -not -path '*/cli/*')
+	mdspell --ignore-numbers --ignore-acronyms --en-us --no-suggestions --report $(shell find docs -name '*.md' -not -name upgrading.md -not -name fields.md -not -name upgrading.md -not -name swagger.md -not -name executor_swagger.md -not -path '*/cli/*')
 
 /usr/local/bin/markdown-link-check:
 	npm i -g markdown-link-check
@@ -626,7 +626,7 @@ docs-spellcheck: /usr/local/bin/mdspell
 .PHONY: docs-linkcheck
 docs-linkcheck: /usr/local/bin/markdown-link-check
 	# check docs for broken links
-	markdown-link-check -q -c .mlc_config.json $(shell find docs -name '*.md' -not -name fields.md -not -name executor_swagger.md)
+	markdown-link-check -q -c .mlc_config.json $(shell find docs -name '*.md' -not -name fields.md -not -name swagger.md -not -name executor_swagger.md)
 
 /usr/local/bin/markdownlint:
 	npm i -g  markdownlint-cli
@@ -634,7 +634,7 @@ docs-linkcheck: /usr/local/bin/markdown-link-check
 .PHONY: docs-lint
 docs-lint: /usr/local/bin/markdownlint
 	# lint docs
-	markdownlint docs --fix --ignore docs/fields.md --ignore docs/executor_swagger.md --ignore docs/cli --ignore docs/walk-through/the-structure-of-workflow-specs.md
+	markdownlint docs --fix --ignore docs/fields.md --ignore docs/executor_swagger.md --ignore docs/swagger.md --ignore docs/cli --ignore docs/walk-through/the-structure-of-workflow-specs.md
 
 /usr/local/bin/mkdocs:
 	python -m pip install mkdocs==1.2.4 mkdocs_material==8.1.9  mkdocs-spellcheck==0.2.1

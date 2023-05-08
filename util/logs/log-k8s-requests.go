@@ -17,7 +17,7 @@ func (m k8sLogRoundTripper) RoundTrip(r *http.Request) (*http.Response, error) {
 	x, err := m.roundTripper.RoundTrip(r)
 	if x != nil {
 		verb, kind := k8s.ParseRequest(r)
-		log.Infof("%s %s %d", verb, kind, x.StatusCode)
+		log.Debugf("%s %s %d", verb, kind, x.StatusCode)
 	}
 	return x, err
 }

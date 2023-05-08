@@ -4,11 +4,17 @@ export interface Link {
     url: string;
 }
 
+export interface Column {
+    name: string;
+    type: string;
+    key: string;
+}
 export interface Info {
     modals: {string: boolean};
     managedNamespace?: string;
     links?: Link[];
     navColor?: string;
+    columns: Column[];
 }
 
 export interface Version {
@@ -19,6 +25,7 @@ export interface GetUserInfoResponse {
     subject?: string;
     issuer?: string;
     groups?: string[];
+    name?: string;
     email?: string;
     emailVerified?: boolean;
     serviceAccountName?: string;

@@ -313,7 +313,7 @@ func IsOssErrCode(err error, code string) bool {
 	return false
 }
 
-// IsDirectory tests if the key is acting like a OSS directory. This just means it has at least one
+// IsOssDirectory tests if the key is acting like a OSS directory. This just means it has at least one
 // object which is prefixed with the given key
 func IsOssDirectory(bucket *oss.Bucket, objectName string) (bool, error) {
 	if objectName == "" {

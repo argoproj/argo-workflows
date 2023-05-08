@@ -18,11 +18,13 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	apiv1 "k8s.io/api/core/v1"
+	policyv1 "k8s.io/api/policy/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/kubernetes/fake"
 	batchfake "k8s.io/client-go/kubernetes/typed/batch/v1/fake"
 	k8stesting "k8s.io/client-go/testing"
@@ -30,6 +32,7 @@ import (
 	"sigs.k8s.io/yaml"
 
 	"github.com/argoproj/argo-workflows/v3/config"
+	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	intstrutil "github.com/argoproj/argo-workflows/v3/util/intstr"
 	"github.com/argoproj/argo-workflows/v3/util/template"
@@ -1364,6 +1367,36 @@ func TestAssessNodeStatus(t *testing.T) {
 				InitContainerStatuses: []apiv1.ContainerStatus{
 					{
 						Name:  common.InitContainerName,
+						State: apiv1.ContainerState{Terminated: &apiv1.ContainerStateTerminated{ExitCode: 1}},
+					},
+				},
+				ContainerStatuses: []apiv1.ContainerStatus{
+					{
+						Name:  common.WaitContainerName,
+						State: apiv1.ContainerState{Terminated: nil},
+					},
+					{
+						Name:  common.MainContainerName,
+						State: apiv1.ContainerState{Terminated: nil},
+					},
+				},
+				Message: "failed since init container failed",
+				Phase:   apiv1.PodFailed,
+			},
+		},
+		node: &wfv1.NodeStatus{TemplateName: templateName},
+		want: wfv1.NodeFailed,
+	}, {
+		name: "pod failed - init container with non-standard init container name failed but neither wait nor main containers are finished",
+		pod: &apiv1.Pod{
+			Status: apiv1.PodStatus{
+				InitContainerStatuses: []apiv1.ContainerStatus{
+					{
+						Name:  common.InitContainerName,
+						State: apiv1.ContainerState{Terminated: &apiv1.ContainerStateTerminated{ExitCode: 0}},
+					},
+					{
+						Name:  "random-init-container",
 						State: apiv1.ContainerState{Terminated: &apiv1.ContainerStateTerminated{ExitCode: 1}},
 					},
 				},
@@ -3730,8 +3763,8 @@ func TestPDBCreation(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(pdbwf)
 	cancel, controller := newController(wf)
 	defer cancel()
-
 	ctx := context.Background()
+
 	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate(ctx)
 	pdb, _ := controller.kubeclientset.PolicyV1().PodDisruptionBudgets("").Get(ctx, woc.wf.Name, metav1.GetOptions{})
@@ -3739,6 +3772,27 @@ func TestPDBCreation(t *testing.T) {
 	woc.markWorkflowSuccess(ctx)
 	_, err := controller.kubeclientset.PolicyV1().PodDisruptionBudgets("").Get(ctx, woc.wf.Name, metav1.GetOptions{})
 	assert.EqualError(t, err, "poddisruptionbudgets.policy \"my-pdb-wf\" not found")
+
+	// Test when PDB already exists
+	newPDB := policyv1.PodDisruptionBudget{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:   wf.Name,
+			Labels: map[string]string{common.LabelKeyWorkflow: wf.Name},
+			OwnerReferences: []metav1.OwnerReference{
+				*metav1.NewControllerRef(wf, wfv1.SchemeGroupVersion.WithKind(workflow.WorkflowKind)),
+			},
+		},
+		Spec: policyv1.PodDisruptionBudgetSpec{
+			MinAvailable: &intstr.IntOrString{Type: intstr.Int, IntVal: 3, StrVal: "3"},
+		},
+	}
+	_, err = controller.kubeclientset.PolicyV1().PodDisruptionBudgets(wf.Namespace).Create(ctx, &newPDB, metav1.CreateOptions{})
+	assert.NoError(t, err)
+
+	woc = newWorkflowOperationCtx(wf, controller)
+	woc.operate(ctx)
+	pdb, _ = controller.kubeclientset.PolicyV1().PodDisruptionBudgets("").Get(ctx, woc.wf.Name, metav1.GetOptions{})
+	assert.Equal(t, pdb.Name, wf.Name)
 }
 
 func TestPDBCreationRaceDelete(t *testing.T) {
@@ -3947,6 +4001,7 @@ status:
         cpu: 10
         memory: 0
       startedAt: "2020-04-02T16:29:18Z"
+      hostNodeName: ip-127-0-1-1
       templateName: influxdb
       type: Pod
     daemon-step-dvbnn-3639466923:
@@ -3990,6 +4045,7 @@ func TestRetryNodeOutputs(t *testing.T) {
 	assert.Contains(t, scope.scope, "steps.influx.id")
 	assert.Contains(t, scope.scope, "steps.influx.startedAt")
 	assert.Contains(t, scope.scope, "steps.influx.finishedAt")
+	assert.Contains(t, scope.scope, "steps.influx.hostNodeName")
 }
 
 var workflowWithPVCAndFailingStep = `
@@ -5983,7 +6039,9 @@ status:
     restartCount: 0
     started: false
     state:
-      waiting: {}
+      waiting:
+        reason: ContainerCreating
+        message: 'Container is creating'
   - containerID: docker://d31f0d56f29b6962ef1493b2df6b7cdb54d48d8b8fa95d7e9c98ddc56f857b35
     image: argoproj/argoexec:v2.9.5
     imageID: docker-pullable://argoproj/argoexec@sha256:989114232892e051c25be323af626149452578d3ebbdc3e9ec7205bba3918d48
@@ -6010,7 +6068,7 @@ func TestPodFailureWithContainerWaitingState(t *testing.T) {
 	assert.NotNil(t, pod)
 	nodeStatus, msg := newWoc().inferFailedReason(&pod, nil)
 	assert.Equal(t, wfv1.NodeError, nodeStatus)
-	assert.Contains(t, msg, "Pod failed before")
+	assert.Equal(t, msg, "Pod failed before main container starts due to ContainerCreating: Container is creating")
 }
 
 var podWithWaitContainerOOM = `
@@ -7803,11 +7861,12 @@ func TestBuildRetryStrategyLocalScope(t *testing.T) {
 
 	localScope := buildRetryStrategyLocalScope(retryNode, wf.Status.Nodes)
 
-	assert.Len(t, localScope, 4)
+	assert.Len(t, localScope, 5)
 	assert.Equal(t, "1", localScope[common.LocalVarRetries])
 	assert.Equal(t, "1", localScope[common.LocalVarRetriesLastExitCode])
 	assert.Equal(t, string(wfv1.NodeFailed), localScope[common.LocalVarRetriesLastStatus])
 	assert.Equal(t, "6", localScope[common.LocalVarRetriesLastDuration])
+	assert.Equal(t, "Error (exit code 1)", localScope[common.LocalVarRetriesLastMessage])
 }
 
 var exitHandlerWithRetryNodeParam = `
