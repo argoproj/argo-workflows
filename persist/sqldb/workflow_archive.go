@@ -57,7 +57,7 @@ type WorkflowArchive interface {
 	// list workflows, with the most recently started workflows at the beginning (i.e. index 0 is the most recent)
 	ListWorkflows(namespace string, name string, namePrefix string, minStartAt, maxStartAt time.Time, labelRequirements labels.Requirements, limit, offset int) (wfv1.Workflows, error)
 	CountWorkflows(namespace string, name string, namePrefix string, minStartAt, maxStartAt time.Time, labelRequirements labels.Requirements) (int64, error)
-	GetWorkflow(uid string) (*wfv1.Workflow, error)
+	GetWorkflow(uid string, namespace string, name string) (*wfv1.Workflow, error)
 	DeleteWorkflow(uid string) error
 	DeleteExpiredWorkflows(ttl time.Duration) error
 	IsEnabled() bool
@@ -257,14 +257,43 @@ func namePrefixClause(namePrefix string) db.Cond {
 	}
 }
 
-func (r *workflowArchive) GetWorkflow(uid string) (*wfv1.Workflow, error) {
+func (r *workflowArchive) GetWorkflow(uid string, namespace string, name string) (*wfv1.Workflow, error) {
+	var err error
 	archivedWf := &archivedWorkflowRecord{}
-	err := r.session.
-		Select("workflow").
-		From(archiveTableName).
-		Where(r.clusterManagedNamespaceAndInstanceID()).
-		And(db.Cond{"uid": uid}).
-		One(archivedWf)
+	if uid != "" {
+		err = r.session.
+			Select("workflow").
+			From(archiveTableName).
+			Where(r.clusterManagedNamespaceAndInstanceID()).
+			And(db.Cond{"uid": uid}).
+			One(archivedWf)
+	} else {
+		if name != "" && namespace != "" {
+			total := &archivedWorkflowCount{}
+			err = r.session.
+				Select(db.Raw("count(*) as total")).
+				From(archiveTableName).
+				Where(r.clusterManagedNamespaceAndInstanceID()).
+				And(namespaceEqual(namespace)).
+				And(nameEqual(name)).
+				One(total)
+			if err != nil {
+				return nil, err
+			}
+			if int64(total.Total) > 1 {
+				return nil, fmt.Errorf("there are more than 1 workflows with the same name and namespace")
+			}
+			err = r.session.
+				Select("workflow").
+				From(archiveTableName).
+				Where(r.clusterManagedNamespaceAndInstanceID()).
+				And(namespaceEqual(namespace)).
+				And(nameEqual(name)).
+				One(archivedWf)
+		} else {
+			return nil, fmt.Errorf("both name and namespace are required if uid is not specified")
+		}
+	}
 	if err != nil {
 		if err == db.ErrNoMoreRows {
 			return nil, nil
