@@ -1,6 +1,6 @@
 module github.com/argoproj/argo-workflows/v3
 
-go 1.19
+go 1.20
 
 require (
 	cloud.google.com/go/storage v1.30.1
@@ -33,7 +33,7 @@ require (
 	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0
 	github.com/grpc-ecosystem/grpc-gateway v1.16.0
 	github.com/itchyny/gojq v0.12.12
-	github.com/klauspost/pgzip v1.2.5
+	github.com/klauspost/pgzip v1.2.6
 	github.com/minio/minio-go/v7 v7.0.52
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.15.0
@@ -231,8 +231,8 @@ require (
 	go.opencensus.io v0.24.0 // indirect
 	go.starlark.net v0.0.0-20200306205701-8dd3e2ee1dd5 // indirect
 	golang.org/x/net v0.9.0 // indirect
-	golang.org/x/sys v0.7.0 // indirect
-	golang.org/x/term v0.7.0
+	golang.org/x/sys v0.8.0 // indirect
+	golang.org/x/term v0.8.0
 	golang.org/x/text v0.9.0 // indirect
 	golang.org/x/xerrors v0.0.0-20220907171357-04be3eba64a2 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
