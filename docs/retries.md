@@ -50,14 +50,14 @@ flowchart LR
   policyGivenApplies(Supplied Policy)
   policyAndExpression(Supplied Policy AND Expression)
   expressionNoPolicy(Expression specified?)
-  expressionNoPolicy-->|No|onfailure
+  expressionNoPolicy-->|No|onfailureNoExpr
   expressionNoPolicy-->|Yes|version
+  onfailureNoExpr[OnFailure]
   onfailure[OnFailure AND Expression]
   version(Workflows version)
   version-->|3.4 or ealier|onfailure
   always[Only Expression matters]
   version-->|3.5 or later|always
-
 ```
 
 An example retry strategy:
