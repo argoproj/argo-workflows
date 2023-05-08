@@ -1943,7 +1943,7 @@ type RetryStrategy struct {
 }
 
 // RetryPolicyActual gets the active retry policy for a strategy
-// If the policy is explict, use that
+// If the policy is explicit, use that
 // If an expression is given, use a policy of Always so the
 // expression is all that controls the retry for 'least surprise'
 // Otherwise, if neither is given, default to retry OnFailure
