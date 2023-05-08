@@ -7,7 +7,7 @@ The workflow archive stores the status of the workflow, which pods have been exe
 The job logs of the workflow pods will not be archived. 
 If you need to save the logs of the pods, you must setup an [artifact repository](artifact-repository-ref.md) according to [this doc](configure-artifact-repository.md).
 
-The default Argo Workflows deployment includes a PosgreSQL database server to store the archive of the finished workflows.
+The default Argo Workflows deployment includes a PostgreSQL database server to store the archive of the finished workflows.
 In this case the workflow archive is already enabled.
 This is convenient for test environments, but in a production environment you must use a production quality database service.
 
