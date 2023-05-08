@@ -58,7 +58,7 @@ spec:
     suspend: {}
 ```
 
-In this case the `job-cmd` parameter can be a command that makes an HTTP call via curl to an endpoint that returns a job UUID. More sophisticated submission and parsing of submission output could be done with something like a Python script step.
+In this case the `cmd` parameter can be a command that makes an HTTP call via curl to an endpoint that returns a job UUID. More sophisticated submission and parsing of submission output could be done with something like a Python script step.
 
 On job completion the external job would need to call either resume if successful:
 
