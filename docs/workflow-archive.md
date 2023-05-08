@@ -43,7 +43,15 @@ The following tables will be created in the database when you start the workflow
 * `argo_archived_workflows_labels`
 * `schema_history`
 
-Every time the Argo workflow-controller starts with persistence enabled, it tries to migrate the database to the correct version. If the database migration fails, the workflow-controller will also fail to start. In this case you can delete all the above tables and restart the workflow-controller.
+## Automatic Database Migration
+Every time the Argo workflow-controller starts with persistence enabled, it tries to migrate the database to the correct version. 
+If the database migration fails, the workflow-controller will also fail to start. 
+In this case you can delete all the above tables and restart the workflow-controller.
+
+If you know what are you doing you also have an option to skip migration:
+
+    persistence: 
+      skipMigration: true
 
 ## Required database permissions
 
