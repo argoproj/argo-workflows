@@ -9,7 +9,7 @@ If you need to save the logs of the pods, you must setup an [artifact repository
 
 The quick-start deployment includes a Postgres database server. 
 In this case the workflow archive is already enabled.
-This is convenient for test environments, but in a production environment you must use a production quality database service.
+Such a deployment is convenient for test environments, but in a production environment you must use a production quality database service.
 
 ## Enabling Workflow Archive
 To enable archiving of the workflows, you must configure database parameters in the `persistence` section of [your configuration](workflow-controller-configmap.yaml) and set `archive:` to `true`.
