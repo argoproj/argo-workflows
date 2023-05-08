@@ -3260,8 +3260,8 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#image-index" class="md-nav__link">
-    Image Index
+  <a href="#image-indexcache" class="md-nav__link">
+    Image Index/Cache
   </a>
   
 </li>
@@ -3860,8 +3860,8 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#image-index" class="md-nav__link">
-    Image Index
+  <a href="#image-indexcache" class="md-nav__link">
+    Image Index/Cache
   </a>
   
 </li>
@@ -3955,7 +3955,7 @@ type template is used.</li>
 </ul>
 </li>
 <li>Configuration:<ul>
-<li><code>command</code> must be specified for containers.</li>
+<li><code>command</code> should be specified for containers.</li>
 </ul>
 </li>
 </ul>
@@ -3963,10 +3963,10 @@ type template is used.</li>
 <div class="highlight"><pre><span></span><code>docker<span class="w"> </span>image<span class="w"> </span>inspect<span class="w"> </span>-f<span class="w"> </span><span class="s1">&#39;{{.Config.Entrypoint}} {{.Config.Cmd}}&#39;</span><span class="w"> </span>argoproj/argosay:v2
 </code></pre></div>
 <p><a href="https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#notes">Learn more about command and args</a></p>
-<h3 id="image-index">Image Index<a class="headerlink" href="#image-index" title="Permanent link">&para;</a></h3>
-<p>If the emissary cannot determine which command to run, because you did not specify it in your workflow spec, then it
-will look it up in the <strong>image index</strong>. This is nothing more fancy than
+<h3 id="image-indexcache">Image Index/Cache<a class="headerlink" href="#image-indexcache" title="Permanent link">&para;</a></h3>
+<p>If you don't provide command to run, the emissary will grab it from container image. You can also specify it using the workflow spec or emissary will look it up in the <strong>image index</strong>. This is nothing more fancy than
 a <a href="../workflow-controller-configmap.yaml">configuration item</a>.</p>
+<p>Emissary will create a cache entry, using image with version as key and command as value, and it will reuse it for specific image/version.</p>
 <h3 id="exit-code-64">Exit Code 64<a class="headerlink" href="#exit-code-64" title="Permanent link">&para;</a></h3>
 <p>The emissary will exit with code 64 if it fails. This may indicate a bug in the emissary.</p>
 <h2 id="docker-docker">Docker (docker)<a class="headerlink" href="#docker-docker" title="Permanent link">&para;</a></h2>
