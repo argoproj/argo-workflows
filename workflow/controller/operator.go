@@ -2023,10 +2023,11 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 		// If retry policy is not set, or if it is not set to Always or OnError, we won't attempt to retry an errored container
 		// and we return instead.
 		retryStrategy := woc.retryStrategy(processedTmpl)
+		retryPolicy := retryStrategy.RetryPolicyActual()
 		if retryStrategy == nil ||
-			(retryStrategy.RetryPolicyActual() != wfv1.RetryPolicyAlways &&
-				retryStrategy.RetryPolicyActual() != wfv1.RetryPolicyOnError &&
-				retryStrategy.RetryPolicyActual() != wfv1.RetryPolicyOnTransientError) {
+			(retryPolicy != wfv1.RetryPolicyAlways &&
+				retryPolicy != wfv1.RetryPolicyOnError &&
+				retryPolicy != wfv1.RetryPolicyOnTransientError) {
 			woc.controller.syncManager.Release(woc.wf, node.ID, processedTmpl.Synchronization)
 			return node, err
 		}
