@@ -27,14 +27,14 @@ spec:
   - name: main
     inputs:
       parameters:
-        - name: "job-cmd"
+        - name: "cmd"
     steps:
       - - name: trigger-job
           template: trigger-job
           arguments:
             parameters:
               - name: "cmd"
-                value: "{{inputs.parameters.job-cmd}}"
+                value: "{{inputs.parameters.cmd}}"
       - - name: wait-completion
           template: wait-completion
           arguments:
@@ -69,6 +69,7 @@ You may need  an [access token](access-token.md).
 # add template to cluster
 kubectl apply -f async-pattern.yaml
 
+# configure some vars
 export ARGO=https://localhost:2746
 export NAMESPACE=argo
 export WFNAME=async-pattern
@@ -82,7 +83,7 @@ export UUID=cb2f8900-4e01-424f-8a26-1975068b97ed
 ```bash
 # submit workflow using argo CLI
 argo submit -n $NAMESPACE --name $WFNAME \
-  --from workflowtemplate/external-job-template -p job-cmd="echo $UUID"
+  --from workflowtemplate/external-job-template -p cmd="echo $UUID"
 
 # resume
 argo resume --node-field-selector "inputs.parameters.uuid.value=$UUID" $WFNAME
@@ -102,7 +103,7 @@ cat > data.json <<EOF
         "name": "$WFNAME",
         "labels": "workflows.argoproj.io/workflow-template=$WFTNAME",
         "parameters": [
-            "job-cmd=echo $UUID"
+            "cmd=echo $UUID"
         ]
     }
 }
@@ -150,5 +151,5 @@ Using `argo retry` on failed jobs that follow this pattern will cause Argo to re
 Instead you need to use the `--restart-successful` option, e.g. if using the template from above:
 
 ```bash
-argo retry $WFNAME --restart-successful --node-field-selector templateRef.template=run-external-job,phase=Failed
+argo retry $WFNAME --restart-successful --node-field-selector templateRef.template=$WFTNAME,phase=Failed
 ```
