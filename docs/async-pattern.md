@@ -151,5 +151,5 @@ Using `argo retry` on failed jobs that follow this pattern will cause Argo to re
 Instead you need to use the `--restart-successful` option, e.g. if using the template from above:
 
 ```bash
-argo retry $WFNAME --restart-successful --node-field-selector templateRef.template=$WFTNAME,phase=Failed
+argo retry $WFNAME --restart-successful --node-field-selector templateRef.template=main,phase=Failed
 ```
