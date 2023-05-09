@@ -143,7 +143,7 @@ returns `0`. Please review the Sprig documentation to understand which functions
 | `steps.<STEPNAME>.exitCode` | Exit code of any previous script or container step |
 | `steps.<STEPNAME>.startedAt` | Time-stamp when the step started |
 | `steps.<STEPNAME>.finishedAt` | Time-stamp when the step finished |
-| `steps.<TASKNAME>.hostNodeName` | Host node where task ran |
+| `steps.<TASKNAME>.hostNodeName` | Host node where task ran (available from version 3.5) |
 | `steps.<STEPNAME>.outputs.result` | Output result of any previous container or script step |
 | `steps.<STEPNAME>.outputs.parameters` | When the previous step uses `withItems` or `withParams`, this contains a JSON array of the output parameter maps of each invocation |
 | `steps.<STEPNAME>.outputs.parameters.<NAME>` | Output parameter of any previous step. When the previous step uses `withItems` or `withParams`, this contains a JSON array of the output parameter values of each invocation |
@@ -160,7 +160,7 @@ returns `0`. Please review the Sprig documentation to understand which functions
 | `tasks.<TASKNAME>.exitCode` | Exit code of any previous script or container task |
 | `tasks.<TASKNAME>.startedAt` | Time-stamp when the task started |
 | `tasks.<TASKNAME>.finishedAt` | Time-stamp when the task finished |
-| `tasks.<TASKNAME>.hostNodeName` | Host node where task ran |
+| `tasks.<TASKNAME>.hostNodeName` | Host node where task ran (available from version 3.5) |
 | `tasks.<TASKNAME>.outputs.result` | Output result of any previous container or script task |
 | `tasks.<TASKNAME>.outputs.parameters` | When the previous task uses `withItems` or `withParams`, this contains a JSON array of the output parameter maps of each invocation |
 | `tasks.<TASKNAME>.outputs.parameters.<NAME>` | Output parameter of any previous task. When the previous task uses `withItems` or `withParams`, this contains a JSON array of the output parameter values of each invocation |
