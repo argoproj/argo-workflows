@@ -144,6 +144,7 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [Polarpoint.io](https://polarpoint.io)
 1. [Pollination](https://pollination.cloud)
 1. [Preferred Networks](https://www.preferred-networks.jp/en/)
+1. [Procore](https://www.procore.com)
 1. [Promaton](https://www.promaton.com/)
 1. [Prudential](https://www.prudential.com.sg/)
 1. [Quantibio](http://quantibio.com/us/en/)
