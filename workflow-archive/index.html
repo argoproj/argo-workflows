@@ -3224,6 +3224,20 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#enabling-workflow-archive" class="md-nav__link">
+    Enabling Workflow Archive
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#automatic-database-migration" class="md-nav__link">
+    Automatic Database Migration
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#required-database-permissions" class="md-nav__link">
     Required database permissions
   </a>
@@ -3240,6 +3254,27 @@
         
       </ul>
     </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#archive-ttl" class="md-nav__link">
+    Archive TTL
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cluster-name" class="md-nav__link">
+    Cluster Name
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#disabling-workflow-archive" class="md-nav__link">
+    Disabling Workflow Archive
+  </a>
   
 </li>
       
@@ -3817,6 +3852,20 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#enabling-workflow-archive" class="md-nav__link">
+    Enabling Workflow Archive
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#automatic-database-migration" class="md-nav__link">
+    Automatic Database Migration
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#required-database-permissions" class="md-nav__link">
     Required database permissions
   </a>
@@ -3833,6 +3882,27 @@
         
       </ul>
     </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#archive-ttl" class="md-nav__link">
+    Archive TTL
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cluster-name" class="md-nav__link">
+    Cluster Name
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#disabling-workflow-archive" class="md-nav__link">
+    Disabling Workflow Archive
+  </a>
   
 </li>
       
@@ -3858,20 +3928,80 @@
 <blockquote>
 <p>v2.5 and after</p>
 </blockquote>
-<p>For many uses, you may wish to keep workflows for a long time. Argo can save completed workflows to an SQL database.</p>
-<p>To enable this feature, configure a Postgres or MySQL (&gt;= 5.7.8) database under <code>persistence</code> in <a href="../workflow-controller-configmap.yaml">your configuration</a> and set <code>archive: true</code>.</p>
-<p>Be aware that this feature will only archive the statuses of the workflows (which pods have been executed, what was the result, ...)</p>
-<p>However, the logs of each pod will NOT be archived. If you need to access the logs of the pods, you need to setup <a href="../artifact-repository-ref/">an artifact repository</a> thanks to <a href="../configure-artifact-repository/">this doc</a>.</p>
-<p>In addition to the table specified in the config map above, the following tables are created when enabling archiving:</p>
+<p>If you want to keep completed workflows for a long time, you can use the workflow archive to save them in a Postgres or MySQL (&gt;= 5.7.8) database.
+The workflow archive stores the status of the workflow, which pods have been executed, what was the result etc.
+The job logs of the workflow pods will not be archived.
+If you need to save the logs of the pods, you must setup an <a href="../artifact-repository-ref/">artifact repository</a> according to <a href="../configure-artifact-repository/">this doc</a>.</p>
+<p>The quick-start deployment includes a Postgres database server.
+In this case the workflow archive is already enabled.
+Such a deployment is convenient for test environments, but in a production environment you must use a production quality database service.</p>
+<h2 id="enabling-workflow-archive">Enabling Workflow Archive<a class="headerlink" href="#enabling-workflow-archive" title="Permanent link">&para;</a></h2>
+<p>To enable archiving of the workflows, you must configure database parameters in the <code>persistence</code> section of <a href="../workflow-controller-configmap.yaml">your configuration</a> and set <code>archive:</code> to <code>true</code>.</p>
+<p>Example:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">persistence</span><span class="o">:</span><span class="w"> </span>
+<span class="w">  </span><span class="n">archive</span><span class="o">:</span><span class="w"> </span><span class="kc">true</span>
+<span class="w">  </span><span class="n">postgresql</span><span class="o">:</span>
+<span class="w">    </span><span class="n">host</span><span class="o">:</span><span class="w"> </span><span class="n">localhost</span>
+<span class="w">    </span><span class="n">port</span><span class="o">:</span><span class="w"> </span><span class="mi">5432</span>
+<span class="w">    </span><span class="n">database</span><span class="o">:</span><span class="w"> </span><span class="n">postgres</span>
+<span class="w">    </span><span class="n">tableName</span><span class="o">:</span><span class="w"> </span><span class="n">argo_workflows</span>
+<span class="w">    </span><span class="n">userNameSecret</span><span class="o">:</span>
+<span class="w">      </span><span class="n">name</span><span class="o">:</span><span class="w"> </span><span class="n">argo</span><span class="o">-</span><span class="n">postgres</span><span class="o">-</span><span class="n">config</span>
+<span class="w">      </span><span class="n">key</span><span class="o">:</span><span class="w"> </span><span class="n">username</span>
+<span class="w">    </span><span class="n">passwordSecret</span><span class="o">:</span>
+<span class="w">      </span><span class="n">name</span><span class="o">:</span><span class="w"> </span><span class="n">argo</span><span class="o">-</span><span class="n">postgres</span><span class="o">-</span><span class="n">config</span>
+<span class="w">      </span><span class="n">key</span><span class="o">:</span><span class="w"> </span><span class="n">password</span>
+</code></pre></div>
+
+<p>You must also create the secret with database user and password in the namespace of the workflow controller.</p>
+<p>Example:</p>
+<div class="codehilite"><pre><span></span><code>kubectl create secret generic argo-postgres-config -n argo --from-literal=password=mypassword --from-literal=username=argodbuser
+</code></pre></div>
+
+<p>The following tables will be created in the database when you start the workflow controller with enabled archive:</p>
 <ul>
+<li><code>argo_workflows</code></li>
 <li><code>argo_archived_workflows</code></li>
 <li><code>argo_archived_workflows_labels</code></li>
 <li><code>schema_history</code></li>
 </ul>
-<p>The database migration will only occur successfully if none of the tables exist. If a partial set of the tables exist, the database migration may fail and the Argo workflow-controller pod may fail to start. If this occurs delete all of the tables and try restarting the deployment.</p>
+<h2 id="automatic-database-migration">Automatic Database Migration<a class="headerlink" href="#automatic-database-migration" title="Permanent link">&para;</a></h2>
+<p>Every time the Argo workflow-controller starts with persistence enabled, it tries to migrate the database to the correct version.
+If the database migration fails, the workflow-controller will also fail to start.
+In this case you can delete all the above tables and restart the workflow-controller.</p>
+<p>If you know what are you doing you also have an option to skip migration:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">persistence</span><span class="o">:</span><span class="w"> </span>
+<span class="w">  </span><span class="n">skipMigration</span><span class="o">:</span><span class="w"> </span><span class="kc">true</span>
+</code></pre></div>
+
 <h2 id="required-database-permissions">Required database permissions<a class="headerlink" href="#required-database-permissions" title="Permanent link">&para;</a></h2>
 <h3 id="postgres">Postgres<a class="headerlink" href="#postgres" title="Permanent link">&para;</a></h3>
-<p>The database user/role needs to have <code>CREATE</code> and <code>USAGE</code> permissions on the <code>public</code> schema of the database so that the necessary table can be generated during the migration.</p>
+<p>The database user/role must have <code>CREATE</code> and <code>USAGE</code> permissions on the <code>public</code> schema of the database so that the tables can be created during the migration.</p>
+<h2 id="archive-ttl">Archive TTL<a class="headerlink" href="#archive-ttl" title="Permanent link">&para;</a></h2>
+<p>You can configure the time period to keep archived workflows before they will be deleted by the archived workflow garbage collection function.
+The default is forever.</p>
+<p>Example:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">persistence</span><span class="o">:</span><span class="w"> </span>
+<span class="w">  </span><span class="n">archiveTTL</span><span class="o">:</span><span class="w"> </span><span class="mi">10</span><span class="n">d</span>
+</code></pre></div>
+
+<p>The <code>ARCHIVED_WORKFLOW_GC_PERIOD</code> variable defines the periodicity of running the garbage collection function.
+The default value is documented <a href="../environment-variables/">here</a>.
+When the workflow controller starts, it sets the ticker to run every <code>ARCHIVED_WORKFLOW_GC_PERIOD</code>.
+It does not run the garbage collection function immediately and the first garbage collection happens only after the period defined in the <code>ARCHIVED_WORKFLOW_GC_PERIOD</code> variable.</p>
+<h2 id="cluster-name">Cluster Name<a class="headerlink" href="#cluster-name" title="Permanent link">&para;</a></h2>
+<p>Optionally you can set a unique name of your Kubernetes cluster. This name will populate the <code>clustername</code> field in the <code>argo_archived_workflows</code> table.</p>
+<p>Example:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">persistence</span><span class="o">:</span><span class="w"> </span>
+<span class="w">  </span><span class="n">clusterName</span><span class="o">:</span><span class="w"> </span><span class="n">dev</span><span class="o">-</span><span class="n">cluster</span>
+</code></pre></div>
+
+<h2 id="disabling-workflow-archive">Disabling Workflow Archive<a class="headerlink" href="#disabling-workflow-archive" title="Permanent link">&para;</a></h2>
+<p>To disable archiving of the workflows, set <code>archive:</code> to  <code>false</code> in the <code>persistence</code> section of <a href="../workflow-controller-configmap.yaml">your configuration</a>.</p>
+<p>Example:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">persistence</span><span class="o">:</span><span class="w"> </span>
+<span class="w">  </span><span class="n">archive</span><span class="o">:</span><span class="w"> </span><span class="kc">false</span>
+</code></pre></div>
 
               
 
