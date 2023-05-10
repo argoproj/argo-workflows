@@ -147,7 +147,7 @@ the [CNCF Code of Conduct](https://github.com/cncf/foundation/blob/master/code-o
 
 ## Project Resources
 
-* [Argo Project GitHub organization](https://github.com/argoproj):  
+* [Argo Project GitHub organization](https://github.com/argoproj)
 * [Argo Website](https://argoproj.github.io/)
 * Argo Slack ([click here to join](https://argoproj.github.io/community/join-slack))
 
