@@ -3882,8 +3882,9 @@ it stores the outputs of a template into a specified cache with a variable key.<
 <p>Currently, caching can only be performed with config-maps.
 This allows you to easily manipulate cache entries manually through <code>kubectl</code> and the Kubernetes API without having to go through Argo.  </p>
 <h2 id="using-memoization">Using Memoization<a class="headerlink" href="#using-memoization" title="Permanent link">&para;</a></h2>
-<p>Memoization is set at the template level. You must specify a key, which can be static strings but more often depend on inputs.
-You must also specify a name for the config-map cache.</p>
+<p>Memoization is set at the template level. You must specify a <code>key</code>, which can be static strings but more often depend on inputs.
+You must also specify a name for the <code>config-map</code> cache.
+Optionally you can set a <code>maxAge</code> in seconds or hours (e.g. <code>180s</code>, <code>24h</code>) to define how long should it be considered valid. If an entry is older than the <code>maxAge</code>, it will be ignored.</p>
 <div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
 <span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Workflow</span>
 <span class="nt">metadata</span><span class="p">:</span>
@@ -3894,10 +3895,12 @@ You must also specify a name for the config-map cache.</p>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">whalesay</span>
 <span class="w">        </span><span class="nt">memoize</span><span class="p">:</span>
 <span class="w">           </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{inputs.parameters.message}}&quot;</span>
+<span class="w">           </span><span class="nt">maxAge</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;10s&quot;</span>
 <span class="w">           </span><span class="nt">cache</span><span class="p">:</span>
 <span class="w">              </span><span class="nt">configMap</span><span class="p">:</span>
 <span class="w">                 </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">whalesay-cache</span>
 </code></pre></div>
+<p><a href="https://github.com/argoproj/argo-workflows/blob/master/examples/memoize-simple.yaml">Find a simple example for memoization here</a>.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>In order to use memoization it is necessary to add the verbs <code>create</code> and <code>update</code> to the <code>configmaps</code> resource for the appropriate (cluster) roles. In the case of a cluster install the <code>argo-cluster-role</code> cluster role should be updated, whilst for a namespace install the <code>argo-role</code> role should be updated.</p>
