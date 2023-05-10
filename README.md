@@ -25,14 +25,12 @@ Argo is a [Cloud Native Computing Foundation (CNCF)](https://cncf.io/) hosted pr
 * [Data and batch processing](https://argoproj.github.io/argo-workflows/use-cases/data-processing/)
 * [Infrastructure automation](https://argoproj.github.io/argo-workflows/use-cases/infrastructure-automation/)
 * [CI/CD](https://argoproj.github.io/argo-workflows/use-cases/ci-cd/)
-* ETL
 * [Other use cases](https://argoproj.github.io/argo-workflows/use-cases/other/)
 
 ## Why Argo Workflows?
 
 * Argo Workflows is the most popular workflow execution engine for Kubernetes.
-* It can run 1000s of workflows a day, each with 1000s of concurrent tasks.
-* Our users say it is lighter-weight, faster, more powerful, and easier to use
+* Lighter-weight, scalable and easier to use.
 * Designed from the ground up for containers without the overhead and limitations of legacy VM and server-based
   environments.
 * Cloud agnostic and can run on any Kubernetes cluster.
@@ -45,13 +43,13 @@ Argo is a [Cloud Native Computing Foundation (CNCF)](https://cncf.io/) hosted pr
 
 ![Screenshot](docs/assets/screenshot.png)
 
-## Documentation
+## Who uses Argo Workflows?
 
-[View the docs](https://argoproj.github.io/argo-workflows/)
+[About 200+ organizations are officially using Argo Workflows](USERS.md)
 
 ## Ecosystem
 
-Just some of the projects that use or rely on Argo Workflows:
+Just some of the projects that use or rely on Argo Workflows (complete list [here](https://github.com/akuity/awesome-argo#ecosystem-projects)):
 
 * [Argo Events](https://github.com/argoproj/argo-events)
 * [Couler](https://github.com/couler-proj/couler)
@@ -70,28 +68,19 @@ Just some of the projects that use or rely on Argo Workflows:
 
 Check out our [Java, Golang and Python clients](docs/client-libraries.md).
 
-## Quickstart
-
-The following commands install Argo Workflows as well as some commmonly used components:
-
-```bash
-kubectl create ns argo
-kubectl apply -n argo -f https://raw.githubusercontent.com/argoproj/argo-workflows/master/manifests/quick-start-postgres.yaml
-```
-
-> **These manifests are intended to help you get started quickly. They contain hard-coded passwords that are publicly available and are not suitable in production.**
-
-## Who uses Argo Workflows?
-
-[Official Argo Workflows user list](USERS.md)
-
-## Documentation
+## Quickstart 
 
 * [Get started here](docs/quick-start.md)
 * [How to write Argo Workflow specs](https://github.com/argoproj/argo-workflows/blob/master/examples/README.md)
 * [How to configure your artifact repository](docs/configure-artifact-repository.md)
 
+## Documentation
+
+[View the docs](https://argoproj.github.io/argo-workflows/)
+
 ## Features
+
+Incomplete list of features Argo Workflows provide:
 
 * UI to visualize and manage Workflows
 * Artifact support (S3, Artifactory, Alibaba Cloud OSS, Azure Blob Storage, HTTP, Git, GCS, raw)
@@ -158,9 +147,9 @@ the [CNCF Code of Conduct](https://github.com/cncf/foundation/blob/master/code-o
 
 ## Project Resources
 
-* Argo GitHub:  https://github.com/argoproj
-* Argo Website: https://argoproj.github.io/
-* Argo Slack:   [click here to join](https://argoproj.github.io/community/join-slack)
+* [Argo Project GitHub organization](https://github.com/argoproj):  
+* [Argo Website](https://argoproj.github.io/)
+* Argo Slack ([click here to join](https://argoproj.github.io/community/join-slack))
 
 ## Security
 
