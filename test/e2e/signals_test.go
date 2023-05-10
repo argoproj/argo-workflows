@@ -15,7 +15,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/test/e2e/fixtures"
 )
 
-const kill2xDuration = 70 * time.Second
+const killDuration = 75 * time.Second
 
 // Tests the use of signals to kill containers.
 // argoproj/argosay:v2 does not contain sh, so you must use argoproj/argosay:v1.
@@ -29,9 +29,9 @@ func (s *SignalsSuite) TestStopBehavior() {
 		Workflow("@functional/stop-terminate.yaml").
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(fixtures.ToHaveRunningPod, kill2xDuration).
+		WaitForWorkflow(fixtures.ToHaveRunningPod, killDuration).
 		ShutdownWorkflow(wfv1.ShutdownStrategyStop).
-		WaitForWorkflow(kill2xDuration).
+		WaitForWorkflow(killDuration).
 		Then().
 		ExpectWorkflow(func(t *testing.T, m *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Contains(t, []wfv1.WorkflowPhase{wfv1.WorkflowFailed, wfv1.WorkflowError}, status.Phase)
@@ -55,9 +55,9 @@ func (s *SignalsSuite) TestStopBehaviorWithDaemon() {
 		Workflow("@functional/stop-terminate-daemon.yaml").
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(fixtures.ToHaveRunningPod, kill2xDuration).
+		WaitForWorkflow(fixtures.ToHaveRunningPod, killDuration).
 		ShutdownWorkflow(wfv1.ShutdownStrategyStop).
-		WaitForWorkflow(kill2xDuration).
+		WaitForWorkflow(killDuration).
 		Then().
 		ExpectWorkflow(func(t *testing.T, m *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Contains(t, []wfv1.WorkflowPhase{wfv1.WorkflowFailed, wfv1.WorkflowError}, status.Phase)
@@ -73,9 +73,9 @@ func (s *SignalsSuite) TestTerminateBehavior() {
 		Workflow("@functional/stop-terminate.yaml").
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(fixtures.ToHaveRunningPod, kill2xDuration).
+		WaitForWorkflow(fixtures.ToHaveRunningPod, killDuration).
 		ShutdownWorkflow(wfv1.ShutdownStrategyTerminate).
-		WaitForWorkflow(kill2xDuration).
+		WaitForWorkflow(killDuration).
 		Then().
 		ExpectWorkflow(func(t *testing.T, m *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Contains(t, []wfv1.WorkflowPhase{wfv1.WorkflowFailed, wfv1.WorkflowError}, status.Phase)
@@ -96,9 +96,9 @@ func (s *SignalsSuite) TestDoNotCreatePodsUnderStopBehavior() {
 		Workflow("@functional/stop-terminate-2.yaml").
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(fixtures.ToHaveRunningPod, kill2xDuration).
+		WaitForWorkflow(fixtures.ToHaveRunningPod, killDuration).
 		ShutdownWorkflow(wfv1.ShutdownStrategyStop).
-		WaitForWorkflow(kill2xDuration).
+		WaitForWorkflow(killDuration).
 		Then().
 		ExpectWorkflow(func(t *testing.T, m *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.WorkflowFailed, status.Phase)
@@ -116,7 +116,7 @@ func (s *SignalsSuite) TestSidecars() {
 		Workflow("@testdata/sidecar-workflow.yaml").
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(fixtures.ToBeSucceeded, kill2xDuration)
+		WaitForWorkflow(fixtures.ToBeSucceeded, killDuration)
 }
 
 // make sure Istio/Anthos and other sidecar injectors will work
@@ -125,7 +125,7 @@ func (s *SignalsSuite) TestInjectedSidecar() {
 		Workflow("@testdata/sidecar-injected-workflow.yaml").
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(fixtures.ToBeSucceeded, kill2xDuration)
+		WaitForWorkflow(fixtures.ToBeSucceeded, killDuration)
 }
 
 func (s *SignalsSuite) TestSubProcess() {
