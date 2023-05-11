@@ -292,7 +292,7 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
 
     private getOutboundNodes(nodeID: string): string[] {
         const node = this.getNode(nodeID);
-        if (node === null) {
+        if (node === null || node === undefined) {
             return [];
         }
         if (node?.type === 'Pod' || node?.type === 'Skipped') {
