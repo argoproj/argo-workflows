@@ -730,11 +730,8 @@ spec:
 `).
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(10*time.Second).
+		WaitForWorkflow(fixtures.ToBeFailed).
 		Then().
-		ExpectWorkflow(func(t *testing.T, md *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.WorkflowFailed, status.Phase)
-		}).
 		ExpectWorkflowNode(wfv1.FailedPodNode, func(t *testing.T, n *wfv1.NodeStatus, p *apiv1.Pod) {
 			assert.Equal(t, *p.Spec.ActiveDeadlineSeconds, int64(5))
 		})
