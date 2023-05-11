@@ -1928,7 +1928,6 @@ type RetryStrategy struct {
 	Limit *intstr.IntOrString `json:"limit,omitempty" protobuf:"varint,1,opt,name=limit"`
 
 	// RetryPolicy is a policy of NodePhase statuses that will be retried
-	// Read this via the helper function RetryPolicyActual
 	RetryPolicy RetryPolicy `json:"retryPolicy,omitempty" protobuf:"bytes,2,opt,name=retryPolicy,casttype=RetryPolicy"`
 
 	// Backoff is a backoff strategy
@@ -1957,7 +1956,6 @@ func (s RetryStrategy) RetryPolicyActual() RetryPolicy {
 		return RetryPolicyAlways
 	}
 }
-
 
 // The amount of requested resource * the duration that request was used.
 // This is represented as duration in seconds, so can be converted to and from
