@@ -700,6 +700,13 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#accessing-the-aggregate-results-of-a-loop" class="md-nav__link">
+    Accessing the aggregate results of a loop
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -3852,6 +3859,13 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#accessing-the-aggregate-results-of-a-loop" class="md-nav__link">
+    Accessing the aggregate results of a loop
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -4033,6 +4047,63 @@
 <span class="w">      </span><span class="nt">command</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">sh</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">-c</span><span class="p p-Indicator">]</span>
 <span class="w">      </span><span class="nt">args</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;echo</span><span class="nv"> </span><span class="s">sleeping</span><span class="nv"> </span><span class="s">for</span><span class="nv"> </span><span class="s">{{inputs.parameters.seconds}}</span><span class="nv"> </span><span class="s">seconds;</span><span class="nv"> </span><span class="s">sleep</span><span class="nv"> </span><span class="s">{{inputs.parameters.seconds}};</span><span class="nv"> </span><span class="s">echo</span><span class="nv"> </span><span class="s">done&quot;</span><span class="p p-Indicator">]</span>
 </code></pre></div>
+<h2 id="accessing-the-aggregate-results-of-a-loop">Accessing the aggregate results of a loop<a class="headerlink" href="#accessing-the-aggregate-results-of-a-loop" title="Permanent link">&para;</a></h2>
+<p>The output of all iterations can be accessed as a JSON array, once the loop is done.
+The example below shows how you can read it.</p>
+<p>Please note: the output of each iteration <em>must</em> be a <strong>valid JSON</strong>.</p>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">WorkflowTemplate</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">loop-test</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">entrypoint</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">main</span>
+<span class="w">  </span><span class="nt">templates</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">main</span>
+<span class="w">    </span><span class="nt">steps</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">execute-parallel-steps</span>
+<span class="w">        </span><span class="nt">template</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">print-json-entry</span>
+<span class="w">        </span><span class="nt">arguments</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">index</span>
+<span class="w">            </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;{{item}}&#39;</span>
+<span class="w">        </span><span class="nt">withParam</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;[1,</span><span class="nv"> </span><span class="s">2,</span><span class="nv"> </span><span class="s">3]&#39;</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">call-access-aggregate-output</span>
+<span class="w">        </span><span class="nt">template</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">access-aggregate-output</span>
+<span class="w">        </span><span class="nt">arguments</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">aggregate-results</span>
+<span class="w">            </span><span class="c1"># If the value of each loop iteration isn&#39;t a valid JSON,</span>
+<span class="w">            </span><span class="c1"># you get a JSON parse error:</span>
+<span class="w">            </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;{{steps.execute-parallel-steps.outputs.result}}&#39;</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">print-json-entry</span>
+<span class="w">    </span><span class="nt">inputs</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">index</span>
+<span class="w">    </span><span class="c1"># The output must be a valid JSON</span>
+<span class="w">    </span><span class="nt">script</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">alpine:latest</span>
+<span class="w">      </span><span class="nt">command</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">sh</span><span class="p p-Indicator">]</span>
+<span class="w">      </span><span class="nt">source</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
+<span class="w">        </span><span class="no">cat &lt;&lt;EOF</span>
+<span class="w">        </span><span class="no">{</span>
+<span class="w">        </span><span class="no">&quot;input&quot;: &quot;{{inputs.parameters.index}}&quot;,</span>
+<span class="w">        </span><span class="no">&quot;transformed-input&quot;: &quot;{{inputs.parameters.index}}.jpeg&quot;</span>
+<span class="w">        </span><span class="no">}</span>
+<span class="w">        </span><span class="no">EOF</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">access-aggregate-output</span>
+<span class="w">    </span><span class="nt">inputs</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">aggregate-results</span>
+<span class="w">        </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;no-value&#39;</span>
+<span class="w">    </span><span class="nt">script</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">alpine:latest</span>
+<span class="w">      </span><span class="nt">command</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">sh</span><span class="p p-Indicator">]</span>
+<span class="w">      </span><span class="nt">source</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
+<span class="w">        </span><span class="no">echo &#39;inputs.parameters.aggregate-results: &quot;{{inputs.parameters.aggregate-results}}&quot;&#39;</span>
+</code></pre></div>
+<p><img alt="image" src="../../assets/aggregate-result-of-all-iterations-of-a-loop.png" /></p>
+<p>The last step of the workflow above should have this output:
+<code>inputs.parameters.aggregate-results: "[{"input":"1","transformed-input":"1.jpeg"},{"input":"2","transformed-input":"2.jpeg"},{"input":"3","transformed-input":"3.jpeg"}]"</code></p>
 
               
 
