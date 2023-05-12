@@ -6,12 +6,11 @@ export const POD_NAME_V2 = 'v2';
 export const maxK8sResourceNameLength = 253;
 export const k8sNamingHashLength = 10;
 
-// getPodName returns a deterministic pod name. It returns a combination of the
-// workflow name, template name, and a hash if the POD_NAME_V2 annotation is
-// set. If the templateName or templateRef is not defined on a given node, it
-// falls back to POD_NAME_V1
+// getPodName returns a deterministic pod name
+// In case templateName is not defined or that version is explicitly set to  POD_NAME_V1, it will return the nodeID (v1)
+// In other cases it will return a combination of workflow name, template name, and a hash (v2)
 export const getPodName = (workflowName: string, nodeName: string, templateName: string, nodeID: string, version: string): string => {
-    if (version === POD_NAME_V2 && templateName !== '') {
+    if (version !== POD_NAME_V1 && templateName !== '') {
         if (workflowName === nodeName) {
             return workflowName;
         }
