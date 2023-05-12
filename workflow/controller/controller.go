@@ -137,6 +137,7 @@ const (
 	clusterWorkflowTemplateResyncPeriod = 20 * time.Minute
 	workflowExistenceCheckPeriod        = 1 * time.Minute
 	workflowTaskSetResyncPeriod         = 20 * time.Minute
+	waitForCacheSyncTimeout             = time.Minute
 )
 
 var (
@@ -284,8 +285,11 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 	wfc.createClusterWorkflowTemplateInformer(ctx)
 
 	// Wait for all involved caches to be synced, before processing items from the queue is started
+	// We need a clear TimeoutCtx, otherwise the controller block long time, but we cannot know the reason.
+	waitForCacheSyncCtx, waitForCacheSyncCtxCancel := context.WithTimeout(ctx, waitForCacheSyncTimeout)
+	defer waitForCacheSyncCtxCancel()
 	if !cache.WaitForCacheSync(
-		ctx.Done(),
+		waitForCacheSyncCtx.Done(),
 		wfc.wfInformer.HasSynced,
 		wfc.wftmplInformer.Informer().HasSynced,
 		wfc.podInformer.HasSynced,
