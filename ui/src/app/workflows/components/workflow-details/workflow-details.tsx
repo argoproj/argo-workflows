@@ -26,6 +26,7 @@ import * as Operations from '../../../shared/workflow-operations-map';
 import {WorkflowOperations} from '../../../shared/workflow-operations-map';
 import {WidgetGallery} from '../../../widgets/widget-gallery';
 import {EventsPanel} from '../events-panel';
+import {ResubmitWorkflowPanel} from '../resubmit-workflow-panel';
 import {WorkflowArtifacts} from '../workflow-artifacts';
 import {WorkflowLogsViewer} from '../workflow-logs-viewer/workflow-logs-viewer';
 import {WorkflowNodeInfo} from '../workflow-node-info/workflow-node-info';
@@ -147,20 +148,24 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
                     title: workflowOperation.title.charAt(0).toUpperCase() + workflowOperation.title.slice(1),
                     iconClassName: workflowOperation.iconClassName,
                     action: () => {
-                        popup.confirm('Confirm', `Are you sure you want to ${workflowOperation.title.toLowerCase()} this workflow?`).then(yes => {
-                            if (yes) {
-                                workflowOperation
-                                    .action(workflow)
-                                    .then((wf: Workflow) => {
-                                        if (workflowOperation.title === 'DELETE') {
-                                            navigation.goto(uiUrl(`workflows/${workflow.metadata.namespace}`));
-                                        } else {
-                                            setName(wf.metadata.name);
-                                        }
-                                    })
-                                    .catch(setError);
-                            }
-                        });
+                        if (actionName !== 'RESUBMIT') {
+                            popup.confirm('Confirm', `Are you sure you want to ${workflowOperation.title.toLowerCase()} this workflow?`).then(yes => {
+                                if (yes) {
+                                    workflowOperation
+                                        .action(workflow)
+                                        .then((wf: Workflow) => {
+                                            if (workflowOperation.title === 'DELETE') {
+                                                navigation.goto(uiUrl(`workflows/${workflow.metadata.namespace}`));
+                                            } else {
+                                                setName(wf.metadata.name);
+                                            }
+                                        })
+                                        .catch(setError);
+                                }
+                            });
+                        } else {
+                            setSidePanel('resubmit');
+                        }
                     }
                 };
             });
@@ -479,6 +484,7 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
                     {parsedSidePanel.type === 'events' && <EventsPanel namespace={namespace} kind='Pod' name={podName} />}
                     {parsedSidePanel.type === 'share' && <WidgetGallery namespace={namespace} name={name} />}
                     {parsedSidePanel.type === 'yaml' && <WorkflowYamlViewer workflow={workflow} selectedNode={selectedNode} />}
+                    {parsedSidePanel.type === 'resubmit' && <ResubmitWorkflowPanel workflow={workflow} workflowParameters={workflow.spec.arguments.parameters || []} />}
                     {!parsedSidePanel}
                 </SlidingPanel>
             )}

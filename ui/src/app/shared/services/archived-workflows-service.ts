@@ -1,4 +1,5 @@
 import * as models from '../../../models';
+import {ResubmitOpts} from '../../../models/resubmit-opts';
 import {Pagination} from '../pagination';
 import {Utils} from '../utils';
 import requests from './requests';
@@ -47,10 +48,10 @@ export const ArchivedWorkflowsService = {
         return (await requests.get(url)).body as models.Labels;
     },
 
-    resubmit(uid: string, namespace: string) {
+    resubmit(uid: string, namespace: string, opts?: ResubmitOpts) {
         return requests
             .put(`api/v1/archived-workflows/${uid}/resubmit`)
-            .send({namespace})
+            .send({namespace, ...opts})
             .then(res => res.body as models.Workflow);
     },
 

@@ -17,6 +17,7 @@ import {WorkflowArtifacts} from '../../../workflows/components/workflow-artifact
 import {ANNOTATION_KEY_POD_NAME_VERSION} from '../../../shared/annotations';
 import {getPodName, getTemplateNameFromNode} from '../../../shared/pod-name';
 import {getResolvedTemplates} from '../../../shared/template-resolution';
+import {ResubmitWorkflowPanel} from '../../../workflows/components/resubmit-workflow-panel';
 import {ArtifactPanel} from '../../../workflows/components/workflow-details/artifact-panel';
 import {WorkflowResourcePanel} from '../../../workflows/components/workflow-details/workflow-resource-panel';
 import {WorkflowLogsViewer} from '../../../workflows/components/workflow-logs-viewer/workflow-logs-viewer';
@@ -170,6 +171,7 @@ export const ArchivedWorkflowDetails = ({history, location, match}: RouteCompone
                 <SlidingPanel isShown={!!sidePanel} onClose={() => setSidePanel(null)}>
                     {sidePanel === 'yaml' && <WorkflowYamlViewer workflow={workflow} selectedNode={node} />}
                     {sidePanel === 'logs' && <WorkflowLogsViewer workflow={workflow} initialPodName={podName()} nodeId={nodeId} container={container} archived={true} />}
+                    {sidePanel === 'resubmit' && <ResubmitWorkflowPanel workflow={workflow} workflowParameters={workflow.spec.arguments.parameters || []} />}
                 </SlidingPanel>
             </>
         );
@@ -187,21 +189,6 @@ export const ArchivedWorkflowDetails = ({history, location, match}: RouteCompone
             .catch(e => {
                 ctx.notifications.show({
                     content: 'Failed to delete archived workflow ' + e,
-                    type: NotificationType.Error
-                });
-            });
-    };
-
-    const resubmitArchivedWorkflow = () => {
-        if (!confirm('Are you sure you want to resubmit this archived workflow?')) {
-            return;
-        }
-        services.archivedWorkflows
-            .resubmit(workflow.metadata.uid, workflow.metadata.namespace)
-            .then(newWorkflow => (document.location.href = uiUrl(`workflows/${newWorkflow.metadata.namespace}/${newWorkflow.metadata.name}`)))
-            .catch(e => {
-                ctx.notifications.show({
-                    content: 'Failed to resubmit archived workflow ' + e,
                     type: NotificationType.Error
                 });
             });
@@ -255,7 +242,7 @@ export const ArchivedWorkflowDetails = ({history, location, match}: RouteCompone
             title: 'Resubmit',
             iconClassName: 'fa fa-plus-circle',
             disabled: false,
-            action: () => resubmitArchivedWorkflow()
+            action: () => setSidePanel('resubmit')
         },
         {
             title: 'Delete',

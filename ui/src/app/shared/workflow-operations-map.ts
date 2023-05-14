@@ -36,7 +36,7 @@ export const WorkflowOperationsMap: WorkflowOperations = {
         title: 'RESUBMIT',
         iconClassName: 'fa fa-plus-circle',
         disabled: () => false,
-        action: (wf: Workflow) => services.workflows.resubmit(wf.metadata.name, wf.metadata.namespace)
+        action: (wf: Workflow) => services.workflows.resubmit(wf.metadata.name, wf.metadata.namespace, null)
     },
     SUSPEND: {
         title: 'SUSPEND',
