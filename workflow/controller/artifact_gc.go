@@ -458,12 +458,12 @@ func (woc *wfOperationCtx) createArtifactGCPod(ctx context.Context, strategy wfv
 					// if this pod is breached by an attacker these limits prevent excessive CPU and memory usage
 					Resources: corev1.ResourceRequirements{
 						Limits: map[corev1.ResourceName]resource.Quantity{
-							"cpu":    resource.MustParse("100m"),
-							"memory": resource.MustParse("64Mi"),
+							"cpu":    resource.MustParse("200m"),
+							"memory": resource.MustParse("128Mi"),
 						},
 						Requests: map[corev1.ResourceName]resource.Quantity{
-							"cpu":    resource.MustParse("50m"),
-							"memory": resource.MustParse("32Mi"),
+							"cpu":    resource.MustParse("100m"),
+							"memory": resource.MustParse("64Mi"),
 						},
 					},
 					VolumeMounts: volumeMounts,

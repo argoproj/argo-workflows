@@ -165,6 +165,9 @@ const (
 	// EnvAgentPatchRate is the rate that the Argo Agent will patch the Workflow TaskSet
 	EnvAgentPatchRate = "ARGO_AGENT_PATCH_RATE"
 
+	// EnvExecGCWorkers is the number of artifact GC workers for argoexec
+	EnvExecGCWorkers = "ARGO_EXEC_GC_WORKERS"
+
 	// Finalizer to block deletion of the workflow if deletion of artifacts fail for some reason.
 	FinalizerArtifactGC = workflow.WorkflowFullName + "/artifact-gc"
 
