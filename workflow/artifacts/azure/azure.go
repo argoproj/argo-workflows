@@ -356,6 +356,7 @@ func DeleteBlob(containerClient *azblob.ContainerClient, blobName string, allowN
 	if err != nil {
 		if allowNonExistent && IsAzureError(err, azblob.StorageErrorCodeBlobNotFound) {
 			log.Debugf("blob to delete '%s' does not exist: %s", blobName, err)
+			return nil
 		} else {
 			return fmt.Errorf("unable to delete Azure Blob %s: %s", blobName, err)
 		}
