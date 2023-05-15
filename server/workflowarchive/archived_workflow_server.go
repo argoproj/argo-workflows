@@ -262,7 +262,7 @@ func (w *archivedWorkflowServer) ResubmitArchivedWorkflow(ctx context.Context, r
 		return nil, sutils.ToStatusError(err, codes.Internal)
 	}
 
-	newWF, err := util.FormulateResubmitWorkflow(wf, req.Memoized, nil)
+	newWF, err := util.FormulateResubmitWorkflow(wf, req.Memoized, req.Parameters)
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.Internal)
 	}
@@ -286,7 +286,7 @@ func (w *archivedWorkflowServer) RetryArchivedWorkflow(ctx context.Context, req 
 	_, err = wfClient.ArgoprojV1alpha1().Workflows(req.Namespace).Get(ctx, wf.Name, metav1.GetOptions{})
 	if apierr.IsNotFound(err) {
 
-		wf, podsToDelete, err := util.FormulateRetryWorkflow(ctx, wf, req.RestartSuccessful, req.NodeFieldSelector, nil)
+		wf, podsToDelete, err := util.FormulateRetryWorkflow(ctx, wf, req.RestartSuccessful, req.NodeFieldSelector, req.Parameters)
 		if err != nil {
 			return nil, sutils.ToStatusError(err, codes.Internal)
 		}
