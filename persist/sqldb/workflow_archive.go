@@ -7,6 +7,7 @@ import (
 	"time"
 
 	log "github.com/sirupsen/logrus"
+	"google.golang.org/grpc/codes"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
@@ -14,6 +15,7 @@ import (
 	"upper.io/db.v3/lib/sqlbuilder"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	sutils "github.com/argoproj/argo-workflows/v3/server/utils"
 	"github.com/argoproj/argo-workflows/v3/util/instanceid"
 )
 
@@ -280,8 +282,9 @@ func (r *workflowArchive) GetWorkflow(uid string, namespace string, name string)
 			if err != nil {
 				return nil, err
 			}
-			if int64(total.Total) > 1 {
-				return nil, fmt.Errorf("there are more than 1 workflows with the same name and namespace")
+			num := int64(total.Total)
+			if num > 1 {
+				return nil, fmt.Errorf("found %d archived workflows with namespace/name: %s/%s", num, namespace, name)
 			}
 			err = r.session.
 				Select("workflow").
@@ -291,7 +294,7 @@ func (r *workflowArchive) GetWorkflow(uid string, namespace string, name string)
 				And(nameEqual(name)).
 				One(archivedWf)
 		} else {
-			return nil, fmt.Errorf("both name and namespace are required if uid is not specified")
+			return nil, sutils.ToStatusError(fmt.Errorf("both name and namespace are required if uid is not specified"), codes.InvalidArgument)
 		}
 	}
 	if err != nil {
