@@ -1,6 +1,6 @@
 name: build
 env:
-  image: argo-workflows
+  image: pdok/argo-workflows
 on:
   push:
     tags:
