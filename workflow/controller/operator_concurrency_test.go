@@ -80,6 +80,33 @@ spec:
         sys.exit(exit_code)
 `
 
+const ScriptWfWithSemaphoreDifferentNamespace = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata: 
+  name: script-wf
+  namespace: default
+spec: 
+  entrypoint: scriptTmpl
+  templates:
+  - name: scriptTmpl
+    synchronization: 
+      semaphore: 
+        namespace: other
+        configMapKeyRef: 
+          key: template
+          name: my-config
+    script:
+      image: python:alpine3.6
+      command: ["python"]
+      # fail with a 66% probability
+      source: |
+        import random;
+        import sys; 
+        exit_code = random.choice([0, 1, 1]); 
+        sys.exit(exit_code)
+`
+
 const ResourceWfWithSemaphore = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -223,6 +250,68 @@ func TestSemaphoreScriptTmplLevel(t *testing.T) {
 		wf_Two := wf.DeepCopy()
 		wf_Two.Name = "two"
 		wf_Two, err = controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace).Create(ctx, wf_Two, metav1.CreateOptions{})
+		assert.NoError(t, err)
+		woc_two := newWorkflowOperationCtx(wf_Two, controller)
+		// Try Acquire the lock
+		woc_two.operate(ctx)
+
+		// Check Node status
+		err = woc_two.podReconciliation(ctx)
+		assert.NoError(t, err)
+		for _, node := range woc_two.wf.Status.Nodes {
+			assert.Equal(t, wfv1.NodePending, node.Phase)
+		}
+		// Updating Pod state
+		makePodsPhase(ctx, woc, v1.PodFailed)
+
+		// Release the lock
+		woc = newWorkflowOperationCtx(woc.wf, controller)
+		woc.operate(ctx)
+		assert.Nil(t, woc.wf.Status.Synchronization)
+
+		// Try to acquired the lock
+		woc_two = newWorkflowOperationCtx(woc_two.wf, controller)
+		woc_two.operate(ctx)
+		assert.NotNil(t, woc_two.wf.Status.Synchronization)
+		assert.NotNil(t, woc_two.wf.Status.Synchronization.Semaphore)
+		assert.Equal(t, 1, len(woc_two.wf.Status.Synchronization.Semaphore.Holding))
+	})
+}
+
+func TestSemaphoreScriptConfigMapInDifferentNamespace(t *testing.T) {
+	cancel, controller := newController()
+	defer cancel()
+	ctx := context.Background()
+	controller.syncManager = sync.NewLockManager(GetSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
+	}, workflowExistenceFunc)
+	var cm v1.ConfigMap
+	wfv1.MustUnmarshal([]byte(configMap), &cm)
+	_, err := controller.kubeclientset.CoreV1().ConfigMaps("other").Create(ctx, &cm, metav1.CreateOptions{})
+	assert.NoError(t, err)
+
+	t.Run("ScriptTmplLevelAcquireAndRelease", func(t *testing.T) {
+		wf := wfv1.MustUnmarshalWorkflow(ScriptWfWithSemaphoreDifferentNamespace)
+		wf.Name = "one"
+		wf.Namespace = "namespace-one"
+		wf, err := controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace).Create(ctx, wf, metav1.CreateOptions{})
+		assert.NoError(t, err)
+		woc := newWorkflowOperationCtx(wf, controller)
+
+		// acquired the lock
+		woc.operate(ctx)
+		assert.NotNil(t, woc.wf.Status.Synchronization)
+		assert.NotNil(t, woc.wf.Status.Synchronization.Semaphore)
+		assert.Equal(t, 1, len(woc.wf.Status.Synchronization.Semaphore.Holding))
+
+		for _, node := range woc.wf.Status.Nodes {
+			assert.Equal(t, wfv1.NodePending, node.Phase)
+		}
+
+		// Try to Acquire the lock, But lock is not available
+		wf_Two := wf.DeepCopy()
+		wf_Two.Name = "two"
+		wf_Two.Namespace = "namespace-two"
+		wf_Two, err = controller.wfclientset.ArgoprojV1alpha1().Workflows(wf_Two.Namespace).Create(ctx, wf_Two, metav1.CreateOptions{})
 		assert.NoError(t, err)
 		woc_two := newWorkflowOperationCtx(wf_Two, controller)
 		// Try Acquire the lock

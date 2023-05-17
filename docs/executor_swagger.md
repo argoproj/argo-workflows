@@ -2468,6 +2468,7 @@ than the MaxAge, it will be ignored. |  |
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
 | name | string| `string` |  | | name of the mutex |  |
+| namespace | string| `string` |  | `"[namespace of workflow]"`|  |  |
 
 
 
@@ -4229,6 +4230,7 @@ Note that this field cannot be set when spec.os.name is windows.
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
 | configMapKeyRef | [ConfigMapKeySelector](#config-map-key-selector)| `ConfigMapKeySelector` |  | |  |  |
+| namespace | string| `string` |  | `"[namespace of workflow]"`|  |  |
 
 
 

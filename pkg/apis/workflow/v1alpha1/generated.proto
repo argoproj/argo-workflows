@@ -940,6 +940,9 @@ message Metrics {
 message Mutex {
   // name of the mutex
   optional string name = 1;
+
+  // Namespace is the namespace of the mutex, default: [namespace of workflow]
+  optional string namespace = 2;
 }
 
 // MutexHolding describes the mutex and the object which is holding it.
@@ -1405,6 +1408,9 @@ message SemaphoreHolding {
 message SemaphoreRef {
   // ConfigMapKeyRef is configmap selector for Semaphore configuration
   optional k8s.io.api.core.v1.ConfigMapKeySelector configMapKeyRef = 1;
+
+  // Namespace is the namespace of the configmap, default: [namespace of workflow]
+  optional string namespace = 2;
 }
 
 message SemaphoreStatus {

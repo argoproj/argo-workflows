@@ -3845,6 +3845,13 @@ func schema_pkg_apis_workflow_v1alpha1_Mutex(ref common.ReferenceCallback) commo
 							Format:      "",
 						},
 					},
+					"namespace": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Namespace is the namespace of the mutex, default: [namespace of workflow]",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
 				},
 			},
 		},
@@ -5578,6 +5585,13 @@ func schema_pkg_apis_workflow_v1alpha1_SemaphoreRef(ref common.ReferenceCallback
 						SchemaProps: spec.SchemaProps{
 							Description: "ConfigMapKeyRef is configmap selector for Semaphore configuration",
 							Ref:         ref("k8s.io/api/core/v1.ConfigMapKeySelector"),
+						},
+					},
+					"namespace": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Namespace is the namespace of the configmap, default: [namespace of workflow]",
+							Type:        []string{"string"},
+							Format:      "",
 						},
 					},
 				},

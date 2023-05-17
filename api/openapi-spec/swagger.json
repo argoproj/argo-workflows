@@ -9352,6 +9352,10 @@
         "name": {
           "description": "name of the mutex",
           "type": "string"
+        },
+        "namespace": {
+          "description": "Namespace is the namespace of the mutex, default: [namespace of workflow]",
+          "type": "string"
         }
       }
     },
@@ -10242,6 +10246,10 @@
         "configMapKeyRef": {
           "description": "ConfigMapKeyRef is configmap selector for Semaphore configuration",
           "$ref": "#/definitions/io.k8s.api.core.v1.ConfigMapKeySelector"
+        },
+        "namespace": {
+          "description": "Namespace is the namespace of the configmap, default: [namespace of workflow]",
+          "type": "string"
         }
       }
     },
