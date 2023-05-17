@@ -88,7 +88,7 @@ func tarDir(sourcePath string, tw *tar.Writer) error {
 		if err != nil {
 			return errors.InternalWrapError(err)
 		}
-		nameInArchive = filepath.Join(baseName, nameInArchive)
+		nameInArchive = filepath.ToSlash(filepath.Join(baseName, nameInArchive))
 		log.Debugf("writing %s", nameInArchive)
 		count++
 
