@@ -839,6 +839,15 @@ func TestWorkflowConditions_UpsertConditionMessage(t *testing.T) {
 	assert.Equal(t, "Hello, world!", wfCond[0].Message)
 }
 
+func TestEmoticon(t *testing.T) {
+	assert.Equal(t, EmoticonHappy, NewEmoticon(
+		&Workflow{ObjectMeta: metav1.ObjectMeta{Name: "argo"}}),
+	)
+	assert.Equal(t, EmoticonSad, NewEmoticon(
+		&Workflow{ObjectMeta: metav1.ObjectMeta{Name: "other"}}),
+	)
+}
+
 func TestShutdownStrategy_ShouldExecute(t *testing.T) {
 	assert.False(t, ShutdownStrategyTerminate.ShouldExecute(true))
 	assert.False(t, ShutdownStrategyTerminate.ShouldExecute(false))

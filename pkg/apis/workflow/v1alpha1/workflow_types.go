@@ -65,6 +65,20 @@ const (
 	NodeOmitted NodePhase = "Omitted"
 )
 
+type Emoticon string
+
+const (
+	EmoticonHappy Emoticon = "😊"
+	EmoticonSad   Emoticon = "☹️"
+)
+
+func NewEmoticon(wf *Workflow) Emoticon {
+	if strings.Contains(wf.Name, "argo") {
+		return EmoticonHappy
+	}
+	return EmoticonSad
+}
+
 // NodeType is the type of a node
 type NodeType string
 
@@ -1871,6 +1885,8 @@ type WorkflowStatus struct {
 
 	// ArtifactGCStatus maintains the status of Artifact Garbage Collection
 	ArtifactGCStatus *ArtGCStatus `json:"artifactGCStatus,omitempty" protobuf:"bytes,19,opt,name=artifactGCStatus"`
+
+	Emoticon Emoticon `json:"Emoticon,omitempty" protobuf:"bytes,20,opt,name=Emoticon,casttype=Emoticon"`
 }
 
 func (ws *WorkflowStatus) IsOffloadNodeStatus() bool {
