@@ -18936,6 +18936,8 @@ spec:
             type: object
           status:
             properties:
+              Emoticon:
+                type: string
               artifactGCStatus:
                 properties:
                   notSpecified:

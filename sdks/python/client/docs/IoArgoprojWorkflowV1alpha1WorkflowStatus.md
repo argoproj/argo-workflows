@@ -5,6 +5,7 @@ WorkflowStatus contains overall status information about a workflow
 ## Properties
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
+**emoticon** | **str** |  | [optional] 
 **artifact_gc_status** | [**IoArgoprojWorkflowV1alpha1ArtGCStatus**](IoArgoprojWorkflowV1alpha1ArtGCStatus.md) |  | [optional] 
 **artifact_repository_ref** | [**IoArgoprojWorkflowV1alpha1ArtifactRepositoryRefStatus**](IoArgoprojWorkflowV1alpha1ArtifactRepositoryRefStatus.md) |  | [optional] 
 **compressed_nodes** | **str** | Compressed and base64 decoded Nodes map | [optional] 
