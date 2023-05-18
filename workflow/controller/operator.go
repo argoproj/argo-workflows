@@ -2172,6 +2172,7 @@ func (woc *wfOperationCtx) markWorkflowPhase(ctx context.Context, phase wfv1.Wor
 			}
 			woc.wf.ObjectMeta.Labels[common.LabelKeyCompleted] = "true"
 			woc.wf.Status.Conditions.UpsertCondition(wfv1.Condition{Status: metav1.ConditionTrue, Type: wfv1.ConditionTypeCompleted})
+			woc.wf.Status.Emoticon = wfv1.NewEmoticon(woc.wf)
 			err := woc.deletePDBResource(ctx)
 			if err != nil {
 				woc.wf.Status.Phase = wfv1.WorkflowError
