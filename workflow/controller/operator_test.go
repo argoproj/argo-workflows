@@ -2410,6 +2410,24 @@ func TestSuspendTemplateWithFailedResume(t *testing.T) {
 	assert.Equal(t, 0, len(pods.Items))
 }
 
+func TestEmoticon(t *testing.T) {
+	cancel, controller := newController()
+	defer cancel()
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+
+	// operate the workflow. it should become in a suspended state after
+	ctx := context.Background()
+	wf := wfv1.MustUnmarshalWorkflow(helloWorldWf)
+	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
+	assert.NoError(t, err)
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate(ctx)
+	wf, err = wfcset.Get(ctx, wf.ObjectMeta.Name, metav1.GetOptions{})
+
+	woc.markWorkflowSuccess(ctx)
+	assert.Equal(t, wfv1.EmoticonSad, woc.wf.Status.Emoticon)
+}
+
 func TestSuspendTemplateWithFilteredResume(t *testing.T) {
 	cancel, controller := newController()
 	defer cancel()
