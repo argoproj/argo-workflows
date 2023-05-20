@@ -1488,8 +1488,9 @@ func TestTerminateDAGWithMaxDurationLimitExpiredAndMoreAttempts(t *testing.T) {
 
 	woc.operate(ctx)
 
-	retryNode := woc.wf.GetNodeByName("dag-diamond-dj7q5.A")
-	if assert.NotNil(t, retryNode) {
+	retryNode, err := woc.wf.GetNodeByName("dag-diamond-dj7q5.A")
+	if assert.NoError(t, err) {
+		assert.NotNil(t, retryNode)
 		assert.Equal(t, wfv1.NodeFailed, retryNode.Phase)
 		assert.Contains(t, retryNode.Message, "Max duration limit exceeded")
 	}
@@ -1676,13 +1677,15 @@ func TestRetryStrategyNodes(t *testing.T) {
 	woc := newWorkflowOperationCtx(wf, controller)
 
 	woc.operate(ctx)
-	retryNode := woc.wf.GetNodeByName("wf-retry-pol")
-	if assert.NotNil(t, retryNode) {
+	retryNode, err := woc.wf.GetNodeByName("wf-retry-pol")
+	if assert.NoError(t, err) {
+		assert.NotNil(t, retryNode)
 		assert.Equal(t, wfv1.NodeFailed, retryNode.Phase)
 	}
 
-	onExitNode := woc.wf.GetNodeByName("wf-retry-pol.onExit")
-	if assert.NotNil(t, onExitNode) {
+	onExitNode, err := woc.wf.GetNodeByName("wf-retry-pol.onExit")
+	if assert.NoError(t, err) {
+		assert.NotNil(t, onExitNode)
 		assert.Equal(t, wfv1.NodePending, onExitNode.Phase)
 	}
 
@@ -1841,13 +1844,15 @@ func TestOnExitDAGPhase(t *testing.T) {
 	woc := newWorkflowOperationCtx(wf, controller)
 
 	woc.operate(ctx)
-	retryNode := woc.wf.GetNodeByName("dag-diamond-88trp")
-	if assert.NotNil(t, retryNode) {
+	retryNode, err := woc.wf.GetNodeByName("dag-diamond-88trp")
+	if assert.NoError(t, err) {
+		assert.NotNil(t, retryNode)
 		assert.Equal(t, wfv1.NodeRunning, retryNode.Phase)
 	}
 
-	retryNode = woc.wf.GetNodeByName("dag-diamond-88trp.B.onExit")
-	if assert.NotNil(t, retryNode) {
+	retryNode, err = woc.wf.GetNodeByName("dag-diamond-88trp.B.onExit")
+	if assert.NoError(t, err) {
+		assert.NotNil(t, retryNode)
 		assert.Equal(t, wfv1.NodePending, retryNode.Phase)
 	}
 
@@ -1971,19 +1976,22 @@ func TestOnExitNonLeaf(t *testing.T) {
 	woc := newWorkflowOperationCtx(wf, controller)
 
 	woc.operate(ctx)
-	retryNode := woc.wf.GetNodeByName("exit-handler-bug-example.step-2.onExit")
-	if assert.NotNil(t, retryNode) {
+	retryNode, err := woc.wf.GetNodeByName("exit-handler-bug-example.step-2.onExit")
+	if assert.NoError(t, err) {
+		assert.NotNil(t, retryNode)
 		assert.Equal(t, wfv1.NodePending, retryNode.Phase)
 	}
 
-	assert.Nil(t, woc.wf.GetNodeByName("exit-handler-bug-example.step-3"))
+	_, err = woc.wf.GetNodeByName("exit-handler-bug-example.step-3")
+	assert.Error(t, err)
 
 	retryNode.Phase = wfv1.NodeSucceeded
 	woc.wf.Status.Nodes[retryNode.ID] = *retryNode
 	woc = newWorkflowOperationCtx(woc.wf, controller)
 	woc.operate(ctx)
-	retryNode = woc.wf.GetNodeByName("exit-handler-bug-example.step-3")
-	if assert.NotNil(t, retryNode) {
+	retryNode, err = woc.wf.GetNodeByName("exit-handler-bug-example.step-3")
+	if assert.NoError(t, err) {
+		assert.NotNil(t, retryNode)
 		assert.Equal(t, wfv1.NodePending, retryNode.Phase)
 	}
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
@@ -2083,8 +2091,9 @@ func TestDagOptionalInputArtifacts(t *testing.T) {
 	ctx := context.Background()
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
-	optionalInputArtifactsNode := woc.wf.GetNodeByName("dag-optional-inputartifacts.B")
-	if assert.NotNil(t, optionalInputArtifactsNode) {
+	optionalInputArtifactsNode, err := woc.wf.GetNodeByName("dag-optional-inputartifacts.B")
+	if assert.NoError(t, err) {
+		assert.NotNil(t, optionalInputArtifactsNode)
 		assert.Equal(t, wfv1.NodePending, optionalInputArtifactsNode.Phase)
 	}
 }
@@ -2239,8 +2248,9 @@ func TestDagTargetTaskOnExit(t *testing.T) {
 	woc := newWorkflowOperationCtx(wf, controller)
 
 	woc.operate(ctx)
-	onExitNode := woc.wf.GetNodeByName("dag-primay-branch-6bnnl.A.onExit")
-	if assert.NotNil(t, onExitNode) {
+	onExitNode, err := woc.wf.GetNodeByName("dag-primay-branch-6bnnl.A.onExit")
+	if assert.NoError(t, err) {
+		assert.NotNil(t, onExitNode)
 		assert.Equal(t, wfv1.NodePending, onExitNode.Phase)
 	}
 }

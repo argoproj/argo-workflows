@@ -168,8 +168,9 @@ func (woc *wfOperationCtx) processArtifactGCStrategy(ctx context.Context, strate
 			groupedByPod[podName] = make(templatesToArtifacts)
 		}
 		// get the Template for the Artifact
-		node, found := woc.wf.Status.Nodes[artifactSearchResult.NodeID]
-		if !found {
+		node, err := woc.wf.Status.Nodes.Get(artifactSearchResult.NodeID)
+		if err != nil {
+			woc.log.Errorf("Was unable to obtain node for %s", artifactSearchResult.NodeID)
 			return fmt.Errorf("can't process Artifact GC Strategy %s: node ID %q not found in Status??", strategy, artifactSearchResult.NodeID)
 		}
 		templateName := node.TemplateName
@@ -635,8 +636,9 @@ func (woc *wfOperationCtx) processCompletedWorkflowArtifactGCTask(artifactGCTask
 	foundGCFailure := false
 	for nodeName, nodeResult := range artifactGCTask.Status.ArtifactResultsByNode {
 		// find this node result in the Workflow Status
-		wfNode, found := woc.wf.Status.Nodes[nodeName]
-		if !found {
+		wfNode, err := woc.wf.Status.Nodes.Get(nodeName)
+		if err != nil {
+			woc.log.Errorf("Was unable to obtain node for %s", nodeName)
 			return false, fmt.Errorf("node named %q returned by WorkflowArtifactGCTask %q wasn't found in Workflow %q Status", nodeName, artifactGCTask.Name, woc.wf.Name)
 		}
 		if wfNode.Outputs == nil {
@@ -649,7 +651,9 @@ func (woc *wfOperationCtx) processCompletedWorkflowArtifactGCTask(artifactGCTask
 				// could be in a different WorkflowArtifactGCTask
 				continue
 			}
-			woc.wf.Status.Nodes[nodeName].Outputs.Artifacts[i].Deleted = artifactResult.Success
+
+			wfNode.Outputs.Artifacts[i].Deleted = artifactResult.Success
+			woc.wf.Status.Nodes.Set(nodeName, *wfNode)
 
 			if artifactResult.Error != nil {
 				woc.addArtGCCondition(fmt.Sprintf("%s (artifactGCTask: %s)", *artifactResult.Error, artifactGCTask.Name))
