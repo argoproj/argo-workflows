@@ -1,12 +1,12 @@
 apiVersion: argoproj.io/v1alpha1
-kind: WorkflowTemplae
+kind: WorkflowTemplate
 metadata:
-  generateName: ui-memoize
+  name: ui-memoize
 spec:
   templates:
     - name: workflow
       steps:
-        - - name: say
+        - - name: memoize
             template: whalesay
           - name: fail
             template: intentional-fail

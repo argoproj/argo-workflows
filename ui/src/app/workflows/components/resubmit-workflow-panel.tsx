@@ -55,7 +55,7 @@ export class ResubmitWorkflowPanel extends React.Component<Props, State> {
                         )}
                     </div>
 
-                    <div key='memorized' style={{marginBottom: 25}}>
+                    <div key='memoized' style={{marginBottom: 25}}>
                         <label>Memorized</label>
                         <div className='columns small-9'>
                             <Checkbox checked={this.state.memoized} onChange={memoized => this.setState({memoized})} />
