@@ -484,7 +484,7 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
                     {parsedSidePanel.type === 'events' && <EventsPanel namespace={namespace} kind='Pod' name={podName} />}
                     {parsedSidePanel.type === 'share' && <WidgetGallery namespace={namespace} name={name} />}
                     {parsedSidePanel.type === 'yaml' && <WorkflowYamlViewer workflow={workflow} selectedNode={selectedNode} />}
-                    {parsedSidePanel.type === 'resubmit' && <ResubmitWorkflowPanel workflow={workflow} workflowParameters={workflow.spec.arguments.parameters || []} />}
+                    {parsedSidePanel.type === 'resubmit' && <ResubmitWorkflowPanel workflow={workflow} />}
                     {!parsedSidePanel}
                 </SlidingPanel>
             )}

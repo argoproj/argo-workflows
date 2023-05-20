@@ -171,7 +171,7 @@ export const ArchivedWorkflowDetails = ({history, location, match}: RouteCompone
                 <SlidingPanel isShown={!!sidePanel} onClose={() => setSidePanel(null)}>
                     {sidePanel === 'yaml' && <WorkflowYamlViewer workflow={workflow} selectedNode={node} />}
                     {sidePanel === 'logs' && <WorkflowLogsViewer workflow={workflow} initialPodName={podName()} nodeId={nodeId} container={container} archived={true} />}
-                    {sidePanel === 'resubmit' && <ResubmitWorkflowPanel workflow={workflow} workflowParameters={workflow.spec.arguments.parameters || []} />}
+                    {sidePanel === 'resubmit' && <ResubmitWorkflowPanel workflow={workflow} archived={true} />}
                 </SlidingPanel>
             </>
         );
