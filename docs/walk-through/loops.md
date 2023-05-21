@@ -176,3 +176,67 @@ spec:
       command: [sh, -c]
       args: ["echo sleeping for {{inputs.parameters.seconds}} seconds; sleep {{inputs.parameters.seconds}}; echo done"]
 ```
+
+## Accessing the aggregate results of a loop
+
+The output of all iterations can be accessed as a JSON array, once the loop is done.
+The example below shows how you can read it.
+
+Please note: the output of each iteration _must_ be a **valid JSON**.
+
+```yaml
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: loop-test
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: execute-parallel-steps
+        template: print-json-entry
+        arguments:
+          parameters:
+          - name: index
+            value: '{{item}}'
+        withParam: '[1, 2, 3]'
+    - - name: call-access-aggregate-output
+        template: access-aggregate-output
+        arguments:
+          parameters:
+          - name: aggregate-results
+            # If the value of each loop iteration isn't a valid JSON,
+            # you get a JSON parse error:
+            value: '{{steps.execute-parallel-steps.outputs.result}}'
+  - name: print-json-entry
+    inputs:
+      parameters:
+      - name: index
+    # The output must be a valid JSON
+    script:
+      image: alpine:latest
+      command: [sh]
+      source: |
+        cat <<EOF
+        {
+        "input": "{{inputs.parameters.index}}",
+        "transformed-input": "{{inputs.parameters.index}}.jpeg"
+        }
+        EOF
+  - name: access-aggregate-output
+    inputs:
+      parameters:
+      - name: aggregate-results
+        value: 'no-value'
+    script:
+      image: alpine:latest
+      command: [sh]
+      source: |
+        echo 'inputs.parameters.aggregate-results: "{{inputs.parameters.aggregate-results}}"'
+```
+
+![image](../assets/aggregate-result-of-all-iterations-of-a-loop.png)
+
+The last step of the workflow above should have this output:
+`inputs.parameters.aggregate-results: "[{"input":"1","transformed-input":"1.jpeg"},{"input":"2","transformed-input":"2.jpeg"},{"input":"3","transformed-input":"3.jpeg"}]"`
