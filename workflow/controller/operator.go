@@ -2028,9 +2028,9 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 			release = true
 		} else {
 			retryPolicy := retryStrategy.RetryPolicyActual()
-			if (retryPolicy != wfv1.RetryPolicyAlways &&
+			if retryPolicy != wfv1.RetryPolicyAlways &&
 				retryPolicy != wfv1.RetryPolicyOnError &&
-				retryPolicy != wfv1.RetryPolicyOnTransientError) {
+				retryPolicy != wfv1.RetryPolicyOnTransientError {
 				release = true
 			}
 		}
