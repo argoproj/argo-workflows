@@ -8,9 +8,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc/codes"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/apimachinery/pkg/types"
 	"upper.io/db.v3"
 	"upper.io/db.v3/lib/sqlbuilder"
 
@@ -144,7 +142,7 @@ func (r *workflowArchive) ArchiveWorkflow(wf *wfv1.Workflow) error {
 }
 
 func (r *workflowArchive) ListWorkflows(namespace string, name string, namePrefix string, minStartedAt, maxStartedAt time.Time, labelRequirements labels.Requirements, limit int, offset int) (wfv1.Workflows, error) {
-	var archivedWfs []archivedWorkflowMetadata
+	var archivedWfs []archivedWorkflowRecord
 	clause, err := labelsClause(r.dbType, labelRequirements)
 	if err != nil {
 		return nil, err
@@ -158,7 +156,7 @@ func (r *workflowArchive) ListWorkflows(namespace string, name string, namePrefi
 	}
 
 	err = r.session.
-		Select("name", "namespace", "uid", "phase", "startedat", "finishedat").
+		Select("workflow").
 		From(archiveTableName).
 		Where(r.clusterManagedNamespaceAndInstanceID()).
 		And(namespaceEqual(namespace)).
@@ -174,20 +172,13 @@ func (r *workflowArchive) ListWorkflows(namespace string, name string, namePrefi
 		return nil, err
 	}
 	wfs := make(wfv1.Workflows, len(archivedWfs))
-	for i, md := range archivedWfs {
-		wfs[i] = wfv1.Workflow{
-			ObjectMeta: v1.ObjectMeta{
-				Name:              md.Name,
-				Namespace:         md.Namespace,
-				UID:               types.UID(md.UID),
-				CreationTimestamp: v1.Time{Time: md.StartedAt},
-			},
-			Status: wfv1.WorkflowStatus{
-				Phase:      md.Phase,
-				StartedAt:  v1.Time{Time: md.StartedAt},
-				FinishedAt: v1.Time{Time: md.FinishedAt},
-			},
+	for i, archivedWf := range archivedWfs {
+		wf := wfs[i]
+		err = json.Unmarshal([]byte(archivedWf.Workflow), &wf)
+		if err != nil {
+			return nil, err
 		}
+		wfs[i] = wf
 	}
 	return wfs, nil
 }

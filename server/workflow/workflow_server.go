@@ -155,6 +155,9 @@ func (s *workflowServer) ListWorkflows(ctx context.Context, req *workflowpkg.Wor
 		NamePrefix:  "",
 		Namespace:   req.Namespace,
 	})
+	if err != nil {
+		return nil, sutils.ToStatusError(err, codes.Internal)
+	}
 	for _, item := range archivedWfList.Items {
 		if !containsWorkflow(*wfList, item) {
 			wfList.Items = append(wfList.Items, item)
