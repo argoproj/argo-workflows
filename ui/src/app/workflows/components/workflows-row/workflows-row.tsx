@@ -87,7 +87,9 @@ export class WorkflowsRow extends React.Component<WorkflowsRowProps, WorkflowRow
                                 </div>
                             </div>
                         </div>
-                        <div className='columns small-2'>{(wf.metadata.labels && wf.metadata.labels['workflows.argoproj.io/workflow-archiving-status'] === 'Archived') || '-'}</div>
+                        <div className='columns small-2'>
+                            {wf.metadata.labels && wf.metadata.labels['workflows.argoproj.io/workflow-archiving-status'] === 'Archived' ? 'true' : 'false'}
+                        </div>
                         {(this.props.columns || []).map(column => {
                             const value = wf.metadata.labels[column.key];
                             return (
