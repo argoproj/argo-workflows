@@ -238,6 +238,11 @@
             "type": "string",
             "name": "namespace",
             "in": "query"
+          },
+          {
+            "type": "string",
+            "name": "name",
+            "in": "query"
           }
         ],
         "responses": {

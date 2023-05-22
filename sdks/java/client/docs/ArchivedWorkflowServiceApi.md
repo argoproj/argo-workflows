@@ -85,7 +85,7 @@ Name | Type | Description  | Notes
 
 <a name="archivedWorkflowServiceGetArchivedWorkflow"></a>
 # **archivedWorkflowServiceGetArchivedWorkflow**
-> IoArgoprojWorkflowV1alpha1Workflow archivedWorkflowServiceGetArchivedWorkflow(uid, namespace)
+> IoArgoprojWorkflowV1alpha1Workflow archivedWorkflowServiceGetArchivedWorkflow(uid, namespace, name)
 
 
 
@@ -113,8 +113,9 @@ public class Example {
     ArchivedWorkflowServiceApi apiInstance = new ArchivedWorkflowServiceApi(defaultClient);
     String uid = "uid_example"; // String | 
     String namespace = "namespace_example"; // String | 
+    String name = "name_example"; // String | 
     try {
-      IoArgoprojWorkflowV1alpha1Workflow result = apiInstance.archivedWorkflowServiceGetArchivedWorkflow(uid, namespace);
+      IoArgoprojWorkflowV1alpha1Workflow result = apiInstance.archivedWorkflowServiceGetArchivedWorkflow(uid, namespace, name);
       System.out.println(result);
     } catch (ApiException e) {
       System.err.println("Exception when calling ArchivedWorkflowServiceApi#archivedWorkflowServiceGetArchivedWorkflow");
@@ -133,6 +134,7 @@ Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **uid** | **String**|  |
  **namespace** | **String**|  | [optional]
+ **name** | **String**|  | [optional]
 
 ### Return type
 
