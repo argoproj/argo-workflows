@@ -5,7 +5,7 @@ the `default` service account of the workflow's namespace. The amount of access 
 what the workflow needs to do. For example, if your workflow needs to deploy a resource, then the workflow's service
 account will require 'create' privileges on that resource.
 
-For the API methods you can take for reference a matching between create, update, list, delete and patch privilegies to what would be POST, POST, GET, DELETE, and PUT respectively.
+For the API methods you can take for reference a matching between create, update, list, delete, and patch privilegies to what would be POST, POST, GET, DELETE, and PUT respectively.
 
 **Warning**: We do not recommend using the `default` service account in production. It is a shared account so may have
 permissions added to it you do not want. Instead, create a service account only for your workflow.
