@@ -3889,15 +3889,39 @@
 <span class="w">      </span><span class="c1"># fail with a 66% probability</span>
 <span class="w">      </span><span class="nt">args</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;import</span><span class="nv"> </span><span class="s">random;</span><span class="nv"> </span><span class="s">import</span><span class="nv"> </span><span class="s">sys;</span><span class="nv"> </span><span class="s">exit_code</span><span class="nv"> </span><span class="s">=</span><span class="nv"> </span><span class="s">random.choice([0,</span><span class="nv"> </span><span class="s">1,</span><span class="nv"> </span><span class="s">1]);</span><span class="nv"> </span><span class="s">sys.exit(exit_code)&quot;</span><span class="p p-Indicator">]</span>
 </code></pre></div>
+<p>The <code>retryPolicy</code> and <code>expression</code> are re-evaluated after each attempt. For example, if you set <code>retryPolicy: OnFailure</code> and your first attempt produces a failure then a retry will be attempted. If the second attempt produces an error, then another attempt will not be made.</p>
 <h2 id="retry-policies">Retry policies<a class="headerlink" href="#retry-policies" title="Permanent link">&para;</a></h2>
-<p>Use <code>retryPolicy</code> to choose which failures to retry:</p>
+<p>Use <code>retryPolicy</code> to choose which failure types to retry:</p>
 <ul>
 <li><code>Always</code>: Retry all failed steps</li>
-<li><code>OnFailure</code>: Retry steps whose main container is marked as failed in Kubernetes (this is the default)</li>
+<li><code>OnFailure</code>: Retry steps whose main container is marked as failed in Kubernetes</li>
 <li><code>OnError</code>: Retry steps that encounter Argo controller errors, or whose init or wait containers fail</li>
 <li><code>OnTransientError</code>: Retry steps that encounter errors <a href="https://github.com/argoproj/argo-workflows/blob/master/util/errors/errors.go">defined as transient</a>, or errors matching the <code>TRANSIENT_ERROR_PATTERN</code> <a href="https://argoproj.github.io/argo-workflows/environment-variables/">environment variable</a>. Available in version 3.0 and later.</li>
 </ul>
-<p>For example:</p>
+<p>The <code>retryPolicy</code> applies even if you also specify an <code>expression</code>, but in version 3.5 or later the default policy means the expression makes the decision unless you explicitly specify a policy.</p>
+<p>The default <code>retryPolicy</code> is <code>OnFailure</code>, except in version 3.5 or later when an expression is also supplied, when it is <code>Always</code>. This may be easier to understand in this diagram.</p>
+<div class="highlight"><pre><span></span><code>flowchart LR
+  start([Will a retry be attempted])
+  start --&gt; policy
+  policy(Policy Specified?)
+  policy--&gt;|No|expressionNoPolicy
+  policy--&gt;|Yes|policyGiven
+  policyGiven(Expression Specified?)
+  policyGiven--&gt;|No|policyGivenApplies
+  policyGiven--&gt;|Yes|policyAndExpression
+  policyGivenApplies(Supplied Policy)
+  policyAndExpression(Supplied Policy AND Expression)
+  expressionNoPolicy(Expression specified?)
+  expressionNoPolicy--&gt;|No|onfailureNoExpr
+  expressionNoPolicy--&gt;|Yes|version
+  onfailureNoExpr[OnFailure]
+  onfailure[OnFailure AND Expression]
+  version(Workflows version)
+  version--&gt;|3.4 or ealier|onfailure
+  always[Only Expression matters]
+  version--&gt;|3.5 or later|always
+</code></pre></div>
+<p>An example retry strategy:</p>
 <div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
 <span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Workflow</span>
 <span class="nt">metadata</span><span class="p">:</span>
@@ -3929,6 +3953,7 @@ access to the following variables:</p>
 <li><code>lastRetry.message</code>: The message output from the last retry (available from version 3.5)</li>
 </ul>
 <p>If <code>expression</code> evaluates to false, the step will not be retried.</p>
+<p>The <code>expression</code> result will be logical <em>and</em> with the <code>retryPolicy</code>. Both must be true to retry.</p>
 <p>See <a href="https://raw.githubusercontent.com/argoproj/argo-workflows/master/examples/retry-conditional.yaml">example</a> for usage.</p>
 <h2 id="back-off">Back-Off<a class="headerlink" href="#back-off" title="Permanent link">&para;</a></h2>
 <p>You can configure the delay between retries with <code>backoff</code>. See <a href="https://raw.githubusercontent.com/argoproj/argo-workflows/master/examples/retry-backoff.yaml">example</a> for usage.</p>
