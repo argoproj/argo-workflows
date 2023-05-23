@@ -2,7 +2,7 @@ import {Ticker} from 'argo-ui/src/index';
 import * as React from 'react';
 import {Link} from 'react-router-dom';
 import * as models from '../../../../models';
-import {Workflow} from '../../../../models';
+import {isArchivedWorkflow, Workflow} from '../../../../models';
 import {ANNOTATION_DESCRIPTION, ANNOTATION_TITLE} from '../../../shared/annotations';
 import {uiUrl} from '../../../shared/base';
 import {DurationPanel} from '../../../shared/components/duration-panel';
@@ -87,9 +87,7 @@ export class WorkflowsRow extends React.Component<WorkflowsRowProps, WorkflowRow
                                 </div>
                             </div>
                         </div>
-                        <div className='columns small-2'>
-                            {wf.metadata.labels && wf.metadata.labels['workflows.argoproj.io/workflow-archiving-status'] === 'Archived' ? 'true' : 'false'}
-                        </div>
+                        <div className='columns small-2'>{isArchivedWorkflow(wf) ? 'true' : 'false'}</div>
                         {(this.props.columns || []).map(column => {
                             const value = wf.metadata.labels[column.key];
                             return (

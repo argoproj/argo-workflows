@@ -3,7 +3,7 @@ import * as classNames from 'classnames';
 import * as React from 'react';
 import {useContext, useEffect, useRef, useState} from 'react';
 import {RouteComponentProps} from 'react-router';
-import {ArtifactRepository, execSpec, Link, NodeStatus, Parameter, Workflow} from '../../../../models';
+import {ArtifactRepository, execSpec, isArchivedWorkflow, Link, NodeStatus, Parameter, Workflow} from '../../../../models';
 import {ANNOTATION_KEY_POD_NAME_VERSION} from '../../../shared/annotations';
 import {artifactRepoHasLocation, findArtifact} from '../../../shared/artifacts';
 import {uiUrl} from '../../../shared/base';
@@ -57,6 +57,7 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
     const queryParams = new URLSearchParams(location.search);
 
     const [namespace] = useState(match.params.namespace);
+    const [isArchived, setIsArchived] = useState(false);
     const [name, setName] = useState(match.params.name);
     const [tab, setTab] = useState(queryParams.get('tab') || 'workflow');
     const [nodeId, setNodeId] = useState(queryParams.get('nodeId'));
@@ -277,7 +278,7 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
                                     </React.Fragment>
                                 )}
                                 <h5>Artifacts</h5>
-                                <WorkflowArtifacts workflow={workflow} archived={false} />
+                                <WorkflowArtifacts workflow={workflow} archived={isArchivedWorkflow(workflow)} />
                                 <WorkflowResourcePanel workflow={workflow} />
                             </div>
                         </div>
@@ -286,7 +287,6 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
             </>
         );
     };
-
     useEffect(() => {
         const retryWatch = new RetryWatch<Workflow>(
             () => services.workflows.watch({name, namespace}),
@@ -294,6 +294,7 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
             e => {
                 if (e.type === 'DELETED') {
                     setError(new Error('Workflow gone'));
+                    setIsArchived(true);
                 } else {
                     if (hasArtifactGCError(e.object.status.conditions)) {
                         setError(new Error('Artifact garbage collection failed'));
@@ -302,21 +303,23 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
                 }
             },
             err => {
-                services.workflows
-                    .get(namespace, name)
-                    .then()
-                    .catch(e => {
-                        if (e.status === 404) {
-                            navigation.goto(historyUrl('archived-workflows', {namespace, name, deep: true}));
-                        }
-                    });
-
                 setError(err);
+                setIsArchived(true);
             }
         );
         retryWatch.start();
         return () => retryWatch.stop();
     }, [namespace, name]);
+
+    useEffect(() => {
+        services.workflows
+            .get(namespace, name)
+            .then(wf => {
+                setError(null);
+                setWorkflow(wf);
+            })
+            .catch(newError => setError(newError));
+    }, [namespace, name, isArchived]);
 
     const openLink = (link: Link) => {
         const object = {
@@ -462,7 +465,7 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
                                         onShowContainerLogs={(x, container) => setSidePanel(`logs:${x}:${container}`)}
                                         onShowEvents={() => setSidePanel(`events:${nodeId}`)}
                                         onShowYaml={() => setSidePanel(`yaml:${nodeId}`)}
-                                        archived={false}
+                                        archived={isArchivedWorkflow(workflow)}
                                         onResume={() => renderResumePopup()}
                                     />
                                 )}
@@ -474,7 +477,13 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
             {workflow && (
                 <SlidingPanel isShown={!!sidePanel} onClose={() => setSidePanel(null)}>
                     {parsedSidePanel.type === 'logs' && (
-                        <WorkflowLogsViewer workflow={workflow} initialPodName={podName} nodeId={parsedSidePanel.nodeId} container={parsedSidePanel.container} archived={false} />
+                        <WorkflowLogsViewer
+                            workflow={workflow}
+                            initialPodName={podName}
+                            nodeId={parsedSidePanel.nodeId}
+                            container={parsedSidePanel.container}
+                            archived={isArchivedWorkflow(workflow)}
+                        />
                     )}
                     {parsedSidePanel.type === 'events' && <EventsPanel namespace={namespace} kind='Pod' name={podName} />}
                     {parsedSidePanel.type === 'share' && <WidgetGallery namespace={namespace} name={name} />}
