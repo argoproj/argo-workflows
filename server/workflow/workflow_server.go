@@ -156,13 +156,17 @@ func (s *workflowServer) ListWorkflows(ctx context.Context, req *workflowpkg.Wor
 		Namespace:   req.Namespace,
 	})
 	if err != nil {
-		return nil, sutils.ToStatusError(err, codes.Internal)
-	}
-	for _, item := range archivedWfList.Items {
-		if !containsWorkflow(*wfList, item) {
-			wfList.Items = append(wfList.Items, item)
+		log.Warnf("unable to list archived workflows:%v", err)
+	} else {
+		if archivedWfList != nil {
+			for _, item := range archivedWfList.Items {
+				if !containsWorkflow(*wfList, item) {
+					wfList.Items = append(wfList.Items, item)
+				}
+			}
 		}
 	}
+
 	cleaner := fields.NewCleaner(req.Fields)
 	if s.offloadNodeStatusRepo.IsEnabled() && !cleaner.WillExclude("items.status.nodes") {
 		offloadedNodes, err := s.offloadNodeStatusRepo.List(req.Namespace)
