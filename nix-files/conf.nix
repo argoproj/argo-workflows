@@ -1,5 +1,5 @@
 # most of these configuration options might not do anything yet. 
-# the plan is to gradually introduced more and more functionality into Nix 
+# the plan is to gradually introduce more and more functionality into Nix 
 # and move away from the Makefile. 
 # At the moment, only the equivalent of "make start UI=true" is supported. 
 # Even then the buildFlags are not passed into Go, meaning you won't see the correct version info yet. 

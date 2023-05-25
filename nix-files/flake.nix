@@ -14,7 +14,7 @@
         let
           argoConfig = import ./conf.nix;
           myyarn = pkgs.yarn.override { nodejs = pkgs.nodejs-16_x-openssl_1_1; };
-          src = 
+          src =
             builtins.filterSource
               (path: type: !(type == "directory" && baseNameOf path == "hack"))
               (lib.sourceFilesBySuffices inputs.self [ ".go" ".mod" ".sum" ]);
@@ -44,9 +44,7 @@
                 hash = "sha256-jnlwomGDSH/ioQQZQMb9A6oNvlVJ5Qw+cZT1Zcs8Z4o=";
               };
               propagatedBuildInputs = [
-                mergedeep
-                markdown
-                click
+                mergedeep markdown click
                 pyyaml
                 pyyaml-env-tag
                 jinja2
@@ -273,16 +271,16 @@
               doCheck = false;
             };
 
-            staticfiles = pkgs.buildGoModule {
-              pname = "staticfiles";
-              version = "0.0.1"; # no official version
+            staticfiles = pkgs.buildGoPackage rec {
+              name = "staticfiles";
               src = pkgs.fetchFromGitHub {
-                owner = "isubasinghe";
+                owner = "bouk";
                 repo = "staticfiles";
-                rev = "3d5ddde4d52ddef391b5f4f37e06c80980a5c0c2";
-                sha256 = "sha256-fyamqYhKXnY0fzNhS3SL15yHDA/pIuoQ+NsehfA7BCE=";
+                rev = "827d7f6389cd410d0aa3f3d472a4838557bf53dd";
+                sha256 = "0xarhmsqypl8036w96ssdzjv3k098p2d4mkmw5f6hkp1m3j67j61";
               };
-              vendorHash = null;
+
+              goPackagePath = "bou.ke/staticfiles";
             };
             default = config.packages.${package.name};
           };
