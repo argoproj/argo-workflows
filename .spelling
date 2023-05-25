@@ -228,3 +228,8 @@ idempotence
 kube-scheduler
 kube-apiserver
 kubectl
+devenv
+vendored
+nix.conf
+LDFlags
+Makefile
