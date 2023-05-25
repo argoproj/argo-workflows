@@ -228,7 +228,7 @@ set when loading input artifacts. |  |
 ### <span id="artifact-g-c"></span> ArtifactGC
 
 
-> ArtifactGC describes how to delete artifacts from completed Workflows
+> ArtifactGC describes how to delete artifacts from completed Workflows - this is embedded into the WorkflowLevelArtifactGC, and also used for individual Artifacts to override that as needed
   
 
 
@@ -1661,8 +1661,21 @@ If this is not specified, the default behavior is defined by gRPC.
 
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
+| operation | [GaugeOperation](#gauge-operation)| `GaugeOperation` |  | |  |  |
 | realtime | boolean| `bool` |  | | Realtime emits this metric in real time if applicable |  |
-| value | string| `string` |  | | Value is the value of the metric |  |
+| value | string| `string` |  | | Value is the value to be used in the operation with the metric's current value. If no operation is set,
+value is the value of the metric |  |
+
+
+
+### <span id="gauge-operation"></span> GaugeOperation
+
+
+  
+
+| Name | Type | Go type | Default | Description | Example |
+|------|------|---------| ------- |-------------|---------|
+| GaugeOperation | string| string | |  |  |
 
 
 

@@ -7,7 +7,6 @@ import (
 	"sort"
 
 	"golang.org/x/exp/maps"
-	apiv1 "k8s.io/api/core/v1"
 	corev1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -43,7 +42,7 @@ func (woc *wfOperationCtx) garbageCollectArtifacts(ctx context.Context) error {
 		if woc.wf.Status.ArtifactGCStatus.NotSpecified {
 			return nil // we already verified it's not required for this workflow
 		}
-		if woc.execWf.HasArtifactGC() {
+		if woc.HasArtifactGC() {
 			woc.log.Info("adding artifact GC finalizer")
 			finalizers := append(woc.wf.GetFinalizers(), common.FinalizerArtifactGC)
 			woc.wf.SetFinalizers(finalizers)
@@ -69,6 +68,34 @@ func (woc *wfOperationCtx) garbageCollectArtifacts(ctx context.Context) error {
 		return err
 	}
 	return nil
+}
+
+func (woc *wfOperationCtx) HasArtifactGC() bool {
+	// ArtifactGC can be defined on the Workflow level or on the Artifact level
+	// It may be defined in the Workflow itself or in a WorkflowTemplate referenced by the Workflow
+
+	// woc.execWf.Spec.Templates includes templates described directly in the Workflow as well as templates
+	// in a WorkflowTemplate that the entire Workflow is based on
+	for _, template := range woc.execWf.Spec.Templates {
+		for _, artifact := range template.Outputs.Artifacts {
+			strategy := woc.execWf.GetArtifactGCStrategy(&artifact)
+			if strategy != wfv1.ArtifactGCStrategyUndefined && strategy != wfv1.ArtifactGCNever {
+				return true
+			}
+		}
+	}
+
+	// need to go to woc.wf.Status.StoredTemplates in the case of a Step referencing a WorkflowTemplate
+	for _, template := range woc.wf.Status.StoredTemplates {
+		for _, artifact := range template.Outputs.Artifacts {
+			strategy := woc.execWf.GetArtifactGCStrategy(&artifact)
+			if strategy != wfv1.ArtifactGCStrategyUndefined && strategy != wfv1.ArtifactGCNever {
+				return true
+			}
+		}
+	}
+
+	return false
 }
 
 // which ArtifactGC Strategies are ready to process?
@@ -508,14 +535,18 @@ func (woc *wfOperationCtx) processArtifactGCCompletion(ctx context.Context) erro
 		}
 	}
 
-	if anyPodSuccess {
+	removeFinalizer := false
+	forceFinalizerRemoval := woc.execWf.Spec.ArtifactGC != nil && woc.execWf.Spec.ArtifactGC.ForceFinalizerRemoval
+	if forceFinalizerRemoval {
+		removeFinalizer = woc.wf.Status.ArtifactGCStatus.AllArtifactGCPodsRecouped()
+	} else {
 		// check if all artifacts have been deleted and if so remove Finalizer
-		if woc.allArtifactsDeleted() {
-			woc.log.Info("no remaining artifacts to GC, removing artifact GC finalizer")
-			woc.wf.Finalizers = slice.RemoveString(woc.wf.Finalizers, common.FinalizerArtifactGC)
-			woc.updated = true
-		}
-
+		removeFinalizer = anyPodSuccess && woc.allArtifactsDeleted()
+	}
+	if removeFinalizer {
+		woc.log.Infof("no remaining artifacts to GC, removing artifact GC finalizer (forceFinalizerRemoval=%v)", forceFinalizerRemoval)
+		woc.wf.Finalizers = slice.RemoveString(woc.wf.Finalizers, common.FinalizerArtifactGC)
+		woc.updated = true
 	}
 	return nil
 }
@@ -645,14 +676,14 @@ func (woc *wfOperationCtx) addArtGCCondition(msg string) {
 }
 
 func (woc *wfOperationCtx) addArtGCEvent(msg string) {
-	woc.eventRecorder.Event(woc.wf, apiv1.EventTypeWarning, "ArtifactGCFailed", msg)
+	woc.eventRecorder.Event(woc.wf, corev1.EventTypeWarning, "ArtifactGCFailed", msg)
 }
 
 func (woc *wfOperationCtx) getArtifactGCPodInfo(artifact *wfv1.Artifact) podInfo {
 	//  start with Workflow.ArtifactGC and override with Artifact.ArtifactGC
 	podAccessInfo := podInfo{}
 	if woc.execWf.Spec.ArtifactGC != nil {
-		woc.updateArtifactGCPodInfo(woc.execWf.Spec.ArtifactGC, &podAccessInfo)
+		woc.updateArtifactGCPodInfo(&woc.execWf.Spec.ArtifactGC.ArtifactGC, &podAccessInfo)
 	}
 	if artifact.ArtifactGC != nil {
 		woc.updateArtifactGCPodInfo(artifact.ArtifactGC, &podAccessInfo)

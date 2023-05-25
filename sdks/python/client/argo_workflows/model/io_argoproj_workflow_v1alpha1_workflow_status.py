@@ -201,7 +201,7 @@ class IoArgoprojWorkflowV1alpha1WorkflowStatus(ModelNormal):
             offload_node_status_version (str): Whether on not node status has been offloaded to a database. If exists, then Nodes and CompressedNodes will be empty. This will actually be populated with a hash of the offloaded data.. [optional]  # noqa: E501
             outputs (IoArgoprojWorkflowV1alpha1Outputs): [optional]  # noqa: E501
             persistent_volume_claims ([Volume]): PersistentVolumeClaims tracks all PVCs that were created as part of the io.argoproj.workflow.v1alpha1. The contents of this list are drained at the end of the workflow.. [optional]  # noqa: E501
-            phase (str): Phase a simple, high-level summary of where the workflow is in its lifecycle.. [optional]  # noqa: E501
+            phase (str): Phase a simple, high-level summary of where the workflow is in its lifecycle. Will be \"\" (Unknown), \"Pending\", or \"Running\" before the workflow is completed, and \"Succeeded\", \"Failed\" or \"Error\" once the workflow has completed.. [optional]  # noqa: E501
             progress (str): Progress to completion. [optional]  # noqa: E501
             resources_duration ({str: (int,)}): ResourcesDuration is the total for the workflow. [optional]  # noqa: E501
             started_at (datetime): Time is a wrapper around time.Time which supports correct marshaling to YAML and JSON.  Wrappers are provided for many of the factory methods that the time package offers.. [optional]  # noqa: E501
@@ -300,7 +300,7 @@ class IoArgoprojWorkflowV1alpha1WorkflowStatus(ModelNormal):
             offload_node_status_version (str): Whether on not node status has been offloaded to a database. If exists, then Nodes and CompressedNodes will be empty. This will actually be populated with a hash of the offloaded data.. [optional]  # noqa: E501
             outputs (IoArgoprojWorkflowV1alpha1Outputs): [optional]  # noqa: E501
             persistent_volume_claims ([Volume]): PersistentVolumeClaims tracks all PVCs that were created as part of the io.argoproj.workflow.v1alpha1. The contents of this list are drained at the end of the workflow.. [optional]  # noqa: E501
-            phase (str): Phase a simple, high-level summary of where the workflow is in its lifecycle.. [optional]  # noqa: E501
+            phase (str): Phase a simple, high-level summary of where the workflow is in its lifecycle. Will be \"\" (Unknown), \"Pending\", or \"Running\" before the workflow is completed, and \"Succeeded\", \"Failed\" or \"Error\" once the workflow has completed.. [optional]  # noqa: E501
             progress (str): Progress to completion. [optional]  # noqa: E501
             resources_duration ({str: (int,)}): ResourcesDuration is the total for the workflow. [optional]  # noqa: E501
             started_at (datetime): Time is a wrapper around time.Time which supports correct marshaling to YAML and JSON.  Wrappers are provided for many of the factory methods that the time package offers.. [optional]  # noqa: E501

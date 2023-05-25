@@ -1,7 +1,10 @@
 package main
 
 import (
+	"context"
 	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/argoproj/argo-workflows/v3/util/errors"
 
@@ -13,7 +16,9 @@ import (
 )
 
 func main() {
-	err := commands.NewRootCommand().Execute()
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGTERM)
+	defer stop()
+	err := commands.NewRootCommand().ExecuteContext(ctx)
 	if err != nil {
 		if exitError, ok := err.(errors.Exited); ok {
 			if exitError.ExitCode() >= 0 {

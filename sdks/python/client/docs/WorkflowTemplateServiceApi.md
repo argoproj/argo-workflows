@@ -582,7 +582,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         ),
                     ],
                 ),
-                artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                artifact_gc=IoArgoprojWorkflowV1alpha1WorkflowLevelArtifactGC(
+                    force_finalizer_removal=True,
                     pod_metadata=IoArgoprojWorkflowV1alpha1Metadata(
                         annotations={
                             "key": "key_example",
@@ -916,6 +917,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 value="value_example",
                             ),
                             gauge=IoArgoprojWorkflowV1alpha1Gauge(
+                                operation="operation_example",
                                 realtime=True,
                                 value="value_example",
                             ),
@@ -942,7 +944,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                 },
                 on_exit="on_exit_example",
                 parallelism=1,
-                pod_disruption_budget=IoK8sApiPolicyV1beta1PodDisruptionBudgetSpec(
+                pod_disruption_budget=IoK8sApiPolicyV1PodDisruptionBudgetSpec(
                     max_unavailable="max_unavailable_example",
                     min_available="min_available_example",
                     selector=LabelSelector(
@@ -3452,6 +3454,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     value="value_example",
                                 ),
                                 gauge=IoArgoprojWorkflowV1alpha1Gauge(
+                                    operation="operation_example",
                                     realtime=True,
                                     value="value_example",
                                 ),
@@ -7962,6 +7965,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         value="value_example",
                                     ),
                                     gauge=IoArgoprojWorkflowV1alpha1Gauge(
+                                        operation="operation_example",
                                         realtime=True,
                                         value="value_example",
                                     ),
@@ -11389,7 +11393,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         ),
                     ],
                 ),
-                artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                artifact_gc=IoArgoprojWorkflowV1alpha1WorkflowLevelArtifactGC(
+                    force_finalizer_removal=True,
                     pod_metadata=IoArgoprojWorkflowV1alpha1Metadata(
                         annotations={
                             "key": "key_example",
@@ -11723,6 +11728,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 value="value_example",
                             ),
                             gauge=IoArgoprojWorkflowV1alpha1Gauge(
+                                operation="operation_example",
                                 realtime=True,
                                 value="value_example",
                             ),
@@ -11749,7 +11755,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                 },
                 on_exit="on_exit_example",
                 parallelism=1,
-                pod_disruption_budget=IoK8sApiPolicyV1beta1PodDisruptionBudgetSpec(
+                pod_disruption_budget=IoK8sApiPolicyV1PodDisruptionBudgetSpec(
                     max_unavailable="max_unavailable_example",
                     min_available="min_available_example",
                     selector=LabelSelector(
@@ -14259,6 +14265,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     value="value_example",
                                 ),
                                 gauge=IoArgoprojWorkflowV1alpha1Gauge(
+                                    operation="operation_example",
                                     realtime=True,
                                     value="value_example",
                                 ),
@@ -18769,6 +18776,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         value="value_example",
                                     ),
                                     gauge=IoArgoprojWorkflowV1alpha1Gauge(
+                                        operation="operation_example",
                                         realtime=True,
                                         value="value_example",
                                     ),
@@ -22105,7 +22113,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         ),
                     ],
                 ),
-                artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                artifact_gc=IoArgoprojWorkflowV1alpha1WorkflowLevelArtifactGC(
+                    force_finalizer_removal=True,
                     pod_metadata=IoArgoprojWorkflowV1alpha1Metadata(
                         annotations={
                             "key": "key_example",
@@ -22439,6 +22448,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 value="value_example",
                             ),
                             gauge=IoArgoprojWorkflowV1alpha1Gauge(
+                                operation="operation_example",
                                 realtime=True,
                                 value="value_example",
                             ),
@@ -22465,7 +22475,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                 },
                 on_exit="on_exit_example",
                 parallelism=1,
-                pod_disruption_budget=IoK8sApiPolicyV1beta1PodDisruptionBudgetSpec(
+                pod_disruption_budget=IoK8sApiPolicyV1PodDisruptionBudgetSpec(
                     max_unavailable="max_unavailable_example",
                     min_available="min_available_example",
                     selector=LabelSelector(
@@ -24975,6 +24985,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     value="value_example",
                                 ),
                                 gauge=IoArgoprojWorkflowV1alpha1Gauge(
+                                    operation="operation_example",
                                     realtime=True,
                                     value="value_example",
                                 ),
@@ -29485,6 +29496,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         value="value_example",
                                     ),
                                     gauge=IoArgoprojWorkflowV1alpha1Gauge(
+                                        operation="operation_example",
                                         realtime=True,
                                         value="value_example",
                                     ),

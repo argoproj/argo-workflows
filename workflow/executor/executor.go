@@ -318,6 +318,14 @@ func (we *WorkflowExecutor) saveArtifact(ctx context.Context, containerName stri
 		}
 		return err
 	}
+	fi, err := os.Stat(localArtPath)
+	if err != nil {
+		return err
+	}
+	size := fi.Size()
+	if size == 0 {
+		log.Warnf("The file %q is empty. It may not be uploaded successfully depending on the artifact driver", localArtPath)
+	}
 	return we.saveArtifactFromFile(ctx, art, fileName, localArtPath)
 }
 
@@ -601,7 +609,7 @@ func (we *WorkflowExecutor) SaveLogs(ctx context.Context) {
 		}
 	}
 
-	// Annotating pod with output
+	// try to upsert TaskResult, if it fails, we will try to update the Pod's Annotations
 	err := we.reportOutputs(ctx, logArtifacts)
 	if err != nil {
 		we.AddError(err)
@@ -888,7 +896,7 @@ func untar(tarPath string, destPath string) error {
 				continue
 			}
 			target := filepath.Join(dest, filepath.Clean(header.Name))
-			if err := os.MkdirAll(filepath.Dir(target), 0o700); err != nil && os.IsExist(err) {
+			if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil && os.IsExist(err) {
 				return err
 			}
 			switch header.Typeflag {

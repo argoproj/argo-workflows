@@ -2,21 +2,15 @@ package common
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"os/exec"
-	"runtime"
 	"sort"
 	"strings"
-	"time"
 
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
-	apierr "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -66,7 +60,16 @@ func (d *WebsocketRoundTripper) RoundTrip(r *http.Request) (*http.Response, erro
 }
 
 // ExecPodContainer runs a command in a container in a pod and returns the remotecommand.Executor
-func ExecPodContainer(restConfig *rest.Config, namespace string, pod string, container string, stdout bool, stderr bool, command ...string) (remotecommand.Executor, error) {
+func ExecPodContainer(restConfig *rest.Config, namespace string, pod string, container string, stdout bool, stderr bool, command ...string) (exec remotecommand.Executor, err error) {
+	defer func() {
+		log.WithField("namespace", namespace).
+			WithField("pod", pod).
+			WithField("container", container).
+			WithField("command", command).
+			WithError(err).
+			Debug("exec container command")
+	}()
+
 	clientset, err := kubernetes.NewForConfig(restConfig)
 	if err != nil {
 		return nil, errors.InternalWrapError(err)
@@ -87,7 +90,7 @@ func ExecPodContainer(restConfig *rest.Config, namespace string, pod string, con
 	}
 
 	log.Info(execRequest.URL())
-	exec, err := remotecommand.NewSPDYExecutor(restConfig, "POST", execRequest.URL())
+	exec, err = remotecommand.NewSPDYExecutor(restConfig, "POST", execRequest.URL())
 	if err != nil {
 		return nil, errors.InternalWrapError(err)
 	}
@@ -195,7 +198,7 @@ func ProcessArgs(tmpl *wfv1.Template, args wfv1.ArgumentsProvider, globalParams,
 	return SubstituteParams(newTmpl, globalParams, localParams)
 }
 
-// substituteConfigMapKeyRefParams check if ConfigMapKeyRef's key is a param and perform the substitution.
+// substituteConfigMapKeyRefParam check if ConfigMapKeyRef's key is a param and perform the substitution.
 func substituteConfigMapKeyRefParam(in string, globalParams Parameters) (string, error) {
 	if strings.HasPrefix(in, "{{") && strings.HasSuffix(in, "}}") {
 		k := strings.TrimSuffix(strings.TrimPrefix(in, "{{"), "}}")
@@ -270,51 +273,6 @@ func SubstituteParams(tmpl *wfv1.Template, globalParams, localParams Parameters)
 		return nil, errors.InternalWrapError(err)
 	}
 	return &newTmpl, nil
-}
-
-// RunCommand is a convenience function to run/log a command and log the stderr upon failure
-func RunCommand(name string, arg ...string) ([]byte, error) {
-	cmd := exec.Command(name, arg...)
-	cmdStr := strings.Join(cmd.Args, " ")
-	log.Info(cmdStr)
-	out, err := cmd.Output()
-	if err != nil {
-		if exErr, ok := err.(*exec.ExitError); ok {
-			errOutput := string(exErr.Stderr)
-			log.Errorf("`%s` failed: %s", cmdStr, errOutput)
-			return nil, errors.InternalError(strings.TrimSpace(errOutput))
-		}
-		return nil, errors.InternalWrapError(err)
-	}
-	return out, nil
-}
-
-// RunShellCommand is a convenience function to use RunCommand for shell executions. It's os-specific
-// and runs `cmd` in windows.
-func RunShellCommand(arg ...string) ([]byte, error) {
-	name := "sh"
-	shellFlag := "-c"
-	if runtime.GOOS == "windows" {
-		name = "cmd"
-		shellFlag = "/c"
-	}
-	arg = append([]string{shellFlag}, arg...)
-	return RunCommand(name, arg...)
-}
-
-const deleteRetries = 3
-
-// DeletePod deletes a pod. Ignores NotFound error
-func DeletePod(ctx context.Context, c kubernetes.Interface, podName, namespace string) error {
-	var err error
-	for attempt := 0; attempt < deleteRetries; attempt++ {
-		err = c.CoreV1().Pods(namespace).Delete(ctx, podName, metav1.DeleteOptions{})
-		if err == nil || apierr.IsNotFound(err) {
-			return nil
-		}
-		time.Sleep(100 * time.Millisecond)
-	}
-	return err
 }
 
 // GetTemplateGetterString returns string of TemplateHolder.

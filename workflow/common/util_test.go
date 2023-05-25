@@ -1,14 +1,11 @@
 package common
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/client-go/kubernetes/fake"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
@@ -158,22 +155,6 @@ func TestParseObjects(t *testing.T) {
 
 	invalidObj := []byte(`<div class="blah" style="display: none; outline: none;" tabindex="0"></div>`)
 	assert.Empty(t, ParseObjects(invalidObj, false))
-}
-
-func TestDeletePod(t *testing.T) {
-	ctx := context.Background()
-	kube := fake.NewSimpleClientset(&corev1.Pod{
-		ObjectMeta: v1.ObjectMeta{Name: "my-pod", Namespace: "my-ns"},
-	})
-
-	t.Run("Exists", func(t *testing.T) {
-		err := DeletePod(ctx, kube, "my-pod", "my-ms")
-		assert.NoError(t, err)
-	})
-	t.Run("NotExists", func(t *testing.T) {
-		err := DeletePod(ctx, kube, "not-exists", "my-ms")
-		assert.NoError(t, err)
-	})
 }
 
 func TestGetTemplateHolderString(t *testing.T) {

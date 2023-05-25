@@ -15,6 +15,7 @@ import (
 type infoServer struct {
 	managedNamespace string
 	links            []*wfv1.Link
+	columns          []*wfv1.Column
 	navColor         string
 }
 
@@ -25,6 +26,7 @@ func (i *infoServer) GetUserInfo(ctx context.Context, _ *infopkg.GetUserInfoRequ
 			Subject:                 claims.Subject,
 			Issuer:                  claims.Issuer,
 			Groups:                  claims.Groups,
+			Name:                    claims.Name,
 			Email:                   claims.Email,
 			EmailVerified:           claims.EmailVerified,
 			ServiceAccountName:      claims.ServiceAccountName,
@@ -43,6 +45,7 @@ func (i *infoServer) GetInfo(context.Context, *infopkg.GetInfoRequest) (*infopkg
 	return &infopkg.InfoResponse{
 		ManagedNamespace: i.managedNamespace,
 		Links:            i.links,
+		Columns:          i.columns,
 		Modals:           modals,
 		NavColor:         i.navColor,
 	}, nil
@@ -69,6 +72,6 @@ func (i *infoServer) CollectEvent(ctx context.Context, req *infopkg.CollectEvent
 	return &infopkg.CollectEventResponse{}, nil
 }
 
-func NewInfoServer(managedNamespace string, links []*wfv1.Link, navColor string) infopkg.InfoServiceServer {
-	return &infoServer{managedNamespace, links, navColor}
+func NewInfoServer(managedNamespace string, links []*wfv1.Link, columns []*wfv1.Column, navColor string) infopkg.InfoServiceServer {
+	return &infoServer{managedNamespace, links, columns, navColor}
 }

@@ -16,7 +16,7 @@ You can also run workflow specs directly using `kubectl` but the Argo CLI provid
 kubectl create -f hello-world.yaml
 kubectl get wf
 kubectl get wf hello-world-xxx
-kubectl get po --selector=workflows.argoproj.io/workflow=hello-world-xxx --show-all  # similar to argo
+kubectl get po --selector=workflows.argoproj.io/workflow=hello-world-xxx
 kubectl logs hello-world-xxx-yyy -c main
 kubectl delete wf hello-world-xxx
 ```

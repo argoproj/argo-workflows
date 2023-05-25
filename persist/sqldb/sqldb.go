@@ -15,10 +15,25 @@ import (
 	"github.com/argoproj/argo-workflows/v3/util"
 )
 
+func GetTableName(persistConfig *config.PersistConfig) (string, error) {
+	var tableName string
+	if persistConfig.PostgreSQL != nil {
+		tableName = persistConfig.PostgreSQL.TableName
+
+	} else if persistConfig.MySQL != nil {
+		tableName = persistConfig.MySQL.TableName
+	}
+	if tableName == "" {
+		return "", errors.InternalError("TableName is empty")
+	} else {
+		return tableName, nil
+	}
+}
+
 // CreateDBSession creates the dB session
-func CreateDBSession(kubectlConfig kubernetes.Interface, namespace string, persistConfig *config.PersistConfig) (sqlbuilder.Database, string, error) {
+func CreateDBSession(kubectlConfig kubernetes.Interface, namespace string, persistConfig *config.PersistConfig) (sqlbuilder.Database, error) {
 	if persistConfig == nil {
-		return nil, "", errors.InternalError("Persistence config is not found")
+		return nil, errors.InternalError("Persistence config is not found")
 	}
 
 	if persistConfig.PostgreSQL != nil {
@@ -26,23 +41,19 @@ func CreateDBSession(kubectlConfig kubernetes.Interface, namespace string, persi
 	} else if persistConfig.MySQL != nil {
 		return CreateMySQLDBSession(kubectlConfig, namespace, persistConfig.MySQL, persistConfig.ConnectionPool)
 	}
-	return nil, "", fmt.Errorf("no databases are configured")
+	return nil, fmt.Errorf("no databases are configured")
 }
 
 // CreatePostGresDBSession creates postgresDB session
-func CreatePostGresDBSession(kubectlConfig kubernetes.Interface, namespace string, cfg *config.PostgreSQLConfig, persistPool *config.ConnectionPool) (sqlbuilder.Database, string, error) {
-	if cfg.TableName == "" {
-		return nil, "", errors.InternalError("tableName is empty")
-	}
-
+func CreatePostGresDBSession(kubectlConfig kubernetes.Interface, namespace string, cfg *config.PostgreSQLConfig, persistPool *config.ConnectionPool) (sqlbuilder.Database, error) {
 	ctx := context.Background()
 	userNameByte, err := util.GetSecrets(ctx, kubectlConfig, namespace, cfg.UsernameSecret.Name, cfg.UsernameSecret.Key)
 	if err != nil {
-		return nil, "", err
+		return nil, err
 	}
 	passwordByte, err := util.GetSecrets(ctx, kubectlConfig, namespace, cfg.PasswordSecret.Name, cfg.PasswordSecret.Key)
 	if err != nil {
-		return nil, "", err
+		return nil, err
 	}
 
 	settings := postgresql.ConnectionURL{
@@ -63,31 +74,26 @@ func CreatePostGresDBSession(kubectlConfig kubernetes.Interface, namespace strin
 
 	session, err := postgresql.Open(settings)
 	if err != nil {
-		return nil, "", err
+		return nil, err
 	}
-
-	if persistPool != nil {
-		session.SetMaxOpenConns(persistPool.MaxOpenConns)
-		session.SetMaxIdleConns(persistPool.MaxIdleConns)
-		session.SetConnMaxLifetime(time.Duration(persistPool.ConnMaxLifetime))
-	}
-	return session, cfg.TableName, nil
+	session = ConfigureDBSession(session, persistPool)
+	return session, nil
 }
 
 // CreateMySQLDBSession creates Mysql DB session
-func CreateMySQLDBSession(kubectlConfig kubernetes.Interface, namespace string, cfg *config.MySQLConfig, persistPool *config.ConnectionPool) (sqlbuilder.Database, string, error) {
+func CreateMySQLDBSession(kubectlConfig kubernetes.Interface, namespace string, cfg *config.MySQLConfig, persistPool *config.ConnectionPool) (sqlbuilder.Database, error) {
 	if cfg.TableName == "" {
-		return nil, "", errors.InternalError("tableName is empty")
+		return nil, errors.InternalError("tableName is empty")
 	}
 
 	ctx := context.Background()
 	userNameByte, err := util.GetSecrets(ctx, kubectlConfig, namespace, cfg.UsernameSecret.Name, cfg.UsernameSecret.Key)
 	if err != nil {
-		return nil, "", err
+		return nil, err
 	}
 	passwordByte, err := util.GetSecrets(ctx, kubectlConfig, namespace, cfg.PasswordSecret.Name, cfg.PasswordSecret.Key)
 	if err != nil {
-		return nil, "", err
+		return nil, err
 	}
 
 	session, err := mysql.Open(mysql.ConnectionURL{
@@ -98,22 +104,27 @@ func CreateMySQLDBSession(kubectlConfig kubernetes.Interface, namespace string, 
 		Options:  cfg.Options,
 	})
 	if err != nil {
-		return nil, "", err
+		return nil, err
 	}
+	session = ConfigureDBSession(session, persistPool)
+	// this is needed to make MySQL run in a Golang-compatible UTF-8 character set.
+	_, err = session.Exec("SET NAMES 'utf8mb4'")
+	if err != nil {
+		return nil, err
+	}
+	_, err = session.Exec("SET CHARACTER SET utf8mb4")
+	if err != nil {
+		return nil, err
+	}
+	return session, nil
+}
 
+// ConfigureDBSession configures the DB session
+func ConfigureDBSession(session sqlbuilder.Database, persistPool *config.ConnectionPool) sqlbuilder.Database {
 	if persistPool != nil {
 		session.SetMaxOpenConns(persistPool.MaxOpenConns)
 		session.SetMaxIdleConns(persistPool.MaxIdleConns)
 		session.SetConnMaxLifetime(time.Duration(persistPool.ConnMaxLifetime))
 	}
-	// this is needed to make MySQL run in a Golang-compatible UTF-8 character set.
-	_, err = session.Exec("SET NAMES 'utf8mb4'")
-	if err != nil {
-		return nil, "", err
-	}
-	_, err = session.Exec("SET CHARACTER SET utf8mb4")
-	if err != nil {
-		return nil, "", err
-	}
-	return session, cfg.TableName, nil
+	return session
 }

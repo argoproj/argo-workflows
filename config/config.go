@@ -71,6 +71,9 @@ type Config struct {
 	// Links to related apps.
 	Links []*wfv1.Link `json:"links,omitempty"`
 
+	// Columns are custom columns that will be exposed in the Workflow List View.
+	Columns []*wfv1.Column `json:"columns,omitempty"`
+
 	// WorkflowDefaults are values that will apply to all Workflows from this controller, unless overridden on the Workflow-level
 	WorkflowDefaults *wfv1.Workflow `json:"workflowDefaults,omitempty"`
 
@@ -144,6 +147,8 @@ func (c *Config) Sanitize(allowedProtocol []string) error {
 	links := c.Links
 
 	for _, link := range links {
+		// We only validate user-supplied URL but not encode/decode it
+		// see 2.4.2 on https://www.ietf.org/rfc/rfc2396.txt
 		u, err := url.Parse(link.URL)
 		if err != nil {
 			return err
@@ -152,7 +157,6 @@ func (c *Config) Sanitize(allowedProtocol []string) error {
 		if err != nil {
 			return err
 		}
-		link.URL = u.String() // reassembles the URL into a valid URL string
 	}
 	return nil
 }

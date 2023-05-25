@@ -634,10 +634,10 @@ spec:
 		When().
 		CreateWorkflowTemplates().
 		SubmitWorkflow().
-		WaitForWorkflow(fixtures.ToBeErrored).
+		WaitForWorkflow(fixtures.ToBeFailed).
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Contains(t, status.Message, "error in exit template execution")
+			assert.Contains(t, status.Message, "invalid spec")
 		})
 }
 
@@ -688,6 +688,23 @@ spec:
 		})
 }
 
+func (s *FunctionalSuite) TestWorkflowHookParameterTemplates() {
+	s.Given().
+		Workflow("@testdata/workflow-hook-parameter.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeSucceeded).
+		Then().
+		ExpectWorkflow(func(t *testing.T, md *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
+		}).
+		ExpectWorkflowNode(wfv1.NodeWithDisplayName("workflow-hook-parameter.onExit"), func(t *testing.T, n *wfv1.NodeStatus, p *apiv1.Pod) {
+			assert.Equal(t, wfv1.NodeSucceeded, n.Phase)
+			assert.Equal(t, "Succeeded", n.Inputs.Parameters[0].Value.String())
+			assert.Equal(t, "Succeeded", n.Inputs.Parameters[1].Value.String())
+		})
+}
+
 func (s *FunctionalSuite) TestParametrizableAds() {
 	s.Given().
 		Workflow(`
@@ -713,11 +730,8 @@ spec:
 `).
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(10*time.Second).
+		WaitForWorkflow(fixtures.ToBeFailed).
 		Then().
-		ExpectWorkflow(func(t *testing.T, md *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.WorkflowFailed, status.Phase)
-		}).
 		ExpectWorkflowNode(wfv1.FailedPodNode, func(t *testing.T, n *wfv1.NodeStatus, p *apiv1.Pod) {
 			assert.Equal(t, *p.Spec.ActiveDeadlineSeconds, int64(5))
 		})
@@ -1158,6 +1172,14 @@ spec:
 func (s *FunctionalSuite) TestTTY() {
 	s.Given().
 		Workflow(`@functional/tty.yaml`).
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeSucceeded)
+}
+
+func (s *FunctionalSuite) TestTemplateDefaultImage() {
+	s.Given().
+		Workflow(`@functional/template-default-image.yaml`).
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeSucceeded)

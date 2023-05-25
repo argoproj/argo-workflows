@@ -224,6 +224,8 @@ const (
 	LocalVarRetriesLastStatus = "lastRetry.status"
 	// LocalVarRetriesLastDuration is a variable that references information about the last retry's duration, in seconds
 	LocalVarRetriesLastDuration = "lastRetry.duration"
+	// LocalVarRetriesLastMessage is a variable that references information about the last retry's failure message
+	LocalVarRetriesLastMessage = "lastRetry.message"
 
 	KubeConfigDefaultMountPath    = "/kube/config"
 	KubeConfigDefaultVolumeName   = "kubeconfig"
@@ -239,9 +241,6 @@ const (
 
 	// ArgoProgressPath defines the path to a file used for self reporting progress
 	ArgoProgressPath = VarRunArgoPath + "/progress"
-
-	// ErrDeadlineExceeded is the pod status reason when exceed deadline
-	ErrDeadlineExceeded = "DeadlineExceeded"
 
 	ConfigMapName = "workflow-controller-configmap"
 )

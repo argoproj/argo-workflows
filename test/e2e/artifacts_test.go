@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/suite"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/yaml"
 
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 
@@ -71,16 +72,19 @@ func (s *ArtifactsSuite) TestArtifactGC() {
 		WorkflowTemplate("@testdata/artifactgc/artgc-template.yaml").
 		WorkflowTemplate("@testdata/artifactgc/artgc-template-2.yaml").
 		WorkflowTemplate("@testdata/artifactgc/artgc-template-ref-template.yaml").
+		WorkflowTemplate("@testdata/artifactgc/artgc-template-no-gc.yaml").
 		When().
 		CreateWorkflowTemplates()
 
 	for _, tt := range []struct {
 		workflowFile                 string
+		hasGC                        bool
 		expectedArtifacts            []artifactState
 		expectedGCPodsOnWFCompletion int
 	}{
 		{
 			workflowFile:                 "@testdata/artifactgc/artgc-multi-strategy-multi-anno.yaml",
+			hasGC:                        true,
 			expectedGCPodsOnWFCompletion: 2,
 			expectedArtifacts: []artifactState{
 				artifactState{"first-on-completion-1", "my-bucket-2", true, false},
@@ -90,45 +94,63 @@ func (s *ArtifactsSuite) TestArtifactGC() {
 				artifactState{"second-on-completion", "my-bucket-2", true, false},
 			},
 		},
+		// entire Workflow based on a WorkflowTemplate
 		{
 			workflowFile:                 "@testdata/artifactgc/artgc-from-template.yaml",
+			hasGC:                        true,
 			expectedGCPodsOnWFCompletion: 1,
 			expectedArtifacts: []artifactState{
 				artifactState{"on-completion", "my-bucket-2", true, false},
 				artifactState{"on-deletion", "my-bucket-2", false, true},
 			},
 		},
+		// entire Workflow based on a WorkflowTemplate
 		{
 			workflowFile:                 "@testdata/artifactgc/artgc-from-template-2.yaml",
+			hasGC:                        true,
 			expectedGCPodsOnWFCompletion: 1,
 			expectedArtifacts: []artifactState{
 				artifactState{"on-completion", "my-bucket-2", true, false},
 				artifactState{"on-deletion", "my-bucket-2", false, true},
 			},
 		},
+		// Step in Workflow references a WorkflowTemplate's template
 		{
 			workflowFile:                 "@testdata/artifactgc/artgc-step-wf-tmpl.yaml",
+			hasGC:                        true,
 			expectedGCPodsOnWFCompletion: 1,
 			expectedArtifacts: []artifactState{
 				artifactState{"on-completion", "my-bucket-2", true, false},
 				artifactState{"on-deletion", "my-bucket-2", false, true},
 			},
 		},
+		// Step in Workflow references a WorkflowTemplate's template
 		{
 			workflowFile:                 "@testdata/artifactgc/artgc-step-wf-tmpl-2.yaml",
+			hasGC:                        true,
 			expectedGCPodsOnWFCompletion: 1,
 			expectedArtifacts: []artifactState{
 				artifactState{"on-completion", "my-bucket-2", true, false},
 				artifactState{"on-deletion", "my-bucket-2", false, false},
 			},
 		},
+		// entire Workflow based on a WorkflowTemplate which has a Step that references another WorkflowTemplate's template
 		{
 			workflowFile:                 "@testdata/artifactgc/artgc-from-ref-template.yaml",
-			expectedGCPodsOnWFCompletion: 0,
+			hasGC:                        true,
+			expectedGCPodsOnWFCompletion: 1,
 			expectedArtifacts: []artifactState{
-				artifactState{"on-completion", "my-bucket-2", false, true},
+				artifactState{"on-completion", "my-bucket-2", true, false},
 				artifactState{"on-deletion", "my-bucket-2", false, true},
 			},
+		},
+		// Step in Workflow references a WorkflowTemplate's template
+		// Workflow defines ArtifactGC but all artifacts override with "Never" so Artifact GC should not be done
+		{
+			workflowFile:                 "@testdata/artifactgc/artgc-step-wf-tmpl-no-gc.yaml",
+			hasGC:                        false,
+			expectedGCPodsOnWFCompletion: 0,
+			expectedArtifacts:            []artifactState{},
 		},
 	} {
 		// for each test make sure that:
@@ -147,8 +169,18 @@ func (s *ArtifactsSuite) TestArtifactGC() {
 			WaitForWorkflow(fixtures.ToBeCompleted).
 			Then().
 			ExpectWorkflow(func(t *testing.T, objectMeta *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-				assert.Contains(t, objectMeta.Finalizers, common.FinalizerArtifactGC)
+				if tt.hasGC {
+					assert.Contains(t, objectMeta.Finalizers, common.FinalizerArtifactGC)
+				}
 			})
+
+		if when.WorkflowCondition(func(wf *wfv1.Workflow) bool {
+			return wf.Status.Phase == wfv1.WorkflowFailed || wf.Status.Phase == wfv1.WorkflowError
+		}) {
+			fmt.Println("can't reliably verify Artifact GC since workflow failed")
+			when.RemoveFinalizers(false)
+			continue
+		}
 
 		// wait for all pods to have started and been completed and recouped
 		when.
@@ -206,23 +238,15 @@ func (s *ArtifactsSuite) TestArtifactGC() {
 	}
 }
 
-// create a ServiceAccount which won't be tied to the artifactgc role and attempt to use that service account in the GC Pod
-// Want to verify that this causes the ArtifactGCError Condition in the Workflow
-func (s *ArtifactsSuite) TestArtifactGC_InsufficientRole() {
-	ctx := context.Background()
-	_, err := s.KubeClient.CoreV1().ServiceAccounts(fixtures.Namespace).Create(ctx, &corev1.ServiceAccount{ObjectMeta: metav1.ObjectMeta{Name: "artgc-role-test-sa"}}, metav1.CreateOptions{})
-	assert.NoError(s.T(), err)
-	s.T().Cleanup(func() {
-		_ = s.KubeClient.CoreV1().ServiceAccounts(fixtures.Namespace).Delete(ctx, "artgc-role-test-sa", metav1.DeleteOptions{})
-	})
-
-	s.Given().Workflow(`
+var insufficientRoleWorkflow = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   generateName: art-gc-simple-
 spec:
   entrypoint: main
+  artifactGC:
+    forceFinalizerRemoval: true
   templates:
   - name: main
     container:
@@ -241,27 +265,89 @@ spec:
             key: temporary-artifact-on-completion.txt
           artifactGC:
             strategy: OnWorkflowCompletion
-            serviceAccountName: artgc-role-test-sa`).
-		When().
-		SubmitWorkflow().
-		WaitForWorkflow(
+            serviceAccountName: artgc-role-test-sa
+`
+
+// create a ServiceAccount which won't be tied to the artifactgc role and attempt to use that service account in the GC Pod
+// Want to verify that this causes the ArtifactGCError Condition in the Workflow
+func (s *ArtifactsSuite) TestArtifactGC_InsufficientRole() {
+	ctx := context.Background()
+	_, err := s.KubeClient.CoreV1().ServiceAccounts(fixtures.Namespace).Create(ctx, &corev1.ServiceAccount{ObjectMeta: metav1.ObjectMeta{Name: "artgc-role-test-sa"}}, metav1.CreateOptions{})
+	assert.NoError(s.T(), err)
+	s.T().Cleanup(func() {
+		_ = s.KubeClient.CoreV1().ServiceAccounts(fixtures.Namespace).Delete(ctx, "artgc-role-test-sa", metav1.DeleteOptions{})
+	})
+
+	// We can test this failure case in 2 ways
+	// 1. Workflow sets ForceFinalizerRemoval to false, so finalizer is still present after failure
+	// 2. Workflow sets ForceFinalizerRemoval to true, so finalizer isn't present after failure
+	tests := []struct { // I suppose this could just be a slice of bool, but making it a struct in case we want to expand it
+		forceFinalizerRemoval bool
+	}{
+		{
+			forceFinalizerRemoval: true,
+		},
+		{
+			forceFinalizerRemoval: false,
+		},
+	}
+
+	for _, tt := range tests {
+		// unmarshal and marshal the yaml so we can modify the Workflow spec
+		var workflow wfv1.Workflow
+		err = yaml.Unmarshal([]byte(insufficientRoleWorkflow), &workflow)
+		if err != nil {
+			assert.Fail(s.T(), err.Error())
+		}
+
+		workflow.Spec.ArtifactGC.ForceFinalizerRemoval = tt.forceFinalizerRemoval
+		modifiedWorkflow, err := yaml.Marshal(&workflow)
+		if err != nil {
+			assert.Fail(s.T(), err.Error())
+		}
+
+		// Submit the Workflow
+		when := s.Given().Workflow(string(modifiedWorkflow)).
+			When().
+			SubmitWorkflow().
+			WaitForWorkflow(fixtures.ToBeCompleted)
+
+		// if the Workflow fails for some reason outside of our control, we can't complete this test
+		if when.WorkflowCondition(func(wf *wfv1.Workflow) bool {
+			return wf.Status.Phase == wfv1.WorkflowFailed || wf.Status.Phase == wfv1.WorkflowError
+		}) {
+			fmt.Println("can't reliably verify Artifact GC (Insufficient Role test) since workflow failed")
+			when.RemoveFinalizers(false)
+			return
+		}
+
+		// Once Workflow completes, check its result
+		when.WaitForWorkflow(
 			fixtures.WorkflowCompletionOkay(true),
 			fixtures.Condition(func(wf *wfv1.Workflow) (bool, string) {
 				return wf.Status.ArtifactGCStatus != nil &&
 					len(wf.Status.ArtifactGCStatus.PodsRecouped) == 1, "for pod to have been recouped"
 			})).
-		Then().
-		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			failCondition := false
-			for _, c := range status.Conditions {
-				if c.Type == wfv1.ConditionTypeArtifactGCError {
-					failCondition = true
+			Then().
+			ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+				failCondition := false
+				for _, c := range status.Conditions {
+					if c.Type == wfv1.ConditionTypeArtifactGCError {
+						failCondition = true
+					}
 				}
-			}
-			assert.Equal(t, true, failCondition)
-		}).
-		When().
-		RemoveFinalizers(true)
+				assert.Equal(t, true, failCondition)
+			}).
+			ExpectWorkflow(func(t *testing.T, meta *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+				if tt.forceFinalizerRemoval {
+					assert.NotContains(s.T(), meta.Finalizers, common.FinalizerArtifactGC)
+				} else {
+					assert.Contains(s.T(), meta.Finalizers, common.FinalizerArtifactGC)
+				}
+			}).
+			When().
+			RemoveFinalizers(true)
+	}
 }
 
 func (s *ArtifactsSuite) TestDefaultParameterOutputs() {
