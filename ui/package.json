@@ -58,7 +58,7 @@
         "@types/react-form": "^2.16.1",
         "@types/react-helmet": "^6.1.6",
         "@types/react-router-dom": "^4.2.3",
-        "@types/superagent": "^4.1.17",
+        "@types/superagent": "^4.1.18",
         "@types/swagger-ui-react": "^4.11.0",
         "babel-jest": "^29.5.0",
         "babel-loader": "^8.3.0",
