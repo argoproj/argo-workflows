@@ -7,11 +7,12 @@ import (
 
 	sv1 "github.com/argoproj/argo-events/pkg/apis/sensor/v1alpha1"
 	"github.com/argoproj/argo-events/pkg/client/sensor/clientset/versioned/typed/sensor/v1alpha1"
-	sensorpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/sensor"
-	auth "github.com/argoproj/argo-workflows/v3/server/auth"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	sensorpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/sensor"
+	auth "github.com/argoproj/argo-workflows/v3/server/auth"
 )
 
 type MockSensorClient struct {
