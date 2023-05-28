@@ -1941,6 +1941,22 @@ type RetryStrategy struct {
 	Expression string `json:"expression,omitempty" protobuf:"bytes,5,opt,name=expression"`
 }
 
+// RetryPolicyActual gets the active retry policy for a strategy.
+// If the policy is explicit, use that.
+// If an expression is given, use a policy of Always so the
+// expression is all that controls the retry for 'least surprise'.
+// Otherwise, if neither is given, default to retry OnFailure.
+func (s RetryStrategy) RetryPolicyActual() RetryPolicy {
+	if s.RetryPolicy != "" {
+		return s.RetryPolicy
+	}
+	if s.Expression == "" {
+		return RetryPolicyOnFailure
+	} else {
+		return RetryPolicyAlways
+	}
+}
+
 // The amount of requested resource * the duration that request was used.
 // This is represented as duration in seconds, so can be converted to and from
 // duration (with loss of precision).
