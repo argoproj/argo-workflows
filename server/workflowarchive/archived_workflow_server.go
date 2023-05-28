@@ -165,7 +165,7 @@ func (w *archivedWorkflowServer) ListArchivedWorkflows(ctx context.Context, req 
 }
 
 func (w *archivedWorkflowServer) GetArchivedWorkflow(ctx context.Context, req *workflowarchivepkg.GetArchivedWorkflowRequest) (*wfv1.Workflow, error) {
-	wf, err := w.wfArchive.GetWorkflow(req.Uid)
+	wf, err := w.wfArchive.GetWorkflow(req.Uid, req.Namespace, req.Name)
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.Internal)
 	}
