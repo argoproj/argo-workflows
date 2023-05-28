@@ -5,7 +5,6 @@ metadata:
   annotations:
     workflows.argoproj.io/description: |
       This is an example of coin flip defined as a DAG.
-      You can also run it in Python: https://couler-proj.github.io/couler/examples/#dag
 spec:
   entrypoint: diamond
   templates:
