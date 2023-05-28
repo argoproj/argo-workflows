@@ -23,6 +23,7 @@ import (
 	cronworkflowserver "github.com/argoproj/argo-workflows/v3/server/cronworkflow"
 	"github.com/argoproj/argo-workflows/v3/server/types"
 	workflowserver "github.com/argoproj/argo-workflows/v3/server/workflow"
+	"github.com/argoproj/argo-workflows/v3/server/workflowarchive"
 	workflowtemplateserver "github.com/argoproj/argo-workflows/v3/server/workflowtemplate"
 	"github.com/argoproj/argo-workflows/v3/util/help"
 	"github.com/argoproj/argo-workflows/v3/util/instanceid"
@@ -83,7 +84,9 @@ func newArgoKubeClient(ctx context.Context, clientConfig clientcmd.ClientConfig,
 }
 
 func (a *argoKubeClient) NewWorkflowServiceClient() workflowpkg.WorkflowServiceClient {
-	return &errorTranslatingWorkflowServiceClient{&argoKubeWorkflowServiceClient{workflowserver.NewWorkflowServer(a.instanceIDService, argoKubeOffloadNodeStatusRepo)}}
+	wfArchive := sqldb.NullWorkflowArchive
+	wfaServer := workflowarchive.NewWorkflowArchiveServer(wfArchive)
+	return &errorTranslatingWorkflowServiceClient{&argoKubeWorkflowServiceClient{workflowserver.NewWorkflowServer(a.instanceIDService, argoKubeOffloadNodeStatusRepo, wfaServer)}}
 }
 
 func (a *argoKubeClient) NewCronWorkflowServiceClient() (cronworkflow.CronWorkflowServiceClient, error) {

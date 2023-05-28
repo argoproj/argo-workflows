@@ -82,25 +82,25 @@ func (_m *WorkflowArchive) DeleteWorkflow(uid string) error {
 	return r0
 }
 
-// GetWorkflow provides a mock function with given fields: uid
-func (_m *WorkflowArchive) GetWorkflow(uid string) (*v1alpha1.Workflow, error) {
-	ret := _m.Called(uid)
+// GetWorkflow provides a mock function with given fields: uid, namespace, name
+func (_m *WorkflowArchive) GetWorkflow(uid string, namespace string, name string) (*v1alpha1.Workflow, error) {
+	ret := _m.Called(uid, namespace, name)
 
 	var r0 *v1alpha1.Workflow
 	var r1 error
-	if rf, ok := ret.Get(0).(func(string) (*v1alpha1.Workflow, error)); ok {
-		return rf(uid)
+	if rf, ok := ret.Get(0).(func(string, string, string) (*v1alpha1.Workflow, error)); ok {
+		return rf(uid, namespace, name)
 	}
-	if rf, ok := ret.Get(0).(func(string) *v1alpha1.Workflow); ok {
-		r0 = rf(uid)
+	if rf, ok := ret.Get(0).(func(string, string, string) *v1alpha1.Workflow); ok {
+		r0 = rf(uid, namespace, name)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*v1alpha1.Workflow)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(string) error); ok {
-		r1 = rf(uid)
+	if rf, ok := ret.Get(1).(func(string, string, string) error); ok {
+		r1 = rf(uid, namespace, name)
 	} else {
 		r1 = ret.Error(1)
 	}
