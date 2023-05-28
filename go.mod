@@ -74,7 +74,12 @@ require (
 	upper.io/db.v3 v3.8.0+incompatible
 )
 
-require github.com/google/s2a-go v0.1.3 // indirect
+require (
+	github.com/cloudflare/circl v1.3.3 // indirect
+	github.com/google/s2a-go v0.1.3 // indirect
+	github.com/pjbgf/sha1cd v0.3.0 // indirect
+	github.com/skeema/knownhosts v1.1.1 // indirect
+)
 
 require (
 	cloud.google.com/go v0.110.0 // indirect
@@ -221,7 +226,6 @@ require (
 	github.com/tidwall/pretty v1.2.0 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasthttp v1.34.0 // indirect
-	github.com/whilp/git-urls v1.0.0 // indirect
 	github.com/xanzy/ssh-agent v0.3.3 // indirect
 	github.com/xeipuuv/gojsonpointer v0.0.0-20190905194746-02993c407bfb // indirect
 	github.com/xeipuuv/gojsonreference v0.0.0-20180127040603-bd5ef7bd5415 // indirect
