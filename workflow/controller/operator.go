@@ -1010,7 +1010,7 @@ func (woc *wfOperationCtx) processNodeRetries(node *wfv1.NodeStatus, retryStrate
 
 	var retryOnFailed bool
 	var retryOnError bool
-	switch retryStrategy.RetryPolicy {
+	switch retryStrategy.RetryPolicyActual() {
 	case wfv1.RetryPolicyAlways:
 		retryOnFailed = true
 		retryOnError = true
@@ -1022,12 +1022,13 @@ func (woc *wfOperationCtx) processNodeRetries(node *wfv1.NodeStatus, retryStrate
 			retryOnFailed = true
 			retryOnError = true
 		}
-	case wfv1.RetryPolicyOnFailure, "":
+	case wfv1.RetryPolicyOnFailure:
 		retryOnFailed = true
 		retryOnError = false
 	default:
-		return nil, false, fmt.Errorf("%s is not a valid RetryPolicy", retryStrategy.RetryPolicy)
+		return nil, false, fmt.Errorf("%s is not a valid RetryPolicy", retryStrategy.RetryPolicyActual())
 	}
+	woc.log.Infof("Retry Policy: %s (onFailed: %v, onError %v)", retryStrategy.RetryPolicyActual(), retryOnFailed, retryOnError)
 
 	if (lastChildNode.Phase == wfv1.NodeFailed && !retryOnFailed) || (lastChildNode.Phase == wfv1.NodeError && !retryOnError) {
 		woc.log.Infof("Node not set to be retried after status: %s", lastChildNode.Phase)
@@ -2022,10 +2023,18 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 		// If retry policy is not set, or if it is not set to Always or OnError, we won't attempt to retry an errored container
 		// and we return instead.
 		retryStrategy := woc.retryStrategy(processedTmpl)
-		if retryStrategy == nil ||
-			(retryStrategy.RetryPolicy != wfv1.RetryPolicyAlways &&
-				retryStrategy.RetryPolicy != wfv1.RetryPolicyOnError &&
-				retryStrategy.RetryPolicy != wfv1.RetryPolicyOnTransientError) {
+		release := false
+		if retryStrategy == nil {
+			release = true
+		} else {
+			retryPolicy := retryStrategy.RetryPolicyActual()
+			if retryPolicy != wfv1.RetryPolicyAlways &&
+				retryPolicy != wfv1.RetryPolicyOnError &&
+				retryPolicy != wfv1.RetryPolicyOnTransientError {
+				release = true
+			}
+		}
+		if release {
 			woc.controller.syncManager.Release(woc.wf, node.ID, processedTmpl.Synchronization)
 			return node, err
 		}

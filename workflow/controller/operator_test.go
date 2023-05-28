@@ -131,7 +131,7 @@ spec:
        - name: pod
          template: pod
    - name: pod
-     container: 
+     container:
        image: my-image
 `)
 	cancel, controller := newController(wf)
@@ -165,7 +165,7 @@ spec:
        - name: pod
          template: pod
    - name: pod
-     container: 
+     container:
        image: my-image
 `)
 	cancel, controller := newController(wf)
@@ -198,7 +198,7 @@ spec:
        - name: pod
          template: pod
    - name: pod
-     container: 
+     container:
        image: my-image
 `)
 	cancel, controller := newController(wfv1.MustUnmarshalWorkflow(`
@@ -243,7 +243,7 @@ spec:
        - name: pod
          template: pod
    - name: pod
-     container: 
+     container:
        image: my-image
 `)
 	cancel, controller := newController(wf)
@@ -277,7 +277,7 @@ spec:
        - name: pod
          template: pod
    - name: pod
-     container: 
+     container:
        image: my-image
 `)
 	cancel, controller := newController(wf)
@@ -511,8 +511,8 @@ func TestVolumeGCStrategy(t *testing.T) {
 	}
 }
 
-// TestProcessNodesWithRetries tests the processNodesWithRetries() method.
-func TestProcessNodesWithRetries(t *testing.T) {
+// TestProcessNodeRetries tests the processNodeRetries() method.
+func TestProcessNodeRetries(t *testing.T) {
 	cancel, controller := newController()
 	defer cancel()
 	assert.NotNil(t, controller)
@@ -548,7 +548,7 @@ func TestProcessNodesWithRetries(t *testing.T) {
 	lastChild = getChildNodeIndex(n, woc.wf.Status.Nodes, -1)
 	assert.NotNil(t, lastChild)
 
-	// Last child is still running. processNodesWithRetries() should return false since
+	// Last child is still running. processNodeRetries() should return false since
 	// there should be no retries at this point.
 	n, _, err := woc.processNodeRetries(n, retries, &executeTemplateOpts{})
 	assert.NoError(t, err)
@@ -579,8 +579,8 @@ func TestProcessNodesWithRetries(t *testing.T) {
 	assert.Equal(t, n.Phase, wfv1.NodeFailed)
 }
 
-// TestProcessNodesWithRetries tests retrying when RetryOn.Error is enabled
-func TestProcessNodesWithRetriesOnErrors(t *testing.T) {
+// TestProcessNodeRetries tests retrying when RetryOn.Error is enabled
+func TestProcessNodeRetriesOnErrors(t *testing.T) {
 	cancel, controller := newController()
 	defer cancel()
 	assert.NotNil(t, controller)
@@ -617,7 +617,7 @@ func TestProcessNodesWithRetriesOnErrors(t *testing.T) {
 	lastChild = getChildNodeIndex(n, woc.wf.Status.Nodes, -1)
 	assert.NotNil(t, lastChild)
 
-	// Last child is still running. processNodesWithRetries() should return false since
+	// Last child is still running. processNodeRetries() should return false since
 	// there should be no retries at this point.
 	n, _, err := woc.processNodeRetries(n, retries, &executeTemplateOpts{})
 	assert.Nil(t, err)
@@ -648,8 +648,8 @@ func TestProcessNodesWithRetriesOnErrors(t *testing.T) {
 	assert.Equal(t, n.Phase, wfv1.NodeError)
 }
 
-// TestProcessNodesWithRetries tests retrying when RetryOnTransientError is enabled
-func TestProcessNodesWithRetriesOnTransientErrors(t *testing.T) {
+// TestProcessNodeRetries tests retrying when RetryOnTransientError is enabled
+func TestProcessNodeRetriesOnTransientErrors(t *testing.T) {
 	cancel, controller := newController()
 	defer cancel()
 	assert.NotNil(t, controller)
@@ -686,7 +686,7 @@ func TestProcessNodesWithRetriesOnTransientErrors(t *testing.T) {
 	lastChild = getChildNodeIndex(n, woc.wf.Status.Nodes, -1)
 	assert.NotNil(t, lastChild)
 
-	// Last child is still running. processNodesWithRetries() should return false since
+	// Last child is still running. processNodeRetries() should return false since
 	// there should be no retries at this point.
 	n, _, err := woc.processNodeRetries(n, retries, &executeTemplateOpts{})
 	assert.Nil(t, err)
@@ -722,7 +722,7 @@ func TestProcessNodesWithRetriesOnTransientErrors(t *testing.T) {
 	assert.Equal(t, n.Phase, wfv1.NodeError)
 }
 
-func TestProcessNodesWithRetriesWithBackoff(t *testing.T) {
+func TestProcessNodeRetriesWithBackoff(t *testing.T) {
 	cancel, controller := newController()
 	defer cancel()
 
@@ -761,7 +761,7 @@ func TestProcessNodesWithRetriesWithBackoff(t *testing.T) {
 	lastChild = getChildNodeIndex(n, woc.wf.Status.Nodes, -1)
 	assert.NotNil(t, lastChild)
 
-	// Last child is still running. processNodesWithRetries() should return false since
+	// Last child is still running. processNodeRetries() should return false since
 	// there should be no retries at this point.
 	n, _, err := woc.processNodeRetries(n, retries, &executeTemplateOpts{})
 	assert.Nil(t, err)
@@ -775,7 +775,7 @@ func TestProcessNodesWithRetriesWithBackoff(t *testing.T) {
 	assert.Equal(t, n.Phase, wfv1.NodeSucceeded)
 }
 
-func TestProcessNodesWithRetriesWithExponentialBackoff(t *testing.T) {
+func TestProcessNodeRetriesWithExponentialBackoff(t *testing.T) {
 	require := require.New(t)
 
 	cancel, controller := newController()
@@ -813,7 +813,7 @@ func TestProcessNodesWithRetriesWithExponentialBackoff(t *testing.T) {
 
 	n := woc.wf.GetNodeByName(nodeName)
 
-	// Last child has failed. processNodesWithRetries() should return false due to the default backoff.
+	// Last child has failed. processNodeRetries() should return false due to the default backoff.
 	var err error
 	n, _, err = woc.processNodeRetries(n, retries, &executeTemplateOpts{})
 	require.NoError(err)
@@ -870,7 +870,7 @@ func parseRetryMessage(message string) (int, error) {
 	return totalSeconds, nil
 }
 
-// TestProcessNodesWithRetries tests retrying when RetryOn.Error is disabled
+// TestProcessNodeRetries tests retrying when RetryOn.Error is disabled
 func TestProcessNodesNoRetryWithError(t *testing.T) {
 	cancel, controller := newController()
 	defer cancel()
@@ -908,7 +908,7 @@ func TestProcessNodesNoRetryWithError(t *testing.T) {
 	lastChild = getChildNodeIndex(n, woc.wf.Status.Nodes, -1)
 	assert.NotNil(t, lastChild)
 
-	// Last child is still running. processNodesWithRetries() should return false since
+	// Last child is still running. processNodeRetries() should return false since
 	// there should be no retries at this point.
 	n, _, err := woc.processNodeRetries(n, retries, &executeTemplateOpts{})
 	assert.Nil(t, err)
@@ -947,10 +947,10 @@ metadata:
   selfLink: /apis/argoproj.io/v1alpha1/namespaces/argo/workflows/retry-backoff-s69z6
   uid: 110dbef4-c54b-4963-9739-03e9878810d9
 spec:
-  
+
   entrypoint: retry-backoff
   templates:
-  - 
+  -
     container:
       args:
       - import random; import sys; exit_code = random.choice([1, 1]); sys.exit(exit_code)
@@ -3932,19 +3932,19 @@ kind: Workflow
 metadata:
   name: daemon-step-dvbnn
 spec:
-  
+
   entrypoint: daemon-example
   templates:
-  - 
+  -
     inputs: {}
     metadata: {}
     name: daemon-example
     outputs: {}
     steps:
-    - - 
+    - -
         name: influx
         template: influxdb
-  - 
+  -
     container:
       image: influxdb:1.2
       name: ""
@@ -4192,19 +4192,19 @@ kind: Workflow
 metadata:
   name: global-outputs-bg7gl
 spec:
-  
+
   entrypoint: generate-globals
   templates:
-  - 
+  -
     inputs: {}
     metadata: {}
     name: generate-globals
     outputs: {}
     steps:
-    - - 
+    - -
         name: generate
         template: nested-global-output-generation
-  - 
+  -
     container:
       args:
       - sleep 1; echo -n hello world > /tmp/hello_world.txt
@@ -4222,7 +4222,7 @@ spec:
       - name: hello-param
         valueFrom:
           path: /tmp/hello_world.txt
-  - 
+  -
     inputs: {}
     metadata: {}
     name: nested-global-output-generation
@@ -4233,7 +4233,7 @@ spec:
         valueFrom:
           parameter: '{{steps.generate-output.outputs.parameters.hello-param}}'
     steps:
-    - - 
+    - -
         name: generate-output
         template: output-generation
 status:
@@ -4386,7 +4386,7 @@ spec:
     - name: missing
   entrypoint: whalesay
   templates:
-  - 
+  -
     container:
       args:
       - hello world
@@ -4462,10 +4462,10 @@ metadata:
   selfLink: /apis/argoproj.io/v1alpha1/namespaces/argo/workflows/echo-wngc4
   uid: bed2749b-2971-4172-a61e-455ef02c4379
 spec:
-  
+
   entrypoint: echo
   templates:
-  - 
+  -
     container:
       args:
       - sleep 10 && exit 1
@@ -4538,10 +4538,10 @@ kind: Workflow
 metadata:
   name: echo-r6v49
 spec:
-  
+
   entrypoint: echo
   templates:
-  - 
+  -
     container:
       args:
       - exit 1
@@ -4636,10 +4636,10 @@ kind: Workflow
 metadata:
   name: dag-primay-branch-sd6rg
 spec:
-  
+
   entrypoint: statis
   templates:
-  - 
+  -
     container:
       args:
       - hello world
@@ -4652,7 +4652,7 @@ spec:
     metadata: {}
     name: pass
     outputs: {}
-  - 
+  -
     container:
       args:
       - exit
@@ -4665,20 +4665,20 @@ spec:
     metadata: {}
     name: exit
     outputs: {}
-  - 
+  -
     dag:
       tasks:
-      - 
+      -
         name: A
         template: pass
-      - 
+      -
         dependencies:
         - A
         name: B
         onExit: exit
         template: pass
         when: '{{tasks.A.status}} != Succeeded'
-      - 
+      -
         dependencies:
         - A
         name: C
@@ -4903,7 +4903,7 @@ var workflowStatusMetric = `
 metadata:
   name: retry-to-completion-rngcr
 spec:
-  
+
   entrypoint: retry-to-completion
   metrics:
     prometheus:
@@ -4920,7 +4920,7 @@ spec:
       name: result_counter
       when: ""
   templates:
-  - 
+  -
     container:
       args:
       - import random; import sys; exit_code = random.choice(range(0, 5)); sys.exit(exit_code)
@@ -5354,10 +5354,10 @@ metadata:
   name: resubmit-pending-wf
   namespace: argo
 spec:
-  
+
   entrypoint: resubmit-pending
   templates:
-  - 
+  -
     inputs: {}
     metadata: {}
     name: resubmit-pending
@@ -5546,7 +5546,7 @@ spec:
     outputs:
       parameters:
       - name: my-param
-        valueFrom: 
+        valueFrom:
           path: /my-path
 `)
 	cancel, controller := newController(wf)
@@ -5570,106 +5570,106 @@ spec:
 var globalVarsOnExit = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
-metadata: 
+metadata:
   name: hello-world-6gphm-8n22g
   namespace: default
-spec: 
-  arguments: 
-    parameters: 
-      - 
+spec:
+  arguments:
+    parameters:
+      -
         name: message
         value: nononono
-  workflowTemplateRef: 
+  workflowTemplateRef:
     name: hello-world-6gphm
-status: 
-  nodes: 
-    hello-world-6gphm-8n22g: 
+status:
+  nodes:
+    hello-world-6gphm-8n22g:
       displayName: hello-world-6gphm-8n22g
       finishedAt: "2020-07-14T20:45:28Z"
       hostNodeName: minikube
       id: hello-world-6gphm-8n22g
-      inputs: 
-        parameters: 
-          - 
+      inputs:
+        parameters:
+          -
             name: message
             value: nononono
       name: hello-world-6gphm-8n22g
-      outputs: 
-        artifacts: 
-          - 
+      outputs:
+        artifacts:
+          -
             archiveLogs: true
             name: main-logs
-            s3: 
-              accessKeySecret: 
+            s3:
+              accessKeySecret:
                 key: accesskey
                 name: my-minio-cred
               bucket: my-bucket
               endpoint: "minio:9000"
               insecure: true
               key: hello-world-6gphm-8n22g/hello-world-6gphm-8n22g/main.log
-              secretKeySecret: 
+              secretKeySecret:
                 key: secretkey
                 name: my-minio-cred
         exitCode: "0"
       phase: Succeeded
-      resourcesDuration: 
+      resourcesDuration:
         cpu: 2
         memory: 1
       startedAt: "2020-07-14T20:45:25Z"
-      templateRef: 
+      templateRef:
         name: hello-world-6gphm
         template: whalesay
       templateScope: local/hello-world-6gphm-8n22g
       type: Pod
   phase: Running
-  resourcesDuration: 
+  resourcesDuration:
     cpu: 5
     memory: 2
   startedAt: "2020-07-14T20:45:25Z"
-  storedTemplates: 
-    namespaced/hello-world-6gphm/whalesay: 
-      
-      container: 
-        args: 
+  storedTemplates:
+    namespaced/hello-world-6gphm/whalesay:
+
+      container:
+        args:
           - "hello {{inputs.parameters.message}}"
-        command: 
+        command:
           - cowsay
         image: "docker/whalesay:latest"
-      inputs: 
-        parameters: 
-          - 
+      inputs:
+        parameters:
+          -
             name: message
       metadata: {}
       name: whalesay
       outputs: {}
-  storedWorkflowTemplateSpec: 
-    arguments: 
-      parameters: 
-        - 
+  storedWorkflowTemplateSpec:
+    arguments:
+      parameters:
+        -
           name: message
           value: nononono
     entrypoint: whalesay
     onExit: exitContainer
-    templates: 
+    templates:
       - name: whalesay
         container:
           image: "docker/whalesay:latest"
-          args: 
+          args:
             - "hello {{inputs.parameters.message}}"
-          command: 
+          command:
             - cowsay
-        inputs: 
-          parameters: 
+        inputs:
+          parameters:
             - name: message
       - name: exitContainer
         container:
           image: docker/whalesay
-          args: 
+          args:
             - "goodbye {{inputs.parameters.message}}"
-          command: 
+          command:
             - cowsay
-        inputs: 
-          parameters: 
+        inputs:
+          parameters:
             - name: message
 `
 
@@ -5857,8 +5857,8 @@ metadata:
 spec:
   entrypoint: main
   templates:
-  - name: main 
-    steps: 
+  - name: main
+    steps:
     - - name: step1
         template: whalesay
 
@@ -5878,7 +5878,7 @@ metadata:
 spec:
   entrypoint: main
   templates:
-  - name: main 
+  - name: main
     dag:
       tasks:
       - name: dag1
@@ -6024,7 +6024,7 @@ apiVersion: v1
 kind: Pod
 status:
   conditions:
-  - lastProbeTime: 
+  - lastProbeTime:
     lastTransitionTime: '2020-08-27T18:14:19Z'
     status: 'True'
     type: PodScheduled
@@ -6261,9 +6261,9 @@ spec:
 
   # divide-by-2 divides a number in half
   - name: divide-by-2
-    retryStrategy: 
+    retryStrategy:
         limit: 2
-        backoff: 
+        backoff:
             duration: "1"
             factor: 2
     inputs:
@@ -6277,9 +6277,9 @@ spec:
         echo $(({{inputs.parameters.num}}/2))
   # whalesay prints a number using whalesay
   - name: whalesay
-    retryStrategy: 
+    retryStrategy:
         limit: 2
-        backoff: 
+        backoff:
             duration: "1"
             factor: 2
     inputs:
@@ -6319,10 +6319,10 @@ kind: Workflow
 metadata:
   name: parameter-aggregation-dag-h8b82
 spec:
-  
+
   entrypoint: parameter-aggregation
   templates:
-  - 
+  -
     dag:
       tasks:
       - arguments:
@@ -6354,7 +6354,7 @@ spec:
     metadata: {}
     name: parameter-aggregation
     outputs: {}
-  - 
+  -
     container:
       args:
       - |
@@ -6384,7 +6384,7 @@ spec:
       - name: evenness
         valueFrom:
           path: /tmp/even
-  - 
+  -
     container:
       args:
       - '{{inputs.parameters.message}}'
@@ -7869,6 +7869,345 @@ func TestBuildRetryStrategyLocalScope(t *testing.T) {
 	assert.Equal(t, "Error (exit code 1)", localScope[common.LocalVarRetriesLastMessage])
 }
 
+const operatorRetryExpressionError = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: retry-script-9z9pv
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: safe-to-retry
+        template: safe-to-retry
+    - - arguments:
+          parameters:
+          - name: safe-to-retry
+            value: '{{steps.safe-to-retry.outputs.result}}'
+        name: retry
+        template: retry-script
+  - name: safe-to-retry
+    script:
+      command:
+      - python
+      image: python:alpine3.6
+      source: |
+        print("true")
+  - inputs:
+      parameters:
+      - name: safe-to-retry
+    name: retry-script
+    retryStrategy:
+      expression: "true"
+      limit: "3"
+    script:
+      command:
+      - python
+      image: python:alpine3.6
+      source: |
+        import random;
+        import sys;
+        exit_code = random.choice([1, 2]);
+        sys.exit(exit_code)
+status:
+  nodes:
+    retry-script-9z9pv:
+      children:
+      - retry-script-9z9pv-1740877928
+      displayName: retry-script-9z9pv
+      id: retry-script-9z9pv
+      name: retry-script-9z9pv
+      outboundNodes:
+      - retry-script-9z9pv-2327053777
+      phase: Running
+      startedAt: "2021-06-10T22:28:49Z"
+      templateName: main
+      templateScope: local/retry-script-9z9pv
+      type: Steps
+    retry-script-9z9pv-734073693:
+      boundaryID: retry-script-9z9pv
+      children:
+      - retry-script-9z9pv-2346402485
+      displayName: '[1]'
+      id: retry-script-9z9pv-734073693
+      name: retry-script-9z9pv[1]
+      phase: Running
+      startedAt: "2021-06-10T22:28:56Z"
+      templateScope: local/retry-script-9z9pv
+      type: StepGroup
+    retry-script-9z9pv-1740877928:
+      boundaryID: retry-script-9z9pv
+      children:
+      - retry-script-9z9pv-3940097040
+      displayName: '[0]'
+      finishedAt: "2021-06-10T22:28:56Z"
+      id: retry-script-9z9pv-1740877928
+      name: retry-script-9z9pv[0]
+      phase: Succeeded
+      startedAt: "2021-06-10T22:28:49Z"
+      templateScope: local/retry-script-9z9pv
+      type: StepGroup
+    retry-script-9z9pv-2327053777:
+      boundaryID: retry-script-9z9pv
+      displayName: retry(1)
+      finishedAt: "2021-06-10T22:29:10Z"
+      id: retry-script-9z9pv-2327053777
+      inputs:
+        parameters:
+        - name: safe-to-retry
+          value: "true"
+      message: Error (exit code 1)
+      name: retry-script-9z9pv[1].retry(1)
+      outputs:
+        exitCode: "1"
+      phase: Error
+      startedAt: "2021-06-10T22:29:04Z"
+      templateName: retry-script
+      templateScope: local/retry-script-9z9pv
+      type: Pod
+    retry-script-9z9pv-2346402485:
+      boundaryID: retry-script-9z9pv
+      children:
+      - retry-script-9z9pv-2931195156
+      - retry-script-9z9pv-2327053777
+      displayName: retry
+      id: retry-script-9z9pv-2346402485
+      inputs:
+        parameters:
+        - name: safe-to-retry
+          value: "true"
+      name: retry-script-9z9pv[1].retry
+      phase: Running
+      startedAt: "2021-06-10T22:28:56Z"
+      templateName: retry-script
+      templateScope: local/retry-script-9z9pv
+      type: Retry
+    retry-script-9z9pv-2931195156:
+      boundaryID: retry-script-9z9pv
+      displayName: retry(0)
+      finishedAt: "2021-06-10T22:29:02Z"
+      id: retry-script-9z9pv-2931195156
+      inputs:
+        parameters:
+        - name: safe-to-retry
+          value: "true"
+      message: Error (exit code 2)
+      name: retry-script-9z9pv[1].retry(0)
+      outputs:
+        exitCode: "1"
+      phase: Error
+      startedAt: "2021-06-10T22:28:56Z"
+      templateName: retry-script
+      templateScope: local/retry-script-9z9pv
+      type: Pod
+    retry-script-9z9pv-3940097040:
+      boundaryID: retry-script-9z9pv
+      children:
+      - retry-script-9z9pv-734073693
+      displayName: safe-to-retry
+      finishedAt: "2021-06-10T22:28:55Z"
+      id: retry-script-9z9pv-3940097040
+      name: retry-script-9z9pv[0].safe-to-retry
+      outputs:
+        exitCode: "0"
+        result: "true"
+      phase: Succeeded
+      startedAt: "2021-06-10T22:28:49Z"
+      templateName: safe-to-retry
+      templateScope: local/retry-script-9z9pv
+      type: Pod
+  phase: Running
+  startedAt: "2021-06-10T22:28:49Z"
+`
+
+// TestOperatorRetryExpressionError tests that retryStrategy.expression works when the last node Errored.
+// The expression says retry "true" and as the policy is not specified
+// we are proving that the policy applied was Always not OnFailure
+func TestOperatorRetryExpressionError(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(operatorRetryExpressionError)
+	cancel, controller := newController(wf)
+	defer cancel()
+	ctx := context.Background()
+	woc := newWorkflowOperationCtx(wf, controller)
+
+	woc.operate(ctx)
+
+	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
+	retryNode := woc.wf.GetNodeByName("retry-script-9z9pv[1].retry")
+	assert.Equal(t, wfv1.NodeRunning, retryNode.Phase)
+	assert.Equal(t, 3, len(retryNode.Children))
+}
+
+const operatorRetryExpressionErrorNoExpr = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: retry-script-9z9pv
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: safe-to-retry
+        template: safe-to-retry
+    - - arguments:
+          parameters:
+          - name: safe-to-retry
+            value: '{{steps.safe-to-retry.outputs.result}}'
+        name: retry
+        template: retry-script
+  - name: safe-to-retry
+    script:
+      command:
+      - python
+      image: python:alpine3.6
+      source: |
+        print("true")
+  - inputs:
+      parameters:
+      - name: safe-to-retry
+    name: retry-script
+    retryStrategy:
+      limit: "3"
+    script:
+      command:
+      - python
+      image: python:alpine3.6
+      source: |
+        import random;
+        import sys;
+        exit_code = random.choice([1, 2]);
+        sys.exit(exit_code)
+status:
+  nodes:
+    retry-script-9z9pv:
+      children:
+      - retry-script-9z9pv-1740877928
+      displayName: retry-script-9z9pv
+      id: retry-script-9z9pv
+      name: retry-script-9z9pv
+      outboundNodes:
+      - retry-script-9z9pv-2327053777
+      phase: Running
+      startedAt: "2021-06-10T22:28:49Z"
+      templateName: main
+      templateScope: local/retry-script-9z9pv
+      type: Steps
+    retry-script-9z9pv-734073693:
+      boundaryID: retry-script-9z9pv
+      children:
+      - retry-script-9z9pv-2346402485
+      displayName: '[1]'
+      id: retry-script-9z9pv-734073693
+      name: retry-script-9z9pv[1]
+      phase: Running
+      startedAt: "2021-06-10T22:28:56Z"
+      templateScope: local/retry-script-9z9pv
+      type: StepGroup
+    retry-script-9z9pv-1740877928:
+      boundaryID: retry-script-9z9pv
+      children:
+      - retry-script-9z9pv-3940097040
+      displayName: '[0]'
+      finishedAt: "2021-06-10T22:28:56Z"
+      id: retry-script-9z9pv-1740877928
+      name: retry-script-9z9pv[0]
+      phase: Succeeded
+      startedAt: "2021-06-10T22:28:49Z"
+      templateScope: local/retry-script-9z9pv
+      type: StepGroup
+    retry-script-9z9pv-2327053777:
+      boundaryID: retry-script-9z9pv
+      displayName: retry(1)
+      finishedAt: "2021-06-10T22:29:10Z"
+      id: retry-script-9z9pv-2327053777
+      inputs:
+        parameters:
+        - name: safe-to-retry
+          value: "true"
+      message: Error (exit code 1)
+      name: retry-script-9z9pv[1].retry(1)
+      outputs:
+        exitCode: "1"
+      phase: Error
+      startedAt: "2021-06-10T22:29:04Z"
+      templateName: retry-script
+      templateScope: local/retry-script-9z9pv
+      type: Pod
+    retry-script-9z9pv-2346402485:
+      boundaryID: retry-script-9z9pv
+      children:
+      - retry-script-9z9pv-2931195156
+      - retry-script-9z9pv-2327053777
+      displayName: retry
+      id: retry-script-9z9pv-2346402485
+      inputs:
+        parameters:
+        - name: safe-to-retry
+          value: "true"
+      name: retry-script-9z9pv[1].retry
+      phase: Running
+      startedAt: "2021-06-10T22:28:56Z"
+      templateName: retry-script
+      templateScope: local/retry-script-9z9pv
+      type: Retry
+    retry-script-9z9pv-2931195156:
+      boundaryID: retry-script-9z9pv
+      displayName: retry(0)
+      finishedAt: "2021-06-10T22:29:02Z"
+      id: retry-script-9z9pv-2931195156
+      inputs:
+        parameters:
+        - name: safe-to-retry
+          value: "true"
+      message: Error (exit code 2)
+      name: retry-script-9z9pv[1].retry(0)
+      outputs:
+        exitCode: "1"
+      phase: Error
+      startedAt: "2021-06-10T22:28:56Z"
+      templateName: retry-script
+      templateScope: local/retry-script-9z9pv
+      type: Pod
+    retry-script-9z9pv-3940097040:
+      boundaryID: retry-script-9z9pv
+      children:
+      - retry-script-9z9pv-734073693
+      displayName: safe-to-retry
+      finishedAt: "2021-06-10T22:28:55Z"
+      id: retry-script-9z9pv-3940097040
+      name: retry-script-9z9pv[0].safe-to-retry
+      outputs:
+        exitCode: "0"
+        result: "true"
+      phase: Succeeded
+      startedAt: "2021-06-10T22:28:49Z"
+      templateName: safe-to-retry
+      templateScope: local/retry-script-9z9pv
+      type: Pod
+  phase: Running
+  startedAt: "2021-06-10T22:28:49Z"
+`
+
+// TestOperatorRetryExpressionErrorNoExpr tests that the default policy becomes
+// OnFailure by having no expression and no explicit retryPolicy
+func TestOperatorRetryExpressionErrorNoExpr(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(operatorRetryExpressionErrorNoExpr)
+	cancel, controller := newController(wf)
+	defer cancel()
+	ctx := context.Background()
+	woc := newWorkflowOperationCtx(wf, controller)
+
+	woc.operate(ctx)
+
+	assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
+	retryNode := woc.wf.GetNodeByName("retry-script-9z9pv[1].retry")
+	assert.Equal(t, wfv1.NodeError, retryNode.Phase)
+	assert.Equal(t, 2, len(retryNode.Children))
+	assert.Equal(t, "Error (exit code 1)", retryNode.Message)
+}
+
 var exitHandlerWithRetryNodeParam = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -8057,7 +8396,7 @@ spec:
        - name: pod
          template: pod
    - name: pod
-     container: 
+     container:
        image: my-image
 `)
 	wf.Status.Phase = wfv1.WorkflowError
