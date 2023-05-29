@@ -5831,7 +5831,7 @@
           "description": "LabelSelector is the label selector to check if the pods match the labels before being added to the pod GC queue."
         },
         "strategy": {
-          "description": "Strategy is the strategy to use. One of \"OnPodCompletion\", \"OnPodSuccess\", \"OnWorkflowCompletion\", \"OnWorkflowSuccess\"",
+          "description": "Strategy is the strategy to use. One of \"OnPodCompletion\", \"OnPodSuccess\", \"OnWorkflowCompletion\", \"OnWorkflowSuccess\". If unset, does not delete Pods",
           "type": "string"
         }
       },
@@ -6956,7 +6956,7 @@
       "description": "VolumeClaimGC describes how to delete volumes from completed Workflows",
       "properties": {
         "strategy": {
-          "description": "Strategy is the strategy to use. One of \"OnWorkflowCompletion\", \"OnWorkflowSuccess\"",
+          "description": "Strategy is the strategy to use. One of \"OnWorkflowCompletion\", \"OnWorkflowSuccess\". Defaults to \"OnWorkflowSuccess\"",
           "type": "string"
         }
       },
