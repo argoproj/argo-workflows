@@ -1009,7 +1009,7 @@ func (a *Artifact) CleanPath() error {
 
 // PodGC describes how to delete completed pods as they complete
 type PodGC struct {
-	// Strategy is the strategy to use. One of "OnPodCompletion", "OnPodSuccess", "OnWorkflowCompletion", "OnWorkflowSuccess"
+	// Strategy is the strategy to use. One of "OnPodCompletion", "OnPodSuccess", "OnWorkflowCompletion", "OnWorkflowSuccess". If unset, does not delete Pods
 	Strategy PodGCStrategy `json:"strategy,omitempty" protobuf:"bytes,1,opt,name=strategy,casttype=PodGCStrategy"`
 	// LabelSelector is the label selector to check if the pods match the labels before being added to the pod GC queue.
 	LabelSelector *metav1.LabelSelector `json:"labelSelector,omitempty" protobuf:"bytes,2,opt,name=labelSelector"`
@@ -1064,7 +1064,7 @@ func (agc *ArtifactGC) GetStrategy() ArtifactGCStrategy {
 
 // VolumeClaimGC describes how to delete volumes from completed Workflows
 type VolumeClaimGC struct {
-	// Strategy is the strategy to use. One of "OnWorkflowCompletion", "OnWorkflowSuccess"
+	// Strategy is the strategy to use. One of "OnWorkflowCompletion", "OnWorkflowSuccess". Defaults to "OnWorkflowSuccess"
 	Strategy VolumeClaimGCStrategy `json:"strategy,omitempty" protobuf:"bytes,1,opt,name=strategy,casttype=VolumeClaimGCStrategy"`
 }
 
@@ -1908,7 +1908,7 @@ type Backoff struct {
 	Duration string `json:"duration,omitempty" protobuf:"varint,1,opt,name=duration"`
 	// Factor is a factor to multiply the base duration after each failed retry
 	Factor *intstr.IntOrString `json:"factor,omitempty" protobuf:"varint,2,opt,name=factor"`
-	// MaxDuration is the maximum amount of time allowed for the backoff strategy
+	// MaxDuration is the maximum amount of time allowed for a workflow in the backoff strategy
 	MaxDuration string `json:"maxDuration,omitempty" protobuf:"varint,3,opt,name=maxDuration"`
 }
 
@@ -1939,6 +1939,22 @@ type RetryStrategy struct {
 	// Expression is a condition expression for when a node will be retried. If it evaluates to false, the node will not
 	// be retried and the retry strategy will be ignored
 	Expression string `json:"expression,omitempty" protobuf:"bytes,5,opt,name=expression"`
+}
+
+// RetryPolicyActual gets the active retry policy for a strategy.
+// If the policy is explicit, use that.
+// If an expression is given, use a policy of Always so the
+// expression is all that controls the retry for 'least surprise'.
+// Otherwise, if neither is given, default to retry OnFailure.
+func (s RetryStrategy) RetryPolicyActual() RetryPolicy {
+	if s.RetryPolicy != "" {
+		return s.RetryPolicy
+	}
+	if s.Expression == "" {
+		return RetryPolicyOnFailure
+	} else {
+		return RetryPolicyAlways
+	}
 }
 
 // The amount of requested resource * the duration that request was used.

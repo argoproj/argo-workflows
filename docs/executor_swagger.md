@@ -463,7 +463,7 @@ the ReadOnly setting in VolumeMounts.
 |------|------|---------|:--------:| ------- |-------------|---------|
 | duration | string| `string` |  | | Duration is the amount to back off. Default unit is seconds, but could also be a duration (e.g. "2m", "1h") |  |
 | factor | [IntOrString](#int-or-string)| `IntOrString` |  | |  |  |
-| maxDuration | string| `string` |  | | MaxDuration is the maximum amount of time allowed for the backoff strategy |  |
+| maxDuration | string| `string` |  | | MaxDuration is the maximum amount of time allowed for a workflow in the backoff strategy |  |
 
 
 
