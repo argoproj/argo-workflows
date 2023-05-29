@@ -9,7 +9,7 @@ PodGC describes how to delete completed pods as they complete
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **labelSelector** | [**LabelSelector**](LabelSelector.md) |  |  [optional]
-**strategy** | **String** | Strategy is the strategy to use. One of \&quot;OnPodCompletion\&quot;, \&quot;OnPodSuccess\&quot;, \&quot;OnWorkflowCompletion\&quot;, \&quot;OnWorkflowSuccess\&quot; |  [optional]
+**strategy** | **String** | Strategy is the strategy to use. One of \&quot;OnPodCompletion\&quot;, \&quot;OnPodSuccess\&quot;, \&quot;OnWorkflowCompletion\&quot;, \&quot;OnWorkflowSuccess\&quot;. If unset, does not delete Pods |  [optional]
 
 
 
