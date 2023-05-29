@@ -322,7 +322,7 @@ func (azblobDriver *ArtifactDriver) Delete(artifact *wfv1.Artifact) error {
 	}
 
 	if !isDir {
-		return DeleteBlob(containerClient, artifact.Azure.Blob)
+		return DeleteBlob(containerClient, artifact.Azure.Blob, true)
 	} else {
 		files, err := azblobDriver.ListObjects(artifact)
 		if err != nil {
@@ -335,18 +335,18 @@ func (azblobDriver *ArtifactDriver) Delete(artifact *wfv1.Artifact) error {
 				continue
 			}
 
-			if err := DeleteBlob(containerClient, file); err != nil {
+			if err := DeleteBlob(containerClient, file, true); err != nil {
 				return err
 			}
 		}
 		if directoryFile != "" {
-			return DeleteBlob(containerClient, directoryFile)
+			return DeleteBlob(containerClient, directoryFile, true)
 		}
 	}
 	return nil
 }
 
-func DeleteBlob(containerClient *azblob.ContainerClient, blobName string) error {
+func DeleteBlob(containerClient *azblob.ContainerClient, blobName string, allowNonExistent bool) error {
 	blobClient, err := containerClient.NewBlobClient(blobName)
 	if err != nil {
 		return fmt.Errorf("unable to create Azure Blob client for %s: %s", blobName, err)
@@ -354,7 +354,12 @@ func DeleteBlob(containerClient *azblob.ContainerClient, blobName string) error 
 
 	_, err = blobClient.Delete(context.TODO(), nil)
 	if err != nil {
-		return fmt.Errorf("unable to delete Azure Blob %s: %s", blobName, err)
+		if allowNonExistent && IsAzureError(err, azblob.StorageErrorCodeBlobNotFound) {
+			log.Debugf("blob to delete '%s' does not exist: %s", blobName, err)
+			return nil
+		} else {
+			return fmt.Errorf("unable to delete Azure Blob %s: %s", blobName, err)
+		}
 	}
 
 	return err

@@ -138,6 +138,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
     api_instance = archived_workflow_service_api.ArchivedWorkflowServiceApi(api_client)
     uid = "uid_example" # str | 
     namespace = "namespace_example" # str |  (optional)
+    name = "name_example" # str |  (optional)
 
     # example passing only required values which don't have defaults set
     try:
@@ -149,7 +150,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
     # example passing only required values which don't have defaults set
     # and optional values
     try:
-        api_response = api_instance.get_archived_workflow(uid, namespace=namespace)
+        api_response = api_instance.get_archived_workflow(uid, namespace=namespace, name=name)
         pprint(api_response)
     except argo_workflows.ApiException as e:
         print("Exception when calling ArchivedWorkflowServiceApi->get_archived_workflow: %s\n" % e)
@@ -162,6 +163,7 @@ Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **uid** | **str**|  |
  **namespace** | **str**|  | [optional]
+ **name** | **str**|  | [optional]
 
 ### Return type
 

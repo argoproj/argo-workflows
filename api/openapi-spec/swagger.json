@@ -238,6 +238,11 @@
             "type": "string",
             "name": "namespace",
             "in": "query"
+          },
+          {
+            "type": "string",
+            "name": "name",
+            "in": "query"
           }
         ],
         "responses": {
@@ -7947,7 +7952,7 @@
           "$ref": "#/definitions/io.k8s.apimachinery.pkg.util.intstr.IntOrString"
         },
         "maxDuration": {
-          "description": "MaxDuration is the maximum amount of time allowed for the backoff strategy",
+          "description": "MaxDuration is the maximum amount of time allowed for a workflow in the backoff strategy",
           "type": "string"
         }
       }
@@ -9762,7 +9767,7 @@
           "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.LabelSelector"
         },
         "strategy": {
-          "description": "Strategy is the strategy to use. One of \"OnPodCompletion\", \"OnPodSuccess\", \"OnWorkflowCompletion\", \"OnWorkflowSuccess\"",
+          "description": "Strategy is the strategy to use. One of \"OnPodCompletion\", \"OnPodSuccess\", \"OnWorkflowCompletion\", \"OnWorkflowSuccess\". If unset, does not delete Pods",
           "type": "string"
         }
       }
@@ -10887,7 +10892,7 @@
       "type": "object",
       "properties": {
         "strategy": {
-          "description": "Strategy is the strategy to use. One of \"OnWorkflowCompletion\", \"OnWorkflowSuccess\"",
+          "description": "Strategy is the strategy to use. One of \"OnWorkflowCompletion\", \"OnWorkflowSuccess\". Defaults to \"OnWorkflowSuccess\"",
           "type": "string"
         }
       }

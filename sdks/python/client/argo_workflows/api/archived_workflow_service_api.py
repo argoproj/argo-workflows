@@ -112,6 +112,7 @@ class ArchivedWorkflowServiceApi(object):
                 'all': [
                     'uid',
                     'namespace',
+                    'name',
                 ],
                 'required': [
                     'uid',
@@ -133,14 +134,18 @@ class ArchivedWorkflowServiceApi(object):
                         (str,),
                     'namespace':
                         (str,),
+                    'name':
+                        (str,),
                 },
                 'attribute_map': {
                     'uid': 'uid',
                     'namespace': 'namespace',
+                    'name': 'name',
                 },
                 'location_map': {
                     'uid': 'path',
                     'namespace': 'query',
+                    'name': 'query',
                 },
                 'collection_format_map': {
                 }
@@ -608,6 +613,7 @@ class ArchivedWorkflowServiceApi(object):
 
         Keyword Args:
             namespace (str): [optional]
+            name (str): [optional]
             _return_http_data_only (bool): response data without head status
                 code and headers. Default is True.
             _preload_content (bool): if False, the urllib3.HTTPResponse object
