@@ -1537,7 +1537,7 @@ PodGC describes how to delete completed pods as they complete
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
 |`labelSelector`|[`LabelSelector`](#labelselector)|LabelSelector is the label selector to check if the pods match the labels before being added to the pod GC queue.|
-|`strategy`|`string`|Strategy is the strategy to use. One of "OnPodCompletion", "OnPodSuccess", "OnWorkflowCompletion", "OnWorkflowSuccess"|
+|`strategy`|`string`|Strategy is the strategy to use. One of "OnPodCompletion", "OnPodSuccess", "OnWorkflowCompletion", "OnWorkflowSuccess". If unset, does not delete Pods|
 
 ## Metadata
 
@@ -1694,7 +1694,7 @@ VolumeClaimGC describes how to delete volumes from completed Workflows
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`strategy`|`string`|Strategy is the strategy to use. One of "OnWorkflowCompletion", "OnWorkflowSuccess"|
+|`strategy`|`string`|Strategy is the strategy to use. One of "OnWorkflowCompletion", "OnWorkflowSuccess". Defaults to "OnWorkflowSuccess"|
 
 ## WorkflowMetadata
 

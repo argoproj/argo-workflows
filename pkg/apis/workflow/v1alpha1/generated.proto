@@ -1215,7 +1215,7 @@ message Plugin {
 
 // PodGC describes how to delete completed pods as they complete
 message PodGC {
-  // Strategy is the strategy to use. One of "OnPodCompletion", "OnPodSuccess", "OnWorkflowCompletion", "OnWorkflowSuccess"
+  // Strategy is the strategy to use. One of "OnPodCompletion", "OnPodSuccess", "OnWorkflowCompletion", "OnWorkflowSuccess". If unset, does not delete Pods
   optional string strategy = 1;
 
   // LabelSelector is the label selector to check if the pods match the labels before being added to the pod GC queue.
@@ -1757,7 +1757,7 @@ message Version {
 
 // VolumeClaimGC describes how to delete volumes from completed Workflows
 message VolumeClaimGC {
-  // Strategy is the strategy to use. One of "OnWorkflowCompletion", "OnWorkflowSuccess"
+  // Strategy is the strategy to use. One of "OnWorkflowCompletion", "OnWorkflowSuccess". Defaults to "OnWorkflowSuccess"
   optional string strategy = 1;
 }
 
