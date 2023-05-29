@@ -56,9 +56,9 @@ require (
 	golang.org/x/oauth2 v0.8.0
 	golang.org/x/sync v0.2.0
 	golang.org/x/time v0.3.0
-	google.golang.org/api v0.122.0
+	google.golang.org/api v0.124.0
 	google.golang.org/genproto v0.0.0-20230410155749-daa745c078e1
-	google.golang.org/grpc v1.54.0
+	google.golang.org/grpc v1.55.0
 	gopkg.in/go-playground/webhooks.v5 v5.17.0
 	gopkg.in/jcmturner/gokrb5.v5 v5.3.0
 	k8s.io/api v0.24.3
@@ -74,7 +74,7 @@ require (
 	upper.io/db.v3 v3.8.0+incompatible
 )
 
-require github.com/google/s2a-go v0.1.3 // indirect
+require github.com/google/s2a-go v0.1.4 // indirect
 
 require (
 	cloud.google.com/go v0.110.0 // indirect
