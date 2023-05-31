@@ -1652,12 +1652,16 @@ func (s *Synchronization) GetType() SynchronizationType {
 type SemaphoreRef struct {
 	// ConfigMapKeyRef is configmap selector for Semaphore configuration
 	ConfigMapKeyRef *apiv1.ConfigMapKeySelector `json:"configMapKeyRef,omitempty" protobuf:"bytes,1,opt,name=configMapKeyRef"`
+	// Namespace is the namespace of the configmap, default: [namespace of workflow]
+	Namespace string `json:"namespace,omitempty" protobuf:"bytes,2,opt,name=namespace"`
 }
 
 // Mutex holds Mutex configuration
 type Mutex struct {
 	// name of the mutex
 	Name string `json:"name,omitempty" protobuf:"bytes,1,opt,name=name"`
+	// Namespace is the namespace of the mutex, default: [namespace of workflow]
+	Namespace string `json:"namespace,omitempty" protobuf:"bytes,2,opt,name=namespace"`
 }
 
 // WorkflowTemplateRef is a reference to a WorkflowTemplate resource.
