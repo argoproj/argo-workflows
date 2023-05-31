@@ -252,6 +252,7 @@ codegen: types swagger manifests $(GOPATH)/bin/mockery docs/fields.md docs/cli/a
 	go generate ./...
 	make --directory sdks/java generate
 	make --directory sdks/python generate
+	make --directory sdks/rust generate
 
 .PHONY: check-pwd
 check-pwd:

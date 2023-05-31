@@ -3,12 +3,12 @@
 # https://openapi-generator.tech/docs/generators/rust/
 
 GIT_TAG               := $(shell git describe --exact-match --tags --abbrev=0 2> /dev/null || echo untagged)
+
 ifeq ($(GIT_TAG),untagged)
-# "SNAPSHOT" is "latest" for Java
-VERSION               := 0.0.0-LATEST
+VERSION               := 0.0.0-latest
 else
 # remove the "v" prefix, not allowed
-VERSION               := $(GIT_TAG:v=)
+VERSION               := $(GIT_TAG:v%=%)
 endif
 
 # work dir
@@ -41,21 +41,16 @@ generate:
 		--remove-operation-id-prefix \
 		--model-name-prefix '' \
 		--model-name-suffix '' \
-		--artifact-id argo-python-client \
+		--artifact-id argo-rust-client \
 		--global-property modelTests=false \
  		--global-property packageName=argo_workflows \
 		--generate-alias-as-model
 	# https://vsupalov.com/docker-shared-permissions/#set-the-docker-user-when-running-your-container
 	$(CHOWN) $(WD) || sudo $(CHOWN) $(WD)
-	# adding kubernetes-client
-	cd client && sed 's/<dependencies>/<dependencies><dependency><groupId>io.kubernetes<\/groupId><artifactId>client-java<\/artifactId><version>14.0.1<\/version><\/dependency>/g' pom.xml > tmp && mv tmp pom.xml
 
-client/pom.xml: generate
-
-install: client/pom.xml
-	mvn -f client install
+install: 
+	cargo install --path ./client
 
 test:
 	../../hack/access-token.sh init
-	kubectl delete wf --all
-	env ARGO_TOKEN="`../../hack/access-token.sh get`" mvn -f tests test
+	env ARGO_TOKEN="`../../hack/access-token.sh get`" cargo test
