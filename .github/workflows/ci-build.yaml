@@ -86,6 +86,8 @@ jobs:
             profile: minimal
           - test: test-python-sdk
             profile: minimal
+          - test: test-rust-sdk
+            profile: minimal
           - test: test-executor
             install_k3s_version: v1.21.2+k3s1
             profile: minimal
@@ -115,6 +117,10 @@ jobs:
         with:
           python-version: '3.x'
           cache: pip
+      - uses: actions-rs/toolchain@v1
+        if: ${{matrix.test == 'test-rust-sdk'}}
+        with:
+          toolchain: stable
       - name: Install and start K3S
         run: |
           if ! echo "${{ matrix.install_k3s_version }}" | egrep '^v[0-9]+\.[0-9]+\.[0-9]+\+k3s1$'; then
@@ -148,11 +154,11 @@ jobs:
       - run: make controller kit STATIC_FILES=false
         name: Build controller
       - run: make cli STATIC_FILES=false
-        if: ${{matrix.test == 'test-api' || matrix.test == 'test-cli' || matrix.test == 'test-java-sdk' || matrix.test == 'test-python-sdk'}}
+        if: ${{matrix.test == 'test-api' || matrix.test == 'test-cli' || matrix.test == 'test-java-sdk' || matrix.test == 'test-python-sdk' || matrix.test == 'test-rust-sdk'}}
         name: Build CLI
-      - run: make start PROFILE=${{matrix.profile}} AUTH_MODE=client STATIC_FILES=false LOG_LEVEL=info API=${{matrix.test == 'test-api' || matrix.test == 'test-cli' || matrix.test == 'test-java-sdk' || matrix.test == 'test-python-sdk'}} UI=false > /tmp/argo.log 2>&1 &
+      - run: make start PROFILE=${{matrix.profile}} AUTH_MODE=client STATIC_FILES=false LOG_LEVEL=info API=${{matrix.test == 'test-api' || matrix.test == 'test-cli' || matrix.test == 'test-java-sdk' || matrix.test == 'test-python-sdk' || matrix.test == 'test-rust-sdk'}}} UI=false > /tmp/argo.log 2>&1 &
         name: Start controller/API
-      - run: make wait API=${{matrix.test == 'test-api' || matrix.test == 'test-cli' || matrix.test == 'test-java-sdk' || matrix.test == 'test-python-sdk'}}
+      - run: make wait API=${{matrix.test == 'test-api' || matrix.test == 'test-cli' || matrix.test == 'test-java-sdk' || matrix.test == 'test-python-sdk' || matrix.test == 'test-rust-sdk'}}}
         timeout-minutes: 4
         name: Wait for controller to be up
       - name: Run tests ${{matrix.test}}
