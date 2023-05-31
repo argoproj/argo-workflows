@@ -22,5 +22,12 @@ kubectl cluster-info
 # install kit
 curl -q https://raw.githubusercontent.com/kitproj/kit/main/install.sh | sh
 
+# install protocol buffer compiler (protoc)
+sudo apt update
+sudo apt install -y protobuf-compiler
+
+# Make sure go path is owned by vscode
+sudo chown -R vscode:vscode /home/vscode/go
+
 # download dependencies and do first-pass compile
 CI=1 kit pre-up
