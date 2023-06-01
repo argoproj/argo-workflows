@@ -58,6 +58,7 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
 
     const [namespace] = useState(match.params.namespace);
     const [isArchived, setIsArchived] = useState(false);
+    const [deleteArchived, setDeleteArchived] = useState(false);
     const [name, setName] = useState(match.params.name);
     const [tab, setTab] = useState(queryParams.get('tab') || 'workflow');
     const [nodeId, setNodeId] = useState(queryParams.get('nodeId'));
@@ -148,20 +149,39 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
                     title: workflowOperation.title.charAt(0).toUpperCase() + workflowOperation.title.slice(1),
                     iconClassName: workflowOperation.iconClassName,
                     action: () => {
-                        popup.confirm('Confirm', `Are you sure you want to ${workflowOperation.title.toLowerCase()} this workflow?`).then(yes => {
-                            if (yes) {
-                                workflowOperation
-                                    .action(workflow)
-                                    .then((wf: Workflow) => {
-                                        if (workflowOperation.title === 'DELETE') {
-                                            navigation.goto(uiUrl(`workflows/${workflow.metadata.namespace}`));
-                                        } else {
+                        if (workflowOperation.title === 'DELETE') {
+                            popup.confirm('Confirm', renderDeleteCheck).then(yes => {
+                                if (yes) {
+                                    services.workflows
+                                        .delete(workflow.metadata.name, workflow.metadata.namespace)
+                                        .then(() => {
+                                            if (!deleteArchived) {
+                                                navigation.goto(uiUrl(`workflows/${workflow.metadata.namespace}`));
+                                            }
+                                        })
+                                        .catch(setError);
+                                    if (deleteArchived) {
+                                        services.workflows
+                                            .deleteArchived(workflow.metadata.uid, workflow.metadata.namespace)
+                                            .then(() => {
+                                                navigation.goto(uiUrl(`workflows/${workflow.metadata.namespace}`));
+                                            })
+                                            .catch(setError);
+                                    }
+                                }
+                            });
+                        } else {
+                            popup.confirm('Confirm', `Are you sure you want to ${workflowOperation.title.toLowerCase()} this workflow?`).then(yes => {
+                                if (yes) {
+                                    workflowOperation
+                                        .action(workflow)
+                                        .then((wf: Workflow) => {
                                             setName(wf.metadata.name);
-                                        }
-                                    })
-                                    .catch(setError);
-                            }
-                        });
+                                        })
+                                        .catch(setError);
+                                }
+                            });
+                        }
                     }
                 };
             });
@@ -385,6 +405,25 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
                     .catch(setError);
             }
         });
+    };
+
+    const renderDeleteCheck = () => {
+        return (
+            <>
+                <p>Are you sure you want to delete this workflow?</p>
+                <label>
+                    <input
+                        type='checkbox'
+                        className='workflows-list__status--checkbox'
+                        checked={deleteArchived}
+                        onClick={e => {
+                            setDeleteArchived(!deleteArchived);
+                        }}
+                    />
+                    Delete in database
+                </label>
+            </>
+        );
     };
 
     const ensurePodName = (wf: Workflow, node: NodeStatus, nodeID: string): string => {

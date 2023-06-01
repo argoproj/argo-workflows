@@ -151,6 +151,14 @@ export const WorkflowsService = {
         return requests.delete(`api/v1/workflows/${namespace}/${name}`).then(res => res.body as WorkflowDeleteResponse);
     },
 
+    deleteArchived(uid: string, namespace: string): Promise<WorkflowDeleteResponse> {
+        if (namespace === '') {
+            return requests.delete(`api/v1/archived-workflows/${uid}`).then(res => res.body as WorkflowDeleteResponse);
+        } else {
+            return requests.delete(`api/v1/archived-workflows/${uid}?namespace=${namespace}`).then(res => res.body as WorkflowDeleteResponse);
+        }
+    },
+
     submit(kind: string, name: string, namespace: string, submitOptions?: SubmitOpts) {
         return requests
             .post(`api/v1/workflows/${namespace}/submit`)
