@@ -6050,6 +6050,10 @@
           "description": "Bucket is the name of the bucket",
           "type": "string"
         },
+        "caSecret": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
+          "description": "CASecret specifies the secret that contains the CA, used to verify the TLS connection"
+        },
         "createBucketIfNotPresent": {
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.CreateS3BucketOptions",
           "description": "CreateBucketIfNotPresent tells the driver to attempt to create the S3 bucket for output artifacts, if it doesn't exist. Setting Enabled Encryption will apply either SSE-S3 to the bucket if KmsKeyId is not set or SSE-KMS if it is."
@@ -6098,6 +6102,10 @@
         "bucket": {
           "description": "Bucket is the name of the bucket",
           "type": "string"
+        },
+        "caSecret": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
+          "description": "CASecret specifies the secret that contains the CA, used to verify the TLS connection"
         },
         "createBucketIfNotPresent": {
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.CreateS3BucketOptions",

@@ -2452,6 +2452,9 @@ type S3Bucket struct {
 	CreateBucketIfNotPresent *CreateS3BucketOptions `json:"createBucketIfNotPresent,omitempty" protobuf:"bytes,9,opt,name=createBucketIfNotPresent"`
 
 	EncryptionOptions *S3EncryptionOptions `json:"encryptionOptions,omitempty" protobuf:"bytes,10,opt,name=encryptionOptions"`
+
+	// CASecret specifies the secret that contains the CA, used to verify the TLS connection
+	CASecret *apiv1.SecretKeySelector `json:"caSecret,omitempty" protobuf:"bytes,11,opt,name=caSecret"`
 }
 
 // S3EncryptionOptions used to determine encryption options during s3 operations

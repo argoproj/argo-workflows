@@ -5077,6 +5077,12 @@ func schema_pkg_apis_workflow_v1alpha1_S3Artifact(ref common.ReferenceCallback) 
 							Ref: ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.S3EncryptionOptions"),
 						},
 					},
+					"caSecret": {
+						SchemaProps: spec.SchemaProps{
+							Description: "CASecret specifies the secret that contains the CA, used to verify the TLS connection",
+							Ref:         ref("k8s.io/api/core/v1.SecretKeySelector"),
+						},
+					},
 					"key": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Key is the key in the bucket where the artifact resides",
@@ -5162,6 +5168,12 @@ func schema_pkg_apis_workflow_v1alpha1_S3ArtifactRepository(ref common.Reference
 					"encryptionOptions": {
 						SchemaProps: spec.SchemaProps{
 							Ref: ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.S3EncryptionOptions"),
+						},
+					},
+					"caSecret": {
+						SchemaProps: spec.SchemaProps{
+							Description: "CASecret specifies the secret that contains the CA, used to verify the TLS connection",
+							Ref:         ref("k8s.io/api/core/v1.SecretKeySelector"),
 						},
 					},
 					"keyFormat": {
@@ -5256,6 +5268,12 @@ func schema_pkg_apis_workflow_v1alpha1_S3Bucket(ref common.ReferenceCallback) co
 					"encryptionOptions": {
 						SchemaProps: spec.SchemaProps{
 							Ref: ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.S3EncryptionOptions"),
+						},
+					},
+					"caSecret": {
+						SchemaProps: spec.SchemaProps{
+							Description: "CASecret specifies the secret that contains the CA, used to verify the TLS connection",
+							Ref:         ref("k8s.io/api/core/v1.SecretKeySelector"),
 						},
 					},
 				},

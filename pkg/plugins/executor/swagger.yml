@@ -3321,6 +3321,8 @@ definitions:
       bucket:
         description: Bucket is the name of the bucket
         type: string
+      caSecret:
+        $ref: '#/definitions/SecretKeySelector'
       createBucketIfNotPresent:
         $ref: '#/definitions/CreateS3BucketOptions'
       encryptionOptions:
