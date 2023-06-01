@@ -1,3 +1,5 @@
+# NOTE: all dependencies changed here must also be changed in the Makefile. 
+
 {
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-22.11";
@@ -35,7 +37,7 @@
             inherit nodeEnv;
           };
           pythonPkgs = pkgs.python310Packages;
-          mkdocs = with pythonPkgs;
+          mkdocs = with pythonPkgs; # upgrade this in the Makefile if upgraded here
             buildPythonPackage rec {
               pname = "mkdocs";
               version = "1.2.4";
@@ -57,7 +59,7 @@
               ];
               doCheck = false;
             };
-          mkdocs-material-extensions = with pythonPkgs;
+          mkdocs-material-extensions = with pythonPkgs; # upgrade this in the Makefile if upgraded here
             buildPythonPackage rec {
               pname = "mkdocs_material_extensions";
               version = "1.1.1";
@@ -68,7 +70,7 @@
               buildInputs = [ hatchling babel ];
               format = "pyproject";
             };
-          mkdocs-material = with pythonPkgs;
+          mkdocs-material = with pythonPkgs; # upgrade this in the Makefile if upgraded here
             buildPythonPackage rec {
               pname = "mkdocs-material";
               version = "8.1.9";
@@ -110,7 +112,7 @@
               propagatedBuildInputs = [ editdistpy ];
               format = "pyproject";
             };
-          mkdocs-spellcheck = with pythonPkgs;
+          mkdocs-spellcheck = with pythonPkgs; # upgrade this in the Makefile if upgraded here
             buildPythonPackage rec {
               pname = "mkdocs-spellcheck";
               version = "0.2.1";
@@ -162,9 +164,9 @@
               doCheck = false;
             };
 
-            mockery = pkgs.buildGoModule rec {
+            mockery = pkgs.buildGoModule rec { 
               pname = "mockery";
-              version = "2.10.0";
+              version = "2.10.0"; # upgrade this in the Makefile if upgraded here
 
               src = pkgs.fetchFromGitHub {
                 owner = "vektra";
@@ -178,7 +180,7 @@
 
             protoc-gen-gogo-all = pkgs.buildGoModule rec {
               pname = "protoc-gen-gogo";
-              version = "1.3.2";
+              version = "1.3.2"; # upgrade this in the Makefile if upgraded here
 
               src = pkgs.fetchFromGitHub {
                 owner = "gogo";
@@ -191,7 +193,7 @@
             };
             grpc-ecosystem = pkgs.buildGoModule rec {
               pname = "grpc-ecosystem";
-              version = "1.16.0";
+              version = "1.16.0"; # upgrade this in the Makefile if upgraded here
 
               src = pkgs.fetchFromGitHub {
                 owner = "grpc-ecosystem";
@@ -205,7 +207,7 @@
 
             go-swagger = pkgs.buildGoModule rec {
               pname = "go-swagger";
-              version = "0.28.0";
+              version = "0.28.0"; # upgrade this in the Makefile if upgraded here
 
               src = pkgs.fetchFromGitHub {
                 owner = "go-swagger";
@@ -219,7 +221,7 @@
 
             controller-tools = pkgs.buildGoModule rec {
               pname = "controller-tools";
-              version = "0.4.1";
+              version = "0.4.1"; # upgrade this in the Makefile if upgraded here
 
               src = pkgs.fetchFromGitHub {
                 owner = "kubernetes-sigs";
@@ -233,7 +235,7 @@
 
             k8sio-tools = pkgs.buildGoModule rec {
               pname = "k8sio-tools";
-              version = "0.21.5";
+              version = "0.21.5"; # upgrade this in the Makefile if upgraded here
 
               src = pkgs.fetchFromGitHub {
                 owner = "kubernetes";
@@ -247,7 +249,7 @@
 
             goreman = pkgs.buildGoModule rec {
               pname = "goreman";
-              version = "0.3.11";
+              version = "0.3.11"; # upgrade this in the Makefile if upgraded here
               src = pkgs.fetchFromGitHub {
                 owner = "mattn";
                 repo = "goreman";
@@ -260,7 +262,7 @@
 
             stern = pkgs.buildGoModule rec {
               pname = "stern";
-              version = "1.25.0";
+              version = "1.25.0"; # upgrade this in the Makefile if upgraded here
               src = pkgs.fetchFromGitHub {
                 owner = "stern";
                 repo = "stern";
