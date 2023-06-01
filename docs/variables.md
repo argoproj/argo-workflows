@@ -275,7 +275,7 @@ For `Template`-level metrics:
 
 ### Knowing where you are
 
-The idea with creating a `WorkflowTemplate` is that they are reusable bits of code you will using in many actual Workflows. Sometimes it is useful to know which workflow you are part of.
+The idea with creating a `WorkflowTemplate` is that they are reusable bits of code you will use in many actual Workflows. Sometimes it is useful to know which workflow you are part of.
 
 `workflow.mainEntrypoint` is one way you can do this. If each of your actual workflows has a differing entrypoint, you can identify the workflow you're part of. Given this use in a `WorkflowTemplate`:
 
@@ -332,4 +332,4 @@ spec:
 
 results in a log of `bar`
 
-This shouldn't that helpful in logging, you should be able to identify workflows through other labels in your clusters log tool, but can be helpful when generating metrics for the workflow for example.
+This shouldn't be that helpful in logging, you should be able to identify workflows through other labels in your cluster's log tool, but can be helpful when generating metrics for the workflow for example.
