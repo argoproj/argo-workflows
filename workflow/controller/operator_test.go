@@ -367,6 +367,7 @@ func TestGlobalParams(t *testing.T) {
 	assert.Contains(t, woc.globalParams, "workflow.duration")
 	assert.Contains(t, woc.globalParams, "workflow.name")
 	assert.Contains(t, woc.globalParams, "workflow.namespace")
+	assert.Contains(t, woc.globalParams, "workflow.mainEntrypoint")
 	assert.Contains(t, woc.globalParams, "workflow.parameters")
 	assert.Contains(t, woc.globalParams, "workflow.annotations")
 	assert.Contains(t, woc.globalParams, "workflow.labels")
@@ -6704,7 +6705,7 @@ spec:
     container:
       image: docker/whalesay:latest
       command: [cowsay]
-      args: ["{{workflows.scheduledTime}}"]
+      args: ["{{workflow.scheduledTime}}"]
 `
 
 func TestWorkflowScheduledTimeVariable(t *testing.T) {
@@ -6716,6 +6717,33 @@ func TestWorkflowScheduledTimeVariable(t *testing.T) {
 	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate(ctx)
 	assert.Equal(t, "2006-01-02T15:04:05-07:00", woc.globalParams[common.GlobalVarWorkflowCronScheduleTime])
+}
+
+var wfMainEntrypointVariable = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: hello-world
+spec:
+  entrypoint: whalesay
+  shutdown: "Stop"
+  templates:
+  - name: whalesay
+    container:
+      image: docker/whalesay:latest
+      command: [cowsay]
+      args: ["{{workflow.mainEntrypoint}}"]
+`
+
+func TestWorkflowMainEntrypointVariable(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(wfMainEntrypointVariable)
+	cancel, controller := newController(wf)
+	defer cancel()
+
+	ctx := context.Background()
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate(ctx)
+	assert.Equal(t, "whalesay", woc.globalParams[common.GlobalVarWorkflowMainEntrypoint])
 }
 
 var wfNodeNameField = `
