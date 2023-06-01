@@ -265,7 +265,7 @@ func (cm *Manager) ReleaseAll(wf *wfv1.Workflow) bool {
 				lock.removeFromQueue(getHolderKey(wf, node.ID))
 			}
 			node.SynchronizationStatus = nil
-			wf.Status.Nodes[node.ID] = node
+			wf.Status.Nodes.Set(node.ID, node)
 		}
 	}
 

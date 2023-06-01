@@ -1,6 +1,8 @@
 package resource
 
 import (
+	log "github.com/sirupsen/logrus"
+
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
 
@@ -14,7 +16,7 @@ func UpdateResourceDurations(wf *wfv1.Workflow) {
 		} else if node.Fulfilled() {
 			// compute the sum of all children
 			node.ResourcesDuration = resourceDuration(wf, node, make(map[string]bool))
-			wf.Status.Nodes[nodeID] = node
+			wf.Status.Nodes.Set(nodeID, node)
 		}
 	}
 }
@@ -27,11 +29,15 @@ func resourceDuration(wf *wfv1.Workflow, node wfv1.NodeStatus, visited map[strin
 			continue
 		}
 		visited[childID] = true
-		child := wf.Status.Nodes[childID]
+		child, err := wf.Status.Nodes.Get(childID)
+		if err != nil {
+			log.Warnf("was unable to obtain node for %s", childID)
+			continue
+		}
 		if child.Type == wfv1.NodeTypePod {
 			v = v.Add(child.ResourcesDuration)
 		}
-		v = v.Add(resourceDuration(wf, child, visited))
+		v = v.Add(resourceDuration(wf, *child, visited))
 	}
 	return v
 }

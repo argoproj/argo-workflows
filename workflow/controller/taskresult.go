@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"fmt"
 	"reflect"
 	"time"
 
@@ -49,32 +50,38 @@ func (wfc *WorkflowController) newWorkflowTaskResultInformer() cache.SharedIndex
 	return informer
 }
 
-func (woc *wfOperationCtx) taskResultReconciliation() {
+func (woc *wfOperationCtx) taskResultReconciliation() error {
 	objs, _ := woc.controller.taskResultInformer.GetIndexer().ByIndex(indexes.WorkflowIndex, woc.wf.Namespace+"/"+woc.wf.Name)
 	woc.log.WithField("numObjs", len(objs)).Info("Task-result reconciliation")
 	for _, obj := range objs {
 		result := obj.(*wfv1.WorkflowTaskResult)
 		nodeID := result.Name
-		old := woc.wf.Status.Nodes[nodeID]
-		new := old.DeepCopy()
+		old, err := woc.wf.Status.Nodes.Get(nodeID)
+		if err != nil {
+			errorMsg := fmt.Sprintf("was unable to obtain node for %s", nodeID)
+			woc.log.Errorf(errorMsg)
+			return fmt.Errorf(errorMsg)
+		}
+		newNode := old.DeepCopy()
 		if result.Outputs.HasOutputs() {
-			if new.Outputs == nil {
-				new.Outputs = &wfv1.Outputs{}
+			if newNode.Outputs == nil {
+				newNode.Outputs = &wfv1.Outputs{}
 			}
-			result.Outputs.DeepCopyInto(new.Outputs)               // preserve any existing values
-			if old.Outputs != nil && new.Outputs.ExitCode == nil { // prevent overwriting of ExitCode
-				new.Outputs.ExitCode = old.Outputs.ExitCode
+			result.Outputs.DeepCopyInto(newNode.Outputs)               // preserve any existing values
+			if old.Outputs != nil && newNode.Outputs.ExitCode == nil { // prevent overwriting of ExitCode
+				newNode.Outputs.ExitCode = old.Outputs.ExitCode
 			}
 		}
 		if result.Progress.IsValid() {
-			new.Progress = result.Progress
+			newNode.Progress = result.Progress
 		}
-		if !reflect.DeepEqual(&old, new) {
+		if !reflect.DeepEqual(&old, newNode) {
 			woc.log.
 				WithField("nodeID", nodeID).
 				Info("task-result changed")
-			woc.wf.Status.Nodes[nodeID] = *new
+			woc.wf.Status.Nodes.Set(nodeID, *newNode)
 			woc.updated = true
 		}
 	}
+	return nil
 }

@@ -63,10 +63,11 @@ func TestResubmitWorkflowWithOnExit(t *testing.T) {
 		},
 	}
 	onExitID := wf.NodeID(onExitName)
-	wf.Status.Nodes[onExitID] = wfv1.NodeStatus{
+	onExitNode := wfv1.NodeStatus{
 		Name:  onExitName,
 		Phase: wfv1.NodeSucceeded,
 	}
+	wf.Status.Nodes.Set(onExitID, onExitNode)
 	newWF, err := FormulateResubmitWorkflow(&wf, true, nil)
 	assert.NoError(t, err)
 	newWFOnExitName := newWF.ObjectMeta.Name + ".onExit"
