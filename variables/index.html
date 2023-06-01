@@ -1409,6 +1409,13 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#knowing-where-you-are" class="md-nav__link">
+    Knowing where you are
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -4079,6 +4086,13 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#knowing-where-you-are" class="md-nav__link">
+    Knowing where you are
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -4136,7 +4150,7 @@
 <h3 id="simple">Simple<a class="headerlink" href="#simple" title="Permanent link">&para;</a></h3>
 <p>The tag is substituted with the variable that has a name the same as the tag.</p>
 <p>Simple tags <strong>may</strong> have white-space between the brackets and variable as seen below. However, there is a known issue where variables may fail to interpolate with white-space, so it is recommended to avoid using white-space until this issue is resolved. <a href="https://github.com/argoproj/argo-workflows/issues/8960">Please report</a> unexpected behavior with reproducible examples.</p>
-<div class="highlight"><pre><span></span><code><span class="nt">args</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">inputs.parameters.message</span><span class="nv"> </span><span class="s">}}&quot;</span><span class="w"> </span><span class="p p-Indicator">]</span><span class="w">  </span>
+<div class="highlight"><pre><span></span><code><span class="nt">args</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">inputs.parameters.message</span><span class="nv"> </span><span class="s">}}&quot;</span><span class="w"> </span><span class="p p-Indicator">]</span>
 </code></pre></div>
 <h3 id="expression">Expression<a class="headerlink" href="#expression" title="Permanent link">&para;</a></h3>
 <blockquote>
@@ -4517,6 +4531,10 @@ currently available for real time emission:</p>
 <td>Workflow namespace</td>
 </tr>
 <tr>
+<td><code>workflow.mainEntrypoint</code></td>
+<td>Workflow's initial entrypoint</td>
+</tr>
+<tr>
 <td><code>workflow.serviceAccountName</code></td>
 <td>Workflow service account name</td>
 </tr>
@@ -4605,6 +4623,54 @@ currently available for real time emission:</p>
 </tr>
 </tbody>
 </table>
+<h3 id="knowing-where-you-are">Knowing where you are<a class="headerlink" href="#knowing-where-you-are" title="Permanent link">&para;</a></h3>
+<p>The idea with creating a <code>WorkflowTemplate</code> is that they are reusable bits of code you will use in many actual Workflows. Sometimes it is useful to know which workflow you are part of.</p>
+<p><code>workflow.mainEntrypoint</code> is one way you can do this. If each of your actual workflows has a differing entrypoint, you can identify the workflow you're part of. Given this use in a <code>WorkflowTemplate</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">WorkflowTemplate</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">say-main-entrypoint</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">entrypoint</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">echo</span>
+<span class="w">  </span><span class="nt">templates</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">echo</span>
+<span class="w">    </span><span class="nt">container</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">alpine</span>
+<span class="w">      </span><span class="nt">command</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">echo</span><span class="p p-Indicator">]</span>
+<span class="w">      </span><span class="nt">args</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;{{workflow.mainEntrypoint}}&quot;</span><span class="p p-Indicator">]</span>
+</code></pre></div>
+<p>I can distinguish my caller:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Workflow</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">generateName</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">foo-</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">entrypoint</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">foo</span>
+<span class="w">  </span><span class="nt">templates</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">foo</span>
+<span class="w">      </span><span class="nt">steps</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">step</span>
+<span class="w">          </span><span class="nt">templateRef</span><span class="p">:</span>
+<span class="w">            </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">say-main-entrypoint</span>
+<span class="w">            </span><span class="nt">template</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">echo</span>
+</code></pre></div>
+<p>results in a log of <code>foo</code></p>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Workflow</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">generateName</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">bar-</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">entrypoint</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">bar</span>
+<span class="w">  </span><span class="nt">templates</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">bar</span>
+<span class="w">      </span><span class="nt">steps</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">step</span>
+<span class="w">          </span><span class="nt">templateRef</span><span class="p">:</span>
+<span class="w">            </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">say-main-entrypoint</span>
+<span class="w">            </span><span class="nt">template</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">echo</span>
+</code></pre></div>
+<p>results in a log of <code>bar</code></p>
+<p>This shouldn't be that helpful in logging, you should be able to identify workflows through other labels in your cluster's log tool, but can be helpful when generating metrics for the workflow for example.</p>
 
               
 
