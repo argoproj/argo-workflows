@@ -233,3 +233,6 @@ vendored
 nix.conf
 LDFlags
 Makefile
+dev 
+vendorSha256
+dependabot
