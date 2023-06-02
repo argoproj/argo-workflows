@@ -164,7 +164,7 @@ ui/dist/app/index.html: $(shell find ui/src -type f && find ui -maxdepth 1 -type
 	JOBS=max yarn --cwd ui build
 
 $(GOPATH)/bin/staticfiles:
-	go install bou.ke/staticfiles@dd04075# update this in Nix when upgrading it here
+	go install bou.ke/staticfiles@dd04075 # update this in Nix when upgrading it here
  
 
 ifeq ($(STATIC_FILES),true)
