@@ -2,7 +2,7 @@
 
 You have two options:
 
-1. If you're using VSCode, you use the [Dev-Container](#development-container). This takes about 7 minutes.
+1. If you're using VSCode, you use the [Dev-Container](#development-container). This takes about 7 minutes. This can also be used from the dev-container CLI.
 1. Install the [requirements](#requirements) on your computer manually. This takes about 1 hour.
 
 ## Git Clone
@@ -12,14 +12,17 @@ generation does not work.
 
 ## Development Container
 
-A development container is a running Docker container with a well-defined tool/runtime stack and its prerequisites.
-[The Visual Studio Code Remote - Containers](https://code.visualstudio.com/docs/remote/containers)  extension lets you use a Docker container as a full-featured development environment.
+A development container is a running Docker container with a well-defined tool/runtime stack and its prerequisites. It should be able to do everything you need to do to develop argo workflows using the development container without installing tools on your local machine. It takes quite a long time to build the container. It will run k3d inside the container so you'll have a cluster to use to test against.
 
-System requirements can be found [here](https://code.visualstudio.com/docs/remote/containers#_system-requirements)
+You can use the development container in a few different ways:
+
+1. [Visual studio code](https://code.visualstudio.com/) with [The Visual Studio Code Remote - Containers](https://code.visualstudio.com/docs/remote/containers) extension lets you use a Docker container as a full-featured development environment. Open the clone of argo-workflows folder in VS code and it should offer to use the development container automatically. System requirements can be found [here](https://code.visualstudio.com/docs/remote/containers#_system-requirements). Visual Studio will allow you to forward ports to allow your external browser to access the running components.
+1. [Dev-container CLI](https://code.visualstudio.com/). Install the tool and from the argo-workflow folder do `devcontainer up --workspace-folder .` followed by `devcontainer exec --workspace-folder . /bin/bash` to get a shell where you can start building the code. You can use your choice editor outside the docker image to edit code, the changes are mirrored inside the container. Due to a limitation in the CLI only port 8080 (the Web UI) will get exposed for you to access if you run this way. Other services are usable from the shell inside.
+
+`Github Codespaces` is known not to work at this time.
 
 Note:
 
-* `GOPATH` must be `$HOME/go`.
 * for **Apple Silicon**
     * This platform can spend 3 times the indicated time
     * Configure Docker Desktop to use BuildKit:
@@ -34,9 +37,11 @@ Note:
     * Configure [`.wslconfig`](https://docs.microsoft.com/en-us/windows/wsl/wsl-config#configuration-setting-for-wslconfig) to limit memory usage by the WSL2 to prevent VSCode OOM.
 
 * For **Linux**
-    * Use [Docker Desktop](https://docs.docker.com/desktop/linux/install/) instead of [Docker Engine](https://docs.docker.com/engine/install/) to prevent incorrect network configuration by k3d
+    * Use [Docker Desktop](https://docs.docker.com/desktop/linux/install/) instead of [Docker Engine](https://docs.docker.com/engine/install/) to prevent incorrect network configuration by k3d.
 
 ## Requirements
+
+To build on your own machine without using the dev-container you will need
 
 * [Go](https://golang.org/dl/)
 * [Yarn](https://classic.yarnpkg.com/en/docs/install/#mac-stable)
