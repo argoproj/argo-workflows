@@ -8,6 +8,7 @@ ifeq ($(GIT_TAG),untagged)
 VERSION               := 0.0.0-latest
 else
 # remove the "v" prefix, not allowed
+# https://stackoverflow.com/a/19571504
 VERSION               := $(GIT_TAG:v%=%)
 endif
 
@@ -49,8 +50,8 @@ generate:
 	$(CHOWN) $(WD) || sudo $(CHOWN) $(WD)
 
 install: 
-	cargo install --path ./client
+	# Rust doesn't need to install a library, nothing to do here...
 
 test:
 	../../hack/access-token.sh init
-	env ARGO_TOKEN="`../../hack/access-token.sh get`" cargo test
+	env ARGO_TOKEN="`../../hack/access-token.sh get`" cargo test --manifest-path ./client/Cargo.toml
