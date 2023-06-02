@@ -52,7 +52,7 @@ fn test_create_workflow() {
 
     let list_workflow_params = init_workflow_params(String::from("argo"));
 
-    workflow_service_api::create_workflow(&config, create_workflow_params);
+    let req = workflow_service_api::create_workflow(&config, create_workflow_params);
     let _res = workflow_service_api::list_workflows(&config, list_workflow_params);
 }
 

@@ -36,21 +36,24 @@ generate:
 		-p hideGenerationTimestamp=true \
 		-p serializationLibrary=jsonb \
 		--additional-properties packageVersion=${VERSION} \
+		--additional-properties useSingleRequestParameter=true \
+		--additional-properties supportMultipleResponses=true \
 		--additional-properties packageName="argo_workflows" \
 		--additional-properties projectName="argo-workflows" \
 		--additional-properties hideGenerationTimestamp=true \
+		--additional-properties supportAsync=false \
 		--remove-operation-id-prefix \
 		--model-name-prefix '' \
 		--model-name-suffix '' \
 		--artifact-id argo-rust-client \
-		--global-property modelTests=false \
  		--global-property packageName=argo_workflows \
 		--generate-alias-as-model
 	# https://vsupalov.com/docker-shared-permissions/#set-the-docker-user-when-running-your-container
 	$(CHOWN) $(WD) || sudo $(CHOWN) $(WD)
 
 install: 
-	# Rust doesn't need to install a library, nothing to do here...
+	# Rust doesn't need to install a library, but for integration tests it's best to be next to src folder
+	cp -r ./tests ./client
 
 test:
 	../../hack/access-token.sh init
