@@ -4007,19 +4007,22 @@
 <h1 id="running-locally">Running Locally<a class="headerlink" href="#running-locally" title="Permanent link">&para;</a></h1>
 <p>You have two options:</p>
 <ol>
-<li>If you're using VSCode, you use the <a href="#development-container">Dev-Container</a>. This takes about 7 minutes.</li>
+<li>If you're using VSCode, you use the <a href="#development-container">Dev-Container</a>. This takes about 7 minutes. This can also be used from the dev-container CLI.</li>
 <li>Install the <a href="#requirements">requirements</a> on your computer manually. This takes about 1 hour.</li>
 </ol>
 <h2 id="git-clone">Git Clone<a class="headerlink" href="#git-clone" title="Permanent link">&para;</a></h2>
 <p>Clone the Git repo into: <code>$GOPATH/src/github.com/argoproj/argo-workflows</code>. Any other path will mean the code
 generation does not work.</p>
 <h2 id="development-container">Development Container<a class="headerlink" href="#development-container" title="Permanent link">&para;</a></h2>
-<p>A development container is a running Docker container with a well-defined tool/runtime stack and its prerequisites.
-<a href="https://code.visualstudio.com/docs/remote/containers">The Visual Studio Code Remote - Containers</a>  extension lets you use a Docker container as a full-featured development environment.</p>
-<p>System requirements can be found <a href="https://code.visualstudio.com/docs/remote/containers#_system-requirements">here</a></p>
+<p>A development container is a running Docker container with a well-defined tool/runtime stack and its prerequisites. It should be able to do everything you need to do to develop argo workflows using the development container without installing tools on your local machine. It takes quite a long time to build the container. It will run k3d inside the container so you'll have a cluster to use to test against.</p>
+<p>You can use the development container in a few different ways:</p>
+<ol>
+<li><a href="https://code.visualstudio.com/">Visual studio code</a> with <a href="https://code.visualstudio.com/docs/remote/containers">The Visual Studio Code Remote - Containers</a> extension lets you use a Docker container as a full-featured development environment. Open the clone of argo-workflows folder in VS code and it should offer to use the development container automatically. System requirements can be found <a href="https://code.visualstudio.com/docs/remote/containers#_system-requirements">here</a>. Visual Studio will allow you to forward ports to allow your external browser to access the running components.</li>
+<li><a href="https://code.visualstudio.com/">Dev-container CLI</a>. Install the tool and from the argo-workflow folder do <code>devcontainer up --workspace-folder .</code> followed by <code>devcontainer exec --workspace-folder . /bin/bash</code> to get a shell where you can start building the code. You can use your choice editor outside the docker image to edit code, the changes are mirrored inside the container. Due to a limitation in the CLI only port 8080 (the Web UI) will get exposed for you to access if you run this way. Other services are usable from the shell inside.</li>
+</ol>
+<p><code>Github Codespaces</code> is known not to work at this time.</p>
 <p>Note:</p>
 <ul>
-<li><code>GOPATH</code> must be <code>$HOME/go</code>.</li>
 <li>
 <p>for <strong>Apple Silicon</strong></p>
 <ul>
@@ -4040,11 +4043,12 @@ generation does not work.</p>
 <li>
 <p>For <strong>Linux</strong></p>
 <ul>
-<li>Use <a href="https://docs.docker.com/desktop/linux/install/">Docker Desktop</a> instead of <a href="https://docs.docker.com/engine/install/">Docker Engine</a> to prevent incorrect network configuration by k3d</li>
+<li>Use <a href="https://docs.docker.com/desktop/linux/install/">Docker Desktop</a> instead of <a href="https://docs.docker.com/engine/install/">Docker Engine</a> to prevent incorrect network configuration by k3d.</li>
 </ul>
 </li>
 </ul>
 <h2 id="requirements">Requirements<a class="headerlink" href="#requirements" title="Permanent link">&para;</a></h2>
+<p>To build on your own machine without using the dev-container you will need</p>
 <ul>
 <li><a href="https://golang.org/dl/">Go</a></li>
 <li><a href="https://classic.yarnpkg.com/en/docs/install/#mac-stable">Yarn</a></li>
