@@ -2,12 +2,14 @@ use argo_workflows::apis::configuration;
 use argo_workflows::apis::workflow_service_api;
 use argo_workflows::models::Container;
 // use argo_workflows::models::CreateWorkflowParams;
+use argo_workflows::apis::Error;
 use argo_workflows::models::IoArgoprojWorkflowV1alpha1Template as WorkflowTemplate;
 use argo_workflows::models::IoArgoprojWorkflowV1alpha1Workflow as Workflow;
 use argo_workflows::models::IoArgoprojWorkflowV1alpha1WorkflowCreateRequest as CreateRequest;
 use argo_workflows::models::IoArgoprojWorkflowV1alpha1WorkflowSpec as WorkflowSpec;
 use argo_workflows::models::ObjectMeta;
 use std::env;
+use std::f64::consts::E;
 
 #[test]
 fn test_create_workflow() {
@@ -52,8 +54,14 @@ fn test_create_workflow() {
 
     let list_workflow_params = init_workflow_params(String::from("argo"));
 
-    workflow_service_api::create_workflow(&config, create_workflow_params);
-    let _res = workflow_service_api::list_workflows(&config, list_workflow_params);
+    match workflow_service_api::create_workflow(&config, create_workflow_params) {
+        Ok(_) => (),
+        Err(error) => panic!("Problem creating workflow, {:?}", error),
+    }
+    match workflow_service_api::list_workflows(&config, list_workflow_params) {
+        Ok(_) => (),
+        Err(error) => panic!("Problem listing workflows, {:?}", error),
+    }
 }
 
 // openapi gen doesn't create a New method for structs under /apis
