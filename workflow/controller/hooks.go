@@ -20,6 +20,8 @@ func (woc *wfOperationCtx) executeWfLifeCycleHook(ctx context.Context, tmplCtx *
 			continue
 		}
 		hookNodeName := generateLifeHookNodeName(woc.wf.ObjectMeta.Name, string(hookName))
+		// To check a node was triggered.
+		hookedNode := woc.wf.GetNodeByName(hookNodeName)
 		if hook.Expression == "" {
 			return true, errors.Errorf(errors.CodeBadRequest, "Expression required for hook %s", hookNodeName)
 		}
@@ -27,7 +29,8 @@ func (woc *wfOperationCtx) executeWfLifeCycleHook(ctx context.Context, tmplCtx *
 		if err != nil {
 			return true, err
 		}
-		if execute {
+		// executeTemplated should be invoked when hookedNode != nil, because we should reexecute the function to check mutex condition, etc.
+		if execute || hookedNode != nil {
 			woc.log.WithField("lifeCycleHook", hookName).WithField("node", hookNodeName).Infof("Running workflow level hooks")
 			hookNode, err := woc.executeTemplate(ctx, hookNodeName, &wfv1.WorkflowStep{Template: hook.Template, TemplateRef: hook.TemplateRef}, tmplCtx, hook.Arguments, &executeTemplateOpts{})
 			if err != nil {
@@ -58,6 +61,8 @@ func (woc *wfOperationCtx) executeTmplLifeCycleHook(ctx context.Context, scope *
 			continue
 		}
 		hookNodeName := generateLifeHookNodeName(parentNode.Name, string(hookName))
+		// To check a node was triggered
+		hookedNode := woc.wf.GetNodeByName(hookNodeName)
 		if hook.Expression == "" {
 			return false, errors.Errorf(errors.CodeBadRequest, "Expression required for hook %s", hookNodeName)
 		}
@@ -65,7 +70,8 @@ func (woc *wfOperationCtx) executeTmplLifeCycleHook(ctx context.Context, scope *
 		if err != nil {
 			return false, err
 		}
-		if execute {
+		// executeTemplated should be invoked when hookedNode != nil, because we should reexecute the function to check mutex condition, etc.
+		if execute || hookedNode != nil {
 			outputs := parentNode.Outputs
 			if parentNode.Type == wfv1.NodeTypeRetry {
 				lastChildNode := getChildNodeIndex(parentNode, woc.wf.Status.Nodes, -1)
