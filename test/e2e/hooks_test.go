@@ -329,7 +329,7 @@ spec:
 	})
 }
 
-func (s *HooksSuite) TestWorkflowLevelHooksWaitTrrigedHook() {
+func (s *HooksSuite) TestWorkflowLevelHooksWaitForTriggeredHook() {
 	s.Given().
 		Workflow(`apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -377,7 +377,7 @@ spec:
 		})
 }
 
-func (s *HooksSuite) TestTemplateLevelHooksWaitTrrigedHook() {
+func (s *HooksSuite) TestTemplateLevelHooksWaitForTriggeredHook() {
 	s.Given().
 		Workflow(`
 apiVersion: argoproj.io/v1alpha1
@@ -426,7 +426,7 @@ spec:
 }
 
 // Ref: https://github.com/argoproj/argo-workflows/issues/11117
-func (s *HooksSuite) TestTemplateLevelHooksWaitTrrigedHookAndRespectSynchronization() {
+func (s *HooksSuite) TestTemplateLevelHooksWaitForTriggeredHookAndRespectSynchronization() {
 	s.Given().
 		Workflow(`
 apiVersion: argoproj.io/v1alpha1

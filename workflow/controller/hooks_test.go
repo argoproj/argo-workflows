@@ -1072,7 +1072,7 @@ spec:
 	assert.Equal(t, "invalid spec: templates.main.steps[0].step-1.foo Expression required", woc.wf.Status.Message)
 }
 
-func TestWfHookWfWaitForTriggerdHook(t *testing.T) {
+func TestWfHookWfWaitForTriggeredHook(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(`
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -1153,7 +1153,7 @@ spec:
 	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
 }
 
-func TestWfTemplHookWfWaitForTriggerdHook(t *testing.T) {
+func TestWfTemplHookWfWaitForTriggeredHook(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(`
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
