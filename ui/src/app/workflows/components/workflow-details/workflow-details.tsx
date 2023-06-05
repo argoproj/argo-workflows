@@ -57,7 +57,8 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
     const queryParams = new URLSearchParams(location.search);
 
     const [namespace] = useState(match.params.namespace);
-    const [isArchived, setIsArchived] = useState(false);
+    const [isWfInDB, setIsWfInDB] = useState(false);
+    const [isWfInCluster, setIsWfInCluster] = useState(false);
     const [deleteArchived, setDeleteArchived] = useState(false);
     const [name, setName] = useState(match.params.name);
     const [tab, setTab] = useState(queryParams.get('tab') || 'workflow');
@@ -310,11 +311,14 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
     useEffect(() => {
         const retryWatch = new RetryWatch<Workflow>(
             () => services.workflows.watch({name, namespace}),
-            () => setError(null),
+            () => {
+                setIsWfInCluster(true);
+                setError(null);
+            },
             e => {
                 if (e.type === 'DELETED') {
                     setError(new Error('Workflow gone'));
-                    setIsArchived(true);
+                    setIsWfInCluster(false);
                 } else {
                     if (hasArtifactGCError(e.object.status.conditions)) {
                         setError(new Error('Artifact garbage collection failed'));
@@ -324,7 +328,7 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
             },
             err => {
                 setError(err);
-                setIsArchived(true);
+                setIsWfInCluster(false);
             }
         );
         retryWatch.start();
@@ -337,9 +341,10 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
             .then(wf => {
                 setError(null);
                 setWorkflow(wf);
+                setIsWfInDB(true);
             })
             .catch(newError => setError(newError));
-    }, [namespace, name, isArchived]);
+    }, [namespace, name, !isWfInCluster]);
 
     const openLink = (link: Link) => {
         const object = {
@@ -408,22 +413,30 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
     };
 
     const renderDeleteCheck = () => {
-        return (
-            <>
-                <p>Are you sure you want to delete this workflow?</p>
-                <label>
-                    <input
-                        type='checkbox'
-                        className='workflows-list__status--checkbox'
-                        checked={deleteArchived}
-                        onClick={e => {
-                            setDeleteArchived(!deleteArchived);
-                        }}
-                    />
-                    Delete in database
-                </label>
-            </>
-        );
+        if (isWfInDB && isWfInCluster) {
+            return (
+                <>
+                    <p>Are you sure you want to delete this workflow?</p>
+                    <label>
+                        <input
+                            type='checkbox'
+                            className='workflows-list__status--checkbox'
+                            checked={deleteArchived}
+                            onClick={() => {
+                                setDeleteArchived(!deleteArchived);
+                            }}
+                        />
+                        Delete in database
+                    </label>
+                </>
+            );
+        } else {
+            return (
+                <>
+                    <p>Are you sure you want to delete this workflow?</p>
+                </>
+            );
+        }
     };
 
     const ensurePodName = (wf: Workflow, node: NodeStatus, nodeID: string): string => {
