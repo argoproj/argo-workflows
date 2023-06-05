@@ -156,18 +156,19 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
                                     services.workflows
                                         .delete(workflow.metadata.name, workflow.metadata.namespace)
                                         .then(() => {
-                                            if (!deleteArchived) {
-                                                navigation.goto(uiUrl(`workflows/${workflow.metadata.namespace}`));
-                                            }
+                                            setIsWfInCluster(false);
                                         })
                                         .catch(setError);
                                     if (deleteArchived) {
                                         services.workflows
                                             .deleteArchived(workflow.metadata.uid, workflow.metadata.namespace)
                                             .then(() => {
-                                                navigation.goto(uiUrl(`workflows/${workflow.metadata.namespace}`));
+                                                setIsWfInDB(false);
                                             })
                                             .catch(setError);
+                                    }
+                                    if (!isWfInDB && !isWfInCluster) {
+                                        navigation.goto(uiUrl(`workflows/${workflow.metadata.namespace}`));
                                     }
                                 }
                             });
