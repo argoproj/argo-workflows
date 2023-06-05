@@ -153,13 +153,15 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
                         if (workflowOperation.title === 'DELETE') {
                             popup.confirm('Confirm', renderDeleteCheck).then(yes => {
                                 if (yes) {
-                                    services.workflows
-                                        .delete(workflow.metadata.name, workflow.metadata.namespace)
-                                        .then(() => {
-                                            setIsWfInCluster(false);
-                                        })
-                                        .catch(setError);
-                                    if (deleteArchived) {
+                                    if (isWfInCluster) {
+                                        services.workflows
+                                            .delete(workflow.metadata.name, workflow.metadata.namespace)
+                                            .then(() => {
+                                                setIsWfInCluster(false);
+                                            })
+                                            .catch(setError);
+                                    }
+                                    if (isWfInDB && deleteArchived) {
                                         services.workflows
                                             .deleteArchived(workflow.metadata.uid, workflow.metadata.namespace)
                                             .then(() => {
@@ -334,7 +336,7 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
         );
         retryWatch.start();
         return () => retryWatch.stop();
-    }, [namespace, name]);
+    }, [namespace, name, !isWfInDB]);
 
     useEffect(() => {
         services.workflows
@@ -344,7 +346,10 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
                 setWorkflow(wf);
                 setIsWfInDB(true);
             })
-            .catch(newError => setError(newError));
+            .catch(newErr => {
+                setError(newErr);
+                navigation.goto(uiUrl(`workflows/${namespace}`));
+            });
     }, [namespace, name, !isWfInCluster]);
 
     const openLink = (link: Link) => {
@@ -432,6 +437,7 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
                 </>
             );
         } else {
+            setDeleteArchived(true);
             return (
                 <>
                     <p>Are you sure you want to delete this workflow?</p>
