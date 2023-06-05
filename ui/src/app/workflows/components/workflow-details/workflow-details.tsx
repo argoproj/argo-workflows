@@ -151,29 +151,31 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
                     iconClassName: workflowOperation.iconClassName,
                     action: () => {
                         if (workflowOperation.title === 'DELETE') {
-                            popup.confirm('Confirm', renderDeleteCheck).then(yes => {
-                                if (yes) {
-                                    if (isWfInCluster) {
-                                        services.workflows
-                                            .delete(workflow.metadata.name, workflow.metadata.namespace)
-                                            .then(() => {
-                                                setIsWfInCluster(false);
-                                            })
-                                            .catch(setError);
+                            popup
+                                .confirm('Confirm', () => renderDeleteCheck(deleteArchived, setDeleteArchived))
+                                .then(yes => {
+                                    if (yes) {
+                                        if (isWfInCluster) {
+                                            services.workflows
+                                                .delete(workflow.metadata.name, workflow.metadata.namespace)
+                                                .then(() => {
+                                                    setIsWfInCluster(false);
+                                                })
+                                                .catch(setError);
+                                        }
+                                        if (deleteArchived) {
+                                            services.workflows
+                                                .deleteArchived(workflow.metadata.uid, workflow.metadata.namespace)
+                                                .then(() => {
+                                                    setIsWfInDB(false);
+                                                })
+                                                .catch(setError);
+                                        }
+                                        if (!isWfInDB && !isWfInCluster) {
+                                            navigation.goto(uiUrl(`workflows/${workflow.metadata.namespace}`));
+                                        }
                                     }
-                                    if (isWfInDB && deleteArchived) {
-                                        services.workflows
-                                            .deleteArchived(workflow.metadata.uid, workflow.metadata.namespace)
-                                            .then(() => {
-                                                setIsWfInDB(false);
-                                            })
-                                            .catch(setError);
-                                    }
-                                    if (!isWfInDB && !isWfInCluster) {
-                                        navigation.goto(uiUrl(`workflows/${workflow.metadata.namespace}`));
-                                    }
-                                }
-                            });
+                                });
                         } else {
                             popup.confirm('Confirm', `Are you sure you want to ${workflowOperation.title.toLowerCase()} this workflow?`).then(yes => {
                                 if (yes) {
@@ -418,26 +420,35 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
         });
     };
 
-    const renderDeleteCheck = () => {
+    const renderDeleteCheck = (da: boolean, sda: (da: boolean) => void) => {
         if (isWfInDB && isWfInCluster) {
             return (
                 <>
                     <p>Are you sure you want to delete this workflow?</p>
-                    <label>
-                        <input
-                            type='checkbox'
-                            className='workflows-list__status--checkbox'
-                            checked={deleteArchived}
-                            onClick={() => {
-                                setDeleteArchived(!deleteArchived);
-                            }}
-                        />
-                        Delete in database
-                    </label>
+                    <div className='workflows-list__status'>
+                        <label>
+                            <input
+                                type='checkbox'
+                                className='workflows-list__status--checkbox'
+                                checked={da}
+                                onClick={() => {
+                                    sda(!da);
+                                    // e.stopPropagation();
+                                }}
+                                // id='delete-checkbox'
+                                // onChange={() => {
+                                //
+                                // }}
+                            />
+                            Delete in database
+                        </label>
+                    </div>
                 </>
             );
         } else {
-            setDeleteArchived(true);
+            if (isWfInDB) {
+                setDeleteArchived(true);
+            }
             return (
                 <>
                     <p>Are you sure you want to delete this workflow?</p>
