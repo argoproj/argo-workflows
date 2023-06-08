@@ -160,7 +160,7 @@
               pname = package.name;
               inherit (package) version;
               inherit src;
-              vendorSha256 = "sha256-OKUiHkVZ/rfjPFs7Md5WDa5K1SNJQvLMxlYClUe7Umk=";
+              vendorSha256 = "sha256-NgINBFURhwG6f0Lbaf31hOmalayLUa8DNqsw533PYqI=";
               doCheck = false;
             };
 
