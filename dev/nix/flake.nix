@@ -23,7 +23,7 @@
           src = filter {
             root = ../../.;
             include = [
-              "." # Way easier to tell it what to exlcude than what to include so include all. 
+              "." # Way easier to tell it what to exclude than what to include so include all. 
             ];
             exclude = [
               ".devcontainer"
