@@ -51,60 +51,40 @@ const INITIAL_SIDE_PANEL_WIDTH = 570;
 const ANIMATION_MS = 200;
 const ANIMATION_BUFFER_MS = 20;
 
-const DeleteCheck = (props: {onChange: (changed: boolean) => void}) => {
-    const [da, sda] = React.useState(false);
-    React.useEffect(() => {
+const DeleteCheck = (props: {onChange: (changed: boolean) => void; isWfInDB: boolean; isWfInCluster: boolean}) => {
+    // The local states are created intentionally so that the checkbox works as expected
+    const [da, sda] = useState(false);
+    useEffect(() => {
         props.onChange(da);
     }, [da]);
-    return (
-        <>
-            <p>Are you sure you want to delete this workflow?</p>
-            <div className='workflows-list__status'>
-                <input
-                    type='checkbox'
-                    className='workflows-list__status--checkbox'
-                    checked={da}
-                    onClick={() => {
-                        sda(!da);
-                    }}
-                    id='delete-check'
-                />
-                <label htmlFor='delete-check'>Delete in database</label>
-            </div>
-        </>
-    );
-    // if (isWfInDB && isWfInCluster) {
-    //     return (
-    //         <>
-    //             <p>Are you sure you want to delete this workflow?</p>
-    //             <div className='workflows-list__status'>
-    //                 <input
-    //                     type='checkbox'
-    //                     className='workflows-list__status--checkbox'
-    //                     checked={da}
-    //                     onClick={() => {
-    //                         sda(!da);
-    //                     }}
-    //                     // onChange={() => {
-    //                     //     checked = !checked;
-    //                     //     // sda(!da);
-    //                     // }}
-    //                     id='delete-check'
-    //                 />
-    //                 <label htmlFor='delete-check'>Delete in database</label>
-    //             </div>
-    //         </>
-    //     );
-    // } else {
-    //     if (isWfInDB) {
-    //         setDeleteArchived(true);
-    //     }
-    //     return (
-    //         <>
-    //             <p>Are you sure you want to delete this workflow?</p>
-    //         </>
-    //     );
-    // }
+    if (props.isWfInDB && props.isWfInCluster) {
+        return (
+            <>
+                <p>Are you sure you want to delete this workflow?</p>
+                <div className='workflows-list__status'>
+                    <input
+                        type='checkbox'
+                        className='workflows-list__status--checkbox'
+                        checked={da}
+                        onClick={() => {
+                            sda(!da);
+                        }}
+                        id='delete-check'
+                    />
+                    <label htmlFor='delete-check'>Delete in database</label>
+                </div>
+            </>
+        );
+    } else {
+        if (props.isWfInDB) {
+            sda(true);
+        }
+        return (
+            <>
+                <p>Are you sure you want to delete this workflow?</p>
+            </>
+        );
+    }
 };
 
 export const WorkflowDetails = ({history, location, match}: RouteComponentProps<any>) => {
@@ -206,29 +186,31 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
                     title: workflowOperation.title.charAt(0).toUpperCase() + workflowOperation.title.slice(1),
                     iconClassName: workflowOperation.iconClassName,
                     action: () => {
+                        // These are intentionally to be local variables since we cannot rely on the async calls.
+                        let localIsWfInDB = isWfInDB;
+                        let localIsWfInCluster = isWfInCluster;
                         if (workflowOperation.title === 'DELETE') {
                             popup
-                                .confirm('Confirm', () => <DeleteCheck onChange={setDeleteArchived} />)
+                                .confirm('Confirm', () => <DeleteCheck onChange={setDeleteArchived} isWfInDB={localIsWfInDB} isWfInCluster={localIsWfInCluster} />)
                                 .then(yes => {
-                                    // localIsWfInCluster
                                     if (yes) {
-                                        if (isWfInCluster) {
+                                        if (localIsWfInCluster) {
                                             services.workflows
                                                 .delete(workflow.metadata.name, workflow.metadata.namespace)
                                                 .then(() => {
-                                                    setIsWfInCluster(false);
+                                                    localIsWfInCluster = false;
                                                 })
                                                 .catch(setError);
                                         }
-                                        if (deleteArchived) {
+                                        if (localIsWfInDB && deleteArchived) {
                                             services.workflows
                                                 .deleteArchived(workflow.metadata.uid, workflow.metadata.namespace)
                                                 .then(() => {
-                                                    setIsWfInDB(false);
+                                                    localIsWfInDB = false;
                                                 })
                                                 .catch(setError);
                                         }
-                                        if (!isWfInDB && !isWfInCluster) {
+                                        if (!localIsWfInDB && !localIsWfInCluster) {
                                             navigation.goto(uiUrl(`workflows/${workflow.metadata.namespace}`));
                                         }
                                     }
@@ -395,21 +377,23 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
         );
         retryWatch.start();
         return () => retryWatch.stop();
-    }, [namespace, name, !isWfInDB]);
+    }, [namespace, name]);
 
     useEffect(() => {
-        services.workflows
-            .get(namespace, name)
-            .then(wf => {
-                setError(null);
-                setWorkflow(wf);
-                setIsWfInDB(true);
-            })
-            .catch(newErr => {
-                setError(newErr);
-                navigation.goto(uiUrl(`workflows/${namespace}`));
-            });
-    }, [namespace, name, !isWfInCluster]);
+        if (!isWfInCluster) {
+            services.workflows
+                .get(namespace, name)
+                .then(wf => {
+                    setError(null);
+                    setWorkflow(wf);
+                    setIsWfInDB(true);
+                })
+                .catch(newErr => {
+                    setError(newErr);
+                    navigation.goto(uiUrl(`workflows/${namespace}`));
+                });
+        }
+    }, [namespace, name, isWfInCluster]);
 
     const openLink = (link: Link) => {
         const object = {
