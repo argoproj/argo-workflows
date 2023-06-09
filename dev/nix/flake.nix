@@ -5,6 +5,7 @@
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-22.11";
     flake-parts = { url = "github:hercules-ci/flake-parts"; inputs.nixpkgs-lib.follows = "nixpkgs"; };
     devenv.url = "github:cachix/devenv";
+    nix-filter.url = "github:numtide/nix-filter";
     treefmt-nix.url = "github:numtide/treefmt-nix";
   };
 
@@ -16,10 +17,29 @@
         let
           argoConfig = import ./conf.nix;
           myyarn = pkgs.yarn.override { nodejs = pkgs.nodejs-16_x-openssl_1_1; };
-          src =
-            builtins.filterSource
-              (path: type: !(type == "directory" && baseNameOf path == "hack"))
-              (lib.sourceFilesBySuffices inputs.self [ ".go" ".mod" ".sum" ]);
+          filter = inputs.nix-filter.lib;
+
+          # dependencies for building the go binaries
+          src = filter {
+            root = ../../.;
+            include = [
+              "." # Way easier to tell it what to exclude than what to include so include all. 
+            ];
+            exclude = [
+              ".devcontainer"
+              ".git"
+              ".github"
+              "community"
+              "docs"
+              "examples"
+              "hack"
+              "manifests"
+              "sdks"
+              (filter.matchExt ".md")
+              (filter.matchExt ".yaml")
+              (filter.matchExt ".yml")
+            ];
+          };
           package = {
             name = "controller";
             version = argoConfig.version;
