@@ -51,6 +51,62 @@ const INITIAL_SIDE_PANEL_WIDTH = 570;
 const ANIMATION_MS = 200;
 const ANIMATION_BUFFER_MS = 20;
 
+const DeleteCheck = (props: {onChange: (changed: boolean) => void}) => {
+    const [da, sda] = React.useState(false);
+    React.useEffect(() => {
+        props.onChange(da);
+    }, [da]);
+    return (
+        <>
+            <p>Are you sure you want to delete this workflow?</p>
+            <div className='workflows-list__status'>
+                <input
+                    type='checkbox'
+                    className='workflows-list__status--checkbox'
+                    checked={da}
+                    onClick={() => {
+                        sda(!da);
+                    }}
+                    id='delete-check'
+                />
+                <label htmlFor='delete-check'>Delete in database</label>
+            </div>
+        </>
+    );
+    // if (isWfInDB && isWfInCluster) {
+    //     return (
+    //         <>
+    //             <p>Are you sure you want to delete this workflow?</p>
+    //             <div className='workflows-list__status'>
+    //                 <input
+    //                     type='checkbox'
+    //                     className='workflows-list__status--checkbox'
+    //                     checked={da}
+    //                     onClick={() => {
+    //                         sda(!da);
+    //                     }}
+    //                     // onChange={() => {
+    //                     //     checked = !checked;
+    //                     //     // sda(!da);
+    //                     // }}
+    //                     id='delete-check'
+    //                 />
+    //                 <label htmlFor='delete-check'>Delete in database</label>
+    //             </div>
+    //         </>
+    //     );
+    // } else {
+    //     if (isWfInDB) {
+    //         setDeleteArchived(true);
+    //     }
+    //     return (
+    //         <>
+    //             <p>Are you sure you want to delete this workflow?</p>
+    //         </>
+    //     );
+    // }
+};
+
 export const WorkflowDetails = ({history, location, match}: RouteComponentProps<any>) => {
     // boiler-plate
     const {navigation, popup} = useContext(Context);
@@ -152,8 +208,9 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
                     action: () => {
                         if (workflowOperation.title === 'DELETE') {
                             popup
-                                .confirm('Confirm', () => renderDeleteCheck(deleteArchived, setDeleteArchived))
+                                .confirm('Confirm', () => <DeleteCheck onChange={setDeleteArchived} />)
                                 .then(yes => {
+                                    // localIsWfInCluster
                                     if (yes) {
                                         if (isWfInCluster) {
                                             services.workflows
@@ -418,43 +475,6 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
                     .catch(setError);
             }
         });
-    };
-
-    const renderDeleteCheck = (da: boolean, sda: (da: boolean) => void) => {
-        if (isWfInDB && isWfInCluster) {
-            return (
-                <>
-                    <p>Are you sure you want to delete this workflow?</p>
-                    <div className='workflows-list__status'>
-                        <label>
-                            <input
-                                type='checkbox'
-                                className='workflows-list__status--checkbox'
-                                checked={da}
-                                onClick={() => {
-                                    sda(!da);
-                                    // e.stopPropagation();
-                                }}
-                                // id='delete-checkbox'
-                                // onChange={() => {
-                                //
-                                // }}
-                            />
-                            Delete in database
-                        </label>
-                    </div>
-                </>
-            );
-        } else {
-            if (isWfInDB) {
-                setDeleteArchived(true);
-            }
-            return (
-                <>
-                    <p>Are you sure you want to delete this workflow?</p>
-                </>
-            );
-        }
     };
 
     const ensurePodName = (wf: Workflow, node: NodeStatus, nodeID: string): string => {
