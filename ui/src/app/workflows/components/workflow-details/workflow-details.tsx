@@ -76,9 +76,6 @@ const DeleteCheck = (props: {onChange: (changed: boolean) => void; isWfInDB: boo
             </>
         );
     } else {
-        if (props.isWfInDB) {
-            sda(true);
-        }
         return (
             <>
                 <p>Are you sure you want to delete this workflow?</p>
@@ -202,7 +199,7 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
                                                 })
                                                 .catch(setError);
                                         }
-                                        if (localIsWfInDB && deleteArchived) {
+                                        if (localIsWfInDB && (deleteArchived || !localIsWfInCluster)) {
                                             services.workflows
                                                 .deleteArchived(workflow.metadata.uid, workflow.metadata.namespace)
                                                 .then(() => {
