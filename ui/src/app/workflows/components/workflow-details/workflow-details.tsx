@@ -55,6 +55,7 @@ const DeleteCheck = (props: {onChange: (changed: boolean) => void; isWfInDB: boo
     // The local states are created intentionally so that the checkbox works as expected
     const [da, sda] = useState(false);
     useEffect(() => {
+        // TODO: Somehow this is only effective after I clicked the checkbox and then hit "cancel" and then try delete again (without clicking the checkbox again).
         props.onChange(da);
     }, [da]);
     if (props.isWfInDB && props.isWfInCluster) {
@@ -183,33 +184,29 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
                     title: workflowOperation.title.charAt(0).toUpperCase() + workflowOperation.title.slice(1),
                     iconClassName: workflowOperation.iconClassName,
                     action: () => {
-                        // These are intentionally to be local variables since we cannot rely on the async calls.
-                        let localIsWfInDB = isWfInDB;
-                        let localIsWfInCluster = isWfInCluster;
                         if (workflowOperation.title === 'DELETE') {
                             popup
-                                .confirm('Confirm', () => <DeleteCheck onChange={setDeleteArchived} isWfInDB={localIsWfInDB} isWfInCluster={localIsWfInCluster} />)
+                                .confirm('Confirm', () => <DeleteCheck onChange={setDeleteArchived} isWfInDB={isWfInDB} isWfInCluster={isWfInCluster} />)
                                 .then(yes => {
                                     if (yes) {
-                                        if (localIsWfInCluster) {
+                                        if (isWfInCluster) {
                                             services.workflows
                                                 .delete(workflow.metadata.name, workflow.metadata.namespace)
                                                 .then(() => {
-                                                    localIsWfInCluster = false;
+                                                    setIsWfInCluster(false);
                                                 })
                                                 .catch(setError);
                                         }
-                                        if (localIsWfInDB && (deleteArchived || !localIsWfInCluster)) {
+                                        if (isWfInDB && (deleteArchived || !isWfInCluster)) {
                                             services.workflows
                                                 .deleteArchived(workflow.metadata.uid, workflow.metadata.namespace)
                                                 .then(() => {
-                                                    localIsWfInDB = false;
+                                                    setIsWfInDB(false);
                                                 })
                                                 .catch(setError);
                                         }
-                                        if (!localIsWfInDB && !localIsWfInCluster) {
-                                            navigation.goto(uiUrl(`workflows/${workflow.metadata.namespace}`));
-                                        }
+                                        navigation.goto(uiUrl(`workflows/${workflow.metadata.namespace}`));
+                                        window.location.reload();
                                     }
                                 });
                         } else {
@@ -365,6 +362,7 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
                         setError(new Error('Artifact garbage collection failed'));
                     }
                     setWorkflow(e.object);
+                    setIsWfInCluster(true);
                 }
             },
             err => {
@@ -377,17 +375,18 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
     }, [namespace, name]);
 
     useEffect(() => {
-        if (!isWfInCluster) {
+        if (!workflow && !isWfInCluster) {
             services.workflows
-                .get(namespace, name)
+                .getArchived(namespace, name)
                 .then(wf => {
                     setError(null);
                     setWorkflow(wf);
                     setIsWfInDB(true);
                 })
                 .catch(newErr => {
-                    setError(newErr);
-                    navigation.goto(uiUrl(`workflows/${namespace}`));
+                    if (newErr.status !== 404) {
+                        setError(newErr);
+                    }
                 });
         }
     }, [namespace, name, isWfInCluster]);

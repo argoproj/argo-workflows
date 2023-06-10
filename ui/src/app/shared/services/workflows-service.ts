@@ -66,6 +66,10 @@ export const WorkflowsService = {
         return requests.get(`api/v1/workflows/${namespace}/${name}`).then(res => res.body as Workflow);
     },
 
+    getArchived(namespace: string, name: string) {
+        return requests.get(`api/v1/archived-workflows/?name=${name}&namespace=${namespace}`).then(res => res.body as models.Workflow);
+    },
+
     watch(query: {
         namespace?: string;
         name?: string;
