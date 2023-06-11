@@ -51,13 +51,13 @@ const INITIAL_SIDE_PANEL_WIDTH = 570;
 const ANIMATION_MS = 200;
 const ANIMATION_BUFFER_MS = 20;
 
-const DeleteCheck = (props: {onChange: (changed: boolean) => void; isWfInDB: boolean; isWfInCluster: boolean}) => {
+// This is used instead of React state since the state update is async and there's a delay for parent
+// component to render with the updated state.
+let globalDeleteArchived = false;
+
+const DeleteCheck = (props: {isWfInDB: boolean; isWfInCluster: boolean}) => {
     // The local states are created intentionally so that the checkbox works as expected
     const [da, sda] = useState(false);
-    useEffect(() => {
-        // TODO: Somehow this is only effective after I clicked the checkbox and then hit "cancel" and then try delete again (without clicking the checkbox again).
-        props.onChange(da);
-    }, [da]);
     if (props.isWfInDB && props.isWfInCluster) {
         return (
             <>
@@ -69,6 +69,7 @@ const DeleteCheck = (props: {onChange: (changed: boolean) => void; isWfInDB: boo
                         checked={da}
                         onClick={() => {
                             sda(!da);
+                            globalDeleteArchived = !globalDeleteArchived;
                         }}
                         id='delete-check'
                     />
@@ -93,7 +94,6 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
     const [namespace] = useState(match.params.namespace);
     const [isWfInDB, setIsWfInDB] = useState(false);
     const [isWfInCluster, setIsWfInCluster] = useState(false);
-    const [deleteArchived, setDeleteArchived] = useState(false);
     const [name, setName] = useState(match.params.name);
     const [tab, setTab] = useState(queryParams.get('tab') || 'workflow');
     const [nodeId, setNodeId] = useState(queryParams.get('nodeId'));
@@ -186,7 +186,7 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
                     action: () => {
                         if (workflowOperation.title === 'DELETE') {
                             popup
-                                .confirm('Confirm', () => <DeleteCheck onChange={setDeleteArchived} isWfInDB={isWfInDB} isWfInCluster={isWfInCluster} />)
+                                .confirm('Confirm', () => <DeleteCheck isWfInDB={isWfInDB} isWfInCluster={isWfInCluster} />)
                                 .then(yes => {
                                     if (yes) {
                                         if (isWfInCluster) {
@@ -197,7 +197,7 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
                                                 })
                                                 .catch(setError);
                                         }
-                                        if (isWfInDB && (deleteArchived || !isWfInCluster)) {
+                                        if (isWfInDB && (globalDeleteArchived || !isWfInCluster)) {
                                             services.workflows
                                                 .deleteArchived(workflow.metadata.uid, workflow.metadata.namespace)
                                                 .then(() => {
@@ -206,6 +206,8 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
                                                 .catch(setError);
                                         }
                                         navigation.goto(uiUrl(`workflows/${workflow.metadata.namespace}`));
+                                        // TODO: This is a temporary workaround so that the list of workflows
+                                        //  is correctly displayed. Workflow list page needs to be more responsive.
                                         window.location.reload();
                                     }
                                 });
