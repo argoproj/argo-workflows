@@ -35,7 +35,7 @@ const tableRow = `
 |` + "`%s`" + `|%s|%s|`
 
 const depTableRow = `
-|~` + "`%s`" + `~|~%s~|%s|`
+|~~` + "`%s`" + `~~|~~%s~~|%s|`
 
 const dropdownOpener = `
 
@@ -82,7 +82,7 @@ func cleanDesc(desc string) string {
 
 func getRow(name, objType, desc string) string {
 	if index := strings.Index(desc, "DEPRECATED"); index != -1 {
-		return fmt.Sprintf(depTableRow, name, objType, "~"+desc[:index-1]+"~ "+desc[index:])
+		return fmt.Sprintf(depTableRow, name, objType, "~~"+desc[:index-1]+"~~ "+desc[index:])
 	}
 	return fmt.Sprintf(tableRow, name, objType, desc)
 }
