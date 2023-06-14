@@ -8948,9 +8948,9 @@
 <td>PodMetadata defines additional metadata that should be applied to workflow pods</td>
 </tr>
 <tr>
-<td style="text-align: center;">~<code>podPriority</code>~</td>
-<td style="text-align: center;">~<code>integer</code>~</td>
-<td>~Priority to apply to workflow pods.~ DEPRECATED: Use PodPriorityClassName instead.</td>
+<td style="text-align: center;">~~<code>podPriority</code>~~</td>
+<td style="text-align: center;">~~<code>integer</code>~~</td>
+<td>~~Priority to apply to workflow pods.~~ DEPRECATED: Use PodPriorityClassName instead.</td>
 </tr>
 <tr>
 <td style="text-align: center;"><code>podPriorityClassName</code></td>
@@ -12783,9 +12783,9 @@
 <td>Name of the step</td>
 </tr>
 <tr>
-<td style="text-align: center;">~<code>onExit</code>~</td>
-<td style="text-align: center;">~<code>string</code>~</td>
-<td>~OnExit is a template reference which is invoked at the end of the template, irrespective of the success, failure, or error of the primary template.~ DEPRECATED: Use Hooks[exit].Template instead.</td>
+<td style="text-align: center;">~~<code>onExit</code>~~</td>
+<td style="text-align: center;">~~<code>string</code>~~</td>
+<td>~~OnExit is a template reference which is invoked at the end of the template, irrespective of the success, failure, or error of the primary template.~~ DEPRECATED: Use Hooks[exit].Template instead.</td>
 </tr>
 <tr>
 <td style="text-align: center;"><code>template</code></td>
@@ -14260,9 +14260,9 @@
 <td>Name is the name of the target</td>
 </tr>
 <tr>
-<td style="text-align: center;">~<code>onExit</code>~</td>
-<td style="text-align: center;">~<code>string</code>~</td>
-<td>~OnExit is a template reference which is invoked at the end of the template, irrespective of the success, failure, or error of the primary template.~ DEPRECATED: Use Hooks[exit].Template instead.</td>
+<td style="text-align: center;">~~<code>onExit</code>~~</td>
+<td style="text-align: center;">~~<code>string</code>~~</td>
+<td>~~OnExit is a template reference which is invoked at the end of the template, irrespective of the success, failure, or error of the primary template.~~ DEPRECATED: Use Hooks[exit].Template instead.</td>
 </tr>
 <tr>
 <td style="text-align: center;"><code>template</code></td>
@@ -14949,9 +14949,9 @@
 <td>KeyFormat is defines the format of how to store keys. Can reference workflow variables</td>
 </tr>
 <tr>
-<td style="text-align: center;">~<code>keyPrefix</code>~</td>
-<td style="text-align: center;">~<code>string</code>~</td>
-<td>~KeyPrefix is prefix used as part of the bucket key in which the controller will store artifacts.~ DEPRECATED. Use KeyFormat instead</td>
+<td style="text-align: center;">~~<code>keyPrefix</code>~~</td>
+<td style="text-align: center;">~~<code>string</code>~~</td>
+<td>~~KeyPrefix is prefix used as part of the bucket key in which the controller will store artifacts.~~ DEPRECATED. Use KeyFormat instead</td>
 </tr>
 <tr>
 <td style="text-align: center;"><code>region</code></td>
@@ -16017,9 +16017,9 @@
 <td>An opaque value that represents the internal version of this object that can be used by clients to determine when objects have changed. May be used for optimistic concurrency, change detection, and the watch operation on a resource or set of resources. Clients must treat these values as opaque and passed unmodified back to the server. They may only be valid for a particular resource or set of resources.Populated by the system. Read-only. Value must be treated as opaque by clients and . More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#concurrency-control-and-consistency</td>
 </tr>
 <tr>
-<td style="text-align: center;">~<code>selfLink</code>~</td>
-<td style="text-align: center;">~<code>string</code>~</td>
-<td>~SelfLink is a URL representing this object. Populated by the system. Read-only~ DEPRECATED Kubernetes will stop propagating this field in 1.20 release and the field is planned to be removed in 1.21 release.</td>
+<td style="text-align: center;">~~<code>selfLink</code>~~</td>
+<td style="text-align: center;">~~<code>string</code>~~</td>
+<td>~~SelfLink is a URL representing this object. Populated by the system. Read-only~~ DEPRECATED Kubernetes will stop propagating this field in 1.20 release and the field is planned to be removed in 1.21 release.</td>
 </tr>
 <tr>
 <td style="text-align: center;"><code>uid</code></td>
@@ -16461,9 +16461,9 @@
 <td>GCEPersistentDisk represents a GCE Disk resource that is attached to a kubelet's host machine and then exposed to the pod. More info: https://kubernetes.io/docs/concepts/storage/volumes#gcepersistentdisk</td>
 </tr>
 <tr>
-<td style="text-align: center;">~<code>gitRepo</code>~</td>
-<td style="text-align: center;">~<a href="#gitrepovolumesource"><code>GitRepoVolumeSource</code></a>~</td>
-<td>~GitRepo represents a git repository at a particular revision.~ DEPRECATED: GitRepo is deprecated. To provision a container with a git repo, mount an EmptyDir into an InitContainer that clones the repo using git, then mount the EmptyDir into the Pod's container.</td>
+<td style="text-align: center;">~~<code>gitRepo</code>~~</td>
+<td style="text-align: center;">~~<a href="#gitrepovolumesource"><code>GitRepoVolumeSource</code></a>~~</td>
+<td>~~GitRepo represents a git repository at a particular revision.~~ DEPRECATED: GitRepo is deprecated. To provision a container with a git repo, mount an EmptyDir into an InitContainer that clones the repo using git, then mount the EmptyDir into the Pod's container.</td>
 </tr>
 <tr>
 <td style="text-align: center;"><code>glusterfs</code></td>
