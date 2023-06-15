@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	jsonpatch "github.com/evanphx/json-patch"
 	"path/filepath"
 	"strconv"
 	"time"
@@ -121,11 +122,20 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 			if err := json.Unmarshal(a, &c); err != nil {
 				return nil, err
 			}
-			if err = json.Unmarshal(b, &c); err != nil {
+			patch, err := jsonpatch.CreateMergePatch(a, b)
+			if err != nil {
 				return nil, err
 			}
+			result, err := jsonpatch.MergePatch(a, patch)
+			if err != nil {
+				return nil, err
+			}
+			var output apiv1.Container
+			if err := json.Unmarshal(result, &output); err != nil {
+				return nil, err
+			}
+			c = output
 		}
-
 		mainCtrs[i] = c
 	}
 
