@@ -1695,7 +1695,7 @@ func getChildNodeIndex(node *wfv1.NodeStatus, nodes wfv1.Nodes, index int) *wfv1
 	lastChildNodeName := node.Children[nodeIndex]
 	lastChildNode, ok := nodes[lastChildNodeName]
 	if !ok {
-		panic("could not find child node")
+		panic(fmt.Sprintf("could not find node named %q, index %d in Children of node %+v", lastChildNodeName, nodeIndex, node))
 	}
 
 	return &lastChildNode
