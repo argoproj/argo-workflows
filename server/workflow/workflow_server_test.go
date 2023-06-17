@@ -662,15 +662,14 @@ func TestMergeWithArchivedWorkflows(t *testing.T) {
 			{ObjectMeta: metav1.ObjectMeta{UID: "2"}},
 		},
 	}
-	assert.Equal(t,
-		mergeWithArchivedWorkflows(liveWfList, archivedWfList),
-		v1alpha1.WorkflowList{
-			Items: []v1alpha1.Workflow{
-				{ObjectMeta: metav1.ObjectMeta{UID: "3"}},
-				{ObjectMeta: metav1.ObjectMeta{UID: "2"}},
-				{ObjectMeta: metav1.ObjectMeta{UID: "1"}},
-			},
-		})
+	expectedWfList := v1alpha1.WorkflowList{
+		Items: []v1alpha1.Workflow{
+			{ObjectMeta: metav1.ObjectMeta{UID: "3"}},
+			{ObjectMeta: metav1.ObjectMeta{UID: "2"}},
+			{ObjectMeta: metav1.ObjectMeta{UID: "1"}},
+		},
+	}
+	assert.Equal(t, mergeWithArchivedWorkflows(liveWfList, archivedWfList), &expectedWfList)
 }
 
 func TestWatchWorkflows(t *testing.T) {

@@ -129,7 +129,7 @@ func (s *workflowServer) GetWorkflow(ctx context.Context, req *workflowpkg.Workf
 	return wf, nil
 }
 
-func mergeWithArchivedWorkflows(liveWfs v1alpha1.WorkflowList, archivedWfs v1alpha1.WorkflowList) v1alpha1.WorkflowList {
+func mergeWithArchivedWorkflows(liveWfs v1alpha1.WorkflowList, archivedWfs v1alpha1.WorkflowList) *v1alpha1.WorkflowList {
 	var finalWfs []v1alpha1.Workflow
 	var uidToWfs = map[types.UID][]v1alpha1.Workflow{}
 	for _, item := range liveWfs.Items {
@@ -143,7 +143,7 @@ func mergeWithArchivedWorkflows(liveWfs v1alpha1.WorkflowList, archivedWfs v1alp
 	}
 	finalWfsList := v1alpha1.WorkflowList{Items: finalWfs}
 	sort.Sort(finalWfsList.Items)
-	return finalWfsList
+	return &finalWfsList
 }
 
 func (s *workflowServer) ListWorkflows(ctx context.Context, req *workflowpkg.WorkflowListRequest) (*wfv1.WorkflowList, error) {
@@ -163,12 +163,8 @@ func (s *workflowServer) ListWorkflows(ctx context.Context, req *workflowpkg.Wor
 		NamePrefix:  "",
 		Namespace:   req.Namespace,
 	})
-	if err != nil {
-		log.Warnf("unable to list archived workflows:%v", err)
-	} else {
-		if archivedWfList != nil {
-			mergeWithArchivedWorkflows(*wfList, *archivedWfList)
-		}
+	if err == nil && archivedWfList != nil {
+		wfList = mergeWithArchivedWorkflows(*wfList, *archivedWfList)
 	}
 
 	cleaner := fields.NewCleaner(req.Fields)
