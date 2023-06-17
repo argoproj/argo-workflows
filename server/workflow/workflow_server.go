@@ -129,13 +129,21 @@ func (s *workflowServer) GetWorkflow(ctx context.Context, req *workflowpkg.Workf
 	return wf, nil
 }
 
-func containsWorkflow(s v1alpha1.WorkflowList, e v1alpha1.Workflow) bool {
-	for _, wf := range s.Items {
-		if wf.UID == e.UID {
-			return true
-		}
+func mergeWithArchivedWorkflows(liveWfs v1alpha1.WorkflowList, archivedWfs v1alpha1.WorkflowList) v1alpha1.WorkflowList {
+	var finalWfs []v1alpha1.Workflow
+	var uidToWfs = map[types.UID][]v1alpha1.Workflow{}
+	for _, item := range liveWfs.Items {
+		uidToWfs[item.UID] = append(uidToWfs[item.UID], item)
 	}
-	return false
+	for _, item := range archivedWfs.Items {
+		uidToWfs[item.UID] = append(uidToWfs[item.UID], item)
+	}
+	for _, v := range uidToWfs {
+		finalWfs = append(finalWfs, v[0])
+	}
+	finalWfsList := v1alpha1.WorkflowList{Items: finalWfs}
+	sort.Sort(finalWfsList.Items)
+	return finalWfsList
 }
 
 func (s *workflowServer) ListWorkflows(ctx context.Context, req *workflowpkg.WorkflowListRequest) (*wfv1.WorkflowList, error) {
@@ -159,11 +167,7 @@ func (s *workflowServer) ListWorkflows(ctx context.Context, req *workflowpkg.Wor
 		log.Warnf("unable to list archived workflows:%v", err)
 	} else {
 		if archivedWfList != nil {
-			for _, item := range archivedWfList.Items {
-				if !containsWorkflow(*wfList, item) {
-					wfList.Items = append(wfList.Items, item)
-				}
-			}
+			mergeWithArchivedWorkflows(*wfList, *archivedWfList)
 		}
 	}
 
@@ -183,9 +187,6 @@ func (s *workflowServer) ListWorkflows(ctx context.Context, req *workflowpkg.Wor
 			}
 		}
 	}
-
-	// we make no promises about the overall list sorting, we just sort each page
-	sort.Sort(wfList.Items)
 
 	res := &wfv1.WorkflowList{ListMeta: metav1.ListMeta{Continue: wfList.Continue, ResourceVersion: wfList.ResourceVersion}, Items: wfList.Items}
 	newRes := &wfv1.WorkflowList{}

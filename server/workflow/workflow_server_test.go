@@ -648,6 +648,31 @@ func (t testWatchWorkflowServer) Send(*workflowpkg.WorkflowWatchEvent) error {
 	panic("implement me")
 }
 
+func TestMergeWithArchivedWorkflows(t *testing.T) {
+	liveWfList := v1alpha1.WorkflowList{
+		Items: []v1alpha1.Workflow{
+			{ObjectMeta: metav1.ObjectMeta{UID: "1"}},
+			{ObjectMeta: metav1.ObjectMeta{UID: "2"}},
+		},
+	}
+	archivedWfList := v1alpha1.WorkflowList{
+		Items: []v1alpha1.Workflow{
+			{ObjectMeta: metav1.ObjectMeta{UID: "1"}},
+			{ObjectMeta: metav1.ObjectMeta{UID: "3"}},
+			{ObjectMeta: metav1.ObjectMeta{UID: "2"}},
+		},
+	}
+	assert.Equal(t,
+		mergeWithArchivedWorkflows(liveWfList, archivedWfList),
+		v1alpha1.WorkflowList{
+			Items: []v1alpha1.Workflow{
+				{ObjectMeta: metav1.ObjectMeta{UID: "3"}},
+				{ObjectMeta: metav1.ObjectMeta{UID: "2"}},
+				{ObjectMeta: metav1.ObjectMeta{UID: "1"}},
+			},
+		})
+}
+
 func TestWatchWorkflows(t *testing.T) {
 	server, ctx := getWorkflowServer()
 	wf := &v1alpha1.Workflow{
