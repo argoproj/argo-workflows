@@ -2,9 +2,6 @@ import {NodePhase, Workflow} from '../../models';
 import {services} from './services';
 import {WorkflowDeleteResponse} from './services/responses';
 import {Utils} from './utils';
-import {useState} from "react";
-import * as React from "react";
-import {uiUrl} from "./base";
 
 export type OperationDisabled = {
     [action in WorkflowOperationName]: boolean;
@@ -24,39 +21,6 @@ export type WorkflowOperationAction = (wf: Workflow) => Promise<Workflow | Workf
 export interface WorkflowOperations {
     [name: string]: WorkflowOperation;
 }
-
-let globalDeleteArchived = false;
-
-const DeleteCheck = (props: {isWfInDB: boolean; isWfInCluster: boolean}) => {
-    // The local states are created intentionally so that the checkbox works as expected
-    const [da, sda] = useState(false);
-    if (props.isWfInDB && props.isWfInCluster) {
-        return (
-            <>
-                <p>Are you sure you want to delete this workflow?</p>
-                <div className='workflows-list__status'>
-                    <input
-                        type='checkbox'
-                        className='workflows-list__status--checkbox'
-                        checked={da}
-                        onClick={() => {
-                            sda(!da);
-                            globalDeleteArchived = !globalDeleteArchived;
-                        }}
-                        id='delete-check'
-                    />
-                    <label htmlFor='delete-check'>Delete in database</label>
-                </div>
-            </>
-        );
-    } else {
-        return (
-            <>
-                <p>Are you sure you want to delete this workflow?</p>
-            </>
-        );
-    }
-};
 
 export const WorkflowOperationsMap: WorkflowOperations = {
     RETRY: {
@@ -102,29 +66,6 @@ export const WorkflowOperationsMap: WorkflowOperations = {
         title: 'DELETE',
         iconClassName: 'fa fa-trash',
         disabled: () => false,
-        action: (wf: Workflow) => {
-            popup
-                .confirm('Confirm', () => <DeleteCheck isWfInDB={isWfInDB} isWfInCluster={isWfInCluster} />)
-                .then(yes => {
-                    if (yes) {
-                        if (isWfInCluster) {
-                            services.workflows
-                                .delete(workflow.metadata.name, workflow.metadata.namespace)
-                                .then(() => {
-                                    setIsWfInCluster(false);
-                                })
-                                .catch(setError);
-                        }
-                        if (isWfInDB && (globalDeleteArchived || !isWfInCluster)) {
-                            services.workflows
-                                .deleteArchived(workflow.metadata.uid, workflow.metadata.namespace)
-                                .then(() => {
-                                    setIsWfInDB(false);
-                                })
-                                .catch(setError);
-                        }
-                    }
-                });
-        }
+        action: (wf: Workflow) => services.workflows.delete(wf.metadata.name, wf.metadata.namespace)
     }
 };
