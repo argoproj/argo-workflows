@@ -520,6 +520,9 @@ func (woc *wfOperationCtx) updateWorkflowMetadata() error {
 			woc.wf.Labels = make(map[string]string)
 		}
 		for n, v := range md.Labels {
+			if errs := validation.IsValidLabelValue(v); errs != nil {
+				return errors.Errorf(errors.CodeBadRequest, "invalid label value %q for label %q: %s", v, n, strings.Join(errs, ";"))
+			}
 			woc.wf.Labels[n] = v
 			woc.globalParams["workflow.labels."+n] = v
 			updatedParams["workflow.labels."+n] = v
@@ -578,6 +581,7 @@ func (woc *wfOperationCtx) getWorkflowDeadline() *time.Time {
 func (woc *wfOperationCtx) setGlobalParameters(executionParameters wfv1.Arguments) error {
 	woc.globalParams[common.GlobalVarWorkflowName] = woc.wf.ObjectMeta.Name
 	woc.globalParams[common.GlobalVarWorkflowNamespace] = woc.wf.ObjectMeta.Namespace
+	woc.globalParams[common.GlobalVarWorkflowMainEntrypoint] = woc.execWf.Spec.Entrypoint
 	woc.globalParams[common.GlobalVarWorkflowServiceAccountName] = woc.execWf.Spec.ServiceAccountName
 	woc.globalParams[common.GlobalVarWorkflowUID] = string(woc.wf.ObjectMeta.UID)
 	woc.globalParams[common.GlobalVarWorkflowCreationTimestamp] = woc.wf.ObjectMeta.CreationTimestamp.Format(time.RFC3339)
@@ -1007,7 +1011,7 @@ func (woc *wfOperationCtx) processNodeRetries(node *wfv1.NodeStatus, retryStrate
 
 	var retryOnFailed bool
 	var retryOnError bool
-	switch retryStrategy.RetryPolicy {
+	switch retryStrategy.RetryPolicyActual() {
 	case wfv1.RetryPolicyAlways:
 		retryOnFailed = true
 		retryOnError = true
@@ -1019,12 +1023,13 @@ func (woc *wfOperationCtx) processNodeRetries(node *wfv1.NodeStatus, retryStrate
 			retryOnFailed = true
 			retryOnError = true
 		}
-	case wfv1.RetryPolicyOnFailure, "":
+	case wfv1.RetryPolicyOnFailure:
 		retryOnFailed = true
 		retryOnError = false
 	default:
-		return nil, false, fmt.Errorf("%s is not a valid RetryPolicy", retryStrategy.RetryPolicy)
+		return nil, false, fmt.Errorf("%s is not a valid RetryPolicy", retryStrategy.RetryPolicyActual())
 	}
+	woc.log.Infof("Retry Policy: %s (onFailed: %v, onError %v)", retryStrategy.RetryPolicyActual(), retryOnFailed, retryOnError)
 
 	if (lastChildNode.Phase == wfv1.NodeFailed && !retryOnFailed) || (lastChildNode.Phase == wfv1.NodeError && !retryOnError) {
 		woc.log.Infof("Node not set to be retried after status: %s", lastChildNode.Phase)
@@ -1690,7 +1695,7 @@ func getChildNodeIndex(node *wfv1.NodeStatus, nodes wfv1.Nodes, index int) *wfv1
 	lastChildNodeName := node.Children[nodeIndex]
 	lastChildNode, ok := nodes[lastChildNodeName]
 	if !ok {
-		panic("could not find child node")
+		panic(fmt.Sprintf("could not find node named %q, index %d in Children of node %+v", lastChildNodeName, nodeIndex, node))
 	}
 
 	return &lastChildNode
@@ -1729,6 +1734,7 @@ func buildRetryStrategyLocalScope(node *wfv1.NodeStatus, nodes wfv1.Nodes) map[s
 	localScope[common.LocalVarRetriesLastExitCode] = exitCode
 	localScope[common.LocalVarRetriesLastStatus] = string(lastChildNode.Phase)
 	localScope[common.LocalVarRetriesLastDuration] = fmt.Sprint(lastChildNode.GetDuration().Seconds())
+	localScope[common.LocalVarRetriesLastMessage] = lastChildNode.Message
 
 	return localScope
 }
@@ -2018,10 +2024,18 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 		// If retry policy is not set, or if it is not set to Always or OnError, we won't attempt to retry an errored container
 		// and we return instead.
 		retryStrategy := woc.retryStrategy(processedTmpl)
-		if retryStrategy == nil ||
-			(retryStrategy.RetryPolicy != wfv1.RetryPolicyAlways &&
-				retryStrategy.RetryPolicy != wfv1.RetryPolicyOnError &&
-				retryStrategy.RetryPolicy != wfv1.RetryPolicyOnTransientError) {
+		release := false
+		if retryStrategy == nil {
+			release = true
+		} else {
+			retryPolicy := retryStrategy.RetryPolicyActual()
+			if retryPolicy != wfv1.RetryPolicyAlways &&
+				retryPolicy != wfv1.RetryPolicyOnError &&
+				retryPolicy != wfv1.RetryPolicyOnTransientError {
+				release = true
+			}
+		}
+		if release {
 			woc.controller.syncManager.Release(woc.wf, node.ID, processedTmpl.Synchronization)
 			return node, err
 		}
@@ -2828,6 +2842,10 @@ func (woc *wfOperationCtx) buildLocalScope(scope *wfScope, prefix string, node *
 	if node.Phase != "" {
 		key := fmt.Sprintf("%s.status", prefix)
 		scope.addParamToScope(key, string(node.Phase))
+	}
+	if node.HostNodeName != "" {
+		key := fmt.Sprintf("%s.hostNodeName", prefix)
+		scope.addParamToScope(key, string(node.HostNodeName))
 	}
 	woc.addOutputsToLocalScope(prefix, node.Outputs, scope)
 }

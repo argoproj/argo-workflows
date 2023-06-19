@@ -2,6 +2,7 @@ package validate
 
 import (
 	"context"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -2714,6 +2715,74 @@ func TestWorkflowTemplateWithEnumValueWithoutValue(t *testing.T) {
 	assert.EqualError(t, err, "spec.arguments.message.value is required")
 	err = validateWorkflowTemplate(workflowTeamplateWithEnumValuesWithoutValue, ValidateOpts{Submit: true})
 	assert.EqualError(t, err, "spec.arguments.message.value is required")
+}
+
+var resourceManifestWithExpressions = `
+apiVersion: v1
+kind: Pod
+metadata:
+  name: foo
+spec:
+  restartPolicy: Never
+  containers:
+  - name: 'foo'
+    image: docker/whalesay
+    command: [cowsay]
+    args: ["{{ = asInt(inputs.parameters.intParam) }}"]
+    ports:
+    - containerPort: {{=asInt(inputs.parameters.intParam)}}
+`
+
+func TestSubstituteResourceManifestExpressions(t *testing.T) {
+	replaced := SubstituteResourceManifestExpressions(resourceManifestWithExpressions)
+	assert.NotEqual(t, resourceManifestWithExpressions, replaced)
+
+	// despite spacing in the expr itself we should have only 1 placeholder here
+	patt, _ := regexp.Compile(`placeholder\-\d+`)
+	matches := patt.FindAllString(replaced, -1)
+	assert.Exactly(t, 2, len(matches))
+	assert.Equal(t, matches[0], matches[1])
+}
+
+var validWorkflowTemplateWithResourceManifest = `
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: workflow-template-with-resource-expr
+spec:
+  entrypoint: whalesay
+  templates:
+    - name: whalesay
+      inputs:
+        parameters:
+          - name: intParam
+            value: '20'
+          - name: strParam
+            value: 'foobarbaz'
+      outputs: {}
+      metadata: {}
+      resource:
+        action: create
+        setOwnerReference: true
+        manifest: |
+          apiVersion: v1
+          kind: Pod
+          metadata:
+            name: foo
+          spec:
+            restartPolicy: Never
+            containers:
+            - name: 'foo'
+              image: docker/whalesay
+              command: [cowsay]
+              args: ["{{=sprig.replace("bar", "baz", inputs.parameters.strParam)}}"]
+              ports:
+              - containerPort: {{=asInt(inputs.parameters.intParam)}}
+`
+
+func TestWorkflowTemplateWithResourceManifest(t *testing.T) {
+	err := validate(validWorkflowTemplateWithResourceManifest)
+	assert.NoError(t, err)
 }
 
 var validActiveDeadlineSecondsArgoVariable = `

@@ -30,7 +30,7 @@ spec:
         parameters:
             - name: safe-to-retry
       retryStrategy:
-        limit: "3"
+        limit: "10"
         # Only continue retrying if the last exit code is greater than 1 and the input parameter is true
         expression: "asInt(lastRetry.exitCode) > 1 && {{inputs.parameters.safe-to-retry}} == true"
       script:

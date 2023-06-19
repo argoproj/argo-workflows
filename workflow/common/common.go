@@ -167,6 +167,8 @@ const (
 	GlobalVarWorkflowName = "workflow.name"
 	// GlobalVarWorkflowNamespace is a global workflow variable referencing the workflow's metadata.namespace field
 	GlobalVarWorkflowNamespace = "workflow.namespace"
+	// GlobalVarWorkflowMainEntrypoint is a global workflow variable referencing the workflow's top level entrypoint name
+	GlobalVarWorkflowMainEntrypoint = "workflow.mainEntrypoint"
 	// GlobalVarWorkflowServiceAccountName is a global workflow variable referencing the workflow's spec.serviceAccountName field
 	GlobalVarWorkflowServiceAccountName = "workflow.serviceAccountName"
 	// GlobalVarWorkflowUID is a global workflow variable referencing the workflow's metadata.uid field
@@ -224,6 +226,8 @@ const (
 	LocalVarRetriesLastStatus = "lastRetry.status"
 	// LocalVarRetriesLastDuration is a variable that references information about the last retry's duration, in seconds
 	LocalVarRetriesLastDuration = "lastRetry.duration"
+	// LocalVarRetriesLastMessage is a variable that references information about the last retry's failure message
+	LocalVarRetriesLastMessage = "lastRetry.message"
 
 	KubeConfigDefaultMountPath    = "/kube/config"
 	KubeConfigDefaultVolumeName   = "kubeconfig"

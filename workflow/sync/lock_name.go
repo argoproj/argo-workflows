@@ -31,14 +31,22 @@ func NewLockName(namespace, resourceName, lockKey string, kind LockKind) *LockNa
 	}
 }
 
-func GetLockName(sync *v1alpha1.Synchronization, namespace string) (*LockName, error) {
+func GetLockName(sync *v1alpha1.Synchronization, wfNamespace string) (*LockName, error) {
 	switch sync.GetType() {
 	case v1alpha1.SynchronizationTypeSemaphore:
 		if sync.Semaphore.ConfigMapKeyRef != nil {
+			namespace := sync.Semaphore.Namespace
+			if namespace == "" {
+				namespace = wfNamespace
+			}
 			return NewLockName(namespace, sync.Semaphore.ConfigMapKeyRef.Name, sync.Semaphore.ConfigMapKeyRef.Key, LockKindConfigMap), nil
 		}
 		return nil, fmt.Errorf("cannot get LockName for a Semaphore without a ConfigMapRef")
 	case v1alpha1.SynchronizationTypeMutex:
+		namespace := sync.Mutex.Namespace
+		if namespace == "" {
+			namespace = wfNamespace
+		}
 		return NewLockName(namespace, sync.Mutex.Name, "", LockKindMutex), nil
 	default:
 		return nil, fmt.Errorf("cannot get LockName for a Sync of Unknown type")

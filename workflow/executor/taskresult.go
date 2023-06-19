@@ -52,7 +52,7 @@ func (we *WorkflowExecutor) createTaskResult(ctx context.Context, result wfv1.No
 		[]metav1.OwnerReference{
 			{
 				APIVersion: "v1",
-				Kind:       "pods",
+				Kind:       "Pod",
 				Name:       we.PodName,
 				UID:        we.podUID,
 			},

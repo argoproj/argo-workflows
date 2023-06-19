@@ -325,7 +325,7 @@ message Backoff {
   // Factor is a factor to multiply the base duration after each failed retry
   optional k8s.io.apimachinery.pkg.util.intstr.IntOrString factor = 2;
 
-  // MaxDuration is the maximum amount of time allowed for the backoff strategy
+  // MaxDuration is the maximum amount of time allowed for a workflow in the backoff strategy
   optional string maxDuration = 3;
 }
 
@@ -940,6 +940,9 @@ message Metrics {
 message Mutex {
   // name of the mutex
   optional string name = 1;
+
+  // Namespace is the namespace of the mutex, default: [namespace of workflow]
+  optional string namespace = 2;
 }
 
 // MutexHolding describes the mutex and the object which is holding it.
@@ -1215,7 +1218,7 @@ message Plugin {
 
 // PodGC describes how to delete completed pods as they complete
 message PodGC {
-  // Strategy is the strategy to use. One of "OnPodCompletion", "OnPodSuccess", "OnWorkflowCompletion", "OnWorkflowSuccess"
+  // Strategy is the strategy to use. One of "OnPodCompletion", "OnPodSuccess", "OnWorkflowCompletion", "OnWorkflowSuccess". If unset, does not delete Pods
   optional string strategy = 1;
 
   // LabelSelector is the label selector to check if the pods match the labels before being added to the pod GC queue.
@@ -1405,6 +1408,9 @@ message SemaphoreHolding {
 message SemaphoreRef {
   // ConfigMapKeyRef is configmap selector for Semaphore configuration
   optional k8s.io.api.core.v1.ConfigMapKeySelector configMapKeyRef = 1;
+
+  // Namespace is the namespace of the configmap, default: [namespace of workflow]
+  optional string namespace = 2;
 }
 
 message SemaphoreStatus {
@@ -1757,7 +1763,7 @@ message Version {
 
 // VolumeClaimGC describes how to delete volumes from completed Workflows
 message VolumeClaimGC {
-  // Strategy is the strategy to use. One of "OnWorkflowCompletion", "OnWorkflowSuccess"
+  // Strategy is the strategy to use. One of "OnWorkflowCompletion", "OnWorkflowSuccess". Defaults to "OnWorkflowSuccess"
   optional string strategy = 1;
 }
 
