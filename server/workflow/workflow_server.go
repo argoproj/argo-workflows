@@ -163,8 +163,12 @@ func (s *workflowServer) ListWorkflows(ctx context.Context, req *workflowpkg.Wor
 		NamePrefix:  "",
 		Namespace:   req.Namespace,
 	})
-	if err == nil && archivedWfList != nil {
-		wfList = mergeWithArchivedWorkflows(*wfList, *archivedWfList)
+	if err != nil {
+		log.Warnf("unable to list archived workflows:%v", err)
+	} else {
+		if archivedWfList != nil {
+			wfList = mergeWithArchivedWorkflows(*wfList, *archivedWfList)
+		}
 	}
 
 	cleaner := fields.NewCleaner(req.Fields)
