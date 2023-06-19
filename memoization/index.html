@@ -3894,7 +3894,8 @@ This feature reduces cost and workflow execution time by memoizing previously ru
 it stores the outputs of a template into a specified cache with a variable key.</p>
 <h2 id="cache-method">Cache Method<a class="headerlink" href="#cache-method" title="Permanent link">&para;</a></h2>
 <p>Currently, caching can only be performed with config-maps.
-This allows you to easily manipulate cache entries manually through <code>kubectl</code> and the Kubernetes API without having to go through Argo.  </p>
+This allows you to easily manipulate cache entries manually through <code>kubectl</code> and the Kubernetes API without having to go through Argo.
+All cache config-maps must have the label <code>workflows.argoproj.io/configmap-type: Cache</code> to be used as a cache. This prevents accidental access to other important config-maps in the system</p>
 <h2 id="using-memoization">Using Memoization<a class="headerlink" href="#using-memoization" title="Permanent link">&para;</a></h2>
 <p>Memoization is set at the template level. You must specify a <code>key</code>, which can be static strings but more often depend on inputs.
 You must also specify a name for the <code>config-map</code> cache.
