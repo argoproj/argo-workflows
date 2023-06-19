@@ -7,7 +7,6 @@ import (
 	"encoding/base64"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -127,7 +126,7 @@ func DecompressContent(content []byte) ([]byte, error) {
 		return nil, fmt.Errorf("failed to decompress: %w", err)
 	}
 	defer close(gzipReader)
-	return ioutil.ReadAll(gzipReader)
+	return io.ReadAll(gzipReader)
 }
 
 // WalkManifests is based on filepath.Walk but will only walk through Kubernetes manifests
