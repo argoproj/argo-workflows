@@ -11,7 +11,8 @@ it stores the outputs of a template into a specified cache with a variable key.
 ## Cache Method
 
 Currently, caching can only be performed with config-maps.
-This allows you to easily manipulate cache entries manually through `kubectl` and the Kubernetes API without having to go through Argo.  
+This allows you to easily manipulate cache entries manually through `kubectl` and the Kubernetes API without having to go through Argo.
+All cache config-maps must have the label `workflows.argoproj.io/configmap-type: Cache` to be used as a cache. This prevents accidental access to other important config-maps in the system
 
 ## Using Memoization
 
