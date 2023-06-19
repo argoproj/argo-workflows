@@ -4,14 +4,13 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	mock "github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/mock"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
@@ -338,7 +337,7 @@ func TestChmod(t *testing.T) {
 		// Setup directory and file for testing
 		tempDir := t.TempDir()
 
-		tempFile, err := ioutil.TempFile(tempDir, "chmod-file-test")
+		tempFile, err := os.CreateTemp(tempDir, "chmod-file-test")
 		assert.NoError(t, err)
 
 		// Run chmod function
