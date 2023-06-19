@@ -5097,6 +5097,9 @@ func TestConfigMapCacheLoadOperate(t *testing.T) {
 		ObjectMeta: metav1.ObjectMeta{
 			Name:            "whalesay-cache",
 			ResourceVersion: "1630732",
+			Labels: map[string]string{
+				common.LabelKeyConfigMapType: common.LabelValueTypeConfigMapCache,
+			},
 		},
 	}
 	wf := wfv1.MustUnmarshalWorkflow(workflowCached)
@@ -5169,6 +5172,9 @@ func TestConfigMapCacheLoadOperateMaxAge(t *testing.T) {
 			ObjectMeta: metav1.ObjectMeta{
 				Name:            "whalesay-cache",
 				ResourceVersion: "1630732",
+				Labels: map[string]string{
+					common.LabelKeyConfigMapType: common.LabelValueTypeConfigMapCache,
+				},
 			},
 		}
 	}
@@ -5214,6 +5220,45 @@ func TestConfigMapCacheLoadOperateMaxAge(t *testing.T) {
 	}
 }
 
+func TestConfigMapCacheLoadNoLabels(t *testing.T) {
+	sampleConfigMapCacheEntry := apiv1.ConfigMap{
+		Data: map[string]string{
+			"hi-there-world": `{"ExpiresAt":"2020-06-18T17:11:05Z","NodeID":"memoize-abx4124-123129321123","Outputs":{}}`,
+		},
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "ConfigMap",
+			APIVersion: "v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:            "whalesay-cache",
+			ResourceVersion: "1630732",
+		},
+	}
+	wf := wfv1.MustUnmarshalWorkflow(workflowCached)
+	cancel, controller := newController()
+	defer cancel()
+
+	ctx := context.Background()
+	_, err := controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.ObjectMeta.Namespace).Create(ctx, wf, metav1.CreateOptions{})
+	assert.NoError(t, err)
+	_, err = controller.kubeclientset.CoreV1().ConfigMaps("default").Create(ctx, &sampleConfigMapCacheEntry, metav1.CreateOptions{})
+	assert.NoError(t, err)
+
+	woc := newWorkflowOperationCtx(wf, controller)
+	fn := func() {
+		woc.operate(ctx)
+	}
+	assert.NotPanics(t, fn)
+	assert.Equal(t, wfv1.WorkflowError, woc.wf.Status.Phase)
+
+	if assert.Len(t, woc.wf.Status.Nodes, 1) {
+		for _, node := range woc.wf.Status.Nodes {
+			assert.Nil(t, node.Outputs)
+			assert.Equal(t, wfv1.NodeError, node.Phase)
+		}
+	}
+}
+
 func TestConfigMapCacheLoadNilOutputs(t *testing.T) {
 	sampleConfigMapCacheEntry := apiv1.ConfigMap{
 		Data: map[string]string{
@@ -5226,6 +5271,9 @@ func TestConfigMapCacheLoadNilOutputs(t *testing.T) {
 		ObjectMeta: metav1.ObjectMeta{
 			Name:            "whalesay-cache",
 			ResourceVersion: "1630732",
+			Labels: map[string]string{
+				common.LabelKeyConfigMapType: common.LabelValueTypeConfigMapCache,
+			},
 		},
 	}
 	wf := wfv1.MustUnmarshalWorkflow(workflowCached)
