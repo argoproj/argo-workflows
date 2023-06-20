@@ -88,7 +88,7 @@ export class WorkflowsRow extends React.Component<WorkflowsRowProps, WorkflowRow
                             </div>
                         </div>
                         {(this.props.columns || []).map(column => {
-                            const value = wf.metadata.labels[column.key];
+                            const value = wf.metadata?.labels[column.key];
                             return (
                                 <div key={column.name} className='columns small-1'>
                                     {value}
