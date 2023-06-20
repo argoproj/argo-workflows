@@ -904,6 +904,10 @@ func untar(tarPath string, destPath string) error {
 				if err != nil {
 					return err
 				}
+			case tar.TypeDir:
+				if err := os.MkdirAll(target, 0o755); err != nil {
+					return err
+				}
 			case tar.TypeReg:
 				f, err := os.OpenFile(target, os.O_CREATE|os.O_RDWR, os.FileMode(header.Mode))
 				if err != nil {
