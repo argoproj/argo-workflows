@@ -279,6 +279,7 @@ func TestUntar(t *testing.T) {
 	destPath := "testdata/untarredDir"
 	filePath := "testdata/untarredDir/file"
 	linkPath := "testdata/untarredDir/link"
+	emptyDirPath := "testdata/untarredDir/empty-dir"
 
 	// test
 	err := untar(tarPath, destPath)
@@ -294,11 +295,16 @@ func TestUntar(t *testing.T) {
 	fileInfo, err = os.Stat(linkPath)
 	assert.NoError(t, err)
 	assert.True(t, fileInfo.Mode().IsRegular())
+	fileInfo, err = os.Stat(emptyDirPath)
+	assert.NoError(t, err)
+	assert.True(t, fileInfo.Mode().IsDir())
 
 	// cleanup
 	err = os.Remove(linkPath)
 	assert.NoError(t, err)
 	err = os.Remove(filePath)
+	assert.NoError(t, err)
+	err = os.Remove(emptyDirPath)
 	assert.NoError(t, err)
 	err = os.Remove(destPath)
 	assert.NoError(t, err)
