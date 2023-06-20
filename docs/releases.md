@@ -28,7 +28,7 @@ Both the `argo-server` and `argocli` should be the same version as the controlle
 
 ## Release Cycle
 
-New minor versions are released roughly every 3 months. Release candidates for each major release are typically available
+New minor versions are released roughly every 6 months. Release candidates for each major release are typically available
 for 4-6 weeks before the release becomes generally available.
 
 Otherwise, we typically release every two weeks:
