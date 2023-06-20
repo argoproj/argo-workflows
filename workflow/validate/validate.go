@@ -908,6 +908,12 @@ func (ctx *templateValidationCtx) validateSteps(scope map[string]interface{}, tm
 			if errs := isValidWorkflowFieldName(step.Name); len(errs) != 0 {
 				return errors.Errorf(errors.CodeBadRequest, "templates.%s.steps[%d].name '%s' is invalid: %s", tmpl.Name, i, step.Name, strings.Join(errs, ";"))
 			}
+			if i := step.Inline; i != nil {
+				for _, p := range i.Inputs.Parameters {
+					scope["inputs.parameters."+p.Name] = placeholderGenerator.NextPlaceholder()
+				}
+			}
+
 			stepNames[step.Name] = true
 			prefix := fmt.Sprintf("steps.%s", step.Name)
 			scope[fmt.Sprintf("%s.status", prefix)] = true
