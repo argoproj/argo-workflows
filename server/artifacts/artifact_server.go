@@ -124,7 +124,7 @@ func (a *ArtifactServer) GetArtifactFile(w http.ResponseWriter, r *http.Request)
 		uid := id
 		log.WithFields(log.Fields{"namespace": namespace, "uid": uid, "nodeId": nodeId, "artifactName": artifactName}).Info("Get artifact file")
 
-		wf, err = a.wfArchive.GetWorkflow(uid)
+		wf, err = a.wfArchive.GetWorkflow(uid, "", "")
 		if err != nil {
 			a.serverInternalError(err, w)
 			return
@@ -287,7 +287,7 @@ func (a *ArtifactServer) getArtifactByUID(w http.ResponseWriter, r *http.Request
 	artifactName := requestPath[4]
 
 	// We need to know the namespace before we can do gate keeping
-	wf, err := a.wfArchive.GetWorkflow(uid)
+	wf, err := a.wfArchive.GetWorkflow(uid, "", "")
 	if err != nil {
 		a.httpFromError(err, w)
 		return

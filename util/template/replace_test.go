@@ -40,6 +40,22 @@ func Test_Replace(t *testing.T) {
 			assert.NoError(t, err)
 			assert.Equal(t, toJsonString("bar"), r)
 		})
+		t.Run("Valid WorkflowStatus", func(t *testing.T) {
+			replaced, err := Replace(toJsonString(`{{=workflow.status == "Succeeded" ? "SUCCESSFUL" : "FAILED"}}`), map[string]string{"workflow.status": "Succeeded"}, false)
+			assert.NoError(t, err)
+			assert.Equal(t, toJsonString(`SUCCESSFUL`), replaced)
+			replaced, err = Replace(toJsonString(`{{=workflow.status == "Succeeded" ? "SUCCESSFUL" : "FAILED"}}`), map[string]string{"workflow.status": "Failed"}, false)
+			assert.NoError(t, err)
+			assert.Equal(t, toJsonString(`FAILED`), replaced)
+		})
+		t.Run("Valid WorkflowFailures", func(t *testing.T) {
+			replaced, err := Replace(toJsonString(`{{=workflow.failures == "{\"foo\":\"bar\"}" ? "SUCCESSFUL" : "FAILED"}}`), map[string]string{"workflow.failures": `{"foo":"bar"}`}, false)
+			assert.NoError(t, err)
+			assert.Equal(t, toJsonString(`SUCCESSFUL`), replaced)
+			replaced, err = Replace(toJsonString(`{{=workflow.failures == "{\"foo\":\"bar\"}" ? "SUCCESSFUL" : "FAILED"}}`), map[string]string{"workflow.failures": `{"foo":"barr"}`}, false)
+			assert.NoError(t, err)
+			assert.Equal(t, toJsonString(`FAILED`), replaced)
+		})
 		t.Run("Unresolved", func(t *testing.T) {
 			t.Run("Allowed", func(t *testing.T) {
 				_, err := Replace(toJsonString("{{=foo}}"), nil, true)
@@ -48,11 +64,29 @@ func Test_Replace(t *testing.T) {
 			t.Run("AllowedRetries", func(t *testing.T) {
 				replaced, err := Replace(toJsonString("{{=sprig.int(retries)}}"), nil, true)
 				assert.NoError(t, err)
-				assert.Equal(t, replaced, toJsonString("{{=sprig.int(retries)}}"))
+				assert.Equal(t, toJsonString("{{=sprig.int(retries)}}"), replaced)
+			})
+			t.Run("AllowedWorkflowStatus", func(t *testing.T) {
+				replaced, err := Replace(toJsonString(`{{=workflow.status == "Succeeded" ? "SUCCESSFUL" : "FAILED"}}`), nil, true)
+				assert.NoError(t, err)
+				assert.Equal(t, toJsonString(`{{=workflow.status == "Succeeded" ? "SUCCESSFUL" : "FAILED"}}`), replaced)
+			})
+			t.Run("AllowedWorkflowFailures", func(t *testing.T) {
+				replaced, err := Replace(toJsonString(`{{=workflow.failures == "Succeeded" ? "SUCCESSFUL" : "FAILED"}}`), nil, true)
+				assert.NoError(t, err)
+				assert.Equal(t, toJsonString(`{{=workflow.failures == "Succeeded" ? "SUCCESSFUL" : "FAILED"}}`), replaced)
 			})
 			t.Run("Disallowed", func(t *testing.T) {
 				_, err := Replace(toJsonString("{{=foo}}"), nil, false)
 				assert.EqualError(t, err, "failed to evaluate expression \"foo\"")
+			})
+			t.Run("DisallowedWorkflowStatus", func(t *testing.T) {
+				_, err := Replace(toJsonString(`{{=workflow.status == "Succeeded" ? "SUCCESSFUL" : "FAILED"}}`), nil, false)
+				assert.ErrorContains(t, err, "failed to evaluate expression")
+			})
+			t.Run("DisallowedWorkflowFailures", func(t *testing.T) {
+				_, err := Replace(toJsonString(`{{=workflow.failures == "Succeeded" ? "SUCCESSFUL" : "FAILED"}}`), nil, false)
+				assert.ErrorContains(t, err, "failed to evaluate expression")
 			})
 		})
 		t.Run("Error", func(t *testing.T) {

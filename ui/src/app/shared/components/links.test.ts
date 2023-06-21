@@ -11,18 +11,6 @@ describe('process URL', () => {
         expect(ProcessURL('https://logging?from=${status.startedAt}&to=${status.finishedAt}', object)).toBe('https://logging?from=2021-01-01T10:30:00Z&to=2021-01-01T10:30:00Z');
     });
 
-    test('url encoded string', () => {
-        const object = {
-            metadata: {
-                name: 'test'
-            },
-            status: {
-                startedAt: '2021-01-01T10:30:00Z'
-            }
-        };
-        expect(ProcessURL('https://logging/$%7Bmetadata.name%7D', object)).toBe('https://logging/test');
-    });
-
     test('epoch timestamp', () => {
         const object = {
             status: {
@@ -54,5 +42,18 @@ describe('process URL', () => {
         };
 
         expect(ProcessURL('https://logging?from=${status.startedAtEpoch}&to=${status.finishedAtEpoch}', object)).toBe(`https://logging?from=null&to=null`);
+    });
+
+    test('ignore missing workflow var', () => {
+        const object = {
+            status: {},
+            workflow: {
+                annotations: {
+                    logQuery: 'query=env:qa'
+                }
+            }
+        };
+
+        expect(ProcessURL('https://logging?${workflow.annotations.logQuery}${workflow.annotations.additionalLogParams}', object)).toBe('https://logging?query=env:qa');
     });
 });

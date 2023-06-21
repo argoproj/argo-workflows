@@ -2,40 +2,62 @@ import * as models from '../../../models';
 import {Pagination} from '../pagination';
 import {Utils} from '../utils';
 import requests from './requests';
-export class ArchivedWorkflowsService {
-    public list(namespace: string, name: string, namePrefix: string, phases: string[], labels: string[], minStartedAt: Date, maxStartedAt: Date, pagination: Pagination) {
-        return requests
-            .get(`api/v1/archived-workflows?${Utils.queryParams({namespace, name, namePrefix, phases, labels, minStartedAt, maxStartedAt, pagination}).join('&')}`)
-            .then(res => res.body as models.WorkflowList);
-    }
+export const ArchivedWorkflowsService = {
+    list(namespace: string, name: string, namePrefix: string, phases: string[], labels: string[], minStartedAt: Date, maxStartedAt: Date, pagination: Pagination) {
+        if (namespace === '') {
+            return requests
+                .get(`api/v1/archived-workflows?${Utils.queryParams({name, namePrefix, phases, labels, minStartedAt, maxStartedAt, pagination}).join('&')}`)
+                .then(res => res.body as models.WorkflowList);
+        } else {
+            return requests
+                .get(`api/v1/archived-workflows?namespace=${namespace}&${Utils.queryParams({name, namePrefix, phases, labels, minStartedAt, maxStartedAt, pagination}).join('&')}`)
+                .then(res => res.body as models.WorkflowList);
+        }
+    },
 
-    public get(uid: string) {
-        return requests.get(`api/v1/archived-workflows/${uid}`).then(res => res.body as models.Workflow);
-    }
+    get(uid: string, namespace: string) {
+        if (namespace === '') {
+            return requests.get(`api/v1/archived-workflows/${uid}`).then(res => res.body as models.Workflow);
+        } else {
+            return requests.get(`api/v1/archived-workflows/${uid}?namespace=${namespace}`).then(res => res.body as models.Workflow);
+        }
+    },
 
-    public delete(uid: string) {
-        return requests.delete(`api/v1/archived-workflows/${uid}`);
-    }
+    delete(uid: string, namespace: string) {
+        if (namespace === '') {
+            return requests.delete(`api/v1/archived-workflows/${uid}`);
+        } else {
+            return requests.delete(`api/v1/archived-workflows/${uid}?namespace=${namespace}`);
+        }
+    },
 
-    public listLabelKeys() {
-        return requests.get(`api/v1/archived-workflows-label-keys`).then(res => res.body as models.Labels);
-    }
+    listLabelKeys(namespace: string) {
+        if (namespace === '') {
+            return requests.get(`api/v1/archived-workflows-label-keys`).then(res => res.body as models.Labels);
+        } else {
+            return requests.get(`api/v1/archived-workflows-label-keys?namespace=${namespace}`).then(res => res.body as models.Labels);
+        }
+    },
 
-    public listLabelValues(key: string) {
-        return requests.get(`api/v1/archived-workflows-label-values?listOptions.labelSelector=${key}`).then(res => res.body as models.Labels);
-    }
+    async listLabelValues(key: string, namespace: string): Promise<models.Labels> {
+        let url = `api/v1/archived-workflows-label-values?listOptions.labelSelector=${key}`;
+        if (namespace !== '') {
+            url += `&namespace=${namespace}`;
+        }
+        return (await requests.get(url)).body as models.Labels;
+    },
 
-    public resubmit(uid: string, namespace: string) {
+    resubmit(uid: string, namespace: string) {
         return requests
             .put(`api/v1/archived-workflows/${uid}/resubmit`)
             .send({namespace})
             .then(res => res.body as models.Workflow);
-    }
+    },
 
-    public retry(uid: string, namespace: string) {
+    retry(uid: string, namespace: string) {
         return requests
             .put(`api/v1/archived-workflows/${uid}/retry`)
             .send({namespace})
             .then(res => res.body as models.Workflow);
     }
-}
+};

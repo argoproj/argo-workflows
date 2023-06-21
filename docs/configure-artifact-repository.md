@@ -25,8 +25,6 @@ The actual repository used by a workflow is chosen by the following rules:
 
 ## Configuring MinIO
 
-NOTE: MinIO is already included in the [quick-start manifests](quick-start.md).
-
 ```bash
 brew install helm # mac, helm 3.x
 helm repo add minio https://helm.min.io/ # official minio Helm charts
@@ -75,7 +73,8 @@ $ cat > policy.json <<EOF
          "Effect":"Allow",
          "Action":[
             "s3:PutObject",
-            "s3:GetObject"
+            "s3:GetObject",
+            "s3:DeleteObject"
          ],
          "Resource":"arn:aws:s3:::$mybucket/*"
       },
@@ -95,7 +94,7 @@ $ aws iam put-user-policy --user-name $mybucket-user --policy-name $mybucket-pol
 $ aws iam create-access-key --user-name $mybucket-user > access-key.json
 ```
 
-If you have Artifact Garbage Collection configured, you should also add "s3:DeleteObject" to the list of Actions above.
+If you do not have Artifact Garbage Collection configured, you should remove `s3:DeleteObject` from the list of Actions above.
 
 NOTE: if you want argo to figure out which region your buckets belong in, you
 must additionally set the following statement policy. Otherwise, you must
@@ -110,6 +109,20 @@ specify a bucket region in your workflow configuration.
          "Resource":"arn:aws:s3:::*"
       }
     ...
+```
+
+### AWS S3 IRSA
+
+If you wish to use S3 IRSA instead of passing in an `accessKey` and `secretKey`, you need to annotate the service account of both the running workflow (in order to save logs/artifacts) and the argo-server pod (in order to retrieve the logs/artifacts).
+
+```yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  annotations:
+    eks.amazonaws.com/role-arn: arn:aws:iam::012345678901:role/mybucket
+  name: myserviceaccount
+  namespace: mynamespace
 ```
 
 ## Configuring GCS (Google Cloud Storage)
@@ -400,7 +413,7 @@ data:
   artifactRepository: |
     gcs:
       bucket: my-bucket
-      keyFormat: prefix/in/bucket     #optional, it could reference workflow variables, such as "{{workflow.name}}/{{pod.name}}"
+      keyFormat: prefix/in/bucket/{{workflow.name}}/{{pod.name}}     #it should reference workflow variables, such as "{{workflow.name}}/{{pod.name}}"
       serviceAccountKeySecret:
         name: my-gcs-credentials
         key: serviceAccountKey

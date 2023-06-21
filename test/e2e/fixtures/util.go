@@ -3,7 +3,6 @@ package fixtures
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -59,7 +58,7 @@ func LoadObject(text string) (runtime.Object, error) {
 	var yaml string
 	if strings.HasPrefix(text, "@") {
 		file := strings.TrimPrefix(text, "@")
-		f, err := ioutil.ReadFile(filepath.Clean(file))
+		f, err := os.ReadFile(filepath.Clean(file))
 		if err != nil {
 			return nil, err
 		}

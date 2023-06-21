@@ -11,12 +11,14 @@ it stores the outputs of a template into a specified cache with a variable key.
 ## Cache Method
 
 Currently, caching can only be performed with config-maps.
-This allows you to easily manipulate cache entries manually through `kubectl` and the Kubernetes API without having to go through Argo.  
+This allows you to easily manipulate cache entries manually through `kubectl` and the Kubernetes API without having to go through Argo.
+All cache config-maps must have the label `workflows.argoproj.io/configmap-type: Cache` to be used as a cache. This prevents accidental access to other important config-maps in the system
 
 ## Using Memoization
 
-Memoization is set at the template level. You must specify a key, which can be static strings but more often depend on inputs.
-You must also specify a name for the config-map cache.
+Memoization is set at the template level. You must specify a `key`, which can be static strings but more often depend on inputs.
+You must also specify a name for the `config-map` cache.
+Optionally you can set a `maxAge` in seconds or hours (e.g. `180s`, `24h`) to define how long should it be considered valid. If an entry is older than the `maxAge`, it will be ignored.
 
 ```yaml
 apiVersion: argoproj.io/v1alpha1
@@ -29,10 +31,13 @@ spec:
       - name: whalesay
         memoize:
            key: "{{inputs.parameters.message}}"
+           maxAge: "10s"
            cache:
               configMap:
                  name: whalesay-cache
 ```
+
+[Find a simple example for memoization here](https://github.com/argoproj/argo-workflows/blob/master/examples/memoize-simple.yaml).
 
 !!! Note
     In order to use memoization it is necessary to add the verbs `create` and `update` to the `configmaps` resource for the appropriate (cluster) roles. In the case of a cluster install the `argo-cluster-role` cluster role should be updated, whilst for a namespace install the `argo-role` role should be updated.

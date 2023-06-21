@@ -5,7 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"math/rand"
 	"net/http"
 	"os"
@@ -265,7 +265,6 @@ func ApplySubmitOpts(wf *wfv1.Workflow, opts *wfv1.SubmitOpts) error {
 		wfAnnotations = make(map[string]string)
 	}
 	if opts.Annotations != "" {
-		fmt.Println(opts.Annotations)
 		passedAnnotations, err := cmdutil.ParseLabels(opts.Annotations)
 		if err != nil {
 			return fmt.Errorf("expected Annotations of the form: NAME1=VALUE2,NAME2=VALUE2. Received: %s: %w", opts.Labels, err)
@@ -325,7 +324,7 @@ func ReadParametersFile(file string, opts *wfv1.SubmitOpts) error {
 			return err
 		}
 	} else {
-		body, err = ioutil.ReadFile(file)
+		body, err = os.ReadFile(file)
 		if err != nil {
 			return err
 		}
@@ -803,7 +802,6 @@ func resetConnectedParentGroupNodes(oldWF *wfv1.Workflow, newWF *wfv1.Workflow, 
 
 // FormulateRetryWorkflow formulates a previous workflow to be retried, deleting all failed steps as well as the onExit node (and children)
 func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSuccessful bool, nodeFieldSelector string, parameters []string) (*wfv1.Workflow, []string, error) {
-
 	switch wf.Status.Phase {
 	case wfv1.WorkflowFailed, wfv1.WorkflowError:
 	default:
@@ -823,6 +821,7 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 	newWF.Status.StartedAt = metav1.Time{Time: time.Now().UTC()}
 	newWF.Status.FinishedAt = metav1.Time{}
 	newWF.Spec.Shutdown = ""
+	newWF.Status.PersistentVolumeClaims = []apiv1.Volume{}
 	if newWF.Spec.ActiveDeadlineSeconds != nil && *newWF.Spec.ActiveDeadlineSeconds == 0 {
 		// if it was terminated, unset the deadline
 		newWF.Spec.ActiveDeadlineSeconds = nil
@@ -858,7 +857,7 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 		}
 		switch node.Phase {
 		case wfv1.NodeSucceeded, wfv1.NodeSkipped:
-			if strings.HasSuffix(node.Name, onExitNodeName) || doForceResetNode {
+			if strings.HasPrefix(node.Name, onExitNodeName) || doForceResetNode {
 				log.Debugf("Force reset for node: %s", node.Name)
 				// Reset parent node if this node is a step/task group or DAG.
 				if isGroupNode(node) && node.BoundaryID != "" {
@@ -1105,7 +1104,7 @@ func SetWorkflow(ctx context.Context, wfClient v1alpha1.WorkflowInterface, hydra
 // Reads from stdin
 func ReadFromStdin() ([]byte, error) {
 	reader := bufio.NewReader(os.Stdin)
-	body, err := ioutil.ReadAll(reader)
+	body, err := io.ReadAll(reader)
 	if err != nil {
 		return []byte{}, err
 	}
@@ -1118,7 +1117,7 @@ func ReadFromUrl(url string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	body, err := ioutil.ReadAll(response.Body)
+	body, err := io.ReadAll(response.Body)
 	_ = response.Body.Close()
 	if err != nil {
 		return nil, err
@@ -1138,7 +1137,7 @@ func ReadFromFilePathsOrUrls(filePathsOrUrls ...string) ([][]byte, error) {
 				return [][]byte{}, err
 			}
 		} else {
-			body, err = ioutil.ReadFile(filepath.Clean(filePathOrUrl))
+			body, err = os.ReadFile(filepath.Clean(filePathOrUrl))
 			if err != nil {
 				return [][]byte{}, err
 			}

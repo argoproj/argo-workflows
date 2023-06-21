@@ -6,7 +6,7 @@ syntax = "proto2";
 package github.com.argoproj.argo_workflows.v3.pkg.apis.workflow.v1alpha1;
 
 import "k8s.io/api/core/v1/generated.proto";
-import "k8s.io/api/policy/v1beta1/generated.proto";
+import "k8s.io/api/policy/v1/generated.proto";
 import "k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto";
 import "k8s.io/apimachinery/pkg/runtime/generated.proto";
 import "k8s.io/apimachinery/pkg/runtime/schema/generated.proto";
@@ -100,7 +100,7 @@ message Artifact {
   optional bool deleted = 13;
 }
 
-// ArtifactGC describes how to delete artifacts from completed Workflows
+// ArtifactGC describes how to delete artifacts from completed Workflows - this is embedded into the WorkflowLevelArtifactGC, and also used for individual Artifacts to override that as needed
 message ArtifactGC {
   // Strategy is the strategy to use.
   // +kubebuilder:validation:Enum="";OnWorkflowCompletion;OnWorkflowDeletion;Never
@@ -325,7 +325,7 @@ message Backoff {
   // Factor is a factor to multiply the base duration after each failed retry
   optional k8s.io.apimachinery.pkg.util.intstr.IntOrString factor = 2;
 
-  // MaxDuration is the maximum amount of time allowed for the backoff strategy
+  // MaxDuration is the maximum amount of time allowed for a workflow in the backoff strategy
   optional string maxDuration = 3;
 }
 
@@ -369,6 +369,20 @@ message ClusterWorkflowTemplateList {
   optional k8s.io.apimachinery.pkg.apis.meta.v1.ListMeta metadata = 1;
 
   repeated ClusterWorkflowTemplate items = 2;
+}
+
+// Column is a custom column that will be exposed in the Workflow List View.
+// +patchStrategy=merge
+// +patchMergeKey=name
+message Column {
+  // The name of this column, e.g., "Workflow Completed".
+  optional string name = 1;
+
+  // The type of this column, "label" or "annotation".
+  optional string type = 2;
+
+  // The key of the label or annotation, e.g., "workflows.argoproj.io/completed".
+  optional string key = 3;
 }
 
 message Condition {
@@ -616,11 +630,16 @@ message GCSBucket {
 
 // Gauge is a Gauge prometheus metric
 message Gauge {
-  // Value is the value of the metric
+  // Value is the value to be used in the operation with the metric's current value. If no operation is set,
+  // value is the value of the metric
   optional string value = 1;
 
   // Realtime emits this metric in real time if applicable
   optional bool realtime = 2;
+
+  // Operation defines the operation to apply with value and the metrics' current value
+  // +optional
+  optional string operation = 3;
 }
 
 // GitArtifact is the location of an git artifact
@@ -860,7 +879,7 @@ message Link {
   // The name of the link, E.g. "Workflow Logs" or "Pod Logs"
   optional string name = 1;
 
-  // "workflow", "pod", "pod-logs", "event-source-logs", "sensor-logs" or "chat"
+  // "workflow", "pod", "pod-logs", "event-source-logs", "sensor-logs", "workflow-list" or "chat"
   optional string scope = 2;
 
   // The URL. Can contain "${metadata.namespace}", "${metadata.name}", "${status.startedAt}", "${status.finishedAt}" or any other element in workflow yaml, e.g. "${workflow.metadata.annotations.userDefinedKey}"
@@ -921,6 +940,9 @@ message Metrics {
 message Mutex {
   // name of the mutex
   optional string name = 1;
+
+  // Namespace is the namespace of the mutex, default: [namespace of workflow]
+  optional string namespace = 2;
 }
 
 // MutexHolding describes the mutex and the object which is holding it.
@@ -988,6 +1010,8 @@ message NodeStatus {
 
   // Phase a simple, high-level summary of where the node is in its lifecycle.
   // Can be used as a state machine.
+  // Will be one of these values "Pending", "Running" before the node is completed, or "Succeeded",
+  // "Skipped", "Failed", "Error", or "Omitted" as a final state.
   optional string phase = 7;
 
   // BoundaryID indicates the node ID of the associated template root node in which this node belongs to
@@ -1194,7 +1218,7 @@ message Plugin {
 
 // PodGC describes how to delete completed pods as they complete
 message PodGC {
-  // Strategy is the strategy to use. One of "OnPodCompletion", "OnPodSuccess", "OnWorkflowCompletion", "OnWorkflowSuccess"
+  // Strategy is the strategy to use. One of "OnPodCompletion", "OnPodSuccess", "OnWorkflowCompletion", "OnWorkflowSuccess". If unset, does not delete Pods
   optional string strategy = 1;
 
   // LabelSelector is the label selector to check if the pods match the labels before being added to the pod GC queue.
@@ -1384,6 +1408,9 @@ message SemaphoreHolding {
 message SemaphoreRef {
   // ConfigMapKeyRef is configmap selector for Semaphore configuration
   optional k8s.io.api.core.v1.ConfigMapKeySelector configMapKeyRef = 1;
+
+  // Namespace is the namespace of the configmap, default: [namespace of workflow]
+  optional string namespace = 2;
 }
 
 message SemaphoreStatus {
@@ -1736,7 +1763,7 @@ message Version {
 
 // VolumeClaimGC describes how to delete volumes from completed Workflows
 message VolumeClaimGC {
-  // Strategy is the strategy to use. One of "OnWorkflowCompletion", "OnWorkflowSuccess"
+  // Strategy is the strategy to use. One of "OnWorkflowCompletion", "OnWorkflowSuccess". Defaults to "OnWorkflowSuccess"
   optional string strategy = 1;
 }
 
@@ -1803,6 +1830,15 @@ message WorkflowEventBindingSpec {
 
   // Submit is the workflow template to submit
   optional Submit submit = 2;
+}
+
+// WorkflowLevelArtifactGC describes how to delete artifacts from completed Workflows - this spec is used on the Workflow level
+message WorkflowLevelArtifactGC {
+  // ArtifactGC is an embedded struct
+  optional ArtifactGC artifactGC = 1;
+
+  // ForceFinalizerRemoval: if set to true, the finalizer will be removed in the case that Artifact GC fails
+  optional bool forceFinalizerRemoval = 2;
 }
 
 // WorkflowList is list of Workflow resources
@@ -1956,7 +1992,7 @@ message WorkflowSpec {
   // Controller will automatically add the selector with workflow name, if selector is empty.
   // Optional: Defaults to empty.
   // +optional
-  optional k8s.io.api.policy.v1beta1.PodDisruptionBudgetSpec podDisruptionBudget = 31;
+  optional k8s.io.api.policy.v1.PodDisruptionBudgetSpec podDisruptionBudget = 31;
 
   // Metrics are a list of metrics emitted from this Workflow
   optional Metrics metrics = 32;
@@ -1994,12 +2030,14 @@ message WorkflowSpec {
 
   // ArtifactGC describes the strategy to use when deleting artifacts from completed or deleted workflows (applies to all output Artifacts
   // unless Artifact.ArtifactGC is specified, which overrides this)
-  optional ArtifactGC artifactGC = 43;
+  optional WorkflowLevelArtifactGC artifactGC = 43;
 }
 
 // WorkflowStatus contains overall status information about a workflow
 message WorkflowStatus {
   // Phase a simple, high-level summary of where the workflow is in its lifecycle.
+  // Will be "" (Unknown), "Pending", or "Running" before the workflow is completed, and "Succeeded",
+  // "Failed" or "Error" once the workflow has completed.
   optional string phase = 1;
 
   // Time at which this workflow started

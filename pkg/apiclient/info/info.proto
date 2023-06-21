@@ -15,6 +15,7 @@ message InfoResponse {
   // which modals to show
   map<string, bool> modals = 3;
   string navColor = 4;
+  repeated github.com.argoproj.argo_workflows.v3.pkg.apis.workflow.v1alpha1.Column columns = 5;
 }
 
 message GetVersionRequest {
@@ -31,6 +32,7 @@ message GetUserInfoResponse {
   bool emailVerified = 5;
   string serviceAccountName = 6;
   string serviceAccountNamespace = 7;
+  string name = 8;
 }
 
 message CollectEventRequest {

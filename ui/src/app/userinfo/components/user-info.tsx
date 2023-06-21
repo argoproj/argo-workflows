@@ -37,34 +37,54 @@ export class UserInfo extends BasePage<RouteComponentProps<any>, State> {
                     </h3>
                     {this.state.userInfo && (
                         <>
-                            <dl>
-                                <dt>Issuer:</dt>
-                                <dd>{this.state.userInfo.issuer || '-'}</dd>
-                            </dl>
-                            <dl>
-                                <dt>Subject:</dt>
-                                <dd>{this.state.userInfo.subject || '-'}</dd>
-                            </dl>
-                            <dl>
-                                <dt>Groups:</dt>
-                                <dd>{(this.state.userInfo.groups && this.state.userInfo.groups.length > 0 && this.state.userInfo.groups.join(', ')) || '-'}</dd>
-                            </dl>
-                            <dl>
-                                <dt>Email:</dt>
-                                <dd>{this.state.userInfo.email || '-'}</dd>
-                            </dl>
-                            <dl>
-                                <dt>Email Verified:</dt>
-                                <dd>{this.state.userInfo.emailVerified || '-'}</dd>
-                            </dl>
-                            <dl>
-                                <dt>Service Account:</dt>
-                                <dd>{this.state.userInfo.serviceAccountName || '-'}</dd>
-                            </dl>
-                            <dl>
-                                <dt>Service Account Namespace:</dt>
-                                <dd>{this.state.userInfo.serviceAccountNamespace || '-'}</dd>
-                            </dl>
+                            {this.state.userInfo.issuer && (
+                                <dl>
+                                    <dt>Issuer:</dt>
+                                    <dd>{this.state.userInfo.issuer}</dd>
+                                </dl>
+                            )}
+                            {this.state.userInfo.subject && (
+                                <dl>
+                                    <dt>Subject:</dt>
+                                    <dd>{this.state.userInfo.subject}</dd>
+                                </dl>
+                            )}
+                            {this.state.userInfo.groups && this.state.userInfo.groups.length > 0 && (
+                                <dl>
+                                    <dt>Groups:</dt>
+                                    <dd>{this.state.userInfo.groups.join(', ')}</dd>
+                                </dl>
+                            )}
+                            {this.state.userInfo.name && (
+                                <dl>
+                                    <dt>Name:</dt>
+                                    <dd>{this.state.userInfo.name}</dd>
+                                </dl>
+                            )}
+                            {this.state.userInfo.email && (
+                                <dl>
+                                    <dt>Email:</dt>
+                                    <dd>{this.state.userInfo.email}</dd>
+                                </dl>
+                            )}
+                            {this.state.userInfo.emailVerified && (
+                                <dl>
+                                    <dt>Email Verified:</dt>
+                                    <dd>{this.state.userInfo.emailVerified}</dd>
+                                </dl>
+                            )}
+                            {this.state.userInfo.serviceAccountName && (
+                                <dl>
+                                    <dt>Service Account:</dt>
+                                    <dd>{this.state.userInfo.serviceAccountName}</dd>
+                                </dl>
+                            )}
+                            {this.state.userInfo.serviceAccountNamespace && (
+                                <dl>
+                                    <dt>Service Account Namespace:</dt>
+                                    <dd>{this.state.userInfo.serviceAccountNamespace}</dd>
+                                </dl>
+                            )}
                         </>
                     )}
                     <a className='argo-button argo-button--base-o' href={uiUrl('login')}>

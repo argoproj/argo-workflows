@@ -222,6 +222,22 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 	// container's PID and root filesystem.
 	pod.Spec.Containers = append(pod.Spec.Containers, mainCtrs...)
 
+	// Configure service account token volume for the main container when AutomountServiceAccountToken is disabled
+	if (woc.execWf.Spec.AutomountServiceAccountToken != nil && !*woc.execWf.Spec.AutomountServiceAccountToken) ||
+		(tmpl.AutomountServiceAccountToken != nil && !*tmpl.AutomountServiceAccountToken) {
+		for i, c := range pod.Spec.Containers {
+			if c.Name == common.WaitContainerName {
+				continue
+			}
+			c.VolumeMounts = append(c.VolumeMounts, apiv1.VolumeMount{
+				Name:      common.ServiceAccountTokenVolumeName,
+				MountPath: common.ServiceAccountTokenMountPath,
+				ReadOnly:  true,
+			})
+			pod.Spec.Containers[i] = c
+		}
+	}
+
 	// Configuring default container to be used with commands like "kubectl exec/logs".
 	// Select "main" container if it's available. In other case use the last container (can happent when pod created from ContainerSet).
 	defaultContainer := pod.Spec.Containers[len(pod.Spec.Containers)-1].Name
@@ -818,7 +834,7 @@ func addVolumeReferences(pod *apiv1.Pod, vols []apiv1.Volume, tmpl *wfv1.Templat
 	return nil
 }
 
-// addInputArtifactVolumes sets up the artifacts volume to the pod to support input artifacts to containers.
+// addInputArtifactsVolumes sets up the artifacts volume to the pod to support input artifacts to containers.
 // In order support input artifacts, the init container shares a emptydir volume with the main container.
 // It is the responsibility of the init container to load all artifacts to the mounted emptydir location.
 // (e.g. /inputs/artifacts/CODE). The shared emptydir is mapped to the user's desired location in the main

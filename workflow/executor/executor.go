@@ -11,7 +11,6 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
-	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
@@ -275,7 +274,7 @@ func (we *WorkflowExecutor) StageFiles() error {
 	default:
 		return nil
 	}
-	err := ioutil.WriteFile(filePath, body, 0o644)
+	err := os.WriteFile(filePath, body, 0o644)
 	if err != nil {
 		return argoerrs.InternalWrapError(err)
 	}
@@ -317,6 +316,14 @@ func (we *WorkflowExecutor) saveArtifact(ctx context.Context, containerName stri
 			return nil
 		}
 		return err
+	}
+	fi, err := os.Stat(localArtPath)
+	if err != nil {
+		return err
+	}
+	size := fi.Size()
+	if size == 0 {
+		log.Warnf("The file %q is empty. It may not be uploaded successfully depending on the artifact driver", localArtPath)
 	}
 	return we.saveArtifactFromFile(ctx, art, fileName, localArtPath)
 }
@@ -556,7 +563,7 @@ func (we *WorkflowExecutor) SaveParameters(ctx context.Context) error {
 		} else {
 			log.Infof("Copying %s from volume mount", param.ValueFrom.Path)
 			mountedPath := filepath.Join(common.ExecutorMainFilesystemDir, param.ValueFrom.Path)
-			data, err := ioutil.ReadFile(filepath.Clean(mountedPath))
+			data, err := os.ReadFile(filepath.Clean(mountedPath))
 			if err != nil {
 				// We have a default value to use instead of returning an error
 				if param.ValueFrom.Default != nil {
@@ -601,7 +608,7 @@ func (we *WorkflowExecutor) SaveLogs(ctx context.Context) {
 		}
 	}
 
-	// Annotating pod with output
+	// try to upsert TaskResult, if it fails, we will try to update the Pod's Annotations
 	err := we.reportOutputs(ctx, logArtifacts)
 	if err != nil {
 		we.AddError(err)
@@ -628,7 +635,7 @@ func (we *WorkflowExecutor) saveContainerLogs(ctx context.Context, tempLogsDir, 
 
 // GetSecret will retrieve the Secrets from VolumeMount
 func (we *WorkflowExecutor) GetSecret(ctx context.Context, accessKeyName string, accessKey string) (string, error) {
-	file, err := ioutil.ReadFile(filepath.Clean(filepath.Join(common.SecretVolMountPath, accessKeyName, accessKey)))
+	file, err := os.ReadFile(filepath.Clean(filepath.Join(common.SecretVolMountPath, accessKeyName, accessKey)))
 	if err != nil {
 		return "", err
 	}
@@ -751,7 +758,7 @@ func (we *WorkflowExecutor) CaptureScriptResult(ctx context.Context) error {
 		return err
 	}
 	defer func() { _ = reader.Close() }()
-	bytes, err := ioutil.ReadAll(reader)
+	bytes, err := io.ReadAll(reader)
 	if err != nil {
 		return argoerrs.InternalWrapError(err)
 	}
@@ -888,13 +895,17 @@ func untar(tarPath string, destPath string) error {
 				continue
 			}
 			target := filepath.Join(dest, filepath.Clean(header.Name))
-			if err := os.MkdirAll(filepath.Dir(target), 0o700); err != nil && os.IsExist(err) {
+			if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil && os.IsExist(err) {
 				return err
 			}
 			switch header.Typeflag {
 			case tar.TypeSymlink:
 				err := os.Symlink(header.Linkname, target)
 				if err != nil {
+					return err
+				}
+			case tar.TypeDir:
+				if err := os.MkdirAll(target, 0o755); err != nil {
 					return err
 				}
 			case tar.TypeReg:
@@ -1004,7 +1015,7 @@ func unpack(srcPath string, destPath string, decompressor func(string, string) e
 	}
 	// next, decide how we wish to rename the file/dir
 	// to the destination path.
-	files, err := ioutil.ReadDir(tmpDir)
+	files, err := os.ReadDir(tmpDir)
 	if err != nil {
 		return argoerrs.InternalWrapError(err)
 	}
@@ -1102,7 +1113,7 @@ func (we *WorkflowExecutor) monitorProgress(ctx context.Context, progressFile st
 				we.progress = ""
 			}
 		case <-fileTicker.C:
-			data, err := ioutil.ReadFile(progressFile)
+			data, err := os.ReadFile(progressFile)
 			if err != nil {
 				if !errors.Is(err, fs.ErrNotExist) {
 					log.WithError(err).WithField("file", progressFile).Info("unable to watch file")

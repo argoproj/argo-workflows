@@ -358,6 +358,25 @@ func (woc *wfOperationCtx) executeDAGTask(ctx context.Context, dagCtx *dagContex
 
 	node := dagCtx.getTaskNode(taskName)
 	task := dagCtx.GetTask(taskName)
+	log := woc.log.WithField("taskName", taskName)
+	if node != nil && (node.Fulfilled() || node.Phase == wfv1.NodeRunning) {
+		scope, err := woc.buildLocalScopeFromTask(dagCtx, task)
+		if err != nil {
+			log.Error("Failed to build local scope from task")
+			woc.markNodeError(node.Name, err)
+			return
+		}
+		scope.addParamToScope(fmt.Sprintf("tasks.%s.status", task.Name), string(node.Phase))
+		hookCompleted, err := woc.executeTmplLifeCycleHook(ctx, scope, dagCtx.GetTask(taskName).Hooks, node, dagCtx.boundaryID, dagCtx.tmplCtx, "tasks."+taskName)
+		if err != nil {
+			woc.markNodeError(node.Name, err)
+		}
+		// Check all hooks are completes
+		if !hookCompleted {
+			return
+		}
+	}
+
 	if node != nil && node.Fulfilled() {
 		// Collect the completed task metrics
 		_, tmpl, _, _ := dagCtx.tmplCtx.ResolveTemplate(task)
@@ -378,20 +397,13 @@ func (woc *wfOperationCtx) executeDAGTask(ctx context.Context, dagCtx *dagContex
 			woc.controller.syncManager.Release(woc.wf, node.ID, processedTmpl.Synchronization)
 		}
 
-		task := dagCtx.GetTask(taskName)
 		scope, err := woc.buildLocalScopeFromTask(dagCtx, task)
 		if err != nil {
 			woc.markNodeError(node.Name, err)
-		}
-		scope.addParamToScope(fmt.Sprintf("tasks.%s.status", task.Name), string(node.Phase))
-		hookCompleted, err := woc.executeTmplLifeCycleHook(ctx, scope, dagCtx.GetTask(taskName).Hooks, node, dagCtx.boundaryID, dagCtx.tmplCtx, "tasks."+taskName)
-		if err != nil {
-			woc.markNodeError(node.Name, err)
-		}
-		// Check all hooks are completes
-		if !hookCompleted {
+			log.Error("Failed to build local scope from task")
 			return
 		}
+		scope.addParamToScope(fmt.Sprintf("tasks.%s.status", task.Name), string(node.Phase))
 
 		if node.Completed() {
 			// Run the node's onExit node, if any.

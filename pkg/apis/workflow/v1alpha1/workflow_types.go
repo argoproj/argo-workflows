@@ -15,7 +15,7 @@ import (
 	"time"
 
 	apiv1 "k8s.io/api/core/v1"
-	policyv1beta "k8s.io/api/policy/v1beta1"
+	policyv1 "k8s.io/api/policy/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -200,23 +200,6 @@ func (w *Workflow) GetExecSpec() *WorkflowSpec {
 		return w.Status.StoredWorkflowSpec
 	}
 	return &w.Spec
-}
-
-func (w *Workflow) HasArtifactGC() bool {
-
-	if w.Spec.ArtifactGC != nil && w.Spec.ArtifactGC.Strategy != ArtifactGCNever && w.Spec.ArtifactGC.Strategy != ArtifactGCStrategyUndefined {
-		return true
-	}
-
-	// either it's defined by an Output Artifact or by the WorkflowSpec itself, or both
-	for _, template := range w.GetTemplates() {
-		for _, artifact := range template.Outputs.Artifacts {
-			if artifact.GetArtifactGC().Strategy != ArtifactGCNever && artifact.GetArtifactGC().Strategy != ArtifactGCStrategyUndefined {
-				return true
-			}
-		}
-	}
-	return false
 }
 
 // return the ultimate ArtifactGCStrategy for the Artifact
@@ -407,7 +390,7 @@ type WorkflowSpec struct {
 	// Controller will automatically add the selector with workflow name, if selector is empty.
 	// Optional: Defaults to empty.
 	// +optional
-	PodDisruptionBudget *policyv1beta.PodDisruptionBudgetSpec `json:"podDisruptionBudget,omitempty" protobuf:"bytes,31,opt,name=podDisruptionBudget"`
+	PodDisruptionBudget *policyv1.PodDisruptionBudgetSpec `json:"podDisruptionBudget,omitempty" protobuf:"bytes,31,opt,name=podDisruptionBudget"`
 
 	// Metrics are a list of metrics emitted from this Workflow
 	Metrics *Metrics `json:"metrics,omitempty" protobuf:"bytes,32,opt,name=metrics"`
@@ -445,7 +428,7 @@ type WorkflowSpec struct {
 
 	// ArtifactGC describes the strategy to use when deleting artifacts from completed or deleted workflows (applies to all output Artifacts
 	// unless Artifact.ArtifactGC is specified, which overrides this)
-	ArtifactGC *ArtifactGC `json:"artifactGC,omitempty" protobuf:"bytes,43,opt,name=artifactGC"`
+	ArtifactGC *WorkflowLevelArtifactGC `json:"artifactGC,omitempty" protobuf:"bytes,43,opt,name=artifactGC"`
 }
 
 type LabelValueFrom struct {
@@ -493,7 +476,7 @@ func (wfs WorkflowSpec) GetArtifactGC() *ArtifactGC {
 		return &ArtifactGC{Strategy: ArtifactGCStrategyUndefined}
 	}
 
-	return wfs.ArtifactGC
+	return &wfs.ArtifactGC.ArtifactGC
 }
 
 func (wfs WorkflowSpec) GetTTLStrategy() *TTLStrategy {
@@ -1026,7 +1009,7 @@ func (a *Artifact) CleanPath() error {
 
 // PodGC describes how to delete completed pods as they complete
 type PodGC struct {
-	// Strategy is the strategy to use. One of "OnPodCompletion", "OnPodSuccess", "OnWorkflowCompletion", "OnWorkflowSuccess"
+	// Strategy is the strategy to use. One of "OnPodCompletion", "OnPodSuccess", "OnWorkflowCompletion", "OnWorkflowSuccess". If unset, does not delete Pods
 	Strategy PodGCStrategy `json:"strategy,omitempty" protobuf:"bytes,1,opt,name=strategy,casttype=PodGCStrategy"`
 	// LabelSelector is the label selector to check if the pods match the labels before being added to the pod GC queue.
 	LabelSelector *metav1.LabelSelector `json:"labelSelector,omitempty" protobuf:"bytes,2,opt,name=labelSelector"`
@@ -1050,7 +1033,15 @@ func (podGC *PodGC) GetStrategy() PodGCStrategy {
 	return PodGCOnPodNone
 }
 
-// ArtifactGC describes how to delete artifacts from completed Workflows
+// WorkflowLevelArtifactGC describes how to delete artifacts from completed Workflows - this spec is used on the Workflow level
+type WorkflowLevelArtifactGC struct {
+	// ArtifactGC is an embedded struct
+	ArtifactGC `json:",inline" protobuf:"bytes,1,opt,name=artifactGC"`
+	// ForceFinalizerRemoval: if set to true, the finalizer will be removed in the case that Artifact GC fails
+	ForceFinalizerRemoval bool `json:"forceFinalizerRemoval,omitempty" protobuf:"bytes,2,opt,name=forceFinalizerRemoval"`
+}
+
+// ArtifactGC describes how to delete artifacts from completed Workflows - this is embedded into the WorkflowLevelArtifactGC, and also used for individual Artifacts to override that as needed
 type ArtifactGC struct {
 	// Strategy is the strategy to use.
 	// +kubebuilder:validation:Enum="";OnWorkflowCompletion;OnWorkflowDeletion;Never
@@ -1073,7 +1064,7 @@ func (agc *ArtifactGC) GetStrategy() ArtifactGCStrategy {
 
 // VolumeClaimGC describes how to delete volumes from completed Workflows
 type VolumeClaimGC struct {
-	// Strategy is the strategy to use. One of "OnWorkflowCompletion", "OnWorkflowSuccess"
+	// Strategy is the strategy to use. One of "OnWorkflowCompletion", "OnWorkflowSuccess". Defaults to "OnWorkflowSuccess"
 	Strategy VolumeClaimGCStrategy `json:"strategy,omitempty" protobuf:"bytes,1,opt,name=strategy,casttype=VolumeClaimGCStrategy"`
 }
 
@@ -1366,6 +1357,17 @@ func (gcStatus *ArtGCStatus) IsArtifactGCPodRecouped(podName string) bool {
 	}
 	return false
 }
+func (gcStatus *ArtGCStatus) AllArtifactGCPodsRecouped() bool {
+	if gcStatus.PodsRecouped == nil {
+		return false
+	}
+	for _, recouped := range gcStatus.PodsRecouped {
+		if !recouped {
+			return false
+		}
+	}
+	return true
+}
 
 type ArtifactSearchResult struct {
 	Artifact `protobuf:"bytes,1,opt,name=artifact"`
@@ -1650,12 +1652,16 @@ func (s *Synchronization) GetType() SynchronizationType {
 type SemaphoreRef struct {
 	// ConfigMapKeyRef is configmap selector for Semaphore configuration
 	ConfigMapKeyRef *apiv1.ConfigMapKeySelector `json:"configMapKeyRef,omitempty" protobuf:"bytes,1,opt,name=configMapKeyRef"`
+	// Namespace is the namespace of the configmap, default: [namespace of workflow]
+	Namespace string `json:"namespace,omitempty" protobuf:"bytes,2,opt,name=namespace"`
 }
 
 // Mutex holds Mutex configuration
 type Mutex struct {
 	// name of the mutex
 	Name string `json:"name,omitempty" protobuf:"bytes,1,opt,name=name"`
+	// Namespace is the namespace of the mutex, default: [namespace of workflow]
+	Namespace string `json:"namespace,omitempty" protobuf:"bytes,2,opt,name=namespace"`
 }
 
 // WorkflowTemplateRef is a reference to a WorkflowTemplate resource.
@@ -1666,11 +1672,11 @@ type WorkflowTemplateRef struct {
 	ClusterScope bool `json:"clusterScope,omitempty" protobuf:"varint,2,opt,name=clusterScope"`
 }
 
-func (ref *WorkflowTemplateRef) ToTemplateRef(entrypoint string) *TemplateRef {
+func (ref *WorkflowTemplateRef) ToTemplateRef(template string) *TemplateRef {
 	return &TemplateRef{
 		Name:         ref.Name,
 		ClusterScope: ref.ClusterScope,
-		Template:     entrypoint,
+		Template:     template,
 	}
 }
 
@@ -1752,6 +1758,33 @@ func (s Nodes) Children(parentNodeId string) Nodes {
 	return childNodes
 }
 
+// NestedChildrenStatus takes in a nodeID and returns all its children, this involves a tree search using DFS.
+// This is needed to mark all children nodes as failed for example.
+func (s Nodes) NestedChildrenStatus(parentNodeId string) ([]NodeStatus, error) {
+	parentNode, ok := s[parentNodeId]
+	if !ok {
+		return nil, fmt.Errorf("could not find %s in nodes when searching for nested children", parentNodeId)
+	}
+
+	children := []NodeStatus{}
+	toexplore := []NodeStatus{parentNode}
+
+	for len(toexplore) > 0 {
+		childNode := toexplore[0]
+		toexplore = toexplore[1:]
+		for _, nodeID := range childNode.Children {
+			toexplore = append(toexplore, s[nodeID])
+		}
+
+		if childNode.Name == parentNode.Name {
+			continue
+		}
+		children = append(children, childNode)
+	}
+
+	return children, nil
+}
+
 // Filter returns the subset of the nodes that match the predicate, e.g. only failed nodes
 func (s Nodes) Filter(predicate func(NodeStatus) bool) Nodes {
 	filteredNodes := make(Nodes)
@@ -1786,6 +1819,8 @@ type UserContainer struct {
 // WorkflowStatus contains overall status information about a workflow
 type WorkflowStatus struct {
 	// Phase a simple, high-level summary of where the workflow is in its lifecycle.
+	// Will be "" (Unknown), "Pending", or "Running" before the workflow is completed, and "Succeeded",
+	// "Failed" or "Error" once the workflow has completed.
 	Phase WorkflowPhase `json:"phase,omitempty" protobuf:"bytes,1,opt,name=phase,casttype=WorkflowPhase"`
 
 	// Time at which this workflow started
@@ -1877,7 +1912,7 @@ type Backoff struct {
 	Duration string `json:"duration,omitempty" protobuf:"varint,1,opt,name=duration"`
 	// Factor is a factor to multiply the base duration after each failed retry
 	Factor *intstr.IntOrString `json:"factor,omitempty" protobuf:"varint,2,opt,name=factor"`
-	// MaxDuration is the maximum amount of time allowed for the backoff strategy
+	// MaxDuration is the maximum amount of time allowed for a workflow in the backoff strategy
 	MaxDuration string `json:"maxDuration,omitempty" protobuf:"varint,3,opt,name=maxDuration"`
 }
 
@@ -1908,6 +1943,22 @@ type RetryStrategy struct {
 	// Expression is a condition expression for when a node will be retried. If it evaluates to false, the node will not
 	// be retried and the retry strategy will be ignored
 	Expression string `json:"expression,omitempty" protobuf:"bytes,5,opt,name=expression"`
+}
+
+// RetryPolicyActual gets the active retry policy for a strategy.
+// If the policy is explicit, use that.
+// If an expression is given, use a policy of Always so the
+// expression is all that controls the retry for 'least surprise'.
+// Otherwise, if neither is given, default to retry OnFailure.
+func (s RetryStrategy) RetryPolicyActual() RetryPolicy {
+	if s.RetryPolicy != "" {
+		return s.RetryPolicy
+	}
+	if s.Expression == "" {
+		return RetryPolicyOnFailure
+	} else {
+		return RetryPolicyAlways
+	}
 }
 
 // The amount of requested resource * the duration that request was used.
@@ -2075,6 +2126,8 @@ type NodeStatus struct {
 
 	// Phase a simple, high-level summary of where the node is in its lifecycle.
 	// Can be used as a state machine.
+	// Will be one of these values "Pending", "Running" before the node is completed, or "Succeeded",
+	// "Skipped", "Failed", "Error", or "Omitted" as a final state.
 	Phase NodePhase `json:"phase,omitempty" protobuf:"bytes,7,opt,name=phase,casttype=NodePhase"`
 
 	// BoundaryID indicates the node ID of the associated template root node in which this node belongs to
@@ -3193,13 +3246,6 @@ func (wf *Workflow) GetTemplateByName(name string) *Template {
 	return nil
 }
 
-func (w *Workflow) GetTemplates() []Template {
-	return append(
-		w.GetExecSpec().Templates,
-		w.Status.GetStoredTemplates()...,
-	)
-}
-
 func (wf *Workflow) GetNodeByName(nodeName string) *NodeStatus {
 	nodeID := wf.NodeID(nodeName)
 	node, ok := wf.Status.Nodes[nodeID]
@@ -3273,6 +3319,10 @@ func resolveTemplateReference(callerScope ResourceScope, resourceName string, ca
 		return fmt.Sprintf("%s/%s/%s", referenceScope, tmplRef.Name, tmplRef.Template), true
 	} else if callerScope != ResourceScopeLocal {
 		// Either a WorkflowTemplate or a ClusterWorkflowTemplate is calling a template inside itself. Template storage is needed
+		if caller.GetTemplate() != nil {
+			// If we have an inlined template here, use the inlined name
+			return fmt.Sprintf("%s/%s/inline/%s", callerScope, resourceName, caller.GetName()), true
+		}
 		return fmt.Sprintf("%s/%s/%s", callerScope, resourceName, caller.GetTemplateName()), true
 	} else {
 		// A Workflow is calling a template inside itself. Template storage is not needed
@@ -3430,11 +3480,24 @@ type MetricLabel struct {
 
 // Gauge is a Gauge prometheus metric
 type Gauge struct {
-	// Value is the value of the metric
+	// Value is the value to be used in the operation with the metric's current value. If no operation is set,
+	// value is the value of the metric
 	Value string `json:"value" protobuf:"bytes,1,opt,name=value"`
 	// Realtime emits this metric in real time if applicable
 	Realtime *bool `json:"realtime" protobuf:"varint,2,opt,name=realtime"`
+	// Operation defines the operation to apply with value and the metrics' current value
+	// +optional
+	Operation GaugeOperation `json:"operation,omitempty" protobuf:"bytes,3,opt,name=operation"`
 }
+
+// A GaugeOperation is the set of operations that can be used in a gauge metric.
+type GaugeOperation string
+
+const (
+	GaugeOperationSet GaugeOperation = "Set"
+	GaugeOperationAdd GaugeOperation = "Add"
+	GaugeOperationSub GaugeOperation = "Sub"
+)
 
 // Histogram is a Histogram prometheus metric
 type Histogram struct {

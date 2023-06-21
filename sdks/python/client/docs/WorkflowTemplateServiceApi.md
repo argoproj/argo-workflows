@@ -582,7 +582,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         ),
                     ],
                 ),
-                artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                artifact_gc=IoArgoprojWorkflowV1alpha1WorkflowLevelArtifactGC(
+                    force_finalizer_removal=True,
                     pod_metadata=IoArgoprojWorkflowV1alpha1Metadata(
                         annotations={
                             "key": "key_example",
@@ -916,6 +917,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 value="value_example",
                             ),
                             gauge=IoArgoprojWorkflowV1alpha1Gauge(
+                                operation="operation_example",
                                 realtime=True,
                                 value="value_example",
                             ),
@@ -942,7 +944,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                 },
                 on_exit="on_exit_example",
                 parallelism=1,
-                pod_disruption_budget=IoK8sApiPolicyV1beta1PodDisruptionBudgetSpec(
+                pod_disruption_budget=IoK8sApiPolicyV1PodDisruptionBudgetSpec(
                     max_unavailable="max_unavailable_example",
                     min_available="min_available_example",
                     selector=LabelSelector(
@@ -1041,6 +1043,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                 synchronization=IoArgoprojWorkflowV1alpha1Synchronization(
                     mutex=IoArgoprojWorkflowV1alpha1Mutex(
                         name="name_example",
+                        namespace="namespace_example",
                     ),
                     semaphore=IoArgoprojWorkflowV1alpha1SemaphoreRef(
                         config_map_key_ref=ConfigMapKeySelector(
@@ -1048,6 +1051,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             name="name_example",
                             optional=True,
                         ),
+                        namespace="namespace_example",
                     ),
                 ),
                 template_defaults=IoArgoprojWorkflowV1alpha1Template(
@@ -3452,6 +3456,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     value="value_example",
                                 ),
                                 gauge=IoArgoprojWorkflowV1alpha1Gauge(
+                                    operation="operation_example",
                                     realtime=True,
                                     value="value_example",
                                 ),
@@ -5168,6 +5173,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                     synchronization=IoArgoprojWorkflowV1alpha1Synchronization(
                         mutex=IoArgoprojWorkflowV1alpha1Mutex(
                             name="name_example",
+                            namespace="namespace_example",
                         ),
                         semaphore=IoArgoprojWorkflowV1alpha1SemaphoreRef(
                             config_map_key_ref=ConfigMapKeySelector(
@@ -5175,6 +5181,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 name="name_example",
                                 optional=True,
                             ),
+                            namespace="namespace_example",
                         ),
                     ),
                     timeout="timeout_example",
@@ -7962,6 +7969,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         value="value_example",
                                     ),
                                     gauge=IoArgoprojWorkflowV1alpha1Gauge(
+                                        operation="operation_example",
                                         realtime=True,
                                         value="value_example",
                                     ),
@@ -9678,6 +9686,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         synchronization=IoArgoprojWorkflowV1alpha1Synchronization(
                             mutex=IoArgoprojWorkflowV1alpha1Mutex(
                                 name="name_example",
+                                namespace="namespace_example",
                             ),
                             semaphore=IoArgoprojWorkflowV1alpha1SemaphoreRef(
                                 config_map_key_ref=ConfigMapKeySelector(
@@ -9685,6 +9694,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     name="name_example",
                                     optional=True,
                                 ),
+                                namespace="namespace_example",
                             ),
                         ),
                         timeout="timeout_example",
@@ -11389,7 +11399,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         ),
                     ],
                 ),
-                artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                artifact_gc=IoArgoprojWorkflowV1alpha1WorkflowLevelArtifactGC(
+                    force_finalizer_removal=True,
                     pod_metadata=IoArgoprojWorkflowV1alpha1Metadata(
                         annotations={
                             "key": "key_example",
@@ -11723,6 +11734,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 value="value_example",
                             ),
                             gauge=IoArgoprojWorkflowV1alpha1Gauge(
+                                operation="operation_example",
                                 realtime=True,
                                 value="value_example",
                             ),
@@ -11749,7 +11761,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                 },
                 on_exit="on_exit_example",
                 parallelism=1,
-                pod_disruption_budget=IoK8sApiPolicyV1beta1PodDisruptionBudgetSpec(
+                pod_disruption_budget=IoK8sApiPolicyV1PodDisruptionBudgetSpec(
                     max_unavailable="max_unavailable_example",
                     min_available="min_available_example",
                     selector=LabelSelector(
@@ -11848,6 +11860,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                 synchronization=IoArgoprojWorkflowV1alpha1Synchronization(
                     mutex=IoArgoprojWorkflowV1alpha1Mutex(
                         name="name_example",
+                        namespace="namespace_example",
                     ),
                     semaphore=IoArgoprojWorkflowV1alpha1SemaphoreRef(
                         config_map_key_ref=ConfigMapKeySelector(
@@ -11855,6 +11868,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             name="name_example",
                             optional=True,
                         ),
+                        namespace="namespace_example",
                     ),
                 ),
                 template_defaults=IoArgoprojWorkflowV1alpha1Template(
@@ -14259,6 +14273,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     value="value_example",
                                 ),
                                 gauge=IoArgoprojWorkflowV1alpha1Gauge(
+                                    operation="operation_example",
                                     realtime=True,
                                     value="value_example",
                                 ),
@@ -15975,6 +15990,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                     synchronization=IoArgoprojWorkflowV1alpha1Synchronization(
                         mutex=IoArgoprojWorkflowV1alpha1Mutex(
                             name="name_example",
+                            namespace="namespace_example",
                         ),
                         semaphore=IoArgoprojWorkflowV1alpha1SemaphoreRef(
                             config_map_key_ref=ConfigMapKeySelector(
@@ -15982,6 +15998,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 name="name_example",
                                 optional=True,
                             ),
+                            namespace="namespace_example",
                         ),
                     ),
                     timeout="timeout_example",
@@ -18769,6 +18786,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         value="value_example",
                                     ),
                                     gauge=IoArgoprojWorkflowV1alpha1Gauge(
+                                        operation="operation_example",
                                         realtime=True,
                                         value="value_example",
                                     ),
@@ -20485,6 +20503,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         synchronization=IoArgoprojWorkflowV1alpha1Synchronization(
                             mutex=IoArgoprojWorkflowV1alpha1Mutex(
                                 name="name_example",
+                                namespace="namespace_example",
                             ),
                             semaphore=IoArgoprojWorkflowV1alpha1SemaphoreRef(
                                 config_map_key_ref=ConfigMapKeySelector(
@@ -20492,6 +20511,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     name="name_example",
                                     optional=True,
                                 ),
+                                namespace="namespace_example",
                             ),
                         ),
                         timeout="timeout_example",
@@ -22105,7 +22125,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         ),
                     ],
                 ),
-                artifact_gc=IoArgoprojWorkflowV1alpha1ArtifactGC(
+                artifact_gc=IoArgoprojWorkflowV1alpha1WorkflowLevelArtifactGC(
+                    force_finalizer_removal=True,
                     pod_metadata=IoArgoprojWorkflowV1alpha1Metadata(
                         annotations={
                             "key": "key_example",
@@ -22439,6 +22460,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 value="value_example",
                             ),
                             gauge=IoArgoprojWorkflowV1alpha1Gauge(
+                                operation="operation_example",
                                 realtime=True,
                                 value="value_example",
                             ),
@@ -22465,7 +22487,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                 },
                 on_exit="on_exit_example",
                 parallelism=1,
-                pod_disruption_budget=IoK8sApiPolicyV1beta1PodDisruptionBudgetSpec(
+                pod_disruption_budget=IoK8sApiPolicyV1PodDisruptionBudgetSpec(
                     max_unavailable="max_unavailable_example",
                     min_available="min_available_example",
                     selector=LabelSelector(
@@ -22564,6 +22586,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                 synchronization=IoArgoprojWorkflowV1alpha1Synchronization(
                     mutex=IoArgoprojWorkflowV1alpha1Mutex(
                         name="name_example",
+                        namespace="namespace_example",
                     ),
                     semaphore=IoArgoprojWorkflowV1alpha1SemaphoreRef(
                         config_map_key_ref=ConfigMapKeySelector(
@@ -22571,6 +22594,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             name="name_example",
                             optional=True,
                         ),
+                        namespace="namespace_example",
                     ),
                 ),
                 template_defaults=IoArgoprojWorkflowV1alpha1Template(
@@ -24975,6 +24999,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     value="value_example",
                                 ),
                                 gauge=IoArgoprojWorkflowV1alpha1Gauge(
+                                    operation="operation_example",
                                     realtime=True,
                                     value="value_example",
                                 ),
@@ -26691,6 +26716,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                     synchronization=IoArgoprojWorkflowV1alpha1Synchronization(
                         mutex=IoArgoprojWorkflowV1alpha1Mutex(
                             name="name_example",
+                            namespace="namespace_example",
                         ),
                         semaphore=IoArgoprojWorkflowV1alpha1SemaphoreRef(
                             config_map_key_ref=ConfigMapKeySelector(
@@ -26698,6 +26724,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 name="name_example",
                                 optional=True,
                             ),
+                            namespace="namespace_example",
                         ),
                     ),
                     timeout="timeout_example",
@@ -29485,6 +29512,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         value="value_example",
                                     ),
                                     gauge=IoArgoprojWorkflowV1alpha1Gauge(
+                                        operation="operation_example",
                                         realtime=True,
                                         value="value_example",
                                     ),
@@ -31201,6 +31229,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         synchronization=IoArgoprojWorkflowV1alpha1Synchronization(
                             mutex=IoArgoprojWorkflowV1alpha1Mutex(
                                 name="name_example",
+                                namespace="namespace_example",
                             ),
                             semaphore=IoArgoprojWorkflowV1alpha1SemaphoreRef(
                                 config_map_key_ref=ConfigMapKeySelector(
@@ -31208,6 +31237,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     name="name_example",
                                     optional=True,
                                 ),
+                                namespace="namespace_example",
                             ),
                         ),
                         timeout="timeout_example",

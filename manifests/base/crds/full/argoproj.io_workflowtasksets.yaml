@@ -4981,6 +4981,8 @@ spec:
                                 type: object
                               gauge:
                                 properties:
+                                  operation:
+                                    type: string
                                   realtime:
                                     type: boolean
                                   value:
@@ -7400,6 +7402,8 @@ spec:
                           properties:
                             name:
                               type: string
+                            namespace:
+                              type: string
                           type: object
                         semaphore:
                           properties:
@@ -7414,6 +7418,8 @@ spec:
                               required:
                               - key
                               type: object
+                            namespace:
+                              type: string
                           type: object
                       type: object
                     timeout:

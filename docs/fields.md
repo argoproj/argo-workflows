@@ -789,7 +789,7 @@ WorkflowSpec is the specification of a Workflow.
 |`affinity`|[`Affinity`](#affinity)|Affinity sets the scheduling constraints for all pods in the io.argoproj.workflow.v1alpha1. Can be overridden by an affinity specified in the template|
 |`archiveLogs`|`boolean`|ArchiveLogs indicates if the container logs should be archived|
 |`arguments`|[`Arguments`](#arguments)|Arguments contain the parameters and artifacts sent to the workflow entrypoint Parameters are referencable globally using the 'workflow' variable prefix. e.g. {{io.argoproj.workflow.v1alpha1.parameters.myparam}}|
-|`artifactGC`|[`ArtifactGC`](#artifactgc)|ArtifactGC describes the strategy to use when deleting artifacts from completed or deleted workflows (applies to all output Artifacts unless Artifact.ArtifactGC is specified, which overrides this)|
+|`artifactGC`|[`WorkflowLevelArtifactGC`](#workflowlevelartifactgc)|ArtifactGC describes the strategy to use when deleting artifacts from completed or deleted workflows (applies to all output Artifacts unless Artifact.ArtifactGC is specified, which overrides this)|
 |`artifactRepositoryRef`|[`ArtifactRepositoryRef`](#artifactrepositoryref)|ArtifactRepositoryRef specifies the configMap name and key containing the artifact repository config.|
 |`automountServiceAccountToken`|`boolean`|AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods. ServiceAccountName of ExecutorConfig must be specified if this value is false.|
 |`dnsConfig`|[`PodDNSConfig`](#poddnsconfig)|PodDNSConfig defines the DNS parameters of a pod in addition to those generated from DNSPolicy.|
@@ -807,7 +807,7 @@ WorkflowSpec is the specification of a Workflow.
 |`podDisruptionBudget`|[`PodDisruptionBudgetSpec`](#poddisruptionbudgetspec)|PodDisruptionBudget holds the number of concurrent disruptions that you allow for Workflow's Pods. Controller will automatically add the selector with workflow name, if selector is empty. Optional: Defaults to empty.|
 |`podGC`|[`PodGC`](#podgc)|PodGC describes the strategy to use when deleting completed pods|
 |`podMetadata`|[`Metadata`](#metadata)|PodMetadata defines additional metadata that should be applied to workflow pods|
-|~`podPriority`~|~`integer`~|~Priority to apply to workflow pods.~ DEPRECATED: Use PodPriorityClassName instead.|
+|~~`podPriority`~~|~~`integer`~~|~~Priority to apply to workflow pods.~~ DEPRECATED: Use PodPriorityClassName instead.|
 |`podPriorityClassName`|`string`|PriorityClassName to apply to workflow pods.|
 |`podSpecPatch`|`string`|PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of container fields which are not strings (e.g. resource limits).|
 |`priority`|`integer`|Priority is used if controller is configured to process limited number of workflows in parallel. Workflows with higher priority are processed first.|
@@ -846,7 +846,7 @@ WorkflowStatus contains overall status information about a workflow
 |`offloadNodeStatusVersion`|`string`|Whether on not node status has been offloaded to a database. If exists, then Nodes and CompressedNodes will be empty. This will actually be populated with a hash of the offloaded data.|
 |`outputs`|[`Outputs`](#outputs)|Outputs captures output values and artifact locations produced by the workflow via global outputs|
 |`persistentVolumeClaims`|`Array<`[`Volume`](#volume)`>`|PersistentVolumeClaims tracks all PVCs that were created as part of the io.argoproj.workflow.v1alpha1. The contents of this list are drained at the end of the workflow.|
-|`phase`|`string`|Phase a simple, high-level summary of where the workflow is in its lifecycle.|
+|`phase`|`string`|Phase a simple, high-level summary of where the workflow is in its lifecycle. Will be "" (Unknown), "Pending", or "Running" before the workflow is completed, and "Succeeded", "Failed" or "Error" once the workflow has completed.|
 |`progress`|`string`|Progress to completion|
 |`resourcesDuration`|`Map< integer , int64 >`|ResourcesDuration is the total for the workflow|
 |`startedAt`|[`Time`](#time)|Time at which this workflow started|
@@ -1432,9 +1432,9 @@ Arguments to a template
 |`artifacts`|`Array<`[`Artifact`](#artifact)`>`|Artifacts is the list of artifacts to pass to the template or workflow|
 |`parameters`|`Array<`[`Parameter`](#parameter)`>`|Parameters is the list of parameters to pass to the template or workflow|
 
-## ArtifactGC
+## WorkflowLevelArtifactGC
 
-ArtifactGC describes how to delete artifacts from completed Workflows
+WorkflowLevelArtifactGC describes how to delete artifacts from completed Workflows - this spec is used on the Workflow level
 
 <details>
 <summary>Examples with this field (click to open)</summary>
@@ -1446,6 +1446,7 @@ ArtifactGC describes how to delete artifacts from completed Workflows
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
+|`forceFinalizerRemoval`|`boolean`|ForceFinalizerRemoval: if set to true, the finalizer will be removed in the case that Artifact GC fails|
 |`podMetadata`|[`Metadata`](#metadata)|PodMetadata is an optional field for specifying the Labels and Annotations that should be assigned to the Pod doing the deletion|
 |`serviceAccountName`|`string`|ServiceAccountName is an optional field for specifying the Service Account that should be assigned to the Pod doing the deletion|
 |`strategy`|`string`|Strategy is the strategy to use.|
@@ -1536,7 +1537,7 @@ PodGC describes how to delete completed pods as they complete
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
 |`labelSelector`|[`LabelSelector`](#labelselector)|LabelSelector is the label selector to check if the pods match the labels before being added to the pod GC queue.|
-|`strategy`|`string`|Strategy is the strategy to use. One of "OnPodCompletion", "OnPodSuccess", "OnWorkflowCompletion", "OnWorkflowSuccess"|
+|`strategy`|`string`|Strategy is the strategy to use. One of "OnPodCompletion", "OnPodSuccess", "OnWorkflowCompletion", "OnWorkflowSuccess". If unset, does not delete Pods|
 
 ## Metadata
 
@@ -1693,7 +1694,7 @@ VolumeClaimGC describes how to delete volumes from completed Workflows
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`strategy`|`string`|Strategy is the strategy to use. One of "OnWorkflowCompletion", "OnWorkflowSuccess"|
+|`strategy`|`string`|Strategy is the strategy to use. One of "OnWorkflowCompletion", "OnWorkflowSuccess". Defaults to "OnWorkflowSuccess"|
 
 ## WorkflowMetadata
 
@@ -1805,7 +1806,7 @@ NodeStatus contains status information about an individual node in the workflow
 |`name`|`string`|Name is unique name in the node tree used to generate the node ID|
 |`outboundNodes`|`Array< string >`|OutboundNodes tracks the node IDs which are considered "outbound" nodes to a template invocation. For every invocation of a template, there are nodes which we considered as "outbound". Essentially, these are last nodes in the execution sequence to run, before the template is considered completed. These nodes are then connected as parents to a following step.In the case of single pod steps (i.e. container, script, resource templates), this list will be nil since the pod itself is already considered the "outbound" node. In the case of DAGs, outbound nodes are the "target" tasks (tasks with no children). In the case of steps, outbound nodes are all the containers involved in the last step group. NOTE: since templates are composable, the list of outbound nodes are carried upwards when a DAG/steps template invokes another DAG/steps template. In other words, the outbound nodes of a template, will be a superset of the outbound nodes of its last children.|
 |`outputs`|[`Outputs`](#outputs)|Outputs captures output parameter values and artifact locations produced by this template invocation|
-|`phase`|`string`|Phase a simple, high-level summary of where the node is in its lifecycle. Can be used as a state machine.|
+|`phase`|`string`|Phase a simple, high-level summary of where the node is in its lifecycle. Can be used as a state machine. Will be one of these values "Pending", "Running" before the node is completed, or "Succeeded", "Skipped", "Failed", "Error", or "Omitted" as a final state.|
 |`podIP`|`string`|PodIP captures the IP of the pod for daemoned steps|
 |`progress`|`string`|Progress to completion|
 |`resourcesDuration`|`Map< integer , int64 >`|ResourcesDuration is indicative, but not accurate, resource duration. This is populated when the nodes completes.|
@@ -2318,7 +2319,7 @@ Backoff is a backoff strategy to use within retryStrategy
 |:----------:|:----------:|---------------|
 |`duration`|`string`|Duration is the amount to back off. Default unit is seconds, but could also be a duration (e.g. "2m", "1h")|
 |`factor`|[`IntOrString`](#intorstring)|Factor is a factor to multiply the base duration after each failed retry|
-|`maxDuration`|`string`|MaxDuration is the maximum amount of time allowed for the backoff strategy|
+|`maxDuration`|`string`|MaxDuration is the maximum amount of time allowed for a workflow in the backoff strategy|
 
 ## Mutex
 
@@ -2337,6 +2338,7 @@ Mutex holds Mutex configuration
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
 |`name`|`string`|name of the mutex|
+|`namespace`|`string`|Namespace is the namespace of the mutex, default: [namespace of workflow]|
 
 ## SemaphoreRef
 
@@ -2346,6 +2348,7 @@ SemaphoreRef is a reference of Semaphore
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
 |`configMapKeyRef`|[`ConfigMapKeySelector`](#configmapkeyselector)|ConfigMapKeyRef is configmap selector for Semaphore configuration|
+|`namespace`|`string`|Namespace is the namespace of the configmap, default: [namespace of workflow]|
 
 ## ArtifactLocation
 
@@ -3111,7 +3114,7 @@ WorkflowStep is a reference to a template to execute in a series of step
 |`hooks`|[`LifecycleHook`](#lifecyclehook)|Hooks holds the lifecycle hook which is invoked at lifecycle of step, irrespective of the success, failure, or error status of the primary step|
 |`inline`|[`Template`](#template)|Inline is the template. Template must be empty if this is declared (and vice-versa).|
 |`name`|`string`|Name of the step|
-|~`onExit`~|~`string`~|~OnExit is a template reference which is invoked at the end of the template, irrespective of the success, failure, or error of the primary template.~ DEPRECATED: Use Hooks[exit].Template instead.|
+|~~`onExit`~~|~~`string`~~|~~OnExit is a template reference which is invoked at the end of the template, irrespective of the success, failure, or error of the primary template.~~ DEPRECATED: Use Hooks[exit].Template instead.|
 |`template`|`string`|Template is the name of the template to execute as the step|
 |`templateRef`|[`TemplateRef`](#templateref)|TemplateRef is the reference to the template resource to execute as the step.|
 |`when`|`string`|When is an expression in which the step should conditionally execute|
@@ -3246,6 +3249,24 @@ ArchiveStrategy describes how to archive files/directory when saving artifacts
 |`none`|[`NoneStrategy`](#nonestrategy)|_No description available_|
 |`tar`|[`TarStrategy`](#tarstrategy)|_No description available_|
 |`zip`|[`ZipStrategy`](#zipstrategy)|_No description available_|
+
+## ArtifactGC
+
+ArtifactGC describes how to delete artifacts from completed Workflows - this is embedded into the WorkflowLevelArtifactGC, and also used for individual Artifacts to override that as needed
+
+<details>
+<summary>Examples with this field (click to open)</summary>
+<br>
+
+- [`artifact-gc-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/artifact-gc-workflow.yaml)
+</details>
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`podMetadata`|[`Metadata`](#metadata)|PodMetadata is an optional field for specifying the Labels and Annotations that should be assigned to the Pod doing the deletion|
+|`serviceAccountName`|`string`|ServiceAccountName is an optional field for specifying the Service Account that should be assigned to the Pod doing the deletion|
+|`strategy`|`string`|Strategy is the strategy to use.|
 
 ## ArtifactoryArtifact
 
@@ -3572,8 +3593,9 @@ Gauge is a Gauge prometheus metric
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
+|`operation`|`string`|Operation defines the operation to apply with value and the metrics' current value|
 |`realtime`|`boolean`|Realtime emits this metric in real time if applicable|
-|`value`|`string`|Value is the value of the metric|
+|`value`|`string`|Value is the value to be used in the operation with the metric's current value. If no operation is set, value is the value of the metric|
 
 ## Histogram
 
@@ -3639,8 +3661,6 @@ MetricLabel is a single label for a prometheus metric
 - [`hello-world.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/hello-world.yaml)
 
 - [`http-hello-world.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/http-hello-world.yaml)
-
-- [`http-success-condition.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/http-success-condition.yaml)
 
 - [`k8s-owner-reference.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-owner-reference.yaml)
 
@@ -3839,7 +3859,7 @@ DAGTask represents a node in the graph during DAG execution
 |`hooks`|[`LifecycleHook`](#lifecyclehook)|Hooks hold the lifecycle hook which is invoked at lifecycle of task, irrespective of the success, failure, or error status of the primary task|
 |`inline`|[`Template`](#template)|Inline is the template. Template must be empty if this is declared (and vice-versa).|
 |`name`|`string`|Name is the name of the target|
-|~`onExit`~|~`string`~|~OnExit is a template reference which is invoked at the end of the template, irrespective of the success, failure, or error of the primary template.~ DEPRECATED: Use Hooks[exit].Template instead.|
+|~~`onExit`~~|~~`string`~~|~~OnExit is a template reference which is invoked at the end of the template, irrespective of the success, failure, or error of the primary template.~~ DEPRECATED: Use Hooks[exit].Template instead.|
 |`template`|`string`|Name of template to execute|
 |`templateRef`|[`TemplateRef`](#templateref)|TemplateRef is the reference to the template resource to execute.|
 |`when`|`string`|When is an expression in which the task should conditionally execute|
@@ -4194,7 +4214,7 @@ S3ArtifactRepository defines the controller configuration for an S3 artifact rep
 |`endpoint`|`string`|Endpoint is the hostname of the bucket endpoint|
 |`insecure`|`boolean`|Insecure will connect to the service with TLS|
 |`keyFormat`|`string`|KeyFormat is defines the format of how to store keys. Can reference workflow variables|
-|~`keyPrefix`~|~`string`~|~KeyPrefix is prefix used as part of the bucket key in which the controller will store artifacts.~ DEPRECATED. Use KeyFormat instead|
+|~~`keyPrefix`~~|~~`string`~~|~~KeyPrefix is prefix used as part of the bucket key in which the controller will store artifacts.~~ DEPRECATED. Use KeyFormat instead|
 |`region`|`string`|Region contains the optional bucket region|
 |`roleARN`|`string`|RoleARN is the Amazon Resource Name (ARN) of the role to assume.|
 |`secretKeySecret`|[`SecretKeySelector`](#secretkeyselector)|SecretKeySecret is the secret selector to the bucket's secret key|
@@ -4880,7 +4900,7 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 |`namespace`|`string`|Namespace defines the space within which each name must be unique. An empty namespace is equivalent to the "default" namespace, but "default" is the canonical representation. Not all objects are required to be scoped to a namespace - the value of this field for those objects will be empty.Must be a DNS_LABEL. Cannot be updated. More info: http://kubernetes.io/docs/user-guide/namespaces|
 |`ownerReferences`|`Array<`[`OwnerReference`](#ownerreference)`>`|List of objects depended by this object. If ALL objects in the list have been deleted, this object will be garbage collected. If this object is managed by a controller, then an entry in this list will point to this controller, with the controller field set to true. There cannot be more than one managing controller.|
 |`resourceVersion`|`string`|An opaque value that represents the internal version of this object that can be used by clients to determine when objects have changed. May be used for optimistic concurrency, change detection, and the watch operation on a resource or set of resources. Clients must treat these values as opaque and passed unmodified back to the server. They may only be valid for a particular resource or set of resources.Populated by the system. Read-only. Value must be treated as opaque by clients and . More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#concurrency-control-and-consistency|
-|~`selfLink`~|~`string`~|~SelfLink is a URL representing this object. Populated by the system. Read-only~ DEPRECATED Kubernetes will stop propagating this field in 1.20 release and the field is planned to be removed in 1.21 release.|
+|~~`selfLink`~~|~~`string`~~|~~SelfLink is a URL representing this object. Populated by the system. Read-only~~ DEPRECATED Kubernetes will stop propagating this field in 1.20 release and the field is planned to be removed in 1.21 release.|
 |`uid`|`string`|UID is the unique in time and space value for this object. It is typically generated by the server on successful creation of a resource and is not allowed to change on PUT operations.Populated by the system. Read-only. More info: http://kubernetes.io/docs/user-guide/identifiers#uids|
 
 ## Affinity
@@ -4954,7 +4974,7 @@ PodDisruptionBudgetSpec is a description of a PodDisruptionBudget.
 |:----------:|:----------:|---------------|
 |`maxUnavailable`|[`IntOrString`](#intorstring)|An eviction is allowed if at most "maxUnavailable" pods selected by "selector" are unavailable after the eviction, i.e. even in absence of the evicted pod. For example, one can prevent all voluntary evictions by specifying 0. This is a mutually exclusive setting with "minAvailable".|
 |`minAvailable`|[`IntOrString`](#intorstring)|An eviction is allowed if at least "minAvailable" pods selected by "selector" will still be available after the eviction, i.e. even in the absence of the evicted pod.  So for example you can prevent all voluntary evictions by specifying "100%".|
-|`selector`|[`LabelSelector`](#labelselector)|Label query over pods whose evictions are managed by the disruption budget. A null selector selects no pods. An empty selector ({}) also selects no pods, which differs from standard behavior of selecting all pods. In policy/v1, an empty selector will select all pods in the namespace.|
+|`selector`|[`LabelSelector`](#labelselector)|Label query over pods whose evictions are managed by the disruption budget. A null selector will match no pods, while an empty ({}) selector will select all pods within the namespace.|
 
 ## PodSecurityContext
 
@@ -5066,7 +5086,7 @@ Volume represents a named volume in a pod that may be accessed by any container 
 |`flexVolume`|[`FlexVolumeSource`](#flexvolumesource)|FlexVolume represents a generic volume resource that is provisioned/attached using an exec based plugin.|
 |`flocker`|[`FlockerVolumeSource`](#flockervolumesource)|Flocker represents a Flocker volume attached to a kubelet's host machine. This depends on the Flocker control service being running|
 |`gcePersistentDisk`|[`GCEPersistentDiskVolumeSource`](#gcepersistentdiskvolumesource)|GCEPersistentDisk represents a GCE Disk resource that is attached to a kubelet's host machine and then exposed to the pod. More info: https://kubernetes.io/docs/concepts/storage/volumes#gcepersistentdisk|
-|~`gitRepo`~|~[`GitRepoVolumeSource`](#gitrepovolumesource)~|~GitRepo represents a git repository at a particular revision.~ DEPRECATED: GitRepo is deprecated. To provision a container with a git repo, mount an EmptyDir into an InitContainer that clones the repo using git, then mount the EmptyDir into the Pod's container.|
+|~~`gitRepo`~~|~~[`GitRepoVolumeSource`](#gitrepovolumesource)~~|~~GitRepo represents a git repository at a particular revision.~~ DEPRECATED: GitRepo is deprecated. To provision a container with a git repo, mount an EmptyDir into an InitContainer that clones the repo using git, then mount the EmptyDir into the Pod's container.|
 |`glusterfs`|[`GlusterfsVolumeSource`](#glusterfsvolumesource)|Glusterfs represents a Glusterfs mount on the host that shares a pod's lifetime. More info: https://examples.k8s.io/volumes/glusterfs/README.md|
 |`hostPath`|[`HostPathVolumeSource`](#hostpathvolumesource)|HostPath represents a pre-existing file or directory on the host machine that is directly exposed to the container. This is generally used for system agents or other privileged things that are allowed to see the host machine. Most containers will NOT need this. More info: https://kubernetes.io/docs/concepts/storage/volumes#hostpath|
 |`iscsi`|[`ISCSIVolumeSource`](#iscsivolumesource)|ISCSI represents an ISCSI Disk resource that is attached to a kubelet's host machine and then exposed to the pod. More info: https://examples.k8s.io/volumes/iscsi/README.md|

@@ -44,6 +44,7 @@ var (
 	connectionTimedoutUErr  *url.Error = urlError("connection timed out")
 	connectionResetUErr     *url.Error = urlError("connection reset by peer")
 	EOFUErr                 *url.Error = urlError("EOF")
+	connectionRefusedErr    *url.Error = urlError("connect: connection refused")
 )
 
 const transientEnvVarKey = "TRANSIENT_ERROR_PATTERN"
@@ -100,6 +101,9 @@ func TestIsTransientErr(t *testing.T) {
 	})
 	t.Run("ExplicitTransientErr", func(t *testing.T) {
 		assert.True(t, IsTransientErr(NewErrTransient("")))
+	})
+	t.Run("ConnectionRefusedTransientErr", func(t *testing.T) {
+		assert.True(t, IsTransientErr(connectionRefusedErr))
 	})
 }
 

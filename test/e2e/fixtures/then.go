@@ -185,6 +185,38 @@ func (t *Then) ExpectAuditEvents(filter func(event apiv1.Event) bool, num int, b
 	return t
 }
 
+func (t *Then) ExpectPVCDeleted() *Then {
+	t.t.Helper()
+	timeout := defaultTimeout
+	_, _ = fmt.Println("Checking", timeout.String(), "for expecting PVCs deletion")
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+	for {
+		select {
+		case <-ctx.Done():
+			t.t.Errorf("timeout after %v waiting for condition", timeout)
+			return t
+		default:
+			num := len(t.wf.Status.PersistentVolumeClaims)
+			pvcClient := t.kubeClient.CoreV1().PersistentVolumeClaims(t.wf.ObjectMeta.Namespace)
+			for _, p := range t.wf.Status.PersistentVolumeClaims {
+				_, err := pvcClient.Get(ctx, p.PersistentVolumeClaim.ClaimName, metav1.GetOptions{})
+				if err == nil {
+					break
+				} else if apierr.IsNotFound(err) {
+					num--
+				} else {
+					t.t.Fatal(err)
+					return t
+				}
+			}
+			if num == 0 {
+				return t
+			}
+		}
+	}
+}
+
 func (t *Then) ExpectArtifact(nodeName string, artifactName string, bucketName string, f func(t *testing.T, object minio.ObjectInfo, err error)) {
 	t.t.Helper()
 
