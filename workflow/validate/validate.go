@@ -933,20 +933,30 @@ func (ctx *templateValidationCtx) validateSteps(scope map[string]interface{}, tm
 			if err != nil {
 				return err
 			}
-		}
 
-		stepBytes, err := json.Marshal(stepGroup)
-		if err != nil {
-			return errors.InternalWrapError(err)
-		}
-		err = resolveAllVariables(scope, ctx.globalParams, string(stepBytes), workflowTemplateValidation)
-		if err != nil {
-			return errors.Errorf(errors.CodeBadRequest, "templates.%s.steps %s", tmpl.Name, err.Error())
-		}
+			stepBytes, err := json.Marshal(step)
+			if err != nil {
+				return errors.InternalWrapError(err)
+			}
 
-		for _, step := range stepGroup.Steps {
+			stepScope := make(map[string]interface{})
+			for k, v := range scope {
+				stepScope[k] = v
+			}
+
+			if i := step.Inline; i != nil {
+				for _, p := range i.Inputs.Parameters {
+					stepScope["inputs.parameters."+p.Name] = placeholderGenerator.NextPlaceholder()
+				}
+			}
+
+			err = resolveAllVariables(stepScope, ctx.globalParams, string(stepBytes), workflowTemplateValidation)
+			if err != nil {
+				return errors.Errorf(errors.CodeBadRequest, "templates.%s.steps %s", tmpl.Name, err.Error())
+			}
+
 			aggregate := len(step.WithItems) > 0 || step.WithParam != ""
-			resolvedTmpl := resolvedTemplates[step.Name]
+
 			ctx.addOutputsToScope(resolvedTmpl, fmt.Sprintf("steps.%s", step.Name), scope, aggregate, false)
 
 			// Validate the template again with actual arguments.
