@@ -161,53 +161,53 @@ jobs:
             --target $TARGET \
             --tag quay.io/$image_name .
 
-  # build-windows:
-  #   name: Build & push windows
-  #   if: github.repository == 'pipekit/argo-workflows'
-  #   runs-on: windows-2019
-  #   steps:
-  #     - uses: actions/checkout@v3
-  #     - name: Docker Login
-  #       uses: Azure/docker-login@v1
-  #       with:
-  #         username: ${{ secrets.DOCKERIO_USERNAME }}
-  #         password: ${{ secrets.DOCKERIO_PASSWORD }}
+  build-windows:
+    name: Build & push windows
+    if: github.repository == 'pipekit/argo-workflows'
+    runs-on: windows-2019
+    steps:
+      - uses: actions/checkout@v3
+      - name: Docker Login
+        uses: Azure/docker-login@v1
+        with:
+          username: ${{ secrets.DOCKERIO_USERNAME }}
+          password: ${{ secrets.DOCKERIO_PASSWORD }}
 
-  #     - name: Login to Quay
-  #       uses: Azure/docker-login@v1
-  #       with:
-  #         login-server: quay.io
-  #         username: ${{ secrets.QUAYIO_USERNAME }}
-  #         password: ${{ secrets.QUAYIO_PASSWORD }}
+      - name: Login to Quay
+        uses: Azure/docker-login@v1
+        with:
+          login-server: quay.io
+          username: ${{ secrets.QUAYIO_USERNAME }}
+          password: ${{ secrets.QUAYIO_PASSWORD }}
    
-  #     - name: Build & Push Windows Docker Images
-  #       env:
-  #         DOCKERIO_ORG: ${{ secrets.DOCKERIO_ORG }}
-  #       run: |
-  #         docker_org=$DOCKERIO_ORG
+      - name: Build & Push Windows Docker Images
+        env:
+          DOCKERIO_ORG: ${{ secrets.DOCKERIO_ORG }}
+        run: |
+          docker_org=$DOCKERIO_ORG
 
-  #         tag=$(basename $GITHUB_REF)
-  #         if [ $tag = "master" ]; then
-  #           tag="latest"
-  #         fi
+          tag=$(basename $GITHUB_REF)
+          if [ $tag = "master" ]; then
+            tag="latest"
+          fi
 
-  #         targets="argoexec"
-  #         for target in $targets; do
-  #           image_name="${docker_org}/${target}:${tag}-windows"
-  #           docker build --target $target -t $image_name -f Dockerfile.windows .
-  #           docker push $image_name
+          targets="argoexec"
+          for target in $targets; do
+            image_name="${docker_org}/${target}:${tag}-windows"
+            docker build --target $target -t $image_name -f Dockerfile.windows .
+            docker push $image_name
 
-  #           docker tag $image_name quay.io/$image_name
-  #           docker push quay.io/$image_name
+            docker tag $image_name quay.io/$image_name
+            docker push quay.io/$image_name
 
-  #         done
+          done
 
   push-images:
     name: Push manifest with all images
     if: github.repository == 'pipekit/argo-workflows'
     runs-on: ubuntu-latest
-    # needs: [ build-linux-amd64, build-linux-arm64, build-windows ]
-    needs: [ build-linux-amd64, build-linux-arm64 ]
+    needs: [ build-linux-amd64, build-linux-arm64, build-windows ]
+    # needs: [ build-linux-amd64, build-linux-arm64 ]
     steps:
       - uses: actions/checkout@v3
       - name: Docker Login
@@ -302,48 +302,48 @@ jobs:
           docker pull $image_name
           docker pull quay.io/$image_name
 
-  # test-images-windows:
-  #   name: Try pulling windows
-  #   if: github.repository == 'pipekit/argo-workflows'
-  #   runs-on: windows-2019
-  #   needs: [ push-images ]
-  #   steps:
-  #     - name: Docker Login
-  #       uses: Azure/docker-login@v1
-  #       with:
-  #         username: ${{ secrets.DOCKERIO_USERNAME }}
-  #         password: ${{ secrets.DOCKERIO_PASSWORD }}
+  test-images-windows:
+    name: Try pulling windows
+    if: github.repository == 'pipekit/argo-workflows'
+    runs-on: windows-2019
+    needs: [ push-images ]
+    steps:
+      - name: Docker Login
+        uses: Azure/docker-login@v1
+        with:
+          username: ${{ secrets.DOCKERIO_USERNAME }}
+          password: ${{ secrets.DOCKERIO_PASSWORD }}
 
-  #     - name: Login to Quay
-  #       uses: Azure/docker-login@v1
-  #       with:
-  #         login-server: quay.io
-  #         username: ${{ secrets.QUAYIO_USERNAME }}
-  #         password: ${{ secrets.QUAYIO_PASSWORD }}
-  #     - name: Try pulling
-  #       env:
-  #         DOCKERIO_ORG: ${{ secrets.DOCKERIO_ORG }}
-  #       run: |
-  #         docker_org=$DOCKERIO_ORG
-  #         tag=$(basename $GITHUB_REF)
-  #         if [ $tag = "master" ]; then
-  #           tag="latest"
-  #         fi
+      - name: Login to Quay
+        uses: Azure/docker-login@v1
+        with:
+          login-server: quay.io
+          username: ${{ secrets.QUAYIO_USERNAME }}
+          password: ${{ secrets.QUAYIO_PASSWORD }}
+      - name: Try pulling
+        env:
+          DOCKERIO_ORG: ${{ secrets.DOCKERIO_ORG }}
+        run: |
+          docker_org=$DOCKERIO_ORG
+          tag=$(basename $GITHUB_REF)
+          if [ $tag = "master" ]; then
+            tag="latest"
+          fi
 
-  #         targets="argoexec"
-  #         for target in $targets; do
-  #           image_name="${docker_org}/${target}:${tag}"
-  #           docker pull $image_name
-  #           docker pull quay.io/$image_name
-  #         done
+          targets="argoexec"
+          for target in $targets; do
+            image_name="${docker_org}/${target}:${tag}"
+            docker pull $image_name
+            docker pull quay.io/$image_name
+          done
 
   publish-release:
     permissions:
       contents: write  # for softprops/action-gh-release to create GitHub release
     runs-on: ubuntu-latest
     if: github.repository == 'pipekit/argo-workflows'
-    # needs: [ push-images, test-images-linux-amd64, test-images-windows ]
-    needs: [ push-images, test-images-linux-amd64 ]
+    needs: [ push-images, test-images-linux-amd64, test-images-windows ]
+    #needs: [ push-images, test-images-linux-amd64 ]
     env:
       NODE_OPTIONS: --max-old-space-size=4096
       # COSIGN_PRIVATE_KEY: ${{secrets.COSIGN_PRIVATE_KEY}}
