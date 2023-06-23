@@ -1,24 +1,24 @@
 use argo_workflows::apis::configuration;
 use argo_workflows::apis::workflow_service_api;
 use argo_workflows::models::Container;
-// use argo_workflows::models::CreateWorkflowParams;
-use argo_workflows::apis::Error;
 use argo_workflows::models::IoArgoprojWorkflowV1alpha1Template as WorkflowTemplate;
 use argo_workflows::models::IoArgoprojWorkflowV1alpha1Workflow as Workflow;
 use argo_workflows::models::IoArgoprojWorkflowV1alpha1WorkflowCreateRequest as CreateRequest;
 use argo_workflows::models::IoArgoprojWorkflowV1alpha1WorkflowSpec as WorkflowSpec;
 use argo_workflows::models::ObjectMeta;
+use core::panic;
 use std::env;
-use std::f64::consts::E;
 
-#[test]
-fn test_create_workflow() {
+use tokio;
+
+#[tokio::test]
+async fn test_create_workflow() {
     // There are a few ways to init structs, either mut or create a new struct object and pass that to another struct object
     // No sense in creating 2 objects when 1 will do nothing, so just create a mut for testing.
 
     // prepare structs
     let mut metadata = ObjectMeta::new();
-    metadata.cluster_name = Some(String::from("test"));
+    metadata.generate_name = Some(String::from("hello-world-"));
 
     let mut container = Container::new(String::from("argoproj/argosay:v2"));
     container.command = Some(vec![String::from("cowsay")]);
@@ -29,7 +29,7 @@ fn test_create_workflow() {
     template.container = Some(Box::new(container));
 
     let mut spec = WorkflowSpec::new();
-    spec.entrypoint = Some(String::from("walesay"));
+    spec.entrypoint = Some(String::from("whalesay"));
     spec.templates = Some(vec![template]);
 
     let manifest = Workflow::new(metadata, spec);
@@ -45,22 +45,27 @@ fn test_create_workflow() {
     let mut request = CreateRequest::new();
     request.workflow = Some(Box::new(manifest));
 
-    println!("{:#?}", request);
-
     let create_workflow_params = workflow_service_api::CreateWorkflowParams {
         namespace: String::from("argo"),
         body: request,
     };
 
-    let list_workflow_params = init_workflow_params(String::from("argo"));
+    let list_workflow_params = init_workflow_params(String::from("wrong-workflow"));
 
-    match workflow_service_api::create_workflow(&config, create_workflow_params) {
-        Ok(_) => (),
-        Err(error) => panic!("Problem creating workflow, {:?}", error),
+    let workflow_creation = workflow_service_api::create_workflow(&config, create_workflow_params);
+    match workflow_creation.await {
+        Ok(ref success) => println!("success! {:#?}", success.content),
+        Err(err) => panic!("Error creating workflows: {:#?}", err),
     }
-    match workflow_service_api::list_workflows(&config, list_workflow_params) {
+
+    match workflow_service_api::list_workflows(&config, list_workflow_params).await {
+        Ok(ref success) => {
+            let contentStr = success.content.as_str();
+            let v: serde_json::Value = serde_json::from_str(contentStr)?;
+            panic!("v is:\n{:#?}", v);
+        }
+        Err(err) => panic!("Error getting list of workflows:\n{:#?}", err),
         Ok(_) => (),
-        Err(error) => panic!("Problem listing workflows, {:?}", error),
     }
 }
 

@@ -28,6 +28,7 @@ generate:
 		sed 's/io.k8s.api.core.v1.//' | \
 		sed 's/io.k8s.apimachinery.pkg.apis.meta.v1.//' \
 		> $(WD)/swagger.json
+	cp ../../LICENSE $(WD)/LICENSE
 	$(DOCKER) openapitools/openapi-generator-cli:v5.2.1 \
 		generate \
 		-i /wd/swagger.json \
@@ -41,7 +42,6 @@ generate:
 		--additional-properties packageName="argo_workflows" \
 		--additional-properties projectName="argo-workflows" \
 		--additional-properties hideGenerationTimestamp=true \
-		--additional-properties supportAsync=false \
 		--remove-operation-id-prefix \
 		--model-name-prefix '' \
 		--model-name-suffix '' \
@@ -52,9 +52,13 @@ generate:
 	$(CHOWN) $(WD) || sudo $(CHOWN) $(WD)
 
 install: 
-	# Rust doesn't need to install a library, but for integration tests it's best to be next to src folder
+	# Set up environment for testing and dev-dependency
 	cp -r ./tests ./client
+	cargo add tokio \
+		--manifest-path ./client/Cargo.toml \
+		--dev \
+		--features "macros"
 
 test:
 	../../hack/access-token.sh init
-	env ARGO_TOKEN="`../../hack/access-token.sh get`" cargo test --manifest-path ./client/Cargo.toml
+	env ARGO_TOKEN="`../../hack/access-token.sh get`" cargo test --manifest-path ./client/Cargo.toml -- --nocapture
