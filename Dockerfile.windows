@@ -4,7 +4,7 @@
 # Also used as the image in CI jobs so needs all dependencies
 ####################################################################################################
 
-ARG IMAGE_OS_VERSION=1809
+ARG IMAGE_OS_VERSION=ltsc2022-amd64
 ARG GIT_COMMIT=unknown
 ARG GIT_TAG=unknown
 ARG GIT_TREE_STATE=unknown

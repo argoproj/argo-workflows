@@ -3,7 +3,6 @@ package util
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"strconv"
 	"strings"
@@ -51,7 +50,7 @@ func GetSecrets(ctx context.Context, clientSet kubernetes.Interface, namespace, 
 
 // Write the Terminate message in pod spec
 func WriteTerminateMessage(message string) {
-	err := ioutil.WriteFile("/dev/termination-log", []byte(message), 0o600)
+	err := os.WriteFile("/dev/termination-log", []byte(message), 0o600)
 	if err != nil {
 		println("unable to write termination log: " + err.Error())
 	}
