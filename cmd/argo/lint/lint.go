@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"strings"
 
 	"github.com/argoproj/pkg/errors"
@@ -100,7 +99,7 @@ func RunLint(ctx context.Context, client apiclient.Client, kinds []string, outpu
 // Entities of other kinds are ignored.
 func Lint(ctx context.Context, opts *LintOptions) (*LintResults, error) {
 	var fmtr Formatter = defaultFormatter
-	var w io.Writer = ioutil.Discard
+	var w = io.Discard
 	if opts.Formatter != nil {
 		fmtr = opts.Formatter
 	}
