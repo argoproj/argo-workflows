@@ -87,13 +87,13 @@ jobs:
           - test: test-python-sdk
             profile: minimal
           - test: test-executor
-            install_k3s_version: v1.21.2+k3s1
+            install_k3s_version: v1.27.2+k3s1
             profile: minimal
           - test: test-corefunctional
-            install_k3s_version: v1.21.2+k3s1
+            install_k3s_version: v1.27.2+k3s1
             profile: minimal
           - test: test-functional
-            install_k3s_version: v1.21.2+k3s1
+            install_k3s_version: v1.27.2+k3s1
             profile: minimal
     steps:
       - name: Install socat
