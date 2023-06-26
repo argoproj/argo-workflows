@@ -227,11 +227,9 @@ func (s *sso) HandleRedirect(w http.ResponseWriter, r *http.Request) {
 func (s *sso) HandleCallback(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	state := r.URL.Query().Get("state")
-	cookie, err := r.Cookie(state)
-	http.SetCookie(w, &http.Cookie{Name: state, MaxAge: 0})
-	if err != nil {
-		w.WriteHeader(400)
-		return
+	cookie, cookieErr := r.Cookie(state)
+	if cookieErr != nil {
+		http.SetCookie(w, &http.Cookie{Name: state, MaxAge: 0})
 	}
 	redirectOption := oauth2.SetAuthURLParam("redirect_uri", s.getRedirectUrl(r))
 	// Use sso.httpClient in order to respect TLSOptions
@@ -315,7 +313,7 @@ func (s *sso) HandleCallback(w http.ResponseWriter, r *http.Request) {
 	}
 	prefix := fmt.Sprintf("%s://%s%s", proto, r.Host, s.baseHRef)
 
-	if strings.HasPrefix(cookie.Value, prefix) {
+	if cookieErr == nil && strings.HasPrefix(cookie.Value, prefix) {
 		redirect = cookie.Value
 	}
 	http.Redirect(w, r, redirect, 302)
