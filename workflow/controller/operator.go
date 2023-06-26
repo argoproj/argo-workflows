@@ -3660,6 +3660,11 @@ func (woc *wfOperationCtx) setExecWorkflow(ctx context.Context) error {
 		return err
 	}
 
+	err = woc.substituteGlobalParameters()
+	if err != nil {
+		return err
+	}
+
 	err = woc.substituteGlobalVariables(woc.globalParams)
 	if err != nil {
 		return err
@@ -3771,6 +3776,30 @@ func (woc *wfOperationCtx) mergedTemplateDefaultsInto(originalTmpl *wfv1.Templat
 			return err
 		}
 		originalTmpl.SetType(originalTmplType)
+	}
+	return nil
+}
+
+func (woc *wfOperationCtx) substituteGlobalParameters() error {
+	oldParamsBytes, err := json.Marshal(woc.globalParams)
+	if err != nil {
+		return err
+	}
+	oldParams := string(oldParamsBytes)
+	for {
+		newParams, err := template.Replace(oldParams, woc.globalParams, true)
+		if err != nil {
+			return err
+		}
+		if strings.Compare(oldParams, newParams) != 0 {
+			oldParams = newParams
+		} else {
+			err = json.Unmarshal([]byte(newParams), &woc.globalParams)
+			if err != nil {
+				return err
+			}
+			break
+		}
 	}
 	return nil
 }

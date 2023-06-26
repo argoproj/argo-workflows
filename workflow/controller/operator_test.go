@@ -9175,3 +9175,45 @@ spec:
 	assert.Equal(t, woc.wf.Status.Phase, wfv1.WorkflowFailed)
 	assert.Contains(t, woc.wf.Status.Message, "invalid spec")
 }
+
+func TestWorkflowGlobalVariablesReferencedByOtherGlobalVariable(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(`apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: whale-say-parameter-debug
+spec:
+  entrypoint: whalesay
+  arguments:
+    parameters:
+      - name: timestamp
+        value: "{{workflow.creationTimestamp.Y}}.{{workflow.creationTimestamp.m}}.{{workflow.creationTimestamp.d}}-{{workflow.creationTimestamp.H}}{{workflow.creationTimestamp.M}}"
+      - name: workdir
+        value: "/mnt/data/{{workflow.parameters.model-name}}/{{workflow.parameters.timestamp}}"
+      - name: model-name
+        value: model-foo-bar
+  templates:
+  - name: whalesay
+    container:
+      image: docker/whalesay
+      command: [cowsay]
+      args: ["{{workflow.parameters.workdir}}"]`)
+	cancel, controller := newController(wf)
+	defer cancel()
+
+	ctx := context.Background()
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate(ctx)
+	timestamp := woc.globalParams["workflow.parameters.timestamp"]
+	creationTimestamp := wf.CreationTimestamp
+	assert.Equal(t,
+		fmt.Sprintf("%s.%s.%s-%s%s",
+			strftime.Format("%Y", creationTimestamp.Time),
+			strftime.Format("%m", creationTimestamp.Time),
+			strftime.Format("%d", creationTimestamp.Time),
+			strftime.Format("%H", creationTimestamp.Time),
+			strftime.Format("%M", creationTimestamp.Time)),
+		timestamp)
+	workdir := woc.globalParams["workflow.parameters.workdir"]
+	modelName := woc.globalParams["workflow.parameters.model-name"]
+	assert.Equal(t, fmt.Sprintf("/mnt/data/%s/%s", modelName, timestamp), workdir)
+}
