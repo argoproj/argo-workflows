@@ -41,6 +41,20 @@ func (_m *Interface) Authorize(authorization string) (*types.Claims, error) {
 	return r0, r1
 }
 
+// GetCallbackURLPath provides a mock function with given fields:
+func (_m *Interface) GetCallbackURLPath() string {
+	ret := _m.Called()
+
+	var r0 string
+	if rf, ok := ret.Get(0).(func() string); ok {
+		r0 = rf()
+	} else {
+		r0 = ret.Get(0).(string)
+	}
+
+	return r0
+}
+
 // HandleCallback provides a mock function with given fields: writer, request
 func (_m *Interface) HandleCallback(writer http.ResponseWriter, request *http.Request) {
 	_m.Called(writer, request)
