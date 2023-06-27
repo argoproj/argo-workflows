@@ -9,6 +9,7 @@ import (
 	"crypto/x509"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
@@ -42,6 +43,7 @@ type Interface interface {
 	HandleRedirect(writer http.ResponseWriter, request *http.Request)
 	HandleCallback(writer http.ResponseWriter, request *http.Request)
 	IsRBACEnabled() bool
+	GetCallbackURLPath() string
 }
 
 var _ Interface = &sso{}
@@ -352,5 +354,17 @@ func (s *sso) getRedirectUrl(r *http.Request) string {
 		proto = "https"
 	}
 
-	return fmt.Sprintf("%s://%s%soauth2/callback", proto, r.Host, s.baseHRef)
+	return fmt.Sprintf("%s://%s%s", proto, r.Host, s.GetCallbackURLPath())
+}
+
+func (s *sso) GetCallbackURLPath() string {
+	if s.config.RedirectURL != "" {
+		u, err := url.Parse(s.config.RedirectURL)
+		if err != nil {
+			return ""
+		}
+		return u.Path
+	}
+
+	return fmt.Sprintf("%soauth2/callback", s.baseHRef)
 }
