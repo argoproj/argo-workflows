@@ -15,7 +15,11 @@ endif
 # work dir
 WD                    := $(shell echo "`pwd`/client")
 
-DOCKER = docker run --rm -v $(WD):/wd --workdir /wd
+CONTAINER_ENGINE?=$(shell docker version >/dev/null 2>&1 && echo docker)
+ifeq ($(CONTAINER_ENGINE),)
+	CONTAINER_ENGINE=$(shell podman version >/dev/null 2>&1 && echo podman)
+endif
+DOCKER = $(CONTAINER_ENGINE) run --rm -v $(WD):/wd --workdir /wd
 CHOWN = chown -R $(shell id -u):$(shell id -g)
 
 publish: generate

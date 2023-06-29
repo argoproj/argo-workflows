@@ -1,6 +1,7 @@
 use argo_workflows::apis::configuration;
 use argo_workflows::apis::workflow_service_api;
 use argo_workflows::models::Container;
+// use argo_workflows::models::CreateWorkflowParams;
 use argo_workflows::models::IoArgoprojWorkflowV1alpha1Template as WorkflowTemplate;
 use argo_workflows::models::IoArgoprojWorkflowV1alpha1Workflow as Workflow;
 use argo_workflows::models::IoArgoprojWorkflowV1alpha1WorkflowCreateRequest as CreateRequest;
@@ -50,22 +51,25 @@ async fn test_create_workflow() {
         body: request,
     };
 
-    let list_workflow_params = init_workflow_params(String::from("wrong-workflow"));
+    let list_workflow_params = init_workflow_params(String::from("blah"));
 
-    let workflow_creation = workflow_service_api::create_workflow(&config, create_workflow_params);
-    match workflow_creation.await {
-        Ok(ref success) => println!("success! {:#?}", success.content),
-        Err(err) => panic!("Error creating workflows: {:#?}", err),
+    match workflow_service_api::create_workflow(&config, create_workflow_params).await {
+        Ok(_) => (),
+        Err(err) => panic!("{:#?}", &err.to_string()),
     }
 
     match workflow_service_api::list_workflows(&config, list_workflow_params).await {
-        Ok(ref success) => {
-            let contentStr = success.content.as_str();
-            let v: serde_json::Value = serde_json::from_str(contentStr)?;
-            panic!("v is:\n{:#?}", v);
-        }
-        Err(err) => panic!("Error getting list of workflows:\n{:#?}", err),
-        Ok(_) => (),
+        Ok(success) => match &success.entity {
+            Some(value) => match &value {
+                workflow_service_api::ListWorkflowsSuccess::Status200(_) => (),
+                workflow_service_api::ListWorkflowsSuccess::UnknownValue(unknown_value) => {
+                    // Ensure that the workflow was actually created
+                    get_workflow_list_items(unknown_value)
+                }
+            },
+            None => panic!("No workflows found"),
+        },
+        Err(err) => panic!("Error getting list of workflows:\n{:#?}", err.to_string()),
     }
 }
 
@@ -84,5 +88,16 @@ fn init_workflow_params(namespace: String) -> workflow_service_api::ListWorkflow
         list_options_limit: None,
         list_options_continue: None,
         fields: None,
+    }
+}
+
+fn get_workflow_list_items(unknown_value: &serde_json::Value) {
+    match unknown_value {
+        serde_json::Value::Object(obj) => match obj.get("items") {
+            Some(obj_items) => get_workflow_list_items(obj_items),
+            _ => (),
+        },
+        serde_json::Value::Null => panic!("No workflow items found:\n{:#}", unknown_value),
+        _ => (),
     }
 }

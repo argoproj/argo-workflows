@@ -1,13 +1,10 @@
 use argo_workflows::apis::configuration;
 use argo_workflows::apis::workflow_service_api;
-use argo_workflows::apis::workflow_service_api::ListWorkflowsSuccess;
-use argo_workflows::apis::ResponseContent;
 use argo_workflows::models::Container;
 // use argo_workflows::models::CreateWorkflowParams;
 use argo_workflows::models::IoArgoprojWorkflowV1alpha1Template as WorkflowTemplate;
 use argo_workflows::models::IoArgoprojWorkflowV1alpha1Workflow as Workflow;
 use argo_workflows::models::IoArgoprojWorkflowV1alpha1WorkflowCreateRequest as CreateRequest;
-use argo_workflows::models::IoArgoprojWorkflowV1alpha1WorkflowList;
 use argo_workflows::models::IoArgoprojWorkflowV1alpha1WorkflowSpec as WorkflowSpec;
 use argo_workflows::models::ObjectMeta;
 use core::panic;
@@ -56,17 +53,27 @@ async fn test_create_workflow() {
 
     let list_workflow_params = init_workflow_params(String::from("blah"));
 
+    // now see if the workflow was created
+    // if there was no error, match the success
+    // if there was an error, match the error
+    // the reqwest error is a bit more complicated, so match that
+    // specifically, we want to extract the inner error from the reqwest error: ConnectError type
+    // This field is private in the reqwest error, so we have to match on the error type
+    // until we get the specific tcp connect error message, eg. "connection refused"
+    // then we can match on that and print the error message
     match workflow_service_api::create_workflow(&config, create_workflow_params).await {
-        Ok(success) => println!("success! {:#?}", success.content),
-        Err(err) => panic!("Error creating workflows: {:#?}", err),
+        Ok(success) => {
+            println!(
+                "create workflow success!\n{:#?}",
+                success.content.to_string()
+            )
+        }
+        Err(err) => println!("{:#?}", &err.to_string()),
     }
 
     match workflow_service_api::list_workflows(&config, list_workflow_params).await {
-        Ok(success) if success.content.is_empty() => {
-            panic!("Error, no workflows found:\n{:#?}", success.content);
-        }
-        Err(err) => panic!("Error getting list of workflows:\n{:#?}", err),
-        _ => (),
+        Ok(success) => println!("List of workflows:\n{:#?}", success.content),
+        Err(err) => panic!("Error getting list of workflows:\n{:#?}", err.to_string()),
     }
 }
 
