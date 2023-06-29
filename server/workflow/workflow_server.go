@@ -136,10 +136,7 @@ func mergeWithArchivedWorkflows(liveWfs v1alpha1.WorkflowList, archivedWfs v1alp
 		uidToWfs[item.UID] = append(uidToWfs[item.UID], item)
 	}
 	for _, item := range archivedWfs.Items {
-		// The workflows with empty UIDs are the ones that we failed to unmarshall in `workflowArchive.ListWorkflows`.
-		if item.UID != "" {
-			uidToWfs[item.UID] = append(uidToWfs[item.UID], item)
-		}
+		uidToWfs[item.UID] = append(uidToWfs[item.UID], item)
 	}
 	numWfs := 0
 	for _, v := range uidToWfs {

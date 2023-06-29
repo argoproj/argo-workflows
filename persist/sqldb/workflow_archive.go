@@ -171,16 +171,15 @@ func (r *workflowArchive) ListWorkflows(namespace string, name string, namePrefi
 	if err != nil {
 		return nil, err
 	}
-	wfs := make(wfv1.Workflows, len(archivedWfs))
-	for i, archivedWf := range archivedWfs {
-		wf := wfs[i]
+	wfs := make(wfv1.Workflows, 0)
+	for _, archivedWf := range archivedWfs {
+		wf := wfv1.Workflow{}
 		err = json.Unmarshal([]byte(archivedWf.Workflow), &wf)
 		if err != nil {
-			// We will filter out all the workflows with empty UIDs
-			wf.UID = ""
 			log.WithFields(log.Fields{"workflowUID": archivedWf.UID, "workflowName": archivedWf.Name}).Errorln("unable to unmarshal workflow from database")
+		} else {
+			wfs = append(wfs, wf)
 		}
-		wfs[i] = wf
 	}
 	return wfs, nil
 }
