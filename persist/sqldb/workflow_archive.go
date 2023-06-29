@@ -176,7 +176,9 @@ func (r *workflowArchive) ListWorkflows(namespace string, name string, namePrefi
 		wf := wfs[i]
 		err = json.Unmarshal([]byte(archivedWf.Workflow), &wf)
 		if err != nil {
-			return nil, err
+			// We will filter out all the workflows with empty UIDs
+			wf.UID = ""
+			log.WithFields(log.Fields{"workflowUID": archivedWf.UID, "workflowName": archivedWf.Name}).Errorln("unable to unmarshal workflow from database")
 		}
 		wfs[i] = wf
 	}
