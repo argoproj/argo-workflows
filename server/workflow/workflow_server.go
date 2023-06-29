@@ -148,7 +148,7 @@ func mergeWithArchivedWorkflows(liveWfs v1alpha1.WorkflowList, archivedWfs v1alp
 			numWfs += 1
 		}
 	}
-	finalWfsList := v1alpha1.WorkflowList{Items: finalWfs}
+	finalWfsList := v1alpha1.WorkflowList{Items: finalWfs, ListMeta: liveWfs.ListMeta}
 	sort.Sort(finalWfsList.Items)
 
 	return &finalWfsList
