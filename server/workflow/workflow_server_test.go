@@ -669,7 +669,7 @@ func TestMergeWithArchivedWorkflows(t *testing.T) {
 			{ObjectMeta: metav1.ObjectMeta{UID: "1"}},
 		},
 	}
-	assert.Len(t, mergeWithArchivedWorkflows(liveWfList, archivedWfList, -1).Items, len(expectedWfList.Items))
+	assert.Len(t, mergeWithArchivedWorkflows(liveWfList, archivedWfList, 0).Items, len(expectedWfList.Items))
 	assert.Len(t, mergeWithArchivedWorkflows(liveWfList, archivedWfList, 2).Items, 2)
 }
 

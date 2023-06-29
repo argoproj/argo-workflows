@@ -143,7 +143,7 @@ func mergeWithArchivedWorkflows(liveWfs v1alpha1.WorkflowList, archivedWfs v1alp
 	}
 	numWfs := 0
 	for _, v := range uidToWfs {
-		if numWfsToKeep < 0 || numWfs < numWfsToKeep {
+		if numWfsToKeep == 0 || numWfs < numWfsToKeep {
 			finalWfs = append(finalWfs, v[0])
 			numWfs += 1
 		}
