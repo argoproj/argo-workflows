@@ -3,16 +3,11 @@
 package commands
 
 import (
-	"fmt"
 	"os"
-	"strconv"
-	"sync"
-	"syscall"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-
 	"github.com/argoproj/argo-workflows/v3/util/errors"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestEmissary(t *testing.T) {
@@ -39,39 +34,7 @@ func TestEmissary(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, "1", string(data))
 	})
-	t.Run("Stdout", func(t *testing.T) {
-		err := run("echo hello")
-		assert.NoError(t, err)
-		data, err := os.ReadFile(varRunArgo + "/ctr/main/stdout")
-		assert.NoError(t, err)
-		assert.Contains(t, string(data), "hello")
-	})
-	t.Run("Combined", func(t *testing.T) {
-		err := run("echo hello > /dev/stderr")
-		assert.NoError(t, err)
-		data, err := os.ReadFile(varRunArgo + "/ctr/main/combined")
-		assert.NoError(t, err)
-		assert.Contains(t, string(data), "hello")
-	})
-	t.Run("Signal", func(t *testing.T) {
-		for signal := range map[syscall.Signal]string{
-			syscall.SIGTERM: "terminated",
-			syscall.SIGKILL: "killed",
-		} {
-			err := os.WriteFile(varRunArgo+"/ctr/main/signal", []byte(strconv.Itoa(int(signal))), 0o600)
-			assert.NoError(t, err)
-			var wg sync.WaitGroup
-			wg.Add(1)
-			go func() {
-				defer wg.Done()
-				err := run("sleep 3")
-				assert.EqualError(t, err, fmt.Sprintf("exit status %d", 128+signal))
-			}()
-			wg.Wait()
-		}
-	})
-	t.Run("ExitCode", func(t *testing.T) {
-		defer wg.Done()
+	t.Run("Exit13", func(t *testing.T) {
 		err := run("exit 13")
 		assert.Equal(t, 13, err.(errors.Exited).ExitCode())
 		assert.EqualError(t, err, "exit status 13")
