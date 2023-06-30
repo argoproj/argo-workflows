@@ -128,7 +128,13 @@ func (d *dagContext) getTaskNode(taskName string) *wfv1.NodeStatus {
 }
 
 // assessDAGPhase assesses the overall DAG status
-func (d *dagContext) assessDAGPhase(targetTasks []string, nodes wfv1.Nodes) wfv1.NodePhase {
+func (d *dagContext) assessDAGPhase(targetTasks []string, nodes wfv1.Nodes, isShutdown bool) (wfv1.NodePhase, error) {
+	// we cannot rely upon the DAG traversal alone
+	// I believe conditionals, self references and ContinuesOn (every one of those features in unison) makes this an undecidable problem.
+	// However, we can just use the isShutdown to automatically fail the DAG.
+	if isShutdown {
+		return wfv1.NodeFailed, nil
+	}
 	// targetTaskPhases keeps track of all the phases of the target tasks. This is necessary because some target tasks may
 	// be omitted and will not have an explicit phase. We would still like to deduce a phase for those tasks in order to
 	// determine the overall phase of the DAG. To do so, an omitted task always inherits the phase of its parents, with
@@ -140,15 +146,24 @@ func (d *dagContext) assessDAGPhase(targetTasks []string, nodes wfv1.Nodes) wfv1
 		targetTaskPhases[d.taskNodeID(task)] = ""
 	}
 
+	boundaryNode, err := nodes.Get(d.boundaryID)
+	if err != nil {
+		return "", err
+	}
 	// BFS over the children of the DAG
-	uniqueQueue := newUniquePhaseNodeQueue(generatePhaseNodes(nodes[d.boundaryID].Children, wfv1.NodeSucceeded)...)
+	uniqueQueue := newUniquePhaseNodeQueue(generatePhaseNodes(boundaryNode.Children, wfv1.NodeSucceeded)...)
 	for !uniqueQueue.empty() {
 		curr := uniqueQueue.pop()
+
+		node, err := nodes.Get(curr.nodeId)
+		if err != nil {
+			return "", err
+		}
 		// We need to store the current branchPhase to remember the last completed phase in this branch so that we can apply it to omitted nodes
-		node, branchPhase := nodes[curr.nodeId], curr.phase
+		branchPhase := curr.phase
 
 		if !node.Fulfilled() {
-			return wfv1.NodeRunning
+			return wfv1.NodeRunning, nil
 		}
 
 		// Only overwrite the branchPhase if this node completed. (If it didn't we can just inherit our parent's branchPhase).
@@ -168,7 +183,7 @@ func (d *dagContext) assessDAGPhase(targetTasks []string, nodes wfv1.Nodes) wfv1
 		}
 
 		if node.Type == wfv1.NodeTypeRetry {
-			uniqueQueue.add(generatePhaseNodes(getRetryNodeChildrenIds(&node, nodes), branchPhase)...)
+			uniqueQueue.add(generatePhaseNodes(getRetryNodeChildrenIds(node, nodes), branchPhase)...)
 		} else {
 			uniqueQueue.add(generatePhaseNodes(node.Children, branchPhase)...)
 		}
@@ -203,11 +218,10 @@ func (d *dagContext) assessDAGPhase(targetTasks []string, nodes wfv1.Nodes) wfv1
 		}
 	}
 
-	return result
+	return result, nil
 }
 
 func (woc *wfOperationCtx) executeDAG(ctx context.Context, nodeName string, tmplCtx *templateresolution.Context, templateScope string, tmpl *wfv1.Template, orgTmpl wfv1.TemplateReferenceHolder, opts *executeTemplateOpts) (*wfv1.NodeStatus, error) {
-
 	node, err := woc.wf.GetNodeByName(nodeName)
 	if err != nil {
 		node = woc.initializeExecutableNode(nodeName, wfv1.NodeTypeDAG, templateScope, tmpl, orgTmpl, opts.boundaryID, wfv1.NodeRunning)
@@ -282,7 +296,11 @@ func (woc *wfOperationCtx) executeDAG(ctx context.Context, nodeName string, tmpl
 	}
 
 	// check if we are still running any tasks in this dag and return early if we do
-	dagPhase := dagCtx.assessDAGPhase(targetTasks, woc.wf.Status.Nodes)
+	dagPhase, err := dagCtx.assessDAGPhase(targetTasks, woc.wf.Status.Nodes, woc.GetShutdownStrategy().Enabled())
+	if err != nil {
+		return nil, err
+	}
+
 	switch dagPhase {
 	case wfv1.NodeRunning:
 		return node, nil
