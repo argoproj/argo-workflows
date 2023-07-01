@@ -129,9 +129,9 @@ func (azblobDriver *ArtifactDriver) Load(artifact *wfv1.Artifact, path string) e
 		return fmt.Errorf("unable to determine if %s is a directory: %s", artifact.Azure.Blob, err)
 	}
 
-	// It's not a directory and the file doesn't exist, so return the original BlobNotFound error.
+	// It's not a directory and the file doesn't exist, Return the original NoSuchKey error.
 	if !isDir && !isEmptyFile {
-		return fmt.Errorf("unable to download blob %s: %s", artifact.Azure.Blob, origErr)
+		return argoerrors.New(argoerrors.CodeNotFound, origErr.Error())
 	}
 
 	// When we tried to download the blob as a file, we created an empty file for the
