@@ -228,11 +228,12 @@ idempotence
 kube-scheduler
 kube-apiserver
 kubectl
+Makefile
+Devenv
 devenv
 vendored
 nix.conf
 LDFlags
-Makefile
 dev 
 vendorSha256
 dependabot
