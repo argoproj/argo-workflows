@@ -146,8 +146,6 @@ func mergeWithArchivedWorkflows(liveWfs v1alpha1.WorkflowList, archivedWfs v1alp
 		}
 	}
 	finalWfsList := v1alpha1.WorkflowList{Items: finalWfs, ListMeta: liveWfs.ListMeta}
-	sort.Sort(finalWfsList.Items)
-
 	return &finalWfsList
 }
 
@@ -192,6 +190,9 @@ func (s *workflowServer) ListWorkflows(ctx context.Context, req *workflowpkg.Wor
 			}
 		}
 	}
+
+	// we make no promises about the overall list sorting, we just sort each page
+	sort.Sort(wfList.Items)
 
 	res := &wfv1.WorkflowList{ListMeta: metav1.ListMeta{Continue: wfList.Continue, ResourceVersion: wfList.ResourceVersion}, Items: wfList.Items}
 	newRes := &wfv1.WorkflowList{}
