@@ -1272,6 +1272,30 @@ func (s *CLISuite) TestCron() {
 			}
 		})
 	})
+
+	s.Run("List with labels", func() {
+		// First create cron workflow with labels
+		s.Given().RunCli([]string{"cron", "create", "cron/cron-workflow-with-labels.yaml"}, func(t *testing.T, output string, err error) {
+			assert.NoError(t, err)
+		}).
+			// Then create cron workflow without labels
+			RunCli([]string{"cron", "create", "cron/basic.yaml", "--name", "cron-wf-without-labels"}, func(t *testing.T, output string, err error) {
+				assert.NoError(t, err)
+			}).
+			// Then check to make sure only cron workflow with labels shows up from 'argo cron list...'
+			RunCli([]string{"cron", "list", "-l client=importantclient"}, func(t *testing.T, output string, err error) {
+				if assert.NoError(t, err) {
+					assert.Contains(t, output, "NAME")
+					assert.Contains(t, output, "AGE")
+					assert.Contains(t, output, "LAST RUN")
+					assert.Contains(t, output, "SCHEDULE")
+					assert.Contains(t, output, "SUSPENDED")
+					assert.Contains(t, output, "test-cwf-with-labels")
+					assert.NotContains(t, output, "cron-wf-without-labels")
+				}
+			})
+	})
+
 	s.Run("Suspend", func() {
 		s.Given().RunCli([]string{"cron", "suspend", "test-cron-wf-basic"}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {
