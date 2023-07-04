@@ -51,28 +51,35 @@ async fn test_create_workflow() {
         body: request,
     };
 
-    let list_workflow_params = init_workflow_params(String::from("blah"));
+    let list_workflow_params = init_workflow_params(String::from("argo"));
 
-    // now see if the workflow was created
-    // if there was no error, match the success
-    // if there was an error, match the error
-    // the reqwest error is a bit more complicated, so match that
-    // specifically, we want to extract the inner error from the reqwest error: ConnectError type
-    // This field is private in the reqwest error, so we have to match on the error type
-    // until we get the specific tcp connect error message, eg. "connection refused"
-    // then we can match on that and print the error message
     match workflow_service_api::create_workflow(&config, create_workflow_params).await {
-        Ok(success) => {
-            println!(
-                "create workflow success!\n{:#?}",
-                success.content.to_string()
-            )
-        }
-        Err(err) => println!("{:#?}", &err.to_string()),
+        Ok(_) => (),
+        Err(err) => panic!("{:#?}", &err.to_string()),
     }
 
     match workflow_service_api::list_workflows(&config, list_workflow_params).await {
-        Ok(success) => println!("List of workflows:\n{:#?}", success.content),
+        Ok(success) => match &success.entity {
+            Some(value) => match &value {
+                workflow_service_api::ListWorkflowsSuccess::Status200(_) => (),
+                workflow_service_api::ListWorkflowsSuccess::UnknownValue(unknown_value) => {
+                    // Ensure that the workflow was actually created
+                    match &unknown_value {
+                        serde_json::Value::Object(obj) => match obj.get("items") {
+                            Some(obj_items) => match obj_items {
+                                serde_json::Value::Null => {
+                                    panic!("No workflow items found:\n{:#}", &unknown_value)
+                                }
+                                _ => (),
+                            },
+                            _ => (),
+                        },
+                        _ => panic!("No items found"),
+                    }
+                }
+            },
+            None => panic!("No workflows found"),
+        },
         Err(err) => panic!("Error getting list of workflows:\n{:#?}", err.to_string()),
     }
 }
