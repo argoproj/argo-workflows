@@ -1,3 +1,4 @@
+Cargo.lock
 /client/.openapi-generator/
 /client/.gitignore
 /client/.openapi-generator-ignore
