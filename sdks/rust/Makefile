@@ -15,11 +15,7 @@ endif
 # work dir
 WD                    := $(shell echo "`pwd`/client")
 
-CONTAINER_ENGINE?=$(shell docker version >/dev/null 2>&1 && echo docker)
-ifeq ($(CONTAINER_ENGINE),)
-	CONTAINER_ENGINE=$(shell podman version >/dev/null 2>&1 && echo podman)
-endif
-DOCKER = $(CONTAINER_ENGINE) run --rm -v $(WD):/wd --workdir /wd
+DOCKER = docker run --rm -v $(WD):/wd --workdir /wd
 CHOWN = chown -R $(shell id -u):$(shell id -g)
 
 publish: generate
@@ -65,4 +61,4 @@ install:
 
 test:
 	../../hack/access-token.sh init
-	env ARGO_TOKEN="`../../hack/access-token.sh get`" cargo test --manifest-path ./client/Cargo.toml -- --nocapture
+	env ARGO_TOKEN="`../../hack/access-token.sh get`" cargo test --manifest-path ./client/Cargo.toml

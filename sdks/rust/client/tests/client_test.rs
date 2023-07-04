@@ -51,7 +51,7 @@ async fn test_create_workflow() {
         body: request,
     };
 
-    let list_workflow_params = init_workflow_params(String::from("blah"));
+    let list_workflow_params = init_workflow_params(String::from("argo"));
 
     match workflow_service_api::create_workflow(&config, create_workflow_params).await {
         Ok(_) => (),
@@ -64,7 +64,18 @@ async fn test_create_workflow() {
                 workflow_service_api::ListWorkflowsSuccess::Status200(_) => (),
                 workflow_service_api::ListWorkflowsSuccess::UnknownValue(unknown_value) => {
                     // Ensure that the workflow was actually created
-                    get_workflow_list_items(unknown_value)
+                    match &unknown_value {
+                        serde_json::Value::Object(obj) => match obj.get("items") {
+                            Some(obj_items) => match obj_items {
+                                serde_json::Value::Null => {
+                                    panic!("No workflow items found:\n{:#}", &unknown_value)
+                                }
+                                _ => (),
+                            },
+                            _ => (),
+                        },
+                        _ => panic!("No items found"),
+                    }
                 }
             },
             None => panic!("No workflows found"),
@@ -88,16 +99,5 @@ fn init_workflow_params(namespace: String) -> workflow_service_api::ListWorkflow
         list_options_limit: None,
         list_options_continue: None,
         fields: None,
-    }
-}
-
-fn get_workflow_list_items(unknown_value: &serde_json::Value) {
-    match unknown_value {
-        serde_json::Value::Object(obj) => match obj.get("items") {
-            Some(obj_items) => get_workflow_list_items(obj_items),
-            _ => (),
-        },
-        serde_json::Value::Null => panic!("No workflow items found:\n{:#}", unknown_value),
-        _ => (),
     }
 }
