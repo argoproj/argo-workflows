@@ -51,3 +51,7 @@ argo --instanceid i1 submit my-wf.yaml
 ```
 
 You do not need to have one instance ID per namespace, you could have many or few.
+
+## Miscellaneous
+
+See also [Running At Massive Scale](running-at-massive-scale.md).
