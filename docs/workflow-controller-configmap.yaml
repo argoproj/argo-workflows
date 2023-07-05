@@ -347,7 +347,7 @@ data:
   # Defaults to 5 seconds.
   podGCDeleteDelayDuration: 30s
 
-  # configurable initial delay (for K8S clusters with mutating webhooks) to prevent workflow getting modified by MWC.
+  # adds initial delay (for K8S clusters with mutating webhooks) to prevent workflow getting modified by MWC.
   # initialDelay: 5s
 
   # Workflow retention by number of workflows
