@@ -18,7 +18,7 @@ data:
 
   # Parallelism limits the max total parallel workflows that can execute at the same time
   # (available since Argo v2.3). Controller must be restarted to take effect.
-  parallelism: 10
+  parallelism: "10"
 
   # Limit the maximum number of incomplete workflows in a namespace.
   # Intended for cluster installs that are multi-tenancy environments, to prevent too many workflows in one
@@ -193,11 +193,11 @@ data:
 
   # kubelet port when using kubelet executor (default: 10250) (kubelet executor will be deprecated use emissary instead)
   # (removed in v3.4)
-  kubeletPort: 10250
+  kubeletPort: "10250"
 
   # disable the TLS verification of the kubelet executor (default: false)
   # (removed in v3.4)
-  kubeletInsecure: false
+  kubeletInsecure: "false"
 
   # The command/args for each image, needed when the command is not specified and the emissary executor is used.
   # https://argoproj.github.io/argo-workflows/workflow-executors/#emissary-emissary
