@@ -298,9 +298,6 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 		log.Fatal("Timed out waiting for caches to sync")
 	}
 
-	// Start the metrics server
-	go wfc.metrics.RunServer(ctx)
-
 	for i := 0; i < podCleanupWorkers; i++ {
 		go wait.UntilWithContext(ctx, wfc.runPodCleanup, time.Second)
 	}
@@ -321,6 +318,10 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 		go wait.JitterUntilWithContext(ctx, wfc.syncAllCacheForGC, cacheGCPeriod, 0.0, true)
 	}
 	<-ctx.Done()
+}
+
+func (wfc *WorkflowController) RunMetricsServer(ctx context.Context, isDummy bool) {
+	go wfc.metrics.RunServer(ctx, isDummy)
 }
 
 // Create and the Synchronization Manager

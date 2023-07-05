@@ -117,6 +117,7 @@ func NewRootCommand() *cobra.Command {
 				log.Info("Leader election is turned off. Running in single-instance mode")
 				log.WithField("id", "single-instance").Info("starting leading")
 				go wfController.Run(ctx, workflowWorkers, workflowTTLWorkers, podCleanupWorkers)
+				go wfController.RunMetricsServer(ctx, false)
 			} else {
 				nodeID, ok := os.LookupEnv("LEADER_ELECTION_IDENTITY")
 				if !ok {
@@ -127,6 +128,11 @@ func NewRootCommand() *cobra.Command {
 				if wfController.Config.InstanceID != "" {
 					leaderName = fmt.Sprintf("%s-%s", leaderName, wfController.Config.InstanceID)
 				}
+
+				// for controlling the dummy metrics server
+				dummyCtx, dummyCancel := context.WithCancel(context.Background())
+				defer dummyCancel()
+				go wfController.RunMetricsServer(dummyCtx, true)
 
 				go leaderelection.RunOrDie(ctx, leaderelection.LeaderElectionConfig{
 					Lock: &resourcelock.LeaseLock{
@@ -139,11 +145,14 @@ func NewRootCommand() *cobra.Command {
 					RetryPeriod:     env.LookupEnvDurationOr("LEADER_ELECTION_RETRY_PERIOD", 5*time.Second),
 					Callbacks: leaderelection.LeaderCallbacks{
 						OnStartedLeading: func(ctx context.Context) {
+							dummyCancel()
 							go wfController.Run(ctx, workflowWorkers, workflowTTLWorkers, podCleanupWorkers)
+							go wfController.RunMetricsServer(ctx, false)
 						},
 						OnStoppedLeading: func() {
 							log.WithField("id", nodeID).Info("stopped leading")
 							cancel()
+							go wfController.RunMetricsServer(dummyCtx, true)
 						},
 						OnNewLeader: func(identity string) {
 							log.WithField("leader", identity).Info("new leader")
