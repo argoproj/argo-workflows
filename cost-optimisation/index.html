@@ -4002,6 +4002,7 @@
 <li>Data storage costs (object storage vs. volume)</li>
 <li>Requirement for parallel access to data (NFS vs. block storage vs. artifact)</li>
 </ul>
+<p>When using volume claims, consider configuring <a href="../fields/#volumeclaimgc">Volume Claim GC</a>. By default, claims are only deleted when a workflow is successful.</p>
 <h3 id="limit-the-total-number-of-workflows-and-pods">Limit The Total Number Of Workflows And Pods<a class="headerlink" href="#limit-the-total-number-of-workflows-and-pods" title="Permanent link">&para;</a></h3>
 <blockquote>
 <p>Suitable for all.</p>
@@ -4012,8 +4013,8 @@
 <p>Limit the total number of workflows using:</p>
 <ul>
 <li>Active Deadline Seconds - terminate running workflows that do not complete in a set time. This will make sure workflows do not run forever.</li>
-<li><a href="../fields/#ttlstrategy">Workflow TTL Strategy</a> - delete completed workflows after a time</li>
-<li><a href="../fields/#podgc">Pod GC</a> - delete completed pods after a time</li>
+<li><a href="../fields/#ttlstrategy">Workflow TTL Strategy</a> - delete completed workflows after a set time.</li>
+<li><a href="../fields/#podgc">Pod GC</a> - delete completed pods. By default, Pods are not deleted.</li>
 </ul>
 <p>Example</p>
 <div class="highlight"><pre><span></span><code><span class="nt">spec</span><span class="p">:</span>
