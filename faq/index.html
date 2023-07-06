@@ -2177,8 +2177,8 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#token-not-valid-for-running-mode-any-bearer-token-is-able-to-login-in-the-ui-or-use-the-api" class="md-nav__link">
-    "token not valid for running mode", "any bearer token is able to login in the UI or use the API"
+  <a href="#token-not-valid-any-bearer-token-is-able-to-login-in-the-ui-or-use-the-api" class="md-nav__link">
+    "token not valid", "any bearer token is able to login in the UI or use the API"
   </a>
   
 </li>
@@ -3844,8 +3844,8 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#token-not-valid-for-running-mode-any-bearer-token-is-able-to-login-in-the-ui-or-use-the-api" class="md-nav__link">
-    "token not valid for running mode", "any bearer token is able to login in the UI or use the API"
+  <a href="#token-not-valid-any-bearer-token-is-able-to-login-in-the-ui-or-use-the-api" class="md-nav__link">
+    "token not valid", "any bearer token is able to login in the UI or use the API"
   </a>
   
 </li>
@@ -3897,8 +3897,10 @@
 
 
 <h1 id="faq">FAQ<a class="headerlink" href="#faq" title="Permanent link">&para;</a></h1>
-<h2 id="token-not-valid-for-running-mode-any-bearer-token-is-able-to-login-in-the-ui-or-use-the-api">"token not valid for running mode", "any bearer token is able to login in the UI or use the API"<a class="headerlink" href="#token-not-valid-for-running-mode-any-bearer-token-is-able-to-login-in-the-ui-or-use-the-api" title="Permanent link">&para;</a></h2>
-<p>You've not configured Argo Server authentication correctly. If you want SSO, try running with <code>--auth-mode=sso</code>.</p>
+<h2 id="token-not-valid-any-bearer-token-is-able-to-login-in-the-ui-or-use-the-api">"token not valid", "any bearer token is able to login in the UI or use the API"<a class="headerlink" href="#token-not-valid-any-bearer-token-is-able-to-login-in-the-ui-or-use-the-api" title="Permanent link">&para;</a></h2>
+<p>You may not have configured Argo Server authentication correctly.</p>
+<p>If you want SSO, try running with <code>--auth-mode=sso</code>.
+If you're using <code>--auth-mode=client</code>, make sure you have <code>Bearer</code> in front of the token, as mentioned in <a href="../access-token/#token-creation">Access Token</a>.</p>
 <p><a href="../argo-server/">Learn more about the Argo Server set-up</a></p>
 <h2 id="argo-server-return-eof-error">Argo Server return EOF error<a class="headerlink" href="#argo-server-return-eof-error" title="Permanent link">&para;</a></h2>
 <p>Since v3.0 the Argo Server listens for HTTPS requests, rather than HTTP. Try changing your URL to HTTPS, or start Argo Server using <code>--secure=false</code>.</p>
