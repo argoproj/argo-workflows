@@ -4060,7 +4060,7 @@ The <code>entrypoint</code> field defines what the "main" function will be – t
 <h4 id="template-definitions">Template Definitions<a class="headerlink" href="#template-definitions" title="Permanent link">&para;</a></h4>
 <p>These templates <em>define</em> work to be done, usually in a Container.</p>
 <h5 id="container"><a href="../fields/#container">Container</a><a class="headerlink" href="#container" title="Permanent link">&para;</a></h5>
-<p>Perhaps the most common template type, it will schedule a Container. The spec of the template is the same as the <a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.19/#container-v1-core">Kubernetes container spec</a>, so you can define a container here the same way you do anywhere else in Kubernetes.</p>
+<p>Perhaps the most common template type, it will schedule a Container. The spec of the template is the same as the <a href="https://v1-26.docs.kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#Container">Kubernetes container spec</a>, so you can define a container here the same way you do anywhere else in Kubernetes.</p>
 <p>Example:</p>
 <div class="highlight"><pre><span></span><code><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">whalesay</span>
 <span class="w">    </span><span class="nt">container</span><span class="p">:</span>
