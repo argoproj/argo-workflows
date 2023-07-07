@@ -5,7 +5,7 @@
 GIT_TAG               := $(shell git describe --exact-match --tags --abbrev=0 2> /dev/null || echo untagged)
 
 ifeq ($(GIT_TAG),untagged)
-VERSION               := 0.0.0-latest
+VERSION               := 0.1.0-pre
 else
 # remove the "v" prefix, not allowed
 # https://stackoverflow.com/a/19571504

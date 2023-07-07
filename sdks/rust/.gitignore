@@ -3,7 +3,5 @@ Cargo.lock
 /client/.gitignore
 /client/.openapi-generator-ignore
 /client/*.*
-/client/README.md
 /client/test
 /client/.gitignore
-/client/LICENSE
