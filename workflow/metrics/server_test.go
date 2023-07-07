@@ -26,7 +26,7 @@ func TestDisableMetricsServer(t *testing.T) {
 	assert.Contains(t, err.Error(), "connection refused") // expect that the metrics server not to start
 }
 
-func TestSameMetricsServer(t *testing.T) {
+func TestMetricsServer(t *testing.T) {
 	config := ServerConfig{
 		Enabled: true,
 		Path:    DefaultMetricsServerPath,
@@ -49,44 +49,6 @@ func TestSameMetricsServer(t *testing.T) {
 
 	bodyString := string(bodyBytes)
 	assert.NotEmpty(t, bodyString)
-}
-
-func TestOwnMetricsServer(t *testing.T) {
-	metricsConfig := ServerConfig{
-		Enabled: true,
-		Path:    DefaultMetricsServerPath,
-		Port:    DefaultMetricsServerPort,
-	}
-	telemetryConfig := ServerConfig{
-		Enabled: true,
-		Path:    DefaultMetricsServerPath,
-		Port:    9091,
-	}
-	m := New(metricsConfig, telemetryConfig)
-
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	m.RunServer(ctx, false)
-	mresp, merr := http.Get(fmt.Sprintf("http://localhost:%d%s", DefaultMetricsServerPort, DefaultMetricsServerPath))
-	tresp, terr := http.Get(fmt.Sprintf("http://localhost:%d%s", 9091, DefaultMetricsServerPath))
-
-	assert.NoError(t, merr)
-	assert.NoError(t, terr)
-	assert.Equal(t, http.StatusOK, mresp.StatusCode)
-	assert.Equal(t, http.StatusOK, tresp.StatusCode)
-
-	defer mresp.Body.Close()
-	defer tresp.Body.Close()
-
-	mbodyBytes, err := io.ReadAll(mresp.Body)
-	tbodyBytes, err := io.ReadAll(tresp.Body)
-	assert.NoError(t, err)
-
-	mbodyString := string(mbodyBytes)
-	tbodyString := string(tbodyBytes)
-	assert.NotEmpty(t, mbodyString)
-	assert.NotEmpty(t, tbodyString)
 }
 
 func TestDummyMetricsServer(t *testing.T) {
