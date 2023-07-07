@@ -10,7 +10,23 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestRunServer(t *testing.T) {
+func TestDisableMetricsServer(t *testing.T) {
+	config := ServerConfig{
+		Enabled: false,
+		Path:    DefaultMetricsServerPath,
+		Port:    DefaultMetricsServerPort,
+	}
+	m := New(config, config)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	go m.RunServer(ctx, false)
+	_, err := http.Get(fmt.Sprintf("http://localhost:%d%s", DefaultMetricsServerPort, DefaultMetricsServerPath))
+	assert.Contains(t, err.Error(), "connection refused") // expect that the metrics server not to start
+}
+
+func TestSameMetricsServer(t *testing.T) {
 	config := ServerConfig{
 		Enabled: true,
 		Path:    DefaultMetricsServerPath,
@@ -18,34 +34,83 @@ func TestRunServer(t *testing.T) {
 	}
 	m := New(config, config)
 
-	server := func(isDummy bool, shouldBodyBeEmpty bool) {
-		ctx, cancel := context.WithCancel(context.Background())
-		defer cancel()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
-		go m.RunServer(ctx, isDummy)
+	go m.RunServer(ctx, false)
+	resp, err := http.Get(fmt.Sprintf("http://localhost:%d%s", DefaultMetricsServerPort, DefaultMetricsServerPath))
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
-		resp, err := http.Get(fmt.Sprintf("http://localhost:%d%s", DefaultMetricsServerPort, DefaultMetricsServerPath))
-		assert.NoError(t, err)
-		defer resp.Body.Close()
+	defer resp.Body.Close()
 
-		bodyBytes, err := io.ReadAll(resp.Body)
-		assert.NoError(t, err)
+	bodyBytes, err := io.ReadAll(resp.Body)
+	assert.NoError(t, err)
 
-		bodyString := string(bodyBytes)
+	bodyString := string(bodyBytes)
+	assert.NotEmpty(t, bodyString)
+}
 
-		assert.Equal(t, http.StatusOK, resp.StatusCode)
-		if shouldBodyBeEmpty {
-			assert.Empty(t, bodyString)
-		} else {
-			assert.NotEmpty(t, bodyString)
-		}
+func TestOwnMetricsServer(t *testing.T) {
+	metricsConfig := ServerConfig{
+		Enabled: true,
+		Path:    DefaultMetricsServerPath,
+		Port:    DefaultMetricsServerPort,
 	}
+	telemetryConfig := ServerConfig{
+		Enabled: true,
+		Path:    DefaultMetricsServerPath,
+		Port:    9091,
+	}
+	m := New(metricsConfig, telemetryConfig)
 
-	t.Run("dummy metrics server", func(t *testing.T) {
-		server(true, true) // dummy metrics server does not provide any metrics responses
-	})
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
-	t.Run("prometheus metrics server", func(t *testing.T) {
-		server(false, false) // prometheus metrics server provides responses for any metrics
-	})
+	go m.RunServer(ctx, false)
+	mresp, merr := http.Get(fmt.Sprintf("http://localhost:%d%s", DefaultMetricsServerPort, DefaultMetricsServerPath))
+	tresp, terr := http.Get(fmt.Sprintf("http://localhost:%d%s", 9091, DefaultMetricsServerPath))
+
+	assert.NoError(t, merr)
+	assert.NoError(t, terr)
+	assert.Equal(t, http.StatusOK, mresp.StatusCode)
+	assert.Equal(t, http.StatusOK, tresp.StatusCode)
+
+	defer mresp.Body.Close()
+	defer tresp.Body.Close()
+
+	mbodyBytes, err := io.ReadAll(mresp.Body)
+	tbodyBytes, err := io.ReadAll(tresp.Body)
+	assert.NoError(t, err)
+
+	mbodyString := string(mbodyBytes)
+	tbodyString := string(tbodyBytes)
+	assert.NotEmpty(t, mbodyString)
+	assert.NotEmpty(t, tbodyString)
+}
+
+func TestDummyMetricsServer(t *testing.T) {
+	config := ServerConfig{
+		Enabled: true,
+		Path:    DefaultMetricsServerPath,
+		Port:    DefaultMetricsServerPort,
+	}
+	m := New(config, config)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	go m.RunServer(ctx, true)
+	resp, err := http.Get(fmt.Sprintf("http://localhost:%d%s", DefaultMetricsServerPort, DefaultMetricsServerPath))
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+
+	defer resp.Body.Close()
+
+	bodyBytes, err := io.ReadAll(resp.Body)
+	assert.NoError(t, err)
+
+	bodyString := string(bodyBytes)
+
+	assert.Empty(t, bodyString) // expect the dummy metrics server to provide no metrics responses
 }
