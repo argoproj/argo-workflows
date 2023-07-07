@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -22,6 +23,7 @@ func TestDisableMetricsServer(t *testing.T) {
 	defer cancel()
 
 	m.RunServer(ctx, false)
+	time.Sleep(1 * time.Second) // to confirm that the server doesn't start, even if we wait
 	resp, err := http.Get(fmt.Sprintf("http://localhost:%d%s", DefaultMetricsServerPort, DefaultMetricsServerPath))
 	if resp != nil {
 		defer resp.Body.Close()
@@ -43,6 +45,7 @@ func TestMetricsServer(t *testing.T) {
 	defer cancel()
 
 	m.RunServer(ctx, false)
+	time.Sleep(1 * time.Second)
 	resp, err := http.Get(fmt.Sprintf("http://localhost:%d%s", DefaultMetricsServerPort, DefaultMetricsServerPath))
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
@@ -68,6 +71,7 @@ func TestDummyMetricsServer(t *testing.T) {
 	defer cancel()
 
 	m.RunServer(ctx, true)
+	time.Sleep(1 * time.Second)
 	resp, err := http.Get(fmt.Sprintf("http://localhost:%d%s", DefaultMetricsServerPort, DefaultMetricsServerPath))
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
