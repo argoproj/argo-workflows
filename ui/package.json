@@ -90,6 +90,7 @@
         "webpack-dev-server": "^4.13.2"
     },
     "resolutions": {
+        "semver": "7.5.2",
         "lodash": "4.17.21",
         "prismjs": "1.27.0",
         "@types/react": "16.8.5",
