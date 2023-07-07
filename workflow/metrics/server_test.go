@@ -22,7 +22,12 @@ func TestDisableMetricsServer(t *testing.T) {
 	defer cancel()
 
 	m.RunServer(ctx, false)
-	_, err := http.Get(fmt.Sprintf("http://localhost:%d%s", DefaultMetricsServerPort, DefaultMetricsServerPath))
+	resp, err := http.Get(fmt.Sprintf("http://localhost:%d%s", DefaultMetricsServerPort, DefaultMetricsServerPath))
+	if resp != nil {
+		defer resp.Body.Close()
+	}
+
+	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "connection refused") // expect that the metrics server not to start
 }
 
