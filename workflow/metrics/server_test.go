@@ -21,7 +21,7 @@ func TestDisableMetricsServer(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	go m.RunServer(ctx, false)
+	m.RunServer(ctx, false)
 	_, err := http.Get(fmt.Sprintf("http://localhost:%d%s", DefaultMetricsServerPort, DefaultMetricsServerPath))
 	assert.Contains(t, err.Error(), "connection refused") // expect that the metrics server not to start
 }
@@ -37,7 +37,7 @@ func TestSameMetricsServer(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	go m.RunServer(ctx, false)
+	m.RunServer(ctx, false)
 	resp, err := http.Get(fmt.Sprintf("http://localhost:%d%s", DefaultMetricsServerPort, DefaultMetricsServerPath))
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
@@ -67,7 +67,7 @@ func TestOwnMetricsServer(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	go m.RunServer(ctx, false)
+	m.RunServer(ctx, false)
 	mresp, merr := http.Get(fmt.Sprintf("http://localhost:%d%s", DefaultMetricsServerPort, DefaultMetricsServerPath))
 	tresp, terr := http.Get(fmt.Sprintf("http://localhost:%d%s", 9091, DefaultMetricsServerPath))
 
@@ -100,7 +100,7 @@ func TestDummyMetricsServer(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	go m.RunServer(ctx, true)
+	m.RunServer(ctx, true)
 	resp, err := http.Get(fmt.Sprintf("http://localhost:%d%s", DefaultMetricsServerPort, DefaultMetricsServerPath))
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
