@@ -6724,6 +6724,13 @@ LifecycleHandler defines a specific action that should be taken in a lifecycle h
 
 ExecAction describes a "run in container" action.
 
+<details>
+<summary>Examples with this field (click to open)</summary>
+<br>
+
+- [`buildkit-template.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/buildkit-template.yaml)
+</details>
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|

@@ -42,7 +42,7 @@
     },
     "devDependencies": {
         "@babel/core": "^7.22.1",
-        "@babel/preset-env": "^7.22.5",
+        "@babel/preset-env": "^7.22.7",
         "@fortawesome/fontawesome-free": "^6.4.0",
         "@types/chart.js": "^2.9.24",
         "@types/classnames": "^2.3.1",
@@ -90,7 +90,7 @@
         "webpack-dev-server": "^4.15.0"
     },
     "resolutions": {
-        "semver": "7.5.2",
+        "semver": "^7.5.2",
         "lodash": "4.17.21",
         "prismjs": "1.27.0",
         "@types/react": "16.8.5",
