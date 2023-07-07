@@ -1,0 +1,7 @@
+Cargo.lock
+/client/.openapi-generator/
+/client/.gitignore
+/client/.openapi-generator-ignore
+/client/*.*
+/client/test
+/client/.gitignore
