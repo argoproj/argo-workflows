@@ -2,6 +2,7 @@ Cargo.lock
 /client/.openapi-generator/
 /client/.gitignore
 /client/.openapi-generator-ignore
-/client/*.*
-/client/test
-/client/.gitignore
+/client/swagger.json
+/client/git_push.sh
+/client/.travis.yml
+/client/target
