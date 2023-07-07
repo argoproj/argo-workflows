@@ -1,7 +1,6 @@
 # Running At Massive Scale
 
-Argo Workflows is capable of running 1,000s of workflows a day, each with 10,000s of nodes. But you'll need to do some
-work to achieve this.
+Argo Workflows is an incredibly scalable tool for orchestrating workflows. It empowers you to process thousands of workflows per day, with each workflow consisting of tens of thousands of nodes. Moreover, it effortlessly handles hundreds of thousands of smaller workflows daily. However, optimizing your setup is crucial to fully leverage this capability.
 
 ## Run The Latest Version
 
