@@ -130,7 +130,7 @@ func (s *workflowServer) GetWorkflow(ctx context.Context, req *workflowpkg.Workf
 }
 
 func mergeWithArchivedWorkflows(liveWfs v1alpha1.WorkflowList, archivedWfs v1alpha1.WorkflowList, numWfsToKeep int) *v1alpha1.WorkflowList {
-	var finalWfs []v1alpha1.Workflow
+	var mergedWfs []v1alpha1.Workflow
 	var uidToWfs = map[types.UID][]v1alpha1.Workflow{}
 	for _, item := range liveWfs.Items {
 		uidToWfs[item.UID] = append(uidToWfs[item.UID], item)
@@ -138,15 +138,21 @@ func mergeWithArchivedWorkflows(liveWfs v1alpha1.WorkflowList, archivedWfs v1alp
 	for _, item := range archivedWfs.Items {
 		uidToWfs[item.UID] = append(uidToWfs[item.UID], item)
 	}
-	numWfs := 0
+
 	for _, v := range uidToWfs {
+		mergedWfs = append(mergedWfs, v[0])
+	}
+	mergedWfsList := v1alpha1.WorkflowList{Items: mergedWfs, ListMeta: liveWfs.ListMeta}
+	sort.Sort(mergedWfsList.Items)
+	numWfs := 0
+	var finalWfs []v1alpha1.Workflow
+	for _, item := range mergedWfsList.Items {
 		if numWfsToKeep == 0 || numWfs < numWfsToKeep {
-			finalWfs = append(finalWfs, v[0])
+			finalWfs = append(finalWfs, item)
 			numWfs += 1
 		}
 	}
-	finalWfsList := v1alpha1.WorkflowList{Items: finalWfs, ListMeta: liveWfs.ListMeta}
-	return &finalWfsList
+	return &v1alpha1.WorkflowList{Items: finalWfs, ListMeta: liveWfs.ListMeta}
 }
 
 func (s *workflowServer) ListWorkflows(ctx context.Context, req *workflowpkg.WorkflowListRequest) (*wfv1.WorkflowList, error) {
