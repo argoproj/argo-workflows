@@ -367,6 +367,7 @@ func TestGlobalParams(t *testing.T) {
 	assert.Contains(t, woc.globalParams, "workflow.duration")
 	assert.Contains(t, woc.globalParams, "workflow.name")
 	assert.Contains(t, woc.globalParams, "workflow.namespace")
+	assert.Contains(t, woc.globalParams, "workflow.mainEntrypoint")
 	assert.Contains(t, woc.globalParams, "workflow.parameters")
 	assert.Contains(t, woc.globalParams, "workflow.annotations")
 	assert.Contains(t, woc.globalParams, "workflow.labels")
@@ -5099,6 +5100,9 @@ func TestConfigMapCacheLoadOperate(t *testing.T) {
 		ObjectMeta: metav1.ObjectMeta{
 			Name:            "whalesay-cache",
 			ResourceVersion: "1630732",
+			Labels: map[string]string{
+				common.LabelKeyConfigMapType: common.LabelValueTypeConfigMapCache,
+			},
 		},
 	}
 	wf := wfv1.MustUnmarshalWorkflow(workflowCached)
@@ -5171,6 +5175,9 @@ func TestConfigMapCacheLoadOperateMaxAge(t *testing.T) {
 			ObjectMeta: metav1.ObjectMeta{
 				Name:            "whalesay-cache",
 				ResourceVersion: "1630732",
+				Labels: map[string]string{
+					common.LabelKeyConfigMapType: common.LabelValueTypeConfigMapCache,
+				},
 			},
 		}
 	}
@@ -5216,6 +5223,45 @@ func TestConfigMapCacheLoadOperateMaxAge(t *testing.T) {
 	}
 }
 
+func TestConfigMapCacheLoadNoLabels(t *testing.T) {
+	sampleConfigMapCacheEntry := apiv1.ConfigMap{
+		Data: map[string]string{
+			"hi-there-world": `{"ExpiresAt":"2020-06-18T17:11:05Z","NodeID":"memoize-abx4124-123129321123","Outputs":{}}`,
+		},
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "ConfigMap",
+			APIVersion: "v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:            "whalesay-cache",
+			ResourceVersion: "1630732",
+		},
+	}
+	wf := wfv1.MustUnmarshalWorkflow(workflowCached)
+	cancel, controller := newController()
+	defer cancel()
+
+	ctx := context.Background()
+	_, err := controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.ObjectMeta.Namespace).Create(ctx, wf, metav1.CreateOptions{})
+	assert.NoError(t, err)
+	_, err = controller.kubeclientset.CoreV1().ConfigMaps("default").Create(ctx, &sampleConfigMapCacheEntry, metav1.CreateOptions{})
+	assert.NoError(t, err)
+
+	woc := newWorkflowOperationCtx(wf, controller)
+	fn := func() {
+		woc.operate(ctx)
+	}
+	assert.NotPanics(t, fn)
+	assert.Equal(t, wfv1.WorkflowError, woc.wf.Status.Phase)
+
+	if assert.Len(t, woc.wf.Status.Nodes, 1) {
+		for _, node := range woc.wf.Status.Nodes {
+			assert.Nil(t, node.Outputs)
+			assert.Equal(t, wfv1.NodeError, node.Phase)
+		}
+	}
+}
+
 func TestConfigMapCacheLoadNilOutputs(t *testing.T) {
 	sampleConfigMapCacheEntry := apiv1.ConfigMap{
 		Data: map[string]string{
@@ -5228,6 +5274,9 @@ func TestConfigMapCacheLoadNilOutputs(t *testing.T) {
 		ObjectMeta: metav1.ObjectMeta{
 			Name:            "whalesay-cache",
 			ResourceVersion: "1630732",
+			Labels: map[string]string{
+				common.LabelKeyConfigMapType: common.LabelValueTypeConfigMapCache,
+			},
 		},
 	}
 	wf := wfv1.MustUnmarshalWorkflow(workflowCached)
@@ -6704,7 +6753,7 @@ spec:
     container:
       image: docker/whalesay:latest
       command: [cowsay]
-      args: ["{{workflows.scheduledTime}}"]
+      args: ["{{workflow.scheduledTime}}"]
 `
 
 func TestWorkflowScheduledTimeVariable(t *testing.T) {
@@ -6716,6 +6765,33 @@ func TestWorkflowScheduledTimeVariable(t *testing.T) {
 	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate(ctx)
 	assert.Equal(t, "2006-01-02T15:04:05-07:00", woc.globalParams[common.GlobalVarWorkflowCronScheduleTime])
+}
+
+var wfMainEntrypointVariable = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: hello-world
+spec:
+  entrypoint: whalesay
+  shutdown: "Stop"
+  templates:
+  - name: whalesay
+    container:
+      image: docker/whalesay:latest
+      command: [cowsay]
+      args: ["{{workflow.mainEntrypoint}}"]
+`
+
+func TestWorkflowMainEntrypointVariable(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(wfMainEntrypointVariable)
+	cancel, controller := newController(wf)
+	defer cancel()
+
+	ctx := context.Background()
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate(ctx)
+	assert.Equal(t, "whalesay", woc.globalParams[common.GlobalVarWorkflowMainEntrypoint])
 }
 
 var wfNodeNameField = `

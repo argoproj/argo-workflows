@@ -5,7 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"math/rand"
 	"net/http"
 	"os"
@@ -324,7 +324,7 @@ func ReadParametersFile(file string, opts *wfv1.SubmitOpts) error {
 			return err
 		}
 	} else {
-		body, err = ioutil.ReadFile(file)
+		body, err = os.ReadFile(file)
 		if err != nil {
 			return err
 		}
@@ -1104,7 +1104,7 @@ func SetWorkflow(ctx context.Context, wfClient v1alpha1.WorkflowInterface, hydra
 // Reads from stdin
 func ReadFromStdin() ([]byte, error) {
 	reader := bufio.NewReader(os.Stdin)
-	body, err := ioutil.ReadAll(reader)
+	body, err := io.ReadAll(reader)
 	if err != nil {
 		return []byte{}, err
 	}
@@ -1117,7 +1117,7 @@ func ReadFromUrl(url string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	body, err := ioutil.ReadAll(response.Body)
+	body, err := io.ReadAll(response.Body)
 	_ = response.Body.Close()
 	if err != nil {
 		return nil, err
@@ -1137,7 +1137,7 @@ func ReadFromFilePathsOrUrls(filePathsOrUrls ...string) ([][]byte, error) {
 				return [][]byte{}, err
 			}
 		} else {
-			body, err = ioutil.ReadFile(filepath.Clean(filePathOrUrl))
+			body, err = os.ReadFile(filepath.Clean(filePathOrUrl))
 			if err != nil {
 				return [][]byte{}, err
 			}

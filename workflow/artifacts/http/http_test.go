@@ -2,7 +2,6 @@ package http
 
 import (
 	"bytes"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -86,7 +85,7 @@ func TestArtifactoryArtifactDriver_Load(t *testing.T) {
 }
 
 func TestSaveHTTPArtifactRedirect(t *testing.T) {
-	tempDir, err := ioutil.TempDir("", "webhdfs-test")
+	tempDir, err := os.MkdirTemp("", "webhdfs-test")
 	if err != nil {
 		panic(err)
 	}
@@ -94,7 +93,7 @@ func TestSaveHTTPArtifactRedirect(t *testing.T) {
 
 	tempFile := path.Join(tempDir, "tmpfile")
 	content := "temporary file's content"
-	if err := ioutil.WriteFile(tempFile, []byte(content), 0o600); err != nil {
+	if err := os.WriteFile(tempFile, []byte(content), 0o600); err != nil {
 		panic(err)
 	}
 

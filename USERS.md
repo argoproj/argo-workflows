@@ -17,6 +17,7 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [Adevinta](https://www.adevinta.com/)
 1. [Admiralty](https://admiralty.io/)
 1. [Adobe](https://www.adobe.com/)
+1. [Adyen](https://www.adyen.com/)
 1. [AKRA](https://www.akra.de/)
 1. [Akuity](https://akuity.io/)
 1. [Alibaba Cloud](https://www.alibabacloud.com/about)

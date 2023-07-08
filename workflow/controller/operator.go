@@ -358,11 +358,12 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 		default:
 			if !errorsutil.IsTransientErr(err) && !woc.wf.Status.Phase.Completed() && os.Getenv("BUBBLE_ENTRY_TEMPLATE_ERR") != "false" {
 				woc.markWorkflowError(ctx, x)
+
+				// Garbage collect PVCs if Entrypoint template execution returns error
+				if err := woc.deletePVCs(ctx); err != nil {
+					woc.log.WithError(err).Warn("failed to delete PVCs")
+				}
 			}
-		}
-		// Garbage collect PVCs if Entrypoint template execution returns error
-		if err := woc.deletePVCs(ctx); err != nil {
-			woc.log.WithError(err).Warn("failed to delete PVCs")
 		}
 		return
 	}
@@ -433,11 +434,12 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 			default:
 				if !errorsutil.IsTransientErr(err) && !woc.wf.Status.Phase.Completed() && os.Getenv("BUBBLE_ENTRY_TEMPLATE_ERR") != "false" {
 					woc.markWorkflowError(ctx, x)
+
+					// Garbage collect PVCs if Onexit template execution returns error
+					if err := woc.deletePVCs(ctx); err != nil {
+						woc.log.WithError(err).Warn("failed to delete PVCs")
+					}
 				}
-			}
-			// Garbage collect PVCs if Onexit template execution returns error
-			if err := woc.deletePVCs(ctx); err != nil {
-				woc.log.WithError(err).Warn("failed to delete PVCs")
 			}
 			return
 		}
@@ -581,6 +583,7 @@ func (woc *wfOperationCtx) getWorkflowDeadline() *time.Time {
 func (woc *wfOperationCtx) setGlobalParameters(executionParameters wfv1.Arguments) error {
 	woc.globalParams[common.GlobalVarWorkflowName] = woc.wf.ObjectMeta.Name
 	woc.globalParams[common.GlobalVarWorkflowNamespace] = woc.wf.ObjectMeta.Namespace
+	woc.globalParams[common.GlobalVarWorkflowMainEntrypoint] = woc.execWf.Spec.Entrypoint
 	woc.globalParams[common.GlobalVarWorkflowServiceAccountName] = woc.execWf.Spec.ServiceAccountName
 	woc.globalParams[common.GlobalVarWorkflowUID] = string(woc.wf.ObjectMeta.UID)
 	woc.globalParams[common.GlobalVarWorkflowCreationTimestamp] = woc.wf.ObjectMeta.CreationTimestamp.Format(time.RFC3339)
@@ -1694,7 +1697,7 @@ func getChildNodeIndex(node *wfv1.NodeStatus, nodes wfv1.Nodes, index int) *wfv1
 	lastChildNodeName := node.Children[nodeIndex]
 	lastChildNode, ok := nodes[lastChildNodeName]
 	if !ok {
-		panic("could not find child node")
+		panic(fmt.Sprintf("could not find node named %q, index %d in Children of node %+v", lastChildNodeName, nodeIndex, node))
 	}
 
 	return &lastChildNode

@@ -230,6 +230,7 @@ nav:
       - windows.md
   - Developer Guide:
       - CONTRIBUTING.md
+      - running-nix.md
       - architecture.md
       - running-locally.md
       - doc-changes.md
