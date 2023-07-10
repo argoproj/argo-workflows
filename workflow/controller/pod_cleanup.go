@@ -13,6 +13,9 @@ import (
 func (woc *wfOperationCtx) queuePodsForCleanup() {
 	delay := woc.controller.Config.GetPodGCDeleteDelayDuration()
 	podGC := woc.execWf.Spec.PodGC
+	if podGC != nil && podGC.DeleteDelayDuration != nil {
+		delay = podGC.DeleteDelayDuration.Duration
+	}
 	strategy := podGC.GetStrategy()
 	selector, _ := podGC.GetLabelSelector()
 	workflowPhase := woc.wf.Status.Phase
