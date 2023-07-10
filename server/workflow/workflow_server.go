@@ -20,6 +20,7 @@ import (
 	workflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflow"
 	workflowarchivepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowarchive"
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
+	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo-workflows/v3/server/auth"
@@ -128,6 +129,32 @@ func (s *workflowServer) GetWorkflow(ctx context.Context, req *workflowpkg.Workf
 	return wf, nil
 }
 
+func mergeWithArchivedWorkflows(liveWfs v1alpha1.WorkflowList, archivedWfs v1alpha1.WorkflowList, numWfsToKeep int) *v1alpha1.WorkflowList {
+	var mergedWfs []v1alpha1.Workflow
+	var uidToWfs = map[types.UID][]v1alpha1.Workflow{}
+	for _, item := range liveWfs.Items {
+		uidToWfs[item.UID] = append(uidToWfs[item.UID], item)
+	}
+	for _, item := range archivedWfs.Items {
+		uidToWfs[item.UID] = append(uidToWfs[item.UID], item)
+	}
+
+	for _, v := range uidToWfs {
+		mergedWfs = append(mergedWfs, v[0])
+	}
+	mergedWfsList := v1alpha1.WorkflowList{Items: mergedWfs, ListMeta: liveWfs.ListMeta}
+	sort.Sort(mergedWfsList.Items)
+	numWfs := 0
+	var finalWfs []v1alpha1.Workflow
+	for _, item := range mergedWfsList.Items {
+		if numWfsToKeep == 0 || numWfs < numWfsToKeep {
+			finalWfs = append(finalWfs, item)
+			numWfs += 1
+		}
+	}
+	return &v1alpha1.WorkflowList{Items: finalWfs, ListMeta: liveWfs.ListMeta}
+}
+
 func (s *workflowServer) ListWorkflows(ctx context.Context, req *workflowpkg.WorkflowListRequest) (*wfv1.WorkflowList, error) {
 	wfClient := auth.GetWfClient(ctx)
 
@@ -140,6 +167,19 @@ func (s *workflowServer) ListWorkflows(ctx context.Context, req *workflowpkg.Wor
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.Internal)
 	}
+	archivedWfList, err := s.wfArchiveServer.ListArchivedWorkflows(ctx, &workflowarchivepkg.ListArchivedWorkflowsRequest{
+		ListOptions: listOption,
+		NamePrefix:  "",
+		Namespace:   req.Namespace,
+	})
+	if err != nil {
+		log.Warnf("unable to list archived workflows:%v", err)
+	} else {
+		if archivedWfList != nil {
+			wfList = mergeWithArchivedWorkflows(*wfList, *archivedWfList, int(listOption.Limit))
+		}
+	}
+
 	cleaner := fields.NewCleaner(req.Fields)
 	if s.offloadNodeStatusRepo.IsEnabled() && !cleaner.WillExclude("items.status.nodes") {
 		offloadedNodes, err := s.offloadNodeStatusRepo.List(req.Namespace)

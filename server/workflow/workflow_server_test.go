@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/go-jose/go-jose/v3/jwt"
 	"github.com/stretchr/testify/assert"
@@ -646,6 +647,22 @@ type testWatchWorkflowServer struct {
 
 func (t testWatchWorkflowServer) Send(*workflowpkg.WorkflowWatchEvent) error {
 	panic("implement me")
+}
+
+func TestMergeWithArchivedWorkflows(t *testing.T) {
+	timeNow := time.Now()
+	wf1 := v1alpha1.Workflow{
+		ObjectMeta: metav1.ObjectMeta{UID: "1", CreationTimestamp: metav1.Time{Time: timeNow.Add(time.Second)}}}
+	wf2 := v1alpha1.Workflow{
+		ObjectMeta: metav1.ObjectMeta{UID: "2", CreationTimestamp: metav1.Time{Time: timeNow.Add(2 * time.Second)}}}
+	wf3 := v1alpha1.Workflow{
+		ObjectMeta: metav1.ObjectMeta{UID: "3", CreationTimestamp: metav1.Time{Time: timeNow.Add(3 * time.Second)}}}
+	liveWfList := v1alpha1.WorkflowList{Items: []v1alpha1.Workflow{wf1, wf2}}
+	archivedWfList := v1alpha1.WorkflowList{Items: []v1alpha1.Workflow{wf1, wf3, wf2}}
+	expectedWfList := v1alpha1.WorkflowList{Items: []v1alpha1.Workflow{wf3, wf2, wf1}}
+	expectedShortWfList := v1alpha1.WorkflowList{Items: []v1alpha1.Workflow{wf3, wf2}}
+	assert.Equal(t, expectedWfList.Items, mergeWithArchivedWorkflows(liveWfList, archivedWfList, 0).Items)
+	assert.Equal(t, expectedShortWfList.Items, mergeWithArchivedWorkflows(liveWfList, archivedWfList, 2).Items)
 }
 
 func TestWatchWorkflows(t *testing.T) {
