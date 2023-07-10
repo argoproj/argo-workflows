@@ -85,8 +85,8 @@ type Config struct {
 	// Defaults to the Kubernetes default of 30 seconds.
 	PodGCGracePeriodSeconds *int64 `json:"podGCGracePeriodSeconds,omitempty"`
 
-	// PodGCDeleteDelayDuration specifies the duration in seconds before the pods in the GC queue get deleted.
-	// Value must be non-negative integer. A zero value indicates that the pods will be deleted immediately.
+	// PodGCDeleteDelayDuration specifies the duration before pods in the GC queue get deleted.
+	// Value must be non-negative. A zero value indicates that the pods will be deleted immediately.
 	// Defaults to 5 seconds.
 	PodGCDeleteDelayDuration *metav1.Duration `json:"podGCDeleteDelayDuration,omitempty"`
 
