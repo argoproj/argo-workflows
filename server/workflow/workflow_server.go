@@ -140,7 +140,17 @@ func mergeWithArchivedWorkflows(liveWfs v1alpha1.WorkflowList, archivedWfs v1alp
 	}
 
 	for _, v := range uidToWfs {
-		mergedWfs = append(mergedWfs, v[0])
+		// The archived workflow we saved in the database will only have "Pending" as the archival status.
+		// We want to only keep the workflow that has the correct label to display correctly in the UI.
+		if len(v) == 1 {
+			mergedWfs = append(mergedWfs, v[0])
+		} else {
+			if ok := v[0].Labels[common.LabelKeyWorkflowArchivingStatus] == "Archived"; ok {
+				mergedWfs = append(mergedWfs, v[0])
+			} else {
+				mergedWfs = append(mergedWfs, v[1])
+			}
+		}
 	}
 	mergedWfsList := v1alpha1.WorkflowList{Items: mergedWfs, ListMeta: liveWfs.ListMeta}
 	sort.Sort(mergedWfsList.Items)
