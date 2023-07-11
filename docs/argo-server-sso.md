@@ -140,7 +140,7 @@ metadata:
     All users MUST map to a cluster service account (such as the one above) before a namespace service account can apply.
 
 Now, for the namespace that you own, configure a service account which would allow members of your team to perform operations in your namespace.
-Make sure that the precedence of the namespace service account is higher than the precedence of the login service account. Create an appropriate role that you want to grant to this service account and bind it with a role-binding.
+Make sure that the precedence of the namespace service account is higher than the precedence of the login service account. Create an appropriate role for this service account and bind it with a role-binding.
 
 ```yaml
 apiVersion: v1
@@ -153,7 +153,7 @@ metadata:
     workflows.argoproj.io/rbac-rule-precedence: "1"
 ```
 
-Using this, whenever a user is logged in via SSO, makes a request in `my-namespace`, and the `rbac-rule` matches, we will use this service account to allow the user to perform that operation in the namespace. If no service account matches in the namespace, the first service account (`user-default-login`) and its associated role will be used to perform the operation in the namespace.
+With this configuration, when a user is logged in via SSO, makes a request in `my-namespace`, and the `rbac-rule` matches, this service account allows the user to perform that operation in the namespace. If no service account matches in the namespace, the first service account (`user-default-login`) and its associated role will be used to perform the operation in the namespace.
 
 ## SSO Login Time
 
