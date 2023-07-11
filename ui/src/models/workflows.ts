@@ -539,13 +539,8 @@ export interface Workflow {
 
 export const execSpec = (w: Workflow) => Object.assign({}, w.status.storedWorkflowTemplateSpec, w.spec);
 
-// The label may not have been updated on time but usually this indicates that they are already archived.
 export function isArchivedWorkflow(wf: Workflow): boolean {
-    return (
-        wf.metadata.labels &&
-        (wf.metadata.labels['workflows.argoproj.io/workflow-archiving-status'] === 'Archived' ||
-            wf.metadata.labels['workflows.argoproj.io/workflow-archiving-status'] === 'Pending')
-    );
+    return wf.metadata.labels && wf.metadata.labels['workflows.argoproj.io/workflow-archiving-status'] === 'Archived';
 }
 
 export type NodeType = 'Pod' | 'Container' | 'Steps' | 'StepGroup' | 'DAG' | 'Retry' | 'Skipped' | 'TaskGroup' | 'Suspend';
