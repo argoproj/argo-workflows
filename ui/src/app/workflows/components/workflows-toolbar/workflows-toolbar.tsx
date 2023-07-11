@@ -52,10 +52,10 @@ export class WorkflowsToolbar extends React.Component<WorkflowsToolbarProps, {}>
         const promises: Promise<any>[] = [];
         this.props.selectedWorkflows.forEach((wf: Workflow) => {
             promises.push(
-                action(wf).catch(() => {
+                action(wf).catch(reason => {
                     this.props.loadWorkflows();
                     ctx.notifications.show({
-                        content: `Unable to ${title} workflow`,
+                        content: `Unable to ${title} workflow: ${reason.toString()}`,
                         type: NotificationType.Error
                     });
                 })
