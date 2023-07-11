@@ -539,6 +539,10 @@ export interface Workflow {
 
 export const execSpec = (w: Workflow) => Object.assign({}, w.status.storedWorkflowTemplateSpec, w.spec);
 
+export function isArchivedWorkflow(wf: Workflow): boolean {
+    return wf.metadata.labels && wf.metadata.labels['workflows.argoproj.io/workflow-archiving-status'] === 'Archived';
+}
+
 export type NodeType = 'Pod' | 'Container' | 'Steps' | 'StepGroup' | 'DAG' | 'Retry' | 'Skipped' | 'TaskGroup' | 'Suspend';
 
 export interface NodeStatus {
