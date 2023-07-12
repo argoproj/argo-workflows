@@ -76,13 +76,10 @@ jobs:
   
           tag_suffix=$(echo $PLATFORM | sed -r "s/\//-/g")
           image_name="${DOCKERIO_ORG}/${TARGET}:${tag}-${tag_suffix}"
-          cache_image_name="${DOCKERIO_ORG}/${TARGET}:cache"
 
           docker buildx build \
             --cache-from "type=local,src=/tmp/.buildx-cache" \
-            --cache-from "type=registry,ref=${cache_image_name}" \
-            --cache-to "type=local,mode=max,dest=/tmp/.buildx-cache" \
-            --cache-to "type=registry,mode=max,ref=${cache_image_name}" \
+            --cache-to "type=local,dest=/tmp/.buildx-cache" \
             --output "type=image,push=true" \
             --platform="${PLATFORM}" \
             --target $TARGET \
