@@ -80,6 +80,9 @@ jobs:
           docker buildx build \
             --cache-from "type=local,src=/tmp/.buildx-cache" \
             --cache-to "type=local,dest=/tmp/.buildx-cache" \
+            --build-arg GIT_COMMIT=$GIT_COMMIT \
+            --build-arg GIT_TAG=$GIT_TAG \
+            --build-arg GIT_TREE_STATE=$GIT_TREE_STATE \
             --output "type=image,push=true" \
             --platform="${PLATFORM}" \
             --target $TARGET \
