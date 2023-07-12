@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - master
-      - terrytangyuan-patch-1
   pull_request:
     branches:
       - master
@@ -43,7 +42,6 @@ jobs:
       - uses: peaceiris/actions-gh-pages@v3
         if: github.repository == 'argoproj/argo-workflows' && github.ref == 'refs/heads/master'
         with:
-          publish_branch: terrytangyuan-patch-1
           github_token: ${{ secrets.GITHUB_TOKEN }}
         env:
           PUBLISH_BRANCH: gh-pages
