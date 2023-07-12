@@ -4059,7 +4059,7 @@ Typically, on organization has a Kubernetes cluster and a central team (the owne
 <p>The feature is currently in beta.
 To enable the feature, set env variable <code>SSO_DELEGATE_RBAC_TO_NAMESPACE=true</code> in your argo-server deployment.</p>
 <h3 id="recommended-usage">Recommended usage<a class="headerlink" href="#recommended-usage" title="Permanent link">&para;</a></h3>
-<p>Configure a default account in the installation namespace which would allow all users of your organization. We will use this service account to allow a user to login to the cluster. You could optionally add workflow read-only role and role-binding if you wish to.</p>
+<p>Configure a default account in the installation namespace that allows access to all users of your organization. This service account allows a user to login to the cluster. You could optionally add a workflow read-only role and role-binding.</p>
 <div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1</span>
 <span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ServiceAccount</span>
 <span class="nt">metadata</span><span class="p">:</span>
@@ -4072,8 +4072,8 @@ To enable the feature, set env variable <code>SSO_DELEGATE_RBAC_TO_NAMESPACE=tru
 <p class="admonition-title">Note</p>
 <p>All users MUST map to a cluster service account (such as the one above) before a namespace service account can apply.</p>
 </div>
-<p>Now, for the namespace that you own, configure a service account which would allow members of your team to perform operations in your namespace.
-Make sure that the precedence of the namespace service account is higher than the precedence of the login service account. Create appropriate role that you want to grant to this service account and bind it with a role-binding.</p>
+<p>Now, for the namespace that you own, configure a service account that allows members of your team to perform operations in your namespace.
+Make sure that the precedence of the namespace service account is higher than the precedence of the login service account. Create an appropriate role for this service account and bind it with a role-binding.</p>
 <div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1</span>
 <span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ServiceAccount</span>
 <span class="nt">metadata</span><span class="p">:</span>
@@ -4083,7 +4083,7 @@ Make sure that the precedence of the namespace service account is higher than th
 <span class="w">    </span><span class="nt">workflows.argoproj.io/rbac-rule</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;&#39;my-team&#39;</span><span class="nv"> </span><span class="s">in</span><span class="nv"> </span><span class="s">groups&quot;</span>
 <span class="w">    </span><span class="nt">workflows.argoproj.io/rbac-rule-precedence</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;1&quot;</span>
 </code></pre></div>
-<p>Using this, whenever a user is logged in via SSO and makes a request in 'my-namespace', and the <code>rbac-rule</code>matches, we will use this service account to allow the user to perform that operation in the namespace. If no service account matches in the namespace, the first service account(<code>user-default-login</code>) and its associated role will be used to perform the operation in the namespace.</p>
+<p>With this configuration, when a user is logged in via SSO, makes a request in <code>my-namespace</code>, and the <code>rbac-rule</code> matches, this service account allows the user to perform that operation. If no service account matches in the namespace, the first service account (<code>user-default-login</code>) and its associated role will be used to perform the operation.</p>
 <h2 id="sso-login-time">SSO Login Time<a class="headerlink" href="#sso-login-time" title="Permanent link">&para;</a></h2>
 <blockquote>
 <p>v2.12 and after</p>
