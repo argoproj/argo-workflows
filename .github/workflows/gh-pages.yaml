@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - master
+      - terrytangyuan-patch-1
   pull_request:
     branches:
       - master
