@@ -1,6 +1,10 @@
 # Core Concepts
 
-This page serves as an introduction into the core concepts of Argo.
+This page serves as an introduction to the core concepts of Argo.
+## The `Server`
+Argo Workflows Server handles the authentication, the UI, and the authentication mechanism (SSO, tokens, or none [server mode]).
+
+
 
 ## The `Workflow`
 
@@ -149,3 +153,6 @@ In this example `A` runs first. Once it is completed, `B` and `C` will run in pa
         dependencies: [B, C]
         template: echo
 ```
+
+## The `Workflow Controller`
+It allows to handle where could we run the Workflow, and let the user restricts which namespace is able to run any Workflow. 
