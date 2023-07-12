@@ -31,6 +31,46 @@ If the user only has permission to create workflows, then they will be typically
 
 You can typically further restrict what a user can do to just being able to submit workflows from templates using [the workflow requirements feature](workflow-restrictions.md).
 
+#### UI Access
+
+If you want a user to have read-only access to the entirety of the Argo UI for their namespace, a sample role for them may look like:
+
+```yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: ui-user-read-only
+rules:
+  # k8s standard APIs
+  - apiGroups:
+      - ""
+    resources:
+      - events
+      - pods
+      - pods/log
+    verbs:
+      - get
+      - list
+      - watch
+  # Argo APIs. See also https://github.com/argoproj/argo-workflows/blob/master/manifests/cluster-install/workflow-controller-rbac/workflow-aggregate-roles.yaml#L4
+  - apiGroups:
+      - argoproj.io
+    resources:
+      - eventsources
+      - sensors
+      - workflows
+      - workfloweventbindings
+      - workflowtemplates
+      - clusterworkflowtemplates
+      - cronworkflows
+      - cronworkflows
+      - workflowtaskresults
+    verbs:
+      - get
+      - list
+      - watch
+```
+
 ### Workflow Pod Permissions
 
 Workflow pods run using either:
