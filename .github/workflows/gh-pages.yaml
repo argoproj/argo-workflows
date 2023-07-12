@@ -41,7 +41,8 @@ jobs:
           if-no-files-found: error
       - uses: peaceiris/actions-gh-pages@v3
         if: github.repository == 'argoproj/argo-workflows' && github.ref == 'refs/heads/master'
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PUBLISH_BRANCH: gh-pages
           PUBLISH_DIR: ./site
