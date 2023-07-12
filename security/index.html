@@ -3089,6 +3089,19 @@
     User Permissions
   </a>
   
+    <nav class="md-nav" aria-label="User Permissions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ui-access" class="md-nav__link">
+    UI Access
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
         
           <li class="md-nav__item">
@@ -3916,6 +3929,19 @@
     User Permissions
   </a>
   
+    <nav class="md-nav" aria-label="User Permissions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ui-access" class="md-nav__link">
+    UI Access
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
         
           <li class="md-nav__item">
@@ -4023,7 +4049,43 @@
 <p class="admonition-title">Warning</p>
 <p>If you allow users to create workflows in the controller's namespace (typically <code>argo</code>), it may be possible for users to modify the controller itself.  In a namespace-install the managed namespace should therefore not be the controller's namespace.</p>
 </div>
-<p>You can typically further restrict what a user can do to just being able to submit workflows from templates using <a href="../workflow-restrictions/">the workflow requirements feature</a>.</p>
+<p>You can typically further restrict what a user can do to just being able to submit workflows from templates using <a href="../workflow-restrictions/">the workflow restrictions feature</a>.</p>
+<h4 id="ui-access">UI Access<a class="headerlink" href="#ui-access" title="Permanent link">&para;</a></h4>
+<p>If you want a user to have read-only access to the entirety of the Argo UI for their namespace, a sample role for them may look like:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">rbac.authorization.k8s.io/v1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Role</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ui-user-read-only</span>
+<span class="nt">rules</span><span class="p">:</span>
+<span class="w">  </span><span class="c1"># k8s standard APIs</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">apiGroups</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;&quot;</span>
+<span class="w">    </span><span class="nt">resources</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">events</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">pods</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">pods/log</span>
+<span class="w">    </span><span class="nt">verbs</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">get</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">list</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">watch</span>
+<span class="w">  </span><span class="c1"># Argo APIs. See also https://github.com/argoproj/argo-workflows/blob/master/manifests/cluster-install/workflow-controller-rbac/workflow-aggregate-roles.yaml#L4</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">apiGroups</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">argoproj.io</span>
+<span class="w">    </span><span class="nt">resources</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">eventsources</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">sensors</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">workflows</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">workfloweventbindings</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">workflowtemplates</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">clusterworkflowtemplates</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cronworkflows</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cronworkflows</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">workflowtaskresults</span>
+<span class="w">    </span><span class="nt">verbs</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">get</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">list</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">watch</span>
+</code></pre></div>
 <h3 id="workflow-pod-permissions">Workflow Pod Permissions<a class="headerlink" href="#workflow-pod-permissions" title="Permanent link">&para;</a></h3>
 <p>Workflow pods run using either:</p>
 <ul>
@@ -4033,7 +4095,7 @@
 <p>There is no restriction on which service account in a namespace may be used.</p>
 <p>This service account typically needs <a href="../workflow-rbac/">permissions</a>.</p>
 <p>Different service accounts should be used if a workflow pod needs to have elevated permissions, e.g. to create other resources.</p>
-<p>The main container will have the service account token mounted , allowing the main container to patch pods (among other permissions). Set <code>automountServiceAccountToken</code> to false to prevent this. See <a href="../fields/">fields</a>.</p>
+<p>The main container will have the service account token mounted, allowing the main container to patch pods (among other permissions). Set <code>automountServiceAccountToken</code> to false to prevent this. See <a href="../fields/">fields</a>.</p>
 <p>By default, workflows pods run as <code>root</code>. To further secure workflow pods, set the <a href="../workflow-pod-security-context/">workflow pod security context</a>.</p>
 <p>You should configure the controller with the correct <a href="../workflow-executors/">workflow executor</a> for your trade off between security and scalability.</p>
 <p>These settings can be set by default using <a href="../default-workflow-specs/">workflow defaults</a>.</p>
@@ -4043,7 +4105,7 @@
 <p>Secondly, you should enable an <a href="../argo-server/#auth-mode">authentication mode</a> to ensure that you do not run workflows from unknown users.</p>
 <p>Finally, you should configure the <code>argo-server</code> role and role binding with the correct permissions.</p>
 <h3 id="read-only">Read-Only<a class="headerlink" href="#read-only" title="Permanent link">&para;</a></h3>
-<p>You can achieve this by configuring the <code>argo-server</code> role (<a href="https://github.com/argoproj/argo-workflows/blob/master/manifests/namespace-install/argo-server-rbac/argo-server-role.yaml">example</a> with only read access (i.e. only <code>get</code>/<code>list</code>/<code>watch</code> verbs).</p>
+<p>You can achieve this by configuring the <code>argo-server</code> role (<a href="https://github.com/argoproj/argo-workflows/blob/master/manifests/namespace-install/argo-server-rbac/argo-server-role.yaml">example</a> with only read access (i.e. only <code>get</code>/<code>list</code>/<code>watch</code> verbs)).</p>
 <h2 id="network-security">Network Security<a class="headerlink" href="#network-security" title="Permanent link">&para;</a></h2>
 <p>Argo Workflows requires various levels of network access depending on configuration and the features enabled. The following describes the different workflow components and their network access needs, to help provide guidance on how to configure the argo namespace in a secure manner (e.g. <code>NetworkPolicy</code>).</p>
 <h3 id="argo-server">Argo Server<a class="headerlink" href="#argo-server" title="Permanent link">&para;</a></h3>
