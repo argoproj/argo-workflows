@@ -43,6 +43,5 @@ jobs:
         if: github.repository == 'argoproj/argo-workflows' && github.ref == 'refs/heads/master'
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-        env:
-          PUBLISH_BRANCH: gh-pages
-          PUBLISH_DIR: ./site
+          publish_branch: gh-pages
+          publish_dir: ./site
