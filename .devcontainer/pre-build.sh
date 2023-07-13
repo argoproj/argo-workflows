@@ -14,7 +14,7 @@ k3d cluster get k3s-default || k3d cluster create --wait
 k3d kubeconfig merge --kubeconfig-merge-default
 
 # install kubectl
-curl -LO https://dl.k8s.io/release/v1.26.0/bin/linux/amd64/kubectl
+curl -LO https://dl.k8s.io/release/v1.26.0/bin/linux/$(go env GOARCH)/kubectl
 chmod +x ./kubectl
 sudo mv ./kubectl /usr/local/bin/kubectl
 kubectl cluster-info
@@ -31,3 +31,6 @@ sudo chown -R vscode:vscode /home/vscode/go
 
 # download dependencies and do first-pass compile
 CI=1 kit pre-up
+
+# Patch CoreDNS to have host.docker.internal inside the cluster available
+kubectl get cm coredns -n kube-system -o yaml | sed "s/  NodeHosts: |/  NodeHosts: |\n    `grep host.docker.internal /etc/hosts`/" | kubectl apply -f -
