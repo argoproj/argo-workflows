@@ -31,3 +31,6 @@ sudo chown -R vscode:vscode /home/vscode/go
 
 # download dependencies and do first-pass compile
 CI=1 kit pre-up
+
+# Patch CoreDNS to have host.docker.internal inside the cluster available
+kubectl get cm coredns -n kube-system -o yaml | sed "s/  NodeHosts: |/  NodeHosts: |\n    `grep host.docker.internal /etc/hosts`/" | kubectl apply -f -
