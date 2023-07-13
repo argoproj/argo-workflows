@@ -810,6 +810,8 @@ func (wfc *WorkflowController) tweakListOptions(options *metav1.ListOptions) {
 	labelSelector := labels.NewSelector().
 		Add(util.InstanceIDRequirement(wfc.Config.InstanceID))
 	options.LabelSelector = labelSelector.String()
+	// `ResourceVersion=0` does not honor the `limit` in API calls, which results in making significant List calls
+	// without `limit`. For details, see https://github.com/argoproj/argo-workflows/pull/11343
 	options.ResourceVersion = ""
 }
 
