@@ -154,5 +154,6 @@ In this example `A` runs first. Once it is completed, `B` and `C` will run in pa
         template: echo
 ```
 
-## The `Workflow Controller`
-It allows to handle where could we run the Workflow, and let the user restricts which namespace is able to run any Workflow. 
+## Architecture
+
+If you are interested in Argo's underlying architecture, see [Architecture](architecture.md).
