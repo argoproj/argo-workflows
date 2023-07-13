@@ -1709,6 +1709,8 @@ spec:
                     type: object
                   podGC:
                     properties:
+                      deleteDelayDuration:
+                        type: string
                       labelSelector:
                         properties:
                           matchExpressions:
