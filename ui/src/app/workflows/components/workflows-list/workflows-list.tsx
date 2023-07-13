@@ -380,6 +380,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                                     <div className='columns small-1'>PROGRESS</div>
                                     <div className='columns small-2'>MESSAGE</div>
                                     <div className='columns small-1'>DETAILS</div>
+                                    <div className='columns small-1'>ARCHIVED</div>
                                     {(this.state.columns || []).map(col => {
                                         return (
                                             <div className='columns small-1' key={col.key}>
