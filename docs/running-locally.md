@@ -12,7 +12,7 @@ generation does not work.
 
 ## Development Container
 
-A development container is a running Docker container with a well-defined tool/runtime stack and its prerequisites. It should be able to do everything you need to do to develop argo workflows using the development container without installing tools on your local machine. It takes quite a long time to build the container. It will run k3d inside the container so you'll have a cluster to use to test against. To communicate with services running either in other development containers or directly on the local developer machine (e.g., a database) the following combination of hostname and port can be used in the workflow spec: `host.docker.internal:<PORT>`. This facilitates the implementation of workflows, which need to connect to a database or an API server.
+A development container is a running Docker container with a well-defined tool/runtime stack and its prerequisites. It should be able to do everything you need to do to develop argo workflows using the development container without installing tools on your local machine. It takes quite a long time to build the container. It will run k3d inside the container so you'll have a cluster to use to test against. To communicate with services running either in other development containers or directly on the local developer machine (e.g., a database) the following URL can be used in the workflow spec: `host.docker.internal:<PORT>`. This facilitates the implementation of workflows, which need to connect to a database or an API server.
 
 You can use the development container in a few different ways:
 
