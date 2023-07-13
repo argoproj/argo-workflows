@@ -140,7 +140,7 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [PDOK](https://www.pdok.nl/)
 1. [Peak AI](https://www.peak.ai/)
 1. [Phrase](https://phrase.com)
-1. [Pipekit](https://pipeit.io)
+1. [Pipekit](https://pipekit.io)
 1. [Pismo](https://pismo.io/)
 1. [Polarpoint.io](https://polarpoint.io)
 1. [Pollination](https://pollination.cloud)
