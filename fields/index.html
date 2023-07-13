@@ -8980,7 +8980,7 @@
 <tr>
 <td style="text-align: center;"><code>securityContext</code></td>
 <td style="text-align: center;"><a href="#podsecuritycontext"><code>PodSecurityContext</code></a></td>
-<td>SecurityContext holds pod-level security attributes and common container settings. Optional: Defaults to empty.  See type description for default values of each field.</td>
+<td>SecurityContext holds pod-level security attributes and common container settings. Optional: Defaults to empty. See type description for default values of each field.</td>
 </tr>
 <tr>
 <td style="text-align: center;"><code>serviceAccountName</code></td>
@@ -10007,6 +10007,11 @@
 </thead>
 <tbody>
 <tr>
+<td style="text-align: center;"><code>deleteDelayDuration</code></td>
+<td style="text-align: center;"><a href="#duration"><code>Duration</code></a></td>
+<td>DeleteDelayDuration specifies the duration before pods in the GC queue get deleted.</td>
+</tr>
+<tr>
 <td style="text-align: center;"><code>labelSelector</code></td>
 <td style="text-align: center;"><a href="#labelselector"><code>LabelSelector</code></a></td>
 <td>LabelSelector is the label selector to check if the pods match the labels before being added to the pod GC queue.</td>
@@ -10328,7 +10333,7 @@
 <tr>
 <td style="text-align: center;"><code>securityContext</code></td>
 <td style="text-align: center;"><a href="#podsecuritycontext"><code>PodSecurityContext</code></a></td>
-<td>SecurityContext holds pod-level security attributes and common container settings. Optional: Defaults to empty.  See type description for default values of each field.</td>
+<td>SecurityContext holds pod-level security attributes and common container settings. Optional: Defaults to empty. See type description for default values of each field.</td>
 </tr>
 <tr>
 <td style="text-align: center;"><code>serviceAccountName</code></td>
@@ -10693,7 +10698,7 @@
 <tr>
 <td style="text-align: center;"><code>outboundNodes</code></td>
 <td style="text-align: center;"><code>Array&lt; string &gt;</code></td>
-<td>OutboundNodes tracks the node IDs which are considered "outbound" nodes to a template invocation. For every invocation of a template, there are nodes which we considered as "outbound". Essentially, these are last nodes in the execution sequence to run, before the template is considered completed. These nodes are then connected as parents to a following step.In the case of single pod steps (i.e. container, script, resource templates), this list will be nil since the pod itself is already considered the "outbound" node. In the case of DAGs, outbound nodes are the "target" tasks (tasks with no children). In the case of steps, outbound nodes are all the containers involved in the last step group. NOTE: since templates are composable, the list of outbound nodes are carried upwards when a DAG/steps template invokes another DAG/steps template. In other words, the outbound nodes of a template, will be a superset of the outbound nodes of its last children.</td>
+<td>OutboundNodes tracks the node IDs which are considered "outbound" nodes to a template invocation. For every invocation of a template, there are nodes which we considered as "outbound". Essentially, these are last nodes in the execution sequence to run, before the template is considered completed. These nodes are then connected as parents to a following step. In the case of single pod steps (i.e. container, script, resource templates), this list will be nil since the pod itself is already considered the "outbound" node. In the case of DAGs, outbound nodes are the "target" tasks (tasks with no children). In the case of steps, outbound nodes are all the containers involved in the last step group. NOTE: since templates are composable, the list of outbound nodes are carried upwards when a DAG/steps template invokes another DAG/steps template. In other words, the outbound nodes of a template, will be a superset of the outbound nodes of its last children.</td>
 </tr>
 <tr>
 <td style="text-align: center;"><code>outputs</code></td>
@@ -11782,7 +11787,7 @@
 <tr>
 <td style="text-align: center;"><code>failFast</code></td>
 <td style="text-align: center;"><code>boolean</code></td>
-<td>This flag is for DAG logic. The DAG logic has a built-in "fail fast" feature to stop scheduling new steps, as soon as it detects that one of the DAG nodes is failed. Then it waits until all DAG nodes are completed before failing the DAG itself. The FailFast flag default is true,  if set to false, it will allow a DAG to run all branches of the DAG to completion (either success or failure), regardless of the failed outcomes of branches in the DAG. More info and example about this feature at https://github.com/argoproj/argo-workflows/issues/1442</td>
+<td>This flag is for DAG logic. The DAG logic has a built-in "fail fast" feature to stop scheduling new steps, as soon as it detects that one of the DAG nodes is failed. Then it waits until all DAG nodes are completed before failing the DAG itself. The FailFast flag default is true, if set to false, it will allow a DAG to run all branches of the DAG to completion (either success or failure), regardless of the failed outcomes of branches in the DAG. More info and example about this feature at https://github.com/argoproj/argo-workflows/issues/1442</td>
 </tr>
 <tr>
 <td style="text-align: center;"><code>target</code></td>
@@ -11892,7 +11897,7 @@
 <tr>
 <td style="text-align: center;"><code>bodyFrom</code></td>
 <td style="text-align: center;"><a href="#httpbodysource"><code>HTTPBodySource</code></a></td>
-<td>BodyFrom is  content of the HTTP Request as Bytes</td>
+<td>BodyFrom is content of the HTTP Request as Bytes</td>
 </tr>
 <tr>
 <td style="text-align: center;"><code>headers</code></td>
@@ -12351,7 +12356,7 @@
 <tr>
 <td style="text-align: center;"><code>flags</code></td>
 <td style="text-align: center;"><code>Array&lt; string &gt;</code></td>
-<td>Flags is a set of additional options passed to kubectl before submitting a resource I.e. to disable resource validation: flags: [    "--validate=false"  # disable resource validation]</td>
+<td>Flags is a set of additional options passed to kubectl before submitting a resource I.e. to disable resource validation: flags: [    "--validate=false" # disable resource validation ]</td>
 </tr>
 <tr>
 <td style="text-align: center;"><code>manifest</code></td>
@@ -12977,7 +12982,7 @@
 </tbody>
 </table>
 <h2 id="mutexstatus">MutexStatus<a class="headerlink" href="#mutexstatus" title="Permanent link">&para;</a></h2>
-<p>MutexStatus contains which objects hold  mutex locks, and which objects this workflow is waiting on to release locks.</p>
+<p>MutexStatus contains which objects hold mutex locks, and which objects this workflow is waiting on to release locks.</p>
 <details>
 <summary>Examples with this field (click to open)</summary>
 <br>
@@ -14990,7 +14995,7 @@
 <tr>
 <td style="text-align: center;"><code>holder</code></td>
 <td style="text-align: center;"><code>string</code></td>
-<td>Holder is a reference to the object which holds the Mutex. Holding Scenario:  1. Current workflow's NodeID which is holding the lock.     e.g: ${NodeID}Waiting Scenario:  1. Current workflow or other workflow NodeID which is holding the lock.     e.g: ${WorkflowName}/${NodeID}</td>
+<td>Holder is a reference to the object which holds the Mutex. Holding Scenario: 1. Current workflow's NodeID which is holding the lock.  e.g: ${NodeID} Waiting Scenario: 1. Current workflow or other workflow NodeID which is holding the lock.  e.g: ${WorkflowName}/${NodeID}</td>
 </tr>
 <tr>
 <td style="text-align: center;"><code>mutex</code></td>
@@ -15959,7 +15964,7 @@
 <tr>
 <td style="text-align: center;"><code>creationTimestamp</code></td>
 <td style="text-align: center;"><a href="#time"><code>Time</code></a></td>
-<td>CreationTimestamp is a timestamp representing the server time when this object was created. It is not guaranteed to be set in happens-before order across separate operations. Clients may not set this value. It is represented in RFC3339 form and is in UTC.Populated by the system. Read-only. Null for lists. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata</td>
+<td>CreationTimestamp is a timestamp representing the server time when this object was created. It is not guaranteed to be set in happens-before order across separate operations. Clients may not set this value. It is represented in RFC3339 form and is in UTC. Populated by the system. Read-only. Null for lists. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata</td>
 </tr>
 <tr>
 <td style="text-align: center;"><code>deletionGracePeriodSeconds</code></td>
@@ -15969,17 +15974,17 @@
 <tr>
 <td style="text-align: center;"><code>deletionTimestamp</code></td>
 <td style="text-align: center;"><a href="#time"><code>Time</code></a></td>
-<td>DeletionTimestamp is RFC 3339 date and time at which this resource will be deleted. This field is set by the server when a graceful deletion is requested by the user, and is not directly settable by a client. The resource is expected to be deleted (no longer visible from resource lists, and not reachable by name) after the time in this field, once the finalizers list is empty. As long as the finalizers list contains items, deletion is blocked. Once the deletionTimestamp is set, this value may not be unset or be set further into the future, although it may be shortened or the resource may be deleted prior to this time. For example, a user may request that a pod is deleted in 30 seconds. The Kubelet will react by sending a graceful termination signal to the containers in the pod. After that 30 seconds, the Kubelet will send a hard termination signal (SIGKILL) to the container and after cleanup, remove the pod from the API. In the presence of network partitions, this object may still exist after this timestamp, until an administrator or automated process can determine the resource is fully terminated. If not set, graceful deletion of the object has not been requested.Populated by the system when a graceful deletion is requested. Read-only. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata</td>
+<td>DeletionTimestamp is RFC 3339 date and time at which this resource will be deleted. This field is set by the server when a graceful deletion is requested by the user, and is not directly settable by a client. The resource is expected to be deleted (no longer visible from resource lists, and not reachable by name) after the time in this field, once the finalizers list is empty. As long as the finalizers list contains items, deletion is blocked. Once the deletionTimestamp is set, this value may not be unset or be set further into the future, although it may be shortened or the resource may be deleted prior to this time. For example, a user may request that a pod is deleted in 30 seconds. The Kubelet will react by sending a graceful termination signal to the containers in the pod. After that 30 seconds, the Kubelet will send a hard termination signal (SIGKILL) to the container and after cleanup, remove the pod from the API. In the presence of network partitions, this object may still exist after this timestamp, until an administrator or automated process can determine the resource is fully terminated. If not set, graceful deletion of the object has not been requested. Populated by the system when a graceful deletion is requested. Read-only. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata</td>
 </tr>
 <tr>
 <td style="text-align: center;"><code>finalizers</code></td>
 <td style="text-align: center;"><code>Array&lt; string &gt;</code></td>
-<td>Must be empty before the object is deleted from the registry. Each entry is an identifier for the responsible component that will remove the entry from the list. If the deletionTimestamp of the object is non-nil, entries in this list can only be removed. Finalizers may be processed and removed in any order.  Order is NOT enforced because it introduces significant risk of stuck finalizers. finalizers is a shared field, any actor with permission can reorder it. If the finalizer list is processed in order, then this can lead to a situation in which the component responsible for the first finalizer in the list is waiting for a signal (field value, external system, or other) produced by a component responsible for a finalizer later in the list, resulting in a deadlock. Without enforced ordering finalizers are free to order amongst themselves and are not vulnerable to ordering changes in the list.</td>
+<td>Must be empty before the object is deleted from the registry. Each entry is an identifier for the responsible component that will remove the entry from the list. If the deletionTimestamp of the object is non-nil, entries in this list can only be removed. Finalizers may be processed and removed in any order. Order is NOT enforced because it introduces significant risk of stuck finalizers. finalizers is a shared field, any actor with permission can reorder it. If the finalizer list is processed in order, then this can lead to a situation in which the component responsible for the first finalizer in the list is waiting for a signal (field value, external system, or other) produced by a component responsible for a finalizer later in the list, resulting in a deadlock. Without enforced ordering finalizers are free to order amongst themselves and are not vulnerable to ordering changes in the list.</td>
 </tr>
 <tr>
 <td style="text-align: center;"><code>generateName</code></td>
 <td style="text-align: center;"><code>string</code></td>
-<td>GenerateName is an optional prefix, used by the server, to generate a unique name ONLY IF the Name field has not been provided. If this field is used, the name returned to the client will be different than the name passed. This value will also be combined with a unique suffix. The provided value has the same validation rules as the Name field, and may be truncated by the length of the suffix required to make the value unique on the server.If this field is specified and the generated name exists, the server will NOT return a 409 - instead, it will either return 201 Created or 500 with Reason ServerTimeout indicating a unique name could not be found in the time allotted, and the client should retry (optionally after the time indicated in the Retry-After header).Applied only if Name is not specified. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#idempotency</td>
+<td>GenerateName is an optional prefix, used by the server, to generate a unique name ONLY IF the Name field has not been provided. If this field is used, the name returned to the client will be different than the name passed. This value will also be combined with a unique suffix. The provided value has the same validation rules as the Name field, and may be truncated by the length of the suffix required to make the value unique on the server. If this field is specified and the generated name exists, the server will NOT return a 409 - instead, it will either return 201 Created or 500 with Reason ServerTimeout indicating a unique name could not be found in the time allotted, and the client should retry (optionally after the time indicated in the Retry-After header). Applied only if Name is not specified. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#idempotency</td>
 </tr>
 <tr>
 <td style="text-align: center;"><code>generation</code></td>
@@ -16004,7 +16009,7 @@
 <tr>
 <td style="text-align: center;"><code>namespace</code></td>
 <td style="text-align: center;"><code>string</code></td>
-<td>Namespace defines the space within which each name must be unique. An empty namespace is equivalent to the "default" namespace, but "default" is the canonical representation. Not all objects are required to be scoped to a namespace - the value of this field for those objects will be empty.Must be a DNS_LABEL. Cannot be updated. More info: http://kubernetes.io/docs/user-guide/namespaces</td>
+<td>Namespace defines the space within which each name must be unique. An empty namespace is equivalent to the "default" namespace, but "default" is the canonical representation. Not all objects are required to be scoped to a namespace - the value of this field for those objects will be empty. Must be a DNS_LABEL. Cannot be updated. More info: http://kubernetes.io/docs/user-guide/namespaces</td>
 </tr>
 <tr>
 <td style="text-align: center;"><code>ownerReferences</code></td>
@@ -16014,17 +16019,17 @@
 <tr>
 <td style="text-align: center;"><code>resourceVersion</code></td>
 <td style="text-align: center;"><code>string</code></td>
-<td>An opaque value that represents the internal version of this object that can be used by clients to determine when objects have changed. May be used for optimistic concurrency, change detection, and the watch operation on a resource or set of resources. Clients must treat these values as opaque and passed unmodified back to the server. They may only be valid for a particular resource or set of resources.Populated by the system. Read-only. Value must be treated as opaque by clients and . More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#concurrency-control-and-consistency</td>
+<td>An opaque value that represents the internal version of this object that can be used by clients to determine when objects have changed. May be used for optimistic concurrency, change detection, and the watch operation on a resource or set of resources. Clients must treat these values as opaque and passed unmodified back to the server. They may only be valid for a particular resource or set of resources. Populated by the system. Read-only. Value must be treated as opaque by clients and . More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#concurrency-control-and-consistency</td>
 </tr>
 <tr>
 <td style="text-align: center;">~~<code>selfLink</code>~~</td>
 <td style="text-align: center;">~~<code>string</code>~~</td>
-<td>~~SelfLink is a URL representing this object. Populated by the system. Read-only~~ DEPRECATED Kubernetes will stop propagating this field in 1.20 release and the field is planned to be removed in 1.21 release.</td>
+<td>~~SelfLink is a URL representing this object. Populated by the system. Read-only.~~ DEPRECATED Kubernetes will stop propagating this field in 1.20 release and the field is planned to be removed in 1.21 release.</td>
 </tr>
 <tr>
 <td style="text-align: center;"><code>uid</code></td>
 <td style="text-align: center;"><code>string</code></td>
-<td>UID is the unique in time and space value for this object. It is typically generated by the server on successful creation of a resource and is not allowed to change on PUT operations.Populated by the system. Read-only. More info: http://kubernetes.io/docs/user-guide/identifiers#uids</td>
+<td>UID is the unique in time and space value for this object. It is typically generated by the server on successful creation of a resource and is not allowed to change on PUT operations. Populated by the system. Read-only. More info: http://kubernetes.io/docs/user-guide/identifiers#uids</td>
 </tr>
 </tbody>
 </table>
@@ -16176,7 +16181,7 @@
 <tr>
 <td style="text-align: center;"><code>minAvailable</code></td>
 <td style="text-align: center;"><a href="#intorstring"><code>IntOrString</code></a></td>
-<td>An eviction is allowed if at least "minAvailable" pods selected by "selector" will still be available after the eviction, i.e. even in the absence of the evicted pod.  So for example you can prevent all voluntary evictions by specifying "100%".</td>
+<td>An eviction is allowed if at least "minAvailable" pods selected by "selector" will still be available after the eviction, i.e. even in the absence of the evicted pod. So for example you can prevent all voluntary evictions by specifying "100%".</td>
 </tr>
 <tr>
 <td style="text-align: center;"><code>selector</code></td>
@@ -16186,7 +16191,7 @@
 </tbody>
 </table>
 <h2 id="podsecuritycontext">PodSecurityContext<a class="headerlink" href="#podsecuritycontext" title="Permanent link">&para;</a></h2>
-<p>PodSecurityContext holds pod-level security attributes and common container settings. Some fields are also present in container.securityContext.  Field values of container.securityContext take precedence over field values of PodSecurityContext.</p>
+<p>PodSecurityContext holds pod-level security attributes and common container settings. Some fields are also present in container.securityContext. Field values of container.securityContext take precedence over field values of PodSecurityContext.</p>
 <details>
 <summary>Examples with this field (click to open)</summary>
 <br>
@@ -16209,7 +16214,7 @@
 <tr>
 <td style="text-align: center;"><code>fsGroup</code></td>
 <td style="text-align: center;"><code>integer</code></td>
-<td>A special supplemental group that applies to all containers in a pod. Some volume types allow the Kubelet to change the ownership of that volume to be owned by the pod:1. The owning GID will be the FSGroup 2. The setgid bit is set (new files created in the volume will be owned by FSGroup) 3. The permission bits are OR'd with rw-rw----If unset, the Kubelet will not modify the ownership and permissions of any volume. Note that this field cannot be set when spec.os.name is windows.</td>
+<td>A special supplemental group that applies to all containers in a pod. Some volume types allow the Kubelet to change the ownership of that volume to be owned by the pod: 1. The owning GID will be the FSGroup 2. The setgid bit is set (new files created in the volume will be owned by FSGroup) 3. The permission bits are OR'd with rw-rw---- If unset, the Kubelet will not modify the ownership and permissions of any volume. Note that this field cannot be set when spec.os.name is windows.</td>
 </tr>
 <tr>
 <td style="text-align: center;"><code>fsGroupChangePolicy</code></td>
@@ -16219,22 +16224,22 @@
 <tr>
 <td style="text-align: center;"><code>runAsGroup</code></td>
 <td style="text-align: center;"><code>integer</code></td>
-<td>The GID to run the entrypoint of the container process. Uses runtime default if unset. May also be set in SecurityContext.  If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence for that container. Note that this field cannot be set when spec.os.name is windows.</td>
+<td>The GID to run the entrypoint of the container process. Uses runtime default if unset. May also be set in SecurityContext. If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence for that container. Note that this field cannot be set when spec.os.name is windows.</td>
 </tr>
 <tr>
 <td style="text-align: center;"><code>runAsNonRoot</code></td>
 <td style="text-align: center;"><code>boolean</code></td>
-<td>Indicates that the container must run as a non-root user. If true, the Kubelet will validate the image at runtime to ensure that it does not run as UID 0 (root) and fail to start the container if it does. If unset or false, no such validation will be performed. May also be set in SecurityContext.  If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence.</td>
+<td>Indicates that the container must run as a non-root user. If true, the Kubelet will validate the image at runtime to ensure that it does not run as UID 0 (root) and fail to start the container if it does. If unset or false, no such validation will be performed. May also be set in SecurityContext. If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence.</td>
 </tr>
 <tr>
 <td style="text-align: center;"><code>runAsUser</code></td>
 <td style="text-align: center;"><code>integer</code></td>
-<td>The UID to run the entrypoint of the container process. Defaults to user specified in image metadata if unspecified. May also be set in SecurityContext.  If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence for that container. Note that this field cannot be set when spec.os.name is windows.</td>
+<td>The UID to run the entrypoint of the container process. Defaults to user specified in image metadata if unspecified. May also be set in SecurityContext. If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence for that container. Note that this field cannot be set when spec.os.name is windows.</td>
 </tr>
 <tr>
 <td style="text-align: center;"><code>seLinuxOptions</code></td>
 <td style="text-align: center;"><a href="#selinuxoptions"><code>SELinuxOptions</code></a></td>
-<td>The SELinux context to be applied to all containers. If unspecified, the container runtime will allocate a random SELinux context for each container.  May also be set in SecurityContext.  If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence for that container. Note that this field cannot be set when spec.os.name is windows.</td>
+<td>The SELinux context to be applied to all containers. If unspecified, the container runtime will allocate a random SELinux context for each container. May also be set in SecurityContext. If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence for that container. Note that this field cannot be set when spec.os.name is windows.</td>
 </tr>
 <tr>
 <td style="text-align: center;"><code>seccompProfile</code></td>
@@ -16244,7 +16249,7 @@
 <tr>
 <td style="text-align: center;"><code>supplementalGroups</code></td>
 <td style="text-align: center;"><code>Array&lt; integer &gt;</code></td>
-<td>A list of groups applied to the first process run in each container, in addition to the container's primary GID.  If unspecified, no groups will be added to any container. Note that this field cannot be set when spec.os.name is windows.</td>
+<td>A list of groups applied to the first process run in each container, in addition to the container's primary GID. If unspecified, no groups will be added to any container. Note that this field cannot be set when spec.os.name is windows.</td>
 </tr>
 <tr>
 <td style="text-align: center;"><code>sysctls</code></td>
@@ -16273,7 +16278,7 @@
 <tr>
 <td style="text-align: center;"><code>effect</code></td>
 <td style="text-align: center;"><code>string</code></td>
-<td>Effect indicates the taint effect to match. Empty means match all taint effects. When specified, allowed values are NoSchedule, PreferNoSchedule and NoExecute.Possible enum values: - <code>"NoExecute"</code> Evict any already-running pods that do not tolerate the taint. Currently enforced by NodeController. - <code>"NoSchedule"</code> Do not allow new pods to schedule onto the node unless they tolerate the taint, but allow all pods submitted to Kubelet without going through the scheduler to start, and allow all already-running pods to continue running. Enforced by the scheduler. - <code>"PreferNoSchedule"</code> Like TaintEffectNoSchedule, but the scheduler tries not to schedule new pods onto the node, rather than prohibiting new pods from scheduling onto the node entirely. Enforced by the scheduler.</td>
+<td>Effect indicates the taint effect to match. Empty means match all taint effects. When specified, allowed values are NoSchedule, PreferNoSchedule and NoExecute. Possible enum values: - <code>"NoExecute"</code> Evict any already-running pods that do not tolerate the taint. Currently enforced by NodeController. - <code>"NoSchedule"</code> Do not allow new pods to schedule onto the node unless they tolerate the taint, but allow all pods submitted to Kubelet without going through the scheduler to start, and allow all already-running pods to continue running. Enforced by the scheduler. - <code>"PreferNoSchedule"</code> Like TaintEffectNoSchedule, but the scheduler tries not to schedule new pods onto the node, rather than prohibiting new pods from scheduling onto the node entirely. Enforced by the scheduler.</td>
 </tr>
 <tr>
 <td style="text-align: center;"><code>key</code></td>
@@ -16283,7 +16288,7 @@
 <tr>
 <td style="text-align: center;"><code>operator</code></td>
 <td style="text-align: center;"><code>string</code></td>
-<td>Operator represents a key's relationship to the value. Valid operators are Exists and Equal. Defaults to Equal. Exists is equivalent to wildcard for value, so that a pod can tolerate all taints of a particular category.Possible enum values: - <code>"Equal"</code> - <code>"Exists"</code></td>
+<td>Operator represents a key's relationship to the value. Valid operators are Exists and Equal. Defaults to Equal. Exists is equivalent to wildcard for value, so that a pod can tolerate all taints of a particular category. Possible enum values: - <code>"Equal"</code> - <code>"Exists"</code></td>
 </tr>
 <tr>
 <td style="text-align: center;"><code>tolerationSeconds</code></td>
@@ -16438,7 +16443,7 @@
 <tr>
 <td style="text-align: center;"><code>ephemeral</code></td>
 <td style="text-align: center;"><a href="#ephemeralvolumesource"><code>EphemeralVolumeSource</code></a></td>
-<td>Ephemeral represents a volume that is handled by a cluster storage driver. The volume's lifecycle is tied to the pod that defines it - it will be created before the pod starts, and deleted when the pod is removed.Use this if: a) the volume is only needed while the pod runs, b) features of normal volumes like restoring from snapshot or capacity   tracking are needed,c) the storage driver is specified through a storage class, and d) the storage driver supports dynamic volume provisioning through   a PersistentVolumeClaim (see EphemeralVolumeSource for more   information on the connection between this volume type   and PersistentVolumeClaim).Use PersistentVolumeClaim or one of the vendor-specific APIs for volumes that persist for longer than the lifecycle of an individual pod.Use CSI for light-weight local ephemeral volumes if the CSI driver is meant to be used that way - see the documentation of the driver for more information.A pod can use both types of ephemeral volumes and persistent volumes at the same time.</td>
+<td>Ephemeral represents a volume that is handled by a cluster storage driver. The volume's lifecycle is tied to the pod that defines it - it will be created before the pod starts, and deleted when the pod is removed. Use this if: a) the volume is only needed while the pod runs, b) features of normal volumes like restoring from snapshot or capacity tracking are needed, c) the storage driver is specified through a storage class, and d) the storage driver supports dynamic volume provisioning through a PersistentVolumeClaim (see EphemeralVolumeSource for more information on the connection between this volume type and PersistentVolumeClaim). Use PersistentVolumeClaim or one of the vendor-specific APIs for volumes that persist for longer than the lifecycle of an individual pod. Use CSI for light-weight local ephemeral volumes if the CSI driver is meant to be used that way - see the documentation of the driver for more information. A pod can use both types of ephemeral volumes and persistent volumes at the same time.</td>
 </tr>
 <tr>
 <td style="text-align: center;"><code>fc</code></td>
@@ -16543,7 +16548,7 @@
 </tbody>
 </table>
 <h2 id="time">Time<a class="headerlink" href="#time" title="Permanent link">&para;</a></h2>
-<p>Time is a wrapper around time.Time which supports correct marshaling to YAML and JSON.  Wrappers are provided for many of the factory methods that the time package offers.</p>
+<p>Time is a wrapper around time.Time which supports correct marshaling to YAML and JSON. Wrappers are provided for many of the factory methods that the time package offers.</p>
 <h2 id="objectreference">ObjectReference<a class="headerlink" href="#objectreference" title="Permanent link">&para;</a></h2>
 <p>ObjectReference contains enough information to let you inspect or modify the referred object.</p>
 <h3 id="fields_111">Fields<a class="headerlink" href="#fields_111" title="Permanent link">&para;</a></h3>
@@ -16593,6 +16598,36 @@
 </tr>
 </tbody>
 </table>
+<h2 id="duration">Duration<a class="headerlink" href="#duration" title="Permanent link">&para;</a></h2>
+<p>Duration is a wrapper around time.Duration which supports correct marshaling to YAML and JSON. In particular, it marshals into strings, which can be used as map keys in json.</p>
+<details>
+<summary>Examples with this field (click to open)</summary>
+<br>
+<ul>
+
+    <li> <a href="https://github.com/argoproj/argo-workflows/blob/master/examples/pod-gc-strategy-with-label-selector.yaml">pod-gc-strategy-with-label-selector.yaml</a>
+
+    <li> <a href="https://github.com/argoproj/argo-workflows/blob/master/examples/pod-gc-strategy.yaml">pod-gc-strategy.yaml</a>
+</ul>
+</details>
+
+<h3 id="fields_112">Fields<a class="headerlink" href="#fields_112" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th style="text-align: center;">Field Name</th>
+<th style="text-align: center;">Field Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: center;"><code>duration</code></td>
+<td style="text-align: center;"><code>string</code></td>
+<td><em>No description available</em></td>
+</tr>
+</tbody>
+</table>
 <h2 id="labelselector">LabelSelector<a class="headerlink" href="#labelselector" title="Permanent link">&para;</a></h2>
 <p>A label selector is a label query over a set of resources. The result of matchLabels and matchExpressions are ANDed. An empty label selector matches all objects. A null label selector matches no objects.</p>
 <details>
@@ -16604,7 +16639,7 @@
 </ul>
 </details>
 
-<h3 id="fields_112">Fields<a class="headerlink" href="#fields_112" title="Permanent link">&para;</a></h3>
+<h3 id="fields_113">Fields<a class="headerlink" href="#fields_113" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -16944,7 +16979,7 @@
 </ul>
 </details>
 
-<h3 id="fields_113">Fields<a class="headerlink" href="#fields_113" title="Permanent link">&para;</a></h3>
+<h3 id="fields_114">Fields<a class="headerlink" href="#fields_114" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -16982,7 +17017,7 @@
 <tr>
 <td style="text-align: center;"><code>imagePullPolicy</code></td>
 <td style="text-align: center;"><code>string</code></td>
-<td>Image pull policy. One of Always, Never, IfNotPresent. Defaults to Always if :latest tag is specified, or IfNotPresent otherwise. Cannot be updated. More info: https://kubernetes.io/docs/concepts/containers/images#updating-imagesPossible enum values: - <code>"Always"</code> means that kubelet always attempts to pull the latest image. Container will fail If the pull fails. - <code>"IfNotPresent"</code> means that kubelet pulls if the image isn't present on disk. Container will fail if the image isn't present and the pull fails. - <code>"Never"</code> means that kubelet never pulls an image, but only uses a local image. Container will fail if the image isn't present</td>
+<td>Image pull policy. One of Always, Never, IfNotPresent. Defaults to Always if :latest tag is specified, or IfNotPresent otherwise. Cannot be updated. More info: https://kubernetes.io/docs/concepts/containers/images#updating-images Possible enum values: - <code>"Always"</code> means that kubelet always attempts to pull the latest image. Container will fail If the pull fails. - <code>"IfNotPresent"</code> means that kubelet pulls if the image isn't present on disk. Container will fail if the image isn't present and the pull fails. - <code>"Never"</code> means that kubelet never pulls an image, but only uses a local image. Container will fail if the image isn't present</td>
 </tr>
 <tr>
 <td style="text-align: center;"><code>lifecycle</code></td>
@@ -17042,7 +17077,7 @@
 <tr>
 <td style="text-align: center;"><code>terminationMessagePolicy</code></td>
 <td style="text-align: center;"><code>string</code></td>
-<td>Indicate how the termination message should be populated. File will use the contents of terminationMessagePath to populate the container status message on both success and failure. FallbackToLogsOnError will use the last chunk of container log output if the termination message file is empty and the container exited with an error. The log output is limited to 2048 bytes or 80 lines, whichever is smaller. Defaults to File. Cannot be updated.Possible enum values: - <code>"FallbackToLogsOnError"</code> will read the most recent contents of the container logs for the container status message when the container exits with an error and the terminationMessagePath has no contents. - <code>"File"</code> is the default behavior and will set the container status message to the contents of the container's terminationMessagePath when the container exits.</td>
+<td>Indicate how the termination message should be populated. File will use the contents of terminationMessagePath to populate the container status message on both success and failure. FallbackToLogsOnError will use the last chunk of container log output if the termination message file is empty and the container exited with an error. The log output is limited to 2048 bytes or 80 lines, whichever is smaller. Defaults to File. Cannot be updated. Possible enum values: - <code>"FallbackToLogsOnError"</code> will read the most recent contents of the container logs for the container status message when the container exits with an error and the terminationMessagePath has no contents. - <code>"File"</code> is the default behavior and will set the container status message to the contents of the container's terminationMessagePath when the container exits.</td>
 </tr>
 <tr>
 <td style="text-align: center;"><code>tty</code></td>
@@ -17081,7 +17116,7 @@
 </ul>
 </details>
 
-<h3 id="fields_114">Fields<a class="headerlink" href="#fields_114" title="Permanent link">&para;</a></h3>
+<h3 id="fields_115">Fields<a class="headerlink" href="#fields_115" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -17143,7 +17178,7 @@
 </ul>
 </details>
 
-<h3 id="fields_115">Fields<a class="headerlink" href="#fields_115" title="Permanent link">&para;</a></h3>
+<h3 id="fields_116">Fields<a class="headerlink" href="#fields_116" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -17156,7 +17191,7 @@
 <tr>
 <td style="text-align: center;"><code>mountPath</code></td>
 <td style="text-align: center;"><code>string</code></td>
-<td>Path within the container at which the volume should be mounted.  Must not contain ':'.</td>
+<td>Path within the container at which the volume should be mounted. Must not contain ':'.</td>
 </tr>
 <tr>
 <td style="text-align: center;"><code>mountPropagation</code></td>
@@ -17206,7 +17241,7 @@
 </ul>
 </details>
 
-<h3 id="fields_116">Fields<a class="headerlink" href="#fields_116" title="Permanent link">&para;</a></h3>
+<h3 id="fields_117">Fields<a class="headerlink" href="#fields_117" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -17235,7 +17270,7 @@
 </table>
 <h2 id="envfromsource">EnvFromSource<a class="headerlink" href="#envfromsource" title="Permanent link">&para;</a></h2>
 <p>EnvFromSource represents the source of a set of ConfigMaps</p>
-<h3 id="fields_117">Fields<a class="headerlink" href="#fields_117" title="Permanent link">&para;</a></h3>
+<h3 id="fields_118">Fields<a class="headerlink" href="#fields_118" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -17264,7 +17299,7 @@
 </table>
 <h2 id="lifecycle">Lifecycle<a class="headerlink" href="#lifecycle" title="Permanent link">&para;</a></h2>
 <p>Lifecycle describes actions that the management system should take in response to container lifecycle events. For the PostStart and PreStop lifecycle handlers, management of the container blocks until the action is complete, unless the container process fails, in which case the handler is aborted.</p>
-<h3 id="fields_118">Fields<a class="headerlink" href="#fields_118" title="Permanent link">&para;</a></h3>
+<h3 id="fields_119">Fields<a class="headerlink" href="#fields_119" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -17288,7 +17323,7 @@
 </table>
 <h2 id="probe">Probe<a class="headerlink" href="#probe" title="Permanent link">&para;</a></h2>
 <p>Probe describes a health check to be performed against a container to determine whether it is alive or ready to receive traffic.</p>
-<h3 id="fields_119">Fields<a class="headerlink" href="#fields_119" title="Permanent link">&para;</a></h3>
+<h3 id="fields_120">Fields<a class="headerlink" href="#fields_120" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -17352,7 +17387,7 @@
 </table>
 <h2 id="containerport">ContainerPort<a class="headerlink" href="#containerport" title="Permanent link">&para;</a></h2>
 <p>ContainerPort represents a network port in a single container.</p>
-<h3 id="fields_120">Fields<a class="headerlink" href="#fields_120" title="Permanent link">&para;</a></h3>
+<h3 id="fields_121">Fields<a class="headerlink" href="#fields_121" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -17385,7 +17420,7 @@
 <tr>
 <td style="text-align: center;"><code>protocol</code></td>
 <td style="text-align: center;"><code>string</code></td>
-<td>Protocol for port. Must be UDP, TCP, or SCTP. Defaults to "TCP".Possible enum values: - <code>"SCTP"</code> is the SCTP protocol. - <code>"TCP"</code> is the TCP protocol. - <code>"UDP"</code> is the UDP protocol.</td>
+<td>Protocol for port. Must be UDP, TCP, or SCTP. Defaults to "TCP". Possible enum values: - <code>"SCTP"</code> is the SCTP protocol. - <code>"TCP"</code> is the TCP protocol. - <code>"UDP"</code> is the UDP protocol.</td>
 </tr>
 </tbody>
 </table>
@@ -17420,7 +17455,7 @@
 </ul>
 </details>
 
-<h3 id="fields_121">Fields<a class="headerlink" href="#fields_121" title="Permanent link">&para;</a></h3>
+<h3 id="fields_122">Fields<a class="headerlink" href="#fields_122" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -17443,7 +17478,7 @@
 </tbody>
 </table>
 <h2 id="securitycontext">SecurityContext<a class="headerlink" href="#securitycontext" title="Permanent link">&para;</a></h2>
-<p>SecurityContext holds security configuration that will be applied to a container. Some fields are present in both SecurityContext and PodSecurityContext.  When both are set, the values in SecurityContext take precedence.</p>
+<p>SecurityContext holds security configuration that will be applied to a container. Some fields are present in both SecurityContext and PodSecurityContext. When both are set, the values in SecurityContext take precedence.</p>
 <details>
 <summary>Examples with this field (click to open)</summary>
 <br>
@@ -17453,7 +17488,7 @@
 </ul>
 </details>
 
-<h3 id="fields_122">Fields<a class="headerlink" href="#fields_122" title="Permanent link">&para;</a></h3>
+<h3 id="fields_123">Fields<a class="headerlink" href="#fields_123" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -17491,22 +17526,22 @@
 <tr>
 <td style="text-align: center;"><code>runAsGroup</code></td>
 <td style="text-align: center;"><code>integer</code></td>
-<td>The GID to run the entrypoint of the container process. Uses runtime default if unset. May also be set in PodSecurityContext.  If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence. Note that this field cannot be set when spec.os.name is windows.</td>
+<td>The GID to run the entrypoint of the container process. Uses runtime default if unset. May also be set in PodSecurityContext. If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence. Note that this field cannot be set when spec.os.name is windows.</td>
 </tr>
 <tr>
 <td style="text-align: center;"><code>runAsNonRoot</code></td>
 <td style="text-align: center;"><code>boolean</code></td>
-<td>Indicates that the container must run as a non-root user. If true, the Kubelet will validate the image at runtime to ensure that it does not run as UID 0 (root) and fail to start the container if it does. If unset or false, no such validation will be performed. May also be set in PodSecurityContext.  If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence.</td>
+<td>Indicates that the container must run as a non-root user. If true, the Kubelet will validate the image at runtime to ensure that it does not run as UID 0 (root) and fail to start the container if it does. If unset or false, no such validation will be performed. May also be set in PodSecurityContext. If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence.</td>
 </tr>
 <tr>
 <td style="text-align: center;"><code>runAsUser</code></td>
 <td style="text-align: center;"><code>integer</code></td>
-<td>The UID to run the entrypoint of the container process. Defaults to user specified in image metadata if unspecified. May also be set in PodSecurityContext.  If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence. Note that this field cannot be set when spec.os.name is windows.</td>
+<td>The UID to run the entrypoint of the container process. Defaults to user specified in image metadata if unspecified. May also be set in PodSecurityContext. If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence. Note that this field cannot be set when spec.os.name is windows.</td>
 </tr>
 <tr>
 <td style="text-align: center;"><code>seLinuxOptions</code></td>
 <td style="text-align: center;"><a href="#selinuxoptions"><code>SELinuxOptions</code></a></td>
-<td>The SELinux context to be applied to the container. If unspecified, the container runtime will allocate a random SELinux context for each container.  May also be set in PodSecurityContext.  If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence. Note that this field cannot be set when spec.os.name is windows.</td>
+<td>The SELinux context to be applied to the container. If unspecified, the container runtime will allocate a random SELinux context for each container. May also be set in PodSecurityContext. If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence. Note that this field cannot be set when spec.os.name is windows.</td>
 </tr>
 <tr>
 <td style="text-align: center;"><code>seccompProfile</code></td>
@@ -17522,7 +17557,7 @@
 </table>
 <h2 id="volumedevice">VolumeDevice<a class="headerlink" href="#volumedevice" title="Permanent link">&para;</a></h2>
 <p>volumeDevice describes a mapping of a raw block device within a container.</p>
-<h3 id="fields_123">Fields<a class="headerlink" href="#fields_123" title="Permanent link">&para;</a></h3>
+<h3 id="fields_124">Fields<a class="headerlink" href="#fields_124" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -17557,7 +17592,7 @@
 </ul>
 </details>
 
-<h3 id="fields_124">Fields<a class="headerlink" href="#fields_124" title="Permanent link">&para;</a></h3>
+<h3 id="fields_125">Fields<a class="headerlink" href="#fields_125" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -17570,7 +17605,7 @@
 <tr>
 <td style="text-align: center;"><code>key</code></td>
 <td style="text-align: center;"><code>string</code></td>
-<td>The key of the secret to select from.  Must be a valid secret key.</td>
+<td>The key of the secret to select from. Must be a valid secret key.</td>
 </tr>
 <tr>
 <td style="text-align: center;"><code>name</code></td>
@@ -17586,7 +17621,7 @@
 </table>
 <h2 id="managedfieldsentry">ManagedFieldsEntry<a class="headerlink" href="#managedfieldsentry" title="Permanent link">&para;</a></h2>
 <p>ManagedFieldsEntry is a workflow-id, a FieldSet and the group version of the resource that the fieldset applies to.</p>
-<h3 id="fields_125">Fields<a class="headerlink" href="#fields_125" title="Permanent link">&para;</a></h3>
+<h3 id="fields_126">Fields<a class="headerlink" href="#fields_126" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -17635,7 +17670,7 @@
 </table>
 <h2 id="ownerreference">OwnerReference<a class="headerlink" href="#ownerreference" title="Permanent link">&para;</a></h2>
 <p>OwnerReference contains enough information to let you identify an owning object. An owning object must be in the same namespace as the dependent, or be cluster-scoped, so there is no namespace field.</p>
-<h3 id="fields_126">Fields<a class="headerlink" href="#fields_126" title="Permanent link">&para;</a></h3>
+<h3 id="fields_127">Fields<a class="headerlink" href="#fields_127" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -17679,7 +17714,7 @@
 </table>
 <h2 id="nodeaffinity">NodeAffinity<a class="headerlink" href="#nodeaffinity" title="Permanent link">&para;</a></h2>
 <p>Node affinity is a group of node affinity scheduling rules.</p>
-<h3 id="fields_127">Fields<a class="headerlink" href="#fields_127" title="Permanent link">&para;</a></h3>
+<h3 id="fields_128">Fields<a class="headerlink" href="#fields_128" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -17703,7 +17738,7 @@
 </table>
 <h2 id="podaffinity">PodAffinity<a class="headerlink" href="#podaffinity" title="Permanent link">&para;</a></h2>
 <p>Pod affinity is a group of inter pod affinity scheduling rules.</p>
-<h3 id="fields_128">Fields<a class="headerlink" href="#fields_128" title="Permanent link">&para;</a></h3>
+<h3 id="fields_129">Fields<a class="headerlink" href="#fields_129" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -17727,7 +17762,7 @@
 </table>
 <h2 id="podantiaffinity">PodAntiAffinity<a class="headerlink" href="#podantiaffinity" title="Permanent link">&para;</a></h2>
 <p>Pod anti affinity is a group of inter pod anti affinity scheduling rules.</p>
-<h3 id="fields_129">Fields<a class="headerlink" href="#fields_129" title="Permanent link">&para;</a></h3>
+<h3 id="fields_130">Fields<a class="headerlink" href="#fields_130" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -17760,7 +17795,7 @@
 </ul>
 </details>
 
-<h3 id="fields_130">Fields<a class="headerlink" href="#fields_130" title="Permanent link">&para;</a></h3>
+<h3 id="fields_131">Fields<a class="headerlink" href="#fields_131" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -17784,7 +17819,7 @@
 </table>
 <h2 id="selinuxoptions">SELinuxOptions<a class="headerlink" href="#selinuxoptions" title="Permanent link">&para;</a></h2>
 <p>SELinuxOptions are the labels to be applied to the container</p>
-<h3 id="fields_131">Fields<a class="headerlink" href="#fields_131" title="Permanent link">&para;</a></h3>
+<h3 id="fields_132">Fields<a class="headerlink" href="#fields_132" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -17818,7 +17853,7 @@
 </table>
 <h2 id="seccompprofile">SeccompProfile<a class="headerlink" href="#seccompprofile" title="Permanent link">&para;</a></h2>
 <p>SeccompProfile defines a pod/container's seccomp profile settings. Only one profile source may be set.</p>
-<h3 id="fields_132">Fields<a class="headerlink" href="#fields_132" title="Permanent link">&para;</a></h3>
+<h3 id="fields_133">Fields<a class="headerlink" href="#fields_133" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -17836,13 +17871,13 @@
 <tr>
 <td style="text-align: center;"><code>type</code></td>
 <td style="text-align: center;"><code>string</code></td>
-<td>type indicates which kind of seccomp profile will be applied. Valid options are:Localhost - a profile defined in a file on the node should be used. RuntimeDefault - the container runtime default profile should be used. Unconfined - no profile should be applied.Possible enum values: - <code>"Localhost"</code> indicates a profile defined in a file on the node should be used. The file's location relative to <kubelet-root-dir>/seccomp. - <code>"RuntimeDefault"</code> represents the default container runtime seccomp profile. - <code>"Unconfined"</code> indicates no seccomp profile is applied (A.K.A. unconfined).</td>
+<td>type indicates which kind of seccomp profile will be applied. Valid options are: Localhost - a profile defined in a file on the node should be used. RuntimeDefault - the container runtime default profile should be used. Unconfined - no profile should be applied. Possible enum values: - <code>"Localhost"</code> indicates a profile defined in a file on the node should be used. The file's location relative to <kubelet-root-dir>/seccomp. - <code>"RuntimeDefault"</code> represents the default container runtime seccomp profile. - <code>"Unconfined"</code> indicates no seccomp profile is applied (A.K.A. unconfined).</td>
 </tr>
 </tbody>
 </table>
 <h2 id="sysctl">Sysctl<a class="headerlink" href="#sysctl" title="Permanent link">&para;</a></h2>
 <p>Sysctl defines a kernel parameter to be set</p>
-<h3 id="fields_133">Fields<a class="headerlink" href="#fields_133" title="Permanent link">&para;</a></h3>
+<h3 id="fields_134">Fields<a class="headerlink" href="#fields_134" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -17866,7 +17901,7 @@
 </table>
 <h2 id="windowssecuritycontextoptions">WindowsSecurityContextOptions<a class="headerlink" href="#windowssecuritycontextoptions" title="Permanent link">&para;</a></h2>
 <p>WindowsSecurityContextOptions contain Windows-specific options and credentials.</p>
-<h3 id="fields_134">Fields<a class="headerlink" href="#fields_134" title="Permanent link">&para;</a></h3>
+<h3 id="fields_135">Fields<a class="headerlink" href="#fields_135" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -17889,7 +17924,7 @@
 <tr>
 <td style="text-align: center;"><code>hostProcess</code></td>
 <td style="text-align: center;"><code>boolean</code></td>
-<td>HostProcess determines if a container should be run as a 'Host Process' container. This field is alpha-level and will only be honored by components that enable the WindowsHostProcessContainers feature flag. Setting this field without the feature flag will result in errors when validating the Pod. All of a Pod's containers must have the same effective HostProcess value (it is not allowed to have a mix of HostProcess containers and non-HostProcess containers).  In addition, if HostProcess is true then HostNetwork must also be set to true.</td>
+<td>HostProcess determines if a container should be run as a 'Host Process' container. This field is alpha-level and will only be honored by components that enable the WindowsHostProcessContainers feature flag. Setting this field without the feature flag will result in errors when validating the Pod. All of a Pod's containers must have the same effective HostProcess value (it is not allowed to have a mix of HostProcess containers and non-HostProcess containers). In addition, if HostProcess is true then HostNetwork must also be set to true.</td>
 </tr>
 <tr>
 <td style="text-align: center;"><code>runAsUserName</code></td>
@@ -18259,7 +18294,7 @@
 </ul>
 </details>
 
-<h3 id="fields_135">Fields<a class="headerlink" href="#fields_135" title="Permanent link">&para;</a></h3>
+<h3 id="fields_136">Fields<a class="headerlink" href="#fields_136" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -18282,7 +18317,7 @@
 <tr>
 <td style="text-align: center;"><code>dataSourceRef</code></td>
 <td style="text-align: center;"><a href="#typedlocalobjectreference"><code>TypedLocalObjectReference</code></a></td>
-<td>Specifies the object from which to populate the volume with data, if a non-empty volume is desired. This may be any local object from a non-empty API group (non core object) or a PersistentVolumeClaim object. When this field is specified, volume binding will only succeed if the type of the specified object matches some installed volume populator or dynamic provisioner. This field will replace the functionality of the DataSource field and as such if both fields are non-empty, they must have the same value. For backwards compatibility, both fields (DataSource and DataSourceRef) will be set to the same value automatically if one of them is empty and the other is non-empty. There are two important differences between DataSource and DataSourceRef: * While DataSource only allows two specific types of objects, DataSourceRef  allows any non-core object, as well as PersistentVolumeClaim objects.* While DataSource ignores disallowed values (dropping them), DataSourceRef  preserves all values, and generates an error if a disallowed value is  specified.(Alpha) Using this field requires the AnyVolumeDataSource feature gate to be enabled.</td>
+<td>Specifies the object from which to populate the volume with data, if a non-empty volume is desired. This may be any local object from a non-empty API group (non core object) or a PersistentVolumeClaim object. When this field is specified, volume binding will only succeed if the type of the specified object matches some installed volume populator or dynamic provisioner. This field will replace the functionality of the DataSource field and as such if both fields are non-empty, they must have the same value. For backwards compatibility, both fields (DataSource and DataSourceRef) will be set to the same value automatically if one of them is empty and the other is non-empty. There are two important differences between DataSource and DataSourceRef: * While DataSource only allows two specific types of objects, DataSourceRef allows any non-core object, as well as PersistentVolumeClaim objects. * While DataSource ignores disallowed values (dropping them), DataSourceRef preserves all values, and generates an error if a disallowed value is specified. (Alpha) Using this field requires the AnyVolumeDataSource feature gate to be enabled.</td>
 </tr>
 <tr>
 <td style="text-align: center;"><code>resources</code></td>
@@ -18313,7 +18348,7 @@
 </table>
 <h2 id="persistentvolumeclaimstatus">PersistentVolumeClaimStatus<a class="headerlink" href="#persistentvolumeclaimstatus" title="Permanent link">&para;</a></h2>
 <p>PersistentVolumeClaimStatus is the current status of a persistent volume claim.</p>
-<h3 id="fields_136">Fields<a class="headerlink" href="#fields_136" title="Permanent link">&para;</a></h3>
+<h3 id="fields_137">Fields<a class="headerlink" href="#fields_137" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -18346,7 +18381,7 @@
 <tr>
 <td style="text-align: center;"><code>phase</code></td>
 <td style="text-align: center;"><code>string</code></td>
-<td>Phase represents the current phase of PersistentVolumeClaim.Possible enum values: - <code>"Bound"</code> used for PersistentVolumeClaims that are bound - <code>"Lost"</code> used for PersistentVolumeClaims that lost their underlying PersistentVolume. The claim was bound to a PersistentVolume and this volume does not exist any longer and all data on it was lost. - <code>"Pending"</code> used for PersistentVolumeClaims that are not yet bound</td>
+<td>Phase represents the current phase of PersistentVolumeClaim. Possible enum values: - <code>"Bound"</code> used for PersistentVolumeClaims that are bound - <code>"Lost"</code> used for PersistentVolumeClaims that lost their underlying PersistentVolume. The claim was bound to a PersistentVolume and this volume does not exist any longer and all data on it was lost. - <code>"Pending"</code> used for PersistentVolumeClaims that are not yet bound</td>
 </tr>
 <tr>
 <td style="text-align: center;"><code>resizeStatus</code></td>
@@ -18356,8 +18391,8 @@
 </tbody>
 </table>
 <h2 id="awselasticblockstorevolumesource">AWSElasticBlockStoreVolumeSource<a class="headerlink" href="#awselasticblockstorevolumesource" title="Permanent link">&para;</a></h2>
-<p>Represents a Persistent Disk resource in AWS.An AWS EBS disk must exist before mounting to a container. The disk must also be in the same AWS zone as the kubelet. An AWS EBS disk can only be mounted as read/write once. AWS EBS volumes support ownership management and SELinux relabeling.</p>
-<h3 id="fields_137">Fields<a class="headerlink" href="#fields_137" title="Permanent link">&para;</a></h3>
+<p>Represents a Persistent Disk resource in AWS. An AWS EBS disk must exist before mounting to a container. The disk must also be in the same AWS zone as the kubelet. An AWS EBS disk can only be mounted as read/write once. AWS EBS volumes support ownership management and SELinux relabeling.</p>
+<h3 id="fields_138">Fields<a class="headerlink" href="#fields_138" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -18391,7 +18426,7 @@
 </table>
 <h2 id="azurediskvolumesource">AzureDiskVolumeSource<a class="headerlink" href="#azurediskvolumesource" title="Permanent link">&para;</a></h2>
 <p>AzureDisk represents an Azure Data Disk mount on the host and bind mount to the pod.</p>
-<h3 id="fields_138">Fields<a class="headerlink" href="#fields_138" title="Permanent link">&para;</a></h3>
+<h3 id="fields_139">Fields<a class="headerlink" href="#fields_139" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -18424,7 +18459,7 @@
 <tr>
 <td style="text-align: center;"><code>kind</code></td>
 <td style="text-align: center;"><code>string</code></td>
-<td>Expected values Shared: multiple blob disks per storage account  Dedicated: single blob disk per storage account  Managed: azure managed data disk (only in managed availability set). defaults to shared</td>
+<td>Expected values Shared: multiple blob disks per storage account Dedicated: single blob disk per storage account Managed: azure managed data disk (only in managed availability set). defaults to shared</td>
 </tr>
 <tr>
 <td style="text-align: center;"><code>readOnly</code></td>
@@ -18435,7 +18470,7 @@
 </table>
 <h2 id="azurefilevolumesource">AzureFileVolumeSource<a class="headerlink" href="#azurefilevolumesource" title="Permanent link">&para;</a></h2>
 <p>AzureFile represents an Azure File Service mount on the host and bind mount to the pod.</p>
-<h3 id="fields_139">Fields<a class="headerlink" href="#fields_139" title="Permanent link">&para;</a></h3>
+<h3 id="fields_140">Fields<a class="headerlink" href="#fields_140" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -18464,7 +18499,7 @@
 </table>
 <h2 id="cephfsvolumesource">CephFSVolumeSource<a class="headerlink" href="#cephfsvolumesource" title="Permanent link">&para;</a></h2>
 <p>Represents a Ceph Filesystem mount that lasts the lifetime of a pod Cephfs volumes do not support ownership management or SELinux relabeling.</p>
-<h3 id="fields_140">Fields<a class="headerlink" href="#fields_140" title="Permanent link">&para;</a></h3>
+<h3 id="fields_141">Fields<a class="headerlink" href="#fields_141" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -18508,7 +18543,7 @@
 </table>
 <h2 id="cindervolumesource">CinderVolumeSource<a class="headerlink" href="#cindervolumesource" title="Permanent link">&para;</a></h2>
 <p>Represents a cinder volume resource in Openstack. A Cinder volume must exist before mounting to a container. The volume must also be in the same region as the kubelet. Cinder volumes support ownership management and SELinux relabeling.</p>
-<h3 id="fields_141">Fields<a class="headerlink" href="#fields_141" title="Permanent link">&para;</a></h3>
+<h3 id="fields_142">Fields<a class="headerlink" href="#fields_142" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -18541,7 +18576,7 @@
 </tbody>
 </table>
 <h2 id="configmapvolumesource">ConfigMapVolumeSource<a class="headerlink" href="#configmapvolumesource" title="Permanent link">&para;</a></h2>
-<p>Adapts a ConfigMap into a volume.The contents of the target ConfigMap's Data field will be presented in a volume as files using the keys in the Data field as the file names, unless the items element is populated with specific mappings of keys to paths. ConfigMap volumes support ownership management and SELinux relabeling.</p>
+<p>Adapts a ConfigMap into a volume. The contents of the target ConfigMap's Data field will be presented in a volume as files using the keys in the Data field as the file names, unless the items element is populated with specific mappings of keys to paths. ConfigMap volumes support ownership management and SELinux relabeling.</p>
 <details>
 <summary>Examples with this field (click to open)</summary>
 <br>
@@ -18551,7 +18586,7 @@
 </ul>
 </details>
 
-<h3 id="fields_142">Fields<a class="headerlink" href="#fields_142" title="Permanent link">&para;</a></h3>
+<h3 id="fields_143">Fields<a class="headerlink" href="#fields_143" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -18585,7 +18620,7 @@
 </table>
 <h2 id="csivolumesource">CSIVolumeSource<a class="headerlink" href="#csivolumesource" title="Permanent link">&para;</a></h2>
 <p>Represents a source location of a volume to mount, managed by an external CSI driver</p>
-<h3 id="fields_143">Fields<a class="headerlink" href="#fields_143" title="Permanent link">&para;</a></h3>
+<h3 id="fields_144">Fields<a class="headerlink" href="#fields_144" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -18608,7 +18643,7 @@
 <tr>
 <td style="text-align: center;"><code>nodePublishSecretRef</code></td>
 <td style="text-align: center;"><a href="#localobjectreference"><code>LocalObjectReference</code></a></td>
-<td>NodePublishSecretRef is a reference to the secret object containing sensitive information to pass to the CSI driver to complete the CSI NodePublishVolume and NodeUnpublishVolume calls. This field is optional, and  may be empty if no secret is required. If the secret object contains more than one secret, all secret references are passed.</td>
+<td>NodePublishSecretRef is a reference to the secret object containing sensitive information to pass to the CSI driver to complete the CSI NodePublishVolume and NodeUnpublishVolume calls. This field is optional, and may be empty if no secret is required. If the secret object contains more than one secret, all secret references are passed.</td>
 </tr>
 <tr>
 <td style="text-align: center;"><code>readOnly</code></td>
@@ -18624,7 +18659,7 @@
 </table>
 <h2 id="downwardapivolumesource">DownwardAPIVolumeSource<a class="headerlink" href="#downwardapivolumesource" title="Permanent link">&para;</a></h2>
 <p>DownwardAPIVolumeSource represents a volume containing downward API info. Downward API volumes support ownership management and SELinux relabeling.</p>
-<h3 id="fields_144">Fields<a class="headerlink" href="#fields_144" title="Permanent link">&para;</a></h3>
+<h3 id="fields_145">Fields<a class="headerlink" href="#fields_145" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -18663,7 +18698,7 @@
 </ul>
 </details>
 
-<h3 id="fields_145">Fields<a class="headerlink" href="#fields_145" title="Permanent link">&para;</a></h3>
+<h3 id="fields_146">Fields<a class="headerlink" href="#fields_146" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -18687,7 +18722,7 @@
 </table>
 <h2 id="ephemeralvolumesource">EphemeralVolumeSource<a class="headerlink" href="#ephemeralvolumesource" title="Permanent link">&para;</a></h2>
 <p>Represents an ephemeral volume that is handled by a normal storage driver.</p>
-<h3 id="fields_146">Fields<a class="headerlink" href="#fields_146" title="Permanent link">&para;</a></h3>
+<h3 id="fields_147">Fields<a class="headerlink" href="#fields_147" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -18700,13 +18735,13 @@
 <tr>
 <td style="text-align: center;"><code>volumeClaimTemplate</code></td>
 <td style="text-align: center;"><a href="#persistentvolumeclaimtemplate"><code>PersistentVolumeClaimTemplate</code></a></td>
-<td>Will be used to create a stand-alone PVC to provision the volume. The pod in which this EphemeralVolumeSource is embedded will be the owner of the PVC, i.e. the PVC will be deleted together with the pod.  The name of the PVC will be <code>&lt;pod name&gt;-&lt;volume name&gt;</code> where <code>&lt;volume name&gt;</code> is the name from the <code>PodSpec.Volumes</code> array entry. Pod validation will reject the pod if the concatenated name is not valid for a PVC (for example, too long).An existing PVC with that name that is not owned by the pod will <em>not</em> be used for the pod to avoid using an unrelated volume by mistake. Starting the pod is then blocked until the unrelated PVC is removed. If such a pre-created PVC is meant to be used by the pod, the PVC has to updated with an owner reference to the pod once the pod exists. Normally this should not be necessary, but it may be useful when manually reconstructing a broken cluster.This field is read-only and no changes will be made by Kubernetes to the PVC after it has been created.Required, must not be nil.</td>
+<td>Will be used to create a stand-alone PVC to provision the volume. The pod in which this EphemeralVolumeSource is embedded will be the owner of the PVC, i.e. the PVC will be deleted together with the pod. The name of the PVC will be <code>&lt;pod name&gt;-&lt;volume name&gt;</code> where <code>&lt;volume name&gt;</code> is the name from the <code>PodSpec.Volumes</code> array entry. Pod validation will reject the pod if the concatenated name is not valid for a PVC (for example, too long). An existing PVC with that name that is not owned by the pod will <em>not</em> be used for the pod to avoid using an unrelated volume by mistake. Starting the pod is then blocked until the unrelated PVC is removed. If such a pre-created PVC is meant to be used by the pod, the PVC has to updated with an owner reference to the pod once the pod exists. Normally this should not be necessary, but it may be useful when manually reconstructing a broken cluster. This field is read-only and no changes will be made by Kubernetes to the PVC after it has been created. Required, must not be nil.</td>
 </tr>
 </tbody>
 </table>
 <h2 id="fcvolumesource">FCVolumeSource<a class="headerlink" href="#fcvolumesource" title="Permanent link">&para;</a></h2>
 <p>Represents a Fibre Channel volume. Fibre Channel volumes can only be mounted as read/write once. Fibre Channel volumes support ownership management and SELinux relabeling.</p>
-<h3 id="fields_147">Fields<a class="headerlink" href="#fields_147" title="Permanent link">&para;</a></h3>
+<h3 id="fields_148">Fields<a class="headerlink" href="#fields_148" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -18745,7 +18780,7 @@
 </table>
 <h2 id="flexvolumesource">FlexVolumeSource<a class="headerlink" href="#flexvolumesource" title="Permanent link">&para;</a></h2>
 <p>FlexVolume represents a generic volume resource that is provisioned/attached using an exec based plugin.</p>
-<h3 id="fields_148">Fields<a class="headerlink" href="#fields_148" title="Permanent link">&para;</a></h3>
+<h3 id="fields_149">Fields<a class="headerlink" href="#fields_149" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -18784,7 +18819,7 @@
 </table>
 <h2 id="flockervolumesource">FlockerVolumeSource<a class="headerlink" href="#flockervolumesource" title="Permanent link">&para;</a></h2>
 <p>Represents a Flocker volume mounted by the Flocker agent. One and only one of datasetName and datasetUUID should be set. Flocker volumes do not support ownership management or SELinux relabeling.</p>
-<h3 id="fields_149">Fields<a class="headerlink" href="#fields_149" title="Permanent link">&para;</a></h3>
+<h3 id="fields_150">Fields<a class="headerlink" href="#fields_150" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -18807,8 +18842,8 @@
 </tbody>
 </table>
 <h2 id="gcepersistentdiskvolumesource">GCEPersistentDiskVolumeSource<a class="headerlink" href="#gcepersistentdiskvolumesource" title="Permanent link">&para;</a></h2>
-<p>Represents a Persistent Disk resource in Google Compute Engine.A GCE PD must exist before mounting to a container. The disk must also be in the same GCE project and zone as the kubelet. A GCE PD can only be mounted as read/write once or read-only many times. GCE PDs support ownership management and SELinux relabeling.</p>
-<h3 id="fields_150">Fields<a class="headerlink" href="#fields_150" title="Permanent link">&para;</a></h3>
+<p>Represents a Persistent Disk resource in Google Compute Engine. A GCE PD must exist before mounting to a container. The disk must also be in the same GCE project and zone as the kubelet. A GCE PD can only be mounted as read/write once or read-only many times. GCE PDs support ownership management and SELinux relabeling.</p>
+<h3 id="fields_151">Fields<a class="headerlink" href="#fields_151" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -18841,8 +18876,8 @@
 </tbody>
 </table>
 <h2 id="gitrepovolumesource">GitRepoVolumeSource<a class="headerlink" href="#gitrepovolumesource" title="Permanent link">&para;</a></h2>
-<p>Represents a volume that is populated with the contents of a git repository. Git repo volumes do not support ownership management. Git repo volumes support SELinux relabeling.DEPRECATED: GitRepo is deprecated. To provision a container with a git repo, mount an EmptyDir into an InitContainer that clones the repo using git, then mount the EmptyDir into the Pod's container.</p>
-<h3 id="fields_151">Fields<a class="headerlink" href="#fields_151" title="Permanent link">&para;</a></h3>
+<p>Represents a volume that is populated with the contents of a git repository. Git repo volumes do not support ownership management. Git repo volumes support SELinux relabeling. DEPRECATED: GitRepo is deprecated. To provision a container with a git repo, mount an EmptyDir into an InitContainer that clones the repo using git, then mount the EmptyDir into the Pod's container.</p>
+<h3 id="fields_152">Fields<a class="headerlink" href="#fields_152" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -18855,7 +18890,7 @@
 <tr>
 <td style="text-align: center;"><code>directory</code></td>
 <td style="text-align: center;"><code>string</code></td>
-<td>Target directory name. Must not contain or start with '..'.  If '.' is supplied, the volume directory will be the git repository.  Otherwise, if specified, the volume will contain the git repository in the subdirectory with the given name.</td>
+<td>Target directory name. Must not contain or start with '..'. If '.' is supplied, the volume directory will be the git repository. Otherwise, if specified, the volume will contain the git repository in the subdirectory with the given name.</td>
 </tr>
 <tr>
 <td style="text-align: center;"><code>repository</code></td>
@@ -18871,7 +18906,7 @@
 </table>
 <h2 id="glusterfsvolumesource">GlusterfsVolumeSource<a class="headerlink" href="#glusterfsvolumesource" title="Permanent link">&para;</a></h2>
 <p>Represents a Glusterfs mount that lasts the lifetime of a pod. Glusterfs volumes do not support ownership management or SELinux relabeling.</p>
-<h3 id="fields_152">Fields<a class="headerlink" href="#fields_152" title="Permanent link">&para;</a></h3>
+<h3 id="fields_153">Fields<a class="headerlink" href="#fields_153" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -18900,7 +18935,7 @@
 </table>
 <h2 id="hostpathvolumesource">HostPathVolumeSource<a class="headerlink" href="#hostpathvolumesource" title="Permanent link">&para;</a></h2>
 <p>Represents a host path mapped into a pod. Host path volumes do not support ownership management or SELinux relabeling.</p>
-<h3 id="fields_153">Fields<a class="headerlink" href="#fields_153" title="Permanent link">&para;</a></h3>
+<h3 id="fields_154">Fields<a class="headerlink" href="#fields_154" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -18924,7 +18959,7 @@
 </table>
 <h2 id="iscsivolumesource">ISCSIVolumeSource<a class="headerlink" href="#iscsivolumesource" title="Permanent link">&para;</a></h2>
 <p>Represents an ISCSI disk. ISCSI volumes can only be mounted as read/write once. ISCSI volumes support ownership management and SELinux relabeling.</p>
-<h3 id="fields_154">Fields<a class="headerlink" href="#fields_154" title="Permanent link">&para;</a></h3>
+<h3 id="fields_155">Fields<a class="headerlink" href="#fields_155" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -18993,7 +19028,7 @@
 </table>
 <h2 id="nfsvolumesource">NFSVolumeSource<a class="headerlink" href="#nfsvolumesource" title="Permanent link">&para;</a></h2>
 <p>Represents an NFS mount that lasts the lifetime of a pod. NFS volumes do not support ownership management or SELinux relabeling.</p>
-<h3 id="fields_155">Fields<a class="headerlink" href="#fields_155" title="Permanent link">&para;</a></h3>
+<h3 id="fields_156">Fields<a class="headerlink" href="#fields_156" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -19031,7 +19066,7 @@
 </ul>
 </details>
 
-<h3 id="fields_156">Fields<a class="headerlink" href="#fields_156" title="Permanent link">&para;</a></h3>
+<h3 id="fields_157">Fields<a class="headerlink" href="#fields_157" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -19055,7 +19090,7 @@
 </table>
 <h2 id="photonpersistentdiskvolumesource">PhotonPersistentDiskVolumeSource<a class="headerlink" href="#photonpersistentdiskvolumesource" title="Permanent link">&para;</a></h2>
 <p>Represents a Photon Controller persistent disk resource.</p>
-<h3 id="fields_157">Fields<a class="headerlink" href="#fields_157" title="Permanent link">&para;</a></h3>
+<h3 id="fields_158">Fields<a class="headerlink" href="#fields_158" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -19079,7 +19114,7 @@
 </table>
 <h2 id="portworxvolumesource">PortworxVolumeSource<a class="headerlink" href="#portworxvolumesource" title="Permanent link">&para;</a></h2>
 <p>PortworxVolumeSource represents a Portworx volume resource.</p>
-<h3 id="fields_158">Fields<a class="headerlink" href="#fields_158" title="Permanent link">&para;</a></h3>
+<h3 id="fields_159">Fields<a class="headerlink" href="#fields_159" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -19108,7 +19143,7 @@
 </table>
 <h2 id="projectedvolumesource">ProjectedVolumeSource<a class="headerlink" href="#projectedvolumesource" title="Permanent link">&para;</a></h2>
 <p>Represents a projected volume source</p>
-<h3 id="fields_159">Fields<a class="headerlink" href="#fields_159" title="Permanent link">&para;</a></h3>
+<h3 id="fields_160">Fields<a class="headerlink" href="#fields_160" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -19132,7 +19167,7 @@
 </table>
 <h2 id="quobytevolumesource">QuobyteVolumeSource<a class="headerlink" href="#quobytevolumesource" title="Permanent link">&para;</a></h2>
 <p>Represents a Quobyte mount that lasts the lifetime of a pod. Quobyte volumes do not support ownership management or SELinux relabeling.</p>
-<h3 id="fields_160">Fields<a class="headerlink" href="#fields_160" title="Permanent link">&para;</a></h3>
+<h3 id="fields_161">Fields<a class="headerlink" href="#fields_161" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -19176,7 +19211,7 @@
 </table>
 <h2 id="rbdvolumesource">RBDVolumeSource<a class="headerlink" href="#rbdvolumesource" title="Permanent link">&para;</a></h2>
 <p>Represents a Rados Block Device mount that lasts the lifetime of a pod. RBD volumes support ownership management and SELinux relabeling.</p>
-<h3 id="fields_161">Fields<a class="headerlink" href="#fields_161" title="Permanent link">&para;</a></h3>
+<h3 id="fields_162">Fields<a class="headerlink" href="#fields_162" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -19230,7 +19265,7 @@
 </table>
 <h2 id="scaleiovolumesource">ScaleIOVolumeSource<a class="headerlink" href="#scaleiovolumesource" title="Permanent link">&para;</a></h2>
 <p>ScaleIOVolumeSource represents a persistent ScaleIO volume</p>
-<h3 id="fields_162">Fields<a class="headerlink" href="#fields_162" title="Permanent link">&para;</a></h3>
+<h3 id="fields_163">Fields<a class="headerlink" href="#fields_163" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -19293,7 +19328,7 @@
 </tbody>
 </table>
 <h2 id="secretvolumesource">SecretVolumeSource<a class="headerlink" href="#secretvolumesource" title="Permanent link">&para;</a></h2>
-<p>Adapts a Secret into a volume.The contents of the target Secret's Data field will be presented in a volume as files using the keys in the Data field as the file names. Secret volumes support ownership management and SELinux relabeling.</p>
+<p>Adapts a Secret into a volume. The contents of the target Secret's Data field will be presented in a volume as files using the keys in the Data field as the file names. Secret volumes support ownership management and SELinux relabeling.</p>
 <details>
 <summary>Examples with this field (click to open)</summary>
 <br>
@@ -19305,7 +19340,7 @@
 </ul>
 </details>
 
-<h3 id="fields_163">Fields<a class="headerlink" href="#fields_163" title="Permanent link">&para;</a></h3>
+<h3 id="fields_164">Fields<a class="headerlink" href="#fields_164" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -19339,7 +19374,7 @@
 </table>
 <h2 id="storageosvolumesource">StorageOSVolumeSource<a class="headerlink" href="#storageosvolumesource" title="Permanent link">&para;</a></h2>
 <p>Represents a StorageOS persistent volume resource.</p>
-<h3 id="fields_164">Fields<a class="headerlink" href="#fields_164" title="Permanent link">&para;</a></h3>
+<h3 id="fields_165">Fields<a class="headerlink" href="#fields_165" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -19362,23 +19397,23 @@
 <tr>
 <td style="text-align: center;"><code>secretRef</code></td>
 <td style="text-align: center;"><a href="#localobjectreference"><code>LocalObjectReference</code></a></td>
-<td>SecretRef specifies the secret to use for obtaining the StorageOS API credentials.  If not specified, default values will be attempted.</td>
+<td>SecretRef specifies the secret to use for obtaining the StorageOS API credentials. If not specified, default values will be attempted.</td>
 </tr>
 <tr>
 <td style="text-align: center;"><code>volumeName</code></td>
 <td style="text-align: center;"><code>string</code></td>
-<td>VolumeName is the human-readable name of the StorageOS volume.  Volume names are only unique within a namespace.</td>
+<td>VolumeName is the human-readable name of the StorageOS volume. Volume names are only unique within a namespace.</td>
 </tr>
 <tr>
 <td style="text-align: center;"><code>volumeNamespace</code></td>
 <td style="text-align: center;"><code>string</code></td>
-<td>VolumeNamespace specifies the scope of the volume within StorageOS.  If no namespace is specified then the Pod's namespace will be used.  This allows the Kubernetes name scoping to be mirrored within StorageOS for tighter integration. Set VolumeName to any name to override the default behaviour. Set to "default" if you are not using namespaces within StorageOS. Namespaces that do not pre-exist within StorageOS will be created.</td>
+<td>VolumeNamespace specifies the scope of the volume within StorageOS. If no namespace is specified then the Pod's namespace will be used. This allows the Kubernetes name scoping to be mirrored within StorageOS for tighter integration. Set VolumeName to any name to override the default behaviour. Set to "default" if you are not using namespaces within StorageOS. Namespaces that do not pre-exist within StorageOS will be created.</td>
 </tr>
 </tbody>
 </table>
 <h2 id="vspherevirtualdiskvolumesource">VsphereVirtualDiskVolumeSource<a class="headerlink" href="#vspherevirtualdiskvolumesource" title="Permanent link">&para;</a></h2>
 <p>Represents a vSphere volume resource.</p>
-<h3 id="fields_165">Fields<a class="headerlink" href="#fields_165" title="Permanent link">&para;</a></h3>
+<h3 id="fields_166">Fields<a class="headerlink" href="#fields_166" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -19412,7 +19447,7 @@
 </table>
 <h2 id="labelselectorrequirement">LabelSelectorRequirement<a class="headerlink" href="#labelselectorrequirement" title="Permanent link">&para;</a></h2>
 <p>A label selector requirement is a selector that contains values, a key, and an operator that relates the key and values.</p>
-<h3 id="fields_166">Fields<a class="headerlink" href="#fields_166" title="Permanent link">&para;</a></h3>
+<h3 id="fields_167">Fields<a class="headerlink" href="#fields_167" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -19490,7 +19525,7 @@
 </ul>
 </details>
 
-<h3 id="fields_167">Fields<a class="headerlink" href="#fields_167" title="Permanent link">&para;</a></h3>
+<h3 id="fields_168">Fields<a class="headerlink" href="#fields_168" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -19523,8 +19558,8 @@
 </tbody>
 </table>
 <h2 id="configmapenvsource">ConfigMapEnvSource<a class="headerlink" href="#configmapenvsource" title="Permanent link">&para;</a></h2>
-<p>ConfigMapEnvSource selects a ConfigMap to populate the environment variables with.The contents of the target ConfigMap's Data field will represent the key-value pairs as environment variables.</p>
-<h3 id="fields_168">Fields<a class="headerlink" href="#fields_168" title="Permanent link">&para;</a></h3>
+<p>ConfigMapEnvSource selects a ConfigMap to populate the environment variables with. The contents of the target ConfigMap's Data field will represent the key-value pairs as environment variables.</p>
+<h3 id="fields_169">Fields<a class="headerlink" href="#fields_169" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -19547,8 +19582,8 @@
 </tbody>
 </table>
 <h2 id="secretenvsource">SecretEnvSource<a class="headerlink" href="#secretenvsource" title="Permanent link">&para;</a></h2>
-<p>SecretEnvSource selects a Secret to populate the environment variables with.The contents of the target Secret's Data field will represent the key-value pairs as environment variables.</p>
-<h3 id="fields_169">Fields<a class="headerlink" href="#fields_169" title="Permanent link">&para;</a></h3>
+<p>SecretEnvSource selects a Secret to populate the environment variables with. The contents of the target Secret's Data field will represent the key-value pairs as environment variables.</p>
+<h3 id="fields_170">Fields<a class="headerlink" href="#fields_170" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -19572,7 +19607,7 @@
 </table>
 <h2 id="lifecyclehandler">LifecycleHandler<a class="headerlink" href="#lifecyclehandler" title="Permanent link">&para;</a></h2>
 <p>LifecycleHandler defines a specific action that should be taken in a lifecycle hook. One and only one of the fields, except TCPSocket must be specified.</p>
-<h3 id="fields_170">Fields<a class="headerlink" href="#fields_170" title="Permanent link">&para;</a></h3>
+<h3 id="fields_171">Fields<a class="headerlink" href="#fields_171" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -19610,7 +19645,7 @@
 </ul>
 </details>
 
-<h3 id="fields_171">Fields<a class="headerlink" href="#fields_171" title="Permanent link">&para;</a></h3>
+<h3 id="fields_172">Fields<a class="headerlink" href="#fields_172" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -19623,13 +19658,13 @@
 <tr>
 <td style="text-align: center;"><code>command</code></td>
 <td style="text-align: center;"><code>Array&lt; string &gt;</code></td>
-<td>Command is the command line to execute inside the container, the working directory for the command  is root ('/') in the container's filesystem. The command is simply exec'd, it is not run inside a shell, so traditional shell instructions ('</td>
+<td>Command is the command line to execute inside the container, the working directory for the command is root ('/') in the container's filesystem. The command is simply exec'd, it is not run inside a shell, so traditional shell instructions ('</td>
 </tr>
 </tbody>
 </table>
 <h2 id="grpcaction">GRPCAction<a class="headerlink" href="#grpcaction" title="Permanent link">&para;</a></h2>
 <p><em>No description available</em></p>
-<h3 id="fields_172">Fields<a class="headerlink" href="#fields_172" title="Permanent link">&para;</a></h3>
+<h3 id="fields_173">Fields<a class="headerlink" href="#fields_173" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -19647,7 +19682,7 @@
 <tr>
 <td style="text-align: center;"><code>service</code></td>
 <td style="text-align: center;"><code>string</code></td>
-<td>Service is the name of the service to place in the gRPC HealthCheckRequest (see https://github.com/grpc/grpc/blob/master/doc/health-checking.md).If this is not specified, the default behavior is defined by gRPC.</td>
+<td>Service is the name of the service to place in the gRPC HealthCheckRequest (see https://github.com/grpc/grpc/blob/master/doc/health-checking.md). If this is not specified, the default behavior is defined by gRPC.</td>
 </tr>
 </tbody>
 </table>
@@ -19668,7 +19703,7 @@
 </ul>
 </details>
 
-<h3 id="fields_173">Fields<a class="headerlink" href="#fields_173" title="Permanent link">&para;</a></h3>
+<h3 id="fields_174">Fields<a class="headerlink" href="#fields_174" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -19701,13 +19736,13 @@
 <tr>
 <td style="text-align: center;"><code>scheme</code></td>
 <td style="text-align: center;"><code>string</code></td>
-<td>Scheme to use for connecting to the host. Defaults to HTTP.Possible enum values: - <code>"HTTP"</code> means that the scheme used will be http:// - <code>"HTTPS"</code> means that the scheme used will be https://</td>
+<td>Scheme to use for connecting to the host. Defaults to HTTP. Possible enum values: - <code>"HTTP"</code> means that the scheme used will be http:// - <code>"HTTPS"</code> means that the scheme used will be https://</td>
 </tr>
 </tbody>
 </table>
 <h2 id="tcpsocketaction">TCPSocketAction<a class="headerlink" href="#tcpsocketaction" title="Permanent link">&para;</a></h2>
 <p>TCPSocketAction describes an action based on opening a socket</p>
-<h3 id="fields_174">Fields<a class="headerlink" href="#fields_174" title="Permanent link">&para;</a></h3>
+<h3 id="fields_175">Fields<a class="headerlink" href="#fields_175" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -19730,7 +19765,7 @@
 </tbody>
 </table>
 <h2 id="quantity">Quantity<a class="headerlink" href="#quantity" title="Permanent link">&para;</a></h2>
-<p>Quantity is a fixed-point representation of a number. It provides convenient marshaling/unmarshaling in JSON and YAML, in addition to String() and AsInt64() accessors.The serialization format is:<quantity>        ::= <signedNumber><suffix>  (Note that <suffix> may be empty, from the "" case in <decimalSI>.)<digit>           ::= 0 | 1 | ... | 9 <digits>          ::= <digit> | <digit><digits> <number>          ::= <digits> | <digits>.<digits> | <digits>. | .<digits> <sign>            ::= "+" | "-" <signedNumber>    ::= <number> | <sign><number> <suffix>          ::= <binarySI> | <decimalExponent> | <decimalSI> <binarySI>        ::= Ki | Mi | Gi | Ti | Pi | Ei  (International System of units; See: http://physics.nist.gov/cuu/Units/binary.html)<decimalSI>       ::= m | "" | k | M | G | T | P | E  (Note that 1024 = 1Ki but 1000 = 1k; I didn't choose the capitalization.)<decimalExponent> ::= "e" <signedNumber> | "E" <signedNumber>No matter which of the three exponent forms is used, no quantity may represent a number greater than 2^63-1 in magnitude, nor may it have more than 3 decimal places. Numbers larger or more precise will be capped or rounded up. (E.g.: 0.1m will rounded up to 1m.) This may be extended in the future if we require larger or smaller quantities.When a Quantity is parsed from a string, it will remember the type of suffix it had, and will use the same type again when it is serialized.Before serializing, Quantity will be put in "canonical form". This means that Exponent/suffix will be adjusted up or down (with a corresponding increase or decrease in Mantissa) such that:  a. No precision is lost  b. No fractional digits will be emitted  c. The exponent (or suffix) is as large as possible.The sign will be omitted unless the number is negative.Examples:  1.5 will be serialized as "1500m"  1.5Gi will be serialized as "1536Mi"Note that the quantity will NEVER be internally represented by a floating point number. That is the whole point of this exercise.Non-canonical values will still parse as long as they are well formed, but will be re-emitted in their canonical form. (So always use canonical form, or don't diff.)This format is intended to make it difficult to use these numbers without writing some sort of special handling code in the hopes that that will cause implementors to also use a fixed point implementation.</p>
+<p>Quantity is a fixed-point representation of a number. It provides convenient marshaling/unmarshaling in JSON and YAML, in addition to String() and AsInt64() accessors. The serialization format is: <quantity>    ::= <signedNumber><suffix>  (Note that <suffix> may be empty, from the "" case in <decimalSI>.) <digit>      ::= 0 | 1 | ... | 9 <digits>     ::= <digit> | <digit><digits> <number>     ::= <digits> | <digits>.<digits> | <digits>. | .<digits> <sign>      ::= "+" | "-" <signedNumber>  ::= <number> | <sign><number> <suffix>     ::= <binarySI> | <decimalExponent> | <decimalSI> <binarySI>    ::= Ki | Mi | Gi | Ti | Pi | Ei  (International System of units; See: http://physics.nist.gov/cuu/Units/binary.html) <decimalSI>    ::= m | "" | k | M | G | T | P | E  (Note that 1024 = 1Ki but 1000 = 1k; I didn't choose the capitalization.) <decimalExponent> ::= "e" <signedNumber> | "E" <signedNumber> No matter which of the three exponent forms is used, no quantity may represent a number greater than 2^63-1 in magnitude, nor may it have more than 3 decimal places. Numbers larger or more precise will be capped or rounded up. (E.g.: 0.1m will rounded up to 1m.) This may be extended in the future if we require larger or smaller quantities. When a Quantity is parsed from a string, it will remember the type of suffix it had, and will use the same type again when it is serialized. Before serializing, Quantity will be put in "canonical form". This means that Exponent/suffix will be adjusted up or down (with a corresponding increase or decrease in Mantissa) such that:  a. No precision is lost  b. No fractional digits will be emitted  c. The exponent (or suffix) is as large as possible. The sign will be omitted unless the number is negative. Examples:  1.5 will be serialized as "1500m"  1.5Gi will be serialized as "1536Mi" Note that the quantity will NEVER be internally represented by a floating point number. That is the whole point of this exercise. Non-canonical values will still parse as long as they are well formed, but will be re-emitted in their canonical form. (So always use canonical form, or don't diff.) This format is intended to make it difficult to use these numbers without writing some sort of special handling code in the hopes that that will cause implementors to also use a fixed point implementation.</p>
 <details>
 <summary>Examples with this field (click to open)</summary>
 <br>
@@ -19746,7 +19781,7 @@
 
 <h2 id="capabilities">Capabilities<a class="headerlink" href="#capabilities" title="Permanent link">&para;</a></h2>
 <p>Adds and removes POSIX capabilities from running containers.</p>
-<h3 id="fields_175">Fields<a class="headerlink" href="#fields_175" title="Permanent link">&para;</a></h3>
+<h3 id="fields_176">Fields<a class="headerlink" href="#fields_176" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -19769,10 +19804,10 @@
 </tbody>
 </table>
 <h2 id="fieldsv1">FieldsV1<a class="headerlink" href="#fieldsv1" title="Permanent link">&para;</a></h2>
-<p>FieldsV1 stores a set of fields in a data structure like a Trie, in JSON format.Each key is either a '.' representing the field itself, and will always map to an empty set, or a string representing a sub-field or item. The string will follow one of these four formats: 'f:<name>', where <name> is the name of a field in a struct, or key in a map 'v:<value>', where <value> is the exact json formatted value of a list item 'i:<index>', where <index> is position of a item in a list 'k:<keys>', where <keys> is a map of  a list item's key fields to their unique values If a key maps to an empty Fields value, the field that key represents is part of the set.The exact format is defined in sigs.k8s.io/structured-merge-diff</p>
+<p>FieldsV1 stores a set of fields in a data structure like a Trie, in JSON format. Each key is either a '.' representing the field itself, and will always map to an empty set, or a string representing a sub-field or item. The string will follow one of these four formats: 'f:<name>', where <name> is the name of a field in a struct, or key in a map 'v:<value>', where <value> is the exact json formatted value of a list item 'i:<index>', where <index> is position of a item in a list 'k:<keys>', where <keys> is a map of a list item's key fields to their unique values If a key maps to an empty Fields value, the field that key represents is part of the set. The exact format is defined in sigs.k8s.io/structured-merge-diff</p>
 <h2 id="preferredschedulingterm">PreferredSchedulingTerm<a class="headerlink" href="#preferredschedulingterm" title="Permanent link">&para;</a></h2>
 <p>An empty preferred scheduling term matches all objects with implicit weight 0 (i.e. it's a no-op). A null preferred scheduling term matches no objects (i.e. is also a no-op).</p>
-<h3 id="fields_176">Fields<a class="headerlink" href="#fields_176" title="Permanent link">&para;</a></h3>
+<h3 id="fields_177">Fields<a class="headerlink" href="#fields_177" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -19796,7 +19831,7 @@
 </table>
 <h2 id="nodeselector">NodeSelector<a class="headerlink" href="#nodeselector" title="Permanent link">&para;</a></h2>
 <p>A node selector represents the union of the results of one or more label queries over a set of nodes; that is, it represents the OR of the selectors represented by the node selector terms.</p>
-<h3 id="fields_177">Fields<a class="headerlink" href="#fields_177" title="Permanent link">&para;</a></h3>
+<h3 id="fields_178">Fields<a class="headerlink" href="#fields_178" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -19815,7 +19850,7 @@
 </table>
 <h2 id="weightedpodaffinityterm">WeightedPodAffinityTerm<a class="headerlink" href="#weightedpodaffinityterm" title="Permanent link">&para;</a></h2>
 <p>The weights of all of the matched WeightedPodAffinityTerm fields are added per-node to find the most preferred node(s)</p>
-<h3 id="fields_178">Fields<a class="headerlink" href="#fields_178" title="Permanent link">&para;</a></h3>
+<h3 id="fields_179">Fields<a class="headerlink" href="#fields_179" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -19839,7 +19874,7 @@
 </table>
 <h2 id="podaffinityterm">PodAffinityTerm<a class="headerlink" href="#podaffinityterm" title="Permanent link">&para;</a></h2>
 <p>Defines a set of pods (namely those matching the labelSelector relative to the given namespace(s)) that this pod should be co-located (affinity) or not co-located (anti-affinity) with, where co-located is defined as running on a node whose value of the label with key <topologyKey> matches that of any node on which a pod of the set of pods is running</p>
-<h3 id="fields_179">Fields<a class="headerlink" href="#fields_179" title="Permanent link">&para;</a></h3>
+<h3 id="fields_180">Fields<a class="headerlink" href="#fields_180" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -19873,7 +19908,7 @@
 </table>
 <h2 id="typedlocalobjectreference">TypedLocalObjectReference<a class="headerlink" href="#typedlocalobjectreference" title="Permanent link">&para;</a></h2>
 <p>TypedLocalObjectReference contains enough information to let you locate the typed referenced object inside the same namespace.</p>
-<h3 id="fields_180">Fields<a class="headerlink" href="#fields_180" title="Permanent link">&para;</a></h3>
+<h3 id="fields_181">Fields<a class="headerlink" href="#fields_181" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -19902,7 +19937,7 @@
 </table>
 <h2 id="persistentvolumeclaimcondition">PersistentVolumeClaimCondition<a class="headerlink" href="#persistentvolumeclaimcondition" title="Permanent link">&para;</a></h2>
 <p>PersistentVolumeClaimCondition contails details about state of pvc</p>
-<h3 id="fields_181">Fields<a class="headerlink" href="#fields_181" title="Permanent link">&para;</a></h3>
+<h3 id="fields_182">Fields<a class="headerlink" href="#fields_182" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -19946,7 +19981,7 @@
 </table>
 <h2 id="keytopath">KeyToPath<a class="headerlink" href="#keytopath" title="Permanent link">&para;</a></h2>
 <p>Maps a string key to a path within a volume.</p>
-<h3 id="fields_182">Fields<a class="headerlink" href="#fields_182" title="Permanent link">&para;</a></h3>
+<h3 id="fields_183">Fields<a class="headerlink" href="#fields_183" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -19975,7 +20010,7 @@
 </table>
 <h2 id="downwardapivolumefile">DownwardAPIVolumeFile<a class="headerlink" href="#downwardapivolumefile" title="Permanent link">&para;</a></h2>
 <p>DownwardAPIVolumeFile represents information to create the file containing the pod field</p>
-<h3 id="fields_183">Fields<a class="headerlink" href="#fields_183" title="Permanent link">&para;</a></h3>
+<h3 id="fields_184">Fields<a class="headerlink" href="#fields_184" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -19998,7 +20033,7 @@
 <tr>
 <td style="text-align: center;"><code>path</code></td>
 <td style="text-align: center;"><code>string</code></td>
-<td>Required: Path is  the relative path name of the file to be created. Must not be absolute or contain the '..' path. Must be utf-8 encoded. The first item of the relative path must not start with '..'</td>
+<td>Required: Path is the relative path name of the file to be created. Must not be absolute or contain the '..' path. Must be utf-8 encoded. The first item of the relative path must not start with '..'</td>
 </tr>
 <tr>
 <td style="text-align: center;"><code>resourceFieldRef</code></td>
@@ -20009,7 +20044,7 @@
 </table>
 <h2 id="persistentvolumeclaimtemplate">PersistentVolumeClaimTemplate<a class="headerlink" href="#persistentvolumeclaimtemplate" title="Permanent link">&para;</a></h2>
 <p>PersistentVolumeClaimTemplate is used to produce PersistentVolumeClaim objects as part of an EphemeralVolumeSource.</p>
-<h3 id="fields_184">Fields<a class="headerlink" href="#fields_184" title="Permanent link">&para;</a></h3>
+<h3 id="fields_185">Fields<a class="headerlink" href="#fields_185" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -20033,7 +20068,7 @@
 </table>
 <h2 id="volumeprojection">VolumeProjection<a class="headerlink" href="#volumeprojection" title="Permanent link">&para;</a></h2>
 <p>Projection that may be projected along with other supported volume types</p>
-<h3 id="fields_185">Fields<a class="headerlink" href="#fields_185" title="Permanent link">&para;</a></h3>
+<h3 id="fields_186">Fields<a class="headerlink" href="#fields_186" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -20067,7 +20102,7 @@
 </table>
 <h2 id="objectfieldselector">ObjectFieldSelector<a class="headerlink" href="#objectfieldselector" title="Permanent link">&para;</a></h2>
 <p>ObjectFieldSelector selects an APIVersioned field of an object.</p>
-<h3 id="fields_186">Fields<a class="headerlink" href="#fields_186" title="Permanent link">&para;</a></h3>
+<h3 id="fields_187">Fields<a class="headerlink" href="#fields_187" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -20091,7 +20126,7 @@
 </table>
 <h2 id="resourcefieldselector">ResourceFieldSelector<a class="headerlink" href="#resourcefieldselector" title="Permanent link">&para;</a></h2>
 <p>ResourceFieldSelector represents container resources (cpu, memory) and their output format</p>
-<h3 id="fields_187">Fields<a class="headerlink" href="#fields_187" title="Permanent link">&para;</a></h3>
+<h3 id="fields_188">Fields<a class="headerlink" href="#fields_188" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -20120,7 +20155,7 @@
 </table>
 <h2 id="httpheader_1">HTTPHeader<a class="headerlink" href="#httpheader_1" title="Permanent link">&para;</a></h2>
 <p>HTTPHeader describes a custom header to be used in HTTP probes</p>
-<h3 id="fields_188">Fields<a class="headerlink" href="#fields_188" title="Permanent link">&para;</a></h3>
+<h3 id="fields_189">Fields<a class="headerlink" href="#fields_189" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -20144,7 +20179,7 @@
 </table>
 <h2 id="nodeselectorterm">NodeSelectorTerm<a class="headerlink" href="#nodeselectorterm" title="Permanent link">&para;</a></h2>
 <p>A null or empty node selector term matches no objects. The requirements of them are ANDed. The TopologySelectorTerm type implements a subset of the NodeSelectorTerm.</p>
-<h3 id="fields_189">Fields<a class="headerlink" href="#fields_189" title="Permanent link">&para;</a></h3>
+<h3 id="fields_190">Fields<a class="headerlink" href="#fields_190" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -20167,7 +20202,7 @@
 </tbody>
 </table>
 <h2 id="configmapprojection">ConfigMapProjection<a class="headerlink" href="#configmapprojection" title="Permanent link">&para;</a></h2>
-<p>Adapts a ConfigMap into a projected volume.The contents of the target ConfigMap's Data field will be presented in a projected volume as files using the keys in the Data field as the file names, unless the items element is populated with specific mappings of keys to paths. Note that this is identical to a configmap volume source without the default mode.</p>
+<p>Adapts a ConfigMap into a projected volume. The contents of the target ConfigMap's Data field will be presented in a projected volume as files using the keys in the Data field as the file names, unless the items element is populated with specific mappings of keys to paths. Note that this is identical to a configmap volume source without the default mode.</p>
 <details>
 <summary>Examples with this field (click to open)</summary>
 <br>
@@ -20177,7 +20212,7 @@
 </ul>
 </details>
 
-<h3 id="fields_190">Fields<a class="headerlink" href="#fields_190" title="Permanent link">&para;</a></h3>
+<h3 id="fields_191">Fields<a class="headerlink" href="#fields_191" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -20206,7 +20241,7 @@
 </table>
 <h2 id="downwardapiprojection">DownwardAPIProjection<a class="headerlink" href="#downwardapiprojection" title="Permanent link">&para;</a></h2>
 <p>Represents downward API info for projecting into a projected volume. Note that this is identical to a downwardAPI volume source without the default mode.</p>
-<h3 id="fields_191">Fields<a class="headerlink" href="#fields_191" title="Permanent link">&para;</a></h3>
+<h3 id="fields_192">Fields<a class="headerlink" href="#fields_192" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -20224,7 +20259,7 @@
 </tbody>
 </table>
 <h2 id="secretprojection">SecretProjection<a class="headerlink" href="#secretprojection" title="Permanent link">&para;</a></h2>
-<p>Adapts a secret into a projected volume.The contents of the target Secret's Data field will be presented in a projected volume as files using the keys in the Data field as the file names. Note that this is identical to a secret volume source without the default mode.</p>
+<p>Adapts a secret into a projected volume. The contents of the target Secret's Data field will be presented in a projected volume as files using the keys in the Data field as the file names. Note that this is identical to a secret volume source without the default mode.</p>
 <details>
 <summary>Examples with this field (click to open)</summary>
 <br>
@@ -20236,7 +20271,7 @@
 </ul>
 </details>
 
-<h3 id="fields_192">Fields<a class="headerlink" href="#fields_192" title="Permanent link">&para;</a></h3>
+<h3 id="fields_193">Fields<a class="headerlink" href="#fields_193" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -20265,7 +20300,7 @@
 </table>
 <h2 id="serviceaccounttokenprojection">ServiceAccountTokenProjection<a class="headerlink" href="#serviceaccounttokenprojection" title="Permanent link">&para;</a></h2>
 <p>ServiceAccountTokenProjection represents a projected service account token volume. This projection can be used to insert a service account token into the pods runtime filesystem for use against APIs (Kubernetes API Server or otherwise).</p>
-<h3 id="fields_193">Fields<a class="headerlink" href="#fields_193" title="Permanent link">&para;</a></h3>
+<h3 id="fields_194">Fields<a class="headerlink" href="#fields_194" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -20294,7 +20329,7 @@
 </table>
 <h2 id="nodeselectorrequirement">NodeSelectorRequirement<a class="headerlink" href="#nodeselectorrequirement" title="Permanent link">&para;</a></h2>
 <p>A node selector requirement is a selector that contains values, a key, and an operator that relates the key and values.</p>
-<h3 id="fields_194">Fields<a class="headerlink" href="#fields_194" title="Permanent link">&para;</a></h3>
+<h3 id="fields_195">Fields<a class="headerlink" href="#fields_195" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -20312,7 +20347,7 @@
 <tr>
 <td style="text-align: center;"><code>operator</code></td>
 <td style="text-align: center;"><code>string</code></td>
-<td>Represents a key's relationship to a set of values. Valid operators are In, NotIn, Exists, DoesNotExist. Gt, and Lt.Possible enum values: - <code>"DoesNotExist"</code> - <code>"Exists"</code> - <code>"Gt"</code> - <code>"In"</code> - <code>"Lt"</code> - <code>"NotIn"</code></td>
+<td>Represents a key's relationship to a set of values. Valid operators are In, NotIn, Exists, DoesNotExist. Gt, and Lt. Possible enum values: - <code>"DoesNotExist"</code> - <code>"Exists"</code> - <code>"Gt"</code> - <code>"In"</code> - <code>"Lt"</code> - <code>"NotIn"</code></td>
 </tr>
 <tr>
 <td style="text-align: center;"><code>values</code></td>
