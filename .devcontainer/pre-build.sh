@@ -14,7 +14,7 @@ k3d cluster get k3s-default || k3d cluster create --image rancher/k3s:v1.27.3-k3
 k3d kubeconfig merge --kubeconfig-merge-default
 
 # install kubectl
-curl -LO https://dl.k8s.io/release/v1.27.0/bin/linux/$(go env GOARCH)/kubectl
+curl -LO https://dl.k8s.io/release/v1.27.3/bin/linux/$(go env GOARCH)/kubectl
 chmod +x ./kubectl
 sudo mv ./kubectl /usr/local/bin/kubectl
 kubectl cluster-info
