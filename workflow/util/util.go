@@ -820,6 +820,9 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 	newWF.Status.Message = ""
 	newWF.Status.StartedAt = metav1.Time{Time: time.Now().UTC()}
 	newWF.Status.FinishedAt = metav1.Time{}
+	if newWF.Status.StoredWorkflowSpec != nil {
+		newWF.Status.StoredWorkflowSpec.Shutdown = ""
+	}
 	newWF.Spec.Shutdown = ""
 	newWF.Status.PersistentVolumeClaims = []apiv1.Volume{}
 	if newWF.Spec.ActiveDeadlineSeconds != nil && *newWF.Spec.ActiveDeadlineSeconds == 0 {
