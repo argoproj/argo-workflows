@@ -1,10 +1,6 @@
 # Core Concepts
 
 This page serves as an introduction to the core concepts of Argo.
-## The `Server`
-Argo Workflows Server handles the authentication, the UI, and the authentication mechanism (SSO, tokens, or none [server mode]).
-
-
 
 ## The `Workflow`
 
