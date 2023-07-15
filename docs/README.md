@@ -41,11 +41,11 @@ Argo is a [Cloud Native Computing Foundation (CNCF)](https://cncf.io/) graduated
 
 [Access the demo environment](https://workflows.apps.argoproj.io/workflows/argo) (login using Github)
 
-![Screenshot](docs/assets/screenshot.png)
+![Screenshot](https://github.com/argoproj/argo-workflows/raw/master/docs/assets/screenshot.png)
 
 ## Who uses Argo Workflows?
 
-[About 200+ organizations are officially using Argo Workflows](USERS.md)
+[About 200+ organizations are officially using Argo Workflows](https://github.com/argoproj/argo-workflows/blob/master/USERS.md)
 
 ## Ecosystem
 
@@ -66,11 +66,11 @@ Just some of the projects that use or rely on Argo Workflows (complete list [her
 
 ## Client Libraries
 
-Check out our [Java, Golang and Python clients](docs/client-libraries.md).
+Check out our [Java, Golang and Python clients](https://github.com/argoproj/argo-workflows/blob/master/docs/client-libraries.md).
 
 ## Quickstart 
 
-* [Get started here](docs/quick-start.md)
+* [Get started here](https://github.com/argoproj/argo-workflows/blob/master/docs/quick-start.md)
 * [Walk-through examples](https://argoproj.github.io/argo-workflows/walk-through/)
 
 ## Documentation
@@ -152,4 +152,4 @@ the [CNCF Code of Conduct](https://github.com/cncf/foundation/blob/master/code-o
 
 ## Security
 
-See [SECURITY.md](SECURITY.md).
+See [SECURITY.md](https://github.com/argoproj/argo-workflows/blob/master/SECURITY.md).
