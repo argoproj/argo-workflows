@@ -372,7 +372,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                                     />
                                 </div>
                                 <div className='row small-11'>
-                                    <div className='columns small-3'>NAME</div>
+                                    <div className='columns small-2'>NAME</div>
                                     <div className='columns small-1'>NAMESPACE</div>
                                     <div className='columns small-1'>STARTED</div>
                                     <div className='columns small-1'>FINISHED</div>
@@ -384,7 +384,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                                     {(this.state.columns || []).map(col => {
                                         return (
                                             <div className='columns small-1' key={col.key}>
-                                                {col.name}
+                                                {col.name.replace(/^Workflow /, '')}
                                             </div>
                                         );
                                     })}
