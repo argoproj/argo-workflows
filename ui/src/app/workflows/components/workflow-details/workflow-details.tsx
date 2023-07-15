@@ -212,8 +212,7 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
                                         window.location.reload();
                                     }
                                 });
-
-                        } else if (workflowOperation.title === "RESUBMIT"){
+                        } else if (workflowOperation.title === 'RESUBMIT') {
                             setSidePanel('resubmit');
                         } else {
                             popup.confirm('Confirm', `Are you sure you want to ${workflowOperation.title.toLowerCase()} this workflow?`).then(yes => {
@@ -227,7 +226,6 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
                                 }
                             });
                         }
-                            
                     }
                 };
             });
@@ -552,7 +550,7 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
                     ))}
             </div>
             {workflow && (
-                <SlidingPanel isShown={!!sidePanel} onClose={() => setSidePanel(null)}>
+                <SlidingPanel isShown={!!sidePanel} onClose={() => setSidePanel(null)} isMiddle={parsedSidePanel.type === 'resubmit'}>
                     {parsedSidePanel.type === 'logs' && (
                         <WorkflowLogsViewer
                             workflow={workflow}
