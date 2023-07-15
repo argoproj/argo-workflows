@@ -384,7 +384,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                                     {(this.state.columns || []).map(col => {
                                         return (
                                             <div className='columns small-1' key={col.key}>
-                                                {col.name.replace(/^Workflow /, '')}
+                                                {col.name}
                                             </div>
                                         );
                                     })}
