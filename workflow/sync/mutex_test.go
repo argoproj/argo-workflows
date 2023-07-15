@@ -32,6 +32,26 @@ spec:
       args: ["hello world"]
 `
 
+var mutexWfNamespaced = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: one
+  namespace: default
+spec:
+  entrypoint: whalesay
+  synchronization:
+    mutex:
+      namespace: other
+      name: test
+  templates:
+  - name: whalesay
+    container:
+      image: docker/whalesay:latest
+      command: [cowsay]
+      args: ["hello world"]
+`
+
 var mutexwfstatus = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -147,6 +167,83 @@ func TestMutexLock(t *testing.T) {
 		assert.True(t, wfUpdate)
 
 		wf3.Name = "four"
+		status, wfUpdate, msg, err = concurrenyMgr.TryAcquire(wf3, "", wf3.Spec.Synchronization)
+		assert.NoError(t, err)
+		assert.NotEmpty(t, msg)
+		assert.False(t, status)
+		assert.True(t, wfUpdate)
+
+		concurrenyMgr.Release(wf, "", wf.Spec.Synchronization)
+		assert.Equal(t, holderKey2, nextWorkflow)
+		assert.NotNil(t, wf.Status.Synchronization)
+		assert.Equal(t, 0, len(wf.Status.Synchronization.Mutex.Holding))
+
+		// Low priority workflow try to acquire the lock
+		status, wfUpdate, msg, err = concurrenyMgr.TryAcquire(wf1, "", wf1.Spec.Synchronization)
+		assert.NoError(t, err)
+		assert.NotEmpty(t, msg)
+		assert.False(t, status)
+		assert.False(t, wfUpdate)
+
+		// High Priority workflow acquires the lock
+		status, wfUpdate, msg, err = concurrenyMgr.TryAcquire(wf2, "", wf2.Spec.Synchronization)
+		assert.NoError(t, err)
+		assert.Empty(t, msg)
+		assert.True(t, status)
+		assert.True(t, wfUpdate)
+		assert.NotNil(t, wf2.Status.Synchronization)
+		assert.NotNil(t, wf2.Status.Synchronization.Mutex)
+		assert.Equal(t, wf2.Name, wf2.Status.Synchronization.Mutex.Holding[0].Holder)
+		concurrenyMgr.ReleaseAll(wf2)
+		assert.Nil(t, wf2.Status.Synchronization)
+	})
+
+	t.Run("WfLevelMutexOthernamespace", func(t *testing.T) {
+		var nextWorkflow string
+		concurrenyMgr := NewLockManager(syncLimitFunc, func(key string) {
+			nextWorkflow = key
+		}, WorkflowExistenceFunc)
+		wf := wfv1.MustUnmarshalWorkflow(mutexWfNamespaced)
+		wf1 := wf.DeepCopy()
+		wf2 := wf.DeepCopy()
+		wf3 := wf.DeepCopy()
+		status, wfUpdate, msg, err := concurrenyMgr.TryAcquire(wf, "", wf.Spec.Synchronization)
+		assert.NoError(t, err)
+		assert.Empty(t, msg)
+		assert.True(t, status)
+		assert.True(t, wfUpdate)
+		assert.NotNil(t, wf.Status.Synchronization)
+		assert.NotNil(t, wf.Status.Synchronization.Mutex)
+		assert.NotNil(t, wf.Status.Synchronization.Mutex.Holding)
+		assert.Equal(t, wf.Name, wf.Status.Synchronization.Mutex.Holding[0].Holder)
+
+		// Try to acquire again
+		status, wfUpdate, msg, err = concurrenyMgr.TryAcquire(wf, "", wf.Spec.Synchronization)
+		assert.NoError(t, err)
+		assert.True(t, status)
+		assert.Empty(t, msg)
+		assert.False(t, wfUpdate)
+
+		wf1.Name = "two"
+		wf1.Namespace = "two"
+		status, wfUpdate, msg, err = concurrenyMgr.TryAcquire(wf1, "", wf1.Spec.Synchronization)
+		assert.NoError(t, err)
+		assert.NotEmpty(t, msg)
+		assert.False(t, status)
+		assert.True(t, wfUpdate)
+
+		wf2.Name = "three"
+		wf2.Namespace = "three"
+		wf2.Spec.Priority = pointer.Int32Ptr(5)
+		holderKey2 := getHolderKey(wf2, "")
+		status, wfUpdate, msg, err = concurrenyMgr.TryAcquire(wf2, "", wf2.Spec.Synchronization)
+		assert.NoError(t, err)
+		assert.NotEmpty(t, msg)
+		assert.False(t, status)
+		assert.True(t, wfUpdate)
+
+		wf3.Name = "four"
+		wf3.Namespace = "four"
 		status, wfUpdate, msg, err = concurrenyMgr.TryAcquire(wf3, "", wf3.Spec.Synchronization)
 		assert.NoError(t, err)
 		assert.NotEmpty(t, msg)

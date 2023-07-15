@@ -6,10 +6,10 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"os"
 	"strings"
 	"testing"
 
@@ -50,7 +50,7 @@ type fakeArtifactDriver struct {
 }
 
 func (a *fakeArtifactDriver) Load(_ *wfv1.Artifact, path string) error {
-	return ioutil.WriteFile(path, a.data, 0o600)
+	return os.WriteFile(path, a.data, 0o600)
 }
 
 var bucketsOfKeys = map[string][]string{
@@ -346,7 +346,7 @@ func newServer() *ArtifactServer {
 	ctx := context.WithValue(context.WithValue(context.Background(), auth.KubeKey, kube), auth.WfKey, argo)
 	gatekeeper.On("ContextWithRequest", mock.Anything, mock.Anything).Return(ctx, nil)
 	a := &sqldbmocks.WorkflowArchive{}
-	a.On("GetWorkflow", "my-uuid").Return(wf, nil)
+	a.On("GetWorkflow", "my-uuid", "", "").Return(wf, nil)
 
 	fakeArtifactDriverFactory := func(_ context.Context, _ *wfv1.Artifact, _ resource.Interface) (artifactscommon.ArtifactDriver, error) {
 		return &fakeArtifactDriver{data: []byte("my-data")}, nil

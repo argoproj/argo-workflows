@@ -42,6 +42,22 @@ func (c *configMapCache) logInfo(fields log.Fields, message string) {
 	log.WithFields(log.Fields{"namespace": c.namespace, "name": c.name}).WithFields(fields).Info(message)
 }
 
+func (c *configMapCache) validateConfigmap(cm *apiv1.ConfigMap) error {
+	label, foundLabel := cm.GetLabels()[common.LabelKeyConfigMapType]
+	errString := ""
+	if !foundLabel {
+		errString = fmt.Sprintf("memoization configmap doesn't have %s label, refusing to use it", common.LabelKeyConfigMapType)
+	} else if label != common.LabelValueTypeConfigMapCache {
+		errString = fmt.Sprintf("memoization configmap doesn't have label %s = %s, refusing to use it", common.LabelKeyConfigMapType, common.LabelValueTypeConfigMapCache)
+	}
+	if errString != "" {
+		err := errors.New(errString)
+		c.logError(err, log.Fields{}, errString)
+		return err
+	}
+	return nil
+}
+
 func (c *configMapCache) Load(ctx context.Context, key string) (*Entry, error) {
 	if !cacheKeyRegex.MatchString(key) {
 		return nil, fmt.Errorf("invalid cache key: %s", key)
@@ -58,6 +74,11 @@ func (c *configMapCache) Load(ctx context.Context, key string) (*Entry, error) {
 		}
 		c.logError(err, log.Fields{}, "Error loading config map cache")
 		return nil, fmt.Errorf("could not load config map cache: %w", err)
+	} else {
+		err := c.validateConfigmap(cm)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	c.logInfo(log.Fields{}, "config map cache loaded")
@@ -114,6 +135,11 @@ func (c *configMapCache) Save(ctx context.Context, key string, nodeId string, va
 		if err != nil {
 			c.logError(err, log.Fields{"key": key, "nodeId": nodeId}, "Error saving to ConfigMap cache")
 			return fmt.Errorf("could not save to config map cache: %w", err)
+		}
+	} else {
+		err := c.validateConfigmap(cache)
+		if err != nil {
+			return err
 		}
 	}
 

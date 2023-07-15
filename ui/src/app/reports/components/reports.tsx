@@ -1,4 +1,4 @@
-import {Checkbox, Page} from 'argo-ui/src/index';
+import {Page} from 'argo-ui/src/index';
 import {ChartOptions} from 'chart.js';
 import 'chartjs-plugin-annotation';
 import * as React from 'react';
@@ -25,7 +25,6 @@ interface Chart {
 }
 
 interface State {
-    archivedWorkflows: boolean;
     namespace: string;
     labels: string[];
     autocompleteLabels: string[];
@@ -58,7 +57,6 @@ export class Reports extends BasePage<RouteComponentProps<any>, State> {
     constructor(props: RouteComponentProps<any>, context: any) {
         super(props, context);
         this.state = {
-            archivedWorkflows: !!this.queryParam('archivedWorkflows'),
             namespace: Utils.getNamespace(this.props.match.params.namespace) || '',
             labels: (this.queryParam('labels') || '').split(',').filter(v => v !== ''),
             autocompleteLabels: ['']
@@ -66,8 +64,7 @@ export class Reports extends BasePage<RouteComponentProps<any>, State> {
     }
 
     public componentDidMount() {
-        this.fetchReport(this.state.namespace, this.state.labels, this.state.archivedWorkflows);
-        this.fetchWorkflowsLabels(this.state.archivedWorkflows);
+        this.fetchReport(this.state.namespace, this.state.labels);
         services.info.collectEvent('openedReports').then();
     }
 
@@ -99,38 +96,30 @@ export class Reports extends BasePage<RouteComponentProps<any>, State> {
     }
 
     private setLabel(name: string, value: string) {
-        this.fetchReport(this.state.namespace, this.state.labels.filter(label => !label.startsWith(name)).concat(name + '=' + value), this.state.archivedWorkflows);
+        this.fetchReport(this.state.namespace, this.state.labels.filter(label => !label.startsWith(name)).concat(name + '=' + value));
     }
 
-    private fetchReport(namespace: string, labels: string[], archivedWorkflows: boolean) {
+    private fetchReport(namespace: string, labels: string[]) {
         if (namespace === '' || labels.length === 0) {
-            this.setState({namespace, labels, archivedWorkflows, charts: null});
+            this.setState({namespace, labels, charts: null});
             return;
         }
-        (archivedWorkflows
-            ? services.archivedWorkflows.list(namespace, '', '', [], labels, null, null, {limit})
-            : services.workflows.list(namespace, [], labels, {limit}, [
-                  'items.metadata.name',
-                  'items.status.phase',
-                  'items.status.startedAt',
-                  'items.status.finishedAt',
-                  'items.status.resourcesDuration'
-              ])
-        )
+        services.workflows
+            .list(namespace, [], labels, {limit}, [
+                'items.metadata.name',
+                'items.status.phase',
+                'items.status.startedAt',
+                'items.status.finishedAt',
+                'items.status.resourcesDuration'
+            ])
             .then(list => this.getExtractDatasets(list.items || []))
-            .then(charts => this.setState({error: null, charts, namespace, labels, archivedWorkflows}, this.saveHistory))
+            .then(charts => this.setState({error: null, charts, namespace, labels}, this.saveHistory))
             .catch(error => this.setState({error}));
     }
 
     private saveHistory() {
         const newNamespace = Utils.managedNamespace ? '' : this.state.namespace;
-        this.url = uiUrl(
-            'reports' +
-                (newNamespace ? '/' + newNamespace : '') +
-                '?labels=' +
-                this.state.labels.join(',') +
-                (this.state.archivedWorkflows ? '&archivedWorkflows=' + this.state.archivedWorkflows : '')
-        );
+        this.url = uiUrl('reports' + (newNamespace ? '/' + newNamespace : '') + '?labels=' + this.state.labels.join(','));
         Utils.currentNamespace = this.state.namespace;
     }
 
@@ -257,42 +246,16 @@ export class Reports extends BasePage<RouteComponentProps<any>, State> {
         ];
     }
 
-    private fetchWorkflowsLabels(isArchivedWorkflows: boolean): void {
-        if (isArchivedWorkflows) {
-            services.archivedWorkflows.listLabelKeys(this.state.namespace).then(list => {
-                this.setState({
-                    autocompleteLabels: list.items?.sort((a, b) => a.localeCompare(b)) || []
-                });
-            });
-        }
-    }
-
-    private fetchArchivedWorkflowsLabels(key: string): Promise<any> {
-        return services.archivedWorkflows.listLabelValues(key, this.state.namespace).then(list => {
-            return list.items.map(i => key + '=' + i).sort((a, b) => a.localeCompare(b));
-        });
-    }
-
     private renderFilters() {
         return (
             <div className='wf-filters-container'>
                 <div className='row'>
                     <div className=' columns small-12 xlarge-12'>
-                        <p className='wf-filters-container__title'>Archived Workflows</p>
-                        <Checkbox
-                            checked={this.state.archivedWorkflows}
-                            onChange={checked => {
-                                this.fetchReport(this.state.namespace, this.state.labels, checked);
-                                this.fetchWorkflowsLabels(checked);
-                            }}
-                        />
-                    </div>
-                    <div className=' columns small-12 xlarge-12'>
                         <p className='wf-filters-container__title'>Namespace</p>
                         <NamespaceFilter
                             value={this.state.namespace}
                             onChange={namespace => {
-                                this.fetchReport(namespace, this.state.labels, this.state.archivedWorkflows);
+                                this.fetchReport(namespace, this.state.labels);
                             }}
                         />
                     </div>
@@ -301,9 +264,8 @@ export class Reports extends BasePage<RouteComponentProps<any>, State> {
                         <TagsInput
                             placeholder='Labels'
                             tags={this.state.labels}
-                            autocomplete={this.state.archivedWorkflows ? this.state.autocompleteLabels : null}
-                            sublistQuery={this.state.archivedWorkflows ? this.fetchArchivedWorkflowsLabels : null}
-                            onChange={labels => this.fetchReport(this.state.namespace, labels, this.state.archivedWorkflows)}
+                            autocomplete={this.state.autocompleteLabels}
+                            onChange={labels => this.fetchReport(this.state.namespace, labels)}
                         />
                     </div>
                     <div className=' columns small-12 xlarge-12'>

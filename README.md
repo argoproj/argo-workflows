@@ -15,9 +15,7 @@ Workflows is implemented as a Kubernetes CRD (Custom Resource Definition).
 * Easily run compute intensive jobs for machine learning or data processing in a fraction of the time using Argo
   Workflows on Kubernetes.
 
-Argo is a [Cloud Native Computing Foundation (CNCF)](https://cncf.io/) hosted project.
-
-[![Argo Workflows in 5 minutes](https://img.youtube.com/vi/TZgLkCFQ2tk/0.jpg)](https://www.youtube.com/watch?v=TZgLkCFQ2tk)
+Argo is a [Cloud Native Computing Foundation (CNCF)](https://cncf.io/) graduated project.
 
 ## Use Cases
 
@@ -71,8 +69,7 @@ Check out our [Java, Golang and Python clients](docs/client-libraries.md).
 ## Quickstart 
 
 * [Get started here](docs/quick-start.md)
-* [How to write Argo Workflow specs](https://github.com/argoproj/argo-workflows/blob/master/examples/README.md)
-* [How to configure your artifact repository](docs/configure-artifact-repository.md)
+* [Walk-through examples](https://argoproj.github.io/argo-workflows/walk-through/)
 
 ## Documentation
 
@@ -80,7 +77,7 @@ Check out our [Java, Golang and Python clients](docs/client-libraries.md).
 
 ## Features
 
-Incomplete list of features Argo Workflows provide:
+An incomplete list of features Argo Workflows provide:
 
 * UI to visualize and manage Workflows
 * Artifact support (S3, Artifactory, Alibaba Cloud OSS, Azure Blob Storage, HTTP, Git, GCS, raw)
@@ -149,7 +146,7 @@ the [CNCF Code of Conduct](https://github.com/cncf/foundation/blob/master/code-o
 
 * [Argo Project GitHub organization](https://github.com/argoproj)
 * [Argo Website](https://argoproj.github.io/)
-* Argo Slack ([click here to join](https://argoproj.github.io/community/join-slack))
+* [Argo Slack](https://argoproj.github.io/community/join-slack)
 
 ## Security
 

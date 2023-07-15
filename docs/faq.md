@@ -1,8 +1,11 @@
 # FAQ
 
-## "token not valid for running mode", "any bearer token is able to login in the UI or use the API"
+## "token not valid", "any bearer token is able to login in the UI or use the API"
 
-You've not configured Argo Server authentication correctly. If you want SSO, try running with `--auth-mode=sso`.
+You may not have configured Argo Server authentication correctly.
+
+If you want SSO, try running with `--auth-mode=sso`.
+If you're using `--auth-mode=client`, make sure you have `Bearer` in front of the token, as mentioned in [Access Token](access-token.md#token-creation).
 
 [Learn more about the Argo Server set-up](argo-server.md)
 
