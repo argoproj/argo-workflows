@@ -38,7 +38,7 @@
         "react-router-dom": "^4.2.2",
         "superagent": "^8.0.9",
         "superagent-promise": "^1.1.0",
-        "swagger-ui-react": "^4.12.0"
+        "swagger-ui-react": "^5.1.1"
     },
     "devDependencies": {
         "@babel/core": "^7.22.9",
