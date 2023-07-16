@@ -1,10 +1,12 @@
-import {Select, Tooltip} from 'argo-ui';
+import {Select} from 'argo-ui';
 import * as React from 'react';
 import {Parameter, Template, Workflow} from '../../../models';
 import {uiUrl} from '../../shared/base';
 import {ErrorNotice} from '../../shared/components/error-notice';
+import {ParametersInput} from '../../shared/components/parameters-input/parameters-input';
 import {TagsInput} from '../../shared/components/tags-input/tags-input';
 import {services} from '../../shared/services';
+import {Utils} from '../../shared/utils';
 
 interface Props {
     kind: string;
@@ -28,7 +30,6 @@ interface State {
 }
 
 const workflowEntrypoint = '<default>';
-type ParamSelector = 'parameters' | 'workflowParameters';
 
 export class SubmitWorkflowPanel extends React.Component<Props, State> {
     constructor(props: any) {
@@ -81,8 +82,10 @@ export class SubmitWorkflowPanel extends React.Component<Props, State> {
                     </div>
                     <div key='parameters' style={{marginBottom: 25}}>
                         <label>Parameters</label>
-                        {this.state.workflowParameters.length > 0 && this.renderParameters(this.state.workflowParameters, 'workflowParameters')}
-                        {this.state.parameters.length > 0 && this.renderParameters(this.state.parameters, 'parameters')}
+                        {this.state.workflowParameters.length > 0 && (
+                            <ParametersInput parameters={this.state.workflowParameters} onChange={workflowParameters => this.setState({workflowParameters})} />
+                        )}
+                        {this.state.parameters.length > 0 && <ParametersInput parameters={this.state.parameters} onChange={parameters => this.setState({parameters})} />}
                         {this.state.workflowParameters.length === 0 && this.state.parameters.length === 0 ? (
                             <>
                                 <br />
@@ -115,81 +118,14 @@ export class SubmitWorkflowPanel extends React.Component<Props, State> {
         return null;
     }
 
-    private displaySelectFieldForEnumValues(parameter: Parameter, parameterStateName: ParamSelector) {
-        return (
-            <Select
-                key={parameter.name}
-                value={this.getValue(parameter)}
-                options={parameter.enum.map(value => ({
-                    value,
-                    title: value
-                }))}
-                onChange={event => {
-                    const update = {} as State;
-                    update[parameterStateName] = this.state[parameterStateName].map(p => ({
-                        name: p.name,
-                        value: p.name === parameter.name ? event.value : this.getValue(p),
-                        enum: p.enum
-                    }));
-                    this.setState(update);
-                }}
-            />
-        );
-    }
-
-    private displayInputFieldForSingleValue(parameter: Parameter, parameterStateName: ParamSelector) {
-        return (
-            <textarea
-                className='argo-field'
-                value={this.getValue(parameter)}
-                onChange={event => {
-                    const update = {} as State;
-                    update[parameterStateName] = this.state[parameterStateName].map(p => ({
-                        name: p.name,
-                        value: p.name === parameter.name ? event.target.value : this.getValue(p),
-                        enum: p.enum
-                    }));
-                    this.setState(update);
-                }}
-            />
-        );
-    }
-
-    private renderParameters(parameters: Parameter[], parameterStateName: ParamSelector) {
-        return (
-            <>
-                {parameters.map((parameter, index) => (
-                    <div key={parameter.name + '_' + index} style={{marginBottom: 14}}>
-                        <label>{parameter.name}</label>
-                        {parameter.description && (
-                            <Tooltip content={parameter.description}>
-                                <i className='fa fa-question-circle' style={{marginLeft: 4}} />
-                            </Tooltip>
-                        )}
-                        {(parameter.enum && this.displaySelectFieldForEnumValues(parameter, parameterStateName)) ||
-                            this.displayInputFieldForSingleValue(parameter, parameterStateName)}
-                    </div>
-                ))}
-            </>
-        );
-    }
-
-    private getValue(p: Parameter) {
-        if (p.value === undefined) {
-            return p.default;
-        } else {
-            return p.value;
-        }
-    }
-
     private submit() {
         this.setState({isSubmitting: true});
         services.workflows
             .submit(this.props.kind, this.props.name, this.props.namespace, {
                 entryPoint: this.state.entrypoint === workflowEntrypoint ? null : this.state.entrypoint,
                 parameters: [
-                    ...this.state.workflowParameters.filter(p => this.getValue(p) !== undefined).map(p => p.name + '=' + this.getValue(p)),
-                    ...this.state.parameters.filter(p => this.getValue(p) !== undefined).map(p => p.name + '=' + this.getValue(p))
+                    ...this.state.workflowParameters.filter(p => Utils.getValueFromParameter(p) !== undefined).map(p => p.name + '=' + Utils.getValueFromParameter(p)),
+                    ...this.state.parameters.filter(p => Utils.getValueFromParameter(p) !== undefined).map(p => p.name + '=' + Utils.getValueFromParameter(p))
                 ],
                 labels: this.state.labels.join(',')
             })
