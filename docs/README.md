@@ -68,7 +68,7 @@ Just some of the projects that use or rely on Argo Workflows (complete list [her
 
 Check out our [Java, Golang and Python clients](https://github.com/argoproj/argo-workflows/blob/master/docs/client-libraries.md).
 
-## Quickstart 
+## Quickstart
 
 * [Get started here](https://github.com/argoproj/argo-workflows/blob/master/docs/quick-start.md)
 * [Walk-through examples](https://argoproj.github.io/argo-workflows/walk-through/)
