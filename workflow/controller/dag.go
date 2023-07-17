@@ -313,19 +313,17 @@ func (woc *wfOperationCtx) executeDAG(ctx context.Context, nodeName string, tmpl
 		return node, err
 	}
 	if outputs != nil {
-		node = woc.wf.GetNodeByName(nodeName)
 		node.Outputs = outputs
 		woc.wf.Status.Nodes[node.ID] = *node
-		if node.MemoizationStatus != nil {
-			c := woc.controller.cacheFactory.GetCache(controllercache.ConfigMapCache, node.MemoizationStatus.CacheName)
-			err := c.Save(ctx, node.MemoizationStatus.Key, node.ID, node.Outputs)
-			if err != nil {
-				woc.log.WithFields(log.Fields{"nodeID": node.ID}).WithError(err).Error("Failed to save node outputs to cache")
-				node.Phase = wfv1.NodeError
-			}
+	}
+	if node.MemoizationStatus != nil {
+		c := woc.controller.cacheFactory.GetCache(controllercache.ConfigMapCache, node.MemoizationStatus.CacheName)
+		err := c.Save(ctx, node.MemoizationStatus.Key, node.ID, outputs)
+		if err != nil {
+			woc.log.WithFields(log.Fields{"nodeID": node.ID}).WithError(err).Error("Failed to save node outputs to cache")
+			node.Phase = wfv1.NodeError
 		}
 	}
-
 	woc.updateOutboundNodesForTargetTasks(dagCtx, targetTasks, nodeName)
 
 	return woc.markNodePhase(nodeName, wfv1.NodeSucceeded), nil
