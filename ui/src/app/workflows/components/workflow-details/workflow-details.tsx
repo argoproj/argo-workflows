@@ -93,10 +93,11 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
     const queryParams = new URLSearchParams(location.search);
 
     const [namespace] = useState(match.params.namespace);
-    const [isWfInDB, setIsWfInDB] = useState(false);
+    const [isWfInDB, setIsWfInDB] = useState(true);
     const [isWfInCluster, setIsWfInCluster] = useState(false);
     const [name, setName] = useState(match.params.name);
     const [tab, setTab] = useState(queryParams.get('tab') || 'workflow');
+    const [uid, setUid] = useState(queryParams.get('uid'));
     const [nodeId, setNodeId] = useState(queryParams.get('nodeId'));
     const [nodePanelView, setNodePanelView] = useState(queryParams.get('nodePanelView'));
     const [sidePanel, setSidePanel] = useState(queryParams.get('sidePanel'));
@@ -120,6 +121,7 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
 
     useEffect(
         useQueryParams(history, p => {
+            setUid(p.get('uid'));
             setTab(p.get('tab') || 'workflow');
             setNodeId(p.get('nodeId'));
             setNodePanelView(p.get('nodePanelView'));
@@ -158,8 +160,8 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
     }, [workflow, selectedArtifact]);
 
     useEffect(() => {
-        history.push(historyUrl('workflows/{namespace}/{name}', {namespace, name, tab, nodeId, nodePanelView, sidePanel}));
-    }, [namespace, name, tab, nodeId, nodePanelView, sidePanel]);
+        history.push(historyUrl('workflows/{namespace}/{name}', {namespace, name, tab, nodeId, nodePanelView, sidePanel, uid}));
+    }, [namespace, name, tab, nodeId, nodePanelView, sidePanel, uid]);
 
     useEffect(() => {
         services.info
@@ -352,6 +354,10 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
         );
     };
     useEffect(() => {
+        // If a workflow is archived, we don't need watch.
+        if (isWfInDB) {
+            return;
+        }
         const retryWatch = new RetryWatch<Workflow>(
             () => services.workflows.watch({name, namespace}),
             () => {
@@ -360,6 +366,8 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
             },
             e => {
                 if (e.type === 'DELETED') {
+                    // After a workflow is deleted, we should query by uid.
+                    setUid(e.object.metadata.uid);
                     setError(new Error('Workflow gone'));
                     setIsWfInCluster(false);
                 } else {
@@ -377,18 +385,19 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
         );
         retryWatch.start();
         return () => retryWatch.stop();
-    }, [namespace, name]);
+    }, [namespace, name, isWfInDB]);
 
     useEffect(() => {
         if (!workflow && !isWfInCluster) {
             services.workflows
-                .getArchived(namespace, name)
+                .getArchived(namespace, uid)
                 .then(wf => {
                     setError(null);
                     setWorkflow(wf);
                     setIsWfInDB(true);
                 })
                 .catch(newErr => {
+                    setIsWfInDB(false);
                     if (newErr.status !== 404) {
                         setError(newErr);
                     }
@@ -563,7 +572,7 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
                     {parsedSidePanel.type === 'events' && <EventsPanel namespace={namespace} kind='Pod' name={podName} />}
                     {parsedSidePanel.type === 'share' && <WidgetGallery namespace={namespace} name={name} />}
                     {parsedSidePanel.type === 'yaml' && <WorkflowYamlViewer workflow={workflow} selectedNode={selectedNode} />}
-                    {parsedSidePanel.type === 'resubmit' && <ResubmitWorkflowPanel workflow={workflow} />}
+                    {parsedSidePanel.type === 'resubmit' && <ResubmitWorkflowPanel workflow={workflow} isArchived={isWfInDB} />}
                     {!parsedSidePanel}
                 </SlidingPanel>
             )}
