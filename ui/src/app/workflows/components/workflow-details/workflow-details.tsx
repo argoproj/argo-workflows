@@ -386,7 +386,7 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
     }, [namespace, name]);
 
     useEffect(() => {
-        if (!workflow && !isWfInCluster) {
+        if (!workflow && !isWfInCluster && uid !== '') {
             services.workflows
                 .getArchived(namespace, uid)
                 .then(wf => {
