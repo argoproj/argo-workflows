@@ -3870,14 +3870,18 @@
 
 <h1 id="release-instructions">Release Instructions<a class="headerlink" href="#release-instructions" title="Permanent link">&para;</a></h1>
 <h2 id="cherry-picking-fixes">Cherry-Picking Fixes<a class="headerlink" href="#cherry-picking-fixes" title="Permanent link">&para;</a></h2>
-<p>✋ Before you start, make sure the release branch is passing CI.</p>
-<p>Get a list of commits you may want to cherry-pick:</p>
-<div class="highlight"><pre><span></span><code>./hack/what-to-cherry-pick.sh<span class="w"> </span>release-3.3
+<p>✋ Before you start, make sure you have created a release branch (e.g. <code>release-3.3</code>) and it's passing CI.</p>
+<p>Then get a list of commits you may want to cherry-pick:</p>
+<div class="highlight"><pre><span></span><code>./hack/what-to-cherry-pick.sh<span class="w"> </span>release-3.3<span class="w"> </span><span class="s2">&quot;fix&quot;</span>
+./hack/what-to-cherry-pick.sh<span class="w"> </span>release-3.3<span class="w"> </span><span class="s2">&quot;chore(deps)&quot;</span>
+./hack/what-to-cherry-pick.sh<span class="w"> </span>release-3.3<span class="w"> </span><span class="s2">&quot;build&quot;</span>
+./hack/what-to-cherry-pick.sh<span class="w"> </span>release-3.3<span class="w"> </span><span class="s2">&quot;ci&quot;</span>
 </code></pre></div>
 <p>Ignore:</p>
 <ul>
 <li>Fixes for features only on master.</li>
-<li>Dependency upgrades, unless it fixes a known security issue.</li>
+<li>Dependency upgrades, unless they fix known security issues.</li>
+<li>Build or CI improvements, unless the release pipeline is blocked without them.</li>
 </ul>
 <p>Cherry-pick the first commit. Run <code>make test</code> locally before pushing. If the build timeouts the build caches may have
 gone, try re-running.</p>
