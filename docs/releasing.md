@@ -2,18 +2,22 @@
 
 ## Cherry-Picking Fixes
 
-✋ Before you start, make sure the release branch is passing CI.
+✋ Before you start, make sure you have created a release branch (e.g. `release-3.3`) and it's passing CI.
 
-Get a list of commits you may want to cherry-pick:
+Then get a list of commits you may want to cherry-pick:
 
 ```bash
-./hack/what-to-cherry-pick.sh release-3.3
+./hack/what-to-cherry-pick.sh release-3.3 "fix"
+./hack/what-to-cherry-pick.sh release-3.3 "chore(deps)"
+./hack/what-to-cherry-pick.sh release-3.3 "build"
+./hack/what-to-cherry-pick.sh release-3.3 "ci"
 ```
 
 Ignore:
 
 * Fixes for features only on master.
-* Dependency upgrades, unless it fixes a known security issue.
+* Dependency upgrades, unless they fix known security issues.
+* Build or CI improvements, unless the release pipeline is blocked without them.
 
 Cherry-pick the first commit. Run `make test` locally before pushing. If the build timeouts the build caches may have
 gone, try re-running.
