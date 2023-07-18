@@ -3,7 +3,7 @@ import * as classNames from 'classnames';
 import * as React from 'react';
 import {useContext, useEffect, useRef, useState} from 'react';
 import {RouteComponentProps} from 'react-router';
-import {ArtifactRepository, execSpec, isArchivedWorkflow, Link, NodeStatus, Parameter, Workflow} from '../../../../models';
+import {ArtifactRepository, execSpec, isArchivedWorkflow, Link, NodeStatus, Parameter, Workflow, archivalStatus} from '../../../../models';
 import {ANNOTATION_KEY_POD_NAME_VERSION} from '../../../shared/annotations';
 import {artifactRepoHasLocation, findArtifact} from '../../../shared/artifacts';
 import {uiUrl} from '../../../shared/base';
@@ -97,7 +97,7 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
     const [isWfInCluster, setIsWfInCluster] = useState(false);
     const [name, setName] = useState(match.params.name);
     const [tab, setTab] = useState(queryParams.get('tab') || 'workflow');
-    const [uid, setUid] = useState(queryParams.get('uid'));
+    const [uid, setUid] = useState(queryParams.get('uid') || '');
     const [nodeId, setNodeId] = useState(queryParams.get('nodeId'));
     const [nodePanelView, setNodePanelView] = useState(queryParams.get('nodePanelView'));
     const [sidePanel, setSidePanel] = useState(queryParams.get('sidePanel'));
@@ -354,14 +354,9 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
         );
     };
     useEffect(() => {
-        // If a workflow is archived, we don't need watch.
-        if (isWfInDB) {
-            return;
-        }
         const retryWatch = new RetryWatch<Workflow>(
             () => services.workflows.watch({name, namespace}),
             () => {
-                setIsWfInCluster(true);
                 setError(null);
             },
             e => {
@@ -374,6 +369,9 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
                     if (hasArtifactGCError(e.object.status.conditions)) {
                         setError(new Error('Artifact garbage collection failed'));
                     }
+                    if (e.object.metadata.labels?.[archivalStatus] === "Archived") {
+                        setIsWfInDB(true)
+                    }
                     setWorkflow(e.object);
                     setIsWfInCluster(true);
                 }
@@ -385,7 +383,7 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
         );
         retryWatch.start();
         return () => retryWatch.stop();
-    }, [namespace, name, isWfInDB]);
+    }, [namespace, name]);
 
     useEffect(() => {
         if (!workflow && !isWfInCluster) {
