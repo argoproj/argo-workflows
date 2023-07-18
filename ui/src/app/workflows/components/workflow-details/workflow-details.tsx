@@ -3,7 +3,7 @@ import * as classNames from 'classnames';
 import * as React from 'react';
 import {useContext, useEffect, useRef, useState} from 'react';
 import {RouteComponentProps} from 'react-router';
-import {ArtifactRepository, execSpec, isArchivedWorkflow, Link, NodeStatus, Parameter, Workflow, archivalStatus} from '../../../../models';
+import {archivalStatus, ArtifactRepository, execSpec, isArchivedWorkflow, Link, NodeStatus, Parameter, Workflow} from '../../../../models';
 import {ANNOTATION_KEY_POD_NAME_VERSION} from '../../../shared/annotations';
 import {artifactRepoHasLocation, findArtifact} from '../../../shared/artifacts';
 import {uiUrl} from '../../../shared/base';
@@ -369,8 +369,8 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
                     if (hasArtifactGCError(e.object.status.conditions)) {
                         setError(new Error('Artifact garbage collection failed'));
                     }
-                    if (e.object.metadata.labels?.[archivalStatus] === "Archived") {
-                        setIsWfInDB(true)
+                    if (e.object.metadata.labels?.[archivalStatus] === 'Archived') {
+                        setIsWfInDB(true);
                     }
                     setWorkflow(e.object);
                     setIsWfInCluster(true);
