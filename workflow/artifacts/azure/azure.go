@@ -155,7 +155,7 @@ func DownloadFile(containerClient *azblob.ContainerClient, blobName, path string
 		return fmt.Errorf("unable to create Azure Blob client for %s: %s", blobName, err)
 	}
 
-	err := os.MkdirAll(filepath.Dir(path), 0755)
+	err = os.MkdirAll(filepath.Dir(path), 0755)
 	if err != nil {
 		return fmt.Errorf("unable to create dir for file %s: %s", path, err)
 	}
