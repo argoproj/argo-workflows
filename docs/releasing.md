@@ -48,6 +48,8 @@ Once the tag is published, GitHub Actions will automatically open a PR to update
 you can approve it, enable auto-merge, and then run the following to force trigger the CI build:
 
 ```bash
+git branch -D create-pull-request/changelog
+git fetch upstream
 git checkout --track upstream/create-pull-request/changelog
 git commit -s --allow-empty -m "docs: Force trigger CI"
 git push upstream create-pull-request/changelog
