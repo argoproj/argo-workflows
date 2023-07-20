@@ -1,6 +1,6 @@
 # Core Concepts
 
-This page serves as an introduction into the core concepts of Argo.
+This page serves as an introduction to the core concepts of Argo.
 
 ## The `Workflow`
 
@@ -45,7 +45,7 @@ These templates _define_ work to be done, usually in a Container.
 
 ##### [Container](fields.md#container)
 
-Perhaps the most common template type, it will schedule a Container. The spec of the template is the same as the [Kubernetes container spec](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.19/#container-v1-core), so you can define a container here the same way you do anywhere else in Kubernetes.
+Perhaps the most common template type, it will schedule a Container. The spec of the template is the same as the [Kubernetes container spec](https://v1-26.docs.kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#Container), so you can define a container here the same way you do anywhere else in Kubernetes.
 
 Example:
 
@@ -56,7 +56,7 @@ Example:
       command: [cowsay]
       args: ["hello world"]
 ```
-  
+
 ##### [Script](fields.md#scripttemplate)
 
 A convenience wrapper around a `container`. The spec is the same as a container, but adds the `source:` field which allows you to define a script in-place.
@@ -93,7 +93,7 @@ This example creates a `ConfigMap` resource on the cluster:
         data:
           some: value
 ```
-  
+
 ##### [Suspend](fields.md#suspendtemplate)
 
 A suspend template will suspend execution, either for a duration or until it is resumed manually. Suspend templates can be resumed from the CLI (with `argo resume`), the API endpoint<!-- TODO: LINK -->, or the UI.
@@ -105,7 +105,7 @@ Example:
     suspend:
       duration: "20s"
 ```
-  
+
 #### Template Invocators
 
 These templates are used to invoke/call other templates and provide execution control.
@@ -149,3 +149,7 @@ In this example `A` runs first. Once it is completed, `B` and `C` will run in pa
         dependencies: [B, C]
         template: echo
 ```
+
+## Architecture
+
+If you are interested in Argo's underlying architecture, see [Architecture](architecture.md).

@@ -963,6 +963,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                     ),
                 ),
                 pod_gc=IoArgoprojWorkflowV1alpha1PodGC(
+                    delete_delay_duration=Duration(
+                        duration="duration_example",
+                    ),
                     label_selector=LabelSelector(
                         match_expressions=[
                             LabelSelectorRequirement(
@@ -11780,6 +11783,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                     ),
                 ),
                 pod_gc=IoArgoprojWorkflowV1alpha1PodGC(
+                    delete_delay_duration=Duration(
+                        duration="duration_example",
+                    ),
                     label_selector=LabelSelector(
                         match_expressions=[
                             LabelSelectorRequirement(
@@ -22506,6 +22512,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                     ),
                 ),
                 pod_gc=IoArgoprojWorkflowV1alpha1PodGC(
+                    delete_delay_duration=Duration(
+                        duration="duration_example",
+                    ),
                     label_selector=LabelSelector(
                         match_expressions=[
                             LabelSelectorRequirement(

@@ -1,3 +1,5 @@
+//go:build !windows
+
 package commands
 
 import (
@@ -44,7 +46,7 @@ func TestEmissary(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Contains(t, string(data), "hello")
 	})
-	t.Run("Comined", func(t *testing.T) {
+	t.Run("Combined", func(t *testing.T) {
 		err := run("echo hello > /dev/stderr")
 		assert.NoError(t, err)
 		data, err := os.ReadFile(varRunArgo + "/ctr/main/combined")

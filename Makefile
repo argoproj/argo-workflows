@@ -1,7 +1,7 @@
 export SHELL:=bash
 export SHELLOPTS:=$(if $(SHELLOPTS),$(SHELLOPTS):)pipefail:errexit
 
-# NOTE: Please ensure dependencies are synced with the flake.nix file in nix-files/flake.nix before upgrading 
+# NOTE: Please ensure dependencies are synced with the flake.nix file in dev/nix/flake.nix before upgrading
 # any external dependency. There is documentation on how to do this under the Developer Guide
 
 # https://stackoverflow.com/questions/4122831/disable-make-builtin-rules-and-variables-from-inside-the-make-file
@@ -165,7 +165,7 @@ ui/dist/app/index.html: $(shell find ui/src -type f && find ui -maxdepth 1 -type
 
 $(GOPATH)/bin/staticfiles:
 	go install bou.ke/staticfiles@dd04075 # update this in Nix when upgrading it here
- 
+
 
 ifeq ($(STATIC_FILES),true)
 server/static/files.go: $(GOPATH)/bin/staticfiles ui/dist/app/index.html
@@ -632,7 +632,7 @@ docs/cli/argo.md: $(CLI_PKGS) go.sum server/static/files.go hack/cli/main.go
 .PHONY: docs-spellcheck
 docs-spellcheck: /usr/local/bin/mdspell
 	# check docs for spelling mistakes
-	mdspell --ignore-numbers --ignore-acronyms --en-us --no-suggestions --report $(shell find docs -name '*.md' -not -name upgrading.md -not -name fields.md -not -name upgrading.md -not -name swagger.md -not -name executor_swagger.md -not -path '*/cli/*')
+	mdspell --ignore-numbers --ignore-acronyms --en-us --no-suggestions --report $(shell find docs -name '*.md' -not -name upgrading.md -not -name README.md -not -name fields.md -not -name upgrading.md -not -name swagger.md -not -name executor_swagger.md -not -path '*/cli/*')
 
 /usr/local/bin/markdown-link-check:
 	npm i -g markdown-link-check # update this in Nix when upgrading it here

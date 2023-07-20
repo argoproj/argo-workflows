@@ -2,6 +2,7 @@ import {EMPTY, from, Observable, of} from 'rxjs';
 import {catchError, filter, map, mergeMap, switchMap} from 'rxjs/operators';
 import * as models from '../../../models';
 import {Event, LogEntry, NodeStatus, Workflow, WorkflowList, WorkflowPhase} from '../../../models';
+import {ResubmitOpts} from '../../../models/resubmit-opts';
 import {SubmitOpts} from '../../../models/submit-opts';
 import {uiUrl} from '../base';
 import {Pagination} from '../pagination';
@@ -66,6 +67,10 @@ export const WorkflowsService = {
         return requests.get(`api/v1/workflows/${namespace}/${name}`).then(res => res.body as Workflow);
     },
 
+    getArchived(namespace: string, name: string) {
+        return requests.get(`api/v1/archived-workflows/?name=${name}&namespace=${namespace}`).then(res => res.body as models.Workflow);
+    },
+
     watch(query: {
         namespace?: string;
         name?: string;
@@ -117,8 +122,11 @@ export const WorkflowsService = {
         return requests.put(`api/v1/workflows/${namespace}/${name}/retry`).then(res => res.body as Workflow);
     },
 
-    resubmit(name: string, namespace: string) {
-        return requests.put(`api/v1/workflows/${namespace}/${name}/resubmit`).then(res => res.body as Workflow);
+    resubmit(name: string, namespace: string, opts?: ResubmitOpts) {
+        return requests
+            .put(`api/v1/workflows/${namespace}/${name}/resubmit`)
+            .send(opts)
+            .then(res => res.body as Workflow);
     },
 
     suspend(name: string, namespace: string) {
@@ -149,6 +157,14 @@ export const WorkflowsService = {
 
     delete(name: string, namespace: string): Promise<WorkflowDeleteResponse> {
         return requests.delete(`api/v1/workflows/${namespace}/${name}`).then(res => res.body as WorkflowDeleteResponse);
+    },
+
+    deleteArchived(uid: string, namespace: string): Promise<WorkflowDeleteResponse> {
+        if (namespace === '') {
+            return requests.delete(`api/v1/archived-workflows/${uid}`).then(res => res.body as WorkflowDeleteResponse);
+        } else {
+            return requests.delete(`api/v1/archived-workflows/${uid}?namespace=${namespace}`).then(res => res.body as WorkflowDeleteResponse);
+        }
     },
 
     submit(kind: string, name: string, namespace: string, submitOptions?: SubmitOpts) {

@@ -187,8 +187,6 @@ func NewWorkflowController(ctx context.Context, restConfig *rest.Config, kubecli
 		wfc.executorPlugins = map[string]map[string]*spec.Plugin{}
 	}
 
-	wfc.UpdateConfig(ctx)
-
 	wfc.metrics = metrics.New(wfc.getMetricsServerConfig())
 	wfc.entrypoint = entrypoint.New(kubeclientset, wfc.Config.Images)
 
@@ -239,6 +237,9 @@ var indexers = cache.Indexers{
 // Run starts an Workflow resource controller
 func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWorkers, podCleanupWorkers int) {
 	defer runtimeutil.HandleCrash(runtimeutil.PanicHandlers...)
+
+	// init DB after leader election (if enabled)
+	wfc.UpdateConfig(ctx)
 
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
@@ -297,9 +298,6 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 		log.Fatal("Timed out waiting for caches to sync")
 	}
 
-	// Start the metrics server
-	go wfc.metrics.RunServer(ctx)
-
 	for i := 0; i < podCleanupWorkers; i++ {
 		go wait.UntilWithContext(ctx, wfc.runPodCleanup, time.Second)
 	}
@@ -320,6 +318,10 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 		go wait.JitterUntilWithContext(ctx, wfc.syncAllCacheForGC, cacheGCPeriod, 0.0, true)
 	}
 	<-ctx.Done()
+}
+
+func (wfc *WorkflowController) RunMetricsServer(ctx context.Context, isDummy bool) {
+	go wfc.metrics.RunServer(ctx, isDummy)
 }
 
 // Create and the Synchronization Manager
@@ -365,7 +367,7 @@ func (wfc *WorkflowController) initManagers(ctx context.Context) error {
 		labelSelector = labelSelector.Add(*req)
 	}
 	listOpts := metav1.ListOptions{LabelSelector: labelSelector.String()}
-	wfList, err := wfc.wfclientset.ArgoprojV1alpha1().Workflows(wfc.namespace).List(ctx, listOpts)
+	wfList, err := wfc.wfclientset.ArgoprojV1alpha1().Workflows(wfc.GetManagedNamespace()).List(ctx, listOpts)
 	if err != nil {
 		return err
 	}
@@ -808,6 +810,9 @@ func (wfc *WorkflowController) tweakListOptions(options *metav1.ListOptions) {
 	labelSelector := labels.NewSelector().
 		Add(util.InstanceIDRequirement(wfc.Config.InstanceID))
 	options.LabelSelector = labelSelector.String()
+	// `ResourceVersion=0` does not honor the `limit` in API calls, which results in making significant List calls
+	// without `limit`. For details, see https://github.com/argoproj/argo-workflows/pull/11343
+	options.ResourceVersion = ""
 }
 
 func getWfPriority(obj interface{}) (int32, time.Time) {
