@@ -3900,7 +3900,9 @@ this was successful.</p>
 <h2 id="update-changelog">Update Changelog<a class="headerlink" href="#update-changelog" title="Permanent link">&para;</a></h2>
 <p>Once the tag is published, GitHub Actions will automatically open a PR to update the changelog. Once the PR is ready,
 you can approve it, enable auto-merge, and then run the following to force trigger the CI build:</p>
-<div class="highlight"><pre><span></span><code>git<span class="w"> </span>checkout<span class="w"> </span>--track<span class="w"> </span>upstream/create-pull-request/changelog
+<div class="highlight"><pre><span></span><code>git<span class="w"> </span>branch<span class="w"> </span>-D<span class="w"> </span>create-pull-request/changelog
+git<span class="w"> </span>fetch<span class="w"> </span>upstream
+git<span class="w"> </span>checkout<span class="w"> </span>--track<span class="w"> </span>upstream/create-pull-request/changelog
 git<span class="w"> </span>commit<span class="w"> </span>-s<span class="w"> </span>--allow-empty<span class="w"> </span>-m<span class="w"> </span><span class="s2">&quot;docs: Force trigger CI&quot;</span>
 git<span class="w"> </span>push<span class="w"> </span>upstream<span class="w"> </span>create-pull-request/changelog
 </code></pre></div>
