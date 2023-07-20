@@ -71,6 +71,9 @@ func NewRetryCommand() *cobra.Command {
 # Retry the latest workflow:
 
   argo retry @latest
+
+# Restart node with id 5 on successful workflow, using node-field-selector
+  argo retry my-wf --restart-successful --node-field-selector id=5
 `,
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) == 0 && !retryOpts.hasSelector() {

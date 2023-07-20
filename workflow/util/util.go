@@ -810,8 +810,12 @@ func resetConnectedParentGroupNodes(oldWF *wfv1.Workflow, newWF *wfv1.Workflow, 
 func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSuccessful bool, nodeFieldSelector string, parameters []string) (*wfv1.Workflow, []string, error) {
 	switch wf.Status.Phase {
 	case wfv1.WorkflowFailed, wfv1.WorkflowError:
+	case wfv1.WorkflowSucceeded:
+		if !(restartSuccessful && len(nodeFieldSelector) > 0) {
+			return nil, nil, errors.Errorf(errors.CodeBadRequest, "To retry a succeeded workflow, set the options restartSuccessful and nodeFieldSelector")
+		}
 	default:
-		return nil, nil, errors.Errorf(errors.CodeBadRequest, "workflow must be Failed/Error to retry")
+		return nil, nil, errors.Errorf(errors.CodeBadRequest, "Cannot retry a workflow in phase %s", wf.Status.Phase)
 	}
 
 	newWF := wf.DeepCopy()
