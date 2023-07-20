@@ -154,6 +154,10 @@ func (azblobDriver *ArtifactDriver) Load(artifact *wfv1.Artifact, path string) e
 func DownloadFile(containerClient *container.Client, blobName, path string) error {
 	blobClient := containerClient.NewBlobClient(blobName)
 
+	err := os.MkdirAll(filepath.Dir(path), 0755)
+	if err != nil {
+		return fmt.Errorf("unable to create dir for file %s: %s", path, err)
+	}
 	outFile, err := os.Create(path)
 	if err != nil {
 		return fmt.Errorf("unable to create file %s: %s", path, err)
@@ -178,7 +182,7 @@ func (azblobDriver *ArtifactDriver) DownloadDirectory(containerClient *container
 		return fmt.Errorf("unable to list blob %s in Azure Storage: %s", artifact.Azure.Blob, err)
 	}
 
-	err = os.Mkdir(path, 0755)
+	err = os.MkdirAll(path, 0755)
 	if err != nil {
 		return fmt.Errorf("unable to create local directory %s: %s", path, err)
 	}
