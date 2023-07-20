@@ -8,10 +8,10 @@ import (
 	"testing"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
+	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
+	"github.com/stretchr/testify/assert"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-
-	"github.com/stretchr/testify/assert"
 )
 
 func TestDetermineAccountName(t *testing.T) {
@@ -64,8 +64,9 @@ func TestArtifactDriver_DownloadDirectory_Subdir(t *testing.T) {
 	}
 
 	// put a file in a subdir on the azurite blob storage
-	blobClient := containerClient.NewBlockBlobClient("dir/subdir/file-in-subdir.txt")
-	_, err = blobClient.UploadBuffer(context.Background(), []byte("foo"), nil)
+	blobClient, err := containerClient.NewBlockBlobClient("dir/subdir/file-in-subdir.txt")
+	assert.NoError(t, err)
+	_, err = blobClient.UploadBuffer(context.Background(), []byte("foo"), azblob.UploadOption{})
 	assert.NoError(t, err)
 
 	// download the dir, containing a subdir
