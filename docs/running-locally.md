@@ -16,7 +16,7 @@ A development container is a running Docker container with a well-defined tool/r
 
 You can use the development container in a few different ways:
 
-1. [Visual studio code](https://code.visualstudio.com/) with [The Visual Studio Code Remote - Containers](https://code.visualstudio.com/docs/remote/containers) extension lets you use a Docker container as a full-featured development environment. Open the clone of argo-workflows folder in VS code and it should offer to use the development container automatically. System requirements can be found [here](https://code.visualstudio.com/docs/remote/containers#_system-requirements). Visual Studio will allow you to forward ports to allow your external browser to access the running components.
+1. [Visual Studio Code](https://code.visualstudio.com/) with [Dev Containers](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers) extension lets you use a Docker container as a full-featured development environment. Open the clone of argo-workflows folder in VS code and it should offer to use the development container automatically. System requirements can be found [here](https://code.visualstudio.com/docs/remote/containers#_system-requirements). Visual Studio will allow you to forward ports to allow your external browser to access the running components.
 1. [Dev-container CLI](https://github.com/devcontainers/cli). Install the tool and from the argo-workflow folder do `devcontainer up --workspace-folder .` followed by `devcontainer exec --workspace-folder . /bin/bash` to get a shell where you can start building the code. You can use your choice editor outside the docker image to edit code, the changes are mirrored inside the container. Due to a limitation in the CLI only port 8080 (the Web UI) will get exposed for you to access if you run this way. Other services are usable from the shell inside.
 
 After you enter the container, run:
@@ -28,7 +28,7 @@ If you want to see Argo Workflows UI in http://localhost:8080:
 ```
 make start UI=true
 ````
-It might take more than 10 minutes. If you're using [Dev Containers extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers) in Visual Studio Code, After waiting you'll see a popup saying that "Your application running on port 8080 is available".
+It might take more than 10 minutes. If you're using [Dev Containers](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers) extension in Visual Studio Code, After waiting you'll see a popup saying that "Your application running on port 8080 is available".
 
 `Github Codespaces` is known not to work at this time.
 
