@@ -541,7 +541,17 @@ export const execSpec = (w: Workflow) => Object.assign({}, w.status.storedWorkfl
 
 export const archivalStatus = 'workflows.argoproj.io/workflow-archiving-status';
 
+export function isWorkflowInCluster(wf: Workflow): boolean {
+    if (!wf) {
+        return false;
+    }
+    return !wf.metadata.labels[archivalStatus] || wf.metadata.labels[archivalStatus] === 'Pending' || wf.metadata.labels[archivalStatus] === 'Archived';
+}
+
 export function isArchivedWorkflow(wf: Workflow): boolean {
+    if (!wf) {
+        return false;
+    }
     return wf.metadata.labels && (wf.metadata.labels[archivalStatus] === 'Archived' || wf.metadata.labels[archivalStatus] === 'Persisted');
 }
 
