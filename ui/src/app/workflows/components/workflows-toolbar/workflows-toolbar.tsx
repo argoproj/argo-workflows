@@ -70,7 +70,7 @@ export class WorkflowsToolbar extends React.Component<WorkflowsToolbarProps, {}>
                         )
                     );
                 }
-                if (deleteArchived && wf.metadata.labels[archivalStatus] === 'Pending') {
+                if (deleteArchived && (wf.metadata.labels[archivalStatus] === 'Archived' || wf.metadata.labels[archivalStatus] === 'Persisted')) {
                     promises.push(
                         services.workflows.deleteArchived(wf.metadata.uid, wf.metadata.namespace).catch(reason =>
                             ctx.notifications.show({
