@@ -185,17 +185,20 @@ export class WorkflowsService {
         return this.isNodePendingOrRunning(node);
     }
 
-    public getContainerLogsFromArtifact(workflow: Workflow, nodeId: string, container: string, grep: string, archived: boolean) {
+    getContainerLogsFromArtifact(workflow: Workflow, nodeId: string, container: string, grep: string, archived: boolean): Observable<LogEntry> {
         return of(this.hasArtifactLogs(workflow, nodeId, container)).pipe(
-            switchMap(hasArtifactLogs => {
-                if (!hasArtifactLogs) {
+            switchMap(isArtifactLogs => {
+                if (!isArtifactLogs) {
+                    if (!nodeId) {
+                        throw new Error('Should specify a node when we get archived logs');
+                    }
                     throw new Error('no artifact logs are available');
                 }
 
                 return from(requests.get(this.getArtifactLogsPath(workflow, nodeId, container, archived)));
             }),
             mergeMap(r => r.text.split('\n')),
-            map(content => ({content} as LogEntry)),
+            map(content => ({content, podName: workflow.status.nodes[nodeId].displayName} as LogEntry)),
             filter(x => !!x.content.match(grep))
         );
     }
