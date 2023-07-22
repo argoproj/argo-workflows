@@ -35,6 +35,8 @@ import (
 	"k8s.io/utils/pointer"
 	"sigs.k8s.io/yaml"
 
+	"github.com/argoproj/argo-workflows/v3/workflow/creator"
+
 	"github.com/argoproj/argo-workflows/v3/errors"
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
@@ -607,7 +609,7 @@ func RandSuffix() string {
 }
 
 // FormulateResubmitWorkflow formulate a new workflow from a previous workflow, optionally re-using successful nodes
-func FormulateResubmitWorkflow(wf *wfv1.Workflow, memoized bool, parameters []string) (*wfv1.Workflow, error) {
+func FormulateResubmitWorkflow(ctx context.Context, wf *wfv1.Workflow, memoized bool, parameters []string) (*wfv1.Workflow, error) {
 	newWF := wfv1.Workflow{}
 	newWF.TypeMeta = wf.TypeMeta
 
@@ -645,12 +647,16 @@ func FormulateResubmitWorkflow(wf *wfv1.Workflow, memoized bool, parameters []st
 	}
 	for key, val := range wf.ObjectMeta.Labels {
 		switch key {
-		case common.LabelKeyCreator, common.LabelKeyPhase, common.LabelKeyCompleted, common.LabelKeyWorkflowArchivingStatus:
+		case common.LabelKeyCreator, common.LabelKeyCreatorEmail, common.LabelKeyCreatorPreferredUsername,
+			common.LabelKeyPhase, common.LabelKeyCompleted, common.LabelKeyWorkflowArchivingStatus:
 			// ignore
 		default:
 			newWF.ObjectMeta.Labels[key] = val
 		}
 	}
+	// Apply creator labels based on the authentication information of the current request,
+	// regardless of the creator labels of the original Workflow.
+	creator.Label(ctx, &newWF)
 	// Append an additional label so it's easy for user to see the
 	// name of the original workflow that has been resubmitted.
 	newWF.ObjectMeta.Labels[common.LabelKeyPreviousWorkflowName] = wf.ObjectMeta.Name

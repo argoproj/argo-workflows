@@ -7,12 +7,16 @@ import (
 	"testing"
 	"time"
 
+	"github.com/go-jose/go-jose/v3/jwt"
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/fields"
 	"sigs.k8s.io/yaml"
+
+	"github.com/argoproj/argo-workflows/v3/server/auth"
+	"github.com/argoproj/argo-workflows/v3/server/auth/types"
 
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
@@ -66,7 +70,7 @@ func TestResubmitWorkflowWithOnExit(t *testing.T) {
 		Name:  onExitName,
 		Phase: wfv1.NodeSucceeded,
 	}
-	newWF, err := FormulateResubmitWorkflow(&wf, true, nil)
+	newWF, err := FormulateResubmitWorkflow(context.Background(), &wf, true, nil)
 	assert.NoError(t, err)
 	newWFOnExitName := newWF.ObjectMeta.Name + ".onExit"
 	newWFOneExitID := newWF.NodeID(newWFOnExitName)
@@ -639,7 +643,7 @@ func TestFormulateResubmitWorkflow(t *testing.T) {
 				},
 			},
 		}
-		wf, err := FormulateResubmitWorkflow(wf, false, nil)
+		wf, err := FormulateResubmitWorkflow(context.Background(), wf, false, nil)
 		if assert.NoError(t, err) {
 			assert.Contains(t, wf.GetLabels(), common.LabelKeyControllerInstanceID)
 			assert.Contains(t, wf.GetLabels(), common.LabelKeyClusterWorkflowTemplate)
@@ -655,6 +659,57 @@ func TestFormulateResubmitWorkflow(t *testing.T) {
 			assert.Equal(t, "testObj", wf.OwnerReferences[0].Name)
 		}
 	})
+	t.Run("OverrideCreatorLabels", func(t *testing.T) {
+		wf := &wfv1.Workflow{
+			ObjectMeta: metav1.ObjectMeta{
+				Labels: map[string]string{
+					common.LabelKeyCreator:                  "xxxx-xxxx-xxxx",
+					common.LabelKeyCreatorEmail:             "foo.at.example.com",
+					common.LabelKeyCreatorPreferredUsername: "foo",
+				},
+				OwnerReferences: []metav1.OwnerReference{
+					{
+						APIVersion: "test",
+						Name:       "testObj",
+					},
+				},
+			},
+		}
+		ctx := context.WithValue(context.Background(), auth.ClaimsKey, &types.Claims{
+			Claims:            jwt.Claims{Subject: "yyyy-yyyy-yyyy-yyyy"},
+			Email:             "bar.at.example.com",
+			PreferredUsername: "bar",
+		})
+		wf, err := FormulateResubmitWorkflow(ctx, wf, false, nil)
+		if assert.NoError(t, err) {
+			assert.Equal(t, "yyyy-yyyy-yyyy-yyyy", wf.Labels[common.LabelKeyCreator])
+			assert.Equal(t, "bar.at.example.com", wf.Labels[common.LabelKeyCreatorEmail])
+			assert.Equal(t, "bar", wf.Labels[common.LabelKeyCreatorPreferredUsername])
+		}
+	})
+	t.Run("UnlabelCreatorLabels", func(t *testing.T) {
+		wf := &wfv1.Workflow{
+			ObjectMeta: metav1.ObjectMeta{
+				Labels: map[string]string{
+					common.LabelKeyCreator:                  "xxxx-xxxx-xxxx",
+					common.LabelKeyCreatorEmail:             "foo.at.example.com",
+					common.LabelKeyCreatorPreferredUsername: "foo",
+				},
+				OwnerReferences: []metav1.OwnerReference{
+					{
+						APIVersion: "test",
+						Name:       "testObj",
+					},
+				},
+			},
+		}
+		wf, err := FormulateResubmitWorkflow(context.Background(), wf, false, nil)
+		if assert.NoError(t, err) {
+			assert.Emptyf(t, wf.Labels[common.LabelKeyCreator], "should not %s label when a workflow is resubmitted by an unauthenticated request", common.LabelKeyCreator)
+			assert.Emptyf(t, wf.Labels[common.LabelKeyCreatorEmail], "should not %s label when a workflow is resubmitted by an unauthenticated request", common.LabelKeyCreatorEmail)
+			assert.Emptyf(t, wf.Labels[common.LabelKeyCreatorPreferredUsername], "should not %s label when a workflow is resubmitted by an unauthenticated request", common.LabelKeyCreatorPreferredUsername)
+		}
+	})
 	t.Run("OverrideParams", func(t *testing.T) {
 		wf := &wfv1.Workflow{
 			Spec: wfv1.WorkflowSpec{Arguments: wfv1.Arguments{
@@ -663,7 +718,7 @@ func TestFormulateResubmitWorkflow(t *testing.T) {
 				},
 			}},
 		}
-		wf, err := FormulateResubmitWorkflow(wf, false, []string{"message=modified"})
+		wf, err := FormulateResubmitWorkflow(context.Background(), wf, false, []string{"message=modified"})
 		if assert.NoError(t, err) {
 			assert.Equal(t, "modified", wf.Spec.Arguments.Parameters[0].Value.String())
 		}
