@@ -262,7 +262,7 @@ func (w *archivedWorkflowServer) ResubmitArchivedWorkflow(ctx context.Context, r
 		return nil, sutils.ToStatusError(err, codes.Internal)
 	}
 
-	newWF, err := util.FormulateResubmitWorkflow(wf, req.Memoized, req.Parameters)
+	newWF, err := util.FormulateResubmitWorkflow(ctx, wf, req.Memoized, req.Parameters)
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.Internal)
 	}
