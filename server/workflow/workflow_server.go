@@ -377,7 +377,7 @@ func (s *workflowServer) ResubmitWorkflow(ctx context.Context, req *workflowpkg.
 		return nil, sutils.ToStatusError(err, codes.InvalidArgument)
 	}
 
-	newWF, err := util.FormulateResubmitWorkflow(wf, req.Memoized, req.Parameters)
+	newWF, err := util.FormulateResubmitWorkflow(ctx, wf, req.Memoized, req.Parameters)
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.Internal)
 	}
