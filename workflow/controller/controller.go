@@ -1115,61 +1115,6 @@ func (wfc *WorkflowController) newSecretInformer() cache.SharedIndexInformer {
 	}, func(opts *metav1.ListOptions) {
 		opts.LabelSelector = common.LabelKeySecretType
 	})
-	log.WithField("executorPlugins", wfc.executorPlugins != nil).Info("Plugins")
-	if wfc.executorPlugins != nil {
-		indexInformer.AddEventHandler(cache.FilteringResourceEventHandler{
-			FilterFunc: func(obj interface{}) bool {
-				secret, err := meta.Accessor(obj)
-				if err != nil {
-					return false
-				}
-				return secret.GetLabels()[common.LabelKeySecretType] == common.LabelValueTypeSecretExecutorPlugin
-			},
-			Handler: cache.ResourceEventHandlerFuncs{
-				AddFunc: func(obj interface{}) {
-					secret := obj.(*apiv1.Secret)
-					p, err := plugin.FromSecret(secret)
-					if err != nil {
-						log.WithField("namespace", secret.GetNamespace()).
-							WithField("name", secret.GetName()).
-							WithError(err).
-							Error("failed to convert secret to plugin")
-						return
-					}
-					if _, ok := wfc.executorPlugins[secret.GetNamespace()]; !ok {
-						wfc.executorPlugins[secret.GetNamespace()] = map[string]*spec.Plugin{}
-					}
-					wfc.executorPlugins[secret.GetNamespace()][secret.GetName()] = p
-					log.WithField("namespace", secret.GetNamespace()).
-						WithField("name", secret.GetName()).
-						Info("Executor plugin added")
-				},
-				UpdateFunc: func(_, obj interface{}) {
-					secret := obj.(*apiv1.Secret)
-					p, err := plugin.FromSecret(secret)
-					if err != nil {
-						log.WithField("namespace", secret.GetNamespace()).
-							WithField("name", secret.GetName()).
-							WithError(err).
-							Error("failed to convert secret to plugin")
-						return
-					}
-
-					wfc.executorPlugins[secret.GetNamespace()][secret.GetName()] = p
-					log.WithField("namespace", secret.GetNamespace()).
-						WithField("name", secret.GetName()).
-						Info("Executor plugin updated")
-				},
-				DeleteFunc: func(obj interface{}) {
-					key, _ := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
-					namespace, name, _ := cache.SplitMetaNamespaceKey(key)
-					delete(wfc.executorPlugins[namespace], name)
-					log.WithField("namespace", namespace).WithField("name", name).Info("Executor plugin removed")
-				},
-			},
-		})
-
-	}
 	return indexInformer
 }
 
