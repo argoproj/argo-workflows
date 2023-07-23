@@ -923,6 +923,17 @@ spec:
                               type: string
                             path:
                               type: string
+                            secretKeyRef:
+                              properties:
+                                key:
+                                  type: string
+                                name:
+                                  type: string
+                                optional:
+                                  type: boolean
+                              required:
+                              - key
+                              type: object
                             supplied:
                               type: object
                           type: object
@@ -1535,6 +1546,17 @@ spec:
                                     type: string
                                   path:
                                     type: string
+                                  secretKeyRef:
+                                    properties:
+                                      key:
+                                        type: string
+                                      name:
+                                        type: string
+                                      optional:
+                                        type: boolean
+                                    required:
+                                    - key
+                                    type: object
                                   supplied:
                                     type: object
                                 type: object
@@ -4419,6 +4441,17 @@ spec:
                                             type: string
                                           path:
                                             type: string
+                                          secretKeyRef:
+                                            properties:
+                                              key:
+                                                type: string
+                                              name:
+                                                type: string
+                                              optional:
+                                                type: boolean
+                                            required:
+                                            - key
+                                            type: object
                                           supplied:
                                             type: object
                                         type: object
@@ -4981,6 +5014,17 @@ spec:
                                                   type: string
                                                 path:
                                                   type: string
+                                                secretKeyRef:
+                                                  properties:
+                                                    key:
+                                                      type: string
+                                                    name:
+                                                      type: string
+                                                    optional:
+                                                      type: boolean
+                                                  required:
+                                                  - key
+                                                  type: object
                                                 supplied:
                                                   type: object
                                               type: object
@@ -6757,6 +6801,17 @@ spec:
                                   type: string
                                 path:
                                   type: string
+                                secretKeyRef:
+                                  properties:
+                                    key:
+                                      type: string
+                                    name:
+                                      type: string
+                                    optional:
+                                      type: boolean
+                                  required:
+                                  - key
+                                  type: object
                                 supplied:
                                   type: object
                               type: object
@@ -7411,6 +7466,17 @@ spec:
                                   type: string
                                 path:
                                   type: string
+                                secretKeyRef:
+                                  properties:
+                                    key:
+                                      type: string
+                                    name:
+                                      type: string
+                                    optional:
+                                      type: boolean
+                                  required:
+                                  - key
+                                  type: object
                                 supplied:
                                   type: object
                               type: object
@@ -12514,6 +12580,17 @@ spec:
                                               type: string
                                             path:
                                               type: string
+                                            secretKeyRef:
+                                              properties:
+                                                key:
+                                                  type: string
+                                                name:
+                                                  type: string
+                                                optional:
+                                                  type: boolean
+                                              required:
+                                              - key
+                                              type: object
                                             supplied:
                                               type: object
                                           type: object
@@ -13076,6 +13153,17 @@ spec:
                                                     type: string
                                                   path:
                                                     type: string
+                                                  secretKeyRef:
+                                                    properties:
+                                                      key:
+                                                        type: string
+                                                      name:
+                                                        type: string
+                                                      optional:
+                                                        type: boolean
+                                                    required:
+                                                    - key
+                                                    type: object
                                                   supplied:
                                                     type: object
                                                 type: object
@@ -14852,6 +14940,17 @@ spec:
                                     type: string
                                   path:
                                     type: string
+                                  secretKeyRef:
+                                    properties:
+                                      key:
+                                        type: string
+                                      name:
+                                        type: string
+                                      optional:
+                                        type: boolean
+                                    required:
+                                    - key
+                                    type: object
                                   supplied:
                                     type: object
                                 type: object
@@ -15506,6 +15605,17 @@ spec:
                                     type: string
                                   path:
                                     type: string
+                                  secretKeyRef:
+                                    properties:
+                                      key:
+                                        type: string
+                                      name:
+                                        type: string
+                                      optional:
+                                        type: boolean
+                                    required:
+                                    - key
+                                    type: object
                                   supplied:
                                     type: object
                                 type: object

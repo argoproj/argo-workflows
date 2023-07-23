@@ -4842,6 +4842,7 @@ Cannot be updated.
 | parameter | string| `string` |  | | Parameter reference to a step or dag task in which to retrieve an output parameter value from
 (e.g. '{{steps.mystep.outputs.myparam}}') |  |
 | path | string| `string` |  | | Path in the container to retrieve an output parameter value from in container templates |  |
+| secretKeyRef | [SecretKeySelector](#secret-key-selector)| `SecretKeySelector` |  | |  |  |
 | supplied | [SuppliedValueFrom](#supplied-value-from)| `SuppliedValueFrom` |  | |  |  |
 
 

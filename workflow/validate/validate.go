@@ -9,10 +9,10 @@ import (
 	"strings"
 	"time"
 
+	log "github.com/sirupsen/logrus"
 	"golang.org/x/exp/maps"
 
 	"github.com/robfig/cron/v3"
-	"github.com/sirupsen/logrus"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	apivalidation "k8s.io/apimachinery/pkg/util/validation"
 	"sigs.k8s.io/yaml"
@@ -452,7 +452,7 @@ func (ctx *templateValidationCtx) validateTemplate(tmpl *wfv1.Template, tmplCtx 
 		}
 	}
 
-	newTmpl, err := common.ProcessArgs(tmpl, args, ctx.globalParams, localParams, true, "", nil)
+	newTmpl, err := common.ProcessArgs(tmpl, args, ctx.globalParams, localParams, true, "", nil, nil)
 	if err != nil {
 		return errors.Errorf(errors.CodeBadRequest, "templates.%s %s", tmpl.Name, err)
 	}
@@ -1035,7 +1035,7 @@ func (ctx *templateValidationCtx) addOutputsToScope(tmpl *wfv1.Template, prefix 
 				scope[globalParamName] = true
 				ctx.globalParams[globalParamName] = placeholderGenerator.NextPlaceholder()
 			} else {
-				logrus.Warnf("GlobalName '%s' is a parameter and won't be validated until runtime", param.GlobalName)
+				log.Warnf("GlobalName '%s' is a parameter and won't be validated until runtime", param.GlobalName)
 				scope[anyWorkflowOutputParameterMagicValue] = true
 			}
 		}
@@ -1048,7 +1048,7 @@ func (ctx *templateValidationCtx) addOutputsToScope(tmpl *wfv1.Template, prefix 
 				scope[globalArtName] = true
 				ctx.globalParams[globalArtName] = placeholderGenerator.NextPlaceholder()
 			} else {
-				logrus.Warnf("GlobalName '%s' is a parameter and won't be validated until runtime", art.GlobalName)
+				log.Warnf("GlobalName '%s' is a parameter and won't be validated until runtime", art.GlobalName)
 				scope[anyWorkflowOutputArtifactMagicValue] = true
 			}
 		}

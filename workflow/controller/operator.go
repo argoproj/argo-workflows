@@ -621,6 +621,18 @@ func (woc *wfOperationCtx) setGlobalParameters(executionParameters wfv1.Argument
 			} else {
 				woc.globalParams["workflow.parameters."+param.Name] = cmValue
 			}
+		} else if param.ValueFrom != nil && param.ValueFrom.SecretKeyRef != nil {
+			secretValue, err := common.GetSecretValue(woc.controller.secretInformer, woc.wf.ObjectMeta.Namespace, param.ValueFrom.SecretKeyRef.Name, param.ValueFrom.SecretKeyRef.Key)
+			if err != nil {
+				if param.ValueFrom.Default != nil {
+					woc.globalParams["workflow.parameters."+param.Name] = param.ValueFrom.Default.String()
+				} else {
+					return fmt.Errorf("failed to set global parameter %s from secret with name %s and key %s: %w",
+						param.Name, param.ValueFrom.SecretKeyRef.Name, param.ValueFrom.SecretKeyRef.Key, err)
+				}
+			} else {
+				woc.globalParams["workflow.parameters."+param.Name] = secretValue
+			}
 		} else if param.Value != nil {
 			woc.globalParams["workflow.parameters."+param.Name] = param.Value.String()
 		} else {
@@ -1793,7 +1805,7 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 	}
 
 	// Inputs has been processed with arguments already, so pass empty arguments.
-	processedTmpl, err := common.ProcessArgs(resolvedTmpl, &args, woc.globalParams, localParams, false, woc.wf.Namespace, woc.controller.configMapInformer)
+	processedTmpl, err := common.ProcessArgs(resolvedTmpl, &args, woc.globalParams, localParams, false, woc.wf.Namespace, woc.controller.configMapInformer, woc.controller.secretInformer)
 	if err != nil {
 		return woc.initializeNodeOrMarkError(node, nodeName, templateScope, orgTmpl, opts.boundaryID, err), err
 	}

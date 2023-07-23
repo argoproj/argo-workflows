@@ -208,6 +208,15 @@ const (
 	// LabelValueTypeConfigMapExecutorPlugin is a key for configmaps that contains an executor plugin.
 	LabelValueTypeConfigMapExecutorPlugin = "ExecutorPlugin"
 
+	// LabelKeySecretType is the label key for the type of secret.
+	LabelKeySecretType = "workflows.argoproj.io/secret-type"
+	// LabelValueTypeSecretCache is a key for secrets that are memoization cache.
+	LabelValueTypeSecretCache = "Cache"
+	// LabelValueTypeSecretParameter is a key for secrets that contains parameter values.
+	LabelValueTypeSecretParameter = "Parameter"
+	// LabelValueTypeSecretExecutorPlugin is a key for secrets that contains an executor plugin.
+	LabelValueTypeSecretExecutorPlugin = "ExecutorPlugin"
+
 	// LocalVarPodName is a step level variable that references the name of the pod
 	LocalVarPodName = "pod.name"
 	// LocalVarRetries is a step level variable that references the retries number if retryStrategy is specified
