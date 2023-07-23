@@ -4,9 +4,9 @@
 
 ## Introduction
 
-A [`LifecycleHook`](https://argoproj.github.io/argo-workflows/fields/#lifecyclehook) triggers an action based on a conditional expression or on completion of a step or template. It is configured either at the workflow-level or template-level, for instance as a function of the `workflow.status` or `steps.status`, respectively. A `LifecycleHook` executes during execution time and executes once. It will execute in parallel to its step or template once the expression is satisfied.
+A [`LifecycleHook`](fields.md#lifecyclehook) triggers an action based on a conditional expression or on completion of a step or template. It is configured either at the workflow-level or template-level, for instance as a function of the `workflow.status` or `steps.status`, respectively. A `LifecycleHook` executes during execution time and executes once. It will execute in parallel to its step or template once the expression is satisfied.
 
-In other words, a `LifecycleHook` functions like an [exit handler](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handlers.yaml) with a conditional expression. You must not name a `LifecycleHook` `exit` or it becomes an exit handler, otherwise the hook name has no relevance.
+In other words, a `LifecycleHook` functions like an [exit handler](https://github.com/argoproj/argo-workflows/blob/master/examples/exit-handlers.yaml) with a conditional expression. You must not name a `LifecycleHook` `exit` or it becomes an exit handler; otherwise the hook name has no relevance.
 
 **Workflow-level `LifecycleHook`**: Executes the template when a configured expression is met during the workflow.
 
@@ -18,14 +18,14 @@ In other words, a `LifecycleHook` functions like an [exit handler](https://githu
 
 ## Supported conditions
 
-- [Exit handler variables](https://github.com/argoproj/argo-workflows/blob/master/docs/variables.md#exit-handler): `workflow.status` and `workflow.failures`
-- [`template`](https://argoproj.github.io/argo-workflows/fields/#template)
-- [`templateRef`](https://argoproj.github.io/argo-workflows/fields/#templateref)
+- [Exit handler variables](variables.md#exit-handler): `workflow.status` and `workflow.failures`
+- [`template`](fields.md#template)
+- [`templateRef`](fields.md#templateref)
 - [`arguments`](https://github.com/argoproj/argo-workflows/blob/master/examples/conditionals.yaml)
 
 ## Unsupported conditions
 
-- [`outputs`](https://argoproj.github.io/argo-workflows/fields/#outputs) are not usable since `LifecycleHook` executes during execution time and `outputs` are not produced until the step is completed. You can use outputs from previous steps, just not the one you're hooking into. If you'd like to use outputs create an exit handler instead - all the status variable are available there so you can still conditionally decide what to do.
+- [`outputs`](fields.md#outputs) are not usable since `LifecycleHook` executes during execution time and `outputs` are not produced until the step is completed. You can use outputs from previous steps, just not the one you're hooking into. If you'd like to use outputs create an exit handler instead - all the status variable are available there so you can still conditionally decide what to do.
 
 ## Notification use case
 
