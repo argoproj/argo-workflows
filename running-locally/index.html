@@ -4017,9 +4017,10 @@ generation does not work.</p>
 <p>A development container is a running Docker container with a well-defined tool/runtime stack and its prerequisites. It should be able to do everything you need to do to develop argo workflows using the development container without installing tools on your local machine. It takes quite a long time to build the container. It will run k3d inside the container so you'll have a cluster to use to test against. To communicate with services running either in other development containers or directly on the local developer machine (e.g., a database) the following URL can be used in the workflow spec: <code>host.docker.internal:&lt;PORT&gt;</code>. This facilitates the implementation of workflows, which need to connect to a database or an API server.</p>
 <p>You can use the development container in a few different ways:</p>
 <ol>
-<li><a href="https://code.visualstudio.com/">Visual studio code</a> with <a href="https://code.visualstudio.com/docs/remote/containers">The Visual Studio Code Remote - Containers</a> extension lets you use a Docker container as a full-featured development environment. Open the clone of argo-workflows folder in VS code and it should offer to use the development container automatically. System requirements can be found <a href="https://code.visualstudio.com/docs/remote/containers#_system-requirements">here</a>. Visual Studio will allow you to forward ports to allow your external browser to access the running components.</li>
-<li><a href="https://code.visualstudio.com/">Dev-container CLI</a>. Install the tool and from the argo-workflow folder do <code>devcontainer up --workspace-folder .</code> followed by <code>devcontainer exec --workspace-folder . /bin/bash</code> to get a shell where you can start building the code. You can use your choice editor outside the docker image to edit code, the changes are mirrored inside the container. Due to a limitation in the CLI only port 8080 (the Web UI) will get exposed for you to access if you run this way. Other services are usable from the shell inside.</li>
+<li><a href="https://code.visualstudio.com/">Visual Studio Code</a> with <a href="https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers">Dev Containers</a> extension lets you use a Docker container as a full-featured development environment. Open the clone of argo-workflows folder in VS code and it should offer to use the development container automatically. System requirements can be found <a href="https://code.visualstudio.com/docs/remote/containers#_system-requirements">here</a>. Visual Studio will allow you to forward ports to allow your external browser to access the running components.</li>
+<li><a href="https://github.com/devcontainers/cli">Dev-container CLI</a>. Install the tool and from the argo-workflow folder do <code>devcontainer up --workspace-folder .</code> followed by <code>devcontainer exec --workspace-folder . /bin/bash</code> to get a shell where you can start building the code. You can use your choice editor outside the docker image to edit code, the changes are mirrored inside the container. Due to a limitation in the CLI only port 8080 (the Web UI) will get exposed for you to access if you run this way. Other services are usable from the shell inside.</li>
 </ol>
+<p>Once you have entered the container, continue to <a href="#developing-locally">Developing Locally</a>.</p>
 <p><code>Github Codespaces</code> is known not to work at this time.</p>
 <p>Note:</p>
 <ul>
@@ -4048,6 +4049,13 @@ generation does not work.</p>
 </li>
 </ul>
 <h2 id="requirements">Requirements<a class="headerlink" href="#requirements" title="Permanent link">&para;</a></h2>
+<p>Add the following to your <code>/etc/hosts</code>:</p>
+<div class="highlight"><pre><span></span><code>127.0.0.1 dex
+127.0.0.1 minio
+127.0.0.1 postgres
+127.0.0.1 mysql
+127.0.0.1 azurite
+</code></pre></div>
 <p>To build on your own machine without using the dev-container you will need</p>
 <ul>
 <li><a href="https://golang.org/dl/">Go</a></li>
@@ -4067,13 +4075,6 @@ automatically.</p>
 <p>⚠️ Do not use Docker for Desktop with its embedded Kubernetes, it does not support Kubernetes RBAC (i.e. <code>kubectl auth can-i</code> always
 returns <code>allowed</code>).</p>
 <h2 id="developing-locally">Developing locally<a class="headerlink" href="#developing-locally" title="Permanent link">&para;</a></h2>
-<p>Add the following to your <code>/etc/hosts</code>:</p>
-<div class="highlight"><pre><span></span><code>127.0.0.1 dex
-127.0.0.1 minio
-127.0.0.1 postgres
-127.0.0.1 mysql
-127.0.0.1 azurite
-</code></pre></div>
 <p>To start:</p>
 <ul>
 <li>The controller, so you can run workflows.</li>
