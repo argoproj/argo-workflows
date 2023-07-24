@@ -67,8 +67,8 @@ export const WorkflowsService = {
         return requests.get(`api/v1/workflows/${namespace}/${name}`).then(res => res.body as Workflow);
     },
 
-    getArchived(namespace: string, name: string) {
-        return requests.get(`api/v1/archived-workflows/?name=${name}&namespace=${namespace}`).then(res => res.body as models.Workflow);
+    getArchived(namespace: string, uid: string) {
+        return requests.get(`api/v1/archived-workflows/${uid}?namespace=${namespace}`).then(res => res.body as models.Workflow);
     },
 
     watch(query: {
@@ -126,6 +126,13 @@ export const WorkflowsService = {
         return requests
             .put(`api/v1/workflows/${namespace}/${name}/resubmit`)
             .send(opts)
+            .then(res => res.body as Workflow);
+    },
+
+    resubmitArchived(uid: string, namespace: string, opts?: ResubmitOpts) {
+        return requests
+            .put(`api/v1/archived-workflows/${uid}/resubmit`)
+            .send({namespace, ...opts})
             .then(res => res.body as Workflow);
     },
 
@@ -219,13 +226,16 @@ export const WorkflowsService = {
         return of(hasArtifactLogs(workflow, nodeId, container)).pipe(
             switchMap(isArtifactLogs => {
                 if (!isArtifactLogs) {
+                    if (!nodeId) {
+                        throw new Error('Should specify a node when we get archived logs');
+                    }
                     throw new Error('no artifact logs are available');
                 }
 
                 return from(requests.get(this.getArtifactLogsPath(workflow, nodeId, container, archived)));
             }),
             mergeMap(r => r.text.split('\n')),
-            map(content => ({content} as LogEntry)),
+            map(content => ({content, podName: workflow.status.nodes[nodeId].displayName} as LogEntry)),
             filter(x => !!x.content.match(grep))
         );
     },

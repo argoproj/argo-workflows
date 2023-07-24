@@ -15,6 +15,7 @@ import (
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	sutils "github.com/argoproj/argo-workflows/v3/server/utils"
 	"github.com/argoproj/argo-workflows/v3/util/instanceid"
+	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
 
 const (
@@ -85,6 +86,7 @@ func NewWorkflowArchive(session sqlbuilder.Database, clusterName, managedNamespa
 func (r *workflowArchive) ArchiveWorkflow(wf *wfv1.Workflow) error {
 	logCtx := log.WithFields(log.Fields{"uid": wf.UID, "labels": wf.GetLabels()})
 	logCtx.Debug("Archiving workflow")
+	wf.ObjectMeta.Labels[common.LabelKeyWorkflowArchivingStatus] = "Persisted"
 	workflow, err := json.Marshal(wf)
 	if err != nil {
 		return err
@@ -178,6 +180,8 @@ func (r *workflowArchive) ListWorkflows(namespace string, name string, namePrefi
 		if err != nil {
 			log.WithFields(log.Fields{"workflowUID": archivedWf.UID, "workflowName": archivedWf.Name}).Errorln("unable to unmarshal workflow from database")
 		} else {
+			// For backward compatibility, we should label workflow retrieved from DB as Persisted.
+			wf.ObjectMeta.Labels[common.LabelKeyWorkflowArchivingStatus] = "Persisted"
 			wfs = append(wfs, wf)
 		}
 	}
@@ -300,6 +304,8 @@ func (r *workflowArchive) GetWorkflow(uid string, namespace string, name string)
 	if err != nil {
 		return nil, err
 	}
+	// For backward compatibility, we should label workflow retrieved from DB as Persisted.
+	wf.ObjectMeta.Labels[common.LabelKeyWorkflowArchivingStatus] = "Persisted"
 	return wf, nil
 }
 

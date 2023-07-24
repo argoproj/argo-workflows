@@ -9,6 +9,7 @@ import {Utils} from '../../shared/utils';
 
 interface Props {
     workflow: Workflow;
+    isArchived: boolean;
 }
 
 interface State {
@@ -98,9 +99,16 @@ export class ResubmitWorkflowPanel extends React.Component<Props, State> {
             memoized: this.state.memoized
         };
 
-        services.workflows
-            .resubmit(this.props.workflow.metadata.name, this.props.workflow.metadata.namespace, opts)
-            .then((submitted: Workflow) => (document.location.href = uiUrl(`workflows/${submitted.metadata.namespace}/${submitted.metadata.name}`)))
-            .catch(error => this.setState({error, isSubmitting: false}));
+        if (!this.props.isArchived) {
+            services.workflows
+                .resubmit(this.props.workflow.metadata.name, this.props.workflow.metadata.namespace, opts)
+                .then((submitted: Workflow) => (document.location.href = uiUrl(`workflows/${submitted.metadata.namespace}/${submitted.metadata.name}`)))
+                .catch(error => this.setState({error, isSubmitting: false}));
+        } else {
+            services.workflows
+                .resubmitArchived(this.props.workflow.metadata.uid, this.props.workflow.metadata.namespace, opts)
+                .then((submitted: Workflow) => (document.location.href = uiUrl(`workflows/${submitted.metadata.namespace}/${submitted.metadata.name}`)))
+                .catch(error => this.setState({error, isSubmitting: false}));
+        }
     }
 }
