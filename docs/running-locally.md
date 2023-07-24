@@ -43,6 +43,16 @@ Note:
 
 ## Requirements
 
+Add the following to your `/etc/hosts`:
+
+```text
+127.0.0.1 dex
+127.0.0.1 minio
+127.0.0.1 postgres
+127.0.0.1 mysql
+127.0.0.1 azurite
+```
+
 To build on your own machine without using the dev-container you will need
 
 * [Go](https://golang.org/dl/)
@@ -67,16 +77,6 @@ automatically.
 returns `allowed`).
 
 ## Developing locally
-
-Add the following to your `/etc/hosts`:
-
-```text
-127.0.0.1 dex
-127.0.0.1 minio
-127.0.0.1 postgres
-127.0.0.1 mysql
-127.0.0.1 azurite
-```
 
 To start:
 
