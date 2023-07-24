@@ -58,6 +58,7 @@ Just some of the projects that use or rely on Argo Workflows (complete list [her
 * [Netflix Metaflow](https://metaflow.org)
 * [Onepanel](https://www.onepanel.ai/)
 * [Orchest](https://github.com/orchest/orchest/)
+* [Piper](https://github.com/rookout/piper)
 * [Ploomber](https://github.com/ploomber/ploomber)
 * [Seldon](https://github.com/SeldonIO/seldon-core)
 * [SQLFlow](https://github.com/sql-machine-learning/sqlflow)

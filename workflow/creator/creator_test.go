@@ -7,6 +7,7 @@ import (
 
 	"github.com/go-jose/go-jose/v3/jwt"
 	"github.com/stretchr/testify/assert"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/server/auth"
@@ -50,6 +51,82 @@ func TestLabel(t *testing.T) {
 		Label(context.WithValue(context.TODO(), auth.ClaimsKey, &types.Claims{Claims: jwt.Claims{Subject: sub}}), wf)
 		if assert.NotEmpty(t, wf.Labels) {
 			assert.Equal(t, strings.Repeat("x", 20), wf.Labels[common.LabelKeyCreator])
+		}
+	})
+	t.Run("DifferentUsersFromCreatorLabels", func(t *testing.T) {
+		type input struct {
+			claims *types.Claims
+			wf     *wfv1.Workflow
+		}
+		type output struct {
+			creatorLabelsToHave    map[string]string
+			creatorLabelsNotToHave []string
+		}
+		for _, testCase := range []struct {
+			name   string
+			input  *input
+			output *output
+		}{
+			{
+				name: "when claims are empty",
+				input: &input{
+					claims: &types.Claims{Claims: jwt.Claims{}},
+					wf: &wfv1.Workflow{ObjectMeta: metav1.ObjectMeta{Labels: map[string]string{
+						common.LabelKeyCreator:                  "xxxx-xxxx-xxxx-xxxx",
+						common.LabelKeyCreatorEmail:             "foo.at.example.com",
+						common.LabelKeyCreatorPreferredUsername: "foo",
+					}}},
+				},
+				output: &output{
+					creatorLabelsToHave:    nil,
+					creatorLabelsNotToHave: []string{common.LabelKeyCreator, common.LabelKeyCreatorEmail, common.LabelKeyCreatorPreferredUsername},
+				},
+			}, {
+				name: "when claims are nil",
+				input: &input{
+					claims: nil,
+					wf: &wfv1.Workflow{ObjectMeta: metav1.ObjectMeta{Labels: map[string]string{
+						common.LabelKeyCreator:                  "xxxx-xxxx-xxxx-xxxx",
+						common.LabelKeyCreatorEmail:             "foo.at.example.com",
+						common.LabelKeyCreatorPreferredUsername: "foo",
+					}}},
+				},
+				output: &output{
+					creatorLabelsToHave:    nil,
+					creatorLabelsNotToHave: []string{common.LabelKeyCreator, common.LabelKeyCreatorEmail, common.LabelKeyCreatorPreferredUsername},
+				},
+			}, {
+				name: "when user information in claim is different from the existing labels of a Workflow",
+				input: &input{
+					claims: &types.Claims{Claims: jwt.Claims{Subject: "yyyy-yyyy-yyyy-yyyy"}, Email: "bar.at.example.com", PreferredUsername: "bar"},
+					wf: &wfv1.Workflow{ObjectMeta: metav1.ObjectMeta{Labels: map[string]string{
+						common.LabelKeyCreator:                  "xxxx-xxxx-xxxx-xxxx",
+						common.LabelKeyCreatorEmail:             "foo.at.example.com",
+						common.LabelKeyCreatorPreferredUsername: "foo",
+					}}},
+				},
+				output: &output{
+					creatorLabelsToHave: map[string]string{
+						common.LabelKeyCreator:                  "yyyy-yyyy-yyyy-yyyy",
+						common.LabelKeyCreatorEmail:             "bar.at.example.com",
+						common.LabelKeyCreatorPreferredUsername: "bar",
+					},
+					creatorLabelsNotToHave: nil,
+				},
+			},
+		} {
+			t.Run(testCase.name, func(t *testing.T) {
+				Label(context.WithValue(context.TODO(), auth.ClaimsKey, testCase.input.claims), testCase.input.wf)
+				labels := testCase.input.wf.GetLabels()
+				for k, expectedValue := range testCase.output.creatorLabelsToHave {
+					assert.Equal(t, expectedValue, labels[k])
+				}
+				for _, creatorLabelKey := range testCase.output.creatorLabelsNotToHave {
+					_, ok := labels[creatorLabelKey]
+					assert.Falsef(t, ok, "should not have the creator label, \"%s\"", creatorLabelKey)
+				}
+			})
+
 		}
 	})
 }

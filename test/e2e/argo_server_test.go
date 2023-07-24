@@ -1255,6 +1255,7 @@ func (s *ArgoServerSuite) TestWorkflowServiceStream() {
 
 func (s *ArgoServerSuite) TestArchivedWorkflowService() {
 	var uid types.UID
+	var name string
 	s.Given().
 		Workflow(`
 metadata:
@@ -1273,6 +1274,7 @@ spec:
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			uid = metadata.UID
+			name = metadata.Name
 		})
 	var failedUid types.UID
 	var failedName string
@@ -1399,12 +1401,22 @@ spec:
 		s.e().GET("/api/v1/archived-workflows/not-found").
 			Expect().
 			Status(404)
-		s.e().GET("/api/v1/archived-workflows/{uid}", uid).
+		j := s.e().GET("/api/v1/archived-workflows/{uid}", uid).
+			Expect().
+			Status(200).
+			JSON()
+		j.
+			Path("$.metadata.name").
+			NotNull()
+		j.
+			Path(fmt.Sprintf("$.metadata.labels[\"%s\"]", common.LabelKeyWorkflowArchivingStatus)).
+			Equal("Persisted")
+		s.e().GET("/api/v1/workflows/argo/" + name).
 			Expect().
 			Status(200).
 			JSON().
-			Path("$.metadata.name").
-			NotNull()
+			Path(fmt.Sprintf("$.metadata.labels[\"%s\"]", common.LabelKeyWorkflowArchivingStatus)).
+			Equal("Archived")
 	})
 
 	s.Run("DeleteForRetry", func() {
