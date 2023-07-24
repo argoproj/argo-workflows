@@ -656,7 +656,7 @@ func TestMergeWithArchivedWorkflows(t *testing.T) {
 			Labels: map[string]string{common.LabelKeyWorkflowArchivingStatus: "Archived"}}}
 	wf1Archived := v1alpha1.Workflow{
 		ObjectMeta: metav1.ObjectMeta{UID: "1", CreationTimestamp: metav1.Time{Time: timeNow.Add(time.Second)},
-			Labels: map[string]string{common.LabelKeyWorkflowArchivingStatus: "Pending"}}}
+			Labels: map[string]string{common.LabelKeyWorkflowArchivingStatus: "Persisted"}}}
 	wf2 := v1alpha1.Workflow{
 		ObjectMeta: metav1.ObjectMeta{UID: "2", CreationTimestamp: metav1.Time{Time: timeNow.Add(2 * time.Second)}}}
 	wf3 := v1alpha1.Workflow{

@@ -140,8 +140,8 @@ func mergeWithArchivedWorkflows(liveWfs v1alpha1.WorkflowList, archivedWfs v1alp
 	}
 
 	for _, v := range uidToWfs {
-		// The archived workflow we saved in the database will only have "Pending" as the archival status.
-		// We want to only keep the workflow that has the correct label to display correctly in the UI.
+		// The archived workflow we saved in the database have "Persisted" as the archival status.
+		// Prioritize 'Archived' over 'Persisted' because 'Archived' means the workflow is in the cluster
 		if len(v) == 1 {
 			mergedWfs = append(mergedWfs, v[0])
 		} else {
@@ -428,7 +428,7 @@ func (s *workflowServer) ResubmitWorkflow(ctx context.Context, req *workflowpkg.
 		return nil, sutils.ToStatusError(err, codes.InvalidArgument)
 	}
 
-	newWF, err := util.FormulateResubmitWorkflow(wf, req.Memoized, req.Parameters)
+	newWF, err := util.FormulateResubmitWorkflow(ctx, wf, req.Memoized, req.Parameters)
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.Internal)
 	}
