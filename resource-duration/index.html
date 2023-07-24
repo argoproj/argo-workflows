@@ -1463,13 +1463,6 @@
   
 </li>
       
-        <li class="md-nav__item">
-  <a href="#rounding-down" class="md-nav__link">
-    Rounding Down
-  </a>
-  
-</li>
-      
     </ul>
   
 </nav>
@@ -3899,13 +3892,6 @@
   
 </li>
       
-        <li class="md-nav__item">
-  <a href="#rounding-down" class="md-nav__link">
-    Rounding Down
-  </a>
-  
-</li>
-      
     </ul>
   
 </nav>
@@ -3939,35 +3925,32 @@ defaults.</p>
 <p>Each resource type has a denominator used to make large values smaller.</p>
 <ul>
 <li>CPU: <code>1</code></li>
-<li>Memory: <code>1Gi</code></li>
+<li>Memory: <code>100Mi</code></li>
 <li>Storage: <code>10Gi</code></li>
 <li>Ephemeral Storage: <code>10Gi</code></li>
 <li>All others: <code>1</code></li>
 </ul>
 <p>The requested fraction of the base amount will be multiplied by the container's run time to get
 the container's Resource Duration.</p>
-<p>For example, if you've requested <code>100Mi</code> of memory (one tenth of the base amount), and the container
-runs 120sec, then the reported Resource Duration will be <code>12sec * (1Gi memory)</code>.</p>
+<p>For example, if you've requested <code>50Mi</code> of memory (half of the base amount), and the container
+runs 120sec, then the reported Resource Duration will be <code>60sec * (100Mi memory)</code>.</p>
 <h3 id="request-defaults">Request Defaults<a class="headerlink" href="#request-defaults" title="Permanent link">&para;</a></h3>
 <p>If <code>requests</code> are not set for a container, Kubernetes defaults to <code>limits</code>. If <code>limits</code> are not set,
 Argo falls back to <code>100m</code> for CPU and <code>100Mi</code> for memory.</p>
 <p><strong>Note:</strong> these are Argo's defaults, <em>not</em> Kubernetes' defaults. For the most meaningful results,
 set <code>requests</code> and/or <code>limits</code> for all containers.</p>
 <h3 id="example">Example<a class="headerlink" href="#example" title="Permanent link">&para;</a></h3>
-<p>A pod that runs for 3min, with a CPU limit of <code>2000m</code>, no memory request and an <code>nvidia.com/gpu</code>
+<p>A pod that runs for 3min, with a CPU limit of <code>2000m</code>, a memory limit of <code>1Gi</code> and an <code>nvidia.com/gpu</code>
 resource limit of <code>1</code>:</p>
 <div class="highlight"><pre><span></span><code>CPU:    3min * 2000m / 1000m = 6min * (1 cpu)
-Memory: 3min * 100Mi / 1Gi   = 18sec * (100Mi memory)
-GPU:    3min * 1     / 1     = 2min * (1 nvidia.com/gpu)
+Memory: 3min * 1Gi / 100Mi   = 30min * (100Mi memory)
+GPU:    3min * 1     / 1     = 3min * (1 nvidia.com/gpu)
 </code></pre></div>
 <h3 id="webcli-reporting">Web/CLI reporting<a class="headerlink" href="#webcli-reporting" title="Permanent link">&para;</a></h3>
 <p>Both the web and CLI give abbreviated usage, like <code>9m10s*cpu,6s*memory,2m31s*nvidia.com/gpu</code>. In
 this context, resources like <code>memory</code> refer to the "base amounts".</p>
 <p>For example, <code>memory</code> means "amount of time a resource requested 1Gi of memory." If a container only
 uses 100Mi, each second it runs will only count as a tenth-second of <code>memory</code>.</p>
-<h2 id="rounding-down">Rounding Down<a class="headerlink" href="#rounding-down" title="Permanent link">&para;</a></h2>
-<p>For short running pods (&lt;10s), the memory value may be 0s. This is because the default is <code>100Mi</code>,
-but the denominator is <code>1Gi</code>.</p>
 
               
 
