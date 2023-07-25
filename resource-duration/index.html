@@ -1463,6 +1463,13 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#rounding-down" class="md-nav__link">
+    Rounding Down
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -3892,6 +3899,13 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#rounding-down" class="md-nav__link">
+    Rounding Down
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -3949,8 +3963,10 @@ GPU:    3min * 1     / 1     = 3min * (1 nvidia.com/gpu)
 <h3 id="webcli-reporting">Web/CLI reporting<a class="headerlink" href="#webcli-reporting" title="Permanent link">&para;</a></h3>
 <p>Both the web and CLI give abbreviated usage, like <code>9m10s*cpu,6s*memory,2m31s*nvidia.com/gpu</code>. In
 this context, resources like <code>memory</code> refer to the "base amounts".</p>
-<p>For example, <code>memory</code> means "amount of time a resource requested 1Gi of memory." If a container only
-uses 100Mi, each second it runs will only count as a tenth-second of <code>memory</code>.</p>
+<p>For example, <code>memory</code> means "amount of time a resource requested <code>100Mi</code> of memory." If a container only
+uses <code>10Mi</code>, each second it runs will only count as a tenth-second of <code>memory</code>.</p>
+<h2 id="rounding-down">Rounding Down<a class="headerlink" href="#rounding-down" title="Permanent link">&para;</a></h2>
+<p>For a short running pods (&lt;10s), if the memory request is also small (for example, <code>10Mi</code>), then the memory value may be 0s. This is because the denominator is <code>100Mi</code>.</p>
 
               
 
