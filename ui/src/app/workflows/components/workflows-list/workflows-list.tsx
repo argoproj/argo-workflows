@@ -205,7 +205,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                                     }}
                                     isDisabled={this.state.batchActionDisabled}
                                 />
-                                <div className='row'>
+                                <div className={`row ${this.state.selectedWorkflows.size === 0 ? '' : 'pt-60'}`}>
                                     <div className='columns small-12 xlarge-2'>
                                         <WorkflowsSummaryContainer workflows={this.state.workflows} />
                                         <div>
