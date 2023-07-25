@@ -58,4 +58,4 @@ uses `10Mi`, each second it runs will only count as a tenth-second of `memory`.
 
 ## Rounding Down
 
-For a short running pods (<10s), if the memory requests of this pod is also small (for example, `10Mi`), then the memory value may be 0s. This is because the dominator is `100Mi`.
+For a short running pods (<10s), if the memory request is also small (for example, `10Mi`), then the memory value may be 0s. This is because the denominator is `100Mi`.
