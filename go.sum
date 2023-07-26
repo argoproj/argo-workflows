@@ -168,8 +168,8 @@ github.com/anmitsu/go-shlex v0.0.0-20161002113705-648efa622239 h1:kFOfPq6dUM1hTo
 github.com/anmitsu/go-shlex v0.0.0-20161002113705-648efa622239/go.mod h1:2FmKhYUyUczH0OGQWaF5ceTx0UBShxjsH6f8oGKYe2c=
 github.com/antihax/optional v0.0.0-20180407024304-ca021399b1a6/go.mod h1:V8iCPQYkqmusNa815XgQio277wI47sdRh1dUOLdyC6Q=
 github.com/antihax/optional v1.0.0/go.mod h1:uupD/76wgC+ih3iEmQUL+0Ugr19nfwCT1kdvxnR2qWY=
-github.com/antonmedv/expr v1.12.6 h1:qtgMHOFissxhePwokx0xB9eqS6PUy0SbhDRPD67PInA=
-github.com/antonmedv/expr v1.12.6/go.mod h1:FPC8iWArxls7axbVLsW+kpg1mz29A1b2M6jt+hZfDkU=
+github.com/antonmedv/expr v1.12.7 h1:jfV/l/+dHWAadLwAtESXNxXdfbK9bE4+FNMHYCMntwk=
+github.com/antonmedv/expr v1.12.7/go.mod h1:FPC8iWArxls7axbVLsW+kpg1mz29A1b2M6jt+hZfDkU=
 github.com/aokoli/goutils v1.0.1/go.mod h1:SijmP0QR8LtwsmDs8Yii5Z/S4trXFGFC2oO5g9DP+DQ=
 github.com/argoproj-labs/go-git/v5 v5.4.7 h1:BXrXK/anGnbdj0MoKJyn++h6HZ7Wa0UhW2mNOmuTcV8=
 github.com/argoproj-labs/go-git/v5 v5.4.7/go.mod h1:hA0dcdz5GgO4KXyDY90CCfJaw4PIGMecmq5YwHdTBi0=
