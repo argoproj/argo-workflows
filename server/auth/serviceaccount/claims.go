@@ -4,7 +4,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"strings"
 
 	"github.com/go-jose/go-jose/v3/jwt"
@@ -21,7 +21,7 @@ func ClaimSetFor(restConfig *rest.Config) (*types.Claims, error) {
 		bearerToken := restConfig.BearerToken
 		if bearerToken == "" {
 			// should only ever be used for service accounts
-			data, err := ioutil.ReadFile(restConfig.BearerTokenFile)
+			data, err := os.ReadFile(restConfig.BearerTokenFile)
 			if err != nil {
 				return nil, fmt.Errorf("failed to read bearer token file: %w", err)
 			}

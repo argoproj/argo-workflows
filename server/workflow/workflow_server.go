@@ -18,10 +18,13 @@ import (
 	"github.com/argoproj/argo-workflows/v3/errors"
 	"github.com/argoproj/argo-workflows/v3/persist/sqldb"
 	workflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflow"
+	workflowarchivepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowarchive"
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
+	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo-workflows/v3/server/auth"
+	sutils "github.com/argoproj/argo-workflows/v3/server/utils"
 	argoutil "github.com/argoproj/argo-workflows/v3/util"
 	"github.com/argoproj/argo-workflows/v3/util/fields"
 	"github.com/argoproj/argo-workflows/v3/util/instanceid"
@@ -32,21 +35,20 @@ import (
 	"github.com/argoproj/argo-workflows/v3/workflow/templateresolution"
 	"github.com/argoproj/argo-workflows/v3/workflow/util"
 	"github.com/argoproj/argo-workflows/v3/workflow/validate"
-
-	sutils "github.com/argoproj/argo-workflows/v3/server/utils"
 )
 
 type workflowServer struct {
 	instanceIDService     instanceid.Service
 	offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo
 	hydrator              hydrator.Interface
+	wfArchiveServer       workflowarchivepkg.ArchivedWorkflowServiceServer
 }
 
 const latestAlias = "@latest"
 
 // NewWorkflowServer returns a new workflowServer
-func NewWorkflowServer(instanceIDService instanceid.Service, offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo) workflowpkg.WorkflowServiceServer {
-	return &workflowServer{instanceIDService, offloadNodeStatusRepo, hydrator.New(offloadNodeStatusRepo)}
+func NewWorkflowServer(instanceIDService instanceid.Service, offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo, wfArchiveServer workflowarchivepkg.ArchivedWorkflowServiceServer) workflowpkg.WorkflowServiceServer {
+	return &workflowServer{instanceIDService, offloadNodeStatusRepo, hydrator.New(offloadNodeStatusRepo), wfArchiveServer}
 }
 
 func (s *workflowServer) CreateWorkflow(ctx context.Context, req *workflowpkg.WorkflowCreateRequest) (*wfv1.Workflow, error) {
@@ -127,6 +129,42 @@ func (s *workflowServer) GetWorkflow(ctx context.Context, req *workflowpkg.Workf
 	return wf, nil
 }
 
+func mergeWithArchivedWorkflows(liveWfs v1alpha1.WorkflowList, archivedWfs v1alpha1.WorkflowList, numWfsToKeep int) *v1alpha1.WorkflowList {
+	var mergedWfs []v1alpha1.Workflow
+	var uidToWfs = map[types.UID][]v1alpha1.Workflow{}
+	for _, item := range liveWfs.Items {
+		uidToWfs[item.UID] = append(uidToWfs[item.UID], item)
+	}
+	for _, item := range archivedWfs.Items {
+		uidToWfs[item.UID] = append(uidToWfs[item.UID], item)
+	}
+
+	for _, v := range uidToWfs {
+		// The archived workflow we saved in the database have "Persisted" as the archival status.
+		// Prioritize 'Archived' over 'Persisted' because 'Archived' means the workflow is in the cluster
+		if len(v) == 1 {
+			mergedWfs = append(mergedWfs, v[0])
+		} else {
+			if ok := v[0].Labels[common.LabelKeyWorkflowArchivingStatus] == "Archived"; ok {
+				mergedWfs = append(mergedWfs, v[0])
+			} else {
+				mergedWfs = append(mergedWfs, v[1])
+			}
+		}
+	}
+	mergedWfsList := v1alpha1.WorkflowList{Items: mergedWfs, ListMeta: liveWfs.ListMeta}
+	sort.Sort(mergedWfsList.Items)
+	numWfs := 0
+	var finalWfs []v1alpha1.Workflow
+	for _, item := range mergedWfsList.Items {
+		if numWfsToKeep == 0 || numWfs < numWfsToKeep {
+			finalWfs = append(finalWfs, item)
+			numWfs += 1
+		}
+	}
+	return &v1alpha1.WorkflowList{Items: finalWfs, ListMeta: liveWfs.ListMeta}
+}
+
 func (s *workflowServer) ListWorkflows(ctx context.Context, req *workflowpkg.WorkflowListRequest) (*wfv1.WorkflowList, error) {
 	wfClient := auth.GetWfClient(ctx)
 
@@ -139,6 +177,19 @@ func (s *workflowServer) ListWorkflows(ctx context.Context, req *workflowpkg.Wor
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.Internal)
 	}
+	archivedWfList, err := s.wfArchiveServer.ListArchivedWorkflows(ctx, &workflowarchivepkg.ListArchivedWorkflowsRequest{
+		ListOptions: listOption,
+		NamePrefix:  "",
+		Namespace:   req.Namespace,
+	})
+	if err != nil {
+		log.Warnf("unable to list archived workflows:%v", err)
+	} else {
+		if archivedWfList != nil {
+			wfList = mergeWithArchivedWorkflows(*wfList, *archivedWfList, int(listOption.Limit))
+		}
+	}
+
 	cleaner := fields.NewCleaner(req.Fields)
 	if s.offloadNodeStatusRepo.IsEnabled() && !cleaner.WillExclude("items.status.nodes") {
 		offloadedNodes, err := s.offloadNodeStatusRepo.List(req.Namespace)
@@ -377,7 +428,7 @@ func (s *workflowServer) ResubmitWorkflow(ctx context.Context, req *workflowpkg.
 		return nil, sutils.ToStatusError(err, codes.InvalidArgument)
 	}
 
-	newWF, err := util.FormulateResubmitWorkflow(wf, req.Memoized, req.Parameters)
+	newWF, err := util.FormulateResubmitWorkflow(ctx, wf, req.Memoized, req.Parameters)
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.Internal)
 	}
@@ -590,8 +641,14 @@ func (s *workflowServer) getWorkflow(ctx context.Context, wfClient versioned.Int
 		return latest, nil
 	}
 	wf, err := wfClient.ArgoprojV1alpha1().Workflows(namespace).Get(ctx, name, options)
-	if err != nil {
-		return nil, sutils.ToStatusError(err, codes.Internal)
+	if wf == nil || err != nil {
+		wf, err = s.wfArchiveServer.GetArchivedWorkflow(ctx, &workflowarchivepkg.GetArchivedWorkflowRequest{
+			Namespace: namespace,
+			Name:      name,
+		})
+		if err != nil {
+			return nil, sutils.ToStatusError(err, codes.Internal)
+		}
 	}
 	return wf, nil
 }

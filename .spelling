@@ -149,6 +149,7 @@ fibonacci
 finalizer
 govaluate
 gzipped
+Generator
 i.e.
 instantiator
 instantiators
@@ -171,6 +172,7 @@ mutex
 namespace
 namespaces
 natively
+OpenAPI
 p.m.
 params
 pre-commit
@@ -228,3 +230,12 @@ idempotence
 kube-scheduler
 kube-apiserver
 kubectl
+Makefile
+Devenv
+devenv
+vendored
+nix.conf
+LDFlags
+dev 
+vendorSha256
+dependabot

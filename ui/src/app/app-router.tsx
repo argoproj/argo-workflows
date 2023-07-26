@@ -6,7 +6,6 @@ import {useEffect, useState} from 'react';
 import {Redirect, Route, Router, Switch} from 'react-router';
 import {Version} from '../models';
 import apidocs from './apidocs';
-import archivedWorkflows from './archived-workflows';
 import clusterWorkflowTemplates from './cluster-workflow-templates';
 import cronWorkflows from './cron-workflows';
 import eventflow from './event-flow';
@@ -35,7 +34,6 @@ const workflowsEventBindingsUrl = uiUrl('workflow-event-bindings');
 const workflowTemplatesUrl = uiUrl('workflow-templates');
 const clusterWorkflowTemplatesUrl = uiUrl('cluster-workflow-templates');
 const cronWorkflowsUrl = uiUrl('cron-workflows');
-const archivedWorkflowsUrl = uiUrl('archived-workflows');
 const eventSourceUrl = uiUrl('event-sources');
 const pluginsUrl = uiUrl('plugins');
 const helpUrl = uiUrl('help');
@@ -131,11 +129,6 @@ export const AppRouter = ({popupManager, history, notificationsManager}: {popupM
                                 iconClassName: 'fa fa-link'
                             },
                             {
-                                title: 'Archived Workflows',
-                                path: archivedWorkflowsUrl + namespaceSuffix,
-                                iconClassName: 'fa fa-archive'
-                            },
-                            {
                                 title: 'Reports',
                                 path: reportsUrl + namespaceSuffix,
                                 iconClassName: 'fa fa-chart-bar'
@@ -176,7 +169,6 @@ export const AppRouter = ({popupManager, history, notificationsManager}: {popupM
                                 <Route path={workflowTemplatesUrl} component={workflowTemplates.component} />
                                 <Route path={clusterWorkflowTemplatesUrl} component={clusterWorkflowTemplates.component} />
                                 <Route path={cronWorkflowsUrl} component={cronWorkflows.component} />
-                                <Route path={archivedWorkflowsUrl} component={archivedWorkflows.component} />
                                 <Route path={reportsUrl} component={reports.component} />
                                 <Route path={pluginsUrl} component={plugins.component} />
                                 <Route exact={true} strict={true} path={helpUrl} component={help.component} />

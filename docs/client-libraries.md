@@ -7,9 +7,10 @@ yourself. You can use a client library for the programming language you are usin
 
 Client libraries often handle common tasks such as authentication for you.
 
-## Officially-supported client libraries
+## Auto-generated client libraries
 
-The following client libraries are officially maintained by the Argo team.
+The following client libraries are auto-generated using [OpenAPI Generator](https://github.com/OpenAPITools/openapi-generator-cli).
+Please expect very minimal support from the Argo team.
 
 | Language | Client Library                                                                                      | Examples/Docs                                                                                 |
 |----------|-----------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------|

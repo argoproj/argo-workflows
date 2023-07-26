@@ -11,7 +11,6 @@ import (
 	"github.com/argoproj/pkg/humanize"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/labels"
 
 	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
 	cronworkflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/cronworkflow"
@@ -21,6 +20,7 @@ import (
 type listFlags struct {
 	allNamespaces bool   // --all-namespaces
 	output        string // --output
+	labelSelector string // --selector
 }
 
 func NewListCommand() *cobra.Command {
@@ -37,8 +37,7 @@ func NewListCommand() *cobra.Command {
 				namespace = ""
 			}
 			listOpts := metav1.ListOptions{}
-			labelSelector := labels.NewSelector()
-			listOpts.LabelSelector = labelSelector.String()
+			listOpts.LabelSelector = listArgs.labelSelector
 			cronWfList, err := serviceClient.ListCronWorkflows(ctx, &cronworkflowpkg.ListCronWorkflowsRequest{
 				Namespace:   namespace,
 				ListOptions: &listOpts,
@@ -58,6 +57,7 @@ func NewListCommand() *cobra.Command {
 	}
 	command.Flags().BoolVarP(&listArgs.allNamespaces, "all-namespaces", "A", false, "Show workflows from all namespaces")
 	command.Flags().StringVarP(&listArgs.output, "output", "o", "", "Output format. One of: wide|name")
+	command.Flags().StringVarP(&listArgs.labelSelector, "selector", "l", "", "Selector (label query) to filter on, supports '=', '==', and '!='.(e.g. -l key1=value1,key2=value2). Matching objects must satisfy all of the specified label constraints.")
 	return command
 }
 

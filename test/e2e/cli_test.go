@@ -6,7 +6,6 @@ package e2e
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -352,7 +351,7 @@ func (s *CLISuite) TestLogProblems() {
 		Workflow(`@testdata/log-problems.yaml`).
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(fixtures.ToStart).
+		WaitForWorkflow(fixtures.ToHaveRunningPod).
 		Then().
 		// logs should come in order
 		RunCli([]string{"logs", "@latest", "--follow"}, func(t *testing.T, output string, err error) {
@@ -747,14 +746,14 @@ func (s *CLISuite) TestWorkflowLint() {
 			})
 	})
 	s.Run("LintDir", func() {
-		tmp, err := ioutil.TempDir("", "")
+		tmp, err := os.MkdirTemp("", "")
 		s.CheckError(err)
 		defer func() { _ = os.RemoveAll(tmp) }()
 		// Read all content of src to data
-		data, err := ioutil.ReadFile("smoke/basic.yaml")
+		data, err := os.ReadFile("smoke/basic.yaml")
 		s.CheckError(err)
 		// Write data to dst
-		err = ioutil.WriteFile(filepath.Join(tmp, "my-workflow.yaml"), data, 0o600)
+		err = os.WriteFile(filepath.Join(tmp, "my-workflow.yaml"), data, 0o600)
 		s.CheckError(err)
 		s.Given().
 			RunCli([]string{"lint", tmp}, func(t *testing.T, output string, err error) {
@@ -1273,6 +1272,30 @@ func (s *CLISuite) TestCron() {
 			}
 		})
 	})
+
+	s.Run("List with labels", func() {
+		// First create cron workflow with labels
+		s.Given().RunCli([]string{"cron", "create", "cron/cron-workflow-with-labels.yaml"}, func(t *testing.T, output string, err error) {
+			assert.NoError(t, err)
+		}).
+			// Then create cron workflow without labels
+			RunCli([]string{"cron", "create", "cron/basic.yaml", "--name", "cron-wf-without-labels"}, func(t *testing.T, output string, err error) {
+				assert.NoError(t, err)
+			}).
+			// Then check to make sure only cron workflow with labels shows up from 'argo cron list...'
+			RunCli([]string{"cron", "list", "-l client=importantclient"}, func(t *testing.T, output string, err error) {
+				if assert.NoError(t, err) {
+					assert.Contains(t, output, "NAME")
+					assert.Contains(t, output, "AGE")
+					assert.Contains(t, output, "LAST RUN")
+					assert.Contains(t, output, "SCHEDULE")
+					assert.Contains(t, output, "SUSPENDED")
+					assert.Contains(t, output, "test-cwf-with-labels")
+					assert.NotContains(t, output, "cron-wf-without-labels")
+				}
+			})
+	})
+
 	s.Run("Suspend", func() {
 		s.Given().RunCli([]string{"cron", "suspend", "test-cron-wf-basic"}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {

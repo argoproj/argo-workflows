@@ -3,7 +3,7 @@ import * as classNames from 'classnames';
 import * as React from 'react';
 import {useContext, useEffect, useRef, useState} from 'react';
 import {RouteComponentProps} from 'react-router';
-import {ArtifactRepository, execSpec, Link, NodeStatus, Parameter, Workflow} from '../../../../models';
+import {archivalStatus, ArtifactRepository, execSpec, isArchivedWorkflow, isWorkflowInCluster, Link, NodeStatus, Parameter, Workflow} from '../../../../models';
 import {ANNOTATION_KEY_POD_NAME_VERSION} from '../../../shared/annotations';
 import {artifactRepoHasLocation, findArtifact} from '../../../shared/artifacts';
 import {uiUrl} from '../../../shared/base';
@@ -26,6 +26,7 @@ import * as Operations from '../../../shared/workflow-operations-map';
 import {WorkflowOperations} from '../../../shared/workflow-operations-map';
 import {WidgetGallery} from '../../../widgets/widget-gallery';
 import {EventsPanel} from '../events-panel';
+import {ResubmitWorkflowPanel} from '../resubmit-workflow-panel';
 import {WorkflowArtifacts} from '../workflow-artifacts';
 import {WorkflowLogsViewer} from '../workflow-logs-viewer/workflow-logs-viewer';
 import {WorkflowNodeInfo} from '../workflow-node-info/workflow-node-info';
@@ -51,6 +52,41 @@ const INITIAL_SIDE_PANEL_WIDTH = 570;
 const ANIMATION_MS = 200;
 const ANIMATION_BUFFER_MS = 20;
 
+// This is used instead of React state since the state update is async and there's a delay for parent
+// component to render with the updated state.
+let globalDeleteArchived = false;
+
+const DeleteCheck = (props: {isWfInDB: boolean; isWfInCluster: boolean}) => {
+    // The local states are created intentionally so that the checkbox works as expected
+    const [da, sda] = useState(false);
+    if (props.isWfInDB && props.isWfInCluster) {
+        return (
+            <>
+                <p>Are you sure you want to delete this workflow?</p>
+                <div className='workflows-list__status'>
+                    <input
+                        type='checkbox'
+                        className='workflows-list__status--checkbox'
+                        checked={da}
+                        onClick={() => {
+                            sda(!da);
+                            globalDeleteArchived = !globalDeleteArchived;
+                        }}
+                        id='delete-check'
+                    />
+                    <label htmlFor='delete-check'>Delete in database</label>
+                </div>
+            </>
+        );
+    } else {
+        return (
+            <>
+                <p>Are you sure you want to delete this workflow?</p>
+            </>
+        );
+    }
+};
+
 export const WorkflowDetails = ({history, location, match}: RouteComponentProps<any>) => {
     // boiler-plate
     const {navigation, popup} = useContext(Context);
@@ -59,6 +95,7 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
     const [namespace] = useState(match.params.namespace);
     const [name, setName] = useState(match.params.name);
     const [tab, setTab] = useState(queryParams.get('tab') || 'workflow');
+    const [uid, setUid] = useState(queryParams.get('uid') || '');
     const [nodeId, setNodeId] = useState(queryParams.get('nodeId'));
     const [nodePanelView, setNodePanelView] = useState(queryParams.get('nodePanelView'));
     const [sidePanel, setSidePanel] = useState(queryParams.get('sidePanel'));
@@ -82,6 +119,7 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
 
     useEffect(
         useQueryParams(history, p => {
+            setUid(p.get('uid'));
             setTab(p.get('tab') || 'workflow');
             setNodeId(p.get('nodeId'));
             setNodePanelView(p.get('nodePanelView'));
@@ -120,8 +158,8 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
     }, [workflow, selectedArtifact]);
 
     useEffect(() => {
-        history.push(historyUrl('workflows/{namespace}/{name}', {namespace, name, tab, nodeId, nodePanelView, sidePanel}));
-    }, [namespace, name, tab, nodeId, nodePanelView, sidePanel]);
+        history.push(historyUrl('workflows/{namespace}/{name}', {namespace, name, tab, nodeId, nodePanelView, sidePanel, uid}));
+    }, [namespace, name, tab, nodeId, nodePanelView, sidePanel, uid]);
 
     useEffect(() => {
         services.info
@@ -147,20 +185,37 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
                     title: workflowOperation.title.charAt(0).toUpperCase() + workflowOperation.title.slice(1),
                     iconClassName: workflowOperation.iconClassName,
                     action: () => {
-                        popup.confirm('Confirm', `Are you sure you want to ${workflowOperation.title.toLowerCase()} this workflow?`).then(yes => {
-                            if (yes) {
-                                workflowOperation
-                                    .action(workflow)
-                                    .then((wf: Workflow) => {
-                                        if (workflowOperation.title === 'DELETE') {
-                                            navigation.goto(uiUrl(`workflows/${workflow.metadata.namespace}`));
-                                        } else {
-                                            setName(wf.metadata.name);
+                        if (workflowOperation.title === 'DELETE') {
+                            popup
+                                .confirm('Confirm', () => <DeleteCheck isWfInDB={isArchivedWorkflow(workflow)} isWfInCluster={isWorkflowInCluster(workflow)} />)
+                                .then(yes => {
+                                    if (yes) {
+                                        if (isWorkflowInCluster(workflow)) {
+                                            services.workflows.delete(workflow.metadata.name, workflow.metadata.namespace).catch(setError);
                                         }
-                                    })
-                                    .catch(setError);
-                            }
-                        });
+                                        if (isArchivedWorkflow(workflow) && (globalDeleteArchived || !isWorkflowInCluster(workflow))) {
+                                            services.workflows.deleteArchived(workflow.metadata.uid, workflow.metadata.namespace).catch(setError);
+                                        }
+                                        navigation.goto(uiUrl(`workflows/${workflow.metadata.namespace}`));
+                                        // TODO: This is a temporary workaround so that the list of workflows
+                                        //  is correctly displayed. Workflow list page needs to be more responsive.
+                                        window.location.reload();
+                                    }
+                                });
+                        } else if (workflowOperation.title === 'RESUBMIT') {
+                            setSidePanel('resubmit');
+                        } else {
+                            popup.confirm('Confirm', `Are you sure you want to ${workflowOperation.title.toLowerCase()} this workflow?`).then(yes => {
+                                if (yes) {
+                                    workflowOperation
+                                        .action(workflow)
+                                        .then((wf: Workflow) => {
+                                            setName(wf.metadata.name);
+                                        })
+                                        .catch(setError);
+                                }
+                            });
+                        }
                     }
                 };
             });
@@ -277,7 +332,7 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
                                     </React.Fragment>
                                 )}
                                 <h5>Artifacts</h5>
-                                <WorkflowArtifacts workflow={workflow} archived={false} />
+                                <WorkflowArtifacts workflow={workflow} archived={isArchivedWorkflow(workflow)} />
                                 <WorkflowResourcePanel workflow={workflow} />
                             </div>
                         </div>
@@ -286,14 +341,23 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
             </>
         );
     };
-
     useEffect(() => {
+        if (!isWorkflowInCluster(workflow)) {
+            return;
+        }
         const retryWatch = new RetryWatch<Workflow>(
             () => services.workflows.watch({name, namespace}),
-            () => setError(null),
+            () => {
+                setError(null);
+            },
             e => {
                 if (e.type === 'DELETED') {
+                    setUid(e.object.metadata.uid);
                     setError(new Error('Workflow gone'));
+                    if (e.object.metadata.labels[archivalStatus]) {
+                        e.object.metadata.labels[archivalStatus] = 'Persisted';
+                    }
+                    setWorkflow(e.object);
                 } else {
                     if (hasArtifactGCError(e.object.status.conditions)) {
                         setError(new Error('Artifact garbage collection failed'));
@@ -302,21 +366,52 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
                 }
             },
             err => {
-                services.workflows
-                    .get(namespace, name)
-                    .then()
-                    .catch(e => {
-                        if (e.status === 404) {
-                            navigation.goto(historyUrl('archived-workflows', {namespace, name, deep: true}));
-                        }
-                    });
-
                 setError(err);
             }
         );
         retryWatch.start();
         return () => retryWatch.stop();
-    }, [namespace, name]);
+    }, [namespace, name, isWorkflowInCluster(workflow)]);
+
+    // Get workflow
+    useEffect(() => {
+        const getWf = async () => {
+            let archivedWf: Workflow;
+            if (uid !== '') {
+                await services.workflows
+                    .getArchived(namespace, uid)
+                    .then(wf => {
+                        setError(null);
+                        archivedWf = wf;
+                    })
+                    .catch(err => {
+                        if (err.status !== 404) {
+                            setError(err);
+                        }
+                    });
+            }
+            await services.workflows
+                .get(namespace, name)
+                .then(wf => {
+                    setError(null);
+                    // If we find live workflow which has same uid, we use live workflow.
+                    if (!archivedWf || archivedWf.metadata.uid === wf.metadata.uid) {
+                        setWorkflow(wf);
+                        setUid(wf.metadata.uid);
+                    } else {
+                        setWorkflow(archivedWf);
+                    }
+                })
+                .catch(err => {
+                    if (archivedWf) {
+                        setWorkflow(archivedWf);
+                    } else {
+                        setError(err);
+                    }
+                });
+        };
+        getWf();
+    }, [namespace, name, uid]);
 
     const openLink = (link: Link) => {
         const object = {
@@ -462,7 +557,7 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
                                         onShowContainerLogs={(x, container) => setSidePanel(`logs:${x}:${container}`)}
                                         onShowEvents={() => setSidePanel(`events:${nodeId}`)}
                                         onShowYaml={() => setSidePanel(`yaml:${nodeId}`)}
-                                        archived={false}
+                                        archived={isArchivedWorkflow(workflow)}
                                         onResume={() => renderResumePopup()}
                                     />
                                 )}
@@ -472,13 +567,20 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
                     ))}
             </div>
             {workflow && (
-                <SlidingPanel isShown={!!sidePanel} onClose={() => setSidePanel(null)}>
+                <SlidingPanel isShown={!!sidePanel} onClose={() => setSidePanel(null)} isMiddle={parsedSidePanel.type === 'resubmit'}>
                     {parsedSidePanel.type === 'logs' && (
-                        <WorkflowLogsViewer workflow={workflow} initialPodName={podName} nodeId={parsedSidePanel.nodeId} container={parsedSidePanel.container} archived={false} />
+                        <WorkflowLogsViewer
+                            workflow={workflow}
+                            initialPodName={podName}
+                            nodeId={parsedSidePanel.nodeId}
+                            container={parsedSidePanel.container}
+                            archived={isArchivedWorkflow(workflow)}
+                        />
                     )}
                     {parsedSidePanel.type === 'events' && <EventsPanel namespace={namespace} kind='Pod' name={podName} />}
                     {parsedSidePanel.type === 'share' && <WidgetGallery namespace={namespace} name={name} />}
                     {parsedSidePanel.type === 'yaml' && <WorkflowYamlViewer workflow={workflow} selectedNode={selectedNode} />}
+                    {parsedSidePanel.type === 'resubmit' && <ResubmitWorkflowPanel workflow={workflow} isArchived={isArchivedWorkflow(workflow)} />}
                     {!parsedSidePanel}
                 </SlidingPanel>
             )}

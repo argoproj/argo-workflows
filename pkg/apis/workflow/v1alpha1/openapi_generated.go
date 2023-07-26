@@ -1403,7 +1403,7 @@ func schema_pkg_apis_workflow_v1alpha1_Backoff(ref common.ReferenceCallback) com
 					},
 					"maxDuration": {
 						SchemaProps: spec.SchemaProps{
-							Description: "MaxDuration is the maximum amount of time allowed for the backoff strategy",
+							Description: "MaxDuration is the maximum amount of time allowed for a workflow in the backoff strategy",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -3845,6 +3845,13 @@ func schema_pkg_apis_workflow_v1alpha1_Mutex(ref common.ReferenceCallback) commo
 							Format:      "",
 						},
 					},
+					"namespace": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Namespace is the namespace of the mutex, default: [namespace of workflow]",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
 				},
 			},
 		},
@@ -4702,7 +4709,7 @@ func schema_pkg_apis_workflow_v1alpha1_PodGC(ref common.ReferenceCallback) commo
 				Properties: map[string]spec.Schema{
 					"strategy": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Strategy is the strategy to use. One of \"OnPodCompletion\", \"OnPodSuccess\", \"OnWorkflowCompletion\", \"OnWorkflowSuccess\"",
+							Description: "Strategy is the strategy to use. One of \"OnPodCompletion\", \"OnPodSuccess\", \"OnWorkflowCompletion\", \"OnWorkflowSuccess\". If unset, does not delete Pods",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -4713,11 +4720,17 @@ func schema_pkg_apis_workflow_v1alpha1_PodGC(ref common.ReferenceCallback) commo
 							Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.LabelSelector"),
 						},
 					},
+					"deleteDelayDuration": {
+						SchemaProps: spec.SchemaProps{
+							Description: "DeleteDelayDuration specifies the duration before pods in the GC queue get deleted.",
+							Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.Duration"),
+						},
+					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"k8s.io/apimachinery/pkg/apis/meta/v1.LabelSelector"},
+			"k8s.io/apimachinery/pkg/apis/meta/v1.Duration", "k8s.io/apimachinery/pkg/apis/meta/v1.LabelSelector"},
 	}
 }
 
@@ -5578,6 +5591,13 @@ func schema_pkg_apis_workflow_v1alpha1_SemaphoreRef(ref common.ReferenceCallback
 						SchemaProps: spec.SchemaProps{
 							Description: "ConfigMapKeyRef is configmap selector for Semaphore configuration",
 							Ref:         ref("k8s.io/api/core/v1.ConfigMapKeySelector"),
+						},
+					},
+					"namespace": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Namespace is the namespace of the configmap, default: [namespace of workflow]",
+							Type:        []string{"string"},
+							Format:      "",
 						},
 					},
 				},
@@ -6763,7 +6783,7 @@ func schema_pkg_apis_workflow_v1alpha1_VolumeClaimGC(ref common.ReferenceCallbac
 				Properties: map[string]spec.Schema{
 					"strategy": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Strategy is the strategy to use. One of \"OnWorkflowCompletion\", \"OnWorkflowSuccess\"",
+							Description: "Strategy is the strategy to use. One of \"OnWorkflowCompletion\", \"OnWorkflowSuccess\". Defaults to \"OnWorkflowSuccess\"",
 							Type:        []string{"string"},
 							Format:      "",
 						},

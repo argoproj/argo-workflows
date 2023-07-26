@@ -2,7 +2,6 @@ package validation
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -22,7 +21,7 @@ func contains(s []string, e string) bool {
 }
 
 func ValidateArgoYamlRecursively(fromPath string, skipFileNames []string) (map[string][]string, error) {
-	schemaBytes, err := ioutil.ReadFile("../api/jsonschema/schema.json")
+	schemaBytes, err := os.ReadFile("../api/jsonschema/schema.json")
 	if err != nil {
 		return nil, err
 	}
@@ -45,7 +44,7 @@ func ValidateArgoYamlRecursively(fromPath string, skipFileNames []string) (map[s
 		if filepath.Ext(path) != ".yaml" {
 			return nil
 		}
-		yamlBytes, err := ioutil.ReadFile(filepath.Clean(path))
+		yamlBytes, err := os.ReadFile(filepath.Clean(path))
 		if err != nil {
 			return err
 		}

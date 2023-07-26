@@ -3998,7 +3998,7 @@
           "description": "Factor is a factor to multiply the base duration after each failed retry"
         },
         "maxDuration": {
-          "description": "MaxDuration is the maximum amount of time allowed for the backoff strategy",
+          "description": "MaxDuration is the maximum amount of time allowed for a workflow in the backoff strategy",
           "type": "string"
         }
       },
@@ -5416,6 +5416,10 @@
         "name": {
           "description": "name of the mutex",
           "type": "string"
+        },
+        "namespace": {
+          "description": "Namespace is the namespace of the mutex, default: [namespace of workflow]",
+          "type": "string"
         }
       },
       "type": "object"
@@ -5826,12 +5830,16 @@
     "io.argoproj.workflow.v1alpha1.PodGC": {
       "description": "PodGC describes how to delete completed pods as they complete",
       "properties": {
+        "deleteDelayDuration": {
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.Duration",
+          "description": "DeleteDelayDuration specifies the duration before pods in the GC queue get deleted."
+        },
         "labelSelector": {
           "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.LabelSelector",
           "description": "LabelSelector is the label selector to check if the pods match the labels before being added to the pod GC queue."
         },
         "strategy": {
-          "description": "Strategy is the strategy to use. One of \"OnPodCompletion\", \"OnPodSuccess\", \"OnWorkflowCompletion\", \"OnWorkflowSuccess\"",
+          "description": "Strategy is the strategy to use. One of \"OnPodCompletion\", \"OnPodSuccess\", \"OnWorkflowCompletion\", \"OnWorkflowSuccess\". If unset, does not delete Pods",
           "type": "string"
         }
       },
@@ -6306,6 +6314,10 @@
         "configMapKeyRef": {
           "$ref": "#/definitions/io.k8s.api.core.v1.ConfigMapKeySelector",
           "description": "ConfigMapKeyRef is configmap selector for Semaphore configuration"
+        },
+        "namespace": {
+          "description": "Namespace is the namespace of the configmap, default: [namespace of workflow]",
+          "type": "string"
         }
       },
       "type": "object"
@@ -6956,7 +6968,7 @@
       "description": "VolumeClaimGC describes how to delete volumes from completed Workflows",
       "properties": {
         "strategy": {
-          "description": "Strategy is the strategy to use. One of \"OnWorkflowCompletion\", \"OnWorkflowSuccess\"",
+          "description": "Strategy is the strategy to use. One of \"OnWorkflowCompletion\", \"OnWorkflowSuccess\". Defaults to \"OnWorkflowSuccess\"",
           "type": "string"
         }
       },
@@ -10424,6 +10436,15 @@
         },
         "fieldValidation": {
           "title": "fieldValidation instructs the server on how to handle\nobjects in the request (POST/PUT/PATCH) containing unknown\nor duplicate fields, provided that the `ServerSideFieldValidation`\nfeature gate is also enabled. Valid values are:\n- Ignore: This will ignore any unknown fields that are silently\ndropped from the object, and will ignore all but the last duplicate\nfield that the decoder encounters. This is the default behavior\nprior to v1.23 and is the default behavior when the\n`ServerSideFieldValidation` feature gate is disabled.\n- Warn: This will send a warning via the standard warning response\nheader for each unknown field that is dropped from the object, and\nfor each duplicate field that is encountered. The request will\nstill succeed if there are no other errors, and will only persist\nthe last of any duplicate fields. This is the default when the\n`ServerSideFieldValidation` feature gate is enabled.\n- Strict: This will fail the request with a BadRequest error if\nany unknown fields would be dropped from the object, or if any\nduplicate fields are present. The error returned from the server\nwill contain all unknown and duplicate fields encountered.\n+optional",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "io.k8s.apimachinery.pkg.apis.meta.v1.Duration": {
+      "description": "Duration is a wrapper around time.Duration which supports correct\nmarshaling to YAML and JSON. In particular, it marshals into strings, which\ncan be used as map keys in json.",
+      "properties": {
+        "duration": {
           "type": "string"
         }
       },

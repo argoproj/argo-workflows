@@ -976,6 +976,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                     ),
                 ),
                 pod_gc=IoArgoprojWorkflowV1alpha1PodGC(
+                    delete_delay_duration=Duration(
+                        duration="duration_example",
+                    ),
                     label_selector=LabelSelector(
                         match_expressions=[
                             LabelSelectorRequirement(
@@ -1056,6 +1059,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                 synchronization=IoArgoprojWorkflowV1alpha1Synchronization(
                     mutex=IoArgoprojWorkflowV1alpha1Mutex(
                         name="name_example",
+                        namespace="namespace_example",
                     ),
                     semaphore=IoArgoprojWorkflowV1alpha1SemaphoreRef(
                         config_map_key_ref=ConfigMapKeySelector(
@@ -1063,6 +1067,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             name="name_example",
                             optional=True,
                         ),
+                        namespace="namespace_example",
                     ),
                 ),
                 template_defaults=IoArgoprojWorkflowV1alpha1Template(
@@ -5184,6 +5189,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                     synchronization=IoArgoprojWorkflowV1alpha1Synchronization(
                         mutex=IoArgoprojWorkflowV1alpha1Mutex(
                             name="name_example",
+                            namespace="namespace_example",
                         ),
                         semaphore=IoArgoprojWorkflowV1alpha1SemaphoreRef(
                             config_map_key_ref=ConfigMapKeySelector(
@@ -5191,6 +5197,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 name="name_example",
                                 optional=True,
                             ),
+                            namespace="namespace_example",
                         ),
                     ),
                     timeout="timeout_example",
@@ -9695,6 +9702,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         synchronization=IoArgoprojWorkflowV1alpha1Synchronization(
                             mutex=IoArgoprojWorkflowV1alpha1Mutex(
                                 name="name_example",
+                                namespace="namespace_example",
                             ),
                             semaphore=IoArgoprojWorkflowV1alpha1SemaphoreRef(
                                 config_map_key_ref=ConfigMapKeySelector(
@@ -9702,6 +9710,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     name="name_example",
                                     optional=True,
                                 ),
+                                namespace="namespace_example",
                             ),
                         ),
                         timeout="timeout_example",
@@ -16090,6 +16099,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         synchronization=IoArgoprojWorkflowV1alpha1Synchronization(
                             mutex=IoArgoprojWorkflowV1alpha1Mutex(
                                 name="name_example",
+                                namespace="namespace_example",
                             ),
                             semaphore=IoArgoprojWorkflowV1alpha1SemaphoreRef(
                                 config_map_key_ref=ConfigMapKeySelector(
@@ -16097,6 +16107,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     name="name_example",
                                     optional=True,
                                 ),
+                                namespace="namespace_example",
                             ),
                         ),
                         timeout="timeout_example",
@@ -17339,6 +17350,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         ),
                     ),
                     pod_gc=IoArgoprojWorkflowV1alpha1PodGC(
+                        delete_delay_duration=Duration(
+                            duration="duration_example",
+                        ),
                         label_selector=LabelSelector(
                             match_expressions=[
                                 LabelSelectorRequirement(
@@ -17419,6 +17433,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                     synchronization=IoArgoprojWorkflowV1alpha1Synchronization(
                         mutex=IoArgoprojWorkflowV1alpha1Mutex(
                             name="name_example",
+                            namespace="namespace_example",
                         ),
                         semaphore=IoArgoprojWorkflowV1alpha1SemaphoreRef(
                             config_map_key_ref=ConfigMapKeySelector(
@@ -17426,6 +17441,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 name="name_example",
                                 optional=True,
                             ),
+                            namespace="namespace_example",
                         ),
                     ),
                     template_defaults=IoArgoprojWorkflowV1alpha1Template(
@@ -21547,6 +21563,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         synchronization=IoArgoprojWorkflowV1alpha1Synchronization(
                             mutex=IoArgoprojWorkflowV1alpha1Mutex(
                                 name="name_example",
+                                namespace="namespace_example",
                             ),
                             semaphore=IoArgoprojWorkflowV1alpha1SemaphoreRef(
                                 config_map_key_ref=ConfigMapKeySelector(
@@ -21554,6 +21571,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     name="name_example",
                                     optional=True,
                                 ),
+                                namespace="namespace_example",
                             ),
                         ),
                         timeout="timeout_example",
@@ -26058,6 +26076,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             synchronization=IoArgoprojWorkflowV1alpha1Synchronization(
                                 mutex=IoArgoprojWorkflowV1alpha1Mutex(
                                     name="name_example",
+                                    namespace="namespace_example",
                                 ),
                                 semaphore=IoArgoprojWorkflowV1alpha1SemaphoreRef(
                                     config_map_key_ref=ConfigMapKeySelector(
@@ -26065,6 +26084,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         name="name_example",
                                         optional=True,
                                     ),
+                                    namespace="namespace_example",
                                 ),
                             ),
                             timeout="timeout_example",
@@ -28182,6 +28202,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                     ),
                 ),
                 pod_gc=IoArgoprojWorkflowV1alpha1PodGC(
+                    delete_delay_duration=Duration(
+                        duration="duration_example",
+                    ),
                     label_selector=LabelSelector(
                         match_expressions=[
                             LabelSelectorRequirement(
@@ -28262,6 +28285,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                 synchronization=IoArgoprojWorkflowV1alpha1Synchronization(
                     mutex=IoArgoprojWorkflowV1alpha1Mutex(
                         name="name_example",
+                        namespace="namespace_example",
                     ),
                     semaphore=IoArgoprojWorkflowV1alpha1SemaphoreRef(
                         config_map_key_ref=ConfigMapKeySelector(
@@ -28269,6 +28293,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             name="name_example",
                             optional=True,
                         ),
+                        namespace="namespace_example",
                     ),
                 ),
                 template_defaults=IoArgoprojWorkflowV1alpha1Template(
@@ -32390,6 +32415,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                     synchronization=IoArgoprojWorkflowV1alpha1Synchronization(
                         mutex=IoArgoprojWorkflowV1alpha1Mutex(
                             name="name_example",
+                            namespace="namespace_example",
                         ),
                         semaphore=IoArgoprojWorkflowV1alpha1SemaphoreRef(
                             config_map_key_ref=ConfigMapKeySelector(
@@ -32397,6 +32423,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 name="name_example",
                                 optional=True,
                             ),
+                            namespace="namespace_example",
                         ),
                     ),
                     timeout="timeout_example",
@@ -36901,6 +36928,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         synchronization=IoArgoprojWorkflowV1alpha1Synchronization(
                             mutex=IoArgoprojWorkflowV1alpha1Mutex(
                                 name="name_example",
+                                namespace="namespace_example",
                             ),
                             semaphore=IoArgoprojWorkflowV1alpha1SemaphoreRef(
                                 config_map_key_ref=ConfigMapKeySelector(
@@ -36908,6 +36936,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     name="name_example",
                                     optional=True,
                                 ),
+                                namespace="namespace_example",
                             ),
                         ),
                         timeout="timeout_example",
@@ -43296,6 +43325,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         synchronization=IoArgoprojWorkflowV1alpha1Synchronization(
                             mutex=IoArgoprojWorkflowV1alpha1Mutex(
                                 name="name_example",
+                                namespace="namespace_example",
                             ),
                             semaphore=IoArgoprojWorkflowV1alpha1SemaphoreRef(
                                 config_map_key_ref=ConfigMapKeySelector(
@@ -43303,6 +43333,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     name="name_example",
                                     optional=True,
                                 ),
+                                namespace="namespace_example",
                             ),
                         ),
                         timeout="timeout_example",
@@ -44545,6 +44576,9 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         ),
                     ),
                     pod_gc=IoArgoprojWorkflowV1alpha1PodGC(
+                        delete_delay_duration=Duration(
+                            duration="duration_example",
+                        ),
                         label_selector=LabelSelector(
                             match_expressions=[
                                 LabelSelectorRequirement(
@@ -44625,6 +44659,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                     synchronization=IoArgoprojWorkflowV1alpha1Synchronization(
                         mutex=IoArgoprojWorkflowV1alpha1Mutex(
                             name="name_example",
+                            namespace="namespace_example",
                         ),
                         semaphore=IoArgoprojWorkflowV1alpha1SemaphoreRef(
                             config_map_key_ref=ConfigMapKeySelector(
@@ -44632,6 +44667,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 name="name_example",
                                 optional=True,
                             ),
+                            namespace="namespace_example",
                         ),
                     ),
                     template_defaults=IoArgoprojWorkflowV1alpha1Template(
@@ -48753,6 +48789,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         synchronization=IoArgoprojWorkflowV1alpha1Synchronization(
                             mutex=IoArgoprojWorkflowV1alpha1Mutex(
                                 name="name_example",
+                                namespace="namespace_example",
                             ),
                             semaphore=IoArgoprojWorkflowV1alpha1SemaphoreRef(
                                 config_map_key_ref=ConfigMapKeySelector(
@@ -48760,6 +48797,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     name="name_example",
                                     optional=True,
                                 ),
+                                namespace="namespace_example",
                             ),
                         ),
                         timeout="timeout_example",
@@ -53264,6 +53302,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             synchronization=IoArgoprojWorkflowV1alpha1Synchronization(
                                 mutex=IoArgoprojWorkflowV1alpha1Mutex(
                                     name="name_example",
+                                    namespace="namespace_example",
                                 ),
                                 semaphore=IoArgoprojWorkflowV1alpha1SemaphoreRef(
                                     config_map_key_ref=ConfigMapKeySelector(
@@ -53271,6 +53310,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         name="name_example",
                                         optional=True,
                                     ),
+                                    namespace="namespace_example",
                                 ),
                             ),
                             timeout="timeout_example",
