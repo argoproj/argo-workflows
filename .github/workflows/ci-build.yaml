@@ -245,7 +245,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 6
     env:
-      NODE_OPTIONS: --openssl-legacy-provider --max-old-space-size=4096
+      NODE_OPTIONS: --max-old-space-size=4096
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-node@v3
