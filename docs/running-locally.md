@@ -12,12 +12,14 @@ generation does not work.
 
 ## Development Container
 
-A development container is a running Docker container with a well-defined tool/runtime stack and its prerequisites. It should be able to do everything you need to do to develop argo workflows using the development container without installing tools on your local machine. It takes quite a long time to build the container. It will run k3d inside the container so you'll have a cluster to use to test against.
+A development container is a running Docker container with a well-defined tool/runtime stack and its prerequisites. It should be able to do everything you need to do to develop argo workflows using the development container without installing tools on your local machine. It takes quite a long time to build the container. It will run k3d inside the container so you'll have a cluster to use to test against. To communicate with services running either in other development containers or directly on the local developer machine (e.g., a database) the following URL can be used in the workflow spec: `host.docker.internal:<PORT>`. This facilitates the implementation of workflows, which need to connect to a database or an API server.
 
 You can use the development container in a few different ways:
 
-1. [Visual studio code](https://code.visualstudio.com/) with [The Visual Studio Code Remote - Containers](https://code.visualstudio.com/docs/remote/containers) extension lets you use a Docker container as a full-featured development environment. Open the clone of argo-workflows folder in VS code and it should offer to use the development container automatically. System requirements can be found [here](https://code.visualstudio.com/docs/remote/containers#_system-requirements). Visual Studio will allow you to forward ports to allow your external browser to access the running components.
-1. [Dev-container CLI](https://code.visualstudio.com/). Install the tool and from the argo-workflow folder do `devcontainer up --workspace-folder .` followed by `devcontainer exec --workspace-folder . /bin/bash` to get a shell where you can start building the code. You can use your choice editor outside the docker image to edit code, the changes are mirrored inside the container. Due to a limitation in the CLI only port 8080 (the Web UI) will get exposed for you to access if you run this way. Other services are usable from the shell inside.
+1. [Visual Studio Code](https://code.visualstudio.com/) with [Dev Containers](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers) extension lets you use a Docker container as a full-featured development environment. Open the clone of argo-workflows folder in VS code and it should offer to use the development container automatically. System requirements can be found [here](https://code.visualstudio.com/docs/remote/containers#_system-requirements). Visual Studio will allow you to forward ports to allow your external browser to access the running components.
+1. [Dev-container CLI](https://github.com/devcontainers/cli). Install the tool and from the argo-workflow folder do `devcontainer up --workspace-folder .` followed by `devcontainer exec --workspace-folder . /bin/bash` to get a shell where you can start building the code. You can use your choice editor outside the docker image to edit code, the changes are mirrored inside the container. Due to a limitation in the CLI only port 8080 (the Web UI) will get exposed for you to access if you run this way. Other services are usable from the shell inside.
+
+Once you have entered the container, continue to [Developing Locally](#developing-locally).
 
 `Github Codespaces` is known not to work at this time.
 
@@ -40,6 +42,16 @@ Note:
     * Use [Docker Desktop](https://docs.docker.com/desktop/linux/install/) instead of [Docker Engine](https://docs.docker.com/engine/install/) to prevent incorrect network configuration by k3d.
 
 ## Requirements
+
+Add the following to your `/etc/hosts`:
+
+```text
+127.0.0.1 dex
+127.0.0.1 minio
+127.0.0.1 postgres
+127.0.0.1 mysql
+127.0.0.1 azurite
+```
 
 To build on your own machine without using the dev-container you will need
 
@@ -65,16 +77,6 @@ automatically.
 returns `allowed`).
 
 ## Developing locally
-
-Add the following to your `/etc/hosts`:
-
-```text
-127.0.0.1 dex
-127.0.0.1 minio
-127.0.0.1 postgres
-127.0.0.1 mysql
-127.0.0.1 azurite
-```
 
 To start:
 

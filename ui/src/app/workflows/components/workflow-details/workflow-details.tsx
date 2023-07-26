@@ -3,7 +3,7 @@ import * as classNames from 'classnames';
 import * as React from 'react';
 import {useContext, useEffect, useRef, useState} from 'react';
 import {RouteComponentProps} from 'react-router';
-import {ArtifactRepository, execSpec, isArchivedWorkflow, Link, NodeStatus, Parameter, Workflow} from '../../../../models';
+import {archivalStatus, ArtifactRepository, execSpec, isArchivedWorkflow, isWorkflowInCluster, Link, NodeStatus, Parameter, Workflow} from '../../../../models';
 import {ANNOTATION_KEY_POD_NAME_VERSION} from '../../../shared/annotations';
 import {artifactRepoHasLocation, findArtifact} from '../../../shared/artifacts';
 import {uiUrl} from '../../../shared/base';
@@ -26,6 +26,7 @@ import * as Operations from '../../../shared/workflow-operations-map';
 import {WorkflowOperations} from '../../../shared/workflow-operations-map';
 import {WidgetGallery} from '../../../widgets/widget-gallery';
 import {EventsPanel} from '../events-panel';
+import {ResubmitWorkflowPanel} from '../resubmit-workflow-panel';
 import {WorkflowArtifacts} from '../workflow-artifacts';
 import {WorkflowLogsViewer} from '../workflow-logs-viewer/workflow-logs-viewer';
 import {WorkflowNodeInfo} from '../workflow-node-info/workflow-node-info';
@@ -92,10 +93,9 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
     const queryParams = new URLSearchParams(location.search);
 
     const [namespace] = useState(match.params.namespace);
-    const [isWfInDB, setIsWfInDB] = useState(false);
-    const [isWfInCluster, setIsWfInCluster] = useState(false);
     const [name, setName] = useState(match.params.name);
     const [tab, setTab] = useState(queryParams.get('tab') || 'workflow');
+    const [uid, setUid] = useState(queryParams.get('uid') || '');
     const [nodeId, setNodeId] = useState(queryParams.get('nodeId'));
     const [nodePanelView, setNodePanelView] = useState(queryParams.get('nodePanelView'));
     const [sidePanel, setSidePanel] = useState(queryParams.get('sidePanel'));
@@ -119,6 +119,7 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
 
     useEffect(
         useQueryParams(history, p => {
+            setUid(p.get('uid'));
             setTab(p.get('tab') || 'workflow');
             setNodeId(p.get('nodeId'));
             setNodePanelView(p.get('nodePanelView'));
@@ -157,8 +158,8 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
     }, [workflow, selectedArtifact]);
 
     useEffect(() => {
-        history.push(historyUrl('workflows/{namespace}/{name}', {namespace, name, tab, nodeId, nodePanelView, sidePanel}));
-    }, [namespace, name, tab, nodeId, nodePanelView, sidePanel]);
+        history.push(historyUrl('workflows/{namespace}/{name}', {namespace, name, tab, nodeId, nodePanelView, sidePanel, uid}));
+    }, [namespace, name, tab, nodeId, nodePanelView, sidePanel, uid]);
 
     useEffect(() => {
         services.info
@@ -186,24 +187,14 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
                     action: () => {
                         if (workflowOperation.title === 'DELETE') {
                             popup
-                                .confirm('Confirm', () => <DeleteCheck isWfInDB={isWfInDB} isWfInCluster={isWfInCluster} />)
+                                .confirm('Confirm', () => <DeleteCheck isWfInDB={isArchivedWorkflow(workflow)} isWfInCluster={isWorkflowInCluster(workflow)} />)
                                 .then(yes => {
                                     if (yes) {
-                                        if (isWfInCluster) {
-                                            services.workflows
-                                                .delete(workflow.metadata.name, workflow.metadata.namespace)
-                                                .then(() => {
-                                                    setIsWfInCluster(false);
-                                                })
-                                                .catch(setError);
+                                        if (isWorkflowInCluster(workflow)) {
+                                            services.workflows.delete(workflow.metadata.name, workflow.metadata.namespace).catch(setError);
                                         }
-                                        if (isWfInDB && (globalDeleteArchived || !isWfInCluster)) {
-                                            services.workflows
-                                                .deleteArchived(workflow.metadata.uid, workflow.metadata.namespace)
-                                                .then(() => {
-                                                    setIsWfInDB(false);
-                                                })
-                                                .catch(setError);
+                                        if (isArchivedWorkflow(workflow) && (globalDeleteArchived || !isWorkflowInCluster(workflow))) {
+                                            services.workflows.deleteArchived(workflow.metadata.uid, workflow.metadata.namespace).catch(setError);
                                         }
                                         navigation.goto(uiUrl(`workflows/${workflow.metadata.namespace}`));
                                         // TODO: This is a temporary workaround so that the list of workflows
@@ -211,6 +202,8 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
                                         window.location.reload();
                                     }
                                 });
+                        } else if (workflowOperation.title === 'RESUBMIT') {
+                            setSidePanel('resubmit');
                         } else {
                             popup.confirm('Confirm', `Are you sure you want to ${workflowOperation.title.toLowerCase()} this workflow?`).then(yes => {
                                 if (yes) {
@@ -349,49 +342,76 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
         );
     };
     useEffect(() => {
+        if (!isWorkflowInCluster(workflow)) {
+            return;
+        }
         const retryWatch = new RetryWatch<Workflow>(
             () => services.workflows.watch({name, namespace}),
             () => {
-                setIsWfInCluster(true);
                 setError(null);
             },
             e => {
                 if (e.type === 'DELETED') {
+                    setUid(e.object.metadata.uid);
                     setError(new Error('Workflow gone'));
-                    setIsWfInCluster(false);
+                    if (e.object.metadata.labels[archivalStatus]) {
+                        e.object.metadata.labels[archivalStatus] = 'Persisted';
+                    }
+                    setWorkflow(e.object);
                 } else {
                     if (hasArtifactGCError(e.object.status.conditions)) {
                         setError(new Error('Artifact garbage collection failed'));
                     }
                     setWorkflow(e.object);
-                    setIsWfInCluster(true);
                 }
             },
             err => {
                 setError(err);
-                setIsWfInCluster(false);
             }
         );
         retryWatch.start();
         return () => retryWatch.stop();
-    }, [namespace, name]);
+    }, [namespace, name, isWorkflowInCluster(workflow)]);
 
+    // Get workflow
     useEffect(() => {
-        if (!workflow && !isWfInCluster) {
-            services.workflows
-                .getArchived(namespace, name)
+        const getWf = async () => {
+            let archivedWf: Workflow;
+            if (uid !== '') {
+                await services.workflows
+                    .getArchived(namespace, uid)
+                    .then(wf => {
+                        setError(null);
+                        archivedWf = wf;
+                    })
+                    .catch(err => {
+                        if (err.status !== 404) {
+                            setError(err);
+                        }
+                    });
+            }
+            await services.workflows
+                .get(namespace, name)
                 .then(wf => {
                     setError(null);
-                    setWorkflow(wf);
-                    setIsWfInDB(true);
+                    // If we find live workflow which has same uid, we use live workflow.
+                    if (!archivedWf || archivedWf.metadata.uid === wf.metadata.uid) {
+                        setWorkflow(wf);
+                        setUid(wf.metadata.uid);
+                    } else {
+                        setWorkflow(archivedWf);
+                    }
                 })
-                .catch(newErr => {
-                    if (newErr.status !== 404) {
-                        setError(newErr);
+                .catch(err => {
+                    if (archivedWf) {
+                        setWorkflow(archivedWf);
+                    } else {
+                        setError(err);
                     }
                 });
-        }
-    }, [namespace, name, isWfInCluster]);
+        };
+        getWf();
+    }, [namespace, name, uid]);
 
     const openLink = (link: Link) => {
         const object = {
@@ -547,7 +567,7 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
                     ))}
             </div>
             {workflow && (
-                <SlidingPanel isShown={!!sidePanel} onClose={() => setSidePanel(null)}>
+                <SlidingPanel isShown={!!sidePanel} onClose={() => setSidePanel(null)} isMiddle={parsedSidePanel.type === 'resubmit'}>
                     {parsedSidePanel.type === 'logs' && (
                         <WorkflowLogsViewer
                             workflow={workflow}
@@ -560,6 +580,7 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
                     {parsedSidePanel.type === 'events' && <EventsPanel namespace={namespace} kind='Pod' name={podName} />}
                     {parsedSidePanel.type === 'share' && <WidgetGallery namespace={namespace} name={name} />}
                     {parsedSidePanel.type === 'yaml' && <WorkflowYamlViewer workflow={workflow} selectedNode={selectedNode} />}
+                    {parsedSidePanel.type === 'resubmit' && <ResubmitWorkflowPanel workflow={workflow} isArchived={isArchivedWorkflow(workflow)} />}
                     {!parsedSidePanel}
                 </SlidingPanel>
             )}

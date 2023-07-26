@@ -15,9 +15,7 @@ Workflows is implemented as a Kubernetes CRD (Custom Resource Definition).
 * Easily run compute intensive jobs for machine learning or data processing in a fraction of the time using Argo
   Workflows on Kubernetes.
 
-Argo is a [Cloud Native Computing Foundation (CNCF)](https://cncf.io/) hosted project.
-
-[![Argo Workflows in 5 minutes](https://img.youtube.com/vi/TZgLkCFQ2tk/0.jpg)](https://www.youtube.com/watch?v=TZgLkCFQ2tk)
+Argo is a [Cloud Native Computing Foundation (CNCF)](https://cncf.io/) graduated project.
 
 ## Use Cases
 
@@ -60,6 +58,7 @@ Just some of the projects that use or rely on Argo Workflows (complete list [her
 * [Netflix Metaflow](https://metaflow.org)
 * [Onepanel](https://www.onepanel.ai/)
 * [Orchest](https://github.com/orchest/orchest/)
+* [Piper](https://github.com/rookout/piper)
 * [Ploomber](https://github.com/ploomber/ploomber)
 * [Seldon](https://github.com/SeldonIO/seldon-core)
 * [SQLFlow](https://github.com/sql-machine-learning/sqlflow)
@@ -71,8 +70,7 @@ Check out our [Java, Golang and Python clients](docs/client-libraries.md).
 ## Quickstart 
 
 * [Get started here](docs/quick-start.md)
-* [How to write Argo Workflow specs](https://github.com/argoproj/argo-workflows/blob/master/examples/README.md)
-* [How to configure your artifact repository](docs/configure-artifact-repository.md)
+* [Walk-through examples](https://argoproj.github.io/argo-workflows/walk-through/)
 
 ## Documentation
 
@@ -80,7 +78,7 @@ Check out our [Java, Golang and Python clients](docs/client-libraries.md).
 
 ## Features
 
-Incomplete list of features Argo Workflows provide:
+An incomplete list of features Argo Workflows provide:
 
 * UI to visualize and manage Workflows
 * Artifact support (S3, Artifactory, Alibaba Cloud OSS, Azure Blob Storage, HTTP, Git, GCS, raw)

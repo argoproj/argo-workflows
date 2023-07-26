@@ -1,6 +1,6 @@
 # Core Concepts
 
-This page serves as an introduction into the core concepts of Argo.
+This page serves as an introduction to the core concepts of Argo.
 
 ## The `Workflow`
 
@@ -149,3 +149,7 @@ In this example `A` runs first. Once it is completed, `B` and `C` will run in pa
         dependencies: [B, C]
         template: echo
 ```
+
+## Architecture
+
+If you are interested in Argo's underlying architecture, see [Architecture](architecture.md).
