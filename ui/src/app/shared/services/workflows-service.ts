@@ -226,13 +226,16 @@ export const WorkflowsService = {
         return of(hasArtifactLogs(workflow, nodeId, container)).pipe(
             switchMap(isArtifactLogs => {
                 if (!isArtifactLogs) {
+                    if (!nodeId) {
+                        throw new Error('Should specify a node when we get archived logs');
+                    }
                     throw new Error('no artifact logs are available');
                 }
 
                 return from(requests.get(this.getArtifactLogsPath(workflow, nodeId, container, archived)));
             }),
             mergeMap(r => r.text.split('\n')),
-            map(content => ({content} as LogEntry)),
+            map(content => ({content, podName: workflow.status.nodes[nodeId].displayName} as LogEntry)),
             filter(x => !!x.content.match(grep))
         );
     },

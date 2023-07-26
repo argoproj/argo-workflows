@@ -5128,6 +5128,77 @@ func TestConfigMapCacheLoadOperate(t *testing.T) {
 	}
 }
 
+var workflowCachedNoOutputs = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: memoized-workflow-test
+  namespace: default
+spec:
+  entrypoint: whalesay
+  arguments:
+    parameters:
+    - name: message
+      value: hi-there-world
+  templates:
+  - name: whalesay
+    inputs:
+      parameters:
+      - name: message
+    memoize:
+      key: "{{inputs.parameters.message}}"
+      cache:
+        configMap:
+          name: whalesay-cache
+    container:
+      image: docker/whalesay:latest
+      command: [sh, -c]
+      args: ["sleep 10; cowsay {{inputs.parameters.message}} > /tmp/hello_world.txt"]
+    outputs:
+      parameters:
+      - name: hello
+        valueFrom:
+          path: /tmp/hello_world.txt
+`
+
+func TestConfigMapCacheLoadOperateNoOutputs(t *testing.T) {
+	sampleConfigMapCacheEntry := apiv1.ConfigMap{
+		Data: map[string]string{
+			"hi-there-world": `{"nodeID":"memoized-simple-workflow-5wj2p","outputs":null,"creationTimestamp":"2020-09-21T18:12:56Z"}`,
+		},
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "ConfigMap",
+			APIVersion: "v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:            "whalesay-cache",
+			ResourceVersion: "1630732",
+			Labels: map[string]string{
+				common.LabelKeyConfigMapType: common.LabelValueTypeConfigMapCache,
+			},
+		},
+	}
+	wf := wfv1.MustUnmarshalWorkflow(workflowCachedNoOutputs)
+	cancel, controller := newController()
+	defer cancel()
+
+	ctx := context.Background()
+	_, err := controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.ObjectMeta.Namespace).Create(ctx, wf, metav1.CreateOptions{})
+	assert.NoError(t, err)
+	_, err = controller.kubeclientset.CoreV1().ConfigMaps("default").Create(ctx, &sampleConfigMapCacheEntry, metav1.CreateOptions{})
+	assert.NoError(t, err)
+
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate(ctx)
+
+	if assert.Len(t, woc.wf.Status.Nodes, 1) {
+		for _, node := range woc.wf.Status.Nodes {
+			assert.Nil(t, node.Outputs)
+			assert.Equal(t, wfv1.NodeSucceeded, node.Phase)
+		}
+	}
+}
+
 var workflowCachedMaxAge = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -5478,12 +5549,12 @@ status:
       name: my-wf
       phase: Failed
 `)
-	wf, err := util.FormulateResubmitWorkflow(wf, true, nil)
+	ctx := context.Background()
+	wf, err := util.FormulateResubmitWorkflow(ctx, wf, true, nil)
 	if assert.NoError(t, err) {
 		cancel, controller := newController(wf)
 		defer cancel()
 
-		ctx := context.Background()
 		woc := newWorkflowOperationCtx(wf, controller)
 		woc.operate(ctx)
 		assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
@@ -5527,12 +5598,12 @@ status:
       name: my-wf
       phase: Failed
 `)
-	wf, err := util.FormulateResubmitWorkflow(wf, true, []string{"message=modified"})
+	ctx := context.Background()
+	wf, err := util.FormulateResubmitWorkflow(ctx, wf, true, []string{"message=modified"})
 	if assert.NoError(t, err) {
 		cancel, controller := newController(wf)
 		defer cancel()
 
-		ctx := context.Background()
 		woc := newWorkflowOperationCtx(wf, controller)
 		woc.operate(ctx)
 		assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
