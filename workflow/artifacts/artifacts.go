@@ -197,7 +197,7 @@ func newDriver(ctx context.Context, art *wfv1.Artifact, ri resource.Interface) (
 		var accessKey string
 		var secretKey string
 
-		if art.OSS.AccessKeySecret != nil && art.OSS.AccessKeySecret.Name != "" {
+		if !art.OSS.UseSDKCreds && art.OSS.AccessKeySecret != nil && art.OSS.AccessKeySecret.Name != "" {
 			accessKeyBytes, err := ri.GetSecret(ctx, art.OSS.AccessKeySecret.Name, art.OSS.AccessKeySecret.Key)
 			if err != nil {
 				return nil, err
@@ -211,10 +211,14 @@ func newDriver(ctx context.Context, art *wfv1.Artifact, ri resource.Interface) (
 		}
 
 		driver := oss.ArtifactDriver{
-			Endpoint:      art.OSS.Endpoint,
-			AccessKey:     accessKey,
-			SecretKey:     secretKey,
-			SecurityToken: art.OSS.SecurityToken,
+			Endpoint:          art.OSS.Endpoint,
+			AccessKey:         accessKey,
+			SecretKey:         secretKey,
+			SecurityToken:     art.OSS.SecurityToken,
+			RoleARN:           art.OSS.RoleARN,
+			OidcTokenFilePath: art.OSS.OidcTokenFile,
+			OidcProviderARN:   art.OSS.OidcProviderARN,
+			UseSDKCreds:       art.OSS.UseSDKCreds,
 		}
 		return &driver, nil
 	}

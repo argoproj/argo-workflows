@@ -8,8 +8,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/aliyun/aliyun-oss-go-sdk/oss"
+	"github.com/alibabacloud-go/tea/tea"
 	"github.com/argoproj/pkg/file"
+
+	"github.com/aliyun/aliyun-oss-go-sdk/oss"
+	"github.com/aliyun/credentials-go/credentials"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/utils/pointer"
@@ -22,12 +25,21 @@ import (
 	wfcommon "github.com/argoproj/argo-workflows/v3/workflow/common"
 )
 
+const (
+	roleSessionName = "argo-workflow-oss-artifacts"
+	oidcRoleArnMode = "oidc_role_arn"
+)
+
 // ArtifactDriver is a driver for OSS
 type ArtifactDriver struct {
-	Endpoint      string
-	AccessKey     string
-	SecretKey     string
-	SecurityToken string
+	Endpoint          string
+	AccessKey         string
+	SecretKey         string
+	SecurityToken     string
+	RoleARN           string
+	OidcProviderARN   string
+	OidcTokenFilePath string
+	UseSDKCreds       bool
 }
 
 var (
@@ -39,11 +51,84 @@ var (
 	bucketLogFilePrefix    = "bucket-log-"
 )
 
+type ossCredentials struct {
+	teaCred credentials.Credential
+}
+
+func (cred *ossCredentials) GetAccessKeyID() string {
+	value, err := cred.teaCred.GetAccessKeyId()
+	if err != nil {
+		log.Printf("get access key id failed: %+v", err)
+		return ""
+	}
+	return tea.StringValue(value)
+}
+
+func (cred *ossCredentials) GetAccessKeySecret() string {
+	value, err := cred.teaCred.GetAccessKeySecret()
+	if err != nil {
+		log.Printf("get access key secret failed: %+v", err)
+		return ""
+	}
+	return tea.StringValue(value)
+}
+
+func (cred *ossCredentials) GetSecurityToken() string {
+	value, err := cred.teaCred.GetSecurityToken()
+	if err != nil {
+		log.Printf("get access security token failed: %+v", err)
+		return ""
+	}
+	return tea.StringValue(value)
+}
+
+type ossCredentialsProvider struct {
+	cred credentials.Credential
+}
+
+func newOidcCredential(roleARN, oidcProviderARN, oidcTokenFilePath string) credentials.Credential {
+	config := new(credentials.Config).
+		SetType(oidcRoleArnMode).
+		SetRoleArn(roleARN).
+		SetOIDCProviderArn(oidcProviderARN).
+		SetOIDCTokenFilePath(oidcTokenFilePath).
+		SetRoleSessionName(roleSessionName)
+
+	oidcCredential, err := credentials.NewCredential(config)
+	if err != nil {
+		panic(err)
+	}
+	return oidcCredential
+}
+
+func (p *ossCredentialsProvider) GetCredentials() oss.Credentials {
+	return &ossCredentials{teaCred: p.cred}
+}
+
 func (ossDriver *ArtifactDriver) newOSSClient() (*oss.Client, error) {
 	var options []oss.ClientOption
 	if token := ossDriver.SecurityToken; token != "" {
 		options = append(options, oss.SecurityToken(token))
 	}
+	if ossDriver.UseSDKCreds {
+		// using default provider chain in sdk to get credential
+		log.Infof("Using default provider chain for OSS driver")
+		cred, err := credentials.NewCredential(nil)
+		if err != nil {
+			panic(err)
+		}
+		provider := &ossCredentialsProvider{cred: cred}
+		return oss.New(ossDriver.Endpoint, "", "",
+			oss.SetCredentialsProvider(provider))
+	} else if ossDriver.RoleARN != "" && ossDriver.OidcProviderARN != "" && ossDriver.OidcTokenFilePath != "" {
+		// using oidc provider for RRSA auth
+		log.Infof("Using oidc provider for OSS driver")
+		cred := newOidcCredential(ossDriver.RoleARN, ossDriver.OidcProviderARN, ossDriver.OidcTokenFilePath)
+		provider := &ossCredentialsProvider{cred: cred}
+		return oss.New(ossDriver.Endpoint, "", "",
+			oss.SetCredentialsProvider(provider))
+	}
+	//using ak sec
 	client, err := oss.New(ossDriver.Endpoint, ossDriver.AccessKey, ossDriver.SecretKey, options...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create new OSS client: %w", err)
