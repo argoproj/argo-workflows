@@ -507,6 +507,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             name="name_example",
                             optional=True,
                             oss=IoArgoprojWorkflowV1alpha1OSSArtifact(
+                                oidc_provider_arn="oidc_provider_arn_example",
+                                oidc_token_file="oidc_token_file_example",
                                 access_key_secret=SecretKeySelector(
                                     key="key_example",
                                     name="name_example",
@@ -520,12 +522,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     mark_deletion_after_days=1,
                                     mark_infrequent_access_after_days=1,
                                 ),
+                                role_arn="role_arn_example",
                                 secret_key_secret=SecretKeySelector(
                                     key="key_example",
                                     name="name_example",
                                     optional=True,
                                 ),
                                 security_token="security_token_example",
+                                use_sdk_creds=True,
                             ),
                             path="path_example",
                             raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -812,6 +816,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     name="name_example",
                                     optional=True,
                                     oss=IoArgoprojWorkflowV1alpha1OSSArtifact(
+                                        oidc_provider_arn="oidc_provider_arn_example",
+                                        oidc_token_file="oidc_token_file_example",
                                         access_key_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
@@ -825,12 +831,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             mark_deletion_after_days=1,
                                             mark_infrequent_access_after_days=1,
                                         ),
+                                        role_arn="role_arn_example",
                                         secret_key_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
                                             optional=True,
                                         ),
                                         security_token="security_token_example",
+                                        use_sdk_creds=True,
                                     ),
                                     path="path_example",
                                     raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -1429,6 +1437,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             url="url_example",
                         ),
                         oss=IoArgoprojWorkflowV1alpha1OSSArtifact(
+                            oidc_provider_arn="oidc_provider_arn_example",
+                            oidc_token_file="oidc_token_file_example",
                             access_key_secret=SecretKeySelector(
                                 key="key_example",
                                 name="name_example",
@@ -1442,12 +1452,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 mark_deletion_after_days=1,
                                 mark_infrequent_access_after_days=1,
                             ),
+                            role_arn="role_arn_example",
                             secret_key_secret=SecretKeySelector(
                                 key="key_example",
                                 name="name_example",
                                 optional=True,
                             ),
                             security_token="security_token_example",
+                            use_sdk_creds=True,
                         ),
                         raw=IoArgoprojWorkflowV1alpha1RawArtifact(
                             data="data_example",
@@ -2231,6 +2243,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             name="name_example",
                                             optional=True,
                                             oss=IoArgoprojWorkflowV1alpha1OSSArtifact(
+                                                oidc_provider_arn="oidc_provider_arn_example",
+                                                oidc_token_file="oidc_token_file_example",
                                                 access_key_secret=SecretKeySelector(
                                                     key="key_example",
                                                     name="name_example",
@@ -2244,12 +2258,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                     mark_deletion_after_days=1,
                                                     mark_infrequent_access_after_days=1,
                                                 ),
+                                                role_arn="role_arn_example",
                                                 secret_key_secret=SecretKeySelector(
                                                     key="key_example",
                                                     name="name_example",
                                                     optional=True,
                                                 ),
                                                 security_token="security_token_example",
+                                                use_sdk_creds=True,
                                             ),
                                             path="path_example",
                                             raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -2507,6 +2523,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                     name="name_example",
                                                     optional=True,
                                                     oss=IoArgoprojWorkflowV1alpha1OSSArtifact(
+                                                        oidc_provider_arn="oidc_provider_arn_example",
+                                                        oidc_token_file="oidc_token_file_example",
                                                         access_key_secret=SecretKeySelector(
                                                             key="key_example",
                                                             name="name_example",
@@ -2520,12 +2538,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             mark_deletion_after_days=1,
                                                             mark_infrequent_access_after_days=1,
                                                         ),
+                                                        role_arn="role_arn_example",
                                                         secret_key_secret=SecretKeySelector(
                                                             key="key_example",
                                                             name="name_example",
                                                             optional=True,
                                                         ),
                                                         security_token="security_token_example",
+                                                        use_sdk_creds=True,
                                                     ),
                                                     path="path_example",
                                                     raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -2805,6 +2825,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 name="name_example",
                                 optional=True,
                                 oss=IoArgoprojWorkflowV1alpha1OSSArtifact(
+                                    oidc_provider_arn="oidc_provider_arn_example",
+                                    oidc_token_file="oidc_token_file_example",
                                     access_key_secret=SecretKeySelector(
                                         key="key_example",
                                         name="name_example",
@@ -2818,12 +2840,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         mark_deletion_after_days=1,
                                         mark_infrequent_access_after_days=1,
                                     ),
+                                    role_arn="role_arn_example",
                                     secret_key_secret=SecretKeySelector(
                                         key="key_example",
                                         name="name_example",
                                         optional=True,
                                     ),
                                     security_token="security_token_example",
+                                    use_sdk_creds=True,
                                 ),
                                 path="path_example",
                                 raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -3358,6 +3382,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 name="name_example",
                                 optional=True,
                                 oss=IoArgoprojWorkflowV1alpha1OSSArtifact(
+                                    oidc_provider_arn="oidc_provider_arn_example",
+                                    oidc_token_file="oidc_token_file_example",
                                     access_key_secret=SecretKeySelector(
                                         key="key_example",
                                         name="name_example",
@@ -3371,12 +3397,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         mark_deletion_after_days=1,
                                         mark_infrequent_access_after_days=1,
                                     ),
+                                    role_arn="role_arn_example",
                                     secret_key_secret=SecretKeySelector(
                                         key="key_example",
                                         name="name_example",
                                         optional=True,
                                     ),
                                     security_token="security_token_example",
+                                    use_sdk_creds=True,
                                 ),
                                 path="path_example",
                                 raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -3676,6 +3704,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 name="name_example",
                                 optional=True,
                                 oss=IoArgoprojWorkflowV1alpha1OSSArtifact(
+                                    oidc_provider_arn="oidc_provider_arn_example",
+                                    oidc_token_file="oidc_token_file_example",
                                     access_key_secret=SecretKeySelector(
                                         key="key_example",
                                         name="name_example",
@@ -3689,12 +3719,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         mark_deletion_after_days=1,
                                         mark_infrequent_access_after_days=1,
                                     ),
+                                    role_arn="role_arn_example",
                                     secret_key_secret=SecretKeySelector(
                                         key="key_example",
                                         name="name_example",
                                         optional=True,
                                     ),
                                     security_token="security_token_example",
+                                    use_sdk_creds=True,
                                 ),
                                 path="path_example",
                                 raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -3955,6 +3987,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 name="name_example",
                                 optional=True,
                                 oss=IoArgoprojWorkflowV1alpha1OSSArtifact(
+                                    oidc_provider_arn="oidc_provider_arn_example",
+                                    oidc_token_file="oidc_token_file_example",
                                     access_key_secret=SecretKeySelector(
                                         key="key_example",
                                         name="name_example",
@@ -3968,12 +4002,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         mark_deletion_after_days=1,
                                         mark_infrequent_access_after_days=1,
                                     ),
+                                    role_arn="role_arn_example",
                                     secret_key_secret=SecretKeySelector(
                                         key="key_example",
                                         name="name_example",
                                         optional=True,
                                     ),
                                     security_token="security_token_example",
+                                    use_sdk_creds=True,
                                 ),
                                 path="path_example",
                                 raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -4791,6 +4827,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             name="name_example",
                                             optional=True,
                                             oss=IoArgoprojWorkflowV1alpha1OSSArtifact(
+                                                oidc_provider_arn="oidc_provider_arn_example",
+                                                oidc_token_file="oidc_token_file_example",
                                                 access_key_secret=SecretKeySelector(
                                                     key="key_example",
                                                     name="name_example",
@@ -4804,12 +4842,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                     mark_deletion_after_days=1,
                                                     mark_infrequent_access_after_days=1,
                                                 ),
+                                                role_arn="role_arn_example",
                                                 secret_key_secret=SecretKeySelector(
                                                     key="key_example",
                                                     name="name_example",
                                                     optional=True,
                                                 ),
                                                 security_token="security_token_example",
+                                                use_sdk_creds=True,
                                             ),
                                             path="path_example",
                                             raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -5063,6 +5103,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                     name="name_example",
                                                     optional=True,
                                                     oss=IoArgoprojWorkflowV1alpha1OSSArtifact(
+                                                        oidc_provider_arn="oidc_provider_arn_example",
+                                                        oidc_token_file="oidc_token_file_example",
                                                         access_key_secret=SecretKeySelector(
                                                             key="key_example",
                                                             name="name_example",
@@ -5076,12 +5118,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             mark_deletion_after_days=1,
                                                             mark_infrequent_access_after_days=1,
                                                         ),
+                                                        role_arn="role_arn_example",
                                                         secret_key_secret=SecretKeySelector(
                                                             key="key_example",
                                                             name="name_example",
                                                             optional=True,
                                                         ),
                                                         security_token="security_token_example",
+                                                        use_sdk_creds=True,
                                                     ),
                                                     path="path_example",
                                                     raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -5942,6 +5986,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 url="url_example",
                             ),
                             oss=IoArgoprojWorkflowV1alpha1OSSArtifact(
+                                oidc_provider_arn="oidc_provider_arn_example",
+                                oidc_token_file="oidc_token_file_example",
                                 access_key_secret=SecretKeySelector(
                                     key="key_example",
                                     name="name_example",
@@ -5955,12 +6001,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     mark_deletion_after_days=1,
                                     mark_infrequent_access_after_days=1,
                                 ),
+                                role_arn="role_arn_example",
                                 secret_key_secret=SecretKeySelector(
                                     key="key_example",
                                     name="name_example",
                                     optional=True,
                                 ),
                                 security_token="security_token_example",
+                                use_sdk_creds=True,
                             ),
                             raw=IoArgoprojWorkflowV1alpha1RawArtifact(
                                 data="data_example",
@@ -6744,6 +6792,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 name="name_example",
                                                 optional=True,
                                                 oss=IoArgoprojWorkflowV1alpha1OSSArtifact(
+                                                    oidc_provider_arn="oidc_provider_arn_example",
+                                                    oidc_token_file="oidc_token_file_example",
                                                     access_key_secret=SecretKeySelector(
                                                         key="key_example",
                                                         name="name_example",
@@ -6757,12 +6807,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         mark_deletion_after_days=1,
                                                         mark_infrequent_access_after_days=1,
                                                     ),
+                                                    role_arn="role_arn_example",
                                                     secret_key_secret=SecretKeySelector(
                                                         key="key_example",
                                                         name="name_example",
                                                         optional=True,
                                                     ),
                                                     security_token="security_token_example",
+                                                    use_sdk_creds=True,
                                                 ),
                                                 path="path_example",
                                                 raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -7020,6 +7072,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         name="name_example",
                                                         optional=True,
                                                         oss=IoArgoprojWorkflowV1alpha1OSSArtifact(
+                                                            oidc_provider_arn="oidc_provider_arn_example",
+                                                            oidc_token_file="oidc_token_file_example",
                                                             access_key_secret=SecretKeySelector(
                                                                 key="key_example",
                                                                 name="name_example",
@@ -7033,12 +7087,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                                 mark_deletion_after_days=1,
                                                                 mark_infrequent_access_after_days=1,
                                                             ),
+                                                            role_arn="role_arn_example",
                                                             secret_key_secret=SecretKeySelector(
                                                                 key="key_example",
                                                                 name="name_example",
                                                                 optional=True,
                                                             ),
                                                             security_token="security_token_example",
+                                                            use_sdk_creds=True,
                                                         ),
                                                         path="path_example",
                                                         raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -7318,6 +7374,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     name="name_example",
                                     optional=True,
                                     oss=IoArgoprojWorkflowV1alpha1OSSArtifact(
+                                        oidc_provider_arn="oidc_provider_arn_example",
+                                        oidc_token_file="oidc_token_file_example",
                                         access_key_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
@@ -7331,12 +7389,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             mark_deletion_after_days=1,
                                             mark_infrequent_access_after_days=1,
                                         ),
+                                        role_arn="role_arn_example",
                                         secret_key_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
                                             optional=True,
                                         ),
                                         security_token="security_token_example",
+                                        use_sdk_creds=True,
                                     ),
                                     path="path_example",
                                     raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -7871,6 +7931,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     name="name_example",
                                     optional=True,
                                     oss=IoArgoprojWorkflowV1alpha1OSSArtifact(
+                                        oidc_provider_arn="oidc_provider_arn_example",
+                                        oidc_token_file="oidc_token_file_example",
                                         access_key_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
@@ -7884,12 +7946,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             mark_deletion_after_days=1,
                                             mark_infrequent_access_after_days=1,
                                         ),
+                                        role_arn="role_arn_example",
                                         secret_key_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
                                             optional=True,
                                         ),
                                         security_token="security_token_example",
+                                        use_sdk_creds=True,
                                     ),
                                     path="path_example",
                                     raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -8189,6 +8253,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     name="name_example",
                                     optional=True,
                                     oss=IoArgoprojWorkflowV1alpha1OSSArtifact(
+                                        oidc_provider_arn="oidc_provider_arn_example",
+                                        oidc_token_file="oidc_token_file_example",
                                         access_key_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
@@ -8202,12 +8268,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             mark_deletion_after_days=1,
                                             mark_infrequent_access_after_days=1,
                                         ),
+                                        role_arn="role_arn_example",
                                         secret_key_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
                                             optional=True,
                                         ),
                                         security_token="security_token_example",
+                                        use_sdk_creds=True,
                                     ),
                                     path="path_example",
                                     raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -8468,6 +8536,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     name="name_example",
                                     optional=True,
                                     oss=IoArgoprojWorkflowV1alpha1OSSArtifact(
+                                        oidc_provider_arn="oidc_provider_arn_example",
+                                        oidc_token_file="oidc_token_file_example",
                                         access_key_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
@@ -8481,12 +8551,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             mark_deletion_after_days=1,
                                             mark_infrequent_access_after_days=1,
                                         ),
+                                        role_arn="role_arn_example",
                                         secret_key_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
                                             optional=True,
                                         ),
                                         security_token="security_token_example",
+                                        use_sdk_creds=True,
                                     ),
                                     path="path_example",
                                     raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -9304,6 +9376,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 name="name_example",
                                                 optional=True,
                                                 oss=IoArgoprojWorkflowV1alpha1OSSArtifact(
+                                                    oidc_provider_arn="oidc_provider_arn_example",
+                                                    oidc_token_file="oidc_token_file_example",
                                                     access_key_secret=SecretKeySelector(
                                                         key="key_example",
                                                         name="name_example",
@@ -9317,12 +9391,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         mark_deletion_after_days=1,
                                                         mark_infrequent_access_after_days=1,
                                                     ),
+                                                    role_arn="role_arn_example",
                                                     secret_key_secret=SecretKeySelector(
                                                         key="key_example",
                                                         name="name_example",
                                                         optional=True,
                                                     ),
                                                     security_token="security_token_example",
+                                                    use_sdk_creds=True,
                                                 ),
                                                 path="path_example",
                                                 raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -9576,6 +9652,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         name="name_example",
                                                         optional=True,
                                                         oss=IoArgoprojWorkflowV1alpha1OSSArtifact(
+                                                            oidc_provider_arn="oidc_provider_arn_example",
+                                                            oidc_token_file="oidc_token_file_example",
                                                             access_key_secret=SecretKeySelector(
                                                                 key="key_example",
                                                                 name="name_example",
@@ -9589,12 +9667,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                                 mark_deletion_after_days=1,
                                                                 mark_infrequent_access_after_days=1,
                                                             ),
+                                                            role_arn="role_arn_example",
                                                             secret_key_secret=SecretKeySelector(
                                                                 key="key_example",
                                                                 name="name_example",
                                                                 optional=True,
                                                             ),
                                                             security_token="security_token_example",
+                                                            use_sdk_creds=True,
                                                         ),
                                                         path="path_example",
                                                         raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -10687,6 +10767,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             path_format="path_format_example",
                         ),
                         oss=IoArgoprojWorkflowV1alpha1OSSArtifactRepository(
+                            oidc_provider_arn="oidc_provider_arn_example",
+                            oidc_token_file="oidc_token_file_example",
                             access_key_secret=SecretKeySelector(
                                 key="key_example",
                                 name="name_example",
@@ -10700,12 +10782,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 mark_deletion_after_days=1,
                                 mark_infrequent_access_after_days=1,
                             ),
+                            role_arn="role_arn_example",
                             secret_key_secret=SecretKeySelector(
                                 key="key_example",
                                 name="name_example",
                                 optional=True,
                             ),
                             security_token="security_token_example",
+                            use_sdk_creds=True,
                         ),
                         s3=IoArgoprojWorkflowV1alpha1S3ArtifactRepository(
                             access_key_secret=SecretKeySelector(
@@ -10947,6 +11031,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     name="name_example",
                                     optional=True,
                                     oss=IoArgoprojWorkflowV1alpha1OSSArtifact(
+                                        oidc_provider_arn="oidc_provider_arn_example",
+                                        oidc_token_file="oidc_token_file_example",
                                         access_key_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
@@ -10960,12 +11046,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             mark_deletion_after_days=1,
                                             mark_infrequent_access_after_days=1,
                                         ),
+                                        role_arn="role_arn_example",
                                         secret_key_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
                                             optional=True,
                                         ),
                                         security_token="security_token_example",
+                                        use_sdk_creds=True,
                                     ),
                                     path="path_example",
                                     raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -11223,6 +11311,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     name="name_example",
                                     optional=True,
                                     oss=IoArgoprojWorkflowV1alpha1OSSArtifact(
+                                        oidc_provider_arn="oidc_provider_arn_example",
+                                        oidc_token_file="oidc_token_file_example",
                                         access_key_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
@@ -11236,12 +11326,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             mark_deletion_after_days=1,
                                             mark_infrequent_access_after_days=1,
                                         ),
+                                        role_arn="role_arn_example",
                                         secret_key_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
                                             optional=True,
                                         ),
                                         security_token="security_token_example",
+                                        use_sdk_creds=True,
                                     ),
                                     path="path_example",
                                     raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -11512,6 +11604,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             name="name_example",
                             optional=True,
                             oss=IoArgoprojWorkflowV1alpha1OSSArtifact(
+                                oidc_provider_arn="oidc_provider_arn_example",
+                                oidc_token_file="oidc_token_file_example",
                                 access_key_secret=SecretKeySelector(
                                     key="key_example",
                                     name="name_example",
@@ -11525,12 +11619,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     mark_deletion_after_days=1,
                                     mark_infrequent_access_after_days=1,
                                 ),
+                                role_arn="role_arn_example",
                                 secret_key_secret=SecretKeySelector(
                                     key="key_example",
                                     name="name_example",
                                     optional=True,
                                 ),
                                 security_token="security_token_example",
+                                use_sdk_creds=True,
                             ),
                             path="path_example",
                             raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -12339,6 +12435,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 url="url_example",
                             ),
                             oss=IoArgoprojWorkflowV1alpha1OSSArtifact(
+                                oidc_provider_arn="oidc_provider_arn_example",
+                                oidc_token_file="oidc_token_file_example",
                                 access_key_secret=SecretKeySelector(
                                     key="key_example",
                                     name="name_example",
@@ -12352,12 +12450,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     mark_deletion_after_days=1,
                                     mark_infrequent_access_after_days=1,
                                 ),
+                                role_arn="role_arn_example",
                                 secret_key_secret=SecretKeySelector(
                                     key="key_example",
                                     name="name_example",
                                     optional=True,
                                 ),
                                 security_token="security_token_example",
+                                use_sdk_creds=True,
                             ),
                             raw=IoArgoprojWorkflowV1alpha1RawArtifact(
                                 data="data_example",
@@ -13141,6 +13241,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 name="name_example",
                                                 optional=True,
                                                 oss=IoArgoprojWorkflowV1alpha1OSSArtifact(
+                                                    oidc_provider_arn="oidc_provider_arn_example",
+                                                    oidc_token_file="oidc_token_file_example",
                                                     access_key_secret=SecretKeySelector(
                                                         key="key_example",
                                                         name="name_example",
@@ -13154,12 +13256,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         mark_deletion_after_days=1,
                                                         mark_infrequent_access_after_days=1,
                                                     ),
+                                                    role_arn="role_arn_example",
                                                     secret_key_secret=SecretKeySelector(
                                                         key="key_example",
                                                         name="name_example",
                                                         optional=True,
                                                     ),
                                                     security_token="security_token_example",
+                                                    use_sdk_creds=True,
                                                 ),
                                                 path="path_example",
                                                 raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -13417,6 +13521,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         name="name_example",
                                                         optional=True,
                                                         oss=IoArgoprojWorkflowV1alpha1OSSArtifact(
+                                                            oidc_provider_arn="oidc_provider_arn_example",
+                                                            oidc_token_file="oidc_token_file_example",
                                                             access_key_secret=SecretKeySelector(
                                                                 key="key_example",
                                                                 name="name_example",
@@ -13430,12 +13536,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                                 mark_deletion_after_days=1,
                                                                 mark_infrequent_access_after_days=1,
                                                             ),
+                                                            role_arn="role_arn_example",
                                                             secret_key_secret=SecretKeySelector(
                                                                 key="key_example",
                                                                 name="name_example",
                                                                 optional=True,
                                                             ),
                                                             security_token="security_token_example",
+                                                            use_sdk_creds=True,
                                                         ),
                                                         path="path_example",
                                                         raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -13715,6 +13823,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     name="name_example",
                                     optional=True,
                                     oss=IoArgoprojWorkflowV1alpha1OSSArtifact(
+                                        oidc_provider_arn="oidc_provider_arn_example",
+                                        oidc_token_file="oidc_token_file_example",
                                         access_key_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
@@ -13728,12 +13838,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             mark_deletion_after_days=1,
                                             mark_infrequent_access_after_days=1,
                                         ),
+                                        role_arn="role_arn_example",
                                         secret_key_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
                                             optional=True,
                                         ),
                                         security_token="security_token_example",
+                                        use_sdk_creds=True,
                                     ),
                                     path="path_example",
                                     raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -14268,6 +14380,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     name="name_example",
                                     optional=True,
                                     oss=IoArgoprojWorkflowV1alpha1OSSArtifact(
+                                        oidc_provider_arn="oidc_provider_arn_example",
+                                        oidc_token_file="oidc_token_file_example",
                                         access_key_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
@@ -14281,12 +14395,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             mark_deletion_after_days=1,
                                             mark_infrequent_access_after_days=1,
                                         ),
+                                        role_arn="role_arn_example",
                                         secret_key_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
                                             optional=True,
                                         ),
                                         security_token="security_token_example",
+                                        use_sdk_creds=True,
                                     ),
                                     path="path_example",
                                     raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -14586,6 +14702,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     name="name_example",
                                     optional=True,
                                     oss=IoArgoprojWorkflowV1alpha1OSSArtifact(
+                                        oidc_provider_arn="oidc_provider_arn_example",
+                                        oidc_token_file="oidc_token_file_example",
                                         access_key_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
@@ -14599,12 +14717,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             mark_deletion_after_days=1,
                                             mark_infrequent_access_after_days=1,
                                         ),
+                                        role_arn="role_arn_example",
                                         secret_key_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
                                             optional=True,
                                         ),
                                         security_token="security_token_example",
+                                        use_sdk_creds=True,
                                     ),
                                     path="path_example",
                                     raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -14865,6 +14985,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     name="name_example",
                                     optional=True,
                                     oss=IoArgoprojWorkflowV1alpha1OSSArtifact(
+                                        oidc_provider_arn="oidc_provider_arn_example",
+                                        oidc_token_file="oidc_token_file_example",
                                         access_key_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
@@ -14878,12 +15000,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             mark_deletion_after_days=1,
                                             mark_infrequent_access_after_days=1,
                                         ),
+                                        role_arn="role_arn_example",
                                         secret_key_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
                                             optional=True,
                                         ),
                                         security_token="security_token_example",
+                                        use_sdk_creds=True,
                                     ),
                                     path="path_example",
                                     raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -15701,6 +15825,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 name="name_example",
                                                 optional=True,
                                                 oss=IoArgoprojWorkflowV1alpha1OSSArtifact(
+                                                    oidc_provider_arn="oidc_provider_arn_example",
+                                                    oidc_token_file="oidc_token_file_example",
                                                     access_key_secret=SecretKeySelector(
                                                         key="key_example",
                                                         name="name_example",
@@ -15714,12 +15840,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         mark_deletion_after_days=1,
                                                         mark_infrequent_access_after_days=1,
                                                     ),
+                                                    role_arn="role_arn_example",
                                                     secret_key_secret=SecretKeySelector(
                                                         key="key_example",
                                                         name="name_example",
                                                         optional=True,
                                                     ),
                                                     security_token="security_token_example",
+                                                    use_sdk_creds=True,
                                                 ),
                                                 path="path_example",
                                                 raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -15973,6 +16101,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         name="name_example",
                                                         optional=True,
                                                         oss=IoArgoprojWorkflowV1alpha1OSSArtifact(
+                                                            oidc_provider_arn="oidc_provider_arn_example",
+                                                            oidc_token_file="oidc_token_file_example",
                                                             access_key_secret=SecretKeySelector(
                                                                 key="key_example",
                                                                 name="name_example",
@@ -15986,12 +16116,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                                 mark_deletion_after_days=1,
                                                                 mark_infrequent_access_after_days=1,
                                                             ),
+                                                            role_arn="role_arn_example",
                                                             secret_key_secret=SecretKeySelector(
                                                                 key="key_example",
                                                                 name="name_example",
                                                                 optional=True,
                                                             ),
                                                             security_token="security_token_example",
+                                                            use_sdk_creds=True,
                                                         ),
                                                         path="path_example",
                                                         raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -16881,6 +17013,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 name="name_example",
                                 optional=True,
                                 oss=IoArgoprojWorkflowV1alpha1OSSArtifact(
+                                    oidc_provider_arn="oidc_provider_arn_example",
+                                    oidc_token_file="oidc_token_file_example",
                                     access_key_secret=SecretKeySelector(
                                         key="key_example",
                                         name="name_example",
@@ -16894,12 +17028,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         mark_deletion_after_days=1,
                                         mark_infrequent_access_after_days=1,
                                     ),
+                                    role_arn="role_arn_example",
                                     secret_key_secret=SecretKeySelector(
                                         key="key_example",
                                         name="name_example",
                                         optional=True,
                                     ),
                                     security_token="security_token_example",
+                                    use_sdk_creds=True,
                                 ),
                                 path="path_example",
                                 raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -17186,6 +17322,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         name="name_example",
                                         optional=True,
                                         oss=IoArgoprojWorkflowV1alpha1OSSArtifact(
+                                            oidc_provider_arn="oidc_provider_arn_example",
+                                            oidc_token_file="oidc_token_file_example",
                                             access_key_secret=SecretKeySelector(
                                                 key="key_example",
                                                 name="name_example",
@@ -17199,12 +17337,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 mark_deletion_after_days=1,
                                                 mark_infrequent_access_after_days=1,
                                             ),
+                                            role_arn="role_arn_example",
                                             secret_key_secret=SecretKeySelector(
                                                 key="key_example",
                                                 name="name_example",
                                                 optional=True,
                                             ),
                                             security_token="security_token_example",
+                                            use_sdk_creds=True,
                                         ),
                                         path="path_example",
                                         raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -17803,6 +17943,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 url="url_example",
                             ),
                             oss=IoArgoprojWorkflowV1alpha1OSSArtifact(
+                                oidc_provider_arn="oidc_provider_arn_example",
+                                oidc_token_file="oidc_token_file_example",
                                 access_key_secret=SecretKeySelector(
                                     key="key_example",
                                     name="name_example",
@@ -17816,12 +17958,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     mark_deletion_after_days=1,
                                     mark_infrequent_access_after_days=1,
                                 ),
+                                role_arn="role_arn_example",
                                 secret_key_secret=SecretKeySelector(
                                     key="key_example",
                                     name="name_example",
                                     optional=True,
                                 ),
                                 security_token="security_token_example",
+                                use_sdk_creds=True,
                             ),
                             raw=IoArgoprojWorkflowV1alpha1RawArtifact(
                                 data="data_example",
@@ -18605,6 +18749,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 name="name_example",
                                                 optional=True,
                                                 oss=IoArgoprojWorkflowV1alpha1OSSArtifact(
+                                                    oidc_provider_arn="oidc_provider_arn_example",
+                                                    oidc_token_file="oidc_token_file_example",
                                                     access_key_secret=SecretKeySelector(
                                                         key="key_example",
                                                         name="name_example",
@@ -18618,12 +18764,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         mark_deletion_after_days=1,
                                                         mark_infrequent_access_after_days=1,
                                                     ),
+                                                    role_arn="role_arn_example",
                                                     secret_key_secret=SecretKeySelector(
                                                         key="key_example",
                                                         name="name_example",
                                                         optional=True,
                                                     ),
                                                     security_token="security_token_example",
+                                                    use_sdk_creds=True,
                                                 ),
                                                 path="path_example",
                                                 raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -18881,6 +19029,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         name="name_example",
                                                         optional=True,
                                                         oss=IoArgoprojWorkflowV1alpha1OSSArtifact(
+                                                            oidc_provider_arn="oidc_provider_arn_example",
+                                                            oidc_token_file="oidc_token_file_example",
                                                             access_key_secret=SecretKeySelector(
                                                                 key="key_example",
                                                                 name="name_example",
@@ -18894,12 +19044,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                                 mark_deletion_after_days=1,
                                                                 mark_infrequent_access_after_days=1,
                                                             ),
+                                                            role_arn="role_arn_example",
                                                             secret_key_secret=SecretKeySelector(
                                                                 key="key_example",
                                                                 name="name_example",
                                                                 optional=True,
                                                             ),
                                                             security_token="security_token_example",
+                                                            use_sdk_creds=True,
                                                         ),
                                                         path="path_example",
                                                         raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -19179,6 +19331,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     name="name_example",
                                     optional=True,
                                     oss=IoArgoprojWorkflowV1alpha1OSSArtifact(
+                                        oidc_provider_arn="oidc_provider_arn_example",
+                                        oidc_token_file="oidc_token_file_example",
                                         access_key_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
@@ -19192,12 +19346,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             mark_deletion_after_days=1,
                                             mark_infrequent_access_after_days=1,
                                         ),
+                                        role_arn="role_arn_example",
                                         secret_key_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
                                             optional=True,
                                         ),
                                         security_token="security_token_example",
+                                        use_sdk_creds=True,
                                     ),
                                     path="path_example",
                                     raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -19732,6 +19888,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     name="name_example",
                                     optional=True,
                                     oss=IoArgoprojWorkflowV1alpha1OSSArtifact(
+                                        oidc_provider_arn="oidc_provider_arn_example",
+                                        oidc_token_file="oidc_token_file_example",
                                         access_key_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
@@ -19745,12 +19903,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             mark_deletion_after_days=1,
                                             mark_infrequent_access_after_days=1,
                                         ),
+                                        role_arn="role_arn_example",
                                         secret_key_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
                                             optional=True,
                                         ),
                                         security_token="security_token_example",
+                                        use_sdk_creds=True,
                                     ),
                                     path="path_example",
                                     raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -20050,6 +20210,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     name="name_example",
                                     optional=True,
                                     oss=IoArgoprojWorkflowV1alpha1OSSArtifact(
+                                        oidc_provider_arn="oidc_provider_arn_example",
+                                        oidc_token_file="oidc_token_file_example",
                                         access_key_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
@@ -20063,12 +20225,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             mark_deletion_after_days=1,
                                             mark_infrequent_access_after_days=1,
                                         ),
+                                        role_arn="role_arn_example",
                                         secret_key_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
                                             optional=True,
                                         ),
                                         security_token="security_token_example",
+                                        use_sdk_creds=True,
                                     ),
                                     path="path_example",
                                     raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -20329,6 +20493,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     name="name_example",
                                     optional=True,
                                     oss=IoArgoprojWorkflowV1alpha1OSSArtifact(
+                                        oidc_provider_arn="oidc_provider_arn_example",
+                                        oidc_token_file="oidc_token_file_example",
                                         access_key_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
@@ -20342,12 +20508,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             mark_deletion_after_days=1,
                                             mark_infrequent_access_after_days=1,
                                         ),
+                                        role_arn="role_arn_example",
                                         secret_key_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
                                             optional=True,
                                         ),
                                         security_token="security_token_example",
+                                        use_sdk_creds=True,
                                     ),
                                     path="path_example",
                                     raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -21165,6 +21333,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 name="name_example",
                                                 optional=True,
                                                 oss=IoArgoprojWorkflowV1alpha1OSSArtifact(
+                                                    oidc_provider_arn="oidc_provider_arn_example",
+                                                    oidc_token_file="oidc_token_file_example",
                                                     access_key_secret=SecretKeySelector(
                                                         key="key_example",
                                                         name="name_example",
@@ -21178,12 +21348,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         mark_deletion_after_days=1,
                                                         mark_infrequent_access_after_days=1,
                                                     ),
+                                                    role_arn="role_arn_example",
                                                     secret_key_secret=SecretKeySelector(
                                                         key="key_example",
                                                         name="name_example",
                                                         optional=True,
                                                     ),
                                                     security_token="security_token_example",
+                                                    use_sdk_creds=True,
                                                 ),
                                                 path="path_example",
                                                 raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -21437,6 +21609,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         name="name_example",
                                                         optional=True,
                                                         oss=IoArgoprojWorkflowV1alpha1OSSArtifact(
+                                                            oidc_provider_arn="oidc_provider_arn_example",
+                                                            oidc_token_file="oidc_token_file_example",
                                                             access_key_secret=SecretKeySelector(
                                                                 key="key_example",
                                                                 name="name_example",
@@ -21450,12 +21624,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                                 mark_deletion_after_days=1,
                                                                 mark_infrequent_access_after_days=1,
                                                             ),
+                                                            role_arn="role_arn_example",
                                                             secret_key_secret=SecretKeySelector(
                                                                 key="key_example",
                                                                 name="name_example",
                                                                 optional=True,
                                                             ),
                                                             security_token="security_token_example",
+                                                            use_sdk_creds=True,
                                                         ),
                                                         path="path_example",
                                                         raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -22316,6 +22492,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     url="url_example",
                                 ),
                                 oss=IoArgoprojWorkflowV1alpha1OSSArtifact(
+                                    oidc_provider_arn="oidc_provider_arn_example",
+                                    oidc_token_file="oidc_token_file_example",
                                     access_key_secret=SecretKeySelector(
                                         key="key_example",
                                         name="name_example",
@@ -22329,12 +22507,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         mark_deletion_after_days=1,
                                         mark_infrequent_access_after_days=1,
                                     ),
+                                    role_arn="role_arn_example",
                                     secret_key_secret=SecretKeySelector(
                                         key="key_example",
                                         name="name_example",
                                         optional=True,
                                     ),
                                     security_token="security_token_example",
+                                    use_sdk_creds=True,
                                 ),
                                 raw=IoArgoprojWorkflowV1alpha1RawArtifact(
                                     data="data_example",
@@ -23118,6 +23298,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                     name="name_example",
                                                     optional=True,
                                                     oss=IoArgoprojWorkflowV1alpha1OSSArtifact(
+                                                        oidc_provider_arn="oidc_provider_arn_example",
+                                                        oidc_token_file="oidc_token_file_example",
                                                         access_key_secret=SecretKeySelector(
                                                             key="key_example",
                                                             name="name_example",
@@ -23131,12 +23313,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             mark_deletion_after_days=1,
                                                             mark_infrequent_access_after_days=1,
                                                         ),
+                                                        role_arn="role_arn_example",
                                                         secret_key_secret=SecretKeySelector(
                                                             key="key_example",
                                                             name="name_example",
                                                             optional=True,
                                                         ),
                                                         security_token="security_token_example",
+                                                        use_sdk_creds=True,
                                                     ),
                                                     path="path_example",
                                                     raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -23394,6 +23578,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             name="name_example",
                                                             optional=True,
                                                             oss=IoArgoprojWorkflowV1alpha1OSSArtifact(
+                                                                oidc_provider_arn="oidc_provider_arn_example",
+                                                                oidc_token_file="oidc_token_file_example",
                                                                 access_key_secret=SecretKeySelector(
                                                                     key="key_example",
                                                                     name="name_example",
@@ -23407,12 +23593,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                                     mark_deletion_after_days=1,
                                                                     mark_infrequent_access_after_days=1,
                                                                 ),
+                                                                role_arn="role_arn_example",
                                                                 secret_key_secret=SecretKeySelector(
                                                                     key="key_example",
                                                                     name="name_example",
                                                                     optional=True,
                                                                 ),
                                                                 security_token="security_token_example",
+                                                                use_sdk_creds=True,
                                                             ),
                                                             path="path_example",
                                                             raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -23692,6 +23880,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         name="name_example",
                                         optional=True,
                                         oss=IoArgoprojWorkflowV1alpha1OSSArtifact(
+                                            oidc_provider_arn="oidc_provider_arn_example",
+                                            oidc_token_file="oidc_token_file_example",
                                             access_key_secret=SecretKeySelector(
                                                 key="key_example",
                                                 name="name_example",
@@ -23705,12 +23895,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 mark_deletion_after_days=1,
                                                 mark_infrequent_access_after_days=1,
                                             ),
+                                            role_arn="role_arn_example",
                                             secret_key_secret=SecretKeySelector(
                                                 key="key_example",
                                                 name="name_example",
                                                 optional=True,
                                             ),
                                             security_token="security_token_example",
+                                            use_sdk_creds=True,
                                         ),
                                         path="path_example",
                                         raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -24245,6 +24437,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         name="name_example",
                                         optional=True,
                                         oss=IoArgoprojWorkflowV1alpha1OSSArtifact(
+                                            oidc_provider_arn="oidc_provider_arn_example",
+                                            oidc_token_file="oidc_token_file_example",
                                             access_key_secret=SecretKeySelector(
                                                 key="key_example",
                                                 name="name_example",
@@ -24258,12 +24452,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 mark_deletion_after_days=1,
                                                 mark_infrequent_access_after_days=1,
                                             ),
+                                            role_arn="role_arn_example",
                                             secret_key_secret=SecretKeySelector(
                                                 key="key_example",
                                                 name="name_example",
                                                 optional=True,
                                             ),
                                             security_token="security_token_example",
+                                            use_sdk_creds=True,
                                         ),
                                         path="path_example",
                                         raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -24563,6 +24759,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         name="name_example",
                                         optional=True,
                                         oss=IoArgoprojWorkflowV1alpha1OSSArtifact(
+                                            oidc_provider_arn="oidc_provider_arn_example",
+                                            oidc_token_file="oidc_token_file_example",
                                             access_key_secret=SecretKeySelector(
                                                 key="key_example",
                                                 name="name_example",
@@ -24576,12 +24774,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 mark_deletion_after_days=1,
                                                 mark_infrequent_access_after_days=1,
                                             ),
+                                            role_arn="role_arn_example",
                                             secret_key_secret=SecretKeySelector(
                                                 key="key_example",
                                                 name="name_example",
                                                 optional=True,
                                             ),
                                             security_token="security_token_example",
+                                            use_sdk_creds=True,
                                         ),
                                         path="path_example",
                                         raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -24842,6 +25042,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         name="name_example",
                                         optional=True,
                                         oss=IoArgoprojWorkflowV1alpha1OSSArtifact(
+                                            oidc_provider_arn="oidc_provider_arn_example",
+                                            oidc_token_file="oidc_token_file_example",
                                             access_key_secret=SecretKeySelector(
                                                 key="key_example",
                                                 name="name_example",
@@ -24855,12 +25057,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 mark_deletion_after_days=1,
                                                 mark_infrequent_access_after_days=1,
                                             ),
+                                            role_arn="role_arn_example",
                                             secret_key_secret=SecretKeySelector(
                                                 key="key_example",
                                                 name="name_example",
                                                 optional=True,
                                             ),
                                             security_token="security_token_example",
+                                            use_sdk_creds=True,
                                         ),
                                         path="path_example",
                                         raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -25678,6 +25882,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                     name="name_example",
                                                     optional=True,
                                                     oss=IoArgoprojWorkflowV1alpha1OSSArtifact(
+                                                        oidc_provider_arn="oidc_provider_arn_example",
+                                                        oidc_token_file="oidc_token_file_example",
                                                         access_key_secret=SecretKeySelector(
                                                             key="key_example",
                                                             name="name_example",
@@ -25691,12 +25897,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             mark_deletion_after_days=1,
                                                             mark_infrequent_access_after_days=1,
                                                         ),
+                                                        role_arn="role_arn_example",
                                                         secret_key_secret=SecretKeySelector(
                                                             key="key_example",
                                                             name="name_example",
                                                             optional=True,
                                                         ),
                                                         security_token="security_token_example",
+                                                        use_sdk_creds=True,
                                                     ),
                                                     path="path_example",
                                                     raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -25950,6 +26158,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             name="name_example",
                                                             optional=True,
                                                             oss=IoArgoprojWorkflowV1alpha1OSSArtifact(
+                                                                oidc_provider_arn="oidc_provider_arn_example",
+                                                                oidc_token_file="oidc_token_file_example",
                                                                 access_key_secret=SecretKeySelector(
                                                                     key="key_example",
                                                                     name="name_example",
@@ -25963,12 +26173,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                                     mark_deletion_after_days=1,
                                                                     mark_infrequent_access_after_days=1,
                                                                 ),
+                                                                role_arn="role_arn_example",
                                                                 secret_key_secret=SecretKeySelector(
                                                                     key="key_example",
                                                                     name="name_example",
                                                                     optional=True,
                                                                 ),
                                                                 security_token="security_token_example",
+                                                                use_sdk_creds=True,
                                                             ),
                                                             path="path_example",
                                                             raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -27733,6 +27945,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             name="name_example",
                             optional=True,
                             oss=IoArgoprojWorkflowV1alpha1OSSArtifact(
+                                oidc_provider_arn="oidc_provider_arn_example",
+                                oidc_token_file="oidc_token_file_example",
                                 access_key_secret=SecretKeySelector(
                                     key="key_example",
                                     name="name_example",
@@ -27746,12 +27960,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     mark_deletion_after_days=1,
                                     mark_infrequent_access_after_days=1,
                                 ),
+                                role_arn="role_arn_example",
                                 secret_key_secret=SecretKeySelector(
                                     key="key_example",
                                     name="name_example",
                                     optional=True,
                                 ),
                                 security_token="security_token_example",
+                                use_sdk_creds=True,
                             ),
                             path="path_example",
                             raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -28038,6 +28254,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     name="name_example",
                                     optional=True,
                                     oss=IoArgoprojWorkflowV1alpha1OSSArtifact(
+                                        oidc_provider_arn="oidc_provider_arn_example",
+                                        oidc_token_file="oidc_token_file_example",
                                         access_key_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
@@ -28051,12 +28269,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             mark_deletion_after_days=1,
                                             mark_infrequent_access_after_days=1,
                                         ),
+                                        role_arn="role_arn_example",
                                         secret_key_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
                                             optional=True,
                                         ),
                                         security_token="security_token_example",
+                                        use_sdk_creds=True,
                                     ),
                                     path="path_example",
                                     raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -28655,6 +28875,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             url="url_example",
                         ),
                         oss=IoArgoprojWorkflowV1alpha1OSSArtifact(
+                            oidc_provider_arn="oidc_provider_arn_example",
+                            oidc_token_file="oidc_token_file_example",
                             access_key_secret=SecretKeySelector(
                                 key="key_example",
                                 name="name_example",
@@ -28668,12 +28890,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 mark_deletion_after_days=1,
                                 mark_infrequent_access_after_days=1,
                             ),
+                            role_arn="role_arn_example",
                             secret_key_secret=SecretKeySelector(
                                 key="key_example",
                                 name="name_example",
                                 optional=True,
                             ),
                             security_token="security_token_example",
+                            use_sdk_creds=True,
                         ),
                         raw=IoArgoprojWorkflowV1alpha1RawArtifact(
                             data="data_example",
@@ -29457,6 +29681,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             name="name_example",
                                             optional=True,
                                             oss=IoArgoprojWorkflowV1alpha1OSSArtifact(
+                                                oidc_provider_arn="oidc_provider_arn_example",
+                                                oidc_token_file="oidc_token_file_example",
                                                 access_key_secret=SecretKeySelector(
                                                     key="key_example",
                                                     name="name_example",
@@ -29470,12 +29696,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                     mark_deletion_after_days=1,
                                                     mark_infrequent_access_after_days=1,
                                                 ),
+                                                role_arn="role_arn_example",
                                                 secret_key_secret=SecretKeySelector(
                                                     key="key_example",
                                                     name="name_example",
                                                     optional=True,
                                                 ),
                                                 security_token="security_token_example",
+                                                use_sdk_creds=True,
                                             ),
                                             path="path_example",
                                             raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -29733,6 +29961,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                     name="name_example",
                                                     optional=True,
                                                     oss=IoArgoprojWorkflowV1alpha1OSSArtifact(
+                                                        oidc_provider_arn="oidc_provider_arn_example",
+                                                        oidc_token_file="oidc_token_file_example",
                                                         access_key_secret=SecretKeySelector(
                                                             key="key_example",
                                                             name="name_example",
@@ -29746,12 +29976,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             mark_deletion_after_days=1,
                                                             mark_infrequent_access_after_days=1,
                                                         ),
+                                                        role_arn="role_arn_example",
                                                         secret_key_secret=SecretKeySelector(
                                                             key="key_example",
                                                             name="name_example",
                                                             optional=True,
                                                         ),
                                                         security_token="security_token_example",
+                                                        use_sdk_creds=True,
                                                     ),
                                                     path="path_example",
                                                     raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -30031,6 +30263,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 name="name_example",
                                 optional=True,
                                 oss=IoArgoprojWorkflowV1alpha1OSSArtifact(
+                                    oidc_provider_arn="oidc_provider_arn_example",
+                                    oidc_token_file="oidc_token_file_example",
                                     access_key_secret=SecretKeySelector(
                                         key="key_example",
                                         name="name_example",
@@ -30044,12 +30278,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         mark_deletion_after_days=1,
                                         mark_infrequent_access_after_days=1,
                                     ),
+                                    role_arn="role_arn_example",
                                     secret_key_secret=SecretKeySelector(
                                         key="key_example",
                                         name="name_example",
                                         optional=True,
                                     ),
                                     security_token="security_token_example",
+                                    use_sdk_creds=True,
                                 ),
                                 path="path_example",
                                 raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -30584,6 +30820,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 name="name_example",
                                 optional=True,
                                 oss=IoArgoprojWorkflowV1alpha1OSSArtifact(
+                                    oidc_provider_arn="oidc_provider_arn_example",
+                                    oidc_token_file="oidc_token_file_example",
                                     access_key_secret=SecretKeySelector(
                                         key="key_example",
                                         name="name_example",
@@ -30597,12 +30835,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         mark_deletion_after_days=1,
                                         mark_infrequent_access_after_days=1,
                                     ),
+                                    role_arn="role_arn_example",
                                     secret_key_secret=SecretKeySelector(
                                         key="key_example",
                                         name="name_example",
                                         optional=True,
                                     ),
                                     security_token="security_token_example",
+                                    use_sdk_creds=True,
                                 ),
                                 path="path_example",
                                 raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -30902,6 +31142,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 name="name_example",
                                 optional=True,
                                 oss=IoArgoprojWorkflowV1alpha1OSSArtifact(
+                                    oidc_provider_arn="oidc_provider_arn_example",
+                                    oidc_token_file="oidc_token_file_example",
                                     access_key_secret=SecretKeySelector(
                                         key="key_example",
                                         name="name_example",
@@ -30915,12 +31157,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         mark_deletion_after_days=1,
                                         mark_infrequent_access_after_days=1,
                                     ),
+                                    role_arn="role_arn_example",
                                     secret_key_secret=SecretKeySelector(
                                         key="key_example",
                                         name="name_example",
                                         optional=True,
                                     ),
                                     security_token="security_token_example",
+                                    use_sdk_creds=True,
                                 ),
                                 path="path_example",
                                 raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -31181,6 +31425,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 name="name_example",
                                 optional=True,
                                 oss=IoArgoprojWorkflowV1alpha1OSSArtifact(
+                                    oidc_provider_arn="oidc_provider_arn_example",
+                                    oidc_token_file="oidc_token_file_example",
                                     access_key_secret=SecretKeySelector(
                                         key="key_example",
                                         name="name_example",
@@ -31194,12 +31440,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         mark_deletion_after_days=1,
                                         mark_infrequent_access_after_days=1,
                                     ),
+                                    role_arn="role_arn_example",
                                     secret_key_secret=SecretKeySelector(
                                         key="key_example",
                                         name="name_example",
                                         optional=True,
                                     ),
                                     security_token="security_token_example",
+                                    use_sdk_creds=True,
                                 ),
                                 path="path_example",
                                 raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -32017,6 +32265,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             name="name_example",
                                             optional=True,
                                             oss=IoArgoprojWorkflowV1alpha1OSSArtifact(
+                                                oidc_provider_arn="oidc_provider_arn_example",
+                                                oidc_token_file="oidc_token_file_example",
                                                 access_key_secret=SecretKeySelector(
                                                     key="key_example",
                                                     name="name_example",
@@ -32030,12 +32280,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                     mark_deletion_after_days=1,
                                                     mark_infrequent_access_after_days=1,
                                                 ),
+                                                role_arn="role_arn_example",
                                                 secret_key_secret=SecretKeySelector(
                                                     key="key_example",
                                                     name="name_example",
                                                     optional=True,
                                                 ),
                                                 security_token="security_token_example",
+                                                use_sdk_creds=True,
                                             ),
                                             path="path_example",
                                             raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -32289,6 +32541,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                     name="name_example",
                                                     optional=True,
                                                     oss=IoArgoprojWorkflowV1alpha1OSSArtifact(
+                                                        oidc_provider_arn="oidc_provider_arn_example",
+                                                        oidc_token_file="oidc_token_file_example",
                                                         access_key_secret=SecretKeySelector(
                                                             key="key_example",
                                                             name="name_example",
@@ -32302,12 +32556,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             mark_deletion_after_days=1,
                                                             mark_infrequent_access_after_days=1,
                                                         ),
+                                                        role_arn="role_arn_example",
                                                         secret_key_secret=SecretKeySelector(
                                                             key="key_example",
                                                             name="name_example",
                                                             optional=True,
                                                         ),
                                                         security_token="security_token_example",
+                                                        use_sdk_creds=True,
                                                     ),
                                                     path="path_example",
                                                     raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -33168,6 +33424,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 url="url_example",
                             ),
                             oss=IoArgoprojWorkflowV1alpha1OSSArtifact(
+                                oidc_provider_arn="oidc_provider_arn_example",
+                                oidc_token_file="oidc_token_file_example",
                                 access_key_secret=SecretKeySelector(
                                     key="key_example",
                                     name="name_example",
@@ -33181,12 +33439,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     mark_deletion_after_days=1,
                                     mark_infrequent_access_after_days=1,
                                 ),
+                                role_arn="role_arn_example",
                                 secret_key_secret=SecretKeySelector(
                                     key="key_example",
                                     name="name_example",
                                     optional=True,
                                 ),
                                 security_token="security_token_example",
+                                use_sdk_creds=True,
                             ),
                             raw=IoArgoprojWorkflowV1alpha1RawArtifact(
                                 data="data_example",
@@ -33970,6 +34230,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 name="name_example",
                                                 optional=True,
                                                 oss=IoArgoprojWorkflowV1alpha1OSSArtifact(
+                                                    oidc_provider_arn="oidc_provider_arn_example",
+                                                    oidc_token_file="oidc_token_file_example",
                                                     access_key_secret=SecretKeySelector(
                                                         key="key_example",
                                                         name="name_example",
@@ -33983,12 +34245,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         mark_deletion_after_days=1,
                                                         mark_infrequent_access_after_days=1,
                                                     ),
+                                                    role_arn="role_arn_example",
                                                     secret_key_secret=SecretKeySelector(
                                                         key="key_example",
                                                         name="name_example",
                                                         optional=True,
                                                     ),
                                                     security_token="security_token_example",
+                                                    use_sdk_creds=True,
                                                 ),
                                                 path="path_example",
                                                 raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -34246,6 +34510,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         name="name_example",
                                                         optional=True,
                                                         oss=IoArgoprojWorkflowV1alpha1OSSArtifact(
+                                                            oidc_provider_arn="oidc_provider_arn_example",
+                                                            oidc_token_file="oidc_token_file_example",
                                                             access_key_secret=SecretKeySelector(
                                                                 key="key_example",
                                                                 name="name_example",
@@ -34259,12 +34525,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                                 mark_deletion_after_days=1,
                                                                 mark_infrequent_access_after_days=1,
                                                             ),
+                                                            role_arn="role_arn_example",
                                                             secret_key_secret=SecretKeySelector(
                                                                 key="key_example",
                                                                 name="name_example",
                                                                 optional=True,
                                                             ),
                                                             security_token="security_token_example",
+                                                            use_sdk_creds=True,
                                                         ),
                                                         path="path_example",
                                                         raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -34544,6 +34812,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     name="name_example",
                                     optional=True,
                                     oss=IoArgoprojWorkflowV1alpha1OSSArtifact(
+                                        oidc_provider_arn="oidc_provider_arn_example",
+                                        oidc_token_file="oidc_token_file_example",
                                         access_key_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
@@ -34557,12 +34827,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             mark_deletion_after_days=1,
                                             mark_infrequent_access_after_days=1,
                                         ),
+                                        role_arn="role_arn_example",
                                         secret_key_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
                                             optional=True,
                                         ),
                                         security_token="security_token_example",
+                                        use_sdk_creds=True,
                                     ),
                                     path="path_example",
                                     raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -35097,6 +35369,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     name="name_example",
                                     optional=True,
                                     oss=IoArgoprojWorkflowV1alpha1OSSArtifact(
+                                        oidc_provider_arn="oidc_provider_arn_example",
+                                        oidc_token_file="oidc_token_file_example",
                                         access_key_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
@@ -35110,12 +35384,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             mark_deletion_after_days=1,
                                             mark_infrequent_access_after_days=1,
                                         ),
+                                        role_arn="role_arn_example",
                                         secret_key_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
                                             optional=True,
                                         ),
                                         security_token="security_token_example",
+                                        use_sdk_creds=True,
                                     ),
                                     path="path_example",
                                     raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -35415,6 +35691,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     name="name_example",
                                     optional=True,
                                     oss=IoArgoprojWorkflowV1alpha1OSSArtifact(
+                                        oidc_provider_arn="oidc_provider_arn_example",
+                                        oidc_token_file="oidc_token_file_example",
                                         access_key_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
@@ -35428,12 +35706,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             mark_deletion_after_days=1,
                                             mark_infrequent_access_after_days=1,
                                         ),
+                                        role_arn="role_arn_example",
                                         secret_key_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
                                             optional=True,
                                         ),
                                         security_token="security_token_example",
+                                        use_sdk_creds=True,
                                     ),
                                     path="path_example",
                                     raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -35694,6 +35974,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     name="name_example",
                                     optional=True,
                                     oss=IoArgoprojWorkflowV1alpha1OSSArtifact(
+                                        oidc_provider_arn="oidc_provider_arn_example",
+                                        oidc_token_file="oidc_token_file_example",
                                         access_key_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
@@ -35707,12 +35989,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             mark_deletion_after_days=1,
                                             mark_infrequent_access_after_days=1,
                                         ),
+                                        role_arn="role_arn_example",
                                         secret_key_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
                                             optional=True,
                                         ),
                                         security_token="security_token_example",
+                                        use_sdk_creds=True,
                                     ),
                                     path="path_example",
                                     raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -36530,6 +36814,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 name="name_example",
                                                 optional=True,
                                                 oss=IoArgoprojWorkflowV1alpha1OSSArtifact(
+                                                    oidc_provider_arn="oidc_provider_arn_example",
+                                                    oidc_token_file="oidc_token_file_example",
                                                     access_key_secret=SecretKeySelector(
                                                         key="key_example",
                                                         name="name_example",
@@ -36543,12 +36829,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         mark_deletion_after_days=1,
                                                         mark_infrequent_access_after_days=1,
                                                     ),
+                                                    role_arn="role_arn_example",
                                                     secret_key_secret=SecretKeySelector(
                                                         key="key_example",
                                                         name="name_example",
                                                         optional=True,
                                                     ),
                                                     security_token="security_token_example",
+                                                    use_sdk_creds=True,
                                                 ),
                                                 path="path_example",
                                                 raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -36802,6 +37090,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         name="name_example",
                                                         optional=True,
                                                         oss=IoArgoprojWorkflowV1alpha1OSSArtifact(
+                                                            oidc_provider_arn="oidc_provider_arn_example",
+                                                            oidc_token_file="oidc_token_file_example",
                                                             access_key_secret=SecretKeySelector(
                                                                 key="key_example",
                                                                 name="name_example",
@@ -36815,12 +37105,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                                 mark_deletion_after_days=1,
                                                                 mark_infrequent_access_after_days=1,
                                                             ),
+                                                            role_arn="role_arn_example",
                                                             secret_key_secret=SecretKeySelector(
                                                                 key="key_example",
                                                                 name="name_example",
                                                                 optional=True,
                                                             ),
                                                             security_token="security_token_example",
+                                                            use_sdk_creds=True,
                                                         ),
                                                         path="path_example",
                                                         raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -37913,6 +38205,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             path_format="path_format_example",
                         ),
                         oss=IoArgoprojWorkflowV1alpha1OSSArtifactRepository(
+                            oidc_provider_arn="oidc_provider_arn_example",
+                            oidc_token_file="oidc_token_file_example",
                             access_key_secret=SecretKeySelector(
                                 key="key_example",
                                 name="name_example",
@@ -37926,12 +38220,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 mark_deletion_after_days=1,
                                 mark_infrequent_access_after_days=1,
                             ),
+                            role_arn="role_arn_example",
                             secret_key_secret=SecretKeySelector(
                                 key="key_example",
                                 name="name_example",
                                 optional=True,
                             ),
                             security_token="security_token_example",
+                            use_sdk_creds=True,
                         ),
                         s3=IoArgoprojWorkflowV1alpha1S3ArtifactRepository(
                             access_key_secret=SecretKeySelector(
@@ -38173,6 +38469,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     name="name_example",
                                     optional=True,
                                     oss=IoArgoprojWorkflowV1alpha1OSSArtifact(
+                                        oidc_provider_arn="oidc_provider_arn_example",
+                                        oidc_token_file="oidc_token_file_example",
                                         access_key_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
@@ -38186,12 +38484,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             mark_deletion_after_days=1,
                                             mark_infrequent_access_after_days=1,
                                         ),
+                                        role_arn="role_arn_example",
                                         secret_key_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
                                             optional=True,
                                         ),
                                         security_token="security_token_example",
+                                        use_sdk_creds=True,
                                     ),
                                     path="path_example",
                                     raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -38449,6 +38749,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     name="name_example",
                                     optional=True,
                                     oss=IoArgoprojWorkflowV1alpha1OSSArtifact(
+                                        oidc_provider_arn="oidc_provider_arn_example",
+                                        oidc_token_file="oidc_token_file_example",
                                         access_key_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
@@ -38462,12 +38764,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             mark_deletion_after_days=1,
                                             mark_infrequent_access_after_days=1,
                                         ),
+                                        role_arn="role_arn_example",
                                         secret_key_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
                                             optional=True,
                                         ),
                                         security_token="security_token_example",
+                                        use_sdk_creds=True,
                                     ),
                                     path="path_example",
                                     raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -38738,6 +39042,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             name="name_example",
                             optional=True,
                             oss=IoArgoprojWorkflowV1alpha1OSSArtifact(
+                                oidc_provider_arn="oidc_provider_arn_example",
+                                oidc_token_file="oidc_token_file_example",
                                 access_key_secret=SecretKeySelector(
                                     key="key_example",
                                     name="name_example",
@@ -38751,12 +39057,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     mark_deletion_after_days=1,
                                     mark_infrequent_access_after_days=1,
                                 ),
+                                role_arn="role_arn_example",
                                 secret_key_secret=SecretKeySelector(
                                     key="key_example",
                                     name="name_example",
                                     optional=True,
                                 ),
                                 security_token="security_token_example",
+                                use_sdk_creds=True,
                             ),
                             path="path_example",
                             raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -39565,6 +39873,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 url="url_example",
                             ),
                             oss=IoArgoprojWorkflowV1alpha1OSSArtifact(
+                                oidc_provider_arn="oidc_provider_arn_example",
+                                oidc_token_file="oidc_token_file_example",
                                 access_key_secret=SecretKeySelector(
                                     key="key_example",
                                     name="name_example",
@@ -39578,12 +39888,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     mark_deletion_after_days=1,
                                     mark_infrequent_access_after_days=1,
                                 ),
+                                role_arn="role_arn_example",
                                 secret_key_secret=SecretKeySelector(
                                     key="key_example",
                                     name="name_example",
                                     optional=True,
                                 ),
                                 security_token="security_token_example",
+                                use_sdk_creds=True,
                             ),
                             raw=IoArgoprojWorkflowV1alpha1RawArtifact(
                                 data="data_example",
@@ -40367,6 +40679,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 name="name_example",
                                                 optional=True,
                                                 oss=IoArgoprojWorkflowV1alpha1OSSArtifact(
+                                                    oidc_provider_arn="oidc_provider_arn_example",
+                                                    oidc_token_file="oidc_token_file_example",
                                                     access_key_secret=SecretKeySelector(
                                                         key="key_example",
                                                         name="name_example",
@@ -40380,12 +40694,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         mark_deletion_after_days=1,
                                                         mark_infrequent_access_after_days=1,
                                                     ),
+                                                    role_arn="role_arn_example",
                                                     secret_key_secret=SecretKeySelector(
                                                         key="key_example",
                                                         name="name_example",
                                                         optional=True,
                                                     ),
                                                     security_token="security_token_example",
+                                                    use_sdk_creds=True,
                                                 ),
                                                 path="path_example",
                                                 raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -40643,6 +40959,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         name="name_example",
                                                         optional=True,
                                                         oss=IoArgoprojWorkflowV1alpha1OSSArtifact(
+                                                            oidc_provider_arn="oidc_provider_arn_example",
+                                                            oidc_token_file="oidc_token_file_example",
                                                             access_key_secret=SecretKeySelector(
                                                                 key="key_example",
                                                                 name="name_example",
@@ -40656,12 +40974,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                                 mark_deletion_after_days=1,
                                                                 mark_infrequent_access_after_days=1,
                                                             ),
+                                                            role_arn="role_arn_example",
                                                             secret_key_secret=SecretKeySelector(
                                                                 key="key_example",
                                                                 name="name_example",
                                                                 optional=True,
                                                             ),
                                                             security_token="security_token_example",
+                                                            use_sdk_creds=True,
                                                         ),
                                                         path="path_example",
                                                         raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -40941,6 +41261,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     name="name_example",
                                     optional=True,
                                     oss=IoArgoprojWorkflowV1alpha1OSSArtifact(
+                                        oidc_provider_arn="oidc_provider_arn_example",
+                                        oidc_token_file="oidc_token_file_example",
                                         access_key_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
@@ -40954,12 +41276,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             mark_deletion_after_days=1,
                                             mark_infrequent_access_after_days=1,
                                         ),
+                                        role_arn="role_arn_example",
                                         secret_key_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
                                             optional=True,
                                         ),
                                         security_token="security_token_example",
+                                        use_sdk_creds=True,
                                     ),
                                     path="path_example",
                                     raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -41494,6 +41818,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     name="name_example",
                                     optional=True,
                                     oss=IoArgoprojWorkflowV1alpha1OSSArtifact(
+                                        oidc_provider_arn="oidc_provider_arn_example",
+                                        oidc_token_file="oidc_token_file_example",
                                         access_key_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
@@ -41507,12 +41833,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             mark_deletion_after_days=1,
                                             mark_infrequent_access_after_days=1,
                                         ),
+                                        role_arn="role_arn_example",
                                         secret_key_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
                                             optional=True,
                                         ),
                                         security_token="security_token_example",
+                                        use_sdk_creds=True,
                                     ),
                                     path="path_example",
                                     raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -41812,6 +42140,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     name="name_example",
                                     optional=True,
                                     oss=IoArgoprojWorkflowV1alpha1OSSArtifact(
+                                        oidc_provider_arn="oidc_provider_arn_example",
+                                        oidc_token_file="oidc_token_file_example",
                                         access_key_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
@@ -41825,12 +42155,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             mark_deletion_after_days=1,
                                             mark_infrequent_access_after_days=1,
                                         ),
+                                        role_arn="role_arn_example",
                                         secret_key_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
                                             optional=True,
                                         ),
                                         security_token="security_token_example",
+                                        use_sdk_creds=True,
                                     ),
                                     path="path_example",
                                     raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -42091,6 +42423,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     name="name_example",
                                     optional=True,
                                     oss=IoArgoprojWorkflowV1alpha1OSSArtifact(
+                                        oidc_provider_arn="oidc_provider_arn_example",
+                                        oidc_token_file="oidc_token_file_example",
                                         access_key_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
@@ -42104,12 +42438,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             mark_deletion_after_days=1,
                                             mark_infrequent_access_after_days=1,
                                         ),
+                                        role_arn="role_arn_example",
                                         secret_key_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
                                             optional=True,
                                         ),
                                         security_token="security_token_example",
+                                        use_sdk_creds=True,
                                     ),
                                     path="path_example",
                                     raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -42927,6 +43263,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 name="name_example",
                                                 optional=True,
                                                 oss=IoArgoprojWorkflowV1alpha1OSSArtifact(
+                                                    oidc_provider_arn="oidc_provider_arn_example",
+                                                    oidc_token_file="oidc_token_file_example",
                                                     access_key_secret=SecretKeySelector(
                                                         key="key_example",
                                                         name="name_example",
@@ -42940,12 +43278,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         mark_deletion_after_days=1,
                                                         mark_infrequent_access_after_days=1,
                                                     ),
+                                                    role_arn="role_arn_example",
                                                     secret_key_secret=SecretKeySelector(
                                                         key="key_example",
                                                         name="name_example",
                                                         optional=True,
                                                     ),
                                                     security_token="security_token_example",
+                                                    use_sdk_creds=True,
                                                 ),
                                                 path="path_example",
                                                 raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -43199,6 +43539,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         name="name_example",
                                                         optional=True,
                                                         oss=IoArgoprojWorkflowV1alpha1OSSArtifact(
+                                                            oidc_provider_arn="oidc_provider_arn_example",
+                                                            oidc_token_file="oidc_token_file_example",
                                                             access_key_secret=SecretKeySelector(
                                                                 key="key_example",
                                                                 name="name_example",
@@ -43212,12 +43554,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                                 mark_deletion_after_days=1,
                                                                 mark_infrequent_access_after_days=1,
                                                             ),
+                                                            role_arn="role_arn_example",
                                                             secret_key_secret=SecretKeySelector(
                                                                 key="key_example",
                                                                 name="name_example",
                                                                 optional=True,
                                                             ),
                                                             security_token="security_token_example",
+                                                            use_sdk_creds=True,
                                                         ),
                                                         path="path_example",
                                                         raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -44107,6 +44451,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 name="name_example",
                                 optional=True,
                                 oss=IoArgoprojWorkflowV1alpha1OSSArtifact(
+                                    oidc_provider_arn="oidc_provider_arn_example",
+                                    oidc_token_file="oidc_token_file_example",
                                     access_key_secret=SecretKeySelector(
                                         key="key_example",
                                         name="name_example",
@@ -44120,12 +44466,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         mark_deletion_after_days=1,
                                         mark_infrequent_access_after_days=1,
                                     ),
+                                    role_arn="role_arn_example",
                                     secret_key_secret=SecretKeySelector(
                                         key="key_example",
                                         name="name_example",
                                         optional=True,
                                     ),
                                     security_token="security_token_example",
+                                    use_sdk_creds=True,
                                 ),
                                 path="path_example",
                                 raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -44412,6 +44760,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         name="name_example",
                                         optional=True,
                                         oss=IoArgoprojWorkflowV1alpha1OSSArtifact(
+                                            oidc_provider_arn="oidc_provider_arn_example",
+                                            oidc_token_file="oidc_token_file_example",
                                             access_key_secret=SecretKeySelector(
                                                 key="key_example",
                                                 name="name_example",
@@ -44425,12 +44775,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 mark_deletion_after_days=1,
                                                 mark_infrequent_access_after_days=1,
                                             ),
+                                            role_arn="role_arn_example",
                                             secret_key_secret=SecretKeySelector(
                                                 key="key_example",
                                                 name="name_example",
                                                 optional=True,
                                             ),
                                             security_token="security_token_example",
+                                            use_sdk_creds=True,
                                         ),
                                         path="path_example",
                                         raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -45029,6 +45381,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 url="url_example",
                             ),
                             oss=IoArgoprojWorkflowV1alpha1OSSArtifact(
+                                oidc_provider_arn="oidc_provider_arn_example",
+                                oidc_token_file="oidc_token_file_example",
                                 access_key_secret=SecretKeySelector(
                                     key="key_example",
                                     name="name_example",
@@ -45042,12 +45396,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     mark_deletion_after_days=1,
                                     mark_infrequent_access_after_days=1,
                                 ),
+                                role_arn="role_arn_example",
                                 secret_key_secret=SecretKeySelector(
                                     key="key_example",
                                     name="name_example",
                                     optional=True,
                                 ),
                                 security_token="security_token_example",
+                                use_sdk_creds=True,
                             ),
                             raw=IoArgoprojWorkflowV1alpha1RawArtifact(
                                 data="data_example",
@@ -45831,6 +46187,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 name="name_example",
                                                 optional=True,
                                                 oss=IoArgoprojWorkflowV1alpha1OSSArtifact(
+                                                    oidc_provider_arn="oidc_provider_arn_example",
+                                                    oidc_token_file="oidc_token_file_example",
                                                     access_key_secret=SecretKeySelector(
                                                         key="key_example",
                                                         name="name_example",
@@ -45844,12 +46202,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         mark_deletion_after_days=1,
                                                         mark_infrequent_access_after_days=1,
                                                     ),
+                                                    role_arn="role_arn_example",
                                                     secret_key_secret=SecretKeySelector(
                                                         key="key_example",
                                                         name="name_example",
                                                         optional=True,
                                                     ),
                                                     security_token="security_token_example",
+                                                    use_sdk_creds=True,
                                                 ),
                                                 path="path_example",
                                                 raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -46107,6 +46467,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         name="name_example",
                                                         optional=True,
                                                         oss=IoArgoprojWorkflowV1alpha1OSSArtifact(
+                                                            oidc_provider_arn="oidc_provider_arn_example",
+                                                            oidc_token_file="oidc_token_file_example",
                                                             access_key_secret=SecretKeySelector(
                                                                 key="key_example",
                                                                 name="name_example",
@@ -46120,12 +46482,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                                 mark_deletion_after_days=1,
                                                                 mark_infrequent_access_after_days=1,
                                                             ),
+                                                            role_arn="role_arn_example",
                                                             secret_key_secret=SecretKeySelector(
                                                                 key="key_example",
                                                                 name="name_example",
                                                                 optional=True,
                                                             ),
                                                             security_token="security_token_example",
+                                                            use_sdk_creds=True,
                                                         ),
                                                         path="path_example",
                                                         raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -46405,6 +46769,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     name="name_example",
                                     optional=True,
                                     oss=IoArgoprojWorkflowV1alpha1OSSArtifact(
+                                        oidc_provider_arn="oidc_provider_arn_example",
+                                        oidc_token_file="oidc_token_file_example",
                                         access_key_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
@@ -46418,12 +46784,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             mark_deletion_after_days=1,
                                             mark_infrequent_access_after_days=1,
                                         ),
+                                        role_arn="role_arn_example",
                                         secret_key_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
                                             optional=True,
                                         ),
                                         security_token="security_token_example",
+                                        use_sdk_creds=True,
                                     ),
                                     path="path_example",
                                     raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -46958,6 +47326,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     name="name_example",
                                     optional=True,
                                     oss=IoArgoprojWorkflowV1alpha1OSSArtifact(
+                                        oidc_provider_arn="oidc_provider_arn_example",
+                                        oidc_token_file="oidc_token_file_example",
                                         access_key_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
@@ -46971,12 +47341,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             mark_deletion_after_days=1,
                                             mark_infrequent_access_after_days=1,
                                         ),
+                                        role_arn="role_arn_example",
                                         secret_key_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
                                             optional=True,
                                         ),
                                         security_token="security_token_example",
+                                        use_sdk_creds=True,
                                     ),
                                     path="path_example",
                                     raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -47276,6 +47648,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     name="name_example",
                                     optional=True,
                                     oss=IoArgoprojWorkflowV1alpha1OSSArtifact(
+                                        oidc_provider_arn="oidc_provider_arn_example",
+                                        oidc_token_file="oidc_token_file_example",
                                         access_key_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
@@ -47289,12 +47663,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             mark_deletion_after_days=1,
                                             mark_infrequent_access_after_days=1,
                                         ),
+                                        role_arn="role_arn_example",
                                         secret_key_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
                                             optional=True,
                                         ),
                                         security_token="security_token_example",
+                                        use_sdk_creds=True,
                                     ),
                                     path="path_example",
                                     raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -47555,6 +47931,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     name="name_example",
                                     optional=True,
                                     oss=IoArgoprojWorkflowV1alpha1OSSArtifact(
+                                        oidc_provider_arn="oidc_provider_arn_example",
+                                        oidc_token_file="oidc_token_file_example",
                                         access_key_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
@@ -47568,12 +47946,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             mark_deletion_after_days=1,
                                             mark_infrequent_access_after_days=1,
                                         ),
+                                        role_arn="role_arn_example",
                                         secret_key_secret=SecretKeySelector(
                                             key="key_example",
                                             name="name_example",
                                             optional=True,
                                         ),
                                         security_token="security_token_example",
+                                        use_sdk_creds=True,
                                     ),
                                     path="path_example",
                                     raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -48391,6 +48771,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 name="name_example",
                                                 optional=True,
                                                 oss=IoArgoprojWorkflowV1alpha1OSSArtifact(
+                                                    oidc_provider_arn="oidc_provider_arn_example",
+                                                    oidc_token_file="oidc_token_file_example",
                                                     access_key_secret=SecretKeySelector(
                                                         key="key_example",
                                                         name="name_example",
@@ -48404,12 +48786,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         mark_deletion_after_days=1,
                                                         mark_infrequent_access_after_days=1,
                                                     ),
+                                                    role_arn="role_arn_example",
                                                     secret_key_secret=SecretKeySelector(
                                                         key="key_example",
                                                         name="name_example",
                                                         optional=True,
                                                     ),
                                                     security_token="security_token_example",
+                                                    use_sdk_creds=True,
                                                 ),
                                                 path="path_example",
                                                 raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -48663,6 +49047,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         name="name_example",
                                                         optional=True,
                                                         oss=IoArgoprojWorkflowV1alpha1OSSArtifact(
+                                                            oidc_provider_arn="oidc_provider_arn_example",
+                                                            oidc_token_file="oidc_token_file_example",
                                                             access_key_secret=SecretKeySelector(
                                                                 key="key_example",
                                                                 name="name_example",
@@ -48676,12 +49062,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                                 mark_deletion_after_days=1,
                                                                 mark_infrequent_access_after_days=1,
                                                             ),
+                                                            role_arn="role_arn_example",
                                                             secret_key_secret=SecretKeySelector(
                                                                 key="key_example",
                                                                 name="name_example",
                                                                 optional=True,
                                                             ),
                                                             security_token="security_token_example",
+                                                            use_sdk_creds=True,
                                                         ),
                                                         path="path_example",
                                                         raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -49542,6 +49930,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     url="url_example",
                                 ),
                                 oss=IoArgoprojWorkflowV1alpha1OSSArtifact(
+                                    oidc_provider_arn="oidc_provider_arn_example",
+                                    oidc_token_file="oidc_token_file_example",
                                     access_key_secret=SecretKeySelector(
                                         key="key_example",
                                         name="name_example",
@@ -49555,12 +49945,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         mark_deletion_after_days=1,
                                         mark_infrequent_access_after_days=1,
                                     ),
+                                    role_arn="role_arn_example",
                                     secret_key_secret=SecretKeySelector(
                                         key="key_example",
                                         name="name_example",
                                         optional=True,
                                     ),
                                     security_token="security_token_example",
+                                    use_sdk_creds=True,
                                 ),
                                 raw=IoArgoprojWorkflowV1alpha1RawArtifact(
                                     data="data_example",
@@ -50344,6 +50736,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                     name="name_example",
                                                     optional=True,
                                                     oss=IoArgoprojWorkflowV1alpha1OSSArtifact(
+                                                        oidc_provider_arn="oidc_provider_arn_example",
+                                                        oidc_token_file="oidc_token_file_example",
                                                         access_key_secret=SecretKeySelector(
                                                             key="key_example",
                                                             name="name_example",
@@ -50357,12 +50751,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             mark_deletion_after_days=1,
                                                             mark_infrequent_access_after_days=1,
                                                         ),
+                                                        role_arn="role_arn_example",
                                                         secret_key_secret=SecretKeySelector(
                                                             key="key_example",
                                                             name="name_example",
                                                             optional=True,
                                                         ),
                                                         security_token="security_token_example",
+                                                        use_sdk_creds=True,
                                                     ),
                                                     path="path_example",
                                                     raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -50620,6 +51016,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             name="name_example",
                                                             optional=True,
                                                             oss=IoArgoprojWorkflowV1alpha1OSSArtifact(
+                                                                oidc_provider_arn="oidc_provider_arn_example",
+                                                                oidc_token_file="oidc_token_file_example",
                                                                 access_key_secret=SecretKeySelector(
                                                                     key="key_example",
                                                                     name="name_example",
@@ -50633,12 +51031,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                                     mark_deletion_after_days=1,
                                                                     mark_infrequent_access_after_days=1,
                                                                 ),
+                                                                role_arn="role_arn_example",
                                                                 secret_key_secret=SecretKeySelector(
                                                                     key="key_example",
                                                                     name="name_example",
                                                                     optional=True,
                                                                 ),
                                                                 security_token="security_token_example",
+                                                                use_sdk_creds=True,
                                                             ),
                                                             path="path_example",
                                                             raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -50918,6 +51318,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         name="name_example",
                                         optional=True,
                                         oss=IoArgoprojWorkflowV1alpha1OSSArtifact(
+                                            oidc_provider_arn="oidc_provider_arn_example",
+                                            oidc_token_file="oidc_token_file_example",
                                             access_key_secret=SecretKeySelector(
                                                 key="key_example",
                                                 name="name_example",
@@ -50931,12 +51333,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 mark_deletion_after_days=1,
                                                 mark_infrequent_access_after_days=1,
                                             ),
+                                            role_arn="role_arn_example",
                                             secret_key_secret=SecretKeySelector(
                                                 key="key_example",
                                                 name="name_example",
                                                 optional=True,
                                             ),
                                             security_token="security_token_example",
+                                            use_sdk_creds=True,
                                         ),
                                         path="path_example",
                                         raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -51471,6 +51875,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         name="name_example",
                                         optional=True,
                                         oss=IoArgoprojWorkflowV1alpha1OSSArtifact(
+                                            oidc_provider_arn="oidc_provider_arn_example",
+                                            oidc_token_file="oidc_token_file_example",
                                             access_key_secret=SecretKeySelector(
                                                 key="key_example",
                                                 name="name_example",
@@ -51484,12 +51890,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 mark_deletion_after_days=1,
                                                 mark_infrequent_access_after_days=1,
                                             ),
+                                            role_arn="role_arn_example",
                                             secret_key_secret=SecretKeySelector(
                                                 key="key_example",
                                                 name="name_example",
                                                 optional=True,
                                             ),
                                             security_token="security_token_example",
+                                            use_sdk_creds=True,
                                         ),
                                         path="path_example",
                                         raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -51789,6 +52197,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         name="name_example",
                                         optional=True,
                                         oss=IoArgoprojWorkflowV1alpha1OSSArtifact(
+                                            oidc_provider_arn="oidc_provider_arn_example",
+                                            oidc_token_file="oidc_token_file_example",
                                             access_key_secret=SecretKeySelector(
                                                 key="key_example",
                                                 name="name_example",
@@ -51802,12 +52212,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 mark_deletion_after_days=1,
                                                 mark_infrequent_access_after_days=1,
                                             ),
+                                            role_arn="role_arn_example",
                                             secret_key_secret=SecretKeySelector(
                                                 key="key_example",
                                                 name="name_example",
                                                 optional=True,
                                             ),
                                             security_token="security_token_example",
+                                            use_sdk_creds=True,
                                         ),
                                         path="path_example",
                                         raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -52068,6 +52480,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         name="name_example",
                                         optional=True,
                                         oss=IoArgoprojWorkflowV1alpha1OSSArtifact(
+                                            oidc_provider_arn="oidc_provider_arn_example",
+                                            oidc_token_file="oidc_token_file_example",
                                             access_key_secret=SecretKeySelector(
                                                 key="key_example",
                                                 name="name_example",
@@ -52081,12 +52495,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                 mark_deletion_after_days=1,
                                                 mark_infrequent_access_after_days=1,
                                             ),
+                                            role_arn="role_arn_example",
                                             secret_key_secret=SecretKeySelector(
                                                 key="key_example",
                                                 name="name_example",
                                                 optional=True,
                                             ),
                                             security_token="security_token_example",
+                                            use_sdk_creds=True,
                                         ),
                                         path="path_example",
                                         raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -52904,6 +53320,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                     name="name_example",
                                                     optional=True,
                                                     oss=IoArgoprojWorkflowV1alpha1OSSArtifact(
+                                                        oidc_provider_arn="oidc_provider_arn_example",
+                                                        oidc_token_file="oidc_token_file_example",
                                                         access_key_secret=SecretKeySelector(
                                                             key="key_example",
                                                             name="name_example",
@@ -52917,12 +53335,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             mark_deletion_after_days=1,
                                                             mark_infrequent_access_after_days=1,
                                                         ),
+                                                        role_arn="role_arn_example",
                                                         secret_key_secret=SecretKeySelector(
                                                             key="key_example",
                                                             name="name_example",
                                                             optional=True,
                                                         ),
                                                         security_token="security_token_example",
+                                                        use_sdk_creds=True,
                                                     ),
                                                     path="path_example",
                                                     raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -53176,6 +53596,8 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             name="name_example",
                                                             optional=True,
                                                             oss=IoArgoprojWorkflowV1alpha1OSSArtifact(
+                                                                oidc_provider_arn="oidc_provider_arn_example",
+                                                                oidc_token_file="oidc_token_file_example",
                                                                 access_key_secret=SecretKeySelector(
                                                                     key="key_example",
                                                                     name="name_example",
@@ -53189,12 +53611,14 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                                     mark_deletion_after_days=1,
                                                                     mark_infrequent_access_after_days=1,
                                                                 ),
+                                                                role_arn="role_arn_example",
                                                                 secret_key_secret=SecretKeySelector(
                                                                     key="key_example",
                                                                     name="name_example",
                                                                     optional=True,
                                                                 ),
                                                                 security_token="security_token_example",
+                                                                use_sdk_creds=True,
                                                             ),
                                                             path="path_example",
                                                             raw=IoArgoprojWorkflowV1alpha1RawArtifact(

@@ -90,13 +90,17 @@ class IoArgoprojWorkflowV1alpha1OSSArtifact(ModelNormal):
         lazy_import()
         return {
             'key': (str,),  # noqa: E501
+            'oidc_provider_arn': (str,),  # noqa: E501
+            'oidc_token_file': (str,),  # noqa: E501
             'access_key_secret': (SecretKeySelector,),  # noqa: E501
             'bucket': (str,),  # noqa: E501
             'create_bucket_if_not_present': (bool,),  # noqa: E501
             'endpoint': (str,),  # noqa: E501
             'lifecycle_rule': (IoArgoprojWorkflowV1alpha1OSSLifecycleRule,),  # noqa: E501
+            'role_arn': (str,),  # noqa: E501
             'secret_key_secret': (SecretKeySelector,),  # noqa: E501
             'security_token': (str,),  # noqa: E501
+            'use_sdk_creds': (bool,),  # noqa: E501
         }
 
     @cached_property
@@ -106,13 +110,17 @@ class IoArgoprojWorkflowV1alpha1OSSArtifact(ModelNormal):
 
     attribute_map = {
         'key': 'key',  # noqa: E501
+        'oidc_provider_arn': 'OidcProviderARN',  # noqa: E501
+        'oidc_token_file': 'OidcTokenFile',  # noqa: E501
         'access_key_secret': 'accessKeySecret',  # noqa: E501
         'bucket': 'bucket',  # noqa: E501
         'create_bucket_if_not_present': 'createBucketIfNotPresent',  # noqa: E501
         'endpoint': 'endpoint',  # noqa: E501
         'lifecycle_rule': 'lifecycleRule',  # noqa: E501
+        'role_arn': 'roleARN',  # noqa: E501
         'secret_key_secret': 'secretKeySecret',  # noqa: E501
         'security_token': 'securityToken',  # noqa: E501
+        'use_sdk_creds': 'useSDKCreds',  # noqa: E501
     }
 
     read_only_vars = {
@@ -159,13 +167,17 @@ class IoArgoprojWorkflowV1alpha1OSSArtifact(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
+            oidc_provider_arn (str): OidcProviderARN is the Alibaba Cloud Resource Name (ARN) of the OIDC IdP.. [optional]  # noqa: E501
+            oidc_token_file (str): OidcTokenFile is the file path of the OIDC token.. [optional]  # noqa: E501
             access_key_secret (SecretKeySelector): [optional]  # noqa: E501
             bucket (str): Bucket is the name of the bucket. [optional]  # noqa: E501
             create_bucket_if_not_present (bool): CreateBucketIfNotPresent tells the driver to attempt to create the OSS bucket for output artifacts, if it doesn't exist. [optional]  # noqa: E501
             endpoint (str): Endpoint is the hostname of the bucket endpoint. [optional]  # noqa: E501
             lifecycle_rule (IoArgoprojWorkflowV1alpha1OSSLifecycleRule): [optional]  # noqa: E501
+            role_arn (str): RoleARN is the Alibaba Cloud Resource Name(ARN) of the role to assume.. [optional]  # noqa: E501
             secret_key_secret (SecretKeySelector): [optional]  # noqa: E501
             security_token (str): SecurityToken is the user's temporary security token. For more details, check out: https://www.alibabacloud.com/help/doc-detail/100624.htm. [optional]  # noqa: E501
+            use_sdk_creds (bool): UseSDKCreds tells the driver to figure out credentials based on sdk defaults.. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -251,13 +263,17 @@ class IoArgoprojWorkflowV1alpha1OSSArtifact(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
+            oidc_provider_arn (str): OidcProviderARN is the Alibaba Cloud Resource Name (ARN) of the OIDC IdP.. [optional]  # noqa: E501
+            oidc_token_file (str): OidcTokenFile is the file path of the OIDC token.. [optional]  # noqa: E501
             access_key_secret (SecretKeySelector): [optional]  # noqa: E501
             bucket (str): Bucket is the name of the bucket. [optional]  # noqa: E501
             create_bucket_if_not_present (bool): CreateBucketIfNotPresent tells the driver to attempt to create the OSS bucket for output artifacts, if it doesn't exist. [optional]  # noqa: E501
             endpoint (str): Endpoint is the hostname of the bucket endpoint. [optional]  # noqa: E501
             lifecycle_rule (IoArgoprojWorkflowV1alpha1OSSLifecycleRule): [optional]  # noqa: E501
+            role_arn (str): RoleARN is the Alibaba Cloud Resource Name(ARN) of the role to assume.. [optional]  # noqa: E501
             secret_key_secret (SecretKeySelector): [optional]  # noqa: E501
             security_token (str): SecurityToken is the user's temporary security token. For more details, check out: https://www.alibabacloud.com/help/doc-detail/100624.htm. [optional]  # noqa: E501
+            use_sdk_creds (bool): UseSDKCreds tells the driver to figure out credentials based on sdk defaults.. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)

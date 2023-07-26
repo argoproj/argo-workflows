@@ -4352,6 +4352,34 @@ func schema_pkg_apis_workflow_v1alpha1_OSSArtifact(ref common.ReferenceCallback)
 							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.OSSLifecycleRule"),
 						},
 					},
+					"roleARN": {
+						SchemaProps: spec.SchemaProps{
+							Description: "RoleARN is the Alibaba Cloud Resource Name(ARN) of the role to assume.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"OidcProviderARN": {
+						SchemaProps: spec.SchemaProps{
+							Description: "OidcProviderARN is the Alibaba Cloud Resource Name (ARN) of the OIDC IdP.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"OidcTokenFile": {
+						SchemaProps: spec.SchemaProps{
+							Description: "OidcTokenFile is the file path of the OIDC token.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"useSDKCreds": {
+						SchemaProps: spec.SchemaProps{
+							Description: "UseSDKCreds tells the driver to figure out credentials based on sdk defaults.",
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
 					"key": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Key is the path in the bucket where the artifact resides",
@@ -4422,6 +4450,34 @@ func schema_pkg_apis_workflow_v1alpha1_OSSArtifactRepository(ref common.Referenc
 							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.OSSLifecycleRule"),
 						},
 					},
+					"roleARN": {
+						SchemaProps: spec.SchemaProps{
+							Description: "RoleARN is the Alibaba Cloud Resource Name(ARN) of the role to assume.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"OidcProviderARN": {
+						SchemaProps: spec.SchemaProps{
+							Description: "OidcProviderARN is the Alibaba Cloud Resource Name (ARN) of the OIDC IdP.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"OidcTokenFile": {
+						SchemaProps: spec.SchemaProps{
+							Description: "OidcTokenFile is the file path of the OIDC token.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"useSDKCreds": {
+						SchemaProps: spec.SchemaProps{
+							Description: "UseSDKCreds tells the driver to figure out credentials based on sdk defaults.",
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
 					"keyFormat": {
 						SchemaProps: spec.SchemaProps{
 							Description: "KeyFormat is defines the format of how to store keys. Can reference workflow variables",
@@ -4488,6 +4544,34 @@ func schema_pkg_apis_workflow_v1alpha1_OSSBucket(ref common.ReferenceCallback) c
 						SchemaProps: spec.SchemaProps{
 							Description: "LifecycleRule specifies how to manage bucket's lifecycle",
 							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.OSSLifecycleRule"),
+						},
+					},
+					"roleARN": {
+						SchemaProps: spec.SchemaProps{
+							Description: "RoleARN is the Alibaba Cloud Resource Name(ARN) of the role to assume.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"OidcProviderARN": {
+						SchemaProps: spec.SchemaProps{
+							Description: "OidcProviderARN is the Alibaba Cloud Resource Name (ARN) of the OIDC IdP.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"OidcTokenFile": {
+						SchemaProps: spec.SchemaProps{
+							Description: "OidcTokenFile is the file path of the OIDC token.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"useSDKCreds": {
+						SchemaProps: spec.SchemaProps{
+							Description: "UseSDKCreds tells the driver to figure out credentials based on sdk defaults.",
+							Type:        []string{"boolean"},
+							Format:      "",
 						},
 					},
 				},

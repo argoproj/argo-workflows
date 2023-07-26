@@ -5655,6 +5655,14 @@
     "io.argoproj.workflow.v1alpha1.OSSArtifact": {
       "description": "OSSArtifact is the location of an Alibaba Cloud OSS artifact",
       "properties": {
+        "OidcProviderARN": {
+          "description": "OidcProviderARN is the Alibaba Cloud Resource Name (ARN) of the OIDC IdP.",
+          "type": "string"
+        },
+        "OidcTokenFile": {
+          "description": "OidcTokenFile is the file path of the OIDC token.",
+          "type": "string"
+        },
         "accessKeySecret": {
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
           "description": "AccessKeySecret is the secret selector to the bucket's access key"
@@ -5679,6 +5687,10 @@
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.OSSLifecycleRule",
           "description": "LifecycleRule specifies how to manage bucket's lifecycle"
         },
+        "roleARN": {
+          "description": "RoleARN is the Alibaba Cloud Resource Name(ARN) of the role to assume.",
+          "type": "string"
+        },
         "secretKeySecret": {
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
           "description": "SecretKeySecret is the secret selector to the bucket's secret key"
@@ -5686,6 +5698,10 @@
         "securityToken": {
           "description": "SecurityToken is the user's temporary security token. For more details, check out: https://www.alibabacloud.com/help/doc-detail/100624.htm",
           "type": "string"
+        },
+        "useSDKCreds": {
+          "description": "UseSDKCreds tells the driver to figure out credentials based on sdk defaults.",
+          "type": "boolean"
         }
       },
       "required": [
@@ -5696,6 +5712,14 @@
     "io.argoproj.workflow.v1alpha1.OSSArtifactRepository": {
       "description": "OSSArtifactRepository defines the controller configuration for an OSS artifact repository",
       "properties": {
+        "OidcProviderARN": {
+          "description": "OidcProviderARN is the Alibaba Cloud Resource Name (ARN) of the OIDC IdP.",
+          "type": "string"
+        },
+        "OidcTokenFile": {
+          "description": "OidcTokenFile is the file path of the OIDC token.",
+          "type": "string"
+        },
         "accessKeySecret": {
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
           "description": "AccessKeySecret is the secret selector to the bucket's access key"
@@ -5720,6 +5744,10 @@
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.OSSLifecycleRule",
           "description": "LifecycleRule specifies how to manage bucket's lifecycle"
         },
+        "roleARN": {
+          "description": "RoleARN is the Alibaba Cloud Resource Name(ARN) of the role to assume.",
+          "type": "string"
+        },
         "secretKeySecret": {
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
           "description": "SecretKeySecret is the secret selector to the bucket's secret key"
@@ -5727,6 +5755,10 @@
         "securityToken": {
           "description": "SecurityToken is the user's temporary security token. For more details, check out: https://www.alibabacloud.com/help/doc-detail/100624.htm",
           "type": "string"
+        },
+        "useSDKCreds": {
+          "description": "UseSDKCreds tells the driver to figure out credentials based on sdk defaults.",
+          "type": "boolean"
         }
       },
       "type": "object"

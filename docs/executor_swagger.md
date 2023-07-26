@@ -2707,14 +2707,18 @@ save/load the directory appropriately.
 
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
+| OidcProviderARN | string| `string` |  | | OidcProviderARN is the Alibaba Cloud Resource Name (ARN) of the OIDC IdP. |  |
+| OidcTokenFile | string| `string` |  | | OidcTokenFile is the file path of the OIDC token. |  |
 | accessKeySecret | [SecretKeySelector](#secret-key-selector)| `SecretKeySelector` |  | |  |  |
 | bucket | string| `string` |  | | Bucket is the name of the bucket |  |
 | createBucketIfNotPresent | boolean| `bool` |  | | CreateBucketIfNotPresent tells the driver to attempt to create the OSS bucket for output artifacts, if it doesn't exist |  |
 | endpoint | string| `string` |  | | Endpoint is the hostname of the bucket endpoint |  |
 | key | string| `string` |  | | Key is the path in the bucket where the artifact resides |  |
 | lifecycleRule | [OSSLifecycleRule](#o-s-s-lifecycle-rule)| `OSSLifecycleRule` |  | |  |  |
+| roleARN | string| `string` |  | | RoleARN is the Alibaba Cloud Resource Name(ARN) of the role to assume. |  |
 | secretKeySecret | [SecretKeySelector](#secret-key-selector)| `SecretKeySelector` |  | |  |  |
 | securityToken | string| `string` |  | | SecurityToken is the user's temporary security token. For more details, check out: https://www.alibabacloud.com/help/doc-detail/100624.htm |  |
+| useSDKCreds | boolean| `bool` |  | | UseSDKCreds tells the driver to figure out credentials based on sdk defaults. |  |
 
 
 
