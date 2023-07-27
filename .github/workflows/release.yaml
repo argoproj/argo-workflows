@@ -110,7 +110,7 @@ jobs:
           login-server: quay.io
           username: ${{ secrets.QUAYIO_USERNAME }}
           password: ${{ secrets.QUAYIO_PASSWORD }}
-   
+
       - name: Build & Push Windows Docker Images
         env:
           DOCKERIO_ORG: ${{ secrets.DOCKERIO_ORG }}
@@ -133,7 +133,7 @@ jobs:
               -t $image_name \
               -f Dockerfile.windows \
               .
-          
+
             docker push $image_name
 
             docker tag $image_name quay.io/$image_name
@@ -280,14 +280,14 @@ jobs:
     if: github.repository == 'argoproj/argo-workflows'
     needs: [ push-images, test-images-linux-amd64, test-images-windows ]
     env:
-      NODE_OPTIONS: --max-old-space-size=4096
+      NODE_OPTIONS: --openssl-legacy-provider --max-old-space-size=4096
       COSIGN_PRIVATE_KEY: ${{secrets.COSIGN_PRIVATE_KEY}}
       COSIGN_PASSWORD: ${{secrets.COSIGN_PASSWORD}}
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-node@v3
         with:
-          node-version: "16"
+          node-version: "20"
       - uses: actions/setup-go@v4
         with:
           go-version: "1.20"
