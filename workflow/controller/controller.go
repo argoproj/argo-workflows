@@ -398,7 +398,7 @@ func (wfc *WorkflowController) runConfigMapWatcher(stopCh <-chan struct{}) {
 	ctx := context.Background()
 	retryWatcher, err := apiwatch.NewRetryWatcher("1", &cache.ListWatch{
 		WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
-			return wfc.kubeclientset.CoreV1().ConfigMaps(wfc.managedNamespace).Watch(ctx, metav1.ListOptions{})
+			return wfc.kubeclientset.CoreV1().ConfigMaps(wfc.namespace).Watch(ctx, metav1.ListOptions{})
 		},
 	})
 	if err != nil {
