@@ -21,10 +21,7 @@ func (woc *wfOperationCtx) executeWfLifeCycleHook(ctx context.Context, tmplCtx *
 		}
 		hookNodeName := generateLifeHookNodeName(woc.wf.ObjectMeta.Name, string(hookName))
 		// To check a node was triggered.
-		hookedNode, err := woc.wf.GetNodeByName(hookNodeName)
-		if err != nil {
-			return true, err
-		}
+		hookedNode, _ := woc.wf.GetNodeByName(hookNodeName)
 		if hook.Expression == "" {
 			return true, errors.Errorf(errors.CodeBadRequest, "Expression required for hook %s", hookNodeName)
 		}
