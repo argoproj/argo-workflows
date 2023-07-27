@@ -3,14 +3,16 @@ package sqldb
 import (
 	"context"
 	"fmt"
-	"github.com/argoproj/argo-workflows/v3/config"
-	"github.com/argoproj/argo-workflows/v3/errors"
-	"github.com/argoproj/argo-workflows/v3/util"
+	"time"
+
 	"github.com/upper/db/v4"
 	mysqladp "github.com/upper/db/v4/adapter/mysql"
 	postgresqladp "github.com/upper/db/v4/adapter/postgresql"
 	"k8s.io/client-go/kubernetes"
-	"time"
+
+	"github.com/argoproj/argo-workflows/v3/config"
+	"github.com/argoproj/argo-workflows/v3/errors"
+	"github.com/argoproj/argo-workflows/v3/util"
 )
 
 func GetTableName(persistConfig *config.PersistConfig) (string, error) {

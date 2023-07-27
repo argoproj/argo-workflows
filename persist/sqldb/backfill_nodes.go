@@ -4,9 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	log "github.com/sirupsen/logrus"
 	"github.com/upper/db/v4"
+
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
 
 type backfillNodes struct {

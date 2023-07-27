@@ -5,13 +5,14 @@ import (
 	"fmt"
 	"time"
 
+	log "github.com/sirupsen/logrus"
+	"google.golang.org/grpc/codes"
+	"k8s.io/apimachinery/pkg/labels"
+
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	sutils "github.com/argoproj/argo-workflows/v3/server/utils"
 	"github.com/argoproj/argo-workflows/v3/util/instanceid"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
-	log "github.com/sirupsen/logrus"
-	"google.golang.org/grpc/codes"
-	"k8s.io/apimachinery/pkg/labels"
 )
 
 const (
