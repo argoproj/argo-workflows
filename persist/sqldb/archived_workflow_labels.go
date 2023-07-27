@@ -64,7 +64,7 @@ func labelsClause(t dbType, requirements labels.Requirements) (db.AndExpr, error
 	return *db.And(conds...), nil
 }
 
-func requirementToCondition(t dbType, r labels.Requirement) (db.LogicalExpr, error) {
+func requirementToCondition(t dbType, r labels.Requirement) (*db.RawExpr, error) {
 	// Should we "sanitize our inputs"? No.
 	// https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/
 	// Valid label values must be 63 characters or less and must be empty or begin and end with an alphanumeric character ([a-z0-9A-Z]) with dashes (-), underscores (_), dots (.), and alphanumerics between.
