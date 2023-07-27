@@ -6,6 +6,7 @@ import (
 	"time"
 
 	log "github.com/sirupsen/logrus"
+	"github.com/upper/db/v4"
 	"google.golang.org/grpc/codes"
 	"k8s.io/apimachinery/pkg/labels"
 
