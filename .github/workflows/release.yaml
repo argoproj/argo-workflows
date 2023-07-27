@@ -280,14 +280,14 @@ jobs:
     if: github.repository == 'argoproj/argo-workflows'
     needs: [ push-images, test-images-linux-amd64, test-images-windows ]
     env:
-      NODE_OPTIONS: --openssl-legacy-provider --max-old-space-size=4096
+      NODE_OPTIONS: --max-old-space-size=4096
       COSIGN_PRIVATE_KEY: ${{secrets.COSIGN_PRIVATE_KEY}}
       COSIGN_PASSWORD: ${{secrets.COSIGN_PASSWORD}}
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-node@v3
         with:
-          node-version: "20"
+          node-version: "20" # change in all GH Workflows
       - uses: actions/setup-go@v4
         with:
           go-version: "1.20"

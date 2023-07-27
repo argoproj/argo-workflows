@@ -250,7 +250,7 @@ jobs:
       - uses: actions/checkout@v3
       - uses: actions/setup-node@v3
         with:
-          node-version: "20" # change in Snyk when changed here
+          node-version: "20" # change in all GH Workflows
           cache: yarn
           cache-dependency-path: ui/yarn.lock
       - run: yarn --cwd ui install
