@@ -7,6 +7,7 @@ import (
 	"sort"
 	"time"
 
+	wfextvv1alpha1 "github.com/argoproj/argo-workflows/v3/pkg/client/informers/externalversions/workflow/v1alpha1"
 	"github.com/robfig/cron/v3"
 	log "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
@@ -29,24 +30,29 @@ import (
 
 type cronWfOperationCtx struct {
 	// CronWorkflow is the CronWorkflow to be run
-	name        string
-	cronWf      *v1alpha1.CronWorkflow
-	wfClientset versioned.Interface
-	wfClient    typed.WorkflowInterface
-	cronWfIf    typed.CronWorkflowInterface
-	log         *log.Entry
-	metrics     *metrics.Metrics
+	name            string
+	cronWf          *v1alpha1.CronWorkflow
+	wfClientset     versioned.Interface
+	wfClient        typed.WorkflowInterface
+	cronWfIf        typed.CronWorkflowInterface
+	wftmplInformer  wfextvv1alpha1.WorkflowTemplateInformer
+	cwftmplInformer wfextvv1alpha1.ClusterWorkflowTemplateInformer
+	log             *log.Entry
+	metrics         *metrics.Metrics
 	// scheduledTimeFunc returns the last scheduled time when it is called
 	scheduledTimeFunc ScheduledTimeFunc
 }
 
-func newCronWfOperationCtx(cronWorkflow *v1alpha1.CronWorkflow, wfClientset versioned.Interface, metrics *metrics.Metrics) *cronWfOperationCtx {
+func newCronWfOperationCtx(cronWorkflow *v1alpha1.CronWorkflow, wfClientset versioned.Interface, metrics *metrics.Metrics,
+	wftmplInformer wfextvv1alpha1.WorkflowTemplateInformer, cwftmplInformer wfextvv1alpha1.ClusterWorkflowTemplateInformer) *cronWfOperationCtx {
 	return &cronWfOperationCtx{
-		name:        cronWorkflow.ObjectMeta.Name,
-		cronWf:      cronWorkflow,
-		wfClientset: wfClientset,
-		wfClient:    wfClientset.ArgoprojV1alpha1().Workflows(cronWorkflow.Namespace),
-		cronWfIf:    wfClientset.ArgoprojV1alpha1().CronWorkflows(cronWorkflow.Namespace),
+		name:            cronWorkflow.ObjectMeta.Name,
+		cronWf:          cronWorkflow,
+		wfClientset:     wfClientset,
+		wfClient:        wfClientset.ArgoprojV1alpha1().Workflows(cronWorkflow.Namespace),
+		cronWfIf:        wfClientset.ArgoprojV1alpha1().CronWorkflows(cronWorkflow.Namespace),
+		wftmplInformer:  wftmplInformer,
+		cwftmplInformer: cwftmplInformer,
 		log: log.WithFields(log.Fields{
 			"workflow":  cronWorkflow.ObjectMeta.Name,
 			"namespace": cronWorkflow.ObjectMeta.Namespace,
@@ -109,8 +115,10 @@ func (woc *cronWfOperationCtx) run(ctx context.Context, scheduledRuntime time.Ti
 }
 
 func (woc *cronWfOperationCtx) validateCronWorkflow() error {
-	wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(woc.wfClientset.ArgoprojV1alpha1().WorkflowTemplates(woc.cronWf.Namespace))
+	//wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(woc.wfClientset.ArgoprojV1alpha1().WorkflowTemplates(woc.cronWf.Namespace))
+	wftmplGetter := templateresolution.NewWorkflowTemplateFromInformerGetter(woc.wftmplInformer, woc.cronWf.ObjectMeta.Namespace)
 	cwftmplGetter := templateresolution.WrapClusterWorkflowTemplateInterface(woc.wfClientset.ArgoprojV1alpha1().ClusterWorkflowTemplates())
+	//todo: need to be able to call the below function with either method
 	err := validate.ValidateCronWorkflow(wftmplGetter, cwftmplGetter, woc.cronWf)
 	if err != nil {
 		woc.reportCronWorkflowError(v1alpha1.ConditionTypeSpecError, fmt.Sprint(err))

@@ -27,6 +27,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
+	wfextvv1alpha1 "github.com/argoproj/argo-workflows/v3/pkg/client/informers/externalversions/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/util/env"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/events"
@@ -43,7 +44,9 @@ type Controller struct {
 	keyLock              sync.KeyLock
 	wfClientset          versioned.Interface
 	wfLister             util.WorkflowLister
-	cronWfInformer       informers.GenericInformer
+	cronWfInformer       informers.GenericInformer               // todo: might be nicer to group the informers in their own struct
+	wftmplInformer       wfextvv1alpha1.WorkflowTemplateInformer //todo: is this type okay?
+	cwftmplInformer      wfextvv1alpha1.ClusterWorkflowTemplateInformer
 	cronWfQueue          workqueue.RateLimitingInterface
 	dynamicInterface     dynamic.Interface
 	metrics              *metrics.Metrics
@@ -68,7 +71,8 @@ func init() {
 	log.WithField("cronSyncPeriod", cronSyncPeriod).Info("cron config")
 }
 
-func NewCronController(wfclientset versioned.Interface, dynamicInterface dynamic.Interface, namespace string, managedNamespace string, instanceId string, metrics *metrics.Metrics, eventRecorderManager events.EventRecorderManager) *Controller {
+func NewCronController(wfclientset versioned.Interface, dynamicInterface dynamic.Interface, namespace string, managedNamespace string, instanceId string, metrics *metrics.Metrics,
+	eventRecorderManager events.EventRecorderManager, wftmplInformer wfextvv1alpha1.WorkflowTemplateInformer, cwftmplInformer wfextvv1alpha1.ClusterWorkflowTemplateInformer) *Controller {
 	return &Controller{
 		wfClientset:          wfclientset,
 		namespace:            namespace,
@@ -80,6 +84,8 @@ func NewCronController(wfclientset versioned.Interface, dynamicInterface dynamic
 		cronWfQueue:          metrics.RateLimiterWithBusyWorkers(workqueue.DefaultControllerRateLimiter(), "cron_wf_queue"),
 		metrics:              metrics,
 		eventRecorderManager: eventRecorderManager,
+		wftmplInformer:       wftmplInformer,
+		cwftmplInformer:      cwftmplInformer,
 	}
 }
 
@@ -162,7 +168,7 @@ func (cc *Controller) processNextCronItem(ctx context.Context) bool {
 		return true
 	}
 
-	cronWorkflowOperationCtx := newCronWfOperationCtx(cronWf, cc.wfClientset, cc.metrics)
+	cronWorkflowOperationCtx := newCronWfOperationCtx(cronWf, cc.wfClientset, cc.metrics, cc.wftmplInformer, cc.cwftmplInformer)
 
 	err = cronWorkflowOperationCtx.validateCronWorkflow()
 	if err != nil {
@@ -256,7 +262,7 @@ func (cc *Controller) syncCronWorkflow(ctx context.Context, cronWf *v1alpha1.Cro
 	cc.keyLock.Lock(key)
 	defer cc.keyLock.Unlock(key)
 
-	cwoc := newCronWfOperationCtx(cronWf, cc.wfClientset, cc.metrics)
+	cwoc := newCronWfOperationCtx(cronWf, cc.wfClientset, cc.metrics, cc.wftmplInformer, cc.cwftmplInformer)
 	err := cwoc.enforceHistoryLimit(ctx, workflows)
 	if err != nil {
 		return err

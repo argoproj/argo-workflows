@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	wfextvv1alpha1 "github.com/argoproj/argo-workflows/v3/pkg/client/informers/externalversions/workflow/v1alpha1"
+
 	log "github.com/sirupsen/logrus"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -35,6 +37,31 @@ type WorkflowTemplateNamespacedGetter interface {
 	Get(name string) (*wfv1.WorkflowTemplate, error)
 }
 
+type WorkflowTemplateFromInformerGetter struct {
+	wftmplInformer wfextvv1alpha1.WorkflowTemplateInformer
+	namespace      string
+}
+
+func (getter *WorkflowTemplateFromInformerGetter) Get(name string) (*wfv1.WorkflowTemplate, error) {
+	obj, exists, err := getter.wftmplInformer.Informer().GetStore().GetByKey(getter.namespace + "/" + name)
+	if err != nil {
+		return nil, err
+	}
+	if !exists {
+		return nil, fmt.Errorf("WorkflowTemplate Informer cannot find WorkflowTemplate of name %q in namespace %q", name, getter.namespace)
+	}
+	wfTmpl, castOk := obj.(*wfv1.WorkflowTemplate)
+	if !castOk {
+		return nil, fmt.Errorf("WorkflowTemplate Informer found WorkflowTemplate of name %q in namespace %q but somehow it's not a WorkflowTemplate: %+v",
+			name, getter.namespace, obj)
+	}
+	return wfTmpl, nil
+}
+
+func NewWorkflowTemplateFromInformerGetter(wftmplInformer wfextvv1alpha1.WorkflowTemplateInformer, namespace string) WorkflowTemplateNamespacedGetter {
+	return &WorkflowTemplateFromInformerGetter{wftmplInformer: wftmplInformer, namespace: namespace}
+}
+
 // clusterWorkflowTemplateInterfaceWrapper is an internal struct to wrap clientset.
 type clusterWorkflowTemplateInterfaceWrapper struct {
 	clientset typed.ClusterWorkflowTemplateInterface
@@ -61,6 +88,30 @@ func (n *NullClusterWorkflowTemplateGetter) Get(name string) (*wfv1.ClusterWorkf
 func (wrapper *clusterWorkflowTemplateInterfaceWrapper) Get(name string) (*wfv1.ClusterWorkflowTemplate, error) {
 	ctx := context.TODO()
 	return wrapper.clientset.Get(ctx, name, metav1.GetOptions{})
+}
+
+type ClusterWorkflowTemplateFromInformerGetter struct {
+	cwftmplInformer wfextvv1alpha1.ClusterWorkflowTemplateInformer
+}
+
+func (getter *ClusterWorkflowTemplateFromInformerGetter) Get(name string) (*wfv1.ClusterWorkflowTemplate, error) {
+	obj, exists, err := getter.cwftmplInformer.Informer().GetStore().GetByKey(name)
+	if err != nil {
+		return nil, err
+	}
+	if !exists {
+		return nil, fmt.Errorf("ClusterWorkflowTemplate Informer cannot find ClusterWorkflowTemplate of name %q", name)
+	}
+	cwfTmpl, castOk := obj.(*wfv1.ClusterWorkflowTemplate)
+	if !castOk {
+		return nil, fmt.Errorf("ClusterWorkflowTemplate Informer found ClusterWorkflowTemplate of name %q but somehow it's not a WorkflowTemplate: %+v",
+			name, obj)
+	}
+	return cwfTmpl, nil
+}
+
+func NewClusterWorkflowTemplateFromInformerGetter(cwftmplInformer wfextvv1alpha1.ClusterWorkflowTemplateInformer) ClusterWorkflowTemplateGetter {
+	return &ClusterWorkflowTemplateFromInformerGetter{cwftmplInformer: cwftmplInformer}
 }
 
 // Context is a context of template search.
