@@ -48,11 +48,11 @@ type Controller struct {
 	dynamicInterface     dynamic.Interface
 	metrics              *metrics.Metrics
 	eventRecorderManager events.EventRecorderManager
+	cronWorkflowWorkers  int
 }
 
 const (
 	cronWorkflowResyncPeriod = 20 * time.Minute
-	cronWorkflowWorkers      = 8
 )
 
 var (
@@ -68,7 +68,7 @@ func init() {
 	log.WithField("cronSyncPeriod", cronSyncPeriod).Info("cron config")
 }
 
-func NewCronController(wfclientset versioned.Interface, dynamicInterface dynamic.Interface, namespace string, managedNamespace string, instanceId string, metrics *metrics.Metrics, eventRecorderManager events.EventRecorderManager) *Controller {
+func NewCronController(wfclientset versioned.Interface, dynamicInterface dynamic.Interface, namespace string, managedNamespace string, instanceId string, metrics *metrics.Metrics, eventRecorderManager events.EventRecorderManager, cronWorkflowWorkers int) *Controller {
 	return &Controller{
 		wfClientset:          wfclientset,
 		namespace:            namespace,
@@ -80,6 +80,7 @@ func NewCronController(wfclientset versioned.Interface, dynamicInterface dynamic
 		cronWfQueue:          metrics.RateLimiterWithBusyWorkers(workqueue.DefaultControllerRateLimiter(), "cron_wf_queue"),
 		metrics:              metrics,
 		eventRecorderManager: eventRecorderManager,
+		cronWorkflowWorkers:  cronWorkflowWorkers,
 	}
 }
 
@@ -110,7 +111,7 @@ func (cc *Controller) Run(ctx context.Context) {
 
 	go wait.UntilWithContext(ctx, cc.syncAll, cronSyncPeriod)
 
-	for i := 0; i < cronWorkflowWorkers; i++ {
+	for i := 0; i < cc.cronWorkflowWorkers; i++ {
 		go wait.Until(cc.runCronWorker, time.Second, ctx.Done())
 	}
 
