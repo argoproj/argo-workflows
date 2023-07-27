@@ -4,11 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 
-	log "github.com/sirupsen/logrus"
-	"upper.io/db.v3"
-	"upper.io/db.v3/lib/sqlbuilder"
-
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	log "github.com/sirupsen/logrus"
+	"github.com/upper/db/v4"
 )
 
 type backfillNodes struct {
@@ -19,9 +17,9 @@ func (s backfillNodes) String() string {
 	return fmt.Sprintf("backfillNodes{%s}", s.tableName)
 }
 
-func (s backfillNodes) apply(session sqlbuilder.Database) (err error) {
+func (s backfillNodes) apply(session db.Session) (err error) {
 	log.Info("Backfill node status")
-	rs, err := session.SelectFrom(s.tableName).
+	rs, err := session.SQL().SelectFrom(s.tableName).
 		Columns("workflow").
 		Where(db.Cond{"version": nil}).
 		Query()
@@ -56,7 +54,7 @@ func (s backfillNodes) apply(session sqlbuilder.Database) (err error) {
 		}
 		logCtx := log.WithFields(log.Fields{"name": wf.Name, "namespace": wf.Namespace, "version": version})
 		logCtx.Info("Back-filling node status")
-		res, err := session.Update(archiveTableName).
+		res, err := session.SQL().Update(archiveTableName).
 			Set("version", wf.ResourceVersion).
 			Set("nodes", marshalled).
 			Where(db.Cond{"name": wf.Name}).
