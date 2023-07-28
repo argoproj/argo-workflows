@@ -52,16 +52,15 @@ func (r *workflowArchive) ListWorkflowsLabelValues(key string) (*wfv1.LabelValue
 	return &wfv1.LabelValues{Items: labels}, nil
 }
 
-func labelsClause(t dbType, requirements labels.Requirements) ([]db.RawExpr, error) {
-	var conds []db.RawExpr
-	for _, r := range requirements {
-		cond, err := requirementToCondition(t, r)
+func labelsClause(selector db.Selector, t dbType, requirements labels.Requirements) (db.Selector, error) {
+	for _, req := range requirements {
+		cond, err := requirementToCondition(t, req)
 		if err != nil {
 			return nil, err
 		}
-		conds = append(conds, *cond)
+		selector = selector.And(cond)
 	}
-	return conds, nil
+	return selector, nil
 }
 
 func requirementToCondition(t dbType, r labels.Requirement) (*db.RawExpr, error) {

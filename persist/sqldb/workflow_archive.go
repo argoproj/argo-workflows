@@ -161,21 +161,16 @@ func (r *workflowArchive) ListWorkflows(namespace string, name string, namePrefi
 		And(startedAtFromClause(minStartedAt)).
 		And(startedAtToClause(maxStartedAt))
 
-	for _, req := range labelRequirements {
-		cond, err := requirementToCondition(r.dbType, req)
-		if err != nil {
-			return nil, err
-		}
-		selector = selector.And(cond)
+	selector, err := labelsClause(selector, r.dbType, labelRequirements)
+	if err != nil {
+		return nil, err
 	}
-	err := selector.
+	err = selector.
 		OrderBy("-startedat").
 		Limit(limit).
 		Offset(offset).
 		All(&archivedWfs)
-	if err != nil {
-		return nil, err
-	}
+
 	wfs := make(wfv1.Workflows, 0)
 	for _, archivedWf := range archivedWfs {
 		wf := wfv1.Workflow{}
@@ -204,14 +199,11 @@ func (r *workflowArchive) CountWorkflows(namespace string, name string, namePref
 		And(startedAtFromClause(minStartedAt)).
 		And(startedAtToClause(maxStartedAt))
 
-	for _, req := range labelRequirements {
-		cond, err := requirementToCondition(r.dbType, req)
-		if err != nil {
-			return 0, err
-		}
-		selector = selector.And(cond)
+	selector, err := labelsClause(selector, r.dbType, labelRequirements)
+	if err != nil {
+		return 0, err
 	}
-	err := selector.One(total)
+	err = selector.One(total)
 	if err != nil {
 		return 0, err
 	}

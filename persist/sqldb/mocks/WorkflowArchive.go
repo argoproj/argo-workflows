@@ -3,10 +3,10 @@
 package mocks
 
 import (
+	time "time"
+
 	mock "github.com/stretchr/testify/mock"
 	labels "k8s.io/apimachinery/pkg/labels"
-
-	time "time"
 
 	v1alpha1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
