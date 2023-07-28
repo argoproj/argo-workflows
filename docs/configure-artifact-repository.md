@@ -274,6 +274,51 @@ $ k apply -f default-artifact-repository.yaml -n demo
 
 You can also set `createBucketIfNotPresent` to `true` to tell the artifact driver to automatically create the OSS bucket if it doesn't exist yet when saving artifacts. Note that you'll need to set additional permission for your OSS account to create new buckets.
 
+### Alibaba Cloud OSS RRSA
+
+If you wish to use OSS RRSA instead of passing in an `accessKey` and `secretKey`,  you need to perform the following actions:
+
+- Install [pod-identity-webhook](https://www.alibabacloud.com/help/en/ack/product-overview/ack-pod-identity-webhook) in your cluster to automatically inject the OIDC tokens and environment variables.
+- Add the label `pod-identity.alibabacloud.com/injection: 'on'` to the target workflow namespace.
+- Add the annotation `pod-identity.alibabacloud.com/role-name: $your_ram_role_name` to the service account of running workflow.
+- Set `useSDKCreds: true` in your target artifact repository cm and remove the secret references to AK/SK.
+
+```yaml
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: my-ns
+  labels:
+    pod-identity.alibabacloud.com/injection: 'on'
+
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: my-sa
+  namespace: rrsa-demo
+  annotations:
+    pod-identity.alibabacloud.com/role-name: $your_ram_role_name
+    
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  # If you want to use this config map by default, name it "artifact-repositories". Otherwise, you can provide a reference to a
+  # different config map in `artifactRepositoryRef.configMap`.
+  name: artifact-repositories
+  annotations:
+    # v3.0 and after - if you want to use a specific key, put that key into this annotation.
+    workflows.argoproj.io/default-artifact-repository: default-oss-artifact-repository
+data:
+  default-oss-artifact-repository: |
+    oss:
+      endpoint: http://oss-cn-zhangjiakou-internal.aliyuncs.com
+      bucket: $mybucket
+      useSDKCreds: true
+```
+
 ## Configuring Azure Blob Storage
 
 Create an Azure Storage account and a container within that account. There are a number of

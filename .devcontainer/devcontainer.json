@@ -6,7 +6,7 @@
       "version": "1.20"
     },
     "ghcr.io/devcontainers/features/node:1": {
-      "version": "16"
+      "version": "20"
     },
     "ghcr.io/devcontainers/features/docker-in-docker:2": {},
     "ghcr.io/devcontainers/features/python:1": {}
@@ -15,7 +15,14 @@
   "hostRequirements": {
     "cpus": 4
   },
-  "runArgs": ["--add-host=host.docker.internal:host-gateway"],
+  "runArgs": [
+    "--add-host=host.docker.internal:host-gateway",
+    "--add-host=dex:127.0.0.1",
+    "--add-host=minio:127.0.0.1",
+    "--add-host=postgres:127.0.0.1",
+    "--add-host=mysql:127.0.0.1",
+    "--add-host=azurite:127.0.0.1"
+  ],
   "onCreateCommand": ".devcontainer/pre-build.sh",
   "workspaceMount": "source=${localWorkspaceFolder},target=/home/vscode/go/src/github.com/argoproj/argo-workflows,type=bind",
   "workspaceFolder": "/home/vscode/go/src/github.com/argoproj/argo-workflows",

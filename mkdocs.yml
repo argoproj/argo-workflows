@@ -75,6 +75,7 @@ nav:
           - http-template.md
           - container-set-template.md
           - data-sourcing-and-transformation.md
+          - resource-template.md
           - inline-templates.md
       - Artifacts:
           - workflow-inputs.md

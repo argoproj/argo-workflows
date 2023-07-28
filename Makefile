@@ -626,7 +626,7 @@ docs/cli/argo.md: $(CLI_PKGS) go.sum server/static/files.go hack/cli/main.go
 # docs
 
 /usr/local/bin/mdspell:
-	npm i -g markdown-spellcheck # update this in Nix when upgrading it here
+	npm i -g markdown-spellcheck@1.3.1 # update this in Nix when upgrading it here
 
 
 .PHONY: docs-spellcheck
@@ -635,7 +635,7 @@ docs-spellcheck: /usr/local/bin/mdspell
 	mdspell --ignore-numbers --ignore-acronyms --en-us --no-suggestions --report $(shell find docs -name '*.md' -not -name upgrading.md -not -name README.md -not -name fields.md -not -name upgrading.md -not -name swagger.md -not -name executor_swagger.md -not -path '*/cli/*')
 
 /usr/local/bin/markdown-link-check:
-	npm i -g markdown-link-check # update this in Nix when upgrading it here
+	npm i -g markdown-link-check@3.11.1 # update this in Nix when upgrading it here
 
 
 .PHONY: docs-linkcheck
@@ -644,7 +644,7 @@ docs-linkcheck: /usr/local/bin/markdown-link-check
 	markdown-link-check -q -c .mlc_config.json $(shell find docs -name '*.md' -not -name fields.md -not -name swagger.md -not -name executor_swagger.md)
 
 /usr/local/bin/markdownlint:
-	npm i -g  markdownlint-cli # update this in Nix when upgrading it here
+	npm i -g markdownlint-cli@0.33.0 # update this in Nix when upgrading it here
 
 
 .PHONY: docs-lint

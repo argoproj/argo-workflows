@@ -41,6 +41,9 @@ argo retry [WORKFLOW...] [flags]
 
   argo retry @latest
 
+# Restart node with id 5 on successful workflow, using node-field-selector
+  argo retry my-wf --restart-successful --node-field-selector id=5
+
 ```
 
 ### Options
