@@ -3212,6 +3212,19 @@
     Configuring Alibaba Cloud OSS (Object Storage Service)
   </a>
   
+    <nav class="md-nav" aria-label="Configuring Alibaba Cloud OSS (Object Storage Service)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#alibaba-cloud-oss-rrsa" class="md-nav__link">
+    Alibaba Cloud OSS RRSA
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -3992,6 +4005,19 @@
     Configuring Alibaba Cloud OSS (Object Storage Service)
   </a>
   
+    <nav class="md-nav" aria-label="Configuring Alibaba Cloud OSS (Object Storage Service)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#alibaba-cloud-oss-rrsa" class="md-nav__link">
+    Alibaba Cloud OSS RRSA
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -4361,6 +4387,47 @@ $<span class="w"> </span>cat<span class="w"> </span>&gt;<span class="w"> </span>
 $<span class="w"> </span>k<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span>default-artifact-repository.yaml<span class="w"> </span>-n<span class="w"> </span>demo
 </code></pre></div>
 <p>You can also set <code>createBucketIfNotPresent</code> to <code>true</code> to tell the artifact driver to automatically create the OSS bucket if it doesn't exist yet when saving artifacts. Note that you'll need to set additional permission for your OSS account to create new buckets.</p>
+<h3 id="alibaba-cloud-oss-rrsa">Alibaba Cloud OSS RRSA<a class="headerlink" href="#alibaba-cloud-oss-rrsa" title="Permanent link">&para;</a></h3>
+<p>If you wish to use OSS RRSA instead of passing in an <code>accessKey</code> and <code>secretKey</code>,  you need to perform the following actions:</p>
+<ul>
+<li>Install <a href="https://www.alibabacloud.com/help/en/ack/product-overview/ack-pod-identity-webhook">pod-identity-webhook</a> in your cluster to automatically inject the OIDC tokens and environment variables.</li>
+<li>Add the label <code>pod-identity.alibabacloud.com/injection: 'on'</code> to the target workflow namespace.</li>
+<li>Add the annotation <code>pod-identity.alibabacloud.com/role-name: $your_ram_role_name</code> to the service account of running workflow.</li>
+<li>Set <code>useSDKCreds: true</code> in your target artifact repository cm and remove the secret references to AK/SK.</li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Namespace</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-ns</span>
+<span class="w">  </span><span class="nt">labels</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">pod-identity.alibabacloud.com/injection</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;on&#39;</span>
+
+<span class="nn">---</span>
+<span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ServiceAccount</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-sa</span>
+<span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">rrsa-demo</span>
+<span class="w">  </span><span class="nt">annotations</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">pod-identity.alibabacloud.com/role-name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">$your_ram_role_name</span>
+
+<span class="nn">---</span>
+<span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ConfigMap</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="c1"># If you want to use this config map by default, name it &quot;artifact-repositories&quot;. Otherwise, you can provide a reference to a</span>
+<span class="w">  </span><span class="c1"># different config map in `artifactRepositoryRef.configMap`.</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">artifact-repositories</span>
+<span class="w">  </span><span class="nt">annotations</span><span class="p">:</span>
+<span class="w">    </span><span class="c1"># v3.0 and after - if you want to use a specific key, put that key into this annotation.</span>
+<span class="w">    </span><span class="nt">workflows.argoproj.io/default-artifact-repository</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default-oss-artifact-repository</span>
+<span class="nt">data</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">default-oss-artifact-repository</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
+<span class="w">    </span><span class="no">oss:</span>
+<span class="w">      </span><span class="no">endpoint: http://oss-cn-zhangjiakou-internal.aliyuncs.com</span>
+<span class="w">      </span><span class="no">bucket: $mybucket</span>
+<span class="w">      </span><span class="no">useSDKCreds: true</span>
+</code></pre></div>
 <h2 id="configuring-azure-blob-storage">Configuring Azure Blob Storage<a class="headerlink" href="#configuring-azure-blob-storage" title="Permanent link">&para;</a></h2>
 <p>Create an Azure Storage account and a container within that account. There are a number of
 ways to accomplish this, including the <a href="https://portal.azure.com">Azure Portal</a> or the
