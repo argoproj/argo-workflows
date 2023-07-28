@@ -2785,17 +2785,8 @@ type OSSBucket struct {
 	// LifecycleRule specifies how to manage bucket's lifecycle
 	LifecycleRule *OSSLifecycleRule `json:"lifecycleRule,omitempty" protobuf:"bytes,7,opt,name=lifecycleRule"`
 
-	// RoleARN is the Alibaba Cloud Resource Name(ARN) of the role to assume.
-	RoleARN string `json:"roleARN,omitempty" protobuf:"bytes,8,opt,name=roleARN"`
-
-	// OidcProviderARN is the Alibaba Cloud Resource Name (ARN) of the OIDC IdP.
-	OidcProviderARN string `json:"OidcProviderARN,omitempty" protobuf:"bytes,9,opt,name=OidcProviderARN"`
-
-	// OidcTokenFile is the file path of the OIDC token.
-	OidcTokenFile string `json:"OidcTokenFile,omitempty" protobuf:"bytes,10,opt,name=OidcTokenFile"`
-
 	// UseSDKCreds tells the driver to figure out credentials based on sdk defaults.
-	UseSDKCreds bool `json:"useSDKCreds,omitempty" protobuf:"varint,11,opt,name=useSDKCreds"`
+	UseSDKCreds bool `json:"useSDKCreds,omitempty" protobuf:"varint,8,opt,name=useSDKCreds"`
 }
 
 // OSSArtifact is the location of an Alibaba Cloud OSS artifact

@@ -9594,14 +9594,6 @@
         "key"
       ],
       "properties": {
-        "OidcProviderARN": {
-          "description": "OidcProviderARN is the Alibaba Cloud Resource Name (ARN) of the OIDC IdP.",
-          "type": "string"
-        },
-        "OidcTokenFile": {
-          "description": "OidcTokenFile is the file path of the OIDC token.",
-          "type": "string"
-        },
         "accessKeySecret": {
           "description": "AccessKeySecret is the secret selector to the bucket's access key",
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
@@ -9626,10 +9618,6 @@
           "description": "LifecycleRule specifies how to manage bucket's lifecycle",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.OSSLifecycleRule"
         },
-        "roleARN": {
-          "description": "RoleARN is the Alibaba Cloud Resource Name(ARN) of the role to assume.",
-          "type": "string"
-        },
         "secretKeySecret": {
           "description": "SecretKeySecret is the secret selector to the bucket's secret key",
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
@@ -9648,14 +9636,6 @@
       "description": "OSSArtifactRepository defines the controller configuration for an OSS artifact repository",
       "type": "object",
       "properties": {
-        "OidcProviderARN": {
-          "description": "OidcProviderARN is the Alibaba Cloud Resource Name (ARN) of the OIDC IdP.",
-          "type": "string"
-        },
-        "OidcTokenFile": {
-          "description": "OidcTokenFile is the file path of the OIDC token.",
-          "type": "string"
-        },
         "accessKeySecret": {
           "description": "AccessKeySecret is the secret selector to the bucket's access key",
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
@@ -9679,10 +9659,6 @@
         "lifecycleRule": {
           "description": "LifecycleRule specifies how to manage bucket's lifecycle",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.OSSLifecycleRule"
-        },
-        "roleARN": {
-          "description": "RoleARN is the Alibaba Cloud Resource Name(ARN) of the role to assume.",
-          "type": "string"
         },
         "secretKeySecret": {
           "description": "SecretKeySecret is the secret selector to the bucket's secret key",

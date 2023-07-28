@@ -703,10 +703,6 @@ spec:
                           type: object
                         oss:
                           properties:
-                            OidcProviderARN:
-                              type: string
-                            OidcTokenFile:
-                              type: string
                             accessKeySecret:
                               properties:
                                 key:
@@ -735,8 +731,6 @@ spec:
                                   format: int32
                                   type: integer
                               type: object
-                            roleARN:
-                              type: string
                             secretKeySecret:
                               properties:
                                 key:
@@ -2422,10 +2416,6 @@ spec:
                                           type: boolean
                                         oss:
                                           properties:
-                                            OidcProviderARN:
-                                              type: string
-                                            OidcTokenFile:
-                                              type: string
                                             accessKeySecret:
                                               properties:
                                                 key:
@@ -2454,8 +2444,6 @@ spec:
                                                   format: int32
                                                   type: integer
                                               type: object
-                                            roleARN:
-                                              type: string
                                             secretKeySecret:
                                               properties:
                                                 key:
@@ -2992,10 +2980,6 @@ spec:
                                                 type: boolean
                                               oss:
                                                 properties:
-                                                  OidcProviderARN:
-                                                    type: string
-                                                  OidcTokenFile:
-                                                    type: string
                                                   accessKeySecret:
                                                     properties:
                                                       key:
@@ -3024,8 +3008,6 @@ spec:
                                                         format: int32
                                                         type: integer
                                                     type: object
-                                                  roleARN:
-                                                    type: string
                                                   secretKeySecret:
                                                     properties:
                                                       key:
@@ -3613,10 +3595,6 @@ spec:
                                   type: boolean
                                 oss:
                                   properties:
-                                    OidcProviderARN:
-                                      type: string
-                                    OidcTokenFile:
-                                      type: string
                                     accessKeySecret:
                                       properties:
                                         key:
@@ -3645,8 +3623,6 @@ spec:
                                           format: int32
                                           type: integer
                                       type: object
-                                    roleARN:
-                                      type: string
                                     secretKeySecret:
                                       properties:
                                         key:
@@ -4784,10 +4760,6 @@ spec:
                                 type: boolean
                               oss:
                                 properties:
-                                  OidcProviderARN:
-                                    type: string
-                                  OidcTokenFile:
-                                    type: string
                                   accessKeySecret:
                                     properties:
                                       key:
@@ -4816,8 +4788,6 @@ spec:
                                         format: int32
                                         type: integer
                                     type: object
-                                  roleARN:
-                                    type: string
                                   secretKeySecret:
                                     properties:
                                       key:
@@ -5444,10 +5414,6 @@ spec:
                                 type: boolean
                               oss:
                                 properties:
-                                  OidcProviderARN:
-                                    type: string
-                                  OidcTokenFile:
-                                    type: string
                                   accessKeySecret:
                                     properties:
                                       key:
@@ -5476,8 +5442,6 @@ spec:
                                         format: int32
                                         type: integer
                                     type: object
-                                  roleARN:
-                                    type: string
                                   secretKeySecret:
                                     properties:
                                       key:
@@ -6025,10 +5989,6 @@ spec:
                                   type: boolean
                                 oss:
                                   properties:
-                                    OidcProviderARN:
-                                      type: string
-                                    OidcTokenFile:
-                                      type: string
                                     accessKeySecret:
                                       properties:
                                         key:
@@ -6057,8 +6017,6 @@ spec:
                                           format: int32
                                           type: integer
                                       type: object
-                                    roleARN:
-                                      type: string
                                     secretKeySecret:
                                       properties:
                                         key:
@@ -8555,10 +8513,6 @@ spec:
                                 type: boolean
                               oss:
                                 properties:
-                                  OidcProviderARN:
-                                    type: string
-                                  OidcTokenFile:
-                                    type: string
                                   accessKeySecret:
                                     properties:
                                       key:
@@ -8587,8 +8541,6 @@ spec:
                                         format: int32
                                         type: integer
                                     type: object
-                                  roleARN:
-                                    type: string
                                   secretKeySecret:
                                     properties:
                                       key:

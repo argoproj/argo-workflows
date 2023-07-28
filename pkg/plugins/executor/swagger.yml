@@ -2306,13 +2306,6 @@ definitions:
   OSSArtifact:
     description: OSSArtifact is the location of an Alibaba Cloud OSS artifact
     properties:
-      OidcProviderARN:
-        description: OidcProviderARN is the Alibaba Cloud Resource Name (ARN) of the
-          OIDC IdP.
-        type: string
-      OidcTokenFile:
-        description: OidcTokenFile is the file path of the OIDC token.
-        type: string
       accessKeySecret:
         $ref: '#/definitions/SecretKeySelector'
       bucket:
@@ -2330,10 +2323,6 @@ definitions:
         type: string
       lifecycleRule:
         $ref: '#/definitions/OSSLifecycleRule'
-      roleARN:
-        description: RoleARN is the Alibaba Cloud Resource Name(ARN) of the role to
-          assume.
-        type: string
       secretKeySecret:
         $ref: '#/definitions/SecretKeySelector'
       securityToken:
