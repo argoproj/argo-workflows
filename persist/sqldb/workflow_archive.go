@@ -143,10 +143,6 @@ func (r *workflowArchive) ArchiveWorkflow(wf *wfv1.Workflow) error {
 
 func (r *workflowArchive) ListWorkflows(namespace string, name string, namePrefix string, minStartedAt, maxStartedAt time.Time, labelRequirements labels.Requirements, limit int, offset int) (wfv1.Workflows, error) {
 	var archivedWfs []archivedWorkflowRecord
-	clause, err := labelsClause(r.dbType, labelRequirements)
-	if err != nil {
-		return nil, err
-	}
 
 	// If we were passed 0 as the limit, then we should load all available archived workflows
 	// to match the behavior of the `List` operations in the Kubernetes API
@@ -155,7 +151,7 @@ func (r *workflowArchive) ListWorkflows(namespace string, name string, namePrefi
 		offset = -1
 	}
 
-	err = r.session.SQL().
+	selector := r.session.SQL().
 		Select("workflow").
 		From(archiveTableName).
 		Where(r.clusterManagedNamespaceAndInstanceID()).
@@ -163,8 +159,16 @@ func (r *workflowArchive) ListWorkflows(namespace string, name string, namePrefi
 		And(nameEqual(name)).
 		And(namePrefixClause(namePrefix)).
 		And(startedAtFromClause(minStartedAt)).
-		And(startedAtToClause(maxStartedAt)).
-		And(clause).
+		And(startedAtToClause(maxStartedAt))
+
+	for _, req := range labelRequirements {
+		cond, err := requirementToCondition(r.dbType, req)
+		if err != nil {
+			return nil, err
+		}
+		selector = selector.And(cond)
+	}
+	err := selector.
 		OrderBy("-startedat").
 		Limit(limit).
 		Offset(offset).
@@ -189,12 +193,8 @@ func (r *workflowArchive) ListWorkflows(namespace string, name string, namePrefi
 
 func (r *workflowArchive) CountWorkflows(namespace string, name string, namePrefix string, minStartedAt, maxStartedAt time.Time, labelRequirements labels.Requirements) (int64, error) {
 	total := &archivedWorkflowCount{}
-	clause, err := labelsClause(r.dbType, labelRequirements)
-	if err != nil {
-		return 0, err
-	}
 
-	err = r.session.SQL().
+	selector := r.session.SQL().
 		Select(db.Raw("count(*) as total")).
 		From(archiveTableName).
 		Where(r.clusterManagedNamespaceAndInstanceID()).
@@ -202,9 +202,16 @@ func (r *workflowArchive) CountWorkflows(namespace string, name string, namePref
 		And(nameEqual(name)).
 		And(namePrefixClause(namePrefix)).
 		And(startedAtFromClause(minStartedAt)).
-		And(startedAtToClause(maxStartedAt)).
-		And(clause).
-		One(total)
+		And(startedAtToClause(maxStartedAt))
+
+	for _, req := range labelRequirements {
+		cond, err := requirementToCondition(r.dbType, req)
+		if err != nil {
+			return 0, err
+		}
+		selector = selector.And(cond)
+	}
+	err := selector.One(total)
 	if err != nil {
 		return 0, err
 	}
