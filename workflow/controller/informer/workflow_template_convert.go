@@ -13,7 +13,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/workflow/util"
 )
 
-func objectToWorkflowTemplate(object runtime.Object) (*wfv1.WorkflowTemplate, error) { // todo: this could be condensed with interfaceToWorkflowTemplate()
+func objectToWorkflowTemplate(object runtime.Object) (*wfv1.WorkflowTemplate, error) {
 	return interfaceToWorkflowTemplate(object)
 }
 
@@ -39,6 +39,7 @@ func interfaceToWorkflowTemplate(object interface{}) (*wfv1.WorkflowTemplate, er
 	return v, nil
 }
 
+// Get WorkflowTemplates from Informer
 type WorkflowTemplateFromInformerGetter struct {
 	wftmplInformer wfextvv1alpha1.WorkflowTemplateInformer
 	namespace      string

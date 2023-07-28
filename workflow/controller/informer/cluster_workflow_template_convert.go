@@ -13,7 +13,6 @@ import (
 	"github.com/argoproj/argo-workflows/v3/workflow/util"
 )
 
-// this function always tries to return a value, even if it is badly formed
 func objectToClusterWorkflowTemplate(object runtime.Object) (*wfv1.ClusterWorkflowTemplate, error) {
 	return interfaceToClusterWorkflowTemplate(object)
 }
@@ -26,6 +25,7 @@ func objectsToClusterWorkflowTemplates(list []runtime.Object) []*wfv1.ClusterWor
 	return ret
 }
 
+// this function always tries to return a value, even if it is badly formed
 func interfaceToClusterWorkflowTemplate(object interface{}) (*wfv1.ClusterWorkflowTemplate, error) {
 	v := &wfv1.ClusterWorkflowTemplate{}
 	un, ok := object.(*unstructured.Unstructured)
