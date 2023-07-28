@@ -259,7 +259,7 @@ func (m migrate) Exec(ctx context.Context) (err error) {
 		ansiSQLChange(`create index argo_archived_workflows_i4 on argo_archived_workflows (startedat)`),
 		ansiSQLChange(`create index argo_archived_workflows_labels_i1 on argo_archived_workflows_labels (name,value)`),
 	} {
-		err := m.applyChange(ctx, changeSchemaVersion, change)
+		err := m.applyChange(changeSchemaVersion, change)
 		if err != nil {
 			return err
 		}
@@ -268,7 +268,7 @@ func (m migrate) Exec(ctx context.Context) (err error) {
 	return nil
 }
 
-func (m migrate) applyChange(ctx context.Context, changeSchemaVersion int, c change) error {
+func (m migrate) applyChange(changeSchemaVersion int, c change) error {
 	// https://upper.io/blog/2020/08/29/whats-new-on-upper-v4/#transactions-enclosed-by-functions
 	err := m.session.Tx(func(tx db.Session) error {
 		rs, err := tx.SQL().Exec("update schema_history set schema_version = ? where schema_version = ?", changeSchemaVersion, changeSchemaVersion-1)
