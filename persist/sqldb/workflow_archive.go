@@ -170,6 +170,9 @@ func (r *workflowArchive) ListWorkflows(namespace string, name string, namePrefi
 		Limit(limit).
 		Offset(offset).
 		All(&archivedWfs)
+	if err != nil {
+		return nil, err
+	}
 
 	wfs := make(wfv1.Workflows, 0)
 	for _, archivedWf := range archivedWfs {
