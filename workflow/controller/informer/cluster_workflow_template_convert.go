@@ -15,6 +15,18 @@ import (
 
 // this function always tries to return a value, even if it is badly formed
 func objectToClusterWorkflowTemplate(object runtime.Object) (*wfv1.ClusterWorkflowTemplate, error) {
+	return interfaceToClusterWorkflowTemplate(object)
+}
+
+func objectsToClusterWorkflowTemplates(list []runtime.Object) []*wfv1.ClusterWorkflowTemplate {
+	ret := make([]*wfv1.ClusterWorkflowTemplate, len(list))
+	for i, object := range list {
+		ret[i], _ = objectToClusterWorkflowTemplate(object)
+	}
+	return ret
+}
+
+func interfaceToClusterWorkflowTemplate(object interface{}) (*wfv1.ClusterWorkflowTemplate, error) {
 	v := &wfv1.ClusterWorkflowTemplate{}
 	un, ok := object.(*unstructured.Unstructured)
 	if !ok {
@@ -25,14 +37,6 @@ func objectToClusterWorkflowTemplate(object runtime.Object) (*wfv1.ClusterWorkfl
 		return v, fmt.Errorf("malformed cluster workflow template \"%s\": %w", un.GetName(), err)
 	}
 	return v, nil
-}
-
-func objectsToClusterWorkflowTemplates(list []runtime.Object) []*wfv1.ClusterWorkflowTemplate {
-	ret := make([]*wfv1.ClusterWorkflowTemplate, len(list))
-	for i, object := range list {
-		ret[i], _ = objectToClusterWorkflowTemplate(object)
-	}
-	return ret
 }
 
 type ClusterWorkflowTemplateFromInformerGetter struct {
@@ -47,10 +51,9 @@ func (getter *ClusterWorkflowTemplateFromInformerGetter) Get(name string) (*wfv1
 	if !exists {
 		return nil, fmt.Errorf("ClusterWorkflowTemplate Informer cannot find ClusterWorkflowTemplate of name %q", name)
 	}
-	cwfTmpl, castOk := obj.(*wfv1.ClusterWorkflowTemplate)
-	if !castOk {
-		return nil, fmt.Errorf("ClusterWorkflowTemplate Informer found ClusterWorkflowTemplate of name %q but somehow it's not a WorkflowTemplate: %+v",
-			name, obj)
+	cwfTmpl, err := interfaceToClusterWorkflowTemplate(obj)
+	if err != nil {
+		return nil, err
 	}
 	return cwfTmpl, nil
 }

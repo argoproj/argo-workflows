@@ -14,22 +14,14 @@ import (
 )
 
 func objectToWorkflowTemplate(object runtime.Object) (*wfv1.WorkflowTemplate, error) { // todo: this could be condensed with interfaceToWorkflowTemplate()
-	v := &wfv1.WorkflowTemplate{}
-	un, ok := object.(*unstructured.Unstructured)
-	if !ok {
-		return v, fmt.Errorf("malformed workflow template: expected \"*unstructured.Unstructured\", got \"%s\"", reflect.TypeOf(object).String())
-	}
-	err := util.FromUnstructuredObj(un, v)
-	if err != nil {
-		return v, fmt.Errorf("malformed workflow template \"%s/%s\": %w", un.GetNamespace(), un.GetName(), err)
-	}
-	return v, nil
+	return interfaceToWorkflowTemplate(object)
 }
 
 func objectsToWorkflowTemplates(list []runtime.Object) []*wfv1.WorkflowTemplate {
 	ret := make([]*wfv1.WorkflowTemplate, len(list))
 	for i, object := range list {
 		ret[i], _ = objectToWorkflowTemplate(object)
+		fmt.Printf("deletethis: objectToWorkflowTemplate() returned %+v\n", ret[i])
 	}
 	return ret
 }
@@ -53,6 +45,7 @@ type WorkflowTemplateFromInformerGetter struct {
 }
 
 func (getter *WorkflowTemplateFromInformerGetter) Get(name string) (*wfv1.WorkflowTemplate, error) {
+
 	obj, exists, err := getter.wftmplInformer.Informer().GetStore().GetByKey(getter.namespace + "/" + name)
 	if err != nil {
 		return nil, err
@@ -60,12 +53,6 @@ func (getter *WorkflowTemplateFromInformerGetter) Get(name string) (*wfv1.Workfl
 	if !exists {
 		return nil, fmt.Errorf("WorkflowTemplate Informer cannot find WorkflowTemplate of name %q in namespace %q", name, getter.namespace)
 	}
-	fmt.Printf("deletethis: type=%+v\n", reflect.TypeOf(obj).String())
-	/*wfTmpl, castOk := obj.(*unstructured.Unstructured)
-	if !castOk {
-		return nil, fmt.Errorf("WorkflowTemplate Informer found WorkflowTemplate of name %q in namespace %q but somehow it's not a WorkflowTemplate: %+v",
-			name, getter.namespace, obj)
-	}*/
 	wfTmpl, err := interfaceToWorkflowTemplate(obj)
 	if err != nil {
 		return nil, err
