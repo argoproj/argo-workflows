@@ -21,7 +21,6 @@ func objectsToWorkflowTemplates(list []runtime.Object) []*wfv1.WorkflowTemplate 
 	ret := make([]*wfv1.WorkflowTemplate, len(list))
 	for i, object := range list {
 		ret[i], _ = objectToWorkflowTemplate(object)
-		fmt.Printf("deletethis: objectToWorkflowTemplate() returned %+v\n", ret[i])
 	}
 	return ret
 }
