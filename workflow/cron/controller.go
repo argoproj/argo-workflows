@@ -44,8 +44,8 @@ type Controller struct {
 	keyLock              sync.KeyLock
 	wfClientset          versioned.Interface
 	wfLister             util.WorkflowLister
-	cronWfInformer       informers.GenericInformer               // todo: might be nicer to group the informers in their own struct
-	wftmplInformer       wfextvv1alpha1.WorkflowTemplateInformer //todo: is this type okay?
+	cronWfInformer       informers.GenericInformer
+	wftmplInformer       wfextvv1alpha1.WorkflowTemplateInformer
 	cwftmplInformer      wfextvv1alpha1.ClusterWorkflowTemplateInformer
 	cronWfQueue          workqueue.RateLimitingInterface
 	dynamicInterface     dynamic.Interface
