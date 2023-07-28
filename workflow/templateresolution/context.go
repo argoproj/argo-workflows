@@ -4,8 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	wfextvv1alpha1 "github.com/argoproj/argo-workflows/v3/pkg/client/informers/externalversions/workflow/v1alpha1"
-
 	log "github.com/sirupsen/logrus"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -14,6 +12,7 @@ import (
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	typed "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
+	//"github.com/argoproj/argo-workflows/v3/workflow/util"
 )
 
 // workflowTemplateInterfaceWrapper is an internal struct to wrap clientset.
@@ -37,7 +36,7 @@ type WorkflowTemplateNamespacedGetter interface {
 	Get(name string) (*wfv1.WorkflowTemplate, error)
 }
 
-type WorkflowTemplateFromInformerGetter struct {
+/*type WorkflowTemplateFromInformerGetter struct {
 	wftmplInformer wfextvv1alpha1.WorkflowTemplateInformer
 	namespace      string
 }
@@ -50,17 +49,43 @@ func (getter *WorkflowTemplateFromInformerGetter) Get(name string) (*wfv1.Workfl
 	if !exists {
 		return nil, fmt.Errorf("WorkflowTemplate Informer cannot find WorkflowTemplate of name %q in namespace %q", name, getter.namespace)
 	}
-	wfTmpl, castOk := obj.(*wfv1.WorkflowTemplate)
-	if !castOk {
-		return nil, fmt.Errorf("WorkflowTemplate Informer found WorkflowTemplate of name %q in namespace %q but somehow it's not a WorkflowTemplate: %+v",
-			name, getter.namespace, obj)
+	fmt.Printf("deletethis: type=%+v\n", reflect.TypeOf(obj).String())
+
+	wfTmpl, err := objectToWorkflowTemplate(obj)
+	if err != nil {
+		return nil, err
 	}
 	return wfTmpl, nil
+}*/
+
+// todo: tried calling this workflow/controller/informer but got this cycle
+// package github.com/argoproj/argo-workflows/v3/cmd/workflow-controller
+//
+//	imports github.com/argoproj/argo-workflows/v3/workflow/controller/
+//	imports github.com/argoproj/argo-workflows/v3/workflow/controller/estimation
+//	imports github.com/argoproj/argo-workflows/v3/workflow/controller/indexes
+//	imports github.com/argoproj/argo-workflows/v3/workflow/util
+//	imports github.com/argoproj/argo-workflows/v3/workflow/templateresolution
+//	imports github.com/argoproj/argo-workflows/v3/workflow/controller/informer
+//	imports github.com/argoproj/argo-workflows/v3/workflow/util: import cycle not allowed
+//
+// also, is somebody else calling that method? verify what I'm doing doesn't already exist
+/*func objectToWorkflowTemplate(object interface{}) (*wfv1.WorkflowTemplate, error) {
+	v := &wfv1.WorkflowTemplate{}
+	un, ok := object.(*unstructured.Unstructured)
+	if !ok {
+		return v, fmt.Errorf("malformed workflow template: expected \"*unstructured.Unstructured\", got \"%s\"", reflect.TypeOf(object).String())
+	}
+	err := util.FromUnstructuredObj(un, v)
+	if err != nil {
+		return v, fmt.Errorf("malformed workflow template \"%s/%s\": %w", un.GetNamespace(), un.GetName(), err)
+	}
+	return v, nil
 }
 
 func NewWorkflowTemplateFromInformerGetter(wftmplInformer wfextvv1alpha1.WorkflowTemplateInformer, namespace string) WorkflowTemplateNamespacedGetter {
 	return &WorkflowTemplateFromInformerGetter{wftmplInformer: wftmplInformer, namespace: namespace}
-}
+}*/
 
 // clusterWorkflowTemplateInterfaceWrapper is an internal struct to wrap clientset.
 type clusterWorkflowTemplateInterfaceWrapper struct {
@@ -90,7 +115,7 @@ func (wrapper *clusterWorkflowTemplateInterfaceWrapper) Get(name string) (*wfv1.
 	return wrapper.clientset.Get(ctx, name, metav1.GetOptions{})
 }
 
-type ClusterWorkflowTemplateFromInformerGetter struct {
+/*type ClusterWorkflowTemplateFromInformerGetter struct {
 	cwftmplInformer wfextvv1alpha1.ClusterWorkflowTemplateInformer
 }
 
@@ -112,7 +137,7 @@ func (getter *ClusterWorkflowTemplateFromInformerGetter) Get(name string) (*wfv1
 
 func NewClusterWorkflowTemplateFromInformerGetter(cwftmplInformer wfextvv1alpha1.ClusterWorkflowTemplateInformer) ClusterWorkflowTemplateGetter {
 	return &ClusterWorkflowTemplateFromInformerGetter{cwftmplInformer: cwftmplInformer}
-}
+}*/
 
 // Context is a context of template search.
 type Context struct {

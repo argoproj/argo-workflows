@@ -8,10 +8,12 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	wfextvv1alpha1 "github.com/argoproj/argo-workflows/v3/pkg/client/informers/externalversions/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/workflow/templateresolution"
 	"github.com/argoproj/argo-workflows/v3/workflow/util"
 )
 
-func objectToWorkflowTemplate(object runtime.Object) (*wfv1.WorkflowTemplate, error) {
+func objectToWorkflowTemplate(object runtime.Object) (*wfv1.WorkflowTemplate, error) { // todo: this could be condensed with interfaceToWorkflowTemplate()
 	v := &wfv1.WorkflowTemplate{}
 	un, ok := object.(*unstructured.Unstructured)
 	if !ok {
@@ -30,4 +32,46 @@ func objectsToWorkflowTemplates(list []runtime.Object) []*wfv1.WorkflowTemplate 
 		ret[i], _ = objectToWorkflowTemplate(object)
 	}
 	return ret
+}
+
+func interfaceToWorkflowTemplate(object interface{}) (*wfv1.WorkflowTemplate, error) {
+	v := &wfv1.WorkflowTemplate{}
+	un, ok := object.(*unstructured.Unstructured)
+	if !ok {
+		return v, fmt.Errorf("malformed workflow template: expected \"*unstructured.Unstructured\", got \"%s\"", reflect.TypeOf(object).String())
+	}
+	err := util.FromUnstructuredObj(un, v)
+	if err != nil {
+		return v, fmt.Errorf("malformed workflow template \"%s/%s\": %w", un.GetNamespace(), un.GetName(), err)
+	}
+	return v, nil
+}
+
+type WorkflowTemplateFromInformerGetter struct {
+	wftmplInformer wfextvv1alpha1.WorkflowTemplateInformer
+	namespace      string
+}
+
+func (getter *WorkflowTemplateFromInformerGetter) Get(name string) (*wfv1.WorkflowTemplate, error) {
+	obj, exists, err := getter.wftmplInformer.Informer().GetStore().GetByKey(getter.namespace + "/" + name)
+	if err != nil {
+		return nil, err
+	}
+	if !exists {
+		return nil, fmt.Errorf("WorkflowTemplate Informer cannot find WorkflowTemplate of name %q in namespace %q", name, getter.namespace)
+	}
+	fmt.Printf("deletethis: type=%+v\n", reflect.TypeOf(obj).String())
+	/*wfTmpl, castOk := obj.(*unstructured.Unstructured)
+	if !castOk {
+		return nil, fmt.Errorf("WorkflowTemplate Informer found WorkflowTemplate of name %q in namespace %q but somehow it's not a WorkflowTemplate: %+v",
+			name, getter.namespace, obj)
+	}*/
+	wfTmpl, err := interfaceToWorkflowTemplate(obj)
+	if err != nil {
+		return nil, err
+	}
+	return wfTmpl, nil
+}
+func NewWorkflowTemplateFromInformerGetter(wftmplInformer wfextvv1alpha1.WorkflowTemplateInformer, namespace string) templateresolution.WorkflowTemplateNamespacedGetter {
+	return &WorkflowTemplateFromInformerGetter{wftmplInformer: wftmplInformer, namespace: namespace}
 }
