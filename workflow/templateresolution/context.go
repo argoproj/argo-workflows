@@ -12,7 +12,6 @@ import (
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	typed "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
-	//"github.com/argoproj/argo-workflows/v3/workflow/util"
 )
 
 // workflowTemplateInterfaceWrapper is an internal struct to wrap clientset.
