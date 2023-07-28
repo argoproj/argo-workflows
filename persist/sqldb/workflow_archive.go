@@ -210,15 +210,15 @@ func (r *workflowArchive) CountWorkflows(namespace string, name string, namePref
 	return int64(total.Total), nil
 }
 
-func (r *workflowArchive) clusterManagedNamespaceAndInstanceID() db.AndExpr {
-	return *db.And(
+func (r *workflowArchive) clusterManagedNamespaceAndInstanceID() *db.AndExpr {
+	return db.And(
 		db.Cond{"clustername": r.clusterName},
 		namespaceEqual(r.managedNamespace),
 		db.Cond{"instanceid": r.instanceIDService.InstanceID()},
 	)
 }
 
-func startedAtClause(from, to time.Time) db.AndExpr {
+func startedAtClause(from, to time.Time) *db.AndExpr {
 	var conds []db.LogicalExpr
 	if !from.IsZero() {
 		conds = append(conds, db.Cond{"startedat > ": from})
@@ -226,7 +226,7 @@ func startedAtClause(from, to time.Time) db.AndExpr {
 	if !to.IsZero() {
 		conds = append(conds, db.Cond{"startedat < ": to})
 	}
-	return *db.And(conds...)
+	return db.And(conds...)
 }
 
 func namespaceEqual(namespace string) db.Cond {
