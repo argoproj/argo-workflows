@@ -13,7 +13,7 @@
     
     
       
-        <title>Workflow Pod Security Context - Argo Workflows - The workflow engine for Kubernetes</title>
+        <title>Resource Template - Argo Workflows - The workflow engine for Kubernetes</title>
       
     
     
@@ -72,7 +72,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#workflow-pod-security-context" class="md-skip">
+        <a href="#resource-template" class="md-skip">
           Skip to content
         </a>
       
@@ -106,7 +106,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Workflow Pod Security Context
+              Resource Template
             
           </span>
         </div>
@@ -975,12 +975,14 @@
               
   
   
+    
+  
   
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
       
-        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3_3" type="checkbox" id="__nav_3_3" >
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3_3" type="checkbox" id="__nav_3_3" checked>
       
       
       
@@ -1043,11 +1045,21 @@
               
   
   
+    
   
-    <li class="md-nav__item">
-      <a href="../resource-template/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         Resource Template
       </a>
+      
     </li>
   
 
@@ -1949,14 +1961,12 @@
               
   
   
-    
-  
   
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
       
-        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3_13" type="checkbox" id="__nav_3_13" checked>
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3_13" type="checkbox" id="__nav_3_13" >
       
       
       
@@ -1977,21 +1987,11 @@
               
   
   
-    
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../workflow-pod-security-context/" class="md-nav__link">
         Workflow Pod Security Context
       </a>
-      
     </li>
   
 
@@ -3805,33 +3805,16 @@
               
 
                 
-<a href="https://github.com/argoproj/argo-workflows/edit/master/docs/workflow-pod-security-context.md" title="Edit this page" class="md-content__button md-icon">
+<a href="https://github.com/argoproj/argo-workflows/edit/master/docs/resource-template.md" title="Edit this page" class="md-content__button md-icon">
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25z"/></svg>
 </a>
 
 
-<h1 id="workflow-pod-security-context">Workflow Pod Security Context<a class="headerlink" href="#workflow-pod-security-context" title="Permanent link">&para;</a></h1>
-<p>By default, all workflow pods run as root. The Docker executor even requires <code>privileged: true</code>.</p>
-<p>For other <a href="../workflow-executors/">workflow executors</a>, you can run your workflow pods more securely by configuring the <a href="https://kubernetes.io/docs/tasks/configure-pod-container/security-context/">security context</a> for your workflow pod.</p>
-<p>This is likely to be necessary if you have a <a href="https://kubernetes.io/docs/concepts/policy/pod-security-policy/">pod security policy</a>. You probably can't use the Docker executor if you have a pod security policy.</p>
-<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
-<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Workflow</span>
-<span class="nt">metadata</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">generateName</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">security-context-</span>
-<span class="nt">spec</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">securityContext</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">runAsNonRoot</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
-<span class="w">    </span><span class="nt">runAsUser</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">8737</span><span class="w"> </span><span class="c1">#; any non-root user</span>
-</code></pre></div>
-<p>You can configure this globally using <a href="../default-workflow-specs/">workflow defaults</a>.</p>
-<div class="admonition warning">
-<p class="admonition-title">It is easy to make a workflow need root unintentionally</p>
-<p>You may find that user's workflows have been written to require root with seemingly innocuous code. E.g. <code>mkdir /my-dir</code> would require root.</p>
-</div>
-<div class="admonition note">
-<p class="admonition-title">You must use volumes for output artifacts</p>
-<p>If you use <code>runAsNonRoot</code> - you cannot have output artifacts on base layer (e.g. <code>/tmp</code>). You must use a volume (e.g. <a href="../empty-dir/">empty dir</a>).</p>
-</div>
+<h1 id="resource-template">Resource Template<a class="headerlink" href="#resource-template" title="Permanent link">&para;</a></h1>
+<blockquote>
+<p>v2.0</p>
+</blockquote>
+<p>See <a href="../walk-through/kubernetes-resources/">Kubernetes Resources</a>.</p>
 
               
 
@@ -3871,7 +3854,7 @@
     <nav class="md-footer__inner md-grid" aria-label="Footer">
       
         
-        <a href="../plugin-directory/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Plugin Directory" rel="prev">
+        <a href="../data-sourcing-and-transformation/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Data Sourcing and Transformations" rel="prev">
           <div class="md-footer__button md-icon">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12z"/></svg>
           </div>
@@ -3880,20 +3863,20 @@
               <span class="md-footer__direction">
                 Previous
               </span>
-              Plugin Directory
+              Data Sourcing and Transformations
             </div>
           </div>
         </a>
       
       
         
-        <a href="../tolerating-pod-deletion/" class="md-footer__link md-footer__link--next" aria-label="Next: Tolerating Pod Deletion" rel="next">
+        <a href="../inline-templates/" class="md-footer__link md-footer__link--next" aria-label="Next: Inline Templates" rel="next">
           <div class="md-footer__title">
             <div class="md-ellipsis">
               <span class="md-footer__direction">
                 Next
               </span>
-              Tolerating Pod Deletion
+              Inline Templates
             </div>
           </div>
           <div class="md-footer__button md-icon">
