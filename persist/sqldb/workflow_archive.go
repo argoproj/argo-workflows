@@ -162,7 +162,8 @@ func (r *workflowArchive) ListWorkflows(namespace string, name string, namePrefi
 		And(namespaceEqual(namespace)).
 		And(nameEqual(name)).
 		And(namePrefixClause(namePrefix)).
-		And(startedAtClause(minStartedAt, maxStartedAt)).
+		And(startedAtFromClause(minStartedAt)).
+		And(startedAtToClause(maxStartedAt)).
 		And(clause).
 		OrderBy("-startedat").
 		Limit(limit).
@@ -200,7 +201,8 @@ func (r *workflowArchive) CountWorkflows(namespace string, name string, namePref
 		And(namespaceEqual(namespace)).
 		And(nameEqual(name)).
 		And(namePrefixClause(namePrefix)).
-		And(startedAtClause(minStartedAt, maxStartedAt)).
+		And(startedAtFromClause(minStartedAt)).
+		And(startedAtToClause(maxStartedAt)).
 		And(clause).
 		One(total)
 	if err != nil {
@@ -218,15 +220,18 @@ func (r *workflowArchive) clusterManagedNamespaceAndInstanceID() *db.AndExpr {
 	)
 }
 
-func startedAtClause(from, to time.Time) []db.Cond {
-	var conds []db.Cond
+func startedAtFromClause(from time.Time) db.Cond {
 	if !from.IsZero() {
-		conds = append(conds, db.Cond{"startedat > ": from})
+		return db.Cond{"startedat > ": from}
 	}
+	return db.Cond{}
+}
+
+func startedAtToClause(to time.Time) db.Cond {
 	if !to.IsZero() {
-		conds = append(conds, db.Cond{"startedat < ": to})
+		return db.Cond{"startedat < ": to}
 	}
-	return conds
+	return db.Cond{}
 }
 
 func namespaceEqual(namespace string) db.Cond {
