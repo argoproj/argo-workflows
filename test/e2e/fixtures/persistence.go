@@ -1,11 +1,12 @@
 package fixtures
 
 import (
+	"github.com/upper/db/v4"
+	"k8s.io/client-go/kubernetes"
+
 	"github.com/argoproj/argo-workflows/v3/config"
 	"github.com/argoproj/argo-workflows/v3/persist/sqldb"
 	"github.com/argoproj/argo-workflows/v3/util/instanceid"
-	"github.com/upper/db/v4"
-	"k8s.io/client-go/kubernetes"
 )
 
 type Persistence struct {

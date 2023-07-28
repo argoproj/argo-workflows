@@ -4,10 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/upper/db/v4"
 	"strconv"
 	"syscall"
 	"time"
+
+	"github.com/upper/db/v4"
 
 	"github.com/argoproj/pkg/errors"
 	syncpkg "github.com/argoproj/pkg/sync"
