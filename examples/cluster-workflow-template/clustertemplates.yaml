@@ -135,7 +135,7 @@ kind: ClusterWorkflowTemplate
 metadata:
   name: cluster-workflow-template-submittable
 spec:
-  entryPoint: whalesay-template
+  entrypoint: whalesay-template
   arguments:
     parameters:
       - name: message
