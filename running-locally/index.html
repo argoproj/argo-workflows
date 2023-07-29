@@ -3609,13 +3609,6 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#git-clone" class="md-nav__link">
-    Git Clone
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#development-container" class="md-nav__link">
     Development Container
   </a>
@@ -3912,13 +3905,6 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#git-clone" class="md-nav__link">
-    Git Clone
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#development-container" class="md-nav__link">
     Development Container
   </a>
@@ -4021,18 +4007,15 @@
 <h1 id="running-locally">Running Locally<a class="headerlink" href="#running-locally" title="Permanent link">&para;</a></h1>
 <p>You have two options:</p>
 <ol>
-<li>If you're using VSCode, you use the <a href="#development-container">Dev-Container</a>. This takes about 7 minutes. This can also be used from the dev-container CLI.</li>
+<li>Use the <a href="#development-container">Dev Container</a>. This takes about 7 minutes. This can be used with VSCode or with the <code>devcontainer</code> CLI.</li>
 <li>Install the <a href="#requirements">requirements</a> on your computer manually. This takes about 1 hour.</li>
 </ol>
-<h2 id="git-clone">Git Clone<a class="headerlink" href="#git-clone" title="Permanent link">&para;</a></h2>
-<p>Clone the Git repo into: <code>$GOPATH/src/github.com/argoproj/argo-workflows</code>. Any other path will mean the code
-generation does not work.</p>
 <h2 id="development-container">Development Container<a class="headerlink" href="#development-container" title="Permanent link">&para;</a></h2>
-<p>A development container is a running Docker container with a well-defined tool/runtime stack and its prerequisites. It should be able to do everything you need to do to develop argo workflows using the development container without installing tools on your local machine. It takes quite a long time to build the container. It will run k3d inside the container so you'll have a cluster to use to test against. To communicate with services running either in other development containers or directly on the local developer machine (e.g., a database) the following URL can be used in the workflow spec: <code>host.docker.internal:&lt;PORT&gt;</code>. This facilitates the implementation of workflows, which need to connect to a database or an API server.</p>
+<p>The development container should be able to do everything you need to do to develop Argo Workflows without installing tools on your local machine. It takes quite a long time to build the container. It runs <code>k3d</code> inside the container so you have a cluster to test against. To communicate with services running either in other development containers or directly on the local machine (e.g. a database), the following URL can be used in the workflow spec: <code>host.docker.internal:&lt;PORT&gt;</code>. This facilitates the implementation of workflows which need to connect to a database or an API server.</p>
 <p>You can use the development container in a few different ways:</p>
 <ol>
-<li><a href="https://code.visualstudio.com/">Visual Studio Code</a> with <a href="https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers">Dev Containers</a> extension lets you use a Docker container as a full-featured development environment. Open the clone of argo-workflows folder in VS code and it should offer to use the development container automatically. System requirements can be found <a href="https://code.visualstudio.com/docs/remote/containers#_system-requirements">here</a>. Visual Studio will allow you to forward ports to allow your external browser to access the running components.</li>
-<li><a href="https://github.com/devcontainers/cli">Dev-container CLI</a>. Install the tool and from the argo-workflow folder do <code>devcontainer up --workspace-folder .</code> followed by <code>devcontainer exec --workspace-folder . /bin/bash</code> to get a shell where you can start building the code. You can use your choice editor outside the docker image to edit code, the changes are mirrored inside the container. Due to a limitation in the CLI only port 8080 (the Web UI) will get exposed for you to access if you run this way. Other services are usable from the shell inside.</li>
+<li><a href="https://code.visualstudio.com/">Visual Studio Code</a> with <a href="https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers">Dev Containers extension</a>. Open your <code>argo-workflows</code> folder in VSCode and it should offer to use the development container automatically. VSCode will allow you to forward ports to allow your external browser to access the running components.</li>
+<li><a href="https://github.com/devcontainers/cli"><code>devcontainer</code> CLI</a>. Once installed, go to your <code>argo-workflows</code> folder and run <code>devcontainer up --workspace-folder .</code> followed by <code>devcontainer exec --workspace-folder . /bin/bash</code> to get a shell where you can build the code. You can use any editor outside the container to edit code; any changes will be mirrored inside the container. Due to a limitation of the CLI, only port 8080 (the Web UI) will be exposed for you to access if you run this way. Other services are usable from the shell inside.</li>
 </ol>
 <p>Once you have entered the container, continue to <a href="#developing-locally">Developing Locally</a>.</p>
 <p><code>Github Codespaces</code> is known not to work at this time.</p>
@@ -4063,6 +4046,7 @@ generation does not work.</p>
 </li>
 </ul>
 <h2 id="requirements">Requirements<a class="headerlink" href="#requirements" title="Permanent link">&para;</a></h2>
+<p>Clone the Git repo into: <code>$GOPATH/src/github.com/argoproj/argo-workflows</code>. Any other path will break the code generation.</p>
 <p>Add the following to your <code>/etc/hosts</code>:</p>
 <div class="highlight"><pre><span></span><code>127.0.0.1 dex
 127.0.0.1 minio
@@ -4070,7 +4054,7 @@ generation does not work.</p>
 127.0.0.1 mysql
 127.0.0.1 azurite
 </code></pre></div>
-<p>To build on your own machine without using the dev-container you will need</p>
+<p>To build on your own machine without using the Dev Container you will need:</p>
 <ul>
 <li><a href="https://golang.org/dl/">Go</a></li>
 <li><a href="https://classic.yarnpkg.com/en/docs/install/#mac-stable">Yarn</a></li>
@@ -4086,13 +4070,15 @@ set-up and is fast. You can set-up K3D to be part of your default kube config as
 <p>Alternatively, you can use <a href="https://github.com/kubernetes/minikube">Minikube</a> to set up the local Kubernetes cluster.
 Once a local Kubernetes cluster has started via <code>minikube start</code>, your kube config will use Minikube's context
 automatically.</p>
-<p>⚠️ Do not use Docker for Desktop with its embedded Kubernetes, it does not support Kubernetes RBAC (i.e. <code>kubectl auth can-i</code> always
-returns <code>allowed</code>).</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Do not use Docker Desktop's embedded Kubernetes, it does not support Kubernetes RBAC (i.e. <code>kubectl auth can-i</code> always returns <code>allowed</code>).</p>
+</div>
 <h2 id="developing-locally">Developing locally<a class="headerlink" href="#developing-locally" title="Permanent link">&para;</a></h2>
 <p>To start:</p>
 <ul>
 <li>The controller, so you can run workflows.</li>
-<li>MinIO (<a href="http://localhost:9000">http://localhost:9000</a>, use admin/password) so you can use artifacts:</li>
+<li>MinIO (<a href="http://localhost:9000">http://localhost:9000</a>, use admin/password) so you can use artifacts.</li>
 </ul>
 <p>Run:</p>
 <div class="highlight"><pre><span></span><code>make<span class="w"> </span>start
