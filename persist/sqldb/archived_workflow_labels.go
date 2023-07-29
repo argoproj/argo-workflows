@@ -5,9 +5,9 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/upper/db/v4"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/selection"
-	"upper.io/db.v3"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
@@ -17,7 +17,7 @@ import (
 func (r *workflowArchive) ListWorkflowsLabelKeys() (*wfv1.LabelKeys, error) {
 	var archivedWfLabels []archivedWorkflowLabelRecord
 
-	err := r.session.
+	err := r.session.SQL().
 		Select(db.Raw("DISTINCT name")).
 		From(archiveLabelsTableName).
 		All(&archivedWfLabels)
@@ -36,7 +36,7 @@ func (r *workflowArchive) ListWorkflowsLabelKeys() (*wfv1.LabelKeys, error) {
 // SELECT DISTINCT value FROM argo_archived_workflows_labels WHERE name=labelkey
 func (r *workflowArchive) ListWorkflowsLabelValues(key string) (*wfv1.LabelValues, error) {
 	var archivedWfLabels []archivedWorkflowLabelRecord
-	err := r.session.
+	err := r.session.SQL().
 		Select(db.Raw("DISTINCT value")).
 		From(archiveLabelsTableName).
 		Where(db.Cond{"name": key}).
@@ -52,19 +52,18 @@ func (r *workflowArchive) ListWorkflowsLabelValues(key string) (*wfv1.LabelValue
 	return &wfv1.LabelValues{Items: labels}, nil
 }
 
-func labelsClause(t dbType, requirements labels.Requirements) (db.Compound, error) {
-	var conds []db.Compound
-	for _, r := range requirements {
-		cond, err := requirementToCondition(t, r)
+func labelsClause(selector db.Selector, t dbType, requirements labels.Requirements) (db.Selector, error) {
+	for _, req := range requirements {
+		cond, err := requirementToCondition(t, req)
 		if err != nil {
 			return nil, err
 		}
-		conds = append(conds, cond)
+		selector = selector.And(cond)
 	}
-	return db.And(conds...), nil
+	return selector, nil
 }
 
-func requirementToCondition(t dbType, r labels.Requirement) (db.Compound, error) {
+func requirementToCondition(t dbType, r labels.Requirement) (*db.RawExpr, error) {
 	// Should we "sanitize our inputs"? No.
 	// https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/
 	// Valid label values must be 63 characters or less and must be empty or begin and end with an alphanumeric character ([a-z0-9A-Z]) with dashes (-), underscores (_), dots (.), and alphanumerics between.
