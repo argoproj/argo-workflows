@@ -205,9 +205,28 @@ func (c *Controller) deleteWorkflow(ctx context.Context, key string) error {
 	// It should be impossible for a workflow to have been queue without a valid key.
 	namespace, name, _ := cache.SplitMetaNamespaceKey(key)
 
-	// Any workflow that was queued must need deleting, therefore we do not check the expiry again.
+	// The workflow can be retried, therefore we need to check again.
+	obj, exists, err := c.wfInformer.GetIndexer().GetByKey(key)
+	if err != nil {
+		log.WithFields(log.Fields{"key": key, "error": err}).Error("Failed to get workflow from informer")
+		return err
+	}
+	if !exists {
+		log.WithField("key", key).Infof("Workflow already deleted")
+		return nil
+	}
+	un, ok := obj.(*unstructured.Unstructured)
+	if !ok {
+		return fmt.Errorf("'%v' is not an unstructured", obj)
+	}
+	if !common.IsDone(un) {
+		// If the workflow has been retried, the phase can change back to running. Do not delete in such case.
+		log.WithField("key", key).Info("Workflow is not done yet. Skip deletion.")
+		return nil
+	}
+
 	log.Infof("Deleting garbage collected workflow '%s'", key)
-	err := c.wfclientset.ArgoprojV1alpha1().Workflows(namespace).Delete(ctx, name, metav1.DeleteOptions{PropagationPolicy: commonutil.GetDeletePropagation()})
+	err = c.wfclientset.ArgoprojV1alpha1().Workflows(namespace).Delete(ctx, name, metav1.DeleteOptions{PropagationPolicy: commonutil.GetDeletePropagation()})
 	if err != nil {
 		if apierr.IsNotFound(err) {
 			log.Infof("Workflow already deleted '%s'", key)
