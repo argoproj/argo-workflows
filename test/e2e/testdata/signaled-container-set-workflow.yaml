@@ -1,0 +1,50 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: example
+  namespace: argo
+spec:
+  templates:
+    - name: entrypoint
+      metadata:
+      containerSet:
+        containers:
+          - name: one
+            resources:
+              requests:
+                memory: "50Mi"
+                cpu: "50m"
+              limits:
+                memory: "50Mi"
+            image: argoproj/argosay:v2
+            command:
+              - bash
+              - '-c'
+            args:
+              - |
+                /bin/bash <<'EOF'
+                echo "hello one"
+                apt update -y
+                apt install stress -y
+                echo 'stress --vm 1 --vm-bytes 512M --vm-hang 100' > abc.sh
+                bash abc.sh
+                EOF
+          - name: two
+            resources:
+              requests:
+                memory: "150Mi"
+                cpu: "50m"
+              limits:
+                memory: "250Mi"
+            image: argoproj/argosay:v2
+            command:
+              - bash
+              - '-c'
+            args:
+              - |
+                /bin/bash <<'EOF'
+                echo "hello world"
+                EOF
+            dependencies:
+              - one
+  entrypoint: entrypoint

@@ -70,24 +70,36 @@ func NewEmissaryCommand() *cobra.Command {
 				return fmt.Errorf("failed to unmarshal template: %w", err)
 			}
 
+			// setup signal handlers
+			signals := make(chan os.Signal, 1)
+			defer close(signals)
+			signal.Notify(signals)
+			defer signal.Reset()
+
 			for _, x := range template.ContainerSet.GetGraph() {
 				if x.Name == containerName {
 					for _, y := range x.Dependencies {
 						logger.Infof("waiting for dependency %q", y)
 						for {
-							data, err := os.ReadFile(filepath.Clean(varRunArgo + "/ctr/" + y + "/exitcode"))
-							if os.IsNotExist(err) {
-								time.Sleep(time.Second)
-								continue
+							select {
+							// If we receive a signal, we should exit immediately.
+							case s := <-signals:
+								return fmt.Errorf("received %q signal while waiting for dependency", s)
+							default:
+								data, err := os.ReadFile(filepath.Clean(varRunArgo + "/ctr/" + y + "/exitcode"))
+								if os.IsNotExist(err) {
+									time.Sleep(time.Second)
+									continue
+								}
+								exitCode, err := strconv.Atoi(string(data))
+								if err != nil {
+									return fmt.Errorf("failed to read exit-code of dependency %q: %w", y, err)
+								}
+								if exitCode != 0 {
+									return fmt.Errorf("dependency %q exited with non-zero code: %d", y, exitCode)
+								}
+								break
 							}
-							exitCode, err := strconv.Atoi(string(data))
-							if err != nil {
-								return fmt.Errorf("failed to read exit-code of dependency %q: %w", y, err)
-							}
-							if exitCode != 0 {
-								return fmt.Errorf("dependency %q exited with non-zero code: %d", y, exitCode)
-							}
-							break
 						}
 					}
 				}
@@ -117,11 +129,6 @@ func NewEmissaryCommand() *cobra.Command {
 			}
 
 			cmdErr := retry.OnError(backoff, func(error) bool { return true }, func() error {
-				// setup signal handlers
-				signals := make(chan os.Signal, 1)
-				defer close(signals)
-				signal.Notify(signals)
-				defer signal.Reset()
 
 				command, closer, err := startCommand(name, args, template)
 				if err != nil {

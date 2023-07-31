@@ -1422,8 +1422,16 @@ func getExitCode(pod *apiv1.Pod) *int32 {
 }
 
 func podHasContainerNeedingTermination(pod *apiv1.Pod, tmpl wfv1.Template) bool {
+	// pod needs to be terminated if any of the following are true:
+	// 1. any main container has exited with non-zero exit code
+	// 2. all main containers have exited
+	// pod termination will cause the wait container to finish
 	for _, c := range pod.Status.ContainerStatuses {
-		// Only clean up pod when all main containers are terminated
+		if tmpl.IsMainContainerName(c.Name) && c.State.Terminated != nil && c.State.Terminated.ExitCode != 0 {
+			return true
+		}
+	}
+	for _, c := range pod.Status.ContainerStatuses {
 		if tmpl.IsMainContainerName(c.Name) && c.State.Terminated == nil {
 			return false
 		}
