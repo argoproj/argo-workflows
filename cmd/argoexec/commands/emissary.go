@@ -82,9 +82,11 @@ func NewEmissaryCommand() *cobra.Command {
 						logger.Infof("waiting for dependency %q", y)
 						for {
 							select {
-							// If we receive a signal, we should exit immediately.
+							// If we receive a terminated or killed signal, we should exit immediately.
 							case s := <-signals:
-								return fmt.Errorf("received %q signal while waiting for dependency", s)
+								if s == osspecific.Term || s == os.Kill {
+									return fmt.Errorf("received %q signal while waiting for dependency", s)
+								}
 							default:
 								data, err := os.ReadFile(filepath.Clean(varRunArgo + "/ctr/" + y + "/exitcode"))
 								if os.IsNotExist(err) {
