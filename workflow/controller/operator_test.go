@@ -27,6 +27,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/kubernetes/fake"
 	batchfake "k8s.io/client-go/kubernetes/typed/batch/v1/fake"
+	corefake "k8s.io/client-go/kubernetes/typed/core/v1/fake"
 	k8stesting "k8s.io/client-go/testing"
 	"k8s.io/utils/pointer"
 	"sigs.k8s.io/yaml"
@@ -9741,4 +9742,119 @@ func TestGetChildNodeIdsAndLastRetriedNode(t *testing.T) {
 		assert.Equal(t, 2, len(childNodeIds))
 		assert.Equal(t, childNodes[1].ID, lastChildNode.ID)
 	})
+}
+
+func TestRetryWhenNodeInstanceMissing(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(`
+kind: Workflow
+apiVersion: argoproj.io/v1alpha1
+metadata:
+  name: node-missing
+  creationTimestamp:
+  labels:
+    workflows.argoproj.io/phase: Running
+  annotations:
+    workflows.argoproj.io/pod-name-format: v2
+spec:
+  templates:
+  - name: entrypoint
+    inputs: {}
+    outputs: {}
+    metadata: {}
+    container:
+      name: 'main'
+      image: centos:7
+      command:
+      - python
+      - "-c"
+      - echo
+      args:
+      - "{{retries}}"
+      - "{{pod.name}}"
+      resources: {}
+    retryStrategy:
+      limit: 10
+      retryPolicy: Always
+      backoff:
+        duration: 5s
+  entrypoint: entrypoint
+  arguments: {}
+status:
+  phase: Runningg
+  startedAt: '2023-09-05T12:02:20Z'
+  finishedAt:
+  estimatedDuration: 1
+  progress: 0/1
+  nodes:
+    node-missing:
+      id: node-missing
+      name: node-missing
+      displayName: node-missing
+      type: Retry
+      templateName: main
+      templateScope: local/node-missing
+      phase: Running
+      startedAt: '2023-09-05T12:02:20Z'
+      finishedAt:
+      estimatedDuration: 1
+      progress: 0/1
+      children:
+      - node-missing-3674300323
+      - node-missing-8574637190
+    node-missing-3674300323:
+      id: node-missing-3674300323
+      name: node-missing(0)
+      displayName: node-missing(0)
+      type: Pod
+      templateName: main
+      templateScope: local/node-missing
+      phase: Failed
+      message: 'test1.test "test" is forbidden: exceeded quota'
+      startedAt: '2023-09-05T12:02:20Z'
+      finishedAt:
+      estimatedDuration: 1
+      progress: 0/1
+    node-missing-8574637190:
+      id: node-missing-8574637190
+      name: node-missing(1)
+      displayName: node-missing(1)
+      type: Pod
+      templateName: main
+      templateScope: local/node-missing
+      phase: Pending
+      message: 'test1.test "test" is forbidden: exceeded quota'
+      startedAt: '2023-09-05T12:02:20Z'
+      finishedAt:
+      estimatedDuration: 1
+      progress: 0/1
+  artifactRepositoryRef: {}
+  artifactGCStatus:
+    notSpecified: true
+`)
+
+	cancel, controller := newController(wf)
+	defer cancel()
+
+	ctx := context.Background()
+
+	controller.kubeclientset.(*fake.Clientset).CoreV1().(*corefake.FakeCoreV1).Fake.PrependReactor("create", "pods", func(action k8stesting.Action) (bool, runtime.Object, error) {
+		createAction, ok := action.(k8stesting.CreateAction)
+		assert.True(t, ok)
+
+		pod, ok := createAction.GetObject().(*apiv1.Pod)
+		assert.True(t, ok)
+
+		for _, container := range pod.Spec.Containers {
+			if container.Name == "main" {
+				t.Log("Container args: ", container.Args[0], container.Args[1])
+				assert.Equal(t, "1", container.Args[0])
+			}
+		}
+
+		return true, pod, nil
+	})
+
+	woc := newWorkflowOperationCtx(wf, controller)
+
+	woc.operate(ctx)
 }

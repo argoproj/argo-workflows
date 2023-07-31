@@ -2075,6 +2075,22 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 			// Last child node is still running.
 			nodeName = lastChildNode.Name
 			node = lastChildNode
+
+			// Instance may be missing caused by creation failure, for example, ResourceQuota error,
+			// so when recreating the pod, we also need to inject variables.
+			woc.log.Debugf("Assume instance is missing, nodeName: %s, all children: %v", nodeName, retryParentNode.Children)
+			localParams := make(map[string]string)
+			// Change the `pod.name` variable to the retry node name
+			if processedTmpl.IsPodType() {
+				localParams[common.LocalVarPodName] = woc.getPodName(nodeName, processedTmpl.Name)
+			}
+			// Inject the retryAttempt number
+			localParams[common.LocalVarRetries] = strconv.Itoa(len(retryParentNode.Children) - 1)
+
+			processedTmpl, err = common.SubstituteParams(processedTmpl, map[string]string{}, localParams)
+			if err != nil {
+				return woc.markNodeError(nodeName, err), err
+			}
 		} else {
 			retryNum := len(childNodeIDs)
 			// Create a new child node and append it to the retry node.
