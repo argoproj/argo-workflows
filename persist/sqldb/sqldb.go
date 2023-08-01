@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/upper/db/v4"
+	mysqladp "github.com/upper/db/v4/adapter/mysql"
+	postgresqladp "github.com/upper/db/v4/adapter/postgresql"
 	"k8s.io/client-go/kubernetes"
-	"upper.io/db.v3/lib/sqlbuilder"
-	"upper.io/db.v3/mysql"
-	"upper.io/db.v3/postgresql"
 
 	"github.com/argoproj/argo-workflows/v3/config"
 	"github.com/argoproj/argo-workflows/v3/errors"
@@ -31,7 +31,7 @@ func GetTableName(persistConfig *config.PersistConfig) (string, error) {
 }
 
 // CreateDBSession creates the dB session
-func CreateDBSession(kubectlConfig kubernetes.Interface, namespace string, persistConfig *config.PersistConfig) (sqlbuilder.Database, error) {
+func CreateDBSession(kubectlConfig kubernetes.Interface, namespace string, persistConfig *config.PersistConfig) (db.Session, error) {
 	if persistConfig == nil {
 		return nil, errors.InternalError("Persistence config is not found")
 	}
@@ -45,7 +45,7 @@ func CreateDBSession(kubectlConfig kubernetes.Interface, namespace string, persi
 }
 
 // CreatePostGresDBSession creates postgresDB session
-func CreatePostGresDBSession(kubectlConfig kubernetes.Interface, namespace string, cfg *config.PostgreSQLConfig, persistPool *config.ConnectionPool) (sqlbuilder.Database, error) {
+func CreatePostGresDBSession(kubectlConfig kubernetes.Interface, namespace string, cfg *config.PostgreSQLConfig, persistPool *config.ConnectionPool) (db.Session, error) {
 	ctx := context.Background()
 	userNameByte, err := util.GetSecrets(ctx, kubectlConfig, namespace, cfg.UsernameSecret.Name, cfg.UsernameSecret.Key)
 	if err != nil {
@@ -56,7 +56,7 @@ func CreatePostGresDBSession(kubectlConfig kubernetes.Interface, namespace strin
 		return nil, err
 	}
 
-	settings := postgresql.ConnectionURL{
+	settings := postgresqladp.ConnectionURL{
 		User:     string(userNameByte),
 		Password: string(passwordByte),
 		Host:     cfg.GetHostname(),
@@ -72,7 +72,7 @@ func CreatePostGresDBSession(kubectlConfig kubernetes.Interface, namespace strin
 		}
 	}
 
-	session, err := postgresql.Open(settings)
+	session, err := postgresqladp.Open(settings)
 	if err != nil {
 		return nil, err
 	}
@@ -81,7 +81,7 @@ func CreatePostGresDBSession(kubectlConfig kubernetes.Interface, namespace strin
 }
 
 // CreateMySQLDBSession creates Mysql DB session
-func CreateMySQLDBSession(kubectlConfig kubernetes.Interface, namespace string, cfg *config.MySQLConfig, persistPool *config.ConnectionPool) (sqlbuilder.Database, error) {
+func CreateMySQLDBSession(kubectlConfig kubernetes.Interface, namespace string, cfg *config.MySQLConfig, persistPool *config.ConnectionPool) (db.Session, error) {
 	if cfg.TableName == "" {
 		return nil, errors.InternalError("tableName is empty")
 	}
@@ -96,7 +96,7 @@ func CreateMySQLDBSession(kubectlConfig kubernetes.Interface, namespace string, 
 		return nil, err
 	}
 
-	session, err := mysql.Open(mysql.ConnectionURL{
+	session, err := mysqladp.Open(mysqladp.ConnectionURL{
 		User:     string(userNameByte),
 		Password: string(passwordByte),
 		Host:     cfg.GetHostname(),
@@ -108,11 +108,11 @@ func CreateMySQLDBSession(kubectlConfig kubernetes.Interface, namespace string, 
 	}
 	session = ConfigureDBSession(session, persistPool)
 	// this is needed to make MySQL run in a Golang-compatible UTF-8 character set.
-	_, err = session.Exec("SET NAMES 'utf8mb4'")
+	_, err = session.SQL().Exec("SET NAMES 'utf8mb4'")
 	if err != nil {
 		return nil, err
 	}
-	_, err = session.Exec("SET CHARACTER SET utf8mb4")
+	_, err = session.SQL().Exec("SET CHARACTER SET utf8mb4")
 	if err != nil {
 		return nil, err
 	}
@@ -120,7 +120,7 @@ func CreateMySQLDBSession(kubectlConfig kubernetes.Interface, namespace string, 
 }
 
 // ConfigureDBSession configures the DB session
-func ConfigureDBSession(session sqlbuilder.Database, persistPool *config.ConnectionPool) sqlbuilder.Database {
+func ConfigureDBSession(session db.Session, persistPool *config.ConnectionPool) db.Session {
 	if persistPool != nil {
 		session.SetMaxOpenConns(persistPool.MaxOpenConns)
 		session.SetMaxIdleConns(persistPool.MaxIdleConns)

@@ -2844,6 +2844,9 @@ type OSSBucket struct {
 
 	// LifecycleRule specifies how to manage bucket's lifecycle
 	LifecycleRule *OSSLifecycleRule `json:"lifecycleRule,omitempty" protobuf:"bytes,7,opt,name=lifecycleRule"`
+
+	// UseSDKCreds tells the driver to figure out credentials based on sdk defaults.
+	UseSDKCreds bool `json:"useSDKCreds,omitempty" protobuf:"varint,8,opt,name=useSDKCreds"`
 }
 
 // OSSArtifact is the location of an Alibaba Cloud OSS artifact

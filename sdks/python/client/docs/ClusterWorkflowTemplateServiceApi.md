@@ -511,6 +511,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     optional=True,
                                 ),
                                 security_token="security_token_example",
+                                use_sdk_creds=True,
                             ),
                             path="path_example",
                             raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -816,6 +817,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             optional=True,
                                         ),
                                         security_token="security_token_example",
+                                        use_sdk_creds=True,
                                     ),
                                     path="path_example",
                                     raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -1433,6 +1435,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 optional=True,
                             ),
                             security_token="security_token_example",
+                            use_sdk_creds=True,
                         ),
                         raw=IoArgoprojWorkflowV1alpha1RawArtifact(
                             data="data_example",
@@ -2235,6 +2238,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                     optional=True,
                                                 ),
                                                 security_token="security_token_example",
+                                                use_sdk_creds=True,
                                             ),
                                             path="path_example",
                                             raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -2511,6 +2515,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             optional=True,
                                                         ),
                                                         security_token="security_token_example",
+                                                        use_sdk_creds=True,
                                                     ),
                                                     path="path_example",
                                                     raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -2809,6 +2814,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         optional=True,
                                     ),
                                     security_token="security_token_example",
+                                    use_sdk_creds=True,
                                 ),
                                 path="path_example",
                                 raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -3362,6 +3368,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         optional=True,
                                     ),
                                     security_token="security_token_example",
+                                    use_sdk_creds=True,
                                 ),
                                 path="path_example",
                                 raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -3680,6 +3687,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         optional=True,
                                     ),
                                     security_token="security_token_example",
+                                    use_sdk_creds=True,
                                 ),
                                 path="path_example",
                                 raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -3959,6 +3967,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         optional=True,
                                     ),
                                     security_token="security_token_example",
+                                    use_sdk_creds=True,
                                 ),
                                 path="path_example",
                                 raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -4795,6 +4804,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                     optional=True,
                                                 ),
                                                 security_token="security_token_example",
+                                                use_sdk_creds=True,
                                             ),
                                             path="path_example",
                                             raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -5067,6 +5077,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             optional=True,
                                                         ),
                                                         security_token="security_token_example",
+                                                        use_sdk_creds=True,
                                                     ),
                                                     path="path_example",
                                                     raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -5946,6 +5957,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     optional=True,
                                 ),
                                 security_token="security_token_example",
+                                use_sdk_creds=True,
                             ),
                             raw=IoArgoprojWorkflowV1alpha1RawArtifact(
                                 data="data_example",
@@ -6748,6 +6760,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         optional=True,
                                                     ),
                                                     security_token="security_token_example",
+                                                    use_sdk_creds=True,
                                                 ),
                                                 path="path_example",
                                                 raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -7024,6 +7037,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                                 optional=True,
                                                             ),
                                                             security_token="security_token_example",
+                                                            use_sdk_creds=True,
                                                         ),
                                                         path="path_example",
                                                         raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -7322,6 +7336,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             optional=True,
                                         ),
                                         security_token="security_token_example",
+                                        use_sdk_creds=True,
                                     ),
                                     path="path_example",
                                     raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -7875,6 +7890,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             optional=True,
                                         ),
                                         security_token="security_token_example",
+                                        use_sdk_creds=True,
                                     ),
                                     path="path_example",
                                     raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -8193,6 +8209,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             optional=True,
                                         ),
                                         security_token="security_token_example",
+                                        use_sdk_creds=True,
                                     ),
                                     path="path_example",
                                     raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -8472,6 +8489,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             optional=True,
                                         ),
                                         security_token="security_token_example",
+                                        use_sdk_creds=True,
                                     ),
                                     path="path_example",
                                     raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -9308,6 +9326,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         optional=True,
                                                     ),
                                                     security_token="security_token_example",
+                                                    use_sdk_creds=True,
                                                 ),
                                                 path="path_example",
                                                 raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -9580,6 +9599,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                                 optional=True,
                                                             ),
                                                             security_token="security_token_example",
+                                                            use_sdk_creds=True,
                                                         ),
                                                         path="path_example",
                                                         raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -11324,6 +11344,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     optional=True,
                                 ),
                                 security_token="security_token_example",
+                                use_sdk_creds=True,
                             ),
                             path="path_example",
                             raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -11629,6 +11650,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             optional=True,
                                         ),
                                         security_token="security_token_example",
+                                        use_sdk_creds=True,
                                     ),
                                     path="path_example",
                                     raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -12246,6 +12268,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 optional=True,
                             ),
                             security_token="security_token_example",
+                            use_sdk_creds=True,
                         ),
                         raw=IoArgoprojWorkflowV1alpha1RawArtifact(
                             data="data_example",
@@ -13048,6 +13071,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                     optional=True,
                                                 ),
                                                 security_token="security_token_example",
+                                                use_sdk_creds=True,
                                             ),
                                             path="path_example",
                                             raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -13324,6 +13348,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             optional=True,
                                                         ),
                                                         security_token="security_token_example",
+                                                        use_sdk_creds=True,
                                                     ),
                                                     path="path_example",
                                                     raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -13622,6 +13647,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         optional=True,
                                     ),
                                     security_token="security_token_example",
+                                    use_sdk_creds=True,
                                 ),
                                 path="path_example",
                                 raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -14175,6 +14201,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         optional=True,
                                     ),
                                     security_token="security_token_example",
+                                    use_sdk_creds=True,
                                 ),
                                 path="path_example",
                                 raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -14493,6 +14520,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         optional=True,
                                     ),
                                     security_token="security_token_example",
+                                    use_sdk_creds=True,
                                 ),
                                 path="path_example",
                                 raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -14772,6 +14800,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         optional=True,
                                     ),
                                     security_token="security_token_example",
+                                    use_sdk_creds=True,
                                 ),
                                 path="path_example",
                                 raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -15608,6 +15637,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                     optional=True,
                                                 ),
                                                 security_token="security_token_example",
+                                                use_sdk_creds=True,
                                             ),
                                             path="path_example",
                                             raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -15880,6 +15910,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             optional=True,
                                                         ),
                                                         security_token="security_token_example",
+                                                        use_sdk_creds=True,
                                                     ),
                                                     path="path_example",
                                                     raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -16759,6 +16790,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     optional=True,
                                 ),
                                 security_token="security_token_example",
+                                use_sdk_creds=True,
                             ),
                             raw=IoArgoprojWorkflowV1alpha1RawArtifact(
                                 data="data_example",
@@ -17561,6 +17593,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         optional=True,
                                                     ),
                                                     security_token="security_token_example",
+                                                    use_sdk_creds=True,
                                                 ),
                                                 path="path_example",
                                                 raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -17837,6 +17870,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                                 optional=True,
                                                             ),
                                                             security_token="security_token_example",
+                                                            use_sdk_creds=True,
                                                         ),
                                                         path="path_example",
                                                         raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -18135,6 +18169,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             optional=True,
                                         ),
                                         security_token="security_token_example",
+                                        use_sdk_creds=True,
                                     ),
                                     path="path_example",
                                     raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -18688,6 +18723,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             optional=True,
                                         ),
                                         security_token="security_token_example",
+                                        use_sdk_creds=True,
                                     ),
                                     path="path_example",
                                     raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -19006,6 +19042,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             optional=True,
                                         ),
                                         security_token="security_token_example",
+                                        use_sdk_creds=True,
                                     ),
                                     path="path_example",
                                     raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -19285,6 +19322,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             optional=True,
                                         ),
                                         security_token="security_token_example",
+                                        use_sdk_creds=True,
                                     ),
                                     path="path_example",
                                     raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -20121,6 +20159,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         optional=True,
                                                     ),
                                                     security_token="security_token_example",
+                                                    use_sdk_creds=True,
                                                 ),
                                                 path="path_example",
                                                 raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -20393,6 +20432,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                                 optional=True,
                                                             ),
                                                             security_token="security_token_example",
+                                                            use_sdk_creds=True,
                                                         ),
                                                         path="path_example",
                                                         raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -22041,6 +22081,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     optional=True,
                                 ),
                                 security_token="security_token_example",
+                                use_sdk_creds=True,
                             ),
                             path="path_example",
                             raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -22346,6 +22387,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             optional=True,
                                         ),
                                         security_token="security_token_example",
+                                        use_sdk_creds=True,
                                     ),
                                     path="path_example",
                                     raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -22963,6 +23005,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                 optional=True,
                             ),
                             security_token="security_token_example",
+                            use_sdk_creds=True,
                         ),
                         raw=IoArgoprojWorkflowV1alpha1RawArtifact(
                             data="data_example",
@@ -23765,6 +23808,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                     optional=True,
                                                 ),
                                                 security_token="security_token_example",
+                                                use_sdk_creds=True,
                                             ),
                                             path="path_example",
                                             raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -24041,6 +24085,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             optional=True,
                                                         ),
                                                         security_token="security_token_example",
+                                                        use_sdk_creds=True,
                                                     ),
                                                     path="path_example",
                                                     raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -24339,6 +24384,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         optional=True,
                                     ),
                                     security_token="security_token_example",
+                                    use_sdk_creds=True,
                                 ),
                                 path="path_example",
                                 raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -24892,6 +24938,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         optional=True,
                                     ),
                                     security_token="security_token_example",
+                                    use_sdk_creds=True,
                                 ),
                                 path="path_example",
                                 raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -25210,6 +25257,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         optional=True,
                                     ),
                                     security_token="security_token_example",
+                                    use_sdk_creds=True,
                                 ),
                                 path="path_example",
                                 raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -25489,6 +25537,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                         optional=True,
                                     ),
                                     security_token="security_token_example",
+                                    use_sdk_creds=True,
                                 ),
                                 path="path_example",
                                 raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -26325,6 +26374,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                     optional=True,
                                                 ),
                                                 security_token="security_token_example",
+                                                use_sdk_creds=True,
                                             ),
                                             path="path_example",
                                             raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -26597,6 +26647,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                             optional=True,
                                                         ),
                                                         security_token="security_token_example",
+                                                        use_sdk_creds=True,
                                                     ),
                                                     path="path_example",
                                                     raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -27476,6 +27527,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                     optional=True,
                                 ),
                                 security_token="security_token_example",
+                                use_sdk_creds=True,
                             ),
                             raw=IoArgoprojWorkflowV1alpha1RawArtifact(
                                 data="data_example",
@@ -28278,6 +28330,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         optional=True,
                                                     ),
                                                     security_token="security_token_example",
+                                                    use_sdk_creds=True,
                                                 ),
                                                 path="path_example",
                                                 raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -28554,6 +28607,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                                 optional=True,
                                                             ),
                                                             security_token="security_token_example",
+                                                            use_sdk_creds=True,
                                                         ),
                                                         path="path_example",
                                                         raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -28852,6 +28906,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             optional=True,
                                         ),
                                         security_token="security_token_example",
+                                        use_sdk_creds=True,
                                     ),
                                     path="path_example",
                                     raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -29405,6 +29460,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             optional=True,
                                         ),
                                         security_token="security_token_example",
+                                        use_sdk_creds=True,
                                     ),
                                     path="path_example",
                                     raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -29723,6 +29779,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             optional=True,
                                         ),
                                         security_token="security_token_example",
+                                        use_sdk_creds=True,
                                     ),
                                     path="path_example",
                                     raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -30002,6 +30059,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                             optional=True,
                                         ),
                                         security_token="security_token_example",
+                                        use_sdk_creds=True,
                                     ),
                                     path="path_example",
                                     raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -30838,6 +30896,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                         optional=True,
                                                     ),
                                                     security_token="security_token_example",
+                                                    use_sdk_creds=True,
                                                 ),
                                                 path="path_example",
                                                 raw=IoArgoprojWorkflowV1alpha1RawArtifact(
@@ -31110,6 +31169,7 @@ with argo_workflows.ApiClient(configuration) as api_client:
                                                                 optional=True,
                                                             ),
                                                             security_token="security_token_example",
+                                                            use_sdk_creds=True,
                                                         ),
                                                         path="path_example",
                                                         raw=IoArgoprojWorkflowV1alpha1RawArtifact(
