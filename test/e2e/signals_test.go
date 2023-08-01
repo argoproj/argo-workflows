@@ -166,8 +166,8 @@ func (s *SignalsSuite) TestSignaledContainerSet() {
 			}
 			two := status.Nodes.FindByDisplayName("two")
 			if assert.NotNil(t, two) {
-				assert.Equal(t, wfv1.NodeError, two.Phase)
-				assert.Equal(t, "Error (exit code 64): received \"terminated\" signal while waiting for dependency", two.Message)
+				assert.Equal(t, wfv1.NodeFailed, two.Phase)
+				assert.Equal(t, "Error (exit code 143): ", two.Message)
 			}
 		})
 }
