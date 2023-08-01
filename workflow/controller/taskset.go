@@ -102,8 +102,8 @@ func (woc *wfOperationCtx) taskSetReconciliation(ctx context.Context) {
 }
 
 func (woc *wfOperationCtx) nodeRequiresTaskSetReconciliation(nodeName string) bool {
-	node := woc.wf.GetNodeByName(nodeName)
-	if node == nil {
+	node, err := woc.wf.GetNodeByName(nodeName)
+	if err != nil {
 		return false
 	}
 	// If this node is of type HTTP, it will need an HTTP reconciliation
@@ -112,7 +112,11 @@ func (woc *wfOperationCtx) nodeRequiresTaskSetReconciliation(nodeName string) bo
 	}
 	for _, child := range node.Children {
 		// If any of the node's children need an HTTP reconciliation, the parent node will also need one
-		childNodeName := woc.wf.Status.Nodes[child].Name
+		childNodeName, err := woc.wf.Status.Nodes.GetName(child)
+		if err != nil {
+			woc.log.Fatalf("was unable to get child node name for %s", child)
+			panic("unable to obtain child node name")
+		}
 		if woc.nodeRequiresTaskSetReconciliation(childNodeName) {
 			return true
 		}
@@ -130,14 +134,19 @@ func (woc *wfOperationCtx) reconcileTaskSet(ctx context.Context) error {
 	woc.log.Info("TaskSet Reconciliation")
 	if workflowTaskSet != nil && len(workflowTaskSet.Status.Nodes) > 0 {
 		for nodeID, taskResult := range workflowTaskSet.Status.Nodes {
-			node := woc.wf.Status.Nodes[nodeID]
+			node, err := woc.wf.Status.Nodes.Get(nodeID)
+			if err != nil {
+				woc.log.Warnf("[SPECIAL][DEBUG] returning but assumed validity before")
+				woc.log.Errorf("[DEBUG] Was unable to obtain node for %s", nodeID)
+				return err
+			}
 
 			node.Outputs = taskResult.Outputs.DeepCopy()
 			node.Phase = taskResult.Phase
 			node.Message = taskResult.Message
 			node.FinishedAt = metav1.Now()
 
-			woc.wf.Status.Nodes[nodeID] = node
+			woc.wf.Status.Nodes.Set(nodeID, *node)
 			if node.MemoizationStatus != nil && node.Succeeded() {
 				c := woc.controller.cacheFactory.GetCache(controllercache.ConfigMapCache, node.MemoizationStatus.CacheName)
 				err := c.Save(ctx, node.MemoizationStatus.Key, node.ID, node.Outputs)
