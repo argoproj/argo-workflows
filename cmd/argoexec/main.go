@@ -20,6 +20,8 @@ func main() {
 	defer stop()
 	err := commands.NewRootCommand().ExecuteContext(ctx)
 	if err != nil {
+		println(err.Error())
+		util.WriteTerminateMessage(err.Error())
 		if exitError, ok := err.(errors.Exited); ok {
 			if exitError.ExitCode() >= 0 {
 				os.Exit(exitError.ExitCode())
@@ -27,8 +29,6 @@ func main() {
 				os.Exit(137) // probably SIGTERM or SIGKILL
 			}
 		} else {
-			util.WriteTerminateMessage(err.Error()) // we don't want to overwrite any other message
-			println(err.Error())
 			os.Exit(64)
 		}
 	}

@@ -80,12 +80,18 @@ func NewEmissaryCommand() *cobra.Command {
 				if x.Name == containerName {
 					for _, y := range x.Dependencies {
 						logger.Infof("waiting for dependency %q", y)
+					WaitForDependency:
 						for {
 							select {
 							// If we receive a terminated or killed signal, we should exit immediately.
 							case s := <-signals:
-								if s == osspecific.Term || s == os.Kill {
-									return fmt.Errorf("received %q signal while waiting for dependency", s)
+								switch s {
+								case osspecific.Term:
+									// exit with 128 + 15 (SIGTERM)
+									return errors.NewExitErr(143)
+								case os.Kill:
+									// exit with 128 + 9 (SIGKILL)
+									return errors.NewExitErr(137)
 								}
 							default:
 								data, err := os.ReadFile(filepath.Clean(varRunArgo + "/ctr/" + y + "/exitcode"))
@@ -100,7 +106,7 @@ func NewEmissaryCommand() *cobra.Command {
 								if exitCode != 0 {
 									return fmt.Errorf("dependency %q exited with non-zero code: %d", y, exitCode)
 								}
-								break
+								break WaitForDependency
 							}
 						}
 					}
