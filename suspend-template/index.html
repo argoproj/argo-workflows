@@ -13,7 +13,7 @@
     
     
       
-        <title>Documentation Changes - Argo Workflows - The workflow engine for Kubernetes</title>
+        <title>Suspend Template - Argo Workflows - The workflow engine for Kubernetes</title>
       
     
     
@@ -72,7 +72,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#documentation-changes" class="md-skip">
+        <a href="#suspend-template" class="md-skip">
           Skip to content
         </a>
       
@@ -106,7 +106,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Documentation Changes
+              Suspend Template
             
           </span>
         </div>
@@ -222,13 +222,15 @@
         
   
   
+    
+  
 
 
   
   
   
     <li class="md-tabs__item">
-      <a href="../workflow-concepts/" class="md-tabs__link">
+      <a href="../workflow-concepts/" class="md-tabs__link md-tabs__link--active">
         User Guide
       </a>
     </li>
@@ -254,15 +256,13 @@
         
   
   
-    
-  
 
 
   
   
   
     <li class="md-tabs__item">
-      <a href="../CONTRIBUTING/" class="md-tabs__link md-tabs__link--active">
+      <a href="../CONTRIBUTING/" class="md-tabs__link">
         Developer Guide
       </a>
     </li>
@@ -858,12 +858,14 @@
 
   
   
+    
+  
   
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
       
-        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3" type="checkbox" id="__nav_3" >
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3" type="checkbox" id="__nav_3" checked>
       
       
       
@@ -973,12 +975,14 @@
               
   
   
+    
+  
   
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
       
-        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3_3" type="checkbox" id="__nav_3_3" >
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3_3" type="checkbox" id="__nav_3_3" checked>
       
       
       
@@ -1055,11 +1059,21 @@
               
   
   
+    
   
-    <li class="md-nav__item">
-      <a href="../suspend-template/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         Suspend Template
       </a>
+      
     </li>
   
 
@@ -3517,14 +3531,12 @@
 
   
   
-    
-  
   
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
       
-        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_5" type="checkbox" id="__nav_5" checked>
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_5" type="checkbox" id="__nav_5" >
       
       
       
@@ -3601,59 +3613,11 @@
               
   
   
-    
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          Documentation Changes
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../doc-changes/" class="md-nav__link">
         Documentation Changes
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#running-locally" class="md-nav__link">
-    Running Locally
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#tips" class="md-nav__link">
-    Tips
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -3844,28 +3808,6 @@
     
   
   
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#running-locally" class="md-nav__link">
-    Running Locally
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#tips" class="md-nav__link">
-    Tips
-  </a>
-  
-</li>
-      
-    </ul>
-  
 </nav>
                   </div>
                 </div>
@@ -3877,41 +3819,16 @@
               
 
                 
-<a href="https://github.com/argoproj/argo-workflows/edit/master/docs/doc-changes.md" title="Edit this page" class="md-content__button md-icon">
+<a href="https://github.com/argoproj/argo-workflows/edit/master/docs/suspend-template.md" title="Edit this page" class="md-content__button md-icon">
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25z"/></svg>
 </a>
 
 
-<h1 id="documentation-changes">Documentation Changes<a class="headerlink" href="#documentation-changes" title="Permanent link">&para;</a></h1>
-<p>Docs help our customers understand how to use workflows and fix their own problems.</p>
-<p>Doc changes are checked for spelling, broken links, and lint issues by CI. To check locally run <code>make docs</code>.</p>
-<ul>
-<li>Explain when you would want to use a feature.</li>
-<li>Provide working examples.</li>
-<li>Use simple short sentences and avoid jargon.</li>
-<li>Format code using back-ticks to avoid it being reported spelling error.</li>
-<li>Avoid use title-case mid-sentence. E.g. instead of "the Workflow", write "the workflow".</li>
-<li>Headings should be title-case. E.g. instead of "and", write "And".</li>
-</ul>
-<h2 id="running-locally">Running Locally<a class="headerlink" href="#running-locally" title="Permanent link">&para;</a></h2>
-<p>To test/run locally:</p>
-<div class="highlight"><pre><span></span><code>make<span class="w"> </span>docs-serve
-</code></pre></div>
-<h2 id="tips">Tips<a class="headerlink" href="#tips" title="Permanent link">&para;</a></h2>
-<p>Use a service like <a href="https://www.grammarly.com">Grammarly</a> to check your grammar.</p>
-<p>Having your computer read text out loud is a way to catch problems, e.g.:</p>
-<ul>
-<li>Word substitutions (i.e. the wrong word is used, but spelled.
-correctly).</li>
-<li>Sentences that do not read correctly will sound wrong.</li>
-</ul>
-<p>On Mac, to set-up:</p>
-<ul>
-<li>Go to <code>System Preferences / Accessibility / Spoken Content</code>.</li>
-<li>Choose a System Voice (I like <code>Siri Voice 1</code>).</li>
-<li>Enable <code>Speak selection</code>.</li>
-</ul>
-<p>To hear text, select the text you want to hear, then press option+escape.</p>
+<h1 id="suspend-template">Suspend Template<a class="headerlink" href="#suspend-template" title="Permanent link">&para;</a></h1>
+<blockquote>
+<p>v2.1</p>
+</blockquote>
+<p>See <a href="../walk-through/suspending/">Suspending</a>.</p>
 
               
 
@@ -3951,7 +3868,7 @@ correctly).</li>
     <nav class="md-footer__inner md-grid" aria-label="Footer">
       
         
-        <a href="../running-locally/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Running Locally" rel="prev">
+        <a href="../resource-template/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Resource Template" rel="prev">
           <div class="md-footer__button md-icon">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12z"/></svg>
           </div>
@@ -3960,20 +3877,20 @@ correctly).</li>
               <span class="md-footer__direction">
                 Previous
               </span>
-              Running Locally
+              Resource Template
             </div>
           </div>
         </a>
       
       
         
-        <a href="../mentoring/" class="md-footer__link md-footer__link--next" aria-label="Next: Mentoring" rel="next">
+        <a href="../inline-templates/" class="md-footer__link md-footer__link--next" aria-label="Next: Inline Templates" rel="next">
           <div class="md-footer__title">
             <div class="md-ellipsis">
               <span class="md-footer__direction">
                 Next
               </span>
-              Mentoring
+              Inline Templates
             </div>
           </div>
           <div class="md-footer__button md-icon">
