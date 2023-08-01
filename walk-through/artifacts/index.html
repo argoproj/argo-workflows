@@ -3925,9 +3925,10 @@
 
 
 <h1 id="artifacts">Artifacts<a class="headerlink" href="#artifacts" title="Permanent link">&para;</a></h1>
-<p><strong>Note:</strong>
-You will need to configure an artifact repository to run this example.
-<a href="https://argoproj.github.io/argo-workflows/configure-artifact-repository/">Configuring an artifact repository here</a>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>You will need to <a href="../../configure-artifact-repository/">configure an artifact repository</a> to run this example.</p>
+</div>
 <p>When running workflows, it is very common to have steps that generate or consume artifacts. Often, the output artifacts of one step may be used as input artifacts to a subsequent step.</p>
 <p>The below workflow spec consists of two steps that run in sequence. The first step named <code>generate-artifact</code> will generate an artifact using the <code>whalesay</code> template that will be consumed by the second step named <code>print-message</code> that then consumes the generated artifact.</p>
 <div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>

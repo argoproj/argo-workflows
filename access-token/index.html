@@ -3997,7 +3997,7 @@
 <p>If you want to automate tasks with the Argo Server API or CLI, you will need an access token.</p>
 <h2 id="prerequisites">Prerequisites<a class="headerlink" href="#prerequisites" title="Permanent link">&para;</a></h2>
 <p>Firstly, create a role with minimal permissions. This example role for jenkins only permission to update and list workflows:</p>
-<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>create<span class="w"> </span>role<span class="w"> </span>jenkins<span class="w"> </span>--verb<span class="o">=</span>list,update<span class="w"> </span>--resource<span class="o">=</span>workflows.argoproj.io<span class="w"> </span>
+<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>create<span class="w"> </span>role<span class="w"> </span>jenkins<span class="w"> </span>--verb<span class="o">=</span>list,update<span class="w"> </span>--resource<span class="o">=</span>workflows.argoproj.io
 </code></pre></div>
 <p>Create a service account for your service:</p>
 <div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>create<span class="w"> </span>sa<span class="w"> </span>jenkins
@@ -4045,9 +4045,7 @@ Bearer<span class="w"> </span>ZXlKaGJHY2lPaUpTVXpJMU5pSXNJbXRwWkNJNkltS...
 <span class="nv">ARGO_NAMESPACE</span><span class="o">=</span>sandbox
 </code></pre></div>
 <h3 id="start-container-with-settings-above">Start container with settings above<a class="headerlink" href="#start-container-with-settings-above" title="Permanent link">&para;</a></h3>
-<blockquote>
-<p>Note: Example for  getting list of templates from an existing namespace</p>
-</blockquote>
+<p>Example for listing templates in a namespace:</p>
 <div class="highlight"><pre><span></span><code>docker<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span>-it<span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>-e<span class="w"> </span><span class="nv">ARGO_SERVER</span><span class="o">=</span><span class="nv">$ARGO_SERVER</span><span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>-e<span class="w"> </span><span class="nv">ARGO_TOKEN</span><span class="o">=</span><span class="nv">$ARGO_TOKEN</span><span class="w"> </span><span class="se">\</span>

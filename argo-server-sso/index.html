@@ -4016,7 +4016,7 @@ kubectl<span class="w"> </span>create<span class="w"> </span>secret<span class="
 <p>You can optionally add RBAC to SSO. This allows you to give different users different access levels. Except for <code>client</code> auth mode, all users of the Argo Server must ultimately use a service account. So we allow you to define rules that map a user (maybe using their OIDC groups) to a service account in the same namespace as argo server by annotating the service account.</p>
 <p>To allow service accounts to manage resources in other namespaces create a role and role binding in the target namespace.</p>
 <p>RBAC config is installation-level, so any changes will need to be made by the team that installed Argo. Many complex rules will be burdensome on that team.</p>
-<p>Firstly, enable the <code>rbac:</code> setting in <a href="../workflow-controller-configmap.yaml">workflow-controller-configmap.yaml</a>. You almost certainly want to be able to configure RBAC using groups, so add <code>scopes:</code> to the SSO settings:</p>
+<p>Firstly, enable the <code>rbac:</code> setting in <a href="../workflow-controller-configmap.yaml">workflow-controller-configmap.yaml</a>. You likely want to configure RBAC using groups, so add <code>scopes:</code> to the SSO settings:</p>
 <div class="highlight"><pre><span></span><code><span class="nt">sso</span><span class="p">:</span>
 <span class="w">  </span><span class="c1"># ...</span>
 <span class="w">  </span><span class="nt">scopes</span><span class="p">:</span>
