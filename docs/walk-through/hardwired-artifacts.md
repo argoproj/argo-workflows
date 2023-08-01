@@ -1,6 +1,6 @@
 # Hardwired Artifacts
 
-With Argo, you can use any container image that you like to generate any kind of artifact. In practice, however, we find certain types of artifacts are very common, so there is built-in support for git, HTTP, GCS and S3 artifacts.
+You can use any container image to generate any kind of artifact. In practice, however, certain types of artifacts are very common, so there is built-in support for git, HTTP, GCS, and S3 artifacts.
 
 ```yaml
 apiVersion: argoproj.io/v1alpha1
