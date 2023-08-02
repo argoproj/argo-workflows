@@ -4,6 +4,7 @@ export SHELLOPTS:=$(if $(SHELLOPTS),$(SHELLOPTS):)pipefail:errexit
 # NOTE: Please ensure dependencies are synced with the flake.nix file in dev/nix/flake.nix before upgrading
 # any external dependency. There is documentation on how to do this under the Developer Guide
 
+USE_NIX := false
 # https://stackoverflow.com/questions/4122831/disable-make-builtin-rules-and-variables-from-inside-the-make-file
 MAKEFLAGS += --no-builtin-rules
 .SUFFIXES:
@@ -164,8 +165,10 @@ ui/dist/app/index.html: $(shell find ui/src -type f && find ui -maxdepth 1 -type
 	JOBS=max yarn --cwd ui build
 
 $(GOPATH)/bin/staticfiles:
-	go install bou.ke/staticfiles@dd04075 # update this in Nix when upgrading it here
-
+# update this in Nix when updating it here
+ifneq ($(USE_NIX), true)
+	go install bou.ke/staticfiles@dd04075 
+endif
 
 ifeq ($(STATIC_FILES),true)
 server/static/files.go: $(GOPATH)/bin/staticfiles ui/dist/app/index.html
@@ -254,8 +257,8 @@ argoexec-image:
 .PHONY: codegen
 codegen: types swagger manifests $(GOPATH)/bin/mockery docs/fields.md docs/cli/argo.md
 	go generate ./...
-	make --directory sdks/java generate
-	make --directory sdks/python generate
+	make --directory sdks/java USE_NIX=$(USE_NIX) generate
+	make --directory sdks/python USE_NIX=$(USE_NIX) generate
 
 .PHONY: check-pwd
 check-pwd:
@@ -285,36 +288,60 @@ swagger: \
 
 
 $(GOPATH)/bin/mockery:
-	go install github.com/vektra/mockery/v2@v2.26.0 # update this in Nix when upgrading it here
+# update this in Nix when upgrading it here
+ifneq ($(USE_NIX), true)
+	go install github.com/vektra/mockery/v2@v2.26.0
+endif
 $(GOPATH)/bin/controller-gen:
-	go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.4.1 # update this in Nix when upgrading it here
-
+# update this in Nix when upgrading it here
+ifneq ($(USE_NIX), true)
+	go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.4.1
+endif
 $(GOPATH)/bin/go-to-protobuf:
-	go install k8s.io/code-generator/cmd/go-to-protobuf@v0.21.5 # update this in Nix when upgrading it here
-
+# update this in Nix when upgrading it here
+ifneq ($(USE_NIX), true)
+	go install k8s.io/code-generator/cmd/go-to-protobuf@v0.21.5
+endif
 $(GOPATH)/src/github.com/gogo/protobuf:
+# update this in Nix when upgrading it here
+ifneq ($(USE_NIX), true)
 	[ -e $(GOPATH)/src/github.com/gogo/protobuf ] || git clone --depth 1 https://github.com/gogo/protobuf.git -b v1.3.2 $(GOPATH)/src/github.com/gogo/protobuf
+endif
 $(GOPATH)/bin/protoc-gen-gogo:
-	go install github.com/gogo/protobuf/protoc-gen-gogo@v1.3.2 # update this in Nix when upgrading it here
-
+# update this in Nix when upgrading it here
+ifneq ($(USE_NIX), true)
+	go install github.com/gogo/protobuf/protoc-gen-gogo@v1.3.2
+endif
 $(GOPATH)/bin/protoc-gen-gogofast:
-	go install github.com/gogo/protobuf/protoc-gen-gogofast@v1.3.2 # update this in Nix when upgrading it here
-
+# update this in Nix when upgrading it here
+ifneq ($(USE_NIX), true)
+	go install github.com/gogo/protobuf/protoc-gen-gogofast@v1.3.2
+endif
 $(GOPATH)/bin/protoc-gen-grpc-gateway:
-	go install github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway@v1.16.0 # update this in Nix when upgrading it here
-
+# update this in Nix when upgrading it here
+ifneq ($(USE_NIX), true)
+	go install github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway@v1.16.0
+endif
 $(GOPATH)/bin/protoc-gen-swagger:
-	go install github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger@v1.16.0 # update this in Nix when upgrading it here
-
+# update this in Nix when upgrading it here
+ifneq ($(USE_NIX), true)
+	go install github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger@v1.16.0
+endif
 $(GOPATH)/bin/openapi-gen:
-	go install k8s.io/kube-openapi/cmd/openapi-gen@v0.0.0-20220124234850-424119656bbf # update this in Nix when upgrading it here
-
+# update this in Nix when upgrading it here
+ifneq ($(USE_NIX), true)
+	go install k8s.io/kube-openapi/cmd/openapi-gen@v0.0.0-20220124234850-424119656bbf
+endif
 $(GOPATH)/bin/swagger:
-	go install github.com/go-swagger/go-swagger/cmd/swagger@v0.28.0 # update this in Nix when upgrading it here
-
+# update this in Nix when upgrading it here
+ifneq ($(USE_NIX), true)
+	go install github.com/go-swagger/go-swagger/cmd/swagger@v0.28.0
+endif
 $(GOPATH)/bin/goimports:
-	go install golang.org/x/tools/cmd/goimports@v0.1.7 # update this in Nix when upgrading it here
-
+# update this in Nix when upgrading it here
+ifneq ($(USE_NIX), true)
+	go install golang.org/x/tools/cmd/goimports@v0.1.7
+endif
 
 /usr/local/bin/clang-format:
 ifeq (, $(shell which clang-format))
@@ -626,8 +653,10 @@ docs/cli/argo.md: $(CLI_PKGS) go.sum server/static/files.go hack/cli/main.go
 # docs
 
 /usr/local/bin/mdspell:
-	npm i -g markdown-spellcheck@1.3.1 # update this in Nix when upgrading it here
-
+# update this in Nix when upgrading it here
+ifneq ($(USE_NIX), true)
+	npm i -g markdown-spellcheck@1.3.1
+endif
 
 .PHONY: docs-spellcheck
 docs-spellcheck: /usr/local/bin/mdspell
@@ -635,8 +664,10 @@ docs-spellcheck: /usr/local/bin/mdspell
 	mdspell --ignore-numbers --ignore-acronyms --en-us --no-suggestions --report $(shell find docs -name '*.md' -not -name upgrading.md -not -name README.md -not -name fields.md -not -name upgrading.md -not -name swagger.md -not -name executor_swagger.md -not -path '*/cli/*')
 
 /usr/local/bin/markdown-link-check:
-	npm i -g markdown-link-check@3.11.1 # update this in Nix when upgrading it here
-
+# update this in Nix when upgrading it here
+ifneq ($(USE_NIX), true)
+	npm i -g markdown-link-check@3.11.1
+endif
 
 .PHONY: docs-linkcheck
 docs-linkcheck: /usr/local/bin/markdown-link-check
@@ -644,7 +675,10 @@ docs-linkcheck: /usr/local/bin/markdown-link-check
 	markdown-link-check -q -c .mlc_config.json $(shell find docs -name '*.md' -not -name fields.md -not -name swagger.md -not -name executor_swagger.md)
 
 /usr/local/bin/markdownlint:
-	npm i -g markdownlint-cli@0.33.0 # update this in Nix when upgrading it here
+# update this in Nix when upgrading it here
+ifneq ($(USE_NIX), true)
+	npm i -g markdownlint-cli@0.33.0 
+endif
 
 
 .PHONY: docs-lint
@@ -653,8 +687,10 @@ docs-lint: /usr/local/bin/markdownlint
 	markdownlint docs --fix --ignore docs/fields.md --ignore docs/executor_swagger.md --ignore docs/swagger.md --ignore docs/cli --ignore docs/walk-through/the-structure-of-workflow-specs.md
 
 /usr/local/bin/mkdocs:
-	python -m pip install mkdocs==1.2.4 mkdocs_material==8.1.9  mkdocs-spellcheck==0.2.1 # update this in Nix when upgrading it here
-
+# update this in Nix when upgrading it here
+ifneq ($(USE_NIX), true)
+	python -m pip install mkdocs==1.2.4 mkdocs_material==8.1.9  mkdocs-spellcheck==0.2.1
+endif
 
 .PHONY: docs
 docs: /usr/local/bin/mkdocs \
