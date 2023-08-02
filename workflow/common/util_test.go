@@ -5,6 +5,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
@@ -270,4 +271,112 @@ func TestOverridableDefaultInputArts(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, newTmpl)
 	assert.Equal(t, newTmpl.Inputs.Artifacts[0].Raw.Data, inputRawArt.Data)
+}
+
+type mockConfigMapStore struct {
+	getByKey func(key string) (interface{}, bool, error)
+}
+
+func (cs mockConfigMapStore) GetByKey(key string) (interface{}, bool, error) {
+	return cs.getByKey(key)
+}
+
+func TestOverridableTemplateInputParamsValue(t *testing.T) {
+	tmpl := wfv1.Template{}
+	tmpl.Name = "artifact-printing"
+
+	paramName := "value-from-param"
+
+	overrideConfigMapName := "override-config-map-name"
+	overrideConfigMapKey := "override-config-map-key"
+	overrideConfigMapValue := "override-config-map-value"
+
+	configMapStore := mockConfigMapStore{}
+	configMapStore.getByKey = func(key string) (interface{}, bool, error) {
+		return &corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{
+			Labels: map[string]string{LabelKeyConfigMapType: LabelValueTypeConfigMapParameter}},
+			Data: map[string]string{overrideConfigMapKey: overrideConfigMapValue},
+		}, true, nil
+	}
+
+	tmpl.Inputs.Parameters = []wfv1.Parameter{{Name: paramName, Value: wfv1.AnyStringPtr("abc")}}
+
+	valueArgs := wfv1.Inputs{Parameters: []wfv1.Parameter{{Name: paramName, Value: wfv1.AnyStringPtr("override")}}}
+	valueFromArgs := wfv1.Inputs{Parameters: []wfv1.Parameter{{Name: paramName, ValueFrom: &wfv1.ValueFrom{ConfigMapKeyRef: &corev1.ConfigMapKeySelector{
+		LocalObjectReference: corev1.LocalObjectReference{
+			Name: overrideConfigMapName,
+		},
+		Key: overrideConfigMapKey,
+	}}}}}
+
+	globalParams := make(map[string]string)
+	localParams := make(map[string]string)
+
+	newTmpl, err := ProcessArgs(&tmpl, &valueArgs, globalParams, localParams, false, "", configMapStore)
+	assert.Nil(t, err)
+	assert.NotNil(t, newTmpl)
+	assert.Equal(t, newTmpl.Inputs.Parameters[0].Value.String(), valueArgs.Parameters[0].Value.String())
+
+	newTmpl, err = ProcessArgs(&tmpl, &valueFromArgs, globalParams, localParams, false, "", configMapStore)
+	assert.Nil(t, err)
+	assert.NotNil(t, newTmpl)
+	assert.Equal(t, newTmpl.Inputs.Parameters[0].Value.String(), overrideConfigMapValue)
+}
+
+func TestOverridableTemplateInputParamsValueFrom(t *testing.T) {
+	tmpl := wfv1.Template{}
+	tmpl.Name = "artifact-printing"
+
+	paramName := "value-from-param"
+
+	configMapName := "config-map-name"
+	configMapKey := "config-map-key"
+	configMapValue := "config-map-value"
+
+	overrideConfigMapName := "override-config-map-name"
+	overrideConfigMapKey := "override-config-map-key"
+	overrideConfigMapValue := "override-config-map-value"
+
+	configMapStore := mockConfigMapStore{}
+	configMapStore.getByKey = func(key string) (interface{}, bool, error) {
+		return &corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{
+			Labels: map[string]string{LabelKeyConfigMapType: LabelValueTypeConfigMapParameter}},
+			Data: map[string]string{configMapKey: configMapValue, overrideConfigMapKey: overrideConfigMapValue},
+		}, true, nil
+	}
+
+	tmpl.Inputs.Parameters = []wfv1.Parameter{{Name: paramName, ValueFrom: &wfv1.ValueFrom{
+		ConfigMapKeyRef: &corev1.ConfigMapKeySelector{
+			LocalObjectReference: corev1.LocalObjectReference{
+				Name: configMapName,
+			},
+			Key: configMapKey,
+		},
+	}}}
+
+	valueArgs := wfv1.Inputs{Parameters: []wfv1.Parameter{{Name: paramName, Value: wfv1.AnyStringPtr("override")}}}
+	valueFromArgs := wfv1.Inputs{Parameters: []wfv1.Parameter{{
+		Name: paramName,
+		ValueFrom: &wfv1.ValueFrom{
+			ConfigMapKeyRef: &corev1.ConfigMapKeySelector{
+				LocalObjectReference: corev1.LocalObjectReference{
+					Name: overrideConfigMapName,
+				},
+				Key: overrideConfigMapKey,
+			},
+		},
+	}}}
+
+	globalParams := map[string]string{paramName: "overrideValue"}
+	localParams := make(map[string]string)
+
+	newTmpl, err := ProcessArgs(&tmpl, &valueArgs, globalParams, localParams, false, "", configMapStore)
+	assert.Nil(t, err)
+	assert.NotNil(t, newTmpl)
+	assert.Equal(t, newTmpl.Inputs.Parameters[0].Value.String(), valueArgs.Parameters[0].Value.String())
+
+	newTmpl, err = ProcessArgs(&tmpl, &valueFromArgs, globalParams, localParams, false, "", configMapStore)
+	assert.Nil(t, err)
+	assert.NotNil(t, newTmpl)
+	assert.Equal(t, newTmpl.Inputs.Parameters[0].Value.String(), overrideConfigMapValue)
 }

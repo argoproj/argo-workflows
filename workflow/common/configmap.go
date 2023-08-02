@@ -4,14 +4,17 @@ import (
 	"fmt"
 
 	apiv1 "k8s.io/api/core/v1"
-	"k8s.io/client-go/tools/cache"
 
 	"github.com/argoproj/argo-workflows/v3/errors"
 )
 
+type ConfigMapStore interface {
+	GetByKey(key string) (interface{}, bool, error)
+}
+
 // GetConfigMapValue retrieves a configmap value
-func GetConfigMapValue(configMapInformer cache.SharedIndexInformer, namespace, name, key string) (string, error) {
-	obj, exists, err := configMapInformer.GetIndexer().GetByKey(namespace + "/" + name)
+func GetConfigMapValue(configMapStore ConfigMapStore, namespace, name, key string) (string, error) {
+	obj, exists, err := configMapStore.GetByKey(namespace + "/" + name)
 	if err != nil {
 		return "", err
 	}
