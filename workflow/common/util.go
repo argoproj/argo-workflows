@@ -14,7 +14,6 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
-	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/remotecommand"
 
 	"github.com/argoproj/argo-workflows/v3/errors"
@@ -112,61 +111,82 @@ func GetExecutorOutput(exec remotecommand.Executor) (*bytes.Buffer, *bytes.Buffe
 	return &stdOut, &stdErr, nil
 }
 
+func overwriteWithDefaultParams(inParam *wfv1.Parameter) {
+	if inParam.Value == nil && inParam.Default != nil {
+		inParam.Value = inParam.Default
+	}
+}
+
+func overwriteWithArguments(argParam, inParam *wfv1.Parameter) {
+	if argParam != nil {
+		if argParam.Value != nil {
+			inParam.Value = argParam.Value
+			inParam.ValueFrom = nil
+		} else {
+			inParam.ValueFrom = argParam.ValueFrom
+			inParam.Value = nil
+		}
+	}
+}
+
+func substituteAndGetConfigMapValue(inParam *wfv1.Parameter, globalParams Parameters, namespace string, configMapStore ConfigMapStore) error {
+	if inParam.ValueFrom != nil && inParam.ValueFrom.ConfigMapKeyRef != nil {
+		if configMapStore != nil {
+			// SubstituteParams is called only at the end of this method. To support parametrization of the configmap
+			// we need to perform a substitution here over the name and the key of the ConfigMapKeyRef.
+			cmName, err := substituteConfigMapKeyRefParam(inParam.ValueFrom.ConfigMapKeyRef.Name, globalParams)
+			if err != nil {
+				log.WithError(err).Error("unable to substitute name for ConfigMapKeyRef")
+				return err
+			}
+			cmKey, err := substituteConfigMapKeyRefParam(inParam.ValueFrom.ConfigMapKeyRef.Key, globalParams)
+			if err != nil {
+				log.WithError(err).Error("unable to substitute key for ConfigMapKeyRef")
+				return err
+			}
+
+			cmValue, err := GetConfigMapValue(configMapStore, namespace, cmName, cmKey)
+			if err != nil {
+				if inParam.ValueFrom.Default != nil && errors.IsCode(errors.CodeNotFound, err) {
+					inParam.Value = inParam.ValueFrom.Default
+				} else {
+					return errors.Errorf(errors.CodeBadRequest, "unable to retrieve inputs.parameters.%s from ConfigMap: %s", inParam.Name, err)
+				}
+			} else {
+				inParam.Value = wfv1.AnyStringPtr(cmValue)
+			}
+		}
+	} else {
+		if inParam.Value == nil {
+			return errors.Errorf(errors.CodeBadRequest, "inputs.parameters.%s was not supplied", inParam.Name)
+		}
+	}
+	return nil
+}
+
 // ProcessArgs sets in the inputs, the values either passed via arguments, or the hardwired values
 // It substitutes:
 // * parameters in the template from the arguments
 // * global parameters (e.g. {{workflow.parameters.XX}}, {{workflow.name}}, {{workflow.status}})
 // * local parameters (e.g. {{pod.name}})
-func ProcessArgs(tmpl *wfv1.Template, args wfv1.ArgumentsProvider, globalParams, localParams Parameters, validateOnly bool, namespace string, configMapInformer cache.SharedIndexInformer) (*wfv1.Template, error) {
+func ProcessArgs(tmpl *wfv1.Template, args wfv1.ArgumentsProvider, globalParams, localParams Parameters, validateOnly bool, namespace string, configMapStore ConfigMapStore) (*wfv1.Template, error) {
 	// For each input parameter:
 	// 1) check if was supplied as argument. if so use the supplied value from arg
 	// 2) if not, use default value.
 	// 3) if no default value, it is an error
 	newTmpl := tmpl.DeepCopy()
 	for i, inParam := range newTmpl.Inputs.Parameters {
-		if inParam.Value == nil && inParam.Default != nil {
-			// first set to default value
-			inParam.Value = inParam.Default
-		}
+		// first set to default value
+		overwriteWithDefaultParams(&inParam)
+
 		// overwrite value from argument (if supplied)
 		argParam := args.GetParameterByName(inParam.Name)
-		if argParam != nil {
-			if argParam.Value != nil {
-				inParam.Value = argParam.Value
-			} else {
-				inParam.ValueFrom = argParam.ValueFrom
-			}
-		}
-		if inParam.ValueFrom != nil && inParam.ValueFrom.ConfigMapKeyRef != nil {
-			if configMapInformer != nil {
-				// SubstituteParams is called only at the end of this method. To support parametrization of the configmap
-				// we need to perform a substitution here over the name and the key of the ConfigMapKeyRef.
-				cmName, err := substituteConfigMapKeyRefParam(inParam.ValueFrom.ConfigMapKeyRef.Name, globalParams)
-				if err != nil {
-					log.WithError(err).Error("unable to substitute name for ConfigMapKeyRef")
-					return nil, err
-				}
-				cmKey, err := substituteConfigMapKeyRefParam(inParam.ValueFrom.ConfigMapKeyRef.Key, globalParams)
-				if err != nil {
-					log.WithError(err).Error("unable to substitute key for ConfigMapKeyRef")
-					return nil, err
-				}
+		overwriteWithArguments(argParam, &inParam)
 
-				cmValue, err := GetConfigMapValue(configMapInformer, namespace, cmName, cmKey)
-				if err != nil {
-					if inParam.ValueFrom.Default != nil && errors.IsCode(errors.CodeNotFound, err) {
-						inParam.Value = inParam.ValueFrom.Default
-					} else {
-						return nil, errors.Errorf(errors.CodeBadRequest, "unable to retrieve inputs.parameters.%s from ConfigMap: %s", inParam.Name, err)
-					}
-				} else {
-					inParam.Value = wfv1.AnyStringPtr(cmValue)
-				}
-			}
-		} else {
-			if inParam.Value == nil {
-				return nil, errors.Errorf(errors.CodeBadRequest, "inputs.parameters.%s was not supplied", inParam.Name)
-			}
+		// substitute configmap string and get value from store
+		err := substituteAndGetConfigMapValue(&inParam, globalParams, namespace, configMapStore)
+		if err != nil {
+			return nil, err
 		}
 
 		newTmpl.Inputs.Parameters[i] = inParam
