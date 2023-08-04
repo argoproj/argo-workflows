@@ -94,18 +94,16 @@ func NewEmissaryCommand() *cobra.Command {
 									return errors.NewExitErr(137)
 								}
 							default:
-								data, err := os.ReadFile(filepath.Clean(varRunArgo + "/ctr/" + y + "/exitcode"))
-								if os.IsNotExist(err) {
-									time.Sleep(time.Second)
-									continue
-								}
+								data, _ := os.ReadFile(filepath.Clean(varRunArgo + "/ctr/" + y + "/exitcode"))
 								exitCode, err := strconv.Atoi(string(data))
 								if err != nil {
-									return fmt.Errorf("failed to read exit-code of dependency %q: %w", y, err)
+									time.Sleep(time.Second)
+									continue
 								}
 								if exitCode != 0 {
 									return fmt.Errorf("dependency %q exited with non-zero code: %d", y, exitCode)
 								}
+
 								break WaitForDependency
 							}
 						}

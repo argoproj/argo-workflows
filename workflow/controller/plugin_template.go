@@ -5,8 +5,11 @@ import (
 )
 
 func (woc *wfOperationCtx) executePluginTemplate(nodeName string, templateScope string, tmpl *wfv1.Template, orgTmpl wfv1.TemplateReferenceHolder, opts *executeTemplateOpts) *wfv1.NodeStatus {
-	node := woc.wf.GetNodeByName(nodeName)
-	if node == nil {
+	node, err := woc.wf.GetNodeByName(nodeName)
+	if err != nil {
+		if opts.boundaryID == "" {
+			woc.log.Warnf("[DEBUG] boundaryID was nil")
+		}
 		node = woc.initializeExecutableNode(nodeName, wfv1.NodeTypePlugin, templateScope, tmpl, orgTmpl, opts.boundaryID, wfv1.NodePending)
 	}
 	if !node.Fulfilled() {
