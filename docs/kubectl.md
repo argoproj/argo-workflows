@@ -1,8 +1,7 @@
 # kubectl
 
-You can also create Workflows directly with `kubectl`. However, the Argo CLI offers extra features
-that `kubectl` does not, such as YAML validation, workflow visualization, parameter passing, retries
-and resubmits, suspend and resume, and more.
+You can also create Workflows directly with `kubectl`.
+However, the [Argo CLI](walk-through/argo-cli.md) offers extra features that `kubectl` does not, such as YAML validation, workflow visualization, parameter passing, retries and resubmits, suspend and resume, and more.
 
 ```bash
 kubectl create -n argo -f https://raw.githubusercontent.com/argoproj/argo-workflows/master/examples/hello-world.yaml
