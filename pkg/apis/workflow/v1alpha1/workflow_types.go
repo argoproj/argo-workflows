@@ -2626,7 +2626,7 @@ func (a *AzureArtifact) SetKey(key string) error {
 }
 
 func (a *AzureArtifact) HasLocation() bool {
-	return a != nil && a.Container != "" && a.Blob != ""
+	return a != nil && a.Endpoint != "" && a.Container != "" && a.Blob != ""
 }
 
 // HDFSArtifact is the location of an HDFS artifact
