@@ -328,7 +328,7 @@ func TestArtifactoryArtifact(t *testing.T) {
 }
 
 func TestAzureArtifact(t *testing.T) {
-	a := &AzureArtifact{Blob: "my-blob", AzureBlobContainer: AzureBlobContainer{Container: "my-container"}}
+	a := &AzureArtifact{Blob: "my-blob", AzureBlobContainer: AzureBlobContainer{Endpoint: "my-endpoint", Container: "my-container"}}
 	assert.True(t, a.HasLocation())
 	assert.NoError(t, a.SetKey("my-blob"))
 	key, err := a.GetKey()
