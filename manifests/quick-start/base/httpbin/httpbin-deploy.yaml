@@ -16,7 +16,7 @@ spec:
       automountServiceAccountToken: false
       containers:
         - name: main
-          image: kennethreitz/httpbin
+          image: kong/httpbin
           ports:
             - containerPort: 80
               name: api

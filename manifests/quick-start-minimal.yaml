@@ -1712,7 +1712,7 @@ spec:
     spec:
       automountServiceAccountToken: false
       containers:
-      - image: kennethreitz/httpbin
+      - image: kong/httpbin
         livenessProbe:
           httpGet:
             path: /get
