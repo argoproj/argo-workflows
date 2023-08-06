@@ -1,3 +1,5 @@
+# This example demonstrates the ability to use intermediate parameter.
+# See https://argoproj.github.io/argo-workflows/intermediate-inputs/ for details.
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
