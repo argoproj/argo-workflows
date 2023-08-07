@@ -340,28 +340,28 @@ spec:
   hooks:
     running:
       expression: workflow.status == "Running"
-      template: sleep
+      template: argosay-sleep-2seconds
     # This hook never triggered by following test.
     # To guarantee workflow does not wait forever for untriggered hooks.
     failed:
       expression: workflow.status == "Failed"
-      template: sleep
+      template: argosay-sleep-2seconds
   templates:
     - name: main
       steps:
       - - name: step1
-          template: exit0
+          template: argosay
 
-    - name: exit0
+    - name: argosay
       container:
-        image: alpine:latest
+        image: argoproj/argosay:v2
         command: ["/bin/sh", "-c"]
-        args: ["exit 0"]
-    - name: sleep
+        args: ["/bin/sleep 1; /argosay"]
+    - name: argosay-sleep-2seconds
       container:
-        image: alpine:latest
+        image: argoproj/argosay:v2
         command: ["/bin/sh", "-c"]
-        args: ["/bin/sleep 2; exit 0"]
+        args: ["/bin/sleep 2; /argosay"]
 `).When().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeSucceeded).
@@ -390,26 +390,25 @@ spec:
     - name: main
       steps:
         - - name: job
-            template: exit0
+            template: argosay
             hooks:
               running:
                 expression: steps['job'].status == "Running"
-                template: hook
+                template: argosay-sleep-2seconds
               failed:
                 expression: steps['job'].status == "Failed"
-                template: hook
-    - name: hook
-      script:
-        image: alpine:latest
-        command: [/bin/sh]
-        source: |
-          sleep 2
-    - name: exit0
-      script:
-        image: alpine:latest
-        command: [/bin/sh]
-        source: |
-          exit 0
+                template: argosay-sleep-2seconds
+
+    - name: argosay
+      container:
+        image: argoproj/argosay:v2
+        command: ["/bin/sh", "-c"]
+        args: ["/bin/sleep 1; /argosay"]
+    - name: argosay-sleep-2seconds
+      container:
+        image: argoproj/argosay:v2
+        command: ["/bin/sh", "-c"]
+        args: ["/bin/sleep 2; /argosay"]
 `).When().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeSucceeded).
@@ -455,13 +454,13 @@ spec:
         image: alpine:latest
         command: [/bin/sh]
         source: |
-          sleep 3
+          sleep 4
     - name: exit0
       script:
         image: alpine:latest
         command: [/bin/sh]
         source: |
-          sleep 1
+          sleep 2
           exit 0
 `).When().
 		SubmitWorkflow().
