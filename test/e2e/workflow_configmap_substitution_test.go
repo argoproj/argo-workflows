@@ -5,6 +5,7 @@ package e2e
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
@@ -52,6 +53,7 @@ spec:
 			"cmref-parameters",
 			map[string]string{"msg": "hello world"},
 			map[string]string{"workflows.argoproj.io/configmap-type": "Parameter"}).
+		Wait(1 * time.Second).
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeSucceeded).
 		DeleteConfigMap("cmref-parameters").
@@ -95,6 +97,7 @@ spec:
 			"cmref-parameters",
 			map[string]string{"msg": "hello world"},
 			map[string]string{"workflows.argoproj.io/configmap-type": "Parameter"}).
+		Wait(1 * time.Second).
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeSucceeded).
 		DeleteConfigMap("cmref-parameters").
@@ -173,6 +176,7 @@ spec:
 			"cmref-parameters",
 			map[string]string{"msg": "hello world"},
 			map[string]string{"workflows.argoproj.io/configmap-type": "Parameter"}).
+		Wait(1 * time.Second).
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeSucceeded).
 		DeleteConfigMap("cmref-parameters").
