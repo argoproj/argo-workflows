@@ -272,6 +272,14 @@ func TestJoinWorkflowMetaData(t *testing.T) {
 	})
 }
 
+var baseNilHookWF = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: workflow-template-hello-world-
+spec:
+`
+
 var baseHookWF = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -282,6 +290,12 @@ spec:
     foo:
       template: a
       expression: workflow.status == "Pending"
+`
+
+var patchNilHookWF = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+spec:
 `
 
 var patchHookWF = `
@@ -297,14 +311,36 @@ spec:
       expression: workflow.status == "Pending"
 `
 
-// Ensure hook bar ends up in result, but foo is unchanged
 func TestMergeHooks(t *testing.T) {
-	patchHookWf := wfv1.MustUnmarshalWorkflow(patchHookWF)
-	targetHookWf := wfv1.MustUnmarshalWorkflow(baseHookWF)
+	t.Run("NilBaseAndNilPatch", func(t *testing.T) {
+		patchHookWf := wfv1.MustUnmarshalWorkflow(patchNilHookWF)
+		targetHookWf := wfv1.MustUnmarshalWorkflow(baseNilHookWF)
 
-	err := MergeTo(patchHookWf, targetHookWf)
-	assert.NoError(t, err)
-	assert.Equal(t, 2, len(targetHookWf.Spec.Hooks))
-	assert.Equal(t, "a", targetHookWf.Spec.Hooks[`foo`].Template)
-	assert.Equal(t, "b", targetHookWf.Spec.Hooks[`bar`].Template)
+		err := MergeTo(patchHookWf, targetHookWf)
+		assert.NoError(t, err)
+		assert.Nil(t, targetHookWf.Spec.Hooks)
+	})
+
+	t.Run("NilBaseAndNotNilPatch", func(t *testing.T) {
+		patchHookWf := wfv1.MustUnmarshalWorkflow(patchHookWF)
+		targetHookWf := wfv1.MustUnmarshalWorkflow(baseNilHookWF)
+
+		err := MergeTo(patchHookWf, targetHookWf)
+		assert.NoError(t, err)
+		assert.Equal(t, 2, len(targetHookWf.Spec.Hooks))
+		assert.Equal(t, "c", targetHookWf.Spec.Hooks[`foo`].Template)
+		assert.Equal(t, "b", targetHookWf.Spec.Hooks[`bar`].Template)
+	})
+
+	// Ensure hook bar ends up in result, but foo is unchanged
+	t.Run("NotNilBaseAndPatch", func(t *testing.T) {
+		patchHookWf := wfv1.MustUnmarshalWorkflow(patchHookWF)
+		targetHookWf := wfv1.MustUnmarshalWorkflow(baseHookWF)
+
+		err := MergeTo(patchHookWf, targetHookWf)
+		assert.NoError(t, err)
+		assert.Equal(t, 2, len(targetHookWf.Spec.Hooks))
+		assert.Equal(t, "a", targetHookWf.Spec.Hooks[`foo`].Template)
+		assert.Equal(t, "b", targetHookWf.Spec.Hooks[`bar`].Template)
+	})
 }
