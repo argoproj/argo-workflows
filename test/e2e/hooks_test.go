@@ -459,13 +459,13 @@ spec:
         image: alpine:latest
         command: [/bin/sh]
         source: |
-          sleep 3
+          sleep 4
     - name: exit0
       script:
         image: alpine:latest
         command: [/bin/sh]
         source: |
-          sleep 1
+          sleep 2
           exit 0
 `).When().
 		SubmitWorkflow().
