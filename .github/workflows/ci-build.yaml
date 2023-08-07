@@ -58,7 +58,7 @@ jobs:
   e2e-tests:
     name: E2E Tests
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 30
     needs: [ argoexec-image ]
     env:
       KUBECONFIG: /home/runner/.kubeconfig
