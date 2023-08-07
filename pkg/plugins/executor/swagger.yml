@@ -2329,6 +2329,10 @@ definitions:
         description: 'SecurityToken is the user''s temporary security token. For more
           details, check out: https://www.alibabacloud.com/help/doc-detail/100624.htm'
         type: string
+      useSDKCreds:
+        description: UseSDKCreds tells the driver to figure out credentials based
+          on sdk defaults.
+        type: boolean
     type: object
   OSSLifecycleRule:
     description: OSSLifecycleRule specifies how to manage bucket's lifecycle

@@ -13,6 +13,9 @@ import (
 func (woc *wfOperationCtx) queuePodsForCleanup() {
 	delay := woc.controller.Config.GetPodGCDeleteDelayDuration()
 	podGC := woc.execWf.Spec.PodGC
+	if podGC != nil && podGC.DeleteDelayDuration != nil {
+		delay = podGC.DeleteDelayDuration.Duration
+	}
 	strategy := podGC.GetStrategy()
 	selector, _ := podGC.GetLabelSelector()
 	workflowPhase := woc.wf.Status.Phase
@@ -23,7 +26,12 @@ func (woc *wfOperationCtx) queuePodsForCleanup() {
 			continue
 		}
 		nodeID := woc.nodeID(pod)
-		if !woc.wf.Status.Nodes[nodeID].Phase.Fulfilled() {
+		nodePhase, err := woc.wf.Status.Nodes.GetPhase(nodeID)
+		if err != nil {
+			woc.log.Errorf("was unable to obtain node for %s", nodeID)
+			continue
+		}
+		if !nodePhase.Fulfilled() {
 			continue
 		}
 		switch determinePodCleanupAction(selector, pod.Labels, strategy, workflowPhase, pod.Status.Phase) {

@@ -97,6 +97,7 @@ class IoArgoprojWorkflowV1alpha1OSSArtifact(ModelNormal):
             'lifecycle_rule': (IoArgoprojWorkflowV1alpha1OSSLifecycleRule,),  # noqa: E501
             'secret_key_secret': (SecretKeySelector,),  # noqa: E501
             'security_token': (str,),  # noqa: E501
+            'use_sdk_creds': (bool,),  # noqa: E501
         }
 
     @cached_property
@@ -113,6 +114,7 @@ class IoArgoprojWorkflowV1alpha1OSSArtifact(ModelNormal):
         'lifecycle_rule': 'lifecycleRule',  # noqa: E501
         'secret_key_secret': 'secretKeySecret',  # noqa: E501
         'security_token': 'securityToken',  # noqa: E501
+        'use_sdk_creds': 'useSDKCreds',  # noqa: E501
     }
 
     read_only_vars = {
@@ -166,6 +168,7 @@ class IoArgoprojWorkflowV1alpha1OSSArtifact(ModelNormal):
             lifecycle_rule (IoArgoprojWorkflowV1alpha1OSSLifecycleRule): [optional]  # noqa: E501
             secret_key_secret (SecretKeySelector): [optional]  # noqa: E501
             security_token (str): SecurityToken is the user's temporary security token. For more details, check out: https://www.alibabacloud.com/help/doc-detail/100624.htm. [optional]  # noqa: E501
+            use_sdk_creds (bool): UseSDKCreds tells the driver to figure out credentials based on sdk defaults.. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -258,6 +261,7 @@ class IoArgoprojWorkflowV1alpha1OSSArtifact(ModelNormal):
             lifecycle_rule (IoArgoprojWorkflowV1alpha1OSSLifecycleRule): [optional]  # noqa: E501
             secret_key_secret (SecretKeySelector): [optional]  # noqa: E501
             security_token (str): SecurityToken is the user's temporary security token. For more details, check out: https://www.alibabacloud.com/help/doc-detail/100624.htm. [optional]  # noqa: E501
+            use_sdk_creds (bool): UseSDKCreds tells the driver to figure out credentials based on sdk defaults.. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)

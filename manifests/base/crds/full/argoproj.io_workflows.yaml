@@ -810,6 +810,8 @@ spec:
                               type: object
                             securityToken:
                               type: string
+                            useSDKCreds:
+                              type: boolean
                           required:
                           - key
                           type: object
@@ -1422,6 +1424,8 @@ spec:
                                     type: object
                                   securityToken:
                                     type: string
+                                  useSDKCreds:
+                                    type: boolean
                                 required:
                                 - key
                                 type: object
@@ -1702,6 +1706,8 @@ spec:
                 type: object
               podGC:
                 properties:
+                  deleteDelayDuration:
+                    type: string
                   labelSelector:
                     properties:
                       matchExpressions:
@@ -2593,6 +2599,8 @@ spec:
                             type: object
                           securityToken:
                             type: string
+                          useSDKCreds:
+                            type: boolean
                         required:
                         - key
                         type: object
@@ -4304,6 +4312,8 @@ spec:
                                             type: object
                                           securityToken:
                                             type: string
+                                          useSDKCreds:
+                                            type: boolean
                                         required:
                                         - key
                                         type: object
@@ -4866,6 +4876,8 @@ spec:
                                                   type: object
                                                 securityToken:
                                                   type: string
+                                                useSDKCreds:
+                                                  type: boolean
                                               required:
                                               - key
                                               type: object
@@ -5479,6 +5491,8 @@ spec:
                                     type: object
                                   securityToken:
                                     type: string
+                                  useSDKCreds:
+                                    type: boolean
                                 required:
                                 - key
                                 type: object
@@ -6642,6 +6656,8 @@ spec:
                                   type: object
                                 securityToken:
                                   type: string
+                                useSDKCreds:
+                                  type: boolean
                               required:
                               - key
                               type: object
@@ -7294,6 +7310,8 @@ spec:
                                   type: object
                                 securityToken:
                                   type: string
+                                useSDKCreds:
+                                  type: boolean
                               required:
                               - key
                               type: object
@@ -7867,6 +7885,8 @@ spec:
                                     type: object
                                   securityToken:
                                     type: string
+                                  useSDKCreds:
+                                    type: boolean
                                 required:
                                 - key
                                 type: object
@@ -10688,6 +10708,8 @@ spec:
                               type: object
                             securityToken:
                               type: string
+                            useSDKCreds:
+                              type: boolean
                           required:
                           - key
                           type: object
@@ -12399,6 +12421,8 @@ spec:
                                               type: object
                                             securityToken:
                                               type: string
+                                            useSDKCreds:
+                                              type: boolean
                                           required:
                                           - key
                                           type: object
@@ -12961,6 +12985,8 @@ spec:
                                                     type: object
                                                   securityToken:
                                                     type: string
+                                                  useSDKCreds:
+                                                    type: boolean
                                                 required:
                                                 - key
                                                 type: object
@@ -13574,6 +13600,8 @@ spec:
                                       type: object
                                     securityToken:
                                       type: string
+                                    useSDKCreds:
+                                      type: boolean
                                   required:
                                   - key
                                   type: object
@@ -14737,6 +14765,8 @@ spec:
                                     type: object
                                   securityToken:
                                     type: string
+                                  useSDKCreds:
+                                    type: boolean
                                 required:
                                 - key
                                 type: object
@@ -15389,6 +15419,8 @@ spec:
                                     type: object
                                   securityToken:
                                     type: string
+                                  useSDKCreds:
+                                    type: boolean
                                 required:
                                 - key
                                 type: object
@@ -15962,6 +15994,8 @@ spec:
                                       type: object
                                     securityToken:
                                       type: string
+                                    useSDKCreds:
+                                      type: boolean
                                   required:
                                   - key
                                   type: object
@@ -19132,6 +19166,8 @@ spec:
                             type: object
                           securityToken:
                             type: string
+                          useSDKCreds:
+                            type: boolean
                         type: object
                       s3:
                         properties:
@@ -19661,6 +19697,8 @@ spec:
                                     type: object
                                   securityToken:
                                     type: string
+                                  useSDKCreds:
+                                    type: boolean
                                 required:
                                 - key
                                 type: object
@@ -20228,6 +20266,8 @@ spec:
                                     type: object
                                   securityToken:
                                     type: string
+                                  useSDKCreds:
+                                    type: boolean
                                 required:
                                 - key
                                 type: object
@@ -20820,6 +20860,8 @@ spec:
                               type: object
                             securityToken:
                               type: string
+                            useSDKCreds:
+                              type: boolean
                           required:
                           - key
                           type: object
@@ -22370,6 +22412,8 @@ spec:
                               type: object
                             securityToken:
                               type: string
+                            useSDKCreds:
+                              type: boolean
                           required:
                           - key
                           type: object
@@ -24081,6 +24125,8 @@ spec:
                                               type: object
                                             securityToken:
                                               type: string
+                                            useSDKCreds:
+                                              type: boolean
                                           required:
                                           - key
                                           type: object
@@ -24643,6 +24689,8 @@ spec:
                                                     type: object
                                                   securityToken:
                                                     type: string
+                                                  useSDKCreds:
+                                                    type: boolean
                                                 required:
                                                 - key
                                                 type: object
@@ -25256,6 +25304,8 @@ spec:
                                       type: object
                                     securityToken:
                                       type: string
+                                    useSDKCreds:
+                                      type: boolean
                                   required:
                                   - key
                                   type: object
@@ -26419,6 +26469,8 @@ spec:
                                     type: object
                                   securityToken:
                                     type: string
+                                  useSDKCreds:
+                                    type: boolean
                                 required:
                                 - key
                                 type: object
@@ -27071,6 +27123,8 @@ spec:
                                     type: object
                                   securityToken:
                                     type: string
+                                  useSDKCreds:
+                                    type: boolean
                                 required:
                                 - key
                                 type: object
@@ -27644,6 +27698,8 @@ spec:
                                       type: object
                                     securityToken:
                                       type: string
+                                    useSDKCreds:
+                                      type: boolean
                                   required:
                                   - key
                                   type: object
@@ -30519,6 +30575,8 @@ spec:
                                   type: object
                                 securityToken:
                                   type: string
+                                useSDKCreds:
+                                  type: boolean
                               required:
                               - key
                               type: object
@@ -31131,6 +31189,8 @@ spec:
                                         type: object
                                       securityToken:
                                         type: string
+                                      useSDKCreds:
+                                        type: boolean
                                     required:
                                     - key
                                     type: object
@@ -31411,6 +31471,8 @@ spec:
                     type: object
                   podGC:
                     properties:
+                      deleteDelayDuration:
+                        type: string
                       labelSelector:
                         properties:
                           matchExpressions:
@@ -32302,6 +32364,8 @@ spec:
                                 type: object
                               securityToken:
                                 type: string
+                              useSDKCreds:
+                                type: boolean
                             required:
                             - key
                             type: object
@@ -34013,6 +34077,8 @@ spec:
                                                 type: object
                                               securityToken:
                                                 type: string
+                                              useSDKCreds:
+                                                type: boolean
                                             required:
                                             - key
                                             type: object
@@ -34575,6 +34641,8 @@ spec:
                                                       type: object
                                                     securityToken:
                                                       type: string
+                                                    useSDKCreds:
+                                                      type: boolean
                                                   required:
                                                   - key
                                                   type: object
@@ -35188,6 +35256,8 @@ spec:
                                         type: object
                                       securityToken:
                                         type: string
+                                      useSDKCreds:
+                                        type: boolean
                                     required:
                                     - key
                                     type: object
@@ -36351,6 +36421,8 @@ spec:
                                       type: object
                                     securityToken:
                                       type: string
+                                    useSDKCreds:
+                                      type: boolean
                                   required:
                                   - key
                                   type: object
@@ -37003,6 +37075,8 @@ spec:
                                       type: object
                                     securityToken:
                                       type: string
+                                    useSDKCreds:
+                                      type: boolean
                                   required:
                                   - key
                                   type: object
@@ -37576,6 +37650,8 @@ spec:
                                         type: object
                                       securityToken:
                                         type: string
+                                      useSDKCreds:
+                                        type: boolean
                                     required:
                                     - key
                                     type: object
@@ -40397,6 +40473,8 @@ spec:
                                   type: object
                                 securityToken:
                                   type: string
+                                useSDKCreds:
+                                  type: boolean
                               required:
                               - key
                               type: object
@@ -42108,6 +42186,8 @@ spec:
                                                   type: object
                                                 securityToken:
                                                   type: string
+                                                useSDKCreds:
+                                                  type: boolean
                                               required:
                                               - key
                                               type: object
@@ -42670,6 +42750,8 @@ spec:
                                                         type: object
                                                       securityToken:
                                                         type: string
+                                                      useSDKCreds:
+                                                        type: boolean
                                                     required:
                                                     - key
                                                     type: object
@@ -43283,6 +43365,8 @@ spec:
                                           type: object
                                         securityToken:
                                           type: string
+                                        useSDKCreds:
+                                          type: boolean
                                       required:
                                       - key
                                       type: object
@@ -44446,6 +44530,8 @@ spec:
                                         type: object
                                       securityToken:
                                         type: string
+                                      useSDKCreds:
+                                        type: boolean
                                     required:
                                     - key
                                     type: object
@@ -45098,6 +45184,8 @@ spec:
                                         type: object
                                       securityToken:
                                         type: string
+                                      useSDKCreds:
+                                        type: boolean
                                     required:
                                     - key
                                     type: object
@@ -45671,6 +45759,8 @@ spec:
                                           type: object
                                         securityToken:
                                           type: string
+                                        useSDKCreds:
+                                          type: boolean
                                       required:
                                       - key
                                       type: object

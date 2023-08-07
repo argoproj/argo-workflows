@@ -35,6 +35,8 @@ import (
 	"k8s.io/utils/pointer"
 	"sigs.k8s.io/yaml"
 
+	"github.com/argoproj/argo-workflows/v3/workflow/creator"
+
 	"github.com/argoproj/argo-workflows/v3/errors"
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
@@ -411,7 +413,7 @@ func ResumeWorkflow(ctx context.Context, wfIf v1alpha1.WorkflowInterface, hydrat
 					}
 					node.Phase = wfv1.NodeSucceeded
 					node.FinishedAt = metav1.Time{Time: time.Now().UTC()}
-					wf.Status.Nodes[nodeID] = node
+					wf.Status.Nodes.Set(nodeID, node)
 					workflowUpdated = true
 				}
 			}
@@ -557,8 +559,7 @@ func updateSuspendedNode(ctx context.Context, wfIf v1alpha1.WorkflowInterface, h
 							}
 						}
 					}
-
-					wf.Status.Nodes[nodeID] = node
+					wf.Status.Nodes.Set(nodeID, node)
 				}
 			}
 		}
@@ -607,7 +608,7 @@ func RandSuffix() string {
 }
 
 // FormulateResubmitWorkflow formulate a new workflow from a previous workflow, optionally re-using successful nodes
-func FormulateResubmitWorkflow(wf *wfv1.Workflow, memoized bool, parameters []string) (*wfv1.Workflow, error) {
+func FormulateResubmitWorkflow(ctx context.Context, wf *wfv1.Workflow, memoized bool, parameters []string) (*wfv1.Workflow, error) {
 	newWF := wfv1.Workflow{}
 	newWF.TypeMeta = wf.TypeMeta
 
@@ -645,12 +646,16 @@ func FormulateResubmitWorkflow(wf *wfv1.Workflow, memoized bool, parameters []st
 	}
 	for key, val := range wf.ObjectMeta.Labels {
 		switch key {
-		case common.LabelKeyCreator, common.LabelKeyPhase, common.LabelKeyCompleted, common.LabelKeyWorkflowArchivingStatus:
+		case common.LabelKeyCreator, common.LabelKeyCreatorEmail, common.LabelKeyCreatorPreferredUsername,
+			common.LabelKeyPhase, common.LabelKeyCompleted, common.LabelKeyWorkflowArchivingStatus:
 			// ignore
 		default:
 			newWF.ObjectMeta.Labels[key] = val
 		}
 	}
+	// Apply creator labels based on the authentication information of the current request,
+	// regardless of the creator labels of the original Workflow.
+	creator.Label(ctx, &newWF)
 	// Append an additional label so it's easy for user to see the
 	// name of the original workflow that has been resubmitted.
 	newWF.ObjectMeta.Labels[common.LabelKeyPreviousWorkflowName] = wf.ObjectMeta.Name
@@ -723,7 +728,7 @@ func FormulateResubmitWorkflow(wf *wfv1.Workflow, memoized bool, parameters []st
 			newNode.Phase = wfv1.NodePending
 			newNode.Message = ""
 		}
-		newWF.Status.Nodes[newNode.ID] = *newNode
+		newWF.Status.Nodes.Set(newNode.ID, *newNode)
 	}
 
 	newWF.Status.StoredTemplates = make(map[string]wfv1.Template)
@@ -748,7 +753,12 @@ func getDescendantNodeIDs(wf *wfv1.Workflow, node wfv1.NodeStatus) []string {
 	var descendantNodeIDs []string
 	descendantNodeIDs = append(descendantNodeIDs, node.Children...)
 	for _, child := range node.Children {
-		descendantNodeIDs = append(descendantNodeIDs, getDescendantNodeIDs(wf, wf.Status.Nodes[child])...)
+		childStatus, err := wf.Status.Nodes.Get(child)
+		if err != nil {
+			log.Fatalf("Couldn't get child, panicking")
+			panic("Was not able to obtain child")
+		}
+		descendantNodeIDs = append(descendantNodeIDs, getDescendantNodeIDs(wf, *childStatus)...)
 	}
 	return descendantNodeIDs
 }
@@ -780,15 +790,23 @@ func isGroupNode(node wfv1.NodeStatus) bool {
 func resetConnectedParentGroupNodes(oldWF *wfv1.Workflow, newWF *wfv1.Workflow, currentNode wfv1.NodeStatus, resetParentGroupNodes []string) (*wfv1.Workflow, []string) {
 	currentNodeID := currentNode.ID
 	for {
-		currentNode := oldWF.Status.Nodes[currentNodeID]
+		currentNode, err := oldWF.Status.Nodes.Get(currentNodeID)
+		if err != nil {
+			log.Fatalf("dying due to inability to obtain node for %s", currentNodeID)
+			panic("was not able to get node, panicking")
+		}
 		if !containsNode(resetParentGroupNodes, currentNodeID) {
-			newWF.Status.Nodes[currentNodeID] = resetNode(*currentNode.DeepCopy())
+			newWF.Status.Nodes.Set(currentNodeID, resetNode(*currentNode.DeepCopy()))
 			resetParentGroupNodes = append(resetParentGroupNodes, currentNodeID)
 			log.Debugf("Reset connected group node %s", currentNode.Name)
 		}
 		if currentNode.BoundaryID != "" && currentNode.BoundaryID != oldWF.ObjectMeta.Name {
-			parentNode := oldWF.Status.Nodes[currentNode.BoundaryID]
-			if isGroupNode(parentNode) {
+			parentNode, err := oldWF.Status.Nodes.Get(currentNode.BoundaryID)
+			if err != nil {
+				log.Fatalf("panicking unable to obtain node for %s", currentNode.BoundaryID)
+				panic("was not able to get node")
+			}
+			if isGroupNode(*parentNode) {
 				currentNodeID = parentNode.ID
 			} else {
 				break
@@ -804,8 +822,12 @@ func resetConnectedParentGroupNodes(oldWF *wfv1.Workflow, newWF *wfv1.Workflow, 
 func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSuccessful bool, nodeFieldSelector string, parameters []string) (*wfv1.Workflow, []string, error) {
 	switch wf.Status.Phase {
 	case wfv1.WorkflowFailed, wfv1.WorkflowError:
+	case wfv1.WorkflowSucceeded:
+		if !(restartSuccessful && len(nodeFieldSelector) > 0) {
+			return nil, nil, errors.Errorf(errors.CodeBadRequest, "To retry a succeeded workflow, set the options restartSuccessful and nodeFieldSelector")
+		}
 	default:
-		return nil, nil, errors.Errorf(errors.CodeBadRequest, "workflow must be Failed/Error to retry")
+		return nil, nil, errors.Errorf(errors.CodeBadRequest, "Cannot retry a workflow in phase %s", wf.Status.Phase)
 	}
 
 	newWF := wf.DeepCopy()
@@ -820,6 +842,9 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 	newWF.Status.Message = ""
 	newWF.Status.StartedAt = metav1.Time{Time: time.Now().UTC()}
 	newWF.Status.FinishedAt = metav1.Time{}
+	if newWF.Status.StoredWorkflowSpec != nil {
+		newWF.Status.StoredWorkflowSpec.Shutdown = ""
+	}
 	newWF.Spec.Shutdown = ""
 	newWF.Status.PersistentVolumeClaims = []apiv1.Volume{}
 	if newWF.Spec.ActiveDeadlineSeconds != nil && *newWF.Spec.ActiveDeadlineSeconds == 0 {
@@ -866,7 +891,11 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 						var nodeGroupNeedsReset bool
 						// Only reset DAG that's in the same branch as the nodeIDsToReset
 						for _, child := range descendantNodeIDs {
-							childNode := wf.Status.Nodes[child]
+							childNode, err := wf.Status.Nodes.Get(child)
+							if err != nil {
+								log.Fatalf("was unable to obtain node for %s due to %s", child, err)
+								return nil, nil, fmt.Errorf("Was unable to obtain node for %s due to %s", child, err)
+							}
 							if _, present := nodeIDsToReset[child]; present {
 								log.Debugf("Group node %s needs to reset since its child %s is in the force reset path", node.Name, childNode.Name)
 								nodeGroupNeedsReset = true
@@ -892,29 +921,33 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 						descendantNodeIDs := getDescendantNodeIDs(wf, node)
 						for _, descendantNodeID := range descendantNodeIDs {
 							deletedNodes[descendantNodeID] = true
-							descendantNode := wf.Status.Nodes[descendantNodeID]
+							descendantNode, err := wf.Status.Nodes.Get(descendantNodeID)
+							if err != nil {
+								log.Fatalf("Was unable to obtain node for %s due to %s", descendantNodeID, err)
+								return nil, nil, fmt.Errorf("Was unable to obtain node for %s due to %s", descendantNodeID, err)
+							}
 							if descendantNode.Type == wfv1.NodeTypePod {
 								newWF, resetParentGroupNodes = resetConnectedParentGroupNodes(wf, newWF, node, resetParentGroupNodes)
-								deletedPods, podsToDelete = deletePodNodeDuringRetryWorkflow(wf, descendantNode, deletedPods, podsToDelete)
+								deletedPods, podsToDelete = deletePodNodeDuringRetryWorkflow(wf, *descendantNode, deletedPods, podsToDelete)
 								log.Debugf("Deleted pod node %s since it belongs to node %s", descendantNode.Name, node.Name)
 							}
 						}
 					} else {
 						log.Debugf("Reset non-pod/suspend node %s", node.Name)
 						newNode := node.DeepCopy()
-						newWF.Status.Nodes[newNode.ID] = resetNode(*newNode)
+						newWF.Status.Nodes.Set(newNode.ID, resetNode(*newNode))
 					}
 				}
 			} else {
 				if !containsNode(resetParentGroupNodes, node.ID) {
 					log.Debugf("Node %s remains as is", node.Name)
-					newWF.Status.Nodes[node.ID] = node
+					newWF.Status.Nodes.Set(node.ID, node)
 				}
 			}
 		case wfv1.NodeError, wfv1.NodeFailed, wfv1.NodeOmitted:
 			if isGroupNode(node) {
 				newNode := node.DeepCopy()
-				newWF.Status.Nodes[newNode.ID] = resetNode(*newNode)
+				newWF.Status.Nodes.Set(newNode.ID, resetNode(*newNode))
 				log.Debugf("Reset %s node %s since it's a group node", node.Name, string(node.Phase))
 				continue
 			} else {
@@ -932,7 +965,7 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 		if node.Name == wf.ObjectMeta.Name {
 			log.Debugf("Reset root node: %s", node.Name)
 			newNode := node.DeepCopy()
-			newWF.Status.Nodes[newNode.ID] = resetNode(*newNode)
+			newWF.Status.Nodes.Set(newNode.ID, resetNode(*newNode))
 			continue
 		}
 	}
@@ -941,7 +974,7 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 		for _, node := range newWF.Status.Nodes {
 			if deletedNodes[node.ID] {
 				log.Debugf("Removed node: %s", node.Name)
-				delete(newWF.Status.Nodes, node.ID)
+				newWF.Status.Nodes.Delete(node.ID)
 				continue
 			}
 
@@ -961,7 +994,7 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 			}
 			node.OutboundNodes = outboundNodes
 
-			newWF.Status.Nodes[node.ID] = node
+			newWF.Status.Nodes.Set(node.ID, node)
 		}
 	}
 

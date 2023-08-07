@@ -7,12 +7,16 @@ import (
 	"testing"
 	"time"
 
+	"github.com/go-jose/go-jose/v3/jwt"
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/fields"
 	"sigs.k8s.io/yaml"
+
+	"github.com/argoproj/argo-workflows/v3/server/auth"
+	"github.com/argoproj/argo-workflows/v3/server/auth/types"
 
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
@@ -62,11 +66,12 @@ func TestResubmitWorkflowWithOnExit(t *testing.T) {
 		},
 	}
 	onExitID := wf.NodeID(onExitName)
-	wf.Status.Nodes[onExitID] = wfv1.NodeStatus{
+	onExitNode := wfv1.NodeStatus{
 		Name:  onExitName,
 		Phase: wfv1.NodeSucceeded,
 	}
-	newWF, err := FormulateResubmitWorkflow(&wf, true, nil)
+	wf.Status.Nodes.Set(onExitID, onExitNode)
+	newWF, err := FormulateResubmitWorkflow(context.Background(), &wf, true, nil)
 	assert.NoError(t, err)
 	newWFOnExitName := newWF.ObjectMeta.Name + ".onExit"
 	newWFOneExitID := newWF.NodeID(newWFOnExitName)
@@ -464,7 +469,7 @@ func TestUpdateSuspendedNode(t *testing.T) {
 		err = updateSuspendedNode(ctx, wfIf, hydratorfake.Noop, "suspend-template", "name=suspend-template-kgfn7[0].approve", SetOperationValues{OutputParameters: map[string]string{"message2": "Hello World 2"}})
 		assert.NoError(t, err)
 
-		//make sure global variable was updated
+		// make sure global variable was updated
 		wf, err := wfIf.Get(ctx, "suspend-template", metav1.GetOptions{})
 		assert.NoError(t, err)
 		assert.Equal(t, "Hello World 2", wf.Status.Outputs.Parameters[0].Value.String())
@@ -639,7 +644,7 @@ func TestFormulateResubmitWorkflow(t *testing.T) {
 				},
 			},
 		}
-		wf, err := FormulateResubmitWorkflow(wf, false, nil)
+		wf, err := FormulateResubmitWorkflow(context.Background(), wf, false, nil)
 		if assert.NoError(t, err) {
 			assert.Contains(t, wf.GetLabels(), common.LabelKeyControllerInstanceID)
 			assert.Contains(t, wf.GetLabels(), common.LabelKeyClusterWorkflowTemplate)
@@ -655,6 +660,57 @@ func TestFormulateResubmitWorkflow(t *testing.T) {
 			assert.Equal(t, "testObj", wf.OwnerReferences[0].Name)
 		}
 	})
+	t.Run("OverrideCreatorLabels", func(t *testing.T) {
+		wf := &wfv1.Workflow{
+			ObjectMeta: metav1.ObjectMeta{
+				Labels: map[string]string{
+					common.LabelKeyCreator:                  "xxxx-xxxx-xxxx",
+					common.LabelKeyCreatorEmail:             "foo.at.example.com",
+					common.LabelKeyCreatorPreferredUsername: "foo",
+				},
+				OwnerReferences: []metav1.OwnerReference{
+					{
+						APIVersion: "test",
+						Name:       "testObj",
+					},
+				},
+			},
+		}
+		ctx := context.WithValue(context.Background(), auth.ClaimsKey, &types.Claims{
+			Claims:            jwt.Claims{Subject: "yyyy-yyyy-yyyy-yyyy"},
+			Email:             "bar.at.example.com",
+			PreferredUsername: "bar",
+		})
+		wf, err := FormulateResubmitWorkflow(ctx, wf, false, nil)
+		if assert.NoError(t, err) {
+			assert.Equal(t, "yyyy-yyyy-yyyy-yyyy", wf.Labels[common.LabelKeyCreator])
+			assert.Equal(t, "bar.at.example.com", wf.Labels[common.LabelKeyCreatorEmail])
+			assert.Equal(t, "bar", wf.Labels[common.LabelKeyCreatorPreferredUsername])
+		}
+	})
+	t.Run("UnlabelCreatorLabels", func(t *testing.T) {
+		wf := &wfv1.Workflow{
+			ObjectMeta: metav1.ObjectMeta{
+				Labels: map[string]string{
+					common.LabelKeyCreator:                  "xxxx-xxxx-xxxx",
+					common.LabelKeyCreatorEmail:             "foo.at.example.com",
+					common.LabelKeyCreatorPreferredUsername: "foo",
+				},
+				OwnerReferences: []metav1.OwnerReference{
+					{
+						APIVersion: "test",
+						Name:       "testObj",
+					},
+				},
+			},
+		}
+		wf, err := FormulateResubmitWorkflow(context.Background(), wf, false, nil)
+		if assert.NoError(t, err) {
+			assert.Emptyf(t, wf.Labels[common.LabelKeyCreator], "should not %s label when a workflow is resubmitted by an unauthenticated request", common.LabelKeyCreator)
+			assert.Emptyf(t, wf.Labels[common.LabelKeyCreatorEmail], "should not %s label when a workflow is resubmitted by an unauthenticated request", common.LabelKeyCreatorEmail)
+			assert.Emptyf(t, wf.Labels[common.LabelKeyCreatorPreferredUsername], "should not %s label when a workflow is resubmitted by an unauthenticated request", common.LabelKeyCreatorPreferredUsername)
+		}
+	})
 	t.Run("OverrideParams", func(t *testing.T) {
 		wf := &wfv1.Workflow{
 			Spec: wfv1.WorkflowSpec{Arguments: wfv1.Arguments{
@@ -663,7 +719,7 @@ func TestFormulateResubmitWorkflow(t *testing.T) {
 				},
 			}},
 		}
-		wf, err := FormulateResubmitWorkflow(wf, false, []string{"message=modified"})
+		wf, err := FormulateResubmitWorkflow(context.Background(), wf, false, []string{"message=modified"})
 		if assert.NoError(t, err) {
 			assert.Equal(t, "modified", wf.Spec.Arguments.Parameters[0].Value.String())
 		}
@@ -1158,6 +1214,91 @@ func TestFormulateRetryWorkflow(t *testing.T) {
 		wf, _, err := FormulateRetryWorkflow(context.Background(), wf, false, "", []string{"message=modified"})
 		if assert.NoError(t, err) {
 			assert.Equal(t, "modified", wf.Spec.Arguments.Parameters[0].Value.String())
+		}
+	})
+
+	t.Run("Fail on running workflow", func(t *testing.T) {
+		wf := &wfv1.Workflow{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:   "running-workflow-1",
+				Labels: map[string]string{},
+			},
+			Status: wfv1.WorkflowStatus{
+				Phase: wfv1.WorkflowRunning,
+				Nodes: map[string]wfv1.NodeStatus{},
+			},
+		}
+		_, err := wfClient.Create(ctx, wf, metav1.CreateOptions{})
+		assert.NoError(t, err)
+		_, _, err = FormulateRetryWorkflow(ctx, wf, false, "", nil)
+		assert.Error(t, err)
+	})
+
+	t.Run("Fail on pending workflow", func(t *testing.T) {
+		wf := &wfv1.Workflow{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:   "pending-workflow-1",
+				Labels: map[string]string{},
+			},
+			Status: wfv1.WorkflowStatus{
+				Phase: wfv1.WorkflowPending,
+				Nodes: map[string]wfv1.NodeStatus{},
+			},
+		}
+		_, err := wfClient.Create(ctx, wf, metav1.CreateOptions{})
+		assert.NoError(t, err)
+		_, _, err = FormulateRetryWorkflow(ctx, wf, false, "", nil)
+		assert.Error(t, err)
+	})
+
+	t.Run("Fail on successful workflow without restartSuccessful and nodeFieldSelector", func(t *testing.T) {
+		wf := &wfv1.Workflow{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:   "successful-workflow-1",
+				Labels: map[string]string{},
+			},
+			Status: wfv1.WorkflowStatus{
+				Phase: wfv1.WorkflowSucceeded,
+				Nodes: map[string]wfv1.NodeStatus{
+					"successful-workflow-1": {ID: "successful-workflow-1", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypeTaskGroup, Children: []string{"1"}},
+					"1":                     {ID: "1", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypeTaskGroup, BoundaryID: "successful-workflow-1", Children: []string{"2"}},
+					"2":                     {ID: "2", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypePod, BoundaryID: "1"}},
+			},
+		}
+		_, err := wfClient.Create(ctx, wf, metav1.CreateOptions{})
+		assert.NoError(t, err)
+		_, _, err = FormulateRetryWorkflow(ctx, wf, false, "", nil)
+		assert.Error(t, err)
+	})
+
+	t.Run("Retry successful workflow with restartSuccessful and nodeFieldSelector", func(t *testing.T) {
+		wf := &wfv1.Workflow{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:   "successful-workflow-2",
+				Labels: map[string]string{},
+			},
+			Status: wfv1.WorkflowStatus{
+				Phase: wfv1.WorkflowSucceeded,
+				Nodes: map[string]wfv1.NodeStatus{
+					"successful-workflow-2": {ID: "successful-workflow-2", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypeTaskGroup, Children: []string{"1"}},
+					"1":                     {ID: "1", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypeTaskGroup, BoundaryID: "successful-workflow-2", Children: []string{"2", "4"}},
+					"2":                     {ID: "2", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypeTaskGroup, BoundaryID: "1", Children: []string{"3"}},
+					"3":                     {ID: "3", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypePod, BoundaryID: "2"},
+					"4":                     {ID: "4", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypePod, BoundaryID: "1"}},
+			},
+		}
+		_, err := wfClient.Create(ctx, wf, metav1.CreateOptions{})
+		assert.NoError(t, err)
+		wf, _, err = FormulateRetryWorkflow(ctx, wf, true, "id=4", nil)
+		if assert.NoError(t, err) {
+			// Node #4 is deleted and will be recreated so only 4 nodes left in wf.Status.Nodes
+			if assert.Len(t, wf.Status.Nodes, 4) {
+				assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes["successful-workflow-2"].Phase)
+				// The parent group nodes should be running.
+				assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["1"].Phase)
+				assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes["2"].Phase)
+				assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes["3"].Phase)
+			}
 		}
 	})
 }

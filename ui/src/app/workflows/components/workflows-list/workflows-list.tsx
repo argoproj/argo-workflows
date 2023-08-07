@@ -205,7 +205,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                                     }}
                                     isDisabled={this.state.batchActionDisabled}
                                 />
-                                <div className='row'>
+                                <div className={`row ${this.state.selectedWorkflows.size === 0 ? '' : 'pt-60'}`}>
                                     <div className='columns small-12 xlarge-2'>
                                         <WorkflowsSummaryContainer workflows={this.state.workflows} />
                                         <div>
@@ -372,7 +372,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                                     />
                                 </div>
                                 <div className='row small-11'>
-                                    <div className='columns small-3'>NAME</div>
+                                    <div className='columns small-2'>NAME</div>
                                     <div className='columns small-1'>NAMESPACE</div>
                                     <div className='columns small-1'>STARTED</div>
                                     <div className='columns small-1'>FINISHED</div>
@@ -380,6 +380,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                                     <div className='columns small-1'>PROGRESS</div>
                                     <div className='columns small-2'>MESSAGE</div>
                                     <div className='columns small-1'>DETAILS</div>
+                                    <div className='columns small-1'>ARCHIVED</div>
                                     {(this.state.columns || []).map(col => {
                                         return (
                                             <div className='columns small-1' key={col.key}>

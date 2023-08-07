@@ -16,6 +16,9 @@ spec:
     # * OnWorkflowSuccess - delete pods when workflow is successful
     # Default: do not delete pods
     strategy: OnPodSuccess
+    # The duration before pods in the GC queue get deleted. Defaults to 5s
+    # Requires Argo >= 3.5
+    deleteDelayDuration: 30s
     # Use label selector to only delete the pods whose labels match with the specified label selector (available since v3.0.0-rc3).
     labelSelector:
       matchLabels:

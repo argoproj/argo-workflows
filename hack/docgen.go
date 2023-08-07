@@ -57,7 +57,8 @@ func cleanTitle(title string) string {
 }
 
 func cleanDesc(desc string) string {
-	desc = strings.ReplaceAll(desc, "\n", "")
+	desc = strings.ReplaceAll(desc, "\n", " ")
+	desc = strings.ReplaceAll(desc, "  ", " ") // reduce multiple spaces to a single space
 	dep := ""
 	if index := strings.Index(desc, "DEPRECATED"); index != -1 {
 		dep = " " + desc[:index]

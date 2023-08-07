@@ -129,9 +129,9 @@ func (azblobDriver *ArtifactDriver) Load(artifact *wfv1.Artifact, path string) e
 		return fmt.Errorf("unable to determine if %s is a directory: %s", artifact.Azure.Blob, err)
 	}
 
-	// It's not a directory and the file doesn't exist, so return the original BlobNotFound error.
+	// It's not a directory and the file doesn't exist, Return the original NoSuchKey error.
 	if !isDir && !isEmptyFile {
-		return fmt.Errorf("unable to download blob %s: %s", artifact.Azure.Blob, origErr)
+		return argoerrors.New(argoerrors.CodeNotFound, origErr.Error())
 	}
 
 	// When we tried to download the blob as a file, we created an empty file for the
@@ -154,6 +154,10 @@ func (azblobDriver *ArtifactDriver) Load(artifact *wfv1.Artifact, path string) e
 func DownloadFile(containerClient *container.Client, blobName, path string) error {
 	blobClient := containerClient.NewBlobClient(blobName)
 
+	err := os.MkdirAll(filepath.Dir(path), 0755)
+	if err != nil {
+		return fmt.Errorf("unable to create dir for file %s: %s", path, err)
+	}
 	outFile, err := os.Create(path)
 	if err != nil {
 		return fmt.Errorf("unable to create file %s: %s", path, err)
@@ -178,7 +182,7 @@ func (azblobDriver *ArtifactDriver) DownloadDirectory(containerClient *container
 		return fmt.Errorf("unable to list blob %s in Azure Storage: %s", artifact.Azure.Blob, err)
 	}
 
-	err = os.Mkdir(path, 0755)
+	err = os.MkdirAll(path, 0755)
 	if err != nil {
 		return fmt.Errorf("unable to create local directory %s: %s", path, err)
 	}

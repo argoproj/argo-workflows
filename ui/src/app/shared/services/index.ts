@@ -1,4 +1,3 @@
-import {ArchivedWorkflowsService} from './archived-workflows-service';
 import {ClusterWorkflowTemplateService} from './cluster-workflow-template-service';
 import {CronWorkflowService} from './cron-workflow-service';
 import {EventService} from './event-service';
@@ -16,7 +15,6 @@ interface Services {
     workflows: typeof WorkflowsService;
     workflowTemplate: typeof WorkflowTemplateService;
     clusterWorkflowTemplate: typeof ClusterWorkflowTemplateService;
-    archivedWorkflows: typeof ArchivedWorkflowsService;
     cronWorkflows: typeof CronWorkflowService;
 }
 
@@ -28,6 +26,5 @@ export const services: Services = {
     event: EventService,
     eventSource: EventSourceService,
     sensor: SensorService,
-    archivedWorkflows: ArchivedWorkflowsService,
     cronWorkflows: CronWorkflowService
 };

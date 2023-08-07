@@ -1,5 +1,54 @@
 # Changelog
 
+## v3.4.9 (2023-07-20)
+
+ * [b76329f3a](https://github.com/argoproj/argo-workflows/commit/b76329f3a2dedf4c76a9cac5ed9603ada289c8d0) fix: Fix Azure test
+ * [163d3d4f1](https://github.com/argoproj/argo-workflows/commit/163d3d4f1530e3e18cfcce1311d5d6d732364326) fix: download subdirs in azure artifact. Fixes #11385 (#11394)
+ * [5836caef1](https://github.com/argoproj/argo-workflows/commit/5836caef1c62a1b9b4949334425ec3d71f55498a) chore(deps): bump golang.org/x/sync from 0.2.0 to 0.3.0 (#11262)
+ * [3a6975549](https://github.com/argoproj/argo-workflows/commit/3a69755494d3cdff8be8d35c4b25ed35178b30cf) chore(deps): bump golang.org/x/oauth2 from 0.8.0 to 0.9.0 (#11228)
+ * [95bf965ca](https://github.com/argoproj/argo-workflows/commit/95bf965ca3b8721005be5b27ff88ea7ad60e6b85) chore(deps): bump google.golang.org/api from 0.124.0 to 0.128.0 (#11229)
+ * [894fcba12](https://github.com/argoproj/argo-workflows/commit/894fcba12c6fffbbbc42fda39534488ce6c3bc08) chore(deps): bump google.golang.org/api from 0.122.0 to 0.124.0 (#11142)
+ * [912c41f96](https://github.com/argoproj/argo-workflows/commit/912c41f96c105fbaa8e69c76b7589b0398198b35) fix: Setup /etc/hosts for running inside devcontainer (#11104)
+ * [dcc4f5851](https://github.com/argoproj/argo-workflows/commit/dcc4f585150e1c4cecdc72e53711f7d7eaaec089) fix: Make devcontainer able to pre-commit (#11153)
+ * [5ef42ee72](https://github.com/argoproj/argo-workflows/commit/5ef42ee729d18a36d9a7c9785112de8c8ad5c3ee) fix: check hooked nodes in executeWfLifeCycleHook and executeTmplLifeCycleHook (#11113, #11117) (#11176)
+ * [6f57159a1](https://github.com/argoproj/argo-workflows/commit/6f57159a1788dc1e68418749917f3d2151a64a62) fix: Remove 401 Unauthorized when customClaimGroup retrieval fails, Fixes #11032 (#11033)
+ * [e6d19c980](https://github.com/argoproj/argo-workflows/commit/e6d19c9803db5529e7cb8877bd68e2b1e48282d7) fix: prevent memoization accessing wrong config-maps (#11225)
+ * [12a8b6f40](https://github.com/argoproj/argo-workflows/commit/12a8b6f4004843e2b79bf336cc5b2e57e55a24bd) fix: Treat "connection refused" error as a transient network error. (#11237)
+ * [57dbc6edf](https://github.com/argoproj/argo-workflows/commit/57dbc6edffbaf79101c57ad657bb0dad57560c22) fix: untar empty directories (#11240)
+ * [1a3f17f74](https://github.com/argoproj/argo-workflows/commit/1a3f17f7432c97dd25baeef906b0d38e12028b99) fix: Allow hooks to be specified in workflowDefaults (#11214)
+ * [1109ab498](https://github.com/argoproj/argo-workflows/commit/1109ab498a50454a2a15afbfd9d178b1a4e6c807) fix: Support inputs for inline steps templates (#11074)
+ * [def9d653e](https://github.com/argoproj/argo-workflows/commit/def9d653e893a1328fa60b25c82015c0701dc285) fix: Update Bitbucket SSH host key (#11245)
+ * [c214aaaf7](https://github.com/argoproj/argo-workflows/commit/c214aaaf73760388ae0c6504c13bd6d06f7e7a24) fix: Upgrade windows container to ltsc2022 (#11246)
+ * [a7db62352](https://github.com/argoproj/argo-workflows/commit/a7db62352743ad0e49b4f9488d9c16159fe08ddf) fix: do not delete pvc when max parallelism has been reached. Fixes #11119 (#11138)
+ * [78acc81a7](https://github.com/argoproj/argo-workflows/commit/78acc81a75c2db74ec0736ef41561b10cf7a6002) fix: fix bugs in throttler and syncManager initialization in WorkflowController (#11210)
+ * [f7b307222](https://github.com/argoproj/argo-workflows/commit/f7b307222cd4c5efeb9ee10ece1a4cc04f35085a) fix: Argo DB init conflict when deploy workflow-controller with multiple replicas #11177 (#11178)
+ * [1222da43e](https://github.com/argoproj/argo-workflows/commit/1222da43e2ef755b828b4cfa29660957c5f4beb3) fix: Azure input artifact support optional. Fixes #11179 (#11235)
+ * [d5e7a554c](https://github.com/argoproj/argo-workflows/commit/d5e7a554c064fbe7aef8c71e98823575b1323f96) fix: use unformatted templateName as args to PodName. Fixes #11250 (#11251)
+ * [709170efe](https://github.com/argoproj/argo-workflows/commit/709170efe4feb859a1e8f024d2395fcda46b15d0) fix: Add ^ to semver version (#11310)
+ * [67064561d](https://github.com/argoproj/argo-workflows/commit/67064561d169b7bb7a62278976b8c786179a48c0) fix: Pin semver to 7.5.2. Fixes SNYK-JS-SEMVER-3247795 (#11306)
+ * [f7bf6ee4c](https://github.com/argoproj/argo-workflows/commit/f7bf6ee4c968f7d6cdf0e3e71a37b13eb5328da4) fix: Correct limit in controller List API calls. Fixes #11134 (#11343)
+ * [3e17d5693](https://github.com/argoproj/argo-workflows/commit/3e17d56930a10c5ac1e00f00e41c9d1c011d645a) fix: Enable the workflow created by a wftmpl to retry after manually stopped (#11355)
+
+### Contributors
+
+ * Abraham Bah
+ * Alan Clucas
+ * Cheng Wang
+ * Iain Lane
+ * James Slater
+ * Lan
+ * Lucas Heinlen
+ * Rachel Bushrian
+ * Roel Arents
+ * Tim Collins
+ * Tom Kahn
+ * Tore
+ * Yuan Tang
+ * dependabot[bot]
+ * smile-luobin
+ * toyamagu
+ * vanny96
+
 ## v3.4.8 (2023-05-25)
 
  * [03c8829cb](https://github.com/argoproj/argo-workflows/commit/03c8829cbe61dc44db2e700421c874cf18752577) chore(deps): bump github.com/sirupsen/logrus from 1.9.0 to 1.9.2 (#11107)
