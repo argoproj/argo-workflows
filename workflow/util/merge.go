@@ -39,6 +39,9 @@ func MergeTo(patch, target *wfv1.Workflow) error {
 		return err
 	}
 
+	if len(patchHooks) != 0 && target.Spec.Hooks == nil {
+		target.Spec.Hooks = make(wfv1.LifecycleHooks)
+	}
 	for name, hook := range patchHooks {
 		// If the patch hook doesn't exist in target
 		if _, ok := target.Spec.Hooks[name]; !ok {
