@@ -53,7 +53,7 @@ To allow service accounts to manage resources in other namespaces create a role 
 
 RBAC config is installation-level, so any changes will need to be made by the team that installed Argo. Many complex rules will be burdensome on that team.
 
-Firstly, enable the `rbac:` setting in [workflow-controller-configmap.yaml](workflow-controller-configmap.yaml). You almost certainly want to be able to configure RBAC using groups, so add `scopes:` to the SSO settings:
+Firstly, enable the `rbac:` setting in [workflow-controller-configmap.yaml](workflow-controller-configmap.yaml). You likely want to configure RBAC using groups, so add `scopes:` to the SSO settings:
 
 ```yaml
 sso:

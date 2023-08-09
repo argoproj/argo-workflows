@@ -82,6 +82,7 @@ data:
       url: http://workflows?label=workflows.argoproj.io/completed=true
 
   # Columns are custom columns that will be exposed in the Workflow List View.
+  # (available since Argo v3.5)
   columns: |
     # Adds a column to the Workflow List View
     - # The name of this column, e.g., "Workflow Completed".

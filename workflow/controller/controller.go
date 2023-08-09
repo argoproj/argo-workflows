@@ -8,6 +8,8 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/upper/db/v4"
+
 	"github.com/argoproj/pkg/errors"
 	syncpkg "github.com/argoproj/pkg/sync"
 	log "github.com/sirupsen/logrus"
@@ -32,7 +34,6 @@ import (
 	"k8s.io/client-go/tools/cache"
 	apiwatch "k8s.io/client-go/tools/watch"
 	"k8s.io/client-go/util/workqueue"
-	"upper.io/db.v3/lib/sqlbuilder"
 
 	"github.com/argoproj/argo-workflows/v3"
 	"github.com/argoproj/argo-workflows/v3/config"
@@ -107,7 +108,7 @@ type WorkflowController struct {
 	podCleanupQueue       workqueue.RateLimitingInterface // pods to be deleted or labelled depend on GC strategy
 	throttler             sync.Throttler
 	workflowKeyLock       syncpkg.KeyLock // used to lock workflows for exclusive modification or access
-	session               sqlbuilder.Database
+	session               db.Session
 	offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo
 	hydrator              hydrator.Interface
 	wfArchive             sqldb.WorkflowArchive
@@ -192,7 +193,6 @@ func NewWorkflowController(ctx context.Context, restConfig *rest.Config, kubecli
 
 	workqueue.SetProvider(wfc.metrics) // must execute SetProvider before we created the queues
 	wfc.wfQueue = wfc.metrics.RateLimiterWithBusyWorkers(&fixedItemIntervalRateLimiter{}, "workflow_queue")
-	wfc.throttler = wfc.newThrottler()
 	wfc.podCleanupQueue = wfc.metrics.RateLimiterWithBusyWorkers(workqueue.DefaultControllerRateLimiter(), "pod_cleanup_queue")
 
 	return &wfc, nil
@@ -220,7 +220,7 @@ func (wfc *WorkflowController) runGCcontroller(ctx context.Context, workflowTTLW
 func (wfc *WorkflowController) runCronController(ctx context.Context, cronWorkflowWorkers int) {
 	defer runtimeutil.HandleCrash(runtimeutil.PanicHandlers...)
 
-	cronController := cron.NewCronController(wfc.wfclientset, wfc.dynamicInterface, wfc.namespace, wfc.GetManagedNamespace(), wfc.Config.InstanceID, wfc.metrics, wfc.eventRecorderManager, cronWorkflowWorkers)
+	cronController := cron.NewCronController(wfc.wfclientset, wfc.dynamicInterface, wfc.namespace, wfc.GetManagedNamespace(), wfc.Config.InstanceID, wfc.metrics, wfc.eventRecorderManager, cronWorkflowWorkers, wfc.wftmplInformer, wfc.cwftmplInformer)
 	cronController.Run(ctx)
 }
 
@@ -240,6 +240,8 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 
 	// init DB after leader election (if enabled)
 	wfc.UpdateConfig(ctx)
+	// init throttler after update config
+	wfc.throttler = wfc.newThrottler()
 
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()

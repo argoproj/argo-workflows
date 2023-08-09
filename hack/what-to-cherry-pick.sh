@@ -4,7 +4,7 @@ set -eu
 
 br=$1;# branch
 commitPrefix=$2;# examples: fix, chore(deps), build, ci
-commitGrepPattern="^${commitPrefix}:.*(#"
+commitGrepPattern="^${commitPrefix}(*.*)*:.*(#"
 
 # find the branch point
 base=$(git merge-base $br master)

@@ -15,13 +15,13 @@ import (
 func (woc *wfOperationCtx) executeWfLifeCycleHook(ctx context.Context, tmplCtx *templateresolution.Context) (bool, error) {
 	var hookNodes []*wfv1.NodeStatus
 	for hookName, hook := range woc.execWf.Spec.Hooks {
-		//exit hook will be executed in runOnExitNode
+		// exit hook will be executed in runOnExitNode
 		if hookName == wfv1.ExitLifecycleEvent {
 			continue
 		}
 		hookNodeName := generateLifeHookNodeName(woc.wf.ObjectMeta.Name, string(hookName))
 		// To check a node was triggered.
-		hookedNode := woc.wf.GetNodeByName(hookNodeName)
+		hookedNode, _ := woc.wf.GetNodeByName(hookNodeName)
 		if hook.Expression == "" {
 			return true, errors.Errorf(errors.CodeBadRequest, "Expression required for hook %s", hookNodeName)
 		}
@@ -56,13 +56,13 @@ func (woc *wfOperationCtx) executeWfLifeCycleHook(ctx context.Context, tmplCtx *
 func (woc *wfOperationCtx) executeTmplLifeCycleHook(ctx context.Context, scope *wfScope, lifeCycleHooks wfv1.LifecycleHooks, parentNode *wfv1.NodeStatus, boundaryID string, tmplCtx *templateresolution.Context, prefix string) (bool, error) {
 	var hookNodes []*wfv1.NodeStatus
 	for hookName, hook := range lifeCycleHooks {
-		//exit hook will be executed in runOnExitNode
+		// exit hook will be executed in runOnExitNode
 		if hookName == wfv1.ExitLifecycleEvent {
 			continue
 		}
 		hookNodeName := generateLifeHookNodeName(parentNode.Name, string(hookName))
 		// To check a node was triggered
-		hookedNode := woc.wf.GetNodeByName(hookNodeName)
+		hookedNode, _ := woc.wf.GetNodeByName(hookNodeName)
 		if hook.Expression == "" {
 			return false, errors.Errorf(errors.CodeBadRequest, "Expression required for hook %s", hookNodeName)
 		}
