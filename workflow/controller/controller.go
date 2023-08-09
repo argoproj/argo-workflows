@@ -193,7 +193,6 @@ func NewWorkflowController(ctx context.Context, restConfig *rest.Config, kubecli
 
 	workqueue.SetProvider(wfc.metrics) // must execute SetProvider before we created the queues
 	wfc.wfQueue = wfc.metrics.RateLimiterWithBusyWorkers(&fixedItemIntervalRateLimiter{}, "workflow_queue")
-	wfc.throttler = wfc.newThrottler()
 	wfc.podCleanupQueue = wfc.metrics.RateLimiterWithBusyWorkers(workqueue.DefaultControllerRateLimiter(), "pod_cleanup_queue")
 
 	return &wfc, nil
@@ -241,6 +240,8 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 
 	// init DB after leader election (if enabled)
 	wfc.UpdateConfig(ctx)
+	// init throttler after update config
+	wfc.throttler = wfc.newThrottler()
 
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
