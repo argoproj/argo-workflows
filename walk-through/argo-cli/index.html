@@ -3832,14 +3832,8 @@ argo<span class="w"> </span>get<span class="w"> </span>hello-world-xxx<span clas
 argo<span class="w"> </span>logs<span class="w"> </span>hello-world-xxx<span class="w">       </span><span class="c1"># print the logs from a workflow</span>
 argo<span class="w"> </span>delete<span class="w"> </span>hello-world-xxx<span class="w">     </span><span class="c1"># delete workflow</span>
 </code></pre></div>
-<p>You can also run workflow specs directly using <code>kubectl</code> but the Argo CLI provides syntax checking, nicer output, and requires less typing.</p>
-<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>create<span class="w"> </span>-f<span class="w"> </span>hello-world.yaml
-kubectl<span class="w"> </span>get<span class="w"> </span>wf
-kubectl<span class="w"> </span>get<span class="w"> </span>wf<span class="w"> </span>hello-world-xxx
-kubectl<span class="w"> </span>get<span class="w"> </span>po<span class="w"> </span>--selector<span class="o">=</span>workflows.argoproj.io/workflow<span class="o">=</span>hello-world-xxx
-kubectl<span class="w"> </span>logs<span class="w"> </span>hello-world-xxx-yyy<span class="w"> </span>-c<span class="w"> </span>main
-kubectl<span class="w"> </span>delete<span class="w"> </span>wf<span class="w"> </span>hello-world-xxx
-</code></pre></div>
+<p>You can also run workflow specs directly <a href="../../kubectl/">using <code>kubectl</code></a>, but the Argo CLI provides syntax checking, nicer output, and requires less typing.</p>
+<p>See the <a href="../../cli/argo/">CLI Reference</a> for more details.</p>
 
               
 
