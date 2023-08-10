@@ -129,9 +129,9 @@ func (d *dagContext) getTaskNode(taskName string) *wfv1.NodeStatus {
 
 // assessDAGPhase assesses the overall DAG status
 func (d *dagContext) assessDAGPhase(targetTasks []string, nodes wfv1.Nodes, isShutdown bool) (wfv1.NodePhase, error) {
-	// we cannot rely upon the DAG traversal alone
-	// I believe conditionals, self references and ContinuesOn (every one of those features in unison) makes this an undecidable problem.
-	// However, we can just use the isShutdown to automatically fail the DAG.
+	// We cannot only rely on the DAG traversal. Conditionals, self-references, 
+	// and ContinuesOn (every one of those features in unison) make this an undecidable problem.
+	// However, we can just use isShutdown to automatically fail the DAG.
 	if isShutdown {
 		return wfv1.NodeFailed, nil
 	}
