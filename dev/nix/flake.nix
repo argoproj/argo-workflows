@@ -191,9 +191,12 @@
               src = pkgs.fetchFromGitHub {
                 owner = "vektra";
                 repo = "mockery";
-                rev = "v${version}";
+                rev = "v${version}"; # Look 4 lines below this one!!!
                 sha256 = "sha256-udzBhCkESd/5GEJf9oVz0nAQDmsk4tenvDP6tbkBIao=";
               };
+              ldflags = [
+                "-X github.com/vektra/mockery/v2/pkg/config.SemVer=v${version}"  # IMPERATIVE TO LOOK AT SOURCE CODE WHEN UPDATING VERSION!!!
+              ];
               doCheck = false;
               vendorHash = "sha256-iuQx2znOh/zsglnJma7Y4YccVArSFul/IOaNh449SpA=";
             };
@@ -335,6 +338,7 @@
                 clang-tools
                 protobuf
                 myyarn
+                diffutils
               ];
             };
 
@@ -364,6 +368,7 @@
                     clang-tools
                     protobuf
                     myyarn
+                    diffutils
                   ];
                   enterShell = ''
                     unset GOPATH;
