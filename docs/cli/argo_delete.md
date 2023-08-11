@@ -33,6 +33,7 @@ argo delete [--dry-run] [WORKFLOW...|[--all] [--older] [--completed] [--resubmit
       --prefix string           Delete workflows by prefix
       --query-chunk-size int    Run the list query in chunks (deletes will still be executed individually)
       --resubmitted             Delete resubmitted workflows
+      --pending                 Delete pending workflows
   -l, --selector string         Selector (label query) to filter on, not including uninitialized ones, supports '=', '==', and '!='.(e.g. -l key1=value1,key2=value2)
 ```
 

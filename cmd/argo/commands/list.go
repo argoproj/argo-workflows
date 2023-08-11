@@ -27,6 +27,7 @@ type listFlags struct {
 	completed     bool
 	running       bool
 	resubmitted   bool
+	pending       bool
 	prefix        string
 	output        string
 	createdSince  string
@@ -87,6 +88,7 @@ func NewListCommand() *cobra.Command {
 	command.Flags().BoolVar(&listArgs.completed, "completed", false, "Show completed workflows. Mutually exclusive with --running.")
 	command.Flags().BoolVar(&listArgs.running, "running", false, "Show running workflows. Mutually exclusive with --completed.")
 	command.Flags().BoolVar(&listArgs.resubmitted, "resubmitted", false, "Show resubmitted workflows")
+	command.Flags().BoolVar(&listArgs.pending, "pending", false, "Show pending workflows")
 	command.Flags().StringVarP(&listArgs.output, "output", "o", "", "Output format. One of: name|wide|yaml|json")
 	command.Flags().StringVar(&listArgs.createdSince, "since", "", "Show only workflows created after than a relative duration")
 	command.Flags().Int64VarP(&listArgs.chunkSize, "chunk-size", "", 0, "Return large lists in chunks rather than all at once. Pass 0 to disable.")
@@ -121,6 +123,10 @@ func listWorkflows(ctx context.Context, serviceClient workflowpkg.WorkflowServic
 	}
 	if flags.resubmitted {
 		req, _ := labels.NewRequirement(common.LabelKeyPreviousWorkflowName, selection.Exists, []string{})
+		labelSelector = labelSelector.Add(*req)
+	}
+	if flags.pending {
+		req, _ := labels.NewRequirement(common.LabelKeyPhase, selection.Equals, []string{"Pending"})
 		labelSelector = labelSelector.Add(*req)
 	}
 	listOpts.LabelSelector = labelSelector.String()

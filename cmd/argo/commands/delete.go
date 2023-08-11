@@ -25,7 +25,7 @@ func NewDeleteCommand() *cobra.Command {
 		force         bool
 	)
 	command := &cobra.Command{
-		Use:   "delete [--dry-run] [WORKFLOW...|[--all] [--older] [--completed] [--resubmitted] [--prefix PREFIX] [--selector SELECTOR] [--force] ]",
+		Use:   "delete [--dry-run] [WORKFLOW...|[--all] [--older] [--completed] [--resubmitted] [--pending] [--prefix PREFIX] [--selector SELECTOR] [--force] ]",
 		Short: "delete workflows",
 		Example: `# Delete a workflow:
 
@@ -36,7 +36,7 @@ func NewDeleteCommand() *cobra.Command {
   argo delete @latest
 `,
 		Run: func(cmd *cobra.Command, args []string) {
-			if len(args) == 0 && !(all || allNamespaces || flags.completed || flags.resubmitted || flags.prefix != "" || flags.labels != "" || flags.fields != "" || flags.finishedAfter != "") {
+			if len(args) == 0 && !(all || allNamespaces || flags.completed || flags.resubmitted || flags.pending || flags.prefix != "" || flags.labels != "" || flags.fields != "" || flags.finishedAfter != "") {
 				cmd.HelpFunc()(cmd, args)
 				os.Exit(1)
 			}
@@ -83,6 +83,7 @@ func NewDeleteCommand() *cobra.Command {
 	command.Flags().BoolVar(&all, "all", false, "Delete all workflows")
 	command.Flags().BoolVar(&flags.completed, "completed", false, "Delete completed workflows")
 	command.Flags().BoolVar(&flags.resubmitted, "resubmitted", false, "Delete resubmitted workflows")
+	command.Flags().BoolVar(&flags.pending, "pending", false, "Delete pending workflows")
 	command.Flags().StringVar(&flags.prefix, "prefix", "", "Delete workflows by prefix")
 	command.Flags().StringVar(&flags.finishedAfter, "older", "", "Delete completed workflows finished before the specified duration (e.g. 10m, 3h, 1d)")
 	command.Flags().StringVarP(&flags.labels, "selector", "l", "", "Selector (label query) to filter on, not including uninitialized ones, supports '=', '==', and '!='.(e.g. -l key1=value1,key2=value2)")
