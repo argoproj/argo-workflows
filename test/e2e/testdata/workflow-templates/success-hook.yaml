@@ -1,0 +1,21 @@
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: hook
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      container:
+        image: argoproj/argosay:v2
+        command: ["/bin/sh", "-c"]
+        # To avoid flakiness, we sleep 1 second.
+        args: ["/bin/sleep 1; /argosay"]
+
+  hooks:
+    running:
+      expression: workflow.status == "Running"
+      template: main
+    succeed:
+      expression: workflow.status == "Succeeded"
+      template: main
