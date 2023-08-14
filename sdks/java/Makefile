@@ -1,3 +1,4 @@
+USE_NIX := false
 GIT_TAG               := $(shell git describe --exact-match --tags --abbrev=0 2> /dev/null || echo untagged)
 ifeq ($(GIT_TAG),untagged)
 # "SNAPSHOT" is "latest" for Java
@@ -19,6 +20,12 @@ publish: generate
 	$(MVN) deploy -DskipTests -DaltDeploymentRepository=github::default::https://maven.pkg.github.com/argoproj/argo-workflows
 
 generate:
+ifeq ($(USE_NIX), true)
+	chmod -R 777 client || exit 0
+	rm -rf $(WD)
+	nix build
+	cp -r result/data/client ./client
+else 
 	rm -Rf $(WD)
 	mkdir -p $(WD)
 	cp settings.xml $(WD)/settings.xml
@@ -71,6 +78,7 @@ generate:
 	$(CHOWN) $(WD) || sudo $(CHOWN) $(WD)
 	# adding kubernetes-client
 	cd client && sed 's/<dependencies>/<dependencies><dependency><groupId>io.kubernetes<\/groupId><artifactId>client-java<\/artifactId><version>14.0.1<\/version><\/dependency>/g' pom.xml > tmp && mv tmp pom.xml
+endif
 
 client/pom.xml: generate
 

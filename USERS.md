@@ -78,6 +78,7 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [Elastic](https://www.elastic.co/)
 1. [Fairwinds](https://fairwinds.com/)
 1. [FOLIO](http://corp.folio-sec.com/)
+1. [freee](https://corp.freee.co.jp/en/company/)
 1. [FreeWheel](https://freewheel.com/)
 1. [Fynd Trak](https://trak.fynd.com/)
 1. [Galixir](https://www.galixir.com/)
