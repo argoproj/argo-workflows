@@ -15,7 +15,7 @@
         "node": ">=20"
     },
     "dependencies": {
-        "argo-ui": "git+https://github.com/argoproj/argo-ui.git",
+        "argo-ui": "git+https://github.com/argoproj/argo-ui.git#87d27fb1cb4f6e3ac4a49f85747e471b2efa7512",
         "chart.js": "^2.9.4",
         "chartjs-plugin-annotation": "^0.5.7",
         "classnames": "^2.3.2",
@@ -60,6 +60,7 @@
         "@types/react-router-dom": "^4.2.3",
         "@types/superagent": "^4.1.18",
         "@types/swagger-ui-react": "^4.11.0",
+        "@types/uuid": "^9.0.1",
         "babel-jest": "^29.6.2",
         "babel-loader": "^8.3.0",
         "copy-webpack-plugin": "^5.1.2",
