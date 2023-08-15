@@ -11,7 +11,7 @@ import (
 )
 
 func TestSimpleStartCloser(t *testing.T) {
-	cmd := exec.Command("sh", "-c", "echo -n A123456789B123456789C123456789D123456789E123456789")
+	cmd := exec.Command("sh", "-c", `echo "A123456789B123456789C123456789D123456789E123456789\c"`)
 	var stdoutWriter bytes.Buffer
 	slowWriter := SlowWriter{
 		&stdoutWriter,

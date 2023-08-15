@@ -49,7 +49,7 @@ func TestEmissary(t *testing.T) {
 	})
 	t.Run("Sub-process", func(t *testing.T) {
 		_ = os.Remove(varRunArgo + "/ctr/main/stdout")
-		err := run("(sleep 60; echo 'should not wait for sub-process')& echo -n hello")
+		err := run(`(sleep 60; echo 'should not wait for sub-process')& echo "hello\c"`)
 		assert.NoError(t, err)
 		data, err := os.ReadFile(varRunArgo + "/ctr/main/stdout")
 		assert.NoError(t, err)
