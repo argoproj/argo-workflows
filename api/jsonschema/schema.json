@@ -6456,7 +6456,7 @@
       "description": "SuspendTemplate is a template subtype to suspend a workflow at a predetermined point in time",
       "properties": {
         "duration": {
-          "description": "Duration is the seconds to wait before automatically resuming a template. Must be a string. Default unit is seconds. Could also be a Duration, e.g.: \"2m\", \"6h\", \"1d\"",
+          "description": "Duration is the seconds to wait before automatically resuming a template. Must be a string. Default unit is seconds. Could also be a Duration, e.g.: \"2m\", \"6h\"",
           "type": "string"
         }
       },
