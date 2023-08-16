@@ -3786,6 +3786,7 @@ be retried and the retry strategy will be ignored |  |
 |------|------|---------|:--------:| ------- |-------------|---------|
 | accessKeySecret | [SecretKeySelector](#secret-key-selector)| `SecretKeySelector` |  | |  |  |
 | bucket | string| `string` |  | | Bucket is the name of the bucket |  |
+| caSecret | [SecretKeySelector](#secret-key-selector)| `SecretKeySelector` |  | |  |  |
 | createBucketIfNotPresent | [CreateS3BucketOptions](#create-s3-bucket-options)| `CreateS3BucketOptions` |  | |  |  |
 | encryptionOptions | [S3EncryptionOptions](#s3-encryption-options)| `S3EncryptionOptions` |  | |  |  |
 | endpoint | string| `string` |  | | Endpoint is the hostname of the bucket endpoint |  |
