@@ -52,7 +52,7 @@ func NewDeleteCommand() *cobra.Command {
 					ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: flags.namespace},
 				})
 			}
-			if all || flags.completed || flags.resubmitted || flags.prefix != "" || flags.labels != "" || flags.fields != "" || flags.finishedAfter != "" {
+			if all || flags.completed || flags.resubmitted || flags.pending || flags.prefix != "" || flags.labels != "" || flags.fields != "" || flags.finishedAfter != "" {
 				listed, err := listWorkflows(ctx, serviceClient, flags)
 				errors.CheckError(err)
 				workflows = append(workflows, listed...)

@@ -52,6 +52,12 @@ func Test_listWorkflows(t *testing.T) {
 			assert.NotNil(t, workflows)
 		}
 	})
+	t.Run("Pending", func(t *testing.T) {
+		workflows, err := list(&metav1.ListOptions{LabelSelector: "workflows.argoproj.io/pending=true"}, listFlags{pending: true})
+		if assert.NoError(t, err) {
+			assert.NotNil(t, workflows)
+		}
+	})
 	t.Run("Labels", func(t *testing.T) {
 		workflows, err := list(&metav1.ListOptions{LabelSelector: "foo"}, listFlags{labels: "foo"})
 		if assert.NoError(t, err) {
