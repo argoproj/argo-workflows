@@ -13646,6 +13646,11 @@
 <td>Bucket is the name of the bucket</td>
 </tr>
 <tr>
+<td style="text-align: center;"><code>caSecret</code></td>
+<td style="text-align: center;"><a href="#secretkeyselector"><code>SecretKeySelector</code></a></td>
+<td>CASecret specifies the secret that contains the CA, used to verify the TLS connection</td>
+</tr>
+<tr>
 <td style="text-align: center;"><code>createBucketIfNotPresent</code></td>
 <td style="text-align: center;"><a href="#creates3bucketoptions"><code>CreateS3BucketOptions</code></a></td>
 <td>CreateBucketIfNotPresent tells the driver to attempt to create the S3 bucket for output artifacts, if it doesn't exist. Setting Enabled Encryption will apply either SSE-S3 to the bucket if KmsKeyId is not set or SSE-KMS if it is.</td>
@@ -14983,6 +14988,11 @@
 <td style="text-align: center;"><code>bucket</code></td>
 <td style="text-align: center;"><code>string</code></td>
 <td>Bucket is the name of the bucket</td>
+</tr>
+<tr>
+<td style="text-align: center;"><code>caSecret</code></td>
+<td style="text-align: center;"><a href="#secretkeyselector"><code>SecretKeySelector</code></a></td>
+<td>CASecret specifies the secret that contains the CA, used to verify the TLS connection</td>
 </tr>
 <tr>
 <td style="text-align: center;"><code>createBucketIfNotPresent</code></td>
