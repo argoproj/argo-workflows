@@ -12,7 +12,6 @@ import (
 	apiv1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/strategicpatch"
 	"k8s.io/utils/pointer"
 
 	"github.com/argoproj/argo-workflows/v3/errors"
@@ -350,13 +349,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 
 	// Apply the patch string from template
 	if woc.hasPodSpecPatch(tmpl) {
-		jsonstr, err := json.Marshal(pod.Spec)
-		if err != nil {
-			return nil, errors.Wrap(err, "", "Failed to marshal the Pod spec")
-		}
-
 		tmpl.PodSpecPatch, err = util.PodSpecPatchMerge(woc.wf, tmpl)
-
 		if err != nil {
 			return nil, errors.Wrap(err, "", "Failed to merge the workflow PodSpecPatch with the template PodSpecPatch due to invalid format")
 		}
@@ -371,19 +364,11 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 			return nil, errors.Wrap(err, "", "Failed to substitute the PodSpecPatch variables")
 		}
 
-		if err := json.Unmarshal([]byte(tmpl.PodSpecPatch), &apiv1.PodSpec{}); err != nil {
-			return nil, fmt.Errorf("invalid podSpecPatch %q: %w", tmpl.PodSpecPatch, err)
-		}
-
-		modJson, err := strategicpatch.StrategicMergePatch(jsonstr, []byte(tmpl.PodSpecPatch), apiv1.PodSpec{})
+		patchedPodSpec, err := util.ApplyPodSpecPatch(pod.Spec, tmpl.PodSpecPatch)
 		if err != nil {
-			return nil, errors.Wrap(err, "", "Error occurred during strategic merge patch")
+			return nil, errors.Wrap(err, "", "Error applying PodSpecPatch")
 		}
-		pod.Spec = apiv1.PodSpec{} // zero out the pod spec so we cannot get conflicts
-		err = json.Unmarshal(modJson, &pod.Spec)
-		if err != nil {
-			return nil, errors.Wrap(err, "", "Error in Unmarshalling after merge the patch")
-		}
+		pod.Spec = *patchedPodSpec
 	}
 
 	for i, c := range pod.Spec.Containers {
