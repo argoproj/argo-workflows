@@ -64,17 +64,18 @@ func NewDeleteCommand() *cobra.Command {
 			}
 
 			for _, wf := range workflows {
-				if !dryRun {
-					_, err := serviceClient.DeleteWorkflow(ctx, &workflowpkg.WorkflowDeleteRequest{Name: wf.Name, Namespace: wf.Namespace, Force: force})
-					if err != nil && status.Code(err) == codes.NotFound {
-						fmt.Printf("Workflow '%s' not found\n", wf.Name)
-						continue
-					}
-					errors.CheckError(err)
-					fmt.Printf("Workflow '%s' deleted\n", wf.Name)
-				} else {
+				if dryRun {
 					fmt.Printf("Workflow '%s' deleted (dry-run)\n", wf.Name)
+					continue
 				}
+
+				_, err := serviceClient.DeleteWorkflow(ctx, &workflowpkg.WorkflowDeleteRequest{Name: wf.Name, Namespace: wf.Namespace, Force: force})
+				if err != nil && status.Code(err) == codes.NotFound {
+					fmt.Printf("Workflow '%s' not found\n", wf.Name)
+					continue
+				}
+				errors.CheckError(err)
+				fmt.Printf("Workflow '%s' deleted\n", wf.Name)
 			}
 		},
 	}
