@@ -1,5 +1,5 @@
 {
-    "name": "argo-ui",
+    "name": "argo-workflows-ui",
     "version": "1.0.0",
     "license": "MIT",
     "files": [
@@ -91,12 +91,12 @@
         "webpack-dev-server": "^4.15.0"
     },
     "resolutions": {
-        "semver": "^7.5.2",
-        "lodash": "4.17.21",
-        "prismjs": "1.27.0",
         "@types/react": "16.8.5",
         "autolinker": "3.16.1",
         "fast-json-patch": "3.1.1",
-        "react-toastify": "9.0.3"
+        "lodash": "4.17.21",
+        "prismjs": "1.27.0",
+        "react-toastify": "9.0.3",
+        "semver": "^7.5.2"
     }
 }
