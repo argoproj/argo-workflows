@@ -3903,11 +3903,11 @@
 <p>If triggering an external job (e.g. an Amazon EMR job) from Argo that does not run to completion in a container, there are two options:</p>
 <ul>
 <li>create a container that polls the external job completion status</li>
-<li>combine a trigger step that starts the job with a <code>Suspend</code> step that is resumed by an API call to Argo when the external job is complete.</li>
+<li>combine a trigger step that starts the job with a <a href="../walk-through/suspending/"><code>suspend</code></a> step that is resumed by an API call to Argo when the external job is complete.</li>
 </ul>
 <p>This document describes the second option in more detail.</p>
 <h2 id="the-pattern">The pattern<a class="headerlink" href="#the-pattern" title="Permanent link">&para;</a></h2>
-<p>The pattern involves two steps - the first step is a short-running step that triggers a long-running job outside Argo (e.g. an HTTP submission), and the second step is a <code>Suspend</code> step that suspends workflow execution and is ultimately either resumed or stopped (i.e. failed) via a call to the Argo API when the job outside Argo succeeds or fails.</p>
+<p>The pattern involves two steps - the first step is a short-running step that triggers a long-running job outside Argo (e.g. an HTTP submission), and the second step is a <code>suspend</code> step that suspends workflow execution and is ultimately either resumed or stopped (i.e. failed) via a call to the Argo API when the job outside Argo succeeds or fails.</p>
 <p>When implemented as a <code>WorkflowTemplate</code> it can look something like this:</p>
 <div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
 <span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">WorkflowTemplate</span>
@@ -3974,7 +3974,7 @@
 <span class="s1">    }&#39;</span><span class="w">  </span>
 </code></pre></div>
 <h2 id="retrying-failed-jobs">Retrying failed jobs<a class="headerlink" href="#retrying-failed-jobs" title="Permanent link">&para;</a></h2>
-<p>Using <code>argo retry</code> on failed jobs that follow this pattern will cause Argo to re-attempt the Suspend step without re-triggering the job.  </p>
+<p>Using <code>argo retry</code> on failed jobs that follow this pattern will cause Argo to re-attempt the <code>suspend</code> step without re-triggering the job.</p>
 <p>Instead you need to use the <code>--restart-successful</code> option, e.g. if using the template from above:</p>
 <div class="highlight"><pre><span></span><code>argo<span class="w"> </span>retry<span class="w"> </span>&lt;WORKFLOWNAME&gt;<span class="w"> </span>--restart-successful<span class="w"> </span>--node-field-selector<span class="w"> </span>templateRef.template<span class="o">=</span>run-external-job,phase<span class="o">=</span>Failed
 </code></pre></div>
