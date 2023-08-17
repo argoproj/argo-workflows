@@ -188,6 +188,7 @@ func NewWorkflowController(ctx context.Context, restConfig *rest.Config, kubecli
 		wfc.executorPlugins = map[string]map[string]*spec.Plugin{}
 	}
 
+	wfc.UpdateConfig(ctx)
 	wfc.metrics = metrics.New(wfc.getMetricsServerConfig())
 	wfc.entrypoint = entrypoint.New(kubeclientset, wfc.Config.Images)
 
@@ -238,9 +239,6 @@ var indexers = cache.Indexers{
 // Run starts an Workflow resource controller
 func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWorkers, podCleanupWorkers, cronWorkflowWorkers int) {
 	defer runtimeutil.HandleCrash(runtimeutil.PanicHandlers...)
-
-	// init DB after leader election (if enabled)
-	wfc.UpdateConfig(ctx)
 
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()

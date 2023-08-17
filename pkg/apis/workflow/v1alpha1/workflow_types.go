@@ -2452,6 +2452,9 @@ type S3Bucket struct {
 	CreateBucketIfNotPresent *CreateS3BucketOptions `json:"createBucketIfNotPresent,omitempty" protobuf:"bytes,9,opt,name=createBucketIfNotPresent"`
 
 	EncryptionOptions *S3EncryptionOptions `json:"encryptionOptions,omitempty" protobuf:"bytes,10,opt,name=encryptionOptions"`
+
+	// CASecret specifies the secret that contains the CA, used to verify the TLS connection
+	CASecret *apiv1.SecretKeySelector `json:"caSecret,omitempty" protobuf:"bytes,11,opt,name=caSecret"`
 }
 
 // S3EncryptionOptions used to determine encryption options during s3 operations
@@ -2626,7 +2629,7 @@ func (a *AzureArtifact) SetKey(key string) error {
 }
 
 func (a *AzureArtifact) HasLocation() bool {
-	return a != nil && a.Container != "" && a.Blob != ""
+	return a != nil && a.Endpoint != "" && a.Container != "" && a.Blob != ""
 }
 
 // HDFSArtifact is the location of an HDFS artifact
@@ -3181,7 +3184,7 @@ func (t *DAGTask) ShouldExpand() bool {
 // SuspendTemplate is a template subtype to suspend a workflow at a predetermined point in time
 type SuspendTemplate struct {
 	// Duration is the seconds to wait before automatically resuming a template. Must be a string. Default unit is seconds.
-	// Could also be a Duration, e.g.: "2m", "6h", "1d"
+	// Could also be a Duration, e.g.: "2m", "6h"
 	Duration string `json:"duration,omitempty" protobuf:"bytes,1,opt,name=duration"`
 }
 

@@ -8,8 +8,8 @@ import (
 	"path/filepath"
 
 	"github.com/argoproj/pkg/file"
-	"gopkg.in/jcmturner/gokrb5.v5/credentials"
-	"gopkg.in/jcmturner/gokrb5.v5/keytab"
+	"github.com/jcmturner/gokrb5/v8/credentials"
+	"github.com/jcmturner/gokrb5/v8/keytab"
 
 	"github.com/argoproj/argo-workflows/v3/errors"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
@@ -93,13 +93,14 @@ func CreateDriver(ctx context.Context, ci resource.Interface, art *wfv1.HDFSArti
 		if err != nil {
 			return nil, err
 		}
-		ccache, err := credentials.ParseCCache([]byte(bytes))
+		ccache := new(credentials.CCache)
+		err = ccache.Unmarshal([]byte(bytes))
 		if err != nil {
 			return nil, err
 		}
 		krbOptions = &KrbOptions{
 			CCacheOptions: &CCacheOptions{
-				CCache: ccache,
+				CCache: *ccache,
 			},
 			Config:               krbConfig,
 			ServicePrincipalName: art.KrbServicePrincipalName,
@@ -110,13 +111,14 @@ func CreateDriver(ctx context.Context, ci resource.Interface, art *wfv1.HDFSArti
 		if err != nil {
 			return nil, err
 		}
-		ktb, err := keytab.Parse([]byte(bytes))
+		ktb := keytab.New()
+		err = ktb.Unmarshal([]byte(bytes))
 		if err != nil {
 			return nil, err
 		}
 		krbOptions = &KrbOptions{
 			KeytabOptions: &KeytabOptions{
-				Keytab:   ktb,
+				Keytab:   *ktb,
 				Username: art.KrbUsername,
 				Realm:    art.KrbRealm,
 			},

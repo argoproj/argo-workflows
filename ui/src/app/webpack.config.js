@@ -7,8 +7,12 @@ const webpack = require("webpack");
 const path = require("path");
 
 const isProd = process.env.NODE_ENV === "production";
+const proxyConf = {
+  target: isProd ? "" : "http://localhost:2746",
+  secure: false
+};
 
-console.log("isProd=", isProd)
+console.log(`Bundling for ${isProd ? 'production' : 'development'}...`);
 
 const config = {
   mode: isProd ? "production" : "development",
@@ -59,22 +63,27 @@ const config = {
       "process.env.NODE_ENV": JSON.stringify(process.env.NODE_ENV || "development"),
       SYSTEM_INFO: JSON.stringify({
         version: process.env.VERSION || "latest"
-      }), 
+      }),
       "process.env.DEFAULT_TZ": JSON.stringify("UTC"),
     }),
     new HtmlWebpackPlugin({ template: "src/app/index.html" }),
     new CopyWebpackPlugin([{
-      from: "node_modules/argo-ui/src/assets", to: "assets"
+      from: "node_modules/argo-ui/src/assets",
+      to: "assets"
     }, {
-      from: "node_modules/@fortawesome/fontawesome-free/webfonts", to: "assets/fonts"
+      from: "node_modules/@fortawesome/fontawesome-free/webfonts",
+      to: "assets/fonts"
     }, {
-      from: "../api/openapi-spec/swagger.json", to: "assets/openapi-spec/swagger.json"
+      from: "../api/openapi-spec/swagger.json",
+      to: "assets/openapi-spec/swagger.json"
     }, {
-      from: "../api/jsonschema/schema.json", to: "assets/jsonschema/schema.json"
+      from: "../api/jsonschema/schema.json",
+      to: "assets/jsonschema/schema.json"
     }, {
-      from: 'node_modules/monaco-editor/min/vs/base/browser/ui/codiconLabel/codicon/codicon.ttf', to: "."
+      from: 'node_modules/monaco-editor/min/vs/base/browser/ui/codiconLabel/codicon/codicon.ttf',
+      to: "."
     }]),
-    new MonacoWebpackPlugin({"languages":["json","yaml"]})
+    new MonacoWebpackPlugin({ languages: ["json", "yaml"] })
   ],
   devServer: {
     // this needs to be disable to allow EventSource to work
@@ -86,34 +95,13 @@ const config = {
       'X-Frame-Options': 'SAMEORIGIN'
     },
     proxy: {
-      "/api/v1": {
-        "target": isProd ? "" : "http://localhost:2746",
-        "secure": false
-      },
-      "/artifact-files": {
-        "target": isProd ? "" : "http://localhost:2746",
-        "secure": false
-      },
-      "/artifacts": {
-        "target": isProd ? "" : "http://localhost:2746",
-        "secure": false
-      },
-      "/input-artifacts": {
-        "target": isProd ? "" : "http://localhost:2746",
-        "secure": false
-      },
-      "/artifacts-by-uid": {
-        "target": isProd ? "" : "http://localhost:2746",
-        "secure": false
-      },
-      "/input-artifacts-by-uid": {
-        "target": isProd ? "" : "http://localhost:2746",
-        "secure": false
-      },
-      '/oauth2': {
-        'target': isProd ? '' : 'http://localhost:2746',
-        'secure': false,
-      },
+      "/api/v1": proxyConf,
+      "/artifact-files": proxyConf,
+      "/artifacts": proxyConf,
+      "/input-artifacts": proxyConf,
+      "/artifacts-by-uid": proxyConf,
+      "/input-artifacts-by-uid": proxyConf,
+      "/oauth2": proxyConf,
     }
   }
 };
