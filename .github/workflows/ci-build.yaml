@@ -25,7 +25,7 @@ jobs:
       - uses: actions/checkout@v3
       - uses: actions/setup-go@v4
         with:
-          go-version: "1.20"
+          go-version: "1.21"
           cache: true
       - run: make test STATIC_FILES=false GOTEST='go test -p 20 -covermode=atomic -coverprofile=coverage.out'
       # engineers just ignore this in PRs, so lets not even run it
@@ -102,7 +102,7 @@ jobs:
       - uses: actions/checkout@v3
       - uses: actions/setup-go@v4
         with:
-          go-version: "1.20"
+          go-version: "1.21"
           cache: true
       - uses: actions/setup-java@v3
         if: ${{matrix.test == 'test-java-sdk'}}
@@ -202,7 +202,7 @@ jobs:
       - uses: actions/checkout@v3
       - uses: actions/setup-go@v4
         with:
-          go-version: "1.20"
+          go-version: "1.21"
           cache: true
       - name: Install protoc
         run: |
@@ -235,7 +235,7 @@ jobs:
       - uses: actions/checkout@v3
       - uses: actions/setup-go@v4
         with:
-          go-version: "1.20"
+          go-version: "1.21"
           cache: true
       - run: make lint STATIC_FILES=false
       - run: git diff --exit-code
