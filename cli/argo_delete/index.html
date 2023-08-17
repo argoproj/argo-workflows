@@ -3936,7 +3936,7 @@
 
 <h2 id="argo-delete">argo delete<a class="headerlink" href="#argo-delete" title="Permanent link">&para;</a></h2>
 <p>delete workflows</p>
-<div class="highlight"><pre><span></span><code>argo delete [--dry-run] [WORKFLOW...|[--all] [--older] [--completed] [--resubmitted] [--prefix PREFIX] [--selector SELECTOR] [--force] ] [flags]
+<div class="highlight"><pre><span></span><code>argo delete [--dry-run] [WORKFLOW...|[--all] [--older] [--completed] [--resubmitted] [--prefix PREFIX] [--selector SELECTOR] [--force] [--status STATUS] ] [flags]
 </code></pre></div>
 <h3 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code># Delete a workflow:
@@ -3960,6 +3960,7 @@
       --query-chunk-size int    Run the list query in chunks (deletes will still be executed individually)
       --resubmitted             Delete resubmitted workflows
   -l, --selector string         Selector (label query) to filter on, not including uninitialized ones, supports &#39;=&#39;, &#39;==&#39;, and &#39;!=&#39;.(e.g. -l key1=value1,key2=value2)
+      --status strings          Delete by status (comma separated)
 </code></pre></div>
 <h3 id="options-inherited-from-parent-commands">Options inherited from parent commands<a class="headerlink" href="#options-inherited-from-parent-commands" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code>      --argo-base-href string          An path to use with HTTP client (e.g. due to BASE_HREF). Defaults to the ARGO_BASE_HREF environment variable.
