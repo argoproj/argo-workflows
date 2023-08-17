@@ -61,7 +61,7 @@ spec:
       image: alpine:3.6
       command: [sh, -c]
       args: ["echo \"it was tails\""]
-  
+
   - name: heads-tails-or-twice-tails
     container:
       image: alpine:3.6
@@ -69,10 +69,12 @@ spec:
       args: ["echo \"it was heads the first flip and tails the second. Or it was two times tails.\""]
 ```
 
-!!! note
-If the parameter value contains quotes, it may invalidate the govaluate expression. To handle parameters with
-quotes, embed an [expr](https://github.com/antonmedv/expr) expression in the conditional. For example:
+!!! Warning "Nested Quotes"
+    If the parameter value contains quotes, it may invalidate the `govaluate` expression.
+    To handle parameters with quotes, embed an [`expr` expression](../variables.md#expression) in the conditional.
+    For example:
 
+<!-- this is supposed to be inside the infobox above, but markdownlint errors when trying to do that and has no in-line ignore yet (https://github.com/markdownlint/markdownlint/issues/16) -->
 ```yaml
 when: "{{=inputs.parameters['may-contain-quotes'] == 'example'}}"
 ```
