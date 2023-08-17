@@ -147,9 +147,9 @@ nav:
           - use-cases/data-processing.md
           - use-cases/infrastructure-automation.md
           - use-cases/machine-learning.md
-          - use-cases/other.md
           - use-cases/stream-processing.md
           - use-cases/webhdfs.md
+          - use-cases/other.md # other should always be last
       - FAQ: faq.md
       - kubectl.md
       - ide-setup.md
