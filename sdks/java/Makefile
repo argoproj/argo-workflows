@@ -11,7 +11,7 @@ endif
 # work dir
 WD                    := $(shell echo "`pwd`/client")
 
-DOCKER = docker run --rm -v $(WD):/wd --workdir /wd
+DOCKER = docker run --rm --user $(shell id -u):$(shell id -g) -v $(WD):/wd --workdir /wd
 MVN = $(DOCKER) -v $(HOME)/.m2:/root/.m2 -e JAVA_SDK_MAVEN_PASSWORD=${JAVA_SDK_MAVEN_PASSWORD} maven:3-openjdk-8 mvn -s settings.xml
 CHOWN = chown -R $(shell id -u):$(shell id -g)
 
