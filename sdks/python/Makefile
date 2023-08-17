@@ -7,7 +7,7 @@ endif
 # work dir
 WD := $(shell echo "`pwd`/client")
 
-DOCKER = docker run --rm -v $(WD):/wd --workdir /wd
+DOCKER = docker run --rm --user $(shell id -u):$(shell id -g) -v $(WD):/wd --workdir /wd
 CHOWN = chown -R $(shell id -u):$(shell id -g)
 
 publish: generate

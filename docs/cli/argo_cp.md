@@ -24,6 +24,7 @@ argo cp my-wf output-directory ... [flags]
 ```
       --artifact-name string   name of output artifact in workflow
   -h, --help                   help for cp
+  -n, --namespace string       namespace of workflow
       --node-id string         id of node in workflow
       --path string            use variables {workflowName}, {nodeId}, {templateName}, {artifactName}, and {namespace} to create a customized path to store the artifacts; example: {workflowName}/{templateName}/{artifactName} (default "{namespace}/{workflowName}/{nodeId}/outputs/{artifactName}")
       --template-name string   name of template in workflow
@@ -50,7 +51,6 @@ argo cp my-wf output-directory ... [flags]
       --instanceid string              submit with a specific controller's instance id label. Default to the ARGO_INSTANCEID environment variable.
       --kubeconfig string              Path to a kube config. Only required if out-of-cluster
       --loglevel string                Set the logging level. One of: debug|info|warn|error (default "info")
-  -n, --namespace string               If present, the namespace scope for this CLI request
       --password string                Password for basic authentication to the API server
       --proxy-url string               If provided, this URL will be used to connect via proxy
       --request-timeout string         The length of time to wait before giving up on a single server request. Non-zero values should contain a corresponding time unit (e.g. 1s, 2m, 3h). A value of zero means don't timeout requests. (default "0")

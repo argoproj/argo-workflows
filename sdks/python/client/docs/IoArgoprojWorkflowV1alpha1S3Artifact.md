@@ -7,6 +7,7 @@ Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **access_key_secret** | [**SecretKeySelector**](SecretKeySelector.md) |  | [optional] 
 **bucket** | **str** | Bucket is the name of the bucket | [optional] 
+**ca_secret** | [**SecretKeySelector**](SecretKeySelector.md) |  | [optional] 
 **create_bucket_if_not_present** | [**IoArgoprojWorkflowV1alpha1CreateS3BucketOptions**](IoArgoprojWorkflowV1alpha1CreateS3BucketOptions.md) |  | [optional] 
 **encryption_options** | [**IoArgoprojWorkflowV1alpha1S3EncryptionOptions**](IoArgoprojWorkflowV1alpha1S3EncryptionOptions.md) |  | [optional] 
 **endpoint** | **str** | Endpoint is the hostname of the bucket endpoint | [optional] 

@@ -1376,6 +1376,9 @@ message S3Bucket {
   optional CreateS3BucketOptions createBucketIfNotPresent = 9;
 
   optional S3EncryptionOptions encryptionOptions = 10;
+
+  // CASecret specifies the secret that contains the CA, used to verify the TLS connection
+  optional k8s.io.api.core.v1.SecretKeySelector caSecret = 11;
 }
 
 // S3EncryptionOptions used to determine encryption options during s3 operations
