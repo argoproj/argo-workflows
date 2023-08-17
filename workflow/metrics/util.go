@@ -201,7 +201,7 @@ func getPodPhaseGauges() map[v1.PodPhase]prometheus.Gauge {
 }
 
 func getErrorCounters() map[ErrorCause]prometheus.Counter {
-	getOptsByPahse := func(phase ErrorCause) prometheus.CounterOpts {
+	getOptsByPhase := func(phase ErrorCause) prometheus.CounterOpts {
 		return prometheus.CounterOpts{
 			Namespace:   argoNamespace,
 			Subsystem:   workflowsSubsystem,
@@ -211,9 +211,9 @@ func getErrorCounters() map[ErrorCause]prometheus.Counter {
 		}
 	}
 	return map[ErrorCause]prometheus.Counter{
-		ErrorCauseOperationPanic:              prometheus.NewCounter(getOptsByPahse(ErrorCauseOperationPanic)),
-		ErrorCauseCronWorkflowSubmissionError: prometheus.NewCounter(getOptsByPahse(ErrorCauseCronWorkflowSubmissionError)),
-		ErrorCauseCronWorkflowSpecError:       prometheus.NewCounter(getOptsByPahse(ErrorCauseCronWorkflowSpecError)),
+		ErrorCauseOperationPanic:              prometheus.NewCounter(getOptsByPhase(ErrorCauseOperationPanic)),
+		ErrorCauseCronWorkflowSubmissionError: prometheus.NewCounter(getOptsByPhase(ErrorCauseCronWorkflowSubmissionError)),
+		ErrorCauseCronWorkflowSpecError:       prometheus.NewCounter(getOptsByPhase(ErrorCauseCronWorkflowSpecError)),
 	}
 }
 
