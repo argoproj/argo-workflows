@@ -3891,11 +3891,13 @@
 <span class="w">      </span><span class="nt">command</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">sh</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">-c</span><span class="p p-Indicator">]</span>
 <span class="w">      </span><span class="nt">args</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;echo</span><span class="nv"> </span><span class="s">\&quot;it</span><span class="nv"> </span><span class="s">was</span><span class="nv"> </span><span class="s">heads</span><span class="nv"> </span><span class="s">the</span><span class="nv"> </span><span class="s">first</span><span class="nv"> </span><span class="s">flip</span><span class="nv"> </span><span class="s">and</span><span class="nv"> </span><span class="s">tails</span><span class="nv"> </span><span class="s">the</span><span class="nv"> </span><span class="s">second.</span><span class="nv"> </span><span class="s">Or</span><span class="nv"> </span><span class="s">it</span><span class="nv"> </span><span class="s">was</span><span class="nv"> </span><span class="s">two</span><span class="nv"> </span><span class="s">times</span><span class="nv"> </span><span class="s">tails.\&quot;&quot;</span><span class="p p-Indicator">]</span>
 </code></pre></div>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
+<div class="admonition warning">
+<p class="admonition-title">Nested Quotes</p>
+<p>If the parameter value contains quotes, it may invalidate the <code>govaluate</code> expression.
+To handle parameters with quotes, embed an <a href="../../variables/#expression"><code>expr</code> expression</a> in the conditional.
+For example:</p>
 </div>
-<p>If the parameter value contains quotes, it may invalidate the govaluate expression. To handle parameters with
-quotes, embed an <a href="https://github.com/antonmedv/expr">expr</a> expression in the conditional. For example:</p>
+<!-- this is supposed to be inside the infobox above, but markdownlint errors when trying to do that and has no in-line ignore yet (https://github.com/markdownlint/markdownlint/issues/16) -->
 <div class="highlight"><pre><span></span><code><span class="nt">when</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{=inputs.parameters[&#39;may-contain-quotes&#39;]</span><span class="nv"> </span><span class="s">==</span><span class="nv"> </span><span class="s">&#39;example&#39;}}&quot;</span>
 </code></pre></div>
 
