@@ -498,6 +498,9 @@ func (woc *wfOperationCtx) expandStepGroup(sgNodeName string, stepGroup []wfv1.W
 }
 
 // expandStep expands a step containing withItems or withParams into multiple parallel steps
+// We want to be lazy with expanding. Unfortunately this is not quite possible as the When field might rely on
+// expansion to work with the shouldExecute function. To address this we apply a trick, we try to expand, if we fail, we then
+// check shouldExecute, if shouldExecute returns false, we continue on as normal else error out
 func (woc *wfOperationCtx) expandStep(step wfv1.WorkflowStep) ([]wfv1.WorkflowStep, error) {
 	var err error
 	expandedStep := make([]wfv1.WorkflowStep, 0)
@@ -507,12 +510,18 @@ func (woc *wfOperationCtx) expandStep(step wfv1.WorkflowStep) ([]wfv1.WorkflowSt
 	} else if step.WithParam != "" {
 		err = json.Unmarshal([]byte(step.WithParam), &items)
 		if err != nil {
-			return nil, errors.Errorf(errors.CodeBadRequest, "withParam value could not be parsed as a JSON list: %s: %v", strings.TrimSpace(step.WithParam), err)
+			mustExec, mustExecErr := shouldExecute(step.When)
+			if mustExecErr != nil || mustExec {
+				return nil, errors.Errorf(errors.CodeBadRequest, "withParam value could not be parsed as a JSON list: %s: %v", strings.TrimSpace(step.WithParam), err)
+			}
 		}
 	} else if step.WithSequence != nil {
 		items, err = expandSequence(step.WithSequence)
 		if err != nil {
-			return nil, err
+			mustExec, mustExecErr := shouldExecute(step.When)
+			if mustExecErr != nil || mustExec {
+				return nil, err
+			}
 		}
 	} else {
 		// this should have been prevented in expandStepGroup()
