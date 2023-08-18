@@ -40,7 +40,7 @@ E2E_PARALLEL          ?= 20
 E2E_SUITE_TIMEOUT     ?= 15m
 
 VERSION               := latest
-DOCKER_PUSH           := false
+DOCKER_PUSH           ?= false
 
 # VERSION is the version to be used for files in manifests and should always be latest unless we are releasing
 # we assume HEAD means you are on a tag
@@ -482,12 +482,33 @@ endif
 
 .PHONY: argosay
 argosay:
-	cd test/e2e/images/argosay/v2 && docker build . -t argoproj/argosay:v2
+ifeq ($(DOCKER_PUSH),true)
+	cd test/e2e/images/argosay/v2 && \
+		docker buildx build \
+			--platform linux/amd64,linux/arm64 \
+			-t argoproj/argosay:v2 \
+			--push \
+			.
+else
+	cd test/e2e/images/argosay/v2 && \
+		docker build . -t argoproj/argosay:v2
+endif
 ifeq ($(K3D),true)
 	k3d image import -c $(K3D_CLUSTER_NAME) argoproj/argosay:v2
 endif
+
+.PHONY: argosayv1
+argosayv1:
 ifeq ($(DOCKER_PUSH),true)
-	docker push argoproj/argosay:v2
+	cd test/e2e/images/argosay/v1 && \
+		docker buildx build \
+			--platform linux/amd64,linux/arm64 \
+			-t argoproj/argosay:v1 \
+			--push \
+			.
+else
+	cd test/e2e/images/argosay/v1 && \
+		docker build . -t argoproj/argosay:v1
 endif
 
 dist/argosay:
