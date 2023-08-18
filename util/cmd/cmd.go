@@ -54,7 +54,7 @@ func MustIsDir(filePath string) bool {
 	return fileInfo.IsDir()
 }
 
-// IsURL returns whether or not a string is a URL
+// IsURL returns whether a string is a URL
 func IsURL(u string) bool {
 	var parsedURL *url.URL
 	var err error
