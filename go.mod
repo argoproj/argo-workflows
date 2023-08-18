@@ -12,7 +12,7 @@ require (
 	github.com/alibabacloud-go/tea v1.2.1
 	github.com/aliyun/aliyun-oss-go-sdk v2.2.8+incompatible
 	github.com/aliyun/credentials-go v1.3.1
-	github.com/antonmedv/expr v1.13.0
+	github.com/antonmedv/expr v1.14.0
 	github.com/argoproj/argo-events v1.7.3
 	github.com/argoproj/pkg v0.13.7-0.20230814141812-41dde703b79c
 	github.com/blushft/go-diagrams v0.0.0-20201006005127-c78c821223d9
