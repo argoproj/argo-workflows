@@ -1,4 +1,4 @@
-FROM ubuntu:trusty-20190515
+FROM ubuntu:mantic-20230807.1
 
 RUN apt-get update && \
     apt-get install -y apt-utils ca-certificates apt-transport-https cowsay --no-install-recommends && \
