@@ -221,8 +221,22 @@ func TestGetUserInfoGroups(t *testing.T) {
 		httpClient = &HttpClientMock{StatusCode: 200, Body: body}
 
 		claims := &Claims{}
-		groups, err := claims.GetUserInfoGroups("Bearer fake", "https://fake.okta.com", "/user-info")
-		assert.Equal(t, groups, []string{"Everyone"})
+		groups, err := claims.GetUserInfoGroups("Bearer fake", "https://fake.okta.com", "/user-info", "")
+		assert.Equal(t, []string{"Everyone"}, groups)
+		assert.Equal(t, nil, err)
+	})
+}
+
+func TestGetUserInfoGroup(t *testing.T) {
+	t.Run("UserInfoGroupsReturn", func(t *testing.T) {
+		userInfo := `{"group": ["Everyone"]}`
+		body := io.NopCloser(bytes.NewReader([]byte(userInfo)))
+
+		httpClient = &HttpClientMock{StatusCode: 200, Body: body}
+
+		claims := &Claims{}
+		groups, err := claims.GetUserInfoGroups("Bearer fake", "https://fake.okta.com", "/user-info", "group")
+		assert.Equal(t, []string{"Everyone"}, groups)
 		assert.Equal(t, nil, err)
 	})
 }

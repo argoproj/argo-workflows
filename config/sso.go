@@ -22,6 +22,10 @@ type SSOConfig struct {
 	UserInfoPath         string   `json:"userInfoPath,omitempty"`
 	InsecureSkipVerify   bool     `json:"insecureSkipVerify,omitempty"`
 	FilterGroupsRegex    []string `json:"filterGroupsRegex,omitempty"`
+	// support providing PrivateKey, ClientID and ClientSecret via env var
+	PrivateKeyEnvName   string `json:"privateKeyEnvName,omitempty"`
+	ClientIDEnvName     string `json:"clientIdEnvName,omitempty"`
+	ClientSecretEnvName string `json:"clientSecretEnvName,omitempty"`
 }
 
 func (c SSOConfig) GetSessionExpiry() time.Duration {

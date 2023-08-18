@@ -395,6 +395,20 @@ data:
     # be in the form <argo-server-root-url>/oauth2/callback. It must be
     # browser-accessible. If omitted, will be automatically generated.
     redirectUrl: https://argo-server/oauth2/callback
+    # This is the environment variable name that will contain the Client ID; this is equivalent to
+    # what is in the secret `argo-workflows-sso.client-id`. If this is not provided, then we
+    # default to using kube Secret above.
+    # (required if clientId is not provided).
+    clientIdEnvName: ARGO_OIDC_CLIENT_ID
+    # This is the environment variable name that contains OIDC client
+    # secret issued to the application by the provider; this is equivalent to
+    # what is in the secret `argo-workflows-sso.client-secret`. If this is not provided, then we
+    # default to using kube Secret above.
+    # (required if clientSecret is not provided).
+    clientSecretEnvName: ARGO_OIDC_CLIENT_SECRET
+    # This is the environment variable name that contains PKCS1 private key, if this is not
+    # provided, then Argo will create one dynamically and store in Kube Secret.
+    privateKeyEnvName: ARGO_OIDC_PRIVATE_KEY
     # Additional scopes to request. Typically needed for SSO RBAC. >= v2.12
     scopes:
      - groups

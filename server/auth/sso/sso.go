@@ -7,8 +7,10 @@ import (
 	"crypto/rsa"
 	"crypto/tls"
 	"crypto/x509"
+	"encoding/base64"
 	"fmt"
 	"net/http"
+	"os"
 	"regexp"
 	"strings"
 	"time"
@@ -88,53 +90,79 @@ func New(c Config, secretsIf corev1.SecretInterface, baseHRef string, secure boo
 	return newSso(providerFactoryOIDC, c, secretsIf, baseHRef, secure)
 }
 
-func newSso(
-	factory providerFactory,
-	c Config,
-	secretsIf corev1.SecretInterface,
-	baseHRef string,
-	secure bool,
-) (Interface, error) {
-	if c.Issuer == "" {
-		return nil, fmt.Errorf("issuer empty")
+func getClientID(ctx context.Context, c Config, secretsIf corev1.SecretInterface) (string, error) {
+	clientID := os.Getenv(c.ClientIDEnvName)
+	if clientID != "" {
+		log.Info("Successfully retrieved ClientID from env var ", c.ClientIDEnvName)
+		return clientID, nil
 	}
 	if c.ClientID.Name == "" || c.ClientID.Key == "" {
-		return nil, fmt.Errorf("clientID empty")
-	}
-	if c.ClientSecret.Name == "" || c.ClientSecret.Key == "" {
-		return nil, fmt.Errorf("clientSecret empty")
-	}
-	ctx := context.Background()
-	clientSecretObj, err := secretsIf.Get(ctx, c.ClientSecret.Name, metav1.GetOptions{})
-	if err != nil {
-		return nil, err
-	}
-	// Create http client with TLSConfig to allow skipping of CA validation if InsecureSkipVerify is set.
-	httpClient := &http.Client{Transport: &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: c.InsecureSkipVerify}, Proxy: http.ProxyFromEnvironment}}
-	oidcContext := oidc.ClientContext(ctx, httpClient)
-	// Some offspec providers like Azure, Oracle IDCS have oidc discovery url different from issuer url which causes issuerValidation to fail
-	// This providerCtx will allow the Verifier to succeed if the alternate/alias URL is in the config
-	if c.IssuerAlias != "" {
-		oidcContext = oidc.InsecureIssuerURLContext(oidcContext, c.IssuerAlias)
+		return "", fmt.Errorf("clientID empty")
 	}
 
-	provider, err := factory(oidcContext, c.Issuer)
+	// Fallback to getting values from Kube Secrets
+	secretObj, err := secretsIf.Get(ctx, c.ClientID.Name, metav1.GetOptions{})
 	if err != nil {
-		return nil, err
+		return "", err
 	}
-	var clientIDObj *apiv1.Secret
-	if c.ClientID.Name == c.ClientSecret.Name {
-		clientIDObj = clientSecretObj
-	} else {
-		clientIDObj, err = secretsIf.Get(ctx, c.ClientID.Name, metav1.GetOptions{})
+	clientID = string(secretObj.Data[c.ClientID.Key])
+	if clientID == "" {
+		return "", fmt.Errorf("key %s missing in secret %s", c.ClientID.Key, c.ClientID.Name)
+	}
+
+	log.Info("Successfully retrieved ClientID from secret ", c.ClientID.Name)
+	return clientID, nil
+}
+
+func getClientSecret(ctx context.Context, c Config, secretsIf corev1.SecretInterface) (string, error) {
+	clientSecret := os.Getenv(c.ClientSecretEnvName)
+	if clientSecret != "" {
+		log.Info("Successfully retrieved ClientSecret from env var ", c.ClientSecretEnvName)
+		return clientSecret, nil
+	}
+	if c.ClientSecret.Name == "" || c.ClientSecret.Key == "" {
+		return "", fmt.Errorf("clientSecret empty")
+	}
+
+	// Fallback to getting values from Kube Secrets
+	secretObj, err := secretsIf.Get(ctx, c.ClientSecret.Name, metav1.GetOptions{})
+	if err != nil {
+		return "", err
+	}
+	clientSecret = string(secretObj.Data[c.ClientSecret.Key])
+	if clientSecret == "" {
+		return "", fmt.Errorf("key %s missing in secret %s", c.ClientSecret.Key, c.ClientSecret.Name)
+	}
+
+	log.Info("Successfully retrieved ClientSecret from secret ", c.ClientSecret.Name)
+	return clientSecret, nil
+}
+
+func getSsoPrivateKey(ctx context.Context, c Config, secretsIf corev1.SecretInterface) (*rsa.PrivateKey, error) {
+	privateKeyBlobEncoded := os.Getenv(c.PrivateKeyEnvName)
+	log.Debug("privateKeyBlobEncoded: ", privateKeyBlobEncoded)
+	if privateKeyBlobEncoded != "" {
+		// Grab private key blob from environment variable as Base64
+		log.Info("Private Key environment variable name was defined and data exists, decoding it")
+		privateKeyBlob, err := base64.StdEncoding.DecodeString(privateKeyBlobEncoded)
 		if err != nil {
 			return nil, err
 		}
+
+		log.Info("Parsing private key blob from environment variable")
+		privateKey, err := x509.ParsePKCS1PrivateKey(privateKeyBlob)
+		if err != nil {
+			return nil, err
+		}
+
+		return privateKey, nil
 	}
+
 	generatedKey, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate key: %w", err)
 	}
+
 	// whoa - are you ignoring errors - yes - we don't care if it fails -
 	// if it fails, then the get will fail, and the pod restart
 	// it may fail due to race condition with another pod - which is fine,
@@ -154,6 +182,7 @@ func newSso(
 	if err != nil {
 		return nil, fmt.Errorf("failed to read secret: %w", err)
 	}
+
 	privateKey, err := x509.ParsePKCS1PrivateKey(secret.Data[cookieEncryptionPrivateKeySecretKey])
 	if err != nil {
 		if isSecretAlreadyExists {
@@ -163,14 +192,49 @@ func newSso(
 		}
 	}
 
-	clientID := clientIDObj.Data[c.ClientID.Key]
-	if clientID == nil {
-		return nil, fmt.Errorf("key %s missing in secret %s", c.ClientID.Key, c.ClientID.Name)
+	return privateKey, nil
+}
+
+func newSso(
+	factory providerFactory,
+	c Config,
+	secretsIf corev1.SecretInterface,
+	baseHRef string,
+	secure bool,
+) (Interface, error) {
+	if c.Issuer == "" {
+		return nil, fmt.Errorf("issuer empty")
 	}
-	clientSecret := clientSecretObj.Data[c.ClientSecret.Key]
-	if clientSecret == nil {
-		return nil, fmt.Errorf("key %s missing in secret %s", c.ClientSecret.Key, c.ClientSecret.Name)
+	ctx := context.Background()
+
+	// Create http client with TLSConfig to allow skipping of CA validation if InsecureSkipVerify is set.
+	httpClient := &http.Client{Transport: &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: c.InsecureSkipVerify}, Proxy: http.ProxyFromEnvironment}}
+	oidcContext := oidc.ClientContext(ctx, httpClient)
+	// Some offspec providers like Azure, Oracle IDCS have oidc discovery url different from issuer url which causes issuerValidation to fail
+	// This providerCtx will allow the Verifier to succeed if the alternate/alias URL is in the config
+	if c.IssuerAlias != "" {
+		oidcContext = oidc.InsecureIssuerURLContext(oidcContext, c.IssuerAlias)
 	}
+
+	provider, err := factory(oidcContext, c.Issuer)
+	if err != nil {
+		return nil, err
+	}
+
+	clientID, err := getClientID(ctx, c, secretsIf)
+	if err != nil {
+		return nil, err
+	}
+	clientSecret, err := getClientSecret(ctx, c, secretsIf)
+	if err != nil {
+		return nil, err
+	}
+
+	privateKey, err := getSsoPrivateKey(ctx, c, secretsIf)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse private key. If you have already defined a Secret named %s, delete it and retry: %w", secretName, err)
+	}
+
 	config := &oauth2.Config{
 		ClientID:     string(clientID),
 		ClientSecret: string(clientSecret),
@@ -288,13 +352,17 @@ func (s *sso) HandleCallback(w http.ResponseWriter, r *http.Request) {
 	// Some SSO implementations (Okta) require a call to
 	// the OIDC user info path to get attributes like groups
 	if s.userInfoPath != "" {
-		groups, err = c.GetUserInfoGroups(oauth2Token.AccessToken, s.issuer, s.userInfoPath)
+		log.Info("Making call to userInfo: ", s.userInfoPath)
+		// Use sso.httpClient in order to respect TLSOptions
+		c.SetHttpClient(s.httpClient)
+		groups, err = c.GetUserInfoGroups(oauth2Token.AccessToken, s.issuer, s.userInfoPath, s.customClaimName)
 		if err != nil {
 			log.WithError(err).Errorf("failed to get groups claim from the given userInfoPath(%s)", s.userInfoPath)
 			w.WriteHeader(401)
 			return
 		}
 	}
+	log.Debug("groups: ", groups)
 
 	// only return groups that match at least one of the regexes
 	if s.filterGroupsRegex != nil && len(s.filterGroupsRegex) > 0 {

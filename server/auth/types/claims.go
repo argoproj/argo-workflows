@@ -3,9 +3,11 @@ package types
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 
 	"github.com/go-jose/go-jose/v3/jwt"
+	log "github.com/sirupsen/logrus"
 )
 
 type Claims struct {
@@ -31,6 +33,7 @@ type HttpClient interface {
 var httpClient HttpClient
 
 func init() {
+	// Default client
 	httpClient = &http.Client{}
 }
 
@@ -54,6 +57,10 @@ func (c *Claims) UnmarshalJSON(data []byte) error {
 
 	*c = Claims(localClaim)
 	return nil
+}
+
+func (c *Claims) SetHttpClient(newHttpClient *http.Client) {
+	httpClient = newHttpClient
 }
 
 // GetCustomGroup is responsible for extracting groups based on the
@@ -81,10 +88,14 @@ func (c *Claims) GetCustomGroup(customKeyName string) ([]string, error) {
 	return newSlice, nil
 }
 
-func (c *Claims) GetUserInfoGroups(accessToken, issuer, userInfoPath string) ([]string, error) {
+func (c *Claims) GetUserInfoGroups(
+	accessToken,
+	issuer,
+	userInfoPath string,
+	customKeyName string,
+) ([]string, error) {
 	url := fmt.Sprintf("%s%s", issuer, userInfoPath)
 	request, err := http.NewRequest("GET", url, nil)
-
 	if err != nil {
 		return nil, err
 	}
@@ -93,19 +104,46 @@ func (c *Claims) GetUserInfoGroups(accessToken, issuer, userInfoPath string) ([]
 	request.Header.Set("Authorization", bearer)
 
 	response, err := httpClient.Do(request)
-
 	if err != nil {
 		return nil, err
 	}
-
-	userInfo := UserInfo{}
+	responseBody, err := io.ReadAll(response.Body)
+	if err != nil {
+		return nil, fmt.Errorf("Could not read userInfo payload: %v", err)
+	}
+	log.Debug("UserInfo responseBody: ", string(responseBody))
 
 	defer response.Body.Close()
-	err = json.NewDecoder(response.Body).Decode(&userInfo)
 
+	userInfo := UserInfo{}
+	err = json.Unmarshal(responseBody, &userInfo)
 	if err != nil {
 		return nil, err
 	}
+	log.Debug("userInfo: ", userInfo)
 
-	return userInfo.Groups, nil
+	// Default to getting groups using "groups" key
+	groups := userInfo.Groups
+
+	// If a custom group key was given, use that
+	if customKeyName != "" {
+		log.Info(
+			"A custom group key has been supplied, trying to retrieve the groups from key: ",
+			customKeyName,
+		)
+		var userInfoRawMap map[string]json.RawMessage
+
+		err = json.Unmarshal(responseBody, &userInfoRawMap)
+		if err != nil {
+			return nil, fmt.Errorf("Could not marshall userInfo payload")
+		}
+
+		err = json.Unmarshal(userInfoRawMap[customKeyName], &groups)
+		if err != nil {
+			return nil, fmt.Errorf("No claim found in userInfo for key: %v", customKeyName)
+		}
+	}
+	log.Debug("UserInfo groups: ", groups)
+
+	return groups, nil
 }
