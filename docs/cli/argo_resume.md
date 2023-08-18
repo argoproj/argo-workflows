@@ -13,8 +13,17 @@ argo resume WORKFLOW1 WORKFLOW2... [flags]
 
   argo resume my-wf
 
+# Resume multiple workflows:
+		
+  argo resume my-wf my-other-wf my-third-wf		
+		
 # Resume the latest workflow:
+		
   argo resume @latest
+		
+# Resume multiple workflows by node field selector:
+		
+  argo resume --node-field-selector inputs.paramaters.myparam.value=abc		
 
 ```
 
