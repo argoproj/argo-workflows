@@ -60,7 +60,7 @@ require (
 	golang.org/x/oauth2 v0.11.0
 	golang.org/x/sync v0.3.0
 	golang.org/x/time v0.3.0
-	google.golang.org/api v0.136.0
+	google.golang.org/api v0.138.0
 	google.golang.org/genproto/googleapis/api v0.0.0-20230803162519-f966b187b2e5
 	google.golang.org/grpc v1.57.0
 	gopkg.in/go-playground/webhooks.v5 v5.17.0
@@ -78,7 +78,7 @@ require (
 
 require (
 	github.com/alibabacloud-go/debug v0.0.0-20190504072949-9472017b5c68 // indirect
-	github.com/google/s2a-go v0.1.4 // indirect
+	github.com/google/s2a-go v0.1.5 // indirect
 	github.com/jackc/chunkreader/v2 v2.0.1 // indirect
 	github.com/jackc/pgconn v1.14.0 // indirect
 	github.com/jackc/pgio v1.0.0 // indirect
