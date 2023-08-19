@@ -38,6 +38,7 @@ func NewStopCommand() *cobra.Command {
 	command := &cobra.Command{
 		Use:   "stop WORKFLOW WORKFLOW2...",
 		Short: "stop zero or more workflows allowing all exit handlers to run",
+		Long:  "Stop a workflow but still run exit handlers.",
 		Example: `# Stop a workflow:
 
   argo stop my-wf
