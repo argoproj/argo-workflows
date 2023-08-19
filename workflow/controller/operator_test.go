@@ -9288,3 +9288,232 @@ spec:
 	assert.Equal(t, woc.wf.Status.Phase, wfv1.WorkflowFailed)
 	assert.Contains(t, woc.wf.Status.Message, "invalid spec")
 }
+
+var workflowWithTemplateLevelMemoizationAndChildStep = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  namespace: default
+  generateName: memoized-entrypoint-
+spec:
+  entrypoint: entrypoint
+  templates:
+  - name: entrypoint
+    memoize:
+      key: "entrypoint-key-1"
+      cache:
+        configMap:
+          name: cache-top-entrypoint
+    outputs:
+        parameters:
+          - name: url
+            valueFrom:
+              expression: |
+                'https://argo-workflows.company.com/workflows/namepace/' + '{{workflow.name}}' + '?tab=workflow'
+    steps:
+      - - name: whalesay
+          template: whalesay
+
+  - name: whalesay
+    container:
+      image: docker/whalesay:latest
+      command: [sh, -c]
+      args: ["cowsay hello_world $(date) > /tmp/hello_world.txt"]
+    outputs:
+      parameters:
+      - name: hello
+        valueFrom:
+          path: /tmp/hello_world.txt
+`
+
+func TestMemoizationTemplateLevelCacheWithStepWithoutCache(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(workflowWithTemplateLevelMemoizationAndChildStep)
+
+	cancel, controller := newController(wf)
+	defer cancel()
+
+	ctx := context.Background()
+
+	woc := newWorkflowOperationCtx(wf, controller)
+
+	woc.operate(ctx)
+	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
+	woc.operate(ctx)
+
+	// Expect both workflowTemplate and the step to be executed
+	for _, node := range woc.wf.Status.Nodes {
+		if node.TemplateName == "entrypoint" {
+			assert.True(t, true, "Entrypoint node does not exist")
+			assert.Equal(t, wfv1.NodeSucceeded, node.Phase)
+			assert.False(t, node.MemoizationStatus.Hit)
+		}
+		if node.Name == "whalesay" {
+			assert.True(t, true, "Whalesay step does not exist")
+			assert.Equal(t, wfv1.NodeSucceeded, node.Phase)
+		}
+	}
+}
+
+func TestMemoizationTemplateLevelCacheWithStepWithCache(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(workflowWithTemplateLevelMemoizationAndChildStep)
+
+	// Assume cache is already set
+	sampleConfigMapCacheEntry := apiv1.ConfigMap{
+		Data: map[string]string{
+			"entrypoint-key-1": `{"ExpiresAt":"2020-06-18T17:11:05Z","NodeID":"memoize-abx4124-123129321123","Outputs":{}}`,
+		},
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "ConfigMap",
+			APIVersion: "v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:            "cache-top-entrypoint",
+			ResourceVersion: "1630732",
+			Labels: map[string]string{
+				common.LabelKeyConfigMapType: common.LabelValueTypeConfigMapCache,
+			},
+		},
+	}
+
+	cancel, controller := newController(wf)
+	defer cancel()
+
+	ctx := context.Background()
+
+	_, err := controller.kubeclientset.CoreV1().ConfigMaps("default").Create(ctx, &sampleConfigMapCacheEntry, metav1.CreateOptions{})
+	assert.NoError(t, err)
+
+	woc := newWorkflowOperationCtx(wf, controller)
+
+	woc.operate(ctx)
+	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
+	woc.operate(ctx)
+
+	// Only parent node should exist and it should be a memoization cache hit
+	for _, node := range woc.wf.Status.Nodes {
+		t.Log(node)
+		if node.TemplateName == "entrypoint" {
+			assert.True(t, true, "Entrypoint node does not exist")
+			assert.Equal(t, wfv1.NodeSucceeded, node.Phase)
+			assert.True(t, node.MemoizationStatus.Hit)
+		}
+		if node.Name == "whalesay" {
+			assert.False(t, true, "Whalesay step should not have been executed")
+		}
+	}
+}
+
+var workflowWithTemplateLevelMemoizationAndChildDag = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  namespace: default
+  generateName: memoized-entrypoint-
+spec:
+  entrypoint: entrypoint
+  templates:
+  - name: entrypoint
+    dag:
+      tasks:
+      - name: whalesay-task
+        template: whalesay
+    memoize:
+      key: "entrypoint-key-1"
+      cache:
+        configMap:
+          name: cache-top-entrypoint
+    outputs:
+      parameters:
+      - name: url
+        valueFrom:
+          expression: |
+            'https://argo-workflows.company.com/workflows/namepace/' + '{{workflow.name}}' + '?tab=workflow'
+            
+  - name: whalesay
+    container:
+      image: docker/whalesay:latest
+      command: [sh, -c]
+      args: ["cowsay hello_world $(date) > /tmp/hello_world.txt"]
+    outputs:
+      parameters:
+      - name: hello
+        valueFrom:
+          path: /tmp/hello_world.txt
+`
+
+func TestMemoizationTemplateLevelCacheWithDagWithoutCache(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(workflowWithTemplateLevelMemoizationAndChildDag)
+
+	cancel, controller := newController(wf)
+	defer cancel()
+
+	ctx := context.Background()
+
+	woc := newWorkflowOperationCtx(wf, controller)
+
+	woc.operate(ctx)
+	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
+	woc.operate(ctx)
+
+	// Expect both workflowTemplate and the dag to be executed
+	for _, node := range woc.wf.Status.Nodes {
+		if node.TemplateName == "entrypoint" {
+			assert.True(t, true, "Entrypoint node does not exist")
+			assert.Equal(t, wfv1.NodeSucceeded, node.Phase)
+			assert.False(t, node.MemoizationStatus.Hit)
+		}
+		if node.Name == "whalesay" {
+			assert.True(t, true, "Whalesay dag does not exist")
+			assert.Equal(t, wfv1.NodeSucceeded, node.Phase)
+		}
+	}
+}
+
+func TestMemoizationTemplateLevelCacheWithDagWithCache(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(workflowWithTemplateLevelMemoizationAndChildDag)
+
+	// Assume cache is already set
+	sampleConfigMapCacheEntry := apiv1.ConfigMap{
+		Data: map[string]string{
+			"entrypoint-key-1": `{"ExpiresAt":"2020-06-18T17:11:05Z","NodeID":"memoize-abx4124-123129321123","Outputs":{}}`,
+		},
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "ConfigMap",
+			APIVersion: "v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:            "cache-top-entrypoint",
+			ResourceVersion: "1630732",
+			Labels: map[string]string{
+				common.LabelKeyConfigMapType: common.LabelValueTypeConfigMapCache,
+			},
+		},
+	}
+
+	cancel, controller := newController(wf)
+	defer cancel()
+
+	ctx := context.Background()
+
+	_, err := controller.kubeclientset.CoreV1().ConfigMaps("default").Create(ctx, &sampleConfigMapCacheEntry, metav1.CreateOptions{})
+	assert.NoError(t, err)
+
+	woc := newWorkflowOperationCtx(wf, controller)
+
+	woc.operate(ctx)
+	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
+	woc.operate(ctx)
+
+	// Only parent node should exist and it should be a memoization cache hit
+	for _, node := range woc.wf.Status.Nodes {
+		t.Log(node)
+		if node.TemplateName == "entrypoint" {
+			assert.True(t, true, "Entrypoint node does not exist")
+			assert.Equal(t, wfv1.NodeSucceeded, node.Phase)
+			assert.True(t, node.MemoizationStatus.Hit)
+		}
+		if node.Name == "whalesay" {
+			assert.False(t, true, "Whalesay dag should not have been executed")
+		}
+	}
+}
