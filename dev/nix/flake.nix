@@ -13,7 +13,7 @@
     inputs.flake-parts.lib.mkFlake { inherit inputs; } {
       systems = [ "x86_64-linux" "x86_64-darwin" "aarch64-linux" "aarch64-darwin" ];
       imports = [ inputs.treefmt-nix.flakeModule ];
-      perSystem = { pkgs, lib, config, ... }:
+      perSystem = { pkgs, lib, config, system, ... }:
         let
           argoConfig = import ./conf.nix;
           myyarn = pkgs.yarn.override { nodejs = pkgs.nodejs-16_x-openssl_1_1; };
@@ -175,12 +175,22 @@
           uiCmd = mkExec "yarn" argoConfig.ui.env argoConfig.ui.args;
         in
         {
+          _module.args = import inputs.nixpkgs {
+            inherit system;
+            overlays = [
+              (self: super: {
+                go = super.go_1_20;
+                buildGoModule = super.buildGo120Module;
+              })
+            ];
+          };
+
           packages = {
             ${package.name} = pkgs.buildGoModule {
               pname = package.name;
               inherit (package) version;
               inherit src;
-              vendorSha256 = "sha256-OKUiHkVZ/rfjPFs7Md5WDa5K1SNJQvLMxlYClUe7Umk=";
+              vendorSha256 = "sha256-KRg9ibAxKm3t+8skxlMjomWUry335BZ576db2nANpj8=";
               doCheck = false;
             };
 
