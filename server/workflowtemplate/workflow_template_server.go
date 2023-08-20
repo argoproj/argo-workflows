@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"sort"
+	"strings"
 
 	"google.golang.org/grpc/codes"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -78,6 +79,17 @@ func (wts *WorkflowTemplateServer) ListWorkflowTemplates(ctx context.Context, re
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.Internal)
 	}
+
+	if req.NamePattern != "" {
+		var items []v1alpha1.WorkflowTemplate
+		for _, item := range wfList.Items {
+			if strings.Contains(item.ObjectMeta.Name, req.NamePattern) {
+				items = append(items, item)
+			}
+		}
+		wfList.Items = items
+	}
+
 	sort.Sort(wfList.Items)
 	return wfList, nil
 }
