@@ -8,7 +8,7 @@ Currently, CronWorkflows are a great resource if we want to run recurring tasks 
 
 This proposal discusses the viability of adding 2 more fields into the cron workflow configuration:
 
-```
+```yaml
 RunStrategy:
  maxSuccess:
  maxFailures:
@@ -20,7 +20,7 @@ RunStrategy:
 
 For example, if we want to run a workflow just once, we could just set:
 
-```
+```yaml
 RunStrategy:
  maxSuccess: 1
 ```
@@ -29,7 +29,7 @@ This configuration will make sure the controller will keep scheduling workflows 
 
 As another example, if we want to stop scheduling workflows when they keep failing, we could configure the CronWorkflow with:
 
-```
+```yaml
 RunStrategy:
  maxFailures: 2
 ```
@@ -75,7 +75,7 @@ One possible case that comes to mind is a long outage where all workflows are fa
 
 I believe option 2 would allow the user to select if they want to stop scheduling or not. If they do, when cron workflows are wrongfully halted, they will need to manually start them again. If they don't, Argo will only introduce a back-off period between schedules to avoid rescheduling workflows that are just going to fail. Spec could look something like:
 
-```
+```yaml
 RunStrategy:
  maxSuccess:
  maxFailures:
