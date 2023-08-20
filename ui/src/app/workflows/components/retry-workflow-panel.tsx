@@ -42,11 +42,6 @@ export class RetryWorkflowPanel extends React.Component<Props, State> {
                     {this.props.workflow.metadata.namespace}/{this.props.workflow.metadata.name}
                 </h5>
 
-                <div key='warning-override-parameter-when-retrying'>
-                    <i className='fa fa-exclamation-triangle' style={{color: '#f4c030'}} />
-                    <a href='https://github.com/argoproj/argo-workflows/issues/11631'>When using WorkflowTemplate, parameter overrides are not supported</a>.
-                </div>
-
                 {this.state.error && <ErrorNotice error={this.state.error} />}
                 <div className='white-box'>
                     <div key='override-parameters' style={{marginBottom: 25}}>
