@@ -257,6 +257,7 @@ jobs:
       - run: yarn --cwd ui build
       - run: yarn --cwd ui test
       - run: yarn --cwd ui lint
+      - run: yarn --cwd ui deduplicate
       - run: git diff --exit-code
       # check to see if it'll start (but not if it'll render)
       - run: yarn --cwd ui start &
