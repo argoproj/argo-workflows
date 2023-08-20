@@ -313,6 +313,9 @@ func overrideParameters(wf *wfv1.Workflow, parameters []string) error {
 			newParams = append(newParams, param)
 		}
 		wf.Spec.Arguments.Parameters = newParams
+		if wf.Status.StoredWorkflowSpec != nil {
+			wf.Status.StoredWorkflowSpec.Arguments.Parameters = newParams
+		}
 	}
 	return nil
 }
