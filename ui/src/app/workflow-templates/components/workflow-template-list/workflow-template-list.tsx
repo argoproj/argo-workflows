@@ -68,7 +68,7 @@ export const WorkflowTemplateList = ({match, location, history}: RouteComponentP
     const [templates, setTemplates] = useState<WorkflowTemplate[]>();
     useEffect(() => {
         services.workflowTemplate
-            .list(namespace, labels, pagination)
+            .list(namespace, labels, '', pagination)
             .then(list => {
                 setPagination({...pagination, nextOffset: list.metadata.continue});
                 setTemplates(list.items || []);
