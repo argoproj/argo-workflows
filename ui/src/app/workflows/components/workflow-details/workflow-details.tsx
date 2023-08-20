@@ -27,6 +27,7 @@ import {WorkflowOperations} from '../../../shared/workflow-operations-map';
 import {WidgetGallery} from '../../../widgets/widget-gallery';
 import {EventsPanel} from '../events-panel';
 import {ResubmitWorkflowPanel} from '../resubmit-workflow-panel';
+import {RetryWorkflowPanel} from '../retry-workflow-panel';
 import {WorkflowArtifacts} from '../workflow-artifacts';
 import {WorkflowLogsViewer} from '../workflow-logs-viewer/workflow-logs-viewer';
 import {WorkflowNodeInfo} from '../workflow-node-info/workflow-node-info';
@@ -204,6 +205,8 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
                                 });
                         } else if (workflowOperation.title === 'RESUBMIT') {
                             setSidePanel('resubmit');
+                        } else if (workflowOperation.title === 'RETRY') {
+                            setSidePanel('retry');
                         } else {
                             popup.confirm('Confirm', `Are you sure you want to ${workflowOperation.title.toLowerCase()} this workflow?`).then(yes => {
                                 if (yes) {
@@ -567,7 +570,7 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
                     ))}
             </div>
             {workflow && (
-                <SlidingPanel isShown={!!sidePanel} onClose={() => setSidePanel(null)} isMiddle={parsedSidePanel.type === 'resubmit'}>
+                <SlidingPanel isShown={!!sidePanel} onClose={() => setSidePanel(null)} isMiddle={['resubmit', 'retry'].includes(parsedSidePanel.type)}>
                     {parsedSidePanel.type === 'logs' && (
                         <WorkflowLogsViewer
                             workflow={workflow}
@@ -581,6 +584,7 @@ export const WorkflowDetails = ({history, location, match}: RouteComponentProps<
                     {parsedSidePanel.type === 'share' && <WidgetGallery namespace={namespace} name={name} />}
                     {parsedSidePanel.type === 'yaml' && <WorkflowYamlViewer workflow={workflow} selectedNode={selectedNode} />}
                     {parsedSidePanel.type === 'resubmit' && <ResubmitWorkflowPanel workflow={workflow} isArchived={isArchivedWorkflow(workflow)} />}
+                    {parsedSidePanel.type === 'retry' && <RetryWorkflowPanel workflow={workflow} isArchived={isArchivedWorkflow(workflow)} />}
                     {!parsedSidePanel}
                 </SlidingPanel>
             )}
