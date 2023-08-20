@@ -46,7 +46,7 @@ type Metrics struct {
 
 	workflowsProcessed prometheus.Counter
 	podsByPhase        map[corev1.PodPhase]prometheus.Gauge
-	workflowsByPhase   map[v1alpha1.NodePhase]prometheus.Gauge
+	workflowsByPhase   map[v1alpha1.NodePhase]map[string]prometheus.Gauge
 	workflows          map[string][]string
 	operationDurations prometheus.Histogram
 	errors             map[ErrorCause]prometheus.Counter
@@ -92,6 +92,8 @@ func New(metricsConfig, telemetryConfig ServerConfig) *Metrics {
 		}, []string{"level"}),
 	}
 
+	metrics.initWorkflowPhaseGauge()
+
 	for _, metric := range metrics.allMetrics() {
 		metrics.defaultMetricDescs[metric.Desc().String()] = true
 	}
@@ -113,9 +115,6 @@ func (m *Metrics) allMetrics() []prometheus.Metric {
 		m.workflowsProcessed,
 		m.operationDurations,
 	}
-	for _, metric := range m.workflowsByPhase {
-		allMetrics = append(allMetrics, metric)
-	}
 	for _, metric := range m.podsByPhase {
 		allMetrics = append(allMetrics, metric)
 	}
@@ -130,6 +129,11 @@ func (m *Metrics) allMetrics() []prometheus.Metric {
 	}
 	for _, metric := range m.customMetrics {
 		allMetrics = append(allMetrics, metric.metric)
+	}
+	for _, metric := range m.workflowsByPhase {
+		for _, gauge := range metric {
+			allMetrics = append(allMetrics, gauge)
+		}
 	}
 	return allMetrics
 }
@@ -189,11 +193,60 @@ func (m *Metrics) UpsertCustomMetric(key string, ownerKey string, newMetric prom
 	return nil
 }
 
-func (m *Metrics) SetWorkflowPhaseGauge(phase v1alpha1.NodePhase, num int) {
+func (m *Metrics) initWorkflowPhaseGauge() {
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
+	for _, phase := range []v1alpha1.NodePhase{v1alpha1.NodePending, v1alpha1.NodeRunning, v1alpha1.NodeSucceeded, v1alpha1.NodeFailed, v1alpha1.NodeError} {
+		labels := map[string]string{
+			"status": string(phase),
+		}
+		metric := createWorkflowPhaseGauges(labels)
+		m.workflowsByPhase[phase] = map[string]prometheus.Gauge{metric.Desc().String(): metric}
+	}
+}
+
+func (m *Metrics) SetWorkflowPhaseGauge(phase v1alpha1.NodePhase, wfs []*v1alpha1.Workflow) {
+	createOrUpdateMetric := func(phaseMetrics map[string]prometheus.Gauge, labels map[string]string) prometheus.Gauge {
+		newMetric := createWorkflowPhaseGauges(labels)
+		desc := newMetric.Desc().String()
+		metric, ok := phaseMetrics[desc]
+		if ok {
+			return metric
+		} else {
+			metric := newMetric
+			phaseMetrics[desc] = metric
+			return metric
+		}
+	}
+
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
 
-	m.workflowsByPhase[phase].Set(float64(num))
+	newPhaseMetrics := make(map[string]prometheus.Gauge)
+
+	if len(wfs) == 0 {
+		labels := map[string]string{
+			"status": string(phase),
+		}
+		metric := createWorkflowPhaseGauges(labels)
+		newPhaseMetrics[metric.Desc().String()] = metric
+		m.workflowsByPhase[phase] = newPhaseMetrics
+		return
+	}
+
+	for _, wf := range wfs {
+		labels := map[string]string{
+			"status": string(phase),
+		}
+		if wf.Spec.Metrics != nil && wf.Spec.Metrics.CustomLabels != nil && len(wf.Spec.Metrics.CustomLabels.Count) > 0 {
+			for key, value := range wf.Spec.Metrics.CustomLabels.Count {
+				labels[key] = value
+			}
+		}
+		metric := createOrUpdateMetric(newPhaseMetrics, labels)
+		metric.Add(1)
+	}
+	m.workflowsByPhase[phase] = newPhaseMetrics
 }
 
 func (m *Metrics) SetPodPhaseGauge(phase corev1.PodPhase, num int) {

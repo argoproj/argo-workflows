@@ -305,7 +305,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 
 	go wfc.runGCcontroller(ctx, workflowTTLWorkers)
 	go wfc.runCronController(ctx, cronWorkflowWorkers)
-	go wait.Until(wfc.syncWorkflowPhaseMetrics, 15*time.Second, ctx.Done())
+	go wait.Until(wfc.syncWorkflowPhaseMetrics, 2*time.Second, ctx.Done())
 	go wait.Until(wfc.syncPodPhaseMetrics, 15*time.Second, ctx.Done())
 
 	go wait.Until(wfc.syncManager.CheckWorkflowExistence, workflowExistenceCheckPeriod, ctx.Done())
@@ -1191,13 +1191,36 @@ func (wfc *WorkflowController) isArchivable(wf *wfv1.Workflow) bool {
 	return wfc.archiveLabelSelector.Matches(labels.Set(wf.Labels))
 }
 
+func (wfc *WorkflowController) getWorkflowsForPhaseGauge(phase wfv1.NodePhase) []*wfv1.Workflow {
+	// return all workflows that have been operated at least once
+	var result []*wfv1.Workflow
+	objs, err := wfc.wfInformer.GetIndexer().ByIndex(indexes.WorkflowPhaseIndex, string(phase))
+	errors.CheckError(err)
+	for _, obj := range objs {
+		un, ok := obj.(*unstructured.Unstructured)
+		if !ok {
+			errors.CheckError(err)
+			continue
+		}
+		wf, err := util.FromUnstructured(un)
+		if err != nil {
+			errors.CheckError(err)
+		}
+		if wf.Status.Phase == wfv1.WorkflowUnknown {
+
+			continue
+		}
+		result = append(result, wf)
+	}
+	return result
+}
+
 func (wfc *WorkflowController) syncWorkflowPhaseMetrics() {
 	defer runtimeutil.HandleCrash(runtimeutil.PanicHandlers...)
 
 	for _, phase := range []wfv1.NodePhase{wfv1.NodePending, wfv1.NodeRunning, wfv1.NodeSucceeded, wfv1.NodeFailed, wfv1.NodeError} {
-		keys, err := wfc.wfInformer.GetIndexer().IndexKeys(indexes.WorkflowPhaseIndex, string(phase))
-		errors.CheckError(err)
-		wfc.metrics.SetWorkflowPhaseGauge(phase, len(keys))
+		wfs := wfc.getWorkflowsForPhaseGauge(phase)
+		wfc.metrics.SetWorkflowPhaseGauge(phase, wfs)
 	}
 	for _, x := range []wfv1.Condition{
 		{Type: wfv1.ConditionTypePodRunning, Status: metav1.ConditionTrue},

@@ -163,23 +163,20 @@ func newHistogram(name, help string, labels map[string]string, buckets []float64
 	return m
 }
 
-func getWorkflowPhaseGauges() map[wfv1.NodePhase]prometheus.Gauge {
-	getOptsByPhase := func(phase wfv1.NodePhase) prometheus.GaugeOpts {
-		return prometheus.GaugeOpts{
-			Namespace:   argoNamespace,
-			Subsystem:   workflowsSubsystem,
-			Name:        "count",
-			Help:        "Number of Workflows currently accessible by the controller by status (refreshed every 15s)",
-			ConstLabels: map[string]string{"status": string(phase)},
-		}
+func getWorkflowPhaseGauges() map[wfv1.NodePhase]map[string]prometheus.Gauge {
+	return map[wfv1.NodePhase]map[string]prometheus.Gauge{
+		wfv1.NodePending:   make(map[string]prometheus.Gauge),
+		wfv1.NodeRunning:   make(map[string]prometheus.Gauge),
+		wfv1.NodeSucceeded: make(map[string]prometheus.Gauge),
+		wfv1.NodeFailed:    make(map[string]prometheus.Gauge),
+		wfv1.NodeError:     make(map[string]prometheus.Gauge),
 	}
-	return map[wfv1.NodePhase]prometheus.Gauge{
-		wfv1.NodePending:   prometheus.NewGauge(getOptsByPhase(wfv1.NodePending)),
-		wfv1.NodeRunning:   prometheus.NewGauge(getOptsByPhase(wfv1.NodeRunning)),
-		wfv1.NodeSucceeded: prometheus.NewGauge(getOptsByPhase(wfv1.NodeSucceeded)),
-		wfv1.NodeFailed:    prometheus.NewGauge(getOptsByPhase(wfv1.NodeFailed)),
-		wfv1.NodeError:     prometheus.NewGauge(getOptsByPhase(wfv1.NodeError)),
-	}
+}
+
+func createWorkflowPhaseGauges(labels map[string]string) prometheus.Gauge {
+	name := "count"
+	help := "Number of Workflows currently accessible by the controller by status (refreshed every 15s)"
+	return newGauge(name, help, labels)
 }
 
 func getPodPhaseGauges() map[v1.PodPhase]prometheus.Gauge {

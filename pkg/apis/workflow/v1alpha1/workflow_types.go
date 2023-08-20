@@ -3438,7 +3438,12 @@ const (
 // Metrics are a list of metrics emitted from a Workflow/Template
 type Metrics struct {
 	// Prometheus is a list of prometheus metrics to be emitted
-	Prometheus []*Prometheus `json:"prometheus" protobuf:"bytes,1,rep,name=prometheus"`
+	Prometheus   []*Prometheus `json:"prometheus" protobuf:"bytes,1,rep,name=prometheus"`
+	CustomLabels *CustomLabels `json:"customLabels,omitempty" protobuf:"bytes,2,opt,name=customLabels"`
+}
+
+type CustomLabels struct {
+	Count map[string]string `json:"count" protobuf:"bytes,1,opt,name=count"`
 }
 
 // Prometheus is a prometheus metric to be emitted
