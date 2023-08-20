@@ -95,7 +95,7 @@ export class WorkflowsRow extends React.Component<WorkflowsRowProps, WorkflowRow
                         <div className='columns small-1'>{isArchivedWorkflow(wf) ? 'true' : 'false'}</div>
                         {(this.props.columns || []).map(column => {
                             // best not to make any assumptions and wait until this data is filled
-                            const value = wf?.metadata?.labels ? wf.metadata.labels[column.key] : 'unknown';
+                            const value = wf?.metadata?.labels?.[column.key] ?? 'unknown';
                             return (
                                 <div key={column.name} className='columns small-1'>
                                     {value}
