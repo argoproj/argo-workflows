@@ -507,6 +507,10 @@ message CronWorkflowStatus {
   repeated Condition conditions = 3;
 }
 
+message CustomLabels {
+  map<string, string> count = 1;
+}
+
 // DAGTask represents a node in the graph during DAG execution
 message DAGTask {
   // Name is the name of the target
@@ -934,6 +938,8 @@ message MetricLabel {
 message Metrics {
   // Prometheus is a list of prometheus metrics to be emitted
   repeated Prometheus prometheus = 1;
+
+  optional CustomLabels customLabels = 2;
 }
 
 // Mutex holds Mutex configuration

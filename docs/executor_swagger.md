@@ -1112,6 +1112,21 @@ Valid time units are "ns", "us" (or "µs"), "ms", "s", "m", "h". |  |
 
 
 
+### <span id="custom-labels"></span> CustomLabels
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| count | map of string| `map[string]string` |  | |  |  |
+
+
+
 ### <span id="d-a-g-task"></span> DAGTask
 
 
@@ -2435,6 +2450,7 @@ than the MaxAge, it will be ignored. |  |
 
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
+| customLabels | [CustomLabels](#custom-labels)| `CustomLabels` |  | |  |  |
 | prometheus | [][Prometheus](#prometheus)| `[]*Prometheus` |  | | Prometheus is a list of prometheus metrics to be emitted |  |
 
 

@@ -1524,6 +1524,7 @@ Metrics are a list of metrics emitted from a Workflow/Template
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
+|`customLabels`|[`CustomLabels`](#customlabels)|_No description available_|
 |`prometheus`|`Array<`[`Prometheus`](#prometheus)`>`|Prometheus is a list of prometheus metrics to be emitted|
 
 ## PodGC
@@ -2280,6 +2281,15 @@ TemplateRef is a reference of template resource.
 |`clusterScope`|`boolean`|ClusterScope indicates the referred template is cluster scoped (i.e. a ClusterWorkflowTemplate).|
 |`name`|`string`|Name is the resource name of the template.|
 |`template`|`string`|Template is the name of referred template in the resource.|
+
+## CustomLabels
+
+_No description available_
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`count`|`Map< string , string >`|_No description available_|
 
 ## Prometheus
 

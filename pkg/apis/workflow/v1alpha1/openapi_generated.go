@@ -56,6 +56,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.CronWorkflowList":              schema_pkg_apis_workflow_v1alpha1_CronWorkflowList(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.CronWorkflowSpec":              schema_pkg_apis_workflow_v1alpha1_CronWorkflowSpec(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.CronWorkflowStatus":            schema_pkg_apis_workflow_v1alpha1_CronWorkflowStatus(ref),
+		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.CustomLabels":                  schema_pkg_apis_workflow_v1alpha1_CustomLabels(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.DAGTask":                       schema_pkg_apis_workflow_v1alpha1_DAGTask(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.DAGTemplate":                   schema_pkg_apis_workflow_v1alpha1_DAGTemplate(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Data":                          schema_pkg_apis_workflow_v1alpha1_Data(ref),
@@ -2285,6 +2286,34 @@ func schema_pkg_apis_workflow_v1alpha1_CronWorkflowStatus(ref common.ReferenceCa
 	}
 }
 
+func schema_pkg_apis_workflow_v1alpha1_CustomLabels(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"count": {
+						SchemaProps: spec.SchemaProps{
+							Type: []string{"object"},
+							AdditionalProperties: &spec.SchemaOrBool{
+								Allows: true,
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: "",
+										Type:    []string{"string"},
+										Format:  "",
+									},
+								},
+							},
+						},
+					},
+				},
+				Required: []string{"count"},
+			},
+		},
+	}
+}
+
 func schema_pkg_apis_workflow_v1alpha1_DAGTask(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
@@ -3822,12 +3851,17 @@ func schema_pkg_apis_workflow_v1alpha1_Metrics(ref common.ReferenceCallback) com
 							},
 						},
 					},
+					"customLabels": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.CustomLabels"),
+						},
+					},
 				},
 				Required: []string{"prometheus"},
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Prometheus"},
+			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.CustomLabels", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Prometheus"},
 	}
 }
 

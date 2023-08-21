@@ -1607,6 +1607,15 @@ spec:
                 type: array
               metrics:
                 properties:
+                  customLabels:
+                    properties:
+                      count:
+                        additionalProperties:
+                          type: string
+                        type: object
+                    required:
+                    - count
+                    type: object
                   prometheus:
                     items:
                       properties:
@@ -6897,6 +6906,15 @@ spec:
                     type: object
                   metrics:
                     properties:
+                      customLabels:
+                        properties:
+                          count:
+                            additionalProperties:
+                              type: string
+                            type: object
+                        required:
+                        - count
+                        type: object
                       prometheus:
                         items:
                           properties:
@@ -15083,6 +15101,15 @@ spec:
                       type: object
                     metrics:
                       properties:
+                        customLabels:
+                          properties:
+                            count:
+                              additionalProperties:
+                                type: string
+                              type: object
+                          required:
+                          - count
+                          type: object
                         prometheus:
                           items:
                             properties:

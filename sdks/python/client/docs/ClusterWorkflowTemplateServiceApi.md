@@ -921,6 +921,11 @@ with argo_workflows.ApiClient(configuration) as api_client:
                     ),
                 ],
                 metrics=IoArgoprojWorkflowV1alpha1Metrics(
+                    custom_labels=IoArgoprojWorkflowV1alpha1CustomLabels(
+                        count={
+                            "key": "key_example",
+                        },
+                    ),
                     prometheus=[
                         IoArgoprojWorkflowV1alpha1Prometheus(
                             counter=IoArgoprojWorkflowV1alpha1Counter(
@@ -3493,6 +3498,11 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         },
                     ),
                     metrics=IoArgoprojWorkflowV1alpha1Metrics(
+                        custom_labels=IoArgoprojWorkflowV1alpha1CustomLabels(
+                            count={
+                                "key": "key_example",
+                            },
+                        ),
                         prometheus=[
                             IoArgoprojWorkflowV1alpha1Prometheus(
                                 counter=IoArgoprojWorkflowV1alpha1Counter(
@@ -8060,6 +8070,11 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             },
                         ),
                         metrics=IoArgoprojWorkflowV1alpha1Metrics(
+                            custom_labels=IoArgoprojWorkflowV1alpha1CustomLabels(
+                                count={
+                                    "key": "key_example",
+                                },
+                            ),
                             prometheus=[
                                 IoArgoprojWorkflowV1alpha1Prometheus(
                                     counter=IoArgoprojWorkflowV1alpha1Counter(
@@ -11854,6 +11869,11 @@ with argo_workflows.ApiClient(configuration) as api_client:
                     ),
                 ],
                 metrics=IoArgoprojWorkflowV1alpha1Metrics(
+                    custom_labels=IoArgoprojWorkflowV1alpha1CustomLabels(
+                        count={
+                            "key": "key_example",
+                        },
+                    ),
                     prometheus=[
                         IoArgoprojWorkflowV1alpha1Prometheus(
                             counter=IoArgoprojWorkflowV1alpha1Counter(
@@ -14426,6 +14446,11 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         },
                     ),
                     metrics=IoArgoprojWorkflowV1alpha1Metrics(
+                        custom_labels=IoArgoprojWorkflowV1alpha1CustomLabels(
+                            count={
+                                "key": "key_example",
+                            },
+                        ),
                         prometheus=[
                             IoArgoprojWorkflowV1alpha1Prometheus(
                                 counter=IoArgoprojWorkflowV1alpha1Counter(
@@ -18993,6 +19018,11 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             },
                         ),
                         metrics=IoArgoprojWorkflowV1alpha1Metrics(
+                            custom_labels=IoArgoprojWorkflowV1alpha1CustomLabels(
+                                count={
+                                    "key": "key_example",
+                                },
+                            ),
                             prometheus=[
                                 IoArgoprojWorkflowV1alpha1Prometheus(
                                     counter=IoArgoprojWorkflowV1alpha1Counter(
@@ -22691,6 +22721,11 @@ with argo_workflows.ApiClient(configuration) as api_client:
                     ),
                 ],
                 metrics=IoArgoprojWorkflowV1alpha1Metrics(
+                    custom_labels=IoArgoprojWorkflowV1alpha1CustomLabels(
+                        count={
+                            "key": "key_example",
+                        },
+                    ),
                     prometheus=[
                         IoArgoprojWorkflowV1alpha1Prometheus(
                             counter=IoArgoprojWorkflowV1alpha1Counter(
@@ -25263,6 +25298,11 @@ with argo_workflows.ApiClient(configuration) as api_client:
                         },
                     ),
                     metrics=IoArgoprojWorkflowV1alpha1Metrics(
+                        custom_labels=IoArgoprojWorkflowV1alpha1CustomLabels(
+                            count={
+                                "key": "key_example",
+                            },
+                        ),
                         prometheus=[
                             IoArgoprojWorkflowV1alpha1Prometheus(
                                 counter=IoArgoprojWorkflowV1alpha1Counter(
@@ -29830,6 +29870,11 @@ with argo_workflows.ApiClient(configuration) as api_client:
                             },
                         ),
                         metrics=IoArgoprojWorkflowV1alpha1Metrics(
+                            custom_labels=IoArgoprojWorkflowV1alpha1CustomLabels(
+                                count={
+                                    "key": "key_example",
+                                },
+                            ),
                             prometheus=[
                                 IoArgoprojWorkflowV1alpha1Prometheus(
                                     counter=IoArgoprojWorkflowV1alpha1Counter(

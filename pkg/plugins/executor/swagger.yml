@@ -1052,6 +1052,13 @@ definitions:
         description: ObjectLocking Enable object locking
         type: boolean
     type: object
+  CustomLabels:
+    properties:
+      count:
+        additionalProperties:
+          type: string
+        type: object
+    type: object
   DAGTask:
     description: DAGTask represents a node in the graph during DAG execution
     properties:
@@ -2127,6 +2134,8 @@ definitions:
   Metrics:
     description: Metrics are a list of metrics emitted from a Workflow/Template
     properties:
+      customLabels:
+        $ref: '#/definitions/CustomLabels'
       prometheus:
         description: Prometheus is a list of prometheus metrics to be emitted
         items:
