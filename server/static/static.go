@@ -11,15 +11,22 @@ type FilesServer struct {
 	hsts            bool
 	xframeOpts      string
 	corsAllowOrigin string
+	Hash            func(string) string
 }
 
 func NewFilesServer(baseHRef string, hsts bool, xframeOpts string, corsAllowOrigin string) *FilesServer {
-	return &FilesServer{baseHRef, hsts, xframeOpts, corsAllowOrigin}
+	return &FilesServer{baseHRef, hsts, xframeOpts, corsAllowOrigin, Hash}
 }
 
 func (s *FilesServer) ServerFiles(w http.ResponseWriter, r *http.Request) {
+	if s.baseHRef != "/" {
+		p := strings.TrimPrefix(r.URL.Path, s.baseHRef)
+		if len(p) < len(r.URL.Path) {
+			r.URL.Path = p
+		}
+	}
 	// If there is no stored static file, we'll redirect to the js app
-	if Hash(strings.TrimLeft(r.URL.Path, "/")) == "" {
+	if s.Hash(strings.TrimLeft(r.URL.Path, "/")) == "" {
 		r.URL.Path = "index.html"
 	}
 
