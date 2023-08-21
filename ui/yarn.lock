@@ -1879,7 +1879,7 @@
     "@types/history" "*"
     "@types/react" "*"
 
-"@types/react@*", "@types/react@16.8.5", "@types/react@^16.8.5":
+"@types/react@*", "@types/react@^16.8.5":
   version "16.8.5"
   resolved "https://registry.yarnpkg.com/@types/react/-/react-16.8.5.tgz#03b9a6597bc20f6eaaed43f377a160f7e41c2b90"
   integrity sha512-8LRySaaSJVLNZb2dbOGvGmzn88cbAfrgDpuWy+6lLgQ0OJFgHHvyuaCX4/7ikqJlpmCPf4uazJAZcfTQRdJqdQ==
@@ -2425,7 +2425,7 @@ atob@^2.1.2:
   resolved "https://registry.yarnpkg.com/atob/-/atob-2.1.2.tgz#6d9517eb9e030d2436666651e86bd9f6f13533c9"
   integrity sha512-Wm6ukoaOGJi/73p/cl2GvLjTI5JM1k/O14isD73YML8StrH/7/lRFgmg8nICZgD3bZZvjwCGxtMOD3wWNAu8cg==
 
-autolinker@3.16.1, autolinker@^3.11.0:
+autolinker@^3.11.0:
   version "3.16.1"
   resolved "https://registry.yarnpkg.com/autolinker/-/autolinker-3.16.1.tgz#92f015cd4f4e5fcb81a41794de0c210a57f95883"
   integrity sha512-DaCB8hJAVC7gfCMeh+rJ2iJEIMpbvCWzY5Bm3/i7Am7ZDrvpy4tZxMTYoc3iuvZqABrogfRgqPyxfA9ExATWaQ==
@@ -3892,7 +3892,7 @@ fast-glob@^3.2.11, fast-glob@^3.3.0:
     merge2 "^1.3.0"
     micromatch "^4.0.4"
 
-fast-json-patch@3.1.1, fast-json-patch@^3.0.0-1:
+fast-json-patch@^3.0.0-1:
   version "3.1.1"
   resolved "https://registry.yarnpkg.com/fast-json-patch/-/fast-json-patch-3.1.1.tgz#85064ea1b1ebf97a3f7ad01e23f9337e72c66947"
   integrity sha512-vf6IHUX2SBcA+5/+4883dsIjpBTqmfBjmYiWK1savxQmFk4JfBMLa7ynTYOs1Rolp/T1betJxHiGD3g1Mn8lUQ==
@@ -5592,7 +5592,7 @@ lodash.sortby@^4.7.0:
   resolved "https://registry.yarnpkg.com/lodash.sortby/-/lodash.sortby-4.7.0.tgz#edd14c824e2cc9c1e0b0a1b42bb5210516a42438"
   integrity sha1-7dFMgk4sycHgsKG0K7UhBRakJDg=
 
-lodash@4.17.21, lodash@^4.17.15, lodash@^4.17.19, lodash@^4.17.20, lodash@^4.17.21, lodash@^4.2.1:
+lodash@^4.17.15, lodash@^4.17.19, lodash@^4.17.20, lodash@^4.17.21, lodash@^4.2.1:
   version "4.17.21"
   resolved "https://registry.yarnpkg.com/lodash/-/lodash-4.17.21.tgz#679591c564c3bffaae8454cf0b3df370c3d6911c"
   integrity sha512-v2kDEe57lecTulaDIuNTPy3Ry4gLGJ6Z1O3vE1krgXZNrsQ+LFTGHVxVjcXPs17LhbZVGedAJv8XZ1tvj5FvSg==
@@ -6347,7 +6347,7 @@ pretty-format@^26.0.0, pretty-format@^26.6.2:
     ansi-styles "^4.0.0"
     react-is "^17.0.1"
 
-prismjs@1.27.0, prismjs@^1.27.0, prismjs@~1.27.0:
+prismjs@^1.27.0, prismjs@~1.27.0:
   version "1.27.0"
   resolved "https://registry.yarnpkg.com/prismjs/-/prismjs-1.27.0.tgz#bb6ee3138a0b438a3653dd4d6ce0cc6510a45057"
   integrity sha512-t13BGPUlFDR7wRB5kQDG4jjl7XeuH6jbJGt11JHPL96qwsEHNX2+68tFXqc1/k+/jALsbSWJKUOT/hcYAZ5LkA==
