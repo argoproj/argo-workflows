@@ -2,7 +2,7 @@
 
 {
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-22.11";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-23.05";
     flake-parts = { url = "github:hercules-ci/flake-parts"; inputs.nixpkgs-lib.follows = "nixpkgs"; };
     devenv.url = "github:cachix/devenv";
     nix-filter.url = "github:numtide/nix-filter";
@@ -16,7 +16,7 @@
       perSystem = { pkgs, lib, config, ... }:
         let
           argoConfig = import ./conf.nix;
-          myyarn = pkgs.yarn.override { nodejs = pkgs.nodejs-16_x-openssl_1_1; };
+          myyarn = pkgs.yarn.override { nodejs = pkgs.nodejs_20; };
           filter = inputs.nix-filter.lib;
 
           # dependencies for building the go binaries
@@ -45,7 +45,7 @@
             version = argoConfig.version;
           };
 
-          nodejs = pkgs.nodejs-16_x-openssl_1_1;
+          nodejs = pkgs.nodejs_20;
           nodeEnv = import ./node-env.nix {
             inherit (pkgs) stdenv lib python2 runCommand writeTextFile writeShellScript;
             inherit pkgs nodejs;
