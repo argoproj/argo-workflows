@@ -51,14 +51,11 @@ export class WorkflowsToolbar extends React.Component<WorkflowsToolbarProps, {}>
         const confirmed = confirm(`Are you sure you want to ${title.toLowerCase()} all selected workflows?`);
         if (confirmed) {
             if (title === 'DELETE') {
-                let hasArchived = false;
-                this.props.selectedWorkflows.forEach((wf: Workflow) => {
-                    if (!hasArchived && isArchivedWorkflow(wf)) {
-                        hasArchived = true;
+                for (const entry of this.props.selectedWorkflows) {
+                    if (isArchivedWorkflow(entry[1])) {
+                        deleteArchived = confirm('Do you also want to delete them from the Archived Workflows database?');
+                        break;
                     }
-                });
-                if (hasArchived) {
-                    deleteArchived = confirm('Would you also want to delete them from the Archived Workflows database?');
                 }
             }
         } else {
