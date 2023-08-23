@@ -11055,6 +11055,10 @@
           "description": "PodMetadata is an optional field for specifying the Labels and Annotations that should be assigned to the Pod doing the deletion",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Metadata"
         },
+        "podSpecPatch": {
+          "description": "PodSpecPatch holds strategic merge patch to apply against the artgc pod spec.",
+          "type": "string"
+        },
         "serviceAccountName": {
           "description": "ServiceAccountName is an optional field for specifying the Service Account that should be assigned to the Pod doing the deletion",
           "type": "string"
