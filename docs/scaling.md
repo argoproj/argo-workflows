@@ -56,7 +56,7 @@ You do not need to have one instance ID per namespace, you could have many or fe
 
 In order to protect users against infinite recursion, the controller has a default maximum recursion depth of 150 calls to templates.
 
-This protection can be disabled with the environment variable `DISABLE_MAX_RECURSION=true`
+This protection can be disabled with the [environment variable](environment-variables.md#controller) `DISABLE_MAX_RECURSION=true`
 
 ## Miscellaneous
 
