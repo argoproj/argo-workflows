@@ -58,7 +58,7 @@ export class WorkflowsToolbar extends React.Component<WorkflowsToolbarProps, {}>
                     }
                 });
                 if (hasArchived) {
-                    deleteArchived = confirm('Would you also want to delete them in the database?');
+                    deleteArchived = confirm('Would you also want to delete them from the Archived Workflows database?');
                 }
             }
         } else {
