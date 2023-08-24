@@ -3,17 +3,19 @@ import {useEffect, useState} from 'react';
 import * as models from '../../../../models';
 import {NamespaceFilter} from '../../../shared/components/namespace-filter';
 import {TagsInput} from '../../../shared/components/tags-input/tags-input';
+import { InputFilter } from '../../../shared/components/input-filter';
 
 require('./workflow-template-filters.scss');
 
 interface WorkflowFilterProps {
     templates: models.WorkflowTemplate[];
     namespace: string;
+    namePattern:string;
     labels: string[];
-    onChange: (namespace: string, labels: string[]) => void;
+    onChange: (namespace: string, namePattern: string, labels: string[]) => void;
 }
 
-export const WorkflowTemplateFilters = ({templates, namespace, labels, onChange}: WorkflowFilterProps) => {
+export const WorkflowTemplateFilters = ({templates, namespace, namePattern,labels, onChange}: WorkflowFilterProps) => {
     const [labelSuggestion, setLabelSuggestion] = useState([]);
 
     useEffect(() => {
@@ -40,7 +42,7 @@ export const WorkflowTemplateFilters = ({templates, namespace, labels, onChange}
                     <NamespaceFilter
                         value={namespace}
                         onChange={ns => {
-                            onChange(ns, labels);
+                            onChange(ns, namePattern, labels);
                         }}
                     />
                 </div>
@@ -51,9 +53,19 @@ export const WorkflowTemplateFilters = ({templates, namespace, labels, onChange}
                         autocomplete={labelSuggestion}
                         tags={labels}
                         onChange={tags => {
-                            onChange(namespace, tags);
+                            onChange(namespace,namePattern ,tags);
                         }}
                     />
+                </div>
+                <div className='columns small-2 xlarge-12'>
+                    <p className='wf-filters-container__title'>Name Pattern</p>
+                    <InputFilter
+                        value={namePattern}
+                        namePattern='wfnamepattern'
+                        onChange={wfnamepattern=>{
+                            onChange(namespace,wfnamepattern,labels);
+                        }}
+                        />
                 </div>
             </div>
         </div>
