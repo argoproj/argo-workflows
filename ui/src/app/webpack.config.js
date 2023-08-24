@@ -82,7 +82,7 @@ const config = {
         from: "../api/jsonschema/schema.json",
         to: "assets/jsonschema/schema.json"
       }, {
-        from: "node_modules/monaco-editor/min/vs/base/browser/ui/codiconLabel/codicon/codicon.ttf",
+        from: "node_modules/monaco-editor/min/vs/base/browser/ui/codicons/codicon/",
         to: "."
       }],
     }),
