@@ -39,6 +39,7 @@ Couler
 ClusterRoleBinding
 CRD
 CRDs
+CloudSQL
 DataDog
 Dataflow
 DeleteObject
@@ -61,6 +62,7 @@ Homebrew
 InitContainer
 InsideBoard
 Invocators
+IAM-based
 Istio
 J.P.
 Jemison
