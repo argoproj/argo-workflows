@@ -63,7 +63,7 @@ func TestResubmitWorkflowWithOnExit(t *testing.T) {
 		},
 	}
 	onExitID := wf.NodeID(onExitName)
-	wf.Status.Nodes[onExitID] = wfv1.NodeStatus{
+	onExitNode := wfv1.NodeStatus{
 		Name:  onExitName,
 		Phase: wfv1.NodeSucceeded,
 	}
