@@ -1,21 +1,21 @@
 import * as React from 'react';
 import {useEffect, useState} from 'react';
 import * as models from '../../../../models';
+import {InputFilter} from '../../../shared/components/input-filter';
 import {NamespaceFilter} from '../../../shared/components/namespace-filter';
 import {TagsInput} from '../../../shared/components/tags-input/tags-input';
-import { InputFilter } from '../../../shared/components/input-filter';
 
 require('./workflow-template-filters.scss');
 
 interface WorkflowFilterProps {
     templates: models.WorkflowTemplate[];
     namespace: string;
-    namePattern:string;
+    namePattern: string;
     labels: string[];
     onChange: (namespace: string, namePattern: string, labels: string[]) => void;
 }
 
-export const WorkflowTemplateFilters = ({templates, namespace, namePattern,labels, onChange}: WorkflowFilterProps) => {
+export const WorkflowTemplateFilters = ({templates, namespace, namePattern, labels, onChange}: WorkflowFilterProps) => {
     const [labelSuggestion, setLabelSuggestion] = useState([]);
 
     useEffect(() => {
@@ -53,7 +53,7 @@ export const WorkflowTemplateFilters = ({templates, namespace, namePattern,label
                         autocomplete={labelSuggestion}
                         tags={labels}
                         onChange={tags => {
-                            onChange(namespace,namePattern ,tags);
+                            onChange(namespace, namePattern, tags);
                         }}
                     />
                 </div>
@@ -62,10 +62,10 @@ export const WorkflowTemplateFilters = ({templates, namespace, namePattern,label
                     <InputFilter
                         value={namePattern}
                         namePattern='wfnamepattern'
-                        onChange={wfnamepattern=>{
-                            onChange(namespace,wfnamepattern,labels);
+                        onChange={wfnamepattern => {
+                            onChange(namespace, wfnamepattern, labels);
                         }}
-                        />
+                    />
                 </div>
             </div>
         </div>

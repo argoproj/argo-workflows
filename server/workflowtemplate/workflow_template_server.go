@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"sort"
+	"strconv"
 	"strings"
 
 	"google.golang.org/grpc/codes"
@@ -74,23 +75,65 @@ func (wts *WorkflowTemplateServer) ListWorkflowTemplates(ctx context.Context, re
 	if req.ListOptions != nil {
 		options = req.ListOptions
 	}
+
+	// kubernetes api will search for all result.
+	// Search whole with limit 0 and save the original limit for custom filtering.
+	limit := options.Limit
+	options.Limit = 0
+
+	// Continue is not used for kubernetes api search offset which is base64.
+	// Now it is just simple number as a string, which is used for custom filtering.
+	var err error
+	intOffset := 0
+	if options.Continue != "" {
+		intOffset, err = strconv.Atoi(options.Continue)
+		if err != nil {
+			return nil, sutils.ToStatusError(fmt.Errorf("invalid offset format: %s", options.Continue), codes.InvalidArgument)
+		}
+		// Prevent continue applied to kubernetes api
+		options.Continue = ""
+	}
+
 	wts.instanceIDService.With(options)
 	wfList, err := wfClient.ArgoprojV1alpha1().WorkflowTemplates(req.Namespace).List(ctx, *options)
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.Internal)
 	}
 
+	items := []v1alpha1.WorkflowTemplate{}
+
+	// Do name pattern filtering if exist
 	if req.NamePattern != "" {
-		var items []v1alpha1.WorkflowTemplate
 		for _, item := range wfList.Items {
 			if strings.Contains(item.ObjectMeta.Name, req.NamePattern) {
 				items = append(items, item)
 			}
 		}
-		wfList.Items = items
+	} else {
+		items = wfList.Items
 	}
 
+	// Apply offset and limit
+	startIndex := intOffset
+	if startIndex > len(items) {
+		startIndex = len(items)
+	}
+
+	endIndex := startIndex + int(limit)
+	if endIndex > len(items) || limit == 0 {
+		endIndex = len(items)
+	}
+
+	wfList.Items = items[startIndex:endIndex]
+
 	sort.Sort(wfList.Items)
+
+	// Calculate new offset for next batch
+	newOffset := intOffset + len(wfList.Items)
+	if limit != 0 && len(wfList.Items) == int(limit) {
+		wfList.ListMeta.Continue = strconv.Itoa(newOffset)
+	}
+
 	return wfList, nil
 }
 
