@@ -85,11 +85,6 @@
         "webpack-dev-server": "^4.15.0"
     },
     "resolutions": {
-        "@types/react": "16.8.5",
-        "autolinker": "3.16.1",
-        "fast-json-patch": "3.1.1",
-        "lodash": "4.17.21",
-        "prismjs": "1.27.0",
         "semver": "^7.5.2"
     }
 }
