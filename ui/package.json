@@ -59,7 +59,7 @@
         "@types/superagent": "^4.1.18",
         "@types/swagger-ui-react": "^4.11.0",
         "@types/uuid": "^9.0.1",
-        "babel-jest": "^29.6.3",
+        "babel-jest": "^29.6.4",
         "babel-loader": "^8.3.0",
         "copy-webpack-plugin": "^11.0.0",
         "html-webpack-plugin": "^5.5.3",
