@@ -40,7 +40,7 @@ func NewRetryCommand() *cobra.Command {
 	command := &cobra.Command{
 		Use:   "retry [WORKFLOW...]",
 		Short: "retry zero or more workflows",
-		Long:  "Rerun a failed Workflow. All steps that failed are marked as pending and then executed as normal. The same Workflow object is used and no new Workflows are created.",
+		Long:  "Rerun a failed Workflow. Specifically, rerun all failed steps. The same Workflow object is used and no new Workflows are created.",
 		Example: `# Retry a workflow:
 
   argo retry my-wf

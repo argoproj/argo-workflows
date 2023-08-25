@@ -4,7 +4,7 @@ retry zero or more workflows
 
 ### Synopsis
 
-Rerun a failed Workflow. All steps that failed are marked as pending and then executed as normal. The same Workflow object is used and no new Workflows are created.
+Rerun a failed Workflow. Specifically, rerun all failed steps. The same Workflow object is used and no new Workflows are created.
 
 ```
 argo retry [WORKFLOW...] [flags]
