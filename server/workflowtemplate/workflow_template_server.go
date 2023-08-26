@@ -78,30 +78,17 @@ func (wts *WorkflowTemplateServer) ListWorkflowTemplates(ctx context.Context, re
 
 	// kubernetes api will search for all result.
 	// Search whole with limit 0 and save the original limit for custom filtering.
-	limit := options.Limit
-	options.Limit = 0
-
-	// Continue is not used for kubernetes api search offset which is base64.
-	// Now it is just simple number as a string, which is used for custom filtering.
-	var err error
-	intOffset := 0
-	if options.Continue != "" {
-		intOffset, err = strconv.Atoi(options.Continue)
-		if err != nil {
-			return nil, sutils.ToStatusError(fmt.Errorf("invalid offset format: %s", options.Continue), codes.InvalidArgument)
-		}
-		// Prevent continue applied to kubernetes api
-		options.Continue = ""
-	}
-
-	wts.instanceIDService.With(options)
-	wfList, err := wfClient.ArgoprojV1alpha1().WorkflowTemplates(req.Namespace).List(ctx, *options)
+	wts.instanceIDService.With(&v1.ListOptions{
+		LabelSelector: req.ListOptions.LabelSelector,
+	})
+	wfList, err := wfClient.ArgoprojV1alpha1().WorkflowTemplates(req.Namespace).List(ctx, v1.ListOptions{
+		LabelSelector: req.ListOptions.LabelSelector,
+	})
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.Internal)
 	}
 
-	items := []v1alpha1.WorkflowTemplate{}
-
+	var items []v1alpha1.WorkflowTemplate
 	// Do name pattern filtering if exist
 	if req.NamePattern != "" {
 		for _, item := range wfList.Items {
@@ -113,27 +100,41 @@ func (wts *WorkflowTemplateServer) ListWorkflowTemplates(ctx context.Context, re
 		items = wfList.Items
 	}
 
-	// Apply offset and limit
-	startIndex := intOffset
-	if startIndex > len(items) {
-		startIndex = len(items)
+	// sort by resourceVersion asc
+	sort.Slice(items, func(i, j int) bool {
+		itemI, _ := strconv.Atoi(items[i].ResourceVersion)
+		itemJ, _ := strconv.Atoi(items[j].ResourceVersion)
+		return itemI > itemJ
+	})
+
+	// Do resourceVersion filtering if continue exist
+	var newItems []v1alpha1.WorkflowTemplate
+	if options.Continue != "" {
+		for _, item := range items {
+			itemRV, _ := strconv.Atoi(item.ResourceVersion)
+			optionRV, _ := strconv.Atoi(options.Continue)
+			if itemRV < optionRV {
+				newItems = append(newItems, item)
+			}
+		}
+	} else {
+		newItems = items
 	}
 
-	endIndex := startIndex + int(limit)
-	if endIndex > len(items) || limit == 0 {
-		endIndex = len(items)
+	// newItem indexing by limit count
+	limit := options.Limit
+	endIndex := int(limit)
+	if endIndex > len(newItems) || limit == 0 {
+		endIndex = len(newItems)
 	}
-
-	wfList.Items = items[startIndex:endIndex]
-
-	sort.Sort(wfList.Items)
+	wfList.Items = newItems[0:endIndex]
 
 	// Calculate new offset for next batch
-	newOffset := intOffset + len(wfList.Items)
 	if limit != 0 && len(wfList.Items) == int(limit) {
-		wfList.ListMeta.Continue = strconv.Itoa(newOffset)
+		wfList.ListMeta.Continue = wfList.Items[len(wfList.Items)-1].ResourceVersion
 	}
 
+	sort.Sort(wfList.Items)
 	return wfList, nil
 }
 
