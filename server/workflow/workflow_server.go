@@ -648,7 +648,9 @@ func (s *workflowServer) getWorkflow(ctx context.Context, wfClient versioned.Int
 			Name:      name,
 		})
 		if err != nil {
-			return nil, sutils.ToStatusError(fmt.Errorf("%v %v", origErr, err), codes.Internal)
+			log.Errorf("failed to get live workflow: %v; failed to get archived workflow: %v", origErr, err)
+			// We only return the original error to preserve the original status code.
+			return nil, sutils.ToStatusError(origErr, codes.Internal)
 		}
 	}
 	return wf, nil
