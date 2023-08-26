@@ -606,8 +606,8 @@ func (s *CLISuite) TestWorkflowDeleteNotFound() {
 	s.Given().
 		When().
 		RunCli([]string{"delete", "not-found"}, func(t *testing.T, output string, err error) {
-			if assert.EqualError(t, err, "exit status 1") {
-				assert.Contains(t, output, `workflows.argoproj.io \"not-found\" not found`)
+			if assert.NoError(t, err) {
+				assert.Contains(t, output, "Workflow 'not-found' not found")
 			}
 		})
 }
