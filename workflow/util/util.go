@@ -1232,6 +1232,36 @@ func PodSpecPatchMerge(wf *wfv1.Workflow, tmpl *wfv1.Template) (string, error) {
 	return string(data), err
 }
 
+func ApplyPodSpecPatch(podSpec apiv1.PodSpec, podSpecPatchYaml string) (*apiv1.PodSpec, error) {
+	podSpecJson, err := json.Marshal(podSpec)
+	if err != nil {
+		return nil, errors.Wrap(err, "", "Failed to marshal the Pod spec")
+	}
+
+	// must convert to json because PodSpec has only json tags
+	podSpecPatchJson, err := ConvertYAMLToJSON(podSpecPatchYaml)
+	if err != nil {
+		return nil, errors.Wrap(err, "", "Failed to convert the PodSpecPatch yaml to json")
+	}
+
+	// validate the patch to be a PodSpec
+	if err := json.Unmarshal([]byte(podSpecPatchJson), &apiv1.PodSpec{}); err != nil {
+		return nil, fmt.Errorf("invalid podSpecPatch %q: %w", podSpecPatchYaml, err)
+	}
+
+	modJson, err := strategicpatch.StrategicMergePatch(podSpecJson, []byte(podSpecPatchJson), apiv1.PodSpec{})
+	if err != nil {
+		return nil, errors.Wrap(err, "", "Error occurred during strategic merge patch")
+	}
+
+	var newPodSpec apiv1.PodSpec
+	err = json.Unmarshal(modJson, &newPodSpec)
+	if err != nil {
+		return nil, errors.Wrap(err, "", "Error in Unmarshalling after merge the patch")
+	}
+	return &newPodSpec, nil
+}
+
 func GetNodeType(tmpl *wfv1.Template) wfv1.NodeType {
 	return tmpl.GetNodeType()
 }

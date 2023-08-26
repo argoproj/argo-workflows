@@ -960,6 +960,8 @@ spec:
                           type: string
                         type: object
                     type: object
+                  podSpecPatch:
+                    type: string
                   serviceAccountName:
                     type: string
                   strategy:
