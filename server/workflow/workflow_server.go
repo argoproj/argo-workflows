@@ -648,7 +648,7 @@ func (s *workflowServer) getWorkflow(ctx context.Context, wfClient versioned.Int
 			Name:      name,
 		})
 		if err != nil {
-			return nil, sutils.ToStatusError(fmt.Errorf("%v %v", origErr, err), codes.Internal)
+			return nil, sutils.ToStatusError(fmt.Errorf("%v %v", origErr, err), codes.NotFound)
 		}
 	}
 	return wf, nil
