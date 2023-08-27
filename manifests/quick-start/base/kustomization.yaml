@@ -21,6 +21,6 @@ resources:
   - cluster-workflow-template-rbac.yaml
   - artifact-repositories-configmap.yaml
 
-patchesStrategicMerge:
-  - overlays/workflow-controller-configmap.yaml
-  - overlays/argo-server-deployment.yaml
+patches:
+  - path: overlays/workflow-controller-configmap.yaml
+  - path: overlays/argo-server-deployment.yaml

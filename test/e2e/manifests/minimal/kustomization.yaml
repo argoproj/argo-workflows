@@ -10,13 +10,16 @@ resources:
 - ../mixins/argo-server.service-account-token-secret.yaml
 - ../mixins/argo.service-account-token-secret.yaml
 
-patchesStrategicMerge:
-- ../mixins/argo-server-deployment.yaml
-- ../mixins/workflow-controller-configmap.yaml
-- ../mixins/workflow-controller-deployment.yaml
-- ../mixins/cluster-workflow-template-rbac.yaml
-- ../mixins/minio-deployment.yaml
+patches:
+- path: ../mixins/argo-server-deployment.yaml
+- path: ../mixins/argo-server-cluster-workflow-template-rbac.yaml
+- path: ../mixins/workflow-controller-configmap.yaml
+- path: ../mixins/workflow-controller-deployment.yaml
+- path: ../mixins/workflow-controller-cluster-workflow-template-rbac.yaml
+- path: ../mixins/minio-deployment.yaml
 
-commonLabels:
-  app.kubernetes.io/part-of: argo
+labels:
+- includeSelectors: true
+  pairs:
+    app.kubernetes.io/part-of: argo
 namespace: argo
