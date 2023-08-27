@@ -1217,6 +1217,35 @@ func TestFormulateRetryWorkflow(t *testing.T) {
 		}
 	})
 
+	t.Run("OverrideParamsSubmitFromWfTmpl", func(t *testing.T) {
+		wf := &wfv1.Workflow{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:   "override-param-wf",
+				Labels: map[string]string{},
+			},
+			Spec: wfv1.WorkflowSpec{Arguments: wfv1.Arguments{
+				Parameters: []wfv1.Parameter{
+					{Name: "message", Value: wfv1.AnyStringPtr("default")},
+				},
+			}},
+			Status: wfv1.WorkflowStatus{
+				Phase: wfv1.WorkflowFailed,
+				Nodes: map[string]wfv1.NodeStatus{
+					"1": {ID: "1", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypeTaskGroup},
+				},
+				StoredWorkflowSpec: &wfv1.WorkflowSpec{Arguments: wfv1.Arguments{
+					Parameters: []wfv1.Parameter{
+						{Name: "message", Value: wfv1.AnyStringPtr("default")},
+					}},
+				}},
+		}
+		wf, _, err := FormulateRetryWorkflow(context.Background(), wf, false, "", []string{"message=modified"})
+		if assert.NoError(t, err) {
+			assert.Equal(t, "modified", wf.Spec.Arguments.Parameters[0].Value.String())
+			assert.Equal(t, "modified", wf.Status.StoredWorkflowSpec.Arguments.Parameters[0].Value.String())
+		}
+	})
+
 	t.Run("Fail on running workflow", func(t *testing.T) {
 		wf := &wfv1.Workflow{
 			ObjectMeta: metav1.ObjectMeta{

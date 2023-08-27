@@ -277,7 +277,7 @@ func (woc *wfOperationCtx) executeDAG(ctx context.Context, nodeName string, tmpl
 				woc.markNodeError(node.Name, err)
 				return node, err
 			}
-			scope.addParamToScope(fmt.Sprintf("tasks.%s.status", task.Name), string(node.Phase))
+			scope.addParamToScope(fmt.Sprintf("tasks.%s.status", task.Name), string(taskNode.Phase))
 			_, err = woc.executeTmplLifeCycleHook(ctx, scope, dagCtx.GetTask(taskName).Hooks, taskNode, dagCtx.boundaryID, dagCtx.tmplCtx, "tasks."+taskName)
 			if err != nil {
 				woc.markNodeError(node.Name, err)
@@ -758,6 +758,9 @@ func (d *dagContext) findLeafTaskNames(tasks []wfv1.DAGTask) []string {
 }
 
 // expandTask expands a single DAG task containing withItems, withParams, withSequence into multiple parallel tasks
+// We want to be lazy with expanding. Unfortunately this is not quite possible as the When field might rely on
+// expansion to work with the shouldExecute function. To address this we apply a trick, we try to expand, if we fail, we then
+// check shouldExecute, if shouldExecute returns false, we continue on as normal else error out
 func expandTask(task wfv1.DAGTask) ([]wfv1.DAGTask, error) {
 	var err error
 	var items []wfv1.Item
@@ -766,12 +769,18 @@ func expandTask(task wfv1.DAGTask) ([]wfv1.DAGTask, error) {
 	} else if task.WithParam != "" {
 		err = json.Unmarshal([]byte(task.WithParam), &items)
 		if err != nil {
-			return nil, errors.Errorf(errors.CodeBadRequest, "withParam value could not be parsed as a JSON list: %s: %v", strings.TrimSpace(task.WithParam), err)
+			mustExec, mustExecErr := shouldExecute(task.When)
+			if mustExecErr != nil || mustExec {
+				return nil, errors.Errorf(errors.CodeBadRequest, "withParam value could not be parsed as a JSON list: %s: %v", strings.TrimSpace(task.WithParam), err)
+			}
 		}
 	} else if task.WithSequence != nil {
 		items, err = expandSequence(task.WithSequence)
 		if err != nil {
-			return nil, err
+			mustExec, mustExecErr := shouldExecute(task.When)
+			if mustExecErr != nil || mustExec {
+				return nil, err
+			}
 		}
 	} else {
 		return []wfv1.DAGTask{task}, nil

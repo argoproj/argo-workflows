@@ -333,6 +333,86 @@ spec:
 	})
 }
 
+func (s *HooksSuite) TestTemplateLevelHooksDagHasDependencyVersion() {
+	s.Given().
+		Workflow(`apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: lifecycle-hook-tmpl-level-
+spec:
+  templates:
+    - name: main
+      dag:
+        tasks:
+          - name: A
+            template: fail
+            hooks:
+              running:
+                template: hook
+                expression: tasks.A.status == "Running"
+              success:
+                template: hook
+                expression: tasks.A.status == "Succeeded"
+          - name: B
+            template: success
+            dependencies:
+              - A
+            hooks:
+              running:
+                template: hook
+                expression: tasks.B.status == "Running"
+              success:
+                template: hook
+                expression: tasks.B.status == "Succeeded"
+    - name: success
+      container:
+        name: ''
+        image: argoproj/argosay:v2
+        command:
+          - /bin/sh
+          - '-c'
+        args:
+          - /bin/sleep 1; /argosay; exit 0
+    - name: fail
+      container:
+        name: ''
+        image: argoproj/argosay:v2
+        command:
+          - /bin/sh
+          - '-c'
+        args:
+          - /bin/sleep 1; /argosay; exit 1
+    - name: hook
+      container:
+        name: ''
+        image: argoproj/argosay:v2
+        command:
+          - /bin/sh
+          - '-c'
+        args:
+          - /bin/sleep 1; /argosay
+  entrypoint: main
+`).When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeFailed).
+		Then().
+		ExpectWorkflow(func(t *testing.T, metadata *v1.ObjectMeta, status *v1alpha1.WorkflowStatus) {
+			assert.Equal(t, v1alpha1.WorkflowFailed, status.Phase)
+			// Make sure unnecessary hooks are not triggered
+			assert.Equal(t, status.Progress, v1alpha1.Progress("1/2"))
+		}).
+		ExpectWorkflowNode(func(status v1alpha1.NodeStatus) bool {
+			return strings.Contains(status.Name, "A.hooks.running")
+		}, func(t *testing.T, status *v1alpha1.NodeStatus, pod *apiv1.Pod) {
+			assert.Equal(t, v1alpha1.NodeSucceeded, status.Phase)
+		}).
+		ExpectWorkflowNode(func(status v1alpha1.NodeStatus) bool {
+			return strings.Contains(status.Name, "B")
+		}, func(t *testing.T, status *v1alpha1.NodeStatus, pod *apiv1.Pod) {
+			assert.Equal(t, v1alpha1.NodeOmitted, status.Phase)
+		})
+}
+
 func (s *HooksSuite) TestWorkflowLevelHooksWaitForTriggeredHook() {
 	s.Given().
 		Workflow(`apiVersion: argoproj.io/v1alpha1

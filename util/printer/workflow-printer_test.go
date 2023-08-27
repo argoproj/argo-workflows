@@ -52,6 +52,18 @@ func TestPrintWorkflows(t *testing.T) {
 		assert.Equal(t, `No workflows found
 `, b.String())
 	})
+	t.Run("EmptyJSON", func(t *testing.T) {
+		var b bytes.Buffer
+		assert.NoError(t, PrintWorkflows(emptyWorkflows, &b, PrintOpts{Output: "json"}))
+		assert.Equal(t, `[]
+`, b.String())
+	})
+	t.Run("EmptyYAML", func(t *testing.T) {
+		var b bytes.Buffer
+		assert.NoError(t, PrintWorkflows(emptyWorkflows, &b, PrintOpts{Output: "yaml"}))
+		assert.Equal(t, `[]
+`, b.String())
+	})
 	t.Run("Default", func(t *testing.T) {
 		var b bytes.Buffer
 		assert.NoError(t, PrintWorkflows(workflows, &b, PrintOpts{}))

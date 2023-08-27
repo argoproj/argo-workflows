@@ -20,21 +20,22 @@ const config = {
     main: "./src/app/index.tsx"
   },
   output: {
-    filename: "[name].[hash].js",
+    filename: "[name].[contenthash].js",
     path: __dirname + "/../../dist/app"
   },
 
   devtool: "source-map",
 
   resolve: {
-    extensions: [".ts", ".tsx", ".js", ".json", ".ttf"]
+    extensions: [".ts", ".tsx", ".js", ".json", ".ttf"],
+    fallback: { fs: false }, // ignore `node:fs` on front-end
   },
 
   module: {
     rules: [
       {
         test: /\.tsx?$/,
-        loaders: [...(isProd ? [] : ["react-hot-loader/webpack"]), `ts-loader?transpileOnly=${!isProd}&allowTsInNodeModules=true&configFile=${path.resolve("./src/app/tsconfig.json")}`]
+        use: [...(isProd ? [] : ["react-hot-loader/webpack"]), `ts-loader?transpileOnly=${!isProd}&allowTsInNodeModules=true&configFile=${path.resolve("./src/app/tsconfig.json")}`]
       }, {
         enforce: 'pre',
         exclude: [
@@ -42,21 +43,21 @@ const config = {
           /node_modules\/monaco-editor/,
         ],
         test: /\.js$/,
-        loaders: [...(isProd ? ['babel-loader'] : ['source-map-loader'])],
+        use: [...(isProd ? ["babel-loader"] : ["source-map-loader"])],
       }, {
         test: /\.scss$/,
-        loader: "style-loader!raw-loader!sass-loader"
+        use: ["style-loader", "raw-loader", "sass-loader"],
       }, {
         test: /\.css$/,
-        loader: "style-loader!raw-loader"
+        use: ["style-loader", "raw-loader"],
       }, {
-        test: /\.ttf$/,
-        use: ['file-loader']
-      }
+        test: /\.(png|svg|jpg|jpeg|gif)$/i,
+        type: 'asset/resource',
+      }, {
+        test: /\.(woff|woff2|eot|ttf|otf)$/i,
+        type: 'asset/resource',
+      },
     ]
-  },
-  node: {
-    fs: "empty"
   },
   plugins: [
     new webpack.DefinePlugin({
@@ -67,22 +68,24 @@ const config = {
       "process.env.DEFAULT_TZ": JSON.stringify("UTC"),
     }),
     new HtmlWebpackPlugin({ template: "src/app/index.html" }),
-    new CopyWebpackPlugin([{
-      from: "node_modules/argo-ui/src/assets",
-      to: "assets"
-    }, {
-      from: "node_modules/@fortawesome/fontawesome-free/webfonts",
-      to: "assets/fonts"
-    }, {
-      from: "../api/openapi-spec/swagger.json",
-      to: "assets/openapi-spec/swagger.json"
-    }, {
-      from: "../api/jsonschema/schema.json",
-      to: "assets/jsonschema/schema.json"
-    }, {
-      from: 'node_modules/monaco-editor/min/vs/base/browser/ui/codiconLabel/codicon/codicon.ttf',
-      to: "."
-    }]),
+    new CopyWebpackPlugin({
+      patterns: [{
+        from: "node_modules/argo-ui/src/assets",
+        to: "assets"
+      }, {
+        from: "node_modules/@fortawesome/fontawesome-free/webfonts",
+        to: "assets/fonts"
+      }, {
+        from: "../api/openapi-spec/swagger.json",
+        to: "assets/openapi-spec/swagger.json"
+      }, {
+        from: "../api/jsonschema/schema.json",
+        to: "assets/jsonschema/schema.json"
+      }, {
+        from: "node_modules/monaco-editor/min/vs/base/browser/ui/codicons/codicon/",
+        to: "."
+      }],
+    }),
     new MonacoWebpackPlugin({ languages: ["json", "yaml"] })
   ],
   devServer: {

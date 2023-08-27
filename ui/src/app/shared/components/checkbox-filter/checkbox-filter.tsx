@@ -13,6 +13,7 @@ interface Props {
 export class CheckboxFilter extends React.Component<Props> {
     constructor(props: any) {
         super(props);
+        this.props.items.forEach(item => this.props.selected.push(item.name));
     }
 
     public render() {

@@ -1812,30 +1812,15 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 		return woc.initializeNodeOrMarkError(node, nodeName, templateScope, orgTmpl, opts.boundaryID, err), err
 	}
 
+	// Check if this is a fulfilled node for synchronization.
+	// If so, release synchronization and return this node. No more logic will be executed.
 	if node != nil {
-		if node.Fulfilled() {
+		fulfilledNode := woc.handleNodeFulfilled(nodeName, node, processedTmpl)
+		if fulfilledNode != nil {
 			woc.controller.syncManager.Release(woc.wf, node.ID, processedTmpl.Synchronization)
-
-			woc.log.Debugf("Node %s already completed", nodeName)
-			if processedTmpl.Metrics != nil {
-				// Check if this node completed between executions. If it did, emit metrics. If a node completes within
-				// the same execution, its metrics are emitted below.
-				// We can infer that this node completed during the current operation, emit metrics
-				if prevNodeStatus, ok := woc.preExecutionNodePhases[node.ID]; ok && !prevNodeStatus.Fulfilled() {
-					localScope, realTimeScope := woc.prepareMetricScope(node)
-					woc.computeMetrics(processedTmpl.Metrics.Prometheus, localScope, realTimeScope, false)
-				}
-			}
-			return node, nil
+			return fulfilledNode, nil
 		}
 		woc.log.Debugf("Executing node %s of %s is %s", nodeName, node.Type, node.Phase)
-		// Memoized nodes don't have StartedAt.
-		if node.StartedAt.IsZero() {
-			node.StartedAt = metav1.Time{Time: time.Now().UTC()}
-			node.EstimatedDuration = woc.estimateNodeDuration(node.Name)
-			woc.wf.Status.Nodes.Set(node.ID, *node)
-			woc.updated = true
-		}
 	}
 
 	// Check if we took too long operating on this workflow and immediately return if we did
@@ -1947,6 +1932,22 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 					woc.updateAsCacheNode(node, memoizationStatus)
 				}
 			}
+			woc.wf.Status.Nodes.Set(node.ID, *node)
+			woc.updated = true
+		}
+	}
+
+	// Check if this is a fulfilled node for memoization.
+	// If so, just return this node. No more logic will be executed.
+	if node != nil {
+		fulfilledNode := woc.handleNodeFulfilled(nodeName, node, processedTmpl)
+		if fulfilledNode != nil {
+			return fulfilledNode, nil
+		}
+		// Memoized nodes don't have StartedAt.
+		if node.StartedAt.IsZero() {
+			node.StartedAt = metav1.Time{Time: time.Now().UTC()}
+			node.EstimatedDuration = woc.estimateNodeDuration(node.Name)
 			woc.wf.Status.Nodes.Set(node.ID, *node)
 			woc.updated = true
 		}
@@ -2141,6 +2142,24 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 	}
 
 	return node, nil
+}
+
+func (woc *wfOperationCtx) handleNodeFulfilled(nodeName string, node *wfv1.NodeStatus, processedTmpl *wfv1.Template) *wfv1.NodeStatus {
+	if node == nil || !node.Fulfilled() {
+		return nil
+	}
+
+	woc.log.Debugf("Node %s already completed", nodeName)
+
+	if processedTmpl.Metrics != nil {
+		// Check if this node completed between executions. If it did, emit metrics.
+		// We can infer that this node completed during the current operation, emit metrics
+		if prevNodeStatus, ok := woc.preExecutionNodePhases[node.ID]; ok && !prevNodeStatus.Fulfilled() {
+			localScope, realTimeScope := woc.prepareMetricScope(node)
+			woc.computeMetrics(processedTmpl.Metrics.Prometheus, localScope, realTimeScope, false)
+		}
+	}
+	return node
 }
 
 // Checks if the template has exceeded its deadline

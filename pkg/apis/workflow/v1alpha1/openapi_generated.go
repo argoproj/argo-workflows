@@ -7131,6 +7131,13 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowLevelArtifactGC(ref common.Refere
 							Format:      "",
 						},
 					},
+					"podSpecPatch": {
+						SchemaProps: spec.SchemaProps{
+							Description: "PodSpecPatch holds strategic merge patch to apply against the artgc pod spec.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
 				},
 			},
 		},
