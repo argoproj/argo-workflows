@@ -71,25 +71,28 @@ func (wts *WorkflowTemplateServer) getTemplateAndValidate(ctx context.Context, n
 
 func (wts *WorkflowTemplateServer) ListWorkflowTemplates(ctx context.Context, req *workflowtemplatepkg.WorkflowTemplateListRequest) (*v1alpha1.WorkflowTemplateList, error) {
 	wfClient := auth.GetWfClient(ctx)
-	options := &v1.ListOptions{}
+	k8sOptions := &v1.ListOptions{}
+
 	if req.ListOptions != nil {
-		options = req.ListOptions
+		k8sOptions = req.ListOptions
 	}
+
+	resourceVersion := k8sOptions.Continue
+	limit := k8sOptions.Limit
 
 	// kubernetes api will search for all result.
 	// Search whole with limit 0 and save the original limit for custom filtering.
-	wts.instanceIDService.With(&v1.ListOptions{
-		LabelSelector: req.ListOptions.LabelSelector,
-	})
-	wfList, err := wfClient.ArgoprojV1alpha1().WorkflowTemplates(req.Namespace).List(ctx, v1.ListOptions{
-		LabelSelector: req.ListOptions.LabelSelector,
-	})
+	k8sOptions.Continue = ""
+	k8sOptions.Limit = 0
+
+	wts.instanceIDService.With(k8sOptions)
+	wfList, err := wfClient.ArgoprojV1alpha1().WorkflowTemplates(req.Namespace).List(ctx, *k8sOptions)
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.Internal)
 	}
 
-	var items []v1alpha1.WorkflowTemplate
 	// Do name pattern filtering if exist
+	var items []v1alpha1.WorkflowTemplate
 	if req.NamePattern != "" {
 		for _, item := range wfList.Items {
 			if strings.Contains(item.ObjectMeta.Name, req.NamePattern) {
@@ -100,34 +103,36 @@ func (wts *WorkflowTemplateServer) ListWorkflowTemplates(ctx context.Context, re
 		items = wfList.Items
 	}
 
-	// sort by resourceVersion asc
+	// Sort by resourceVersion desc
 	sort.Slice(items, func(i, j int) bool {
-		itemI, _ := strconv.Atoi(items[i].ResourceVersion)
-		itemJ, _ := strconv.Atoi(items[j].ResourceVersion)
-		return itemI > itemJ
+		itemIRV, _ := strconv.Atoi(items[i].ResourceVersion)
+		itemJRV, _ := strconv.Atoi(items[j].ResourceVersion)
+		return itemIRV > itemJRV
 	})
 
 	// Do resourceVersion filtering if continue exist
-	var newItems []v1alpha1.WorkflowTemplate
-	if options.Continue != "" {
+	if resourceVersion != "" {
+		newItems := []v1alpha1.WorkflowTemplate{}
 		for _, item := range items {
-			itemRV, _ := strconv.Atoi(item.ResourceVersion)
-			optionRV, _ := strconv.Atoi(options.Continue)
-			if itemRV < optionRV {
+			targetRV, _ := strconv.Atoi(item.ResourceVersion)
+			receivedRV, _ := strconv.Atoi(resourceVersion)
+			if targetRV < receivedRV {
 				newItems = append(newItems, item)
 			}
+			items = newItems
 		}
-	} else {
-		newItems = items
 	}
 
-	// newItem indexing by limit count
-	limit := options.Limit
-	endIndex := int(limit)
-	if endIndex > len(newItems) || limit == 0 {
-		endIndex = len(newItems)
+	// Indexing list by limit count
+	if limit != 0 {
+		endIndex := int(limit)
+		if endIndex > len(items) || limit == 0 {
+			endIndex = len(items)
+		}
+		wfList.Items = items[0:endIndex]
+	} else {
+		wfList.Items = items
 	}
-	wfList.Items = newItems[0:endIndex]
 
 	// Calculate new offset for next batch
 	if limit != 0 && len(wfList.Items) == int(limit) {
