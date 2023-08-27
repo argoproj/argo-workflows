@@ -133,6 +133,6 @@ func (h *ArtifactDriver) ListObjects(artifact *wfv1.Artifact) ([]string, error) 
 	return nil, fmt.Errorf("ListObjects is currently not supported for this artifact type, but it will be in a future version")
 }
 
-func (g *ArtifactDriver) IsDirectory(artifact *wfv1.Artifact) (bool, error) {
+func (h *ArtifactDriver) IsDirectory(artifact *wfv1.Artifact) (bool, error) {
 	return false, errors.New(errors.CodeNotImplemented, "IsDirectory currently unimplemented for http")
 }
