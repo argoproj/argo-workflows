@@ -10,9 +10,10 @@ resources:
 
 patches:
   - path: ../mixins/argo-server-deployment.yaml
+  - path: ../mixins/argo-server-cluster-workflow-template-rbac.yaml
   - path: ../mixins/workflow-controller-configmap.yaml
   - path: ../mixins/workflow-controller-deployment.yaml
-  - path: ../mixins/cluster-workflow-template-rbac.yaml
+  - path: ../mixins/workflow-controller-cluster-workflow-template-rbac.yaml
   - path: ../mixins/minio-deployment.yaml
 
 labels:
