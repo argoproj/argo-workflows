@@ -61,9 +61,9 @@ export const WorkflowTemplateFilters = ({templates, namespace, namePattern, labe
                     <p className='wf-filters-container__title'>Name Pattern</p>
                     <InputFilter
                         value={namePattern}
-                        namePattern='wfnamepattern'
-                        onChange={wfnamepattern => {
-                            onChange(namespace, wfnamepattern, labels);
+                        name='wfnamePattern'
+                        onChange={wfnamePattern => {
+                            onChange(namespace, wfnamePattern, labels);
                         }}
                     />
                 </div>

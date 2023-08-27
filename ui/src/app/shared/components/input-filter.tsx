@@ -5,7 +5,6 @@ interface InputProps {
     value: string;
     placeholder?: string;
     name: string;
-    namePattern?: string;
     onChange: (input: string) => void;
 }
 
