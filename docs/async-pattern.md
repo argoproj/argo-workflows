@@ -66,12 +66,12 @@ You may need  an [access token](access-token.md).
 curl --request PUT \
   --url https://localhost:2746/api/v1/workflows/<NAMESPACE>/<WORKFLOWNAME>/resume
   --header 'content-type: application/json' \
-  --header "Authorization: Bearer $ARGO_TOKEN" \
+  --header "Authorization: $ARGO_TOKEN" \
   --data '{
       "namespace": "<NAMESPACE>",
       "name": "<WORKFLOWNAME>",
       "nodeFieldSelector": "inputs.parameters.uuid.value=<UUID>"
-    }'  
+    }'
 ```
 
 or stop if unsuccessful:
@@ -80,13 +80,13 @@ or stop if unsuccessful:
 curl --request PUT \
   --url https://localhost:2746/api/v1/workflows/<NAMESPACE>/<WORKFLOWNAME>/stop
   --header 'content-type: application/json' \
-  --header "Authorization: Bearer $ARGO_TOKEN" \
+  --header "Authorization: $ARGO_TOKEN" \
   --data '{
       "namespace": "<NAMESPACE>",
       "name": "<WORKFLOWNAME>",
       "nodeFieldSelector": "inputs.parameters.uuid.value=<UUID>",
       "message": "<FAILURE-MESSAGE>"
-    }'  
+    }'
 ```
 
 ## Retrying failed jobs
