@@ -20,6 +20,14 @@ var (
 // https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/#define-a-liveness-http-request
 // If we are in a state where there are any workflows that have not been reconciled in the last 2m, we've gone wrong.
 func (wfc *WorkflowController) Healthz(w http.ResponseWriter, r *http.Request) {
+	// If the param "full" is set to "false", only check if the controller is running.
+	param := r.URL.Query().Get("full")
+	if param == "false" {
+		w.WriteHeader(200)
+		_, _ = w.Write([]byte("ok"))
+		return
+	}
+
 	ctx := r.Context()
 	instanceID := wfc.Config.InstanceID
 	instanceIDSelector := func() string {
