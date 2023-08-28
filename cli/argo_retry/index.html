@@ -2811,6 +2811,13 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#synopsis" class="md-nav__link">
+    Synopsis
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#examples" class="md-nav__link">
     Examples
   </a>
@@ -3882,6 +3889,13 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#synopsis" class="md-nav__link">
+    Synopsis
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#examples" class="md-nav__link">
     Examples
   </a>
@@ -3936,6 +3950,8 @@
 
 <h2 id="argo-retry">argo retry<a class="headerlink" href="#argo-retry" title="Permanent link">&para;</a></h2>
 <p>retry zero or more workflows</p>
+<h3 id="synopsis">Synopsis<a class="headerlink" href="#synopsis" title="Permanent link">&para;</a></h3>
+<p>Rerun a failed Workflow. Specifically, rerun all failed steps. The same Workflow object is used and no new Workflows are created.</p>
 <div class="highlight"><pre><span></span><code>argo retry [WORKFLOW...] [flags]
 </code></pre></div>
 <h3 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h3>
@@ -3943,7 +3959,7 @@
 
   argo retry my-wf
 
-# Retry multiple workflows: 
+# Retry multiple workflows:
 
   argo retry my-wf my-other-wf my-third-wf
 
