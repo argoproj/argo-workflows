@@ -1,8 +1,8 @@
 package fixtures
 
 import (
+	"github.com/upper/db/v4"
 	"k8s.io/client-go/kubernetes"
-	"upper.io/db.v3/lib/sqlbuilder"
 
 	"github.com/argoproj/argo-workflows/v3/config"
 	"github.com/argoproj/argo-workflows/v3/persist/sqldb"
@@ -10,7 +10,7 @@ import (
 )
 
 type Persistence struct {
-	session               sqlbuilder.Database
+	session               db.Session
 	offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo
 	workflowArchive       sqldb.WorkflowArchive
 }

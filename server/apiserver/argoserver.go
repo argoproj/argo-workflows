@@ -142,8 +142,11 @@ func NewArgoServer(ctx context.Context, opts ArgoServerOpts) (*argoServer, error
 		if err != nil {
 			return nil, err
 		}
-		resourceCache = cache.NewResourceCache(opts.Clients.Kubernetes, getResourceCacheNamespace(opts))
-		resourceCache.Run(ctx.Done())
+		if ssoIf.IsRBACEnabled() {
+			// resourceCache is only used for SSO RBAC
+			resourceCache = cache.NewResourceCache(opts.Clients.Kubernetes, getResourceCacheNamespace(opts))
+			resourceCache.Run(ctx.Done())
+		}
 		log.Info("SSO enabled")
 	} else {
 		log.Info("SSO disabled")

@@ -8,6 +8,8 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/upper/db/v4"
+
 	"github.com/argoproj/pkg/errors"
 	syncpkg "github.com/argoproj/pkg/sync"
 	log "github.com/sirupsen/logrus"
@@ -32,7 +34,6 @@ import (
 	"k8s.io/client-go/tools/cache"
 	apiwatch "k8s.io/client-go/tools/watch"
 	"k8s.io/client-go/util/workqueue"
-	"upper.io/db.v3/lib/sqlbuilder"
 
 	"github.com/argoproj/argo-workflows/v3"
 	"github.com/argoproj/argo-workflows/v3/config"
@@ -107,7 +108,7 @@ type WorkflowController struct {
 	podCleanupQueue       workqueue.RateLimitingInterface // pods to be deleted or labelled depend on GC strategy
 	throttler             sync.Throttler
 	workflowKeyLock       syncpkg.KeyLock // used to lock workflows for exclusive modification or access
-	session               sqlbuilder.Database
+	session               db.Session
 	offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo
 	hydrator              hydrator.Interface
 	wfArchive             sqldb.WorkflowArchive
@@ -187,6 +188,7 @@ func NewWorkflowController(ctx context.Context, restConfig *rest.Config, kubecli
 		wfc.executorPlugins = map[string]map[string]*spec.Plugin{}
 	}
 
+	wfc.UpdateConfig(ctx)
 	wfc.metrics = metrics.New(wfc.getMetricsServerConfig())
 	wfc.entrypoint = entrypoint.New(kubeclientset, wfc.Config.Images)
 
@@ -217,10 +219,10 @@ func (wfc *WorkflowController) runGCcontroller(ctx context.Context, workflowTTLW
 	}
 }
 
-func (wfc *WorkflowController) runCronController(ctx context.Context) {
+func (wfc *WorkflowController) runCronController(ctx context.Context, cronWorkflowWorkers int) {
 	defer runtimeutil.HandleCrash(runtimeutil.PanicHandlers...)
 
-	cronController := cron.NewCronController(wfc.wfclientset, wfc.dynamicInterface, wfc.namespace, wfc.GetManagedNamespace(), wfc.Config.InstanceID, wfc.metrics, wfc.eventRecorderManager)
+	cronController := cron.NewCronController(wfc.wfclientset, wfc.dynamicInterface, wfc.namespace, wfc.GetManagedNamespace(), wfc.Config.InstanceID, wfc.metrics, wfc.eventRecorderManager, cronWorkflowWorkers, wfc.wftmplInformer, wfc.cwftmplInformer)
 	cronController.Run(ctx)
 }
 
@@ -235,11 +237,8 @@ var indexers = cache.Indexers{
 }
 
 // Run starts an Workflow resource controller
-func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWorkers, podCleanupWorkers int) {
+func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWorkers, podCleanupWorkers, cronWorkflowWorkers int) {
 	defer runtimeutil.HandleCrash(runtimeutil.PanicHandlers...)
-
-	// init DB after leader election (if enabled)
-	wfc.UpdateConfig(ctx)
 
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
@@ -305,7 +304,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 	go wfc.archivedWorkflowGarbageCollector(ctx.Done())
 
 	go wfc.runGCcontroller(ctx, workflowTTLWorkers)
-	go wfc.runCronController(ctx)
+	go wfc.runCronController(ctx, cronWorkflowWorkers)
 	go wait.Until(wfc.syncWorkflowPhaseMetrics, 15*time.Second, ctx.Done())
 	go wait.Until(wfc.syncPodPhaseMetrics, 15*time.Second, ctx.Done())
 

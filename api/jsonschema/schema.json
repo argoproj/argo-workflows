@@ -5686,6 +5686,10 @@
         "securityToken": {
           "description": "SecurityToken is the user's temporary security token. For more details, check out: https://www.alibabacloud.com/help/doc-detail/100624.htm",
           "type": "string"
+        },
+        "useSDKCreds": {
+          "description": "UseSDKCreds tells the driver to figure out credentials based on sdk defaults.",
+          "type": "boolean"
         }
       },
       "required": [
@@ -5727,6 +5731,10 @@
         "securityToken": {
           "description": "SecurityToken is the user's temporary security token. For more details, check out: https://www.alibabacloud.com/help/doc-detail/100624.htm",
           "type": "string"
+        },
+        "useSDKCreds": {
+          "description": "UseSDKCreds tells the driver to figure out credentials based on sdk defaults.",
+          "type": "boolean"
         }
       },
       "type": "object"
@@ -6042,6 +6050,10 @@
           "description": "Bucket is the name of the bucket",
           "type": "string"
         },
+        "caSecret": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
+          "description": "CASecret specifies the secret that contains the CA, used to verify the TLS connection"
+        },
         "createBucketIfNotPresent": {
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.CreateS3BucketOptions",
           "description": "CreateBucketIfNotPresent tells the driver to attempt to create the S3 bucket for output artifacts, if it doesn't exist. Setting Enabled Encryption will apply either SSE-S3 to the bucket if KmsKeyId is not set or SSE-KMS if it is."
@@ -6090,6 +6102,10 @@
         "bucket": {
           "description": "Bucket is the name of the bucket",
           "type": "string"
+        },
+        "caSecret": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
+          "description": "CASecret specifies the secret that contains the CA, used to verify the TLS connection"
         },
         "createBucketIfNotPresent": {
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.CreateS3BucketOptions",
@@ -6448,7 +6464,7 @@
       "description": "SuspendTemplate is a template subtype to suspend a workflow at a predetermined point in time",
       "properties": {
         "duration": {
-          "description": "Duration is the seconds to wait before automatically resuming a template. Must be a string. Default unit is seconds. Could also be a Duration, e.g.: \"2m\", \"6h\", \"1d\"",
+          "description": "Duration is the seconds to wait before automatically resuming a template. Must be a string. Default unit is seconds. Could also be a Duration, e.g.: \"2m\", \"6h\"",
           "type": "string"
         }
       },
@@ -7120,6 +7136,10 @@
         "podMetadata": {
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Metadata",
           "description": "PodMetadata is an optional field for specifying the Labels and Annotations that should be assigned to the Pod doing the deletion"
+        },
+        "podSpecPatch": {
+          "description": "PodSpecPatch holds strategic merge patch to apply against the artgc pod spec.",
+          "type": "string"
         },
         "serviceAccountName": {
           "description": "ServiceAccountName is an optional field for specifying the Service Account that should be assigned to the Pod doing the deletion",

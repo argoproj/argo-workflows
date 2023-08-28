@@ -184,6 +184,8 @@ Workflow is the definition of a workflow resource
 
 - [`input-artifact-s3.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/input-artifact-s3.yaml)
 
+- [`intermediate-parameters.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/intermediate-parameters.yaml)
+
 - [`k8s-jobs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-jobs.yaml)
 
 - [`k8s-json-patch-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-json-patch-workflow.yaml)
@@ -619,6 +621,8 @@ WorkflowSpec is the specification of a Workflow.
 
 - [`input-artifact-s3.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/input-artifact-s3.yaml)
 
+- [`intermediate-parameters.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/intermediate-parameters.yaml)
+
 - [`k8s-json-patch-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-json-patch-workflow.yaml)
 
 - [`k8s-owner-reference.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-owner-reference.yaml)
@@ -1052,6 +1056,8 @@ CronWorkflowSpec is the specification of a CronWorkflow
 
 - [`input-artifact-s3.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/input-artifact-s3.yaml)
 
+- [`intermediate-parameters.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/intermediate-parameters.yaml)
+
 - [`k8s-json-patch-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-json-patch-workflow.yaml)
 
 - [`k8s-owner-reference.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-owner-reference.yaml)
@@ -1448,6 +1454,7 @@ WorkflowLevelArtifactGC describes how to delete artifacts from completed Workflo
 |:----------:|:----------:|---------------|
 |`forceFinalizerRemoval`|`boolean`|ForceFinalizerRemoval: if set to true, the finalizer will be removed in the case that Artifact GC fails|
 |`podMetadata`|[`Metadata`](#metadata)|PodMetadata is an optional field for specifying the Labels and Annotations that should be assigned to the Pod doing the deletion|
+|`podSpecPatch`|`string`|PodSpecPatch holds strategic merge patch to apply against the artgc pod spec.|
 |`serviceAccountName`|`string`|ServiceAccountName is an optional field for specifying the Service Account that should be assigned to the Pod doing the deletion|
 |`strategy`|`string`|Strategy is the strategy to use.|
 
@@ -1878,6 +1885,8 @@ Outputs hold parameters, artifacts, and results from a step
 
 - [`influxdb-ci.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/influxdb-ci.yaml)
 
+- [`intermediate-parameters.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/intermediate-parameters.yaml)
+
 - [`k8s-wait-wf.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-wait-wf.yaml)
 
 - [`key-only-artifact.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/key-only-artifact.yaml)
@@ -2140,6 +2149,8 @@ Parameter indicate a passed string parameter to a service template with an optio
 - [`http-success-condition.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/http-success-condition.yaml)
 
 - [`influxdb-ci.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/influxdb-ci.yaml)
+
+- [`intermediate-parameters.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/intermediate-parameters.yaml)
 
 - [`k8s-wait-wf.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-wait-wf.yaml)
 
@@ -2708,6 +2719,8 @@ Inputs are the mechanism for passing parameters, artifacts, volumes from one tem
 
 - [`input-artifact-s3.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/input-artifact-s3.yaml)
 
+- [`intermediate-parameters.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/intermediate-parameters.yaml)
+
 - [`k8s-wait-wf.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-wait-wf.yaml)
 
 - [`key-only-artifact.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/key-only-artifact.yaml)
@@ -3012,6 +3025,8 @@ WorkflowStep is a reference to a template to execute in a series of step
 
 - [`influxdb-ci.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/influxdb-ci.yaml)
 
+- [`intermediate-parameters.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/intermediate-parameters.yaml)
+
 - [`k8s-wait-wf.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-wait-wf.yaml)
 
 - [`life-cycle-hooks-tmpl-level.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/life-cycle-hooks-tmpl-level.yaml)
@@ -3133,6 +3148,8 @@ SuspendTemplate is a template subtype to suspend a workflow at a predetermined p
 
 - [`cron-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/cron-workflow.yaml)
 
+- [`intermediate-parameters.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/intermediate-parameters.yaml)
+
 - [`suspend-template-outputs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/suspend-template-outputs.yaml)
 
 - [`suspend-template.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/suspend-template.yaml)
@@ -3141,7 +3158,7 @@ SuspendTemplate is a template subtype to suspend a workflow at a predetermined p
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`duration`|`string`|Duration is the seconds to wait before automatically resuming a template. Must be a string. Default unit is seconds. Could also be a Duration, e.g.: "2m", "6h", "1d"|
+|`duration`|`string`|Duration is the seconds to wait before automatically resuming a template. Must be a string. Default unit is seconds. Could also be a Duration, e.g.: "2m", "6h"|
 
 ## LabelValueFrom
 
@@ -3458,6 +3475,7 @@ OSSArtifact is the location of an Alibaba Cloud OSS artifact
 |`lifecycleRule`|[`OSSLifecycleRule`](#osslifecyclerule)|LifecycleRule specifies how to manage bucket's lifecycle|
 |`secretKeySecret`|[`SecretKeySelector`](#secretkeyselector)|SecretKeySecret is the secret selector to the bucket's secret key|
 |`securityToken`|`string`|SecurityToken is the user's temporary security token. For more details, check out: https://www.alibabacloud.com/help/doc-detail/100624.htm|
+|`useSDKCreds`|`boolean`|UseSDKCreds tells the driver to figure out credentials based on sdk defaults.|
 
 ## RawArtifact
 
@@ -3486,6 +3504,7 @@ S3Artifact is the location of an S3 artifact
 |:----------:|:----------:|---------------|
 |`accessKeySecret`|[`SecretKeySelector`](#secretkeyselector)|AccessKeySecret is the secret selector to the bucket's access key|
 |`bucket`|`string`|Bucket is the name of the bucket|
+|`caSecret`|[`SecretKeySelector`](#secretkeyselector)|CASecret specifies the secret that contains the CA, used to verify the TLS connection|
 |`createBucketIfNotPresent`|[`CreateS3BucketOptions`](#creates3bucketoptions)|CreateBucketIfNotPresent tells the driver to attempt to create the S3 bucket for output artifacts, if it doesn't exist. Setting Enabled Encryption will apply either SSE-S3 to the bucket if KmsKeyId is not set or SSE-KMS if it is.|
 |`encryptionOptions`|[`S3EncryptionOptions`](#s3encryptionoptions)|_No description available_|
 |`endpoint`|`string`|Endpoint is the hostname of the bucket endpoint|
@@ -3529,6 +3548,8 @@ ValueFrom describes a location in which to obtain the value to a parameter
 - [`global-parameters-from-configmap.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/global-parameters-from-configmap.yaml)
 
 - [`handle-large-output-results.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/handle-large-output-results.yaml)
+
+- [`intermediate-parameters.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/intermediate-parameters.yaml)
 
 - [`k8s-wait-wf.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-wait-wf.yaml)
 
@@ -4200,6 +4221,7 @@ OSSArtifactRepository defines the controller configuration for an OSS artifact r
 |`lifecycleRule`|[`OSSLifecycleRule`](#osslifecyclerule)|LifecycleRule specifies how to manage bucket's lifecycle|
 |`secretKeySecret`|[`SecretKeySelector`](#secretkeyselector)|SecretKeySecret is the secret selector to the bucket's secret key|
 |`securityToken`|`string`|SecurityToken is the user's temporary security token. For more details, check out: https://www.alibabacloud.com/help/doc-detail/100624.htm|
+|`useSDKCreds`|`boolean`|UseSDKCreds tells the driver to figure out credentials based on sdk defaults.|
 
 ## S3ArtifactRepository
 
@@ -4210,6 +4232,7 @@ S3ArtifactRepository defines the controller configuration for an S3 artifact rep
 |:----------:|:----------:|---------------|
 |`accessKeySecret`|[`SecretKeySelector`](#secretkeyselector)|AccessKeySecret is the secret selector to the bucket's access key|
 |`bucket`|`string`|Bucket is the name of the bucket|
+|`caSecret`|[`SecretKeySelector`](#secretkeyselector)|CASecret specifies the secret that contains the CA, used to verify the TLS connection|
 |`createBucketIfNotPresent`|[`CreateS3BucketOptions`](#creates3bucketoptions)|CreateBucketIfNotPresent tells the driver to attempt to create the S3 bucket for output artifacts, if it doesn't exist. Setting Enabled Encryption will apply either SSE-S3 to the bucket if KmsKeyId is not set or SSE-KMS if it is.|
 |`encryptionOptions`|[`S3EncryptionOptions`](#s3encryptionoptions)|_No description available_|
 |`endpoint`|`string`|Endpoint is the hostname of the bucket endpoint|
@@ -4356,6 +4379,8 @@ SuppliedValueFrom is a placeholder for a value to be filled in directly, either 
 <summary>Examples with this field (click to open)</summary>
 <br>
 
+- [`intermediate-parameters.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/intermediate-parameters.yaml)
+
 - [`suspend-template-outputs.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/suspend-template-outputs.yaml)
 </details>
 
@@ -4440,6 +4465,8 @@ _No description available_
 - [`global-parameters-from-configmap.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/global-parameters-from-configmap.yaml)
 
 - [`handle-large-output-results.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/handle-large-output-results.yaml)
+
+- [`intermediate-parameters.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/intermediate-parameters.yaml)
 
 - [`k8s-wait-wf.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-wait-wf.yaml)
 
@@ -4720,6 +4747,8 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 - [`input-artifact-raw.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/input-artifact-raw.yaml)
 
 - [`input-artifact-s3.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/input-artifact-s3.yaml)
+
+- [`intermediate-parameters.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/intermediate-parameters.yaml)
 
 - [`k8s-json-patch-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-json-patch-workflow.yaml)
 
@@ -5342,6 +5371,8 @@ A single application container that you want to run within a pod.
 - [`input-artifact-raw.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/input-artifact-raw.yaml)
 
 - [`input-artifact-s3.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/input-artifact-s3.yaml)
+
+- [`intermediate-parameters.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/intermediate-parameters.yaml)
 
 - [`k8s-owner-reference.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-owner-reference.yaml)
 
@@ -6060,6 +6091,8 @@ PersistentVolumeClaimSpec describes the common attributes of storage devices and
 
 - [`input-artifact-s3.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/input-artifact-s3.yaml)
 
+- [`intermediate-parameters.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/intermediate-parameters.yaml)
+
 - [`k8s-json-patch-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-json-patch-workflow.yaml)
 
 - [`k8s-owner-reference.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-owner-reference.yaml)
@@ -6682,6 +6715,8 @@ EnvVarSource represents a source for the value of an EnvVar.
 - [`global-parameters-from-configmap.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/global-parameters-from-configmap.yaml)
 
 - [`handle-large-output-results.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/handle-large-output-results.yaml)
+
+- [`intermediate-parameters.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/intermediate-parameters.yaml)
 
 - [`k8s-wait-wf.yaml`](https://github.com/argoproj/argo-workflows/blob/master/examples/k8s-wait-wf.yaml)
 

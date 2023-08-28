@@ -5,13 +5,13 @@
 If triggering an external job (e.g. an Amazon EMR job) from Argo that does not run to completion in a container, there are two options:
 
 - create a container that polls the external job completion status
-- combine a trigger step that starts the job with a `Suspend` step that is resumed by an API call to Argo when the external job is complete.
+- combine a trigger step that starts the job with a [`suspend`](walk-through/suspending.md) step that is resumed by an API call to Argo when the external job is complete.
 
 This document describes the second option in more detail.
 
 ## The pattern
 
-The pattern involves two steps - the first step is a short-running step that triggers a long-running job outside Argo (e.g. an HTTP submission), and the second step is a `Suspend` step that suspends workflow execution and is ultimately either resumed or stopped (i.e. failed) via a call to the Argo API when the job outside Argo succeeds or fails.
+The pattern involves two steps - the first step is a short-running step that triggers a long-running job outside Argo (e.g. an HTTP submission), and the second step is a `suspend` step that suspends workflow execution and is ultimately either resumed or stopped (i.e. failed) via a call to the Argo API when the job outside Argo succeeds or fails.
 
 When implemented as a `WorkflowTemplate` it can look something like this:
 
@@ -91,7 +91,7 @@ curl --request PUT \
 
 ## Retrying failed jobs
 
-Using `argo retry` on failed jobs that follow this pattern will cause Argo to re-attempt the Suspend step without re-triggering the job.  
+Using `argo retry` on failed jobs that follow this pattern will cause Argo to re-attempt the `suspend` step without re-triggering the job.
 
 Instead you need to use the `--restart-successful` option, e.g. if using the template from above:
 

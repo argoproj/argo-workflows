@@ -3,7 +3,7 @@ ARG GIT_COMMIT=unknown
 ARG GIT_TAG=unknown
 ARG GIT_TREE_STATE=unknown
 
-FROM golang:1.20-alpine3.16 as builder
+FROM golang:1.21-alpine3.18 as builder
 
 RUN apk update && apk add --no-cache \
     git \
@@ -24,7 +24,7 @@ COPY . .
 
 ####################################################################################################
 
-FROM node:16-alpine as argo-ui
+FROM node:20-alpine as argo-ui
 
 RUN apk update && apk add --no-cache git
 
@@ -39,7 +39,7 @@ COPY api api
 
 RUN --mount=type=cache,target=/root/.yarn \
   YARN_CACHE_FOLDER=/root/.yarn JOBS=max \
-  NODE_OPTIONS="--max-old-space-size=2048" JOBS=max yarn --cwd ui build
+  NODE_OPTIONS="--openssl-legacy-provider --max-old-space-size=2048" JOBS=max yarn --cwd ui build
 
 ####################################################################################################
 

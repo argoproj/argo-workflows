@@ -15,9 +15,9 @@ import (
 )
 
 var (
-	invalidMetricNameError = "metric name is invalid: names may only contain alphanumeric characters, '_', or ':'"
-	invalidMetricLabelrror = "metric label '%s' is invalid: keys may only contain alphanumeric characters, '_', or ':'"
-	descRegex              = regexp.MustCompile(fmt.Sprintf(`Desc{fqName: "%s_%s_(.+?)", help: "(.+?)", constLabels: {`, argoNamespace, workflowsSubsystem))
+	invalidMetricNameError  = "metric name is invalid: names may only contain alphanumeric characters, '_', or ':'"
+	invalidMetricLabelError = "metric label '%s' is invalid: keys may only contain alphanumeric characters, '_', or ':'"
+	descRegex               = regexp.MustCompile(fmt.Sprintf(`Desc{fqName: "%s_%s_(.+?)", help: "(.+?)", constLabels: {`, argoNamespace, workflowsSubsystem))
 )
 
 type RealTimeMetric struct {
@@ -201,7 +201,7 @@ func getPodPhaseGauges() map[v1.PodPhase]prometheus.Gauge {
 }
 
 func getErrorCounters() map[ErrorCause]prometheus.Counter {
-	getOptsByPahse := func(phase ErrorCause) prometheus.CounterOpts {
+	getOptsByPhase := func(phase ErrorCause) prometheus.CounterOpts {
 		return prometheus.CounterOpts{
 			Namespace:   argoNamespace,
 			Subsystem:   workflowsSubsystem,
@@ -211,9 +211,9 @@ func getErrorCounters() map[ErrorCause]prometheus.Counter {
 		}
 	}
 	return map[ErrorCause]prometheus.Counter{
-		ErrorCauseOperationPanic:              prometheus.NewCounter(getOptsByPahse(ErrorCauseOperationPanic)),
-		ErrorCauseCronWorkflowSubmissionError: prometheus.NewCounter(getOptsByPahse(ErrorCauseCronWorkflowSubmissionError)),
-		ErrorCauseCronWorkflowSpecError:       prometheus.NewCounter(getOptsByPahse(ErrorCauseCronWorkflowSpecError)),
+		ErrorCauseOperationPanic:              prometheus.NewCounter(getOptsByPhase(ErrorCauseOperationPanic)),
+		ErrorCauseCronWorkflowSubmissionError: prometheus.NewCounter(getOptsByPhase(ErrorCauseCronWorkflowSubmissionError)),
+		ErrorCauseCronWorkflowSpecError:       prometheus.NewCounter(getOptsByPhase(ErrorCauseCronWorkflowSpecError)),
 	}
 }
 
@@ -254,7 +254,7 @@ func ValidateMetricValues(metric *wfv1.Prometheus) error {
 func ValidateMetricLabels(metrics map[string]string) error {
 	for name := range metrics {
 		if !IsValidMetricName(name) {
-			return fmt.Errorf(invalidMetricLabelrror, name)
+			return fmt.Errorf(invalidMetricLabelError, name)
 		}
 	}
 	return nil

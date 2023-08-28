@@ -40,11 +40,12 @@ func NewRetryCommand() *cobra.Command {
 	command := &cobra.Command{
 		Use:   "retry [WORKFLOW...]",
 		Short: "retry zero or more workflows",
+		Long:  "Rerun a failed Workflow. Specifically, rerun all failed steps. The same Workflow object is used and no new Workflows are created.",
 		Example: `# Retry a workflow:
 
   argo retry my-wf
 
-# Retry multiple workflows: 
+# Retry multiple workflows:
 
   argo retry my-wf my-other-wf my-third-wf
 
@@ -71,6 +72,9 @@ func NewRetryCommand() *cobra.Command {
 # Retry the latest workflow:
 
   argo retry @latest
+
+# Restart node with id 5 on successful workflow, using node-field-selector
+  argo retry my-wf --restart-successful --node-field-selector id=5
 `,
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) == 0 && !retryOpts.hasSelector() {

@@ -646,6 +646,8 @@ spec:
                           type: object
                         securityToken:
                           type: string
+                        useSDKCreds:
+                          type: boolean
                       required:
                       - key
                       type: object
@@ -675,6 +677,17 @@ spec:
                           type: object
                         bucket:
                           type: string
+                        caSecret:
+                          properties:
+                            key:
+                              type: string
+                            name:
+                              type: string
+                            optional:
+                              type: boolean
+                          required:
+                          - key
+                          type: object
                         createBucketIfNotPresent:
                           properties:
                             objectLocking:
@@ -1710,7 +1723,7 @@ spec:
     spec:
       automountServiceAccountToken: false
       containers:
-      - image: kennethreitz/httpbin
+      - image: kong/httpbin
         livenessProbe:
           httpGet:
             path: /get

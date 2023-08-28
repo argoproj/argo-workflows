@@ -2329,6 +2329,10 @@ definitions:
         description: 'SecurityToken is the user''s temporary security token. For more
           details, check out: https://www.alibabacloud.com/help/doc-detail/100624.htm'
         type: string
+      useSDKCreds:
+        description: UseSDKCreds tells the driver to figure out credentials based
+          on sdk defaults.
+        type: boolean
     type: object
   OSSLifecycleRule:
     description: OSSLifecycleRule specifies how to manage bucket's lifecycle
@@ -3317,6 +3321,8 @@ definitions:
       bucket:
         description: Bucket is the name of the bucket
         type: string
+      caSecret:
+        $ref: '#/definitions/SecretKeySelector'
       createBucketIfNotPresent:
         $ref: '#/definitions/CreateS3BucketOptions'
       encryptionOptions:
@@ -3925,7 +3931,7 @@ definitions:
       duration:
         description: |-
           Duration is the seconds to wait before automatically resuming a template. Must be a string. Default unit is seconds.
-          Could also be a Duration, e.g.: "2m", "6h", "1d"
+          Could also be a Duration, e.g.: "2m", "6h"
         type: string
     type: object
   Synchronization:

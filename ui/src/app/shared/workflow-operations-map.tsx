@@ -30,7 +30,7 @@ export const WorkflowOperationsMap: WorkflowOperations = {
             const workflowPhase: NodePhase = wf && wf.status ? wf.status.phase : undefined;
             return workflowPhase === undefined || !(workflowPhase === 'Failed' || workflowPhase === 'Error');
         },
-        action: (wf: Workflow) => services.workflows.retry(wf.metadata.name, wf.metadata.namespace)
+        action: (wf: Workflow) => services.workflows.retry(wf.metadata.name, wf.metadata.namespace, null)
     },
     RESUBMIT: {
         title: 'RESUBMIT',

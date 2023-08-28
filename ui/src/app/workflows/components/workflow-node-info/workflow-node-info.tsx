@@ -1,5 +1,5 @@
 import {Tabs, Ticker, Tooltip} from 'argo-ui';
-import * as moment from 'moment';
+import moment from 'moment';
 import * as React from 'react';
 
 import * as models from '../../../../models';

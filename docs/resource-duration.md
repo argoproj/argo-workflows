@@ -53,5 +53,9 @@ GPU:    3min * 1     / 1     = 3min * (1 nvidia.com/gpu)
 Both the web and CLI give abbreviated usage, like `9m10s*cpu,6s*memory,2m31s*nvidia.com/gpu`. In
 this context, resources like `memory` refer to the "base amounts".
 
-For example, `memory` means "amount of time a resource requested 1Gi of memory." If a container only
-uses 100Mi, each second it runs will only count as a tenth-second of `memory`.
+For example, `memory` means "amount of time a resource requested `100Mi` of memory." If a container only
+uses `10Mi`, each second it runs will only count as a tenth-second of `memory`.
+
+## Rounding Down
+
+For a short running pods (<10s), if the memory request is also small (for example, `10Mi`), then the memory value may be 0s. This is because the denominator is `100Mi`.

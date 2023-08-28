@@ -2,6 +2,10 @@
 
 resubmit one or more workflows
 
+### Synopsis
+
+Submit a completed workflow again. Optionally override parameters and memoize. Similar to running `argo submit` again with the same parameters.
+
 ```
 argo resubmit [WORKFLOW...] [flags]
 ```
