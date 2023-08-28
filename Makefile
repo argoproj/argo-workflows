@@ -167,7 +167,7 @@ ui/dist/app/index.html: $(shell find ui/src -type f && find ui -maxdepth 1 -type
 $(GOPATH)/bin/staticfiles:
 # update this in Nix when updating it here
 ifneq ($(USE_NIX), true)
-	go install bou.ke/staticfiles@dd04075 
+	go install bou.ke/staticfiles@dd04075
 endif
 
 ifeq ($(STATIC_FILES),true)
@@ -456,6 +456,8 @@ lint: server/static/files.go $(GOPATH)/bin/golangci-lint
 	$(GOPATH)/bin/golangci-lint run --fix --verbose
 	# Lint the UI
 	if [ -e ui/node_modules ]; then yarn --cwd ui lint ; fi
+	# Deduplicate Node modules
+	if [ -e ui/node_modules ]; then yarn --cwd ui deduplicate ; fi
 
 # for local we have a faster target that prints to stdout, does not use json, and can cache because it has no coverage
 .PHONY: test
@@ -698,7 +700,7 @@ docs-linkcheck: /usr/local/bin/markdown-link-check
 /usr/local/bin/markdownlint:
 # update this in Nix when upgrading it here
 ifneq ($(USE_NIX), true)
-	npm i -g markdownlint-cli@0.33.0 
+	npm i -g markdownlint-cli@0.33.0
 endif
 
 
