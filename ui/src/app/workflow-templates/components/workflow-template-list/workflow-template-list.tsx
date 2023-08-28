@@ -112,7 +112,7 @@ export const WorkflowTemplateList = ({match, location, history}: RouteComponentP
                                 setNamespace(namespaceValue);
                                 setNamePattern(namePatternValue);
                                 setLabels(labelsValue);
-                                setPagination({...pagination, offset: ''})
+                                setPagination({...pagination, offset: ''});
                             }}
                         />
                     </div>
