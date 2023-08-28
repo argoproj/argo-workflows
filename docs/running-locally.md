@@ -229,6 +229,7 @@ git commit --signoff -m 'feat: Added a new feature. Fixes #1234'
   Compilation may fail if allocated RAM is less than 4Gi.
 * To start profiling with [pprof](https://go.dev/blog/pprof), pass `ARGO_PPROF=true` when starting the controller locally,
   and run the following:
+
 ```bash
 go tool pprof http://localhost:6060/debug/pprof/profile   # 30-second CPU profile
 go tool pprof http://localhost:6060/debug/pprof/heap      # heap profile
