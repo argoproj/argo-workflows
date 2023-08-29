@@ -77,11 +77,13 @@ func (wts *WorkflowTemplateServer) ListWorkflowTemplates(ctx context.Context, re
 		k8sOptions = req.ListOptions
 	}
 
+	// Save the original Continue and Limit for custom filtering.
 	resourceVersion := k8sOptions.Continue
 	limit := k8sOptions.Limit
 
-	// kubernetes api will search for all result.
-	// Search whole with limit 0 and save the original limit for custom filtering.
+	// Search whole with Limit 0.
+	// Reset the Continue "" to prevent Kubernetes native pagination.
+	// Kubernetes api will search for all results without limit and pagination.
 	k8sOptions.Continue = ""
 	k8sOptions.Limit = 0
 
@@ -91,7 +93,8 @@ func (wts *WorkflowTemplateServer) ListWorkflowTemplates(ctx context.Context, re
 		return nil, sutils.ToStatusError(err, codes.Internal)
 	}
 
-	// Do name pattern filtering if exist
+	// Enables name-based searching.
+	// Do name pattern filtering if NamePattern request exist.
 	var items []v1alpha1.WorkflowTemplate
 	if req.NamePattern != "" {
 		for _, item := range wfList.Items {
@@ -103,14 +106,17 @@ func (wts *WorkflowTemplateServer) ListWorkflowTemplates(ctx context.Context, re
 		items = wfList.Items
 	}
 
-	// Sort by resourceVersion desc
+	// Use Kubernetes resourceVersion for cursor pagination.
+	// Sort the Kubernetes results in descending order by resourceVersion.
+	// To implement cursor pagination with filtering based on resourceVersion, start by sorting in descending order according to the resourceVersion.
 	sort.Slice(items, func(i, j int) bool {
 		itemIRV, _ := strconv.Atoi(items[i].ResourceVersion)
 		itemJRV, _ := strconv.Atoi(items[j].ResourceVersion)
 		return itemIRV > itemJRV
 	})
 
-	// Do resourceVersion filtering if continue exist
+	// Due to the descending sorting above, the items are filtered to have a resourceVersion smaller than the received value.
+	// The data with values smaller than the received resourceVersion on the current page will be used for the next page.
 	if resourceVersion != "" {
 		newItems := []v1alpha1.WorkflowTemplate{}
 		for _, item := range items {
@@ -135,8 +141,10 @@ func (wts *WorkflowTemplateServer) ListWorkflowTemplates(ctx context.Context, re
 	}
 
 	// Calculate new offset for next batch
+	// For the next pagination, the resourceVersion of the last item is set in the Continue field.
 	if limit != 0 && len(wfList.Items) == int(limit) {
-		wfList.ListMeta.Continue = wfList.Items[len(wfList.Items)-1].ResourceVersion
+		lastIndex := len(wfList.Items) - 1
+		wfList.ListMeta.Continue = wfList.Items[lastIndex].ResourceVersion
 	}
 
 	sort.Sort(wfList.Items)
