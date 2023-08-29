@@ -4182,7 +4182,13 @@ Our CI will run those concurrently when you create a PR, which will give you fee
   have checked out your code into <code>$GOPATH/src/github.com/argoproj/argo-workflows</code>.</li>
 <li>If you encounter "out of heap" issues when building UI through Docker, please validate resources allocated to Docker.
   Compilation may fail if allocated RAM is less than 4Gi.</li>
+<li>To start profiling with <a href="https://go.dev/blog/pprof"><code>pprof</code></a>, pass <code>ARGO_PPROF=true</code> when starting the controller locally.
+  Then run the following:</li>
 </ul>
+<div class="highlight"><pre><span></span><code>go<span class="w"> </span>tool<span class="w"> </span>pprof<span class="w"> </span>http://localhost:6060/debug/pprof/profile<span class="w">   </span><span class="c1"># 30-second CPU profile</span>
+go<span class="w"> </span>tool<span class="w"> </span>pprof<span class="w"> </span>http://localhost:6060/debug/pprof/heap<span class="w">      </span><span class="c1"># heap profile</span>
+go<span class="w"> </span>tool<span class="w"> </span>pprof<span class="w"> </span>http://localhost:6060/debug/pprof/block<span class="w">     </span><span class="c1"># goroutine blocking profile</span>
+</code></pre></div>
 <h2 id="using-multiple-terminals">Using Multiple Terminals<a class="headerlink" href="#using-multiple-terminals" title="Permanent link">&para;</a></h2>
 <p>I run the controller in one terminal, and the UI in another. I like the UI: it is much faster to debug workflows than
 the terminal. This allows you to make changes to the controller and re-start it, without restarting the UI (which I
