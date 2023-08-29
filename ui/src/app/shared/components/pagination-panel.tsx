@@ -40,8 +40,9 @@ export class PaginationPanel extends React.Component<{pagination: Pagination; on
                             // Only return the offset if we're actually going to be limiting
                             // the results we're requesting.  If we're requesting all records,
                             // we should not skip any by setting an offset.
+                            // The offset must be initialized whenever the pagination limit is changed.
                             if (limit) {
-                                newValue.offset = this.props.pagination.offset;
+                                newValue.offset = '';
                             }
 
                             this.props.onChange(newValue);
