@@ -3,6 +3,10 @@
 Breaking changes  typically (sometimes we don't realise they are breaking) have "!" in the commit message, as per
 the [conventional commits](https://www.conventionalcommits.org/en/v1.0.0/#summary).
 
+## Upgrading to v3.5
+
+There is no known breaking change in this release. Please submit an issue if you encounter any issues.
+
 ## Upgrading to v3.4
 
 ### Non-Emissary executors are removed. ([#7829](https://github.com/argoproj/argo-workflows/issues/7829))
