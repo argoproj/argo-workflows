@@ -11,8 +11,6 @@ run:
     - sdks
     - ui
     - vendor
-  skip-files:
-    - server/static/files.go
   build-tags:
     - api
     - cli

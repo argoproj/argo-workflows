@@ -159,25 +159,14 @@ endef
 cli: dist/argo
 
 ui/dist/app/index.html: $(shell find ui/src -type f && find ui -maxdepth 1 -type f)
+ifeq ($(STATIC_FILES),true)
 	# `yarn install` is fast (~2s), so you can call it safely.
 	JOBS=max yarn --cwd ui install
 	# `yarn build` is slow, so we guard it with a up-to-date check.
 	JOBS=max yarn --cwd ui build
-
-$(GOPATH)/bin/staticfiles:
-# update this in Nix when updating it here
-ifneq ($(USE_NIX), true)
-	go install bou.ke/staticfiles@dd04075
-endif
-
-ifeq ($(STATIC_FILES),true)
-server/static/files.go: $(GOPATH)/bin/staticfiles ui/dist/app/index.html
-	# Pack UI into a Go file
-	$(GOPATH)/bin/staticfiles -o server/static/files.go ui/dist/app
 else
-server/static/files.go:
-	# Building without static files
-	cp ./server/static/files.go.stub ./server/static/files.go
+	@mkdir -p ui/dist/app
+	touch ui/dist/app/index.html
 endif
 
 dist/argo-linux-amd64: GOARGS = GOOS=linux GOARCH=amd64
@@ -191,16 +180,16 @@ dist/argo-windows-amd64: GOARGS = GOOS=windows GOARCH=amd64
 dist/argo-windows-%.gz: dist/argo-windows-%
 	gzip --force --keep dist/argo-windows-$*.exe
 
-dist/argo-windows-%: server/static/files.go $(CLI_PKGS) go.sum
+dist/argo-windows-%: ui/dist/app/index.html $(CLI_PKGS) go.sum
 	CGO_ENABLED=0 $(GOARGS) go build -v -gcflags '${GCFLAGS}' -ldflags '${LDFLAGS} -extldflags -static' -o $@.exe ./cmd/argo
 
 dist/argo-%.gz: dist/argo-%
 	gzip --force --keep dist/argo-$*
 
-dist/argo-%: server/static/files.go $(CLI_PKGS) go.sum
+dist/argo-%: ui/dist/app/index.html $(CLI_PKGS) go.sum
 	CGO_ENABLED=0 $(GOARGS) go build -v -gcflags '${GCFLAGS}' -ldflags '${LDFLAGS} -extldflags -static' -o $@ ./cmd/argo
 
-dist/argo: server/static/files.go $(CLI_PKGS) go.sum
+dist/argo: ui/dist/app/index.html $(CLI_PKGS) go.sum
 ifeq ($(shell uname -s),Darwin)
 	# if local, then build fast: use CGO and dynamic-linking
 	go build -v -gcflags '${GCFLAGS}' -ldflags '${LDFLAGS}' -o $@ ./cmd/argo
@@ -444,7 +433,7 @@ $(GOPATH)/bin/golangci-lint:
 	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b `go env GOPATH`/bin v1.52.2
 
 .PHONY: lint
-lint: server/static/files.go $(GOPATH)/bin/golangci-lint
+lint: $(GOPATH)/bin/golangci-lint
 	rm -Rf v3 vendor
 	# If you're using `woc.wf.Spec` or `woc.execWf.Status` your code probably won't work with WorkflowTemplate.
 	# * Change `woc.wf.Spec` to `woc.execWf.Spec`.
@@ -461,7 +450,7 @@ lint: server/static/files.go $(GOPATH)/bin/golangci-lint
 
 # for local we have a faster target that prints to stdout, does not use json, and can cache because it has no coverage
 .PHONY: test
-test: server/static/files.go
+test: ui/dist/app/index.html
 	go build ./...
 	env KUBECONFIG=/dev/null $(GOTEST) ./...
 	# marker file, based on it's modification time, we know how long ago this target was run
@@ -670,7 +659,7 @@ docs/fields.md: api/openapi-spec/swagger.json $(shell find examples -type f) hac
 	env ARGO_SECURE=false ARGO_INSECURE_SKIP_VERIFY=false ARGO_SERVER= ARGO_INSTANCEID= go run ./hack docgen
 
 # generates several other files
-docs/cli/argo.md: $(CLI_PKGS) go.sum server/static/files.go hack/cli/main.go
+docs/cli/argo.md: $(CLI_PKGS) go.sum ui/dist/app/index.html hack/cli/main.go
 	go run ./hack/cli
 
 # docs
