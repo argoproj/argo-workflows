@@ -1,6 +1,6 @@
 import {NotificationType} from 'argo-ui';
 import * as React from 'react';
-import {archivalStatus, Workflow} from '../../../../models';
+import {isArchivedWorkflow, isWorkflowInCluster, Workflow} from '../../../../models';
 import {Consumer} from '../../../shared/context';
 import {services} from '../../../shared/services';
 import * as Actions from '../../../shared/workflow-operations-map';
@@ -47,11 +47,16 @@ export class WorkflowsToolbar extends React.Component<WorkflowsToolbarProps, {}>
     }
 
     private performActionOnSelectedWorkflows(ctx: any, title: string, action: WorkflowOperationAction): Promise<any> {
-        const confirmed = confirm(`Are you sure you want to ${title.toLowerCase()} all selected workflows?`);
         let deleteArchived = false;
+        const confirmed = confirm(`Are you sure you want to ${title.toLowerCase()} all selected workflows?`);
         if (confirmed) {
             if (title === 'DELETE') {
-                deleteArchived = confirm('Would you also want to delete them in the database?');
+                for (const entry of this.props.selectedWorkflows) {
+                    if (isArchivedWorkflow(entry[1])) {
+                        deleteArchived = confirm('Do you also want to delete them from the Archived Workflows database?');
+                        break;
+                    }
+                }
             }
         } else {
             return Promise.resolve(false);
@@ -60,7 +65,7 @@ export class WorkflowsToolbar extends React.Component<WorkflowsToolbarProps, {}>
         this.props.selectedWorkflows.forEach((wf: Workflow) => {
             if (title === 'DELETE') {
                 // The ones without archivalStatus label or with 'Archived' labels are the live workflows.
-                if (!wf.metadata.labels.hasOwnProperty(archivalStatus) || wf.metadata.labels[archivalStatus] === 'Archived') {
+                if (isWorkflowInCluster(wf)) {
                     promises.push(
                         services.workflows.delete(wf.metadata.name, wf.metadata.namespace).catch(reason =>
                             ctx.notifications.show({
@@ -70,7 +75,7 @@ export class WorkflowsToolbar extends React.Component<WorkflowsToolbarProps, {}>
                         )
                     );
                 }
-                if (deleteArchived && wf.metadata.labels[archivalStatus] === 'Pending') {
+                if (deleteArchived && isArchivedWorkflow(wf)) {
                     promises.push(
                         services.workflows.deleteArchived(wf.metadata.uid, wf.metadata.namespace).catch(reason =>
                             ctx.notifications.show({

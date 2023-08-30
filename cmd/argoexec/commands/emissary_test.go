@@ -40,11 +40,20 @@ func TestEmissary(t *testing.T) {
 		assert.Equal(t, "1", string(data))
 	})
 	t.Run("Stdout", func(t *testing.T) {
+		_ = os.Remove(varRunArgo + "/ctr/main/stdout")
 		err := run("echo hello")
 		assert.NoError(t, err)
 		data, err := os.ReadFile(varRunArgo + "/ctr/main/stdout")
 		assert.NoError(t, err)
 		assert.Contains(t, string(data), "hello")
+	})
+	t.Run("Sub-process", func(t *testing.T) {
+		_ = os.Remove(varRunArgo + "/ctr/main/stdout")
+		err := run(`(sleep 60; echo 'should not wait for sub-process')& echo "hello\c"`)
+		assert.NoError(t, err)
+		data, err := os.ReadFile(varRunArgo + "/ctr/main/stdout")
+		assert.NoError(t, err)
+		assert.Equal(t, "hello", string(data))
 	})
 	t.Run("Combined", func(t *testing.T) {
 		err := run("echo hello > /dev/stderr")

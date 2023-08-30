@@ -18,7 +18,7 @@ type ResourceRateLimit struct {
 	Burst int     `json:"burst"`
 }
 
-// Config contain the configuration settings for the workflow controller
+// Config contains the configuration settings for the workflow controller
 type Config struct {
 
 	// NodeEvents configures how node events are emitted
@@ -85,21 +85,22 @@ type Config struct {
 	// Defaults to the Kubernetes default of 30 seconds.
 	PodGCGracePeriodSeconds *int64 `json:"podGCGracePeriodSeconds,omitempty"`
 
-	// PodGCDeleteDelayDuration specifies the duration in seconds before the pods in the GC queue get deleted.
-	// Value must be non-negative integer. A zero value indicates that the pods will be deleted immediately.
+	// PodGCDeleteDelayDuration specifies the duration before pods in the GC queue get deleted.
+	// Value must be non-negative. A zero value indicates that the pods will be deleted immediately.
 	// Defaults to 5 seconds.
 	PodGCDeleteDelayDuration *metav1.Duration `json:"podGCDeleteDelayDuration,omitempty"`
 
 	// WorkflowRestrictions restricts the controller to executing Workflows that meet certain restrictions
 	WorkflowRestrictions *WorkflowRestrictions `json:"workflowRestrictions,omitempty"`
 
-	// Adding configurable initial delay (for K8S clusters with mutating webhooks) to prevent workflow getting modified by MWC.
+	// Adds configurable initial delay (for K8S clusters with mutating webhooks) to prevent workflow getting modified by MWC.
 	InitialDelay metav1.Duration `json:"initialDelay,omitempty"`
 
 	// The command/args for each image, needed when the command is not specified and the emissary executor is used.
 	// https://argoproj.github.io/argo-workflows/workflow-executors/#emissary-emissary
 	Images map[string]Image `json:"images,omitempty"`
 
+	// Workflow retention by number of workflows
 	RetentionPolicy *RetentionPolicy `json:"retentionPolicy,omitempty"`
 
 	// NavColor is an ui navigation bar background color

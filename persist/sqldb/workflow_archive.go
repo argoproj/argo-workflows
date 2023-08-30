@@ -1,20 +1,19 @@
 package sqldb
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"time"
 
 	log "github.com/sirupsen/logrus"
+	"github.com/upper/db/v4"
 	"google.golang.org/grpc/codes"
 	"k8s.io/apimachinery/pkg/labels"
-	"upper.io/db.v3"
-	"upper.io/db.v3/lib/sqlbuilder"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	sutils "github.com/argoproj/argo-workflows/v3/server/utils"
 	"github.com/argoproj/argo-workflows/v3/util/instanceid"
+	"github.com/argoproj/argo-workflows/v3/workflow/common"
 )
 
 const (
@@ -66,7 +65,7 @@ type WorkflowArchive interface {
 }
 
 type workflowArchive struct {
-	session           sqlbuilder.Database
+	session           db.Session
 	clusterName       string
 	managedNamespace  string
 	instanceIDService instanceid.Service
@@ -78,19 +77,20 @@ func (r *workflowArchive) IsEnabled() bool {
 }
 
 // NewWorkflowArchive returns a new workflowArchive
-func NewWorkflowArchive(session sqlbuilder.Database, clusterName, managedNamespace string, instanceIDService instanceid.Service) WorkflowArchive {
+func NewWorkflowArchive(session db.Session, clusterName, managedNamespace string, instanceIDService instanceid.Service) WorkflowArchive {
 	return &workflowArchive{session: session, clusterName: clusterName, managedNamespace: managedNamespace, instanceIDService: instanceIDService, dbType: dbTypeFor(session)}
 }
 
 func (r *workflowArchive) ArchiveWorkflow(wf *wfv1.Workflow) error {
 	logCtx := log.WithFields(log.Fields{"uid": wf.UID, "labels": wf.GetLabels()})
 	logCtx.Debug("Archiving workflow")
+	wf.ObjectMeta.Labels[common.LabelKeyWorkflowArchivingStatus] = "Persisted"
 	workflow, err := json.Marshal(wf)
 	if err != nil {
 		return err
 	}
-	return r.session.Tx(context.Background(), func(sess sqlbuilder.Tx) error {
-		_, err := sess.
+	return r.session.Tx(func(sess db.Session) error {
+		_, err := sess.SQL().
 			DeleteFrom(archiveTableName).
 			Where(r.clusterManagedNamespaceAndInstanceID()).
 			And(db.Cond{"uid": wf.UID}).
@@ -116,7 +116,7 @@ func (r *workflowArchive) ArchiveWorkflow(wf *wfv1.Workflow) error {
 			return err
 		}
 
-		_, err = sess.
+		_, err = sess.SQL().
 			DeleteFrom(archiveLabelsTableName).
 			Where(db.Cond{"clustername": r.clusterName}).
 			And(db.Cond{"uid": wf.UID}).
@@ -143,10 +143,6 @@ func (r *workflowArchive) ArchiveWorkflow(wf *wfv1.Workflow) error {
 
 func (r *workflowArchive) ListWorkflows(namespace string, name string, namePrefix string, minStartedAt, maxStartedAt time.Time, labelRequirements labels.Requirements, limit int, offset int) (wfv1.Workflows, error) {
 	var archivedWfs []archivedWorkflowRecord
-	clause, err := labelsClause(r.dbType, labelRequirements)
-	if err != nil {
-		return nil, err
-	}
 
 	// If we were passed 0 as the limit, then we should load all available archived workflows
 	// to match the behavior of the `List` operations in the Kubernetes API
@@ -155,15 +151,21 @@ func (r *workflowArchive) ListWorkflows(namespace string, name string, namePrefi
 		offset = -1
 	}
 
-	err = r.session.
+	selector := r.session.SQL().
 		Select("workflow").
 		From(archiveTableName).
 		Where(r.clusterManagedNamespaceAndInstanceID()).
 		And(namespaceEqual(namespace)).
 		And(nameEqual(name)).
 		And(namePrefixClause(namePrefix)).
-		And(startedAtClause(minStartedAt, maxStartedAt)).
-		And(clause).
+		And(startedAtFromClause(minStartedAt)).
+		And(startedAtToClause(maxStartedAt))
+
+	selector, err := labelsClause(selector, r.dbType, labelRequirements)
+	if err != nil {
+		return nil, err
+	}
+	err = selector.
 		OrderBy("-startedat").
 		Limit(limit).
 		Offset(offset).
@@ -171,6 +173,7 @@ func (r *workflowArchive) ListWorkflows(namespace string, name string, namePrefi
 	if err != nil {
 		return nil, err
 	}
+
 	wfs := make(wfv1.Workflows, 0)
 	for _, archivedWf := range archivedWfs {
 		wf := wfv1.Workflow{}
@@ -178,6 +181,8 @@ func (r *workflowArchive) ListWorkflows(namespace string, name string, namePrefi
 		if err != nil {
 			log.WithFields(log.Fields{"workflowUID": archivedWf.UID, "workflowName": archivedWf.Name}).Errorln("unable to unmarshal workflow from database")
 		} else {
+			// For backward compatibility, we should label workflow retrieved from DB as Persisted.
+			wf.ObjectMeta.Labels[common.LabelKeyWorkflowArchivingStatus] = "Persisted"
 			wfs = append(wfs, wf)
 		}
 	}
@@ -186,21 +191,22 @@ func (r *workflowArchive) ListWorkflows(namespace string, name string, namePrefi
 
 func (r *workflowArchive) CountWorkflows(namespace string, name string, namePrefix string, minStartedAt, maxStartedAt time.Time, labelRequirements labels.Requirements) (int64, error) {
 	total := &archivedWorkflowCount{}
-	clause, err := labelsClause(r.dbType, labelRequirements)
-	if err != nil {
-		return 0, err
-	}
 
-	err = r.session.
+	selector := r.session.SQL().
 		Select(db.Raw("count(*) as total")).
 		From(archiveTableName).
 		Where(r.clusterManagedNamespaceAndInstanceID()).
 		And(namespaceEqual(namespace)).
 		And(nameEqual(name)).
 		And(namePrefixClause(namePrefix)).
-		And(startedAtClause(minStartedAt, maxStartedAt)).
-		And(clause).
-		One(total)
+		And(startedAtFromClause(minStartedAt)).
+		And(startedAtToClause(maxStartedAt))
+
+	selector, err := labelsClause(selector, r.dbType, labelRequirements)
+	if err != nil {
+		return 0, err
+	}
+	err = selector.One(total)
 	if err != nil {
 		return 0, err
 	}
@@ -208,7 +214,7 @@ func (r *workflowArchive) CountWorkflows(namespace string, name string, namePref
 	return int64(total.Total), nil
 }
 
-func (r *workflowArchive) clusterManagedNamespaceAndInstanceID() db.Compound {
+func (r *workflowArchive) clusterManagedNamespaceAndInstanceID() *db.AndExpr {
 	return db.And(
 		db.Cond{"clustername": r.clusterName},
 		namespaceEqual(r.managedNamespace),
@@ -216,15 +222,18 @@ func (r *workflowArchive) clusterManagedNamespaceAndInstanceID() db.Compound {
 	)
 }
 
-func startedAtClause(from, to time.Time) db.Compound {
-	var conds []db.Compound
+func startedAtFromClause(from time.Time) db.Cond {
 	if !from.IsZero() {
-		conds = append(conds, db.Cond{"startedat > ": from})
+		return db.Cond{"startedat > ": from}
 	}
+	return db.Cond{}
+}
+
+func startedAtToClause(to time.Time) db.Cond {
 	if !to.IsZero() {
-		conds = append(conds, db.Cond{"startedat < ": to})
+		return db.Cond{"startedat < ": to}
 	}
-	return db.And(conds...)
+	return db.Cond{}
 }
 
 func namespaceEqual(namespace string) db.Cond {
@@ -255,7 +264,7 @@ func (r *workflowArchive) GetWorkflow(uid string, namespace string, name string)
 	var err error
 	archivedWf := &archivedWorkflowRecord{}
 	if uid != "" {
-		err = r.session.
+		err = r.session.SQL().
 			Select("workflow").
 			From(archiveTableName).
 			Where(r.clusterManagedNamespaceAndInstanceID()).
@@ -264,7 +273,7 @@ func (r *workflowArchive) GetWorkflow(uid string, namespace string, name string)
 	} else {
 		if name != "" && namespace != "" {
 			total := &archivedWorkflowCount{}
-			err = r.session.
+			err = r.session.SQL().
 				Select(db.Raw("count(*) as total")).
 				From(archiveTableName).
 				Where(r.clusterManagedNamespaceAndInstanceID()).
@@ -278,7 +287,7 @@ func (r *workflowArchive) GetWorkflow(uid string, namespace string, name string)
 			if num > 1 {
 				return nil, fmt.Errorf("found %d archived workflows with namespace/name: %s/%s", num, namespace, name)
 			}
-			err = r.session.
+			err = r.session.SQL().
 				Select("workflow").
 				From(archiveTableName).
 				Where(r.clusterManagedNamespaceAndInstanceID()).
@@ -300,11 +309,13 @@ func (r *workflowArchive) GetWorkflow(uid string, namespace string, name string)
 	if err != nil {
 		return nil, err
 	}
+	// For backward compatibility, we should label workflow retrieved from DB as Persisted.
+	wf.ObjectMeta.Labels[common.LabelKeyWorkflowArchivingStatus] = "Persisted"
 	return wf, nil
 }
 
 func (r *workflowArchive) DeleteWorkflow(uid string) error {
-	rs, err := r.session.
+	rs, err := r.session.SQL().
 		DeleteFrom(archiveTableName).
 		Where(r.clusterManagedNamespaceAndInstanceID()).
 		And(db.Cond{"uid": uid}).
@@ -321,7 +332,7 @@ func (r *workflowArchive) DeleteWorkflow(uid string) error {
 }
 
 func (r *workflowArchive) DeleteExpiredWorkflows(ttl time.Duration) error {
-	rs, err := r.session.
+	rs, err := r.session.SQL().
 		DeleteFrom(archiveTableName).
 		Where(r.clusterManagedNamespaceAndInstanceID()).
 		And(fmt.Sprintf("finishedat < current_timestamp - interval '%d' second", int(ttl.Seconds()))).

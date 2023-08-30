@@ -37,6 +37,10 @@ Example:
 
     kubectl create secret generic argo-postgres-config -n argo --from-literal=password=mypassword --from-literal=username=argodbuser
 
+Note that IAM-based authentication is not currently supported. However, you can start your database proxy as a sidecar
+(e.g. via [CloudSQL Proxy](https://github.com/GoogleCloudPlatform/cloud-sql-proxy) on GCP) and then specify your local
+proxy address, IAM username, and an empty string as your password in the persistence configuration to connect to it.
+
 The following tables will be created in the database when you start the workflow controller with enabled archive:
 
 * `argo_workflows`

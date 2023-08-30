@@ -140,8 +140,8 @@ func mergeWithArchivedWorkflows(liveWfs v1alpha1.WorkflowList, archivedWfs v1alp
 	}
 
 	for _, v := range uidToWfs {
-		// The archived workflow we saved in the database will only have "Pending" as the archival status.
-		// We want to only keep the workflow that has the correct label to display correctly in the UI.
+		// The archived workflow we saved in the database have "Persisted" as the archival status.
+		// Prioritize 'Archived' over 'Persisted' because 'Archived' means the workflow is in the cluster
 		if len(v) == 1 {
 			mergedWfs = append(mergedWfs, v[0])
 		} else {
@@ -428,7 +428,7 @@ func (s *workflowServer) ResubmitWorkflow(ctx context.Context, req *workflowpkg.
 		return nil, sutils.ToStatusError(err, codes.InvalidArgument)
 	}
 
-	newWF, err := util.FormulateResubmitWorkflow(wf, req.Memoized, req.Parameters)
+	newWF, err := util.FormulateResubmitWorkflow(ctx, wf, req.Memoized, req.Parameters)
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.Internal)
 	}
@@ -640,14 +640,17 @@ func (s *workflowServer) getWorkflow(ctx context.Context, wfClient versioned.Int
 		log.Debugf("Resolved alias %s to workflow %s.\n", latestAlias, latest.Name)
 		return latest, nil
 	}
-	wf, err := wfClient.ArgoprojV1alpha1().Workflows(namespace).Get(ctx, name, options)
-	if wf == nil || err != nil {
+	var err error
+	wf, origErr := wfClient.ArgoprojV1alpha1().Workflows(namespace).Get(ctx, name, options)
+	if wf == nil || origErr != nil {
 		wf, err = s.wfArchiveServer.GetArchivedWorkflow(ctx, &workflowarchivepkg.GetArchivedWorkflowRequest{
 			Namespace: namespace,
 			Name:      name,
 		})
 		if err != nil {
-			return nil, sutils.ToStatusError(err, codes.Internal)
+			log.Errorf("failed to get live workflow: %v; failed to get archived workflow: %v", origErr, err)
+			// We only return the original error to preserve the original status code.
+			return nil, sutils.ToStatusError(origErr, codes.Internal)
 		}
 	}
 	return wf, nil

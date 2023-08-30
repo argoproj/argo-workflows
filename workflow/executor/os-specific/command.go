@@ -4,6 +4,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/term"
@@ -16,7 +17,12 @@ func simpleStart(cmd *exec.Cmd) (func(), error) {
 		return nil, err
 	}
 
-	return func() {}, nil
+	closer := func() {
+		cmd.WaitDelay = 100 * time.Millisecond
+		_ = cmd.Wait()
+	}
+
+	return closer, nil
 }
 
 func isTerminal(stdin io.Reader) bool {

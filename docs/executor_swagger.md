@@ -2715,6 +2715,7 @@ save/load the directory appropriately.
 | lifecycleRule | [OSSLifecycleRule](#o-s-s-lifecycle-rule)| `OSSLifecycleRule` |  | |  |  |
 | secretKeySecret | [SecretKeySelector](#secret-key-selector)| `SecretKeySelector` |  | |  |  |
 | securityToken | string| `string` |  | | SecurityToken is the user's temporary security token. For more details, check out: https://www.alibabacloud.com/help/doc-detail/100624.htm |  |
+| useSDKCreds | boolean| `bool` |  | | UseSDKCreds tells the driver to figure out credentials based on sdk defaults. |  |
 
 
 
@@ -3785,6 +3786,7 @@ be retried and the retry strategy will be ignored |  |
 |------|------|---------|:--------:| ------- |-------------|---------|
 | accessKeySecret | [SecretKeySelector](#secret-key-selector)| `SecretKeySelector` |  | |  |  |
 | bucket | string| `string` |  | | Bucket is the name of the bucket |  |
+| caSecret | [SecretKeySelector](#secret-key-selector)| `SecretKeySelector` |  | |  |  |
 | createBucketIfNotPresent | [CreateS3BucketOptions](#create-s3-bucket-options)| `CreateS3BucketOptions` |  | |  |  |
 | encryptionOptions | [S3EncryptionOptions](#s3-encryption-options)| `S3EncryptionOptions` |  | |  |  |
 | endpoint | string| `string` |  | | Endpoint is the hostname of the bucket endpoint |  |
@@ -4353,7 +4355,7 @@ Namespaces that do not pre-exist within StorageOS will be created.
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
 | duration | string| `string` |  | | Duration is the seconds to wait before automatically resuming a template. Must be a string. Default unit is seconds.
-Could also be a Duration, e.g.: "2m", "6h", "1d" |  |
+Could also be a Duration, e.g.: "2m", "6h" |  |
 
 
 

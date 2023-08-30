@@ -351,7 +351,7 @@ func (s *CLISuite) TestLogProblems() {
 		Workflow(`@testdata/log-problems.yaml`).
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(fixtures.ToStart).
+		WaitForWorkflow(fixtures.ToHaveRunningPod).
 		Then().
 		// logs should come in order
 		RunCli([]string{"logs", "@latest", "--follow"}, func(t *testing.T, output string, err error) {

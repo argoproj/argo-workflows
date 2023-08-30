@@ -32,7 +32,7 @@ spec:
 
   - name: delay
     suspend:
-      duration: "20"    # Must be a string. Default unit is seconds. Could also be a Duration, e.g.: "2m", "6h", "1d"
+      duration: "20"    # Must be a string. Default unit is seconds. Could also be a Duration, e.g.: "2m", "6h"
 
   - name: whalesay
     container:

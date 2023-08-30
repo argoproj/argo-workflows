@@ -39,6 +39,7 @@ Couler
 ClusterRoleBinding
 CRD
 CRDs
+CloudSQL
 DataDog
 Dataflow
 DeleteObject
@@ -61,6 +62,7 @@ Homebrew
 InitContainer
 InsideBoard
 Invocators
+IAM-based
 Istio
 J.P.
 Jemison
@@ -149,6 +151,7 @@ fibonacci
 finalizer
 govaluate
 gzipped
+Generator
 i.e.
 instantiator
 instantiators
@@ -171,8 +174,10 @@ mutex
 namespace
 namespaces
 natively
+OpenAPI
 p.m.
 params
+pprof
 pre-commit
 rc2
 repo
@@ -196,6 +201,8 @@ v1.2
 v1.3
 v1.24
 v2
+v2.0
+v2.1
 v2.10
 v2.11
 v2.12
@@ -234,6 +241,6 @@ devenv
 vendored
 nix.conf
 LDFlags
-dev 
+dev
 vendorSha256
 dependabot

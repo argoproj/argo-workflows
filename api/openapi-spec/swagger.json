@@ -9625,6 +9625,10 @@
         "securityToken": {
           "description": "SecurityToken is the user's temporary security token. For more details, check out: https://www.alibabacloud.com/help/doc-detail/100624.htm",
           "type": "string"
+        },
+        "useSDKCreds": {
+          "description": "UseSDKCreds tells the driver to figure out credentials based on sdk defaults.",
+          "type": "boolean"
         }
       }
     },
@@ -9663,6 +9667,10 @@
         "securityToken": {
           "description": "SecurityToken is the user's temporary security token. For more details, check out: https://www.alibabacloud.com/help/doc-detail/100624.htm",
           "type": "string"
+        },
+        "useSDKCreds": {
+          "description": "UseSDKCreds tells the driver to figure out credentials based on sdk defaults.",
+          "type": "boolean"
         }
       }
     },
@@ -9978,6 +9986,10 @@
           "description": "Bucket is the name of the bucket",
           "type": "string"
         },
+        "caSecret": {
+          "description": "CASecret specifies the secret that contains the CA, used to verify the TLS connection",
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
+        },
         "createBucketIfNotPresent": {
           "description": "CreateBucketIfNotPresent tells the driver to attempt to create the S3 bucket for output artifacts, if it doesn't exist. Setting Enabled Encryption will apply either SSE-S3 to the bucket if KmsKeyId is not set or SSE-KMS if it is.",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.CreateS3BucketOptions"
@@ -10026,6 +10038,10 @@
         "bucket": {
           "description": "Bucket is the name of the bucket",
           "type": "string"
+        },
+        "caSecret": {
+          "description": "CASecret specifies the secret that contains the CA, used to verify the TLS connection",
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
         },
         "createBucketIfNotPresent": {
           "description": "CreateBucketIfNotPresent tells the driver to attempt to create the S3 bucket for output artifacts, if it doesn't exist. Setting Enabled Encryption will apply either SSE-S3 to the bucket if KmsKeyId is not set or SSE-KMS if it is.",
@@ -10384,7 +10400,7 @@
       "type": "object",
       "properties": {
         "duration": {
-          "description": "Duration is the seconds to wait before automatically resuming a template. Must be a string. Default unit is seconds. Could also be a Duration, e.g.: \"2m\", \"6h\", \"1d\"",
+          "description": "Duration is the seconds to wait before automatically resuming a template. Must be a string. Default unit is seconds. Could also be a Duration, e.g.: \"2m\", \"6h\"",
           "type": "string"
         }
       }
@@ -11038,6 +11054,10 @@
         "podMetadata": {
           "description": "PodMetadata is an optional field for specifying the Labels and Annotations that should be assigned to the Pod doing the deletion",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Metadata"
+        },
+        "podSpecPatch": {
+          "description": "PodSpecPatch holds strategic merge patch to apply against the artgc pod spec.",
+          "type": "string"
         },
         "serviceAccountName": {
           "description": "ServiceAccountName is an optional field for specifying the Service Account that should be assigned to the Pod doing the deletion",

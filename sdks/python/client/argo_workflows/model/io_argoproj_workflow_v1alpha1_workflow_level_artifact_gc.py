@@ -89,6 +89,7 @@ class IoArgoprojWorkflowV1alpha1WorkflowLevelArtifactGC(ModelNormal):
         return {
             'force_finalizer_removal': (bool,),  # noqa: E501
             'pod_metadata': (IoArgoprojWorkflowV1alpha1Metadata,),  # noqa: E501
+            'pod_spec_patch': (str,),  # noqa: E501
             'service_account_name': (str,),  # noqa: E501
             'strategy': (str,),  # noqa: E501
         }
@@ -101,6 +102,7 @@ class IoArgoprojWorkflowV1alpha1WorkflowLevelArtifactGC(ModelNormal):
     attribute_map = {
         'force_finalizer_removal': 'forceFinalizerRemoval',  # noqa: E501
         'pod_metadata': 'podMetadata',  # noqa: E501
+        'pod_spec_patch': 'podSpecPatch',  # noqa: E501
         'service_account_name': 'serviceAccountName',  # noqa: E501
         'strategy': 'strategy',  # noqa: E501
     }
@@ -148,6 +150,7 @@ class IoArgoprojWorkflowV1alpha1WorkflowLevelArtifactGC(ModelNormal):
                                 _visited_composed_classes = (Animal,)
             force_finalizer_removal (bool): ForceFinalizerRemoval: if set to true, the finalizer will be removed in the case that Artifact GC fails. [optional]  # noqa: E501
             pod_metadata (IoArgoprojWorkflowV1alpha1Metadata): [optional]  # noqa: E501
+            pod_spec_patch (str): PodSpecPatch holds strategic merge patch to apply against the artgc pod spec.. [optional]  # noqa: E501
             service_account_name (str): ServiceAccountName is an optional field for specifying the Service Account that should be assigned to the Pod doing the deletion. [optional]  # noqa: E501
             strategy (str): Strategy is the strategy to use.. [optional]  # noqa: E501
         """
@@ -233,6 +236,7 @@ class IoArgoprojWorkflowV1alpha1WorkflowLevelArtifactGC(ModelNormal):
                                 _visited_composed_classes = (Animal,)
             force_finalizer_removal (bool): ForceFinalizerRemoval: if set to true, the finalizer will be removed in the case that Artifact GC fails. [optional]  # noqa: E501
             pod_metadata (IoArgoprojWorkflowV1alpha1Metadata): [optional]  # noqa: E501
+            pod_spec_patch (str): PodSpecPatch holds strategic merge patch to apply against the artgc pod spec.. [optional]  # noqa: E501
             service_account_name (str): ServiceAccountName is an optional field for specifying the Service Account that should be assigned to the Pod doing the deletion. [optional]  # noqa: E501
             strategy (str): Strategy is the strategy to use.. [optional]  # noqa: E501
         """

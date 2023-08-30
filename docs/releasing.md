@@ -2,18 +2,22 @@
 
 ## Cherry-Picking Fixes
 
-✋ Before you start, make sure the release branch is passing CI.
+✋ Before you start, make sure you have created a release branch (e.g. `release-3.3`) and it's passing CI.
 
-Get a list of commits you may want to cherry-pick:
+Then get a list of commits you may want to cherry-pick:
 
 ```bash
-./hack/what-to-cherry-pick.sh release-3.3
+./hack/what-to-cherry-pick.sh release-3.3 "fix"
+./hack/what-to-cherry-pick.sh release-3.3 "chore(deps)"
+./hack/what-to-cherry-pick.sh release-3.3 "build"
+./hack/what-to-cherry-pick.sh release-3.3 "ci"
 ```
 
 Ignore:
 
 * Fixes for features only on master.
-* Dependency upgrades, unless it fixes a known security issue.
+* Dependency upgrades, unless they fix known security issues.
+* Build or CI improvements, unless the release pipeline is blocked without them.
 
 Cherry-pick the first commit. Run `make test` locally before pushing. If the build timeouts the build caches may have
 gone, try re-running.
@@ -44,6 +48,8 @@ Once the tag is published, GitHub Actions will automatically open a PR to update
 you can approve it, enable auto-merge, and then run the following to force trigger the CI build:
 
 ```bash
+git branch -D create-pull-request/changelog
+git fetch upstream
 git checkout --track upstream/create-pull-request/changelog
 git commit -s --allow-empty -m "docs: Force trigger CI"
 git push upstream create-pull-request/changelog

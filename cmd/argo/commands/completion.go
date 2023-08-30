@@ -42,22 +42,13 @@ __argo_get_cron_workflow() {
 
 __argo_get_logs() {
 	# Determine if were completing a workflow or not.
-	local workflow=0
-	for comp_word in "${COMP_WORDS[@]}"; do
-		if [[ $comp_word =~ ^(-w|--workflow)$ ]]; then
-			workflow=1
-			break
-		fi
-	done
-
-	# If completing a workflow, call normal function.
-	if [[ $workflow -eq 1 ]]; then
+	if [[ $prev == "logs" ]]; then
 		__argo_get_workflow && return $?
-	fi
-
+ 	fi
+    local workflow=$prev
 	# Otherwise, complete the list of pods
 	local -a kubectl_out
-	if kubectl_out=($(kubectl get pods --no-headers --label-columns=workflows.argoproj.io/workflow 2>/dev/null | awk '{if ($6!="") print $1}' 2>/dev/null)); then
+	if kubectl_out=($(kubectl get pods --no-headers --selector=workflows.argoproj.io/workflow="${workflow}" 2>/dev/null | awk '{print $1}' 2>/dev/null)); then
 		COMPREPLY+=( $( compgen -W "${kubectl_out[*]}" -- "$cur" ) )
 	fi
 }
@@ -108,7 +99,7 @@ __argo_custom_func() {
 		    __argo_list_files
 			return
 			;;
-		argo_cron_get | argo_cron_delete | argo_cron_resume | argo_cron_subspend)
+		argo_cron_get | argo_cron_delete | argo_cron_resume | argo_cron_suspend)
 			__argo_get_cron_workflow
 			return
 			;;

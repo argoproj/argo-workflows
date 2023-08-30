@@ -3,11 +3,20 @@ package common
 import (
 	"time"
 
+	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
+
+// labelsToPropagate includes the labels of a CronWorkflow which are to be
+// propagated to the Workflow to be scheduled.
+var labelsToPropagate []string = []string{
+	"workflows.argoproj.io/creator",
+	"workflows.argoproj.io/creator-email",
+	"workflows.argoproj.io/creator-preferred-username",
+}
 
 func ConvertCronWorkflowToWorkflow(cronWf *wfv1.CronWorkflow) *wfv1.Workflow {
 	meta := metav1.ObjectMeta{
@@ -21,9 +30,21 @@ func ConvertCronWorkflowToWorkflow(cronWf *wfv1.CronWorkflow) *wfv1.Workflow {
 }
 
 func ConvertCronWorkflowToWorkflowWithProperties(cronWf *wfv1.CronWorkflow, name string, scheduledTime time.Time) *wfv1.Workflow {
+	cronWfLabels := cronWf.ObjectMeta.GetLabels()
+	wfLabels := make(map[string]string)
+	for _, k := range labelsToPropagate {
+		v, ok := cronWfLabels[k]
+		if ok {
+			wfLabels[k] = v
+			log.WithField("key", k).
+				WithField("value", v).
+				Debug("propagated the label of the cron workflow to the workflow to be scheduled.")
+		}
+	}
+
 	meta := metav1.ObjectMeta{
 		Name:   name,
-		Labels: make(map[string]string),
+		Labels: wfLabels,
 		Annotations: map[string]string{
 			AnnotationKeyCronWfScheduledTime: scheduledTime.Format(time.RFC3339),
 		},

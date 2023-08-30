@@ -8,8 +8,8 @@ import (
 )
 
 func (woc *wfOperationCtx) executeContainerSet(ctx context.Context, nodeName string, templateScope string, tmpl *wfv1.Template, orgTmpl wfv1.TemplateReferenceHolder, opts *executeTemplateOpts) (*wfv1.NodeStatus, error) {
-	node := woc.wf.GetNodeByName(nodeName)
-	if node == nil {
+	node, err := woc.wf.GetNodeByName(nodeName)
+	if err != nil {
 		node = woc.initializeExecutableNode(nodeName, wfv1.NodeTypePod, templateScope, tmpl, orgTmpl, opts.boundaryID, wfv1.NodePending)
 	}
 	includeScriptOutput, err := woc.includeScriptOutput(nodeName, opts.boundaryID)
@@ -30,8 +30,8 @@ func (woc *wfOperationCtx) executeContainerSet(ctx context.Context, nodeName str
 	// which prevents creating many pending nodes that could never be scheduled
 	for _, c := range tmpl.ContainerSet.GetContainers() {
 		ctxNodeName := fmt.Sprintf("%s.%s", nodeName, c.Name)
-		ctrNode := woc.wf.GetNodeByName(ctxNodeName)
-		if ctrNode == nil {
+		_, err := woc.wf.GetNodeByName(ctxNodeName)
+		if err != nil {
 			_ = woc.initializeNode(ctxNodeName, wfv1.NodeTypeContainer, templateScope, orgTmpl, node.ID, wfv1.NodePending)
 		}
 	}

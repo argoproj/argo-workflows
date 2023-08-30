@@ -15,6 +15,7 @@ spec:
     # Default: do not delete pods
     strategy: OnPodSuccess
     # The duration before pods in the GC queue get deleted. Defaults to 5s
+    # Requires Argo >= 3.5
     deleteDelayDuration: 30s
 
   templates:

@@ -1,6 +1,6 @@
 # https://golangci-lint.run/usage/quick-start/
 run:
-  timeout: 8m
+  timeout: 12m
   skip-dirs:
     - dist
     - docs

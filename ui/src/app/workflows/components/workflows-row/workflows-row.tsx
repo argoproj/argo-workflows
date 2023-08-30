@@ -50,7 +50,12 @@ export class WorkflowsRow extends React.Component<WorkflowsRowProps, WorkflowRow
                         />
                         <PhaseIcon value={wf.status.phase} />
                     </div>
-                    <Link to={uiUrl(`workflows/${wf.metadata.namespace}/${wf.metadata.name}`)} className='small-11 row'>
+                    <Link
+                        to={{
+                            pathname: uiUrl(`workflows/${wf.metadata.namespace}/${wf.metadata.name}`),
+                            search: `?uid=${wf.metadata.uid}`
+                        }}
+                        className='small-11 row'>
                         <div className='columns small-2'>
                             {(wf.metadata.annotations && wf.metadata.annotations[ANNOTATION_TITLE]) || wf.metadata.name}
                             {wf.metadata.annotations && wf.metadata.annotations[ANNOTATION_DESCRIPTION] ? <p>{wf.metadata.annotations[ANNOTATION_DESCRIPTION]}</p> : null}
@@ -89,7 +94,8 @@ export class WorkflowsRow extends React.Component<WorkflowsRowProps, WorkflowRow
                         </div>
                         <div className='columns small-1'>{isArchivedWorkflow(wf) ? 'true' : 'false'}</div>
                         {(this.props.columns || []).map(column => {
-                            const value = wf.metadata?.labels[column.key];
+                            // best not to make any assumptions and wait until this data is filled
+                            const value = wf?.metadata?.labels?.[column.key] ?? 'unknown';
                             return (
                                 <div key={column.name} className='columns small-1'>
                                     {value}

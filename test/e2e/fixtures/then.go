@@ -224,7 +224,10 @@ func (t *Then) ExpectArtifact(nodeName string, artifactName string, bucketName s
 		nodeName = t.wf.Name
 	}
 
-	n := t.wf.GetNodeByName(nodeName)
+	n, err := t.wf.GetNodeByName(nodeName)
+	if err != nil {
+		t.t.Error("was unable to get node by name")
+	}
 	a := n.GetOutputs().GetArtifactByName(artifactName)
 	key, _ := a.GetKey()
 

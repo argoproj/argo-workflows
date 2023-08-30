@@ -3,7 +3,7 @@
 delete workflows
 
 ```
-argo delete [--dry-run] [WORKFLOW...|[--all] [--older] [--completed] [--resubmitted] [--prefix PREFIX] [--selector SELECTOR] [--force] ] [flags]
+argo delete [--dry-run] [WORKFLOW...|[--all] [--older] [--completed] [--resubmitted] [--prefix PREFIX] [--selector SELECTOR] [--force] [--status STATUS] ] [flags]
 ```
 
 ### Examples
@@ -34,6 +34,7 @@ argo delete [--dry-run] [WORKFLOW...|[--all] [--older] [--completed] [--resubmit
       --query-chunk-size int    Run the list query in chunks (deletes will still be executed individually)
       --resubmitted             Delete resubmitted workflows
   -l, --selector string         Selector (label query) to filter on, not including uninitialized ones, supports '=', '==', and '!='.(e.g. -l key1=value1,key2=value2)
+      --status strings          Delete by status (comma separated)
 ```
 
 ### Options inherited from parent commands
