@@ -5,7 +5,7 @@ the [conventional commits](https://www.conventionalcommits.org/en/v1.0.0/#summar
 
 ## Upgrading to v3.5
 
-There is no known breaking change in this release. Please submit an issue if you encounter any issues.
+There are no known breaking changes in this release. Please file an issue if you encounter any unexpected problems after upgrading.
 
 ## Upgrading to v3.4
 
