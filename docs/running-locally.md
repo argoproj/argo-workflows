@@ -206,7 +206,7 @@ make pre-commit -B
 
 Please do the following when creating your PR:
 
-* Sign-off your commits.
+* [Sign-off](https://probot.github.io/apps/dco) your commits.
 * Use [Conventional Commit messages](https://www.conventionalcommits.org/en/v1.0.0/).
 * Suffix the issue number.
 
