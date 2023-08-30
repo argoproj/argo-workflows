@@ -24,7 +24,7 @@ const config = {
     path: __dirname + "/../../dist/app"
   },
 
-  devtool: isProd ? false : "source-map",
+  devtool: isProd ? false : "eval",
 
   resolve: {
     extensions: [".ts", ".tsx", ".js", ".json", ".ttf"],
